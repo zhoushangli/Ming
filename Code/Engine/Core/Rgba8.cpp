@@ -1,0 +1,9 @@
+#include "Rgba8.hpp"
+
+Rgba8::Rgba8()
+	: r(255)
+	, g(255)
+	, b(255)
+	, a(255)
+{
+}
