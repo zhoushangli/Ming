@@ -1,35 +1,37 @@
 #include "RandomNumberGenerator.hpp"
-#include <random>
+#include <cstdlib>
+#include <ctime>
+
 
 int RandomNumberGenerator::RollRandomIntLessThan(int maxNotInclusive)
 {
-    static std::random_device rd;
-    static std::mt19937 gen(rd());
-    std::uniform_int_distribution<> dist(0, maxNotInclusive - 1);
-    return dist(gen);
+	if (maxNotInclusive <= 0) 
+    {
+        return 0;
+    }
+
+	return std::rand() % maxNotInclusive;
 }
 
 int RandomNumberGenerator::RollRandomIntInRange(int minInclusive, int maxInclusive)
 {
-    static std::random_device rd;
-    static std::mt19937 gen(rd());
-    std::uniform_int_distribution<> dist(minInclusive, maxInclusive);
-    return dist(gen);
+	if (minInclusive >= maxInclusive) 
+	{
+		return minInclusive;
+	}
+
+	int range = maxInclusive - minInclusive + 1;
+	return minInclusive + std::rand() % range;
 }
 
 float RandomNumberGenerator::RollRandomFloatZeroToOne()
 {
-    static std::random_device rd;
-    static std::mt19937 gen(rd());
-    std::uniform_real_distribution<float> dist(0.0f, 1.0f);
-    return dist(gen);
+	return (float)((float)std::rand() / float(RAND_MAX));
 }
 
 float RandomNumberGenerator::RollRandomFloatInRange(float minInclusive, float maxInclusive)
 {
-    static std::random_device rd;
-    static std::mt19937 gen(rd());
-    std::uniform_real_distribution<float> dist(minInclusive, maxInclusive);
-    return dist(gen);
+	float t = RollRandomFloatZeroToOne();
+	return minInclusive + t * (maxInclusive - minInclusive);
 }
 
