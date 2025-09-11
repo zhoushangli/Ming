@@ -1,8 +1,8 @@
 #pragma once
 
-#include "Camera.hpp"
-#include <Engine/Core/Rgba8.hpp>
-#include <Engine/Core/Vertex.hpp>
+extern struct Rgba8;
+extern class Camera;
+extern class Vertex;
 
 class Renderer
 {
@@ -12,15 +12,14 @@ public:
 
 	void Startup();
 	void Shutdown();
-	void BeginFrame() const;
-	void EndFrame() const;
+	void BeginFrame();
+	void EndFrame();
 
 	void CreateRenderingContext();
 
 	void ClearScreen(Rgba8 const& clearColor);
 	void BeginCamera(Camera const& camera);
-	void EndCamera() const;
-
+	void EndCamera(Camera const& camera);
 	void DrawVertexArray(int numVertexes, Vertex const* vertexes);
 };
 
