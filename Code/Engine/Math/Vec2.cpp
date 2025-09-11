@@ -1,14 +1,13 @@
 #include "Engine/Math/Vec2.hpp"
-//#include "Engine/Math/MathUtils.hpp"
-//#include "Engine/Core/EngineCommon.hpp"
+#include <cmath>
 
+constexpr float RadiansToDegreesMultiplier = 57.29577951f;
+constexpr float DegreesToRadiansMultiplier = 0.01745329252f;
 
 //-----------------------------------------------------------------------------------------------
-Vec2::Vec2( Vec2 const& copy )
-	: x( copy.x )
-	, y( copy.y )
-{
-}
+Vec2::Vec2() = default;
+
+Vec2::Vec2( Vec2 const& copy ) = default;
 
 
 //-----------------------------------------------------------------------------------------------
@@ -18,6 +17,7 @@ Vec2::Vec2( float initialX, float initialY )
 {
 }
 
+Vec2::~Vec2() = default;
 
 //-----------------------------------------------------------------------------------------------
 Vec2 const Vec2::operator + ( Vec2 const& vecToAdd ) const
@@ -121,4 +121,150 @@ bool Vec2::operator!=( Vec2 const& compare ) const
 	return x != compare.x || y != compare.y;
 }
 
+// Static factory methods
+Vec2 Vec2::MakeFromPolarDegrees(float degrees, float length) {
+	float radians = degrees * DegreesToRadiansMultiplier;
+	return Vec2(std::cos(radians) * length, std::sin(radians) * length);
+}
 
+Vec2 Vec2::MakeFromPolarRadians(float radians, float length) {
+	return Vec2(std::cos(radians) * length, std::sin(radians) * length);
+}
+
+// Getters
+float Vec2::GetLength() const {
+	return std::sqrt(x * x + y * y);
+}
+
+float Vec2::GetLengthSquared() const {
+	return x * x + y * y;
+}
+
+float Vec2::GetOrientationDegrees() const {
+	return std::atan2(y, x) * RadiansToDegreesMultiplier;
+}
+
+float Vec2::GetOrientationRadians() const {
+	return std::atan2(y, x);
+}
+
+// Rotations (return new Vec2)
+Vec2 Vec2::GetRotatedBy90Degrees() const {
+	return Vec2(-y, x);
+}
+
+Vec2 Vec2::GetRotatedByMinus90Degrees() const {
+	return Vec2(y, -x);
+}
+
+Vec2 Vec2::GetRotatedByDegrees(float degrees) const {
+	float radians = degrees * DegreesToRadiansMultiplier;
+	return GetRotatedByRadians(radians);
+}
+
+Vec2 Vec2::GetRotatedByRadians(float radians) const {
+	float cosTheta = std::cos(radians);
+	float sinTheta = std::sin(radians);
+	return Vec2(x * cosTheta - y * sinTheta, x * sinTheta + y * cosTheta);
+}
+
+// Mutators (change this Vec2)
+void Vec2::SetOrientationDegrees(float degrees) {
+	float length = GetLength();
+	float radians = degrees * DegreesToRadiansMultiplier;
+	x = std::cos(radians) * length;
+	y = std::sin(radians) * length;
+}
+
+void Vec2::SetOrientationRadians(float radians) {
+	float length = GetLength();
+	x = std::cos(radians) * length;
+	y = std::sin(radians) * length;
+}
+
+void Vec2::SetPolarDegrees(float degrees, float length) {
+	float radians = degrees * DegreesToRadiansMultiplier;
+	x = std::cos(radians) * length;
+	y = std::sin(radians) * length;
+}
+
+void Vec2::SetPolarRadians(float radians, float length) {
+	x = std::cos(radians) * length;
+	y = std::sin(radians) * length;
+}
+
+void Vec2::RotateDegrees(float degrees) {
+	float radians = degrees * DegreesToRadiansMultiplier;
+	RotateRadians(radians);
+}
+
+void Vec2::RotateRadians(float radians) {
+	float cosTheta = std::cos(radians);
+	float sinTheta = std::sin(radians);
+	float newX = x * cosTheta - y * sinTheta;
+	float newY = x * sinTheta + y * cosTheta;
+	x = newX;
+	y = newY;
+}
+
+void Vec2::Rotate90Degrees() {
+	float temp = x;
+	x = -y;
+	y = temp;
+}
+
+void Vec2::RotateMinus90Degrees() {
+	float temp = x;
+	x = y;
+	y = -temp;
+}
+
+// Length/Normalization
+Vec2 Vec2::GetClamped(float maxLength) const {
+	float len = GetLength();
+	if (len > maxLength && len > 0.f) {
+		float scale = maxLength / len;
+		return Vec2(x * scale, y * scale);
+	}
+	return *this;
+}
+
+Vec2 Vec2::GetNormalized() const {
+	float len = GetLength();
+	if (len > 0.f) {
+		return Vec2(x / len, y / len);
+	}
+	return Vec2(0.f, 0.f);
+}
+
+void Vec2::SetLength(float newLength) {
+	float len = GetLength();
+	if (len > 0.f) {
+		float scale = newLength / len;
+		x *= scale;
+		y *= scale;
+	}
+}
+
+void Vec2::ClampLength(float maxLength) {
+	float len = GetLength();
+	if (len > maxLength && len > 0.f) {
+		float scale = maxLength / len;
+		x *= scale;
+		y *= scale;
+	}
+}
+
+void Vec2::Normalize() {
+	float len = GetLength();
+	if (len > 0.f) {
+		x /= len;
+		y /= len;
+	}
+}
+
+float Vec2::NormalizeAndGetPreviousLength() {
+	float len = GetLength();
+	Normalize();
+	return len;
+}

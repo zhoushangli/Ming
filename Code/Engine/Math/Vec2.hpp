@@ -10,8 +10,8 @@ public: // NOTE: this is one of the few cases where we break both the "m_" namin
 
 public:
 	// Construction/Destruction
-	~Vec2() {}												// destructor (do nothing)
-	Vec2() {}												// default constructor (do nothing)
+	~Vec2();												// destructor (do nothing)
+	Vec2();													// default constructor (do nothing)
 	Vec2( Vec2 const& copyFrom );							// copy constructor (from another vec2)
 	explicit Vec2( float initialX, float initialY );		// explicit constructor (from x, y)
 
@@ -34,6 +34,38 @@ public:
 
 	// Standalone "friend" functions that are conceptually, but not actually, part of Vec2::
 	friend Vec2 const operator*( float uniformScale, Vec2 const& vecToScale );	// float * vec2
+
+	// Static factory methods
+	static Vec2 MakeFromPolarDegrees(float degrees, float length = 1.f);
+	static Vec2 MakeFromPolarRadians(float radians, float length = 1.f);
+
+	// Getters
+	float GetLength() const;
+	float GetLengthSquared() const;
+	float GetOrientationDegrees() const;
+	float GetOrientationRadians() const;
+
+	// Rotations (return new Vec2)
+	Vec2 GetRotatedBy90Degrees() const;
+	Vec2 GetRotatedByMinus90Degrees() const;
+	Vec2 GetRotatedByDegrees(float degrees) const;
+	Vec2 GetRotatedByRadians(float radians) const;
+
+	// Mutators (change this Vec2)
+	void SetOrientationDegrees(float degrees);
+	void SetOrientationRadians(float radians);
+	void SetPolarDegrees(float degrees, float length);
+	void SetPolarRadians(float radians, float length);
+	void RotateDegrees(float degrees);
+	void RotateRadians(float radians);
+	void Rotate90Degrees();
+	void RotateMinus90Degrees();
+
+	// Length/Normalization
+	Vec2 GetClamped(float maxLength) const;
+	Vec2 GetNormalized() const;
+	void SetLength(float newLength);
+	void ClampLength(float maxLength);
+	void Normalize();
+	float NormalizeAndGetPreviousLength();
 };
-
-
