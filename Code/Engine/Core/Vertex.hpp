@@ -9,6 +9,7 @@ struct Vertex
 public:
 	Vertex();
 	Vertex(Vec3 const& position);
+	Vertex(Vec3 const& position, Rgba8 const& color);
 	Vertex(Vec3 const& position, Rgba8 const& color, Vec2 const& uvTexCoords);
 
 public:

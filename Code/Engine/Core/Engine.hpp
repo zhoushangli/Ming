@@ -8,10 +8,10 @@ public:
 	Engine();
 	~Engine();
 
-	/*void Startup();
+	void Startup();
 	void Shutdown();
 	void BeginFrame();
-	void EndFrame();*/
+	void EndFrame();
 
 	Renderer* GetRenderer() { return m_renderer; }
 

@@ -5,8 +5,7 @@
 #include "../Core/Vertex.hpp"
 #pragma comment(lib, "opengl32")
 
-// Only visible in this file
-// static HGLRC g_openGLRenderingContext = nullptr;
+HGLRC g_openGLRenderingContext;
 
 Renderer::Renderer()
 {
@@ -20,7 +19,7 @@ Renderer::~Renderer()
 
 void Renderer::Startup()
 {
-    CreateRenderingContext();
+	// Nothing yet
 }
 
 void Renderer::Shutdown()
@@ -30,7 +29,11 @@ void Renderer::Shutdown()
 
 void Renderer::BeginFrame()
 {
-    // Nothing yet
+	glLoadIdentity();
+	glOrtho(0.f, 200.f, 0.f, 100.f, 0.f, 1.f); 
+
+	glClearColor(0.f, 0.f, 0.f, 1.f);
+	glClear(GL_COLOR_BUFFER_BIT); 
 }
 
 void Renderer::EndFrame()
@@ -40,10 +43,30 @@ void Renderer::EndFrame()
 
 void Renderer::CreateRenderingContext()
 {
-    // Example: Move code from Main_Windows.cpp here
-    // This is a placeholder; actual implementation depends on your window/context setup
-    // g_openGLRenderingContext = wglCreateContext(hdc);
-    // wglMakeCurrent(hdc, g_openGLRenderingContext);
+	// Creates an OpenGL rendering context (RC) and binds it to the current window's device context (DC)
+	PIXELFORMATDESCRIPTOR pixelFormatDescriptor;
+	memset(&pixelFormatDescriptor, 0, sizeof(pixelFormatDescriptor));
+	pixelFormatDescriptor.nSize = sizeof(pixelFormatDescriptor);
+	pixelFormatDescriptor.nVersion = 1;
+	pixelFormatDescriptor.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
+	pixelFormatDescriptor.iPixelType = PFD_TYPE_RGBA;
+	pixelFormatDescriptor.cColorBits = 24;
+	pixelFormatDescriptor.cDepthBits = 24;
+	pixelFormatDescriptor.cAccumBits = 0;
+	pixelFormatDescriptor.cStencilBits = 8;
+
+    HWND windowHandle = ::GetActiveWindow();
+    HDC displayDeviceContext = GetDC(windowHandle);
+
+	// These two OpenGL-like functions (wglCreateContext and wglMakeCurrent) will remain here for now.
+	int pixelFormatCode = ChoosePixelFormat(displayDeviceContext, &pixelFormatDescriptor);
+	SetPixelFormat(displayDeviceContext, pixelFormatCode, &pixelFormatDescriptor);
+	g_openGLRenderingContext = wglCreateContext(displayDeviceContext);
+	wglMakeCurrent(displayDeviceContext, g_openGLRenderingContext);
+
+	// #SD1ToDo: move all OpenGL functions (including those below) to Renderer.cpp (only!)
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
 
 void Renderer::ClearScreen(Rgba8 const& clearColor)
