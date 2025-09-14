@@ -2,17 +2,21 @@
 
 #include <Engine/Renderer/Renderer.hpp>
 
-extern Engine* g_engine;
-
 class Engine 
 {
 public:
 	Engine();
 	~Engine();
 
-	void BegineFrame();
-	void EndFrame();
+	/*void Startup();
+	void Shutdown();
+	void BeginFrame();
+	void EndFrame();*/
 
-public:
-	Renderer* renderer = nullptr;
+	Renderer* GetRenderer() { return m_renderer; }
+
+private:
+	Renderer* m_renderer = nullptr;
 };
+
+extern Engine* g_engine;

@@ -1,25 +1,29 @@
 #pragma once
 
-extern struct Rgba8;
-extern class Camera;
-extern class Vertex;
+#include <Engine/Core/Rgba8.hpp>
+#include <Engine/Core/Vertex.hpp>
+
+class Camera;
 
 class Renderer
 {
 public:
-	Renderer();
-	~Renderer();
+    Renderer();
+    ~Renderer();
 
-	void Startup();
-	void Shutdown();
-	void BeginFrame();
-	void EndFrame();
+    void Startup();
+    void Shutdown();
 
-	void CreateRenderingContext();
+    void BeginFrame();
+    void EndFrame();
 
-	void ClearScreen(Rgba8 const& clearColor);
-	void BeginCamera(Camera const& camera);
-	void EndCamera(Camera const& camera);
-	void DrawVertexArray(int numVertexes, Vertex const* vertexes);
+    void CreateRenderingContext();
+
+    void ClearScreen(Rgba8 const& clearColor);
+
+    void BeginCamera(Camera const& camera);
+    void EndCamera();
+
+    void DrawVertexArray(int numVertexes, Vertex const* vertexes);
 };
 

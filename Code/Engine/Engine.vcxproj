@@ -164,15 +164,29 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\Engine\Code\Engine\Math\Vec2.cpp" />
+    <ClCompile Include="Core\Engine.cpp" />
+    <ClCompile Include="Core\Rgba8.cpp" />
+    <ClCompile Include="Core\Vertex.cpp" />
+    <ClCompile Include="Core\VertexUtils.cpp" />
     <ClCompile Include="Math\MathUtils.cpp" />
     <ClCompile Include="Math\RandomNumberGenerator.cpp" />
     <ClCompile Include="Math\Vec3.cpp" />
+    <ClCompile Include="Renderer\Camera.cpp" />
+    <ClCompile Include="Renderer\Renderer.cpp" />
+    <ClCompile Include="Window\Window.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\Engine\Code\Engine\Math\Vec2.hpp" />
+    <ClInclude Include="Core\Engine.hpp" />
+    <ClInclude Include="Core\Rgba8.hpp" />
+    <ClInclude Include="Core\Vertex.hpp" />
+    <ClInclude Include="Core\VertexUtils.hpp" />
     <ClInclude Include="Math\MathUtils.hpp" />
     <ClInclude Include="Math\RandomNumberGenerator.hpp" />
     <ClInclude Include="Math\Vec3.hpp" />
+    <ClInclude Include="Renderer\Camera.hpp" />
+    <ClInclude Include="Renderer\Renderer.hpp" />
+    <ClInclude Include="Window\Window.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

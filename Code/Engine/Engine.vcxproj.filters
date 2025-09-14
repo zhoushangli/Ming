@@ -4,6 +4,15 @@
     <Filter Include="Math">
       <UniqueIdentifier>{e56c99ab-3268-43e0-8619-c04887f6236a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Core">
+      <UniqueIdentifier>{bd6e45b7-d89a-4a35-ba5a-47804ceac744}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Renderer">
+      <UniqueIdentifier>{9cb7cf69-1f1c-4e50-9668-dbf3af9e2733}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Window">
+      <UniqueIdentifier>{179442f5-f9af-42ef-b799-a84a38453f54}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\Engine\Code\Engine\Math\Vec2.cpp">
@@ -18,6 +27,27 @@
     <ClCompile Include="Math\Vec3.cpp">
       <Filter>Math</Filter>
     </ClCompile>
+    <ClCompile Include="Core\Engine.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Rgba8.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Vertex.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer\Camera.cpp">
+      <Filter>Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer\Renderer.cpp">
+      <Filter>Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="Window\Window.cpp">
+      <Filter>Window</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\VertexUtils.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\Engine\Code\Engine\Math\Vec2.hpp">
@@ -31,6 +61,27 @@
     </ClInclude>
     <ClInclude Include="Math\Vec3.hpp">
       <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Engine.hpp">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Rgba8.hpp">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Vertex.hpp">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer\Camera.hpp">
+      <Filter>Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer\Renderer.hpp">
+      <Filter>Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Window\Window.hpp">
+      <Filter>Window</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\VertexUtils.hpp">
+      <Filter>Core</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

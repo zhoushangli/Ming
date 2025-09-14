@@ -8,6 +8,9 @@ public: // NOTE: this is one of the few cases where we break both the "m_" namin
 	float x = 0.f;
 	float y = 0.f;
 
+	// Zero vector constant
+	static const Vec2 ZERO;
+
 public:
 	// Construction/Destruction
 	~Vec2();												// destructor (do nothing)

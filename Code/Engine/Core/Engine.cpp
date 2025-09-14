@@ -4,25 +4,11 @@ Engine* g_engine = nullptr;
 
 Engine::Engine()
 {
-	renderer = new Renderer();
-
-	renderer->Startup();
+	m_renderer = new Renderer();
 }
 
 Engine::~Engine()
 {
-	renderer->Shutdown();
-
-	delete renderer;
-	renderer = nullptr;
-}
-
-void Engine::BegineFrame()
-{
-	renderer->BeginFrame();
-}
-
-void Engine::EndFrame()
-{
-	renderer->EndFrame();
+	delete m_renderer;
+	m_renderer = nullptr;
 }

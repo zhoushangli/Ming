@@ -4,14 +4,15 @@
 #include "Engine/Math/Vec2.hpp"
 #include "Engine/Core/Rgba8.hpp"
 
-class Vertex
+struct Vertex
 {
+public:
+	Vertex();
+	Vertex(Vec3 const& position);
+	Vertex(Vec3 const& position, Rgba8 const& color, Vec2 const& uvTexCoords);
+
 public:
 	Vec3 m_position;
 	Rgba8 m_color;
 	Vec2 m_uvTexCoords;
-
-public:
-	Vertex();
-	explicit Vertex(Vec3 const& position, Rgba8 const& color, Vec2 const& uvTexCoords);
 };

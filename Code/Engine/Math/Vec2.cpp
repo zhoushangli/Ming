@@ -4,6 +4,8 @@
 constexpr float RadiansToDegreesMultiplier = 57.29577951f;
 constexpr float DegreesToRadiansMultiplier = 0.01745329252f;
 
+const Vec2 Vec2::ZERO = Vec2(0.f, 0.f);
+
 //-----------------------------------------------------------------------------------------------
 Vec2::Vec2() = default;
 
