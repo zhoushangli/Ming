@@ -9,7 +9,7 @@ HGLRC g_openGLRenderingContext;
 
 Renderer::Renderer()
 {
-    // Nothing yet
+    CreateRenderingContext();
 }
 
 Renderer::~Renderer()
