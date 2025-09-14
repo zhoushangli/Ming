@@ -1,5 +1,8 @@
 #include "Vec3.hpp"
+
 #include <cmath>
+
+#include "Vec2.hpp"
 
 constexpr float RadiansToDegreesMultiplier = 57.29577951f;
 constexpr float DegreesToRadiansMultiplier = 0.01745329252f;
@@ -13,11 +16,12 @@ Vec3::Vec3(float initialX, float initialY, float initialZ)
 
 Vec3::Vec3(Vec3 const& other) = default;
 
-Vec3::Vec3(float initialX, float initialY) 
+Vec3::Vec3(float initialX, float initialY) : x(initialX), y(initialY), z(0.f)
 {
-	x = initialX;
-	y = initialY;
-	z = 0.f;
+}
+
+Vec3::Vec3(Vec2 const& other) : x(other.x), y(other.y), z(0.f)
+{
 }
 
 Vec3::~Vec3() = default;

@@ -1,5 +1,7 @@
 #pragma once
 
+struct Vec2;
+
 struct Vec3
 {
 public:
@@ -11,6 +13,7 @@ public:
 	Vec3();
 	Vec3(float x, float y, float z);
 	Vec3(Vec3 const& other);
+	Vec3(Vec2 const& other);
 	~Vec3();
 	explicit Vec3(float initialX, float initialY);
 

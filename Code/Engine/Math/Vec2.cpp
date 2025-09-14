@@ -1,4 +1,7 @@
 #include "Engine/Math/Vec2.hpp"
+
+#include "Vec3.hpp"
+
 #include <cmath>
 
 constexpr float RadiansToDegreesMultiplier = 57.29577951f;
@@ -16,6 +19,10 @@ Vec2::Vec2( Vec2 const& copy ) = default;
 Vec2::Vec2( float initialX, float initialY )
 	: x( initialX )
 	, y( initialY )
+{
+}
+
+Vec2::Vec2(Vec3 const& copyFrom) : x(copyFrom.x), y(copyFrom.y)
 {
 }
 

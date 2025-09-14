@@ -1,5 +1,6 @@
 #pragma once
 
+struct Vec3;
 
 //-----------------------------------------------------------------------------------------------
 struct Vec2
@@ -16,6 +17,7 @@ public:
 	~Vec2();												// destructor (do nothing)
 	Vec2();													// default constructor (do nothing)
 	Vec2( Vec2 const& copyFrom );							// copy constructor (from another vec2)
+	Vec2(Vec3 const& copyFrom);                             // copy constructor (from Vec3, dropping Z)
 	explicit Vec2( float initialX, float initialY );		// explicit constructor (from x, y)
 
 	// Operators (const)
