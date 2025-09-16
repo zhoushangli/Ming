@@ -25,5 +25,8 @@ public:
     void EndCamera();
 
     void DrawVertexArray(int numVertexes, Vertex const* vertexes);
+
+private:
+	Camera* m_currentCamera = nullptr;
 };
 

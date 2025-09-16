@@ -2,43 +2,43 @@
 
 #include <Windows.h>
 #include <gl/gl.h>
-#include "../Core/Vertex.hpp"
 #pragma comment(lib, "opengl32")
 
-HGLRC g_openGLRenderingContext;
+#include "Engine/Core/Vertex.hpp"
+#include "Camera.hpp"
+
+HGLRC g_openGLRenderingContext = nullptr;
 
 Renderer::Renderer()
 {
     CreateRenderingContext();
+	m_currentCamera = new Camera();
 }
 
 Renderer::~Renderer()
 {
-    // Nothing yet
+	delete m_currentCamera;
+	m_currentCamera = nullptr;
 }
 
 void Renderer::Startup()
 {
-	// Nothing yet
+	BeginCamera(*m_currentCamera);
 }
 
 void Renderer::Shutdown()
 {
-    // Nothing yet
+    
 }
 
 void Renderer::BeginFrame()
 {
-	glLoadIdentity();
-	glOrtho(0.f, 200.f, 0.f, 100.f, 0.f, 1.f); 
 
-	glClearColor(0.f, 0.f, 0.f, 1.f);
-	glClear(GL_COLOR_BUFFER_BIT); 
 }
 
 void Renderer::EndFrame()
 {
-    // Nothing yet
+
 }
 
 void Renderer::CreateRenderingContext()
@@ -82,15 +82,15 @@ void Renderer::ClearScreen(Rgba8 const& clearColor)
 
 void Renderer::BeginCamera(Camera const& camera)
 {
-    glLoadIdentity();
-    camera;
-    // Example: Set up orthographic projection
-    // glOrtho(left, right, bottom, top, zNear, zFar);
+	camera;
+	
+	glLoadIdentity();
+	glOrtho(0.f, 200.f, 0.f, 100.f, 0.f, 1.f);
 }
 
 void Renderer::EndCamera()
 {
-    // Nothing yet
+
 }
 
 void Renderer::DrawVertexArray(int numVertexes, Vertex const* vertexes)

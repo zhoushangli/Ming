@@ -9,10 +9,14 @@ Engine::Engine()
 {
 	m_renderer = new Renderer();
 	m_rng = new RandomNumberGenerator();
+
+	m_renderer->Startup();
 }
 
 Engine::~Engine()
 {
+	m_renderer->Shutdown();
+
 	delete m_renderer;
 	m_renderer = nullptr;
 
@@ -22,10 +26,12 @@ Engine::~Engine()
 
 void Engine::BeginFrame()
 {
+	m_renderer->ClearScreen(Rgba8::BLACK);
+
 	m_renderer->BeginFrame();
 }
 
 void Engine::EndFrame()
 {
-
+	m_renderer->EndFrame();
 }
