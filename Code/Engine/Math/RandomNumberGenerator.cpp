@@ -2,7 +2,6 @@
 #include <cstdlib>
 #include <ctime>
 
-
 int RandomNumberGenerator::RollRandomIntLessThan(int maxNotInclusive)
 {
 	if (maxNotInclusive <= 0) 

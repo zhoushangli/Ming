@@ -1,5 +1,8 @@
 #include "Rgba8.hpp"
 
+Rgba8 const Rgba8::WHITE = Rgba8(255, 255, 255, 255);
+Rgba8 const Rgba8::BLACK = Rgba8(0, 0, 0, 255);
+
 Rgba8::Rgba8()
 	: r(255)
 	, g(255)

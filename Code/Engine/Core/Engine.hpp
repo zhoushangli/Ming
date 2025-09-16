@@ -1,6 +1,7 @@
 #pragma once
 
-#include <Engine/Renderer/Renderer.hpp>
+class Renderer;
+class RandomNumberGenerator;
 
 class Engine 
 {
@@ -14,9 +15,12 @@ public:
 	void EndFrame();
 
 	Renderer* GetRenderer() { return m_renderer; }
+	RandomNumberGenerator* GetRNG() { return m_rng; }
+
 
 private:
 	Renderer* m_renderer = nullptr;
+	RandomNumberGenerator* m_rng;
 };
 
 extern Engine* g_engine;
