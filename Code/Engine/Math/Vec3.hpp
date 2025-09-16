@@ -7,7 +7,7 @@ struct Vec3
 public:
 	float x = 0.f;
 	float y = 0.f;
-	float z = 0.f; // test
+	float z = 0.f;
 
 public:
 	Vec3();
