@@ -48,6 +48,12 @@
     <ClCompile Include="Core\VertexUtils.cpp">
       <Filter>Core</Filter>
     </ClCompile>
+    <ClCompile Include="Core\ErrorWarningAssert.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\StringUtils.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\Engine\Code\Engine\Math\Vec2.hpp">
@@ -81,6 +87,12 @@
       <Filter>Window</Filter>
     </ClInclude>
     <ClInclude Include="Core\VertexUtils.hpp">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\ErrorWarningAssert.hpp">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\StringUtils.hpp">
       <Filter>Core</Filter>
     </ClInclude>
   </ItemGroup>

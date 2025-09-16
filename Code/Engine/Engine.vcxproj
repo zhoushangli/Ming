@@ -165,7 +165,9 @@
   <ItemGroup>
     <ClCompile Include="..\..\..\Engine\Code\Engine\Math\Vec2.cpp" />
     <ClCompile Include="Core\Engine.cpp" />
+    <ClCompile Include="Core\ErrorWarningAssert.cpp" />
     <ClCompile Include="Core\Rgba8.cpp" />
+    <ClCompile Include="Core\StringUtils.cpp" />
     <ClCompile Include="Core\Vertex.cpp" />
     <ClCompile Include="Core\VertexUtils.cpp" />
     <ClCompile Include="Math\MathUtils.cpp" />
@@ -178,7 +180,9 @@
   <ItemGroup>
     <ClInclude Include="..\..\..\Engine\Code\Engine\Math\Vec2.hpp" />
     <ClInclude Include="Core\Engine.hpp" />
+    <ClInclude Include="Core\ErrorWarningAssert.hpp" />
     <ClInclude Include="Core\Rgba8.hpp" />
+    <ClInclude Include="Core\StringUtils.hpp" />
     <ClInclude Include="Core\Vertex.hpp" />
     <ClInclude Include="Core\VertexUtils.hpp" />
     <ClInclude Include="Math\MathUtils.hpp" />
