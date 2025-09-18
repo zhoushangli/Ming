@@ -1,11 +1,9 @@
 #include "Vec3.hpp"
 
-#include <cmath>
+#include <math.h>
 
 #include "Vec2.hpp"
-
-constexpr float RadiansToDegreesMultiplier = 57.29577951f;
-constexpr float DegreesToRadiansMultiplier = 0.01745329252f;
+#include "MathUtils.hpp"
 
 Vec3::Vec3() = default;
 
@@ -26,49 +24,37 @@ Vec3::Vec3(Vec2 const& other) : x(other.x), y(other.y), z(0.f)
 
 Vec3::~Vec3() = default;
 
-//-----------------------------------------------------------------------------------------------
 Vec3 const Vec3::operator+ (Vec3 const& vecToAdd) const
 {
-	return Vec3(this->x + vecToAdd.x, this->y + vecToAdd.y, this->z + vecToAdd.z);
+	return Vec3(x + vecToAdd.x, y + vecToAdd.y, z + vecToAdd.z);
 }
 
-
-//-----------------------------------------------------------------------------------------------
 Vec3 const Vec3::operator-(Vec3 const& vecToSubtract) const
 {
-	return Vec3(this->x - vecToSubtract.x, this->y - vecToSubtract.y, this->z - vecToSubtract.z);
+	return Vec3(x - vecToSubtract.x, y - vecToSubtract.y, z - vecToSubtract.z);
 }
 
 
-//------------------------------------------------------------------------------------------------
 Vec3 const Vec3::operator-() const
 {
-	return Vec3(-this->x, -this->y, -this->z);
+	return Vec3(-x, -y, -z);
 }
 
-
-//-----------------------------------------------------------------------------------------------
 Vec3 const Vec3::operator*(float uniformScale) const
 {
-	return Vec3(this->x * uniformScale, this->y * uniformScale, this->z * uniformScale);
+	return Vec3(x * uniformScale, y * uniformScale, z * uniformScale);
 }
 
-
-//------------------------------------------------------------------------------------------------
 Vec3 const Vec3::operator*(Vec3 const& vecToMultiply) const
 {
-	return Vec3(this->x * vecToMultiply.x, this->y * vecToMultiply.y, this->z * vecToMultiply.z);
+	return Vec3(x * vecToMultiply.x, y * vecToMultiply.y, z * vecToMultiply.z);
 }
 
-
-//-----------------------------------------------------------------------------------------------
 Vec3 const Vec3::operator/(float inverseScale) const
 {
-	return Vec3(this->x / inverseScale, this->y / inverseScale, this->z / inverseScale);
+	return Vec3(x / inverseScale, y / inverseScale, z / inverseScale);
 }
 
-
-//-----------------------------------------------------------------------------------------------
 void Vec3::operator+=(Vec3 const& vecToAdd)
 {
 	x += vecToAdd.x;
@@ -76,8 +62,6 @@ void Vec3::operator+=(Vec3 const& vecToAdd)
 	z += vecToAdd.z;
 }
 
-
-//-----------------------------------------------------------------------------------------------
 void Vec3::operator-=(Vec3 const& vecToSubtract)
 {
 	x -= vecToSubtract.x;
@@ -85,8 +69,6 @@ void Vec3::operator-=(Vec3 const& vecToSubtract)
 	z -= vecToSubtract.z;
 }
 
-
-//-----------------------------------------------------------------------------------------------
 void Vec3::operator*=(const float uniformScale)
 {
 	x *= uniformScale;
@@ -94,8 +76,6 @@ void Vec3::operator*=(const float uniformScale)
 	z *= uniformScale;
 }
 
-
-//-----------------------------------------------------------------------------------------------
 void Vec3::operator/=(const float uniformDivisor)
 {
 	x /= uniformDivisor;
@@ -103,8 +83,6 @@ void Vec3::operator/=(const float uniformDivisor)
 	z /= uniformDivisor;
 }
 
-
-//-----------------------------------------------------------------------------------------------
 void Vec3::operator=(Vec3 const& copyFrom)
 {
 	x = copyFrom.x;
@@ -112,22 +90,16 @@ void Vec3::operator=(Vec3 const& copyFrom)
 	z = copyFrom.z;
 }
 
-
-//-----------------------------------------------------------------------------------------------
 Vec3 const operator*(float uniformScale, Vec3 const& vecToScale)
 {
 	return Vec3(vecToScale.x * uniformScale, vecToScale.y * uniformScale, vecToScale.z * uniformScale);
 }
 
-
-//-----------------------------------------------------------------------------------------------
 bool Vec3::operator==(Vec3 const& compare) const
 {
 	return x == compare.x && y == compare.y && z == compare.z;
 }
 
-
-//-----------------------------------------------------------------------------------------------
 bool Vec3::operator!=(Vec3 const& compare) const
 {
 	return x != compare.x || y != compare.y || z != compare.z;
@@ -135,12 +107,12 @@ bool Vec3::operator!=(Vec3 const& compare) const
 
 float Vec3::GetLength() const
 {
-	return std::sqrt(x * x + y * y + z * z);
+	return sqrtf(x * x + y * y + z * z);
 }
 
 float Vec3::GetLengthXY() const
 {
-	return std::sqrt(x * x + y * y);
+	return sqrtf(x * x + y * y);
 }
 
 float Vec3::GetLengthSquared() const
@@ -155,24 +127,24 @@ float Vec3::GetLengthXYSquared() const
 
 float Vec3::GetOrientationAboutZDegrees() const
 {
-	return std::atan2(y, x) * RadiansToDegreesMultiplier;
+	return ConvertRadiansToDegrees(atan2f(y, x));
 }
 
 float Vec3::GetOrientationAboutZRadians() const
 {
-	return std::atan2(y, x);
+	return atan2f(y, x);
 }
 
 Vec3 Vec3::GetRotatedAboutZDegrees(float degrees) const
 {
-	float radians = degrees * DegreesToRadiansMultiplier;
+	float radians = ConvertDegreesToRadians(degrees);
 	return GetRotatedAboutZRadians(radians);
 }
 
 Vec3 Vec3::GetRotatedAboutZRadians(float radians) const
 {
-	float cosTheta = std::cos(radians);
-	float sinTheta = std::sin(radians);
+	float cosTheta = cosf(radians);
+	float sinTheta = sinf(radians);
 	return Vec3(
 		x * cosTheta - y * sinTheta,
 		x * sinTheta + y * cosTheta,

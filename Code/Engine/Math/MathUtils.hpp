@@ -25,3 +25,17 @@ bool DoSpheresOverlap(Vec3 const& centerA, float radiusA, Vec3 const& centerB, f
 // Transformations
 Vec2 TransformPosition2D(Vec2& pos, float scale, float rotationDegrees, Vec2 const& translation);
 Vec3 TransformPositionXY3D(Vec3& pos, float scaleXY, float zRotationDegrees, Vec2 const& translationXY);
+
+// Interpolation and range mapping functions
+float Interpolate(float start, float end, float fraction);
+float GetFractionWithinRange(float value, float start, float end);
+float RangeMap(float inStart, float inEnd, float outStart, float outEnd, float inValue);
+float RangeMapClamped(float inStart, float inEnd, float outStart, float outEnd, float inValue);
+float GetClamped(float value, float minValue, float maxValue);
+float GetClampedZeroToOne(float value);
+int RoundDownToInt(float value);
+
+// Angular displacement and dot product functions
+float GetShortestAngularDispDegrees(float startDegrees, float endDegrees);
+float GetTurnedTowardDegrees(float currentDegrees, float goalDegrees, float maxDeltaDegrees);
+float DotProduct2D(Vec2 const& a, Vec2 const& b);

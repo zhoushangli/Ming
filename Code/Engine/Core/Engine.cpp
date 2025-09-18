@@ -26,8 +26,6 @@ Engine::~Engine()
 
 void Engine::BeginFrame()
 {
-	m_renderer->ClearScreen(Rgba8::BLACK);
-
 	m_renderer->BeginFrame();
 }
 

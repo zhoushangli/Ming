@@ -1,50 +1,34 @@
 #pragma once
 
-struct Vec2;
+#include "Vec2.hpp"
 
-struct Vec3
+class AABB2
 {
 public:
-	float x = 0.f;
-	float y = 0.f;
-	float z = 0.f;
+	AABB2() = default;
+	AABB2(const AABB2& copy) = default;
+	~AABB2() = default;
+	explicit AABB2(const Vec2& mins, const Vec2& maxs);
+	explicit AABB2(float minX, float minY, float maxX, float maxY);
+
+	// Methods to implement
+	bool		IsPointInside(const Vec2& point) const;
+	Vec2 const	GetCenter() const;
+	Vec2 const	GetDimensions() const;
+	Vec2 const	GetNearestPoint(const Vec2& point) const;
+	Vec2 const	GetPointAtUV(const Vec2& uv) const;
+	Vec2 const	GetUVForPoint(const Vec2& point) const;
+	
+	void		Translate(const Vec2& translation);
+	void		SetCenter(const Vec2& newCenter);
+	void		SetDimensions(const Vec2& newDimensions);
+	void		StretchToIncludePoint(const Vec2& point);
+
+	bool operator==(const AABB2& other) const;
+	AABB2& operator=(const AABB2& other);
 
 public:
-	Vec3();
-	Vec3(float x, float y, float z);
-	Vec3(Vec3 const& other);
-	Vec3(Vec2 const& other);
-	~Vec3();
-	explicit Vec3(float initialX, float initialY);
-
-	// Operators (const)
-	bool		operator==(Vec3 const& compare) const;
-	bool		operator!=(Vec3 const& compare) const;
-	Vec3 const	operator+(Vec3 const& vecToAdd) const;
-	Vec3 const	operator-(Vec3 const& vecToSubtract) const;
-	Vec3 const	operator-() const;
-	Vec3 const	operator*(float uniformScale) const;
-	Vec3 const	operator*(Vec3 const& vecToMultiply) const;
-	Vec3 const	operator/(float inverseScale) const;
-
-	// Operators (self-mutating / non-const)
-	void		operator+=(Vec3 const& vecToAdd);
-	void		operator-=(Vec3 const& vecToSubtract);
-	void		operator*=(const float uniformScale);
-	void		operator/=(const float uniformDivisor);
-	void		operator=(Vec3 const& copyFrom);
-
-	// Standalone "friend" functions
-	friend Vec3 const operator*(float uniformScale, Vec3 const& vecToScale);
-
-	// Vec3 methods
-	float		GetLength() const;
-	float		GetLengthXY() const;
-	float		GetLengthSquared() const;
-	float		GetLengthXYSquared() const;
-	float		GetOrientationAboutZDegrees() const;
-	float		GetOrientationAboutZRadians() const;
-	Vec3		GetRotatedAboutZDegrees(float degrees) const;
-	Vec3		GetRotatedAboutZRadians(float radians) const;
+	Vec2 m_mins;
+	Vec2 m_maxs;
 };
 

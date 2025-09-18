@@ -1,11 +1,9 @@
 #include "Engine/Math/Vec2.hpp"
 
+#include <math.h>
+
 #include "Vec3.hpp"
-
-#include <cmath>
-
-constexpr float RadiansToDegreesMultiplier = 57.29577951f;
-constexpr float DegreesToRadiansMultiplier = 0.01745329252f;
+#include "MathCommon.hpp"
 
 const Vec2 Vec2::ZERO = Vec2(0.f, 0.f);
 
@@ -133,16 +131,16 @@ bool Vec2::operator!=( Vec2 const& compare ) const
 // Static factory methods
 Vec2 Vec2::MakeFromPolarDegrees(float degrees, float length) {
 	float radians = degrees * DegreesToRadiansMultiplier;
-	return Vec2(std::cos(radians) * length, std::sin(radians) * length);
+	return Vec2(cosf(radians) * length, sinf(radians) * length);
 }
 
 Vec2 Vec2::MakeFromPolarRadians(float radians, float length) {
-	return Vec2(std::cos(radians) * length, std::sin(radians) * length);
+	return Vec2(cosf(radians) * length, sinf(radians) * length);
 }
 
 // Getters
 float Vec2::GetLength() const {
-	return std::sqrt(x * x + y * y);
+	return sqrtf(x * x + y * y);
 }
 
 float Vec2::GetLengthSquared() const {
@@ -150,11 +148,11 @@ float Vec2::GetLengthSquared() const {
 }
 
 float Vec2::GetOrientationDegrees() const {
-	return std::atan2(y, x) * RadiansToDegreesMultiplier;
+	return atan2f(y, x) * RadiansToDegreesMultiplier;
 }
 
 float Vec2::GetOrientationRadians() const {
-	return std::atan2(y, x);
+	return atan2f(y, x);
 }
 
 // Rotations (return new Vec2)
@@ -172,8 +170,8 @@ Vec2 Vec2::GetRotatedByDegrees(float degrees) const {
 }
 
 Vec2 Vec2::GetRotatedByRadians(float radians) const {
-	float cosTheta = std::cos(radians);
-	float sinTheta = std::sin(radians);
+	float cosTheta = cosf(radians);
+	float sinTheta = sinf(radians);
 	return Vec2(x * cosTheta - y * sinTheta, x * sinTheta + y * cosTheta);
 }
 
@@ -181,25 +179,25 @@ Vec2 Vec2::GetRotatedByRadians(float radians) const {
 void Vec2::SetOrientationDegrees(float degrees) {
 	float length = GetLength();
 	float radians = degrees * DegreesToRadiansMultiplier;
-	x = std::cos(radians) * length;
-	y = std::sin(radians) * length;
+	x = cosf(radians) * length;
+	y = sinf(radians) * length;
 }
 
 void Vec2::SetOrientationRadians(float radians) {
 	float length = GetLength();
-	x = std::cos(radians) * length;
-	y = std::sin(radians) * length;
+	x = cosf(radians) * length;
+	y = sinf(radians) * length;
 }
 
 void Vec2::SetPolarDegrees(float degrees, float length) {
 	float radians = degrees * DegreesToRadiansMultiplier;
-	x = std::cos(radians) * length;
-	y = std::sin(radians) * length;
+	x = cosf(radians) * length;
+	y = sinf(radians) * length;
 }
 
 void Vec2::SetPolarRadians(float radians, float length) {
-	x = std::cos(radians) * length;
-	y = std::sin(radians) * length;
+	x = cosf(radians) * length;
+	y = sinf(radians) * length;
 }
 
 void Vec2::RotateDegrees(float degrees) {
@@ -208,8 +206,8 @@ void Vec2::RotateDegrees(float degrees) {
 }
 
 void Vec2::RotateRadians(float radians) {
-	float cosTheta = std::cos(radians);
-	float sinTheta = std::sin(radians);
+	float cosTheta = cosf(radians);
+	float sinTheta = sinf(radians);
 	float newX = x * cosTheta - y * sinTheta;
 	float newY = x * sinTheta + y * cosTheta;
 	x = newX;
