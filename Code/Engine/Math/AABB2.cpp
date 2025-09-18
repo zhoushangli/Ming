@@ -35,7 +35,7 @@ Vec2 const AABB2::GetNearestPoint(const Vec2& point) const
 
 Vec2 const AABB2::GetPointAtUV(const Vec2& uv) const
 {
-	return Vec2(Interpolate(m_mins.x, m_maxs.x, uv.x), Interpolate(m_mins.y, m_maxs.y, uv.y));
+	return Vec2(Interpolate(m_mins.x, m_maxs.x, uv.x), Interpolate(m_mins.y, m_maxs.y, uv.y)); 
 }
 
 Vec2 const AABB2::GetUVForPoint(const Vec2& point) const
