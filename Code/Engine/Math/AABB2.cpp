@@ -1,181 +1,103 @@
-#include "Vec3.hpp"
+#include "AABB2.hpp"
 
-#include <cmath>
+#include "MathUtils.hpp"
 
-#include "Vec2.hpp"
-
-constexpr float RadiansToDegreesMultiplier = 57.29577951f;
-constexpr float DegreesToRadiansMultiplier = 0.01745329252f;
-
-Vec3::Vec3() = default;
-
-Vec3::Vec3(float initialX, float initialY, float initialZ)
-	: x(initialX), y(initialY), z(initialZ)
+AABB2::AABB2(const Vec2& mins, const Vec2& maxs) : m_mins(mins), m_maxs(maxs)
 {
+
 }
 
-Vec3::Vec3(Vec3 const& other) = default;
-
-Vec3::Vec3(float initialX, float initialY) : x(initialX), y(initialY), z(0.f)
+AABB2::AABB2(float minX, float minY, float maxX, float maxY) : m_mins(minX, minY), m_maxs(maxX, maxY)
 {
+
 }
 
-Vec3::Vec3(Vec2 const& other) : x(other.x), y(other.y), z(0.f)
+bool AABB2::IsPointInside(const Vec2& point) const
 {
+	return (point.x >= m_mins.x && point.x <= m_maxs.x &&
+			point.y >= m_mins.y && point.y <= m_maxs.y);
 }
 
-Vec3::~Vec3() = default;
-
-//-----------------------------------------------------------------------------------------------
-Vec3 const Vec3::operator+ (Vec3 const& vecToAdd) const
+Vec2 const AABB2::GetCenter() const
 {
-	return Vec3(this->x + vecToAdd.x, this->y + vecToAdd.y, this->z + vecToAdd.z);
+	return (m_mins + m_maxs) * 0.5f;
 }
 
-
-//-----------------------------------------------------------------------------------------------
-Vec3 const Vec3::operator-(Vec3 const& vecToSubtract) const
+Vec2 const AABB2::GetDimensions() const
 {
-	return Vec3(this->x - vecToSubtract.x, this->y - vecToSubtract.y, this->z - vecToSubtract.z);
+	return m_maxs - m_mins;
 }
 
-
-//------------------------------------------------------------------------------------------------
-Vec3 const Vec3::operator-() const
+Vec2 const AABB2::GetNearestPoint(const Vec2& point) const
 {
-	return Vec3(-this->x, -this->y, -this->z);
+	return Vec2(GetClamped(point.x, m_mins.x, m_maxs.x), GetClamped(point.y, m_mins.y, m_maxs.y));
 }
 
-
-//-----------------------------------------------------------------------------------------------
-Vec3 const Vec3::operator*(float uniformScale) const
+Vec2 const AABB2::GetPointAtUV(const Vec2& uv) const
 {
-	return Vec3(this->x * uniformScale, this->y * uniformScale, this->z * uniformScale);
+	return Vec2(Interpolate(m_mins.x, m_maxs.x, uv.x), Interpolate(m_mins.y, m_maxs.y, uv.y));
 }
 
-
-//------------------------------------------------------------------------------------------------
-Vec3 const Vec3::operator*(Vec3 const& vecToMultiply) const
+Vec2 const AABB2::GetUVForPoint(const Vec2& point) const
 {
-	return Vec3(this->x * vecToMultiply.x, this->y * vecToMultiply.y, this->z * vecToMultiply.z);
+	return Vec2(GetFractionWithinRange(point.x, m_mins.x, m_maxs.x), GetFractionWithinRange(point.y, m_mins.y, m_maxs.y));
 }
 
-
-//-----------------------------------------------------------------------------------------------
-Vec3 const Vec3::operator/(float inverseScale) const
+void AABB2::Translate(const Vec2& translation)
 {
-	return Vec3(this->x / inverseScale, this->y / inverseScale, this->z / inverseScale);
+	m_mins += translation;
+	m_maxs += translation;
 }
 
-
-//-----------------------------------------------------------------------------------------------
-void Vec3::operator+=(Vec3 const& vecToAdd)
+void AABB2::SetCenter(const Vec2& newCenter)
 {
-	x += vecToAdd.x;
-	y += vecToAdd.y;
-	z += vecToAdd.z;
+	Vec2 dimensions = GetDimensions();
+	m_mins = newCenter - (dimensions * 0.5f);
+	m_maxs = m_mins + dimensions;
 }
 
-
-//-----------------------------------------------------------------------------------------------
-void Vec3::operator-=(Vec3 const& vecToSubtract)
+void AABB2::SetDimensions(const Vec2& newDimensions)
 {
-	x -= vecToSubtract.x;
-	y -= vecToSubtract.y;
-	z -= vecToSubtract.z;
+	Vec2 center = GetCenter();
+	m_mins = center - (newDimensions * 0.5f);
+	m_maxs = m_mins + newDimensions;
 }
 
-
-//-----------------------------------------------------------------------------------------------
-void Vec3::operator*=(const float uniformScale)
+void AABB2::StretchToIncludePoint(const Vec2& point)
 {
-	x *= uniformScale;
-	y *= uniformScale;
-	z *= uniformScale;
+	if (point.x < m_mins.x)
+	{
+		m_mins.x = point.x;
+	}
+	else if (point.x > m_maxs.x) 
+	{
+		m_maxs.x = point.x;
+	}
+		
+	if (point.y < m_mins.y) 
+	{
+		m_mins.y = point.y;
+	}
+	else if (point.y > m_maxs.y) 
+	{
+		m_maxs.y = point.y;
+	}
 }
 
-
-//-----------------------------------------------------------------------------------------------
-void Vec3::operator/=(const float uniformDivisor)
+bool AABB2::operator==(const AABB2& other) const
 {
-	x /= uniformDivisor;
-	y /= uniformDivisor;
-	z /= uniformDivisor;
+	return m_mins.x == other.m_mins.x &&
+		m_mins.y == other.m_mins.y &&
+		m_maxs.x == other.m_maxs.x &&
+		m_maxs.y == other.m_maxs.y;
 }
 
-
-//-----------------------------------------------------------------------------------------------
-void Vec3::operator=(Vec3 const& copyFrom)
+AABB2& AABB2::operator=(const AABB2& other)
 {
-	x = copyFrom.x;
-	y = copyFrom.y;
-	z = copyFrom.z;
+	if (this != &other) {
+		m_mins = other.m_mins;
+		m_maxs = other.m_maxs;
+	}
+	return *this;
 }
 
-
-//-----------------------------------------------------------------------------------------------
-Vec3 const operator*(float uniformScale, Vec3 const& vecToScale)
-{
-	return Vec3(vecToScale.x * uniformScale, vecToScale.y * uniformScale, vecToScale.z * uniformScale);
-}
-
-
-//-----------------------------------------------------------------------------------------------
-bool Vec3::operator==(Vec3 const& compare) const
-{
-	return x == compare.x && y == compare.y && z == compare.z;
-}
-
-
-//-----------------------------------------------------------------------------------------------
-bool Vec3::operator!=(Vec3 const& compare) const
-{
-	return x != compare.x || y != compare.y || z != compare.z;
-}
-
-float Vec3::GetLength() const
-{
-	return std::sqrt(x * x + y * y + z * z);
-}
-
-float Vec3::GetLengthXY() const
-{
-	return std::sqrt(x * x + y * y);
-}
-
-float Vec3::GetLengthSquared() const
-{
-	return x * x + y * y + z * z;
-}
-
-float Vec3::GetLengthXYSquared() const
-{
-	return x * x + y * y;
-}
-
-float Vec3::GetOrientationAboutZDegrees() const
-{
-	return std::atan2(y, x) * RadiansToDegreesMultiplier;
-}
-
-float Vec3::GetOrientationAboutZRadians() const
-{
-	return std::atan2(y, x);
-}
-
-Vec3 Vec3::GetRotatedAboutZDegrees(float degrees) const
-{
-	float radians = degrees * DegreesToRadiansMultiplier;
-	return GetRotatedAboutZRadians(radians);
-}
-
-Vec3 Vec3::GetRotatedAboutZRadians(float radians) const
-{
-	float cosTheta = std::cos(radians);
-	float sinTheta = std::sin(radians);
-	return Vec3(
-		x * cosTheta - y * sinTheta,
-		x * sinTheta + y * cosTheta,
-		z
-	);
-}
