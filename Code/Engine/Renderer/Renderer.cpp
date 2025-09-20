@@ -12,18 +12,15 @@ HGLRC g_openGLRenderingContext = nullptr;
 Renderer::Renderer()
 {
     CreateRenderingContext();
-	m_currentCamera = new Camera();
+	
 }
 
 Renderer::~Renderer()
 {
-	delete m_currentCamera;
-	m_currentCamera = nullptr;
 }
 
 void Renderer::Startup()
 {
-	BeginCamera(*m_currentCamera);
 }
 
 void Renderer::Shutdown()
@@ -81,11 +78,9 @@ void Renderer::ClearScreen(Rgba8 const& clearColor)
 }
 
 void Renderer::BeginCamera(Camera const& camera)
-{
-	camera;
-	
+{	
 	glLoadIdentity();
-	glOrtho(0.f, 200.f, 0.f, 100.f, 0.f, 1.f);
+	glOrtho(camera.GetLeft(), camera.GetRight(), camera.GetBottom(), camera.GetTop(), 0.f, 1.f);
 }
 
 void Renderer::EndCamera()
