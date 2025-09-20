@@ -43,7 +43,7 @@ void InputSystem::Shutdown()
 
 void InputSystem::BeginFrame()
 {
-	for (int key = 0; key < 256; ++key)
+	/*for (int key = 0; key < 256; ++key)
 	{
 		bool isDown = (GetAsyncKeyState(key) & 0x8000) != 0;
 		if (isDown)
@@ -54,7 +54,7 @@ void InputSystem::BeginFrame()
 		{
 			HandleKeyReleased((unsigned char)key);
 		}
-	}
+	}*/
 }
 
 void InputSystem::EndFrame()
@@ -88,4 +88,13 @@ void InputSystem::HandleKeyPressed(unsigned char keyCode)
 void InputSystem::HandleKeyReleased(unsigned char keyCode)
 {
 	m_keyStates[keyCode].state = false;
+}
+
+void InputSystem::ClearKeyStates()
+{
+	for (int key = 0; key < 256; ++key)
+	{
+		m_keyStates[key].state = false;
+		m_keyStates[key].prevState = false;
+	}
 }

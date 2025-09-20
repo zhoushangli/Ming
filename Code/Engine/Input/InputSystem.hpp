@@ -23,16 +23,21 @@ class InputSystem
 public:
 	InputSystem();
 	~InputSystem();
+
 	void Startup();
 	void Shutdown();
 	void BeginFrame();
 	void EndFrame();
+
 	bool WasKeyJustPressed(unsigned char keyCode);
 	bool WasKeyJustReleased(unsigned char keyCode);
 	bool IsKeyDown(unsigned char keyCode);
+
 	void HandleKeyPressed(unsigned char keyCode);
 	void HandleKeyReleased(unsigned char keyCode);
 	// XboxController const& GetController(int controllerID);
+
+	void ClearKeyStates();
 
 protected:
 	KeyButtonState  m_keyStates[NUM_KEYCODES];
