@@ -1,7 +1,7 @@
 #pragma once
 
 class Renderer;
-class RandomNumberGenerator;
+class InputSystem;
 
 class Engine 
 {
@@ -14,11 +14,9 @@ public:
 	void BeginFrame();
 	void EndFrame();
 
+public:
 	Renderer* m_renderer = nullptr;
-	RandomNumberGenerator* m_rng;
-
-private:
-
+	InputSystem* m_inputSystem = nullptr;
 };
 
 extern Engine* g_engine;
