@@ -1,8 +1,9 @@
 #pragma once
 
-#include <Engine/Core/Rgba8.hpp>
-#include <Engine/Core/Vertex.hpp>
 
+struct Vec2;
+struct Rgba8;
+struct Vertex;
 class Camera;
 
 class Renderer
@@ -24,7 +25,8 @@ public:
     void BeginCamera(Camera const& camera);
     void EndCamera();
 
-    void DrawVertexArray(int numVertexes, Vertex const* vertexes);
+    void DrawVertexArray(int numVertexes, Vertex const* vertexes) const;
+	void TransformAndDrawVertexArray(int numVerts, Vertex* verts, float scale, float rotationDegrees, Vec2 const& translation) const;
 
 private:
 	Camera* m_currentCamera = nullptr;

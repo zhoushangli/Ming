@@ -4,8 +4,10 @@
 #include <gl/gl.h>
 #pragma comment(lib, "opengl32")
 
-#include "Engine/Core/Vertex.hpp"
 #include "Camera.hpp"
+
+#include "Engine/Core/Vertex.hpp"
+#include "Engine/Core/VertexUtils.hpp"
 
 HGLRC g_openGLRenderingContext = nullptr;
 
@@ -88,7 +90,7 @@ void Renderer::EndCamera()
 
 }
 
-void Renderer::DrawVertexArray(int numVertexes, Vertex const* vertexes)
+void Renderer::DrawVertexArray(int numVertexes, Vertex const* vertexes) const
 {
     if (numVertexes % 3 != 0 || vertexes == nullptr) 
     {
@@ -103,5 +105,15 @@ void Renderer::DrawVertexArray(int numVertexes, Vertex const* vertexes)
         glVertex3f(vertexes[i].m_position.x, vertexes[i].m_position.y, vertexes[i].m_position.z);
     }
     glEnd();
+}
+
+void Renderer::TransformAndDrawVertexArray(int numVerts, Vertex* verts, float scale, float rotationDegrees, Vec2 const& translation) const
+{
+	Vertex tempVerts[256]; 
+	for (int i = 0; i < numVerts; ++i) {
+		tempVerts[i] = verts[i];
+	}
+	TransformVertexArrayXY3D(numVerts, tempVerts, scale, rotationDegrees, translation);
+	DrawVertexArray(numVerts, tempVerts);
 }
 

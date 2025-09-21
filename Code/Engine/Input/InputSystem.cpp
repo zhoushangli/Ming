@@ -43,18 +43,6 @@ void InputSystem::Shutdown()
 
 void InputSystem::BeginFrame()
 {
-	/*for (int key = 0; key < 256; ++key)
-	{
-		bool isDown = (GetAsyncKeyState(key) & 0x8000) != 0;
-		if (isDown)
-		{
-			HandleKeyPressed((unsigned char)key);
-		}
-		else
-		{
-			HandleKeyReleased((unsigned char)key);
-		}
-	}*/
 }
 
 void InputSystem::EndFrame()
