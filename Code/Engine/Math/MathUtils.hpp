@@ -29,8 +29,8 @@ Vec3 TransformPositionXY3D(Vec3& pos, float scaleXY, float zRotationDegrees, Vec
 // Interpolation and range mapping functions
 float Interpolate(float start, float end, float fraction);
 float GetFractionWithinRange(float value, float start, float end);
-float RangeMap(float inStart, float inEnd, float outStart, float outEnd, float inValue);
-float RangeMapClamped(float inStart, float inEnd, float outStart, float outEnd, float inValue);
+float RangeMap(float inValue, float inStart, float inEnd, float outStart, float outEnd);
+float RangeMapClamped(float inValue, float inStart, float inEnd, float outStart, float outEnd);
 float GetClamped(float value, float minValue, float maxValue);
 float GetClampedZeroToOne(float value);
 int RoundDownToInt(float value);
