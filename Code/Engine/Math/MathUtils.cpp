@@ -87,22 +87,36 @@ bool DoSpheresOverlap(Vec3 const& centerA, float radiusA, Vec3 const& centerB, f
     return distSquared <= (radiiSum * radiiSum);
 }
 
-Vec2 TransformPosition2D(Vec2& pos, float scale, float rotationDegrees, Vec2 const& translation)
+void TransformPosition2D(Vec2& pos, float scale, float rotationDegrees, Vec2 const& translation)
 {
     pos *= scale;
 	pos.RotateDegrees(rotationDegrees);
 	pos += translation;
-    return pos;
 }
 
-Vec3 TransformPositionXY3D(Vec3& pos, float scaleXY, float zRotationDegrees, Vec2 const& translationXY)
+void TransformPosition2D(Vec2& pos, Vec2 const& iBasis, Vec2 const& jBasis, Vec2 const& translation)
+{
+    float x = pos.x;
+    float y = pos.y;
+    pos = iBasis * x + jBasis * y + translation;
+}
+
+void TransformPositionXY3D(Vec3& pos, float scaleXY, float zRotationDegrees, Vec2 const& translationXY)
 {
     pos.x *= scaleXY;
 	pos.y *= scaleXY;
     pos = pos.GetRotatedAboutZDegrees(zRotationDegrees);
     pos.x += translationXY.x;
     pos.y += translationXY.y;
-    return pos;
+}
+
+void TransformPositionXY3D(Vec3& pos, Vec2 const& iBasisXY, Vec2 const& jBasisXY, Vec2 const& translationXY)
+{
+	float x = pos.x;
+	float y = pos.y;
+	Vec2 pos2D = iBasisXY * x + jBasisXY * y + translationXY;
+	pos.x = pos2D.x;
+	pos.y = pos2D.y;
 }
 
 float Interpolate(float start, float end, float fraction)
@@ -215,5 +229,114 @@ float GetTurnedTowardDegrees(float currentDegrees, float goalDegrees, float maxD
 float DotProduct2D(Vec2 const& a, Vec2 const& b)
 {
 	return a.x * b.x + a.y * b.y;
+}
+
+Vec2 GetNearestPointOnDisc2D(Vec2 const& point, Vec2 const& discCenter, float discRadius)
+{
+    Vec2 toPoint = point - discCenter;
+    float dist = toPoint.GetLength();
+    if (dist <= discRadius || dist == 0.f) {
+        return point;
+    }
+    return discCenter + toPoint * (discRadius / dist);
+}
+
+bool PushDiscOutOfFixedPoint2D(Vec2& discCenter, float discRadius, Vec2 const& fixedPoint)
+{
+    Vec2 toCenter = discCenter - fixedPoint;
+    float dist = toCenter.GetLength();
+    if (dist >= discRadius || dist == 0.f) {
+        return false;
+    }
+    Vec2 pushDir = toCenter.GetNormalized();
+    discCenter = fixedPoint + pushDir * discRadius;
+    return true;
+}
+
+bool PushDiscOutOfFixedDisc2D(Vec2& discCenter, float discRadius, Vec2 const& fixedDiscCenter, float fixedDiscRadius)
+{
+    Vec2 between = discCenter - fixedDiscCenter;
+    float dist = between.GetLength();
+    float minDist = discRadius + fixedDiscRadius;
+    if (dist >= minDist || dist == 0.f) {
+        return false;
+    }
+    Vec2 pushDir = between.GetNormalized();
+    discCenter = fixedDiscCenter + pushDir * minDist;
+    return true;
+}
+
+bool PushDiscsOutOfEachOther2D(Vec2& discCenterA, float discRadiusA, Vec2& discCenterB, float discRadiusB)
+{
+    Vec2 between = discCenterA - discCenterB;
+    float dist = between.GetLength();
+    float minDist = discRadiusA + discRadiusB;
+    if (dist >= minDist || dist == 0.f) {
+        return false;
+    }
+    Vec2 pushDir = between.GetNormalized();
+    float overlap = minDist - dist;
+    discCenterA += pushDir * (overlap * 0.5f);
+    discCenterB -= pushDir * (overlap * 0.5f);
+    return true;
+}
+
+bool PushDiscOutOfFixedAABB2D(Vec2& discCenter, float discRadius, AABB2 const& box)
+{
+    Vec2 nearest = box.GetNearestPoint(discCenter);
+    Vec2 toCenter = discCenter - nearest;
+    float dist = toCenter.GetLength();
+    if (dist >= discRadius || dist == 0.f) {
+        return false;
+    }
+    Vec2 pushDir = toCenter.GetNormalized();
+    discCenter = nearest + pushDir * discRadius;
+    return true;
+}
+
+float GetProjectedLength2D(Vec2 const& vector, Vec2 const& basis)
+{
+    Vec2 n = basis.GetNormalized();
+    return DotProduct2D(vector, n);
+}
+
+Vec2 GetProjectedVector2D(Vec2 const& vector, Vec2 const& basis)
+{
+    Vec2 n = basis.GetNormalized();
+    return n * DotProduct2D(vector, n);
+}
+
+float GetAngleDegreesBetweenVectors2D(Vec2 const& a, Vec2 const& b)
+{
+    float aLen = a.GetLength();
+    float bLen = b.GetLength();
+    if (aLen == 0.f || bLen == 0.f) return 0.f;
+    float dot = DotProduct2D(a, b) / (aLen * bLen);
+    dot = std::fmax(-1.f, std::fmin(1.f, dot)); 
+    return ConvertRadiansToDegrees(std::acos(dot));
+}
+
+int GetTaxicabDistance2D(IntVec2 const& a, IntVec2 const& b)
+{
+    return std::abs(a.x - b.x) + std::abs(a.y - b.y);
+}
+
+bool IsPointInsideOrientedSector2D(Vec2 const& point, Vec2 const& sectorOrigin, float sectorForwardDegrees, float sectorApertureDegrees, float sectorMaxRange) {
+    Vec2 toPoint = point - sectorOrigin;
+    float dist = toPoint.GetLength();
+    if (dist > sectorMaxRange || dist == 0.f) return false;
+    float pointDir = toPoint.GetOrientationDegrees();
+    float delta = GetShortestAngularDispDegrees(sectorForwardDegrees, pointDir);
+    return std::abs(delta) <= (sectorApertureDegrees * 0.5f);
+}
+
+bool IsPointInsideDirectedSector2D(Vec2 const& point, Vec2 const& sectorOrigin, Vec2 const& sectorForwardNormal, float sectorApertureDegrees, float sectorMaxRange) {
+    Vec2 toPoint = point - sectorOrigin;
+    float dist = toPoint.GetLength();
+    if (dist > sectorMaxRange || dist == 0.f) return false;
+    float forwardDir = sectorForwardNormal.GetOrientationDegrees();
+    float pointDir = toPoint.GetOrientationDegrees();
+    float delta = GetShortestAngularDispDegrees(forwardDir, pointDir);
+    return std::abs(delta) <= (sectorApertureDegrees * 0.5f);
 }
 

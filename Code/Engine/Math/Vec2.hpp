@@ -73,4 +73,8 @@ public:
 	void ClampLength(float maxLength);
 	void Normalize();
 	float NormalizeAndGetPreviousLength();
+
+	// Reflection
+	Vec2 const	GetReflected(Vec2 const& normal) const;
+	void		Reflect(Vec2 const& normal);
 };

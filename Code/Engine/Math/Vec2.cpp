@@ -1,9 +1,12 @@
 #include "Engine/Math/Vec2.hpp"
 
-#include <math.h>
+#include <complex>
 
 #include "Vec3.hpp"
+#include "MathUtils.hpp"
 #include "MathCommon.hpp"
+
+#include <math.h>
 
 const Vec2 Vec2::ZERO = Vec2(0.f, 0.f);
 
@@ -274,4 +277,15 @@ float Vec2::NormalizeAndGetPreviousLength() {
 	float len = GetLength();
 	Normalize();
 	return len;
+}
+
+Vec2 const Vec2::GetReflected(Vec2 const& normal) const
+{
+	float dot = DotProduct2D(*this, normal);
+	return (*this - dot * normal) - dot * normal;
+}
+
+void Vec2::Reflect(Vec2 const& normal)
+{
+	*this = GetReflected(normal);
 }
