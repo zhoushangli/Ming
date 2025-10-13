@@ -164,6 +164,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\Engine\Code\Engine\Math\Vec2.cpp" />
+    <ClCompile Include="Audio\AudioSystem.cpp" />
     <ClCompile Include="Core\Engine.cpp" />
     <ClCompile Include="Core\ErrorWarningAssert.cpp" />
     <ClCompile Include="Core\Rgba8.cpp" />
@@ -177,7 +178,6 @@
     <ClCompile Include="Input\XboxController.cpp" />
     <ClCompile Include="Math\AABB2.cpp" />
     <ClCompile Include="Math\IntVec2.cpp" />
-    <ClCompile Include="Math\MathCommon.cpp" />
     <ClCompile Include="Math\MathUtils.cpp" />
     <ClCompile Include="Math\RandomNumberGenerator.cpp" />
     <ClCompile Include="Math\Vec3.cpp" />
@@ -187,6 +187,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\Engine\Code\Engine\Math\Vec2.hpp" />
+    <ClInclude Include="Audio\AudioSystem.hpp" />
     <ClInclude Include="Core\Engine.hpp" />
     <ClInclude Include="Core\ErrorWarningAssert.hpp" />
     <ClInclude Include="Core\Rgba8.hpp" />
@@ -200,7 +201,6 @@
     <ClInclude Include="Input\XboxController.hpp" />
     <ClInclude Include="Math\AABB2.hpp" />
     <ClInclude Include="Math\IntVec2.hpp" />
-    <ClInclude Include="Math\MathCommon.hpp" />
     <ClInclude Include="Math\MathUtils.hpp" />
     <ClInclude Include="Math\RandomNumberGenerator.hpp" />
     <ClInclude Include="Math\Vec3.hpp" />

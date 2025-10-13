@@ -5,6 +5,16 @@
 #include "AABB2.hpp"
 #include "IntVec2.hpp"
 
+float const DegreesToRadiansMultiplier  = 0.017453292519943295f;    // PI / 180
+float const RadiansToDegreesMultiplier  = 57.29577951308232f;       // 180 / PI
+const float PI                          = 3.14159265358979323846f;
+const float TWO_PI                      = 6.28318530717958647692f;
+const float HALF_PI                     = 1.57079632679489661923f;
+
+float   Max(float a, float b);
+float   Min(float a, float b);
+float   Abs(float a);
+
 // Angle conversion and trigonometric functions
 float	ConvertDegreesToRadians(float degrees);
 float	ConvertRadiansToDegrees(float radians);
@@ -32,6 +42,7 @@ void	TransformPositionXY3D(Vec3& pos, Vec2 const& iBasisXY, Vec2 const& jBasisXY
 
 // Interpolation and range mapping functions 
 float	Interpolate(float start, float end, float fraction);
+float   InterpolateClamped(float start, float end, float fraction);
 float	GetFractionWithinRange(float value, float start, float end);
 float	RangeMap(float inValue, float inStart, float inEnd, float outStart, float outEnd);
 float	RangeMapClamped(float inValue, float inStart, float inEnd, float outStart, float outEnd);

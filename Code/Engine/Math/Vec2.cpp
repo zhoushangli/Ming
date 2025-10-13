@@ -4,7 +4,6 @@
 
 #include "Vec3.hpp"
 #include "MathUtils.hpp"
-#include "MathCommon.hpp"
 
 #include <math.h>
 

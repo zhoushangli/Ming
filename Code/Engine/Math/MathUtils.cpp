@@ -2,7 +2,20 @@
 
 #include <cmath>
 
-#include "MathCommon.hpp"
+float Max(float a, float b)
+{
+    return (a > b) ? a : b;
+}
+
+float Min(float a, float b)
+{
+    return (a < b) ? a : b;
+}
+
+float Abs(float a)
+{
+    return abs(a);
+}
 
 float ConvertDegreesToRadians(float degrees)
 {
@@ -122,6 +135,12 @@ void TransformPositionXY3D(Vec3& pos, Vec2 const& iBasisXY, Vec2 const& jBasisXY
 float Interpolate(float start, float end, float fraction)
 {
 	return start * (1.0f - fraction) + end * fraction;
+}
+
+float InterpolateClamped(float start, float end, float fraction)
+{
+    float f = GetClampedZeroToOne(fraction);
+    return Interpolate(start, end, f);
 }
 
 float GetFractionWithinRange(float value, float start, float end)
@@ -312,7 +331,7 @@ float GetAngleDegreesBetweenVectors2D(Vec2 const& a, Vec2 const& b)
     float bLen = b.GetLength();
     if (aLen == 0.f || bLen == 0.f) return 0.f;
     float dot = DotProduct2D(a, b) / (aLen * bLen);
-    dot = std::fmax(-1.f, std::fmin(1.f, dot)); 
+    dot = GetClamped(dot, -1.f, 1.f); 
     return ConvertRadiansToDegrees(std::acos(dot));
 }
 

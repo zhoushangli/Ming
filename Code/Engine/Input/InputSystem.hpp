@@ -1,7 +1,9 @@
 #pragma once
 
 #include "KeyButtonState.hpp"
+#include "XboxController.hpp"
 
+extern unsigned char const KEYCODE_F1;
 extern unsigned char const KEYCODE_F7;
 extern unsigned char const KEYCODE_F8;
 extern unsigned char const KEYCODE_F9;
@@ -35,11 +37,17 @@ public:
 
 	void HandleKeyPressed(unsigned char keyCode);
 	void HandleKeyReleased(unsigned char keyCode);
-	// XboxController const& GetController(int controllerID);
+	XboxController const& GetController(int controllerID);
 
-	void ClearKeyStates();
+	void ClearAllInputStates();
 
 protected:
 	KeyButtonState  m_keyStates[NUM_KEYCODES];
-	// XboxController  m_controllers[NUM_XBOX_CONTROLLERS];
+	XboxController  m_controllers[NUM_XBOX_CONTROLLERS] =
+		{
+			XboxController(0),
+			XboxController(1),
+			XboxController(2),
+			XboxController(3)
+		};
 };

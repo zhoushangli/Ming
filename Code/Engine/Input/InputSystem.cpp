@@ -2,6 +2,7 @@
 
 #include <Windows.h>
 
+unsigned char const KEYCODE_F1			= VK_F1;
 unsigned char const KEYCODE_F7			= VK_F7;
 unsigned char const KEYCODE_F8			= VK_F8;
 unsigned char const KEYCODE_F9			= VK_F9;
@@ -20,7 +21,11 @@ InputSystem::InputSystem()
 
 InputSystem::~InputSystem()
 {
-
+	for (int key = 0; key < 256; ++key)
+	{
+		m_keyStates[key].state = false;
+		m_keyStates[key].prevState = false;
+	}
 }
 
 void InputSystem::Startup()
@@ -43,6 +48,10 @@ void InputSystem::Shutdown()
 
 void InputSystem::BeginFrame()
 {
+	for (int i = 0; i < NUM_XBOX_CONTROLLERS; ++i)
+	{
+		m_controllers[i].Update();
+	}
 }
 
 void InputSystem::EndFrame()
@@ -78,11 +87,26 @@ void InputSystem::HandleKeyReleased(unsigned char keyCode)
 	m_keyStates[keyCode].state = false;
 }
 
-void InputSystem::ClearKeyStates()
+XboxController const& InputSystem::GetController(int controllerID)
+{
+	if (controllerID < 0 || controllerID >= NUM_XBOX_CONTROLLERS) 
+	{
+		return m_controllers[0];
+	}
+
+	return m_controllers[controllerID];
+}
+
+void InputSystem::ClearAllInputStates()
 {
 	for (int key = 0; key < 256; ++key)
 	{
 		m_keyStates[key].state = false;
 		m_keyStates[key].prevState = false;
+	}
+
+	for (int i = 0; i < NUM_XBOX_CONTROLLERS; ++i)
+	{
+		m_controllers[i].Reset();
 	}
 }
