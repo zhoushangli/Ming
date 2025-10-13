@@ -29,24 +29,24 @@ float ConvertRadiansToDegrees(float radians)
 
 float CosDegrees(float degrees)
 {
-    return std::cos(ConvertDegreesToRadians(degrees));
+    return std::cosf(ConvertDegreesToRadians(degrees));
 }
 
 float SinDegrees(float degrees)
 {
-    return std::sin(ConvertDegreesToRadians(degrees));
+    return std::sinf(ConvertDegreesToRadians(degrees));
 }
 
 float Atan2Degrees(float y, float x)
 {
-    return ConvertRadiansToDegrees(std::atan2(y, x));
+    return ConvertRadiansToDegrees(std::atan2f(y, x));
 }
 
 float GetDistance2D(Vec2 const& a, Vec2 const& b)
 {
     float dx = a.x - b.x;
     float dy = a.y - b.y;
-    return std::sqrt(dx * dx + dy * dy);
+    return std::sqrtf(dx * dx + dy * dy);
 }
 
 float GetDistanceSquared2D(Vec2 const& a, Vec2 const& b)
@@ -61,14 +61,14 @@ float GetDistance3D(Vec3 const& a, Vec3 const& b)
     float dx = a.x - b.x;
     float dy = a.y - b.y;
     float dz = a.z - b.z;
-    return std::sqrt(dx * dx + dy * dy + dz * dz);
+    return std::sqrtf(dx * dx + dy * dy + dz * dz);
 }
 
 float GetDistanceXY3D(Vec3 const& a, Vec3 const& b)
 {
     float dx = a.x - b.x;
     float dy = a.y - b.y;
-    return std::sqrt(dx * dx + dy * dy);
+    return std::sqrtf(dx * dx + dy * dy);
 }
 
 float GetDistanceSquared3D(Vec3 const& a, Vec3 const& b)
@@ -332,7 +332,7 @@ float GetAngleDegreesBetweenVectors2D(Vec2 const& a, Vec2 const& b)
     if (aLen == 0.f || bLen == 0.f) return 0.f;
     float dot = DotProduct2D(a, b) / (aLen * bLen);
     dot = GetClamped(dot, -1.f, 1.f); 
-    return ConvertRadiansToDegrees(std::acos(dot));
+    return ConvertRadiansToDegrees(std::acosf(dot));
 }
 
 int GetTaxicabDistance2D(IntVec2 const& a, IntVec2 const& b)
