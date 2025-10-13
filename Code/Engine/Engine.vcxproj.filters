@@ -16,6 +16,9 @@
     <Filter Include="Input">
       <UniqueIdentifier>{da089420-74a3-4696-9277-f44032f70ecc}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Audio">
+      <UniqueIdentifier>{6be02775-be9e-4b29-986d-799857982677}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\Engine\Code\Engine\Math\Vec2.cpp">
@@ -81,6 +84,9 @@
     <ClCompile Include="Core\Time.cpp">
       <Filter>Core</Filter>
     </ClCompile>
+    <ClCompile Include="Audio\AudioSystem.cpp">
+      <Filter>Audio</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\Engine\Code\Engine\Math\Vec2.hpp">
@@ -145,6 +151,9 @@
     </ClInclude>
     <ClInclude Include="Core\Time.hpp">
       <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Audio\AudioSystem.hpp">
+      <Filter>Audio</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
