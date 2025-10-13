@@ -43,7 +43,7 @@ public:
 	bool					WasButtonJustPressed(XboxButtonID buttonID) const;
 	bool					WasButtonJustReleased(XboxButtonID buttonID) const;
 
-	void					Shake(float intensity, float duration);
+	void					Shake(float intensity, float duration) const;
 
 private:
 	void Update();
@@ -52,7 +52,7 @@ private:
 	void UpdateTrigger(float& out_triggerValue, unsigned char rawValue);
 	void UpdateButton(XboxButtonID buttonID, unsigned short buttonFlags, unsigned short buttonFlag);
 
-	void SetVibration(unsigned short leftMotor = 0.f, unsigned short rightMotor = 0.f);
+	void SetVibration(unsigned short leftMotor = 0.f, unsigned short rightMotor = 0.f) const;
 	
 
 private:
@@ -64,5 +64,5 @@ private:
 	AnalogJoystick m_leftStick;
 	AnalogJoystick m_rightStick;
 
-	unsigned long long m_vibeEndMs = 0;
+	mutable unsigned long long m_vibeEndMs = 0;
 };

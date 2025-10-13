@@ -74,7 +74,7 @@ bool XboxController::WasButtonJustReleased(XboxButtonID buttonID) const
     return !btn.state && btn.prevState;
 }
 
-void XboxController::Shake(float intensity, float duration)
+void XboxController::Shake(float intensity, float duration) const
 {
     if (!m_isConnected)
     {
@@ -183,7 +183,7 @@ void XboxController::UpdateButton(XboxButtonID buttonID, unsigned short buttonFl
     btn.state = (buttonFlags & buttonFlag) == buttonFlag;
 }
 
-void XboxController::SetVibration(unsigned short leftMotor, unsigned short rightMotor)
+void XboxController::SetVibration(unsigned short leftMotor, unsigned short rightMotor) const
 {
     XINPUT_VIBRATION vib = {};
     vib.wLeftMotorSpeed = leftMotor;
