@@ -18,7 +18,6 @@ public:
 public:
 	Renderer*				m_renderer		= nullptr;
 	InputSystem*			m_inputSystem	= nullptr;
-	RandomNumberGenerator*	m_rng			= nullptr;
 };
 
 extern Engine* g_engine;

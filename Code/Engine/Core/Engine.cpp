@@ -10,7 +10,6 @@ Engine::Engine()
 {
 	m_renderer = new Renderer();
 	m_inputSystem = new InputSystem();
-	m_rng = new RandomNumberGenerator();
 
 	m_renderer->Startup();
 	m_inputSystem->Startup();
@@ -26,9 +25,6 @@ Engine::~Engine()
 
 	delete m_inputSystem;
 	m_inputSystem = nullptr;
-
-	delete m_rng;
-	m_rng = nullptr;
 }
 
 void Engine::BeginFrame()

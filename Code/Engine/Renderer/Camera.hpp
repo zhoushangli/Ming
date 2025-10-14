@@ -17,7 +17,8 @@ public:
 	void SetOrthoView(Vec2 const& leftBottom, Vec2 const& rightTop);
 	void SetOrthoView(float left, float right, float bottom, float top);
 	void SetPosition(Vec2 const& pos);
-	void TryShake(float shakeDuration, float shakeIntensity);
+	void Shake(Vec2 offset);
+	void Reset();
 
 	Vec2 GetDimensions() const;
 
@@ -27,17 +28,10 @@ public:
 	float GetTop() const { return m_rightTop.y; }
 
 private:
-	void Shake();
-
-private:
 	Vec2 m_leftBottom = Vec2::ZERO;
 	Vec2 m_rightTop = Vec2::ZERO;
 
 	Vec2 m_baseLeftBottom = Vec2::ZERO;
 	Vec2 m_baseRightTop = Vec2::ZERO;
-	
-	float m_shakeDuration = 0.f;
-	float m_shakeIntensity = 0.f;
-	float m_shakeTimer = 0.f;
 };
 
