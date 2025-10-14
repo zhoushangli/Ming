@@ -74,33 +74,6 @@ bool XboxController::WasButtonJustReleased(XboxButtonID buttonID) const
     return !btn.state && btn.prevState;
 }
 
-void XboxController::Shake(float intensity, float duration) const
-{
-    if (!m_isConnected)
-    {
-        return;
-    }
-
-    if (intensity <= 0.f || duration < 0.f)
-    {
-        SetVibration(0, 0);
-        m_vibeEndMs = 0;
-        return;
-    }
-
-    intensity = GetClampedZeroToOne(intensity);
-
-    float leftRatio = intensity;
-    float rightRatio = 0.7f * intensity - 0.1f < 0.f ? 0.f : 0.7f * intensity - 0.1f;
-
-    WORD leftMotor  = static_cast<WORD>(leftRatio  * 65535.0f);
-    WORD rightMotor = static_cast<WORD>(rightRatio * 30000.0f);
-
-    SetVibration(leftMotor, rightMotor);
-
-    m_vibeEndMs = GetTickCount64() + static_cast<ULONGLONG>(duration * 1000.0);
-}
-
 void XboxController::Update()
 {
     XINPUT_STATE xboxControllerState = {};
@@ -137,13 +110,6 @@ void XboxController::Update()
     UpdateButton(XboxButtonID::RIGHT_THUMB, xboxControllerState.Gamepad.wButtons, XINPUT_GAMEPAD_RIGHT_THUMB);
     UpdateButton(XboxButtonID::LEFT_SHOULDER, xboxControllerState.Gamepad.wButtons, XINPUT_GAMEPAD_LEFT_SHOULDER);
     UpdateButton(XboxButtonID::RIGHT_SHOULDER, xboxControllerState.Gamepad.wButtons, XINPUT_GAMEPAD_RIGHT_SHOULDER);
-
-    // Vibration timeout
-    if (m_vibeEndMs != 0 && GetTickCount64() >= m_vibeEndMs)
-    {
-        SetVibration(0.f, 0.f);
-        m_vibeEndMs = 0;
-    }
 }
 
 void XboxController::Reset()
@@ -160,7 +126,6 @@ void XboxController::Reset()
     }
 
     SetVibration(0.f, 0.f);
-    m_vibeEndMs = 0;
 }
 
 void XboxController::UpdateJoystick(AnalogJoystick& out_joystick, short rawX, short rawY)
