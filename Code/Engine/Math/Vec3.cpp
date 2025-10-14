@@ -1,9 +1,9 @@
 #include "Vec3.hpp"
 
-#include <math.h>
-
 #include "Vec2.hpp"
 #include "MathUtils.hpp"
+
+#include <math.h>
 
 Vec3::Vec3() = default;
 

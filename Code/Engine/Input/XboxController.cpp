@@ -125,7 +125,7 @@ void XboxController::Reset()
         m_buttons[i].prevState = false;
     }
 
-    SetVibration(0.f, 0.f);
+    SetVibration(0, 0);
 }
 
 void XboxController::UpdateJoystick(AnalogJoystick& out_joystick, short rawX, short rawY)

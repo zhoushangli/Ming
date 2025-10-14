@@ -1,8 +1,8 @@
 #include "IntVec2.hpp"
 
-#include <math.h>
-
 #include "MathUtils.hpp"
+
+#include <math.h>
 
 IntVec2::IntVec2(int initialX, int initialY) : x(initialX), y(initialY)
 {

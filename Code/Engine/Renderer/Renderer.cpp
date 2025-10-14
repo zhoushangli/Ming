@@ -1,13 +1,13 @@
 #include "Renderer.hpp"
 
-#include <Windows.h>
-#include <gl/gl.h>
-#pragma comment(lib, "opengl32")
-
 #include "Camera.hpp"
 
 #include "Engine/Core/Vertex.hpp"
 #include "Engine/Core/VertexUtils.hpp"
+
+#include <Windows.h>
+#include <gl/gl.h>
+#pragma comment(lib, "opengl32")
 
 HGLRC g_openGLRenderingContext = nullptr;
 
