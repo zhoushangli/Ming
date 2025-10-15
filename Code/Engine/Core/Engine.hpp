@@ -3,6 +3,7 @@
 class RandomNumberGenerator;
 class Renderer;
 class InputSystem;
+class AudioSystem;
 
 class Engine 
 {
@@ -18,6 +19,7 @@ public:
 public:
 	Renderer*				m_renderer		= nullptr;
 	InputSystem*			m_inputSystem	= nullptr;
+	AudioSystem*			m_audioSystem	= nullptr;
 };
 
 extern Engine* g_engine;
