@@ -1,7 +1,7 @@
 #include "Vec3.hpp"
 
-#include "Vec2.hpp"
-#include "MathUtils.hpp"
+#include "Engine/Math/Vec2.hpp"
+#include "Engine/Math/MathUtils.hpp"
 
 #include <math.h>
 

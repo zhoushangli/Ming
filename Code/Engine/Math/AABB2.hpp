@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Vec2.hpp"
+#include "Engine/Math/Vec2.hpp"
 
 class AABB2
 {

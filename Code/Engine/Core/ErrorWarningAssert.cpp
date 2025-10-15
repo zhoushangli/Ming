@@ -2,6 +2,10 @@
 // ErrorWarningAssert.cpp
 //
 
+#include "Engine/Core/ErrorWarningAssert.hpp"
+#include "Engine/Core/StringUtils.hpp"
+
+
 //-----------------------------------------------------------------------------------------------
 #ifdef _WIN32
 #define PLATFORM_WINDOWS
@@ -10,8 +14,6 @@
 #endif
 
 //-----------------------------------------------------------------------------------------------
-#include "Engine/Core/ErrorWarningAssert.hpp"
-#include "Engine/Core/StringUtils.hpp"
 #include <stdarg.h>
 #include <iostream>
 

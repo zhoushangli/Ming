@@ -1,6 +1,6 @@
-#include "AABB2.hpp"
+#include "Engine/Math/AABB2.hpp"
 
-#include "MathUtils.hpp"
+#include "Engine/Math/MathUtils.hpp"
 
 AABB2::AABB2(const Vec2& mins, const Vec2& maxs) : m_mins(mins), m_maxs(maxs)
 {

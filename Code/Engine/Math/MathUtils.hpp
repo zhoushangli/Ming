@@ -1,8 +1,8 @@
 #pragma once
 
-#include "Vec2.hpp"
+#include "Engine/Math/Vec2.hpp"
 #include "Vec3.hpp"
-#include "AABB2.hpp"
+#include "Engine/Math/AABB2.hpp"
 #include "IntVec2.hpp"
 
 float const DegreesToRadiansMultiplier  = 0.017453292519943295f;    // PI / 180

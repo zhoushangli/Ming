@@ -1,7 +1,7 @@
 #pragma once
 
-#include "KeyButtonState.hpp"
-#include "XboxController.hpp"
+#include "Engine/Input/KeyButtonState.hpp"
+#include "Engine/Input/XboxController.hpp"
 
 extern unsigned char const KEYCODE_F1;
 extern unsigned char const KEYCODE_F7;

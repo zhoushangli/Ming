@@ -1,4 +1,4 @@
-#include "Vertex.hpp"
+#include "Engine/Core/Vertex.hpp"
 
 Vertex::Vertex()
 	: m_position(0.f, 0.f, 0.f)

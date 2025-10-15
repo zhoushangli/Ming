@@ -1,4 +1,5 @@
-#include "VertexUtils.hpp"
+#include "Engine/Core/VertexUtils.hpp"
+
 #include "Engine/Math/MathUtils.hpp"
 
 void TransformVertexArrayXY3D(int numVerts, Vertex* verts, float scaleXY, 
