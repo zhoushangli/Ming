@@ -23,8 +23,8 @@ InputSystem::~InputSystem()
 {
 	for (int key = 0; key < 256; ++key)
 	{
-		m_keyStates[key].state = false;
-		m_keyStates[key].prevState = false;
+		m_keyStates[key].m_state = false;
+		m_keyStates[key].m_prevState = false;
 	}
 }
 
@@ -32,8 +32,8 @@ void InputSystem::Startup()
 {
 	for (int key = 0; key < 256; ++key)
 	{
-		m_keyStates[key].state = false;
-		m_keyStates[key].prevState = false;
+		m_keyStates[key].m_state = false;
+		m_keyStates[key].m_prevState = false;
 	}
 }
 
@@ -41,8 +41,8 @@ void InputSystem::Shutdown()
 {
 	for (int key = 0; key < 256; ++key)
 	{
-		m_keyStates[key].state = false;
-		m_keyStates[key].prevState = false;
+		m_keyStates[key].m_state = false;
+		m_keyStates[key].m_prevState = false;
 	}
 }
 
@@ -58,33 +58,33 @@ void InputSystem::EndFrame()
 {
 	for (int key = 0; key < 256; ++key)
 	{
-		m_keyStates[key].prevState = m_keyStates[key].state;
+		m_keyStates[key].m_prevState = m_keyStates[key].m_state;
 	}
 }
 
 bool InputSystem::WasKeyJustPressed(unsigned char keyCode)
 {
-	return m_keyStates[keyCode].state && !m_keyStates[keyCode].prevState;
+	return m_keyStates[keyCode].m_state && !m_keyStates[keyCode].m_prevState;
 }
 
 bool InputSystem::WasKeyJustReleased(unsigned char keyCode)
 {
-	return !m_keyStates[keyCode].state && m_keyStates[keyCode].prevState;
+	return !m_keyStates[keyCode].m_state && m_keyStates[keyCode].m_prevState;
 }
 
 bool InputSystem::IsKeyDown(unsigned char keyCode)
 {
-	return m_keyStates[keyCode].state;
+	return m_keyStates[keyCode].m_state;
 }
 
 void InputSystem::HandleKeyPressed(unsigned char keyCode)
 {
-	m_keyStates[keyCode].state = true;
+	m_keyStates[keyCode].m_state = true;
 }
 
 void InputSystem::HandleKeyReleased(unsigned char keyCode)
 {
-	m_keyStates[keyCode].state = false;
+	m_keyStates[keyCode].m_state = false;
 }
 
 XboxController const& InputSystem::GetController(int controllerID)
@@ -101,8 +101,8 @@ void InputSystem::ClearAllInputStates()
 {
 	for (int key = 0; key < 256; ++key)
 	{
-		m_keyStates[key].state = false;
-		m_keyStates[key].prevState = false;
+		m_keyStates[key].m_state = false;
+		m_keyStates[key].m_prevState = false;
 	}
 
 	for (int i = 0; i < NUM_XBOX_CONTROLLERS; ++i)

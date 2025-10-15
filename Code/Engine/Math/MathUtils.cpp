@@ -1,6 +1,6 @@
 #include "Engine/Math/MathUtils.hpp"
 
-#include <cmath>
+#include <math.h>
 
 float Max(float a, float b)
 {
@@ -29,24 +29,24 @@ float ConvertRadiansToDegrees(float radians)
 
 float CosDegrees(float degrees)
 {
-    return std::cosf(ConvertDegreesToRadians(degrees));
+    return cosf(ConvertDegreesToRadians(degrees));
 }
 
 float SinDegrees(float degrees)
 {
-    return std::sinf(ConvertDegreesToRadians(degrees));
+    return sinf(ConvertDegreesToRadians(degrees));
 }
 
 float Atan2Degrees(float y, float x)
 {
-    return ConvertRadiansToDegrees(std::atan2f(y, x));
+    return ConvertRadiansToDegrees(atan2f(y, x));
 }
 
 float GetDistance2D(Vec2 const& a, Vec2 const& b)
 {
     float dx = a.x - b.x;
     float dy = a.y - b.y;
-    return std::sqrtf(dx * dx + dy * dy);
+    return sqrtf(dx * dx + dy * dy);
 }
 
 float GetDistanceSquared2D(Vec2 const& a, Vec2 const& b)
@@ -61,14 +61,14 @@ float GetDistance3D(Vec3 const& a, Vec3 const& b)
     float dx = a.x - b.x;
     float dy = a.y - b.y;
     float dz = a.z - b.z;
-    return std::sqrtf(dx * dx + dy * dy + dz * dz);
+    return sqrtf(dx * dx + dy * dy + dz * dz);
 }
 
 float GetDistanceXY3D(Vec3 const& a, Vec3 const& b)
 {
     float dx = a.x - b.x;
     float dy = a.y - b.y;
-    return std::sqrtf(dx * dx + dy * dy);
+    return sqrtf(dx * dx + dy * dy);
 }
 
 float GetDistanceSquared3D(Vec3 const& a, Vec3 const& b)
@@ -254,9 +254,12 @@ Vec2 GetNearestPointOnDisc2D(Vec2 const& point, Vec2 const& discCenter, float di
 {
     Vec2 toPoint = point - discCenter;
     float dist = toPoint.GetLength();
-    if (dist <= discRadius || dist == 0.f) {
+
+    if (dist <= discRadius || dist == 0.f) 
+    {
         return point;
     }
+
     return discCenter + toPoint * (discRadius / dist);
 }
 
@@ -264,9 +267,12 @@ bool PushDiscOutOfFixedPoint2D(Vec2& discCenter, float discRadius, Vec2 const& f
 {
     Vec2 toCenter = discCenter - fixedPoint;
     float dist = toCenter.GetLength();
-    if (dist >= discRadius || dist == 0.f) {
+
+    if (dist >= discRadius || dist == 0.f) 
+    {
         return false;
     }
+
     Vec2 pushDir = toCenter.GetNormalized();
     discCenter = fixedPoint + pushDir * discRadius;
     return true;
@@ -277,9 +283,12 @@ bool PushDiscOutOfFixedDisc2D(Vec2& discCenter, float discRadius, Vec2 const& fi
     Vec2 between = discCenter - fixedDiscCenter;
     float dist = between.GetLength();
     float minDist = discRadius + fixedDiscRadius;
-    if (dist >= minDist || dist == 0.f) {
+
+    if (dist >= minDist || dist == 0.f) 
+    {
         return false;
     }
+
     Vec2 pushDir = between.GetNormalized();
     discCenter = fixedDiscCenter + pushDir * minDist;
     return true;
@@ -290,9 +299,12 @@ bool PushDiscsOutOfEachOther2D(Vec2& discCenterA, float discRadiusA, Vec2& discC
     Vec2 between = discCenterA - discCenterB;
     float dist = between.GetLength();
     float minDist = discRadiusA + discRadiusB;
-    if (dist >= minDist || dist == 0.f) {
+
+    if (dist >= minDist || dist == 0.f) 
+    {
         return false;
     }
+
     Vec2 pushDir = between.GetNormalized();
     float overlap = minDist - dist;
     discCenterA += pushDir * (overlap * 0.5f);
@@ -305,9 +317,12 @@ bool PushDiscOutOfFixedAABB2D(Vec2& discCenter, float discRadius, AABB2 const& b
     Vec2 nearest = box.GetNearestPoint(discCenter);
     Vec2 toCenter = discCenter - nearest;
     float dist = toCenter.GetLength();
-    if (dist >= discRadius || dist == 0.f) {
+
+    if (dist >= discRadius || dist == 0.f) 
+    {
         return false;
     }
+
     Vec2 pushDir = toCenter.GetNormalized();
     discCenter = nearest + pushDir * discRadius;
     return true;
@@ -332,12 +347,12 @@ float GetAngleDegreesBetweenVectors2D(Vec2 const& a, Vec2 const& b)
     if (aLen == 0.f || bLen == 0.f) return 0.f;
     float dot = DotProduct2D(a, b) / (aLen * bLen);
     dot = GetClamped(dot, -1.f, 1.f); 
-    return ConvertRadiansToDegrees(std::acosf(dot));
+    return ConvertRadiansToDegrees(acosf(dot));
 }
 
 int GetTaxicabDistance2D(IntVec2 const& a, IntVec2 const& b)
 {
-    return std::abs(a.x - b.x) + std::abs(a.y - b.y);
+    return abs(a.x - b.x) + abs(a.y - b.y);
 }
 
 bool IsPointInsideOrientedSector2D(Vec2 const& point, Vec2 const& sectorOrigin, float sectorForwardDegrees, float sectorApertureDegrees, float sectorMaxRange) {
@@ -346,7 +361,7 @@ bool IsPointInsideOrientedSector2D(Vec2 const& point, Vec2 const& sectorOrigin, 
     if (dist > sectorMaxRange || dist == 0.f) return false;
     float pointDir = toPoint.GetOrientationDegrees();
     float delta = GetShortestAngularDispDegrees(sectorForwardDegrees, pointDir);
-    return std::abs(delta) <= (sectorApertureDegrees * 0.5f);
+    return abs(delta) <= (sectorApertureDegrees * 0.5f);
 }
 
 bool IsPointInsideDirectedSector2D(Vec2 const& point, Vec2 const& sectorOrigin, Vec2 const& sectorForwardNormal, float sectorApertureDegrees, float sectorMaxRange) {
@@ -356,6 +371,6 @@ bool IsPointInsideDirectedSector2D(Vec2 const& point, Vec2 const& sectorOrigin, 
     float forwardDir = sectorForwardNormal.GetOrientationDegrees();
     float pointDir = toPoint.GetOrientationDegrees();
     float delta = GetShortestAngularDispDegrees(forwardDir, pointDir);
-    return std::abs(delta) <= (sectorApertureDegrees * 0.5f);
+    return abs(delta) <= (sectorApertureDegrees * 0.5f);
 }
 

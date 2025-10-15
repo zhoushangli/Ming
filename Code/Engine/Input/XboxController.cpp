@@ -53,25 +53,25 @@ KeyButtonState const& XboxController::GetButton(XboxButtonID buttonID) const
 bool XboxController::IsButtonPressed(XboxButtonID buttonID) const
 {
     const KeyButtonState& btn = m_buttons[(int)buttonID];
-    return btn.state;
+    return btn.m_state;
 }
 
 bool XboxController::IsButtonReleased(XboxButtonID buttonID) const
 {
     const KeyButtonState& btn = m_buttons[(int)buttonID];
-    return !btn.state;
+    return !btn.m_state;
 }
 
 bool XboxController::WasButtonJustPressed(XboxButtonID buttonID) const
 {
     const KeyButtonState& btn = m_buttons[(int)buttonID];
-    return btn.state && !btn.prevState;
+    return btn.m_state && !btn.m_prevState;
 }
 
 bool XboxController::WasButtonJustReleased(XboxButtonID buttonID) const
 {
     const KeyButtonState& btn = m_buttons[(int)buttonID];
-    return !btn.state && btn.prevState;
+    return !btn.m_state && btn.m_prevState;
 }
 
 void XboxController::Update()
@@ -121,8 +121,8 @@ void XboxController::Reset()
     m_rightStick.Reset();
     for (int i = 0; i < (int)XboxButtonID::NUM; ++i)
     {
-        m_buttons[i].state = false;
-        m_buttons[i].prevState = false;
+        m_buttons[i].m_state = false;
+        m_buttons[i].m_prevState = false;
     }
 
     SetVibration(0, 0);
@@ -144,8 +144,8 @@ void XboxController::UpdateTrigger(float& out_triggerValue, unsigned char rawVal
 void XboxController::UpdateButton(XboxButtonID buttonID, unsigned short buttonFlags, unsigned short buttonFlag)
 {
     KeyButtonState& btn = m_buttons[(int)buttonID];
-    btn.prevState = btn.state;
-    btn.state = (buttonFlags & buttonFlag) == buttonFlag;
+    btn.m_prevState = btn.m_state;
+    btn.m_state = (buttonFlags & buttonFlag) == buttonFlag;
 }
 
 void XboxController::SetVibration(unsigned short leftMotor, unsigned short rightMotor) const

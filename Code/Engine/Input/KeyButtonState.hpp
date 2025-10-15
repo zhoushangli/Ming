@@ -3,6 +3,6 @@
 struct KeyButtonState
 {
 public:
-	bool state;
-	bool prevState;
+	bool m_state;
+	bool m_prevState;
 };

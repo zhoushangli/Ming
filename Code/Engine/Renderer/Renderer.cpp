@@ -71,10 +71,10 @@ void Renderer::CreateRenderingContext()
 void Renderer::ClearScreen(Rgba8 const& clearColor)
 {
     glClearColor(
-        clearColor.r / 255.0f,
-        clearColor.g / 255.0f,
-        clearColor.b / 255.0f,
-        clearColor.a / 255.0f
+        static_cast<float>(clearColor.r) / 255.0f,
+		static_cast<float>(clearColor.g) / 255.0f,
+        static_cast<float>(clearColor.b) / 255.0f,
+        static_cast<float>(clearColor.a) / 255.0f
     );
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
@@ -110,7 +110,8 @@ void Renderer::DrawVertexArray(int numVertexes, Vertex const* vertexes) const
 void Renderer::TransformAndDrawVertexArray(int numVerts, Vertex* verts, float scale, float rotationDegrees, Vec2 const& translation) const
 {
 	Vertex tempVerts[256]; 
-	for (int i = 0; i < numVerts; ++i) {
+	for (int i = 0; i < numVerts; ++i) 
+	{
 		tempVerts[i] = verts[i];
 	}
 	TransformVertexArrayXY3D(numVerts, tempVerts, scale, rotationDegrees, translation);
