@@ -2,21 +2,6 @@
 
 #include <math.h>
 
-float Max(float a, float b)
-{
-    return (a > b) ? a : b;
-}
-
-float Min(float a, float b)
-{
-    return (a < b) ? a : b;
-}
-
-float Abs(float a)
-{
-    return abs(a);
-}
-
 float ConvertDegreesToRadians(float degrees)
 {
     return degrees * DegreesToRadiansMultiplier;
@@ -355,22 +340,38 @@ int GetTaxicabDistance2D(IntVec2 const& a, IntVec2 const& b)
     return abs(a.x - b.x) + abs(a.y - b.y);
 }
 
-bool IsPointInsideOrientedSector2D(Vec2 const& point, Vec2 const& sectorOrigin, float sectorForwardDegrees, float sectorApertureDegrees, float sectorMaxRange) {
-    Vec2 toPoint = point - sectorOrigin;
-    float dist = toPoint.GetLength();
-    if (dist > sectorMaxRange || dist == 0.f) return false;
-    float pointDir = toPoint.GetOrientationDegrees();
-    float delta = GetShortestAngularDispDegrees(sectorForwardDegrees, pointDir);
-    return abs(delta) <= (sectorApertureDegrees * 0.5f);
+bool IsPointInsideDisc2D(Vec2 const& point, Vec2 const& discCenter, float discRadius)
+{
+	Vec2 toPoint = point - discCenter;
+	float distSquared = toPoint.GetLengthSquared();
+	return distSquared <= (discRadius * discRadius);
 }
 
-bool IsPointInsideDirectedSector2D(Vec2 const& point, Vec2 const& sectorOrigin, Vec2 const& sectorForwardNormal, float sectorApertureDegrees, float sectorMaxRange) {
+bool IsPointInsideOrientedSector2D(Vec2 const& point, Vec2 const& sectorOrigin, float sectorForwardDegrees, float sectorApertureDegrees, float sectorMaxRange) 
+{
+	if (!IsPointInsideDisc2D(point, sectorOrigin, sectorMaxRange)) 
+    {
+        return false;
+    }
+
     Vec2 toPoint = point - sectorOrigin;
-    float dist = toPoint.GetLength();
-    if (dist > sectorMaxRange || dist == 0.f) return false;
-    float forwardDir = sectorForwardNormal.GetOrientationDegrees();
-    float pointDir = toPoint.GetOrientationDegrees();
-    float delta = GetShortestAngularDispDegrees(forwardDir, pointDir);
-    return abs(delta) <= (sectorApertureDegrees * 0.5f);
+	Vec2 forward = Vec2::MakeFromPolarDegrees(sectorForwardDegrees, 1.f);
+	float angle = GetAngleDegreesBetweenVectors2D(toPoint, forward);
+	return angle <= (sectorApertureDegrees * 0.5f);
+}
+
+bool IsPointInsideDirectedSector2D(Vec2 const& point, Vec2 const& sectorOrigin, Vec2 const& sectorForwardNormal, float sectorApertureDegrees, float sectorMaxRange) 
+{
+	if (!IsPointInsideDisc2D(point, sectorOrigin, sectorMaxRange))
+	{
+		return false;
+	}
+
+    Vec2 toPoint = point - sectorOrigin;
+	Vec2 dirToPoint = toPoint.GetNormalized();
+	Vec2 fwd = sectorForwardNormal.GetNormalized();
+	float cosAngle = DotProduct2D(dirToPoint, fwd);
+	float cosLimit = CosDegrees(sectorApertureDegrees * 0.5f);
+	return cosAngle >= cosLimit;
 }
 

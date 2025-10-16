@@ -26,7 +26,6 @@ public:
     void EndCamera();
 
     void DrawVertexArray(int numVertexes, Vertex const* vertexes) const;
-	void TransformAndDrawVertexArray(int numVerts, Vertex* verts, float scale, float rotationDegrees, Vec2 const& translation) const;
 
 private:
 	Camera* m_currentCamera = nullptr;

@@ -107,14 +107,3 @@ void Renderer::DrawVertexArray(int numVertexes, Vertex const* vertexes) const
     glEnd();
 }
 
-void Renderer::TransformAndDrawVertexArray(int numVerts, Vertex* verts, float scale, float rotationDegrees, Vec2 const& translation) const
-{
-	Vertex tempVerts[256]; 
-	for (int i = 0; i < numVerts; ++i) 
-	{
-		tempVerts[i] = verts[i];
-	}
-	TransformVertexArrayXY3D(numVerts, tempVerts, scale, rotationDegrees, translation);
-	DrawVertexArray(numVerts, tempVerts);
-}
-

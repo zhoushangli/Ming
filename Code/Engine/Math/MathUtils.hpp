@@ -1,19 +1,15 @@
 #pragma once
 
 #include "Engine/Math/Vec2.hpp"
-#include "Vec3.hpp"
+#include "Engine/Math/Vec3.hpp"
 #include "Engine/Math/AABB2.hpp"
-#include "IntVec2.hpp"
+#include "Engine/Math/IntVec2.hpp"
 
 float const DegreesToRadiansMultiplier  = 0.017453292519943295f;    // PI / 180
 float const RadiansToDegreesMultiplier  = 57.29577951308232f;       // 180 / PI
 const float PI                          = 3.14159265358979323846f;
 const float TWO_PI                      = 6.28318530717958647692f;
 const float HALF_PI                     = 1.57079632679489661923f;
-
-float   Max(float a, float b);
-float   Min(float a, float b);
-float   Abs(float a);
 
 // Angle conversion and trigonometric functions
 float	ConvertDegreesToRadians(float degrees);
@@ -69,6 +65,7 @@ float	GetAngleDegreesBetweenVectors2D(Vec2 const& a, Vec2 const& b);
 
 // Miscellaneous utilities
 int		GetTaxicabDistance2D(IntVec2 const& a, IntVec2 const& b);
+bool	IsPointInsideDisc2D(Vec2 const& point, Vec2 const& discCenter, float discRadius);
 bool	IsPointInsideOrientedSector2D(Vec2 const& point, Vec2 const& sectorOrigin, float sectorForwardDegrees, float sectorApertureDegrees, float sectorMaxRange);
 bool	IsPointInsideDirectedSector2D(Vec2 const& point, Vec2 const& sectorOrigin, Vec2 const& sectorForwardNormal, float sectorApertureDegrees, float sectorMaxRange);
 
