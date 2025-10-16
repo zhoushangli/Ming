@@ -12,8 +12,6 @@ public:
 	Camera(Camera const& copy) = default;
 	~Camera() = default;
 
-	void Update(float deltaSeconds);
-
 	void SetOrthoView(Vec2 const& leftBottom, Vec2 const& rightTop);
 	void SetOrthoView(float left, float right, float bottom, float top);
 	void SetPosition(Vec2 const& pos);

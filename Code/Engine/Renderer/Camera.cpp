@@ -10,11 +10,6 @@ Camera::Camera(float left, float right, float bottom, float top) :
 {
 }
 
-void Camera::Update([[maybe_unused]] float deltaSeconds) 
-{
-
-}
-
 void Camera::SetOrthoView(Vec2 const& leftBottom, Vec2 const& rightTop)
 {
 	m_baseLeftBottom = leftBottom;
