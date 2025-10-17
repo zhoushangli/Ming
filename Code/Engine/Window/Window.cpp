@@ -3,7 +3,7 @@
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 
-Window::Window()
+Window::Window(WindowConfig config) : m_config(config)
 {
 
 }

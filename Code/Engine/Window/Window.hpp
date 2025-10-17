@@ -1,9 +1,14 @@
 #pragma once
 
+struct WindowConfig
+{
+	bool m_isEnable = true;
+};
+
 class Window
 {
 public:
-	Window();
+	Window(WindowConfig config);
 	~Window();
 
 	void Startup();
@@ -11,5 +16,8 @@ public:
 
 	void BeginFrame();
 	void EndFrame();
+
+private:
+	WindowConfig m_config;
 };
 

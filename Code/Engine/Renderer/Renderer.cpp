@@ -11,10 +11,9 @@
 
 HGLRC g_openGLRenderingContext = nullptr;
 
-Renderer::Renderer()
+Renderer::Renderer(RendererConfig config) : m_config(config)
 {
     CreateRenderingContext();
-	
 }
 
 Renderer::~Renderer()

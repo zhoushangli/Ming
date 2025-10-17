@@ -6,10 +6,15 @@ struct Rgba8;
 struct Vertex;
 class Camera;
 
+struct RendererConfig
+{
+	bool m_isEnable = true;
+};
+
 class Renderer
 {
 public:
-    Renderer();
+    Renderer(RendererConfig config);
     ~Renderer();
 
     void Startup();
@@ -28,6 +33,8 @@ public:
     void DrawVertexArray(int numVertexes, Vertex const* vertexes) const;
 
 private:
+	RendererConfig m_config;
+
 	Camera* m_currentCamera = nullptr;
 };
 

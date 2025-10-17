@@ -1,29 +1,24 @@
 #pragma once
 
-
-//-----------------------------------------------------------------------------------------------
 #include "ThirdParty/fmod/fmod.hpp"
 
 #include <string>
 #include <vector>
 #include <map>
 
-
-//-----------------------------------------------------------------------------------------------
 typedef size_t SoundID;
 typedef size_t SoundPlaybackID;
 constexpr size_t MISSING_SOUND_ID = (size_t)(-1); // for bad SoundIDs and SoundPlaybackIDs
 
+struct AudioConfig
+{
+	bool m_isEnable = true;
+};
 
-//-----------------------------------------------------------------------------------------------
-class AudioSystem;
-
-
-/////////////////////////////////////////////////////////////////////////////////////////////////
 class AudioSystem
 {
 public:
-	AudioSystem();
+	AudioSystem(AudioConfig config);
 	virtual ~AudioSystem();
 
 public:
@@ -42,6 +37,8 @@ public:
 	virtual void				ValidateResult( FMOD_RESULT result );
 
 protected:
+	AudioConfig							m_config;
+
 	FMOD::System*						m_fmodSystem;
 	std::map< std::string, SoundID >	m_registeredSoundIDs;
 	std::vector< FMOD::Sound* >			m_registeredSounds;
