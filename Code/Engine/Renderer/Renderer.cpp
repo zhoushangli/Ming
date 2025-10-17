@@ -2,6 +2,7 @@
 
 #include "Camera.hpp"
 
+#include <Engine/Core/Engine.hpp>
 #include "Engine/Core/Vertex.hpp"
 #include "Engine/Core/VertexUtils.hpp"
 
@@ -13,7 +14,7 @@ HGLRC g_openGLRenderingContext = nullptr;
 
 Renderer::Renderer(RendererConfig config) : m_config(config)
 {
-    CreateRenderingContext();
+
 }
 
 Renderer::~Renderer()
@@ -22,6 +23,7 @@ Renderer::~Renderer()
 
 void Renderer::Startup()
 {
+	CreateRenderingContext();
 }
 
 void Renderer::Shutdown()
@@ -36,7 +38,8 @@ void Renderer::BeginFrame()
 
 void Renderer::EndFrame()
 {
-
+	HDC displayDeviceContext = (HDC)g_engine->m_window->m_displayDeviceContext;
+	SwapBuffers(displayDeviceContext);
 }
 
 void Renderer::CreateRenderingContext()
