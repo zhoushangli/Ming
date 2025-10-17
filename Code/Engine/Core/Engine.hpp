@@ -1,6 +1,7 @@
 #pragma once
 
 class RandomNumberGenerator;
+class Window;
 class Renderer;
 class InputSystem;
 class AudioSystem;
@@ -17,9 +18,10 @@ public:
 	void EndFrame();
 
 public:
-	Renderer*				m_renderer		= nullptr;
-	InputSystem*			m_inputSystem	= nullptr;
-	AudioSystem*			m_audioSystem	= nullptr;
+	Window*			m_window	= nullptr;
+	Renderer*		m_renderer	= nullptr;
+	InputSystem*	m_input		= nullptr;
+	AudioSystem*	m_audio		= nullptr;
 };
 
 extern Engine* g_engine;
