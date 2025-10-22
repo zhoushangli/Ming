@@ -10,6 +10,8 @@ Engine* g_engine = nullptr;
 
 Engine::Engine(EngineConfig config) : m_config(config)
 {
+	g_engine = this;
+
 	m_window	= new Window(config.m_windowConfig);
 	m_renderer	= new Renderer(config.m_rendererConfig);
 	m_input		= new InputSystem(config.m_inputConfig);
