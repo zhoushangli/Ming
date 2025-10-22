@@ -2,9 +2,10 @@
 
 #include "Camera.hpp"
 
-#include <Engine/Core/Engine.hpp>
+#include "Engine/Core/Engine.hpp"
 #include "Engine/Core/Vertex.hpp"
 #include "Engine/Core/VertexUtils.hpp"
+#include "Engine/Core/ErrorWarningAssert.hpp"
 
 #include <Windows.h>
 #include <gl/gl.h>
@@ -55,6 +56,10 @@ void Renderer::CreateRenderingContext()
 	pixelFormatDescriptor.cDepthBits = 24;
 	pixelFormatDescriptor.cAccumBits = 0;
 	pixelFormatDescriptor.cStencilBits = 8;
+
+	GUARANTEE_OR_DIE(g_engine, "No Engine instance!");
+	GUARANTEE_OR_DIE(g_engine->m_window, "No Window instance!");
+	GUARANTEE_OR_DIE(g_engine->m_window->m_displayDeviceContext, "No Window Display Device Context!");
 
     HWND windowHandle = ::GetActiveWindow();
     HDC displayDeviceContext = GetDC(windowHandle);
