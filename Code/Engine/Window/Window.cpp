@@ -145,6 +145,7 @@ void Window::CreateOSWindow()
 	SetForegroundWindow(hWnd);
 	SetFocus(hWnd);
 
+	m_windowHandle = hWnd;
 	m_displayDeviceContext = GetDC(hWnd);
 
 	HCURSOR cursor = LoadCursor(NULL, IDC_ARROW);

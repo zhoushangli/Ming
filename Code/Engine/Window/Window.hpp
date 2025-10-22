@@ -26,6 +26,7 @@ private:
 	void RunMessagePump();
 
 public:
+	void* m_windowHandle = 0;
 	void* m_displayDeviceContext = 0;
 
 private:
