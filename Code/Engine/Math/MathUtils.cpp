@@ -344,7 +344,7 @@ bool IsPointInsideDisc2D(Vec2 const& point, Vec2 const& discCenter, float discRa
 {
 	Vec2 toPoint = point - discCenter;
 	float distSquared = toPoint.GetLengthSquared();
-	return distSquared <= (discRadius * discRadius);
+	return distSquared < (discRadius * discRadius);
 }
 
 bool IsPointInsideOrientedSector2D(Vec2 const& point, Vec2 const& sectorOrigin, float sectorForwardDegrees, float sectorApertureDegrees, float sectorMaxRange) 
@@ -357,7 +357,7 @@ bool IsPointInsideOrientedSector2D(Vec2 const& point, Vec2 const& sectorOrigin, 
     Vec2 toPoint = point - sectorOrigin;
 	Vec2 forward = Vec2::MakeFromPolarDegrees(sectorForwardDegrees, 1.f);
 	float angle = GetAngleDegreesBetweenVectors2D(toPoint, forward);
-	return angle <= (sectorApertureDegrees * 0.5f);
+	return angle < (sectorApertureDegrees * 0.5f);
 }
 
 bool IsPointInsideDirectedSector2D(Vec2 const& point, Vec2 const& sectorOrigin, Vec2 const& sectorForwardNormal, float sectorApertureDegrees, float sectorMaxRange) 
@@ -372,6 +372,6 @@ bool IsPointInsideDirectedSector2D(Vec2 const& point, Vec2 const& sectorOrigin, 
 	Vec2 fwd = sectorForwardNormal.GetNormalized();
 	float cosAngle = DotProduct2D(dirToPoint, fwd);
 	float cosLimit = CosDegrees(sectorApertureDegrees * 0.5f);
-	return cosAngle >= cosLimit;
+	return cosAngle > cosLimit;
 }
 
