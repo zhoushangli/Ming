@@ -38,4 +38,6 @@ public:
 public:
 	int x = 0;
 	int y = 0;
+
+	static const IntVec2 ZERO;
 };

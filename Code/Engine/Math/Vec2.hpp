@@ -5,13 +5,6 @@ struct Vec3;
 //-----------------------------------------------------------------------------------------------
 struct Vec2
 {
-public: // NOTE: this is one of the few cases where we break both the "m_" naming rule AND the avoid-public-members rule
-	float x = 0.f;
-	float y = 0.f;
-
-	// Zero vector constant
-	static const Vec2 ZERO;
-
 public:
 	// Construction/Destruction
 	~Vec2();												// destructor (do nothing)
@@ -77,4 +70,11 @@ public:
 	// Reflection
 	Vec2 const	GetReflected(Vec2 const& normal) const;
 	void		Reflect(Vec2 const& normal);
+
+public: // NOTE: this is one of the few cases where we break both the "m_" naming rule AND the avoid-public-members rule
+	float x = 0.f;
+	float y = 0.f;
+
+	// Zero vector constant
+	static const Vec2 ZERO;
 };

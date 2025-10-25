@@ -11,3 +11,5 @@ void TransformVertexArrayXY3D(
     float rotationDegreesAboutZ,
     Vec2 const& translationXY
 );
+
+void AddVertsForAABB2();
