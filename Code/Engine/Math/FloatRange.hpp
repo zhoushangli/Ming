@@ -1,34 +1,27 @@
 #pragma once
 
-#include "Engine/Math/Vec2.hpp"
-
-class AABB2
+class FloatRange
 {
 public:
-	AABB2() = default;
-	AABB2(const AABB2& copy) = default;
-	~AABB2() = default;
-	explicit AABB2(const Vec2& mins, const Vec2& maxs);
-	explicit AABB2(float minX, float minY, float maxX, float maxY);
+    float m_min = 0.f;
+    float m_max = 0.f;
 
-	// Methods to implement
-	bool		IsPointInside(const Vec2& point) const;
-	Vec2 const	GetCenter() const;
-	Vec2 const	GetDimensions() const;
-	Vec2 const	GetNearestPoint(const Vec2& point) const;
-	Vec2 const	GetPointAtUV(const Vec2& uv) const;
-	Vec2 const	GetUVForPoint(const Vec2& point) const;
-	
-	void		Translate(const Vec2& translation);
-	void		SetCenter(const Vec2& newCenter);
-	void		SetDimensions(const Vec2& newDimensions);
-	void		StretchToIncludePoint(const Vec2& point);
+    // Constructors
+    FloatRange() = default;
+    explicit FloatRange(float min, float max);
 
-	bool operator==(const AABB2& other) const;
-	AABB2& operator=(const AABB2& other);
+    // Operators
+    FloatRange& operator=(const FloatRange& other);
+    bool operator==(const FloatRange& other) const;
+    bool operator!=(const FloatRange& other) const;
 
-public:
-	Vec2 m_mins;
-	Vec2 m_maxs;
+    // Methods
+    bool IsOnRange(float value) const;
+    bool IsOverlappingWith(const FloatRange& other) const;
+
+    // Named static consts
+    static const FloatRange ZERO;
+    static const FloatRange ONE;
+    static const FloatRange ZERO_TO_ONE;
 };
 

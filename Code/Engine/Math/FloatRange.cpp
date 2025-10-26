@@ -1,103 +1,44 @@
-#include "Engine/Math/AABB2.hpp"
+#include "Engine/Math/FloatRange.hpp"
 
-#include "Engine/Math/MathUtils.hpp"
+// Static consts
+const FloatRange FloatRange::ZERO(0.f, 0.f);
+const FloatRange FloatRange::ONE(1.f, 1.f);
+const FloatRange FloatRange::ZERO_TO_ONE(0.f, 1.f);
 
-AABB2::AABB2(const Vec2& mins, const Vec2& maxs) : m_mins(mins), m_maxs(maxs)
+// Constructors
+FloatRange::FloatRange(float min, float max)
+    : m_min(min), m_max(max)
 {
-
 }
 
-AABB2::AABB2(float minX, float minY, float maxX, float maxY) : m_mins(minX, minY), m_maxs(maxX, maxY)
+// Operators
+FloatRange& FloatRange::operator=(const FloatRange& other)
 {
-
+    if (this != &other) {
+        m_min = other.m_min;
+        m_max = other.m_max;
+    }
+    return *this;
 }
 
-bool AABB2::IsPointInside(const Vec2& point) const
+bool FloatRange::operator==(const FloatRange& other) const
 {
-	return (point.x >= m_mins.x && point.x <= m_maxs.x &&
-			point.y >= m_mins.y && point.y <= m_maxs.y);
+    return m_min == other.m_min && m_max == other.m_max;
 }
 
-Vec2 const AABB2::GetCenter() const
+bool FloatRange::operator!=(const FloatRange& other) const
 {
-	return (m_mins + m_maxs) * 0.5f;
+    return !(*this == other);
 }
 
-Vec2 const AABB2::GetDimensions() const
+// Methods
+bool FloatRange::IsOnRange(float value) const
 {
-	return m_maxs - m_mins;
+    return value >= m_min && value <= m_max;
 }
 
-Vec2 const AABB2::GetNearestPoint(const Vec2& point) const
+bool FloatRange::IsOverlappingWith(const FloatRange& other) const
 {
-	return Vec2(GetClamped(point.x, m_mins.x, m_maxs.x), GetClamped(point.y, m_mins.y, m_maxs.y));
-}
-
-Vec2 const AABB2::GetPointAtUV(const Vec2& uv) const
-{
-	return Vec2(Interpolate(m_mins.x, m_maxs.x, uv.x), Interpolate(m_mins.y, m_maxs.y, uv.y)); 
-}
-
-Vec2 const AABB2::GetUVForPoint(const Vec2& point) const
-{
-	return Vec2(GetFractionWithinRange(point.x, m_mins.x, m_maxs.x), GetFractionWithinRange(point.y, m_mins.y, m_maxs.y));
-}
-
-void AABB2::Translate(const Vec2& translation)
-{
-	m_mins += translation;
-	m_maxs += translation;
-}
-
-void AABB2::SetCenter(const Vec2& newCenter)
-{
-	Vec2 dimensions = GetDimensions();
-	m_mins = newCenter - (dimensions * 0.5f);
-	m_maxs = m_mins + dimensions;
-}
-
-void AABB2::SetDimensions(const Vec2& newDimensions)
-{
-	Vec2 center = GetCenter();
-	m_mins = center - (newDimensions * 0.5f);
-	m_maxs = m_mins + newDimensions;
-}
-
-void AABB2::StretchToIncludePoint(const Vec2& point)
-{
-	if (point.x < m_mins.x)
-	{
-		m_mins.x = point.x;
-	}
-	else if (point.x > m_maxs.x) 
-	{
-		m_maxs.x = point.x;
-	}
-		
-	if (point.y < m_mins.y) 
-	{
-		m_mins.y = point.y;
-	}
-	else if (point.y > m_maxs.y) 
-	{
-		m_maxs.y = point.y;
-	}
-}
-
-bool AABB2::operator==(const AABB2& other) const
-{
-	return m_mins.x == other.m_mins.x &&
-		m_mins.y == other.m_mins.y &&
-		m_maxs.x == other.m_maxs.x &&
-		m_maxs.y == other.m_maxs.y;
-}
-
-AABB2& AABB2::operator=(const AABB2& other)
-{
-	if (this != &other) {
-		m_mins = other.m_mins;
-		m_maxs = other.m_maxs;
-	}
-	return *this;
+    return !(m_max < other.m_min || m_min > other.m_max);
 }
 
