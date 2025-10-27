@@ -1,44 +1,34 @@
-#include "Engine/Math/IntRange.hpp"
+#include "Engine/Math/OBB2.hpp"
+#include "Engine/Math/MathUtils.hpp"
 
-// Static consts
-const IntRange IntRange::ZERO(0, 0);
-const IntRange IntRange::ONE(1, 1);
-const IntRange IntRange::ZERO_TO_ONE(0, 1);
-
-// Constructors
-IntRange::IntRange(int min, int max)
-    : m_min(min), m_max(max)
+void OBB2::GetCornerPoints(Vec2* out_fourCornerWorldPositions) const
 {
+    Vec2 jBasisNormal = m_iBasisNormal.GetRotatedBy90Degrees();
+    Vec2 corners[4] = {
+        m_center - m_iBasisNormal * m_halfDimensions.x - jBasisNormal * m_halfDimensions.y,
+        m_center + m_iBasisNormal * m_halfDimensions.x - jBasisNormal * m_halfDimensions.y,
+        m_center + m_iBasisNormal * m_halfDimensions.x + jBasisNormal * m_halfDimensions.y,
+        m_center - m_iBasisNormal * m_halfDimensions.x + jBasisNormal * m_halfDimensions.y
+    };
+    for (int i = 0; i < 4; ++i) out_fourCornerWorldPositions[i] = corners[i];
 }
 
-// Operators
-IntRange& IntRange::operator=(const IntRange& other)
+Vec2 OBB2::GetLocalPosForWorldPos(Vec2 const& worldPos) const
 {
-    if (this != &other) {
-        m_min = other.m_min;
-        m_max = other.m_max;
-    }
-    return *this;
+    Vec2 disp = worldPos - m_center;
+    Vec2 jBasisNormal = m_iBasisNormal.GetRotatedBy90Degrees();
+    return Vec2(DotProduct2D(disp, m_iBasisNormal), DotProduct2D(disp, jBasisNormal));
 }
 
-bool IntRange::operator==(const IntRange& other) const
+Vec2 OBB2::GetWorldPosForLocalPos(Vec2 const& localPos) const
 {
-    return m_min == other.m_min && m_max == other.m_max;
+    Vec2 jBasisNormal = m_iBasisNormal.GetRotatedBy90Degrees();
+    return m_center + m_iBasisNormal * localPos.x + jBasisNormal * localPos.y;
 }
 
-bool IntRange::operator!=(const IntRange& other) const
+void OBB2::RotateAboutCenter(float rotationDeltaDegrees)
 {
-    return !(*this == other);
+    m_iBasisNormal = m_iBasisNormal.GetRotatedByDegrees(rotationDeltaDegrees);
 }
 
-// Methods
-bool IntRange::IsOnRange(int value) const
-{
-    return value >= m_min && value <= m_max;
-}
-
-bool IntRange::IsOverlappingWith(const IntRange& other) const
-{
-    return !(m_max < other.m_min || m_min > other.m_max);
-}
 

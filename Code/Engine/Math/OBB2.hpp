@@ -1,27 +1,18 @@
 #pragma once
 
-class IntRange
+#include "Engine/Math/Vec2.hpp"
+
+struct OBB2
 {
 public:
-    int m_min = 0;
-    int m_max = 0;
+    void GetCornerPoints(Vec2* out_fourCornerWorldPositions) const;
+    Vec2 GetLocalPosForWorldPos(Vec2 const& worldPos) const;
+    Vec2 GetWorldPosForLocalPos(Vec2 const& localPos) const;
+    void RotateAboutCenter(float rotationDeltaDegrees);
 
-    // Constructors
-    IntRange() = default;
-    explicit IntRange(int min, int max);
-
-    // Operators
-    IntRange& operator=(const IntRange& other);
-    bool operator==(const IntRange& other) const;
-    bool operator!=(const IntRange& other) const;
-
-    // Methods
-    bool IsOnRange(int value) const;
-    bool IsOverlappingWith(const IntRange& other) const;
-
-    // Named static consts
-    static const IntRange ZERO;
-    static const IntRange ONE;
-    static const IntRange ZERO_TO_ONE;
+private:
+    Vec2 m_center;
+    Vec2 m_iBasisNormal;
+    Vec2 m_halfDimensions;
 };
 

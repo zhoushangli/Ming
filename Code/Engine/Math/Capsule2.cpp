@@ -1,44 +1,17 @@
-#include "Engine/Math/IntRange.hpp"
+#include "Engine/Math/Capsule2.hpp"
+#include "Engine/Math/MathUtils.hpp"
 
-// Static consts
-const IntRange IntRange::ZERO(0, 0);
-const IntRange IntRange::ONE(1, 1);
-const IntRange IntRange::ZERO_TO_ONE(0, 1);
-
-// Constructors
-IntRange::IntRange(int min, int max)
-    : m_min(min), m_max(max)
+void Capsule2::Translate(const Vec2& translation)
 {
+    m_bone.Translate(translation);
 }
 
-// Operators
-IntRange& IntRange::operator=(const IntRange& other)
+void Capsule2::SetCenter(const Vec2& newCenter)
 {
-    if (this != &other) {
-        m_min = other.m_min;
-        m_max = other.m_max;
-    }
-    return *this;
+    m_bone.SetCenter(newCenter);
 }
 
-bool IntRange::operator==(const IntRange& other) const
+void Capsule2::RotateAboutCenter(float rotationDeltaDegrees)
 {
-    return m_min == other.m_min && m_max == other.m_max;
+    m_bone.RotateAboutCenter(rotationDeltaDegrees);
 }
-
-bool IntRange::operator!=(const IntRange& other) const
-{
-    return !(*this == other);
-}
-
-// Methods
-bool IntRange::IsOnRange(int value) const
-{
-    return value >= m_min && value <= m_max;
-}
-
-bool IntRange::IsOverlappingWith(const IntRange& other) const
-{
-    return !(m_max < other.m_min || m_min > other.m_max);
-}
-

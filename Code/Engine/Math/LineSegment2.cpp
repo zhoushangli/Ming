@@ -1,44 +1,29 @@
-#include "Engine/Math/IntRange.hpp"
+#include "Engine/Math/LineSegment2.hpp"
+#include "Engine/Math/MathUtils.hpp"
 
-// Static consts
-const IntRange IntRange::ZERO(0, 0);
-const IntRange IntRange::ONE(1, 1);
-const IntRange IntRange::ZERO_TO_ONE(0, 1);
-
-// Constructors
-IntRange::IntRange(int min, int max)
-    : m_min(min), m_max(max)
+void LineSegment2::Translate(const Vec2& translation)
 {
+    m_start += translation;
+    m_end += translation;
 }
 
-// Operators
-IntRange& IntRange::operator=(const IntRange& other)
+void LineSegment2::SetCenter(const Vec2& newCenter)
 {
-    if (this != &other) {
-        m_min = other.m_min;
-        m_max = other.m_max;
-    }
-    return *this;
+    Vec2 center = (m_start + m_end) * 0.5f;
+    Vec2 offset = newCenter - center;
+    m_start += offset;
+    m_end += offset;
 }
 
-bool IntRange::operator==(const IntRange& other) const
+void LineSegment2::RotateAboutCenter(float rotationDeltaDegrees)
 {
-    return m_min == other.m_min && m_max == other.m_max;
+    Vec2 center = (m_start + m_end) * 0.5f;
+    Vec2 dirStart = m_start - center;
+    Vec2 dirEnd = m_end - center;
+    dirStart = dirStart.GetRotatedByDegrees(rotationDeltaDegrees);
+    dirEnd = dirEnd.GetRotatedByDegrees(rotationDeltaDegrees);
+    m_start = center + dirStart;
+    m_end = center + dirEnd;
 }
 
-bool IntRange::operator!=(const IntRange& other) const
-{
-    return !(*this == other);
-}
-
-// Methods
-bool IntRange::IsOnRange(int value) const
-{
-    return value >= m_min && value <= m_max;
-}
-
-bool IntRange::IsOverlappingWith(const IntRange& other) const
-{
-    return !(m_max < other.m_min || m_min > other.m_max);
-}
 
