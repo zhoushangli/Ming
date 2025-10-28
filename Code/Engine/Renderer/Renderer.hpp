@@ -32,6 +32,17 @@ public:
 
     void DrawVertexArray(int numVertexes, Vertex const* vertexes) const;
 
+	void BindTexture(Texture* textureOrNull);
+
+	Texture* CreateOrGetTextureFromFile(char const* fileDataPath);
+    Texture* CreateTextureFromData(char const* name, IntVec2 dimensions, int bytesPerTexel, uint8_t* texelData);
+
+private:
+	Texture* CreateTextureFromFile(char const* fileDataPath);
+	Texture* GetTextureFromFileName(char const* fileDataPath);
+
+	std::vector<Texture*> m_loadedTextures;
+
 private:
 	RendererConfig m_config;
 
