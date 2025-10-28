@@ -1,8 +1,11 @@
 #pragma once
 
-#include "Engine/Core/Vertex.hpp"
+#include <vector>
 
-#include "Engine/Math/Vec2.hpp"
+struct Rgba8;
+struct Vertex;
+struct Vec2;
+class AABB2;
 
 void TransformVertexArrayXY3D(
     int numVerts,
@@ -12,4 +15,8 @@ void TransformVertexArrayXY3D(
     Vec2 const& translationXY
 );
 
-void AddVertsForAABB2();
+void AddVertsForAABB2D(
+    std::vector<Vertex>& testTextureVerts, 
+    const AABB2& texturedAABB2, 
+    const Rgba8& color
+);

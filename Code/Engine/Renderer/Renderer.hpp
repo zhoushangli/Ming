@@ -1,10 +1,14 @@
 #pragma once
 
+#include "Engine/Math/IntVec2.hpp"
+
+#include <vector>
 
 struct Vec2;
 struct Rgba8;
 struct Vertex;
 class Camera;
+class Texture;
 
 struct RendererConfig
 {
@@ -31,6 +35,7 @@ public:
     void EndCamera();
 
     void DrawVertexArray(int numVertexes, Vertex const* vertexes) const;
+    void DrawVertexArray(std::vector<Vertex> const& verts) const;
 
 	void BindTexture(Texture* textureOrNull);
 
@@ -39,7 +44,7 @@ public:
 
 private:
 	Texture* CreateTextureFromFile(char const* fileDataPath);
-	Texture* GetTextureFromFileName(char const* fileDataPath);
+	Texture* GetTextureFromFileName(char const* fileName);
 
 	std::vector<Texture*> m_loadedTextures;
 

@@ -1,35 +1,27 @@
 #pragma once
 
-#include "Engine/Math/Vec2.hpp"
+#include "Engine/Math/IntVec2.hpp"
 
-class Game;
+#include <string>
 
-class Camera
+class Texture
 {
-public:
-	Camera() = default;
-	Camera(float left, float right, float bottom, float top);
-	Camera(Camera const& copy) = default;
-	~Camera() = default;
-
-	void SetOrthoView(Vec2 const& leftBottom, Vec2 const& rightTop);
-	void SetOrthoView(float left, float right, float bottom, float top);
-	void SetPosition(Vec2 const& pos);
-	void Shake(Vec2 offset);
-	void Reset();
-
-	Vec2 GetDimensions() const;
-
-	float GetLeft() const { return m_leftBottom.x; }
-	float GetRight() const { return m_rightTop.x; }
-	float GetBottom() const { return m_leftBottom.y; }
-	float GetTop() const { return m_rightTop.y; }
+	friend class Renderer; // Only the Renderer can create new Texture objects!
 
 private:
-	Vec2 m_leftBottom = Vec2::ZERO;
-	Vec2 m_rightTop = Vec2::ZERO;
+	Texture(); // can't instantiate directly; must ask Renderer to do it for you
+	Texture(Texture const& copy) = delete; // No copying allowed!  This represents GPU memory.
+	~Texture();
 
-	Vec2 m_baseLeftBottom = Vec2::ZERO;
-	Vec2 m_baseRightTop = Vec2::ZERO;
+public:
+	IntVec2				GetDimensions() const { return m_dimensions; }
+	std::string const& GetImageFilePath() const { return m_name; }
+
+protected:
+	std::string			m_name;			// Can't be char const* -- store a copy, in case it was temporary
+	IntVec2				m_dimensions;
+
+	// #ToDo in SD2: Use #if defined( ENGINE_RENDER_D3D11 ) to do something different for DX11; #else do:
+	unsigned int		m_textureID = 0xFFFFFFFF;
 };
 
