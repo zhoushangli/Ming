@@ -4,6 +4,11 @@
 #include "Engine/Input/XboxController.hpp"
 
 extern unsigned char const KEYCODE_F1;
+extern unsigned char const KEYCODE_F2;
+extern unsigned char const KEYCODE_F3;
+extern unsigned char const KEYCODE_F4;
+extern unsigned char const KEYCODE_F5;
+extern unsigned char const KEYCODE_F6;
 extern unsigned char const KEYCODE_F7;
 extern unsigned char const KEYCODE_F8;
 extern unsigned char const KEYCODE_F9;

@@ -43,6 +43,11 @@ Vec2 Camera::GetDimensions() const
 	return m_rightTop - m_leftBottom;
 }
 
+AABB2 Camera::GetBounds()
+{
+	return AABB2(m_leftBottom, m_rightTop);
+}
+
 void Camera::Shake(Vec2 offset)
 {
 	m_leftBottom = m_baseLeftBottom + offset;

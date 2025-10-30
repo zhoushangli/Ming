@@ -3,6 +3,11 @@
 #include <Windows.h>
 
 unsigned char const KEYCODE_F1			= VK_F1;
+unsigned char const KEYCODE_F2			= VK_F2;
+unsigned char const KEYCODE_F3			= VK_F3;
+unsigned char const KEYCODE_F4			= VK_F4;
+unsigned char const KEYCODE_F5			= VK_F5;
+unsigned char const KEYCODE_F6			= VK_F6;
 unsigned char const KEYCODE_F7			= VK_F7;
 unsigned char const KEYCODE_F8			= VK_F8;
 unsigned char const KEYCODE_F9			= VK_F9;

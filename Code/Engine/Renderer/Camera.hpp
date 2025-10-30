@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Engine/Math/Vec2.hpp"
+#include "Engine/Math/AABB2.hpp"
 
 class Game;
 
@@ -18,6 +19,7 @@ public:
 	void Shake(Vec2 offset);
 	void Reset();
 
+	AABB2 GetBounds();
 	Vec2 GetDimensions() const;
 
 	float GetLeft() const { return m_leftBottom.x; }
