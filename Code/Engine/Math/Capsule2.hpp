@@ -10,7 +10,7 @@ public:
     void SetCenter(const Vec2& newCenter);
     void RotateAboutCenter(float rotationDeltaDegrees);
 
-private:
+public:
     LineSegment2 m_bone;
     float m_radius = 0.f;
 };

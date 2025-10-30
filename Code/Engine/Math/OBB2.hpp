@@ -10,7 +10,7 @@ public:
     Vec2 GetWorldPosForLocalPos(Vec2 const& localPos) const;
     void RotateAboutCenter(float rotationDeltaDegrees);
 
-private:
+public:
     Vec2 m_center;
     Vec2 m_iBasisNormal;
     Vec2 m_halfDimensions;

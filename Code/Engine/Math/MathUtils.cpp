@@ -235,19 +235,6 @@ float DotProduct2D(Vec2 const& a, Vec2 const& b)
 	return a.x * b.x + a.y * b.y;
 }
 
-Vec2 GetNearestPointOnDisc2D(Vec2 const& point, Vec2 const& discCenter, float discRadius)
-{
-    Vec2 toPoint = point - discCenter;
-    float dist = toPoint.GetLength();
-
-    if (dist <= discRadius || dist == 0.f) 
-    {
-        return point;
-    }
-
-    return discCenter + toPoint * (discRadius / dist);
-}
-
 bool PushDiscOutOfFixedPoint2D(Vec2& discCenter, float discRadius, Vec2 const& fixedPoint)
 {
     Vec2 toCenter = discCenter - fixedPoint;
@@ -340,16 +327,71 @@ int GetTaxicabDistance2D(IntVec2 const& a, IntVec2 const& b)
     return abs(a.x - b.x) + abs(a.y - b.y);
 }
 
-bool IsPointInsideDisc2D(Vec2 const& point, Vec2 const& discCenter, float discRadius)
+// --- Is Point Inside ---
+bool IsPointInsideDisc2D(Vec2 point, Vec2 discCenter, float discRadius)
 {
 	Vec2 toPoint = point - discCenter;
 	float distSquared = toPoint.GetLengthSquared();
 	return distSquared < (discRadius * discRadius);
 }
 
-bool IsPointInsideOrientedSector2D(Vec2 const& point, Vec2 const& sectorOrigin, float sectorForwardDegrees, float sectorApertureDegrees, float sectorMaxRange) 
+bool IsPointInsideDisc2D(Vec2 point, Disc2 const& disc)
 {
-	if (!IsPointInsideDisc2D(point, sectorOrigin, sectorMaxRange)) 
+	return IsPointInsideDisc2D(point, disc.m_center, disc.m_radius);
+}
+
+bool IsPointInsideAABB2D(Vec2 point, AABB2 const& alignedBox)
+{
+    return (point.x > alignedBox.m_mins.x && point.x < alignedBox.m_maxs.x &&
+		point.y > alignedBox.m_mins.y && point.y < alignedBox.m_maxs.y);
+}
+
+bool IsPointInsideOBB2D(Vec2 point, OBB2 const& orientedBox)
+{
+	Vec2 localPos = orientedBox.GetLocalPosForWorldPos(point);
+	return IsPointInsideAABB2D(localPos, AABB2(-orientedBox.m_halfDimensions, orientedBox.m_halfDimensions));
+}
+
+bool IsPointInsideCapsule2D(Vec2 point, Vec2 boneStart, Vec2 boneEnd, float radius)
+{
+	Vec2 nearestPoint = GetNearestPointOnLineSegment2D(point, boneStart, boneEnd);
+	return IsPointInsideDisc2D(point, nearestPoint, radius);
+}
+
+bool IsPointInsideCapsule2D(Vec2 point, Capsule2 const& capsule)
+{
+	return IsPointInsideCapsule2D(point, capsule.m_bone.m_start, capsule.m_bone.m_end, capsule.m_radius);
+}
+
+bool IsPointInsideTriangle2D(Vec2 point, Vec2 ccw0, Vec2 ccw1, Vec2 ccw2)
+{
+	Vec2 edge0 = ccw1 - ccw0;
+	Vec2 edge1 = ccw2 - ccw1;
+	Vec2 edge2 = ccw0 - ccw2;
+
+	Vec2 edge0Rotate90 = edge0.GetRotatedBy90Degrees();
+	Vec2 edge1Rotate90 = edge1.GetRotatedBy90Degrees();
+	Vec2 edge2Rotate90 = edge2.GetRotatedBy90Degrees();
+
+	Vec2 toPoint0 = point - ccw0;
+	Vec2 toPoint1 = point - ccw1;
+	Vec2 toPoint2 = point - ccw2;
+
+	if (DotProduct2D(edge0Rotate90, toPoint0) < 0.f) return false;
+	if (DotProduct2D(edge1Rotate90, toPoint1) < 0.f) return false;
+	if (DotProduct2D(edge2Rotate90, toPoint2) < 0.f) return false;
+	
+    return true;
+}
+
+bool IsPointInsideTriangle2D(Vec2 point, Triangle2 const& triangle)
+{
+	return IsPointInsideTriangle2D(point, triangle.m_pointsCounterClockwise[0], triangle.m_pointsCounterClockwise[1], triangle.m_pointsCounterClockwise[2]);
+}
+
+bool IsPointInsideOrientedSector2D(Vec2 point, Vec2 sectorOrigin, float sectorForwardDegrees, float sectorApertureDegrees, float sectorRadius) 
+{
+	if (!IsPointInsideDisc2D(point, sectorOrigin, sectorRadius)) 
     {
         return false;
     }
@@ -360,9 +402,9 @@ bool IsPointInsideOrientedSector2D(Vec2 const& point, Vec2 const& sectorOrigin, 
 	return angle < (sectorApertureDegrees * 0.5f);
 }
 
-bool IsPointInsideDirectedSector2D(Vec2 const& point, Vec2 const& sectorOrigin, Vec2 const& sectorForwardNormal, float sectorApertureDegrees, float sectorMaxRange) 
+bool IsPointInsideDirectedSector2D(Vec2 point, Vec2 sectorOrigin, Vec2 sectorForwardNormal, float sectorApertureDegrees, float sectorRadius) 
 {
-	if (!IsPointInsideDisc2D(point, sectorOrigin, sectorMaxRange))
+	if (!IsPointInsideDisc2D(point, sectorOrigin, sectorRadius))
 	{
 		return false;
 	}
@@ -375,3 +417,122 @@ bool IsPointInsideDirectedSector2D(Vec2 const& point, Vec2 const& sectorOrigin, 
 	return cosAngle > cosLimit;
 }
 
+// --- Get Nearest Point On ---
+Vec2 GetNearestPointOnDisc2D(Vec2 point, Vec2 discCenter, float discRadius)
+{
+	Vec2 toPoint = point - discCenter;
+	float dist = toPoint.GetLength();
+
+	if (dist <= discRadius || dist == 0.f)
+	{
+		return point;
+	}
+
+	return discCenter + toPoint * (discRadius / dist);
+}
+
+Vec2 GetNearestPointOnDisc2D(Vec2 referencePos, Disc2 const& disc)
+{
+	return GetNearestPointOnDisc2D(referencePos, disc.m_center, disc.m_radius);
+}
+
+Vec2 GetNearestPointOnAABB2D(Vec2 referencePos, AABB2 const& alignedBox)
+{
+	return Vec2(
+		GetClamped(referencePos.x, alignedBox.m_mins.x, alignedBox.m_maxs.x),
+		GetClamped(referencePos.y, alignedBox.m_mins.y, alignedBox.m_maxs.y)
+	);
+}
+
+Vec2 GetNearestPointOnOBB2D(Vec2 referencePos, OBB2 const& orientedBox)
+{
+	Vec2 localPos = orientedBox.GetLocalPosForWorldPos(referencePos);
+	Vec2 clampedLocalPos = Vec2(
+		GetClamped(localPos.x, -orientedBox.m_halfDimensions.x, orientedBox.m_halfDimensions.x),
+		GetClamped(localPos.y, -orientedBox.m_halfDimensions.y, orientedBox.m_halfDimensions.y)
+	);
+	return orientedBox.GetWorldPosForLocalPos(clampedLocalPos);
+}
+
+Vec2 GetNearestPointOnInfiniteLine2D(Vec2 referencePos, Vec2 pointOnLine, Vec2 anotherPointOnLine)
+{
+	Vec2 lineDir = (anotherPointOnLine - pointOnLine).GetNormalized();
+
+    if (lineDir.GetLengthSquared() == 0.f) 
+    {
+        return pointOnLine;
+	}
+
+	Vec2 toReference = referencePos - pointOnLine;
+	float projectedLength = DotProduct2D(toReference, lineDir);
+	return pointOnLine + lineDir * projectedLength;
+}
+
+Vec2 GetNearestPointOnInfiniteLine2D(Vec2 referencePos, LineSegment2 const& lineSegmentOnInfiniteLine)
+{
+	return GetNearestPointOnInfiniteLine2D(referencePos, lineSegmentOnInfiniteLine.m_start, lineSegmentOnInfiniteLine.m_end);
+}
+
+Vec2 GetNearestPointOnLineSegment2D(Vec2 referencePos, Vec2 start, Vec2 end)
+{
+	Vec2 startToEnd = end - start;
+	Vec2 endToStart = start - end;
+
+	Vec2 startToRef = referencePos - start;
+	Vec2 endToRef = referencePos - end;
+
+    if (DotProduct2D(startToRef, startToEnd) <= 0.f)    return start;
+	if (DotProduct2D(endToRef, endToStart) <= 0.f)      return end;
+
+	return GetNearestPointOnInfiniteLine2D(referencePos, start, end);
+}
+
+Vec2 GetNearestPointOnLineSegment2D(Vec2 referencePos, LineSegment2 const& lineSegment)
+{
+	return GetNearestPointOnLineSegment2D(referencePos, lineSegment.m_start, lineSegment.m_end);
+}
+
+Vec2 GetNearestPointOnCapsule2D(Vec2 referencePos, Vec2 boneStart, Vec2 boneEnd, float radius)
+{
+	Vec2 nearestPointOnBone = GetNearestPointOnLineSegment2D(referencePos, boneStart, boneEnd);
+	return GetNearestPointOnDisc2D(referencePos, nearestPointOnBone, radius);
+}
+
+Vec2 GetNearestPointOnCapsule2D(Vec2 referencePos, Capsule2 const& capsule)
+{
+	return GetNearestPointOnCapsule2D(referencePos, capsule.m_bone.m_start, capsule.m_bone.m_end, capsule.m_radius);
+}
+
+Vec2 GetNearestPointOnTriangle2D(Vec2 referencePos, Vec2 ccw0, Vec2 ccw1, Vec2 ccw2)
+{
+    if (IsPointInsideTriangle2D(referencePos, ccw0, ccw1, ccw2)) 
+    {
+        return referencePos;
+	}
+
+	Vec2 nearest0 = GetNearestPointOnLineSegment2D(referencePos, ccw0, ccw1);
+	Vec2 nearest1 = GetNearestPointOnLineSegment2D(referencePos, ccw1, ccw2);
+	Vec2 nearest2 = GetNearestPointOnLineSegment2D(referencePos, ccw2, ccw0);
+
+	float distSquared0 = GetDistanceSquared2D(referencePos, nearest0);
+	float distSquared1 = GetDistanceSquared2D(referencePos, nearest1);
+	float distSquared2 = GetDistanceSquared2D(referencePos, nearest2);
+
+    if (distSquared0 <= distSquared1 && distSquared0 <= distSquared2) 
+    {
+        return nearest0;
+    }
+    else if (distSquared1 <= distSquared0 && distSquared1 <= distSquared2) 
+    {
+        return nearest1;
+    }
+    else 
+    {
+        return nearest2;
+	}
+}
+
+Vec2 GetNearestPointOnTriangle2D(Vec2 referencePos, Triangle2 const& triangle)
+{
+	return GetNearestPointOnTriangle2D(referencePos, triangle.m_pointsCounterClockwise[0], triangle.m_pointsCounterClockwise[1], triangle.m_pointsCounterClockwise[2]);
+}

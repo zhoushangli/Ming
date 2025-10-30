@@ -7,7 +7,7 @@ struct Triangle2
 public:
     void Translate(const Vec2& translation);
 
-private:
+public:
     Vec2 m_pointsCounterClockwise[3];
 };
 

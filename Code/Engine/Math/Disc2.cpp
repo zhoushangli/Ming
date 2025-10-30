@@ -1,17 +1,11 @@
-#include "Engine/Math/Capsule2.hpp"
-#include "Engine/Math/MathUtils.hpp"
+#include "Engine/Math/Disc2.hpp"
 
-void Capsule2::Translate(const Vec2& translation)
+void Disc2::Translate(const Vec2& translation)
 {
-    m_bone.Translate(translation);
+	m_center += translation;
 }
 
-void Capsule2::SetCenter(const Vec2& newCenter)
+void Disc2::SetCenter(const Vec2& newCenter)
 {
-    m_bone.SetCenter(newCenter);
-}
-
-void Capsule2::RotateAboutCenter(float rotationDeltaDegrees)
-{
-    m_bone.RotateAboutCenter(rotationDeltaDegrees);
+	m_center = newCenter;
 }

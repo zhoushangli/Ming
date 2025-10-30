@@ -44,8 +44,8 @@ public:
 	float GetOrientationRadians() const;
 
 	// Rotations (return new Vec2)
-	Vec2 GetRotatedBy90Degrees() const;
-	Vec2 GetRotatedByMinus90Degrees() const;
+	Vec2 GetRotatedBy90Degrees() const;				// Rotate (counter-clockwise)
+	Vec2 GetRotatedByMinus90Degrees() const;		// Rotate (clockwise)
 	Vec2 GetRotatedByDegrees(float degrees) const;
 	Vec2 GetRotatedByRadians(float radians) const;
 

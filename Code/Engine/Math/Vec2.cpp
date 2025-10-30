@@ -155,7 +155,6 @@ float Vec2::GetOrientationRadians() const {
 	return atan2f(y, x);
 }
 
-// Rotations (return new Vec2)
 Vec2 Vec2::GetRotatedBy90Degrees() const {
 	return Vec2(-y, x);
 }

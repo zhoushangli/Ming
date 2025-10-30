@@ -9,7 +9,7 @@ public:
     void SetCenter(const Vec2& newCenter);
     void RotateAboutCenter(float rotationDeltaDegrees);
     
-private:
+public:
     Vec2 m_start;
     Vec2 m_end;
 };
