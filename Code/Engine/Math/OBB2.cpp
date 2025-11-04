@@ -1,16 +1,29 @@
 #include "Engine/Math/OBB2.hpp"
 #include "Engine/Math/MathUtils.hpp"
 
+OBB2::OBB2(Vec2 const& center, Vec2 const& iBasisNormal, Vec2 const& halfDimensions) : 
+    m_center(center),
+    m_iBasisNormal(iBasisNormal),
+	m_halfDimensions(halfDimensions)
+{
+
+}
+
+OBB2::OBB2(Vec2 const& center, Vec2 const& halfDimensions, float orientationDegree) : 
+    m_center(center),
+    m_iBasisNormal(Vec2::MakeFromPolarDegrees(orientationDegree, 1.f)),
+	m_halfDimensions(halfDimensions)
+{
+}
+
 void OBB2::GetCornerPoints(Vec2* out_fourCornerWorldPositions) const
 {
     Vec2 jBasisNormal = m_iBasisNormal.GetRotatedBy90Degrees();
-    Vec2 corners[4] = {
-        m_center - m_iBasisNormal * m_halfDimensions.x - jBasisNormal * m_halfDimensions.y,
-        m_center + m_iBasisNormal * m_halfDimensions.x - jBasisNormal * m_halfDimensions.y,
-        m_center + m_iBasisNormal * m_halfDimensions.x + jBasisNormal * m_halfDimensions.y,
-        m_center - m_iBasisNormal * m_halfDimensions.x + jBasisNormal * m_halfDimensions.y
-    };
-    for (int i = 0; i < 4; ++i) out_fourCornerWorldPositions[i] = corners[i];
+
+	out_fourCornerWorldPositions[0] = m_center - m_iBasisNormal * m_halfDimensions.x - jBasisNormal * m_halfDimensions.y;
+	out_fourCornerWorldPositions[1] = m_center + m_iBasisNormal * m_halfDimensions.x - jBasisNormal * m_halfDimensions.y;
+	out_fourCornerWorldPositions[2] = m_center + m_iBasisNormal * m_halfDimensions.x + jBasisNormal * m_halfDimensions.y;
+	out_fourCornerWorldPositions[3] = m_center - m_iBasisNormal * m_halfDimensions.x + jBasisNormal * m_halfDimensions.y;
 }
 
 Vec2 OBB2::GetLocalPosForWorldPos(Vec2 const& worldPos) const

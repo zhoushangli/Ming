@@ -6,6 +6,9 @@
 struct Capsule2
 {
 public:
+	Capsule2() = default;
+	Capsule2(const Vec2& start, const Vec2& end, float radius);
+
     void Translate(const Vec2& translation);
     void SetCenter(const Vec2& newCenter);
     void RotateAboutCenter(float rotationDeltaDegrees);

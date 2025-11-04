@@ -30,5 +30,8 @@ public:
 public:
 	Vec2 m_mins;
 	Vec2 m_maxs;
+
+	static const AABB2 ZERO;
+	static const AABB2 UNIT;
 };
 

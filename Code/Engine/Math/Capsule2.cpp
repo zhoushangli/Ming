@@ -1,6 +1,10 @@
 #include "Engine/Math/Capsule2.hpp"
 #include "Engine/Math/MathUtils.hpp"
 
+Capsule2::Capsule2(const Vec2& start, const Vec2& end, float radius) : m_bone(start, end), m_radius(radius)
+{    
+}
+
 void Capsule2::Translate(const Vec2& translation)
 {
     m_bone.Translate(translation);

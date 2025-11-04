@@ -1,6 +1,12 @@
 #include "Engine/Math/LineSegment2.hpp"
 #include "Engine/Math/MathUtils.hpp"
 
+LineSegment2::LineSegment2(const Vec2& start, const Vec2& end) : 
+    m_start(start),
+	m_end(end)
+{
+}
+
 void LineSegment2::Translate(const Vec2& translation)
 {
     m_start += translation;
