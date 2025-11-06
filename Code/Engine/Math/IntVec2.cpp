@@ -129,3 +129,8 @@ void IntVec2::operator=(IntVec2 const& copyFrom)
 	y = copyFrom.y;
 }
 
+IntVec2::operator Vec2() const
+{
+	return Vec2(static_cast<float>(x), static_cast<float>(y));
+}
+

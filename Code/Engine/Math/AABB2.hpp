@@ -33,5 +33,6 @@ public:
 
 	static const AABB2 ZERO;
 	static const AABB2 UNIT;
+    static const AABB2 CENTERED_UNIT;
 };
 

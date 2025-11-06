@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Vec2.hpp"
+
 class IntVec2
 {
 public:
@@ -34,6 +36,8 @@ public:
 	void			operator*=(const float uniformScale);
 	void			operator/=(const float uniformDivisor);
 	void			operator=(IntVec2 const& copyFrom);
+
+	operator Vec2() const;
 
 public:
 	int x = 0;
