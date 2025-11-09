@@ -1,22 +1,18 @@
 #pragma once
 
-#include "Engine/Math/Vec2.hpp"
+#include "Vec2.hpp"
 
-struct OBB2
+struct RaycastResult2D
 {
-public:
-	OBB2() = default;
-	OBB2(Vec2 const& center, Vec2 const& iBasisNormal, Vec2 const& halfDimensions);
-    OBB2(Vec2 const& center, Vec2 const& halfDimensions, float orientationDegree);
+    // Basic raycast result information (required)
+    bool	m_didImpact = false;
+    float	m_impactDist = 0.f;
+    Vec2	m_impactPos;
+    Vec2	m_impactNormal;
 
-    void GetCornerPoints(Vec2* out_fourCornerWorldPositions) const;
-    Vec2 GetLocalPosForWorldPos(Vec2 const& worldPos) const;
-    Vec2 GetWorldPosForLocalPos(Vec2 const& localPos) const;
-    void RotateAboutCenter(float rotationDeltaDegrees);
-
-public:
-    Vec2 m_center;
-    Vec2 m_iBasisNormal;
-    Vec2 m_halfDimensions;
+    // Original raycast information (optional)
+    Vec2	m_rayStartPos;
+    Vec2	m_rayFwdNormal;
+    float	m_rayMaxLength = 1.f;
 };
 

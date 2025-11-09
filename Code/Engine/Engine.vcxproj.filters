@@ -120,6 +120,9 @@
     <ClCompile Include="Math\Triangle2.cpp">
       <Filter>Math\Shapes</Filter>
     </ClCompile>
+    <ClCompile Include="Math\RaycastUtils.cpp">
+      <Filter>Math</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\Engine\Code\Engine\Math\Vec2.hpp">
@@ -244,6 +247,9 @@
     </ClInclude>
     <ClInclude Include="Math\Triangle2.hpp">
       <Filter>Math\Shapes</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\RaycastUtils.hpp">
+      <Filter>Math</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

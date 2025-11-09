@@ -1,8 +1,10 @@
 #pragma once
 
 #include "Engine/Math/IntVec2.hpp"
+#include "Engine/Math/AABB2.hpp"
 
 #include <string>
+#include <vector>
 
 class Texture
 {
@@ -15,7 +17,7 @@ private:
 
 public:
 	IntVec2				GetDimensions() const { return m_dimensions; }
-	std::string const& GetImageFilePath() const { return m_name; }
+	std::string const&  GetImageFilePath() const { return m_name; }
 
 protected:
 	std::string			m_name;			// Can't be char const* -- store a copy, in case it was temporary
@@ -25,3 +27,21 @@ protected:
 	unsigned int		m_textureID = 0xFFFFFFFF;
 };
 
+struct SpriteDef
+{
+	SpriteDef(AABB2 const& uvBounds);
+	AABB2 m_uvBounds;
+};
+
+class SpriteSheet
+{
+public:
+	SpriteSheet(Texture const& texture, IntVec2 const& gridLayout);
+	~SpriteSheet() = default;
+
+    Texture const& GetTexture() const { return m_texture; }
+
+private:
+	Texture const&	m_texture;
+    std::vector<SpriteDef> m_spriteDefs;
+};
