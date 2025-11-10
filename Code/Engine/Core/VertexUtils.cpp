@@ -17,16 +17,21 @@ void TransformVertexArrayXY3D(int numVerts, Vertex* verts, float scaleXY,
 
 void AddVertsForAABB2D(std::vector<Vertex>& verts, AABB2 const& alignedBox, Rgba8 color)
 {
+    AddVertsForAABB2D(verts, alignedBox, color, Vec2::ZERO, Vec2::ONE);
+}
+
+void AddVertsForAABB2D(std::vector<Vertex>& verts, AABB2 const& alignedBox, Rgba8 color, Vec2 uvAtMins, Vec2 uvAtMaxs)
+{
     Vec2 mins = alignedBox.m_mins;
     Vec2 maxs = alignedBox.m_maxs;
 
-    verts.emplace_back(Vec3(mins.x, mins.y, 0.f), color, Vec2(0.f, 0.f));
-    verts.emplace_back(Vec3(maxs.x, mins.y, 0.f), color, Vec2(1.f, 0.f));
-    verts.emplace_back(Vec3(maxs.x, maxs.y, 0.f), color, Vec2(1.f, 1.f));
+    verts.emplace_back(Vec3(mins.x, mins.y, 0.f), color, Vec2(uvAtMins.x, uvAtMins.y));
+    verts.emplace_back(Vec3(maxs.x, mins.y, 0.f), color, Vec2(uvAtMaxs.x, uvAtMins.y));
+    verts.emplace_back(Vec3(maxs.x, maxs.y, 0.f), color, Vec2(uvAtMaxs.x, uvAtMaxs.y));
 
-    verts.emplace_back(Vec3(mins.x, mins.y, 0.f), color, Vec2(0.f, 0.f));
-    verts.emplace_back(Vec3(maxs.x, maxs.y, 0.f), color, Vec2(1.f, 1.f));
-    verts.emplace_back(Vec3(mins.x, maxs.y, 0.f), color, Vec2(0.f, 1.f));
+    verts.emplace_back(Vec3(mins.x, mins.y, 0.f), color, Vec2(uvAtMins.x, uvAtMins.y));
+    verts.emplace_back(Vec3(maxs.x, maxs.y, 0.f), color, Vec2(uvAtMaxs.x, uvAtMaxs.y));
+    verts.emplace_back(Vec3(mins.x, maxs.y, 0.f), color, Vec2(uvAtMins.x, uvAtMaxs.y));
 }
 
 void AddVertsForDisc2D(std::vector<Vertex>& verts, Vec2 discCenter, float discRadius, Rgba8 color) 

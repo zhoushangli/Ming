@@ -32,7 +32,10 @@ void Renderer::Startup()
 
 void Renderer::Shutdown()
 {
-    
+    for (Texture* texture : m_loadedTextures)
+	{
+		delete texture;
+    }
 }
 
 void Renderer::BeginFrame()

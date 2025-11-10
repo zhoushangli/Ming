@@ -5,7 +5,8 @@
 
 #include <math.h>
 
-const Vec2 Vec2::ZERO = Vec2(0.f, 0.f);
+const Vec2 Vec2::ZERO   = Vec2(0.f, 0.f);
+const Vec2 Vec2::ONE    = Vec2(1.f, 1.f);
 
 //-----------------------------------------------------------------------------------------------
 Vec2::Vec2() = default;

@@ -27,21 +27,37 @@ protected:
 	unsigned int		m_textureID = 0xFFFFFFFF;
 };
 
-struct SpriteDef
+class SpriteSheet;
+class SpriteDefinition
 {
-	SpriteDef(AABB2 const& uvBounds);
-	AABB2 m_uvBounds;
+public:
+    explicit SpriteDefinition(SpriteSheet const& spriteSheet, int spriteIndex, Vec2 const& uvAtMins, Vec2 const& uvAtMaxs);
+
+    void                GetUVs(Vec2& out_uvAtMins, Vec2& out_uvAtMaxs) const;
+    AABB2               GetUVs() const;
+    SpriteSheet const&  GetSpriteSheet() const;
+    Texture&            GetTexture() const;
+    float               GetAspect() const;
+
+protected:
+    SpriteSheet const& m_spriteSheet;
+    int                  m_spriteIndex = -1;
+    Vec2                 m_uvAtMins = Vec2::ZERO;
+    Vec2                 m_uvAtMaxs = Vec2::ONE;
 };
 
 class SpriteSheet
 {
 public:
-	SpriteSheet(Texture const& texture, IntVec2 const& gridLayout);
-	~SpriteSheet() = default;
+    explicit SpriteSheet(Texture& texture, IntVec2 const& simpleGridLayout);
 
-    Texture const& GetTexture() const { return m_texture; }
+    Texture& GetTexture() const;
+    int                     GetNumSprites() const;
+    SpriteDefinition const& GetSpriteDef(int spriteIndex) const;
+    void                    GetSpriteUVs(Vec2& out_uvAtMins, Vec2& out_uvAtMaxs, int spriteIndex) const;
+    AABB2                   GetSpriteUVs(int spriteIndex) const;
 
-private:
-	Texture const&	m_texture;
-    std::vector<SpriteDef> m_spriteDefs;
+protected:
+    Texture& m_texture;      // reference members must be set in constructor's initializer list
+    std::vector<SpriteDefinition>    m_spriteDefs;
 };
