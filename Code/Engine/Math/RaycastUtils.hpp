@@ -16,3 +16,4 @@ struct RaycastResult2D
     float	m_rayMaxLength = 1.f;
 };
 
+RaycastResult2D RaycastVsDisc2D(Vec2 startPos, Vec2 forwardNormal, float maxDist, Vec2 discCenter, float discRadius);

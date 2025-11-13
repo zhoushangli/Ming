@@ -3,16 +3,16 @@
 #include "Engine/Core/Vertex.hpp"
 #include "Engine/Math/MathUtils.hpp"
 
-void TransformVertexArrayXY3D(int numVerts, Vertex* verts, float scaleXY, 
-	float rotationDegreesAboutZ, Vec2 const& translationXY)
+void TransformVertexArrayXY3D(int numVerts, Vertex* verts, float scaleXY,
+    float rotationDegreesAboutZ, Vec2 const& translationXY)
 {
-	Vec2 iBasis = Vec2::MakeFromPolarDegrees(rotationDegreesAboutZ, scaleXY);
-	Vec2 jBasis = iBasis.GetRotatedBy90Degrees();
-	for (int index = 0; index < numVerts; ++index)
-	{
-		Vec3& position = verts[index].m_position;
-		TransformPositionXY3D(position, iBasis, jBasis, translationXY);
-	}
+    Vec2 iBasis = Vec2::MakeFromPolarDegrees(rotationDegreesAboutZ, scaleXY);
+    Vec2 jBasis = iBasis.GetRotatedBy90Degrees();
+    for (int index = 0; index < numVerts; ++index)
+    {
+        Vec3& position = verts[index].m_position;
+        TransformPositionXY3D(position, iBasis, jBasis, translationXY);
+    }
 }
 
 void AddVertsForAABB2D(std::vector<Vertex>& verts, AABB2 const& alignedBox, Rgba8 color)
@@ -34,9 +34,9 @@ void AddVertsForAABB2D(std::vector<Vertex>& verts, AABB2 const& alignedBox, Rgba
     verts.emplace_back(Vec3(mins.x, maxs.y, 0.f), color, Vec2(uvAtMins.x, uvAtMaxs.y));
 }
 
-void AddVertsForDisc2D(std::vector<Vertex>& verts, Vec2 discCenter, float discRadius, Rgba8 color) 
+void AddVertsForDisc2D(std::vector<Vertex>& verts, Vec2 discCenter, float discRadius, Rgba8 color)
 {
-	int numSides = (int)RangeMapClamped(discRadius, 1.f, 10.f, 36.f, 360.f);
+    int numSides = (int)RangeMapClamped(discRadius, 1.f, 10.f, 36.f, 360.f);
 
     float delta = 360.0f / (float)numSides;
     for (int i = 0; i < numSides; ++i)
@@ -52,7 +52,7 @@ void AddVertsForDisc2D(std::vector<Vertex>& verts, Vec2 discCenter, float discRa
     }
 }
 
-void AddVertsForRing2D(std::vector<Vertex>& verts, Vec2 ringCenter, float ringRadius, float thickness, Rgba8 color) 
+void AddVertsForRing2D(std::vector<Vertex>& verts, Vec2 ringCenter, float ringRadius, float thickness, Rgba8 color)
 {
     int numSides = (int)RangeMapClamped(ringRadius, 1.f, 10.f, 36.f, 360.f);
 
@@ -60,7 +60,7 @@ void AddVertsForRing2D(std::vector<Vertex>& verts, Vec2 ringCenter, float ringRa
     float outerRadius = ringRadius + thickness * 0.5f;
 
     float delta = 360.0f / (float)numSides;
-    for (int i = 0; i < numSides; ++i) 
+    for (int i = 0; i < numSides; ++i)
     {
         float angle0 = i * delta;
         float angle1 = (i + 1) * delta;
@@ -81,7 +81,7 @@ void AddVertsForRing2D(std::vector<Vertex>& verts, Vec2 ringCenter, float ringRa
     }
 }
 
-void AddVertsForOBB2D(std::vector<Vertex>& verts, OBB2 const& orientedBox, Rgba8 color) 
+void AddVertsForOBB2D(std::vector<Vertex>& verts, OBB2 const& orientedBox, Rgba8 color)
 {
     Vec2 corners[4];
     orientedBox.GetCornerPoints(corners);
@@ -100,7 +100,7 @@ void AddVertsForSector2D(std::vector<Vertex>& verts, Vec2 sectorOrigin, float se
 {
     // Clamp aperture to [0, 360]
     float aperture = GetClamped(sectorApertureDegrees, 0.f, 360.f);
-    if (aperture <= 0.f || sectorRadius <= 0.f) 
+    if (aperture <= 0.f || sectorRadius <= 0.f)
     {
         return;
     }
@@ -111,7 +111,7 @@ void AddVertsForSector2D(std::vector<Vertex>& verts, Vec2 sectorOrigin, float se
     float startAngle = sectorForwardDegrees - aperture * 0.5f;
     float delta = aperture / (float)sectorSides;
 
-    for (int i = 0; i < sectorSides; ++i) 
+    for (int i = 0; i < sectorSides; ++i)
     {
         float angle0 = startAngle + i * delta;
         float angle1 = startAngle + (i + 1) * delta;
@@ -131,12 +131,12 @@ void AddVertsForCapsule2D(std::vector<Vertex>& verts, Vec2 boneStart, Vec2 boneE
     Vec2 right = dir.GetRotatedBy90Degrees();
     Vec2 thicknessVec = right * (radius * 2.f);
 
-	OBB2 capsuleBody = OBB2();
+    OBB2 capsuleBody = OBB2();
     capsuleBody.m_center = (boneStart + boneEnd) * 0.5f;
     capsuleBody.m_iBasisNormal = dir;
-	capsuleBody.m_halfDimensions = Vec2((boneEnd - boneStart).GetLength() * 0.5f, radius);
+    capsuleBody.m_halfDimensions = Vec2((boneEnd - boneStart).GetLength() * 0.5f, radius);
 
-	AddVertsForOBB2D(verts, capsuleBody, color);
+    AddVertsForOBB2D(verts, capsuleBody, color);
 
     // Draw the semicircle at each end using AddVertsForSector2D
     float forwardDegrees = dir.GetOrientationDegrees();
@@ -144,14 +144,14 @@ void AddVertsForCapsule2D(std::vector<Vertex>& verts, Vec2 boneStart, Vec2 boneE
     AddVertsForSector2D(verts, boneEnd, forwardDegrees, 180.f, radius, color);
 }
 
-void AddVertsForTriangle2D(std::vector<Vertex>& verts, Vec2 ccw0, Vec2 ccw1, Vec2 ccw2, Rgba8 color) 
+void AddVertsForTriangle2D(std::vector<Vertex>& verts, Vec2 ccw0, Vec2 ccw1, Vec2 ccw2, Rgba8 color)
 {
     verts.emplace_back(Vec3(ccw0.x, ccw0.y, 0.f), color);
     verts.emplace_back(Vec3(ccw1.x, ccw1.y, 0.f), color);
     verts.emplace_back(Vec3(ccw2.x, ccw2.y, 0.f), color);
 }
 
-void AddVertsForLineSegment2D(std::vector<Vertex>& verts, Vec2 start, Vec2 end, Vec2 thickness, Rgba8 color) 
+void AddVertsForLineSegment2D(std::vector<Vertex>& verts, Vec2 start, Vec2 end, Vec2 thickness, Rgba8 color)
 {
     Vec2 dir = (end - start).GetNormalized();
     Vec2 right = dir.GetRotatedBy90Degrees();
@@ -173,32 +173,71 @@ void AddVertsForLineSegment2D(std::vector<Vertex>& verts, Vec2 start, Vec2 end, 
 
 void AddVertsForInfiniteLine2D(std::vector<Vertex>& verts, Vec2 pointOnLine, Vec2 anotherPointOnLine, float thickness, Rgba8 color)
 {
-	Vec2 direction = anotherPointOnLine - pointOnLine;
+    Vec2 direction = anotherPointOnLine - pointOnLine;
     AddVertsForLineSegment2D(verts, pointOnLine - direction.GetNormalized() * 10000.f,
-		pointOnLine + direction.GetNormalized() * 10000.f, Vec2(thickness, thickness), color);
+        pointOnLine + direction.GetNormalized() * 10000.f, Vec2(thickness, thickness), color);
 }
 
-void AddVertsForDisc2D(std::vector<Vertex>& verts, Disc2 const& disc, Rgba8 color) 
+void AddVertsForArrow2D(std::vector<Vertex>& verts, Vec2 tailPos, Vec2 tipPos, float arrowSize, float lineThickness, Rgba8 color)
+{
+    Vec2 dir = (tipPos - tailPos).GetNormalized();
+    float length = (tipPos - tailPos).GetLength();
+
+    float headLength = (arrowSize > 0.f) ? std::min(arrowSize, length * 0.5f) : length * 0.2f;
+    float shaftLength = length - headLength;
+
+    Vec2 headBase = tipPos - dir * headLength;
+
+    Vec2 right = dir.GetRotatedBy90Degrees();
+    Vec2 halfShaft = right * (lineThickness * 0.5f);
+    float headWidth = headLength;
+    Vec2 halfHead = right * (headWidth * 0.5f);
+
+    if (shaftLength > 0.0f)
+    {
+        Vec2 shaftStartL = tailPos + halfShaft;
+        Vec2 shaftStartR = tailPos - halfShaft;
+        Vec2 shaftEndL = headBase + halfShaft;
+        Vec2 shaftEndR = headBase - halfShaft;
+
+        verts.emplace_back(Vec3(shaftStartL.x, shaftStartL.y, 0.f), color);
+        verts.emplace_back(Vec3(shaftEndL.x, shaftEndL.y, 0.f), color);
+        verts.emplace_back(Vec3(shaftEndR.x, shaftEndR.y, 0.f), color);
+
+        verts.emplace_back(Vec3(shaftStartL.x, shaftStartL.y, 0.f), color);
+        verts.emplace_back(Vec3(shaftEndR.x, shaftEndR.y, 0.f), color);
+        verts.emplace_back(Vec3(shaftStartR.x, shaftStartR.y, 0.f), color);
+    }
+
+    Vec2 headLeft = headBase + halfHead;
+    Vec2 headRight = headBase - halfHead;
+
+    verts.emplace_back(Vec3(tipPos.x, tipPos.y, 0.f), color);
+    verts.emplace_back(Vec3(headLeft.x, headLeft.y, 0.f), color);
+    verts.emplace_back(Vec3(headRight.x, headRight.y, 0.f), color);
+}
+
+void AddVertsForDisc2D(std::vector<Vertex>& verts, Disc2 const& disc, Rgba8 color)
 {
     AddVertsForDisc2D(verts, disc.m_center, disc.m_radius, color);
 }
 
-void AddVertsForCapsule2D(std::vector<Vertex>& verts, Capsule2 const& capsule, Rgba8 color) 
+void AddVertsForCapsule2D(std::vector<Vertex>& verts, Capsule2 const& capsule, Rgba8 color)
 {
     AddVertsForCapsule2D(verts, capsule.m_bone.m_start, capsule.m_bone.m_end, capsule.m_radius, color);
 }
 
-void AddVertsForTriangle2D(std::vector<Vertex>& verts, Triangle2 const& triangle, Rgba8 color) 
+void AddVertsForTriangle2D(std::vector<Vertex>& verts, Triangle2 const& triangle, Rgba8 color)
 {
     AddVertsForTriangle2D(verts, triangle.m_pointsCounterClockwise[0], triangle.m_pointsCounterClockwise[1], triangle.m_pointsCounterClockwise[2], color);
 }
 
-void AddVertsForLineSegment2D(std::vector<Vertex>& verts, LineSegment2 const& lineSegment, float thickness, Rgba8 color) 
+void AddVertsForLineSegment2D(std::vector<Vertex>& verts, LineSegment2 const& lineSegment, float thickness, Rgba8 color)
 {
-	AddVertsForLineSegment2D(verts, lineSegment.m_start, lineSegment.m_end, Vec2(thickness, thickness), color);
+    AddVertsForLineSegment2D(verts, lineSegment.m_start, lineSegment.m_end, Vec2(thickness, thickness), color);
 }
 
 void AddVertsForInfiniteLine2D(std::vector<Vertex>& verts, LineSegment2 const& infiniteLine, float thickness, Rgba8 color)
 {
-	AddVertsForInfiniteLine2D(verts, infiniteLine.m_start, infiniteLine.m_end, thickness, color);
+    AddVertsForInfiniteLine2D(verts, infiniteLine.m_start, infiniteLine.m_end, thickness, color);
 }

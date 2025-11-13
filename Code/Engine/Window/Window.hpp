@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Engine/Math/Vec2.hpp"
+
 #include <string>
 
 struct WindowConfig
@@ -20,6 +22,8 @@ public:
 
 	void BeginFrame();
 	void EndFrame();
+
+    Vec2 GetNormalizedMouseUV() const;
 
 private:
 	void CreateOSWindow();

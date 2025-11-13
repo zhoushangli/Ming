@@ -196,6 +196,12 @@ int RoundDownToInt(float value)
 	}
 }
 
+/// <summary>
+/// Returns the shortest angular displacement from startDegrees to endDegrees in the range [-180, 180].
+/// </summary>
+/// <param name="startDegrees"></param>
+/// <param name="endDegrees"></param>
+/// <returns></returns>
 float GetShortestAngularDispDegrees(float startDegrees, float endDegrees)
 {
     float delta = endDegrees - startDegrees;

@@ -94,4 +94,3 @@ Vec2 GetNearestPointOnCapsule2D(Vec2 referencePos, Vec2 boneStart, Vec2 boneEnd,
 Vec2 GetNearestPointOnCapsule2D(Vec2 referencePos, Capsule2 const& capsule);
 Vec2 GetNearestPointOnTriangle2D(Vec2 referencePos, Vec2 ccw0, Vec2 ccw1, Vec2 ccw2); // Counter-Clockwise (positive winding)
 Vec2 GetNearestPointOnTriangle2D(Vec2 referencePos, Triangle2 const& triangle);
-

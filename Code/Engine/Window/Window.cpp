@@ -36,6 +36,20 @@ void Window::EndFrame()
 
 }
 
+Vec2 Window::GetNormalizedMouseUV() const
+{
+    HWND windowHandle = static_cast<HWND>(m_windowHandle); // Need to add this new void* member!
+    POINT cursorCoords;
+    RECT clientRect;
+
+    ::GetCursorPos(&cursorCoords);                         // in Windows screen coordinates; (0,0) is top-left
+    ::ScreenToClient(windowHandle, &cursorCoords);          // get relative to this window's client area
+    ::GetClientRect(windowHandle, &clientRect);             // dimensions of client area (0,0 to width,height)
+    float cursorX = static_cast<float>(cursorCoords.x) / static_cast<float>(clientRect.right);
+    float cursorY = static_cast<float>(cursorCoords.y) / static_cast<float>(clientRect.bottom);
+    return Vec2(cursorX, 1.f - cursorY);                    // Flip Y; we want (0,0) bottom-left, not top-left
+}
+
 LRESULT CALLBACK WindowsMessageHandlingProcedure(HWND windowHandle, UINT wmMessageCode, WPARAM wParam, LPARAM lParam)
 {
 	switch (wmMessageCode)
@@ -48,6 +62,11 @@ LRESULT CALLBACK WindowsMessageHandlingProcedure(HWND windowHandle, UINT wmMessa
 
 	case WM_KEYDOWN:
 	{
+		if (g_engine == nullptr || g_engine->m_input == nullptr)
+		{
+			break;
+		}
+
 		unsigned char asKey = (unsigned char)wParam;
 		g_engine->m_input->HandleKeyPressed(asKey);
 
@@ -56,9 +75,56 @@ LRESULT CALLBACK WindowsMessageHandlingProcedure(HWND windowHandle, UINT wmMessa
 
 	case WM_KEYUP:
 	{
+		if (g_engine == nullptr || g_engine->m_input == nullptr)
+		{
+			break;
+		}
+
 		unsigned char asKey = (unsigned char)wParam;
 		g_engine->m_input->HandleKeyReleased(asKey);
 
+		break;
+	}
+
+	case WM_LBUTTONDOWN:
+	{
+		if (g_engine == nullptr || g_engine->m_input == nullptr)
+		{
+			break;
+		}
+
+		g_engine->m_input->HandleKeyPressed(KEYCODE_LEFT_MOUSE);
+		break;
+	}
+
+	case WM_LBUTTONUP:
+	{
+		if (g_engine == nullptr || g_engine->m_input == nullptr)
+		{
+			break;
+		}
+
+		g_engine->m_input->HandleKeyReleased(KEYCODE_LEFT_MOUSE);
+		break;
+	}
+
+	case WM_RBUTTONDOWN:
+	{
+		if (g_engine == nullptr || g_engine->m_input == nullptr)
+		{
+			break;
+		}
+		g_engine->m_input->HandleKeyPressed(KEYCODE_RIGHT_MOUSE);
+		break;
+	}
+
+	case WM_RBUTTONUP:
+	{
+		if (g_engine == nullptr || g_engine->m_input == nullptr)
+		{
+			break;
+		}
+		g_engine->m_input->HandleKeyReleased(KEYCODE_RIGHT_MOUSE);
 		break;
 	}
 	}
