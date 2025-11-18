@@ -1,5 +1,6 @@
 #include "Engine/Math/IntVec2.hpp"
 
+#include "Engine/Core/StringUtils.hpp"
 #include "Engine/Math/MathUtils.hpp"
 
 #include <math.h>
@@ -132,5 +133,20 @@ void IntVec2::operator=(IntVec2 const& copyFrom)
 IntVec2::operator Vec2() const
 {
 	return Vec2(static_cast<float>(x), static_cast<float>(y));
+}
+
+void IntVec2::SetFromText(char const* text)
+{
+    Strings parts = SplitStringOnDelimiter(std::string(text), ',');
+
+	if (parts.size() != 2)
+	{
+		x = 0;
+		y = 0;
+		return;
+    }
+
+    x = atoi(parts[0].c_str());
+    y = atoi(parts[1].c_str());
 }
 

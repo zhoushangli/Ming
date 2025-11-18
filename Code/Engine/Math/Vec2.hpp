@@ -71,6 +71,8 @@ public:
 	Vec2 const	GetReflected(Vec2 const& normal) const;
 	void		Reflect(Vec2 const& normal);
 
+    void SetFromText(char const* text);
+
 public: // NOTE: this is one of the few cases where we break both the "m_" naming rule AND the avoid-public-members rule
 	float x = 0.f;
 	float y = 0.f;

@@ -173,6 +173,7 @@
     <ClCompile Include="Core\Time.cpp" />
     <ClCompile Include="Core\Vertex.cpp" />
     <ClCompile Include="Core\VertexUtils.cpp" />
+    <ClCompile Include="Core\XmlUtils.cpp" />
     <ClCompile Include="Input\AnalogJoystick.cpp" />
     <ClCompile Include="Input\InputSystem.cpp" />
     <ClCompile Include="Input\KeyButtonState.cpp" />
@@ -217,6 +218,7 @@
     <ClInclude Include="Core\Time.hpp" />
     <ClInclude Include="Core\Vertex.hpp" />
     <ClInclude Include="Core\VertexUtils.hpp" />
+    <ClInclude Include="Core\XmlUtils.hpp" />
     <ClInclude Include="Input\AnalogJoystick.hpp" />
     <ClInclude Include="Input\InputSystem.hpp" />
     <ClInclude Include="Input\KeyButtonState.hpp" />

@@ -1,12 +1,13 @@
 #include "Engine/Math/Vec2.hpp"
 
-#include "Vec3.hpp"
+#include "Engine/Core/StringUtils.hpp"
+#include "Engine/Math/Vec3.hpp"
 #include "Engine/Math/MathUtils.hpp"
 
 #include <math.h>
 
-const Vec2 Vec2::ZERO   = Vec2(0.f, 0.f);
-const Vec2 Vec2::ONE    = Vec2(1.f, 1.f);
+const Vec2 Vec2::ZERO = Vec2(0.f, 0.f);
+const Vec2 Vec2::ONE = Vec2(1.f, 1.f);
 
 //-----------------------------------------------------------------------------------------------
 Vec2::Vec2() = default;
@@ -312,4 +313,19 @@ Vec2 const Vec2::GetReflected(Vec2 const& normal) const
 void Vec2::Reflect(Vec2 const& normal)
 {
     *this = GetReflected(normal);
+}
+
+void Vec2::SetFromText(char const* text)
+{
+    Strings parts = SplitStringOnDelimiter(std::string(text), ',');
+
+    if (parts.size() < 2)
+    {
+        x = 0.f;
+        y = 0.f;
+        return;
+    }
+
+    x = atof(parts[0].c_str());
+    y = atof(parts[1].c_str());
 }

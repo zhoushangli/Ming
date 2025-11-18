@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Vec2.hpp"
+#include "Engine/Math/Vec2.hpp"
 
 class IntVec2
 {
@@ -38,6 +38,8 @@ public:
 	void			operator=(IntVec2 const& copyFrom);
 
 	operator Vec2() const;
+
+    void SetFromText(char const* text);
 
 public:
 	int x = 0;
