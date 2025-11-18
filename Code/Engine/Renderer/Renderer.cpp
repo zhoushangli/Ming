@@ -229,6 +229,13 @@ Texture* Renderer::CreateTextureFromData(char const* name, IntVec2 dimensions, i
 	return newTexture;
 }
 
+BitmapFont* Renderer::CreateOrGetBitmapFont(char const* fontFilePathNameWithNoExtension)
+{
+    Texture* fontTexture = CreateOrGetTextureFromFile(Stringf("%s.png", fontFilePathNameWithNoExtension).c_str());
+    BitmapFont* newBitmapFont = new BitmapFont(fontFilePathNameWithNoExtension, *fontTexture);
+	return newBitmapFont;
+}
+
 void Renderer::BindTexture(Texture* texture)
 {
 	if (texture)

@@ -1,95 +1,68 @@
+#include "Engine/Renderer/BitmapFont.hpp"
+
+#include "Engine/Core/Vertex.hpp"
 #include "Engine/Renderer/Texture.hpp"
 #include "Engine/Math/AABB2.hpp"
+#include "Engine/Math/Vec2.hpp"
 
-// Texture
-Texture::Texture()
+#include <string>
+#include <vector>
+
+int const FONT_SPRITE_SHEET_COLS = 16;
+int const FONT_SPRITE_SHEET_ROWS = 16;
+
+BitmapFont::BitmapFont(char const* fontFilePathNameWithNoExtension, Texture& fontTexture)
+    : m_fontFilePathNameWithNoExtension(fontFilePathNameWithNoExtension)
+    , m_fontGlyphsSpriteSheet(fontTexture, IntVec2(FONT_SPRITE_SHEET_COLS, FONT_SPRITE_SHEET_ROWS))
 {
+    IntVec2 texDims = fontTexture.GetDimensions();
+    float texAspect = (texDims.y == 0) ? 1.f : (float)texDims.x / (float)texDims.y;
+    float gridAspect = (float)FONT_SPRITE_SHEET_COLS / (float)FONT_SPRITE_SHEET_ROWS;
+    m_fontDefaultAspect = texAspect / gridAspect;
 }
 
-Texture::~Texture()
+Texture& BitmapFont::GetTexture()
 {
+    return m_fontGlyphsSpriteSheet.GetTexture();
 }
 
-// SpriteDefinition
-SpriteDefinition::SpriteDefinition(SpriteSheet const& spriteSheet, int spriteIndex, Vec2 const& uvAtMins, Vec2 const& uvAtMaxs)
-    : m_spriteSheet(spriteSheet)
-    , m_spriteIndex(spriteIndex)
-    , m_uvAtMins(uvAtMins)
-    , m_uvAtMaxs(uvAtMaxs)
+void BitmapFont::AddVertsForText2D(
+    std::vector<Vertex>& vertexArray,
+    Vec2 textMins,
+    float cellHeight,
+    std::string const& text,
+    Rgba8 tint,
+    float cellAspectScale)
 {
-}
+    float cellWidth = cellHeight * m_fontDefaultAspect * cellAspectScale;
+    Vec2 pen = textMins;
 
-void SpriteDefinition::GetUVs(Vec2& out_uvAtMins, Vec2& out_uvAtMaxs) const
-{
-    out_uvAtMins = m_uvAtMins;
-    out_uvAtMaxs = m_uvAtMaxs;
-}
+    for (char c : text)
+    {
+        int index = static_cast<int>(c);
+        AABB2 uv = m_fontGlyphsSpriteSheet.GetSpriteUVs(index);
 
-AABB2 SpriteDefinition::GetUVs() const
-{
-    return AABB2(m_uvAtMins, m_uvAtMaxs);
-}
+        AABB2 bounds(pen, pen + Vec2(cellWidth, cellHeight));
 
-SpriteSheet const& SpriteDefinition::GetSpriteSheet() const
-{
-    return m_spriteSheet;
-}
+        vertexArray.emplace_back(Vec3(bounds.m_mins.x, bounds.m_mins.y, 0.f), tint, uv.m_mins);
+        vertexArray.emplace_back(Vec3(bounds.m_maxs.x, bounds.m_mins.y, 0.f), tint, Vec2(uv.m_maxs.x, uv.m_mins.y));
+        vertexArray.emplace_back(Vec3(bounds.m_maxs.x, bounds.m_maxs.y, 0.f), tint, uv.m_maxs);
 
-Texture& SpriteDefinition::GetTexture() const
-{
-    return m_spriteSheet.GetTexture();
-}
+        vertexArray.emplace_back(Vec3(bounds.m_mins.x, bounds.m_mins.y, 0.f), tint, uv.m_mins);
+        vertexArray.emplace_back(Vec3(bounds.m_maxs.x, bounds.m_maxs.y, 0.f), tint, uv.m_maxs);
+        vertexArray.emplace_back(Vec3(bounds.m_mins.x, bounds.m_maxs.y, 0.f), tint, Vec2(uv.m_mins.x, uv.m_maxs.y));
 
-float SpriteDefinition::GetAspect() const
-{
-    // Calculate aspect ratio from UVs
-    float width = m_uvAtMaxs.x - m_uvAtMins.x;
-    float height = m_uvAtMaxs.y - m_uvAtMins.y;
-    return (height != 0.0f) ? (width / height) : 1.0f;
-}
-
-// SpriteSheet
-SpriteSheet::SpriteSheet(Texture& texture, IntVec2 const& simpleGridLayout)
-    : m_texture(texture)
-{
-    int numSprites = simpleGridLayout.x * simpleGridLayout.y;
-    m_spriteDefs.reserve(numSprites);
-
-    float cellWidth = 1.0f / static_cast<float>(simpleGridLayout.x);
-    float cellHeight = 1.0f / static_cast<float>(simpleGridLayout.y);
-
-    for (int y = simpleGridLayout.y - 1; y >= 0; --y) {
-        for (int x = 0; x < simpleGridLayout.x; ++x) {
-            int spriteIndex = y * simpleGridLayout.x + x;
-            Vec2 uvMins(cellWidth * x, cellHeight * y);
-            Vec2 uvMaxs(cellWidth * (x + 1), cellHeight * (y + 1));
-            m_spriteDefs.emplace_back(*this, spriteIndex, uvMins, uvMaxs);
-        }
+        pen.x += cellWidth;
     }
 }
 
-Texture& SpriteSheet::GetTexture() const
+float BitmapFont::GetTextWidth(float cellHeight, std::string const& text, float cellAspectScale)
 {
-    return m_texture;
+    float cellWidth = cellHeight * m_fontDefaultAspect * cellAspectScale;
+    return cellWidth * static_cast<float>(text.length());
 }
 
-int SpriteSheet::GetNumSprites() const
+float BitmapFont::GetGlyphAspect(int /*glyphUnicode*/) const
 {
-    return static_cast<int>(m_spriteDefs.size());
+    return m_fontDefaultAspect;
 }
-
-SpriteDefinition const& SpriteSheet::GetSpriteDef(int spriteIndex) const
-{
-    return m_spriteDefs[spriteIndex];
-}
-
-void SpriteSheet::GetSpriteUVs(Vec2& out_uvAtMins, Vec2& out_uvAtMaxs, int spriteIndex) const
-{
-    m_spriteDefs[spriteIndex].GetUVs(out_uvAtMins, out_uvAtMaxs);
-}
-
-AABB2 SpriteSheet::GetSpriteUVs(int spriteIndex) const
-{
-    return m_spriteDefs[spriteIndex].GetUVs();
-}
-
