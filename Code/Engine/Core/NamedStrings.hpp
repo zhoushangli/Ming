@@ -1,26 +1,25 @@
 #pragma once
 
-#include "Engine/Core/Rgba8.hpp"
-#include "Engine/Core/VertexUtils.hpp"
-#include "Engine/Core/StringUtils.hpp"
-#include "Engine/Math/IntVec2.hpp"
-
-#include "ThirdParty/tinyxml2/tinyxml2.h"
+#include "Engine/Core/XmlUtils.hpp"
 
 #include <string>
+#include <map>
 
-typedef tinyxml2::XMLDocument   XmlDocument;
-typedef tinyxml2::XMLElement    XmlElement;
-typedef tinyxml2::XMLAttribute  XmlAttribute;
-typedef tinyxml2::XMLError      XmlResult;
+class NamedStrings
+{
+public:
+    void			PopulateFromXmlElementAttributes(XmlElement const& element);
+    void			SetValue(std::string const& keyName, std::string const& newValue);
+    std::string		GetValue(std::string const& keyName, std::string const& defaultValue) const;
+    bool			GetValue(std::string const& keyName, bool defaultValue) const;
+    int			    GetValue(std::string const& keyName, int defaultValue) const;
+    float			GetValue(std::string const& keyName, float defaultValue) const;
+    std::string		GetValue(std::string const& keyName, char const* defaultValue) const;
+    Rgba8			GetValue(std::string const& keyName, Rgba8 const& defaultValue) const;
+    Vec2			GetValue(std::string const& keyName, Vec2 const& defaultValue) const;
+    IntVec2		    GetValue(std::string const& keyName, IntVec2 const& defaultValue) const;
 
-int         ParseXmlAttribute(XmlElement const& element, char const* attributeName, int defaultValue);
-char        ParseXmlAttribute(XmlElement const& element, char const* attributeName, char defaultValue);
-bool        ParseXmlAttribute(XmlElement const& element, char const* attributeName, bool defaultValue);
-float       ParseXmlAttribute(XmlElement const& element, char const* attributeName, float defaultValue);
-Rgba8       ParseXmlAttribute(XmlElement const& element, char const* attributeName, Rgba8 const& defaultValue);
-Vec2        ParseXmlAttribute(XmlElement const& element, char const* attributeName, Vec2 const& defaultValue);
-IntVec2     ParseXmlAttribute(XmlElement const& element, char const* attributeName, IntVec2 const& defaultValue);
-std::string ParseXmlAttribute(XmlElement const& element, char const* attributeName, std::string const& defaultValue);
-Strings     ParseXmlAttribute(XmlElement const& element, char const* attributeName, Strings const& defaultValues, char delimiter = ',');
-std::string ParseXmlAttribute(XmlElement const& element, char const* attributeName, char const* defaultValue);
+
+private:
+    std::map<std::string, std::string> m_keyValuePairs;
+};

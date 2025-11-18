@@ -1,5 +1,5 @@
 #pragma once
 
-class NamedStrings
-{
-};
+#include "Engine/Core/NamedStrings.hpp"
+
+extern NamedStrings g_gameConfigBlackBoard;

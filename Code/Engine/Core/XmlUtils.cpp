@@ -1,68 +1,127 @@
-#include "Engine/Core/StringUtils.hpp"
+#include "Engine/Core/XmlUtils.hpp"
 
-#include <stdarg.h>
+#include <string>
 
-
-constexpr int STRINGF_STACK_LOCAL_TEMP_LENGTH = 2048;
-
-
-const std::string Stringf(char const* format, ...)
+int ParseXmlAttribute(XmlElement const& element, char const* attributeName, int defaultValue)
 {
-    char textLiteral[STRINGF_STACK_LOCAL_TEMP_LENGTH];
-    va_list variableArgumentList;
-    va_start(variableArgumentList, format);
-    vsnprintf_s(textLiteral, STRINGF_STACK_LOCAL_TEMP_LENGTH, _TRUNCATE, format, variableArgumentList);
-    va_end(variableArgumentList);
-    textLiteral[STRINGF_STACK_LOCAL_TEMP_LENGTH - 1] = '\0'; // In case vsnprintf overran (doesn't auto-terminate)
-
-    return std::string(textLiteral);
-}
-
-
-const std::string Stringf(int maxLength, char const* format, ...)
-{
-    char textLiteralSmall[STRINGF_STACK_LOCAL_TEMP_LENGTH];
-    char* textLiteral = textLiteralSmall;
-    if (maxLength > STRINGF_STACK_LOCAL_TEMP_LENGTH)
-        textLiteral = new char[maxLength];
-
-    va_list variableArgumentList;
-    va_start(variableArgumentList, format);
-    vsnprintf_s(textLiteral, maxLength, _TRUNCATE, format, variableArgumentList);
-    va_end(variableArgumentList);
-    textLiteral[maxLength - 1] = '\0'; // In case vsnprintf overran (doesn't auto-terminate)
-
-    std::string returnValue(textLiteral);
-    if (maxLength > STRINGF_STACK_LOCAL_TEMP_LENGTH)
-        delete[] textLiteral;
-
-    return returnValue;
-}
-
-Strings SplitStringOnDelimiter(std::string const& originalString, char delimiterToSplitOn)
-{
-    Strings result;
-    std::string currentPart;
-    for (char ch : originalString)
+    char const* text = element.Attribute(attributeName);
+    if (text == nullptr)
     {
-        if (ch == delimiterToSplitOn)
-        {
-            result.push_back(currentPart);
-            currentPart.clear();
-        }
-        else
-        {
-            currentPart += ch;
-        }
+        return defaultValue;
     }
-    
-    result.push_back(currentPart);
-    return result;
+
+    return atoi(text);
 }
 
+char ParseXmlAttribute(XmlElement const& element, char const* attributeName, char defaultValue)
+{
+    char const* text = element.Attribute(attributeName);
+    if (text == nullptr || text[0] == '\0')
+    {
+        return defaultValue;
+    }
 
+    return text[0];
+}
 
+bool ParseXmlAttribute(XmlElement const& element, char const* attributeName, bool defaultValue)
+{
+    char const* text = element.Attribute(attributeName);
+    if (text == nullptr)
+    {
+        return defaultValue;
+    }
 
+    std::string value(text);
 
+    if (value == "true" || value == "1")
+    {
+        return true;
+    }
+    if (value == "false" || value == "0")
+    {
+        return false;
+    }
 
+    return defaultValue;
+}
 
+float ParseXmlAttribute(XmlElement const& element, char const* attributeName, float defaultValue)
+{
+    char const* text = element.Attribute(attributeName);
+    if (text == nullptr)
+    {
+        return defaultValue;
+    }
+
+    return (float)atof(text);
+}
+
+Rgba8 ParseXmlAttribute(XmlElement const& element, char const* attributeName, Rgba8 const& defaultValue)
+{
+    char const* text = element.Attribute(attributeName);
+    if (text == nullptr)
+    {
+        return defaultValue;
+    }
+
+    Rgba8 color;
+    color.SetFromText(text);
+
+    return color;
+}
+
+Vec2 ParseXmlAttribute(XmlElement const& element, char const* attributeName, Vec2 const& defaultValue)
+{
+    char const* text = element.Attribute(attributeName);
+    if (text == nullptr)
+    {
+        return defaultValue;
+    }
+
+    Vec2 value;
+    value.SetFromText(text);
+
+    return value;
+}
+
+IntVec2 ParseXmlAttribute(XmlElement const& element, char const* attributeName, IntVec2 const& defaultValue)
+{
+    char const* text = element.Attribute(attributeName);
+    if (text == nullptr)
+    {
+        return defaultValue;
+    }
+
+    IntVec2 value;
+    value.SetFromText(text);
+
+    return value;
+}
+
+std::string ParseXmlAttribute(XmlElement const& element, char const* attributeName, std::string const& defaultValue)
+{
+    char const* text = element.Attribute(attributeName);
+    if (text == nullptr)
+    {
+        return defaultValue;
+    }
+
+    return std::string(text);
+}
+
+Strings ParseXmlAttribute(XmlElement const& element, char const* attributeName, Strings const& defaultValues, char delimiter /*= ','*/)
+{
+    char const* text = element.Attribute(attributeName);
+    if (text == nullptr)
+    {
+        return defaultValues;
+    }
+
+    return SplitStringOnDelimiter(text, delimiter);
+}
+
+std::string ParseXmlAttribute(XmlElement const& element, char const* attributeName, char const* defaultValue)
+{
+    return ParseXmlAttribute(element, attributeName, std::string(defaultValue));
+}

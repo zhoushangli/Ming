@@ -1,127 +1,113 @@
-#include "Engine/Core/XmlUtils.hpp"
+#include "Engine/Core/NamedStrings.hpp"
+#include "Engine/Core/StringUtils.hpp"
 
-#include <string>
-
-int ParseXmlAttribute(XmlElement const& element, char const* attributeName, int defaultValue)
+#include "ErrorWarningAssert.hpp"
+void NamedStrings::PopulateFromXmlElementAttributes(XmlElement const& element)
 {
-    char const* text = element.Attribute(attributeName);
-    if (text == nullptr)
+    XmlAttribute const* attribute = element.FirstAttribute();
+    while (attribute)
     {
-        return defaultValue;
+        DebuggerPrintf("%s ------ %s\n", attribute->Name(), attribute->Value());
+        SetValue(attribute->Name(), attribute->Value());
+        attribute = attribute->Next();
     }
-
-    return atoi(text);
 }
 
-char ParseXmlAttribute(XmlElement const& element, char const* attributeName, char defaultValue)
+void NamedStrings::SetValue(std::string const& keyName, std::string const& newValue)
 {
-    char const* text = element.Attribute(attributeName);
-    if (text == nullptr || text[0] == '\0')
-    {
-        return defaultValue;
-    }
-
-    return text[0];
+    m_keyValuePairs[keyName] = newValue;
 }
 
-bool ParseXmlAttribute(XmlElement const& element, char const* attributeName, bool defaultValue)
+std::string NamedStrings::GetValue(std::string const& keyName, std::string const& defaultValue) const
 {
-    char const* text = element.Attribute(attributeName);
-    if (text == nullptr)
+    auto iter = m_keyValuePairs.find(keyName);
+    if (iter != m_keyValuePairs.end())
     {
-        return defaultValue;
+        return iter->second;
     }
-
-    std::string value(text);
-
-    if (value == "true" || value == "1")
-    {
-        return true;
-    }
-    if (value == "false" || value == "0")
-    {
-        return false;
-    }
-
     return defaultValue;
 }
 
-float ParseXmlAttribute(XmlElement const& element, char const* attributeName, float defaultValue)
+bool NamedStrings::GetValue(std::string const& keyName, bool defaultValue) const
 {
-    char const* text = element.Attribute(attributeName);
-    if (text == nullptr)
+    auto iter = m_keyValuePairs.find(keyName);
+    if (iter != m_keyValuePairs.end())
     {
-        return defaultValue;
+        std::string value = iter->second;
+        if (value == "true" || value == "1")
+        {
+            return true;
+        }
+        if (value == "false" || value == "0")
+        {
+            return false;
+        }
     }
-
-    return atof(text);
+    return defaultValue;
 }
 
-Rgba8 ParseXmlAttribute(XmlElement const& element, char const* attributeName, Rgba8 const& defaultValue)
+int NamedStrings::GetValue(std::string const& keyName, int defaultValue) const
 {
-    char const* text = element.Attribute(attributeName);
-    if (text == nullptr)
+    auto iter = m_keyValuePairs.find(keyName);
+    if (iter != m_keyValuePairs.end())
     {
-        return defaultValue;
+        return atoi(iter->second.c_str());
     }
-
-    Rgba8 color;
-    color.SetFromText(text);
-
-    return color;
+    return defaultValue;
 }
 
-Vec2 ParseXmlAttribute(XmlElement const& element, char const* attributeName, Vec2 const& defaultValue)
+float NamedStrings::GetValue(std::string const& keyName, float defaultValue) const
 {
-    char const* text = element.Attribute(attributeName);
-    if (text == nullptr)
+    auto iter = m_keyValuePairs.find(keyName);
+    if (iter != m_keyValuePairs.end())
     {
-        return defaultValue;
+        return (float)atof(iter->second.c_str());
     }
-
-    Vec2 value;
-    value.SetFromText(text);
-
-    return value;
+    return defaultValue;
 }
 
-IntVec2 ParseXmlAttribute(XmlElement const& element, char const* attributeName, IntVec2 const& defaultValue)
+std::string NamedStrings::GetValue(std::string const& keyName, char const* defaultValue) const
 {
-    char const* text = element.Attribute(attributeName);
-    if (text == nullptr)
+    auto iter = m_keyValuePairs.find(keyName);
+    if (iter != m_keyValuePairs.end())
     {
-        return defaultValue;
+        return iter->second;
     }
-
-    IntVec2 value;
-    value.SetFromText(text);
-
-    return value;
+    return std::string(defaultValue);
 }
 
-std::string ParseXmlAttribute(XmlElement const& element, char const* attributeName, std::string const& defaultValue)
+Rgba8 NamedStrings::GetValue(std::string const& keyName, Rgba8 const& defaultValue) const
 {
-    char const* text = element.Attribute(attributeName);
-    if (text == nullptr)
+    auto iter = m_keyValuePairs.find(keyName);
+    if (iter != m_keyValuePairs.end())
     {
-        return defaultValue;
+        Rgba8 result = defaultValue;
+        result.SetFromText(iter->second.c_str());
+        return result;
     }
-
-    return std::string(text);
+    return defaultValue;
 }
 
-Strings ParseXmlAttribute(XmlElement const& element, char const* attributeName, Strings const& defaultValues, char delimiter /*= ','*/)
+Vec2 NamedStrings::GetValue(std::string const& keyName, Vec2 const& defaultValue) const
 {
-    char const* text = element.Attribute(attributeName);
-    if (text == nullptr)
+    auto iter = m_keyValuePairs.find(keyName);
+    if (iter != m_keyValuePairs.end())
     {
-        return defaultValues;
+        Vec2 result = defaultValue;
+        result.SetFromText(iter->second.c_str());
+        return result;
     }
-
-    return SplitStringOnDelimiter(text, delimiter);
+    return defaultValue;
 }
 
-std::string ParseXmlAttribute(XmlElement const& element, char const* attributeName, char const* defaultValue)
+IntVec2 NamedStrings::GetValue(std::string const& keyName, IntVec2 const& defaultValue) const
 {
-    return ParseXmlAttribute(element, attributeName, std::string(defaultValue));
+    auto iter = m_keyValuePairs.find(keyName);
+    if (iter != m_keyValuePairs.end())
+    {
+        IntVec2 result = defaultValue;
+        result.SetFromText(iter->second.c_str());
+        return result;
+    }
+    return defaultValue;
 }

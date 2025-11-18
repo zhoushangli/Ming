@@ -326,6 +326,6 @@ void Vec2::SetFromText(char const* text)
         return;
     }
 
-    x = atof(parts[0].c_str());
-    y = atof(parts[1].c_str());
+    x = (float)atof(parts[0].c_str());
+    y = (float)atof(parts[1].c_str());
 }
