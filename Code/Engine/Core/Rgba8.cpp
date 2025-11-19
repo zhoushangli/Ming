@@ -1,6 +1,7 @@
 #include "Engine/Core/Rgba8.hpp"
 
 #include "Engine/Core/StringUtils.hpp"
+#include "Engine/Math/MathUtils.hpp"
 
 Rgba8 const Rgba8::WHITE = Rgba8(255, 255, 255);
 Rgba8 const Rgba8::BLACK = Rgba8(0, 0, 0);
@@ -54,4 +55,24 @@ void Rgba8::SetFromText(const char* text)
     {
         a = static_cast<unsigned char>(std::stoi(parts[3]));
     }
+}
+
+float NormalizeByte(unsigned char byteValue)
+{
+    return static_cast<float>(byteValue) / 255.f;
+}
+
+unsigned char DenormalizeByte(float normalizedValue)
+{
+    return static_cast<unsigned char>(GetClamped(normalizedValue, 0.f, 1.f) * 255.f);
+}
+
+Rgba8 Interpolate(Rgba8 const& start, Rgba8 const& end, float fraction)
+{
+    float r = Interpolate(NormalizeByte(start.r), NormalizeByte(end.r), fraction);
+    float g = Interpolate(NormalizeByte(start.g), NormalizeByte(end.g), fraction);
+    float b = Interpolate(NormalizeByte(start.b), NormalizeByte(end.b), fraction);
+    float a = Interpolate(NormalizeByte(start.a), NormalizeByte(end.a), fraction);
+
+    return Rgba8(DenormalizeByte(r), DenormalizeByte(g), DenormalizeByte(b), DenormalizeByte(a));
 }

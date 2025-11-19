@@ -1,113 +1,99 @@
-#include "Engine/Core/NamedStrings.hpp"
-#include "Engine/Core/StringUtils.hpp"
+#include "Engine/Core/HeatMaps.hpp"
 
-#include "ErrorWarningAssert.hpp"
-void NamedStrings::PopulateFromXmlElementAttributes(XmlElement const& element)
+#include "Engine/Core/Vertex.hpp"
+#include "Engine/Math/MathUtils.hpp"
+
+TileHeatMap::TileHeatMap(IntVec2 const& dimensions)
+    : m_dimensions(dimensions)
 {
-    XmlAttribute const* attribute = element.FirstAttribute();
-    while (attribute)
+    int numTiles = m_dimensions.x * m_dimensions.y;
+    m_values = new float[numTiles];
+    SetAllValues(0.0f);
+}
+
+TileHeatMap::~TileHeatMap()
+{
+    delete[] m_values;
+    m_values = nullptr;
+}
+
+void TileHeatMap::SetAllValues(float value)
+{
+    int numTiles = m_dimensions.x * m_dimensions.y;
+    for (int i = 0; i < numTiles; ++i)
     {
-        DebuggerPrintf("%s ------ %s\n", attribute->Name(), attribute->Value());
-        SetValue(attribute->Name(), attribute->Value());
-        attribute = attribute->Next();
+        m_values[i] = value;
     }
 }
 
-void NamedStrings::SetValue(std::string const& keyName, std::string const& newValue)
+int TileHeatMap::GetIndexForCoords(IntVec2 const& coords) const
 {
-    m_keyValuePairs[keyName] = newValue;
+    return coords.y * m_dimensions.x + coords.x;
 }
 
-std::string NamedStrings::GetValue(std::string const& keyName, std::string const& defaultValue) const
+float TileHeatMap::GetValue(IntVec2 const& coords) const
 {
-    auto iter = m_keyValuePairs.find(keyName);
-    if (iter != m_keyValuePairs.end())
-    {
-        return iter->second;
-    }
-    return defaultValue;
+    int idx = GetIndexForCoords(coords);
+    return m_values[idx];
 }
 
-bool NamedStrings::GetValue(std::string const& keyName, bool defaultValue) const
+void TileHeatMap::SetValue(IntVec2 const& coords, float value)
 {
-    auto iter = m_keyValuePairs.find(keyName);
-    if (iter != m_keyValuePairs.end())
+    int idx = GetIndexForCoords(coords);
+    m_values[idx] = value;
+}
+
+void TileHeatMap::AddValue(IntVec2 const& coords, float value)
+{
+    int idx = GetIndexForCoords(coords);
+    m_values[idx] += value;
+}
+
+void TileHeatMap::AddVertsForDebugDraw(
+    std::vector<Vertex>& verts,
+    AABB2 totalBounds,
+    FloatRange valueRange,
+    Rgba8 lowColor,
+    Rgba8 highColor,
+    float specialValue,
+    Rgba8 specialColor) const
+{
+    int numTilesX = m_dimensions.x;
+    int numTilesY = m_dimensions.y;
+    Vec2 tileSize = totalBounds.GetDimensions();
+    tileSize.x /= (float)numTilesX;
+    tileSize.y /= (float)numTilesY;
+
+    for (int y = 0; y < numTilesY; ++y)
     {
-        std::string value = iter->second;
-        if (value == "true" || value == "1")
+        for (int x = 0; x < numTilesX; ++x)
         {
-            return true;
+            IntVec2 coords(x, y);
+            float value = GetValue(coords);
+
+            Vec2 mins = totalBounds.m_mins + Vec2((float)x * tileSize.x, (float)y * tileSize.y);
+            Vec2 maxs = mins + tileSize;
+            AABB2 tileBounds(mins, maxs);
+
+            Rgba8 color;
+            if (value == specialValue)
+            {
+                color = specialColor;
+            }
+            else
+            {
+                value          = GetClamped(value, valueRange.m_min, valueRange.m_max);
+                float fraction = (value - valueRange.m_min) / (valueRange.m_max - valueRange.m_min);
+                color          = Interpolate(lowColor, highColor, fraction);
+            }
+
+            verts.emplace_back(Vec3(tileBounds.m_mins.x, tileBounds.m_mins.y, 0.f), color);
+            verts.emplace_back(Vec3(tileBounds.m_maxs.x, tileBounds.m_mins.y, 0.f), color);
+            verts.emplace_back(Vec3(tileBounds.m_maxs.x, tileBounds.m_maxs.y, 0.f), color);
+
+            verts.emplace_back(Vec3(tileBounds.m_mins.x, tileBounds.m_mins.y, 0.f), color);
+            verts.emplace_back(Vec3(tileBounds.m_maxs.x, tileBounds.m_maxs.y, 0.f), color);
+            verts.emplace_back(Vec3(tileBounds.m_mins.x, tileBounds.m_maxs.y, 0.f), color);
         }
-        if (value == "false" || value == "0")
-        {
-            return false;
-        }
     }
-    return defaultValue;
-}
-
-int NamedStrings::GetValue(std::string const& keyName, int defaultValue) const
-{
-    auto iter = m_keyValuePairs.find(keyName);
-    if (iter != m_keyValuePairs.end())
-    {
-        return atoi(iter->second.c_str());
-    }
-    return defaultValue;
-}
-
-float NamedStrings::GetValue(std::string const& keyName, float defaultValue) const
-{
-    auto iter = m_keyValuePairs.find(keyName);
-    if (iter != m_keyValuePairs.end())
-    {
-        return (float)atof(iter->second.c_str());
-    }
-    return defaultValue;
-}
-
-std::string NamedStrings::GetValue(std::string const& keyName, char const* defaultValue) const
-{
-    auto iter = m_keyValuePairs.find(keyName);
-    if (iter != m_keyValuePairs.end())
-    {
-        return iter->second;
-    }
-    return std::string(defaultValue);
-}
-
-Rgba8 NamedStrings::GetValue(std::string const& keyName, Rgba8 const& defaultValue) const
-{
-    auto iter = m_keyValuePairs.find(keyName);
-    if (iter != m_keyValuePairs.end())
-    {
-        Rgba8 result = defaultValue;
-        result.SetFromText(iter->second.c_str());
-        return result;
-    }
-    return defaultValue;
-}
-
-Vec2 NamedStrings::GetValue(std::string const& keyName, Vec2 const& defaultValue) const
-{
-    auto iter = m_keyValuePairs.find(keyName);
-    if (iter != m_keyValuePairs.end())
-    {
-        Vec2 result = defaultValue;
-        result.SetFromText(iter->second.c_str());
-        return result;
-    }
-    return defaultValue;
-}
-
-IntVec2 NamedStrings::GetValue(std::string const& keyName, IntVec2 const& defaultValue) const
-{
-    auto iter = m_keyValuePairs.find(keyName);
-    if (iter != m_keyValuePairs.end())
-    {
-        IntVec2 result = defaultValue;
-        result.SetFromText(iter->second.c_str());
-        return result;
-    }
-    return defaultValue;
 }

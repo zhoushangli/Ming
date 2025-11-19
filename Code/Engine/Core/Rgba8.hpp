@@ -33,3 +33,6 @@ public:
     unsigned char a = 0;
 };
 
+float NormalizeByte(unsigned char byteValue);
+unsigned char DenormalizeByte(float normalizedValue);
+Rgba8 Interpolate(Rgba8 const& start, Rgba8 const& end, float fraction);
