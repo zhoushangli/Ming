@@ -26,27 +26,87 @@ void TileHeatMap::SetAllValues(float value)
     }
 }
 
+int TileHeatMap::GetIndexForCoords(int x, int y) const
+{
+    return y * m_dimensions.x + x;
+}
+
 int TileHeatMap::GetIndexForCoords(IntVec2 const& coords) const
 {
-    return coords.y * m_dimensions.x + coords.x;
+    return GetIndexForCoords(coords.x, coords.y);
+}
+
+float TileHeatMap::GetValue(int x, int y) const
+{
+    int idx = GetIndexForCoords(x, y);
+    return m_values[idx];
+}
+
+void TileHeatMap::SetValue(int x, int y, float value)
+{
+    int idx = GetIndexForCoords(x, y);
+    m_values[idx] = value;
+}
+
+void TileHeatMap::AddValue(int x, int y, float value)
+{
+    int idx = GetIndexForCoords(x, y);
+    m_values[idx] += value;
 }
 
 float TileHeatMap::GetValue(IntVec2 const& coords) const
 {
-    int idx = GetIndexForCoords(coords);
-    return m_values[idx];
+    return GetValue(coords.x, coords.y);
 }
 
 void TileHeatMap::SetValue(IntVec2 const& coords, float value)
 {
-    int idx = GetIndexForCoords(coords);
-    m_values[idx] = value;
+    return SetValue(coords.x, coords.y, value);
 }
 
 void TileHeatMap::AddValue(IntVec2 const& coords, float value)
 {
-    int idx = GetIndexForCoords(coords);
-    m_values[idx] += value;
+    return AddValue(coords.x, coords.y, value);
+}
+
+float TileHeatMap::GetMinValue() const
+{
+    float minValue = 1e9f;
+
+    for (int y = 0; y < m_dimensions.y; ++y)
+    {
+        for (int x = 0; x < m_dimensions.x; ++x)
+        {
+            IntVec2 coords(x, y);
+            float value = GetValue(coords);
+            if (value < minValue && value != TILE_HEAT_MAP_INVALID_VALUE)
+            {
+                minValue = value;
+            }
+        }
+    }
+
+    return minValue;
+}
+
+float TileHeatMap::GetMaxValue() const
+{
+    float maxValue = -1e9f;
+
+    for (int y = 0; y < m_dimensions.y; ++y)
+    {
+        for (int x = 0; x < m_dimensions.x; ++x)
+        {
+            IntVec2 coords(x, y);
+            float value = GetValue(coords);
+            if (value > maxValue && value != TILE_HEAT_MAP_INVALID_VALUE)
+            {
+                maxValue = value;
+            }
+        }
+    }
+
+    return maxValue;
 }
 
 void TileHeatMap::AddVertsForDebugDraw(

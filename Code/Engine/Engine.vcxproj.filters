@@ -96,9 +96,6 @@
     <ClCompile Include="Math\MathCommon.cpp">
       <Filter>Math</Filter>
     </ClCompile>
-    <ClCompile Include="Core\Image.cpp">
-      <Filter>Core</Filter>
-    </ClCompile>
     <ClCompile Include="Renderer\Texture.cpp">
       <Filter>Renderer</Filter>
     </ClCompile>
@@ -140,6 +137,9 @@
     </ClCompile>
     <ClCompile Include="Core\HeatMaps.cpp">
       <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer\Image.cpp">
+      <Filter>Renderer</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -239,9 +239,6 @@
     <ClInclude Include="Math\MathCommon.hpp">
       <Filter>Math</Filter>
     </ClInclude>
-    <ClInclude Include="Core\Image.hpp">
-      <Filter>Core</Filter>
-    </ClInclude>
     <ClInclude Include="..\ThirdParty\stb\stb_image.h">
       <Filter>Core</Filter>
     </ClInclude>
@@ -286,6 +283,9 @@
     </ClInclude>
     <ClInclude Include="Core\HeatMaps.hpp">
       <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer\Image.hpp">
+      <Filter>Renderer</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

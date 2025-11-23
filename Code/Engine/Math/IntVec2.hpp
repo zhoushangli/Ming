@@ -2,12 +2,17 @@
 
 #include "Engine/Math/Vec2.hpp"
 
-class IntVec2
+struct Vec2;
+
+struct IntVec2
 {
 public:
     IntVec2() = default;
 	~IntVec2() = default;
+
 	IntVec2(const IntVec2& copyFrom) = default;
+    IntVec2(const Vec2& copyFrom);
+
     explicit IntVec2(int initialX, int initialY);
 
     float GetLength() const;

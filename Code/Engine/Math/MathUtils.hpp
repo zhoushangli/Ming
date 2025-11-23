@@ -15,6 +15,8 @@ const float PI                          = 3.14159265358979323846f;
 const float TWO_PI                      = 6.28318530717958647692f;
 const float HALF_PI                     = 1.57079632679489661923f;
 
+float Abs(float value);
+
 // Angle conversion and trigonometric functions
 float ConvertDegreesToRadians(float degrees);
 float ConvertRadiansToDegrees(float radians);
@@ -68,6 +70,7 @@ float GetAngleDegreesBetweenVectors2D(Vec2 const& a, Vec2 const& b);
 
 // Miscellaneous utilities
 int	GetTaxicabDistance2D(IntVec2 const& a, IntVec2 const& b);
+int GetTaxicabDistance2D(Vec2 const& a, Vec2 const& b);
 
 // --- Is Point Inside ---
 bool IsPointInsideDisc2D(Vec2 point, Vec2 discCenter, float discRadius);

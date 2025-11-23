@@ -24,6 +24,10 @@ Vec2::Vec2(float initialX, float initialY)
 Vec2::Vec2(Vec3 const& copyFrom) : x(copyFrom.x), y(copyFrom.y)
 {}
 
+Vec2::Vec2(IntVec2 const& copyFrom) : x(static_cast<float>(copyFrom.x)), y(static_cast<float>(copyFrom.y))
+{
+}
+
 Vec2::~Vec2() = default;
 
 //-----------------------------------------------------------------------------------------------

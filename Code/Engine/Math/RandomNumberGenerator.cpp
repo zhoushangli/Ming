@@ -1,4 +1,7 @@
-#include "RandomNumberGenerator.hpp"
+#include "Engine/Math/RandomNumberGenerator.hpp"
+
+#include "Engine/Math/Vec2.hpp"
+#include "Engine/Math/IntVec2.hpp"
 
 #include <cstdlib>
 #include <ctime>
@@ -57,5 +60,13 @@ Vec2 RandomNumberGenerator::RollRandomVec2InRange(float minX, float maxX, float 
 	output.x = RollRandomFloatInRange(minX, maxX);
 	output.y = RollRandomFloatInRange(minY, maxY);
 	return output;
+}
+
+IntVec2 RandomNumberGenerator::RollRandomIntVec2InRange(IntVec2 minInclusive, IntVec2 maxInclusive)
+{
+    IntVec2 output;
+    output.x = RollRandomIntInRange(minInclusive.x, maxInclusive.x);
+    output.y = RollRandomIntInRange(minInclusive.y, maxInclusive.y);
+    return output;
 }
 

@@ -7,6 +7,8 @@
 
 #include <vector>
 
+float const TILE_HEAT_MAP_INVALID_VALUE = 1e9f;
+
 struct Vertex;
 
 class TileHeatMap
@@ -16,9 +18,17 @@ public:
     ~TileHeatMap();
 
     void SetAllValues(float value);
+
+    float GetValue(int x, int y) const;
+    void SetValue(int x, int y, float value);
+    void AddValue(int x, int y, float value);
+
     float GetValue(IntVec2 const& coords) const;
     void SetValue(IntVec2 const& coords, float value);
     void AddValue(IntVec2 const& coords, float value);
+
+    float GetMinValue() const;
+    float GetMaxValue() const;
 
     void AddVertsForDebugDraw(
         std::vector<Vertex>& verts,
@@ -32,6 +42,7 @@ public:
     IntVec2 GetDimensions() const { return m_dimensions; }
 
 private:
+    int GetIndexForCoords(int x, int y) const;
     int GetIndexForCoords(IntVec2 const& coords) const;
 
 private:

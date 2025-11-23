@@ -2,6 +2,7 @@
 
 #include "Engine/Core/StringUtils.hpp"
 #include "Engine/Math/MathUtils.hpp"
+#include "Engine/Math/Vec2.hpp"
 
 #include <math.h>
 
@@ -9,6 +10,11 @@ const IntVec2 IntVec2::ZERO = IntVec2(0, 0);
 
 IntVec2::IntVec2(int initialX, int initialY) : x(initialX), y(initialY)
 {
+}
+
+IntVec2::IntVec2(const Vec2& copyFrom) : x(RoundDownToInt(copyFrom.x)), y(RoundDownToInt(copyFrom.y))
+{
+
 }
 
 float IntVec2::GetLength() const

@@ -1,96 +1,37 @@
-#include "Engine/Renderer/Texture.hpp"
+#include "Engine/Renderer/Image.hpp"
 
-#include "Engine/Math/AABB2.hpp"
+#include "Engine/Core/Rgba8.hpp"
+#include "Engine/Core/ErrorWarningAssert.hpp"
 
-// Texture
-Texture::Texture()
+#include <ThirdParty/stb/stb_image.h>
+
+Image::Image(char const* imageFilePath)
 {
-}
+    int numComponents = 0;
+    unsigned char* imageData = stbi_load(imageFilePath, &m_dimensions.x, &m_dimensions.y, &numComponents, STBI_rgb_alpha);
 
-Texture::~Texture()
-{
-}
+    // GUARANTEE_OR_DIE(imageData != nullptr, "Failed to load image from file: %s", imageFilePath);
 
-// SpriteDefinition
-SpriteDefinition::SpriteDefinition(SpriteSheet const& spriteSheet, int spriteIndex, Vec2 const& uvAtMins, Vec2 const& uvAtMaxs)
-    : m_spriteSheet(spriteSheet)
-    , m_spriteIndex(spriteIndex)
-    , m_uvAtMins(uvAtMins)
-    , m_uvAtMaxs(uvAtMaxs)
-{
-}
+    int totalTexels = m_dimensions.x * m_dimensions.y;
+    m_texelColors.reserve(totalTexels);
 
-void SpriteDefinition::GetUVs(Vec2& out_uvAtMins, Vec2& out_uvAtMaxs) const
-{
-    out_uvAtMins = m_uvAtMins;
-    out_uvAtMaxs = m_uvAtMaxs;
-}
-
-AABB2 SpriteDefinition::GetUVs() const
-{
-    return AABB2(m_uvAtMins, m_uvAtMaxs);
-}
-
-SpriteSheet const& SpriteDefinition::GetSpriteSheet() const
-{
-    return m_spriteSheet;
-}
-
-Texture& SpriteDefinition::GetTexture() const
-{
-    return m_spriteSheet.GetTexture();
-}
-
-float SpriteDefinition::GetAspect() const
-{
-    // Calculate aspect ratio from UVs
-    float width = m_uvAtMaxs.x - m_uvAtMins.x;
-    float height = m_uvAtMaxs.y - m_uvAtMins.y;
-    return (height != 0.0f) ? (width / height) : 1.0f;
-}
-
-// SpriteSheet
-SpriteSheet::SpriteSheet(Texture& texture, IntVec2 const& simpleGridLayout)
-    : m_texture(texture)
-{
-    int numSprites = simpleGridLayout.x * simpleGridLayout.y;
-    m_spriteDefs.reserve(numSprites);
-
-    float cellWidth = 1.0f / static_cast<float>(simpleGridLayout.x);
-    float cellHeight = 1.0f / static_cast<float>(simpleGridLayout.y);
-
-    for (int y = simpleGridLayout.y - 1; y >= 0; --y) {
-        for (int x = 0; x < simpleGridLayout.x; ++x) {
-            int spriteIndex = y * simpleGridLayout.x + x;
-            Vec2 uvMins(cellWidth * x, cellHeight * y);
-            Vec2 uvMaxs(cellWidth * (x + 1), cellHeight * (y + 1));
-            m_spriteDefs.emplace_back(*this, spriteIndex, uvMins, uvMaxs);
-        }
+    for (int texelIndex = 0; texelIndex < totalTexels; ++texelIndex)
+    {
+        int byteIndex = texelIndex * numComponents;
+        unsigned char r = imageData[byteIndex + 0];
+        unsigned char g = imageData[byteIndex + 1];
+        unsigned char b = imageData[byteIndex + 2];
+        unsigned char a = (numComponents < 4) ? 255 : imageData[byteIndex + 3];
+        m_texelColors.emplace_back(r, g, b, a);
     }
+
+    stbi_image_free(imageData);
 }
 
-Texture& SpriteSheet::GetTexture() const
+Rgba8 Image::GetColorAt(int x, int y) const
 {
-    return m_texture;
-}
-
-int SpriteSheet::GetNumSprites() const
-{
-    return static_cast<int>(m_spriteDefs.size());
-}
-
-SpriteDefinition const& SpriteSheet::GetSpriteDef(int spriteIndex) const
-{
-    return m_spriteDefs[spriteIndex];
-}
-
-void SpriteSheet::GetSpriteUVs(Vec2& out_uvAtMins, Vec2& out_uvAtMaxs, int spriteIndex) const
-{
-    m_spriteDefs[spriteIndex].GetUVs(out_uvAtMins, out_uvAtMaxs);
-}
-
-AABB2 SpriteSheet::GetSpriteUVs(int spriteIndex) const
-{
-    return m_spriteDefs[spriteIndex].GetUVs();
+    int index = y * m_dimensions.x + x;
+    GUARANTEE_OR_DIE(index >= 0 && index < static_cast<int>(m_texelColors.size()), "GetColorAt out of bounds");
+    return m_texelColors[index];
 }
 

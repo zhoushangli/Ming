@@ -2,6 +2,11 @@
 
 #include <math.h>
 
+float Abs(float value)
+{
+    return (value < 0.f) ? -value : value;
+}
+
 float ConvertDegreesToRadians(float degrees)
 {
     return degrees * DegreesToRadiansMultiplier;
@@ -331,6 +336,13 @@ float GetAngleDegreesBetweenVectors2D(Vec2 const& a, Vec2 const& b)
 int GetTaxicabDistance2D(IntVec2 const& a, IntVec2 const& b)
 {
     return abs(a.x - b.x) + abs(a.y - b.y);
+}
+
+int GetTaxicabDistance2D(Vec2 const& a, Vec2 const& b)
+{
+    IntVec2 intA(RoundDownToInt(a.x), RoundDownToInt(a.y));
+    IntVec2 intB(RoundDownToInt(b.x), RoundDownToInt(b.y));
+    return GetTaxicabDistance2D(intA, intB);
 }
 
 // --- Is Point Inside ---

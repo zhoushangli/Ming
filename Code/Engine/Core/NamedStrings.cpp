@@ -1,13 +1,14 @@
 #include "Engine/Core/NamedStrings.hpp"
-#include "Engine/Core/StringUtils.hpp"
 
-#include "ErrorWarningAssert.hpp"
-void NamedStrings::PopulateFromXmlElementAttributes(XmlElement const& element)
+#include "Engine/Core/StringUtils.hpp"
+#include "Engine/Core/ErrorWarningAssert.hpp"
+
+void NamedStrings::PopulateFromXmlElementAttributes(XMLElement const& element)
 {
-    XmlAttribute const* attribute = element.FirstAttribute();
+    XMLAttribute const* attribute = element.FirstAttribute();
     while (attribute)
     {
-        DebuggerPrintf("%s ------ %s\n", attribute->Name(), attribute->Value());
+        DebuggerPrintf("[NamedStrings] Attribute: %-20s | Value: %s\n", attribute->Name(), attribute->Value());
         SetValue(attribute->Name(), attribute->Value());
         attribute = attribute->Next();
     }

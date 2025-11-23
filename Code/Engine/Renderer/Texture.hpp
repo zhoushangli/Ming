@@ -28,6 +28,7 @@ protected:
 };
 
 class SpriteSheet;
+
 class SpriteDefinition
 {
 public:

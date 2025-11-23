@@ -2,7 +2,7 @@
 
 #include <string>
 
-int ParseXmlAttribute(XmlElement const& element, char const* attributeName, int defaultValue)
+int ParseXmlAttribute(XMLElement const& element, char const* attributeName, int defaultValue)
 {
     char const* text = element.Attribute(attributeName);
     if (text == nullptr)
@@ -13,7 +13,7 @@ int ParseXmlAttribute(XmlElement const& element, char const* attributeName, int 
     return atoi(text);
 }
 
-char ParseXmlAttribute(XmlElement const& element, char const* attributeName, char defaultValue)
+char ParseXmlAttribute(XMLElement const& element, char const* attributeName, char defaultValue)
 {
     char const* text = element.Attribute(attributeName);
     if (text == nullptr || text[0] == '\0')
@@ -24,7 +24,7 @@ char ParseXmlAttribute(XmlElement const& element, char const* attributeName, cha
     return text[0];
 }
 
-bool ParseXmlAttribute(XmlElement const& element, char const* attributeName, bool defaultValue)
+bool ParseXmlAttribute(XMLElement const& element, char const* attributeName, bool defaultValue)
 {
     char const* text = element.Attribute(attributeName);
     if (text == nullptr)
@@ -46,7 +46,7 @@ bool ParseXmlAttribute(XmlElement const& element, char const* attributeName, boo
     return defaultValue;
 }
 
-float ParseXmlAttribute(XmlElement const& element, char const* attributeName, float defaultValue)
+float ParseXmlAttribute(XMLElement const& element, char const* attributeName, float defaultValue)
 {
     char const* text = element.Attribute(attributeName);
     if (text == nullptr)
@@ -57,7 +57,7 @@ float ParseXmlAttribute(XmlElement const& element, char const* attributeName, fl
     return (float)atof(text);
 }
 
-Rgba8 ParseXmlAttribute(XmlElement const& element, char const* attributeName, Rgba8 const& defaultValue)
+Rgba8 ParseXmlAttribute(XMLElement const& element, char const* attributeName, Rgba8 const& defaultValue)
 {
     char const* text = element.Attribute(attributeName);
     if (text == nullptr)
@@ -71,7 +71,7 @@ Rgba8 ParseXmlAttribute(XmlElement const& element, char const* attributeName, Rg
     return color;
 }
 
-Vec2 ParseXmlAttribute(XmlElement const& element, char const* attributeName, Vec2 const& defaultValue)
+Vec2 ParseXmlAttribute(XMLElement const& element, char const* attributeName, Vec2 const& defaultValue)
 {
     char const* text = element.Attribute(attributeName);
     if (text == nullptr)
@@ -85,7 +85,7 @@ Vec2 ParseXmlAttribute(XmlElement const& element, char const* attributeName, Vec
     return value;
 }
 
-IntVec2 ParseXmlAttribute(XmlElement const& element, char const* attributeName, IntVec2 const& defaultValue)
+IntVec2 ParseXmlAttribute(XMLElement const& element, char const* attributeName, IntVec2 const& defaultValue)
 {
     char const* text = element.Attribute(attributeName);
     if (text == nullptr)
@@ -99,7 +99,7 @@ IntVec2 ParseXmlAttribute(XmlElement const& element, char const* attributeName, 
     return value;
 }
 
-std::string ParseXmlAttribute(XmlElement const& element, char const* attributeName, std::string const& defaultValue)
+std::string ParseXmlAttribute(XMLElement const& element, char const* attributeName, std::string const& defaultValue)
 {
     char const* text = element.Attribute(attributeName);
     if (text == nullptr)
@@ -110,7 +110,7 @@ std::string ParseXmlAttribute(XmlElement const& element, char const* attributeNa
     return std::string(text);
 }
 
-Strings ParseXmlAttribute(XmlElement const& element, char const* attributeName, Strings const& defaultValues, char delimiter /*= ','*/)
+Strings ParseXmlAttribute(XMLElement const& element, char const* attributeName, Strings const& defaultValues, char delimiter /*= ','*/)
 {
     char const* text = element.Attribute(attributeName);
     if (text == nullptr)
@@ -121,7 +121,7 @@ Strings ParseXmlAttribute(XmlElement const& element, char const* attributeName, 
     return SplitStringOnDelimiter(text, delimiter);
 }
 
-std::string ParseXmlAttribute(XmlElement const& element, char const* attributeName, char const* defaultValue)
+std::string ParseXmlAttribute(XMLElement const& element, char const* attributeName, char const* defaultValue)
 {
     return ParseXmlAttribute(element, attributeName, std::string(defaultValue));
 }
