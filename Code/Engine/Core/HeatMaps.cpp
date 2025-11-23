@@ -3,8 +3,7 @@
 #include "Engine/Core/Vertex.hpp"
 #include "Engine/Math/MathUtils.hpp"
 
-TileHeatMap::TileHeatMap(IntVec2 const& dimensions)
-    : m_dimensions(dimensions)
+TileHeatMap::TileHeatMap(IntVec2 const& dimensions) : m_dimensions(dimensions)
 {
     int numTiles = m_dimensions.x * m_dimensions.y;
     m_values = new float[numTiles];
