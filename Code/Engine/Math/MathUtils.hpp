@@ -16,6 +16,7 @@ const float TWO_PI                      = 6.28318530717958647692f;
 const float HALF_PI                     = 1.57079632679489661923f;
 
 float Abs(float value);
+float Sign(float value);
 
 // Angle conversion and trigonometric functions
 float ConvertDegreesToRadians(float degrees);
