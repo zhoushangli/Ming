@@ -138,8 +138,8 @@
     <ClCompile Include="Core\HeatMaps.cpp">
       <Filter>Core</Filter>
     </ClCompile>
-    <ClCompile Include="Renderer\Image.cpp">
-      <Filter>Renderer</Filter>
+    <ClCompile Include="Core\Image.cpp">
+      <Filter>Core</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -284,8 +284,8 @@
     <ClInclude Include="Core\HeatMaps.hpp">
       <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="Renderer\Image.hpp">
-      <Filter>Renderer</Filter>
+    <ClInclude Include="Core\Image.hpp">
+      <Filter>Core</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

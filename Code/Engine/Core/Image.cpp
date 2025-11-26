@@ -1,6 +1,7 @@
-#include "Engine/Renderer/Image.hpp"
+#include "Engine/Core/Image.hpp"
 
 #include "Engine/Core/Rgba8.hpp"
+#include "Engine/Core/StringUtils.hpp"
 #include "Engine/Core/ErrorWarningAssert.hpp"
 
 #include <ThirdParty/stb/stb_image.h>
@@ -8,9 +9,12 @@
 Image::Image(char const* imageFilePath)
 {
     int numComponents = 0;
+    
+    stbi_set_flip_vertically_on_load(true);
     unsigned char* imageData = stbi_load(imageFilePath, &m_dimensions.x, &m_dimensions.y, &numComponents, STBI_rgb_alpha);
+    stbi_set_flip_vertically_on_load(false);
 
-    // GUARANTEE_OR_DIE(imageData != nullptr, "Failed to load image from file: %s", imageFilePath);
+    GUARANTEE_OR_DIE(imageData != nullptr, Stringf("Failed to load image from file: %s", imageFilePath));
 
     int totalTexels = m_dimensions.x * m_dimensions.y;
     m_texelColors.reserve(totalTexels);
@@ -26,6 +30,11 @@ Image::Image(char const* imageFilePath)
     }
 
     stbi_image_free(imageData);
+}
+
+Image::Image(std::string const& imageFilePath) : Image(imageFilePath.c_str())
+{
+
 }
 
 Rgba8 Image::GetColorAt(int x, int y) const

@@ -148,8 +148,9 @@ Texture* Renderer::CreateTextureFromFile(char const* imageFilePath)
 	int bytesPerTexel = 0;					// ...and how many color components the image had (e.g. 3=RGB=24bit, 4=RGBA=32bit)
 
 	// Load (and decompress) the image RGB(A) bytes from a file on disk into a memory buffer (array of bytes)
-	stbi_set_flip_vertically_on_load(1); // We prefer uvTexCoords has origin (0,0) at BOTTOM LEFT
+	stbi_set_flip_vertically_on_load(true); // We prefer uvTexCoords has origin (0,0) at BOTTOM LEFT
 	unsigned char* texelData = stbi_load(imageFilePath, &dimensions.x, &dimensions.y, &bytesPerTexel, 0);
+    stbi_set_flip_vertically_on_load(false);
 
 	// Check if the load was successful
 	GUARANTEE_OR_DIE(texelData, Stringf("Failed to load image \"%s\"", imageFilePath));
