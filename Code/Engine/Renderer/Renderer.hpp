@@ -1,7 +1,9 @@
 #pragma once
 
 #include "Engine/Math/IntVec2.hpp"
+#include "Engine/Renderer/BitmapFont.hpp"
 
+#include <map>
 #include <vector>
 
 struct Vec2;
@@ -41,12 +43,14 @@ public:
 
 	Texture* CreateOrGetTextureFromFile(char const* fileDataPath);
     Texture* CreateTextureFromData(char const* name, IntVec2 dimensions, int bytesPerTexel, uint8_t* texelData);
+    BitmapFont* CreateOrGetBitmapFont(char const* fontFilePathNameWithNoExtension);
 
 private:
 	Texture* CreateTextureFromFile(char const* fileDataPath);
 	Texture* GetTextureFromFileName(char const* fileName);
 
-	std::vector<Texture*> m_loadedTextures;
+	std::map<std::string, Texture*> m_loadedTexturesDict;
+    std::map<std::string, BitmapFont*> m_loadedFontsDict;
 
 private:
 	RendererConfig m_config;
