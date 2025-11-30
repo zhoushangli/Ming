@@ -7,6 +7,22 @@ float Abs(float value)
     return (value < 0.f) ? -value : value;
 }
 
+float Sign(float value)
+{
+    if (value > 0.f)
+    {
+        return 1.f;
+    }
+    else if (value < 0.f)
+    {
+        return -1.f;
+    }
+    else
+    {
+        return 0.f;
+    }
+}
+
 float ConvertDegreesToRadians(float degrees)
 {
     return degrees * DegreesToRadiansMultiplier;
