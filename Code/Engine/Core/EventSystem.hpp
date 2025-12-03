@@ -1,23 +1,33 @@
 #pragma once
 
-#include "Engine/Math/IntVec2.hpp"
-
-#include <vector>
 #include <string>
+#include <vector>
+#include <map>
 
-struct Rgba8;
+typedef void (*EventSystemCallbackFunctionPtr)();
 
-class Image
+struct EventSystemConfig
+{
+    bool m_isEnable = true;
+};
+
+class EventSystem
 {
 public:
-    Image(char const* imageFilePath);
-    Image(std::string const& imageFilePath);
+    EventSystem(EventSystemConfig const& config);
+    ~EventSystem();
 
-    Rgba8 GetColorAt(int x, int y) const;
+    void Startup();
+    void Shutdown();
+    void BeginFrame();
+    void EndFrame();
 
-    IntVec2 GetDimensions() const { return m_dimensions; }
+    void SubscribeEventCallbackFunction(std::string const& eventName, EventSystemCallbackFunctionPtr ptr);
+    void UnsubscribeEventCallbackFunction(std::string const& eventName, EventSystemCallbackFunctionPtr ptr);
+/*    void FireEvent(std::string const& eventName, EventArgs& args);*/
+    void FireEvent(std::string const& eventName);
 
 protected:
-    std::vector<Rgba8> m_texelColors;
-    IntVec2 m_dimensions;
+    EventSystemConfig m_config;
+    std::map<std::string, std::vector<EventSystemCallbackFunctionPtr>> m_subscriptionListsByEventName;
 };
