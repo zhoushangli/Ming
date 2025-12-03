@@ -57,7 +57,6 @@ public:
     void SetIJKT4D(Vec4 const& iBasis4D, Vec4 const& jBasis4D, Vec4 const& kBasis4D, Vec4 const& translation4D); 
 
     void Append(Matrix4x4 const appendThis);            
-    void AppendRotation(float degreesAboutX);   
     void AppendRotationX(float degreesAboutX);
     void AppendRotationY(float degreesAboutY);          
     void AppendRotationZ(float degreesAboutZ);          

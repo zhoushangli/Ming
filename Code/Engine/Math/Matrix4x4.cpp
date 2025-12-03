@@ -376,62 +376,112 @@ void Matrix4x4::Append(Matrix4x4 const appendThis)
     }
 }
 
-void Matrix4x4::AppendRotation(float degreesAboutX)
-{
-    Matrix4x4 rot = Matrix4x4::MakeRotationDegreesX(degreesAboutX);
-    Append(rot);
-}
-
 void Matrix4x4::AppendRotationX(float degreesAboutX)
 {
-    Matrix4x4 rot = Matrix4x4::MakeRotationDegreesX(degreesAboutX);
+    float c = CosDegrees(degreesAboutX);
+    float s = SinDegrees(degreesAboutX);
+
+    Matrix4x4 rot;
+
+    rot.m_values[Jy] = c;
+    rot.m_values[Jz] = s;
+    rot.m_values[Ky] = -s;
+    rot.m_values[Kz] = c;
+
     Append(rot);
 }
 
 void Matrix4x4::AppendRotationY(float degreesAboutY)
 {
-    Matrix4x4 rot = Matrix4x4::MakeRotationDegreesY(degreesAboutY);
+    float c = CosDegrees(degreesAboutY);
+    float s = SinDegrees(degreesAboutY);
+
+    Matrix4x4 rot;
+
+    rot.m_values[Ix] = c;
+    rot.m_values[Iz] = -s;
+
+    rot.m_values[Kx] = s;
+    rot.m_values[Kz] = c;
+
     Append(rot);
 }
 
 void Matrix4x4::AppendRotationZ(float degreesAboutZ)
 {
-    Matrix4x4 rot = Matrix4x4::MakeRotationDegreesZ(degreesAboutZ);
+    float c = CosDegrees(degreesAboutZ);
+    float s = SinDegrees(degreesAboutZ);
+
+    Matrix4x4 rot;
+
+    rot.m_values[Ix] = c;
+    rot.m_values[Iy] = s;
+
+    rot.m_values[Jx] = -s;
+    rot.m_values[Jy] = c;
+
     Append(rot);
 }
 
 void Matrix4x4::AppendTranslation2D(Vec2 const translationXY)
 {
-    Matrix4x4 trans = Matrix4x4::MakeTranslation2D(translationXY);
+    Matrix4x4 trans; 
+
+    trans.m_values[Tx] = translationXY.x;
+    trans.m_values[Ty] = translationXY.y;
+
     Append(trans);
 }
 
 void Matrix4x4::AppendTranslation3D(Vec3 const translationXYZ)
 {
-    Matrix4x4 trans = Matrix4x4::MakeTranslation3D(translationXYZ);
+    Matrix4x4 trans;
+
+    trans.m_values[Tx] = translationXYZ.x;
+    trans.m_values[Ty] = translationXYZ.y;
+    trans.m_values[Tz] = translationXYZ.z;
+
     Append(trans);
 }
 
 void Matrix4x4::AppendScaleUniform2D(float uniformScaleXY)
 {
-    Matrix4x4 scale = Matrix4x4::MakeUniformScale2D(uniformScaleXY);
+    Matrix4x4 scale; 
+
+    scale.m_values[Ix] = uniformScaleXY;
+    scale.m_values[Jy] = uniformScaleXY;
+
     Append(scale);
 }
 
 void Matrix4x4::AppendScaleUniform3D(float uniformScaleXYZ)
 {
-    Matrix4x4 scale = Matrix4x4::MakeUniformScale3D(uniformScaleXYZ);
+    Matrix4x4 scale; 
+
+    scale.m_values[Ix] = uniformScaleXYZ;
+    scale.m_values[Jy] = uniformScaleXYZ;
+    scale.m_values[Kz] = uniformScaleXYZ;
+
     Append(scale);
 }
 
 void Matrix4x4::AppendScaleNonUniform2D(Vec2 const nonUniformScaleXY)
 {
-    Matrix4x4 scale = Matrix4x4::MakeNonUniformScale2D(nonUniformScaleXY);
+    Matrix4x4 scale; 
+
+    scale.m_values[Ix] = nonUniformScaleXY.x;
+    scale.m_values[Jy] = nonUniformScaleXY.y;
+
     Append(scale);
 }
 
 void Matrix4x4::AppendScaleNonUniform3D(Vec3 const nonUniformScaleXYZ)
 {
-    Matrix4x4 scale = Matrix4x4::MakeNonUniformScale3D(nonUniformScaleXYZ);
+    Matrix4x4 scale; 
+
+    scale.m_values[Ix] = nonUniformScaleXYZ.x;
+    scale.m_values[Jy] = nonUniformScaleXYZ.y;
+    scale.m_values[Kz] = nonUniformScaleXYZ.z;
+
     Append(scale);
 }
