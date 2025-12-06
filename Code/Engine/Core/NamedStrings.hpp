@@ -8,7 +8,7 @@
 class NamedStrings
 {
 public:
-    void			PopulateFromXmlElementAttributes(XMLElement const& element);
+    void			PopulateFromXmlElementAttributes(XmlElement const& element);
     void			SetValue(std::string const& keyName, std::string const& newValue);
     std::string		GetValue(std::string const& keyName, std::string const& defaultValue) const;
     bool			GetValue(std::string const& keyName, bool defaultValue) const;
@@ -19,6 +19,7 @@ public:
     Vec2			GetValue(std::string const& keyName, Vec2 const& defaultValue) const;
     IntVec2		    GetValue(std::string const& keyName, IntVec2 const& defaultValue) const;
 
+    void            DebugPrintContents();
 
 private:
     std::map<std::string, std::string> m_keyValuePairs;

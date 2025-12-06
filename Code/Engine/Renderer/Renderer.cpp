@@ -99,6 +99,23 @@ void Renderer::ClearScreen(Rgba8 const& clearColor)
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
+void Renderer::SetBlendMode(BlendMode blendMode)
+{
+    if (blendMode == BlendMode::ALPHA)
+    {
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    }
+    else if (blendMode == BlendMode::ADDITIVE)
+    {
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+    }
+    else
+    {
+        ERROR_AND_DIE(Stringf("Unknown / unsupported blend mode #%i", blendMode));
+    }
+}
+
+
 void Renderer::BeginCamera(Camera const& camera)
 {	
 	glLoadIdentity();

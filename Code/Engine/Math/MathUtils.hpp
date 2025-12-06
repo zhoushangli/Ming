@@ -17,6 +17,10 @@ const float HALF_PI                     = 1.57079632679489661923f;
 
 float Abs(float value);
 float Sign(float value);
+float Min(float a, float b);
+int Min(int a, int b);
+float Max(float a, float b);
+int Max(int a, int b);
 
 // Angle conversion and trigonometric functions
 float ConvertDegreesToRadians(float degrees);

@@ -17,6 +17,7 @@ public:
     static const Rgba8 GRAY;
     static const Rgba8 LIGHT_GRAY;
     static const Rgba8 DARK_GRAY;
+    static const Rgba8 TRANSLUCENT_BLACK;
     static const Rgba8 TRANSPARENT;
 
 	Rgba8();

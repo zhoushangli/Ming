@@ -17,6 +17,13 @@ struct RendererConfig
 	bool m_isEnable = true;
 };
 
+enum class BlendMode
+{
+    ALPHA,
+    ADDITIVE,
+};
+
+
 class Renderer
 {
 public:
@@ -32,6 +39,7 @@ public:
     void CreateRenderingContext();
 
     void ClearScreen(Rgba8 const& clearColor);
+    void SetBlendMode(BlendMode blendMode);
 
     void BeginCamera(Camera const& camera);
     void EndCamera();

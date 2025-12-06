@@ -4,6 +4,7 @@
 #include "Engine/Renderer/Texture.hpp"
 #include "Engine/Math/AABB2.hpp"
 #include "Engine/Math/Vec2.hpp"
+#include "Engine/Math/MathUtils.hpp"
 
 #include <string>
 #include <vector>
@@ -27,7 +28,7 @@ Texture& BitmapFont::GetTexture()
 }
 
 void BitmapFont::AddVertsForText2D(
-    std::vector<Vertex>& vertexArray,
+    std::vector<Vertex>& verts,
     Vec2 textMins,
     float cellHeight,
     std::string const& text,
@@ -36,33 +37,128 @@ void BitmapFont::AddVertsForText2D(
 {
     float cellWidth = cellHeight * m_fontDefaultAspect * cellAspectScale;
     Vec2 pen = textMins;
+    float lineStartX = textMins.x;
 
     for (char c : text)
     {
-        int index = static_cast<int>(c);
-        AABB2 uv = m_fontGlyphsSpriteSheet.GetSpriteUVs(index);
+        if (c == '\n')
+        {
+            pen.x = lineStartX;
+            pen.y -= cellHeight;
+            continue;
+        }
 
+        int index = (int)c;
+        AABB2 uv = m_fontGlyphsSpriteSheet.GetSpriteUVs(index);
         AABB2 bounds(pen, pen + Vec2(cellWidth, cellHeight));
 
-        vertexArray.emplace_back(Vec3(bounds.m_mins.x, bounds.m_mins.y, 0.f), tint, uv.m_mins);
-        vertexArray.emplace_back(Vec3(bounds.m_maxs.x, bounds.m_mins.y, 0.f), tint, Vec2(uv.m_maxs.x, uv.m_mins.y));
-        vertexArray.emplace_back(Vec3(bounds.m_maxs.x, bounds.m_maxs.y, 0.f), tint, uv.m_maxs);
+        verts.emplace_back(Vec3(bounds.m_mins.x, bounds.m_mins.y, 0.f), tint, uv.m_mins);
+        verts.emplace_back(Vec3(bounds.m_maxs.x, bounds.m_mins.y, 0.f), tint, Vec2(uv.m_maxs.x, uv.m_mins.y));
+        verts.emplace_back(Vec3(bounds.m_maxs.x, bounds.m_maxs.y, 0.f), tint, uv.m_maxs);
 
-        vertexArray.emplace_back(Vec3(bounds.m_mins.x, bounds.m_mins.y, 0.f), tint, uv.m_mins);
-        vertexArray.emplace_back(Vec3(bounds.m_maxs.x, bounds.m_maxs.y, 0.f), tint, uv.m_maxs);
-        vertexArray.emplace_back(Vec3(bounds.m_mins.x, bounds.m_maxs.y, 0.f), tint, Vec2(uv.m_mins.x, uv.m_maxs.y));
+        verts.emplace_back(Vec3(bounds.m_mins.x, bounds.m_mins.y, 0.f), tint, uv.m_mins);
+        verts.emplace_back(Vec3(bounds.m_maxs.x, bounds.m_maxs.y, 0.f), tint, uv.m_maxs);
+        verts.emplace_back(Vec3(bounds.m_mins.x, bounds.m_maxs.y, 0.f), tint, Vec2(uv.m_mins.x, uv.m_maxs.y));
 
         pen.x += cellWidth;
     }
 }
 
+void BitmapFont::AddVertsForTextInBox2D(
+    std::vector<Vertex>& verts,
+    std::string const& text,
+    AABB2 const& box,
+    float cellHeight,
+    Rgba8 tint,
+    float cellAspectScale,
+    Vec2 alignment,
+    TextBoxMode mode,
+    int maxGlyphsToDraw)
+{
+    Vec2 textBoundsDimension = GetTextBoundsDimension(cellHeight, text, cellAspectScale);
+    AABB2 textBounds = AABB2(box.m_mins, box.m_mins + textBoundsDimension);
+
+    Vec2 gaps = box.GetDimensions() - textBounds.GetDimensions();
+
+    if (mode == TextBoxMode::SHRINK_TO_FIT)
+    {
+        Vec2 dims = textBounds.GetDimensions();
+        Vec2 boxDims = box.GetDimensions();
+
+        float sx = boxDims.x / dims.x;
+        float sy = boxDims.y / dims.y;
+        float scale = Min(sx, sy);
+
+        if (scale < 1.f)
+        {
+            cellHeight *= scale;
+
+            textBoundsDimension = GetTextBoundsDimension(cellHeight, text, cellAspectScale);
+            textBounds = AABB2(box.m_mins, box.m_mins + textBoundsDimension);
+
+            gaps = box.GetDimensions() - textBounds.GetDimensions();
+        }
+    }
+
+    Vec2 start = box.m_mins + gaps * alignment;
+    int glyphCount = Min((int)text.size(), maxGlyphsToDraw);
+    std::string clipped = text.substr(0, glyphCount + 1);
+
+    AddVertsForText2D(
+        verts,
+        start,
+        cellHeight,
+        clipped,
+        tint,
+        cellAspectScale);
+}
+
 float BitmapFont::GetTextWidth(float cellHeight, std::string const& text, float cellAspectScale)
 {
     float cellWidth = cellHeight * m_fontDefaultAspect * cellAspectScale;
-    return cellWidth * static_cast<float>(text.length());
+
+    int maxLen = 0;
+    int curLen = 0;
+
+    for (char c : text)
+    {
+        if (c == '\n')
+        {
+            maxLen = Max(maxLen, curLen);
+            curLen = 0;
+        }
+        else
+        {
+            ++curLen;
+        }
+    }
+
+    maxLen = Max(maxLen, curLen);
+    return cellWidth * (float)maxLen;
 }
 
-float BitmapFont::GetGlyphAspect(int /*glyphUnicode*/) const
+float BitmapFont::GetTextHeight(float cellHeight, std::string const& text)
+{
+    int lines = 1;
+    for (char c : text)
+    {
+        if (c == '\n')
+        {
+            ++lines;
+        }
+    }
+
+    return cellHeight * (float)lines;
+}
+
+Vec2 BitmapFont::GetTextBoundsDimension(float cellHeight, std::string const& text, float cellAspectScale /*= 1.f*/)
+{
+    float textWidth = GetTextWidth(cellHeight, text, cellAspectScale);
+    float textHeight = GetTextHeight(cellHeight, text);
+    return Vec2(textWidth, textHeight);
+}
+
+float BitmapFont::GetGlyphAspect(int) const
 {
     return m_fontDefaultAspect;
 }

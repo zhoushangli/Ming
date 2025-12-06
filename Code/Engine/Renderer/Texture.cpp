@@ -59,11 +59,17 @@ SpriteSheet::SpriteSheet(Texture& texture, IntVec2 const& simpleGridLayout)
     float cellWidth = 1.0f / static_cast<float>(simpleGridLayout.x);
     float cellHeight = 1.0f / static_cast<float>(simpleGridLayout.y);
 
+    float texelWidth = 1.0f / static_cast<float>(m_texture.GetDimensions().x);
+    float texelHeight = 1.0f / static_cast<float>(m_texture.GetDimensions().y);
+    Vec2 texelOffset(texelWidth / 128.f, texelHeight / 128.f);
+
     for (int y = simpleGridLayout.y - 1; y >= 0; --y) {
         for (int x = 0; x < simpleGridLayout.x; ++x) {
             int spriteIndex = y * simpleGridLayout.x + x;
             Vec2 uvMins(cellWidth * x, cellHeight * y);
             Vec2 uvMaxs(cellWidth * (x + 1), cellHeight * (y + 1));
+            uvMins += texelOffset;
+            uvMaxs -= texelOffset;
             m_spriteDefs.emplace_back(*this, spriteIndex, uvMins, uvMaxs);
         }
     }

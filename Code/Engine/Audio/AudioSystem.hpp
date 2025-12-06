@@ -23,9 +23,9 @@ class AudioSystem;
 struct AudioConfig
 {
 #if defined( ENGINE_DISABLE_AUDIO )
-	bool		m_isEnabled = false;
+	bool		m_isEnable = false;
 #else
-	bool		m_isEnabled = true;
+	bool		m_isEnable = true;
 #endif
 };
 

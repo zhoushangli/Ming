@@ -1,46 +1,170 @@
-#include "Engine/Core/Image.hpp"
+#include "Engine/Core/DevConsole.hpp"
 
-#include "Engine/Core/Rgba8.hpp"
-#include "Engine/Core/StringUtils.hpp"
-#include "Engine/Core/ErrorWarningAssert.hpp"
+#include "Engine/Core/Engine.hpp"
 
-#include <ThirdParty/stb/stb_image.h>
+// Static color definitions
+Rgba8 const DevConsole::ERROR      = Rgba8(255, 0, 0, 255);      // Red
+Rgba8 const DevConsole::WARNING    = Rgba8(255, 255, 0, 255);    // Yellow
+Rgba8 const DevConsole::INFO_MAJOR = Rgba8(0, 255, 0, 255);      // Green
+Rgba8 const DevConsole::INFO_MINOR = Rgba8(0, 255, 255, 255);    // Cyan
 
-Image::Image(char const* imageFilePath)
+int const MAX_CONSOLE_LINES = 40;
+
+DevConsole::DevConsole(DevConsoleConfig const& config)
+    : m_config(config)
 {
-    int numComponents = 0;
+}
+
+DevConsole::~DevConsole()
+{
+}
+
+void DevConsole::Startup()
+{
+    m_lines.clear();
+    m_mode = DevConsoleMode::HIDDEN;
+    m_frameNumber = 0;
+}
+
+void DevConsole::Shutdown()
+{
+    m_lines.clear();
+}
+
+void DevConsole::BeginFrame()
+{
+    ++m_frameNumber;
+}
+
+void DevConsole::EndFrame()
+{
+    // No-op for now
+}
+
+void DevConsole::Execute(std::string const& consoleCommandText)
+{
+    // For now, just echo the command as an info line
+    AddLine(INFO_MAJOR, consoleCommandText);
+}
+
+void DevConsole::AddLine(Rgba8 const& color, std::string const& text)
+{
+    DevConsoleLine line;
     
-    stbi_set_flip_vertically_on_load(true);
-    unsigned char* imageData = stbi_load(imageFilePath, &m_dimensions.x, &m_dimensions.y, &numComponents, STBI_rgb_alpha);
-    stbi_set_flip_vertically_on_load(false);
+    line.m_color = color;
+    line.m_text = text;
+    line.m_frameNumber = m_frameNumber;
+    
+    m_lines.push_back(line);
+}
 
-    GUARANTEE_OR_DIE(imageData != nullptr, Stringf("Failed to load image from file: %s", imageFilePath));
+void DevConsole::Render(AABB2 const& bounds) const
+{
+    if (m_mode == DevConsoleMode::HIDDEN)
+        return;
 
-    int totalTexels = m_dimensions.x * m_dimensions.y;
-    m_texelColors.reserve(totalTexels);
+    std::vector<Vertex> verts;
 
-    for (int texelIndex = 0; texelIndex < totalTexels; ++texelIndex)
+    AddVertsForAABB2D(verts, bounds, Rgba8::TRANSLUCENT_BLACK);
+
+    g_engine->m_renderer->BindTexture(nullptr);
+    g_engine->m_renderer->DrawVertexArray((int)verts.size(), verts.data());
+
+    switch (m_mode)
     {
-        int byteIndex = texelIndex * numComponents;
-        unsigned char r = imageData[byteIndex + 0];
-        unsigned char g = imageData[byteIndex + 1];
-        unsigned char b = imageData[byteIndex + 2];
-        unsigned char a = (numComponents < 4) ? 255 : imageData[byteIndex + 3];
-        m_texelColors.emplace_back(r, g, b, a);
+        case DevConsoleMode::OPEN_FULL:
+        {
+            BitmapFont* font = g_engine->m_renderer->CreateOrGetBitmapFont("Data/Images/SquirrelFixedFont");
+            Render_OpenFull(bounds, *font);
+            break;
+        }
+          
+        default:
+            break;
+    }
+}
+
+DevConsoleMode DevConsole::GetMode() const
+{
+    return m_mode;
+}
+
+void DevConsole::SetMode(DevConsoleMode mode)
+{
+    m_mode = mode;
+}
+
+void DevConsole::ToggleMode(DevConsoleMode mode)
+{
+    if (m_mode == mode)
+    {
+        m_mode = DevConsoleMode::HIDDEN;
+    }
+    else
+    {
+        m_mode = mode;
+    }
+}
+
+void DevConsole::Render_OpenFull(AABB2 const& bounds, BitmapFont& font, float fontAspect) const
+{
+    float cellHeight = (bounds.GetDimensions().y) / (float)MAX_CONSOLE_LINES;
+
+    int maxLines = MAX_CONSOLE_LINES - 1; // Reserve one line for input
+    int numLines = (int)m_lines.size();
+    int linesToDraw = std::min(numLines, maxLines);
+
+    std::vector<Vertex> verts;
+
+    // Draw console lines from bottom up
+    for (int i = 0; i < linesToDraw; ++i)
+    {
+        int lineIdx = numLines - i - 1;
+        const DevConsoleLine& line = m_lines[lineIdx];
+
+        std::string text = "> " + line.m_text;
+        float y = bounds.m_mins.y + cellHeight * (i + 1);
+
+        AABB2 lineBox(
+            Vec2(bounds.m_mins.x, y),
+            Vec2(bounds.m_maxs.x, y + cellHeight)
+        );
+
+        font.AddVertsForTextInBox2D(
+            verts,
+            text,
+            lineBox,
+            cellHeight,
+            line.m_color,
+            fontAspect,
+            Vec2(0.f, 0.5f), // left, vertically centered
+            TextBoxMode::SHRINK_TO_FIT
+        );
     }
 
-    stbi_image_free(imageData);
+    // Draw input line (empty, with blinking '>')
+    AABB2 inputBox(
+        Vec2(bounds.m_mins.x, bounds.m_mins.y),
+        Vec2(bounds.m_maxs.x, bounds.m_mins.y + cellHeight)
+    );
+
+    // Blinking cursor: show '>' if even frame, hide if odd
+    bool showCursor = ((m_frameNumber / 30) % 2) == 0; // Blinks every ~0.5s at 60fps
+    std::string inputPrompt = showCursor ? "> " : "  ";
+
+    font.AddVertsForTextInBox2D(
+        verts,
+        inputPrompt + m_currentInput,
+        inputBox,
+        cellHeight,
+        Rgba8::WHITE,
+        fontAspect,
+        Vec2(0.f, 0.5f),
+        TextBoxMode::SHRINK_TO_FIT
+    );
+
+    g_engine->m_renderer->BindTexture(&font.GetTexture());
+    g_engine->m_renderer->DrawVertexArray((int)verts.size(), verts.data());
 }
 
-Image::Image(std::string const& imageFilePath) : Image(imageFilePath.c_str())
-{
-
-}
-
-Rgba8 Image::GetColorAt(int x, int y) const
-{
-    int index = y * m_dimensions.x + x;
-    GUARANTEE_OR_DIE(index >= 0 && index < static_cast<int>(m_texelColors.size()), "GetColorAt out of bounds");
-    return m_texelColors[index];
-}
 

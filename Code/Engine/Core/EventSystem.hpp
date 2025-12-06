@@ -1,10 +1,12 @@
 #pragma once
 
+#include "Engine/Core/NamedStrings.hpp"
+
 #include <string>
 #include <vector>
 #include <map>
 
-typedef void (*EventSystemCallbackFunctionPtr)();
+using EventSystemCallbackFunctionPtr = bool (*)(NamedStrings&);
 
 struct EventSystemConfig
 {
@@ -24,10 +26,15 @@ public:
 
     void SubscribeEventCallbackFunction(std::string const& eventName, EventSystemCallbackFunctionPtr ptr);
     void UnsubscribeEventCallbackFunction(std::string const& eventName, EventSystemCallbackFunctionPtr ptr);
-/*    void FireEvent(std::string const& eventName, EventArgs& args);*/
-    void FireEvent(std::string const& eventName);
+    int  FireEvent(std::string const& eventName, NamedStrings& args);
+    int  FireEvent(std::string const& eventName);
 
 protected:
     EventSystemConfig m_config;
     std::map<std::string, std::vector<EventSystemCallbackFunctionPtr>> m_subscriptionListsByEventName;
 };
+
+void SubscribeEventCallbackFunction(std::string const& eventName, EventSystemCallbackFunctionPtr ptr);
+void UnsubscribeEventCallbackFunction(std::string const& eventName, EventSystemCallbackFunctionPtr ptr);
+int FireEvent(std::string const& eventName);
+int FireEvent(std::string const& eventName, NamedStrings& args);

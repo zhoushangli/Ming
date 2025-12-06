@@ -3,9 +3,9 @@
 #include "Engine/Core/StringUtils.hpp"
 #include "Engine/Core/ErrorWarningAssert.hpp"
 
-void NamedStrings::PopulateFromXmlElementAttributes(XMLElement const& element)
+void NamedStrings::PopulateFromXmlElementAttributes(XmlElement const& element)
 {
-    XMLAttribute const* attribute = element.FirstAttribute();
+    XmlAttribute const* attribute = element.FirstAttribute();
     while (attribute)
     {
         DebuggerPrintf("[NamedStrings] Attribute: %-20s | Value: %s\n", attribute->Name(), attribute->Value());
@@ -111,4 +111,13 @@ IntVec2 NamedStrings::GetValue(std::string const& keyName, IntVec2 const& defaul
         return result;
     }
     return defaultValue;
+}
+
+void NamedStrings::DebugPrintContents()
+{
+    DebuggerPrintf("NamedStrings Contents:\n");
+    for (auto const& pair : m_keyValuePairs)
+    {
+        DebuggerPrintf("  Key: %-20s | Value: %s\n", pair.first.c_str(), pair.second.c_str());
+    }
 }

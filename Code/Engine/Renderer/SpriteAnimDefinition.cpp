@@ -1,102 +1,62 @@
-#include "Engine/Renderer/Texture.hpp"
+#include "Engine/Renderer/SpriteAnimDefinition.hpp"
 
-#include "Engine/Math/AABB2.hpp"
+SpriteAnimDefinition::SpriteAnimDefinition(
+    SpriteSheet const& sheet,
+    int startSpriteIndex,
+    int endSpriteIndex,
+    float framesPerSecond,
+    SpriteAnimPlaybackType playbackType /*= SpriteAnimPlaybackType::LOOP*/) :
+    m_spriteSheet(sheet),
+    m_startSpriteIndex(startSpriteIndex),
+    m_endSpriteIndex(endSpriteIndex),
+    m_framesPerSecond(framesPerSecond),
+    m_playbackType(playbackType)
+{}
 
-// Texture
-Texture::Texture()
+SpriteDefinition const& SpriteAnimDefinition::GetSpriteDefAtTime(float seconds) const
 {
-}
-
-Texture::~Texture()
-{
-}
-
-// SpriteDefinition
-SpriteDefinition::SpriteDefinition(SpriteSheet const& spriteSheet, int spriteIndex, Vec2 const& uvAtMins, Vec2 const& uvAtMaxs)
-    : m_spriteSheet(spriteSheet)
-    , m_spriteIndex(spriteIndex)
-    , m_uvAtMins(uvAtMins)
-    , m_uvAtMaxs(uvAtMaxs)
-{
-}
-
-void SpriteDefinition::GetUVs(Vec2& out_uvAtMins, Vec2& out_uvAtMaxs) const
-{
-    out_uvAtMins = m_uvAtMins;
-    out_uvAtMaxs = m_uvAtMaxs;
-}
-
-AABB2 SpriteDefinition::GetUVs() const
-{
-    return AABB2(m_uvAtMins, m_uvAtMaxs);
-}
-
-SpriteSheet const& SpriteDefinition::GetSpriteSheet() const
-{
-    return m_spriteSheet;
-}
-
-Texture& SpriteDefinition::GetTexture() const
-{
-    return m_spriteSheet.GetTexture();
-}
-
-float SpriteDefinition::GetAspect() const
-{
-    // Calculate aspect ratio from UVs
-    float width = m_uvAtMaxs.x - m_uvAtMins.x;
-    float height = m_uvAtMaxs.y - m_uvAtMins.y;
-    return (height != 0.0f) ? (width / height) : 1.0f;
-}
-
-// SpriteSheet
-SpriteSheet::SpriteSheet(Texture& texture, IntVec2 const& simpleGridLayout)
-    : m_texture(texture)
-{
-    int numSprites = simpleGridLayout.x * simpleGridLayout.y;
-    m_spriteDefs.reserve(numSprites);
-
-    float cellWidth = 1.0f / static_cast<float>(simpleGridLayout.x);
-    float cellHeight = 1.0f / static_cast<float>(simpleGridLayout.y);
-
-    float texelWidth = 1.0f / static_cast<float>(m_texture.GetDimensions().x);
-    float texelHeight = 1.0f / static_cast<float>(m_texture.GetDimensions().y);
-    Vec2 texelOffset(texelWidth / 128.f, texelHeight / 128.f);
-
-    for (int y = simpleGridLayout.y - 1; y >= 0; --y) {
-        for (int x = 0; x < simpleGridLayout.x; ++x) {
-            int spriteIndex = y * simpleGridLayout.x + x;
-            Vec2 uvMins(cellWidth * x, cellHeight * y);
-            Vec2 uvMaxs(cellWidth * (x + 1), cellHeight * (y + 1));
-            uvMins += texelOffset;
-            uvMaxs -= texelOffset;
-            m_spriteDefs.emplace_back(*this, spriteIndex, uvMins, uvMaxs);
-        }
+    int numFrames = m_endSpriteIndex - m_startSpriteIndex + 1;
+    if (numFrames <= 0)
+    {
+        return m_spriteSheet.GetSpriteDef(m_startSpriteIndex);
     }
-}
 
-Texture& SpriteSheet::GetTexture() const
-{
-    return m_texture;
-}
+    seconds = seconds < 0.f ? 0.f : seconds;
+    int frameIndex = 0;
 
-int SpriteSheet::GetNumSprites() const
-{
-    return static_cast<int>(m_spriteDefs.size());
-}
+    switch (m_playbackType)
+    {
+    case SpriteAnimPlaybackType::ONCE:
+    {
+        int frame = static_cast<int>(seconds * m_framesPerSecond);
+        if (frame >= numFrames) frame = numFrames - 1;
+        frameIndex = m_startSpriteIndex + frame;
+        break;
+    }
+    case SpriteAnimPlaybackType::LOOP:
+    {
+        int frame = static_cast<int>(seconds * m_framesPerSecond) % numFrames;
+        frameIndex = m_startSpriteIndex + frame;
+        break;
+    }
+    case SpriteAnimPlaybackType::PINGPONG:
+    {
+        int totalPingPongFrames = (numFrames * 2) - 2;
+        int frame = static_cast<int>(seconds * m_framesPerSecond) % totalPingPongFrames;
+        if (frame < numFrames)
+        {
+            frameIndex = m_startSpriteIndex + frame;
+        }
+        else
+        {
+            frameIndex = m_endSpriteIndex - (frame - numFrames + 1);
+        }
+        break;
+    }
+    default:
+        frameIndex = m_startSpriteIndex;
+        break;
+    }
 
-SpriteDefinition const& SpriteSheet::GetSpriteDef(int spriteIndex) const
-{
-    return m_spriteDefs[spriteIndex];
+    return m_spriteSheet.GetSpriteDef(frameIndex);
 }
-
-void SpriteSheet::GetSpriteUVs(Vec2& out_uvAtMins, Vec2& out_uvAtMaxs, int spriteIndex) const
-{
-    m_spriteDefs[spriteIndex].GetUVs(out_uvAtMins, out_uvAtMaxs);
-}
-
-AABB2 SpriteSheet::GetSpriteUVs(int spriteIndex) const
-{
-    return m_spriteDefs[spriteIndex].GetUVs();
-}
-

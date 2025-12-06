@@ -10,51 +10,77 @@ Engine* g_engine = nullptr;
 
 Engine::Engine(EngineConfig config) : m_config(config)
 {
-	g_engine = this;
+    g_engine = this;
 
-	m_window	= new Window(config.m_windowConfig);
-	m_renderer	= new Renderer(config.m_rendererConfig);
-	m_input		= new InputSystem(config.m_inputConfig);
-	m_audio		= new AudioSystem(config.m_audioConfig);
+    if (config.m_eventSystemConfig.m_isEnable)	m_eventSystem = new EventSystem(config.m_eventSystemConfig);
+    if (config.m_devConsoleConfig.m_isEnable)	m_devConsole = new DevConsole(config.m_devConsoleConfig);
+    if (config.m_windowConfig.m_isEnable)		m_window = new Window(config.m_windowConfig);
+    if (config.m_rendererConfig.m_isEnable)		m_renderer = new Renderer(config.m_rendererConfig);
+    if (config.m_inputConfig.m_isEnable)		m_input = new InputSystem(config.m_inputConfig);
+    if (config.m_audioConfig.m_isEnable)		m_audio = new AudioSystem(config.m_audioConfig);
 
-	m_window->Startup();
-	m_renderer->Startup();
-	m_input->Startup();
-	m_audio->Startup();
+    Startup();
 }
 
 Engine::~Engine()
 {
-	m_audio->Shutdown();
-	m_input->Shutdown();
-	m_renderer->Shutdown();
-	m_window->Shutdown();
+    Shutdown();
 
-	delete m_audio;
-	m_audio = nullptr;
+    delete m_audio;
+    m_audio = nullptr;
 
-	delete m_input;
-	m_input = nullptr;
+    delete m_input;
+    m_input = nullptr;
 
-	delete m_renderer;
-	m_renderer = nullptr;
+    delete m_renderer;
+    m_renderer = nullptr;
 
-	delete m_window;
-	m_window = nullptr;
+    delete m_window;
+    m_window = nullptr;
+
+    delete m_devConsole;
+    m_devConsole = nullptr;
+
+    delete m_eventSystem;
+    m_eventSystem = nullptr;
+}
+
+void Engine::Startup()
+{
+    if (m_eventSystem != nullptr)	m_eventSystem->Startup();
+    if (m_devConsole  != nullptr)	m_devConsole->Startup();
+    if (m_window      != nullptr)	m_window->Startup();
+    if (m_renderer    != nullptr)	m_renderer->Startup();
+    if (m_input       != nullptr)	m_input->Startup();
+    if (m_audio       != nullptr)	m_audio->Startup();
+}
+
+void Engine::Shutdown()
+{
+    if (m_audio       != nullptr) m_audio->Shutdown();
+    if (m_input       != nullptr) m_input->Shutdown();
+    if (m_renderer    != nullptr) m_renderer->Shutdown();
+    if (m_window      != nullptr) m_window->Shutdown();
+    if (m_devConsole  != nullptr) m_devConsole->Shutdown();
+    if (m_eventSystem != nullptr) m_eventSystem->Shutdown();
 }
 
 void Engine::BeginFrame()
 {
-	m_window->BeginFrame();
-	m_renderer->BeginFrame();
-	m_input->BeginFrame();
-	m_audio->BeginFrame();
+    if (m_eventSystem != nullptr) m_eventSystem->BeginFrame();
+    if (m_devConsole  != nullptr) m_devConsole->BeginFrame();
+    if (m_window      != nullptr) m_window->BeginFrame();
+    if (m_renderer    != nullptr) m_renderer->BeginFrame();
+    if (m_input       != nullptr) m_input->BeginFrame();
+    if (m_audio       != nullptr) m_audio->BeginFrame();
 }
 
 void Engine::EndFrame()
 {
-	m_window->EndFrame();
-	m_renderer->EndFrame();
-	m_input->EndFrame();
-	m_audio->EndFrame();
+    if (m_eventSystem != nullptr) m_eventSystem->EndFrame();
+    if (m_devConsole  != nullptr) m_devConsole->EndFrame();
+    if (m_window      != nullptr) m_window->EndFrame();
+    if (m_renderer    != nullptr) m_renderer->EndFrame();
+    if (m_input       != nullptr) m_input->EndFrame();
+    if (m_audio       != nullptr) m_audio->EndFrame();
 }

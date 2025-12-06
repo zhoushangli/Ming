@@ -23,6 +23,26 @@ float Sign(float value)
     }
 }
 
+float Min(float a, float b)
+{
+    return (a < b) ? a : b;
+}
+
+int Min(int a, int b)
+{
+    return (a < b) ? a : b;
+}
+
+float Max(float a, float b)
+{
+    return (a > b) ? a : b;
+}
+
+int Max(int a, int b)
+{
+    return (a > b) ? a : b;
+}
+
 float ConvertDegreesToRadians(float degrees)
 {
     return degrees * DegreesToRadiansMultiplier;

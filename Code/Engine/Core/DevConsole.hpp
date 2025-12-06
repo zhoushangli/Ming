@@ -1,23 +1,62 @@
 #pragma once
 
-#include "Engine/Math/IntVec2.hpp"
+#include "Engine/Core/Rgba8.hpp"
+#include "Engine/Math/AABB2.hpp"
+#include "Engine/Renderer/BitmapFont.hpp"
 
-#include <vector>
 #include <string>
 
-struct Rgba8;
+struct DevConsoleConfig
+{
+    bool m_isEnable = true;
+};
 
-class Image
+struct DevConsoleLine
+{
+    Rgba8       m_color;
+    std::string m_text;
+    int         m_frameNumber = 0;
+};
+
+enum class DevConsoleMode
+{
+    HIDDEN,
+    OPEN_FULL
+};
+
+class DevConsole
 {
 public:
-    Image(char const* imageFilePath);
-    Image(std::string const& imageFilePath);
+    DevConsole(DevConsoleConfig const& config);
+    ~DevConsole();
 
-    Rgba8 GetColorAt(int x, int y) const;
+    void Startup();
+    void Shutdown();
+    void BeginFrame();
+    void EndFrame();
 
-    IntVec2 GetDimensions() const { return m_dimensions; }
+    void Execute(std::string const& consoleCommandText);
+    void AddLine(Rgba8 const& color, std::string const& text);
+    void Render(AABB2 const& bounds) const;
+
+    DevConsoleMode GetMode() const;
+    void SetMode(DevConsoleMode mode);
+    void ToggleMode(DevConsoleMode mode);
+
+    static const Rgba8 ERROR;
+    static const Rgba8 WARNING;
+    static const Rgba8 INFO_MAJOR;
+    static const Rgba8 INFO_MINOR;
 
 protected:
-    std::vector<Rgba8> m_texelColors;
-    IntVec2 m_dimensions;
+    void Render_OpenFull(AABB2 const& bounds, BitmapFont& font, float fontAspect = 1.f) const;
+
+public:
+    std::string            m_currentInput;
+
+protected:
+    DevConsoleConfig       m_config;
+    DevConsoleMode         m_mode = DevConsoleMode::HIDDEN;   // also OPEN_FULL, and eventually others
+    std::vector<DevConsoleLine> m_lines;                      // #ToDo: support a max limited # of lines (e.g. fixed circular buffer)
+    int                    m_frameNumber = 0;
 };
