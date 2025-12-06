@@ -6,7 +6,8 @@
 #include <vector>
 #include <map>
 
-using EventSystemCallbackFunctionPtr = bool (*)(NamedStrings&);
+using EventArgs = NamedStrings;
+using EventSystemCallbackFunctionPtr = bool (*)(EventArgs&);
 
 struct EventSystemConfig
 {
@@ -26,7 +27,7 @@ public:
 
     void SubscribeEventCallbackFunction(std::string const& eventName, EventSystemCallbackFunctionPtr ptr);
     void UnsubscribeEventCallbackFunction(std::string const& eventName, EventSystemCallbackFunctionPtr ptr);
-    int  FireEvent(std::string const& eventName, NamedStrings& args);
+    int  FireEvent(std::string const& eventName, EventArgs& args);
     int  FireEvent(std::string const& eventName);
 
 protected:
@@ -37,4 +38,4 @@ protected:
 void SubscribeEventCallbackFunction(std::string const& eventName, EventSystemCallbackFunctionPtr ptr);
 void UnsubscribeEventCallbackFunction(std::string const& eventName, EventSystemCallbackFunctionPtr ptr);
 int FireEvent(std::string const& eventName);
-int FireEvent(std::string const& eventName, NamedStrings& args);
+int FireEvent(std::string const& eventName, EventArgs& args);

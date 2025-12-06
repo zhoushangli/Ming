@@ -24,6 +24,11 @@ void DevConsole::Startup()
     m_lines.clear();
     m_mode = DevConsoleMode::HIDDEN;
     m_frameNumber = 0;
+
+    AddLine(ERROR, "This is an ERROR line");
+    AddLine(WARNING, "This is a WARNING line");
+    AddLine(INFO_MAJOR, "This is a INFO_MAJOR line");
+    AddLine(INFO_MINOR, "This is a INFO_MINOR line");
 }
 
 void DevConsole::Shutdown()
@@ -134,7 +139,7 @@ void DevConsole::Render_OpenFull(AABB2 const& bounds, BitmapFont& font, float fo
             verts,
             text,
             lineBox,
-            cellHeight,
+            cellHeight * 0.9f,
             line.m_color,
             fontAspect,
             Vec2(0.f, 0.5f), // left, vertically centered
@@ -154,9 +159,9 @@ void DevConsole::Render_OpenFull(AABB2 const& bounds, BitmapFont& font, float fo
 
     font.AddVertsForTextInBox2D(
         verts,
-        inputPrompt + m_currentInput,
+        inputPrompt,
         inputBox,
-        cellHeight,
+        cellHeight * 0.9f,
         Rgba8::WHITE,
         fontAspect,
         Vec2(0.f, 0.5f),

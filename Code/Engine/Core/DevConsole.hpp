@@ -51,9 +51,6 @@ public:
 protected:
     void Render_OpenFull(AABB2 const& bounds, BitmapFont& font, float fontAspect = 1.f) const;
 
-public:
-    std::string            m_currentInput;
-
 protected:
     DevConsoleConfig       m_config;
     DevConsoleMode         m_mode = DevConsoleMode::HIDDEN;   // also OPEN_FULL, and eventually others

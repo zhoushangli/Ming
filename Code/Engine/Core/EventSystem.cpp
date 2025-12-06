@@ -50,7 +50,7 @@ void EventSystem::UnsubscribeEventCallbackFunction(std::string const& eventName,
     }
 }
 
-int EventSystem::FireEvent(std::string const& eventName, NamedStrings& args)
+int EventSystem::FireEvent(std::string const& eventName, EventArgs& args)
 {
     auto& callbackList = m_subscriptionListsByEventName[eventName];
     int numCallbacks = 0;
@@ -69,7 +69,7 @@ int EventSystem::FireEvent(std::string const& eventName, NamedStrings& args)
 int EventSystem::FireEvent(std::string const& eventName)
 {
     NamedStrings args;
-    FireEvent(eventName, args);
+    return FireEvent(eventName, args);
 }
 
 void SubscribeEventCallbackFunction(std::string const& eventName, EventSystemCallbackFunctionPtr ptr)
@@ -84,10 +84,10 @@ void UnsubscribeEventCallbackFunction(std::string const& eventName, EventSystemC
 
 int FireEvent(std::string const& eventName)
 {
-    g_engine->m_eventSystem->FireEvent(eventName);
+    return g_engine->m_eventSystem->FireEvent(eventName);
 }
 
-int FireEvent(std::string const& eventName, NamedStrings& args)
+int FireEvent(std::string const& eventName, EventArgs& args)
 {
-    g_engine->m_eventSystem->FireEvent(eventName, args);
+    return g_engine->m_eventSystem->FireEvent(eventName, args);
 }

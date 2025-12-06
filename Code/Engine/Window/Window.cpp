@@ -56,7 +56,7 @@ LRESULT CALLBACK WindowsMessageHandlingProcedure(HWND windowHandle, UINT wmMessa
 	{
 	case WM_CLOSE:
 	{
-		ERROR_AND_DIE("The window was closed by the user.");
+		FireEvent("Quit");
 		// return 0;
 	}
 
@@ -69,31 +69,6 @@ LRESULT CALLBACK WindowsMessageHandlingProcedure(HWND windowHandle, UINT wmMessa
 
 		unsigned char asKey = (unsigned char)wParam;
 		g_engine->m_input->HandleKeyPressed(asKey);
-
-        DevConsole* devConsole = g_engine->m_devConsole;
-		if (devConsole != nullptr && devConsole->GetMode() != DevConsoleMode::HIDDEN)
-		{
-            if (asKey == VK_BACK)
-			{
-				if (!devConsole->m_currentInput.empty())
-				{
-					devConsole->m_currentInput.pop_back();
-				}
-				return 0;
-			}
-			else if (asKey == VK_RETURN)
-			{
-				g_engine->m_devConsole->Execute(g_engine->m_devConsole->m_currentInput);
-				devConsole->m_currentInput.clear();
-				return 0;
-            }
-            else if (asKey >= 'A' && asKey <= 'z')
-			{
-				devConsole->m_currentInput.push_back(asKey);
-			}
-            
-			return 0;
-        }
 
 		break;
 	}
