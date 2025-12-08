@@ -29,8 +29,14 @@ SpriteDefinition const& SpriteAnimDefinition::GetSpriteDefAtTime(float seconds) 
     case SpriteAnimPlaybackType::ONCE:
     {
         int frame = static_cast<int>(seconds * m_framesPerSecond);
-        if (frame >= numFrames) frame = numFrames - 1;
-        frameIndex = m_startSpriteIndex + frame;
+        if (frame >= numFrames)
+        {
+            frameIndex = m_endSpriteIndex;
+        }
+        else
+        {
+            frameIndex = m_startSpriteIndex + frame;
+        }
         break;
     }
     case SpriteAnimPlaybackType::LOOP:

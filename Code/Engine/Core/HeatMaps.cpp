@@ -156,3 +156,58 @@ void TileHeatMap::AddVertsForDebugDraw(
         }
     }
 }
+
+void TileHeatMap::GeneratePath(std::vector<Vec2>& path, Vec2 position)
+{
+    path.clear();
+
+    IntVec2 currentCoords = (IntVec2)position;
+    float currentValue = GetValue(currentCoords);
+
+    int maxSteps = m_dimensions.x * m_dimensions.y;
+
+    for (int step = 0; step < maxSteps; ++step)
+    {
+        path.emplace_back(Vec2((float)currentCoords.x + 0.5f, (float)currentCoords.y + 0.5f));
+
+        IntVec2 bestNeighbor = currentCoords;
+        float   bestValue    = currentValue;
+
+        static IntVec2 const s_neighbors[4] =
+        {
+            IntVec2(1, 0),
+            IntVec2(-1, 0),
+            IntVec2(0, 1),
+            IntVec2(0,-1),
+        };
+
+        for (IntVec2 const& offset : s_neighbors)
+        {
+            IntVec2 n = currentCoords + offset;
+
+            if (n.x < 0 || n.x >= m_dimensions.x ||
+                n.y < 0 || n.y >= m_dimensions.y)
+            {
+                continue;
+            }
+
+            float nv = GetValue(n.x, n.y);
+            if (nv != TILE_HEAT_MAP_INVALID_VALUE && nv < bestValue)
+            {
+                bestValue = nv;
+                bestNeighbor = n;
+            }
+        }
+
+        if (bestNeighbor == currentCoords)
+        {
+            break;
+        }
+
+        currentCoords = bestNeighbor;
+        currentValue = bestValue;
+    }
+
+    std::reverse(path.begin(), path.end());
+}
+
