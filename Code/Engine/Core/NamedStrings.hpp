@@ -19,6 +19,7 @@ public:
     Vec2			GetValue(std::string const& keyName, Vec2 const& defaultValue) const;
     IntVec2		    GetValue(std::string const& keyName, IntVec2 const& defaultValue) const;
 
+    std::string     GetDebugInfo() const;
     void            DebugPrintContents();
 
 private:

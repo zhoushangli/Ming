@@ -111,23 +111,73 @@ void DevConsole::ToggleMode(DevConsoleMode mode)
     }
 }
 
+bool DevConsole::Command_Test(EventArgs& args)
+{
+    std::string debugInfo = args.GetDebugInfo();
+    g_engine->m_devConsole->AddLine(INFO_MAJOR, Stringf("Test command received:\n %s", debugInfo.c_str()));
+    return false;
+}
+
 void DevConsole::Render_OpenFull(AABB2 const& bounds, BitmapFont& font, float fontAspect) const
 {
     float cellHeight = (bounds.GetDimensions().y) / (float)MAX_CONSOLE_LINES;
 
-    int maxLines = MAX_CONSOLE_LINES - 1; // Reserve one line for input
-    int numLines = (int)m_lines.size();
-    int linesToDraw = std::min(numLines, maxLines);
+    int maxLines = MAX_CONSOLE_LINES - 1; // reserve one line for input
+
+    struct VisualLine
+    {
+        Rgba8       color;
+        std::string text;
+        bool        isFirstInGroup = true;
+    };
+
+    std::vector<VisualLine> visualLines;
+    visualLines.reserve(m_lines.size());
+
+    // Flatten DevConsoleLine into visual lines
+    for (DevConsoleLine const& line : m_lines)
+    {
+        std::string const& full = line.m_text;
+        size_t start = 0;
+        bool firstInThisLine = true;
+
+        while (true)
+        {
+            size_t pos = full.find('\n', start);
+            std::string part = full.substr(start, pos - start);
+
+            VisualLine v;
+            v.color = line.m_color;
+            v.text = part;
+            v.isFirstInGroup = firstInThisLine;
+
+            visualLines.push_back(v);
+
+            if (pos == std::string::npos)
+            {
+                break;
+            }
+
+            start = pos + 1;
+            firstInThisLine = false;
+        }
+    }
+
+    int numVisualLines = (int)visualLines.size();
+    int linesToDraw = std::min(numVisualLines, maxLines);
 
     std::vector<Vertex> verts;
 
-    // Draw console lines from bottom up
+    // Draw visual lines from bottom up
     for (int i = 0; i < linesToDraw; ++i)
     {
-        int lineIdx = numLines - i - 1;
-        const DevConsoleLine& line = m_lines[lineIdx];
+        int visualIdx = numVisualLines - i - 1;
+        VisualLine const& vline = visualLines[visualIdx];
 
-        std::string text = "> " + line.m_text;
+        // First line of this DevConsoleLine uses "> ", others use tab
+        std::string prefix = vline.isFirstInGroup ? "> " : "     ";
+        std::string text = prefix + vline.text;
+
         float y = bounds.m_mins.y + cellHeight * (i + 1);
 
         AABB2 lineBox(
@@ -140,21 +190,20 @@ void DevConsole::Render_OpenFull(AABB2 const& bounds, BitmapFont& font, float fo
             text,
             lineBox,
             cellHeight * 0.9f,
-            line.m_color,
+            vline.color,
             fontAspect,
-            Vec2(0.f, 0.5f), // left, vertically centered
+            Vec2(0.f, 0.5f),
             TextBoxMode::SHRINK_TO_FIT
         );
     }
 
-    // Draw input line (empty, with blinking '>')
+    // Input line
     AABB2 inputBox(
         Vec2(bounds.m_mins.x, bounds.m_mins.y),
         Vec2(bounds.m_maxs.x, bounds.m_mins.y + cellHeight)
     );
 
-    // Blinking cursor: show '>' if even frame, hide if odd
-    bool showCursor = ((m_frameNumber / 30) % 2) == 0; // Blinks every ~0.5s at 60fps
+    bool showCursor = ((m_frameNumber / 30) % 2) == 0;
     std::string inputPrompt = showCursor ? "> " : "  ";
 
     font.AddVertsForTextInBox2D(
@@ -171,5 +220,4 @@ void DevConsole::Render_OpenFull(AABB2 const& bounds, BitmapFont& font, float fo
     g_engine->m_renderer->BindTexture(&font.GetTexture());
     g_engine->m_renderer->DrawVertexArray((int)verts.size(), verts.data());
 }
-
 

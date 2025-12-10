@@ -15,6 +15,7 @@ extern unsigned char const KEYCODE_F9;
 extern unsigned char const KEYCODE_F10;
 extern unsigned char const KEYCODE_F11;
 extern unsigned char const KEYCODE_F12;
+extern unsigned char const KEYCODE_TILDE;
 extern unsigned char const KEYCODE_ESC;
 extern unsigned char const KEYCODE_UPARROW;
 extern unsigned char const KEYCODE_DOWNARROW;

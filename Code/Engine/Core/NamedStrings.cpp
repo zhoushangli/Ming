@@ -113,6 +113,16 @@ IntVec2 NamedStrings::GetValue(std::string const& keyName, IntVec2 const& defaul
     return defaultValue;
 }
 
+std::string NamedStrings::GetDebugInfo() const
+{
+    std::string debugInfo;
+    for (auto const& pair : m_keyValuePairs)
+    {
+        debugInfo += Stringf("Key: %-10s | Value: %s", pair.first.c_str(), pair.second.c_str());
+    }
+    return debugInfo;
+}
+
 void NamedStrings::DebugPrintContents()
 {
     DebuggerPrintf("NamedStrings Contents:\n");

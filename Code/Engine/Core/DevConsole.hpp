@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Engine/Core/Rgba8.hpp"
+#include "Engine/Core/EventSystem.hpp"
 #include "Engine/Math/AABB2.hpp"
 #include "Engine/Renderer/BitmapFont.hpp"
 
@@ -43,15 +44,17 @@ public:
     void SetMode(DevConsoleMode mode);
     void ToggleMode(DevConsoleMode mode);
 
-    static const Rgba8 ERROR;
-    static const Rgba8 WARNING;
-    static const Rgba8 INFO_MAJOR;
-    static const Rgba8 INFO_MINOR;
+    static bool Command_Test(EventArgs& commandArgs);
 
 protected:
     void Render_OpenFull(AABB2 const& bounds, BitmapFont& font, float fontAspect = 1.f) const;
 
 protected:
+    static const Rgba8 ERROR;
+    static const Rgba8 WARNING;
+    static const Rgba8 INFO_MAJOR;
+    static const Rgba8 INFO_MINOR;
+
     DevConsoleConfig       m_config;
     DevConsoleMode         m_mode = DevConsoleMode::HIDDEN;   // also OPEN_FULL, and eventually others
     std::vector<DevConsoleLine> m_lines;                      // #ToDo: support a max limited # of lines (e.g. fixed circular buffer)

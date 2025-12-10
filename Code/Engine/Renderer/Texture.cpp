@@ -59,10 +59,9 @@ SpriteSheet::SpriteSheet(Texture& texture, IntVec2 const& simpleGridLayout)
     float cellWidth = 1.0f / static_cast<float>(simpleGridLayout.x);
     float cellHeight = 1.0f / static_cast<float>(simpleGridLayout.y);
 
-//     float texelWidth = 1.0f / static_cast<float>(m_texture.GetDimensions().x);
-//     float texelHeight = 1.0f / static_cast<float>(m_texture.GetDimensions().y);
-//     Vec2 texelOffset(texelWidth / 128.f, texelHeight / 128.f);
-    Vec2 texelOffset(0.f, 0.f);
+    float texelWidth = 1.0f / static_cast<float>(m_texture.GetDimensions().x);
+    float texelHeight = 1.0f / static_cast<float>(m_texture.GetDimensions().y);
+    Vec2 texelOffset(texelWidth / 128.f, texelHeight / 128.f);
 
     for (int y = simpleGridLayout.y - 1; y >= 0; --y) {
         for (int x = 0; x < simpleGridLayout.x; ++x) {

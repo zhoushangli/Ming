@@ -14,6 +14,7 @@ unsigned char const KEYCODE_F9			= VK_F9;
 unsigned char const KEYCODE_F10			= VK_F10;
 unsigned char const KEYCODE_F11			= VK_F11;
 unsigned char const KEYCODE_F12			= VK_F12;
+unsigned char const KEYCODE_TILDE       = VK_OEM_3;
 unsigned char const KEYCODE_ESC			= VK_ESCAPE;
 unsigned char const KEYCODE_UPARROW		= VK_UP;
 unsigned char const KEYCODE_DOWNARROW	= VK_DOWN;
