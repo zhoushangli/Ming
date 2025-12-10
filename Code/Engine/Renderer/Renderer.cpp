@@ -8,6 +8,7 @@
 #include "Engine/Renderer/Camera.hpp"
 #include "Engine/Renderer/Texture.hpp"
 
+#define STB_IMAGE_IMPLEMENTATION
 #include "ThirdParty/stb/stb_image.h"
 
 #include <Windows.h>
