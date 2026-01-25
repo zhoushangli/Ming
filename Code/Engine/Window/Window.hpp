@@ -25,6 +25,9 @@ public:
 
     Vec2 GetNormalizedMouseUV() const;
 
+	void* GetHwnd() const;
+    IntVec2 GetClientDimensions() const;
+
 private:
 	void CreateOSWindow();
 	void RunMessagePump();

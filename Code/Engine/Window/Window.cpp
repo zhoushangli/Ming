@@ -234,3 +234,21 @@ void Window::RunMessagePump()
 	}
 }
 
+void* Window::GetHwnd() const
+{
+    return m_windowHandle;
+}
+
+IntVec2 Window::GetClientDimensions() const
+{
+    HWND hwnd = static_cast<HWND>(m_windowHandle);
+    RECT clientRect;
+    ::GetClientRect(hwnd, &clientRect);
+    int width = clientRect.right - clientRect.left;
+    int height = clientRect.bottom - clientRect.top;
+    return IntVec2(width, height);
+}
+
+				 
+					 
+					 

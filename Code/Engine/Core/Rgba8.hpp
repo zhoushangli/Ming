@@ -26,7 +26,8 @@ public:
 	~Rgba8() = default;
 
     void SetFromText(const char* text);
-
+    void GetAsFloats(float* colorAsFloats) const;
+    
 public:
     unsigned char r = 0;
     unsigned char g = 0;
