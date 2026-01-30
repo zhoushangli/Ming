@@ -9,18 +9,32 @@ EulerAngles::EulerAngles(float yawDegrees, float pitchDegrees, float rollDegrees
 
 Vec3 EulerAngles::GetForwardDir_IFwd_JLeft_KUp() const
 {
-    Vec3 i, j, k;
-    GetAsVectors_IFwd_JLeft_KUp(i, j, k);
+    float cy = CosDegrees(m_yawDegrees);
+    float sy = SinDegrees(m_yawDegrees);
+    float cp = CosDegrees(m_pitchDegrees);
+    float sp = SinDegrees(m_pitchDegrees);
 
-    return i;
+    return Vec3(
+        cp * cy,
+        cp * sy,
+        -sp
+    );
 }
 
 Vec3 EulerAngles::GetForwardDir_IRight_JUp_KFwd() const
 {
-    Vec3 i, j, k;
-    GetAsVectors_IRight_JUp_KFwd(i, j, k);
+    float cy = CosDegrees(m_yawDegrees);
+    float sy = SinDegrees(m_yawDegrees);
+    float cp = CosDegrees(m_pitchDegrees);
+    float sp = SinDegrees(m_pitchDegrees);
+    float cr = CosDegrees(m_rollDegrees);
+    float sr = SinDegrees(m_rollDegrees);
 
-    return k;
+    return Vec3(
+        cr * cy * sp + sr * sy,
+        cr * sy * sp - sr * cy,
+        cp * cr
+    );
 }
 
 void EulerAngles::GetAsVectors_IFwd_JLeft_KUp(Vec3& out_forwardIBasis, Vec3& out_leftJBasis, Vec3& out_upKBasis) const
