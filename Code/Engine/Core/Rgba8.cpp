@@ -73,7 +73,8 @@ float NormalizeByte(unsigned char byteValue)
 
 unsigned char DenormalizeByte(float normalizedValue)
 {
-    return static_cast<unsigned char>(GetClamped(normalizedValue, 0.f, 1.f) * 255.f);
+    float v = normalizedValue * 256.f;
+    return static_cast<unsigned char>(GetClamped(v, 0.f, 255.f));
 }
 
 Rgba8 Interpolate(Rgba8 const& start, Rgba8 const& end, float fraction)

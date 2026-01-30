@@ -1,24 +1,28 @@
 #pragma once
 
-class FloatRange
+#include "Engine/Math/Vec3.hpp"
+#include "Engine/Math/Matrix4x4.hpp"
+
+struct EulerAngles
 {
 public:
-    FloatRange() = default;
-    explicit FloatRange(float min, float max);
+    EulerAngles() = default;
+    EulerAngles(float yawDegrees, float pitchDegrees, float rollDegrees);
+    Vec3 GetForwardDir_IFwd_JLeft_KUp() const;
+    Vec3 GetForwardDir_IRight_JUp_KFwd() const;
+    void GetAsVectors_IFwd_JLeft_KUp( Vec3& out_forwardIBasis, Vec3& out_leftJBasis, Vec3& out_upKBasis ) const;
+    void GetAsVectors_IRight_JUp_KFwd( Vec3& out_rightIBasis, Vec3& out_upJBasis, Vec3& out_forwardKBasis ) const;
+    Matrix4x4 GetAsMatrix_IFwd_JLeft_KUp() const;
+    Matrix4x4 GetAsMatrix_IRight_JUp_KFwd() const;
 
-    FloatRange& operator=(const FloatRange& other);
-    bool operator==(const FloatRange& other) const;
-    bool operator!=(const FloatRange& other) const;
+    void operator +=(EulerAngles const& anglesToAdd);
 
-    bool IsOnRange(float value) const;
-    bool IsOverlappingWith(const FloatRange& other) const;
+    friend EulerAngles const Interpolate(EulerAngles const& from, EulerAngles const& to, float lerpFraction);
 
 public:
-    float m_min = 0.f;
-    float m_max = 0.f;
-
-    static const FloatRange ZERO;
-    static const FloatRange ONE;
-    static const FloatRange ZERO_TO_ONE;
+    float m_yawDegrees = 0.f;
+    float m_pitchDegrees = 0.f;
+    float m_rollDegrees = 0.f;
 };
+
 

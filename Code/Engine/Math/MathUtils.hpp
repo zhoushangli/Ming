@@ -62,7 +62,7 @@ float GetShortestAngularDispDegrees(float startDegrees, float endDegrees);
 float GetTurnedTowardDegrees(float currentDegrees, float goalDegrees, float maxDeltaDegrees);
 float DotProduct2D(Vec2 const& vector, Vec2 const& basis);
 
-// Geometric utilities
+// Geometric utilities·
 bool PushDiscOutOfFixedPoint2D(Vec2& discCenter, float discRadius, Vec2 const& fixedPoint);
 bool PushDiscOutOfFixedDisc2D(Vec2& discCenter, float discRadius, Vec2 const& fixedDiscCenter, float fixedDiscRadius);
 bool PushDiscsOutOfEachOther2D(Vec2& discCenterA, float discRadiusA, Vec2& discCenterB, float discRadiusB);
@@ -102,3 +102,12 @@ Vec2 GetNearestPointOnCapsule2D(Vec2 referencePos, Vec2 boneStart, Vec2 boneEnd,
 Vec2 GetNearestPointOnCapsule2D(Vec2 referencePos, Capsule2 const& capsule);
 Vec2 GetNearestPointOnTriangle2D(Vec2 referencePos, Vec2 ccw0, Vec2 ccw1, Vec2 ccw2); // Counter-Clockwise (positive winding)
 Vec2 GetNearestPointOnTriangle2D(Vec2 referencePos, Triangle2 const& triangle);
+
+// --- Dot and Cross Products ---
+float DotProduct2D(Vec2 const& a, Vec2 const& b);
+float DotProduct3D(Vec3 const& a, Vec3 const& b);
+float CrossProduct2D(Vec2 const& a, Vec2 const& b);
+Vec3  CrossProduct3D(Vec3 const& a, Vec3 const& b);
+
+float         NormalizeByte(unsigned char byteValue);
+unsigned char DenormalizeByte(float zeroToOne);

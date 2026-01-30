@@ -156,6 +156,9 @@
     <ClCompile Include="Core\DevConsole.cpp">
       <Filter>Core</Filter>
     </ClCompile>
+    <ClCompile Include="Math\EulerAngles.cpp">
+      <Filter>Math</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\Engine\Code\Engine\Math\Vec2.hpp">
@@ -316,6 +319,9 @@
     </ClInclude>
     <ClInclude Include="Core\DevConsole.hpp">
       <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\EulerAngles.hpp">
+      <Filter>Math</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

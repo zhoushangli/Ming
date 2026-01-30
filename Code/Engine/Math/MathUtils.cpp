@@ -282,6 +282,25 @@ float DotProduct2D(Vec2 const& a, Vec2 const& b)
 	return a.x * b.x + a.y * b.y;
 }
 
+float DotProduct3D(Vec3 const& a, Vec3 const& b)
+{
+    return a.x * b.x + a.y * b.y + a.z * b.z;
+}
+
+float CrossProduct2D(Vec2 const& a, Vec2 const& b)
+{
+    return a.x * b.y - a.y * b.x;
+}
+
+Vec3 CrossProduct3D(Vec3 const& a, Vec3 const& b)
+{
+    return Vec3(
+        a.y * b.z - a.z * b.y,
+        a.z * b.x - a.x * b.z,
+        a.x * b.y - a.y * b.x
+    );
+}
+
 bool PushDiscOutOfFixedPoint2D(Vec2& discCenter, float discRadius, Vec2 const& fixedPoint)
 {
     Vec2 toCenter = discCenter - fixedPoint;
