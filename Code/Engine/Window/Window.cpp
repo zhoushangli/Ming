@@ -151,7 +151,7 @@ void Window::CreateOSWindow()
 	RegisterClassEx(&windowClassDescription);
 
 	// #SD1ToDo: Add support for fullscreen mode (requires different window style flags than windowed mode)
-	DWORD const windowStyleFlags = WS_CAPTION | WS_BORDER | WS_THICKFRAME | WS_SYSMENU | WS_OVERLAPPED;
+	DWORD const windowStyleFlags = WS_CAPTION | WS_BORDER | WS_SYSMENU | WS_OVERLAPPED;
 	DWORD const windowStyleExFlags = WS_EX_APPWINDOW;
 
 	// Get desktop rect, dimensions, aspect

@@ -1,21 +1,32 @@
-//-----------------------------------------------------------------------------------------------
-// SimpleTriangleFont.hpp
-//	- Provided by Squirrel Eiserloh for use until we add Texture/SpriteSheet/BitmapFonts later!
-//	- Create vertex arrays of triangles that spell out simple ASCII text
-//	- Can further transform/distort font triangles using any math you see fit!
-//
-// A simple utility file for creating basic 5x9 pixel fonts out of pure triangles, i.e. does not
-// require any external bitmap or TrueType fonts (or textures, or anything at all) in Data.
-//-----------------------------------------------------------------------------------------------
 #pragma once
+
 #include <string>
-#include <vector>
-struct Vertex;
-struct Rgba8;
-struct Vec2;
 
+struct ID3D11VertexShader;
+struct ID3D11PixelShader;
+struct ID3D11InputLayout;
 
-//------------------------------------------------------------------------------------------------
-void AddVertsForTextTriangles2D( std::vector<Vertex>& verts, std::string const& text, Vec2 const& startMins, float cellHeight, const Rgba8& color, float cellAspect = 0.56f, bool isFlipped=false, float spacingFraction = 0.2f );
-float GetSimpleTriangleStringWidth( const std::string& text, float cellHeight, float cellAspect = 0.56f, float spacingFraction = 0.2f );
+struct ShaderConfig
+{
+    std::string m_name;
+    std::string m_vertexEntryPoint = "VertexMain";
+    std::string m_pixelEntryPoint = "PixelMain";
+};
 
+class Shader
+{
+    friend class Renderer;
+
+public:
+    Shader(const ShaderConfig& config);
+    Shader(const Shader& copy) = delete;
+    ~Shader();
+
+    const std::string& GetName() const;
+
+private:
+    ShaderConfig m_config;
+    ID3D11VertexShader* m_vertexShader = nullptr;
+    ID3D11PixelShader* m_pixelShader = nullptr;
+    ID3D11InputLayout* m_inputLayout = nullptr;
+};
