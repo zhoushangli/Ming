@@ -15,6 +15,15 @@
 #include <d3dcompiler.h>
 #include <d3d11.h>
 
+#pragma comment( lib, "d3d11.lib" )
+#pragma comment( lib, "dxgi.lib" )
+#pragma comment( lib, "d3dcompiler.lib" )
+
+#if defined( ENGINE_DEBUG_RENDER )
+#include <dxgidebug.h>
+#pragma comment( lib, "dxguid.lib" )
+#endif
+
 HGLRC g_openGLRenderingContext = nullptr;
 
 const char* defaultShaderSource = R"(
