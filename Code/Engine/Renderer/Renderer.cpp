@@ -116,154 +116,18 @@ void Renderer::Startup()
     }
 #endif
 
-//     Compile vertex shader
-//                 DWORD shaderFlags = D3DCOMPILE_OPTIMIZATION_LEVEL3;
-//             #if defined(ENGINE_DEBUG_RENDER)
-//                 shaderFlags = D3DCOMPILE_DEBUG;
-//                 shaderFlags |= D3DCOMPILE_SKIP_OPTIMIZATION;
-//                 shaderFlags |= D3DCOMPILE_WARNINGS_ARE_ERRORS;
-//             #endif
-//             
-//                 ID3DBlob* shaderBlob = NULL;
-//                 ID3DBlob* errorBlob = NULL;
-//             
-//                 hr = D3DCompile(
-//                     shaderSource,
-//                     strlen(shaderSource),
-//                     "VertexShader", nullptr, nullptr,
-//                     "VertexMain", "vs_5_0", shaderFlags,
-//                     0, &shaderBlob, &errorBlob);
-//             
-//                 if (SUCCEEDED(hr))
-//                 {
-//                     m_vertexShaderByteCode.resize(shaderBlob->GetBufferSize());
-//                     memcpy(
-//                         m_vertexShaderByteCode.data(),
-//                         shaderBlob->GetBufferPointer(),
-//                         shaderBlob->GetBufferSize());
-//                 }
-//                 else
-//                 {
-//                     if (errorBlob != NULL)
-//                     {
-//                         DebuggerPrintf((char*)errorBlob->GetBufferPointer());
-//                     }
-//                     ERROR_AND_DIE(Stringf("Could not compile vertex shader."));
-//                 }
-//             
-//                 shaderBlob->Release();
-//                 if (errorBlob != NULL)
-//                 {
-//                     errorBlob->Release();
-//                 }
-//             
-//                 // Create vertex shader
-//                 hr = m_device->CreateVertexShader(
-//                     m_vertexShaderByteCode.data(),
-//                     m_vertexShaderByteCode.size(),
-//                     NULL, &m_vertexShader
-//                 );
-//                 if (!SUCCEEDED(hr))
-//                 {
-//                     ERROR_AND_DIE(Stringf("Could not create vertex shader."));
-//                 }
-//             
-//                 // Compile pixel shader
-//                 hr = D3DCompile(
-//                     shaderSource,
-//                     strlen(shaderSource),
-//                     "PixelShader", nullptr, nullptr,
-//                     "PixelMain", "ps_5_0", shaderFlags, 0,
-//                     &shaderBlob, &errorBlob
-//                 );
-//                 if (SUCCEEDED(hr))
-//                 {
-//                     m_pixelShaderByteCode.resize(shaderBlob->GetBufferSize());
-//                     memcpy(
-//                         m_pixelShaderByteCode.data(),
-//                         shaderBlob->GetBufferPointer(),
-//                         shaderBlob->GetBufferSize()
-//                     );
-//                 }
-//                 else
-//                 {
-//                     if (errorBlob != NULL)
-//                     {
-//                         DebuggerPrintf((char*)errorBlob->GetBufferPointer());
-//                     }
-//                     ERROR_AND_DIE(Stringf("Could not compile pixel shader."));
-//                 }
-//             
-//                 shaderBlob->Release();
-//                 if (errorBlob != NULL)
-//                 {
-//                     errorBlob->Release();
-//                 }
-//             
-//                 // Create pixel shader
-//                 hr = m_device->CreatePixelShader(
-//                     m_pixelShaderByteCode.data(),
-//                     m_pixelShaderByteCode.size(),
-//                     NULL, &m_pixelShader);
-//                 if (!SUCCEEDED(hr))
-//                 {
-//                     ERROR_AND_DIE(Stringf("Could not create pixel shader."));
-//                 }
-//             
-//                 D3D11_INPUT_ELEMENT_DESC inputElementDesc[] = {
-//                 {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT,
-//                     0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
-//                 {"COLOR", 0, DXGI_FORMAT_R8G8B8A8_UNORM,
-//                     0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0},
-//                 {"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,
-//                     0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0},
-//                 };
-//             
-//                 UINT numElements = ARRAYSIZE(inputElementDesc);
-//                 hr = m_device->CreateInputLayout(
-//                     inputElementDesc, numElements,
-//                     m_vertexShaderByteCode.data(),
-//                     m_vertexShaderByteCode.size(),
-//                     &m_inputLayoutForVertex_PCU
-//                 );
-//                 if (!SUCCEEDED(hr))
-//                 {
-//                     ERROR_AND_DIE("Could not create vertex layout.");
-//                 }
-
     m_currentShader = CreateShader("Default", defaultShaderSource);
     BindShader(m_currentShader);
     
-    Vertex vertices[] = {
-        Vertex(Vec3(-0.50f, -0.50f, 0.0f), Rgba8(255, 255, 255, 255), Vec2(0.0f, 0.0f)),
-        Vertex(Vec3(0.00f,  0.50f, 0.0f), Rgba8(255, 255, 255, 255), Vec2(0.0f, 0.0f)),
-        Vertex(Vec3(0.50f, -0.50f, 0.0f), Rgba8(255, 255, 255, 255), Vec2(0.0f, 0.0f)),
-    };
-
-//     // Create vertex buffer
-//     UINT vertexBufferSize = (UINT)sizeof(vertices);
-//     D3D11_BUFFER_DESC bufferDesc = {};
-//     bufferDesc.Usage = D3D11_USAGE_DYNAMIC;
-//     bufferDesc.ByteWidth = vertexBufferSize;
-//     bufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-//     bufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+//     Vertex vertices[] = {
+//         Vertex(Vec3(-0.50f, -0.50f, 0.0f), Rgba8(255, 255, 255, 255), Vec2(0.0f, 0.0f)),
+//         Vertex(Vec3(0.00f,  0.50f, 0.0f), Rgba8(255, 255, 255, 255), Vec2(0.0f, 0.0f)),
+//         Vertex(Vec3(0.50f, -0.50f, 0.0f), Rgba8(255, 255, 255, 255), Vec2(0.0f, 0.0f)),
+//     };
 // 
-//     hr = m_device->CreateBuffer(&bufferDesc, nullptr, &m_vertexBuffer);
-//     if (!SUCCEEDED(hr))
-//     {
-//         ERROR_AND_DIE("Could not create vertex buffer.");
-//     }
-// 
-// 
-//     // Copy vertices
-//     D3D11_MAPPED_SUBRESOURCE resource;
-//     m_deviceContext->Map(m_vertexBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &resource);
-//     memcpy(resource.pData, vertices, vertexBufferSize);
-//     m_deviceContext->Unmap(m_vertexBuffer, 0);
-
-    m_currentVertexBuffer = CreateVertexBuffer(sizeof(vertices), sizeof(Vertex));
-    CopyCPUToGPU(vertices, sizeof(vertices), m_currentVertexBuffer);
-    BindVertexBuffer(m_currentVertexBuffer);
+//     m_currentVertexBuffer = CreateVertexBuffer(sizeof(vertices), sizeof(Vertex));
+//     CopyCPUToGPU(vertices, sizeof(vertices), m_currentVertexBuffer);
+//     BindVertexBuffer(m_currentVertexBuffer);
 
     // Set rasterizer state
     D3D11_RASTERIZER_DESC rasterizerDesc = {};
@@ -337,10 +201,10 @@ void Renderer::BeginFrame()
 {
     // Set render target
     m_deviceContext->OMSetRenderTargets(1, &m_renderTargetView, nullptr);
+}
 
-    // Draw
-    m_deviceContext->Draw(3, 0);
-
+void Renderer::EndFrame()
+{
     // Present
     HRESULT hr;
     hr = m_swapChain->Present(0, 0);
@@ -348,11 +212,6 @@ void Renderer::BeginFrame()
     {
         ERROR_AND_DIE("Device has been lost, application will now terminate.");
     }
-}
-
-void Renderer::EndFrame()
-{
-
 }
 
 void Renderer::CreateRenderingContext()
@@ -403,8 +262,12 @@ void Renderer::DrawVertexArray(int numVertexes, Vertex const* vertexes) const
     {
         return;
     }
+}
 
-    
+void Renderer::DrawVertexBuffer(VertexBuffer* vertexBuffer, unsigned int vertexCount)
+{
+    BindVertexBuffer(vertexBuffer);
+    m_deviceContext->Draw(vertexCount, 0);
 }
 
 Texture* Renderer::CreateOrGetTextureFromFile(char const* imageFilePath)

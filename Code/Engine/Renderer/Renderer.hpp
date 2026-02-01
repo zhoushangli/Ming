@@ -59,12 +59,16 @@ public:
 
     void DrawVertexArray(int numVertexes, Vertex const* vertexes) const;
     void DrawVertexArray(std::vector<Vertex> const& verts) const;
+    void DrawVertexBuffer(VertexBuffer* vertexBuffer, unsigned int vertexCount);
 
 	void BindTexture(Texture* textureOrNull);
+    void BindShader(Shader* shader);
 
 	Texture* CreateOrGetTextureFromFile(char const* fileDataPath);
     Texture* CreateTextureFromData(char const* name, IntVec2 dimensions, int bytesPerTexel, uint8_t* texelData);
     BitmapFont* CreateOrGetBitmapFont(char const* fontFilePathNameWithNoExtension);
+    VertexBuffer* CreateVertexBuffer(const unsigned int size, unsigned int stride);
+    void CopyCPUToGPU(const void* data, unsigned int size, VertexBuffer* vbo);
 
 private:
 	Texture* CreateTextureFromFile(char const* fileDataPath);
@@ -73,10 +77,6 @@ private:
     Shader* CreateShader(char const* shaderName, char const* shaderSource);
     bool CompileShaderToByteCode(std::vector<unsigned char>& outByteCode, char const* name,
         char const* source, char const* entryPoint, char const* target);
-    void BindShader(Shader* shader);
-
-    VertexBuffer* CreateVertexBuffer(const unsigned int size, unsigned int stride);
-    void CopyCPUToGPU(const void* data, unsigned int size, VertexBuffer* vbo);
     void BindVertexBuffer(VertexBuffer* vbo);
 
 

@@ -37,7 +37,7 @@ void VertexBuffer::Create()
     bufferDesc.MiscFlags = 0;
     bufferDesc.StructureByteStride = m_stride;
 
-    HRESULT hr = m_device->CreateBuffer(&bufferDesc, nullptr, &m_buffer);
+    m_device->CreateBuffer(&bufferDesc, nullptr, &m_buffer);
 }
 
 void VertexBuffer::Resize(unsigned int size)
