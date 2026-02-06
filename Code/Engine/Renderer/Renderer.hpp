@@ -64,6 +64,7 @@ public:
 	void BindTexture(Texture* textureOrNull);
     void BindShader(Shader* shader);
 
+    Shader* CreateShader(char const* shaderName);
 	Texture* CreateOrGetTextureFromFile(char const* fileDataPath);
     Texture* CreateTextureFromData(char const* name, IntVec2 dimensions, int bytesPerTexel, uint8_t* texelData);
     BitmapFont* CreateOrGetBitmapFont(char const* fontFilePathNameWithNoExtension);

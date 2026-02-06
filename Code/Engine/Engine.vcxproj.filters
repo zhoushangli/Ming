@@ -165,6 +165,9 @@
     <ClCompile Include="Renderer\VertexBuffer.cpp">
       <Filter>Renderer</Filter>
     </ClCompile>
+    <ClCompile Include="Core\FileUtils.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\Engine\Code\Engine\Math\Vec2.hpp">
@@ -334,6 +337,9 @@
     </ClInclude>
     <ClInclude Include="Renderer\VertexBuffer.hpp">
       <Filter>Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\FileUtils.hpp">
+      <Filter>Core</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

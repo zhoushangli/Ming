@@ -1,35 +1,71 @@
-//-----------------------------------------------------------------------------------------------
-// Time.cpp
-//	
+#include "Engine/Core/FileUtils.hpp"
 
-//-----------------------------------------------------------------------------------------------
-#include "Engine/Core/Time.hpp"
+#include <cstdio>   
+#include <cerrno>   
+#include <cstring>  
+#include <cstdint>  
+#include <vector>
+#include <string>
 
-#define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
-
-
-//-----------------------------------------------------------------------------------------------
-double InitializeTime( LARGE_INTEGER& out_initialTime )
+int FileReadToBuffer(std::vector<uint8_t>& outBuffer, const std::string& filename)
 {
-	LARGE_INTEGER countsPerSecond;
-	QueryPerformanceFrequency( &countsPerSecond );
-	QueryPerformanceCounter( &out_initialTime );
-	return( 1.0 / static_cast< double >( countsPerSecond.QuadPart ) );
+    outBuffer.clear();
+
+    FILE* file = nullptr;
+    errno_t err = fopen_s(&file, filename.c_str(), "rb");
+    if (err != 0 || file == nullptr)
+    {
+        return 0;
+    }
+
+    if (fseek(file, 0, SEEK_END) != 0)
+    {
+        fclose(file);
+        return 0;
+    }
+
+    long fileSize = ftell(file);
+    if (fileSize < 0)
+    {
+        fclose(file);
+        return 0;
+    }
+
+    if (fseek(file, 0, SEEK_SET) != 0)
+    {
+        fclose(file);
+        return 0;
+    }
+
+    if (fileSize == 0)
+    {
+        fclose(file);
+        return 0;
+    }
+
+    outBuffer.resize(static_cast<size_t>(fileSize));
+
+    size_t bytesRead = fread(outBuffer.data(), 1, static_cast<size_t>(fileSize), file);
+    fclose(file);
+
+    outBuffer.resize(bytesRead);
+
+    return static_cast<int>(bytesRead);
 }
 
-
-//-----------------------------------------------------------------------------------------------
-double GetCurrentTimeSeconds()
+int FileReadToString(std::string& outString, const std::string& filename)
 {
-	static LARGE_INTEGER initialTime;
-	static double secondsPerCount = InitializeTime( initialTime );
-	LARGE_INTEGER currentCount;
-	QueryPerformanceCounter( &currentCount );
-	LONGLONG elapsedCountsSinceInitialTime = currentCount.QuadPart - initialTime.QuadPart;
+    outString.clear();
 
-	double currentSeconds = static_cast< double >( elapsedCountsSinceInitialTime ) * secondsPerCount;
-	return currentSeconds;
+    std::vector<uint8_t> buffer;
+    int bytesRead = FileReadToBuffer(buffer, filename);
+    if (bytesRead <= 0)
+    {
+        return 0;
+    }
+
+    outString.resize(static_cast<size_t>(bytesRead));
+    std::memcpy(outString.data(), buffer.data(), static_cast<size_t>(bytesRead));
+
+    return bytesRead;
 }
-
-

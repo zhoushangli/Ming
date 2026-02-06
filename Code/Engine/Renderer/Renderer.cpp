@@ -2,6 +2,7 @@
 
 #include "Engine/Core/Engine.hpp"
 #include "Engine/Core/Vertex.hpp"
+#include "Engine/Core/FileUtils.hpp"
 #include "Engine/Core/VertexUtils.hpp"
 #include "Engine/Core/StringUtils.hpp"
 #include "Engine/Core/ErrorWarningAssert.hpp"
@@ -25,30 +26,6 @@
 #endif
 
 HGLRC g_openGLRenderingContext = nullptr;
-
-const char* defaultShaderSource = R"(
-struct VS_INPUT
-{
-    float3 position : POSITION;
-};
-
-struct VS_OUTPUT
-{
-    float4 position : SV_Position;
-};
-
-VS_OUTPUT VertexMain(VS_INPUT input)
-{
-    VS_OUTPUT output;
-    output.position = float4(input.position, 1.0f);
-    return output;
-}
-
-float4 PixelMain(VS_OUTPUT input) : SV_Target
-{
-    return float4(1.f, 1.f, 1.f, 1.f);
-}
-)";
 
 Renderer::Renderer(RendererConfig config) : m_config(config)
 {
@@ -125,7 +102,8 @@ void Renderer::Startup()
     }
 #endif
 
-    m_currentShader = CreateShader("Default", defaultShaderSource);
+    std::string defaultShaderName = "Data/Shaders/Default";
+    m_currentShader = CreateShader(defaultShaderName.c_str());
     BindShader(m_currentShader);
     
 //     Vertex vertices[] = {
@@ -164,6 +142,10 @@ void Renderer::Startup()
 
 void Renderer::Shutdown()
 {
+    m_currentCamera = nullptr;
+    m_currentShader = nullptr;
+    m_currentVertexBuffer = nullptr;
+
     for (auto& shader : m_loadedShaders)
     {
         delete shader;
@@ -393,6 +375,20 @@ Shader* Renderer::CreateShader(char const* shaderName, char const* shaderSource)
 }
 
 
+Shader* Renderer::CreateShader(char const* shaderName)
+{
+    GUARANTEE_OR_DIE(shaderName && shaderName[0], "CreateShader(shaderName): shaderName is null/empty");
+
+    std::string shaderFilename = std::string(shaderName) + ".hlsl";
+
+    std::string shaderSource;
+    int bytesRead = FileReadToString(shaderSource, shaderFilename);
+
+    GUARANTEE_OR_DIE(bytesRead > 0, Stringf("Failed to read shader file \"%s\"", shaderFilename.c_str()));
+
+    return CreateShader(shaderName, shaderSource.c_str());
+}
+
 bool Renderer::CompileShaderToByteCode(
     std::vector<unsigned char>& outByteCode,
     char const* name,
@@ -421,7 +417,7 @@ bool Renderer::CompileShaderToByteCode(
         strlen(source),
         name,
         nullptr,
-        nullptr,
+        D3D_COMPILE_STANDARD_FILE_INCLUDE,
         entryPoint,
         target,
         shaderFlags,
