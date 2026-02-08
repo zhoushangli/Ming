@@ -8,6 +8,8 @@
 #include "Engine/Core/ErrorWarningAssert.hpp"
 #include "Engine/Renderer/Camera.hpp"
 #include "Engine/Renderer/Texture.hpp"
+#include "Engine/Renderer/VertexBuffer.hpp"
+#include "Engine/Renderer/ConstantBuffer.hpp"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "ThirdParty/stb/stb_image.h"
@@ -15,6 +17,11 @@
 #include <Windows.h>
 #include <d3dcompiler.h>
 #include <d3d11.h>
+
+#if defined(OPAQUE)
+#undef OPAQUE
+#endif
+
 
 #pragma comment( lib, "d3d11.lib" )
 #pragma comment( lib, "dxgi.lib" )
@@ -26,6 +33,73 @@
 #endif
 
 HGLRC g_openGLRenderingContext = nullptr;
+
+const char* g_defaultShaderSource = R"(
+    cbuffer CameraConstants : register(b2)
+    {
+	    float OrthoMinX;
+	    float OrthoMinY;
+	    float OrthoMinZ;
+	    float OrthoMaxX;
+	    float OrthoMaxY;
+	    float OrthoMaxZ;
+	    float pad0;
+	    float pad1;
+    };
+
+    struct VS_INPUT
+    {
+	    float3 localPosition : POSITION;
+	    float4 color : COLOR;
+	    float2 uv : TEXCOORD0;
+    };
+
+    struct VS_OUTPUT
+    {
+	    float4 position : SV_Position;
+	    float4 color : COLOR;
+	    float2 uv : TEXCOORD0;
+    };
+
+    float Interpolate(float start, float end, float fraction)
+    {
+	    return start * (1.0f - fraction) + end * fraction;
+    }
+
+    float GetFractionWithinRange(float value, float start, float end)
+    {
+	    return (value - start) / (end - start);
+    }
+
+    float RangeMap(float inValue, float inStart, float inEnd, float outStart, float outEnd)
+    {
+	    float fraction = GetFractionWithinRange(inValue, inStart, inEnd);
+	    return Interpolate(outStart, outEnd, fraction);
+    }
+
+    VS_OUTPUT VertexMain(VS_INPUT input)
+    {
+	    float4 localPosition = float4(input.localPosition, 1);
+
+	    float4 clipPosition;
+	    clipPosition.x = RangeMap(localPosition.x, OrthoMinX, OrthoMaxX, -1.0f, 1.0f);
+	    clipPosition.y = RangeMap(localPosition.y, OrthoMinY, OrthoMaxY, -1.0f, 1.0f);
+	    clipPosition.z = RangeMap(localPosition.z, OrthoMinZ, OrthoMaxZ, 0.0f, 1.0f);
+	    clipPosition.w = localPosition.w;
+
+	    VS_OUTPUT o;
+	    o.position = clipPosition;
+	    o.color = input.color;
+	    o.uv = input.uv;
+	    return o;
+    }
+
+
+    float4 PixelMain(VS_OUTPUT input) : SV_Target
+    {
+	    return float4(1.f, 1.f, 1.f, 1.f);
+    }
+    )";
 
 Renderer::Renderer(RendererConfig config) : m_config(config)
 {
@@ -102,19 +176,8 @@ void Renderer::Startup()
     }
 #endif
 
-    std::string defaultShaderName = "Data/Shaders/Default";
-    m_currentShader = CreateShader(defaultShaderName.c_str());
-    BindShader(m_currentShader);
-    
-//     Vertex vertices[] = {
-//         Vertex(Vec3(-0.50f, -0.50f, 0.0f), Rgba8(255, 255, 255, 255), Vec2(0.0f, 0.0f)),
-//         Vertex(Vec3(0.00f,  0.50f, 0.0f), Rgba8(255, 255, 255, 255), Vec2(0.0f, 0.0f)),
-//         Vertex(Vec3(0.50f, -0.50f, 0.0f), Rgba8(255, 255, 255, 255), Vec2(0.0f, 0.0f)),
-//     };
-// 
-//     m_currentVertexBuffer = CreateVertexBuffer(sizeof(vertices), sizeof(Vertex));
-//     CopyCPUToGPU(vertices, sizeof(vertices), m_currentVertexBuffer);
-//     BindVertexBuffer(m_currentVertexBuffer);
+    m_defaultShader = CreateShader("Default", g_defaultShaderSource);
+    BindShader(m_defaultShader);
 
     // Set rasterizer state
     D3D11_RASTERIZER_DESC rasterizerDesc = {};
@@ -138,6 +201,59 @@ void Renderer::Startup()
     m_deviceContext->RSSetState(m_rasterizerState);
 
     m_deviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+    // Create camera constant buffer
+    m_cameraCBO = CreateConstantBuffer(sizeof(CameraConstants));
+
+    // Set blend states
+    D3D11_BLEND_DESC blendDesc = { };
+    blendDesc.RenderTarget[0].BlendEnable = TRUE;
+    blendDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_ONE;
+    blendDesc.RenderTarget[0].DestBlend = D3D11_BLEND_ZERO;
+    blendDesc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
+    blendDesc.RenderTarget[0].SrcBlendAlpha = blendDesc.RenderTarget[0].SrcBlend;
+    blendDesc.RenderTarget[0].DestBlendAlpha = blendDesc.RenderTarget[0].DestBlend;
+    blendDesc.RenderTarget[0].BlendOpAlpha = blendDesc.RenderTarget[0].BlendOp;
+    blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+
+    // OPAQUE
+    hr = m_device->CreateBlendState(
+        &blendDesc,
+        &m_blendStates[(int)(BlendMode::OPAQUE)]
+    );
+
+    if (!SUCCEEDED(hr))
+    {
+        ERROR_AND_DIE("CreateBlendState for BlendMode::OPAQUE failed.");
+    }
+
+    // ALPHA
+    blendDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;
+    blendDesc.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
+
+    hr = m_device->CreateBlendState(
+        &blendDesc,
+        &m_blendStates[(int)(BlendMode::ALPHA)]
+    );
+
+    if (!SUCCEEDED(hr))
+    {
+        ERROR_AND_DIE("CreateBlendState for BlendMode::ALPHA failed.");
+    }
+
+    // ADDITIVE
+    blendDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;
+    blendDesc.RenderTarget[0].DestBlend = D3D11_BLEND_ONE;
+
+    hr = m_device->CreateBlendState(
+        &blendDesc,
+        &m_blendStates[(int)(BlendMode::ADDITIVE)]
+    );
+
+    if (!SUCCEEDED(hr))
+    {
+        ERROR_AND_DIE("CreateBlendState for BlendMode::ADDITIVE failed.");
+    }
 }
 
 void Renderer::Shutdown()
@@ -145,6 +261,14 @@ void Renderer::Shutdown()
     m_currentCamera = nullptr;
     m_currentShader = nullptr;
     m_currentVertexBuffer = nullptr;
+
+    for (auto& blendState : m_blendStates)
+    {
+        if (blendState)
+        {
+            blendState->Release();
+        }
+    }
 
     for (auto& shader : m_loadedShaders)
     {
@@ -219,9 +343,26 @@ void Renderer::ClearScreen(Rgba8 const& clearColor)
 
 void Renderer::SetBlendMode(BlendMode blendMode)
 {
-    blendMode;
+    m_desiredBlendMode = blendMode;
 }
 
+
+void Renderer::SetStatesIfChanged()
+{
+    GUARANTEE_OR_DIE(m_deviceContext, "SetStatesIfChanged: m_deviceContext is null");
+
+    // Blend state
+    ID3D11BlendState* desiredBlendState = m_blendStates[(int)m_desiredBlendMode];
+    if (m_blendState != desiredBlendState)
+    {
+        m_blendState = desiredBlendState;
+
+        float blendFactor[4] = { 0.f, 0.f, 0.f, 0.f };
+        UINT sampleMask = 0xffffffff;
+
+        m_deviceContext->OMSetBlendState(m_blendState, blendFactor, sampleMask);
+    }
+}
 
 void Renderer::BeginCamera(Camera const& camera)
 {	
@@ -240,6 +381,19 @@ void Renderer::BeginCamera(Camera const& camera)
     DebuggerPrintf("%f --- %f \n", (float)g_engine->m_window->GetClientDimensions().x, (float)g_engine->m_window->GetClientDimensions().y);
 
     m_deviceContext->RSSetViewports(1, &viewport);
+
+    CameraConstants cameraData = CameraConstants();
+    cameraData.OrthoMinX = camera.GetLeft();
+    cameraData.OrthoMaxX = camera.GetRight();
+    cameraData.OrthoMinY = camera.GetBottom();
+    cameraData.OrthoMaxY = camera.GetTop();
+    cameraData.OrthoMinZ = 0.0f;
+    cameraData.OrthoMaxZ = 1.0f;
+    cameraData.pad0 = 0.0f; // Padding to ensure 16-byte alignment
+    cameraData.pad1 = 0.0f;
+
+    CopyCPUToGPU(&cameraData, sizeof(cameraData), m_cameraCBO);
+    BindConstantBuffer(m_cameraCBO);
 }
 
 void Renderer::EndCamera()
@@ -257,6 +411,7 @@ void Renderer::DrawVertexArray(int numVertexes, Vertex const* vertexes) const
 
 void Renderer::DrawVertexBuffer(VertexBuffer* vertexBuffer, unsigned int vertexCount)
 {
+    SetStatesIfChanged();
     BindVertexBuffer(vertexBuffer);
     m_deviceContext->Draw(vertexCount, 0);
 }
@@ -451,9 +606,9 @@ void Renderer::BindShader(Shader* shader)
 
     if (shader == nullptr)
     {
-        m_deviceContext->VSSetShader(nullptr, nullptr, 0);
-        m_deviceContext->PSSetShader(nullptr, nullptr, 0);
-        m_deviceContext->IASetInputLayout(nullptr);
+        m_deviceContext->IASetInputLayout(m_defaultShader->m_inputLayout);
+        m_deviceContext->VSSetShader(m_defaultShader->m_vertexShader, nullptr, 0);
+        m_deviceContext->PSSetShader(m_defaultShader->m_pixelShader, nullptr, 0);
         return;
     }
 
@@ -465,6 +620,11 @@ void Renderer::BindShader(Shader* shader)
 VertexBuffer* Renderer::CreateVertexBuffer(const unsigned int size, unsigned int stride)
 {
     return new VertexBuffer(m_device, size, stride);
+}
+
+ConstantBuffer* Renderer::CreateConstantBuffer(const unsigned int size)
+{
+    return new ConstantBuffer(m_device, size);
 }
 
 void Renderer::CopyCPUToGPU(const void* data, unsigned int size, VertexBuffer* vertexBuffer)
@@ -488,6 +648,26 @@ void Renderer::CopyCPUToGPU(const void* data, unsigned int size, VertexBuffer* v
     m_deviceContext->Unmap(vertexBuffer->m_buffer, 0);
 }
 
+void Renderer::CopyCPUToGPU(const void* data, unsigned int size, ConstantBuffer* constantBuffer)
+{
+    GUARANTEE_OR_DIE(m_deviceContext, "CopyCPUToGPU: m_deviceContext is null");
+    GUARANTEE_OR_DIE(constantBuffer, "CopyCPUToGPU: vertexBuffer is null");
+    GUARANTEE_OR_DIE(data, "CopyCPUToGPU: data is null");
+
+    if (constantBuffer->m_size > 0)
+    {
+        GUARANTEE_OR_DIE(size <= constantBuffer->m_size, "CopyCPUToGPU: upload size exceeds constant buffer capacity");
+    }
+
+    D3D11_MAPPED_SUBRESOURCE mapped = {};
+    HRESULT hr = m_deviceContext->Map(constantBuffer->m_buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
+    GUARANTEE_OR_DIE(SUCCEEDED(hr), "CopyCPUToGPU: Map failed");
+
+    memcpy(mapped.pData, data, size);
+
+    m_deviceContext->Unmap(constantBuffer->m_buffer, 0);
+}
+
 void Renderer::BindVertexBuffer(VertexBuffer* vertexBuffer)
 {
     GUARANTEE_OR_DIE(m_deviceContext, "BindVertexBuffer: m_deviceContext is null");
@@ -505,6 +685,25 @@ void Renderer::BindVertexBuffer(VertexBuffer* vertexBuffer)
     UINT offset = 0;
     ID3D11Buffer* buf = vertexBuffer->m_buffer;
     m_deviceContext->IASetVertexBuffers(0, 1, &buf, &stride, &offset);
+}
+
+void Renderer::BindConstantBuffer(ConstantBuffer* constantBuffer)
+{
+    GUARANTEE_OR_DIE(m_deviceContext, "BindConstantBuffer: m_deviceContext is null");
+
+    if (constantBuffer == nullptr)
+    {
+        ID3D11Buffer* nullBuf = nullptr;
+        m_deviceContext->VSSetConstantBuffers(k_cameraConstantsSlot, 1, &nullBuf);
+        m_deviceContext->PSSetConstantBuffers(k_cameraConstantsSlot, 1, &nullBuf);
+        return;
+    }
+
+    ID3D11Buffer* buf = constantBuffer->m_buffer;
+    GUARANTEE_OR_DIE(buf, "BindConstantBuffer: constantBuffer->m_buffer is null");
+
+    m_deviceContext->VSSetConstantBuffers(k_cameraConstantsSlot, 1, &buf);
+    m_deviceContext->PSSetConstantBuffers(k_cameraConstantsSlot, 1, &buf);
 }
 
 Texture* Renderer::CreateTextureFromData(char const* name, IntVec2 dimensions, int bytesPerTexel, uint8_t* texelData)

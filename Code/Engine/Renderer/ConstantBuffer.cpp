@@ -1,20 +1,40 @@
-#include "Engine/Renderer/Shader.hpp"
+#include "Engine/Renderer/ConstantBuffer.hpp"
+
+#include "Engine/Core/ErrorWarningAssert.hpp"
 
 #include <d3d11.h>
 
-Shader::Shader(const ShaderConfig& config) : m_config(config)
+ConstantBuffer::ConstantBuffer(ID3D11Device* device, size_t size) : m_device(device), m_size(size)
 {
+    Create();
 }
 
-Shader::~Shader()
+ConstantBuffer::~ConstantBuffer()
 {
-    if (m_inputLayout) { m_inputLayout->Release();  m_inputLayout = nullptr; }
-    if (m_pixelShader) { m_pixelShader->Release();  m_pixelShader = nullptr; }
-    if (m_vertexShader) { m_vertexShader->Release(); m_vertexShader = nullptr; }
+    if (m_buffer)
+    {
+        m_buffer->Release();
+        m_buffer = nullptr;
+    }
 }
 
-const std::string& Shader::GetName() const
+void ConstantBuffer::Create()
 {
-    return m_config.m_name;
-}
+    if (!m_device) return;
 
+    if (m_buffer)
+    {
+        m_buffer->Release();
+        m_buffer = nullptr;
+    }
+
+    D3D11_BUFFER_DESC bufferDesc = {};
+    bufferDesc.Usage = D3D11_USAGE_DYNAMIC;
+    bufferDesc.ByteWidth = (UINT)m_size;
+    bufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+    bufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+
+    const HRESULT hr = m_device->CreateBuffer(&bufferDesc, nullptr, &m_buffer);
+
+    GUARANTEE_OR_DIE(SUCCEEDED(hr), "ConstantBuffer::Create failed to create D3D11 constant buffer");
+}
