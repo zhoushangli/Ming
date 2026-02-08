@@ -6,12 +6,32 @@
 
 #include <ThirdParty/stb/stb_image.h>
 
-Image::Image(char const* imageFilePath)
+Image::Image()
 {
+    m_dimensions = IntVec2::ZERO;
+}
+
+Image::~Image()
+{
+}
+
+Image::Image(IntVec2 size, Rgba8 color)
+{
+    GUARANTEE_OR_DIE(size.x > 0 && size.y > 0, "Image: invalid dimensions");
+    m_dimensions = size;
+
+    int const totalTexels = m_dimensions.x * m_dimensions.y;
+    m_texelColors.assign(static_cast<size_t>(totalTexels), color);
+}
+
+Image::Image(char const* imageFilePath) : m_imageFilePath(imageFilePath)
+{
+    GUARANTEE_OR_DIE(imageFilePath != nullptr && imageFilePath[0] != '\0', "Image: imageFilePath is null/empty");
+
     int numComponents = 0;
-    
+
     stbi_set_flip_vertically_on_load(true);
-    unsigned char* imageData = stbi_load(imageFilePath, &m_dimensions.x, &m_dimensions.y, &numComponents, STBI_rgb_alpha);
+    unsigned char* imageData = stbi_load(imageFilePath, &m_dimensions.x, &m_dimensions.y, &numComponents, 4);
     stbi_set_flip_vertically_on_load(false);
 
     GUARANTEE_OR_DIE(imageData != nullptr, Stringf("Failed to load image from file: %s", imageFilePath));
@@ -21,7 +41,7 @@ Image::Image(char const* imageFilePath)
 
     for (int texelIndex = 0; texelIndex < totalTexels; ++texelIndex)
     {
-        int byteIndex = texelIndex * numComponents;
+        int byteIndex = texelIndex * 4;
         unsigned char r = imageData[byteIndex + 0];
         unsigned char g = imageData[byteIndex + 1];
         unsigned char b = imageData[byteIndex + 2];
@@ -34,13 +54,22 @@ Image::Image(char const* imageFilePath)
 
 Image::Image(std::string const& imageFilePath) : Image(imageFilePath.c_str())
 {
-
 }
 
 Rgba8 Image::GetColorAt(int x, int y) const
 {
-    int index = y * m_dimensions.x + x;
-    GUARANTEE_OR_DIE(index >= 0 && index < static_cast<int>(m_texelColors.size()), "GetColorAt out of bounds");
-    return m_texelColors[index];
+    GUARANTEE_OR_DIE(x >= 0 && x < m_dimensions.x && y >= 0 && y < m_dimensions.y, "GetColorAt out of bounds");
+    int const index = y * m_dimensions.x + x;
+    return m_texelColors[static_cast<size_t>(index)];
+}
+
+const std::string& Image::GetImageFilePath() const
+{
+    return m_imageFilePath;
+}
+
+const void* Image::GetRawData() const
+{
+    return m_texelColors.empty() ? nullptr : m_texelColors.data();
 }
 

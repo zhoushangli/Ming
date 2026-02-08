@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Engine/Core/Image.hpp"
 #include "Engine/Math/IntVec2.hpp"
 #include "Engine/Renderer/Shader.hpp"
 #include "Engine/Renderer/BitmapFont.hpp"
@@ -27,12 +28,21 @@ struct ID3D11InputLayout;
 struct ID3D11Buffer;
 struct ID3D11RasterizerState;
 struct ID3D11BlendState;
+struct ID3D11SamplerState;
+
 
 enum class BlendMode
 {
     ALPHA,
     ADDITIVE,
     OPAQUE,
+    COUNT
+};
+
+enum class SamplerMode
+{
+    POINT_CLAMP,
+    BILINEAR_CLAMP,
     COUNT
 };
 
@@ -71,6 +81,7 @@ public:
 
     void ClearScreen(Rgba8 const& clearColor);
     void SetBlendMode(BlendMode blendMode);
+    void SetSamplerMode(SamplerMode samplerMode);
     void SetStatesIfChanged();
 
     void BeginCamera(Camera const& camera);
@@ -85,6 +96,7 @@ public:
 
     Shader* CreateShader(char const* shaderName);
 	Texture* CreateOrGetTextureFromFile(char const* fileDataPath);
+    Texture* CreateTextureFromImage(const Image& image);
     Texture* CreateTextureFromData(char const* name, IntVec2 dimensions, int bytesPerTexel, uint8_t* texelData);
     BitmapFont* CreateOrGetBitmapFont(char const* fontFilePathNameWithNoExtension);
     VertexBuffer* CreateVertexBuffer(const unsigned int size, unsigned int stride);
@@ -108,6 +120,7 @@ private:
 	RendererConfig m_config;
 
     Shader* m_defaultShader = nullptr;
+    Texture* m_defaultTexture = nullptr;
 
 	Camera* m_currentCamera              = nullptr;
     Shader* m_currentShader              = nullptr;
@@ -123,6 +136,11 @@ private:
     ID3D11BlendState* m_blendState                         = nullptr;
     BlendMode m_desiredBlendMode                           = BlendMode::ALPHA;
     ID3D11BlendState* m_blendStates[(int)BlendMode::COUNT] = {};
+
+    ID3D11SamplerState* m_samplerState                             = nullptr;
+    SamplerMode m_desiredSamplerMode                               = SamplerMode::POINT_CLAMP;
+    ID3D11SamplerState* m_samplerStates[(int)(SamplerMode::COUNT)] = {};
+
 
     std::vector<Shader*>    m_loadedShaders;
     std::vector<uint8_t>    m_vertexShaderByteCode;

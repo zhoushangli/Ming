@@ -10,6 +10,9 @@ struct Rgba8;
 class Image
 {
 public:
+    Image();
+    ~Image();
+    Image(IntVec2 size, Rgba8 color);
     Image(char const* imageFilePath);
     Image(std::string const& imageFilePath);
 
@@ -17,7 +20,11 @@ public:
 
     IntVec2 GetDimensions() const { return m_dimensions; }
 
+    const std::string& GetImageFilePath() const;
+    const void* GetRawData() const;
+
 protected:
+    std::string m_imageFilePath;
     std::vector<Rgba8> m_texelColors;
     IntVec2 m_dimensions;
 };

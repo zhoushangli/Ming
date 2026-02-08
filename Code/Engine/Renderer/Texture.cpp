@@ -2,13 +2,25 @@
 
 #include "Engine/Math/AABB2.hpp"
 
-// Texture
+#include <d3d11.h>
+
 Texture::Texture()
 {
 }
 
 Texture::~Texture()
 {
+    if (m_shaderResourceView) 
+    { 
+        m_shaderResourceView->Release();
+        m_shaderResourceView = nullptr; 
+    }
+
+    if (m_texture) 
+    { 
+        m_texture->Release();            
+        m_texture = nullptr; 
+    }
 }
 
 // SpriteDefinition

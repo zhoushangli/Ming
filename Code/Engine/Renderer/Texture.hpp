@@ -6,6 +6,9 @@
 #include <string>
 #include <vector>
 
+struct ID3D11Texture2D;
+struct ID3D11ShaderResourceView;
+
 class Texture
 {
 	friend class Renderer; // Only the Renderer can create new Texture objects!
@@ -23,8 +26,8 @@ protected:
 	std::string			m_name;			// Can't be char const* -- store a copy, in case it was temporary
 	IntVec2				m_dimensions;
 
-	// #ToDo in SD2: Use #if defined( ENGINE_RENDER_D3D11 ) to do something different for DX11; #else do:
-	unsigned int		m_textureID = 0xFFFFFFFF;
+    ID3D11Texture2D* m_texture = nullptr;
+    ID3D11ShaderResourceView* m_shaderResourceView = nullptr;
 };
 
 class SpriteSheet;

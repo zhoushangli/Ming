@@ -34,72 +34,86 @@
 
 HGLRC g_openGLRenderingContext = nullptr;
 
-const char* g_defaultShaderSource = R"(
+const char* k_defaultShaderSource = R"(
     cbuffer CameraConstants : register(b2)
     {
-	    float OrthoMinX;
-	    float OrthoMinY;
-	    float OrthoMinZ;
-	    float OrthoMaxX;
-	    float OrthoMaxY;
-	    float OrthoMaxZ;
-	    float pad0;
-	    float pad1;
+        float OrthoMinX;
+        float OrthoMinY;
+        float OrthoMinZ;
+        float OrthoMaxX;
+        float OrthoMaxY;
+        float OrthoMaxZ;
+        float pad0;
+        float pad1;
     };
+
+    Texture2D    diffuseTexture : register(t0);
+    SamplerState diffuseSampler : register(s0);
 
     struct VS_INPUT
     {
-	    float3 localPosition : POSITION;
-	    float4 color : COLOR;
-	    float2 uv : TEXCOORD0;
+        float3 localPosition : POSITION;
+        float4 color : COLOR;
+        float2 uv : TEXCOORD0;
     };
 
     struct VS_OUTPUT
     {
-	    float4 position : SV_Position;
-	    float4 color : COLOR;
-	    float2 uv : TEXCOORD0;
+        float4 position : SV_Position;
+        float4 color : COLOR;
+        float2 uv : TEXCOORD0;
     };
 
     float Interpolate(float start, float end, float fraction)
     {
-	    return start * (1.0f - fraction) + end * fraction;
+        return start * (1.0f - fraction) + end * fraction;
     }
 
     float GetFractionWithinRange(float value, float start, float end)
     {
-	    return (value - start) / (end - start);
+        return (value - start) / (end - start);
     }
 
     float RangeMap(float inValue, float inStart, float inEnd, float outStart, float outEnd)
     {
-	    float fraction = GetFractionWithinRange(inValue, inStart, inEnd);
-	    return Interpolate(outStart, outEnd, fraction);
+        float fraction = GetFractionWithinRange(inValue, inStart, inEnd);
+        return Interpolate(outStart, outEnd, fraction);
     }
 
     VS_OUTPUT VertexMain(VS_INPUT input)
     {
-	    float4 localPosition = float4(input.localPosition, 1);
+        float4 localPosition = float4(input.localPosition, 1);
 
-	    float4 clipPosition;
-	    clipPosition.x = RangeMap(localPosition.x, OrthoMinX, OrthoMaxX, -1.0f, 1.0f);
-	    clipPosition.y = RangeMap(localPosition.y, OrthoMinY, OrthoMaxY, -1.0f, 1.0f);
-	    clipPosition.z = RangeMap(localPosition.z, OrthoMinZ, OrthoMaxZ, 0.0f, 1.0f);
-	    clipPosition.w = localPosition.w;
+        float4 clipPosition;
+        clipPosition.x = RangeMap(localPosition.x, OrthoMinX, OrthoMaxX, -1.0f, 1.0f);
+        clipPosition.y = RangeMap(localPosition.y, OrthoMinY, OrthoMaxY, -1.0f, 1.0f);
+        clipPosition.z = RangeMap(localPosition.z, OrthoMinZ, OrthoMaxZ,  0.0f, 1.0f);
+        clipPosition.w = localPosition.w;
 
-	    VS_OUTPUT o;
-	    o.position = clipPosition;
-	    o.color = input.color;
-	    o.uv = input.uv;
-	    return o;
+        VS_OUTPUT o;
+        o.position = clipPosition;
+        o.color    = input.color;
+        o.uv       = input.uv;
+        return o;
     }
 
-
-    float4 PixelMain(VS_OUTPUT input) : SV_Target
+    float4 PixelMain(VS_OUTPUT input) : SV_Target0
     {
-	    return input.color;
+        float4 textureColor = diffuseTexture.Sample(diffuseSampler, input.uv);
+        float4 color = textureColor * input.color;
+        clip(color.a - 0.01f);
+        return color;
     }
-    )";
+)";
+
+
+const uint8_t k_defaultTexture[16] =
+{
+    0xFF, 0xFF, 0xFF, 0xFF,   // (0,0)
+    0xFF, 0xFF, 0xFF, 0xFF,   // (1,0)
+    0xFF, 0xFF, 0xFF, 0xFF,   // (0,1)
+    0xFF, 0xFF, 0xFF, 0xFF    // (1,1)
+};
 
 Renderer::Renderer(RendererConfig config) : m_config(config)
 {
@@ -185,13 +199,6 @@ void Renderer::Startup()
 
 #pragma endregion
 
-#pragma region Default Shader
-
-    m_defaultShader = CreateShader("Default", g_defaultShaderSource);
-    BindShader(m_defaultShader);
-
-#pragma endregion
-
 #pragma region Default Shader Set rasterizer state
 
     D3D11_RASTERIZER_DESC rasterizerDesc = {};
@@ -274,6 +281,60 @@ void Renderer::Startup()
     {
         ERROR_AND_DIE("CreateBlendState for BlendMode::ADDITIVE failed.");
     }
+
+#pragma endregion
+
+#pragma region Set sampler states
+
+    D3D11_SAMPLER_DESC samplerDesc = {};
+
+    // POINT_CLAMP
+    samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
+    samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
+    samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
+    samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
+    samplerDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
+    samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
+
+    hr = m_device->CreateSamplerState(
+        &samplerDesc,
+        &m_samplerStates[(int)SamplerMode::POINT_CLAMP]
+    );
+
+    if (!SUCCEEDED(hr))
+    {
+        ERROR_AND_DIE("CreateSamplerState for SamplerMode::POINT_CLAMP failed.");
+    }
+
+    // BILINEAR_CLAMP
+    samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+    samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
+    samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
+    samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
+
+    hr = m_device->CreateSamplerState(
+        &samplerDesc,
+        &m_samplerStates[(int)SamplerMode::BILINEAR_CLAMP]
+    );
+
+#pragma endregion
+
+#pragma region Default Shader
+
+    m_defaultShader = CreateShader("Default", k_defaultShaderSource);
+    BindShader(m_defaultShader);
+
+#pragma endregion
+
+#pragma region Default Texture
+
+    m_defaultTexture = CreateTextureFromData(
+        "Default",
+        IntVec2(2, 2),
+        4,
+        (uint8_t*)k_defaultTexture
+    );
+    BindTexture(m_defaultTexture);
 
 #pragma endregion
 }
@@ -368,6 +429,10 @@ void Renderer::SetBlendMode(BlendMode blendMode)
     m_desiredBlendMode = blendMode;
 }
 
+void Renderer::SetSamplerMode(SamplerMode samplerMode)
+{
+    m_desiredSamplerMode = samplerMode;
+}
 
 void Renderer::SetStatesIfChanged()
 {
@@ -383,6 +448,14 @@ void Renderer::SetStatesIfChanged()
         UINT sampleMask = 0xffffffff;
 
         m_deviceContext->OMSetBlendState(m_blendState, blendFactor, sampleMask);
+    }
+
+    // Sampler state
+    ID3D11SamplerState* desiredSamplerState = m_samplerStates[(int)m_desiredSamplerMode];
+    if (m_samplerState != desiredSamplerState)
+    {
+        m_samplerState = desiredSamplerState;
+        m_deviceContext->PSSetSamplers(0, 1, &m_samplerState);
     }
 }
 
@@ -461,26 +534,21 @@ Texture* Renderer::CreateOrGetTextureFromFile(char const* imageFilePath)
 	return newTexture;
 }
 
+Texture* Renderer::CreateTextureFromImage(const Image& image)
+{
+    return CreateTextureFromData(
+        image.GetImageFilePath().c_str(),
+        image.GetDimensions(),
+        4,
+        (uint8_t*)image.GetRawData()
+    );
+}
 
 Texture* Renderer::CreateTextureFromFile(char const* imageFilePath)
 {
-	IntVec2 dimensions = IntVec2::ZERO;		// This will be filled in for us to indicate image width & height
-	int bytesPerTexel = 0;					// ...and how many color components the image had (e.g. 3=RGB=24bit, 4=RGBA=32bit)
+    Image image(imageFilePath);
 
-	// Load (and decompress) the image RGB(A) bytes from a file on disk into a memory buffer (array of bytes)
-	stbi_set_flip_vertically_on_load(true); // We prefer uvTexCoords has origin (0,0) at BOTTOM LEFT
-	unsigned char* texelData = stbi_load(imageFilePath, &dimensions.x, &dimensions.y, &bytesPerTexel, 0);
-    stbi_set_flip_vertically_on_load(false);
-
-	// Check if the load was successful
-	GUARANTEE_OR_DIE(texelData, Stringf("Failed to load image \"%s\"", imageFilePath));
-
-	Texture* newTexture = CreateTextureFromData(imageFilePath, dimensions, bytesPerTexel, texelData);
-
-	// Free the raw image texel data now that we've sent a copy of it down to the GPU to be stored in video memory
-	stbi_image_free(texelData);
-
-	return newTexture;
+	return CreateTextureFromImage(image);
 }
 
 Texture* Renderer::GetTextureFromFileName(char const* imageFilePath)
@@ -637,10 +705,7 @@ void Renderer::BindShader(Shader* shader)
 
     if (shader == nullptr)
     {
-        m_deviceContext->IASetInputLayout(m_defaultShader->m_inputLayout);
-        m_deviceContext->VSSetShader(m_defaultShader->m_vertexShader, nullptr, 0);
-        m_deviceContext->PSSetShader(m_defaultShader->m_pixelShader, nullptr, 0);
-        return;
+        shader = m_defaultShader;
     }
 
     m_deviceContext->IASetInputLayout(shader->m_inputLayout);
@@ -739,19 +804,51 @@ void Renderer::BindConstantBuffer(ConstantBuffer* constantBuffer)
 
 Texture* Renderer::CreateTextureFromData(char const* name, IntVec2 dimensions, int bytesPerTexel, uint8_t* texelData)
 {
-    bytesPerTexel;
-
-    // Check if the load was successful
+    GUARANTEE_OR_DIE(m_device, "CreateTextureFromData: m_device is null");
     GUARANTEE_OR_DIE(texelData, Stringf("CreateTextureFromData failed for \"%s\" - texelData was null!", name));
-    GUARANTEE_OR_DIE(dimensions.x > 0 && dimensions.y > 0, Stringf("CreateTextureFromData failed for \"%s\" - illegal texture dimensions (%i x %i)", name, dimensions.x, dimensions.y));
+    GUARANTEE_OR_DIE(dimensions.x > 0 && dimensions.y > 0,
+        Stringf("CreateTextureFromData failed for \"%s\" - illegal texture dimensions (%i x %i)", name, dimensions.x, dimensions.y));
+
+    // We only support RGBA8 format for now, so require 4 bytes per texel
+    GUARANTEE_OR_DIE(bytesPerTexel == 4,
+        Stringf("CreateTextureFromData requires 4 bytes/texel (RGBA). Got %i for \"%s\"", bytesPerTexel, name));
 
     Texture* newTexture = new Texture();
-    newTexture->m_name = name; // NOTE: m_name must be a std::string, otherwise it may point to temporary data!
+    newTexture->m_name = name;
     newTexture->m_dimensions = dimensions;
+
+    D3D11_TEXTURE2D_DESC textureDesc = {};
+    textureDesc.Width = (UINT)dimensions.x;
+    textureDesc.Height = (UINT)dimensions.y;
+    textureDesc.MipLevels = 1;
+    textureDesc.ArraySize = 1;
+    textureDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+    textureDesc.SampleDesc.Count = 1;
+    textureDesc.Usage = D3D11_USAGE_IMMUTABLE;
+    textureDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+
+    D3D11_SUBRESOURCE_DATA textureData = {};
+    textureData.pSysMem = texelData;
+    textureData.SysMemPitch = 4 * dimensions.x; 
+
+    HRESULT hr = m_device->CreateTexture2D(&textureDesc, &textureData, &newTexture->m_texture);
+    if (!SUCCEEDED(hr))
+    {
+        delete newTexture;
+        ERROR_AND_DIE(Stringf("CreateTexture2D failed for image file \"%s\".", name));
+    }
+
+    hr = m_device->CreateShaderResourceView(newTexture->m_texture, nullptr, &newTexture->m_shaderResourceView);
+    if (!SUCCEEDED(hr))
+    {
+        delete newTexture;
+        ERROR_AND_DIE(Stringf("CreateShaderResourceView failed for image file \"%s\".", name));
+    }
 
     m_loadedTexturesDict[newTexture->m_name] = newTexture;
     return newTexture;
 }
+
 
 BitmapFont* Renderer::CreateOrGetBitmapFont(char const* fontFilePathNameWithNoExtension)
 {
@@ -770,5 +867,14 @@ BitmapFont* Renderer::CreateOrGetBitmapFont(char const* fontFilePathNameWithNoEx
 
 void Renderer::BindTexture(Texture* texture)
 {
-	texture;
+    GUARANTEE_OR_DIE(m_deviceContext, "BindTexture: m_deviceContext is null");
+
+    if (texture == nullptr)
+    {
+        texture = m_defaultTexture;
+    }
+
+    ID3D11ShaderResourceView* srv = texture->m_shaderResourceView;
+    m_deviceContext->PSSetShaderResources(0, 1, &srv);
 }
+
