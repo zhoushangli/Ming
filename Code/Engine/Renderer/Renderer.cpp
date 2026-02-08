@@ -97,7 +97,7 @@ const char* g_defaultShaderSource = R"(
 
     float4 PixelMain(VS_OUTPUT input) : SV_Target
     {
-	    return float4(1.f, 1.f, 1.f, 1.f);
+	    return input.color;
     }
     )";
 
@@ -428,8 +428,10 @@ void Renderer::DrawVertexArray(int numVertexes, Vertex const* vertexes) const
         return;
     }
 
-    VertexBuffer* currentVertexBuffer = g_engine->m_renderer->CreateVertexBuffer(sizeof(vertexes), sizeof(Vertex));
-    g_engine->m_renderer->CopyCPUToGPU(vertexes, sizeof(vertexes), currentVertexBuffer);
+    unsigned int size = numVertexes * sizeof(Vertex);
+
+    VertexBuffer* currentVertexBuffer = g_engine->m_renderer->CreateVertexBuffer(size, sizeof(Vertex));
+    g_engine->m_renderer->CopyCPUToGPU(vertexes, size, currentVertexBuffer);
     g_engine->m_renderer->DrawVertexBuffer(currentVertexBuffer, numVertexes);
 }
 
