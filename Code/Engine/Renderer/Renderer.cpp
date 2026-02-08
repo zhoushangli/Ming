@@ -117,7 +117,8 @@ void Renderer::Startup()
     deviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
 #endif
 
-    // Create device and swap chain
+#pragma region Create device and swap chain
+
     DXGI_SWAP_CHAIN_DESC swapChainDesc = {};
     swapChainDesc.BufferDesc.Width = g_engine->m_window->GetClientDimensions().x;
     swapChainDesc.BufferDesc.Height = g_engine->m_window->GetClientDimensions().y;
@@ -140,7 +141,10 @@ void Renderer::Startup()
         ERROR_AND_DIE("Could not create D3D 11 device and swap chain.");
     }
 
-    // Get back buffer texture
+#pragma endregion
+
+#pragma region Get back buffer texture
+
     ID3D11Texture2D* backBuffer;
     hr = m_swapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)&backBuffer);
     if (!SUCCEEDED(hr))
@@ -156,7 +160,10 @@ void Renderer::Startup()
 
     backBuffer->Release();
 
-    // Create debug module
+#pragma endregion
+
+#pragma region Create debug module
+
 #if defined(ENGINE_DEBUG_RENDER)
     m_dxgiDebugModule = (void*)::LoadLibraryA("dxgidebug.dll");
     if (m_dxgiDebugModule == nullptr)
@@ -176,10 +183,17 @@ void Renderer::Startup()
     }
 #endif
 
+#pragma endregion
+
+#pragma region Default Shader
+
     m_defaultShader = CreateShader("Default", g_defaultShaderSource);
     BindShader(m_defaultShader);
 
-    // Set rasterizer state
+#pragma endregion
+
+#pragma region Default Shader Set rasterizer state
+
     D3D11_RASTERIZER_DESC rasterizerDesc = {};
     rasterizerDesc.FillMode = D3D11_FILL_SOLID;
     rasterizerDesc.CullMode = D3D11_CULL_NONE;
@@ -202,10 +216,16 @@ void Renderer::Startup()
 
     m_deviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-    // Create camera constant buffer
+#pragma endregion
+
+#pragma region Create camera constant buffer
+
     m_cameraCBO = CreateConstantBuffer(sizeof(CameraConstants));
 
-    // Set blend states
+#pragma endregion
+
+#pragma region Set blend states
+
     D3D11_BLEND_DESC blendDesc = { };
     blendDesc.RenderTarget[0].BlendEnable = TRUE;
     blendDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_ONE;
@@ -254,6 +274,8 @@ void Renderer::Startup()
     {
         ERROR_AND_DIE("CreateBlendState for BlendMode::ADDITIVE failed.");
     }
+
+#pragma endregion
 }
 
 void Renderer::Shutdown()
@@ -366,19 +388,17 @@ void Renderer::SetStatesIfChanged()
 
 void Renderer::BeginCamera(Camera const& camera)
 {	
-    Vec2 cameraTopLeft = Vec2(camera.GetLeft(), camera.GetBottom()); // Top-Left in D3D is equal to Bottom-Left in our camera
-    Vec2 camDimensions = camera.GetDimensions();
 
     // Set viewport
+    Vec2 camDimensions = (Vec2)g_engine->m_window->GetClientDimensions();
+
     D3D11_VIEWPORT viewport = {};
-    viewport.TopLeftX = cameraTopLeft.x;
-    viewport.TopLeftY = cameraTopLeft.y;
+    viewport.TopLeftX = 0.f;
+    viewport.TopLeftY = 0.f;
     viewport.Width = camDimensions.x;
     viewport.Height = camDimensions.y;
     viewport.MinDepth = 0.0f;
     viewport.MaxDepth = 1.0f;
-
-    DebuggerPrintf("%f --- %f \n", (float)g_engine->m_window->GetClientDimensions().x, (float)g_engine->m_window->GetClientDimensions().y);
 
     m_deviceContext->RSSetViewports(1, &viewport);
 
@@ -407,6 +427,15 @@ void Renderer::DrawVertexArray(int numVertexes, Vertex const* vertexes) const
     {
         return;
     }
+
+    VertexBuffer* currentVertexBuffer = g_engine->m_renderer->CreateVertexBuffer(sizeof(vertexes), sizeof(Vertex));
+    g_engine->m_renderer->CopyCPUToGPU(vertexes, sizeof(vertexes), currentVertexBuffer);
+    g_engine->m_renderer->DrawVertexBuffer(currentVertexBuffer, numVertexes);
+}
+
+void Renderer::DrawVertexArray(std::vector<Vertex> const& verts) const
+{
+    DrawVertexArray(static_cast<int>(verts.size()), verts.data());
 }
 
 void Renderer::DrawVertexBuffer(VertexBuffer* vertexBuffer, unsigned int vertexCount)
@@ -740,9 +769,4 @@ BitmapFont* Renderer::CreateOrGetBitmapFont(char const* fontFilePathNameWithNoEx
 void Renderer::BindTexture(Texture* texture)
 {
 	texture;
-}
-
-void Renderer::DrawVertexArray(std::vector<Vertex> const& verts) const
-{
-	DrawVertexArray(static_cast<int>(verts.size()), verts.data());
 }
