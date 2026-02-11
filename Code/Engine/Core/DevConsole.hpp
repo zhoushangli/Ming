@@ -1,62 +1,116 @@
 #pragma once
 
+#include "Engine/Core/Clock.hpp"
+#include "Engine/Core/EngineCommon.hpp"
 #include "Engine/Core/Rgba8.hpp"
 #include "Engine/Core/EventSystem.hpp"
-#include "Engine/Math/AABB2.hpp"
-#include "Engine/Renderer/BitmapFont.hpp"
 
 #include <string>
+#include <vector>
 
-struct DevConsoleConfig
-{
-    bool m_isEnable = true;
-};
+class Renderer;
+class Camera;
+class BitmapFont;
+class Timer;
 
+// Stores the text and color for an individual line of text
 struct DevConsoleLine
 {
-    Rgba8       m_color;
-    std::string m_text;
-    int         m_frameNumber = 0;
+    Rgba8		m_color;
+    std::string	m_text;
 };
 
-enum class DevConsoleMode
+// Dev console defaults. A Renderer and Camera must be provided.
+struct DevConsoleConfig
 {
-    HIDDEN,
-    OPEN_FULL
+    bool            m_isEnable          = true;
+    Renderer*       m_renderer          = nullptr;
+    Camera*         m_camera            = nullptr;
+    std::string	    m_fontName          = "SquirrelFixedFont";
+    float		    m_fontAspect        = 0.7f;
+    int			    m_linesOnScreen     = 40;
+    int			    m_maxCommandHistory = 128;
+    bool		    m_startOpen         = false;
 };
 
+// Class for a dev console that allows entering text and executing commands. Can be toggled with
+// tilde ('~') and renders within a transparent box with configurable bounds. Other features
+// include specific coloring for different lines of text and a blinking insertion point.
 class DevConsole
 {
 public:
     DevConsole(DevConsoleConfig const& config);
     ~DevConsole();
 
+    // Subscribes to any events needed, prints an initial line of text, and starts the blink timer.
     void Startup();
     void Shutdown();
     void BeginFrame();
     void EndFrame();
 
-    void Execute(std::string const& consoleCommandText);
+    // Parses the current input line and executes it using the event system. Commands and arguments
+    // are delimited from each other with space (' ') and argument names and values are delimited
+    // with equals ('='). Echoes the command to the dev console as well as any command output.
+    void Execute(std::string const& consoleContext, bool echoCommand = true);
+
+    // Adds a line of text to the current list of lines being shown. Individual lines are delimited
+    // with the newline ('\n') character.
     void AddLine(Rgba8 const& color, std::string const& text);
-    void Render(AABB2 const& bounds) const;
 
-    DevConsoleMode GetMode() const;
-    void SetMode(DevConsoleMode mode);
-    void ToggleMode(DevConsoleMode mode);
+    // Renders just visible text lines within the bounds specified. Bounds are in terms of the
+    // camera being used to render. The current input line renders at the bottom with all other
+    // lines rendered above it, with the most recent lines at the bottom.
+    void Render(AABB2 const& bounds);
 
-    static bool Command_Test(EventArgs& commandArgs);
+    // Toggles between open and closed.
+    void ToggleOpen();
+    bool IsOpen();
 
-protected:
-    void Render_OpenFull(AABB2 const& bounds, BitmapFont& font, float fontAspect = 1.f) const;
+    void HandleInput(unsigned char asKey);
 
-protected:
     static const Rgba8 ERROR;
     static const Rgba8 WARNING;
     static const Rgba8 INFO_MAJOR;
     static const Rgba8 INFO_MINOR;
+    static const Rgba8 INPUT_TEXT;
+    static const Rgba8 INPUT_INSERTION_POINT;
 
-    DevConsoleConfig       m_config;
-    DevConsoleMode         m_mode = DevConsoleMode::HIDDEN;   // also OPEN_FULL, and eventually others
-    std::vector<DevConsoleLine> m_lines;                      // #ToDo: support a max limited # of lines (e.g. fixed circular buffer)
-    int                    m_frameNumber = 0;
+    // Handle key input.
+    static bool Event_KeyDown(EventArgs& args);
+
+    // Handle char input by appending valid characters to our current input line.
+    static bool Event_CharInput(EventArgs& args);
+
+    // Clear all lines of text.
+    static bool Command_Clear(EventArgs& args);
+
+    // Display all currently registered commands in the event system.
+    static bool Command_Help(EventArgs& args);
+
+protected:
+    DevConsoleConfig m_config;
+
+    // True if the dev console is currently visible and accepting input.
+    bool m_isOpen = false;
+
+    // All lines added to the dev console since the last time it was cleared.
+    std::vector<DevConsoleLine> m_lines;
+
+    // Our current line of input text.
+    std::string m_inputText;
+
+    // Index of the insertion point in our current input text.
+    int m_insertionPointPosition = 0;
+
+    // True if our insertion point is currently in the visible phase of blinking.
+    bool m_insertionPointVisible = true;
+
+    // Timer for controlling insertion point visibility.
+    Timer* m_insertionPointBlinkTimer;
+
+    // History of all commands executed.
+    std::vector<std::string> m_commandHistory;
+
+    // Our current index in our history of commands as we are scrolling.
+    int m_historyIndex = -1;
 };

@@ -22,7 +22,6 @@
 #undef OPAQUE
 #endif
 
-
 #pragma comment( lib, "d3d11.lib" )
 #pragma comment( lib, "dxgi.lib" )
 #pragma comment( lib, "d3dcompiler.lib" )
@@ -33,79 +32,6 @@
 #endif
 
 HGLRC g_openGLRenderingContext = nullptr;
-
-const char* k_defaultShaderSource = R"(
-    cbuffer CameraConstants : register(b2)
-    {
-        float OrthoMinX;
-        float OrthoMinY;
-        float OrthoMinZ;
-        float OrthoMaxX;
-        float OrthoMaxY;
-        float OrthoMaxZ;
-        float pad0;
-        float pad1;
-    };
-
-    Texture2D    diffuseTexture : register(t0);
-    SamplerState diffuseSampler : register(s0);
-
-    struct VS_INPUT
-    {
-        float3 localPosition : POSITION;
-        float4 color : COLOR;
-        float2 uv : TEXCOORD0;
-    };
-
-    struct VS_OUTPUT
-    {
-        float4 position : SV_Position;
-        float4 color : COLOR;
-        float2 uv : TEXCOORD0;
-    };
-
-    float Interpolate(float start, float end, float fraction)
-    {
-        return start * (1.0f - fraction) + end * fraction;
-    }
-
-    float GetFractionWithinRange(float value, float start, float end)
-    {
-        return (value - start) / (end - start);
-    }
-
-    float RangeMap(float inValue, float inStart, float inEnd, float outStart, float outEnd)
-    {
-        float fraction = GetFractionWithinRange(inValue, inStart, inEnd);
-        return Interpolate(outStart, outEnd, fraction);
-    }
-
-    VS_OUTPUT VertexMain(VS_INPUT input)
-    {
-        float4 localPosition = float4(input.localPosition, 1);
-
-        float4 clipPosition;
-        clipPosition.x = RangeMap(localPosition.x, OrthoMinX, OrthoMaxX, -1.0f, 1.0f);
-        clipPosition.y = RangeMap(localPosition.y, OrthoMinY, OrthoMaxY, -1.0f, 1.0f);
-        clipPosition.z = RangeMap(localPosition.z, OrthoMinZ, OrthoMaxZ,  0.0f, 1.0f);
-        clipPosition.w = localPosition.w;
-
-        VS_OUTPUT o;
-        o.position = clipPosition;
-        o.color    = input.color;
-        o.uv       = input.uv;
-        return o;
-    }
-
-    float4 PixelMain(VS_OUTPUT input) : SV_Target0
-    {
-        float4 textureColor = diffuseTexture.Sample(diffuseSampler, input.uv);
-        float4 color = textureColor * input.color;
-        clip(color.a - 0.01f);
-        return color;
-    }
-)";
-
 
 const uint8_t k_defaultTexture[16] =
 {
@@ -225,8 +151,9 @@ void Renderer::Startup()
 
 #pragma endregion
 
-#pragma region Create camera constant buffer
+#pragma region Create buffer
 
+    m_currentVertexBuffer = CreateVertexBuffer(sizeof(Vertex) * 3, sizeof(Vertex));
     m_cameraCBO = CreateConstantBuffer(sizeof(CameraConstants));
 
 #pragma endregion
@@ -321,7 +248,7 @@ void Renderer::Startup()
 
 #pragma region Default Shader
 
-    m_defaultShader = CreateShader("Default", k_defaultShaderSource);
+    m_defaultShader = CreateShader("Data/Shaders/Default");
     BindShader(m_defaultShader);
 
 #pragma endregion
@@ -343,6 +270,11 @@ void Renderer::Shutdown()
 {
     m_currentCamera = nullptr;
     m_currentShader = nullptr;
+
+    delete m_cameraCBO;
+    m_cameraCBO = nullptr;
+
+    delete m_currentVertexBuffer;
     m_currentVertexBuffer = nullptr;
 
     for (auto& blendState : m_blendStates)
@@ -350,6 +282,16 @@ void Renderer::Shutdown()
         if (blendState)
         {
             blendState->Release();
+            blendState = nullptr;
+        }
+    }
+
+    for (auto& samplerState : m_samplerStates)
+    {
+        if (samplerState)
+        {
+            samplerState->Release();
+            samplerState = nullptr;
         }
     }
 
@@ -503,9 +445,9 @@ void Renderer::DrawVertexArray(int numVertexes, Vertex const* vertexes) const
 
     unsigned int size = numVertexes * sizeof(Vertex);
 
-    VertexBuffer* currentVertexBuffer = g_engine->m_renderer->CreateVertexBuffer(size, sizeof(Vertex));
-    g_engine->m_renderer->CopyCPUToGPU(vertexes, size, currentVertexBuffer);
-    g_engine->m_renderer->DrawVertexBuffer(currentVertexBuffer, numVertexes);
+    m_currentVertexBuffer->Resize(size);
+    g_engine->m_renderer->CopyCPUToGPU(vertexes, size, m_currentVertexBuffer);
+    g_engine->m_renderer->DrawVertexBuffer(m_currentVertexBuffer, numVertexes);
 }
 
 void Renderer::DrawVertexArray(std::vector<Vertex> const& verts) const

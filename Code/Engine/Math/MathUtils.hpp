@@ -53,6 +53,7 @@ float InterpolateClamped(float start, float end, float fraction);
 float GetFractionWithinRange(float value, float start, float end);
 float RangeMap(float inValue, float inStart, float inEnd, float outStart, float outEnd);
 float RangeMapClamped(float inValue, float inStart, float inEnd, float outStart, float outEnd);
+int GetClamped(int value, int minValue, int maxValue);
 float GetClamped(float value, float minValue, float maxValue);
 float GetClampedZeroToOne(float value);
 int	 RoundDownToInt(float value);

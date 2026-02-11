@@ -202,6 +202,21 @@ float GetClamped(float value, float minValue, float maxValue)
 	return value;
 }
 
+int GetClamped(int value, int minValue, int maxValue)
+{
+    if (value < minValue)
+    {
+        return minValue;
+    }
+
+    if (value > maxValue)
+    {
+        return maxValue;
+    }
+
+    return value;
+}
+
 float GetClampedZeroToOne(float value)
 {
 	if (value < 0.f)

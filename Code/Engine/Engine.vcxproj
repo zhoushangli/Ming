@@ -94,6 +94,7 @@
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <AdditionalIncludeDirectories>$(SolutionDir)Code/;$(SolutionDir)../Engine/Code/</AdditionalIncludeDirectories>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -114,6 +115,7 @@
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <AdditionalIncludeDirectories>$(SolutionDir)Code/;$(SolutionDir)../Engine/Code/</AdditionalIncludeDirectories>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -132,6 +134,7 @@
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <AdditionalIncludeDirectories>$(SolutionDir)Code/;$(SolutionDir)../Engine/Code/</AdditionalIncludeDirectories>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -152,6 +155,7 @@
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <AdditionalIncludeDirectories>$(SolutionDir)Code/;$(SolutionDir)../Engine/Code/</AdditionalIncludeDirectories>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -166,6 +170,7 @@
     <ClCompile Include="..\..\..\Engine\Code\Engine\Math\Vec2.cpp" />
     <ClCompile Include="..\ThirdParty\tinyxml2\tinyxml2.cpp" />
     <ClCompile Include="Audio\AudioSystem.cpp" />
+    <ClCompile Include="Core\Clock.cpp" />
     <ClCompile Include="Core\DevConsole.cpp" />
     <ClCompile Include="Core\Engine.cpp" />
     <ClCompile Include="Core\EngineCommon.cpp" />
@@ -178,6 +183,7 @@
     <ClCompile Include="Core\Rgba8.cpp" />
     <ClCompile Include="Core\StringUtils.cpp" />
     <ClCompile Include="Core\Time.cpp" />
+    <ClCompile Include="Core\Timer.cpp" />
     <ClCompile Include="Core\Vertex.cpp" />
     <ClCompile Include="Core\VertexUtils.cpp" />
     <ClCompile Include="Core\XmlUtils.cpp" />
@@ -226,6 +232,7 @@
     <ClInclude Include="..\ThirdParty\stb\stb_image.h" />
     <ClInclude Include="..\ThirdParty\tinyxml2\tinyxml2.h" />
     <ClInclude Include="Audio\AudioSystem.hpp" />
+    <ClInclude Include="Core\Clock.hpp" />
     <ClInclude Include="Core\DevConsole.hpp" />
     <ClInclude Include="Core\Engine.hpp" />
     <ClInclude Include="Core\EngineCommon.hpp" />
@@ -238,6 +245,7 @@
     <ClInclude Include="Core\Rgba8.hpp" />
     <ClInclude Include="Core\StringUtils.hpp" />
     <ClInclude Include="Core\Time.hpp" />
+    <ClInclude Include="Core\Timer.hpp" />
     <ClInclude Include="Core\Vertex.hpp" />
     <ClInclude Include="Core\VertexUtils.hpp" />
     <ClInclude Include="Core\XmlUtils.hpp" />

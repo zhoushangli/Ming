@@ -57,73 +57,56 @@ LRESULT CALLBACK WindowsMessageHandlingProcedure(HWND windowHandle, UINT wmMessa
 	case WM_CLOSE:
 	{
 		FireEvent("Quit");
-		// return 0;
+		break;
 	}
 
 	case WM_KEYDOWN:
 	{
-		if (g_engine == nullptr || g_engine->m_input == nullptr)
-		{
-			break;
-		}
-
+        EventArgs args = EventArgs();
 		unsigned char asKey = (unsigned char)wParam;
-		g_engine->m_input->HandleKeyPressed(asKey);
-
+		args.SetValue("asKey", std::to_string(asKey));
+		FireEvent("KeyDown", args);
 		break;
 	}
 
 	case WM_KEYUP:
 	{
-		if (g_engine == nullptr || g_engine->m_input == nullptr)
-		{
-			break;
-		}
+        EventArgs args = EventArgs();
+        unsigned char asKey = (unsigned char)wParam;
+        args.SetValue("asKey", std::to_string(asKey));
+		FireEvent("KeyUp", args);
+		break;
+	}
 
-		unsigned char asKey = (unsigned char)wParam;
-		g_engine->m_input->HandleKeyReleased(asKey);
-
+	case WM_CHAR:
+	{
+        EventArgs args = EventArgs();
+        unsigned char asKey = (unsigned char)wParam;
+        args.SetValue("asKey", std::to_string(asKey));
+		FireEvent("CharInput", args);
 		break;
 	}
 
 	case WM_LBUTTONDOWN:
 	{
-		if (g_engine == nullptr || g_engine->m_input == nullptr)
-		{
-			break;
-		}
-
 		g_engine->m_input->HandleKeyPressed(KEYCODE_LEFT_MOUSE);
 		break;
 	}
 
 	case WM_LBUTTONUP:
 	{
-		if (g_engine == nullptr || g_engine->m_input == nullptr)
-		{
-			break;
-		}
-
 		g_engine->m_input->HandleKeyReleased(KEYCODE_LEFT_MOUSE);
 		break;
 	}
 
 	case WM_RBUTTONDOWN:
 	{
-		if (g_engine == nullptr || g_engine->m_input == nullptr)
-		{
-			break;
-		}
 		g_engine->m_input->HandleKeyPressed(KEYCODE_RIGHT_MOUSE);
 		break;
 	}
 
 	case WM_RBUTTONUP:
 	{
-		if (g_engine == nullptr || g_engine->m_input == nullptr)
-		{
-			break;
-		}
 		g_engine->m_input->HandleKeyReleased(KEYCODE_RIGHT_MOUSE);
 		break;
 	}

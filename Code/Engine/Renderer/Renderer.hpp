@@ -4,6 +4,7 @@
 #include "Engine/Math/IntVec2.hpp"
 #include "Engine/Renderer/Shader.hpp"
 #include "Engine/Renderer/BitmapFont.hpp"
+#include "Game/EngineBuildPreferences.hpp"
 
 #include <map>
 #include <vector>
@@ -140,7 +141,6 @@ private:
     ID3D11SamplerState* m_samplerState                             = nullptr;
     SamplerMode m_desiredSamplerMode                               = SamplerMode::POINT_CLAMP;
     ID3D11SamplerState* m_samplerStates[(int)(SamplerMode::COUNT)] = {};
-
 
     std::vector<Shader*>    m_loadedShaders;
     std::vector<uint8_t>    m_vertexShaderByteCode;

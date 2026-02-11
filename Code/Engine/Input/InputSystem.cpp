@@ -1,4 +1,7 @@
-#include "InputSystem.hpp"
+#include "Engine/Input/InputSystem.hpp"
+
+#include "Engine/Core/Engine.hpp"
+#include "Engine/Core/ErrorWarningAssert.hpp"
 
 #include <Windows.h>
 
@@ -23,6 +26,14 @@ unsigned char const KEYCODE_RIGHTARROW	= VK_RIGHT;
 unsigned char const KEYCODE_LEFT_MOUSE  = VK_LBUTTON;
 unsigned char const KEYCODE_RIGHT_MOUSE = VK_RBUTTON;
 
+unsigned char const KEYCODE_ENTER     = VK_RETURN;
+unsigned char const KEYCODE_BACKSPACE = VK_BACK;
+unsigned char const KEYCODE_INSERT    = VK_INSERT;
+unsigned char const KEYCODE_DELETE    = VK_DELETE;
+unsigned char const KEYCODE_HOME      = VK_HOME;
+unsigned char const KEYCODE_END       = VK_END;
+
+
 InputSystem::InputSystem(InputConfig config) : m_config(config)
 {
 
@@ -44,10 +55,16 @@ void InputSystem::Startup()
 		m_keyStates[key].m_state = false;
 		m_keyStates[key].m_prevState = false;
 	}
+
+    g_engine->m_eventSystem->SubscribeEventCallbackFunction("KeyUp", InputSystem::Event_KeyUp);
+    g_engine->m_eventSystem->SubscribeEventCallbackFunction("KeyDown", InputSystem::Event_KeyDown);
 }
 
 void InputSystem::Shutdown()
 {
+    g_engine->m_eventSystem->UnsubscribeEventCallbackFunction("KeyDown", Event_KeyDown);
+    g_engine->m_eventSystem->UnsubscribeEventCallbackFunction("KeyUp", Event_KeyUp);
+
 	for (int key = 0; key < 256; ++key)
 	{
 		m_keyStates[key].m_state = false;
@@ -118,4 +135,18 @@ void InputSystem::ClearAllInputStates()
 	{
 		m_controllers[i].Reset();
 	}
+}
+
+bool InputSystem::Event_KeyDown(EventArgs& args)
+{
+    unsigned char asKey = (unsigned char)std::stoi(args.GetValue("asKey", "0")); 
+	g_engine->m_input->HandleKeyPressed(asKey);
+    return true;
+}
+
+bool InputSystem::Event_KeyUp(EventArgs& args)
+{
+    unsigned char asKey = (unsigned char)std::stoi(args.GetValue("asKey", "0"));
+    g_engine->m_input->HandleKeyReleased(asKey);
+    return true;
 }

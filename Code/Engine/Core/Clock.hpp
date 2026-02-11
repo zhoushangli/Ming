@@ -1,45 +1,99 @@
 //--------------------------------------------------------------------------------------------------
-// Timer class that can be attached to any clock in a hierarchy and correctly handles duration
-// regardless of update frequency.
-class Timer
+// Hierarchical clock that inherits time scale. Parent clocks pass scaled delta seconds down to
+// child clocks to be used as their base delta seconds. Child clocks in turn scale that time and
+// pass that down to their children. There is one system clock at the root of the hierarchy.
+
+#include <vector>
+
+class Clock
 {
 public:
-    // Create a clock with a period and the the specified clock. If the clock
-    // is null, use the system clock.
-    explicit Timer(double period, const Clock* clock = nullptr);
+    // Default constructor, uses the system clock as the parent of the new clock.
+    Clock();
 
-    // Set the start time to the clock's current total time.
-    void Start();
+    // Constructor to specify a parent clock for the new clock.
+    explicit Clock(Clock& parent);
 
-    // Set the start time back to negative one.
-    void Stop();
+    // Destructor, unparents ourself and our children to avoid crashes but does not otherwise try
+    // to fix up the clock hierarchy. That is the responsibility of the user of this class.
+    ~Clock();
+    Clock(const Clock& copy) = delete;
 
-    // Returns zero if stopped, otherwise returns the time elapsed between the clock's current
-    // time and our start time.
-    double GetElapsedTime() const;
+    // Reset all book keeping variables values back to zero and then set the last updated time
+    // to be the current system time.
+    void Reset();
 
-    // Return the elapsed time as a percentage of our period. This can be greater than 1.
-    double GetElapsedFraction() const;
+    bool IsPaused() const;
+    void Pause();
+    void Unpause();
+    void TogglePause();
 
-    // Returns true if our start time less than zero.
-    bool IsStopped() const;
+    // Unpause for frame then pause again the next frame.
+    void StepSingleFrame();
 
-    // Returns true if our elapsed time is greater than our period and we are not stopped.
-    bool HasPeriodElapsed() const;
+    // Set and get the value by which this clock scales delta seconds.
+    void SetTimeScale(double timeScale);
+    double GetTimeScale() const;
 
-    // If a period has elapsed and we are not stopped, decrements a period by adding a
-    // period to the start time and returns true. Generally called within a loop until it
-    // returns false so the caller can process each elapsed period.
-    bool DecrementPeriodIfElapsed();
+    double GetDeltaSeconds() const;
+    double GetTotalSeconds() const;
+    double GetFrameRate() const;
+    int    GetFrameCount() const;
 
-    // The clock to use for getting the current time.
-    const Clock* m_clock = nullptr;
+public:
+    // Returns a reference to a static system clock that by default will be the parent of all
+    // other clocks if a parent is not specified.
+    static Clock& GetSystemClock();
 
-    // Clock time at which the timer was started. This is incremented by one period each
-    // time we decrement a period, however, so it is not always the original start time.
-    // A value of -1.0f indicates the timer is stopped.
-    double m_startTime = -1.0f;
+    // Called in BeginFrame to Tick the system clock, which will in turn Advance the system
+    // clock, which will in turn Advance all of its children, thus updating the entire hierarchy.
+    static void TickSystemClock();
 
-    // The time interval it takes for a period to elapse.
-    double m_period = 0.0f;
+protected:
+    // Calculates the current delta seconds and clamps it to the max delta time, sets the last
+    // updated time, then calls Advance, passing down the delta seconds.
+    void Tick();
+
+    // Calculates delta seconds based on pausing and time scale, updates all remaining book
+    // keeping variables, calls Advance on all child clocks and passes down our delta seconds,
+    // and handles pausing after frames for stepping single frames.
+    void Advance(double deltaTimeSeconds);
+
+    // Add a child clock as one of our children. Does not handle cases where the child clock
+    // already has a parent.
+    void AddChild(Clock* childClock);
+
+    // Removes a child clock from our children if it is a child, otherwise does nothing.
+    void RemoveChild(Clock* childClock);
+
+private:
+    explicit Clock(bool isSystemClock);
+
+protected:
+    // Parent clock. Will be nullptr for the root clock.
+    Clock* m_parent = nullptr;
+
+    // All children of this clock.
+    std::vector<Clock*> m_children;
+
+    // Book keeping variables.
+    double m_lastUpdateTimeInSeconds = 0.0;
+    double m_totalSeconds = 0.0f;
+    double m_deltaSeconds = 0.0;
+    int    m_frameCount = 0;
+
+    // Time scale for this clock.
+    double m_timeScale = 1.0;
+
+    // Pauses the clock completely.
+    bool m_isPaused = false;
+
+    // For single stepping frames.
+    bool m_stepSingleFrame = false;
+
+    // Max delta time. Useful for preventing large time steps when stepping in a debugger.
+    double m_maxDeltaSeconds = 0.1;
+
+private:
+    static Clock* s_systemClock;  
 };

@@ -1,35 +1,76 @@
-//-----------------------------------------------------------------------------------------------
-// Time.cpp
-//	
+#include "Engine/Core/Timer.hpp"
 
-//-----------------------------------------------------------------------------------------------
-#include "Engine/Core/Time.hpp"
+#include "Engine/Core/Clock.hpp"
 
-#define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
-
-
-//-----------------------------------------------------------------------------------------------
-double InitializeTime( LARGE_INTEGER& out_initialTime )
+Timer::Timer(double period, const Clock* clock)
+    : m_clock(clock)
+    , m_startTime(-1.0)
+    , m_period(period)
 {
-	LARGE_INTEGER countsPerSecond;
-	QueryPerformanceFrequency( &countsPerSecond );
-	QueryPerformanceCounter( &out_initialTime );
-	return( 1.0 / static_cast< double >( countsPerSecond.QuadPart ) );
+    if (m_clock == nullptr)
+    {
+        m_clock = &Clock::GetSystemClock();
+    }
 }
 
-
-//-----------------------------------------------------------------------------------------------
-double GetCurrentTimeSeconds()
+void Timer::Start()
 {
-	static LARGE_INTEGER initialTime;
-	static double secondsPerCount = InitializeTime( initialTime );
-	LARGE_INTEGER currentCount;
-	QueryPerformanceCounter( &currentCount );
-	LONGLONG elapsedCountsSinceInitialTime = currentCount.QuadPart - initialTime.QuadPart;
+    if (m_clock == nullptr)
+    {
+        m_clock = &Clock::GetSystemClock();
+    }
 
-	double currentSeconds = static_cast< double >( elapsedCountsSinceInitialTime ) * secondsPerCount;
-	return currentSeconds;
+    m_startTime = m_clock->GetTotalSeconds();
 }
 
+void Timer::Stop()
+{
+    m_startTime = -1.0;
+}
 
+double Timer::GetElapsedTime() const
+{
+    if (IsStopped())
+    {
+        return 0.0;
+    }
+
+    const Clock* clock = (m_clock != nullptr) ? m_clock : &Clock::GetSystemClock();
+    return clock->GetTotalSeconds() - m_startTime;
+}
+
+double Timer::GetElapsedFraction() const
+{
+    if (m_period == 0.0)
+    {
+        return 0.0;
+    }
+
+    return GetElapsedTime() / m_period;
+}
+
+bool Timer::IsStopped() const
+{
+    return m_startTime < 0.0;
+}
+
+bool Timer::HasPeriodElapsed() const
+{
+    if (IsStopped())
+    {
+        return false;
+    }
+
+    return GetElapsedTime() > m_period;
+}
+
+bool Timer::DecrementPeriodIfElapsed()
+{
+    if (!HasPeriodElapsed())
+    {
+        return false;
+    }
+
+    m_startTime += m_period;
+    return true;
+}
