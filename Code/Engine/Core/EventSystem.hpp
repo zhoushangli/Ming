@@ -30,6 +30,9 @@ public:
     int  FireEvent(std::string const& eventName, EventArgs& args);
     int  FireEvent(std::string const& eventName);
 
+    bool IsEventRegistered(std::string const& eventName) const;
+    Strings GetRegisteredEventNames() const;
+
 protected:
     EventSystemConfig m_config;
     std::map<std::string, std::vector<EventSystemCallbackFunctionPtr>> m_subscriptionListsByEventName;

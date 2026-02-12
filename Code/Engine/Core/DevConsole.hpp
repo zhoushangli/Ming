@@ -24,10 +24,8 @@ struct DevConsoleLine
 struct DevConsoleConfig
 {
     bool            m_isEnable          = true;
-    Renderer*       m_renderer          = nullptr;
-    Camera*         m_camera            = nullptr;
-    std::string	    m_fontName          = "SquirrelFixedFont";
-    float		    m_fontAspect        = 0.7f;
+    std::string	    m_fontName          = "Data/Images/SquirrelFixedFont";
+    float		    m_fontAspect        = 0.8f;
     int			    m_linesOnScreen     = 40;
     int			    m_maxCommandHistory = 128;
     bool		    m_startOpen         = false;
@@ -63,7 +61,7 @@ public:
     void Render(AABB2 const& bounds);
 
     // Toggles between open and closed.
-    void ToggleOpen();
+    void ToggleOpen(); 
     bool IsOpen();
 
     void HandleInput(unsigned char asKey);
@@ -75,11 +73,14 @@ public:
     static const Rgba8 INPUT_TEXT;
     static const Rgba8 INPUT_INSERTION_POINT;
 
+
     // Handle key input.
     static bool Event_KeyDown(EventArgs& args);
 
     // Handle char input by appending valid characters to our current input line.
     static bool Event_CharInput(EventArgs& args);
+
+    static bool Command_Quit(EventArgs& args);
 
     // Clear all lines of text.
     static bool Command_Clear(EventArgs& args);

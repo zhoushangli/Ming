@@ -1,3 +1,5 @@
+#pragma once
+
 //--------------------------------------------------------------------------------------------------
 // Timer class that can be attached to any clock in a hierarchy and correctly handles duration
 // regardless of update frequency.

@@ -72,6 +72,25 @@ int EventSystem::FireEvent(std::string const& eventName)
     return FireEvent(eventName, args);
 }
 
+bool EventSystem::IsEventRegistered(std::string const& eventName) const
+{
+    auto it = m_subscriptionListsByEventName.find(eventName);
+    return it != m_subscriptionListsByEventName.end();
+}
+
+Strings EventSystem::GetRegisteredEventNames() const
+{
+    Strings registeredEventNames;
+    registeredEventNames.reserve(m_subscriptionListsByEventName.size());
+
+    for (auto const& pair : m_subscriptionListsByEventName)
+    {
+        registeredEventNames.push_back(pair.first);
+    }
+
+    return registeredEventNames;
+}
+
 void SubscribeEventCallbackFunction(std::string const& eventName, EventSystemCallbackFunctionPtr ptr)
 {
     g_engine->m_eventSystem->SubscribeEventCallbackFunction(eventName, ptr);

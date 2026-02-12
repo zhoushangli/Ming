@@ -64,6 +64,17 @@ LRESULT CALLBACK WindowsMessageHandlingProcedure(HWND windowHandle, UINT wmMessa
 	{
         EventArgs args = EventArgs();
 		unsigned char asKey = (unsigned char)wParam;
+
+		// This is a special "key" that Windows sends when IME (Input Method Editor) is active
+		// which is used for inputting complex characters in languages like Chinese, Japanese, and Korean. 
+		// The actual key code is encoded in lParam instead of wParam in this case.
+        if (asKey == VK_PROCESSKEY) 
+        {
+            UINT sc = (lParam >> 16) & 0xFF;
+            UINT vk2 = MapVirtualKey(sc, MAPVK_VSC_TO_VK_EX);
+            if (vk2 != 0) asKey = (unsigned char)vk2;
+        }
+
 		args.SetValue("asKey", std::to_string(asKey));
 		FireEvent("KeyDown", args);
 		break;

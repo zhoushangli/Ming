@@ -1,3 +1,5 @@
+#pragma once
+
 //--------------------------------------------------------------------------------------------------
 // Hierarchical clock that inherits time scale. Parent clocks pass scaled delta seconds down to
 // child clocks to be used as their base delta seconds. Child clocks in turn scale that time and
