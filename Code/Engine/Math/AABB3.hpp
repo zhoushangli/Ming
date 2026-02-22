@@ -1,38 +1,21 @@
 #pragma once
 
-#include "Engine/Math/Vec2.hpp"
+#include "Engine/Math/Vec3.hpp"
 
-class AABB2
+class AABB3
 {
 public:
-	AABB2() = default;
-	AABB2(const AABB2& copy) = default;
-	~AABB2() = default;
-	explicit AABB2(const Vec2& mins, const Vec2& maxs);
-	explicit AABB2(float minX, float minY, float maxX, float maxY);
+	AABB3() = default;
+	AABB3(const AABB3& copy) = default;
+	~AABB3() = default;
 
-	// Methods to implement
-	bool		IsPointInside(const Vec2& point) const;
-	Vec2 const	GetCenter() const;
-	Vec2 const	GetDimensions() const;
-	Vec2 const	GetNearestPoint(const Vec2& point) const;
-	Vec2 const	GetPointAtUV(const Vec2& uv) const;
-	Vec2 const	GetUVForPoint(const Vec2& point) const;
-	
-	void		Translate(const Vec2& translation);
-	void		SetCenter(const Vec2& newCenter);
-	void		SetDimensions(const Vec2& newDimensions);
-	void		StretchToIncludePoint(const Vec2& point);
+	explicit AABB3(const Vec3& mins, const Vec3& maxs);
+	explicit AABB3(float minX, float minY, float minZ, float maxX, float maxY, float maxZ);
 
-	bool operator==(const AABB2& other) const;
-	AABB2& operator=(const AABB2& other);
+	bool operator==(const AABB3& other) const;
+	AABB3& operator=(const AABB3& other);
 
 public:
-	Vec2 m_mins;
-	Vec2 m_maxs;
-
-	static const AABB2 ZERO;
-	static const AABB2 UNIT;
-    static const AABB2 CENTERED_UNIT;
+	Vec3 m_mins;
+	Vec3 m_maxs;
 };
-

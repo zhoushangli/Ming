@@ -2,6 +2,7 @@
 
 #include "Engine/Math/Vec2.hpp"
 #include "Engine/Math/Vec3.hpp"
+#include "Engine/Math/Vec4.hpp"
 #include "Engine/Math/AABB2.hpp"
 #include "Engine/Math/IntVec2.hpp"
 #include "Engine/Math/OBB2.hpp"
@@ -107,8 +108,10 @@ Vec2 GetNearestPointOnTriangle2D(Vec2 referencePos, Triangle2 const& triangle);
 // --- Dot and Cross Products ---
 float DotProduct2D(Vec2 const& a, Vec2 const& b);
 float DotProduct3D(Vec3 const& a, Vec3 const& b);
+float DotProduct4D(Vec4 const& a, Vec4 const& b);
 float CrossProduct2D(Vec2 const& a, Vec2 const& b);
 Vec3  CrossProduct3D(Vec3 const& a, Vec3 const& b);
+
 
 float         NormalizeByte(unsigned char byteValue);
 unsigned char DenormalizeByte(float zeroToOne);

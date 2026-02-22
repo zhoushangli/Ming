@@ -8,11 +8,11 @@ struct Matrix4x4
 {
 public:
     Matrix4x4();
+    explicit Matrix4x4(float const* sixteenValuesBasisMajor);
     explicit Matrix4x4(Vec2 const& iBasis2D, Vec2 const& jBasis2D, Vec2 const& translation2D);
     explicit Matrix4x4(Vec3 const& iBasis3D, Vec3 const& jBasis3D, Vec3 const& kBasis3D, Vec3 const& translation3D);
     explicit Matrix4x4(Vec2 const& iBasis2D, Vec2 const& jBasis2D, Vec2 const& kBasis2D, Vec4 const& translation4D);
     explicit Matrix4x4(Vec4 const& iBasis4D, Vec4 const& jBasis4D, Vec4 const& kBasis4D, Vec4 const& translation4D);
-    explicit Matrix4x4(float* const sixteenValuesBasisMajor);
 
     static Matrix4x4 const MakeTranslation2D(Vec2 const translation);
     static Matrix4x4 const MakeTranslation3D(Vec3 const translationXYZ);
@@ -24,6 +24,9 @@ public:
     static Matrix4x4 const MakeRotationDegreesX(float rotationDegreesAboutX);
     static Matrix4x4 const MakeRotationDegreesY(float rotationDegreesAboutY);
     static Matrix4x4 const MakeRotationDegreesZ(float rotationDegreesAboutZ);
+
+    static Matrix4x4 const MakeOrthoProjection(float left, float right, float bottom, float top, float zNear, float zFar);
+    static Matrix4x4 const MakePerspectiveProjection(float fovDegrees, float aspectRatio, float zNear, float zFar);
 
     Vec2 const TransformVectorQuantity2D(Vec2 const vectorQuantityXY) const;        // assumes z=0, w=0
     Vec3 const TransformVectorQuantity3D(Vec3 const vectorQuantityXYZ) const;       // assumes w=0
@@ -65,7 +68,11 @@ public:
     void AppendScaleUniform2D(float uniformScaleXY);    
     void AppendScaleUniform3D(float uniformScaleXYZ);
     void AppendScaleNonUniform2D(Vec2 const nonUniformScaleXY);    
-    void AppendScaleNonUniform3D(Vec3 const nonUniformScaleXYZ);   
+    void AppendScaleNonUniform3D(Vec3 const nonUniformScaleXYZ);
+
+    void Transpose();
+    void Orthonormalize_XFwd_YLeft_ZUp2();
+    Matrix4x4 GetOrthonormalInverse();
 
 public:
     enum { Ix, Iy, Iz, Iw, Jx, Jy, Jz, Jw, Kx, Ky, Kz, Kw, Tx, Ty, Tz, Tw }; // index nicknames

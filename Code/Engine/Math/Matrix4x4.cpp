@@ -51,7 +51,7 @@ Matrix4x4::Matrix4x4(Vec4 const& iBasis4D, Vec4 const& jBasis4D, Vec4 const& kBa
 }
 
 // From float array (basis-major)
-Matrix4x4::Matrix4x4(float* const sixteenValuesBasisMajor)
+Matrix4x4::Matrix4x4(float const* sixteenValuesBasisMajor)
 {
     for (int i = 0; i < 16; ++i)
     {
@@ -317,6 +317,40 @@ Matrix4x4 const Matrix4x4::MakeRotationDegreesZ(float rotationDegreesAboutZ)
     return mat;
 }
 
+Matrix4x4 const Matrix4x4::MakeOrthoProjection(float left, float right, float bottom, float top, float zNear, float zFar)
+{
+    Matrix4x4 ortho;
+    ortho.m_values[Ix] = 2.f / (right - left);
+    ortho.m_values[Jy] = 2.f / (top - bottom);
+    ortho.m_values[Kz] = 1.f / (zFar - zNear);
+    ortho.m_values[Tx] = (left + right) / (left - right);
+    ortho.m_values[Ty] = (bottom + top) / (bottom - top);
+    ortho.m_values[Tz] = zNear / (zNear - zFar);
+    return ortho;
+}
+
+Matrix4x4 const Matrix4x4::MakePerspectiveProjection(float fovYDegrees, float aspect, float zNear, float zFar)
+{
+    Matrix4x4 perspective;
+
+    float c = CosDegrees(fovYDegrees * 0.5f);
+    float s = SinDegrees(fovYDegrees * 0.5f);
+    float scaleY = c / s;
+    float scaleX = scaleY / aspect;
+
+    float scaleZ = zFar / (zFar - zNear);
+    float translateZ = (zNear * zFar) / (zNear - zFar);
+
+    perspective.m_values[Ix] = scaleX;
+    perspective.m_values[Jy] = scaleY;
+    perspective.m_values[Kz] = scaleZ;
+    perspective.m_values[Kw] = 1.f;
+    perspective.m_values[Tz] = translateZ;
+    perspective.m_values[Tw] = 0.f;
+
+    return perspective;
+}
+
 Vec2 const Matrix4x4::TransformVectorQuantity2D(Vec2 const vectorQuantityXY) const
 {
     float x = m_values[Ix] * vectorQuantityXY.x + m_values[Jx] * vectorQuantityXY.y;
@@ -484,4 +518,52 @@ void Matrix4x4::AppendScaleNonUniform3D(Vec3 const nonUniformScaleXYZ)
     scale.m_values[Kz] = nonUniformScaleXYZ.z;
 
     Append(scale);
+}
+
+void Matrix4x4::Transpose()
+{
+    Matrix4x4 transposed;
+    for (int row = 0; row < 4; ++row)
+    {
+        for (int col = 0; col < 4; ++col)
+        {
+            transposed.m_values[row * 4 + col] = m_values[col * 4 + row];
+        }
+    }
+
+    for (int i = 0; i < 16; ++i)
+    {
+        m_values[i] = transposed.m_values[i];
+    }
+}
+
+void Matrix4x4::Orthonormalize_XFwd_YLeft_ZUp2()
+{
+    Vec4 iBasis = GetIBasis4D();
+    iBasis.Normalize();
+
+    Vec4 jBasis = GetJBasis4D();
+    jBasis -= DotProduct4D(iBasis, jBasis) * iBasis;
+    jBasis.Normalize();
+    
+    Vec4 kBasis = GetKBasis4D();
+    kBasis -= DotProduct4D(iBasis, kBasis) * iBasis;
+    kBasis -= DotProduct4D(jBasis, kBasis) * jBasis;
+    kBasis.Normalize();
+
+    Vec4 translation = GetTranslation4D();
+
+    SetIJKT4D(iBasis, jBasis, kBasis, translation);
+}
+
+Matrix4x4 Matrix4x4::GetOrthonormalInverse()
+{
+    Matrix4x4 inv = *this;
+    inv.SetTranslation3D(Vec3(0.f, 0.f, 0.f));
+    inv.Transpose();
+
+    Vec3 invTranslate(-m_values[Tx], -m_values[Ty], -m_values[Tz]);
+    inv.AppendTranslation3D(invTranslate);
+
+    return inv;
 }
