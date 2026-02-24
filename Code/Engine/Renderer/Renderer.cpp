@@ -418,14 +418,9 @@ void Renderer::BeginCamera(Camera const& camera)
     m_deviceContext->RSSetViewports(1, &viewport);
 
     CameraConstants cameraData = CameraConstants();
-    cameraData.OrthoMinX = camera.GetLeft();
-    cameraData.OrthoMaxX = camera.GetRight();
-    cameraData.OrthoMinY = camera.GetBottom();
-    cameraData.OrthoMaxY = camera.GetTop();
-    cameraData.OrthoMinZ = 0.0f;
-    cameraData.OrthoMaxZ = 1.0f;
-    cameraData.pad0 = 0.0f; // Padding to ensure 16-byte alignment
-    cameraData.pad1 = 0.0f;
+    cameraData.WorldToCameraTransform = camera.GetWorldToCameraTransform();
+    cameraData.CameraToRenderTransform = camera.GetCameraToRenderTransform();
+    cameraData.RenderToClipTransform = camera.GetRenderToClipTransform();
 
     CopyCPUToGPU(&cameraData, sizeof(cameraData), m_cameraCBO);
     BindConstantBuffer(m_cameraCBO);

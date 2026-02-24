@@ -217,6 +217,20 @@ void AddVertsForArrow2D(std::vector<Vertex>& verts, Vec2 tailPos, Vec2 tipPos, f
     verts.emplace_back(Vec3(headRight.x, headRight.y, 0.f), color);
 }
 
+void AddVertsForQuad3D(std::vector<Vertex>& verts, const Vec3& bottomLeft, const Vec3& bottomRight, const Vec3& topRight, const Vec3& topLeft, const Rgba8& color /*= Rgba8::WHITE*/, const AABB2& UVs /*= AABB2::UNIT */)
+{
+    Vec2 uvMins = UVs.m_mins;
+    Vec2 uvMaxs = UVs.m_maxs;
+
+    verts.emplace_back(bottomLeft, color, Vec2(uvMins.x, uvMins.y));
+    verts.emplace_back(bottomRight, color, Vec2(uvMaxs.x, uvMins.y));
+    verts.emplace_back(topRight, color, Vec2(uvMaxs.x, uvMaxs.y));
+
+    verts.emplace_back(bottomLeft, color, Vec2(uvMins.x, uvMins.y));
+    verts.emplace_back(topRight, color, Vec2(uvMaxs.x, uvMaxs.y));
+    verts.emplace_back(topLeft, color, Vec2(uvMins.x, uvMaxs.y));
+}
+
 void AddVertsForDisc2D(std::vector<Vertex>& verts, Disc2 const& disc, Rgba8 color)
 {
     AddVertsForDisc2D(verts, disc.m_center, disc.m_radius, color);

@@ -2,6 +2,7 @@
 
 #include "Engine/Core/Image.hpp"
 #include "Engine/Math/IntVec2.hpp"
+#include "Engine/Math/Matrix4x4.hpp"
 #include "Engine/Renderer/Shader.hpp"
 #include "Engine/Renderer/BitmapFont.hpp"
 #include "Game/EngineBuildPreferences.hpp"
@@ -54,15 +55,11 @@ struct RendererConfig
 
 struct CameraConstants
 {
-    float OrthoMinX;
-    float OrthoMinY;
-    float OrthoMinZ;
-    float OrthoMaxX;
-    float OrthoMaxY;
-    float OrthoMaxZ;
-    float pad0;
-    float pad1;
+    Matrix4x4 WorldToCameraTransform;
+    Matrix4x4 CameraToRenderTransform;
+    Matrix4x4 RenderToClipTransform;
 };
+
 static const int k_cameraConstantsSlot = 2;
 
 

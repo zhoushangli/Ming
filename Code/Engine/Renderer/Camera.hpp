@@ -1,37 +1,58 @@
 #pragma once
 
-#include "Engine/Math/Vec2.hpp"
-#include "Engine/Math/AABB2.hpp"
-
-class Game;
+#include "Engine/Math/EulerAngles.hpp"
 
 class Camera
 {
 public:
-	Camera() = default;
-	Camera(float left, float right, float bottom, float top);
-	Camera(Camera const& copy) = default;
-	~Camera() = default;
+    enum Mode
+    {
+        eMode_Orthographic,
+        eMode_Perspective,
 
-	void SetOrthoView(Vec2 const& leftBottom, Vec2 const& rightTop);
-	void SetOrthoView(float left, float right, float bottom, float top);
-	void SetPosition(Vec2 const& pos);
-	void Shake(Vec2 offset);
-	void Reset();
+        eMode_Count
+    };
 
-	AABB2 GetBounds();
-	Vec2 GetDimensions() const;
+    void SetOrthographicView(Vec2 const& bottomLeft, Vec2 const& topRight, float near = 0.0f, float far = 1.0f);
+    void SetPerspectiveView(float aspect, float fov, float near, float far);
 
-	float GetLeft() const { return m_leftBottom.x; }
-	float GetRight() const { return m_rightTop.x; }
-	float GetBottom() const { return m_leftBottom.y; }
-	float GetTop() const { return m_rightTop.y; }
+    void SetPositionAndOrientation(const Vec3& position, const EulerAngles& orientation);
+    void SetPosition(const Vec3& position);
+    Vec3 GetPosition() const;
+    void SetOrientation(const EulerAngles& orientation);
+    EulerAngles GetOrientation() const;
 
-private:
-	Vec2 m_leftBottom = Vec2::ZERO;
-	Vec2 m_rightTop = Vec2::ZERO;
+    Matrix4x4 GetCameraToWorldTransform() const;
+    Matrix4x4 GetWorldToCameraTransform() const;
 
-	Vec2 m_baseLeftBottom = Vec2::ZERO;
-	Vec2 m_baseRightTop = Vec2::ZERO;
+    void SetCameraToRenderTransform(const Matrix4x4& m);
+    Matrix4x4 GetCameraToRenderTransform() const;
+
+    Matrix4x4 GetRenderToClipTransform() const;
+
+    Vec2 GetOrthographicBottomLeft() const;
+    Vec2 GetOrthographicTopRight() const;
+    void Translate2D(Vec2 const& translation);
+
+    Matrix4x4 GetOrthographicMatrix() const;
+    Matrix4x4 GetPerspectiveMatrix() const;
+    Matrix4x4 GetProjectionMatrix() const;
+
+protected:
+    Mode m_mode = eMode_Orthographic;
+
+    Vec3 m_position;
+    EulerAngles m_orientation;
+
+    Vec2 m_orthographicBottomLeft;
+    Vec2 m_orthographicTopRight;
+    float m_orthographicNear;
+    float m_orthographicFar;
+
+    float m_perspectiveAspect;
+    float m_perspectiveFOV;
+    float m_perspectiveNear;
+    float m_perspectiveFar;
+
+    Matrix4x4 m_cameraToRenderTransform;
 };
-

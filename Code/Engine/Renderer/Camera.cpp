@@ -1,62 +1,125 @@
-#include "Camera.hpp"
+#include "Engine/Renderer/Camera.hpp"
 
-#include "Engine/Core/Engine.hpp"
-#include "Engine/Math/MathUtils.hpp"
-#include "Engine/Math/RandomNumberGenerator.hpp"
+#include "Engine/Math/Matrix4x4.hpp"
+#include "Engine/Math/Vec2.hpp"
+#include "Engine/Math/Vec3.hpp"
 
-Camera::Camera(float left, float right, float bottom, float top) :
-	m_leftBottom(left, bottom), m_rightTop(right, top),
-	m_baseLeftBottom(left, bottom), m_baseRightTop(right, top)
+void Camera::SetOrthographicView(Vec2 const& bottomLeft, Vec2 const& topRight, float near /*= 0.0f*/, float far /*= 1.0f*/)
 {
+    m_mode = eMode_Orthographic;
+
+    m_orthographicBottomLeft = bottomLeft;
+    m_orthographicTopRight = topRight;
+    m_orthographicNear = near;
+    m_orthographicFar = far;
 }
 
-void Camera::SetOrthoView(Vec2 const& leftBottom, Vec2 const& rightTop)
+void Camera::SetPerspectiveView(float aspect, float fov, float near, float far)
 {
-	m_baseLeftBottom = leftBottom;
-	m_baseRightTop = rightTop;
-	
-	m_leftBottom = m_baseLeftBottom;
-	m_rightTop = m_baseRightTop;
+    m_mode = eMode_Perspective;
+
+    m_perspectiveAspect = aspect;
+    m_perspectiveFOV = fov;
+    m_perspectiveNear = near;
+    m_perspectiveFar = far;
 }
 
-void Camera::SetOrthoView(float left, float right, float bottom, float top)
+void Camera::SetPositionAndOrientation(const Vec3& position, const EulerAngles& orientation)
 {
-	m_baseLeftBottom = Vec2(left, bottom);
-	m_baseRightTop = Vec2(right, top);
-	
-	m_leftBottom = m_baseLeftBottom;
-	m_rightTop = m_baseRightTop;
+    m_position = position;
+    m_orientation = orientation;
 }
 
-void Camera::SetPosition(Vec2 const& pos)
+void Camera::SetPosition(const Vec3& position)
 {
-	Vec2 dimensions = GetDimensions();
-	m_baseLeftBottom = pos - dimensions * 0.5f;
-	m_baseRightTop = pos + dimensions * 0.5f;
-
-	m_leftBottom = m_baseLeftBottom;
-	m_rightTop = m_baseRightTop;
+    m_position = position;
 }
 
-Vec2 Camera::GetDimensions() const
+Vec3 Camera::GetPosition() const
 {
-	return m_rightTop - m_leftBottom;
+    return m_position;
 }
 
-AABB2 Camera::GetBounds()
+void Camera::SetOrientation(const EulerAngles& orientation)
 {
-	return AABB2(m_leftBottom, m_rightTop);
+    m_orientation = orientation;
 }
 
-void Camera::Shake(Vec2 offset)
+EulerAngles Camera::GetOrientation() const
 {
-	m_leftBottom = m_baseLeftBottom + offset;
-	m_rightTop = m_baseRightTop + offset;
+    return m_orientation;
 }
 
-void Camera::Reset()
+Matrix4x4 Camera::GetCameraToWorldTransform() const
 {
-	m_leftBottom = m_baseLeftBottom;
-	m_rightTop = m_baseRightTop;
+    // Camera basis: +X forward, +Y left, +Z up (matches EulerAngles::*IFwd_JLeft_KUp)
+    Matrix4x4 camToWorld = m_orientation.GetAsMatrix_IFwd_JLeft_KUp();
+    camToWorld.SetTranslation3D(m_position);
+    return camToWorld;
 }
 
+Matrix4x4 Camera::GetWorldToCameraTransform() const
+{
+    return GetCameraToWorldTransform().GetOrthonormalInverse();
+}
+
+void Camera::SetCameraToRenderTransform(const Matrix4x4& m)
+{
+    m_cameraToRenderTransform = m;
+}
+
+Matrix4x4 Camera::GetCameraToRenderTransform() const
+{
+    return m_cameraToRenderTransform;
+}
+
+Matrix4x4 Camera::GetRenderToClipTransform() const
+{
+    return GetProjectionMatrix();
+}
+
+Vec2 Camera::GetOrthographicBottomLeft() const
+{
+    return m_orthographicBottomLeft;
+}
+
+Vec2 Camera::GetOrthographicTopRight() const
+{
+    return m_orthographicTopRight;
+}
+
+void Camera::Translate2D(Vec2 const& translation)
+{
+    m_position.x += translation.x;
+    m_position.y += translation.y;
+
+    m_orthographicBottomLeft += translation;
+    m_orthographicTopRight += translation;
+}
+
+Matrix4x4 Camera::GetOrthographicMatrix() const
+{
+    return Matrix4x4::MakeOrthoProjection(
+        m_orthographicBottomLeft.x,
+        m_orthographicTopRight.x,
+        m_orthographicBottomLeft.y,
+        m_orthographicTopRight.y,
+        m_orthographicNear,
+        m_orthographicFar
+    );
+}
+
+Matrix4x4 Camera::GetPerspectiveMatrix() const
+{
+    return Matrix4x4::MakePerspectiveProjection(
+        m_perspectiveFOV,
+        m_perspectiveAspect,
+        m_perspectiveNear,
+        m_perspectiveFar
+    );
+}
+
+Matrix4x4 Camera::GetProjectionMatrix() const
+{
+    return (m_mode == eMode_Perspective) ? GetPerspectiveMatrix() : GetOrthographicMatrix();
+}
