@@ -25,6 +25,16 @@ public:
 	Rgba8(unsigned char red, unsigned char green, unsigned char blue, unsigned char alpha);
 	~Rgba8() = default;
 
+    Rgba8 const operator+(float value) const;
+    Rgba8 const operator-(float value) const;
+    Rgba8 const operator*(float value) const;
+    Rgba8 const operator/(float value) const;
+
+    void operator+=(float value);
+    void operator-=(float value);
+    void operator*=(float value);
+    void operator/=(float value);
+
     void SetFromText(const char* text);
     void GetAsFloats(float* colorAsFloats) const;
     
@@ -38,3 +48,8 @@ public:
 float NormalizeByte(unsigned char byteValue);
 unsigned char DenormalizeByte(float normalizedValue);
 Rgba8 Interpolate(Rgba8 const& start, Rgba8 const& end, float fraction);
+
+Rgba8 const operator+(float value, Rgba8 const& color);
+Rgba8 const operator-(float value, Rgba8 const& color);
+Rgba8 const operator*(float value, Rgba8 const& color);
+Rgba8 const operator/(float value, Rgba8 const& color);

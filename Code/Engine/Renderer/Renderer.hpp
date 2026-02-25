@@ -31,6 +31,9 @@ struct ID3D11Buffer;
 struct ID3D11RasterizerState;
 struct ID3D11BlendState;
 struct ID3D11SamplerState;
+struct ID3D11Texture2D;
+struct ID3D11DepthStencilView;
+struct ID3D11DepthStencilState;
 
 enum class BlendMode
 {
@@ -56,6 +59,15 @@ enum class RasterizerMode
     COUNT
 };
 
+enum class DepthMode
+{
+    DISABLED,
+    READ_ONLY_ALWAYS,
+    READ_ONLY_LESS_EQUAL,
+    READ_WRITE_LESS_EQUAL,
+    COUNT
+};
+
 struct RendererConfig
 {
 	bool m_isEnable = true;
@@ -67,9 +79,14 @@ struct CameraConstants
     Matrix4x4 CameraToRenderTransform;
     Matrix4x4 RenderToClipTransform;
 };
-
 static const int k_cameraConstantsSlot = 2;
 
+struct ModelConstants
+{
+    Matrix4x4 ModelToWorldTransform;
+    float ModelColor[4];
+};
+static const int k_modelConstantsSlot = 3;
 
 class Renderer
 {
@@ -100,6 +117,8 @@ public:
 	void BindTexture(Texture* textureOrNull);
     void BindShader(Shader* shader);
 
+    void SetModelConstants(Matrix4x4 const& modelToWorldTransform, Rgba8 const& modelColor);
+
     Shader* CreateShader(char const* shaderName);
 	Texture* CreateOrGetTextureFromFile(char const* fileDataPath);
     Texture* CreateTextureFromImage(const Image& image);
@@ -119,7 +138,7 @@ private:
     bool CompileShaderToByteCode(std::vector<unsigned char>& outByteCode, char const* name,
         char const* source, char const* entryPoint, char const* target);
     void BindVertexBuffer(VertexBuffer* vertexBuffer);
-    void BindConstantBuffer(ConstantBuffer* constantBuffer);
+    void BindConstantBuffer(ConstantBuffer* constantBuffer, int slot);
 
 
 private:
@@ -132,6 +151,7 @@ private:
     Shader* m_currentShader              = nullptr;
     VertexBuffer* m_currentVertexBuffer  = nullptr;
     ConstantBuffer* m_cameraCBO          = nullptr;
+    ConstantBuffer* m_modelCBO           = nullptr;
 
     ID3D11Device* m_device                     = nullptr;
     ID3D11DeviceContext* m_deviceContext       = nullptr;
@@ -147,6 +167,11 @@ private:
     ID3D11SamplerState* m_samplerStates[(int)(SamplerMode::COUNT)] = {};
 
     ID3D11RasterizerState* m_rasterizerStates[(int)(RasterizerMode::COUNT)] = {};
+    
+    ID3D11DepthStencilState* m_depthStencilStates[(int)(DepthMode::COUNT)] = {};
+
+    ID3D11Texture2D* m_depthStencilTexture = nullptr;
+    ID3D11DepthStencilView* m_depthStencilDSV = nullptr;
 
     std::vector<Shader*>    m_loadedShaders;
     std::vector<uint8_t>    m_vertexShaderByteCode;

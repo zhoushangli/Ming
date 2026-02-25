@@ -153,6 +153,7 @@ void Renderer::Startup()
 
     m_currentVertexBuffer = CreateVertexBuffer(sizeof(Vertex) * 3, sizeof(Vertex));
     m_cameraCBO = CreateConstantBuffer(sizeof(CameraConstants));
+    m_modelCBO = CreateConstantBuffer(sizeof(ModelConstants));
 
 #pragma endregion
 
@@ -244,6 +245,75 @@ void Renderer::Startup()
 
 #pragma endregion
 
+#pragma region Set depth stencil state
+
+    // Create depth stencil texture and view
+    D3D11_TEXTURE2D_DESC depthTextureDesc = {};
+    depthTextureDesc.Width = g_engine->m_window->GetClientDimensions().x;
+    depthTextureDesc.Height = g_engine->m_window->GetClientDimensions().y;
+    depthTextureDesc.MipLevels = 1;
+    depthTextureDesc.ArraySize = 1;
+    depthTextureDesc.Usage = D3D11_USAGE_DEFAULT;
+    depthTextureDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+    depthTextureDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
+    depthTextureDesc.SampleDesc.Count = 1;
+
+    hr = m_device->CreateTexture2D(&depthTextureDesc, nullptr, &m_depthStencilTexture);
+    if (!SUCCEEDED(hr))
+    {
+        ERROR_AND_DIE("Could not create texture for depth stencil.");
+    }
+
+    hr = m_device->CreateDepthStencilView(m_depthStencilTexture, nullptr, &m_depthStencilDSV);
+    if (!SUCCEEDED(hr))
+    {
+        ERROR_AND_DIE("Could not create depth stencil view.");
+    }
+
+    // a. For DISABLED use the following.
+    D3D11_DEPTH_STENCIL_DESC depthStencilDesc = {};
+    hr = m_device->CreateDepthStencilState(
+        &depthStencilDesc,
+        &m_depthStencilStates[(int)DepthMode::DISABLED]
+    );
+
+    if (!SUCCEEDED(hr))
+    {
+        ERROR_AND_DIE("CreateDepthStencilState for DepthMode::DISABLED failed.");
+    }
+    
+    depthStencilDesc.DepthEnable = TRUE;
+    
+    // READ_ONLY_ALWAYS
+    depthStencilDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
+    depthStencilDesc.DepthFunc = D3D11_COMPARISON_ALWAYS;
+
+    hr = m_device->CreateDepthStencilState(
+        &depthStencilDesc,
+        &m_depthStencilStates[(int)DepthMode::READ_ONLY_ALWAYS]
+    );
+
+    // READ_ONLY_LESS_EQUAL
+    depthStencilDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
+    depthStencilDesc.DepthFunc = D3D11_COMPARISON_LESS_EQUAL;
+
+    hr = m_device->CreateDepthStencilState(
+        &depthStencilDesc,
+        &m_depthStencilStates[(int)DepthMode::READ_ONLY_LESS_EQUAL]
+    );
+
+    // READ_WRITE_LESS_EQUAL
+    depthStencilDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+    depthStencilDesc.DepthFunc = D3D11_COMPARISON_LESS_EQUAL;
+
+    hr = m_device->CreateDepthStencilState(
+        &depthStencilDesc,
+        &m_depthStencilStates[(int)DepthMode::READ_WRITE_LESS_EQUAL]
+    );
+
+#pragma endregion
+
+
 #pragma region Default Shader
 
     m_defaultShader = CreateShader("Data/Shaders/Default");
@@ -268,6 +338,9 @@ void Renderer::Shutdown()
 {
     m_currentCamera = nullptr;
     m_currentShader = nullptr;
+
+    delete m_modelCBO;
+    m_modelCBO = nullptr;
 
     delete m_cameraCBO;
     m_cameraCBO = nullptr;
@@ -346,7 +419,7 @@ void Renderer::Shutdown()
 void Renderer::BeginFrame()
 {
     // Set render target
-    m_deviceContext->OMSetRenderTargets(1, &m_renderTargetView, nullptr);
+    m_deviceContext->OMSetRenderTargets(1, &m_renderTargetView, m_depthStencilDSV);
 }
 
 void Renderer::EndFrame()
@@ -370,6 +443,7 @@ void Renderer::ClearScreen(Rgba8 const& clearColor)
     float colorAsFloats[4];
     clearColor.GetAsFloats(colorAsFloats);
     m_deviceContext->ClearRenderTargetView(m_renderTargetView, colorAsFloats);
+    m_deviceContext->ClearDepthStencilView(m_depthStencilDSV, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 }
 
 void Renderer::SetBlendMode(BlendMode blendMode)
@@ -429,7 +503,7 @@ void Renderer::BeginCamera(Camera const& camera)
     cameraData.RenderToClipTransform = camera.GetRenderToClipTransform();
 
     CopyCPUToGPU(&cameraData, sizeof(cameraData), m_cameraCBO);
-    BindConstantBuffer(m_cameraCBO);
+    BindConstantBuffer(m_cameraCBO, k_cameraConstantsSlot);
 }
 
 void Renderer::EndCamera()
@@ -656,6 +730,19 @@ void Renderer::BindShader(Shader* shader)
     m_deviceContext->PSSetShader(shader->m_pixelShader, nullptr, 0);
 }
 
+void Renderer::SetModelConstants(Matrix4x4 const& modelToWorldTransform, Rgba8 const& modelColor)
+{
+    ModelConstants modelData = ModelConstants();
+    modelData.ModelToWorldTransform = modelToWorldTransform;
+    modelData.ModelColor[0] = modelColor.r / 255.f;
+    modelData.ModelColor[1] = modelColor.g / 255.f;
+    modelData.ModelColor[2] = modelColor.b / 255.f;
+    modelData.ModelColor[3] = modelColor.a / 255.f;
+
+    CopyCPUToGPU(&modelData, sizeof(modelData), m_modelCBO);
+    BindConstantBuffer(m_modelCBO, k_modelConstantsSlot);
+}
+
 VertexBuffer* Renderer::CreateVertexBuffer(const unsigned int size, unsigned int stride)
 {
     return new VertexBuffer(m_device, size, stride);
@@ -726,23 +813,23 @@ void Renderer::BindVertexBuffer(VertexBuffer* vertexBuffer)
     m_deviceContext->IASetVertexBuffers(0, 1, &buf, &stride, &offset);
 }
 
-void Renderer::BindConstantBuffer(ConstantBuffer* constantBuffer)
+void Renderer::BindConstantBuffer(ConstantBuffer* constantBuffer, int slot)
 {
     GUARANTEE_OR_DIE(m_deviceContext, "BindConstantBuffer: m_deviceContext is null");
 
     if (constantBuffer == nullptr)
     {
         ID3D11Buffer* nullBuf = nullptr;
-        m_deviceContext->VSSetConstantBuffers(k_cameraConstantsSlot, 1, &nullBuf);
-        m_deviceContext->PSSetConstantBuffers(k_cameraConstantsSlot, 1, &nullBuf);
+        m_deviceContext->VSSetConstantBuffers(2, 1, &nullBuf);
+        m_deviceContext->PSSetConstantBuffers(2, 1, &nullBuf);
         return;
     }
 
     ID3D11Buffer* buf = constantBuffer->m_buffer;
     GUARANTEE_OR_DIE(buf, "BindConstantBuffer: constantBuffer->m_buffer is null");
 
-    m_deviceContext->VSSetConstantBuffers(k_cameraConstantsSlot, 1, &buf);
-    m_deviceContext->PSSetConstantBuffers(k_cameraConstantsSlot, 1, &buf);
+    m_deviceContext->VSSetConstantBuffers(slot, 1, &buf);
+    m_deviceContext->PSSetConstantBuffers(slot, 1, &buf);
 }
 
 Texture* Renderer::CreateTextureFromData(char const* name, IntVec2 dimensions, int bytesPerTexel, uint8_t* texelData)

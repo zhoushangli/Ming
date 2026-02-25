@@ -35,6 +35,67 @@ Rgba8::Rgba8(unsigned char red, unsigned char green, unsigned char blue, unsigne
     : r(red), g(green), b(blue), a(alpha)
 {}
 
+Rgba8 const Rgba8::operator+(float value) const
+{
+    return Rgba8(
+        static_cast<unsigned char>(GetClamped(static_cast<float>(r) + value, 0.f, 255.f)),
+        static_cast<unsigned char>(GetClamped(static_cast<float>(g) + value, 0.f, 255.f)),
+        static_cast<unsigned char>(GetClamped(static_cast<float>(b) + value, 0.f, 255.f)),
+        static_cast<unsigned char>(GetClamped(static_cast<float>(a) + value, 0.f, 255.f)));
+}
+
+Rgba8 const Rgba8::operator-(float value) const
+{
+    return Rgba8(
+        static_cast<unsigned char>(GetClamped(static_cast<float>(r) - value, 0.f, 255.f)),
+        static_cast<unsigned char>(GetClamped(static_cast<float>(g) - value, 0.f, 255.f)),
+        static_cast<unsigned char>(GetClamped(static_cast<float>(b) - value, 0.f, 255.f)),
+        static_cast<unsigned char>(GetClamped(static_cast<float>(a) - value, 0.f, 255.f)));
+}
+
+Rgba8 const Rgba8::operator*(float value) const
+{
+    return Rgba8(
+        static_cast<unsigned char>(GetClamped(static_cast<float>(r) * value, 0.f, 255.f)),
+        static_cast<unsigned char>(GetClamped(static_cast<float>(g) * value, 0.f, 255.f)),
+        static_cast<unsigned char>(GetClamped(static_cast<float>(b) * value, 0.f, 255.f)),
+        static_cast<unsigned char>(GetClamped(static_cast<float>(a) * value, 0.f, 255.f)));
+}
+
+Rgba8 const Rgba8::operator/(float value) const
+{
+    if (value == 0.f)
+    {
+        return *this;
+    }
+
+    return Rgba8(
+        static_cast<unsigned char>(GetClamped(static_cast<float>(r) / value, 0.f, 255.f)),
+        static_cast<unsigned char>(GetClamped(static_cast<float>(g) / value, 0.f, 255.f)),
+        static_cast<unsigned char>(GetClamped(static_cast<float>(b) / value, 0.f, 255.f)),
+        static_cast<unsigned char>(GetClamped(static_cast<float>(a) / value, 0.f, 255.f)));
+}
+
+void Rgba8::operator+=(float value)
+{
+    *this = *this + value;
+}
+
+void Rgba8::operator-=(float value)
+{
+    *this = *this - value;
+}
+
+void Rgba8::operator*=(float value)
+{
+    *this = *this * value;
+}
+
+void Rgba8::operator/=(float value)
+{
+    *this = *this / value;
+}
+
 void Rgba8::SetFromText(const char* text)
 {
     Strings parts = SplitStringOnDelimiter(text, ',');
@@ -85,4 +146,32 @@ Rgba8 Interpolate(Rgba8 const& start, Rgba8 const& end, float fraction)
     float a = Interpolate(NormalizeByte(start.a), NormalizeByte(end.a), fraction);
 
     return Rgba8(DenormalizeByte(r), DenormalizeByte(g), DenormalizeByte(b), DenormalizeByte(a));
+}
+
+Rgba8 const operator+(float value, Rgba8 const& color)
+{
+    return color + value;
+}
+
+Rgba8 const operator-(float value, Rgba8 const& color)
+{
+    return Rgba8(
+        static_cast<unsigned char>(GetClamped(value - static_cast<float>(color.r), 0.f, 255.f)),
+        static_cast<unsigned char>(GetClamped(value - static_cast<float>(color.g), 0.f, 255.f)),
+        static_cast<unsigned char>(GetClamped(value - static_cast<float>(color.b), 0.f, 255.f)),
+        static_cast<unsigned char>(GetClamped(value - static_cast<float>(color.a), 0.f, 255.f)));
+}
+
+Rgba8 const operator*(float value, Rgba8 const& color)
+{
+    return color * value;
+}
+
+Rgba8 const operator/(float value, Rgba8 const& color)
+{
+    return Rgba8(
+        color.r == 0 ? 255 : static_cast<unsigned char>(GetClamped(value / static_cast<float>(color.r), 0.f, 255.f)),
+        color.g == 0 ? 255 : static_cast<unsigned char>(GetClamped(value / static_cast<float>(color.g), 0.f, 255.f)),
+        color.b == 0 ? 255 : static_cast<unsigned char>(GetClamped(value / static_cast<float>(color.b), 0.f, 255.f)),
+        color.a == 0 ? 255 : static_cast<unsigned char>(GetClamped(value / static_cast<float>(color.a), 0.f, 255.f)));
 }
