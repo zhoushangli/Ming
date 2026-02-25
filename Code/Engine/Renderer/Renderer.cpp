@@ -127,25 +127,23 @@ void Renderer::Startup()
 
 #pragma region Default Shader Set rasterizer state
 
-    D3D11_RASTERIZER_DESC rasterizerDesc = {};
+    D3D11_RASTERIZER_DESC rasterizerDesc = { };
     rasterizerDesc.FillMode = D3D11_FILL_SOLID;
     rasterizerDesc.CullMode = D3D11_CULL_NONE;
-    rasterizerDesc.FrontCounterClockwise = false;
-    rasterizerDesc.DepthBias = 0;
-    rasterizerDesc.DepthBiasClamp = 0.0f;
-    rasterizerDesc.SlopeScaledDepthBias = 0.0f;
+    rasterizerDesc.FrontCounterClockwise = true;
     rasterizerDesc.DepthClipEnable = true;
-    rasterizerDesc.ScissorEnable = false;
-    rasterizerDesc.MultisampleEnable = false;
     rasterizerDesc.AntialiasedLineEnable = true;
 
-    hr = m_device->CreateRasterizerState(&rasterizerDesc, &m_rasterizerState);
+    hr = m_device->CreateRasterizerState(
+        &rasterizerDesc,
+        &m_rasterizerStates[(int)RasterizerMode::SOLID_CULL_NONE]);
+
     if (!SUCCEEDED(hr))
     {
-        ERROR_AND_DIE("Could not create rasterizer state.");
+        ERROR_AND_DIE("CreateRasterizerState for RasterizerMode::SOLID_CULL_NONE failed.");
     }
 
-    m_deviceContext->RSSetState(m_rasterizerState);
+    m_deviceContext->RSSetState(m_rasterizerStates[(int)RasterizerMode::SOLID_CULL_NONE]);
 
     m_deviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
@@ -277,6 +275,15 @@ void Renderer::Shutdown()
     delete m_currentVertexBuffer;
     m_currentVertexBuffer = nullptr;
 
+    for (auto& rasterizerState : m_rasterizerStates)
+    {
+        if (rasterizerState)
+        {
+            rasterizerState->Release();
+            rasterizerState = nullptr;
+        }
+    }
+
     for (auto& blendState : m_blendStates)
     {
         if (blendState)
@@ -313,7 +320,6 @@ void Renderer::Shutdown()
     }
     m_loadedFontsDict.clear();
 
-    m_rasterizerState->Release();
     m_renderTargetView->Release();
     m_swapChain->Release();
     m_deviceContext->Release();

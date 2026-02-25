@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Engine/Math/Vec2.hpp"
 #include "Engine/Math/EulerAngles.hpp"
 
 class Camera

@@ -52,9 +52,9 @@ EulerAngles Camera::GetOrientation() const
 
 Matrix4x4 Camera::GetCameraToWorldTransform() const
 {
-    // Camera basis: +X forward, +Y left, +Z up (matches EulerAngles::*IFwd_JLeft_KUp)
-    Matrix4x4 camToWorld = m_orientation.GetAsMatrix_IFwd_JLeft_KUp();
+    Matrix4x4 camToWorld;
     camToWorld.SetTranslation3D(m_position);
+    camToWorld.Append(m_orientation.GetAsMatrix_IFwd_JLeft_KUp());
     return camToWorld;
 }
 

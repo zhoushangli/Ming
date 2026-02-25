@@ -9,6 +9,12 @@ struct Matrix4x4
 public:
     Matrix4x4();
     explicit Matrix4x4(float const* sixteenValuesBasisMajor);
+    explicit Matrix4x4(
+        float ix, float jx, float kx, float tx,
+        float iy, float jy, float ky, float ty,
+        float iz, float jz, float kz, float tz,
+        float iw, float jw, float kw, float tw
+    );
     explicit Matrix4x4(Vec2 const& iBasis2D, Vec2 const& jBasis2D, Vec2 const& translation2D);
     explicit Matrix4x4(Vec3 const& iBasis3D, Vec3 const& jBasis3D, Vec3 const& kBasis3D, Vec3 const& translation3D);
     explicit Matrix4x4(Vec2 const& iBasis2D, Vec2 const& jBasis2D, Vec2 const& kBasis2D, Vec4 const& translation4D);
@@ -73,6 +79,9 @@ public:
     void Transpose();
     void Orthonormalize_XFwd_YLeft_ZUp2();
     Matrix4x4 GetOrthonormalInverse();
+
+    static Matrix4x4 const ZERO;
+    static Matrix4x4 const IDENTITY;
 
 public:
     enum { Ix, Iy, Iz, Iw, Jx, Jy, Jz, Jw, Kx, Ky, Kz, Kw, Tx, Ty, Tz, Tw }; // index nicknames

@@ -35,6 +35,20 @@ extern unsigned char const KEYCODE_END;
 constexpr int NUM_KEYCODES = 256;
 constexpr int NUM_XBOX_CONTROLLERS = 4;
 
+enum class CursorMode
+{
+    POINTER,
+    FPS,
+};
+
+struct CursorState
+{
+    IntVec2 m_cursorClientDelta;
+    IntVec2 m_cursorClientPosition;
+
+    CursorMode m_cursorMode = CursorMode::POINTER;
+};
+
 struct InputConfig
 {
 	bool m_isEnable = true;
@@ -61,11 +75,37 @@ public:
 
 	void ClearAllInputStates();
 
-    static bool Event_KeyDown(EventArgs& args);
+    // In pointer mode, the cursor should be visible, freely able to move, and not
+	// locked to the window. In FPS mode, the cursor should be hidden, reset to the
+	// center of the window each frame, and record the delta each frame.
+    void SetCursorMode(CursorMode cursorMode);
+
+    // Returns the current frame cursor delta in pixels, relative to the client
+    // region. This is how much the cursor moved last frame before it was reset
+    // to the center of the screen. Only valid in FPS mode, will be zero otherwise.
+    Vec2 GetCursorClientDelta() const;
+
+    // Returns the cursor position, in pixels relative to the client region.
+    Vec2 GetCursorClientPosition() const;
+
+    // Returns the cursor position, normalized to the range [0, 1], relative
+    // to the client region, with the y-axis inverted to map from Windows
+    // conventions to game screen camera conventions
+    Vec2 GetCursorNormalizedPosition() const;
+
+	void ClearCursorDelta();
+
+	static bool Event_KeyDown(EventArgs& args);
     static bool Event_KeyUp(EventArgs& args);
 
 protected:
 	InputConfig		m_config;
+
+    CursorMode		m_cursorMode = CursorMode::POINTER;
+
+    IntVec2         m_cursorClientPosition = IntVec2::ZERO;
+    IntVec2         m_prevCursorClientPosition = IntVec2::ZERO;
+    IntVec2         m_cursorClientDelta = IntVec2::ZERO;
 
 	KeyButtonState  m_keyStates[NUM_KEYCODES];
 	XboxController  m_controllers[NUM_XBOX_CONTROLLERS] =

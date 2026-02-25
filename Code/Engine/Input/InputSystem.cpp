@@ -2,6 +2,7 @@
 
 #include "Engine/Core/Engine.hpp"
 #include "Engine/Core/ErrorWarningAssert.hpp"
+#include "Engine/Math/MathUtils.hpp"
 
 #include <Windows.h>
 
@@ -78,6 +79,67 @@ void InputSystem::BeginFrame()
 	{
 		m_controllers[i].Update();
 	}
+
+    if (g_engine != nullptr && g_engine->m_window != nullptr)
+    {
+        HWND hwnd = (HWND)g_engine->m_window->GetHwnd();
+        if (hwnd != nullptr)
+        {
+            // 1) Cursor visibility (Windows uses an internal show/hide counter)
+            bool const shouldHideCursor = (m_cursorMode == CursorMode::FPS);
+            if (shouldHideCursor)
+            {
+                while (::ShowCursor(FALSE) >= 0) {}
+            }
+            else
+            {
+                while (::ShowCursor(TRUE) < 0) {}
+            }
+
+            // 2) Cache last frame cursor position
+            m_prevCursorClientPosition = m_cursorClientPosition;
+
+            // 3) Read current cursor position (client pixels)
+            auto GetCursorClientPosInt = [hwnd]() -> IntVec2
+            {
+                POINT cursorScreen{};
+                ::GetCursorPos(&cursorScreen);
+
+                POINT cursorClient = cursorScreen;
+                ::ScreenToClient(hwnd, &cursorClient);
+
+                return IntVec2(cursorClient.x, cursorClient.y);
+            };
+
+            m_cursorClientPosition = GetCursorClientPosInt();
+
+            // 4) Relative mode: compute delta then recenter to client middle
+            if (m_cursorMode == CursorMode::FPS)
+            {
+                m_cursorClientDelta = m_cursorClientPosition - m_prevCursorClientPosition;
+
+                RECT clientRect{};
+                ::GetClientRect(hwnd, &clientRect);
+
+                int const clientWidth = clientRect.right - clientRect.left;
+                int const clientHeight = clientRect.bottom - clientRect.top;
+
+                POINT clientCenter{ clientWidth / 2, clientHeight / 2 };
+
+                POINT centerScreen = clientCenter;
+                ::ClientToScreen(hwnd, &centerScreen);
+                ::SetCursorPos(centerScreen.x, centerScreen.y);
+
+                // Re-read (Windows may delay the SetCursorPos)
+                m_cursorClientPosition = GetCursorClientPosInt();
+            }
+            else
+            {
+                // 5) Pointer mode: no relative delta
+                m_cursorClientDelta = IntVec2::ZERO;
+            }
+        }
+    }
 }
 
 void InputSystem::EndFrame()
@@ -137,10 +199,65 @@ void InputSystem::ClearAllInputStates()
 	}
 }
 
+void InputSystem::SetCursorMode(CursorMode cursorMode)
+{
+    m_cursorMode = cursorMode;
+}
+
+Vec2 InputSystem::GetCursorClientDelta() const
+{
+    return Vec2(m_cursorClientDelta);
+}
+
+Vec2 InputSystem::GetCursorClientPosition() const
+{
+    return Vec2(m_cursorClientPosition);
+}
+
+Vec2 InputSystem::GetCursorNormalizedPosition() const
+{
+    if (g_engine == nullptr || g_engine->m_window == nullptr)
+    {
+        return Vec2(0.f, 0.f);
+    }
+
+    HWND hwnd = (HWND)g_engine->m_window->GetHwnd();
+    if (hwnd == nullptr)
+    {
+        return Vec2(0.f, 0.f);
+    }
+
+    RECT clientRect{};
+    ::GetClientRect(hwnd, &clientRect);
+
+    float const clientWidth = (float)(clientRect.right - clientRect.left);
+    float const clientHeight = (float)(clientRect.bottom - clientRect.top);
+    if (clientWidth <= 0.f || clientHeight <= 0.f)
+    {
+        return Vec2(0.f, 0.f);
+    }
+
+    Vec2 clientPos = GetCursorClientPosition();
+
+    float u = clientPos.x / clientWidth;
+    float v = clientPos.y / clientHeight;
+
+    u = GetClamped(u, 0.f, 1.f);
+    v = GetClamped(v, 0.f, 1.f);
+
+    v = 1.f - v;
+    return Vec2(u, v);
+}
+
+void InputSystem::ClearCursorDelta()
+{
+    m_cursorClientDelta = IntVec2::ZERO;
+}
+
 bool InputSystem::Event_KeyDown(EventArgs& args)
 {
-    unsigned char asKey = (unsigned char)std::stoi(args.GetValue("asKey", "0")); 
-	g_engine->m_input->HandleKeyPressed(asKey);
+    unsigned char asKey = (unsigned char)std::stoi(args.GetValue("asKey", "0"));
+    g_engine->m_input->HandleKeyPressed(asKey);
     return true;
 }
 

@@ -5,6 +5,20 @@
 #include "Engine/Math/Vec4.hpp"
 #include "Engine/Math/MathUtils.hpp"
 
+Matrix4x4 const Matrix4x4::ZERO = Matrix4x4(
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0
+);
+
+Matrix4x4 const Matrix4x4::IDENTITY = Matrix4x4(
+    1, 0, 0, 0,
+    0, 1, 0, 0,
+    0, 0, 1, 0,
+    0, 0, 0, 1
+);
+
 // Default constructor: Identity matrix
 Matrix4x4::Matrix4x4()
 {
@@ -57,6 +71,34 @@ Matrix4x4::Matrix4x4(float const* sixteenValuesBasisMajor)
     {
         m_values[i] = sixteenValuesBasisMajor[i];
     }
+}
+
+Matrix4x4::Matrix4x4(
+    float ix, float jx, float kx, float tx,
+    float iy, float jy, float ky, float ty,
+    float iz, float jz, float kz, float tz,
+    float iw, float jw, float kw, float tw
+)
+{
+    m_values[Ix] = ix;
+    m_values[Iy] = iy;
+    m_values[Iz] = iz;
+    m_values[Iw] = iw;
+
+    m_values[Jx] = jx;
+    m_values[Jy] = jy;
+    m_values[Jz] = jz;
+    m_values[Jw] = jw;
+
+    m_values[Kx] = kx;
+    m_values[Ky] = ky;
+    m_values[Kz] = kz;
+    m_values[Kw] = kw;
+
+    m_values[Tx] = tx;
+    m_values[Ty] = ty;
+    m_values[Tz] = tz;
+    m_values[Tw] = tw;
 }
 
 float* Matrix4x4::GetAsFloatArray()
@@ -567,3 +609,5 @@ Matrix4x4 Matrix4x4::GetOrthonormalInverse()
 
     return inv;
 }
+
+

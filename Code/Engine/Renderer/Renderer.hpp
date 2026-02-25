@@ -32,7 +32,6 @@ struct ID3D11RasterizerState;
 struct ID3D11BlendState;
 struct ID3D11SamplerState;
 
-
 enum class BlendMode
 {
     ALPHA,
@@ -45,6 +44,15 @@ enum class SamplerMode
 {
     POINT_CLAMP,
     BILINEAR_CLAMP,
+    COUNT
+};
+
+enum class RasterizerMode
+{
+    SOLID_CULL_NONE,
+    SOLID_CULL_BACK,
+    WIREFRAME_CULL_NONE,
+    WIREFRAME_CULL_BACK,
     COUNT
 };
 
@@ -129,7 +137,6 @@ private:
     ID3D11DeviceContext* m_deviceContext       = nullptr;
     IDXGISwapChain* m_swapChain                = nullptr;
     ID3D11RenderTargetView* m_renderTargetView = nullptr;
-    ID3D11RasterizerState* m_rasterizerState   = nullptr;
 
     ID3D11BlendState* m_blendState                         = nullptr;
     BlendMode m_desiredBlendMode                           = BlendMode::ALPHA;
@@ -138,6 +145,8 @@ private:
     ID3D11SamplerState* m_samplerState                             = nullptr;
     SamplerMode m_desiredSamplerMode                               = SamplerMode::POINT_CLAMP;
     ID3D11SamplerState* m_samplerStates[(int)(SamplerMode::COUNT)] = {};
+
+    ID3D11RasterizerState* m_rasterizerStates[(int)(RasterizerMode::COUNT)] = {};
 
     std::vector<Shader*>    m_loadedShaders;
     std::vector<uint8_t>    m_vertexShaderByteCode;
