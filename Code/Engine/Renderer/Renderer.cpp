@@ -906,5 +906,6 @@ void Renderer::BindTexture(Texture* texture)
 
     ID3D11ShaderResourceView* srv = texture->m_shaderResourceView;
     m_deviceContext->PSSetShaderResources(0, 1, &srv);
+    m_deviceContext->PSGetSamplers(0, 1, &m_samplerState);
 }
 

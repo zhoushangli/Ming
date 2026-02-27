@@ -6,6 +6,7 @@
 #include "Engine/Math/Disc2.hpp"
 #include "Engine/Math/AABB2.hpp"
 #include "Engine/Math/OBB2.hpp"
+#include "Engine/Math/AABB3.hpp"
 #include "Engine/Math/Capsule2.hpp"
 #include "Engine/Math/LineSegment2.hpp"
 
@@ -50,3 +51,11 @@ void AddVertsForQuad3D(
     const Rgba8& color = Rgba8::WHITE,
     const AABB2& UVs = AABB2::UNIT
 );
+
+void AddVertsForAABB3D(std::vector<Vertex>& verts,
+    const AABB3& bounds, const Rgba8& color = Rgba8::WHITE,
+    const AABB2& UVs = AABB2::UNIT);
+
+void AddVertsForSphere3D(std::vector<Vertex>& verts,
+    const Vec3& center, float radius, const Rgba8& color = Rgba8::WHITE,
+    const AABB2& UVs = AABB2::UNIT, int numSlices = 32, int numStacks = 16);

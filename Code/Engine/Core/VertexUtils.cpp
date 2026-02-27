@@ -231,6 +231,111 @@ void AddVertsForQuad3D(std::vector<Vertex>& verts, const Vec3& bottomLeft, const
     verts.emplace_back(topLeft, color, Vec2(uvMins.x, uvMaxs.y));
 }
 
+void AddVertsForAABB3D(std::vector<Vertex>& verts, const AABB3& bounds, const Rgba8& color /*= Rgba8::WHITE*/, const AABB2& UVs /*= AABB2::UNIT*/)
+{
+    Vec3 const& mins = bounds.m_mins;
+    Vec3 const& maxs = bounds.m_maxs;
+
+    // +Z (top)
+    AddVertsForQuad3D(verts,
+        Vec3(mins.x, mins.y, maxs.z),
+        Vec3(maxs.x, mins.y, maxs.z),
+        Vec3(maxs.x, maxs.y, maxs.z),
+        Vec3(mins.x, maxs.y, maxs.z),
+        color, UVs);
+
+    // -Z (bottom)
+    AddVertsForQuad3D(verts,
+        Vec3(mins.x, maxs.y, mins.z),
+        Vec3(maxs.x, maxs.y, mins.z),
+        Vec3(maxs.x, mins.y, mins.z),
+        Vec3(mins.x, mins.y, mins.z),
+        color, UVs);
+
+    // +X
+    AddVertsForQuad3D(verts,
+        Vec3(maxs.x, mins.y, mins.z),
+        Vec3(maxs.x, maxs.y, mins.z),
+        Vec3(maxs.x, maxs.y, maxs.z),
+        Vec3(maxs.x, mins.y, maxs.z),
+        color, UVs);
+
+    // -X
+    AddVertsForQuad3D(verts,
+        Vec3(mins.x, maxs.y, mins.z),
+        Vec3(mins.x, mins.y, mins.z),
+        Vec3(mins.x, mins.y, maxs.z),
+        Vec3(mins.x, maxs.y, maxs.z),
+        color, UVs);
+
+    // +Y
+    AddVertsForQuad3D(verts,
+        Vec3(maxs.x, maxs.y, mins.z),
+        Vec3(mins.x, maxs.y, mins.z),
+        Vec3(mins.x, maxs.y, maxs.z),
+        Vec3(maxs.x, maxs.y, maxs.z),
+        color, UVs);
+
+    // -Y
+    AddVertsForQuad3D(verts,
+        Vec3(mins.x, mins.y, mins.z),
+        Vec3(maxs.x, mins.y, mins.z),
+        Vec3(maxs.x, mins.y, maxs.z),
+        Vec3(mins.x, mins.y, maxs.z),
+        color, UVs);
+}
+
+void AddVertsForSphere3D(std::vector<Vertex>& verts, const Vec3& center, float radius, const Rgba8& color /*= Rgba8::WHITE*/, const AABB2& UVs /*= AABB2::UNIT*/, int numSlices /*= 32*/, int numStacks /*= 16*/)
+{
+    if (radius <= 0.f)
+    {
+        return;
+    }
+
+    numSlices = Max(3, numSlices);
+    numStacks = Max(2, numStacks);
+
+    float uRange = UVs.m_maxs.x - UVs.m_mins.x;
+    float vRange = UVs.m_maxs.y - UVs.m_mins.y;
+
+    for (int stackIndex = 0; stackIndex < numStacks; ++stackIndex)
+    {
+        float v0Frac = static_cast<float>(stackIndex) / static_cast<float>(numStacks);
+        float v1Frac = static_cast<float>(stackIndex + 1) / static_cast<float>(numStacks);
+
+        float pitch0 = -HALF_PI + v0Frac * PI;
+        float pitch1 = -HALF_PI + v1Frac * PI;
+
+        float v0 = UVs.m_mins.y + v0Frac * vRange;
+        float v1 = UVs.m_mins.y + v1Frac * vRange;
+
+        for (int sliceIndex = 0; sliceIndex < numSlices; ++sliceIndex)
+        {
+            float u0Frac = static_cast<float>(sliceIndex) / static_cast<float>(numSlices);
+            float u1Frac = static_cast<float>(sliceIndex + 1) / static_cast<float>(numSlices);
+
+            float yaw0 = u0Frac * TWO_PI;
+            float yaw1 = u1Frac * TWO_PI;
+
+            Vec3 p00 = center + Vec3::MakeFromPolarRadians(pitch0, yaw0, radius);
+            Vec3 p10 = center + Vec3::MakeFromPolarRadians(pitch0, yaw1, radius);
+            Vec3 p11 = center + Vec3::MakeFromPolarRadians(pitch1, yaw1, radius);
+            Vec3 p01 = center + Vec3::MakeFromPolarRadians(pitch1, yaw0, radius);
+
+            float u0 = UVs.m_mins.x + u0Frac * uRange;
+            float u1 = UVs.m_mins.x + u1Frac * uRange;
+
+            verts.emplace_back(p00, color, Vec2(u0, v0));
+            verts.emplace_back(p10, color, Vec2(u1, v0));
+            verts.emplace_back(p11, color, Vec2(u1, v1));
+
+            verts.emplace_back(p00, color, Vec2(u0, v0));
+            verts.emplace_back(p11, color, Vec2(u1, v1));
+            verts.emplace_back(p01, color, Vec2(u0, v1));
+        }
+    }
+}
+
 void AddVertsForDisc2D(std::vector<Vertex>& verts, Disc2 const& disc, Rgba8 color)
 {
     AddVertsForDisc2D(verts, disc.m_center, disc.m_radius, color);

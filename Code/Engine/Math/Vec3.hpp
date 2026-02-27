@@ -46,5 +46,11 @@ public:
 	float		GetOrientationAboutZRadians() const;
 	Vec3		GetRotatedAboutZDegrees(float degrees) const;
 	Vec3		GetRotatedAboutZRadians(float radians) const;
+
+    static Vec3 MakeFromPolarRadians(float pitchRadians, float yawRadians, float length = 1.0f);
+    static Vec3 MakeFromPolarDegrees(float pitchDegrees, float yawDegrees, float length = 1.0f);
+
+    static const Vec3 ZERO;
+	static const Vec3 ONE;
 };
 

@@ -5,6 +5,9 @@
 
 #include <math.h>
 
+const Vec3 Vec3::ZERO = Vec3(0.f, 0.f, 0.f);
+const Vec3 Vec3::ONE = Vec3(1.f, 1.f, 1.f);
+
 Vec3::Vec3() = default;
 
 Vec3::Vec3(float initialX, float initialY, float initialZ)
@@ -150,4 +153,25 @@ Vec3 Vec3::GetRotatedAboutZRadians(float radians) const
 		x * sinTheta + y * cosTheta,
 		z
 	);
+}
+
+Vec3 Vec3::MakeFromPolarRadians(float pitchRadians, float yawRadians, float length /*= 1.0f*/)
+{
+	float cosPitch = cosf(pitchRadians);
+	float sinPitch = sinf(pitchRadians);
+	float cosYaw = cosf(yawRadians);
+	float sinYaw = sinf(yawRadians);
+
+	return Vec3(
+		length * cosPitch * cosYaw,
+		length * cosPitch * sinYaw,
+		length * sinPitch
+	);
+}
+
+Vec3 Vec3::MakeFromPolarDegrees(float pitchDegrees, float yawDegrees, float length /*= 1.0f*/)
+{
+	float pitchRadians = pitchDegrees * DegreesToRadiansMultiplier;
+	float yawRadians = yawDegrees * DegreesToRadiansMultiplier;
+	return MakeFromPolarRadians(pitchRadians, yawRadians, length);
 }
