@@ -313,7 +313,6 @@ void Renderer::Startup()
 
 #pragma endregion
 
-
 #pragma region Default Shader
 
     m_defaultShader = CreateShader("Data/Shaders/Default");
@@ -456,6 +455,16 @@ void Renderer::SetSamplerMode(SamplerMode samplerMode)
     m_desiredSamplerMode = samplerMode;
 }
 
+void Renderer::SetRasterizerMode(RasterizerMode rasterizerMode)
+{
+    m_desiredRasterizerMode = rasterizerMode;
+}
+
+void Renderer::SetDepthMode(DepthMode depthMode)
+{
+    m_desiredDepthMode = depthMode;
+}
+
 void Renderer::SetStatesIfChanged()
 {
     GUARANTEE_OR_DIE(m_deviceContext, "SetStatesIfChanged: m_deviceContext is null");
@@ -478,6 +487,20 @@ void Renderer::SetStatesIfChanged()
     {
         m_samplerState = desiredSamplerState;
         m_deviceContext->PSSetSamplers(0, 1, &m_samplerState);
+    }
+
+    ID3D11RasterizerState* desiredRasterizerState = m_rasterizerStates[(int)m_desiredRasterizerMode];
+    if (m_rasterizerState != desiredRasterizerState)
+    {
+        m_rasterizerState = desiredRasterizerState;
+        m_deviceContext->RSSetState(m_rasterizerState);
+    }
+
+    ID3D11DepthStencilState* desiredDepthStencilState = m_depthStencilStates[(int)m_desiredDepthMode];
+    if (m_depthStencilState != desiredDepthStencilState)
+    {
+        m_depthStencilState = desiredDepthStencilState;
+        m_deviceContext->OMSetDepthStencilState(m_depthStencilState, 0);
     }
 }
 

@@ -105,6 +105,8 @@ public:
     void ClearScreen(Rgba8 const& clearColor);
     void SetBlendMode(BlendMode blendMode);
     void SetSamplerMode(SamplerMode samplerMode);
+    void SetRasterizerMode(RasterizerMode rasterizerMode);
+    void SetDepthMode(DepthMode depthMode);
     void SetStatesIfChanged();
 
     void BeginCamera(Camera const& camera);
@@ -166,8 +168,12 @@ private:
     SamplerMode m_desiredSamplerMode                               = SamplerMode::POINT_CLAMP;
     ID3D11SamplerState* m_samplerStates[(int)(SamplerMode::COUNT)] = {};
 
+    ID3D11RasterizerState* m_rasterizerState = nullptr;
+    RasterizerMode m_desiredRasterizerMode = RasterizerMode::SOLID_CULL_BACK;
     ID3D11RasterizerState* m_rasterizerStates[(int)(RasterizerMode::COUNT)] = {};
     
+    ID3D11DepthStencilState* m_depthStencilState = nullptr;
+    DepthMode m_desiredDepthMode = DepthMode::READ_WRITE_LESS_EQUAL;
     ID3D11DepthStencilState* m_depthStencilStates[(int)(DepthMode::COUNT)] = {};
 
     ID3D11Texture2D* m_depthStencilTexture = nullptr;
