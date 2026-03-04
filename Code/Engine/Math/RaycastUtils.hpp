@@ -1,6 +1,9 @@
 #pragma once
 
-#include "Vec2.hpp"
+#include "Engine/Math/Vec2.hpp"
+#include "Engine/Math/Disc2.hpp"
+#include "Engine/Math/AABB2.hpp"
+#include "Engine/Math/LineSegment2.hpp"
 
 struct RaycastResult2D
 {
@@ -17,3 +20,8 @@ struct RaycastResult2D
 };
 
 RaycastResult2D RaycastVsDisc2D(Vec2 startPos, Vec2 forwardNormal, float maxDist, Vec2 discCenter, float discRadius);
+RaycastResult2D RaycastVsDisc2D(Vec2 startPos, Vec2 forwardNormal, float maxDist, Disc2 disc);
+RaycastResult2D RaycastVsLineSegments2D(Vec2 startPos, Vec2 forwardNormal, float maxDist, Vec2 lineStartPos, Vec2 lineEndPos);
+RaycastResult2D RaycastVsLineSegments2D(Vec2 startPos, Vec2 forwardNormal, float maxDist, LineSegment2 line);
+RaycastResult2D RaycastVsAABB2D(Vec2 startPos, Vec2 forwardNormal, float maxDist, Vec2 aabbMins, Vec2 aabbMaxs);
+RaycastResult2D RaycastVsAABB2D(Vec2 startPos, Vec2 forwardNormal, float maxDist, AABB2 aabb);
