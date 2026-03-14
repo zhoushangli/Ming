@@ -47,10 +47,19 @@ public:
 	Vec3		GetRotatedAboutZDegrees(float degrees) const;
 	Vec3		GetRotatedAboutZRadians(float radians) const;
 
+    void        Normalize();
+    Vec3		GetNormalized() const;
+
     static Vec3 MakeFromPolarRadians(float pitchRadians, float yawRadians, float length = 1.0f);
     static Vec3 MakeFromPolarDegrees(float pitchDegrees, float yawDegrees, float length = 1.0f);
 
     static const Vec3 ZERO;
 	static const Vec3 ONE;
+    static const Vec3 FORWARD;
+    static const Vec3 BACKWARD;
+    static const Vec3 LEFT;
+    static const Vec3 RIGHT;
+    static const Vec3 UP;
+    static const Vec3 DOWN;
 };
 

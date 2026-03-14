@@ -15,6 +15,26 @@ void TransformVertexArrayXY3D(int numVerts, Vertex* verts, float scaleXY,
     }
 }
 
+void TransformVertexArray3D(std::vector<Vertex>& verts, const Matrix4x4& transform)
+{
+    for (Vertex& vert : verts)
+    {
+        vert.m_position = transform.TransformPosition3D(vert.m_position);
+    }
+}
+
+AABB2 GetVertexBounds2D(const std::vector<Vertex>& verts)
+{
+    AABB2 bounds;
+
+    for (const Vertex& vert : verts)
+    {
+        bounds.StretchToIncludePoint(Vec2(vert.m_position.x, vert.m_position.y));
+    }
+
+    return bounds;
+}
+
 void AddVertsForAABB2D(std::vector<Vertex>& verts, AABB2 const& alignedBox, Rgba8 color)
 {
     AddVertsForAABB2D(verts, alignedBox, color, Vec2::ZERO, Vec2::ONE);
@@ -334,6 +354,210 @@ void AddVertsForSphere3D(std::vector<Vertex>& verts, const Vec3& center, float r
             verts.emplace_back(p01, color, Vec2(u0, v1));
         }
     }
+}
+
+void AddVertsForCylinder3D(std::vector<Vertex>& verts, const Vec3& start, const Vec3& end, float radius, const Rgba8& color /*= Rgba8::WHITE*/, const AABB2& UVs /*= AABB2::UNIT*/, int numSlices /*= 32*/)
+{
+    if (radius <= 0.f)
+    {
+        return;
+    }
+
+    Vec3 axis = end - start;
+    float height = axis.GetLength();
+    if (height <= 0.f)
+    {
+        return;
+    }
+
+    numSlices = Max(3, numSlices);
+
+    Vec3 kBasis = axis / height;
+
+    // Pick a helper not parallel to kBasis
+    Vec3 helper = (Abs(kBasis.z) < 0.999f) ? Vec3(0.f, 0.f, 1.f) : Vec3(0.f, 1.f, 0.f);
+
+    Vec3 iBasis = CrossProduct3D(helper, kBasis);
+    float iLen = iBasis.GetLength();
+    if (iLen <= 0.f)
+    {
+        return;
+    }
+    iBasis /= iLen;
+
+    Vec3 jBasis = CrossProduct3D(kBasis, iBasis); // already normalized if i,k are orthonormal
+
+    float uRange = UVs.m_maxs.x - UVs.m_mins.x;
+    float vRange = UVs.m_maxs.y - UVs.m_mins.y;
+
+    float deltaYaw = TWO_PI / static_cast<float>(numSlices);
+
+    for (int sliceIndex = 0; sliceIndex < numSlices; ++sliceIndex)
+    {
+        float yaw0 = deltaYaw * static_cast<float>(sliceIndex);
+        float yaw1 = deltaYaw * static_cast<float>(sliceIndex + 1);
+
+        float cos0 = cosf(yaw0);
+        float sin0 = sinf(yaw0);
+        float cos1 = cosf(yaw1);
+        float sin1 = sinf(yaw1);
+
+        Vec3 rim0 = (iBasis * cos0 + jBasis * sin0) * radius;
+        Vec3 rim1 = (iBasis * cos1 + jBasis * sin1) * radius;
+
+        Vec3 b0 = start + rim0;
+        Vec3 b1 = start + rim1;
+        Vec3 t0 = end + rim0;
+        Vec3 t1 = end + rim1;
+
+        float u0Frac = static_cast<float>(sliceIndex) / static_cast<float>(numSlices);
+        float u1Frac = static_cast<float>(sliceIndex + 1) / static_cast<float>(numSlices);
+
+        float u0 = UVs.m_mins.x + u0Frac * uRange;
+        float u1 = UVs.m_mins.x + u1Frac * uRange;
+
+        float vBottom = UVs.m_mins.y;
+        float vTop = UVs.m_mins.y + vRange;
+
+        // Side quad (two triangles)
+        verts.emplace_back(b0, color, Vec2(u0, vBottom));
+        verts.emplace_back(b1, color, Vec2(u1, vBottom));
+        verts.emplace_back(t1, color, Vec2(u1, vTop));
+
+        verts.emplace_back(b0, color, Vec2(u0, vBottom));
+        verts.emplace_back(t1, color, Vec2(u1, vTop));
+        verts.emplace_back(t0, color, Vec2(u0, vTop));
+
+        // Bottom cap (-kBasis) - triangle fan
+        Vec3 cB = start;
+        float cu0 = UVs.m_mins.x + (0.5f + 0.5f * cos0) * uRange;
+        float cv0 = UVs.m_mins.y + (0.5f + 0.5f * sin0) * vRange;
+        float cu1 = UVs.m_mins.x + (0.5f + 0.5f * cos1) * uRange;
+        float cv1 = UVs.m_mins.y + (0.5f + 0.5f * sin1) * vRange;
+        float cuC = UVs.m_mins.x + 0.5f * uRange;
+        float cvC = UVs.m_mins.y + 0.5f * vRange;
+
+        // Winding chosen to face outward on bottom
+        verts.emplace_back(cB, color, Vec2(cuC, cvC));
+        verts.emplace_back(b1, color, Vec2(cu1, cv1));
+        verts.emplace_back(b0, color, Vec2(cu0, cv0));
+
+        // Top cap (+kBasis)
+        Vec3 cT = end;
+        // Winding chosen to face outward on top
+        verts.emplace_back(cT, color, Vec2(cuC, cvC));
+        verts.emplace_back(t0, color, Vec2(cu0, cv0));
+        verts.emplace_back(t1, color, Vec2(cu1, cv1));
+    }
+}
+
+void AddVertsForCone3D(std::vector<Vertex>& verts, const Vec3& start, const Vec3& end, float radius, const Rgba8& color /*= Rgba8::WHITE*/, const AABB2& UVs /*= AABB2::UNIT*/, int numSlices /*= 32*/)
+{
+    if (radius <= 0.f)
+    {
+        return;
+    }
+
+    Vec3 axis = end - start;
+    float height = axis.GetLength();
+    if (height <= 0.f)
+    {
+        return;
+    }
+
+    numSlices = Max(3, numSlices);
+
+    Vec3 kBasis = axis / height;
+
+    Vec3 helper = (Abs(kBasis.z) < 0.999f) ? Vec3(0.f, 0.f, 1.f) : Vec3(0.f, 1.f, 0.f);
+
+    Vec3 iBasis = CrossProduct3D(helper, kBasis);
+    float iLen = iBasis.GetLength();
+    if (iLen <= 0.f)
+    {
+        return;
+    }
+    iBasis /= iLen;
+
+    Vec3 jBasis = CrossProduct3D(kBasis, iBasis);
+
+    float uRange = UVs.m_maxs.x - UVs.m_mins.x;
+    float vRange = UVs.m_maxs.y - UVs.m_mins.y;
+
+    float deltaYaw = TWO_PI / static_cast<float>(numSlices);
+
+    for (int sliceIndex = 0; sliceIndex < numSlices; ++sliceIndex)
+    {
+        float yaw0 = deltaYaw * static_cast<float>(sliceIndex);
+        float yaw1 = deltaYaw * static_cast<float>(sliceIndex + 1);
+
+        float cos0 = cosf(yaw0);
+        float sin0 = sinf(yaw0);
+        float cos1 = cosf(yaw1);
+        float sin1 = sinf(yaw1);
+
+        Vec3 rim0 = (iBasis * cos0 + jBasis * sin0) * radius;
+        Vec3 rim1 = (iBasis * cos1 + jBasis * sin1) * radius;
+
+        Vec3 b0 = start + rim0;
+        Vec3 b1 = start + rim1;
+        Vec3 tip = end;
+
+        float u0Frac = static_cast<float>(sliceIndex) / static_cast<float>(numSlices);
+        float u1Frac = static_cast<float>(sliceIndex + 1) / static_cast<float>(numSlices);
+
+        float u0 = UVs.m_mins.x + u0Frac * uRange;
+        float u1 = UVs.m_mins.x + u1Frac * uRange;
+
+        float vBase = UVs.m_mins.y;
+        float vTip = UVs.m_mins.y + vRange;
+
+        // Side triangle
+        verts.emplace_back(b0, color, Vec2(u0, vBase));
+        verts.emplace_back(b1, color, Vec2(u1, vBase));
+        verts.emplace_back(tip, color, Vec2((u0 + u1) * 0.5f, vTip));
+
+        // Base cap (faces outward opposite to +kBasis => -kBasis)
+        Vec3 cB = start;
+
+        float cu0 = UVs.m_mins.x + (0.5f + 0.5f * cos0) * uRange;
+        float cv0 = UVs.m_mins.y + (0.5f + 0.5f * sin0) * vRange;
+        float cu1 = UVs.m_mins.x + (0.5f + 0.5f * cos1) * uRange;
+        float cv1 = UVs.m_mins.y + (0.5f + 0.5f * sin1) * vRange;
+        float cuC = UVs.m_mins.x + 0.5f * uRange;
+        float cvC = UVs.m_mins.y + 0.5f * vRange;
+
+        verts.emplace_back(cB, color, Vec2(cuC, cvC));
+        verts.emplace_back(b1, color, Vec2(cu1, cv1));
+        verts.emplace_back(b0, color, Vec2(cu0, cv0));
+    }
+}
+
+void AddVertsForArrow3D(std::vector<Vertex>& verts, Vec3 const& start, Vec3 const& end, float radius, Rgba8 const& color /*= Rgba8::WHITE*/, int numSlices /*= 32*/)
+{
+    Vec3 dir = end - start;
+    float length = dir.GetLength();
+    if (length <= 0.f || radius <= 0.f)
+    {
+        return;
+    }
+
+    // Arrow proportions (similar spirit to 2D version)
+    float headLength = Min(length * 0.25f, radius * 4.f);
+    headLength = GetClamped(headLength, length * 0.10f, length * 0.50f);
+
+    float shaftLength = length - headLength;
+    if (shaftLength < 0.f)
+    {
+        shaftLength = 0.f;
+        headLength = length;
+    }
+
+    Vec3 shaftEnd = start + (dir / length) * shaftLength;
+    float shaftRadius = radius * 0.5f;
+
+    AddVertsForCylinder3D(verts, start, shaftEnd, shaftRadius, color, AABB2::UNIT, numSlices);
+    AddVertsForCone3D(verts, shaftEnd, end, radius, color, AABB2::UNIT, numSlices);
 }
 
 void AddVertsForDisc2D(std::vector<Vertex>& verts, Disc2 const& disc, Rgba8 color)

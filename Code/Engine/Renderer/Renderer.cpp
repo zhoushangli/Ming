@@ -127,23 +127,40 @@ void Renderer::Startup()
 
 #pragma region Default Shader Set rasterizer state
 
+    // SOLID CULL NONE
     D3D11_RASTERIZER_DESC rasterizerDesc = { };
     rasterizerDesc.FillMode = D3D11_FILL_SOLID;
     rasterizerDesc.CullMode = D3D11_CULL_NONE;
     rasterizerDesc.FrontCounterClockwise = true;
     rasterizerDesc.DepthClipEnable = true;
     rasterizerDesc.AntialiasedLineEnable = true;
-
     hr = m_device->CreateRasterizerState(
         &rasterizerDesc,
         &m_rasterizerStates[(int)RasterizerMode::SOLID_CULL_NONE]);
 
-    if (!SUCCEEDED(hr))
-    {
-        ERROR_AND_DIE("CreateRasterizerState for RasterizerMode::SOLID_CULL_NONE failed.");
-    }
+    // SOLID CULL BACK
+    rasterizerDesc.FillMode = D3D11_FILL_SOLID;
+    rasterizerDesc.CullMode = D3D11_CULL_BACK;
+    hr = m_device->CreateRasterizerState(
+        &rasterizerDesc,
+        &m_rasterizerStates[(int)RasterizerMode::SOLID_CULL_BACK]);
 
-    m_deviceContext->RSSetState(m_rasterizerStates[(int)RasterizerMode::SOLID_CULL_NONE]);
+    // WIREFRAME CULL NONE
+    rasterizerDesc.FillMode = D3D11_FILL_WIREFRAME;
+    rasterizerDesc.CullMode = D3D11_CULL_NONE;
+    hr = m_device->CreateRasterizerState(
+        &rasterizerDesc,
+        &m_rasterizerStates[(int)RasterizerMode::WIREFRAME_CULL_NONE]);
+
+    // WIREFRAME CULL BACK
+    rasterizerDesc.FillMode = D3D11_FILL_WIREFRAME;
+    rasterizerDesc.CullMode = D3D11_CULL_BACK;
+    hr = m_device->CreateRasterizerState(
+        &rasterizerDesc,
+        &m_rasterizerStates[(int)RasterizerMode::WIREFRAME_CULL_BACK]);
+
+
+    m_deviceContext->RSSetState(m_rasterizerStates[(int)RasterizerMode::SOLID_CULL_BACK]);
 
     m_deviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
@@ -175,11 +192,6 @@ void Renderer::Startup()
         &m_blendStates[(int)(BlendMode::OPAQUE)]
     );
 
-    if (!SUCCEEDED(hr))
-    {
-        ERROR_AND_DIE("CreateBlendState for BlendMode::OPAQUE failed.");
-    }
-
     // ALPHA
     blendDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;
     blendDesc.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
@@ -189,11 +201,6 @@ void Renderer::Startup()
         &m_blendStates[(int)(BlendMode::ALPHA)]
     );
 
-    if (!SUCCEEDED(hr))
-    {
-        ERROR_AND_DIE("CreateBlendState for BlendMode::ALPHA failed.");
-    }
-
     // ADDITIVE
     blendDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;
     blendDesc.RenderTarget[0].DestBlend = D3D11_BLEND_ONE;
@@ -202,11 +209,6 @@ void Renderer::Startup()
         &blendDesc,
         &m_blendStates[(int)(BlendMode::ADDITIVE)]
     );
-
-    if (!SUCCEEDED(hr))
-    {
-        ERROR_AND_DIE("CreateBlendState for BlendMode::ADDITIVE failed.");
-    }
 
 #pragma endregion
 
@@ -226,11 +228,6 @@ void Renderer::Startup()
         &samplerDesc,
         &m_samplerStates[(int)SamplerMode::POINT_CLAMP]
     );
-
-    if (!SUCCEEDED(hr))
-    {
-        ERROR_AND_DIE("CreateSamplerState for SamplerMode::POINT_CLAMP failed.");
-    }
 
     // BILINEAR_CLAMP
     samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
@@ -270,21 +267,15 @@ void Renderer::Startup()
         ERROR_AND_DIE("Could not create depth stencil view.");
     }
 
-    // a. For DISABLED use the following.
+    // DISABLED
     D3D11_DEPTH_STENCIL_DESC depthStencilDesc = {};
     hr = m_device->CreateDepthStencilState(
         &depthStencilDesc,
         &m_depthStencilStates[(int)DepthMode::DISABLED]
     );
-
-    if (!SUCCEEDED(hr))
-    {
-        ERROR_AND_DIE("CreateDepthStencilState for DepthMode::DISABLED failed.");
-    }
-    
-    depthStencilDesc.DepthEnable = TRUE;
     
     // READ_ONLY_ALWAYS
+    depthStencilDesc.DepthEnable = TRUE;
     depthStencilDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
     depthStencilDesc.DepthFunc = D3D11_COMPARISON_ALWAYS;
 

@@ -9,12 +9,25 @@
 #include "Engine/Math/Capsule2.hpp"
 #include "Engine/Math/Triangle2.hpp"
 #include "Engine/Math/Disc2.hpp"
+#include "Engine/Math/Matrix4x4.hpp"
 
-float const DegreesToRadiansMultiplier  = 0.017453292519943295f;    // PI / 180
-float const RadiansToDegreesMultiplier  = 57.29577951308232f;       // 180 / PI
-const float PI                          = 3.14159265358979323846f;
-const float TWO_PI                      = 6.28318530717958647692f;
-const float HALF_PI                     = 1.57079632679489661923f;
+//------------------------------------------------------------------------------------------------
+// Constants
+//------------------------------------------------------------------------------------------------
+#pragma region Constants
+
+float const DegreesToRadiansMultiplier = 0.017453292519943295f; // PI / 180
+float const RadiansToDegreesMultiplier = 57.29577951308232f;    // 180 / PI
+const float PI = 3.14159265358979323846f;
+const float TWO_PI = 6.28318530717958647692f;
+const float HALF_PI = 1.57079632679489661923f;
+
+#pragma endregion
+
+//------------------------------------------------------------------------------------------------
+// Basic math helpers
+//------------------------------------------------------------------------------------------------
+#pragma region Basic Math Helpers
 
 float Abs(float value);
 float Sign(float value);
@@ -23,17 +36,32 @@ int Min(int a, int b);
 float Max(float a, float b);
 int Max(int a, int b);
 
-// Angle conversion and trigonometric functions
+#pragma endregion
+
+//------------------------------------------------------------------------------------------------
+// Angles & Trigonometry
+//------------------------------------------------------------------------------------------------
+#pragma region Angles & Trigonometry
+
 float ConvertDegreesToRadians(float degrees);
 float ConvertRadiansToDegrees(float radians);
 float CosDegrees(float degrees);
 float SinDegrees(float degrees);
 float Atan2Degrees(float y, float x);
 
-// Distance and overlap functions
+float GetShortestAngularDispDegrees(float startDegrees, float endDegrees);
+float GetTurnedTowardDegrees(float currentDegrees, float goalDegrees, float maxDeltaDegrees);
+
+#pragma endregion
+
+//------------------------------------------------------------------------------------------------
+// Distance & Overlap Tests
+//------------------------------------------------------------------------------------------------
+#pragma region Distance & Overlap Tests
+
 float GetDistance2D(Vec2 const& a, Vec2 const& b);
 float GetDistanceSquared2D(Vec2 const& a, Vec2 const& b);
-	  
+
 float GetDistance3D(Vec3 const& a, Vec3 const& b);
 float GetDistanceXY3D(Vec3 const& a, Vec3 const& b);
 float GetDistanceSquared3D(Vec3 const& a, Vec3 const& b);
@@ -42,44 +70,75 @@ float GetDistanceXYSquared3D(Vec3 const& a, Vec3 const& b);
 bool DoDiscsOverlap(Vec2 const& centerA, float radiusA, Vec2 const& centerB, float radiusB);
 bool DoSpheresOverlap(Vec3 const& centerA, float radiusA, Vec3 const& centerB, float radiusB);
 
-// Transformations
+#pragma endregion
+
+//------------------------------------------------------------------------------------------------
+// Transforms (in-place helpers)
+//------------------------------------------------------------------------------------------------
+#pragma region Transforms
+
 void TransformPosition2D(Vec2& pos, float scale, float rotationDegrees, Vec2 const& translation);
 void TransformPosition2D(Vec2& pos, Vec2 const& iBasis, Vec2 const& jBasis, Vec2 const& translation);
 void TransformPositionXY3D(Vec3& pos, float scaleXY, float zRotationDegrees, Vec2 const& translationXY);
 void TransformPositionXY3D(Vec3& pos, Vec2 const& iBasisXY, Vec2 const& jBasisXY, Vec2 const& translationXY);
 
-// Interpolation and range mapping functions 
+#pragma endregion
+
+//------------------------------------------------------------------------------------------------
+// Interpolation, Mapping, Clamping
+//------------------------------------------------------------------------------------------------
+#pragma region Interpolation / Mapping / Clamping
+
 float Interpolate(float start, float end, float fraction);
 float InterpolateClamped(float start, float end, float fraction);
 float GetFractionWithinRange(float value, float start, float end);
 float RangeMap(float inValue, float inStart, float inEnd, float outStart, float outEnd);
 float RangeMapClamped(float inValue, float inStart, float inEnd, float outStart, float outEnd);
+
 int GetClamped(int value, int minValue, int maxValue);
 float GetClamped(float value, float minValue, float maxValue);
 float GetClampedZeroToOne(float value);
-int	 RoundDownToInt(float value);
+int RoundDownToInt(float value);
 
-// Angular displacement and dot product functions
-float GetShortestAngularDispDegrees(float startDegrees, float endDegrees);
-float GetTurnedTowardDegrees(float currentDegrees, float goalDegrees, float maxDeltaDegrees);
+#pragma endregion
+
+//------------------------------------------------------------------------------------------------
+// Dot & Cross Products / Projections / Vector-Angle Helpers
+//------------------------------------------------------------------------------------------------
+#pragma region Dot / Cross / Projection
+
 float DotProduct2D(Vec2 const& vector, Vec2 const& basis);
+float DotProduct2D(Vec2 const& a, Vec2 const& b);
+float DotProduct3D(Vec3 const& a, Vec3 const& b);
+float DotProduct4D(Vec4 const& a, Vec4 const& b);
 
-// Geometric utilities·
+float CrossProduct2D(Vec2 const& a, Vec2 const& b);
+Vec3 CrossProduct3D(Vec3 const& a, Vec3 const& b);
+
+float GetProjectedLength2D(Vec2 const& vector, Vec2 const& basis);
+Vec2 GetProjectedVector2D(Vec2 const& vector, Vec2 const& basis);
+Vec3 GetProjectedVector3D(Vec3 const& vector, Vec3 const& basis);
+float GetAngleDegreesBetweenVectors2D(Vec2 const& a, Vec2 const& b);
+
+#pragma endregion
+
+//------------------------------------------------------------------------------------------------
+// Geometry: Push Out (collision resolution helpers)
+//------------------------------------------------------------------------------------------------
+#pragma region Geometry - Push Out
+
 bool PushDiscOutOfFixedPoint2D(Vec2& discCenter, float discRadius, Vec2 const& fixedPoint);
 bool PushDiscOutOfFixedDisc2D(Vec2& discCenter, float discRadius, Vec2 const& fixedDiscCenter, float fixedDiscRadius);
 bool PushDiscsOutOfEachOther2D(Vec2& discCenterA, float discRadiusA, Vec2& discCenterB, float discRadiusB);
 bool PushDiscOutOfFixedAABB2D(Vec2& discCenter, float discRadius, AABB2 const& box);
 
-// Projection and angle functions
-float GetProjectedLength2D(Vec2 const& vector, Vec2 const& basis);
-Vec2 GetProjectedVector2D(Vec2 const& vector, Vec2 const& basis);
-float GetAngleDegreesBetweenVectors2D(Vec2 const& a, Vec2 const& b);
+#pragma endregion
 
-// Miscellaneous utilities
-int	GetTaxicabDistance2D(IntVec2 const& a, IntVec2 const& b);
-int GetTaxicabDistance2D(Vec2 const& a, Vec2 const& b);
+//------------------------------------------------------------------------------------------------
+// Geometry Queries: Point Inside Tests
+//------------------------------------------------------------------------------------------------
+#pragma region Geometry - Point Inside
 
-// --- Is Point Inside ---
 bool IsPointInsideDisc2D(Vec2 point, Vec2 discCenter, float discRadius);
 bool IsPointInsideDisc2D(Vec2 point, Disc2 const& disc);
 bool IsPointInsideAABB2D(Vec2 point, AABB2 const& alignedBox);
@@ -91,7 +150,13 @@ bool IsPointInsideTriangle2D(Vec2 point, Triangle2 const& triangle);
 bool IsPointInsideOrientedSector2D(Vec2 point, Vec2 sectorOrigin, float sectorForwardDegrees, float sectorApertureDegrees, float sectorRadius);
 bool IsPointInsideDirectedSector2D(Vec2 point, Vec2 sectorOrigin, Vec2 sectorForwardNormal, float sectorApertureDegrees, float sectorRadius);
 
-// --- Get Nearest Point On ---
+#pragma endregion
+
+//------------------------------------------------------------------------------------------------
+// Geometry Queries: Nearest Point
+//------------------------------------------------------------------------------------------------
+#pragma region Geometry - Nearest Point
+
 Vec2 GetNearestPointOnDisc2D(Vec2 referencePos, Vec2 discCenter, float discRadius);
 Vec2 GetNearestPointOnDisc2D(Vec2 referencePos, Disc2 const& disc);
 Vec2 GetNearestPointOnAABB2D(Vec2 referencePos, AABB2 const& alignedBox);
@@ -105,13 +170,40 @@ Vec2 GetNearestPointOnCapsule2D(Vec2 referencePos, Capsule2 const& capsule);
 Vec2 GetNearestPointOnTriangle2D(Vec2 referencePos, Vec2 ccw0, Vec2 ccw1, Vec2 ccw2); // Counter-Clockwise (positive winding)
 Vec2 GetNearestPointOnTriangle2D(Vec2 referencePos, Triangle2 const& triangle);
 
-// --- Dot and Cross Products ---
-float DotProduct2D(Vec2 const& a, Vec2 const& b);
-float DotProduct3D(Vec3 const& a, Vec3 const& b);
-float DotProduct4D(Vec4 const& a, Vec4 const& b);
-float CrossProduct2D(Vec2 const& a, Vec2 const& b);
-Vec3  CrossProduct3D(Vec3 const& a, Vec3 const& b);
+#pragma endregion
 
+//------------------------------------------------------------------------------------------------
+// Misc / Integer grid helpers
+//------------------------------------------------------------------------------------------------
+#pragma region Misc
 
-float         NormalizeByte(unsigned char byteValue);
+int GetTaxicabDistance2D(IntVec2 const& a, IntVec2 const& b);
+int GetTaxicabDistance2D(Vec2 const& a, Vec2 const& b);
+
+float NormalizeByte(unsigned char byteValue);
 unsigned char DenormalizeByte(float zeroToOne);
+
+#pragma endregion
+
+//------------------------------------------------------------------------------------------------
+// Billboarding
+//------------------------------------------------------------------------------------------------
+#pragma region Billboarding
+
+enum class BillboardType
+{
+    NONE = -1,
+    WORLD_UP_FACING,
+    WORLD_UP_OPPOSING,
+    FULL_FACING,
+    FULL_OPPOSING,
+    COUNT
+};
+
+Matrix4x4 GetBillboardTransform(
+    BillboardType billboardType,
+    Matrix4x4 const& targetTransform,
+    const Vec3& billboardPosition,
+    const Vec2& billboardScale = Vec2(1.0f, 1.0f));
+
+#pragma endregion

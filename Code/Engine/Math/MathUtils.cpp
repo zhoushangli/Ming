@@ -321,6 +321,107 @@ Vec3 CrossProduct3D(Vec3 const& a, Vec3 const& b)
     );
 }
 
+Matrix4x4 GetBillboardTransform(BillboardType billboardType, Matrix4x4 const& targetTransform, const Vec3& billboardPosition, const Vec2& billboardScale /*= Vec2(1.0f, 1.0f)*/)
+{
+    Matrix4x4 billboardTransform = Matrix4x4::MakeNonUniformScale2D(billboardScale);
+    billboardTransform.SetTranslation3D(billboardPosition);
+
+    switch (billboardType)
+    {   
+    case BillboardType::NONE:
+    {
+        return billboardTransform;
+    }
+
+    case BillboardType::WORLD_UP_FACING:
+    {
+        Vec3 worldUp = Vec3::UP;
+        Vec3 toTarget = targetTransform.GetTranslation3D() - billboardPosition;
+        Vec3 toTargetOnXY = toTarget - GetProjectedVector3D(toTarget, worldUp);
+
+        if (toTargetOnXY.GetLengthSquared() <= 1e-5f)
+        {
+            toTarget = targetTransform.GetIBasis3D();
+            toTargetOnXY = toTarget - GetProjectedVector3D(toTarget, worldUp);
+
+            if (toTargetOnXY.GetLengthSquared() <= 1e-5f)
+            {
+                toTarget = Vec3::FORWARD;
+                toTargetOnXY = toTarget - GetProjectedVector3D(toTarget, worldUp);
+            }
+        }
+
+        Vec3 iBasis = toTargetOnXY.GetNormalized();
+        Vec3 jBasis = CrossProduct3D(worldUp, iBasis);
+        jBasis.Normalize();
+
+        billboardTransform = Matrix4x4(iBasis, jBasis, worldUp, billboardPosition);
+        billboardTransform.AppendScaleNonUniform3D(billboardScale);
+        return billboardTransform;
+    }
+        
+    case BillboardType::WORLD_UP_OPPOSING:
+    {
+        Vec3 worldUp = Vec3::UP;
+        Vec3 fromTarget = billboardPosition - targetTransform.GetTranslation3D();
+        Vec3 fromTargetOnXY = fromTarget - GetProjectedVector3D(fromTarget, worldUp);
+
+        if (fromTargetOnXY.GetLengthSquared() <= 1e-5f)
+        {
+            fromTarget = targetTransform.GetIBasis3D();
+            fromTargetOnXY = fromTarget - GetProjectedVector3D(fromTarget, worldUp);
+
+            if (fromTargetOnXY.GetLengthSquared() <= 1e-5f)
+            {
+                fromTarget = Vec3::FORWARD;
+                fromTargetOnXY = fromTarget - GetProjectedVector3D(fromTarget, worldUp);
+            }
+        }
+
+        Vec3 iBasis = fromTargetOnXY.GetNormalized();
+        Vec3 jBasis = CrossProduct3D(worldUp, iBasis);
+        jBasis.Normalize();
+
+        billboardTransform = Matrix4x4(iBasis, jBasis, worldUp, billboardPosition);
+        billboardTransform.AppendScaleNonUniform3D(billboardScale);
+        return billboardTransform;
+    }
+        
+    case BillboardType::FULL_FACING:
+    {
+        Vec3 worldUp = Vec3::UP;
+        Vec3 toTarget = targetTransform.GetTranslation3D() - billboardPosition;
+        Vec3 iBasis = toTarget.GetNormalized();
+        Vec3 jBasis = CrossProduct3D(worldUp, iBasis);
+        jBasis.Normalize();
+        Vec3 kBasis = CrossProduct3D(iBasis, jBasis);
+        kBasis.Normalize();
+
+        billboardTransform = Matrix4x4(iBasis, jBasis, kBasis, billboardPosition);
+        billboardTransform.AppendScaleNonUniform3D(billboardScale);
+        return billboardTransform;
+    }
+
+    case BillboardType::FULL_OPPOSING:
+    {
+        Vec3 worldUp = Vec3::UP;
+        Vec3 fromTarget = billboardPosition - targetTransform.GetTranslation3D();
+        Vec3 iBasis = fromTarget.GetNormalized();
+        Vec3 jBasis = CrossProduct3D(worldUp, iBasis);
+        jBasis.Normalize();
+        Vec3 kBasis = CrossProduct3D(iBasis, jBasis);
+        kBasis.Normalize();
+
+        billboardTransform = Matrix4x4(iBasis, jBasis, kBasis, billboardPosition);
+        billboardTransform.AppendScaleNonUniform3D(billboardScale);
+        return billboardTransform;
+    }
+
+    default:
+        return billboardTransform;
+    }
+}
+
 bool PushDiscOutOfFixedPoint2D(Vec2& discCenter, float discRadius, Vec2 const& fixedPoint)
 {
     Vec2 toCenter = discCenter - fixedPoint;
@@ -396,6 +497,12 @@ Vec2 GetProjectedVector2D(Vec2 const& vector, Vec2 const& basis)
 {
     Vec2 n = basis.GetNormalized();
     return n * DotProduct2D(vector, n);
+}
+
+Vec3 GetProjectedVector3D(Vec3 const& vector, Vec3 const& basis)
+{
+    Vec3 n = basis.GetNormalized();
+    return n * DotProduct3D(vector, n);
 }
 
 float GetAngleDegreesBetweenVectors2D(Vec2 const& a, Vec2 const& b)

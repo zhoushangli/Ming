@@ -2,6 +2,7 @@
 
 #include "Engine/Window/Window.hpp"
 #include "Engine/Renderer/Renderer.hpp"
+#include "Engine/Renderer/DebugRenderer.hpp"
 #include "Engine/Input/InputSystem.hpp"
 #include "Engine/Audio/AudioSystem.hpp"
 #include "Engine/Core/EventSystem.hpp"

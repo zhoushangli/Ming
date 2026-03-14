@@ -1,10 +1,11 @@
 #include "Engine/Renderer/BitmapFont.hpp"
 
 #include "Engine/Core/Vertex.hpp"
-#include "Engine/Renderer/Texture.hpp"
+#include "Engine/Core/VertexUtils.hpp"
 #include "Engine/Math/AABB2.hpp"
 #include "Engine/Math/Vec2.hpp"
 #include "Engine/Math/MathUtils.hpp"
+#include "Engine/Renderer/Texture.hpp"
 
 #include <string>
 #include <vector>
@@ -111,6 +112,38 @@ void BitmapFont::AddVertsForTextInBox2D(
         clipped,
         tint,
         cellAspectScale);
+}
+
+void BitmapFont::AddVertsForText3DAtOriginXForward(
+    std::vector<Vertex>& verts,
+    float cellHeight,
+    std::string const& text,
+    Rgba8 const& tint /*= Rgba8::WHITE*/,
+    float cellAspect /*= 1.0f*/,
+    Vec2 const& alignment /*= Vec2(0.5f, 0.5f)*/,
+    int maxGlyphsToDraw /*= 999*/)
+{
+    int glyphCount = Min((int)text.size(), maxGlyphsToDraw);
+    if (glyphCount <= 0 || cellHeight <= 0.f)
+    {
+        return;
+    }
+
+    std::string clippedText = text.substr(0, glyphCount);
+    Vec2 textDimensions = GetTextBoundsDimension(cellHeight, clippedText, cellAspect);
+    Vec2 textMins = -textDimensions * alignment;
+
+    std::vector<Vertex> textVerts;
+    AddVertsForText2D(textVerts, textMins, cellHeight, clippedText, tint, cellAspect);
+
+    Matrix4x4 textTransform(
+        0.f, 0.f, 1.f, 0.f,
+        1.f, 0.f, 0.f, 0.f,
+        0.f, 1.f, 0.f, 0.f,
+        0.f, 0.f, 0.f, 1.f);
+    TransformVertexArray3D(textVerts, textTransform);
+
+    verts.insert(verts.end(), textVerts.begin(), textVerts.end());
 }
 
 float BitmapFont::GetTextWidth(float cellHeight, std::string const& text, float cellAspectScale)

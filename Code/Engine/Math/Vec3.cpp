@@ -7,6 +7,12 @@
 
 const Vec3 Vec3::ZERO = Vec3(0.f, 0.f, 0.f);
 const Vec3 Vec3::ONE = Vec3(1.f, 1.f, 1.f);
+const Vec3 Vec3::FORWARD = Vec3(1.f, 0.f, 0.f);
+const Vec3 Vec3::BACKWARD = Vec3(-1.f, 0.f, 0.f);
+const Vec3 Vec3::LEFT = Vec3(0.f, 1.f, 0.f);
+const Vec3 Vec3::RIGHT = Vec3(0.f, -1.f, 0.f);
+const Vec3 Vec3::UP = Vec3(0.f, 0.f, 1.f);
+const Vec3 Vec3::DOWN = Vec3(0.f, 0.f, -1.f);
 
 Vec3::Vec3() = default;
 
@@ -153,6 +159,30 @@ Vec3 Vec3::GetRotatedAboutZRadians(float radians) const
 		x * sinTheta + y * cosTheta,
 		z
 	);
+}
+
+void Vec3::Normalize()
+{
+    float len = GetLength();
+	if (len > 0.f)
+	{
+		x /= len;
+		y /= len;
+		z /= len;
+    }
+}
+
+Vec3 Vec3::GetNormalized() const
+{
+    float len = GetLength();
+    if (len > 0.f)
+	{
+		return Vec3(x / len, y / len, z / len);
+    }
+	else
+	{
+        return Vec3(0.f, 0.f, 0.f);
+	}
 }
 
 Vec3 Vec3::MakeFromPolarRadians(float pitchRadians, float yawRadians, float length /*= 1.0f*/)

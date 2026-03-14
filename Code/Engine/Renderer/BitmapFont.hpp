@@ -19,6 +19,8 @@ private:
 public:
     Texture& GetTexture();
 
+#pragma region 2D
+
     void AddVertsForText2D(
         std::vector<Vertex>& vertexArray, 
         Vec2 textMins,
@@ -37,6 +39,18 @@ public:
         Vec2 alignment = Vec2(.5f, .5f), 
         TextBoxMode mode = TextBoxMode::SHRINK_TO_FIT, 
         int maxGlyphsToDraw = 99999999);
+
+#pragma endregion
+
+#pragma region 3D
+
+    void AddVertsForText3DAtOriginXForward(std::vector<Vertex>& verts,
+        float cellHeight, std::string const& text, Rgba8 const& tint = Rgba8::WHITE,
+        float cellAspect = 1.0f, Vec2 const& alignment = Vec2(0.5f, 0.5f),
+        int maxGlyphsToDraw = 999);
+
+#pragma endregion
+
 
 
     float GetTextWidth(float cellHeight, std::string const& text, float cellAspectScale = 1.f);

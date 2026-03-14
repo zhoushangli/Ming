@@ -57,23 +57,24 @@ public:
     Vec4 const GetKBasis4D() const;
     Vec4 const GetTranslation4D() const;
 
-    void SetTranslation2D(Vec2 const translationXY);    
-    void SetTranslation3D(Vec3 const translationXYZ);   
+    void SetTranslation2D(Vec2 const translationXY);
+    void SetTranslation3D(Vec3 const translationXYZ);
+
     void SetIJ2D(Vec2 const& iBasis2D, Vec2 const& jBasis2D);
     void SetIJT2D(Vec2 const& iBasis2D, Vec2 const& jBasis2D, Vec2 const& translationXY);
     void SetIJK3D(Vec3 const& iBasis3D, Vec3 const& jBasis3D, Vec3 const& kBasis3D);
     void SetIJKT3D(Vec3 const& iBasis3D, Vec3 const& jBasis3D, Vec3 const& kBasis3D, Vec3 const& translationXYZ);
-    void SetIJKT4D(Vec4 const& iBasis4D, Vec4 const& jBasis4D, Vec4 const& kBasis4D, Vec4 const& translation4D); 
+    void SetIJKT4D(Vec4 const& iBasis4D, Vec4 const& jBasis4D, Vec4 const& kBasis4D, Vec4 const& translation4D);
 
-    void Append(Matrix4x4 const appendThis);            
+    void Append(Matrix4x4 const appendThis);
     void AppendRotationX(float degreesAboutX);
-    void AppendRotationY(float degreesAboutY);          
-    void AppendRotationZ(float degreesAboutZ);          
-    void AppendTranslation2D(Vec2 const translationXY); 
+    void AppendRotationY(float degreesAboutY);
+    void AppendRotationZ(float degreesAboutZ);
+    void AppendTranslation2D(Vec2 const translationXY);
     void AppendTranslation3D(Vec3 const translationXYZ);
-    void AppendScaleUniform2D(float uniformScaleXY);    
+    void AppendScaleUniform2D(float uniformScaleXY);
     void AppendScaleUniform3D(float uniformScaleXYZ);
-    void AppendScaleNonUniform2D(Vec2 const nonUniformScaleXY);    
+    void AppendScaleNonUniform2D(Vec2 const nonUniformScaleXY);
     void AppendScaleNonUniform3D(Vec3 const nonUniformScaleXYZ);
 
     void Transpose();
@@ -86,5 +87,5 @@ public:
 public:
     enum { Ix, Iy, Iz, Iw, Jx, Jy, Jz, Jw, Kx, Ky, Kz, Kw, Tx, Ty, Tz, Tw }; // index nicknames
 
-    float m_values[16]; 
+    float m_values[16];
 };
