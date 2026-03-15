@@ -83,5 +83,5 @@ void DebugAddMessage(const std::string& text, float duration,
 
 
 // Console commands
-// bool Command_DebugRenderClear(EventArgs& args);
-// bool Command_DebugRenderToggle(EventArgs& args);
+bool Command_DebugRenderClear(EventArgs& args);
+bool Command_DebugRenderToggle(EventArgs& args);

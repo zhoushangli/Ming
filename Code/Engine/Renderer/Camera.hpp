@@ -2,6 +2,7 @@
 
 #include "Engine/Math/Vec2.hpp"
 #include "Engine/Math/EulerAngles.hpp"
+#include "Engine/Math/AABB2.hpp"
 
 class Camera
 {
@@ -25,6 +26,7 @@ public:
 
     Matrix4x4 GetCameraToWorldTransform() const;
     Matrix4x4 GetWorldToCameraTransform() const;
+    AABB2 GetOrthographicBounds() const;
 
     void SetCameraToRenderTransform(const Matrix4x4& m);
     Matrix4x4 GetCameraToRenderTransform() const;

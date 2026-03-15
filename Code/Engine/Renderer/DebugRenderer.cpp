@@ -4,6 +4,7 @@
 #include "Engine/Core/Engine.hpp"
 #include "Engine/Core/Time.hpp"
 #include "Engine/Core/ErrorWarningAssert.hpp"
+#include "Engine/Renderer/Camera.hpp"
 #include "Engine/Renderer/Renderer.hpp"
 #include "Engine/Renderer/BitmapFont.hpp"
 #include "Engine/Math/MathUtils.hpp"
@@ -18,7 +19,6 @@ namespace
         WORLD_WIRE_CYLINDER,
         WORLD_ARROW,
         WORLD_WIRE_ARROW,
-        WORLD_BASIS,
         WORLD_TEXT,
         WORLD_BILLBOARD_TEXT,
         SCREEN_TEXT,
@@ -53,15 +53,11 @@ namespace
 
         // screen
         AABB2 screenBox;
-
-        // basis
-        float length = 1.f;
-        float colorScale = 1.f;
-        float alphaScale = 1.f;
     };
 
     static DebugRenderConfig s_debugRenderConfig;
     static std::vector<DebugObject> s_debugObjects;
+    static std::vector<DebugObject> s_debugMessages;
     static bool s_isVisible = true;
 
     DebugObject MakeDebugObject(DebugObjectType type, float duration,
@@ -78,7 +74,7 @@ namespace
         return object;
     }
 
-    Rgba8 InterpolateColor(DebugObject const& obj)
+    Rgba8 GetDebugObjectColor(DebugObject const& obj)
     {
         if (obj.totalDuration < 0.f)
         {
@@ -116,7 +112,7 @@ namespace
             switch (obj.mode)
             {
             case DebugRenderMode::ALWAYS:
-                renderer->SetDepthMode(DepthMode::READ_ONLY_ALWAYS);
+                renderer->SetDepthMode(DepthMode::DISABLED);
                 break;
 
             case DebugRenderMode::USE_DEPTH:
@@ -150,12 +146,10 @@ namespace
 
     void DrawWorldObject(Renderer* renderer, BitmapFont* font, Camera const& camera, DebugObject const& obj)
     {
-        (void)camera;
-
         std::vector<Vertex> verts;
         verts.reserve(2048);
 
-        Rgba8 color = InterpolateColor(obj);
+        Rgba8 color = GetDebugObjectColor(obj);
 
         switch (obj.type)
         {
@@ -201,41 +195,6 @@ namespace
             renderer->DrawVertexArray(verts);
             break;
 
-        case DebugObjectType::WORLD_BASIS:
-        {
-            // draw 3 arrows (X=red, Y=green, Z=blue) using transform's translation as origin
-            Vec3 origin = obj.transform.GetTranslation3D();
-
-            // Build basis directions from transform by transforming unit axes; assumes transform is orthonormal-ish.
-            Vec3 xEnd = obj.transform.TransformPosition3D(Vec3(obj.length, 0.f, 0.f));
-            Vec3 yEnd = obj.transform.TransformPosition3D(Vec3(0.f, obj.length, 0.f));
-            Vec3 zEnd = obj.transform.TransformPosition3D(Vec3(0.f, 0.f, obj.length));
-
-            Rgba8 cx = Rgba8::RED;   cx.a = (unsigned char)((float)cx.a * obj.alphaScale); cx = cx * obj.colorScale;
-            Rgba8 cy = Rgba8::GREEN; cy.a = (unsigned char)((float)cy.a * obj.alphaScale); cy = cy * obj.colorScale;
-            Rgba8 cz = Rgba8::BLUE;  cz.a = (unsigned char)((float)cz.a * obj.alphaScale); cz = cz * obj.colorScale;
-
-            // helper multiply operator may not exist; keep safe: scale rgb manually
-            auto scaleRgb = [](Rgba8& c, float s)
-            {
-                c.r = (unsigned char)GetClamped((int)((float)c.r * s), 0, 255);
-                c.g = (unsigned char)GetClamped((int)((float)c.g * s), 0, 255);
-                c.b = (unsigned char)GetClamped((int)((float)c.b * s), 0, 255);
-            };
-            scaleRgb(cx, obj.colorScale);
-            scaleRgb(cy, obj.colorScale);
-            scaleRgb(cz, obj.colorScale);
-
-            AddVertsForArrow3D(verts, origin, xEnd, obj.radius, cx);
-            AddVertsForArrow3D(verts, origin, yEnd, obj.radius, cy);
-            AddVertsForArrow3D(verts, origin, zEnd, obj.radius, cz);
-
-            renderer->BindTexture(nullptr);
-            renderer->SetModelConstants(Matrix4x4::IDENTITY, Rgba8::WHITE);
-            renderer->DrawVertexArray(verts);
-        }
-        break;
-
         case DebugObjectType::WORLD_TEXT:
         {
             if (font == nullptr)
@@ -261,15 +220,15 @@ namespace
                 break;
             }
 
-//             font->AddVertsForText3DAtOriginXForward(verts, obj.textHeight, obj.text, color, 1.0f, obj.alignment);
-// 
-//             Matrix4x4 billboard = GetBillboardTransform(BillboardType::FULL_OPPOSING,
-//                 camera.GetCameraToWorldTransform(), obj.center);
-//             TransformVertexArray3D(verts, billboard);
-// 
-//             renderer->BindTexture(&font->GetTexture());
-//             renderer->SetModelConstants(Matrix4x4::IDENTITY, Rgba8::WHITE);
-//             renderer->DrawVertexArray(verts);
+            font->AddVertsForText3DAtOriginXForward(verts, obj.textHeight, obj.text, color, 1.0f, obj.alignment);
+
+            Matrix4x4 billboard = GetBillboardTransform(BillboardType::FULL_OPPOSING, camera.GetCameraToWorldTransform(), obj.center);
+            TransformVertexArray3D(verts, billboard);
+            
+
+            renderer->BindTexture(&font->GetTexture());
+            renderer->SetModelConstants(Matrix4x4::IDENTITY, Rgba8::WHITE);
+            renderer->DrawVertexArray(verts);
         }
         break;
 
@@ -278,7 +237,7 @@ namespace
         }
     }
 
-    void DrawScreenObject(Renderer* renderer, BitmapFont* font, DebugObject const& obj)
+    void DrawScreenObject(Renderer* renderer, BitmapFont* font, Camera const& camera, DebugObject const& obj, int lineNum = -1)
     {
         if (renderer == nullptr || font == nullptr)
         {
@@ -290,26 +249,47 @@ namespace
             return;
         }
 
-        Rgba8 color = InterpolateColor(obj);
+        Rgba8 color = GetDebugObjectColor(obj);
 
         AABB2 box = obj.screenBox;
         if (obj.type == DebugObjectType::MESSAGE)
         {
-            // Simple default: message box near top-left
-            Vec2 windowDimensions = (Vec2)g_engine->m_window->GetClientDimensions();
-            float h = 20.f;
-            box = AABB2(Vec2(10.f, windowDimensions.y - 10.f - h), Vec2(windowDimensions.x - 10.f, windowDimensions.y - 10.f));
-            // alignment top-left-ish
+            Vec2 cameraDimensions = camera.GetOrthographicBounds().GetDimensions();
+            float cellHeight = obj.textHeight > 0.f ? obj.textHeight : 20.f;
+            float linePadding = 2.f;
+            float top = cameraDimensions.y - 10.f - (cellHeight + linePadding) * (float)lineNum;
+            box = AABB2(Vec2(10.f, top - cellHeight), Vec2(cameraDimensions.x - 10.f, top));
         }
 
         std::vector<Vertex> verts;
         verts.reserve(1024);
 
-        font->AddVertsForTextInBox2D(verts, obj.text, box, obj.textHeight, color, 1.f, obj.alignment, TextBoxMode::SHRINK_TO_FIT);
+        float cellHeight = obj.textHeight > 0.f ? obj.textHeight : 20.f;
+        font->AddVertsForTextInBox2D(verts, obj.text, box, cellHeight, color, 0.85f, obj.alignment, TextBoxMode::SHRINK_TO_FIT);
 
         renderer->BindTexture(&font->GetTexture());
         renderer->SetModelConstants(Matrix4x4::IDENTITY, Rgba8::WHITE);
         renderer->DrawVertexArray(verts);
+    }
+
+    void UpdateDebugObjectLifetimes(std::vector<DebugObject>& objects, float deltaSeconds)
+    {
+        for (int i = (int)objects.size() - 1; i >= 0; --i)
+        {
+            DebugObject& obj = objects[i];
+
+            if (obj.totalDuration < 0.f)
+            {
+                continue;
+            }
+
+            obj.remainingDuration -= deltaSeconds;
+
+            if (obj.remainingDuration <= 0.f)
+            {
+                objects.erase(objects.begin() + i);
+            }
+        }
     }
 
     void ResetRendererStates(Renderer* renderer)
@@ -329,13 +309,21 @@ void DebugRenderSystemStartup(const DebugRenderConfig& config)
 {
     s_debugRenderConfig = config;
     s_debugObjects.clear();
+    s_debugMessages.clear();
     s_isVisible = true;
+
+    g_engine->m_eventSystem->SubscribeEventCallbackFunction("DebugRenderClear", Command_DebugRenderClear);
+    g_engine->m_eventSystem->SubscribeEventCallbackFunction("DebugRenderToggle", Command_DebugRenderToggle);
 }
 
 void DebugRenderSystemShutdown()
 {
+    g_engine->m_eventSystem->UnsubscribeEventCallbackFunction("DebugRenderClear", Command_DebugRenderClear);
+    g_engine->m_eventSystem->UnsubscribeEventCallbackFunction("DebugRenderToggle", Command_DebugRenderToggle);
+
     s_debugRenderConfig.m_renderer = nullptr;
     s_debugObjects.clear();
+    s_debugMessages.clear();
     s_isVisible = false;
 }
 
@@ -353,6 +341,7 @@ void DebugRenderSetHidden()
 void DebugRenderClear()
 {
     s_debugObjects.clear();
+    s_debugMessages.clear();
 }
 
 // Geometry
@@ -417,18 +406,27 @@ void DebugAddWorldWireArrow(const Vec3& start, const Vec3& end, float radius, fl
 void DebugAddBasis(const Matrix4x4& transform, float duration, float length, float radius,
     float colorScale, float alphaScale, DebugRenderMode mode)
 {
-    DebugObject object = MakeDebugObject(DebugObjectType::WORLD_BASIS, duration, Rgba8::WHITE, Rgba8::WHITE, mode);
-    object.transform = transform;
-    object.length = length;
-    object.radius = radius;
-    object.colorScale = colorScale;
-    object.alphaScale = alphaScale;
-    s_debugObjects.push_back(object);
+    Vec3 origin = transform.GetTranslation3D();
+    Vec3 xEnd = transform.TransformPosition3D(Vec3(length, 0.f, 0.f));
+    Vec3 yEnd = transform.TransformPosition3D(Vec3(0.f, length, 0.f));
+    Vec3 zEnd = transform.TransformPosition3D(Vec3(0.f, 0.f, length));
+
+    Rgba8 xColor = Interpolate(Rgba8::BLACK, Rgba8::RED, colorScale);
+    Rgba8 yColor = Interpolate(Rgba8::BLACK, Rgba8::GREEN, colorScale);
+    Rgba8 zColor = Interpolate(Rgba8::BLACK, Rgba8::BLUE, colorScale);
+
+    xColor.a = (unsigned char)GetClamped((float)xColor.a * alphaScale, 0.f, 255.f);
+    yColor.a = (unsigned char)GetClamped((float)yColor.a * alphaScale, 0.f, 255.f);
+    zColor.a = (unsigned char)GetClamped((float)zColor.a * alphaScale, 0.f, 255.f);
+
+    DebugAddWorldArrow(origin, xEnd, radius, duration, xColor, xColor, mode);
+    DebugAddWorldArrow(origin, yEnd, radius, duration, yColor, yColor, mode);
+    DebugAddWorldArrow(origin, zEnd, radius, duration, zColor, zColor, mode);
 }
 
 void DebugAddWorldBasis(const Matrix4x4& transform, float duration, DebugRenderMode mode)
 {
-    DebugAddBasis(transform, duration, 1.0f, 0.025f, 1.0f, 1.0f, mode);
+    DebugAddBasis(transform, duration, 1.0f, 0.1f, 1.0f, 1.0f, mode);
 }
 
 void DebugAddWorldText(const std::string& text, const Matrix4x4& transform, float textHeight,
@@ -457,11 +455,21 @@ void DebugAddWorldBillboardText(const std::string& text, const Vec3& origin, flo
 
 void DebugAddScreenText(const std::string& text, const AABB2& box, float cellHeight, const Vec2& alignment, float duration, const Rgba8& startColor /*= Rgba8::WHITE*/, const Rgba8& endColor /*= Rgba8::WHITE*/)
 {
-
+    DebugObject object = MakeDebugObject(DebugObjectType::SCREEN_TEXT, duration, startColor, endColor, DebugRenderMode::ALWAYS);
+    object.text = text;
+    object.screenBox = box;
+    object.textHeight = cellHeight;
+    object.alignment = alignment;
+    s_debugObjects.push_back(object);
 }
 
-void DebugAddMessage(const std::string& text, float cellHeight, const Vec2& alignment, float duration, const Rgba8& startColor /*= Rgba8::WHITE*/, const Rgba8& endColor /*= Rgba8::WHITE*/)
+void DebugAddMessage(const std::string& text, float duration, const Rgba8& startColor /*= Rgba8::WHITE*/, const Rgba8& endColor /*= Rgba8::WHITE*/)
 {
+    DebugObject object = MakeDebugObject(DebugObjectType::MESSAGE, duration, startColor, endColor, DebugRenderMode::ALWAYS);
+    object.text = text;
+    object.textHeight = 20.f;
+    object.alignment = Vec2(0.f, 0.5f);
+    s_debugMessages.push_back(object);
 }
 
 // Output
@@ -487,6 +495,7 @@ void DebugRenderWorld(const Camera& camera)
     );
 
     // First pass: X_RAY objects only, with modified alpha for see-through effect.
+    float const xrayAlphaMultiplier = 0.2f;
     for (DebugObject const& obj : s_debugObjects)
     {
         if (obj.type == DebugObjectType::SCREEN_TEXT || obj.type == DebugObjectType::MESSAGE)
@@ -501,8 +510,8 @@ void DebugRenderWorld(const Camera& camera)
 
         DebugObject xrayObject = obj;
         xrayObject.mode = DebugRenderMode::ALWAYS;
-        xrayObject.startColor.a = (unsigned char)((float)xrayObject.startColor.a * 0.35f);
-        xrayObject.endColor.a = (unsigned char)((float)xrayObject.endColor.a * 0.35f);
+        xrayObject.startColor.a = (unsigned char)((float)xrayObject.startColor.a * xrayAlphaMultiplier);
+        xrayObject.endColor.a = (unsigned char)((float)xrayObject.endColor.a * xrayAlphaMultiplier);
 
         ApplyDebugRenderMode(renderer, xrayObject);
         DrawWorldObject(renderer, font, camera, xrayObject);
@@ -525,8 +534,6 @@ void DebugRenderWorld(const Camera& camera)
 
 void DebugRenderScreen(const Camera& camera)
 {
-    (void)camera;
-
     if (!s_isVisible)
     {
         return;
@@ -544,13 +551,20 @@ void DebugRenderScreen(const Camera& camera)
 
     for (DebugObject const& obj : s_debugObjects)
     {
-        if (obj.type != DebugObjectType::SCREEN_TEXT && obj.type != DebugObjectType::MESSAGE)
+        if (obj.type != DebugObjectType::SCREEN_TEXT)
         {
             continue;
         }
 
         ApplyDebugRenderMode(renderer, obj);
-        DrawScreenObject(renderer, font, obj);
+        DrawScreenObject(renderer, font, camera, obj);
+    }
+
+    for (int messageIndex = 0; messageIndex < (int)s_debugMessages.size(); ++messageIndex)
+    {
+        DebugObject const& obj = s_debugMessages[messageIndex];
+        ApplyDebugRenderMode(renderer, obj);
+        DrawScreenObject(renderer, font, camera, obj, (int)s_debugMessages.size() - messageIndex - 1);
     }
 
     ResetRendererStates(renderer);
@@ -559,31 +573,26 @@ void DebugRenderScreen(const Camera& camera)
 void DebugRenderEndFrame()
 {
     float dt = (float)Clock::GetSystemClock().GetDeltaSeconds(); 
-
-    for (int i = (int)s_debugObjects.size() - 1; i >= 0; --i)
-    {
-        DebugObject& obj = s_debugObjects[i];
-
-        if (obj.totalDuration < 0.f)
-        {
-            continue;
-        }
-
-        obj.remainingDuration -= dt;
-
-        if (obj.remainingDuration <= 0.f)
-        {
-            s_debugObjects.erase(s_debugObjects.begin() + i);
-        }
-    }
+    UpdateDebugObjectLifetimes(s_debugObjects, dt);
+    UpdateDebugObjectLifetimes(s_debugMessages, dt);
 }
 
-// bool Command_DebugRenderClear([[maybe_unused]] EventArgs& args)
-// {
-//     return false;
-// }
-// 
-// bool Command_DebugRenderToggle([[maybe_unused]] EventArgs& args)
-// {
-//     return false;
-// }
+bool Command_DebugRenderClear([[maybe_unused]] EventArgs& args)
+{
+    DebugRenderClear();
+    return true;
+}
+
+bool Command_DebugRenderToggle([[maybe_unused]] EventArgs& args)
+{
+    s_isVisible = !s_isVisible;
+    if (s_isVisible)
+    {
+        DebugRenderSetHidden();
+    }
+    else
+    {
+        DebugRenderSetVisible();
+    }
+    return false;
+}

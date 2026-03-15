@@ -125,7 +125,7 @@ void Renderer::Startup()
 
 #pragma endregion
 
-#pragma region Default Shader Set rasterizer state
+#pragma region Rasterizer states
 
     // SOLID CULL NONE
     D3D11_RASTERIZER_DESC rasterizerDesc = { };
@@ -256,16 +256,7 @@ void Renderer::Startup()
     depthTextureDesc.SampleDesc.Count = 1;
 
     hr = m_device->CreateTexture2D(&depthTextureDesc, nullptr, &m_depthStencilTexture);
-    if (!SUCCEEDED(hr))
-    {
-        ERROR_AND_DIE("Could not create texture for depth stencil.");
-    }
-
     hr = m_device->CreateDepthStencilView(m_depthStencilTexture, nullptr, &m_depthStencilDSV);
-    if (!SUCCEEDED(hr))
-    {
-        ERROR_AND_DIE("Could not create depth stencil view.");
-    }
 
     // DISABLED
     D3D11_DEPTH_STENCIL_DESC depthStencilDesc = {};

@@ -63,6 +63,11 @@ Matrix4x4 Camera::GetWorldToCameraTransform() const
     return GetCameraToWorldTransform().GetOrthonormalInverse();
 }
 
+AABB2 Camera::GetOrthographicBounds() const
+{
+    return AABB2(m_orthographicBottomLeft, m_orthographicTopRight);
+}
+
 void Camera::SetCameraToRenderTransform(const Matrix4x4& m)
 {
     m_cameraToRenderTransform = m;

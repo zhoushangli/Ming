@@ -323,8 +323,10 @@ Vec3 CrossProduct3D(Vec3 const& a, Vec3 const& b)
 
 Matrix4x4 GetBillboardTransform(BillboardType billboardType, Matrix4x4 const& targetTransform, const Vec3& billboardPosition, const Vec2& billboardScale /*= Vec2(1.0f, 1.0f)*/)
 {
-    Matrix4x4 billboardTransform = Matrix4x4::MakeNonUniformScale2D(billboardScale);
-    billboardTransform.SetTranslation3D(billboardPosition);
+    Vec3 const billboardScale3D = Vec3(billboardScale.x, billboardScale.y, 1.0f);
+
+    Matrix4x4 billboardTransform = Matrix4x4::MakeTranslation3D(billboardPosition);
+    billboardTransform.AppendScaleNonUniform3D(billboardScale3D);
 
     switch (billboardType)
     {   
@@ -356,25 +358,25 @@ Matrix4x4 GetBillboardTransform(BillboardType billboardType, Matrix4x4 const& ta
         jBasis.Normalize();
 
         billboardTransform = Matrix4x4(iBasis, jBasis, worldUp, billboardPosition);
-        billboardTransform.AppendScaleNonUniform3D(billboardScale);
+        billboardTransform.AppendScaleNonUniform3D(billboardScale3D);
         return billboardTransform;
     }
         
     case BillboardType::WORLD_UP_OPPOSING:
     {
         Vec3 worldUp = Vec3::UP;
-        Vec3 fromTarget = billboardPosition - targetTransform.GetTranslation3D();
-        Vec3 fromTargetOnXY = fromTarget - GetProjectedVector3D(fromTarget, worldUp);
+        Vec3 invTarget = -targetTransform.GetIBasis3D();
+        Vec3 fromTargetOnXY = invTarget - GetProjectedVector3D(invTarget, worldUp);
 
         if (fromTargetOnXY.GetLengthSquared() <= 1e-5f)
         {
-            fromTarget = targetTransform.GetIBasis3D();
-            fromTargetOnXY = fromTarget - GetProjectedVector3D(fromTarget, worldUp);
+            invTarget = targetTransform.GetIBasis3D();
+            fromTargetOnXY = invTarget - GetProjectedVector3D(invTarget, worldUp);
 
             if (fromTargetOnXY.GetLengthSquared() <= 1e-5f)
             {
-                fromTarget = Vec3::FORWARD;
-                fromTargetOnXY = fromTarget - GetProjectedVector3D(fromTarget, worldUp);
+                invTarget = Vec3::FORWARD;
+                fromTargetOnXY = invTarget - GetProjectedVector3D(invTarget, worldUp);
             }
         }
 
@@ -383,37 +385,71 @@ Matrix4x4 GetBillboardTransform(BillboardType billboardType, Matrix4x4 const& ta
         jBasis.Normalize();
 
         billboardTransform = Matrix4x4(iBasis, jBasis, worldUp, billboardPosition);
-        billboardTransform.AppendScaleNonUniform3D(billboardScale);
+        billboardTransform.AppendScaleNonUniform3D(billboardScale3D);
         return billboardTransform;
     }
         
     case BillboardType::FULL_FACING:
     {
-        Vec3 worldUp = Vec3::UP;
         Vec3 toTarget = targetTransform.GetTranslation3D() - billboardPosition;
         Vec3 iBasis = toTarget.GetNormalized();
-        Vec3 jBasis = CrossProduct3D(worldUp, iBasis);
+        Vec3 referenceUp = targetTransform.GetKBasis3D();
+        if (referenceUp.GetLengthSquared() <= 1e-5f)
+        {
+            referenceUp = Vec3::UP;
+        }
+
+        Vec3 jBasis = CrossProduct3D(referenceUp, iBasis);
+        if (jBasis.GetLengthSquared() <= 1e-5f)
+        {
+            referenceUp = targetTransform.GetJBasis3D();
+            jBasis = CrossProduct3D(referenceUp, iBasis);
+
+            if (jBasis.GetLengthSquared() <= 1e-5f)
+            {
+                referenceUp = Vec3::UP;
+                jBasis = CrossProduct3D(referenceUp, iBasis);
+            }
+        }
+
         jBasis.Normalize();
         Vec3 kBasis = CrossProduct3D(iBasis, jBasis);
         kBasis.Normalize();
 
         billboardTransform = Matrix4x4(iBasis, jBasis, kBasis, billboardPosition);
-        billboardTransform.AppendScaleNonUniform3D(billboardScale);
+        billboardTransform.AppendScaleNonUniform3D(billboardScale3D);
         return billboardTransform;
     }
 
     case BillboardType::FULL_OPPOSING:
     {
-        Vec3 worldUp = Vec3::UP;
-        Vec3 fromTarget = billboardPosition - targetTransform.GetTranslation3D();
-        Vec3 iBasis = fromTarget.GetNormalized();
-        Vec3 jBasis = CrossProduct3D(worldUp, iBasis);
+        Vec3 invTarget = -targetTransform.GetIBasis3D();
+        Vec3 iBasis = invTarget.GetNormalized();
+        Vec3 referenceUp = targetTransform.GetKBasis3D();
+        if (referenceUp.GetLengthSquared() <= 1e-5f)
+        {
+            referenceUp = Vec3::UP;
+        }
+
+        Vec3 jBasis = CrossProduct3D(referenceUp, iBasis);
+        if (jBasis.GetLengthSquared() <= 1e-5f)
+        {
+            referenceUp = targetTransform.GetJBasis3D();
+            jBasis = CrossProduct3D(referenceUp, iBasis);
+
+            if (jBasis.GetLengthSquared() <= 1e-5f)
+            {
+                referenceUp = Vec3::UP;
+                jBasis = CrossProduct3D(referenceUp, iBasis);
+            }
+        }
+
         jBasis.Normalize();
         Vec3 kBasis = CrossProduct3D(iBasis, jBasis);
         kBasis.Normalize();
 
         billboardTransform = Matrix4x4(iBasis, jBasis, kBasis, billboardPosition);
-        billboardTransform.AppendScaleNonUniform3D(billboardScale);
+        billboardTransform.AppendScaleNonUniform3D(billboardScale3D);
         return billboardTransform;
     }
 
