@@ -312,14 +312,14 @@ void DebugRenderSystemStartup(const DebugRenderConfig& config)
     s_debugMessages.clear();
     s_isVisible = true;
 
-    g_engine->m_eventSystem->SubscribeEventCallbackFunction("DebugRenderClear", Command_DebugRenderClear);
-    g_engine->m_eventSystem->SubscribeEventCallbackFunction("DebugRenderToggle", Command_DebugRenderToggle);
+    g_engine->m_eventSystem->SubscribeEventCallbackFunction("Dev_DebugRenderClear", Command_DebugRenderClear);
+    g_engine->m_eventSystem->SubscribeEventCallbackFunction("Dev_DebugRenderToggle", Command_DebugRenderToggle);
 }
 
 void DebugRenderSystemShutdown()
 {
-    g_engine->m_eventSystem->UnsubscribeEventCallbackFunction("DebugRenderClear", Command_DebugRenderClear);
-    g_engine->m_eventSystem->UnsubscribeEventCallbackFunction("DebugRenderToggle", Command_DebugRenderToggle);
+    g_engine->m_eventSystem->UnsubscribeEventCallbackFunction("Dev_DebugRenderClear", Command_DebugRenderClear);
+    g_engine->m_eventSystem->UnsubscribeEventCallbackFunction("Dev_DebugRenderToggle", Command_DebugRenderToggle);
 
     s_debugRenderConfig.m_renderer = nullptr;
     s_debugObjects.clear();
@@ -586,13 +586,5 @@ bool Command_DebugRenderClear([[maybe_unused]] EventArgs& args)
 bool Command_DebugRenderToggle([[maybe_unused]] EventArgs& args)
 {
     s_isVisible = !s_isVisible;
-    if (s_isVisible)
-    {
-        DebugRenderSetHidden();
-    }
-    else
-    {
-        DebugRenderSetVisible();
-    }
-    return false;
+    return true;
 }
