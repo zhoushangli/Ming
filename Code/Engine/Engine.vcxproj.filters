@@ -4,9 +4,6 @@
     <Filter Include="Math">
       <UniqueIdentifier>{e56c99ab-3268-43e0-8619-c04887f6236a}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Core">
-      <UniqueIdentifier>{bd6e45b7-d89a-4a35-ba5a-47804ceac744}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Renderer">
       <UniqueIdentifier>{9cb7cf69-1f1c-4e50-9668-dbf3af9e2733}</UniqueIdentifier>
     </Filter>
@@ -21,6 +18,9 @@
     </Filter>
     <Filter Include="Math\Shapes">
       <UniqueIdentifier>{375b6760-fa4a-432b-ab28-88c98e43d77e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core">
+      <UniqueIdentifier>{bd6e45b7-d89a-4a35-ba5a-47804ceac744}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

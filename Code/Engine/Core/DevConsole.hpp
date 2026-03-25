@@ -24,11 +24,14 @@ struct DevConsoleLine
 struct DevConsoleConfig
 {
     bool            m_isEnable          = true;
-    std::string	    m_fontName          = "Data/Images/SquirrelFixedFont";
-    float		    m_fontAspect        = 0.8f;
-    int			    m_linesOnScreen     = 40;
-    int			    m_maxCommandHistory = 128;
-    bool		    m_startOpen         = false;
+
+    std::string     m_fontName          = "SquirrelFixedFont";
+    std::string     m_fontPath          = "Data/Images";
+
+    float           m_fontAspect        = 1.f;
+    int             m_linesOnScreen     = 32;
+    int             m_maxCommandHistory = 128;
+    bool            m_startOpen         = false;
 };
 
 // Class for a dev console that allows entering text and executing commands. Can be toggled with

@@ -128,13 +128,18 @@ void DevConsole::Render(AABB2 const& bounds)
     if (!m_isOpen)
         return;
 
+    g_engine->m_renderer->SetBlendMode(BlendMode::ALPHA);
+    g_engine->m_renderer->SetDepthMode(DepthMode::READ_ONLY_ALWAYS);
+    g_engine->m_renderer->SetRasterizerMode(RasterizerMode::SOLID_CULL_BACK);
+
     std::vector<Vertex> bgVerts;
     AddVertsForAABB2D(bgVerts, bounds, Rgba8::TRANSLUCENT_BLACK);
 
     g_engine->m_renderer->BindTexture(nullptr);
     g_engine->m_renderer->DrawVertexArray((int)bgVerts.size(), bgVerts.data());
 
-    BitmapFont* font = g_engine->m_renderer->CreateOrGetBitmapFont(m_config.m_fontName.c_str());
+    std::string const fontFullPath = m_config.m_fontPath + "/" + m_config.m_fontName;
+    BitmapFont* font = g_engine->m_renderer->CreateOrGetBitmapFont(fontFullPath.c_str());
 
     float const cellHeight = bounds.GetDimensions().y / (float)m_config.m_linesOnScreen;
     int const maxLinesToDraw = m_config.m_linesOnScreen - 1; // reserve one line for input
