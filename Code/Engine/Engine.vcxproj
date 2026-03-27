@@ -184,8 +184,8 @@
     <ClCompile Include="Core\StringUtils.cpp" />
     <ClCompile Include="Core\Time.cpp" />
     <ClCompile Include="Core\Timer.cpp" />
-    <ClCompile Include="Core\Vertex.cpp" />
     <ClCompile Include="Core\VertexUtils.cpp" />
+    <ClCompile Include="Core\Vertex_PCU.cpp" />
     <ClCompile Include="Core\XmlUtils.cpp" />
     <ClCompile Include="Input\AnalogJoystick.cpp" />
     <ClCompile Include="Input\InputSystem.cpp" />
@@ -248,8 +248,8 @@
     <ClInclude Include="Core\StringUtils.hpp" />
     <ClInclude Include="Core\Time.hpp" />
     <ClInclude Include="Core\Timer.hpp" />
-    <ClInclude Include="Core\Vertex.hpp" />
     <ClInclude Include="Core\VertexUtils.hpp" />
+    <ClInclude Include="Core\Vertex_PCU.hpp" />
     <ClInclude Include="Core\XmlUtils.hpp" />
     <ClInclude Include="Input\AnalogJoystick.hpp" />
     <ClInclude Include="Input\InputSystem.hpp" />

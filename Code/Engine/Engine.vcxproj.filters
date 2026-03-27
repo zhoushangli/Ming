@@ -42,9 +42,6 @@
     <ClCompile Include="Core\Rgba8.cpp">
       <Filter>Core</Filter>
     </ClCompile>
-    <ClCompile Include="Core\Vertex.cpp">
-      <Filter>Core</Filter>
-    </ClCompile>
     <ClCompile Include="Renderer\Camera.cpp">
       <Filter>Renderer</Filter>
     </ClCompile>
@@ -183,6 +180,9 @@
     <ClCompile Include="Renderer\DebugRenderer.cpp">
       <Filter>Renderer</Filter>
     </ClCompile>
+    <ClCompile Include="Core\Vertex_PCU.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\Engine\Code\Engine\Math\Vec2.hpp">
@@ -201,9 +201,6 @@
       <Filter>Core</Filter>
     </ClInclude>
     <ClInclude Include="Core\Rgba8.hpp">
-      <Filter>Core</Filter>
-    </ClInclude>
-    <ClInclude Include="Core\Vertex.hpp">
       <Filter>Core</Filter>
     </ClInclude>
     <ClInclude Include="Renderer\Camera.hpp">
@@ -370,6 +367,9 @@
     </ClInclude>
     <ClInclude Include="Renderer\DebugRenderer.hpp">
       <Filter>Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Vertex_PCU.hpp">
+      <Filter>Core</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

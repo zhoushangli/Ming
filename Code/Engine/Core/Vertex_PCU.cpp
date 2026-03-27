@@ -1,4 +1,4 @@
-#include "Engine/Core/Vertex.hpp"
+#include "Engine/Core/Vertex_PCU.hpp"
 
 Vertex::Vertex()
 	: m_position(0.f, 0.f, 0.f)

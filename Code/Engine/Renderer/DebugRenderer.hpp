@@ -81,6 +81,7 @@ void DebugAddScreenText(const std::string& text, const AABB2& box, float cellHei
 void DebugAddMessage(const std::string& text, float duration,
     const Rgba8& startColor = Rgba8::WHITE, const Rgba8& endColor = Rgba8::WHITE);
 
+void DebugAddWorldGrid();
 
 // Console commands
 bool Command_DebugRenderClear(EventArgs& args);

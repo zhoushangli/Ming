@@ -21,6 +21,7 @@ namespace
         WORLD_WIRE_ARROW,
         WORLD_TEXT,
         WORLD_BILLBOARD_TEXT,
+        WORLD_GRID,
         SCREEN_TEXT,
         MESSAGE
     };
@@ -53,6 +54,9 @@ namespace
 
         // screen
         AABB2 screenBox;
+
+        // grid (hard-coded in DebugAddWorldGrid; stored here so renderer doesn't need to regenerate)
+        std::vector<Vertex> verts;
     };
 
     static DebugRenderConfig s_debugRenderConfig;
@@ -229,6 +233,19 @@ namespace
             renderer->BindTexture(&font->GetTexture());
             renderer->SetModelConstants(Matrix4x4::IDENTITY, Rgba8::WHITE);
             renderer->DrawVertexArray(verts);
+        }
+        break;
+
+        case DebugObjectType::WORLD_GRID:
+        {
+            if (obj.verts.empty())
+            {
+                break;
+            }
+
+            renderer->BindTexture(nullptr);
+            renderer->SetModelConstants(Matrix4x4::IDENTITY, Rgba8::WHITE);
+            renderer->DrawVertexArray(obj.verts);
         }
         break;
 
@@ -470,6 +487,113 @@ void DebugAddMessage(const std::string& text, float duration, const Rgba8& start
     object.textHeight = 20.f;
     object.alignment = Vec2(0.f, 0.5f);
     s_debugMessages.push_back(object);
+}
+
+void DebugAddWorldGrid()
+{
+    // Params are intentionally hard-coded per request.
+    constexpr int kHalfExtent = 50;
+    constexpr float kLineHeight = 0.01f;
+
+    // Thickness: only Base + Axis (Major treated same as Base)
+    constexpr float kBaseThickness = 0.005f;
+    constexpr float kAxisThickness = 0.02f;
+
+    // Brightness: only Base + Axis (Major treated same as Base)
+    constexpr float kBaseBrightness = 0.25f;
+    constexpr float kAxisBrightness = 1.f;
+
+    // Fade settings (hard-coded)
+    constexpr float kFadeStart = 10.f;
+    constexpr float kFadeEnd = 30.f;
+
+    // Segment size (hard-coded): smaller => smoother fade, more verts
+    constexpr float kSegmentLength = 1.f;
+
+    DebugObject object = MakeDebugObject(DebugObjectType::WORLD_GRID, -1.f, Rgba8::WHITE, Rgba8::WHITE, DebugRenderMode::USE_DEPTH);
+    object.verts.clear();
+    object.verts.reserve((kHalfExtent * 2 + 1) * 2 * 36);
+
+    auto ComputeAlphaForDistance = [](float d) -> unsigned char
+    {
+        float a = RangeMapClamped(d, kFadeStart, kFadeEnd, 255.f, 0.f);
+        return (unsigned char)GetClamped(a, 0.f, 255.f);
+    };
+
+    auto AddSegmentAABB = [&object, &ComputeAlphaForDistance](AABB3 const& aabb, Rgba8 baseColor)
+    {
+        // Use segment center distance to compute alpha
+        Vec3 center = aabb.GetCenter();
+        float dist = sqrtf(center.x * center.x + center.y * center.y);
+        baseColor.a = ComputeAlphaForDistance(dist);
+        AddVertsForAABB3D(object.verts, aabb, baseColor);
+    };
+
+    for (int lineIndex = -kHalfExtent; lineIndex <= kHalfExtent; ++lineIndex)
+    {
+        bool const isAxis = (lineIndex == 0);
+
+        float lineThickness = kBaseThickness;
+        float brightness = kBaseBrightness;
+
+        if (isAxis)
+        {
+            lineThickness = kAxisThickness;
+            brightness = kAxisBrightness;
+        }
+
+        float const lineOffset = static_cast<float>(lineIndex);
+        float const halfThickness = lineThickness * 0.5f;
+
+        Rgba8 xParallelColor = Rgba8::RED * brightness;
+        Rgba8 yParallelColor = Rgba8::GREEN * brightness;
+
+        if (!isAxis)
+        {
+            xParallelColor = Rgba8::GRAY;
+            yParallelColor = Rgba8::GRAY;
+        }
+
+        // Split each long strip into small segments along its length.
+        float const minCoord = -static_cast<float>(kHalfExtent);
+        float const maxCoord = static_cast<float>(kHalfExtent);
+
+        // X-axis parallel lines (vary Y, span X)
+        for (float x = minCoord; x < maxCoord; x += kSegmentLength)
+        {
+            float x0 = x;
+            float x1 = x + kSegmentLength;
+            if (x1 > maxCoord)
+            {
+                x1 = maxCoord;
+            }
+
+            AddSegmentAABB(
+                AABB3(
+                    Vec3(x0, lineOffset - halfThickness, 0.f),
+                    Vec3(x1, lineOffset + halfThickness, kLineHeight)),
+                xParallelColor);
+        }
+
+        // Y-axis parallel lines (vary X, span Y)
+        for (float y = minCoord; y < maxCoord; y += kSegmentLength)
+        {
+            float y0 = y;
+            float y1 = y + kSegmentLength;
+            if (y1 > maxCoord)
+            {
+                y1 = maxCoord;
+            }
+
+            AddSegmentAABB(
+                AABB3(
+                    Vec3(lineOffset - halfThickness, y0, 0.f),
+                    Vec3(lineOffset + halfThickness, y1, kLineHeight)),
+                yParallelColor);
+        }
+    }
+
+    s_debugObjects.push_back(std::move(object));
 }
 
 // Output
