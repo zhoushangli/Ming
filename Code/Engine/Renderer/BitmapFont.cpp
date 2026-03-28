@@ -1,6 +1,6 @@
 #include "Engine/Renderer/BitmapFont.hpp"
 
-#include "Engine/Core/Vertex.hpp"
+#include "Engine/Core/Vertex_PCU.hpp"
 #include "Engine/Core/VertexUtils.hpp"
 #include "Engine/Math/AABB2.hpp"
 #include "Engine/Math/Vec2.hpp"
@@ -29,7 +29,7 @@ Texture& BitmapFont::GetTexture()
 }
 
 void BitmapFont::AddVertsForText2D(
-    std::vector<Vertex>& verts,
+    std::vector<Vertex_PCU>& verts,
     Vec2 textMins,
     float cellHeight,
     std::string const& text,
@@ -66,7 +66,7 @@ void BitmapFont::AddVertsForText2D(
 }
 
 void BitmapFont::AddVertsForTextInBox2D(
-    std::vector<Vertex>& verts,
+    std::vector<Vertex_PCU>& verts,
     std::string const& text,
     AABB2 const& box,
     float cellHeight,
@@ -115,7 +115,7 @@ void BitmapFont::AddVertsForTextInBox2D(
 }
 
 void BitmapFont::AddVertsForText3DAtOriginXForward(
-    std::vector<Vertex>& verts,
+    std::vector<Vertex_PCU>& verts,
     float cellHeight,
     std::string const& text,
     Rgba8 const& tint /*= Rgba8::WHITE*/,
@@ -133,7 +133,7 @@ void BitmapFont::AddVertsForText3DAtOriginXForward(
     Vec2 textDimensions = GetTextBoundsDimension(cellHeight, clippedText, cellAspect);
     Vec2 textMins = -textDimensions * alignment;
 
-    std::vector<Vertex> textVerts;
+    std::vector<Vertex_PCU> textVerts;
     AddVertsForText2D(textVerts, textMins, cellHeight, clippedText, tint, cellAspect);
 
     Matrix4x4 textTransform(

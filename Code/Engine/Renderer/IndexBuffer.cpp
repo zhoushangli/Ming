@@ -1,130 +1,56 @@
-#include "Engine/Renderer/Camera.hpp"
+#include "Engine/Renderer/IndexBuffer.hpp"
 
-#include "Engine/Math/Matrix4x4.hpp"
-#include "Engine/Math/Vec2.hpp"
-#include "Engine/Math/Vec3.hpp"
+#include <d3d11.h>
 
-void Camera::SetOrthographicView(Vec2 const& bottomLeft, Vec2 const& topRight, float near /*= 0.0f*/, float far /*= 1.0f*/)
+IndexBuffer::IndexBuffer(ID3D11Device* device, unsigned int size) : m_device(device), m_size(size), m_buffer(nullptr)
 {
-    m_mode = eMode_Orthographic;
-
-    m_orthographicBottomLeft = bottomLeft;
-    m_orthographicTopRight = topRight;
-    m_orthographicNear = near;
-    m_orthographicFar = far;
+    Create();
 }
 
-void Camera::SetPerspectiveView(float aspect, float fov, float near, float far)
+IndexBuffer::~IndexBuffer()
 {
-    m_mode = eMode_Perspective;
-
-    m_perspectiveAspect = aspect;
-    m_perspectiveFOV = fov;
-    m_perspectiveNear = near;
-    m_perspectiveFar = far;
+    if (m_buffer)
+    {
+        m_buffer->Release();
+        m_buffer = nullptr;
+    }
 }
 
-void Camera::SetPositionAndOrientation(const Vec3& position, const EulerAngles& orientation)
+void IndexBuffer::Resize(unsigned int size)
 {
-    m_position = position;
-    m_orientation = orientation;
+    m_size = size;
+    Create();
 }
 
-void Camera::SetPosition(const Vec3& position)
+void IndexBuffer::Create()
 {
-    m_position = position;
+    if (m_buffer)
+    {
+        m_buffer->Release();
+        m_buffer = nullptr;
+    }
+
+    D3D11_BUFFER_DESC bufferDesc = {};
+    bufferDesc.Usage = D3D11_USAGE_DYNAMIC;
+    bufferDesc.ByteWidth = m_size;
+    bufferDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
+    bufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+    bufferDesc.MiscFlags = 0;
+
+    m_device->CreateBuffer(&bufferDesc, nullptr, &m_buffer);
 }
 
-Vec3 Camera::GetPosition() const
+unsigned int IndexBuffer::GetSize()
 {
-    return m_position;
+    return m_size;
 }
 
-void Camera::SetOrientation(const EulerAngles& orientation)
+unsigned int IndexBuffer::GetStride()
 {
-    m_orientation = orientation;
+    return sizeof(unsigned int);
 }
 
-EulerAngles Camera::GetOrientation() const
+unsigned int IndexBuffer::GetCount()
 {
-    return m_orientation;
-}
-
-Matrix4x4 Camera::GetCameraToWorldTransform() const
-{
-    Matrix4x4 camToWorld;
-    camToWorld.SetTranslation3D(m_position);
-    camToWorld.Append(m_orientation.GetAsMatrix_IFwd_JLeft_KUp());
-    return camToWorld;
-}
-
-Matrix4x4 Camera::GetWorldToCameraTransform() const
-{
-    return GetCameraToWorldTransform().GetOrthonormalInverse();
-}
-
-AABB2 Camera::GetOrthographicBounds() const
-{
-    return AABB2(m_orthographicBottomLeft, m_orthographicTopRight);
-}
-
-void Camera::SetCameraToRenderTransform(const Matrix4x4& m)
-{
-    m_cameraToRenderTransform = m;
-}
-
-Matrix4x4 Camera::GetCameraToRenderTransform() const
-{
-    return m_cameraToRenderTransform;
-}
-
-Matrix4x4 Camera::GetRenderToClipTransform() const
-{
-    return GetProjectionMatrix();
-}
-
-Vec2 Camera::GetOrthographicBottomLeft() const
-{
-    return m_orthographicBottomLeft;
-}
-
-Vec2 Camera::GetOrthographicTopRight() const
-{
-    return m_orthographicTopRight;
-}
-
-void Camera::Translate2D(Vec2 const& translation)
-{
-    m_position.x += translation.x;
-    m_position.y += translation.y;
-
-    m_orthographicBottomLeft += translation;
-    m_orthographicTopRight += translation;
-}
-
-Matrix4x4 Camera::GetOrthographicMatrix() const
-{
-    return Matrix4x4::MakeOrthoProjection(
-        m_orthographicBottomLeft.x,
-        m_orthographicTopRight.x,
-        m_orthographicBottomLeft.y,
-        m_orthographicTopRight.y,
-        m_orthographicNear,
-        m_orthographicFar
-    );
-}
-
-Matrix4x4 Camera::GetPerspectiveMatrix() const
-{
-    return Matrix4x4::MakePerspectiveProjection(
-        m_perspectiveFOV,
-        m_perspectiveAspect,
-        m_perspectiveNear,
-        m_perspectiveFar
-    );
-}
-
-Matrix4x4 Camera::GetProjectionMatrix() const
-{
-    return (m_mode == eMode_Perspective) ? GetPerspectiveMatrix() : GetOrthographicMatrix();
+    return GetSize() / GetStride();
 }

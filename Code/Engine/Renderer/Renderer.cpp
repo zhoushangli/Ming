@@ -1,7 +1,7 @@
 #include "Engine/Renderer/Renderer.hpp"
 
 #include "Engine/Core/Engine.hpp"
-#include "Engine/Core/Vertex.hpp"
+#include "Engine/Core/Vertex_PCU.hpp"
 #include "Engine/Core/FileUtils.hpp"
 #include "Engine/Core/VertexUtils.hpp"
 #include "Engine/Core/StringUtils.hpp"
@@ -10,6 +10,7 @@
 #include "Engine/Renderer/Texture.hpp"
 #include "Engine/Renderer/VertexBuffer.hpp"
 #include "Engine/Renderer/ConstantBuffer.hpp"
+#include "Engine/Renderer/IndexBuffer.hpp"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "ThirdParty/stb/stb_image.h"
@@ -168,7 +169,8 @@ void Renderer::Startup()
 
 #pragma region Create buffer
 
-    m_currentVertexBuffer = CreateVertexBuffer(sizeof(Vertex) * 3, sizeof(Vertex));
+    m_currentVertexBuffer = CreateVertexBuffer(sizeof(Vertex_PCU) * 3, sizeof(Vertex_PCU));
+    m_currentIndexBuffer = CreateIndexBuffer(sizeof(unsigned int) * 3);
     m_cameraCBO = CreateConstantBuffer(sizeof(CameraConstants));
     m_modelCBO = CreateConstantBuffer(sizeof(ModelConstants));
 
@@ -328,6 +330,9 @@ void Renderer::Shutdown()
 
     delete m_currentVertexBuffer;
     m_currentVertexBuffer = nullptr;
+
+    delete m_currentIndexBuffer;
+    m_currentIndexBuffer = nullptr;
 
     for (auto& rasterizerState : m_rasterizerStates)
     {
@@ -516,23 +521,39 @@ void Renderer::EndCamera()
 
 }
 
-void Renderer::DrawVertexArray(int numVertexes, Vertex const* vertexes) const
+void Renderer::DrawVertexArray(int numVertexes, Vertex_PCU const* vertexes) const
 {
     if (numVertexes % 3 != 0 || vertexes == nullptr) 
     {
         return;
     }
 
-    unsigned int size = numVertexes * sizeof(Vertex);
+    unsigned int size = numVertexes * sizeof(Vertex_PCU);
 
     m_currentVertexBuffer->Resize(size);
     g_engine->m_renderer->CopyCPUToGPU(vertexes, size, m_currentVertexBuffer);
     g_engine->m_renderer->DrawVertexBuffer(m_currentVertexBuffer, numVertexes);
 }
 
-void Renderer::DrawVertexArray(std::vector<Vertex> const& verts) const
+void Renderer::DrawVertexArray(std::vector<Vertex_PCU> const& verts) const
 {
     DrawVertexArray(static_cast<int>(verts.size()), verts.data());
+}
+
+void Renderer::DrawVertexArray(std::vector<Vertex_PCU> const& verts, std::vector<unsigned int> const& vertIndexes) const
+{
+    unsigned int vertsNum = static_cast<unsigned int>(verts.size());
+    unsigned int indexesNum = static_cast<unsigned int>(vertIndexes.size());
+    unsigned int vertsSize = vertsNum * sizeof(Vertex_PCU);
+    unsigned int indexesSize = indexesNum * sizeof(unsigned int);
+
+    m_currentVertexBuffer->Resize(vertsSize);
+    m_currentIndexBuffer->Resize(indexesSize);
+
+    g_engine->m_renderer->CopyCPUToGPU(verts.data(), vertsSize, m_currentVertexBuffer);
+    g_engine->m_renderer->CopyCPUToGPU(vertIndexes.data(), indexesSize, m_currentIndexBuffer);
+
+    g_engine->m_renderer->DrawIndexedVertexBuffer(m_currentVertexBuffer, m_currentIndexBuffer, indexesSize);
 }
 
 void Renderer::DrawVertexBuffer(VertexBuffer* vertexBuffer, unsigned int vertexCount)
@@ -540,6 +561,14 @@ void Renderer::DrawVertexBuffer(VertexBuffer* vertexBuffer, unsigned int vertexC
     SetStatesIfChanged();
     BindVertexBuffer(vertexBuffer);
     m_deviceContext->Draw(vertexCount, 0);
+}
+
+void Renderer::DrawIndexedVertexBuffer(VertexBuffer* vertexBuffer, IndexBuffer* indexBuffer, unsigned int indexCount)
+{
+    SetStatesIfChanged();
+    BindVertexBuffer(vertexBuffer);
+    BindIndexBuffer(indexBuffer);
+    m_deviceContext->DrawIndexed(indexCount, 0, 0);
 }
 
 Texture* Renderer::CreateOrGetTextureFromFile(char const* imageFilePath)
@@ -590,7 +619,7 @@ Texture* Renderer::GetTextureFromFileName(char const* imageFilePath)
     return nullptr;
 }
 
-Shader* Renderer::CreateShader(char const* shaderName, char const* shaderSource)
+Shader* Renderer::CreateShader(char const* shaderName, char const* shaderSource, VertexType vertexType)
 {
     GUARANTEE_OR_DIE(m_device, "CreateShader: m_device is null");
     GUARANTEE_OR_DIE(shaderName && shaderName[0], "CreateShader: shaderName is null/empty");
@@ -628,17 +657,52 @@ Shader* Renderer::CreateShader(char const* shaderName, char const* shaderSource)
     );
     GUARANTEE_OR_DIE(SUCCEEDED(hr), Stringf("Could not create pixel shader for '%s'", shaderName));
 
-    // Create Input Layout (Vertex_PCU)
-    D3D11_INPUT_ELEMENT_DESC inputElementDesc[] =
+    D3D11_INPUT_ELEMENT_DESC const* inputElementDesc = nullptr;
+    UINT inputElementCount = 0;
+
+    switch (vertexType)
     {
-        { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0,                            D3D11_INPUT_PER_VERTEX_DATA, 0 },
-        { "COLOR",    0, DXGI_FORMAT_R8G8B8A8_UNORM,  0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-        { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,    0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-    };
+    case VertexType::PCU:
+    {
+        static D3D11_INPUT_ELEMENT_DESC const pcuDesc[] =
+        {
+            { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0,                            D3D11_INPUT_PER_VERTEX_DATA, 0 },
+            { "COLOR",    0, DXGI_FORMAT_R8G8B8A8_UNORM,  0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+            { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,    0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        };
+
+        inputElementDesc = pcuDesc;
+        inputElementCount = (UINT)ARRAYSIZE(pcuDesc);
+        break;
+    }
+
+    case VertexType::PCUTBN:
+    {
+        static D3D11_INPUT_ELEMENT_DESC const pcutbnDesc[] =
+        {
+            { "POSITION",  0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0,                            D3D11_INPUT_PER_VERTEX_DATA, 0 },
+            { "COLOR",     0, DXGI_FORMAT_R8G8B8A8_UNORM,  0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+            { "TEXCOORD",  0, DXGI_FORMAT_R32G32_FLOAT,    0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+            { "NORMAL",    0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+            { "TANGENT",   0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+            { "BITANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        };
+
+        inputElementDesc = pcutbnDesc;
+        inputElementCount = (UINT)ARRAYSIZE(pcutbnDesc);
+        break;
+    }
+
+    default:
+    {
+        ERROR_AND_DIE("Unsupported vertex type");
+        break;
+    }
+    }
 
     hr = m_device->CreateInputLayout(
         inputElementDesc,
-        (UINT)ARRAYSIZE(inputElementDesc),
+        inputElementCount,
         vsByteCode.data(),
         (UINT)vsByteCode.size(),
         &shader->m_inputLayout
@@ -651,7 +715,7 @@ Shader* Renderer::CreateShader(char const* shaderName, char const* shaderSource)
 }
 
 
-Shader* Renderer::CreateShader(char const* shaderName)
+Shader* Renderer::CreateShader(char const* shaderName, VertexType vertexType)
 {
     GUARANTEE_OR_DIE(shaderName && shaderName[0], "CreateShader(shaderName): shaderName is null/empty");
 
@@ -662,7 +726,7 @@ Shader* Renderer::CreateShader(char const* shaderName)
 
     GUARANTEE_OR_DIE(bytesRead > 0, Stringf("Failed to read shader file \"%s\"", shaderFilename.c_str()));
 
-    return CreateShader(shaderName, shaderSource.c_str());
+    return CreateShader(shaderName, shaderSource.c_str(), vertexType);
 }
 
 bool Renderer::CompileShaderToByteCode(
@@ -758,6 +822,11 @@ ConstantBuffer* Renderer::CreateConstantBuffer(const unsigned int size)
     return new ConstantBuffer(m_device, size);
 }
 
+IndexBuffer* Renderer::CreateIndexBuffer(const unsigned int size)
+{
+    return new IndexBuffer(m_device, size);
+}
+
 void Renderer::CopyCPUToGPU(const void* data, unsigned int size, VertexBuffer* vertexBuffer)
 {
     GUARANTEE_OR_DIE(m_deviceContext, "CopyCPUToGPU: m_deviceContext is null");
@@ -799,6 +868,26 @@ void Renderer::CopyCPUToGPU(const void* data, unsigned int size, ConstantBuffer*
     m_deviceContext->Unmap(constantBuffer->m_buffer, 0);
 }
 
+void Renderer::CopyCPUToGPU(const void* data, unsigned int size, IndexBuffer* indexBuffer)
+{
+    GUARANTEE_OR_DIE(m_deviceContext, "CopyCPUToGPU: m_deviceContext is null");
+    GUARANTEE_OR_DIE(indexBuffer, "CopyCPUToGPU: vertexBuffer is null");
+    GUARANTEE_OR_DIE(data, "CopyCPUToGPU: data is null");
+
+    if (indexBuffer->m_size > 0)
+    {
+        GUARANTEE_OR_DIE(size <= indexBuffer->m_size, "CopyCPUToGPU: upload size exceeds constant buffer capacity");
+    }
+
+    D3D11_MAPPED_SUBRESOURCE mapped = {};
+    HRESULT hr = m_deviceContext->Map(indexBuffer->m_buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
+    GUARANTEE_OR_DIE(SUCCEEDED(hr), "CopyCPUToGPU: Map failed");
+
+    memcpy(mapped.pData, data, size);
+
+    m_deviceContext->Unmap(indexBuffer->m_buffer, 0);
+}
+
 void Renderer::BindVertexBuffer(VertexBuffer* vertexBuffer)
 {
     GUARANTEE_OR_DIE(m_deviceContext, "BindVertexBuffer: m_deviceContext is null");
@@ -812,7 +901,7 @@ void Renderer::BindVertexBuffer(VertexBuffer* vertexBuffer)
         return;
     }
 
-    UINT stride = vertexBuffer->m_stride;
+    UINT stride = vertexBuffer->GetStride();
     UINT offset = 0;
     ID3D11Buffer* buf = vertexBuffer->m_buffer;
     m_deviceContext->IASetVertexBuffers(0, 1, &buf, &stride, &offset);
@@ -835,6 +924,23 @@ void Renderer::BindConstantBuffer(ConstantBuffer* constantBuffer, int slot)
 
     m_deviceContext->VSSetConstantBuffers(slot, 1, &buf);
     m_deviceContext->PSSetConstantBuffers(slot, 1, &buf);
+}
+
+void Renderer::BindIndexBuffer(IndexBuffer* indexBuffer)
+{
+    GUARANTEE_OR_DIE(m_deviceContext, "BindVertexBuffer: m_deviceContext is null");
+
+    if (indexBuffer == nullptr)
+    {
+        ID3D11Buffer* nullBuf = nullptr;
+        UINT stride = 0;
+        UINT offset = 0;
+        m_deviceContext->IASetVertexBuffers(0, 1, &nullBuf, &stride, &offset);
+        return;
+    }
+
+    ID3D11Buffer* buf = indexBuffer->m_buffer;
+    m_deviceContext->IASetIndexBuffer(buf, DXGI_FORMAT_R32_UINT, 0);
 }
 
 Texture* Renderer::CreateTextureFromData(char const* name, IntVec2 dimensions, int bytesPerTexel, uint8_t* texelData)

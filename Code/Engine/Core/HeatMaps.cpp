@@ -1,6 +1,6 @@
 #include "Engine/Core/HeatMaps.hpp"
 
-#include "Engine/Core/Vertex.hpp"
+#include "Engine/Core/Vertex_PCU.hpp"
 #include "Engine/Math/MathUtils.hpp"
 
 TileHeatMap::TileHeatMap(IntVec2 const& dimensions) : m_dimensions(dimensions)
@@ -109,7 +109,7 @@ float TileHeatMap::GetMaxValue() const
 }
 
 void TileHeatMap::AddVertsForDebugDraw(
-    std::vector<Vertex>& verts,
+    std::vector<Vertex_PCU>& verts,
     AABB2 totalBounds,
     FloatRange valueRange,
     Rgba8 lowColor,

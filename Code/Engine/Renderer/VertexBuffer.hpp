@@ -12,12 +12,14 @@ public:
     VertexBuffer(const VertexBuffer& copy) = delete;
     virtual ~VertexBuffer();
 
-    void Create();
     void Resize(unsigned int size);
 
     unsigned int GetSize();
     unsigned int GetStride();
     unsigned int GetCount();
+
+private:
+    void Create();
 
 private:
     ID3D11Device* m_device = nullptr;

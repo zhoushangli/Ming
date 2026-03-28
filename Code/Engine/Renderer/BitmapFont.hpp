@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Engine/Core/Vertex.hpp"
+#include "Engine/Core/Vertex_PCU.hpp"
 #include "Engine/Renderer/Texture.hpp"
 
 enum class TextBoxMode
@@ -22,7 +22,7 @@ public:
 #pragma region 2D
 
     void AddVertsForText2D(
-        std::vector<Vertex>& vertexArray, 
+        std::vector<Vertex_PCU>& vertexArray, 
         Vec2 textMins,
         float cellHeight, 
         std::string const& text, 
@@ -30,7 +30,7 @@ public:
         float cellAspectScale = 1.f);
 
     void AddVertsForTextInBox2D(
-        std::vector<Vertex>& verts, 
+        std::vector<Vertex_PCU>& verts, 
         std::string const& text, 
         AABB2 const& box, 
         float cellHeight, 
@@ -44,7 +44,7 @@ public:
 
 #pragma region 3D
 
-    void AddVertsForText3DAtOriginXForward(std::vector<Vertex>& verts,
+    void AddVertsForText3DAtOriginXForward(std::vector<Vertex_PCU>& verts,
         float cellHeight, std::string const& text, Rgba8 const& tint = Rgba8::WHITE,
         float cellAspect = 1.0f, Vec2 const& alignment = Vec2(0.5f, 0.5f),
         int maxGlyphsToDraw = 999);

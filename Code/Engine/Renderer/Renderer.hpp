@@ -14,11 +14,12 @@ class Camera;
 class Texture;
 
 class VertexBuffer;
+class IndexBuffer;
 class ConstantBuffer;
 
 struct Vec2;
 struct Rgba8;
-struct Vertex;
+struct Vertex_PCU;
 
 struct ID3D11Device;
 struct ID3D11DeviceContext;
@@ -68,6 +69,13 @@ enum class DepthMode
     COUNT
 };
 
+enum class VertexType
+{
+    PCU,
+    PCUTBN,
+    COUNT
+};
+
 struct RendererConfig
 {
 	bool m_isEnable = true;
@@ -112,35 +120,41 @@ public:
     void BeginCamera(Camera const& camera);
     void EndCamera();
 
-    void DrawVertexArray(int numVertexes, Vertex const* vertexes) const;
-    void DrawVertexArray(std::vector<Vertex> const& verts) const;
+    void DrawVertexArray(int numVertexes, Vertex_PCU const* vertexes) const;
+    void DrawVertexArray(std::vector<Vertex_PCU> const& verts) const;
+    void DrawVertexArray(std::vector<Vertex_PCU> const& verts, std::vector<unsigned int> const& vertIndexs) const;
     void DrawVertexBuffer(VertexBuffer* vertexBuffer, unsigned int vertexCount);
+    void DrawIndexedVertexBuffer(VertexBuffer* vertexBuffer, IndexBuffer* indexBuffer, unsigned int indexCount);
 
 	void BindTexture(Texture* textureOrNull);
     void BindShader(Shader* shader);
 
     void SetModelConstants(Matrix4x4 const& modelToWorldTransform, Rgba8 const& modelColor);
 
-    Shader* CreateShader(char const* shaderName);
+    Shader* CreateShader(char const* shaderName, VertexType vertexType = VertexType::PCU);
 	Texture* CreateOrGetTextureFromFile(char const* fileDataPath);
     Texture* CreateTextureFromImage(const Image& image);
     Texture* CreateTextureFromData(char const* name, IntVec2 dimensions, int bytesPerTexel, uint8_t* texelData);
     BitmapFont* CreateOrGetBitmapFont(char const* fontFilePathNameWithNoExtension);
     VertexBuffer* CreateVertexBuffer(const unsigned int size, unsigned int stride);
     ConstantBuffer* CreateConstantBuffer(const unsigned int size);
+    IndexBuffer* CreateIndexBuffer(const unsigned int size);
 
     void CopyCPUToGPU(const void* data, unsigned int size, VertexBuffer* vertexBuffer);
     void CopyCPUToGPU(const void* data, unsigned int size, ConstantBuffer* constantBuffer);
+    void CopyCPUToGPU(const void* data, unsigned int size, IndexBuffer* indexBuffer);
 
 private:
 	Texture* CreateTextureFromFile(char const* fileDataPath);
 	Texture* GetTextureFromFileName(char const* fileName);
 
-    Shader* CreateShader(char const* shaderName, char const* shaderSource);
+    Shader* CreateShader(char const* shaderName, char const* shaderSource, VertexType vertexType = VertexType::PCU);
     bool CompileShaderToByteCode(std::vector<unsigned char>& outByteCode, char const* name,
         char const* source, char const* entryPoint, char const* target);
+
     void BindVertexBuffer(VertexBuffer* vertexBuffer);
     void BindConstantBuffer(ConstantBuffer* constantBuffer, int slot);
+    void BindIndexBuffer(IndexBuffer* indexBuffer);
 
 
 private:
@@ -151,7 +165,9 @@ private:
 
 	Camera* m_currentCamera              = nullptr;
     Shader* m_currentShader              = nullptr;
+
     VertexBuffer* m_currentVertexBuffer  = nullptr;
+    IndexBuffer* m_currentIndexBuffer    = nullptr;
     ConstantBuffer* m_cameraCBO          = nullptr;
     ConstantBuffer* m_modelCBO           = nullptr;
 

@@ -56,7 +56,7 @@ namespace
         AABB2 screenBox;
 
         // grid (hard-coded in DebugAddWorldGrid; stored here so renderer doesn't need to regenerate)
-        std::vector<Vertex> verts;
+        std::vector<Vertex_PCU> verts;
     };
 
     static DebugRenderConfig s_debugRenderConfig;
@@ -150,7 +150,7 @@ namespace
 
     void DrawWorldObject(Renderer* renderer, BitmapFont* font, Camera const& camera, DebugObject const& obj)
     {
-        std::vector<Vertex> verts;
+        std::vector<Vertex_PCU> verts;
         verts.reserve(2048);
 
         Rgba8 color = GetDebugObjectColor(obj);
@@ -278,7 +278,7 @@ namespace
             box = AABB2(Vec2(10.f, top - cellHeight), Vec2(cameraDimensions.x - 10.f, top));
         }
 
-        std::vector<Vertex> verts;
+        std::vector<Vertex_PCU> verts;
         verts.reserve(1024);
 
         float cellHeight = obj.textHeight > 0.f ? obj.textHeight : 20.f;
