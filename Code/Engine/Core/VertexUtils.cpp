@@ -1,6 +1,7 @@
 #include "Engine/Core/VertexUtils.hpp"
 
 #include "Engine/Core/Vertex_PCU.hpp"
+#include "Engine/Core/Vertex_PCUTBN.hpp"
 #include "Engine/Math/MathUtils.hpp"
 #include "VertexUtils.hpp"
 
@@ -263,6 +264,31 @@ void AddVertsForQuad3D(std::vector<Vertex_PCU> &verts, std::vector<unsigned int>
     verts.emplace_back(bottomRight, color, Vec2(uvMaxs.x, uvMins.y));
     verts.emplace_back(topRight, color, Vec2(uvMaxs.x, uvMaxs.y));
     verts.emplace_back(topLeft, color, Vec2(uvMins.x, uvMaxs.y));
+
+    indexes.push_back(startIndex + 0);
+    indexes.push_back(startIndex + 1);
+    indexes.push_back(startIndex + 2);
+
+    indexes.push_back(startIndex + 0);
+    indexes.push_back(startIndex + 2);
+    indexes.push_back(startIndex + 3);
+}
+
+void AddVertsForQuad3D(std::vector<Vertex_PCUTBN> &verts, std::vector<unsigned int> &indexes, const Vec3 &bottomLeft, const Vec3 &bottomRight, const Vec3 &topRight, const Vec3 &topLeft, const Rgba8 &color /*= Rgba8::WHITE*/, const AABB2 &UVs /*= AABB2::UNIT */)
+{
+    Vec2 const uvMins = UVs.m_mins;
+    Vec2 const uvMaxs = UVs.m_maxs;
+
+    Vec3 const tangent = (bottomRight - bottomLeft).GetNormalized();
+    Vec3 const bitangent = (topLeft - bottomLeft).GetNormalized();
+    Vec3 const normal = CrossProduct3D(tangent, bitangent).GetNormalized();
+
+    unsigned int startIndex = (unsigned int)verts.size();
+
+    verts.emplace_back(bottomLeft, color, Vec2(uvMins.x, uvMins.y), tangent, bitangent, normal);
+    verts.emplace_back(bottomRight, color, Vec2(uvMaxs.x, uvMins.y), tangent, bitangent, normal);
+    verts.emplace_back(topRight, color, Vec2(uvMaxs.x, uvMaxs.y), tangent, bitangent, normal);
+    verts.emplace_back(topLeft, color, Vec2(uvMins.x, uvMaxs.y), tangent, bitangent, normal);
 
     indexes.push_back(startIndex + 0);
     indexes.push_back(startIndex + 1);

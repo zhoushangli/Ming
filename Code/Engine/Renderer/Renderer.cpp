@@ -2,6 +2,7 @@
 
 #include "Engine/Core/Engine.hpp"
 #include "Engine/Core/Vertex_PCU.hpp"
+#include "Engine/Core/Vertex_PCUTBN.hpp"
 #include "Engine/Core/FileUtils.hpp"
 #include "Engine/Core/VertexUtils.hpp"
 #include "Engine/Core/StringUtils.hpp"
@@ -23,34 +24,36 @@
 #undef OPAQUE
 #endif
 
-#pragma comment( lib, "d3d11.lib" )
-#pragma comment( lib, "dxgi.lib" )
-#pragma comment( lib, "d3dcompiler.lib" )
+#pragma comment(lib, "d3d11.lib")
+#pragma comment(lib, "dxgi.lib")
+#pragma comment(lib, "d3dcompiler.lib")
 
-#if defined( ENGINE_DEBUG_RENDER )
+#if defined(ENGINE_DEBUG_RENDER)
 #include <dxgidebug.h>
-#pragma comment( lib, "dxguid.lib" )
+#pragma comment(lib, "dxguid.lib")
 #endif
 
 HGLRC g_openGLRenderingContext = nullptr;
 
 const uint8_t k_defaultTexture[16] =
-{
-    0xFF, 0xFF, 0xFF, 0xFF,   // (0,0)
-    0xFF, 0xFF, 0xFF, 0xFF,   // (1,0)
-    0xFF, 0xFF, 0xFF, 0xFF,   // (0,1)
-    0xFF, 0xFF, 0xFF, 0xFF    // (1,1)
+    {
+        0xFF, 0xFF, 0xFF, 0xFF, // (0,0)
+        0xFF, 0xFF, 0xFF, 0xFF, // (1,0)
+        0xFF, 0xFF, 0xFF, 0xFF, // (0,1)
+        0xFF, 0xFF, 0xFF, 0xFF  // (1,1)
 };
 
+//------------------------------------------------------------------------------------------------
+// Lifetime and frame loop
 Renderer::Renderer(RendererConfig config) : m_config(config)
 {
-
 }
 
 Renderer::~Renderer()
 {
 }
 
+#pragma region Public: Lifetime and frame loop
 void Renderer::Startup()
 {
     unsigned int deviceFlags = 0;
@@ -58,7 +61,7 @@ void Renderer::Startup()
     deviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
 #endif
 
-#pragma region Create device and swap chain
+#pragma region Startup: Create device and swap chain
 
     DXGI_SWAP_CHAIN_DESC swapChainDesc = {};
     swapChainDesc.BufferDesc.Width = g_engine->m_window->GetClientDimensions().x;
@@ -84,10 +87,10 @@ void Renderer::Startup()
 
 #pragma endregion
 
-#pragma region Get back buffer texture
+#pragma region Startup: Get back buffer texture
 
-    ID3D11Texture2D* backBuffer;
-    hr = m_swapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)&backBuffer);
+    ID3D11Texture2D *backBuffer;
+    hr = m_swapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void **)&backBuffer);
     if (!SUCCEEDED(hr))
     {
         ERROR_AND_DIE("Could not get swap chain buffer.");
@@ -103,20 +106,19 @@ void Renderer::Startup()
 
 #pragma endregion
 
-#pragma region Create debug module
+#pragma region Startup: Create debug module
 
 #if defined(ENGINE_DEBUG_RENDER)
-    m_dxgiDebugModule = (void*)::LoadLibraryA("dxgidebug.dll");
+    m_dxgiDebugModule = (void *)::LoadLibraryA("dxgidebug.dll");
     if (m_dxgiDebugModule == nullptr)
     {
         ERROR_AND_DIE("Could not load dxgidebug.dll.");
     }
 
-    typedef HRESULT(WINAPI* GetDebugModuleCB)(REFIID, void**);
+    typedef HRESULT(WINAPI * GetDebugModuleCB)(REFIID, void **);
     ((GetDebugModuleCB)::GetProcAddress(
         (HMODULE)m_dxgiDebugModule,
-        "DXGIGetDebugInterface"
-    ))(__uuidof(IDXGIDebug), &m_dxgiDebug);
+        "DXGIGetDebugInterface"))(__uuidof(IDXGIDebug), &m_dxgiDebug);
 
     if (m_dxgiDebug == nullptr)
     {
@@ -126,10 +128,10 @@ void Renderer::Startup()
 
 #pragma endregion
 
-#pragma region Rasterizer states
+#pragma region Startup: Rasterizer states
 
     // SOLID CULL NONE
-    D3D11_RASTERIZER_DESC rasterizerDesc = { };
+    D3D11_RASTERIZER_DESC rasterizerDesc = {};
     rasterizerDesc.FillMode = D3D11_FILL_SOLID;
     rasterizerDesc.CullMode = D3D11_CULL_NONE;
     rasterizerDesc.FrontCounterClockwise = true;
@@ -160,25 +162,26 @@ void Renderer::Startup()
         &rasterizerDesc,
         &m_rasterizerStates[(int)RasterizerMode::WIREFRAME_CULL_BACK]);
 
-
     m_deviceContext->RSSetState(m_rasterizerStates[(int)RasterizerMode::SOLID_CULL_BACK]);
 
     m_deviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 #pragma endregion
 
-#pragma region Create buffer
+#pragma region Startup: Create buffers
 
-    m_currentVertexBuffer = CreateVertexBuffer(sizeof(Vertex_PCU) * 3, sizeof(Vertex_PCU));
+    m_vertexBufferPCU = CreateVertexBuffer(sizeof(Vertex_PCU) * 3, sizeof(Vertex_PCU));
+    m_vertexBufferPCUTBN = CreateVertexBuffer(sizeof(Vertex_PCUTBN) * 3, sizeof(Vertex_PCUTBN));
     m_currentIndexBuffer = CreateIndexBuffer(sizeof(unsigned int) * 3);
+    m_lightCBO = CreateConstantBuffer(sizeof(LightConstants));
     m_cameraCBO = CreateConstantBuffer(sizeof(CameraConstants));
     m_modelCBO = CreateConstantBuffer(sizeof(ModelConstants));
 
 #pragma endregion
 
-#pragma region Set blend states
+#pragma region Startup: Create blend states
 
-    D3D11_BLEND_DESC blendDesc = { };
+    D3D11_BLEND_DESC blendDesc = {};
     blendDesc.RenderTarget[0].BlendEnable = TRUE;
     blendDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_ONE;
     blendDesc.RenderTarget[0].DestBlend = D3D11_BLEND_ZERO;
@@ -191,8 +194,7 @@ void Renderer::Startup()
     // OPAQUE
     hr = m_device->CreateBlendState(
         &blendDesc,
-        &m_blendStates[(int)(BlendMode::OPAQUE)]
-    );
+        &m_blendStates[(int)(BlendMode::OPAQUE)]);
 
     // ALPHA
     blendDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;
@@ -200,8 +202,7 @@ void Renderer::Startup()
 
     hr = m_device->CreateBlendState(
         &blendDesc,
-        &m_blendStates[(int)(BlendMode::ALPHA)]
-    );
+        &m_blendStates[(int)(BlendMode::ALPHA)]);
 
     // ADDITIVE
     blendDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;
@@ -209,12 +210,11 @@ void Renderer::Startup()
 
     hr = m_device->CreateBlendState(
         &blendDesc,
-        &m_blendStates[(int)(BlendMode::ADDITIVE)]
-    );
+        &m_blendStates[(int)(BlendMode::ADDITIVE)]);
 
 #pragma endregion
 
-#pragma region Set sampler states
+#pragma region Startup: Create sampler states
 
     D3D11_SAMPLER_DESC samplerDesc = {};
 
@@ -228,8 +228,7 @@ void Renderer::Startup()
 
     hr = m_device->CreateSamplerState(
         &samplerDesc,
-        &m_samplerStates[(int)SamplerMode::POINT_CLAMP]
-    );
+        &m_samplerStates[(int)SamplerMode::POINT_CLAMP]);
 
     // BILINEAR_CLAMP
     samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
@@ -239,12 +238,11 @@ void Renderer::Startup()
 
     hr = m_device->CreateSamplerState(
         &samplerDesc,
-        &m_samplerStates[(int)SamplerMode::BILINEAR_CLAMP]
-    );
+        &m_samplerStates[(int)SamplerMode::BILINEAR_CLAMP]);
 
 #pragma endregion
 
-#pragma region Set depth stencil state
+#pragma region Startup: Create depth stencil state
 
     // Create depth stencil texture and view
     D3D11_TEXTURE2D_DESC depthTextureDesc = {};
@@ -264,9 +262,8 @@ void Renderer::Startup()
     D3D11_DEPTH_STENCIL_DESC depthStencilDesc = {};
     hr = m_device->CreateDepthStencilState(
         &depthStencilDesc,
-        &m_depthStencilStates[(int)DepthMode::DISABLED]
-    );
-    
+        &m_depthStencilStates[(int)DepthMode::DISABLED]);
+
     // READ_ONLY_ALWAYS
     depthStencilDesc.DepthEnable = TRUE;
     depthStencilDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
@@ -274,8 +271,7 @@ void Renderer::Startup()
 
     hr = m_device->CreateDepthStencilState(
         &depthStencilDesc,
-        &m_depthStencilStates[(int)DepthMode::READ_ONLY_ALWAYS]
-    );
+        &m_depthStencilStates[(int)DepthMode::READ_ONLY_ALWAYS]);
 
     // READ_ONLY_LESS_EQUAL
     depthStencilDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
@@ -283,8 +279,7 @@ void Renderer::Startup()
 
     hr = m_device->CreateDepthStencilState(
         &depthStencilDesc,
-        &m_depthStencilStates[(int)DepthMode::READ_ONLY_LESS_EQUAL]
-    );
+        &m_depthStencilStates[(int)DepthMode::READ_ONLY_LESS_EQUAL]);
 
     // READ_WRITE_LESS_EQUAL
     depthStencilDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
@@ -292,26 +287,24 @@ void Renderer::Startup()
 
     hr = m_device->CreateDepthStencilState(
         &depthStencilDesc,
-        &m_depthStencilStates[(int)DepthMode::READ_WRITE_LESS_EQUAL]
-    );
+        &m_depthStencilStates[(int)DepthMode::READ_WRITE_LESS_EQUAL]);
 
 #pragma endregion
 
-#pragma region Default Shader
+#pragma region Startup: Create default shader
 
     m_defaultShader = CreateShader("Data/Shaders/Default");
     BindShader(m_defaultShader);
 
 #pragma endregion
 
-#pragma region Default Texture
+#pragma region Startup: Create default texture
 
     m_defaultTexture = CreateTextureFromData(
         "Default",
         IntVec2(2, 2),
         4,
-        (uint8_t*)k_defaultTexture
-    );
+        (uint8_t *)k_defaultTexture);
     BindTexture(m_defaultTexture);
 
 #pragma endregion
@@ -328,13 +321,16 @@ void Renderer::Shutdown()
     delete m_cameraCBO;
     m_cameraCBO = nullptr;
 
-    delete m_currentVertexBuffer;
-    m_currentVertexBuffer = nullptr;
+    delete m_vertexBufferPCU;
+    m_vertexBufferPCU = nullptr;
+
+    delete m_vertexBufferPCUTBN;
+    m_vertexBufferPCUTBN = nullptr;
 
     delete m_currentIndexBuffer;
     m_currentIndexBuffer = nullptr;
 
-    for (auto& rasterizerState : m_rasterizerStates)
+    for (auto &rasterizerState : m_rasterizerStates)
     {
         if (rasterizerState)
         {
@@ -343,7 +339,7 @@ void Renderer::Shutdown()
         }
     }
 
-    for (auto& blendState : m_blendStates)
+    for (auto &blendState : m_blendStates)
     {
         if (blendState)
         {
@@ -352,7 +348,7 @@ void Renderer::Shutdown()
         }
     }
 
-    for (auto& samplerState : m_samplerStates)
+    for (auto &samplerState : m_samplerStates)
     {
         if (samplerState)
         {
@@ -361,19 +357,19 @@ void Renderer::Shutdown()
         }
     }
 
-    for (auto& shader : m_loadedShaders)
+    for (auto &shader : m_loadedShaders)
     {
         delete shader;
     }
     m_loadedShaders.clear();
 
-    for (auto& pair : m_loadedTexturesDict)
+    for (auto &pair : m_loadedTexturesDict)
     {
         delete pair.second;
     }
     m_loadedTexturesDict.clear();
 
-    for (auto& pair : m_loadedFontsDict)
+    for (auto &pair : m_loadedFontsDict)
     {
         delete pair.second;
     }
@@ -386,15 +382,9 @@ void Renderer::Shutdown()
 
     // Report error leaks and release debug module
 #if defined(ENGINE_DEBUG_RENDER)
-    ((IDXGIDebug*)m_dxgiDebug)->ReportLiveObjects(
-        DXGI_DEBUG_ALL,
-        (DXGI_DEBUG_RLO_FLAGS)(
-            DXGI_DEBUG_RLO_DETAIL |
-            DXGI_DEBUG_RLO_IGNORE_INTERNAL
-            )
-    );
+    ((IDXGIDebug *)m_dxgiDebug)->ReportLiveObjects(DXGI_DEBUG_ALL, (DXGI_DEBUG_RLO_FLAGS)(DXGI_DEBUG_RLO_DETAIL | DXGI_DEBUG_RLO_IGNORE_INTERNAL));
 
-    ((IDXGIDebug*)m_dxgiDebug)->Release();
+    ((IDXGIDebug *)m_dxgiDebug)->Release();
     m_dxgiDebug = nullptr;
 
     ::FreeLibrary((HMODULE)m_dxgiDebugModule);
@@ -423,7 +413,40 @@ void Renderer::CreateRenderingContext()
 {
 }
 
-void Renderer::ClearScreen(Rgba8 const& clearColor)
+#pragma endregion
+
+#pragma region Public: Camera and pipeline state
+
+void Renderer::BeginCamera(Camera const &camera)
+{
+
+    // Set viewport
+    Vec2 camDimensions = (Vec2)g_engine->m_window->GetClientDimensions();
+
+    D3D11_VIEWPORT viewport = {};
+    viewport.TopLeftX = 0.f;
+    viewport.TopLeftY = 0.f;
+    viewport.Width = camDimensions.x;
+    viewport.Height = camDimensions.y;
+    viewport.MinDepth = 0.0f;
+    viewport.MaxDepth = 1.0f;
+
+    m_deviceContext->RSSetViewports(1, &viewport);
+
+    CameraConstants cameraData = CameraConstants();
+    cameraData.WorldToCameraTransform = camera.GetWorldToCameraTransform();
+    cameraData.CameraToRenderTransform = camera.GetCameraToRenderTransform();
+    cameraData.RenderToClipTransform = camera.GetRenderToClipTransform();
+
+    CopyCPUToGPU(&cameraData, sizeof(cameraData), m_cameraCBO);
+    BindConstantBuffer(m_cameraCBO, k_cameraConstantsSlot);
+}
+
+void Renderer::EndCamera()
+{
+}
+
+void Renderer::ClearScreen(Rgba8 const &clearColor)
 {
     // Clear the screen
     float colorAsFloats[4];
@@ -457,33 +480,33 @@ void Renderer::SetStatesIfChanged()
     GUARANTEE_OR_DIE(m_deviceContext, "SetStatesIfChanged: m_deviceContext is null");
 
     // Blend state
-    ID3D11BlendState* desiredBlendState = m_blendStates[(int)m_desiredBlendMode];
+    ID3D11BlendState *desiredBlendState = m_blendStates[(int)m_desiredBlendMode];
     if (m_blendState != desiredBlendState)
     {
         m_blendState = desiredBlendState;
 
-        float blendFactor[4] = { 0.f, 0.f, 0.f, 0.f };
+        float blendFactor[4] = {0.f, 0.f, 0.f, 0.f};
         UINT sampleMask = 0xffffffff;
 
         m_deviceContext->OMSetBlendState(m_blendState, blendFactor, sampleMask);
     }
 
     // Sampler state
-    ID3D11SamplerState* desiredSamplerState = m_samplerStates[(int)m_desiredSamplerMode];
+    ID3D11SamplerState *desiredSamplerState = m_samplerStates[(int)m_desiredSamplerMode];
     if (m_samplerState != desiredSamplerState)
     {
         m_samplerState = desiredSamplerState;
         m_deviceContext->PSSetSamplers(0, 1, &m_samplerState);
     }
 
-    ID3D11RasterizerState* desiredRasterizerState = m_rasterizerStates[(int)m_desiredRasterizerMode];
+    ID3D11RasterizerState *desiredRasterizerState = m_rasterizerStates[(int)m_desiredRasterizerMode];
     if (m_rasterizerState != desiredRasterizerState)
     {
         m_rasterizerState = desiredRasterizerState;
         m_deviceContext->RSSetState(m_rasterizerState);
     }
 
-    ID3D11DepthStencilState* desiredDepthStencilState = m_depthStencilStates[(int)m_desiredDepthMode];
+    ID3D11DepthStencilState *desiredDepthStencilState = m_depthStencilStates[(int)m_desiredDepthMode];
     if (m_depthStencilState != desiredDepthStencilState)
     {
         m_depthStencilState = desiredDepthStencilState;
@@ -491,79 +514,88 @@ void Renderer::SetStatesIfChanged()
     }
 }
 
-void Renderer::BeginCamera(Camera const& camera)
-{	
+#pragma endregion
 
-    // Set viewport
-    Vec2 camDimensions = (Vec2)g_engine->m_window->GetClientDimensions();
+#pragma region Public: Draw entry points
 
-    D3D11_VIEWPORT viewport = {};
-    viewport.TopLeftX = 0.f;
-    viewport.TopLeftY = 0.f;
-    viewport.Width = camDimensions.x;
-    viewport.Height = camDimensions.y;
-    viewport.MinDepth = 0.0f;
-    viewport.MaxDepth = 1.0f;
-
-    m_deviceContext->RSSetViewports(1, &viewport);
-
-    CameraConstants cameraData = CameraConstants();
-    cameraData.WorldToCameraTransform = camera.GetWorldToCameraTransform();
-    cameraData.CameraToRenderTransform = camera.GetCameraToRenderTransform();
-    cameraData.RenderToClipTransform = camera.GetRenderToClipTransform();
-
-    CopyCPUToGPU(&cameraData, sizeof(cameraData), m_cameraCBO);
-    BindConstantBuffer(m_cameraCBO, k_cameraConstantsSlot);
-}
-
-void Renderer::EndCamera()
+void Renderer::DrawVertexArray(int numVertexes, Vertex_PCU const *vertexes) const
 {
-
-}
-
-void Renderer::DrawVertexArray(int numVertexes, Vertex_PCU const* vertexes) const
-{
-    if (numVertexes % 3 != 0 || vertexes == nullptr) 
+    if (numVertexes % 3 != 0 || vertexes == nullptr)
     {
         return;
     }
 
     unsigned int size = numVertexes * sizeof(Vertex_PCU);
 
-    m_currentVertexBuffer->Resize(size);
-    g_engine->m_renderer->CopyCPUToGPU(vertexes, size, m_currentVertexBuffer);
-    g_engine->m_renderer->DrawVertexBuffer(m_currentVertexBuffer, numVertexes);
+    m_vertexBufferPCU->Resize(size);
+    g_engine->m_renderer->CopyCPUToGPU(vertexes, size, m_vertexBufferPCU);
+    g_engine->m_renderer->DrawVertexBuffer(m_vertexBufferPCU, numVertexes);
 }
 
-void Renderer::DrawVertexArray(std::vector<Vertex_PCU> const& verts) const
+void Renderer::DrawVertexArray(std::vector<Vertex_PCU> const &verts) const
 {
     DrawVertexArray(static_cast<int>(verts.size()), verts.data());
 }
 
-void Renderer::DrawVertexArray(std::vector<Vertex_PCU> const& verts, std::vector<unsigned int> const& vertIndexes) const
+void Renderer::DrawVertexArray(std::vector<Vertex_PCU> const &verts, std::vector<unsigned int> const &vertIndexes) const
 {
     unsigned int vertsNum = static_cast<unsigned int>(verts.size());
     unsigned int indexesNum = static_cast<unsigned int>(vertIndexes.size());
     unsigned int vertsSize = vertsNum * sizeof(Vertex_PCU);
     unsigned int indexesSize = indexesNum * sizeof(unsigned int);
 
-    m_currentVertexBuffer->Resize(vertsSize);
+    m_vertexBufferPCU->Resize(vertsSize);
     m_currentIndexBuffer->Resize(indexesSize);
 
-    g_engine->m_renderer->CopyCPUToGPU(verts.data(), vertsSize, m_currentVertexBuffer);
+    g_engine->m_renderer->CopyCPUToGPU(verts.data(), vertsSize, m_vertexBufferPCU);
     g_engine->m_renderer->CopyCPUToGPU(vertIndexes.data(), indexesSize, m_currentIndexBuffer);
 
-    g_engine->m_renderer->DrawIndexedVertexBuffer(m_currentVertexBuffer, m_currentIndexBuffer, indexesSize);
+    g_engine->m_renderer->DrawIndexedVertexBuffer(m_vertexBufferPCU, m_currentIndexBuffer, indexesNum);
 }
 
-void Renderer::DrawVertexBuffer(VertexBuffer* vertexBuffer, unsigned int vertexCount)
+void Renderer::DrawVertexArray(int numVertexes, Vertex_PCUTBN const *vertexes) const
+{
+    if (numVertexes % 3 != 0 || vertexes == nullptr)
+    {
+        return;
+    }
+
+    unsigned int size = numVertexes * sizeof(Vertex_PCUTBN);
+
+    m_vertexBufferPCUTBN->Resize(size);
+    g_engine->m_renderer->CopyCPUToGPU(vertexes, size, m_vertexBufferPCUTBN);
+    g_engine->m_renderer->DrawVertexBuffer(m_vertexBufferPCUTBN, numVertexes);
+}
+
+void Renderer::DrawVertexArray(std::vector<Vertex_PCUTBN> const &verts) const
+{
+    DrawVertexArray(static_cast<int>(verts.size()), verts.data());
+}
+
+void Renderer::DrawVertexArray(std::vector<Vertex_PCUTBN> const &verts, std::vector<unsigned int> const &vertIndexes) const
+{
+    unsigned int vertsNum = static_cast<unsigned int>(verts.size());
+    unsigned int indexesNum = static_cast<unsigned int>(vertIndexes.size());
+    unsigned int vertsSize = vertsNum * sizeof(Vertex_PCUTBN);
+    unsigned int indexesSize = indexesNum * sizeof(unsigned int);
+
+    m_vertexBufferPCUTBN->Resize(vertsSize);
+    m_currentIndexBuffer->Resize(indexesSize);
+
+    g_engine->m_renderer->CopyCPUToGPU(verts.data(), vertsSize, m_vertexBufferPCUTBN);
+    g_engine->m_renderer->CopyCPUToGPU(vertIndexes.data(), indexesSize, m_currentIndexBuffer);
+
+    g_engine->m_renderer->DrawIndexedVertexBuffer(m_vertexBufferPCUTBN, m_currentIndexBuffer, indexesNum);
+}
+
+void Renderer::DrawVertexBuffer(VertexBuffer *vertexBuffer, unsigned int vertexCount)
 {
     SetStatesIfChanged();
     BindVertexBuffer(vertexBuffer);
     m_deviceContext->Draw(vertexCount, 0);
 }
 
-void Renderer::DrawIndexedVertexBuffer(VertexBuffer* vertexBuffer, IndexBuffer* indexBuffer, unsigned int indexCount)
+void Renderer::DrawIndexedVertexBuffer(VertexBuffer *vertexBuffer, IndexBuffer *indexBuffer, unsigned int indexCount)
 {
     SetStatesIfChanged();
     BindVertexBuffer(vertexBuffer);
@@ -571,221 +603,25 @@ void Renderer::DrawIndexedVertexBuffer(VertexBuffer* vertexBuffer, IndexBuffer* 
     m_deviceContext->DrawIndexed(indexCount, 0, 0);
 }
 
-Texture* Renderer::CreateOrGetTextureFromFile(char const* imageFilePath)
-{
-	// See if we already have this texture previously loaded
-	Texture* existingTexture = GetTextureFromFileName(imageFilePath); // You need to write this
-	if (existingTexture)
-	{
-		return existingTexture;
-	}
+#pragma endregion
 
-	// Never seen this texture before!  Let's load it.
-	Texture* newTexture = CreateTextureFromFile(imageFilePath);
-	return newTexture;
+#pragma region Public: High-level bind helpers used by gameplay/render features
+
+void Renderer::BindTexture(Texture *texture)
+{
+    GUARANTEE_OR_DIE(m_deviceContext, "BindTexture: m_deviceContext is null");
+
+    if (texture == nullptr)
+    {
+        texture = m_defaultTexture;
+    }
+
+    ID3D11ShaderResourceView *srv = texture->m_shaderResourceView;
+    m_deviceContext->PSSetShaderResources(0, 1, &srv);
+    m_deviceContext->PSGetSamplers(0, 1, &m_samplerState);
 }
 
-Texture* Renderer::CreateTextureFromImage(const Image& image)
-{
-    return CreateTextureFromData(
-        image.GetImageFilePath().c_str(),
-        image.GetDimensions(),
-        4,
-        (uint8_t*)image.GetRawData()
-    );
-}
-
-Texture* Renderer::CreateTextureFromFile(char const* imageFilePath)
-{
-    Image image(imageFilePath);
-
-	return CreateTextureFromImage(image);
-}
-
-Texture* Renderer::GetTextureFromFileName(char const* imageFilePath)
-{
-    if (imageFilePath == nullptr) 
-	{
-        return nullptr;
-    }
-
-    std::string filePath = std::string(imageFilePath);
-    auto found = m_loadedTexturesDict.find(filePath);
-    if (found != m_loadedTexturesDict.end())
-    {
-        return found->second;
-    }
-
-    return nullptr;
-}
-
-Shader* Renderer::CreateShader(char const* shaderName, char const* shaderSource, VertexType vertexType)
-{
-    GUARANTEE_OR_DIE(m_device, "CreateShader: m_device is null");
-    GUARANTEE_OR_DIE(shaderName && shaderName[0], "CreateShader: shaderName is null/empty");
-    GUARANTEE_OR_DIE(shaderSource, "CreateShader: shaderSource is null");
-
-    ShaderConfig config;
-    config.m_name = shaderName;
-
-    Shader* shader = new Shader(config);
-
-    // Compile VS / PS
-    std::vector<unsigned char> vsByteCode;
-    std::vector<unsigned char> psByteCode;
-
-    bool vsOK = CompileShaderToByteCode(vsByteCode, shaderName, shaderSource, config.m_vertexEntryPoint.c_str(), "vs_5_0");
-    GUARANTEE_OR_DIE(vsOK, Stringf("Could not compile vertex shader for '%s'", shaderName));
-
-    bool psOK = CompileShaderToByteCode(psByteCode, shaderName, shaderSource, config.m_pixelEntryPoint.c_str(), "ps_5_0");
-    GUARANTEE_OR_DIE(psOK, Stringf("Could not compile pixel shader for '%s'", shaderName));
-
-    // Create VS / PS
-    HRESULT hr = m_device->CreateVertexShader(
-        vsByteCode.data(),
-        vsByteCode.size(),
-        nullptr,
-        &shader->m_vertexShader
-    );
-    GUARANTEE_OR_DIE(SUCCEEDED(hr), Stringf("Could not create vertex shader for '%s'", shaderName));
-
-    hr = m_device->CreatePixelShader(
-        psByteCode.data(),
-        psByteCode.size(),
-        nullptr,
-        &shader->m_pixelShader
-    );
-    GUARANTEE_OR_DIE(SUCCEEDED(hr), Stringf("Could not create pixel shader for '%s'", shaderName));
-
-    D3D11_INPUT_ELEMENT_DESC const* inputElementDesc = nullptr;
-    UINT inputElementCount = 0;
-
-    switch (vertexType)
-    {
-    case VertexType::PCU:
-    {
-        static D3D11_INPUT_ELEMENT_DESC const pcuDesc[] =
-        {
-            { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0,                            D3D11_INPUT_PER_VERTEX_DATA, 0 },
-            { "COLOR",    0, DXGI_FORMAT_R8G8B8A8_UNORM,  0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-            { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,    0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-        };
-
-        inputElementDesc = pcuDesc;
-        inputElementCount = (UINT)ARRAYSIZE(pcuDesc);
-        break;
-    }
-
-    case VertexType::PCUTBN:
-    {
-        static D3D11_INPUT_ELEMENT_DESC const pcutbnDesc[] =
-        {
-            { "POSITION",  0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0,                            D3D11_INPUT_PER_VERTEX_DATA, 0 },
-            { "COLOR",     0, DXGI_FORMAT_R8G8B8A8_UNORM,  0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-            { "TEXCOORD",  0, DXGI_FORMAT_R32G32_FLOAT,    0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-            { "NORMAL",    0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-            { "TANGENT",   0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-            { "BITANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-        };
-
-        inputElementDesc = pcutbnDesc;
-        inputElementCount = (UINT)ARRAYSIZE(pcutbnDesc);
-        break;
-    }
-
-    default:
-    {
-        ERROR_AND_DIE("Unsupported vertex type");
-        break;
-    }
-    }
-
-    hr = m_device->CreateInputLayout(
-        inputElementDesc,
-        inputElementCount,
-        vsByteCode.data(),
-        (UINT)vsByteCode.size(),
-        &shader->m_inputLayout
-    );
-    GUARANTEE_OR_DIE(SUCCEEDED(hr), Stringf("Could not create input layout for '%s'", shaderName));
-
-    m_loadedShaders.push_back(shader);
-
-    return shader;
-}
-
-
-Shader* Renderer::CreateShader(char const* shaderName, VertexType vertexType)
-{
-    GUARANTEE_OR_DIE(shaderName && shaderName[0], "CreateShader(shaderName): shaderName is null/empty");
-
-    std::string shaderFilename = std::string(shaderName) + ".hlsl";
-
-    std::string shaderSource;
-    int bytesRead = FileReadToString(shaderSource, shaderFilename);
-
-    GUARANTEE_OR_DIE(bytesRead > 0, Stringf("Failed to read shader file \"%s\"", shaderFilename.c_str()));
-
-    return CreateShader(shaderName, shaderSource.c_str(), vertexType);
-}
-
-bool Renderer::CompileShaderToByteCode(
-    std::vector<unsigned char>& outByteCode,
-    char const* name,
-    char const* source,
-    char const* entryPoint,
-    char const* target
-)
-{
-    if (source == nullptr || entryPoint == nullptr || target == nullptr)
-    {
-        return false;
-    }
-
-    DWORD shaderFlags = D3DCOMPILE_OPTIMIZATION_LEVEL3;
-#if defined(ENGINE_DEBUG_RENDER)
-    shaderFlags = D3DCOMPILE_DEBUG;
-    shaderFlags |= D3DCOMPILE_SKIP_OPTIMIZATION;
-    shaderFlags |= D3DCOMPILE_WARNINGS_ARE_ERRORS;
-#endif
-
-    ID3DBlob* shaderBlob = nullptr;
-    ID3DBlob* errorBlob = nullptr;
-
-    HRESULT hr = D3DCompile(
-        source,
-        strlen(source),
-        name,
-        nullptr,
-        D3D_COMPILE_STANDARD_FILE_INCLUDE,
-        entryPoint,
-        target,
-        shaderFlags,
-        0,
-        &shaderBlob,
-        &errorBlob
-    );
-
-    if (!SUCCEEDED(hr))
-    {
-        if (errorBlob)
-        {
-            DebuggerPrintf((char*)errorBlob->GetBufferPointer());
-            errorBlob->Release();
-        }
-        if (shaderBlob) shaderBlob->Release();
-        return false;
-    }
-
-    outByteCode.resize(shaderBlob->GetBufferSize());
-    memcpy(outByteCode.data(), shaderBlob->GetBufferPointer(), shaderBlob->GetBufferSize());
-
-    shaderBlob->Release();
-    if (errorBlob) errorBlob->Release();
-    return true;
-}
-
-void Renderer::BindShader(Shader* shader)
+void Renderer::BindShader(Shader *shader)
 {
     GUARANTEE_OR_DIE(m_deviceContext, "BindShader: m_deviceContext is null");
 
@@ -799,7 +635,7 @@ void Renderer::BindShader(Shader* shader)
     m_deviceContext->PSSetShader(shader->m_pixelShader, nullptr, 0);
 }
 
-void Renderer::BindModelConstants(Matrix4x4 const& modelToWorldTransform, Rgba8 const& modelColor)
+void Renderer::BindModelConstants(Matrix4x4 const &modelToWorldTransform, Rgba8 const &modelColor)
 {
     ModelConstants modelData = ModelConstants();
     modelData.ModelToWorldTransform = modelToWorldTransform;
@@ -812,7 +648,7 @@ void Renderer::BindModelConstants(Matrix4x4 const& modelToWorldTransform, Rgba8 
     BindConstantBuffer(m_modelCBO, k_modelConstantsSlot);
 }
 
-void Renderer::BindLightConstants(Vec3 const& sunDirection, float const sunIntensity, float const ambientIntensity)
+void Renderer::BindLightConstants(Vec3 const &sunDirection, float const sunIntensity, float const ambientIntensity)
 {
     LightConstants lightData = LightConstants();
     lightData.SunDirection = sunDirection;
@@ -823,22 +659,129 @@ void Renderer::BindLightConstants(Vec3 const& sunDirection, float const sunInten
     BindConstantBuffer(m_lightCBO, k_lightConstantsSlot);
 }
 
-VertexBuffer* Renderer::CreateVertexBuffer(const unsigned int size, unsigned int stride)
+#pragma endregion
+
+#pragma region Public: GPU resource creation and cache access
+
+Shader *Renderer::CreateShader(char const *shaderName, VertexType vertexType)
+{
+    GUARANTEE_OR_DIE(shaderName && shaderName[0], "CreateShader(shaderName): shaderName is null/empty");
+
+    std::string shaderFilename = std::string(shaderName) + ".hlsl";
+
+    std::string shaderSource;
+    int bytesRead = FileReadToString(shaderSource, shaderFilename);
+
+    GUARANTEE_OR_DIE(bytesRead > 0, Stringf("Failed to read shader file \"%s\"", shaderFilename.c_str()));
+
+    return CreateShader(shaderName, shaderSource.c_str(), vertexType);
+}
+
+Texture *Renderer::CreateOrGetTextureFromFile(char const *imageFilePath)
+{
+    // See if we already have this texture previously loaded
+    Texture *existingTexture = GetTextureFromFileName(imageFilePath); // You need to write this
+    if (existingTexture)
+    {
+        return existingTexture;
+    }
+
+    // Never seen this texture before!  Let's load it.
+    Texture *newTexture = CreateTextureFromFile(imageFilePath);
+    return newTexture;
+}
+
+Texture *Renderer::CreateTextureFromImage(const Image &image)
+{
+    return CreateTextureFromData(
+        image.GetImageFilePath().c_str(),
+        image.GetDimensions(),
+        4,
+        (uint8_t *)image.GetRawData());
+}
+
+Texture *Renderer::CreateTextureFromData(char const *name, IntVec2 dimensions, int bytesPerTexel, uint8_t *texelData)
+{
+    GUARANTEE_OR_DIE(m_device, "CreateTextureFromData: m_device is null");
+    GUARANTEE_OR_DIE(texelData, Stringf("CreateTextureFromData failed for \"%s\" - texelData was null!", name));
+    GUARANTEE_OR_DIE(dimensions.x > 0 && dimensions.y > 0,
+                     Stringf("CreateTextureFromData failed for \"%s\" - illegal texture dimensions (%i x %i)", name, dimensions.x, dimensions.y));
+
+    // We only support RGBA8 format for now, so require 4 bytes per texel
+    GUARANTEE_OR_DIE(bytesPerTexel == 4,
+                     Stringf("CreateTextureFromData requires 4 bytes/texel (RGBA). Got %i for \"%s\"", bytesPerTexel, name));
+
+    Texture *newTexture = new Texture();
+    newTexture->m_name = name;
+    newTexture->m_dimensions = dimensions;
+
+    D3D11_TEXTURE2D_DESC textureDesc = {};
+    textureDesc.Width = (UINT)dimensions.x;
+    textureDesc.Height = (UINT)dimensions.y;
+    textureDesc.MipLevels = 1;
+    textureDesc.ArraySize = 1;
+    textureDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+    textureDesc.SampleDesc.Count = 1;
+    textureDesc.Usage = D3D11_USAGE_IMMUTABLE;
+    textureDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+
+    D3D11_SUBRESOURCE_DATA textureData = {};
+    textureData.pSysMem = texelData;
+    textureData.SysMemPitch = 4 * dimensions.x;
+
+    HRESULT hr = m_device->CreateTexture2D(&textureDesc, &textureData, &newTexture->m_texture);
+    if (!SUCCEEDED(hr))
+    {
+        delete newTexture;
+        ERROR_AND_DIE(Stringf("CreateTexture2D failed for image file \"%s\".", name));
+    }
+
+    hr = m_device->CreateShaderResourceView(newTexture->m_texture, nullptr, &newTexture->m_shaderResourceView);
+    if (!SUCCEEDED(hr))
+    {
+        delete newTexture;
+        ERROR_AND_DIE(Stringf("CreateShaderResourceView failed for image file \"%s\".", name));
+    }
+
+    m_loadedTexturesDict[newTexture->m_name] = newTexture;
+    return newTexture;
+}
+
+BitmapFont *Renderer::CreateOrGetBitmapFont(char const *fontFilePathNameWithNoExtension)
+{
+    std::string fontKey = std::string(fontFilePathNameWithNoExtension);
+    auto found = m_loadedFontsDict.find(fontKey);
+    if (found != m_loadedFontsDict.end())
+    {
+        return found->second;
+    }
+
+    Texture *fontTexture = CreateOrGetTextureFromFile(Stringf("%s.png", fontFilePathNameWithNoExtension).c_str());
+    BitmapFont *newBitmapFont = new BitmapFont(fontFilePathNameWithNoExtension, *fontTexture);
+    m_loadedFontsDict[fontKey] = newBitmapFont;
+    return newBitmapFont;
+}
+
+VertexBuffer *Renderer::CreateVertexBuffer(const unsigned int size, unsigned int stride)
 {
     return new VertexBuffer(m_device, size, stride);
 }
 
-ConstantBuffer* Renderer::CreateConstantBuffer(const unsigned int size)
+ConstantBuffer *Renderer::CreateConstantBuffer(const unsigned int size)
 {
     return new ConstantBuffer(m_device, size);
 }
 
-IndexBuffer* Renderer::CreateIndexBuffer(const unsigned int size)
+IndexBuffer *Renderer::CreateIndexBuffer(const unsigned int size)
 {
     return new IndexBuffer(m_device, size);
 }
 
-void Renderer::CopyCPUToGPU(const void* data, unsigned int size, VertexBuffer* vertexBuffer)
+#pragma endregion
+
+#pragma region Public: CPU -> GPU uploads
+
+void Renderer::CopyCPUToGPU(const void *data, unsigned int size, VertexBuffer *vertexBuffer)
 {
     GUARANTEE_OR_DIE(m_deviceContext, "CopyCPUToGPU: m_deviceContext is null");
     GUARANTEE_OR_DIE(vertexBuffer, "CopyCPUToGPU: vertexBuffer is null");
@@ -859,7 +802,7 @@ void Renderer::CopyCPUToGPU(const void* data, unsigned int size, VertexBuffer* v
     m_deviceContext->Unmap(vertexBuffer->m_buffer, 0);
 }
 
-void Renderer::CopyCPUToGPU(const void* data, unsigned int size, ConstantBuffer* constantBuffer)
+void Renderer::CopyCPUToGPU(const void *data, unsigned int size, ConstantBuffer *constantBuffer)
 {
     GUARANTEE_OR_DIE(m_deviceContext, "CopyCPUToGPU: m_deviceContext is null");
     GUARANTEE_OR_DIE(constantBuffer, "CopyCPUToGPU: vertexBuffer is null");
@@ -879,7 +822,7 @@ void Renderer::CopyCPUToGPU(const void* data, unsigned int size, ConstantBuffer*
     m_deviceContext->Unmap(constantBuffer->m_buffer, 0);
 }
 
-void Renderer::CopyCPUToGPU(const void* data, unsigned int size, IndexBuffer* indexBuffer)
+void Renderer::CopyCPUToGPU(const void *data, unsigned int size, IndexBuffer *indexBuffer)
 {
     GUARANTEE_OR_DIE(m_deviceContext, "CopyCPUToGPU: m_deviceContext is null");
     GUARANTEE_OR_DIE(indexBuffer, "CopyCPUToGPU: vertexBuffer is null");
@@ -899,13 +842,197 @@ void Renderer::CopyCPUToGPU(const void* data, unsigned int size, IndexBuffer* in
     m_deviceContext->Unmap(indexBuffer->m_buffer, 0);
 }
 
-void Renderer::BindVertexBuffer(VertexBuffer* vertexBuffer)
+#pragma endregion
+
+#pragma region Private: Texture cache internals
+
+Texture *Renderer::CreateTextureFromFile(char const *imageFilePath)
+{
+    Image image(imageFilePath);
+
+    return CreateTextureFromImage(image);
+}
+
+Texture *Renderer::GetTextureFromFileName(char const *imageFilePath)
+{
+    if (imageFilePath == nullptr)
+    {
+        return nullptr;
+    }
+
+    std::string filePath = std::string(imageFilePath);
+    auto found = m_loadedTexturesDict.find(filePath);
+    if (found != m_loadedTexturesDict.end())
+    {
+        return found->second;
+    }
+
+    return nullptr;
+}
+
+#pragma endregion
+
+#pragma region Private: Shader creation internals
+
+Shader *Renderer::CreateShader(char const *shaderName, char const *shaderSource, VertexType vertexType)
+{
+    GUARANTEE_OR_DIE(m_device, "CreateShader: m_device is null");
+    GUARANTEE_OR_DIE(shaderName && shaderName[0], "CreateShader: shaderName is null/empty");
+    GUARANTEE_OR_DIE(shaderSource, "CreateShader: shaderSource is null");
+
+    ShaderConfig config;
+    config.m_name = shaderName;
+
+    Shader *shader = new Shader(config);
+
+    // Compile VS / PS
+    std::vector<unsigned char> vsByteCode;
+    std::vector<unsigned char> psByteCode;
+
+    bool vsOK = CompileShaderToByteCode(vsByteCode, shaderName, shaderSource, config.m_vertexEntryPoint.c_str(), "vs_5_0");
+    GUARANTEE_OR_DIE(vsOK, Stringf("Could not compile vertex shader for '%s'", shaderName));
+
+    bool psOK = CompileShaderToByteCode(psByteCode, shaderName, shaderSource, config.m_pixelEntryPoint.c_str(), "ps_5_0");
+    GUARANTEE_OR_DIE(psOK, Stringf("Could not compile pixel shader for '%s'", shaderName));
+
+    // Create VS / PS
+    HRESULT hr = m_device->CreateVertexShader(
+        vsByteCode.data(),
+        vsByteCode.size(),
+        nullptr,
+        &shader->m_vertexShader);
+    GUARANTEE_OR_DIE(SUCCEEDED(hr), Stringf("Could not create vertex shader for '%s'", shaderName));
+
+    hr = m_device->CreatePixelShader(
+        psByteCode.data(),
+        psByteCode.size(),
+        nullptr,
+        &shader->m_pixelShader);
+    GUARANTEE_OR_DIE(SUCCEEDED(hr), Stringf("Could not create pixel shader for '%s'", shaderName));
+
+    D3D11_INPUT_ELEMENT_DESC const *inputElementDesc = nullptr;
+    UINT inputElementCount = 0;
+
+    switch (vertexType)
+    {
+    case VertexType::PCU:
+    {
+        static D3D11_INPUT_ELEMENT_DESC const pcuDesc[] =
+            {
+                {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
+                {"COLOR", 0, DXGI_FORMAT_R8G8B8A8_UNORM, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0},
+                {"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0},
+            };
+
+        inputElementDesc = pcuDesc;
+        inputElementCount = (UINT)ARRAYSIZE(pcuDesc);
+        break;
+    }
+
+    case VertexType::PCUTBN:
+    {
+        static D3D11_INPUT_ELEMENT_DESC const pcutbnDesc[] =
+            {
+                {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
+                {"COLOR", 0, DXGI_FORMAT_R8G8B8A8_UNORM, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0},
+                {"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0},
+                {"NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0},
+                {"TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0},
+                {"BITANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0},
+            };
+
+        inputElementDesc = pcutbnDesc;
+        inputElementCount = (UINT)ARRAYSIZE(pcutbnDesc);
+        break;
+    }
+
+    default:
+    {
+        ERROR_AND_DIE("Unsupported vertex type");
+        break;
+    }
+    }
+
+    hr = m_device->CreateInputLayout(
+        inputElementDesc,
+        inputElementCount,
+        vsByteCode.data(),
+        (UINT)vsByteCode.size(),
+        &shader->m_inputLayout);
+    GUARANTEE_OR_DIE(SUCCEEDED(hr), Stringf("Could not create input layout for '%s'", shaderName));
+
+    m_loadedShaders.push_back(shader);
+
+    return shader;
+}
+
+bool Renderer::CompileShaderToByteCode(
+    std::vector<unsigned char> &outByteCode,
+    char const *name,
+    char const *source,
+    char const *entryPoint,
+    char const *target)
+{
+    if (source == nullptr || entryPoint == nullptr || target == nullptr)
+    {
+        return false;
+    }
+
+    DWORD shaderFlags = D3DCOMPILE_OPTIMIZATION_LEVEL3;
+#if defined(ENGINE_DEBUG_RENDER)
+    shaderFlags = D3DCOMPILE_DEBUG;
+    shaderFlags |= D3DCOMPILE_SKIP_OPTIMIZATION;
+    shaderFlags |= D3DCOMPILE_WARNINGS_ARE_ERRORS;
+#endif
+
+    ID3DBlob *shaderBlob = nullptr;
+    ID3DBlob *errorBlob = nullptr;
+
+    HRESULT hr = D3DCompile(
+        source,
+        strlen(source),
+        name,
+        nullptr,
+        D3D_COMPILE_STANDARD_FILE_INCLUDE,
+        entryPoint,
+        target,
+        shaderFlags,
+        0,
+        &shaderBlob,
+        &errorBlob);
+
+    if (!SUCCEEDED(hr))
+    {
+        if (errorBlob)
+        {
+            DebuggerPrintf((char *)errorBlob->GetBufferPointer());
+            errorBlob->Release();
+        }
+        if (shaderBlob)
+            shaderBlob->Release();
+        return false;
+    }
+
+    outByteCode.resize(shaderBlob->GetBufferSize());
+    memcpy(outByteCode.data(), shaderBlob->GetBufferPointer(), shaderBlob->GetBufferSize());
+
+    shaderBlob->Release();
+    if (errorBlob)
+        errorBlob->Release();
+    return true;
+}
+
+#pragma endregion
+
+#pragma region Private: Low-level buffer binding to D3D context
+
+void Renderer::BindVertexBuffer(VertexBuffer *vertexBuffer)
 {
     GUARANTEE_OR_DIE(m_deviceContext, "BindVertexBuffer: m_deviceContext is null");
 
     if (vertexBuffer == nullptr)
     {
-        ID3D11Buffer* nullBuf = nullptr;
+        ID3D11Buffer *nullBuf = nullptr;
         UINT stride = 0;
         UINT offset = 0;
         m_deviceContext->IASetVertexBuffers(0, 1, &nullBuf, &stride, &offset);
@@ -914,120 +1041,44 @@ void Renderer::BindVertexBuffer(VertexBuffer* vertexBuffer)
 
     UINT stride = vertexBuffer->GetStride();
     UINT offset = 0;
-    ID3D11Buffer* buf = vertexBuffer->m_buffer;
+    ID3D11Buffer *buf = vertexBuffer->m_buffer;
     m_deviceContext->IASetVertexBuffers(0, 1, &buf, &stride, &offset);
 }
 
-void Renderer::BindConstantBuffer(ConstantBuffer* constantBuffer, int slot)
+void Renderer::BindConstantBuffer(ConstantBuffer *constantBuffer, int slot)
 {
     GUARANTEE_OR_DIE(m_deviceContext, "BindConstantBuffer: m_deviceContext is null");
 
     if (constantBuffer == nullptr)
     {
-        ID3D11Buffer* nullBuf = nullptr;
+        ID3D11Buffer *nullBuf = nullptr;
         m_deviceContext->VSSetConstantBuffers(slot, 1, &nullBuf);
         m_deviceContext->PSSetConstantBuffers(slot, 1, &nullBuf);
         return;
     }
 
-    ID3D11Buffer* buf = constantBuffer->m_buffer;
+    ID3D11Buffer *buf = constantBuffer->m_buffer;
     GUARANTEE_OR_DIE(buf, "BindConstantBuffer: constantBuffer->m_buffer is null");
 
     m_deviceContext->VSSetConstantBuffers(slot, 1, &buf);
     m_deviceContext->PSSetConstantBuffers(slot, 1, &buf);
 }
 
-void Renderer::BindIndexBuffer(IndexBuffer* indexBuffer)
+void Renderer::BindIndexBuffer(IndexBuffer *indexBuffer)
 {
     GUARANTEE_OR_DIE(m_deviceContext, "BindVertexBuffer: m_deviceContext is null");
 
     if (indexBuffer == nullptr)
     {
-        ID3D11Buffer* nullBuf = nullptr;
+        ID3D11Buffer *nullBuf = nullptr;
         UINT stride = 0;
         UINT offset = 0;
         m_deviceContext->IASetVertexBuffers(0, 1, &nullBuf, &stride, &offset);
         return;
     }
 
-    ID3D11Buffer* buf = indexBuffer->m_buffer;
+    ID3D11Buffer *buf = indexBuffer->m_buffer;
     m_deviceContext->IASetIndexBuffer(buf, DXGI_FORMAT_R32_UINT, 0);
 }
 
-Texture* Renderer::CreateTextureFromData(char const* name, IntVec2 dimensions, int bytesPerTexel, uint8_t* texelData)
-{
-    GUARANTEE_OR_DIE(m_device, "CreateTextureFromData: m_device is null");
-    GUARANTEE_OR_DIE(texelData, Stringf("CreateTextureFromData failed for \"%s\" - texelData was null!", name));
-    GUARANTEE_OR_DIE(dimensions.x > 0 && dimensions.y > 0,
-        Stringf("CreateTextureFromData failed for \"%s\" - illegal texture dimensions (%i x %i)", name, dimensions.x, dimensions.y));
-
-    // We only support RGBA8 format for now, so require 4 bytes per texel
-    GUARANTEE_OR_DIE(bytesPerTexel == 4,
-        Stringf("CreateTextureFromData requires 4 bytes/texel (RGBA). Got %i for \"%s\"", bytesPerTexel, name));
-
-    Texture* newTexture = new Texture();
-    newTexture->m_name = name;
-    newTexture->m_dimensions = dimensions;
-
-    D3D11_TEXTURE2D_DESC textureDesc = {};
-    textureDesc.Width = (UINT)dimensions.x;
-    textureDesc.Height = (UINT)dimensions.y;
-    textureDesc.MipLevels = 1;
-    textureDesc.ArraySize = 1;
-    textureDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-    textureDesc.SampleDesc.Count = 1;
-    textureDesc.Usage = D3D11_USAGE_IMMUTABLE;
-    textureDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
-
-    D3D11_SUBRESOURCE_DATA textureData = {};
-    textureData.pSysMem = texelData;
-    textureData.SysMemPitch = 4 * dimensions.x; 
-
-    HRESULT hr = m_device->CreateTexture2D(&textureDesc, &textureData, &newTexture->m_texture);
-    if (!SUCCEEDED(hr))
-    {
-        delete newTexture;
-        ERROR_AND_DIE(Stringf("CreateTexture2D failed for image file \"%s\".", name));
-    }
-
-    hr = m_device->CreateShaderResourceView(newTexture->m_texture, nullptr, &newTexture->m_shaderResourceView);
-    if (!SUCCEEDED(hr))
-    {
-        delete newTexture;
-        ERROR_AND_DIE(Stringf("CreateShaderResourceView failed for image file \"%s\".", name));
-    }
-
-    m_loadedTexturesDict[newTexture->m_name] = newTexture;
-    return newTexture;
-}
-
-
-BitmapFont* Renderer::CreateOrGetBitmapFont(char const* fontFilePathNameWithNoExtension)
-{
-    std::string fontKey = std::string(fontFilePathNameWithNoExtension);
-    auto found = m_loadedFontsDict.find(fontKey);
-    if (found != m_loadedFontsDict.end())
-    {
-        return found->second;
-    }
-
-    Texture* fontTexture = CreateOrGetTextureFromFile(Stringf("%s.png", fontFilePathNameWithNoExtension).c_str());
-    BitmapFont* newBitmapFont = new BitmapFont(fontFilePathNameWithNoExtension, *fontTexture);
-    m_loadedFontsDict[fontKey] = newBitmapFont;
-    return newBitmapFont;
-}
-
-void Renderer::BindTexture(Texture* texture)
-{
-    GUARANTEE_OR_DIE(m_deviceContext, "BindTexture: m_deviceContext is null");
-
-    if (texture == nullptr)
-    {
-        texture = m_defaultTexture;
-    }
-
-    ID3D11ShaderResourceView* srv = texture->m_shaderResourceView;
-    m_deviceContext->PSSetShaderResources(0, 1, &srv);
-    m_deviceContext->PSGetSamplers(0, 1, &m_samplerState);
-}
-
+#pragma endregion

@@ -14,6 +14,7 @@
 #include <vector>
 
 struct Vertex_PCU;
+struct Vertex_PCUTBN;
 struct Vec2;
 class AABB2;
 
@@ -62,6 +63,16 @@ void AddVertsForQuad3D(
 
 void AddVertsForQuad3D(
     std::vector<Vertex_PCU> &verts,
+    std::vector<unsigned int> &indexes,
+    const Vec3 &bottomLeft,
+    const Vec3 &bottomRight,
+    const Vec3 &topRight,
+    const Vec3 &topLeft,
+    const Rgba8 &color = Rgba8::WHITE,
+    const AABB2 &UVs = AABB2::UNIT);
+
+void AddVertsForQuad3D(
+    std::vector<Vertex_PCUTBN> &verts,
     std::vector<unsigned int> &indexes,
     const Vec3 &bottomLeft,
     const Vec3 &bottomRight,

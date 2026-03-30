@@ -282,8 +282,9 @@ namespace
         verts.reserve(1024);
 
         float cellHeight = obj.textHeight > 0.f ? obj.textHeight : 20.f;
-        font->AddVertsForTextInBox2D(verts, obj.text, box, cellHeight, color, 0.85f, obj.alignment, TextBoxMode::SHRINK_TO_FIT);
+        font->AddVertsForTextInBox2D(verts, obj.text, box, cellHeight, color, 1.f, obj.alignment, TextBoxMode::SHRINK_TO_FIT);
 
+        renderer->BindShader(nullptr);
         renderer->BindTexture(&font->GetTexture());
         renderer->BindModelConstants(Matrix4x4::IDENTITY, Rgba8::WHITE);
         renderer->DrawVertexArray(verts);
