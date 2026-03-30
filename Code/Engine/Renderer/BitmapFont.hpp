@@ -51,8 +51,6 @@ public:
 
 #pragma endregion
 
-
-
     float GetTextWidth(float cellHeight, std::string const& text, float cellAspectScale = 1.f);
     float GetTextHeight(float cellHeight, std::string const& text);
     Vec2 GetTextBoundsDimension(float cellHeight, std::string const& text, float cellAspectScale = 1.f);

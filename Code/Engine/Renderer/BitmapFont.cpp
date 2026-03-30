@@ -13,9 +13,8 @@
 int const FONT_SPRITE_SHEET_COLS = 16;
 int const FONT_SPRITE_SHEET_ROWS = 16;
 
-BitmapFont::BitmapFont(char const* fontFilePathNameWithNoExtension, Texture& fontTexture)
-    : m_fontFilePathNameWithNoExtension(fontFilePathNameWithNoExtension)
-    , m_fontGlyphsSpriteSheet(fontTexture, IntVec2(FONT_SPRITE_SHEET_COLS, FONT_SPRITE_SHEET_ROWS))
+BitmapFont::BitmapFont(char const *fontFilePathNameWithNoExtension, Texture &fontTexture)
+    : m_fontFilePathNameWithNoExtension(fontFilePathNameWithNoExtension), m_fontGlyphsSpriteSheet(fontTexture, IntVec2(FONT_SPRITE_SHEET_COLS, FONT_SPRITE_SHEET_ROWS))
 {
     IntVec2 texDims = fontTexture.GetDimensions();
     float texAspect = (texDims.y == 0) ? 1.f : (float)texDims.x / (float)texDims.y;
@@ -23,16 +22,16 @@ BitmapFont::BitmapFont(char const* fontFilePathNameWithNoExtension, Texture& fon
     m_fontDefaultAspect = texAspect / gridAspect;
 }
 
-Texture& BitmapFont::GetTexture()
+Texture &BitmapFont::GetTexture()
 {
     return m_fontGlyphsSpriteSheet.GetTexture();
 }
 
 void BitmapFont::AddVertsForText2D(
-    std::vector<Vertex_PCU>& verts,
+    std::vector<Vertex_PCU> &verts,
     Vec2 textMins,
     float cellHeight,
-    std::string const& text,
+    std::string const &text,
     Rgba8 tint,
     float cellAspectScale)
 {
@@ -66,9 +65,9 @@ void BitmapFont::AddVertsForText2D(
 }
 
 void BitmapFont::AddVertsForTextInBox2D(
-    std::vector<Vertex_PCU>& verts,
-    std::string const& text,
-    AABB2 const& box,
+    std::vector<Vertex_PCU> &verts,
+    std::string const &text,
+    AABB2 const &box,
     float cellHeight,
     Rgba8 tint,
     float cellAspectScale,
@@ -102,6 +101,8 @@ void BitmapFont::AddVertsForTextInBox2D(
     }
 
     Vec2 start = box.m_mins + gaps * alignment;
+    float baselineYOffset = textBoundsDimension.y - cellHeight;
+    start.y += baselineYOffset;
     int glyphCount = Min((int)text.size(), maxGlyphsToDraw);
     std::string clipped = text.substr(0, glyphCount + 1);
 
@@ -115,12 +116,12 @@ void BitmapFont::AddVertsForTextInBox2D(
 }
 
 void BitmapFont::AddVertsForText3DAtOriginXForward(
-    std::vector<Vertex_PCU>& verts,
+    std::vector<Vertex_PCU> &verts,
     float cellHeight,
-    std::string const& text,
-    Rgba8 const& tint /*= Rgba8::WHITE*/,
+    std::string const &text,
+    Rgba8 const &tint /*= Rgba8::WHITE*/,
     float cellAspect /*= 1.0f*/,
-    Vec2 const& alignment /*= Vec2(0.5f, 0.5f)*/,
+    Vec2 const &alignment /*= Vec2(0.5f, 0.5f)*/,
     int maxGlyphsToDraw /*= 999*/)
 {
     int glyphCount = Min((int)text.size(), maxGlyphsToDraw);
@@ -146,7 +147,7 @@ void BitmapFont::AddVertsForText3DAtOriginXForward(
     verts.insert(verts.end(), textVerts.begin(), textVerts.end());
 }
 
-float BitmapFont::GetTextWidth(float cellHeight, std::string const& text, float cellAspectScale)
+float BitmapFont::GetTextWidth(float cellHeight, std::string const &text, float cellAspectScale)
 {
     float cellWidth = cellHeight * m_fontDefaultAspect * cellAspectScale;
 
@@ -170,7 +171,7 @@ float BitmapFont::GetTextWidth(float cellHeight, std::string const& text, float 
     return cellWidth * (float)maxLen;
 }
 
-float BitmapFont::GetTextHeight(float cellHeight, std::string const& text)
+float BitmapFont::GetTextHeight(float cellHeight, std::string const &text)
 {
     int lines = 1;
     for (char c : text)
@@ -184,7 +185,7 @@ float BitmapFont::GetTextHeight(float cellHeight, std::string const& text)
     return cellHeight * (float)lines;
 }
 
-Vec2 BitmapFont::GetTextBoundsDimension(float cellHeight, std::string const& text, float cellAspectScale /*= 1.f*/)
+Vec2 BitmapFont::GetTextBoundsDimension(float cellHeight, std::string const &text, float cellAspectScale /*= 1.f*/)
 {
     float textWidth = GetTextWidth(cellHeight, text, cellAspectScale);
     float textHeight = GetTextHeight(cellHeight, text);

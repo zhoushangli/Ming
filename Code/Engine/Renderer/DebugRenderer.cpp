@@ -65,8 +65,8 @@ namespace
     static bool s_isVisible = true;
 
     DebugObject MakeDebugObject(DebugObjectType type, float duration,
-        Rgba8 const& startColor, Rgba8 const& endColor,
-        DebugRenderMode mode = DebugRenderMode::USE_DEPTH)
+                                Rgba8 const &startColor, Rgba8 const &endColor,
+                                DebugRenderMode mode = DebugRenderMode::USE_DEPTH)
     {
         DebugObject object;
         object.type = type;
@@ -78,7 +78,7 @@ namespace
         return object;
     }
 
-    Rgba8 GetDebugObjectColor(DebugObject const& obj)
+    Rgba8 GetDebugObjectColor(DebugObject const &obj)
     {
         if (obj.totalDuration < 0.f)
         {
@@ -95,7 +95,7 @@ namespace
         return Interpolate(obj.startColor, obj.endColor, t);
     }
 
-    void ApplyDebugRenderMode(Renderer* renderer, DebugObject const& obj)
+    void ApplyDebugRenderMode(Renderer *renderer, DebugObject const &obj)
     {
         if (renderer == nullptr)
         {
@@ -145,58 +145,40 @@ namespace
                 break;
             }
         }
-        
     }
 
-    void DrawWorldObject(Renderer* renderer, BitmapFont* font, Camera const& camera, DebugObject const& obj)
+    void DrawWorldObject(Renderer *renderer, BitmapFont *font, Camera const &camera, DebugObject const &obj)
     {
         std::vector<Vertex_PCU> verts;
         verts.reserve(2048);
 
         Rgba8 color = GetDebugObjectColor(obj);
+        Texture *texture = nullptr;
 
         switch (obj.type)
         {
         case DebugObjectType::WORLD_SPHERE:
             AddVertsForSphere3D(verts, obj.center, obj.radius, color);
-            renderer->BindTexture(nullptr);
-            renderer->BindModelConstants(Matrix4x4::IDENTITY, Rgba8::WHITE);
-            renderer->DrawVertexArray(verts);
             break;
 
         case DebugObjectType::WORLD_WIRE_SPHERE:
             AddVertsForSphere3D(verts, obj.center, obj.radius, color);
-            renderer->BindTexture(nullptr);
-            renderer->BindModelConstants(Matrix4x4::IDENTITY, Rgba8::WHITE);
-            renderer->DrawVertexArray(verts);
             break;
 
         case DebugObjectType::WORLD_CYLINDER:
             AddVertsForCylinder3D(verts, obj.start, obj.end, obj.radius, color);
-            renderer->BindTexture(nullptr);
-            renderer->BindModelConstants(Matrix4x4::IDENTITY, Rgba8::WHITE);
-            renderer->DrawVertexArray(verts);
             break;
 
         case DebugObjectType::WORLD_WIRE_CYLINDER:
             AddVertsForCylinder3D(verts, obj.start, obj.end, obj.radius, color);
-            renderer->BindTexture(nullptr);
-            renderer->BindModelConstants(Matrix4x4::IDENTITY, Rgba8::WHITE);
-            renderer->DrawVertexArray(verts);
             break;
 
         case DebugObjectType::WORLD_ARROW:
             AddVertsForArrow3D(verts, obj.start, obj.end, obj.radius, color);
-            renderer->BindTexture(nullptr);
-            renderer->BindModelConstants(Matrix4x4::IDENTITY, Rgba8::WHITE);
-            renderer->DrawVertexArray(verts);
             break;
 
         case DebugObjectType::WORLD_WIRE_ARROW:
             AddVertsForArrow3D(verts, obj.start, obj.end, obj.radius, color);
-            renderer->BindTexture(nullptr);
-            renderer->BindModelConstants(Matrix4x4::IDENTITY, Rgba8::WHITE);
-            renderer->DrawVertexArray(verts);
             break;
 
         case DebugObjectType::WORLD_TEXT:
@@ -207,13 +189,8 @@ namespace
             }
 
             font->AddVertsForText3DAtOriginXForward(verts, obj.textHeight, obj.text, color, 1.0f, obj.alignment);
-
-            // Put text in world using model matrix
             TransformVertexArray3D(verts, obj.transform);
-
-            renderer->BindTexture(&font->GetTexture());
-            renderer->BindModelConstants(Matrix4x4::IDENTITY, Rgba8::WHITE);
-            renderer->DrawVertexArray(verts);
+            texture = &font->GetTexture();
         }
         break;
 
@@ -225,36 +202,36 @@ namespace
             }
 
             font->AddVertsForText3DAtOriginXForward(verts, obj.textHeight, obj.text, color, 1.0f, obj.alignment);
-
             Matrix4x4 billboard = GetBillboardTransform(BillboardType::FULL_OPPOSING, camera.GetCameraToWorldTransform(), obj.center);
             TransformVertexArray3D(verts, billboard);
-            
-
-            renderer->BindTexture(&font->GetTexture());
-            renderer->BindModelConstants(Matrix4x4::IDENTITY, Rgba8::WHITE);
-            renderer->DrawVertexArray(verts);
+            texture = &font->GetTexture();
         }
         break;
 
         case DebugObjectType::WORLD_GRID:
         {
-            if (obj.verts.empty())
+            if (!obj.verts.empty())
             {
-                break;
+                verts = obj.verts;
             }
-
-            renderer->BindTexture(nullptr);
-            renderer->BindModelConstants(Matrix4x4::IDENTITY, Rgba8::WHITE);
-            renderer->DrawVertexArray(obj.verts);
         }
         break;
 
         default:
             break;
         }
+
+        // Render if we have vertices
+        if (!verts.empty())
+        {
+            renderer->BindShader(nullptr);
+            renderer->BindTexture(texture);
+            renderer->BindModelConstants(Matrix4x4::IDENTITY, Rgba8::WHITE);
+            renderer->DrawVertexArray(verts);
+        }
     }
 
-    void DrawScreenObject(Renderer* renderer, BitmapFont* font, Camera const& camera, DebugObject const& obj, int lineNum = -1)
+    void DrawScreenObject(Renderer *renderer, BitmapFont *font, Camera const &camera, DebugObject const &obj, int lineNum = -1)
     {
         if (renderer == nullptr || font == nullptr)
         {
@@ -290,11 +267,11 @@ namespace
         renderer->DrawVertexArray(verts);
     }
 
-    void UpdateDebugObjectLifetimes(std::vector<DebugObject>& objects, float deltaSeconds)
+    void UpdateDebugObjectLifetimes(std::vector<DebugObject> &objects, float deltaSeconds)
     {
         for (int i = (int)objects.size() - 1; i >= 0; --i)
         {
-            DebugObject& obj = objects[i];
+            DebugObject &obj = objects[i];
 
             if (obj.totalDuration < 0.f)
             {
@@ -310,7 +287,7 @@ namespace
         }
     }
 
-    void ResetRendererStates(Renderer* renderer)
+    void ResetRendererStates(Renderer *renderer)
     {
         if (renderer == nullptr)
         {
@@ -323,7 +300,7 @@ namespace
 }
 
 // Setup
-void DebugRenderSystemStartup(const DebugRenderConfig& config)
+void DebugRenderSystemStartup(const DebugRenderConfig &config)
 {
     s_debugRenderConfig = config;
     s_debugObjects.clear();
@@ -363,8 +340,8 @@ void DebugRenderClear()
 }
 
 // Geometry
-void DebugAddWorldSphere(const Vec3& center, float radius, float duration,
-    const Rgba8& startColor, const Rgba8& endColor, DebugRenderMode mode)
+void DebugAddWorldSphere(const Vec3 &center, float radius, float duration,
+                         const Rgba8 &startColor, const Rgba8 &endColor, DebugRenderMode mode)
 {
     DebugObject object = MakeDebugObject(DebugObjectType::WORLD_SPHERE, duration, startColor, endColor, mode);
     object.center = center;
@@ -372,8 +349,8 @@ void DebugAddWorldSphere(const Vec3& center, float radius, float duration,
     s_debugObjects.push_back(object);
 }
 
-void DebugAddWorldWireSphere(const Vec3& center, float radius, float duration,
-    const Rgba8& startColor, const Rgba8& endColor, DebugRenderMode mode)
+void DebugAddWorldWireSphere(const Vec3 &center, float radius, float duration,
+                             const Rgba8 &startColor, const Rgba8 &endColor, DebugRenderMode mode)
 {
     DebugObject object = MakeDebugObject(DebugObjectType::WORLD_WIRE_SPHERE, duration, startColor, endColor, mode);
     object.center = center;
@@ -381,8 +358,8 @@ void DebugAddWorldWireSphere(const Vec3& center, float radius, float duration,
     s_debugObjects.push_back(object);
 }
 
-void DebugAddWorldCylinder(const Vec3& start, const Vec3& end, float radius, float duration,
-    const Rgba8& startColor, const Rgba8& endColor, DebugRenderMode mode)
+void DebugAddWorldCylinder(const Vec3 &start, const Vec3 &end, float radius, float duration,
+                           const Rgba8 &startColor, const Rgba8 &endColor, DebugRenderMode mode)
 {
     DebugObject object = MakeDebugObject(DebugObjectType::WORLD_CYLINDER, duration, startColor, endColor, mode);
     object.start = start;
@@ -391,8 +368,8 @@ void DebugAddWorldCylinder(const Vec3& start, const Vec3& end, float radius, flo
     s_debugObjects.push_back(object);
 }
 
-void DebugAddWorldWireCylinder(const Vec3& start, const Vec3& end, float radius, float duration,
-    const Rgba8& startColor, const Rgba8& endColor, DebugRenderMode mode)
+void DebugAddWorldWireCylinder(const Vec3 &start, const Vec3 &end, float radius, float duration,
+                               const Rgba8 &startColor, const Rgba8 &endColor, DebugRenderMode mode)
 {
     DebugObject object = MakeDebugObject(DebugObjectType::WORLD_WIRE_CYLINDER, duration, startColor, endColor, mode);
     object.start = start;
@@ -401,8 +378,8 @@ void DebugAddWorldWireCylinder(const Vec3& start, const Vec3& end, float radius,
     s_debugObjects.push_back(object);
 }
 
-void DebugAddWorldArrow(const Vec3& start, const Vec3& end, float radius, float duration,
-    const Rgba8& startColor, const Rgba8& endColor, DebugRenderMode mode)
+void DebugAddWorldArrow(const Vec3 &start, const Vec3 &end, float radius, float duration,
+                        const Rgba8 &startColor, const Rgba8 &endColor, DebugRenderMode mode)
 {
     DebugObject object = MakeDebugObject(DebugObjectType::WORLD_ARROW, duration, startColor, endColor, mode);
     object.start = start;
@@ -411,8 +388,8 @@ void DebugAddWorldArrow(const Vec3& start, const Vec3& end, float radius, float 
     s_debugObjects.push_back(object);
 }
 
-void DebugAddWorldWireArrow(const Vec3& start, const Vec3& end, float radius, float duration,
-    const Rgba8& startColor, const Rgba8& endColor, DebugRenderMode mode)
+void DebugAddWorldWireArrow(const Vec3 &start, const Vec3 &end, float radius, float duration,
+                            const Rgba8 &startColor, const Rgba8 &endColor, DebugRenderMode mode)
 {
     DebugObject object = MakeDebugObject(DebugObjectType::WORLD_WIRE_ARROW, duration, startColor, endColor, mode);
     object.start = start;
@@ -421,8 +398,8 @@ void DebugAddWorldWireArrow(const Vec3& start, const Vec3& end, float radius, fl
     s_debugObjects.push_back(object);
 }
 
-void DebugAddBasis(const Matrix4x4& transform, float duration, float length, float radius,
-    float colorScale, float alphaScale, DebugRenderMode mode)
+void DebugAddBasis(const Matrix4x4 &transform, float duration, float length, float radius,
+                   float colorScale, float alphaScale, DebugRenderMode mode)
 {
     Vec3 origin = transform.GetTranslation3D();
     Vec3 xEnd = transform.TransformPosition3D(Vec3(length, 0.f, 0.f));
@@ -442,14 +419,14 @@ void DebugAddBasis(const Matrix4x4& transform, float duration, float length, flo
     DebugAddWorldArrow(origin, zEnd, radius, duration, zColor, zColor, mode);
 }
 
-void DebugAddWorldBasis(const Matrix4x4& transform, float duration, DebugRenderMode mode)
+void DebugAddWorldBasis(const Matrix4x4 &transform, float duration, DebugRenderMode mode)
 {
     DebugAddBasis(transform, duration, 1.0f, 0.1f, 1.0f, 1.0f, mode);
 }
 
-void DebugAddWorldText(const std::string& text, const Matrix4x4& transform, float textHeight,
-    const Vec2& alignment, float duration,
-    const Rgba8& startColor, const Rgba8& endColor, DebugRenderMode mode)
+void DebugAddWorldText(const std::string &text, const Matrix4x4 &transform, float textHeight,
+                       const Vec2 &alignment, float duration,
+                       const Rgba8 &startColor, const Rgba8 &endColor, DebugRenderMode mode)
 {
     DebugObject object = MakeDebugObject(DebugObjectType::WORLD_TEXT, duration, startColor, endColor, mode);
     object.text = text;
@@ -459,9 +436,9 @@ void DebugAddWorldText(const std::string& text, const Matrix4x4& transform, floa
     s_debugObjects.push_back(object);
 }
 
-void DebugAddWorldBillboardText(const std::string& text, const Vec3& origin, float textHeight,
-    const Vec2& alignment, float duration,
-    const Rgba8& startColor, const Rgba8& endColor, DebugRenderMode mode)
+void DebugAddWorldBillboardText(const std::string &text, const Vec3 &origin, float textHeight,
+                                const Vec2 &alignment, float duration,
+                                const Rgba8 &startColor, const Rgba8 &endColor, DebugRenderMode mode)
 {
     DebugObject object = MakeDebugObject(DebugObjectType::WORLD_BILLBOARD_TEXT, duration, startColor, endColor, mode);
     object.text = text;
@@ -471,7 +448,7 @@ void DebugAddWorldBillboardText(const std::string& text, const Vec3& origin, flo
     s_debugObjects.push_back(object);
 }
 
-void DebugAddScreenText(const std::string& text, const AABB2& box, float cellHeight, const Vec2& alignment, float duration, const Rgba8& startColor /*= Rgba8::WHITE*/, const Rgba8& endColor /*= Rgba8::WHITE*/)
+void DebugAddScreenText(const std::string &text, const AABB2 &box, float cellHeight, const Vec2 &alignment, float duration, const Rgba8 &startColor /*= Rgba8::WHITE*/, const Rgba8 &endColor /*= Rgba8::WHITE*/)
 {
     DebugObject object = MakeDebugObject(DebugObjectType::SCREEN_TEXT, duration, startColor, endColor, DebugRenderMode::ALWAYS);
     object.text = text;
@@ -481,7 +458,7 @@ void DebugAddScreenText(const std::string& text, const AABB2& box, float cellHei
     s_debugObjects.push_back(object);
 }
 
-void DebugAddMessage(const std::string& text, float duration, const Rgba8& startColor /*= Rgba8::WHITE*/, const Rgba8& endColor /*= Rgba8::WHITE*/)
+void DebugAddMessage(const std::string &text, float duration, const Rgba8 &startColor /*= Rgba8::WHITE*/, const Rgba8 &endColor /*= Rgba8::WHITE*/)
 {
     DebugObject object = MakeDebugObject(DebugObjectType::MESSAGE, duration, startColor, endColor, DebugRenderMode::ALWAYS);
     object.text = text;
@@ -521,7 +498,7 @@ void DebugAddWorldGrid()
         return (unsigned char)GetClamped(a, 0.f, 255.f);
     };
 
-    auto AddSegmentAABB = [&object, &ComputeAlphaForDistance](AABB3 const& aabb, Rgba8 baseColor)
+    auto AddSegmentAABB = [&object, &ComputeAlphaForDistance](AABB3 const &aabb, Rgba8 baseColor)
     {
         // Use segment center distance to compute alpha
         Vec3 center = aabb.GetCenter();
@@ -602,26 +579,25 @@ void DebugRenderBeginFrame()
 {
 }
 
-void DebugRenderWorld(const Camera& camera)
+void DebugRenderWorld(const Camera &camera)
 {
     if (!s_isVisible)
     {
         return;
     }
 
-    Renderer* renderer = s_debugRenderConfig.m_renderer;
+    Renderer *renderer = s_debugRenderConfig.m_renderer;
     if (renderer == nullptr)
     {
         return;
     }
 
-    BitmapFont* font = renderer->CreateOrGetBitmapFont(
-        Stringf("%s%s", s_debugRenderConfig.m_fontPath.c_str(), s_debugRenderConfig.m_fontName.c_str()).c_str()
-    );
+    BitmapFont *font = renderer->CreateOrGetBitmapFont(
+        Stringf("%s%s", s_debugRenderConfig.m_fontPath.c_str(), s_debugRenderConfig.m_fontName.c_str()).c_str());
 
     // First pass: X_RAY objects only, with modified alpha for see-through effect.
     float const xrayAlphaMultiplier = 0.2f;
-    for (DebugObject const& obj : s_debugObjects)
+    for (DebugObject const &obj : s_debugObjects)
     {
         if (obj.type == DebugObjectType::SCREEN_TEXT || obj.type == DebugObjectType::MESSAGE)
         {
@@ -643,7 +619,7 @@ void DebugRenderWorld(const Camera& camera)
     }
 
     // Second pass: draw all world objects normally.
-    for (DebugObject const& obj : s_debugObjects)
+    for (DebugObject const &obj : s_debugObjects)
     {
         if (obj.type == DebugObjectType::SCREEN_TEXT || obj.type == DebugObjectType::MESSAGE)
         {
@@ -657,24 +633,23 @@ void DebugRenderWorld(const Camera& camera)
     ResetRendererStates(renderer);
 }
 
-void DebugRenderScreen(const Camera& camera)
+void DebugRenderScreen(const Camera &camera)
 {
     if (!s_isVisible)
     {
         return;
     }
 
-    Renderer* renderer = s_debugRenderConfig.m_renderer;
+    Renderer *renderer = s_debugRenderConfig.m_renderer;
     if (renderer == nullptr)
     {
         return;
     }
 
-    BitmapFont* font = renderer->CreateOrGetBitmapFont(
-        Stringf("%s%s", s_debugRenderConfig.m_fontPath.c_str(), s_debugRenderConfig.m_fontName.c_str()).c_str()
-    );
+    BitmapFont *font = renderer->CreateOrGetBitmapFont(
+        Stringf("%s%s", s_debugRenderConfig.m_fontPath.c_str(), s_debugRenderConfig.m_fontName.c_str()).c_str());
 
-    for (DebugObject const& obj : s_debugObjects)
+    for (DebugObject const &obj : s_debugObjects)
     {
         if (obj.type != DebugObjectType::SCREEN_TEXT)
         {
@@ -687,7 +662,7 @@ void DebugRenderScreen(const Camera& camera)
 
     for (int messageIndex = 0; messageIndex < (int)s_debugMessages.size(); ++messageIndex)
     {
-        DebugObject const& obj = s_debugMessages[messageIndex];
+        DebugObject const &obj = s_debugMessages[messageIndex];
         ApplyDebugRenderMode(renderer, obj);
         DrawScreenObject(renderer, font, camera, obj, (int)s_debugMessages.size() - messageIndex - 1);
     }
@@ -697,18 +672,18 @@ void DebugRenderScreen(const Camera& camera)
 
 void DebugRenderEndFrame()
 {
-    float dt = (float)Clock::GetSystemClock().GetDeltaSeconds(); 
+    float dt = (float)Clock::GetSystemClock().GetDeltaSeconds();
     UpdateDebugObjectLifetimes(s_debugObjects, dt);
     UpdateDebugObjectLifetimes(s_debugMessages, dt);
 }
 
-bool Command_DebugRenderClear([[maybe_unused]] EventArgs& args)
+bool Command_DebugRenderClear([[maybe_unused]] EventArgs &args)
 {
     DebugRenderClear();
     return true;
 }
 
-bool Command_DebugRenderToggle([[maybe_unused]] EventArgs& args)
+bool Command_DebugRenderToggle([[maybe_unused]] EventArgs &args)
 {
     s_isVisible = !s_isVisible;
     return true;

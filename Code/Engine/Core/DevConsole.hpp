@@ -25,8 +25,8 @@ struct DevConsoleConfig
 {
     bool            m_isEnable          = true;
 
+    std::string     m_fontPath          = "Data/Fonts";
     std::string     m_fontName          = "SquirrelFixedFont";
-    std::string     m_fontPath          = "Data/Images";
 
     float           m_fontAspect        = 1.f;
     int             m_linesOnScreen     = 32;
