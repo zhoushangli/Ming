@@ -799,7 +799,7 @@ void Renderer::BindShader(Shader* shader)
     m_deviceContext->PSSetShader(shader->m_pixelShader, nullptr, 0);
 }
 
-void Renderer::SetModelConstants(Matrix4x4 const& modelToWorldTransform, Rgba8 const& modelColor)
+void Renderer::BindModelConstants(Matrix4x4 const& modelToWorldTransform, Rgba8 const& modelColor)
 {
     ModelConstants modelData = ModelConstants();
     modelData.ModelToWorldTransform = modelToWorldTransform;
@@ -810,6 +810,17 @@ void Renderer::SetModelConstants(Matrix4x4 const& modelToWorldTransform, Rgba8 c
 
     CopyCPUToGPU(&modelData, sizeof(modelData), m_modelCBO);
     BindConstantBuffer(m_modelCBO, k_modelConstantsSlot);
+}
+
+void Renderer::BindLightConstants(Vec3 const& sunDirection, float const sunIntensity, float const ambientIntensity)
+{
+    LightConstants lightData = LightConstants();
+    lightData.SunDirection = sunDirection;
+    lightData.SunIntensity = sunIntensity;
+    lightData.AmbientIntensity = ambientIntensity;
+
+    CopyCPUToGPU(&lightData, sizeof(lightData), m_lightCBO);
+    BindConstantBuffer(m_lightCBO, k_lightConstantsSlot);
 }
 
 VertexBuffer* Renderer::CreateVertexBuffer(const unsigned int size, unsigned int stride)
@@ -914,8 +925,8 @@ void Renderer::BindConstantBuffer(ConstantBuffer* constantBuffer, int slot)
     if (constantBuffer == nullptr)
     {
         ID3D11Buffer* nullBuf = nullptr;
-        m_deviceContext->VSSetConstantBuffers(2, 1, &nullBuf);
-        m_deviceContext->PSSetConstantBuffers(2, 1, &nullBuf);
+        m_deviceContext->VSSetConstantBuffers(slot, 1, &nullBuf);
+        m_deviceContext->PSSetConstantBuffers(slot, 1, &nullBuf);
         return;
     }
 

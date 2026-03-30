@@ -160,42 +160,42 @@ namespace
         case DebugObjectType::WORLD_SPHERE:
             AddVertsForSphere3D(verts, obj.center, obj.radius, color);
             renderer->BindTexture(nullptr);
-            renderer->SetModelConstants(Matrix4x4::IDENTITY, Rgba8::WHITE);
+            renderer->BindModelConstants(Matrix4x4::IDENTITY, Rgba8::WHITE);
             renderer->DrawVertexArray(verts);
             break;
 
         case DebugObjectType::WORLD_WIRE_SPHERE:
             AddVertsForSphere3D(verts, obj.center, obj.radius, color);
             renderer->BindTexture(nullptr);
-            renderer->SetModelConstants(Matrix4x4::IDENTITY, Rgba8::WHITE);
+            renderer->BindModelConstants(Matrix4x4::IDENTITY, Rgba8::WHITE);
             renderer->DrawVertexArray(verts);
             break;
 
         case DebugObjectType::WORLD_CYLINDER:
             AddVertsForCylinder3D(verts, obj.start, obj.end, obj.radius, color);
             renderer->BindTexture(nullptr);
-            renderer->SetModelConstants(Matrix4x4::IDENTITY, Rgba8::WHITE);
+            renderer->BindModelConstants(Matrix4x4::IDENTITY, Rgba8::WHITE);
             renderer->DrawVertexArray(verts);
             break;
 
         case DebugObjectType::WORLD_WIRE_CYLINDER:
             AddVertsForCylinder3D(verts, obj.start, obj.end, obj.radius, color);
             renderer->BindTexture(nullptr);
-            renderer->SetModelConstants(Matrix4x4::IDENTITY, Rgba8::WHITE);
+            renderer->BindModelConstants(Matrix4x4::IDENTITY, Rgba8::WHITE);
             renderer->DrawVertexArray(verts);
             break;
 
         case DebugObjectType::WORLD_ARROW:
             AddVertsForArrow3D(verts, obj.start, obj.end, obj.radius, color);
             renderer->BindTexture(nullptr);
-            renderer->SetModelConstants(Matrix4x4::IDENTITY, Rgba8::WHITE);
+            renderer->BindModelConstants(Matrix4x4::IDENTITY, Rgba8::WHITE);
             renderer->DrawVertexArray(verts);
             break;
 
         case DebugObjectType::WORLD_WIRE_ARROW:
             AddVertsForArrow3D(verts, obj.start, obj.end, obj.radius, color);
             renderer->BindTexture(nullptr);
-            renderer->SetModelConstants(Matrix4x4::IDENTITY, Rgba8::WHITE);
+            renderer->BindModelConstants(Matrix4x4::IDENTITY, Rgba8::WHITE);
             renderer->DrawVertexArray(verts);
             break;
 
@@ -212,7 +212,7 @@ namespace
             TransformVertexArray3D(verts, obj.transform);
 
             renderer->BindTexture(&font->GetTexture());
-            renderer->SetModelConstants(Matrix4x4::IDENTITY, Rgba8::WHITE);
+            renderer->BindModelConstants(Matrix4x4::IDENTITY, Rgba8::WHITE);
             renderer->DrawVertexArray(verts);
         }
         break;
@@ -231,7 +231,7 @@ namespace
             
 
             renderer->BindTexture(&font->GetTexture());
-            renderer->SetModelConstants(Matrix4x4::IDENTITY, Rgba8::WHITE);
+            renderer->BindModelConstants(Matrix4x4::IDENTITY, Rgba8::WHITE);
             renderer->DrawVertexArray(verts);
         }
         break;
@@ -244,7 +244,7 @@ namespace
             }
 
             renderer->BindTexture(nullptr);
-            renderer->SetModelConstants(Matrix4x4::IDENTITY, Rgba8::WHITE);
+            renderer->BindModelConstants(Matrix4x4::IDENTITY, Rgba8::WHITE);
             renderer->DrawVertexArray(obj.verts);
         }
         break;
@@ -285,7 +285,7 @@ namespace
         font->AddVertsForTextInBox2D(verts, obj.text, box, cellHeight, color, 0.85f, obj.alignment, TextBoxMode::SHRINK_TO_FIT);
 
         renderer->BindTexture(&font->GetTexture());
-        renderer->SetModelConstants(Matrix4x4::IDENTITY, Rgba8::WHITE);
+        renderer->BindModelConstants(Matrix4x4::IDENTITY, Rgba8::WHITE);
         renderer->DrawVertexArray(verts);
     }
 

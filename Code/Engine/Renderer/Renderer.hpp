@@ -81,6 +81,14 @@ struct RendererConfig
 	bool m_isEnable = true;
 };
 
+struct LightConstants
+{
+    Vec3 SunDirection;
+    float SunIntensity;
+    float AmbientIntensity;
+};
+static const int k_lightConstantsSlot = 1;
+
 struct CameraConstants
 {
     Matrix4x4 WorldToCameraTransform;
@@ -129,7 +137,8 @@ public:
 	void BindTexture(Texture* textureOrNull);
     void BindShader(Shader* shader);
 
-    void SetModelConstants(Matrix4x4 const& modelToWorldTransform, Rgba8 const& modelColor);
+    void BindModelConstants(Matrix4x4 const& modelToWorldTransform, Rgba8 const& modelColor);
+    void BindLightConstants(Vec3 const& sunDirection, float const sunIntensity, float const ambientIntensity);
 
     Shader* CreateShader(char const* shaderName, VertexType vertexType = VertexType::PCU);
 	Texture* CreateOrGetTextureFromFile(char const* fileDataPath);
@@ -168,6 +177,7 @@ private:
 
     VertexBuffer* m_currentVertexBuffer  = nullptr;
     IndexBuffer* m_currentIndexBuffer    = nullptr;
+    ConstantBuffer* m_lightCBO           = nullptr;
     ConstantBuffer* m_cameraCBO          = nullptr;
     ConstantBuffer* m_modelCBO           = nullptr;
 

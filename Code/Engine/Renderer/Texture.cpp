@@ -62,22 +62,22 @@ float SpriteDefinition::GetAspect() const
 }
 
 // SpriteSheet
-SpriteSheet::SpriteSheet(Texture& texture, IntVec2 const& simpleGridLayout)
-    : m_texture(texture)
+SpriteSheet::SpriteSheet(Texture& texture, IntVec2 const& dimension)
+    : m_texture(texture), m_dimension(dimension)
 {
-    int numSprites = simpleGridLayout.x * simpleGridLayout.y;
+    int numSprites = dimension.x * dimension.y;
     m_spriteDefs.reserve(numSprites);
 
-    float cellWidth = 1.0f / static_cast<float>(simpleGridLayout.x);
-    float cellHeight = 1.0f / static_cast<float>(simpleGridLayout.y);
+    float cellWidth = 1.0f / static_cast<float>(dimension.x);
+    float cellHeight = 1.0f / static_cast<float>(dimension.y);
 
     float texelWidth = 1.0f / static_cast<float>(m_texture.GetDimensions().x);
     float texelHeight = 1.0f / static_cast<float>(m_texture.GetDimensions().y);
     Vec2 texelOffset(texelWidth / 128.f, texelHeight / 128.f);
 
-    for (int y = simpleGridLayout.y - 1; y >= 0; --y) {
-        for (int x = 0; x < simpleGridLayout.x; ++x) {
-            int spriteIndex = y * simpleGridLayout.x + x;
+    for (int y = dimension.y - 1; y >= 0; --y) {
+        for (int x = 0; x < dimension.x; ++x) {
+            int spriteIndex = y * dimension.x + x;
             Vec2 uvMins(cellWidth * x, cellHeight * y);
             Vec2 uvMaxs(cellWidth * (x + 1), cellHeight * (y + 1));
             uvMins += texelOffset;
@@ -110,5 +110,11 @@ void SpriteSheet::GetSpriteUVs(Vec2& out_uvAtMins, Vec2& out_uvAtMaxs, int sprit
 AABB2 SpriteSheet::GetSpriteUVs(int spriteIndex) const
 {
     return m_spriteDefs[spriteIndex].GetUVs();
+}
+
+AABB2 SpriteSheet::GetSpriteUVs(IntVec2& spriteCoords) const
+{
+    int spriteIndex = spriteCoords.y * m_dimension.x + spriteCoords.x;
+    return GetSpriteUVs(spriteIndex);
 }
 
