@@ -175,7 +175,13 @@ void AddVertsForTriangle2D(std::vector<Vertex_PCU> &verts, Vec2 ccw0, Vec2 ccw1,
 
 void AddVertsForLineSegment2D(std::vector<Vertex_PCU> &verts, Vec2 start, Vec2 end, Vec2 thickness, Rgba8 color)
 {
-    Vec2 dir = (end - start).GetNormalized();
+    Vec2 delta = end - start;
+    if (delta.GetLengthSquared() < 0.0001f)  // Skip zero-length line segments
+    {
+        return;
+    }
+
+    Vec2 dir = delta.GetNormalized();
     Vec2 right = dir.GetRotatedBy90Degrees();
     Vec2 halfThick = right * (thickness.x * 0.5f);
 

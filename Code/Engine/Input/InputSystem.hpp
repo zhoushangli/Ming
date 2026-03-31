@@ -39,6 +39,7 @@ enum class CursorMode
 {
     POINTER,
     FPS,
+	COUNT
 };
 
 struct CursorState
