@@ -10,6 +10,8 @@
 #include "Engine/Math/Triangle2.hpp"
 #include "Engine/Math/Disc2.hpp"
 #include "Engine/Math/Matrix4x4.hpp"
+#include "Engine/Math/Cylinder3.hpp"
+#include "AABB3.hpp"
 
 //------------------------------------------------------------------------------------------------
 // Constants
@@ -62,13 +64,16 @@ float GetTurnedTowardDegrees(float currentDegrees, float goalDegrees, float maxD
 float GetDistance2D(Vec2 const& a, Vec2 const& b);
 float GetDistanceSquared2D(Vec2 const& a, Vec2 const& b);
 
+bool DoDiscsOverlap2D(Vec2 const& centerA, float radiusA, Vec2 const& centerB, float radiusB);
+
 float GetDistance3D(Vec3 const& a, Vec3 const& b);
 float GetDistanceXY3D(Vec3 const& a, Vec3 const& b);
 float GetDistanceSquared3D(Vec3 const& a, Vec3 const& b);
 float GetDistanceXYSquared3D(Vec3 const& a, Vec3 const& b);
 
-bool DoDiscsOverlap(Vec2 const& centerA, float radiusA, Vec2 const& centerB, float radiusB);
-bool DoSpheresOverlap(Vec3 const& centerA, float radiusA, Vec3 const& centerB, float radiusB);
+bool DoSpheresOverlap3D(Vec3 const& centerA, float radiusA, Vec3 const& centerB, float radiusB);
+bool DoCylindersOverlap3D(Vec3 const& centerA, float radiusA, float heightA, Vec3 const& centerB, float radiusB, float heightB);
+bool DoCylindersOverlap3D(Cylinder3 const& a, Cylinder3 const& b);
 
 #pragma endregion
 
@@ -129,7 +134,9 @@ float GetAngleDegreesBetweenVectors2D(Vec2 const& a, Vec2 const& b);
 
 bool PushDiscOutOfFixedPoint2D(Vec2& discCenter, float discRadius, Vec2 const& fixedPoint);
 bool PushDiscOutOfFixedDisc2D(Vec2& discCenter, float discRadius, Vec2 const& fixedDiscCenter, float fixedDiscRadius);
+bool PushDiscOutOfFixedDisc2D(Disc2& discToPush, Disc2 const& fixedDisc);
 bool PushDiscsOutOfEachOther2D(Vec2& discCenterA, float discRadiusA, Vec2& discCenterB, float discRadiusB);
+bool PushDiscsOutOfEachOther2D(Disc2& discA, Disc2& discB);
 bool PushDiscOutOfFixedAABB2D(Vec2& discCenter, float discRadius, AABB2 const& box);
 
 #pragma endregion

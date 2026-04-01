@@ -7,6 +7,7 @@ struct Disc2
 public:
 	Disc2() = default;
 	Disc2(const Vec2& center, float radius);
+    Disc2(float centerX, float centerY, float radius);
 
     void Translate(const Vec2& translation);
     void SetCenter(const Vec2& newCenter);

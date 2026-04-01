@@ -1,0 +1,16 @@
+#pragma once
+
+#include "Vec3.hpp"
+
+class Cylinder3
+{
+public:
+    Cylinder3() = default;
+    Cylinder3(Vec3 const& start, float height, float radius);
+    ~Cylinder3() = default;
+
+public:
+    Vec3 m_start;
+    float m_height;
+    float m_radius;
+};

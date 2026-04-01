@@ -112,18 +112,30 @@ float GetDistanceXYSquared3D(Vec3 const& a, Vec3 const& b)
     return dx * dx + dy * dy;
 }
 
-bool DoDiscsOverlap(Vec2 const& centerA, float radiusA, Vec2 const& centerB, float radiusB)
+bool DoDiscsOverlap2D(Vec2 const& centerA, float radiusA, Vec2 const& centerB, float radiusB)
 {
     float distSquared = GetDistanceSquared2D(centerA, centerB);
     float radiiSum = radiusA + radiusB;
     return distSquared <= (radiiSum * radiiSum);
 }
 
-bool DoSpheresOverlap(Vec3 const& centerA, float radiusA, Vec3 const& centerB, float radiusB)
+bool DoSpheresOverlap3D(Vec3 const& centerA, float radiusA, Vec3 const& centerB, float radiusB)
 {
     float distSquared = GetDistanceSquared3D(centerA, centerB);
     float radiiSum = radiusA + radiusB;
     return distSquared <= (radiiSum * radiiSum);
+}
+
+bool DoCylindersOverlap3D(Vec3 const& centerA, float radiusA, float heightA, Vec3 const& centerB, float radiusB, float heightB)
+{
+    bool overlapInXY = DoDiscsOverlap2D(Vec2(centerA.x, centerA.y), radiusA, Vec2(centerB.x, centerB.y), radiusB);
+    bool overlapInZ = Abs(centerA.z - centerB.z) < ((heightA + heightB) * 0.5f);
+    return overlapInXY && overlapInZ;
+}
+
+bool DoCylindersOverlap3D(Cylinder3 const& a, Cylinder3 const& b)
+{
+    return DoCylindersOverlap3D(a.m_start, a.m_radius, a.m_height, b.m_start, b.m_radius, b.m_height);
 }
 
 void TransformPosition2D(Vec2& pos, float scale, float rotationDegrees, Vec2 const& translation)
@@ -489,6 +501,11 @@ bool PushDiscOutOfFixedDisc2D(Vec2& discCenter, float discRadius, Vec2 const& fi
     return true;
 }
 
+bool PushDiscOutOfFixedDisc2D(Disc2& discToPush, Disc2 const& fixedDisc)
+{
+    return PushDiscOutOfFixedDisc2D(discToPush.m_center, discToPush.m_radius, fixedDisc.m_center, fixedDisc.m_radius);
+}
+
 bool PushDiscsOutOfEachOther2D(Vec2& discCenterA, float discRadiusA, Vec2& discCenterB, float discRadiusB)
 {
     Vec2 between = discCenterA - discCenterB;
@@ -505,6 +522,11 @@ bool PushDiscsOutOfEachOther2D(Vec2& discCenterA, float discRadiusA, Vec2& discC
     discCenterA += pushDir * (overlap * 0.5f);
     discCenterB -= pushDir * (overlap * 0.5f);
     return true;
+}
+
+bool PushDiscsOutOfEachOther2D(Disc2& discA, Disc2& discB)
+{
+    return PushDiscsOutOfEachOther2D(discA.m_center, discA.m_radius, discB.m_center, discB.m_radius);
 }
 
 bool PushDiscOutOfFixedAABB2D(Vec2& discCenter, float discRadius, AABB2 const& box)
