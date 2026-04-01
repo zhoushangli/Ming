@@ -4,14 +4,14 @@
 
 #include <math.h>
 
-RaycastResult2D RaycastVsDisc2D(Vec2 startPos, Vec2 forwardNormal, float maxDist, Vec2 discCenter, float discRadius)
+RaycastResult2D RaycastVsDisc2D(Vec2 rayStart, Vec2 rayForwardNormal, float rayLength, Vec2 discCenter, float discRadius)
 {
-    RaycastResult2D result;
+    RaycastResult2D result(rayStart, rayForwardNormal, rayLength);
 
-    Vec2 i = forwardNormal;
+    Vec2 i = rayForwardNormal;
     Vec2 j = i.GetRotatedBy90Degrees();
-    Vec2 startToCenter = discCenter - startPos;
-    Vec2 endPos = startPos + (forwardNormal * maxDist);
+    Vec2 startToCenter = discCenter - rayStart;
+    Vec2 endPos = rayStart + (rayForwardNormal * rayLength);
 
     // --- Whether raycast could hit disc ---
     float SCj = DotProduct2D(startToCenter, j);
@@ -22,18 +22,18 @@ RaycastResult2D RaycastVsDisc2D(Vec2 startPos, Vec2 forwardNormal, float maxDist
 
     // --- Whether raycast is too far or too close ---
     float SCi = DotProduct2D(startToCenter, i);
-    if (SCi > maxDist + discRadius || SCi <= -discRadius)
+    if (SCi > rayLength + discRadius || SCi <= -discRadius)
     {
         return result;
     }
 
     // --- Whether raycast starts inside disc ---
-    if (IsPointInsideDisc2D(startPos, discCenter, discRadius))
+    if (IsPointInsideDisc2D(rayStart, discCenter, discRadius))
     {
-        result.m_didImpact    = true;
-        result.m_impactDist   = 0.f;
-        result.m_impactPos    = startPos;
-        result.m_impactNormal = -forwardNormal;
+        result.m_didImpact = true;
+        result.m_impactDist = 0.f;
+        result.m_impactPos = rayStart;
+        result.m_impactNormal = -rayForwardNormal;
         return result;
     }
 
@@ -42,34 +42,34 @@ RaycastResult2D RaycastVsDisc2D(Vec2 startPos, Vec2 forwardNormal, float maxDist
     float impactDist = SCi - adjustmentDist;
 
     // Check if impact dist is too late or too early
-    if (impactDist >= maxDist || impactDist <= 0.f)
+    if (impactDist >= rayLength || impactDist <= 0.f)
     {
         return result;
     }
 
     // Raycast did impact
-    result.m_didImpact    = true;
-    result.m_impactDist   = impactDist;
-    result.m_impactPos    = startPos + (forwardNormal * result.m_impactDist);
+    result.m_didImpact = true;
+    result.m_impactDist = impactDist;
+    result.m_impactPos = rayStart + (rayForwardNormal * result.m_impactDist);
     result.m_impactNormal = (result.m_impactPos - discCenter).GetNormalized();
 
     return result;
 }
 
-RaycastResult2D RaycastVsDisc2D(Vec2 startPos, Vec2 forwardNormal, float maxDist, Disc2 disc)
+RaycastResult2D RaycastVsDisc2D(Vec2 rayStart, Vec2 rayForwardNormal, float rayLength, Disc2 disc)
 {
-    return RaycastVsDisc2D(startPos, forwardNormal, maxDist, disc.m_center, disc.m_radius);
+    return RaycastVsDisc2D(rayStart, rayForwardNormal, rayLength, disc.m_center, disc.m_radius);
 }
 
-RaycastResult2D RaycastVsLineSegments2D(Vec2 startPos, Vec2 forwardNormal, float maxDist, Vec2 lineStartPos, Vec2 lineEndPos)
+RaycastResult2D RaycastVsLineSegments2D(Vec2 rayStart, Vec2 rayForwardNormal, float rayLength, Vec2 lineStartPos, Vec2 lineEndPos)
 {
-    RaycastResult2D result;
+    RaycastResult2D result(rayStart, rayForwardNormal, rayLength);
 
-    Vec2 i = forwardNormal;
+    Vec2 i = rayForwardNormal;
     Vec2 j = i.GetRotatedBy90Degrees();
 
-    Vec2 ra = lineStartPos - startPos;
-    Vec2 rb = lineEndPos - startPos;
+    Vec2 ra = lineStartPos - rayStart;
+    Vec2 rb = lineEndPos - rayStart;
 
     float raxj = DotProduct2D(ra, j);
     float rbxj = DotProduct2D(rb, j);
@@ -84,7 +84,7 @@ RaycastResult2D RaycastVsLineSegments2D(Vec2 startPos, Vec2 forwardNormal, float
     float rbxi = DotProduct2D(rb, i);
 
     // --- Whether line segment is too far or too close or parallel ---
-    if (raxi > maxDist && rbxi > maxDist)
+    if (raxi > rayLength && rbxi > rayLength)
     {
         return result;
     }
@@ -102,17 +102,17 @@ RaycastResult2D RaycastVsLineSegments2D(Vec2 startPos, Vec2 forwardNormal, float
     float t = raxj / (raxj - rbxj);
     float impactDist = raxi + t * (rbxi - raxi);
 
-    if (impactDist >= maxDist || impactDist <= 0.f)
+    if (impactDist >= rayLength || impactDist <= 0.f)
     {
         return result;
     }
-    
+
     result.m_didImpact = true;
     result.m_impactDist = impactDist;
     result.m_impactPos = lineStartPos + t * (lineEndPos - lineStartPos);
     result.m_impactNormal = (lineEndPos - lineStartPos).GetNormalized().GetRotatedBy90Degrees();
 
-    if (DotProduct2D(result.m_impactNormal, forwardNormal) > 0.f)
+    if (DotProduct2D(result.m_impactNormal, rayForwardNormal) > 0.f)
     {
         result.m_impactNormal = -result.m_impactNormal;
     }
@@ -120,19 +120,19 @@ RaycastResult2D RaycastVsLineSegments2D(Vec2 startPos, Vec2 forwardNormal, float
     return result;
 }
 
-RaycastResult2D RaycastVsLineSegments2D(Vec2 startPos, Vec2 forwardNormal, float maxDist, LineSegment2 line)
+RaycastResult2D RaycastVsLineSegments2D(Vec2 rayStart, Vec2 rayForwardNormal, float rayLength, LineSegment2 line)
 {
-    return RaycastVsLineSegments2D(startPos, forwardNormal, maxDist, line.m_start, line.m_end);
+    return RaycastVsLineSegments2D(rayStart, rayForwardNormal, rayLength, line.m_start, line.m_end);
 }
 
-RaycastResult2D RaycastVsAABB2D(Vec2 startPos, Vec2 forwardNormal, float maxDist, Vec2 aabbMins, Vec2 aabbMaxs)
+RaycastResult2D RaycastVsAABB2D(Vec2 rayStart, Vec2 rayForwardNormal, float rayLength, Vec2 aabbMins, Vec2 aabbMaxs)
 {
-    RaycastResult2D result;
+    RaycastResult2D result(rayStart, rayForwardNormal, rayLength);
 
-    float tx1 = (aabbMins.x - startPos.x) / forwardNormal.x;
-    float tx2 = (aabbMaxs.x - startPos.x) / forwardNormal.x;
-    float ty1 = (aabbMins.y - startPos.y) / forwardNormal.y;
-    float ty2 = (aabbMaxs.y - startPos.y) / forwardNormal.y;
+    float tx1 = (aabbMins.x - rayStart.x) / rayForwardNormal.x;
+    float tx2 = (aabbMaxs.x - rayStart.x) / rayForwardNormal.x;
+    float ty1 = (aabbMins.y - rayStart.y) / rayForwardNormal.y;
+    float ty2 = (aabbMaxs.y - rayStart.y) / rayForwardNormal.y;
 
     float tminX = Min(tx1, tx2);
     float tmaxX = Max(tx1, tx2);
@@ -140,12 +140,12 @@ RaycastResult2D RaycastVsAABB2D(Vec2 startPos, Vec2 forwardNormal, float maxDist
     float tmaxY = Max(ty1, ty2);
 
     // --- Whether raycast starts inside disc ---
-    if (IsPointInsideAABB2D(startPos, AABB2(aabbMins, aabbMaxs)))
+    if (IsPointInsideAABB2D(rayStart, AABB2(aabbMins, aabbMaxs)))
     {
         result.m_didImpact = true;
         result.m_impactDist = 0.f;
-        result.m_impactPos = startPos;
-        result.m_impactNormal = -forwardNormal;
+        result.m_impactPos = rayStart;
+        result.m_impactNormal = -rayForwardNormal;
         return result;
     }
 
@@ -156,17 +156,17 @@ RaycastResult2D RaycastVsAABB2D(Vec2 startPos, Vec2 forwardNormal, float maxDist
 
     float impactDist = Max(tminX, tminY);
 
-    if (impactDist >= maxDist || impactDist <= 0.f)
+    if (impactDist >= rayLength || impactDist <= 0.f)
     {
         return result;
     }
 
     result.m_didImpact = true;
     result.m_impactDist = impactDist;
-    result.m_impactPos = startPos + forwardNormal * impactDist;
+    result.m_impactPos = rayStart + rayForwardNormal * impactDist;
     result.m_impactNormal = impactDist == tminX ? Vec2(1.f, 0.f) : Vec2(0.f, 1.f);
 
-    if (DotProduct2D(result.m_impactNormal, forwardNormal) > 0.f)
+    if (DotProduct2D(result.m_impactNormal, rayForwardNormal) > 0.f)
     {
         result.m_impactNormal = -result.m_impactNormal;
     }
@@ -174,7 +174,111 @@ RaycastResult2D RaycastVsAABB2D(Vec2 startPos, Vec2 forwardNormal, float maxDist
     return result;
 }
 
-RaycastResult2D RaycastVsAABB2D(Vec2 startPos, Vec2 forwardNormal, float maxDist, AABB2 aabb)
+RaycastResult2D RaycastVsAABB2D(Vec2 rayStart, Vec2 rayForwardNormal, float rayLength, AABB2 aabb)
 {
-    return RaycastVsAABB2D(startPos, forwardNormal, maxDist, aabb.m_mins, aabb.m_maxs);
+    return RaycastVsAABB2D(rayStart, rayForwardNormal, rayLength, aabb.m_mins, aabb.m_maxs);
+}
+
+RaycastResult3D RaycastVsCylinderZ3D(Vec3 rayStart, Vec3 rayForwardNormal, float rayLength, Vec2 const& centerXY, FloatRange const& minMaxZ, float radiusXY)
+{
+    RaycastResult3D result(rayStart, rayForwardNormal, rayLength);
+
+    //--------------------------------------
+    // XY interval
+    //--------------------------------------
+    float xyEnter = -1e9f;
+    float xyExit = 1e9f;
+
+    Vec2 startXY(rayStart.x, rayStart.y);
+    Vec2 forwardXY(rayForwardNormal.x, rayForwardNormal.y);
+
+    float forwardXYLength = forwardXY.GetLength();
+    if (forwardXYLength < 1e-9f)
+    {
+        if (!IsPointInsideDisc2D(startXY, centerXY, radiusXY))
+        {
+            return result;
+        }
+    }
+    else
+    {
+        Vec2 i = forwardXY / forwardXYLength;
+        Vec2 j = i.GetRotatedBy90Degrees();
+        Vec2 startToCenter = centerXY - startXY;
+
+        float SCj = DotProduct2D(startToCenter, j);
+        if (SCj > radiusXY || SCj < -radiusXY)
+        {
+            return result;
+        }
+
+        float SCi = DotProduct2D(startToCenter, i);
+
+        if (SCi > rayLength * forwardXYLength + radiusXY || SCi < -radiusXY)
+        {
+            return result;
+        }
+
+        float adjustmentDist = sqrtf(radiusXY * radiusXY - SCj * SCj);
+
+        float enterDistXY = SCi - adjustmentDist;
+        float exitDistXY = SCi + adjustmentDist;
+
+        xyEnter = enterDistXY / forwardXYLength;
+        xyExit = exitDistXY / forwardXYLength;
+    }
+
+    //--------------------------------------
+    // Z interval
+    //--------------------------------------
+    float zEnter = -1e9f;
+    float zExit = 1e9f;
+    if (Abs(rayForwardNormal.z) < 1e-9f)
+    {
+        if (rayStart.z < minMaxZ.m_min || rayStart.z > minMaxZ.m_max)
+        {
+            return result;
+        }
+    }
+    else
+    {
+        float tz0 = (minMaxZ.m_min - rayStart.z) / rayForwardNormal.z;
+        float tz1 = (minMaxZ.m_max - rayStart.z) / rayForwardNormal.z;
+        zEnter = Min(tz0, tz1);
+        zExit = Max(tz0, tz1);
+    }
+
+    float enterTime = Max(0.f, Max(xyEnter, zEnter));
+    float exitTime = Min(rayLength, Min(xyExit, zExit));
+
+    if (enterTime > exitTime)
+    {
+        return result;
+    }
+
+    result.m_didImpact = true;
+    result.m_impactDist = enterTime;
+    result.m_impactPos = rayStart + rayForwardNormal * enterTime;
+
+    float const zNormalEpsilon = 1e-4f;
+    if (Abs(result.m_impactPos.z - minMaxZ.m_min) <= zNormalEpsilon)
+    {
+        result.m_impactNormal = Vec3(0.f, 0.f, -1.f);
+    }
+    else if (Abs(result.m_impactPos.z - minMaxZ.m_max) <= zNormalEpsilon)
+    {
+        result.m_impactNormal = Vec3(0.f, 0.f, 1.f);
+    }
+    else
+    {
+        Vec2 sideNormalXY = (Vec2(result.m_impactPos.x, result.m_impactPos.y) - centerXY).GetNormalized();
+        result.m_impactNormal = Vec3(sideNormalXY.x, sideNormalXY.y, 0.f);
+    }
+
+    if (DotProduct3D(result.m_impactNormal, rayForwardNormal) > 0.f)
+    {
+        result.m_impactNormal = -result.m_impactNormal;
+    }
+
+    return result;
 }

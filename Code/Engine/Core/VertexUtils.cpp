@@ -150,7 +150,7 @@ void AddVertsForCapsule2D(std::vector<Vertex_PCU> &verts, Vec2 boneStart, Vec2 b
 {
     // Draw the body as a rectangle using AddVertsForLineSegment2D
     Vec2 dir = (boneEnd - boneStart).GetNormalized();
-    Vec2 right = dir.GetRotatedBy90Degrees();
+    Vec2 right = dir.GetRotatedByMinus90Degrees();
     Vec2 thicknessVec = right * (radius * 2.f);
 
     OBB2 capsuleBody = OBB2();
@@ -175,14 +175,8 @@ void AddVertsForTriangle2D(std::vector<Vertex_PCU> &verts, Vec2 ccw0, Vec2 ccw1,
 
 void AddVertsForLineSegment2D(std::vector<Vertex_PCU> &verts, Vec2 start, Vec2 end, Vec2 thickness, Rgba8 color)
 {
-    Vec2 delta = end - start;
-    if (delta.GetLengthSquared() < 0.0001f)  // Skip zero-length line segments
-    {
-        return;
-    }
-
-    Vec2 dir = delta.GetNormalized();
-    Vec2 right = dir.GetRotatedBy90Degrees();
+    Vec2 dir = (end - start).GetNormalized();
+    Vec2 right = dir.GetRotatedByMinus90Degrees();
     Vec2 halfThick = right * (thickness.x * 0.5f);
 
     Vec2 p0 = start + halfThick;
@@ -216,7 +210,7 @@ void AddVertsForArrow2D(std::vector<Vertex_PCU> &verts, Vec2 tailPos, Vec2 tipPo
 
     Vec2 headBase = tipPos - dir * headLength;
 
-    Vec2 right = dir.GetRotatedBy90Degrees();
+    Vec2 right = dir.GetRotatedByMinus90Degrees();
     Vec2 halfShaft = right * (lineThickness * 0.5f);
     float headWidth = headLength;
     Vec2 halfHead = right * (headWidth * 0.5f);
@@ -237,8 +231,8 @@ void AddVertsForArrow2D(std::vector<Vertex_PCU> &verts, Vec2 tailPos, Vec2 tipPo
         verts.emplace_back(Vec3(shaftStartR.x, shaftStartR.y, 0.f), color);
     }
 
-    Vec2 headLeft = headBase + halfHead;
-    Vec2 headRight = headBase - halfHead;
+    Vec2 headRight = headBase + halfHead;
+    Vec2 headLeft = headBase - halfHead;
 
     verts.emplace_back(Vec3(tipPos.x, tipPos.y, 0.f), color);
     verts.emplace_back(Vec3(headLeft.x, headLeft.y, 0.f), color);
@@ -650,9 +644,9 @@ void AddVertsForArrow3D(std::vector<Vertex_PCU> &verts, Vec3 const &start, Vec3 
         return;
     }
 
-    // Arrow proportions (similar spirit to 2D version)
-    float headLength = Min(length * 0.25f, radius * 4.f);
-    headLength = GetClamped(headLength, length * 0.10f, length * 0.50f);
+    // Keep a visible shaft while making the head read clearly at gameplay distances.
+    float headLength = Min(length * 0.30f, radius * 6.f);
+    headLength = GetClamped(headLength, length * 0.20f, length * 0.45f);
 
     float shaftLength = length - headLength;
     if (shaftLength < 0.f)
@@ -662,7 +656,7 @@ void AddVertsForArrow3D(std::vector<Vertex_PCU> &verts, Vec3 const &start, Vec3 
     }
 
     Vec3 shaftEnd = start + (dir / length) * shaftLength;
-    float shaftRadius = radius * 0.5f;
+    float shaftRadius = radius * 0.30f;
 
     AddVertsForCylinder3D(verts, start, shaftEnd, shaftRadius, color, AABB2::UNIT, numSlices);
     AddVertsForCone3D(verts, shaftEnd, end, radius, color, AABB2::UNIT, numSlices);
