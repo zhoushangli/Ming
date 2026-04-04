@@ -315,20 +315,41 @@ void Renderer::Shutdown()
     m_currentCamera = nullptr;
     m_currentShader = nullptr;
 
+    if (m_deviceContext)
+    {
+        m_deviceContext->ClearState();
+        m_deviceContext->Flush();
+    }
+
     delete m_modelCBO;
     m_modelCBO = nullptr;
 
     delete m_cameraCBO;
     m_cameraCBO = nullptr;
 
-    delete m_vertexBufferPCU;
-    m_vertexBufferPCU = nullptr;
+    delete m_lightCBO;
+    m_lightCBO = nullptr;
+
+    delete m_currentIndexBuffer;
+    m_currentIndexBuffer = nullptr;
 
     delete m_vertexBufferPCUTBN;
     m_vertexBufferPCUTBN = nullptr;
 
-    delete m_currentIndexBuffer;
-    m_currentIndexBuffer = nullptr;
+    delete m_vertexBufferPCU;
+    m_vertexBufferPCU = nullptr;
+
+    if (m_depthStencilDSV)
+    {
+        m_depthStencilDSV->Release();
+        m_depthStencilDSV = nullptr;
+    }
+
+    if (m_depthStencilTexture)
+    {
+        m_depthStencilTexture->Release();
+        m_depthStencilTexture = nullptr;
+    }
 
     for (auto &rasterizerState : m_rasterizerStates)
     {
@@ -618,7 +639,7 @@ void Renderer::BindTexture(Texture *texture)
 
     ID3D11ShaderResourceView *srv = texture->m_shaderResourceView;
     m_deviceContext->PSSetShaderResources(0, 1, &srv);
-    m_deviceContext->PSGetSamplers(0, 1, &m_samplerState);
+    m_deviceContext->PSSetSamplers(0, 1, &m_samplerState);
 }
 
 void Renderer::BindShader(Shader *shader)
