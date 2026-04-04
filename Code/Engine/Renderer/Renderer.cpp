@@ -360,6 +360,15 @@ void Renderer::Shutdown()
         }
     }
 
+    for (auto &depthStencilState : m_depthStencilStates)
+    {
+        if (depthStencilState)
+        {
+            depthStencilState->Release();
+            depthStencilState = nullptr;
+        }
+    }
+
     for (auto &blendState : m_blendStates)
     {
         if (blendState)
