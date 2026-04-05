@@ -27,6 +27,7 @@ unsigned char const KEYCODE_RIGHTARROW	= VK_RIGHT;
 unsigned char const KEYCODE_LEFT_MOUSE  = VK_LBUTTON;
 unsigned char const KEYCODE_RIGHT_MOUSE = VK_RBUTTON;
 
+unsigned char const KEYCODE_SHIFT     = VK_SHIFT;
 unsigned char const KEYCODE_ENTER     = VK_RETURN;
 unsigned char const KEYCODE_BACKSPACE = VK_BACK;
 unsigned char const KEYCODE_INSERT    = VK_INSERT;

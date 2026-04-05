@@ -25,6 +25,7 @@ extern unsigned char const KEYCODE_RIGHTARROW;
 extern unsigned char const KEYCODE_LEFT_MOUSE;
 extern unsigned char const KEYCODE_RIGHT_MOUSE;
 
+extern unsigned char const KEYCODE_SHIFT;
 extern unsigned char const KEYCODE_ENTER;
 extern unsigned char const KEYCODE_BACKSPACE;
 extern unsigned char const KEYCODE_INSERT;

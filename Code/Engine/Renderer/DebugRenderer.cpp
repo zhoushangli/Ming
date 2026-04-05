@@ -224,6 +224,7 @@ namespace
         // Render if we have vertices
         if (!verts.empty())
         {
+            renderer->BeginCamera(camera);
             renderer->BindShader(nullptr);
             renderer->BindTexture(texture);
             renderer->BindModelConstants(Matrix4x4::IDENTITY, Rgba8::WHITE);
@@ -261,6 +262,7 @@ namespace
         float cellHeight = obj.textHeight > 0.f ? obj.textHeight : 20.f;
         font->AddVertsForTextInBox2D(verts, obj.text, box, cellHeight, color, 1.f, obj.alignment, TextBoxMode::SHRINK_TO_FIT);
 
+        renderer->BeginCamera(camera);
         renderer->BindShader(nullptr);
         renderer->BindTexture(&font->GetTexture());
         renderer->BindModelConstants(Matrix4x4::IDENTITY, Rgba8::WHITE);
@@ -467,10 +469,9 @@ void DebugAddMessage(const std::string &text, float duration, const Rgba8 &start
     s_debugMessages.push_back(object);
 }
 
-void DebugAddWorldGrid()
+void DebugAddWorldGrid(float duration, int halfExtent)
 {
-    // Params are intentionally hard-coded per request.
-    constexpr int kHalfExtent = 50;
+    // Configurable parameters for grid generation.
     constexpr float kLineHeight = 0.01f;
 
     // Thickness: only Base + Axis (Major treated same as Base)
@@ -488,9 +489,11 @@ void DebugAddWorldGrid()
     // Segment size (hard-coded): smaller => smoother fade, more verts
     constexpr float kSegmentLength = 1.f;
 
-    DebugObject object = MakeDebugObject(DebugObjectType::WORLD_GRID, -1.f, Rgba8::WHITE, Rgba8::WHITE, DebugRenderMode::USE_DEPTH);
+    int const clampedHalfExtent = halfExtent < 0 ? 0 : halfExtent;
+
+    DebugObject object = MakeDebugObject(DebugObjectType::WORLD_GRID, duration, Rgba8::WHITE, Rgba8::WHITE, DebugRenderMode::USE_DEPTH);
     object.verts.clear();
-    object.verts.reserve((kHalfExtent * 2 + 1) * 2 * 36);
+    object.verts.reserve((clampedHalfExtent * 2 + 1) * 2 * 36);
 
     auto ComputeAlphaForDistance = [](float d) -> unsigned char
     {
@@ -507,7 +510,7 @@ void DebugAddWorldGrid()
         AddVertsForAABB3D(object.verts, aabb, baseColor);
     };
 
-    for (int lineIndex = -kHalfExtent; lineIndex <= kHalfExtent; ++lineIndex)
+    for (int lineIndex = -clampedHalfExtent; lineIndex <= clampedHalfExtent; ++lineIndex)
     {
         bool const isAxis = (lineIndex == 0);
 
@@ -533,8 +536,8 @@ void DebugAddWorldGrid()
         }
 
         // Split each long strip into small segments along its length.
-        float const minCoord = -static_cast<float>(kHalfExtent);
-        float const maxCoord = static_cast<float>(kHalfExtent);
+        float const minCoord = -static_cast<float>(clampedHalfExtent);
+        float const maxCoord = static_cast<float>(clampedHalfExtent);
 
         // X-axis parallel lines (vary Y, span X)
         for (float x = minCoord; x < maxCoord; x += kSegmentLength)
