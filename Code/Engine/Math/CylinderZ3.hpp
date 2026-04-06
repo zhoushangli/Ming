@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Vec2.hpp"
 #include "Vec3.hpp"
 #include "Engine/Math/FloatRange.hpp"
 
@@ -11,10 +12,9 @@ public:
     ~CylinderZ3() = default;
 
     Vec3 const GetNearestPoint(Vec3 const &point) const;
-    FloatRange GetMinMaxZ() const;
 
 public:
-    Vec3 m_start;
-    float m_height;
+    Vec2 m_centerXY;
     float m_radius;
+    FloatRange m_minMaxZ;
 };

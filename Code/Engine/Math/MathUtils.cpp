@@ -162,13 +162,6 @@ bool DoCylinderZsOverlap3D(Vec3 const &centerA, float radiusA, float heightA, Ve
     return DoCylinderZsOverlap3D(Vec2(centerA.x, centerA.y), radiusA, rangeA, Vec2(centerB.x, centerB.y), radiusB, rangeB);
 }
 
-bool DoCylinderZsOverlap3D(CylinderZ3 const &a, CylinderZ3 const &b)
-{
-    FloatRange rangeA = a.GetMinMaxZ();
-    FloatRange rangeB = b.GetMinMaxZ();
-    return DoCylinderZsOverlap3D(Vec2(a.m_start.x, a.m_start.y), a.m_radius, rangeA, Vec2(b.m_start.x, b.m_start.y), b.m_radius, rangeB);
-}
-
 bool DoSphereAndAABBOverlap3D(Vec3 const &sphereCenter, float sphereRadius, Vec3 const &boxMins, Vec3 const &boxMaxs)
 {
     Vec3 nearestPoint = GetNearestPointOnAABB3D(sphereCenter, boxMins, boxMaxs);
@@ -206,8 +199,7 @@ bool DoCylinderZAndAABBOverlap3D(Vec2 const &cylinderCenterXY, float cylinderRad
 
 bool DoCylinderZAndAABBOverlap3D(CylinderZ3 const &cylinder, AABB3 const &box)
 {
-    FloatRange cylinderRangeZ = cylinder.GetMinMaxZ();
-    return DoCylinderZAndAABBOverlap3D(Vec2(cylinder.m_start.x, cylinder.m_start.y), cylinder.m_radius, cylinderRangeZ, box);
+    return DoCylinderZAndAABBOverlap3D(cylinder.m_centerXY, cylinder.m_radius, cylinder.m_minMaxZ, box);
 }
 
 bool DoCylinderZAndSphereOverlap3D(Vec2 const &cylinderCenterXY, float cylinderRadius, FloatRange const &cylinderMinMaxZ, Vec3 const &sphereCenter, float sphereRadius)
@@ -224,8 +216,7 @@ bool DoCylinderZAndSphereOverlap3D(Vec2 const &cylinderCenterXY, float cylinderR
 
 bool DoCylinderZAndSphereOverlap3D(CylinderZ3 const &cylinder, Sphere3 const &sphere)
 {
-    FloatRange cylinderRangeZ = cylinder.GetMinMaxZ();
-    return DoCylinderZAndSphereOverlap3D(Vec2(cylinder.m_start.x, cylinder.m_start.y), cylinder.m_radius, cylinderRangeZ, sphere.m_center, sphere.m_radius);
+    return DoCylinderZAndSphereOverlap3D(cylinder.m_centerXY, cylinder.m_radius, cylinder.m_minMaxZ, sphere.m_center, sphere.m_radius);
 }
 
 void TransformPosition2D(Vec2 &pos, float scale, float rotationDegrees, Vec2 const &translation)
@@ -906,7 +897,11 @@ Vec3 GetNearestPointOnAABB3D(Vec3 referencePos, Vec3 const &boxMins, Vec3 const 
 
 Vec3 GetNearestPointOnZCylinder3D(Vec3 referencePos, CylinderZ3 const &cylinder)
 {
-    return GetNearestPointOnZCylinder3D(referencePos, cylinder.m_start, cylinder.m_height, cylinder.m_radius);
+    float minZ = cylinder.m_minMaxZ.m_min;
+    float maxZ = cylinder.m_minMaxZ.m_max;
+    float height = maxZ - minZ;
+    Vec3 cylinderStart(cylinder.m_centerXY.x, cylinder.m_centerXY.y, minZ);
+    return GetNearestPointOnZCylinder3D(referencePos, cylinderStart, height, cylinder.m_radius);
 }
 
 Vec3 GetNearestPointOnZCylinder3D(Vec3 referencePos, Vec3 const &cylinderStart, float cylinderHeight, float cylinderRadius)

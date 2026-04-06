@@ -304,7 +304,7 @@ RaycastResult3D RaycastVsSphere3D(Vec3 rayStart, Vec3 rayForwardNormal, float ra
     return result;
 }
 
-RaycastResult3D RaycastVsZCylinder3D(Vec3 rayStart, Vec3 rayForwardNormal, float rayLength, Vec2 const &centerXY, FloatRange const &minMaxZ, float radiusXY)
+RaycastResult3D RaycastVsCylinderZ3D(Vec3 rayStart, Vec3 rayForwardNormal, float rayLength, Vec2 const &centerXY, FloatRange const &minMaxZ, float radiusXY)
 {
     RaycastResult3D result(rayStart, rayForwardNormal, rayLength);
 

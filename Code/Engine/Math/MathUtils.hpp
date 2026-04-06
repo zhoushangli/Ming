@@ -11,7 +11,7 @@
 #include "Engine/Math/Disc2.hpp"
 #include "Engine/Math/Sphere3.hpp"
 #include "Engine/Math/Matrix4x4.hpp"
-#include "Engine/Math/ZCylinder3.hpp"
+#include "Engine/Math/CylinderZ3.hpp"
 #include "Engine/Math/FloatRange.hpp"
 #include "AABB3.hpp"
 
@@ -82,7 +82,6 @@ bool DoSpheresOverlap3D(Sphere3 const &a, Sphere3 const &b);
 bool DoCylinderZsOverlap3D(Vec2 const &cylinder1CenterXY, float cylinder1Radius, FloatRange const &cylinder1MinMaxZ,
                            Vec2 const &cylinder2CenterXY, float cylinder2Radius, FloatRange const &cylinder2MinMaxZ);
 bool DoCylinderZsOverlap3D(Vec3 const &centerA, float radiusA, float heightA, Vec3 const &centerB, float radiusB, float heightB);
-bool DoCylinderZsOverlap3D(CylinderZ3 const &a, CylinderZ3 const &b);
 
 bool DoSphereAndAABBOverlap3D(Vec3 const &sphereCenter, float sphereRadius, Vec3 const &boxMins, Vec3 const &boxMaxs);
 bool DoSphereAndAABBOverlap3D(Vec3 const &sphereCenter, float sphereRadius, AABB3 const &box);
