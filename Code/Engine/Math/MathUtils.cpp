@@ -144,7 +144,7 @@ bool DoSpheresOverlap3D(Sphere3 const &a, Sphere3 const &b)
     return DoSpheresOverlap3D(a.m_center, a.m_radius, b.m_center, b.m_radius);
 }
 
-bool DoZCylindersOverlap3D(Vec2 const &cylinder1CenterXY, float cylinder1Radius, FloatRange const &cylinder1MinMaxZ,
+bool DoCylinderZsOverlap3D(Vec2 const &cylinder1CenterXY, float cylinder1Radius, FloatRange const &cylinder1MinMaxZ,
                            Vec2 const &cylinder2CenterXY, float cylinder2Radius, FloatRange const &cylinder2MinMaxZ)
 {
     float distSquaredXY = GetDistanceSquared2D(cylinder1CenterXY, cylinder2CenterXY);
@@ -155,18 +155,18 @@ bool DoZCylindersOverlap3D(Vec2 const &cylinder1CenterXY, float cylinder1Radius,
     return overlapInXY && overlapInZ;
 }
 
-bool DoZCylindersOverlap3D(Vec3 const &centerA, float radiusA, float heightA, Vec3 const &centerB, float radiusB, float heightB)
+bool DoCylinderZsOverlap3D(Vec3 const &centerA, float radiusA, float heightA, Vec3 const &centerB, float radiusB, float heightB)
 {
     FloatRange rangeA(centerA.z - (heightA * 0.5f), centerA.z + (heightA * 0.5f));
     FloatRange rangeB(centerB.z - (heightB * 0.5f), centerB.z + (heightB * 0.5f));
-    return DoZCylindersOverlap3D(Vec2(centerA.x, centerA.y), radiusA, rangeA, Vec2(centerB.x, centerB.y), radiusB, rangeB);
+    return DoCylinderZsOverlap3D(Vec2(centerA.x, centerA.y), radiusA, rangeA, Vec2(centerB.x, centerB.y), radiusB, rangeB);
 }
 
-bool DoZCylindersOverlap3D(ZCylinder3 const &a, ZCylinder3 const &b)
+bool DoCylinderZsOverlap3D(CylinderZ3 const &a, CylinderZ3 const &b)
 {
     FloatRange rangeA = a.GetMinMaxZ();
     FloatRange rangeB = b.GetMinMaxZ();
-    return DoZCylindersOverlap3D(Vec2(a.m_start.x, a.m_start.y), a.m_radius, rangeA, Vec2(b.m_start.x, b.m_start.y), b.m_radius, rangeB);
+    return DoCylinderZsOverlap3D(Vec2(a.m_start.x, a.m_start.y), a.m_radius, rangeA, Vec2(b.m_start.x, b.m_start.y), b.m_radius, rangeB);
 }
 
 bool DoSphereAndAABBOverlap3D(Vec3 const &sphereCenter, float sphereRadius, Vec3 const &boxMins, Vec3 const &boxMaxs)
@@ -186,7 +186,7 @@ bool DoSphereAndAABBOverlap3D(Sphere3 const &sphere, AABB3 const &box)
     return DoSphereAndAABBOverlap3D(sphere.m_center, sphere.m_radius, box);
 }
 
-bool DoZCylinderAndAABBOverlap3D(Vec2 const &cylinderCenterXY, float cylinderRadius, FloatRange const &cylinderMinMaxZ, Vec3 const &boxMins, Vec3 const &boxMaxs)
+bool DoCylinderZAndAABBOverlap3D(Vec2 const &cylinderCenterXY, float cylinderRadius, FloatRange const &cylinderMinMaxZ, Vec3 const &boxMins, Vec3 const &boxMaxs)
 {
     float nearestX = GetClamped(cylinderCenterXY.x, boxMins.x, boxMaxs.x);
     float nearestY = GetClamped(cylinderCenterXY.y, boxMins.y, boxMaxs.y);
@@ -199,18 +199,18 @@ bool DoZCylinderAndAABBOverlap3D(Vec2 const &cylinderCenterXY, float cylinderRad
     return overlapInXY && overlapInZ;
 }
 
-bool DoZCylinderAndAABBOverlap3D(Vec2 const &cylinderCenterXY, float cylinderRadius, FloatRange const &cylinderMinMaxZ, AABB3 const &box)
+bool DoCylinderZAndAABBOverlap3D(Vec2 const &cylinderCenterXY, float cylinderRadius, FloatRange const &cylinderMinMaxZ, AABB3 const &box)
 {
-    return DoZCylinderAndAABBOverlap3D(cylinderCenterXY, cylinderRadius, cylinderMinMaxZ, box.m_mins, box.m_maxs);
+    return DoCylinderZAndAABBOverlap3D(cylinderCenterXY, cylinderRadius, cylinderMinMaxZ, box.m_mins, box.m_maxs);
 }
 
-bool DoZCylinderAndAABBOverlap3D(ZCylinder3 const &cylinder, AABB3 const &box)
+bool DoCylinderZAndAABBOverlap3D(CylinderZ3 const &cylinder, AABB3 const &box)
 {
     FloatRange cylinderRangeZ = cylinder.GetMinMaxZ();
-    return DoZCylinderAndAABBOverlap3D(Vec2(cylinder.m_start.x, cylinder.m_start.y), cylinder.m_radius, cylinderRangeZ, box);
+    return DoCylinderZAndAABBOverlap3D(Vec2(cylinder.m_start.x, cylinder.m_start.y), cylinder.m_radius, cylinderRangeZ, box);
 }
 
-bool DoZCylinderAndSphereOverlap3D(Vec2 const &cylinderCenterXY, float cylinderRadius, FloatRange const &cylinderMinMaxZ, Vec3 const &sphereCenter, float sphereRadius)
+bool DoCylinderZAndSphereOverlap3D(Vec2 const &cylinderCenterXY, float cylinderRadius, FloatRange const &cylinderMinMaxZ, Vec3 const &sphereCenter, float sphereRadius)
 {
     float cylinderMinZ = cylinderMinMaxZ.m_min;
     float cylinderMaxZ = cylinderMinMaxZ.m_max;
@@ -222,10 +222,10 @@ bool DoZCylinderAndSphereOverlap3D(Vec2 const &cylinderCenterXY, float cylinderR
     return distanceSquared < (sphereRadius * sphereRadius);
 }
 
-bool DoZCylinderAndSphereOverlap3D(ZCylinder3 const &cylinder, Sphere3 const &sphere)
+bool DoCylinderZAndSphereOverlap3D(CylinderZ3 const &cylinder, Sphere3 const &sphere)
 {
     FloatRange cylinderRangeZ = cylinder.GetMinMaxZ();
-    return DoZCylinderAndSphereOverlap3D(Vec2(cylinder.m_start.x, cylinder.m_start.y), cylinder.m_radius, cylinderRangeZ, sphere.m_center, sphere.m_radius);
+    return DoCylinderZAndSphereOverlap3D(Vec2(cylinder.m_start.x, cylinder.m_start.y), cylinder.m_radius, cylinderRangeZ, sphere.m_center, sphere.m_radius);
 }
 
 void TransformPosition2D(Vec2 &pos, float scale, float rotationDegrees, Vec2 const &translation)
@@ -904,7 +904,7 @@ Vec3 GetNearestPointOnAABB3D(Vec3 referencePos, Vec3 const &boxMins, Vec3 const 
         GetClamped(referencePos.z, boxMins.z, boxMaxs.z));
 }
 
-Vec3 GetNearestPointOnZCylinder3D(Vec3 referencePos, ZCylinder3 const &cylinder)
+Vec3 GetNearestPointOnZCylinder3D(Vec3 referencePos, CylinderZ3 const &cylinder)
 {
     return GetNearestPointOnZCylinder3D(referencePos, cylinder.m_start, cylinder.m_height, cylinder.m_radius);
 }

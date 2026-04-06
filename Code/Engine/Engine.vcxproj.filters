@@ -195,7 +195,7 @@
     <ClCompile Include="Math\AABB3.cpp">
       <Filter>Math\Shapes\3D</Filter>
     </ClCompile>
-    <ClCompile Include="Math\ZCylinder3.cpp">
+    <ClCompile Include="Math\CylinderZ3.cpp">
       <Filter>Math\Shapes\3D</Filter>
     </ClCompile>
     <ClCompile Include="Math\Sphere3.cpp">
@@ -395,7 +395,7 @@
     <ClInclude Include="Math\AABB3.hpp">
       <Filter>Math\Shapes\3D</Filter>
     </ClInclude>
-    <ClInclude Include="Math\ZCylinder3.hpp">
+    <ClInclude Include="Math\CylinderZ3.hpp">
       <Filter>Math\Shapes\3D</Filter>
     </ClInclude>
     <ClInclude Include="Math\Sphere3.hpp">

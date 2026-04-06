@@ -3,12 +3,12 @@
 #include "Vec3.hpp"
 #include "Engine/Math/FloatRange.hpp"
 
-class ZCylinder3
+class CylinderZ3
 {
 public:
-    ZCylinder3() = default;
-    ZCylinder3(Vec3 const &start, float height, float radius);
-    ~ZCylinder3() = default;
+    CylinderZ3() = default;
+    CylinderZ3(Vec3 const &start, float height, float radius);
+    ~CylinderZ3() = default;
 
     Vec3 const GetNearestPoint(Vec3 const &point) const;
     FloatRange GetMinMaxZ() const;
