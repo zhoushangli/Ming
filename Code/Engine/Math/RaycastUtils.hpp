@@ -65,7 +65,7 @@ RaycastResult3D RaycastVsSphere3D(
     float sphereRadius
 );
 
-RaycastResult3D RaycastVsCylinderZ3D(
+RaycastResult3D RaycastVsZCylinder3D(
     Vec3 rayStart,
     Vec3 rayForwardNormal,
     float rayLength,

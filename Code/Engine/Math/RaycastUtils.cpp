@@ -3,6 +3,7 @@
 #include "Engine/Math/MathUtils.hpp"
 
 #include <math.h>
+#include <utility>
 
 RaycastResult2D RaycastVsDisc2D(Vec2 rayStart, Vec2 rayForwardNormal, float rayLength, Vec2 discCenter, float discRadius)
 {
@@ -179,7 +180,131 @@ RaycastResult2D RaycastVsAABB2D(Vec2 rayStart, Vec2 rayForwardNormal, float rayL
     return RaycastVsAABB2D(rayStart, rayForwardNormal, rayLength, aabb.m_mins, aabb.m_maxs);
 }
 
-RaycastResult3D RaycastVsCylinderZ3D(Vec3 rayStart, Vec3 rayForwardNormal, float rayLength, Vec2 const& centerXY, FloatRange const& minMaxZ, float radiusXY)
+RaycastResult3D RaycastVsAABB3D(Vec3 rayStart, Vec3 rayForwardNormal, float rayLength, AABB3 box)
+{
+    RaycastResult3D result(rayStart, rayForwardNormal, rayLength);
+
+    bool isInside =
+        rayStart.x >= box.m_mins.x && rayStart.x <= box.m_maxs.x &&
+        rayStart.y >= box.m_mins.y && rayStart.y <= box.m_maxs.y &&
+        rayStart.z >= box.m_mins.z && rayStart.z <= box.m_maxs.z;
+    if (isInside)
+    {
+        result.m_didImpact = true;
+        result.m_impactDist = 0.f;
+        result.m_impactPos = rayStart;
+        result.m_impactNormal = -rayForwardNormal;
+        return result;
+    }
+
+    float tMin = 0.f;
+    float tMax = rayLength;
+    Vec3 impactNormal = Vec3::ZERO;
+
+    auto UpdateSlab = [&](float start, float dir, float minValue, float maxValue, Vec3 const &minNormal, Vec3 const &maxNormal) -> bool
+    {
+        float const epsilon = 1e-8f;
+        if (Abs(dir) <= epsilon)
+        {
+            return start >= minValue && start <= maxValue;
+        }
+
+        float t0 = (minValue - start) / dir;
+        float t1 = (maxValue - start) / dir;
+        Vec3 nearNormal = minNormal;
+        Vec3 farNormal = maxNormal;
+        if (t0 > t1)
+        {
+            std::swap(t0, t1);
+            std::swap(nearNormal, farNormal);
+        }
+
+        if (t0 > tMin)
+        {
+            tMin = t0;
+            impactNormal = nearNormal;
+        }
+
+        tMax = Min(tMax, t1);
+        return tMin <= tMax;
+    };
+
+    if (!UpdateSlab(rayStart.x, rayForwardNormal.x, box.m_mins.x, box.m_maxs.x, Vec3(-1.f, 0.f, 0.f), Vec3(1.f, 0.f, 0.f)))
+    {
+        return result;
+    }
+
+    if (!UpdateSlab(rayStart.y, rayForwardNormal.y, box.m_mins.y, box.m_maxs.y, Vec3(0.f, -1.f, 0.f), Vec3(0.f, 1.f, 0.f)))
+    {
+        return result;
+    }
+
+    if (!UpdateSlab(rayStart.z, rayForwardNormal.z, box.m_mins.z, box.m_maxs.z, Vec3(0.f, 0.f, -1.f), Vec3(0.f, 0.f, 1.f)))
+    {
+        return result;
+    }
+
+    if (tMin < 0.f || tMin > rayLength)
+    {
+        return result;
+    }
+
+    result.m_didImpact = true;
+    result.m_impactDist = tMin;
+    result.m_impactPos = rayStart + rayForwardNormal * tMin;
+    result.m_impactNormal = impactNormal;
+
+    if (DotProduct3D(result.m_impactNormal, rayForwardNormal) > 0.f)
+    {
+        result.m_impactNormal = -result.m_impactNormal;
+    }
+
+    return result;
+}
+
+RaycastResult3D RaycastVsSphere3D(Vec3 rayStart, Vec3 rayForwardNormal, float rayLength, Vec3 sphereCenter, float sphereRadius)
+{
+    RaycastResult3D result(rayStart, rayForwardNormal, rayLength);
+
+    float startToCenterDistSquared = GetDistanceSquared3D(rayStart, sphereCenter);
+    if (startToCenterDistSquared < (sphereRadius * sphereRadius))
+    {
+        result.m_didImpact = true;
+        result.m_impactDist = 0.f;
+        result.m_impactPos = rayStart;
+        result.m_impactNormal = -rayForwardNormal;
+        return result;
+    }
+
+    Vec3 startToCenter = rayStart - sphereCenter;
+    float b = DotProduct3D(startToCenter, rayForwardNormal);
+    float c = DotProduct3D(startToCenter, startToCenter) - sphereRadius * sphereRadius;
+    float discriminant = b * b - c;
+    if (discriminant < 0.f)
+    {
+        return result;
+    }
+
+    float impactDist = -b - sqrtf(discriminant);
+    if (impactDist < 0.f || impactDist > rayLength)
+    {
+        return result;
+    }
+
+    result.m_didImpact = true;
+    result.m_impactDist = impactDist;
+    result.m_impactPos = rayStart + rayForwardNormal * impactDist;
+    result.m_impactNormal = (result.m_impactPos - sphereCenter).GetNormalized();
+
+    if (DotProduct3D(result.m_impactNormal, rayForwardNormal) > 0.f)
+    {
+        result.m_impactNormal = -result.m_impactNormal;
+    }
+
+    return result;
+}
+
+RaycastResult3D RaycastVsZCylinder3D(Vec3 rayStart, Vec3 rayForwardNormal, float rayLength, Vec2 const &centerXY, FloatRange const &minMaxZ, float radiusXY)
 {
     RaycastResult3D result(rayStart, rayForwardNormal, rayLength);
 

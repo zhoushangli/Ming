@@ -22,6 +22,12 @@
     <Filter Include="Core">
       <UniqueIdentifier>{bd6e45b7-d89a-4a35-ba5a-47804ceac744}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Math\Shapes\2D">
+      <UniqueIdentifier>{60083391-365b-4abc-93c7-e825375eb87d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Math\Shapes\3D">
+      <UniqueIdentifier>{d65801d4-5b4c-4b6b-81fa-28a0dfbe43ef}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\Engine\Code\Engine\Math\Vec2.cpp">
@@ -96,24 +102,6 @@
     <ClCompile Include="Renderer\Texture.cpp">
       <Filter>Renderer</Filter>
     </ClCompile>
-    <ClCompile Include="Math\AABB2.cpp">
-      <Filter>Math\Shapes</Filter>
-    </ClCompile>
-    <ClCompile Include="Math\Capsule2.cpp">
-      <Filter>Math\Shapes</Filter>
-    </ClCompile>
-    <ClCompile Include="Math\Disc2.cpp">
-      <Filter>Math\Shapes</Filter>
-    </ClCompile>
-    <ClCompile Include="Math\LineSegment2.cpp">
-      <Filter>Math\Shapes</Filter>
-    </ClCompile>
-    <ClCompile Include="Math\OBB2.cpp">
-      <Filter>Math\Shapes</Filter>
-    </ClCompile>
-    <ClCompile Include="Math\Triangle2.cpp">
-      <Filter>Math\Shapes</Filter>
-    </ClCompile>
     <ClCompile Include="Math\RaycastUtils.cpp">
       <Filter>Math</Filter>
     </ClCompile>
@@ -186,11 +174,32 @@
     <ClCompile Include="Renderer\IndexBuffer.cpp">
       <Filter>Renderer</Filter>
     </ClCompile>
-    <ClCompile Include="Math\Cylinder3.cpp">
-      <Filter>Math\Shapes</Filter>
+    <ClCompile Include="Math\AABB2.cpp">
+      <Filter>Math\Shapes\2D</Filter>
+    </ClCompile>
+    <ClCompile Include="Math\Capsule2.cpp">
+      <Filter>Math\Shapes\2D</Filter>
+    </ClCompile>
+    <ClCompile Include="Math\Disc2.cpp">
+      <Filter>Math\Shapes\2D</Filter>
+    </ClCompile>
+    <ClCompile Include="Math\LineSegment2.cpp">
+      <Filter>Math\Shapes\2D</Filter>
+    </ClCompile>
+    <ClCompile Include="Math\OBB2.cpp">
+      <Filter>Math\Shapes\2D</Filter>
+    </ClCompile>
+    <ClCompile Include="Math\Triangle2.cpp">
+      <Filter>Math\Shapes\2D</Filter>
     </ClCompile>
     <ClCompile Include="Math\AABB3.cpp">
-      <Filter>Math\Shapes</Filter>
+      <Filter>Math\Shapes\3D</Filter>
+    </ClCompile>
+    <ClCompile Include="Math\ZCylinder3.cpp">
+      <Filter>Math\Shapes\3D</Filter>
+    </ClCompile>
+    <ClCompile Include="Math\Sphere3.cpp">
+      <Filter>Math\Shapes\3D</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -293,24 +302,6 @@
     <ClInclude Include="Renderer\Texture.hpp">
       <Filter>Renderer</Filter>
     </ClInclude>
-    <ClInclude Include="Math\AABB2.hpp">
-      <Filter>Math\Shapes</Filter>
-    </ClInclude>
-    <ClInclude Include="Math\Capsule2.hpp">
-      <Filter>Math\Shapes</Filter>
-    </ClInclude>
-    <ClInclude Include="Math\Disc2.hpp">
-      <Filter>Math\Shapes</Filter>
-    </ClInclude>
-    <ClInclude Include="Math\LineSegment2.hpp">
-      <Filter>Math\Shapes</Filter>
-    </ClInclude>
-    <ClInclude Include="Math\OBB2.hpp">
-      <Filter>Math\Shapes</Filter>
-    </ClInclude>
-    <ClInclude Include="Math\Triangle2.hpp">
-      <Filter>Math\Shapes</Filter>
-    </ClInclude>
     <ClInclude Include="Math\RaycastUtils.hpp">
       <Filter>Math</Filter>
     </ClInclude>
@@ -383,11 +374,32 @@
     <ClInclude Include="Renderer\IndexBuffer.hpp">
       <Filter>Renderer</Filter>
     </ClInclude>
-    <ClInclude Include="Math\Cylinder3.hpp">
-      <Filter>Math\Shapes</Filter>
+    <ClInclude Include="Math\AABB2.hpp">
+      <Filter>Math\Shapes\2D</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Capsule2.hpp">
+      <Filter>Math\Shapes\2D</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Disc2.hpp">
+      <Filter>Math\Shapes\2D</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\LineSegment2.hpp">
+      <Filter>Math\Shapes\2D</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\OBB2.hpp">
+      <Filter>Math\Shapes\2D</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Triangle2.hpp">
+      <Filter>Math\Shapes\2D</Filter>
     </ClInclude>
     <ClInclude Include="Math\AABB3.hpp">
-      <Filter>Math\Shapes</Filter>
+      <Filter>Math\Shapes\3D</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\ZCylinder3.hpp">
+      <Filter>Math\Shapes\3D</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Sphere3.hpp">
+      <Filter>Math\Shapes\3D</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
