@@ -60,9 +60,3 @@ Strings SplitStringOnDelimiter(std::string const& originalString, char delimiter
     return result;
 }
 
-
-
-
-
-
-

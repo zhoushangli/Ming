@@ -1,11 +1,13 @@
 #pragma once
 
+#include "Game/EngineBuildPreferences.hpp"
+
 #include "Engine/Core/Image.hpp"
 #include "Engine/Math/IntVec2.hpp"
 #include "Engine/Math/Matrix4x4.hpp"
 #include "Engine/Renderer/Shader.hpp"
 #include "Engine/Renderer/BitmapFont.hpp"
-#include "Game/EngineBuildPreferences.hpp"
+#include "Engine/Renderer/PostProcessPass.hpp"
 
 #include <map>
 #include <vector>
@@ -24,6 +26,7 @@ struct Vertex;
 struct ID3D11Device;
 struct ID3D11DeviceContext;
 struct IDXGISwapChain;
+struct ID3DUserDefinedAnnotation;
 struct ID3D11RenderTargetView;
 struct ID3D11VertexShader;
 struct ID3D11PixelShader;
@@ -164,6 +167,9 @@ public:
     void CopyCPUToGPU(const void* data, unsigned int size, ConstantBuffer* constantBuffer);
     void CopyCPUToGPU(const void* data, unsigned int size, IndexBuffer* indexBuffer);
 
+	// Post-process pass management
+	void AddPostProcessPass(PostProcessPass const& pass);
+
 private:
     // Texture cache internals
     Texture* CreateTextureFromFile(char const* fileDataPath);
@@ -188,46 +194,50 @@ private:
     Camera* m_currentCamera = nullptr;
     Shader* m_currentShader = nullptr;
 
-    VertexBuffer* m_vertexBuffer = nullptr;
+    VertexBuffer* m_currentVertexBuffer = nullptr;
     IndexBuffer* m_currentIndexBuffer = nullptr;
-    ConstantBuffer* m_lightCBO = nullptr;
-    ConstantBuffer* m_cameraCBO = nullptr;
-    ConstantBuffer* m_modelCBO = nullptr;
+    ConstantBuffer* m_lightConstantBuffer = nullptr;
+    ConstantBuffer* m_cameraConstantBuffer = nullptr;
+    ConstantBuffer* m_modelConstantBuffer = nullptr;
 
-    ID3D11Device* m_device = nullptr;
-    ID3D11DeviceContext* m_deviceContext = nullptr;
-    IDXGISwapChain* m_swapChain = nullptr;
-    ID3D11RenderTargetView* m_renderTargetView = nullptr;
+    ID3D11Device* m_d3dDevice = nullptr;
+    ID3D11DeviceContext* m_d3dDeviceContext = nullptr;
+    IDXGISwapChain* m_d3dSwapChain = nullptr;
+    ID3D11RenderTargetView* m_d3dRenderTargetView = nullptr;
+	ID3DUserDefinedAnnotation* m_d3dAnnotation = nullptr;
 
-    ID3D11BlendState* m_blendState = nullptr;
+    ID3D11BlendState* m_currentBlendState = nullptr;
     BlendMode m_desiredBlendMode = BlendMode::ALPHA;
     ID3D11BlendState* m_blendStates[(int)BlendMode::COUNT] = {};
 
-    ID3D11SamplerState* m_samplerState = nullptr;
+    ID3D11SamplerState* m_currentSamplerState = nullptr;
     SamplerMode m_desiredSamplerMode = SamplerMode::POINT_CLAMP;
     ID3D11SamplerState* m_samplerStates[(int)(SamplerMode::COUNT)] = {};
 
-    ID3D11RasterizerState* m_rasterizerState = nullptr;
+    ID3D11RasterizerState* m_currentRasterizerState = nullptr;
     RasterizerMode m_desiredRasterizerMode = RasterizerMode::SOLID_CULL_BACK;
     ID3D11RasterizerState* m_rasterizerStates[(int)(RasterizerMode::COUNT)] = {};
 
-    ID3D11DepthStencilState* m_depthStencilState = nullptr;
+    ID3D11DepthStencilState* m_currentDepthStencilState = nullptr;
     DepthMode m_desiredDepthMode = DepthMode::READ_WRITE_LESS_EQUAL;
     ID3D11DepthStencilState* m_depthStencilStates[(int)(DepthMode::COUNT)] = {};
 
     ID3D11Texture2D* m_depthStencilTexture = nullptr;
-    ID3D11DepthStencilView* m_depthStencilDSV = nullptr;
+    ID3D11DepthStencilView* m_depthStencilView = nullptr;
 
-    std::vector<Shader*> m_loadedShaders;
+    std::vector<Shader*> m_cachedShaders;
     std::vector<uint8_t> m_vertexShaderByteCode;
     std::vector<uint8_t> m_pixelShaderByteCode;
 
-    std::map<std::string, Texture*> m_loadedTexturesDict;
-    std::map<std::string, BitmapFont*> m_loadedFontsDict;
+    std::map<std::string, Texture*> m_texturesByName;
+    std::map<std::string, BitmapFont*> m_fontsByName;
 
-    // Testing render target
-    Texture* m_testTexture = nullptr;
-    Shader* m_testShader = nullptr;
+	// Post-process pass resources
+    Texture* m_sceneColorTexture = nullptr;
+    std::vector<PostProcessPass> m_postProcessPasses;
+	Texture* m_postProcessTextureA = nullptr;
+	Texture* m_postProcessTextureB = nullptr;
+    Shader* m_postProcessCopyShader = nullptr;
 
 #if defined(ENGINE_DEBUG_RENDER)
     void* m_dxgiDebug = nullptr;
