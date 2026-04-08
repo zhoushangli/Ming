@@ -10,6 +10,12 @@ Texture::Texture()
 
 Texture::~Texture()
 {
+    if (m_renderTargetView)
+    {
+        m_renderTargetView->Release();
+        m_renderTargetView = nullptr;
+    }
+
     if (m_shaderResourceView) 
     { 
         m_shaderResourceView->Release();

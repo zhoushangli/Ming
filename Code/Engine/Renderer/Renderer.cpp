@@ -1,8 +1,7 @@
 #include "Engine/Renderer/Renderer.hpp"
 
 #include "Engine/Core/Engine.hpp"
-#include "Engine/Core/Vertex_PCU.hpp"
-#include "Engine/Core/Vertex_PCUTBN.hpp"
+#include "Engine/Core/Vertex.hpp"
 #include "Engine/Core/FileUtils.hpp"
 #include "Engine/Core/VertexUtils.hpp"
 #include "Engine/Core/StringUtils.hpp"
@@ -36,22 +35,20 @@
 HGLRC g_openGLRenderingContext = nullptr;
 
 const uint8_t k_defaultTexture[16] =
-    {
-        0xFF, 0xFF, 0xFF, 0xFF, // (0,0)
-        0xFF, 0xFF, 0xFF, 0xFF, // (1,0)
-        0xFF, 0xFF, 0xFF, 0xFF, // (0,1)
-        0xFF, 0xFF, 0xFF, 0xFF  // (1,1)
+{
+    0xFF, 0xFF, 0xFF, 0xFF, // (0,0)
+    0xFF, 0xFF, 0xFF, 0xFF, // (1,0)
+    0xFF, 0xFF, 0xFF, 0xFF, // (0,1)
+    0xFF, 0xFF, 0xFF, 0xFF  // (1,1)
 };
 
 //------------------------------------------------------------------------------------------------
 // Lifetime and frame loop
 Renderer::Renderer(RendererConfig config) : m_config(config)
-{
-}
+{}
 
 Renderer::~Renderer()
-{
-}
+{}
 
 #pragma region Public: Lifetime and frame loop
 void Renderer::Startup()
@@ -89,8 +86,8 @@ void Renderer::Startup()
 
 #pragma region Startup: Get back buffer texture
 
-    ID3D11Texture2D *backBuffer;
-    hr = m_swapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void **)&backBuffer);
+    ID3D11Texture2D* backBuffer;
+    hr = m_swapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)&backBuffer);
     if (!SUCCEEDED(hr))
     {
         ERROR_AND_DIE("Could not get swap chain buffer.");
@@ -109,13 +106,13 @@ void Renderer::Startup()
 #pragma region Startup: Create debug module
 
 #if defined(ENGINE_DEBUG_RENDER)
-    m_dxgiDebugModule = (void *)::LoadLibraryA("dxgidebug.dll");
+    m_dxgiDebugModule = (void*)::LoadLibraryA("dxgidebug.dll");
     if (m_dxgiDebugModule == nullptr)
     {
         ERROR_AND_DIE("Could not load dxgidebug.dll.");
     }
 
-    typedef HRESULT(WINAPI * GetDebugModuleCB)(REFIID, void **);
+    typedef HRESULT(WINAPI* GetDebugModuleCB)(REFIID, void**);
     ((GetDebugModuleCB)::GetProcAddress(
         (HMODULE)m_dxgiDebugModule,
         "DXGIGetDebugInterface"))(__uuidof(IDXGIDebug), &m_dxgiDebug);
@@ -170,8 +167,7 @@ void Renderer::Startup()
 
 #pragma region Startup: Create buffers
 
-    m_vertexBufferPCU = CreateVertexBuffer(sizeof(Vertex_PCU) * 3, sizeof(Vertex_PCU));
-    m_vertexBufferPCUTBN = CreateVertexBuffer(sizeof(Vertex_PCUTBN) * 3, sizeof(Vertex_PCUTBN));
+    m_vertexBuffer = CreateVertexBuffer(sizeof(Vertex) * 3, sizeof(Vertex));
     m_currentIndexBuffer = CreateIndexBuffer(sizeof(unsigned int) * 3);
     m_lightCBO = CreateConstantBuffer(sizeof(LightConstants));
     m_cameraCBO = CreateConstantBuffer(sizeof(CameraConstants));
@@ -304,10 +300,12 @@ void Renderer::Startup()
         "Default",
         IntVec2(2, 2),
         4,
-        (uint8_t *)k_defaultTexture);
+        (uint8_t*)k_defaultTexture);
     BindTexture(m_defaultTexture);
 
 #pragma endregion
+
+    m_testTexture = CreateRenderTargetTexture("RenderTargetTest", IntVec2(200, 100));
 }
 
 void Renderer::Shutdown()
@@ -333,11 +331,8 @@ void Renderer::Shutdown()
     delete m_currentIndexBuffer;
     m_currentIndexBuffer = nullptr;
 
-    delete m_vertexBufferPCUTBN;
-    m_vertexBufferPCUTBN = nullptr;
-
-    delete m_vertexBufferPCU;
-    m_vertexBufferPCU = nullptr;
+    delete m_vertexBuffer;
+    m_vertexBuffer = nullptr;
 
     if (m_depthStencilDSV)
     {
@@ -351,7 +346,7 @@ void Renderer::Shutdown()
         m_depthStencilTexture = nullptr;
     }
 
-    for (auto &rasterizerState : m_rasterizerStates)
+    for (auto& rasterizerState : m_rasterizerStates)
     {
         if (rasterizerState)
         {
@@ -360,7 +355,7 @@ void Renderer::Shutdown()
         }
     }
 
-    for (auto &depthStencilState : m_depthStencilStates)
+    for (auto& depthStencilState : m_depthStencilStates)
     {
         if (depthStencilState)
         {
@@ -369,7 +364,7 @@ void Renderer::Shutdown()
         }
     }
 
-    for (auto &blendState : m_blendStates)
+    for (auto& blendState : m_blendStates)
     {
         if (blendState)
         {
@@ -378,7 +373,7 @@ void Renderer::Shutdown()
         }
     }
 
-    for (auto &samplerState : m_samplerStates)
+    for (auto& samplerState : m_samplerStates)
     {
         if (samplerState)
         {
@@ -387,19 +382,19 @@ void Renderer::Shutdown()
         }
     }
 
-    for (auto &shader : m_loadedShaders)
+    for (auto& shader : m_loadedShaders)
     {
         delete shader;
     }
     m_loadedShaders.clear();
 
-    for (auto &pair : m_loadedTexturesDict)
+    for (auto& pair : m_loadedTexturesDict)
     {
         delete pair.second;
     }
     m_loadedTexturesDict.clear();
 
-    for (auto &pair : m_loadedFontsDict)
+    for (auto& pair : m_loadedFontsDict)
     {
         delete pair.second;
     }
@@ -412,9 +407,9 @@ void Renderer::Shutdown()
 
     // Report error leaks and release debug module
 #if defined(ENGINE_DEBUG_RENDER)
-    ((IDXGIDebug *)m_dxgiDebug)->ReportLiveObjects(DXGI_DEBUG_ALL, (DXGI_DEBUG_RLO_FLAGS)(DXGI_DEBUG_RLO_DETAIL | DXGI_DEBUG_RLO_IGNORE_INTERNAL));
+    ((IDXGIDebug*)m_dxgiDebug)->ReportLiveObjects(DXGI_DEBUG_ALL, (DXGI_DEBUG_RLO_FLAGS)(DXGI_DEBUG_RLO_DETAIL | DXGI_DEBUG_RLO_IGNORE_INTERNAL));
 
-    ((IDXGIDebug *)m_dxgiDebug)->Release();
+    ((IDXGIDebug*)m_dxgiDebug)->Release();
     m_dxgiDebug = nullptr;
 
     ::FreeLibrary((HMODULE)m_dxgiDebugModule);
@@ -440,14 +435,13 @@ void Renderer::EndFrame()
 }
 
 void Renderer::CreateRenderingContext()
-{
-}
+{}
 
 #pragma endregion
 
 #pragma region Public: Camera and pipeline state
 
-void Renderer::BeginCamera(Camera const &camera)
+void Renderer::BeginCamera(Camera const& camera)
 {
 
     // Set viewport
@@ -473,10 +467,9 @@ void Renderer::BeginCamera(Camera const &camera)
 }
 
 void Renderer::EndCamera()
-{
-}
+{}
 
-void Renderer::ClearScreen(Rgba8 const &clearColor)
+void Renderer::ClearScreen(Rgba8 const& clearColor)
 {
     // Clear the screen
     float colorAsFloats[4];
@@ -510,33 +503,33 @@ void Renderer::SetStatesIfChanged()
     GUARANTEE_OR_DIE(m_deviceContext, "SetStatesIfChanged: m_deviceContext is null");
 
     // Blend state
-    ID3D11BlendState *desiredBlendState = m_blendStates[(int)m_desiredBlendMode];
+    ID3D11BlendState* desiredBlendState = m_blendStates[(int)m_desiredBlendMode];
     if (m_blendState != desiredBlendState)
     {
         m_blendState = desiredBlendState;
 
-        float blendFactor[4] = {0.f, 0.f, 0.f, 0.f};
+        float blendFactor[4] = { 0.f, 0.f, 0.f, 0.f };
         UINT sampleMask = 0xffffffff;
 
         m_deviceContext->OMSetBlendState(m_blendState, blendFactor, sampleMask);
     }
 
     // Sampler state
-    ID3D11SamplerState *desiredSamplerState = m_samplerStates[(int)m_desiredSamplerMode];
+    ID3D11SamplerState* desiredSamplerState = m_samplerStates[(int)m_desiredSamplerMode];
     if (m_samplerState != desiredSamplerState)
     {
         m_samplerState = desiredSamplerState;
         m_deviceContext->PSSetSamplers(0, 1, &m_samplerState);
     }
 
-    ID3D11RasterizerState *desiredRasterizerState = m_rasterizerStates[(int)m_desiredRasterizerMode];
+    ID3D11RasterizerState* desiredRasterizerState = m_rasterizerStates[(int)m_desiredRasterizerMode];
     if (m_rasterizerState != desiredRasterizerState)
     {
         m_rasterizerState = desiredRasterizerState;
         m_deviceContext->RSSetState(m_rasterizerState);
     }
 
-    ID3D11DepthStencilState *desiredDepthStencilState = m_depthStencilStates[(int)m_desiredDepthMode];
+    ID3D11DepthStencilState* desiredDepthStencilState = m_depthStencilStates[(int)m_desiredDepthMode];
     if (m_depthStencilState != desiredDepthStencilState)
     {
         m_depthStencilState = desiredDepthStencilState;
@@ -548,84 +541,49 @@ void Renderer::SetStatesIfChanged()
 
 #pragma region Public: Draw entry points
 
-void Renderer::DrawVertexArray(int numVertexes, Vertex_PCU const *vertexes) const
+void Renderer::DrawVertexArray(int numVertexes, Vertex const* vertexes) const
 {
     if (numVertexes % 3 != 0 || vertexes == nullptr)
     {
         return;
     }
 
-    unsigned int size = numVertexes * sizeof(Vertex_PCU);
+    unsigned int size = numVertexes * sizeof(Vertex);
 
-    m_vertexBufferPCU->Resize(size);
-    g_engine->m_renderer->CopyCPUToGPU(vertexes, size, m_vertexBufferPCU);
-    g_engine->m_renderer->DrawVertexBuffer(m_vertexBufferPCU, numVertexes);
+    m_vertexBuffer->Resize(size);
+    g_engine->m_renderer->CopyCPUToGPU(vertexes, size, m_vertexBuffer);
+    g_engine->m_renderer->DrawVertexBuffer(m_vertexBuffer, numVertexes);
 }
 
-void Renderer::DrawVertexArray(std::vector<Vertex_PCU> const &verts) const
+void Renderer::DrawVertexArray(std::vector<Vertex> const& verts) const
 {
     DrawVertexArray(static_cast<int>(verts.size()), verts.data());
 }
 
-void Renderer::DrawVertexArray(std::vector<Vertex_PCU> const &verts, std::vector<unsigned int> const &vertIndexes) const
+void Renderer::DrawVertexArray(std::vector<Vertex> const& verts, std::vector<unsigned int> const& vertIndexes) const
 {
     unsigned int vertsNum = static_cast<unsigned int>(verts.size());
     unsigned int indexesNum = static_cast<unsigned int>(vertIndexes.size());
-    unsigned int vertsSize = vertsNum * sizeof(Vertex_PCU);
+    unsigned int vertsSize = vertsNum * sizeof(Vertex);
     unsigned int indexesSize = indexesNum * sizeof(unsigned int);
 
-    m_vertexBufferPCU->Resize(vertsSize);
+    m_vertexBuffer->Resize(vertsSize);
     m_currentIndexBuffer->Resize(indexesSize);
 
-    g_engine->m_renderer->CopyCPUToGPU(verts.data(), vertsSize, m_vertexBufferPCU);
+    g_engine->m_renderer->CopyCPUToGPU(verts.data(), vertsSize, m_vertexBuffer);
     g_engine->m_renderer->CopyCPUToGPU(vertIndexes.data(), indexesSize, m_currentIndexBuffer);
 
-    g_engine->m_renderer->DrawIndexedVertexBuffer(m_vertexBufferPCU, m_currentIndexBuffer, indexesNum);
+    g_engine->m_renderer->DrawIndexedVertexBuffer(m_vertexBuffer, m_currentIndexBuffer, indexesNum);
 }
 
-void Renderer::DrawVertexArray(int numVertexes, Vertex_PCUTBN const *vertexes) const
-{
-    if (numVertexes % 3 != 0 || vertexes == nullptr)
-    {
-        return;
-    }
-
-    unsigned int size = numVertexes * sizeof(Vertex_PCUTBN);
-
-    m_vertexBufferPCUTBN->Resize(size);
-    g_engine->m_renderer->CopyCPUToGPU(vertexes, size, m_vertexBufferPCUTBN);
-    g_engine->m_renderer->DrawVertexBuffer(m_vertexBufferPCUTBN, numVertexes);
-}
-
-void Renderer::DrawVertexArray(std::vector<Vertex_PCUTBN> const &verts) const
-{
-    DrawVertexArray(static_cast<int>(verts.size()), verts.data());
-}
-
-void Renderer::DrawVertexArray(std::vector<Vertex_PCUTBN> const &verts, std::vector<unsigned int> const &vertIndexes) const
-{
-    unsigned int vertsNum = static_cast<unsigned int>(verts.size());
-    unsigned int indexesNum = static_cast<unsigned int>(vertIndexes.size());
-    unsigned int vertsSize = vertsNum * sizeof(Vertex_PCUTBN);
-    unsigned int indexesSize = indexesNum * sizeof(unsigned int);
-
-    m_vertexBufferPCUTBN->Resize(vertsSize);
-    m_currentIndexBuffer->Resize(indexesSize);
-
-    g_engine->m_renderer->CopyCPUToGPU(verts.data(), vertsSize, m_vertexBufferPCUTBN);
-    g_engine->m_renderer->CopyCPUToGPU(vertIndexes.data(), indexesSize, m_currentIndexBuffer);
-
-    g_engine->m_renderer->DrawIndexedVertexBuffer(m_vertexBufferPCUTBN, m_currentIndexBuffer, indexesNum);
-}
-
-void Renderer::DrawVertexBuffer(VertexBuffer *vertexBuffer, unsigned int vertexCount)
+void Renderer::DrawVertexBuffer(VertexBuffer* vertexBuffer, unsigned int vertexCount)
 {
     SetStatesIfChanged();
     BindVertexBuffer(vertexBuffer);
     m_deviceContext->Draw(vertexCount, 0);
 }
 
-void Renderer::DrawIndexedVertexBuffer(VertexBuffer *vertexBuffer, IndexBuffer *indexBuffer, unsigned int indexCount)
+void Renderer::DrawIndexedVertexBuffer(VertexBuffer* vertexBuffer, IndexBuffer* indexBuffer, unsigned int indexCount)
 {
     SetStatesIfChanged();
     BindVertexBuffer(vertexBuffer);
@@ -637,7 +595,7 @@ void Renderer::DrawIndexedVertexBuffer(VertexBuffer *vertexBuffer, IndexBuffer *
 
 #pragma region Public: High-level bind helpers used by gameplay/render features
 
-void Renderer::BindTexture(Texture *texture)
+void Renderer::BindTexture(Texture* texture)
 {
     GUARANTEE_OR_DIE(m_deviceContext, "BindTexture: m_deviceContext is null");
 
@@ -646,12 +604,12 @@ void Renderer::BindTexture(Texture *texture)
         texture = m_defaultTexture;
     }
 
-    ID3D11ShaderResourceView *srv = texture->m_shaderResourceView;
+    ID3D11ShaderResourceView* srv = texture->m_shaderResourceView;
     m_deviceContext->PSSetShaderResources(0, 1, &srv);
     m_deviceContext->PSSetSamplers(0, 1, &m_samplerState);
 }
 
-void Renderer::BindShader(Shader *shader)
+void Renderer::BindShader(Shader* shader)
 {
     GUARANTEE_OR_DIE(m_deviceContext, "BindShader: m_deviceContext is null");
 
@@ -665,7 +623,7 @@ void Renderer::BindShader(Shader *shader)
     m_deviceContext->PSSetShader(shader->m_pixelShader, nullptr, 0);
 }
 
-void Renderer::BindModelConstants(Matrix4x4 const &modelToWorldTransform, Rgba8 const &modelColor)
+void Renderer::BindModelConstants(Matrix4x4 const& modelToWorldTransform, Rgba8 const& modelColor)
 {
     ModelConstants modelData = ModelConstants();
     modelData.ModelToWorldTransform = modelToWorldTransform;
@@ -678,7 +636,7 @@ void Renderer::BindModelConstants(Matrix4x4 const &modelToWorldTransform, Rgba8 
     BindConstantBuffer(m_modelCBO, k_modelConstantsSlot);
 }
 
-void Renderer::BindLightConstants(Vec3 const &sunDirection, float const sunIntensity, float const ambientIntensity)
+void Renderer::BindLightConstants(Vec3 const& sunDirection, float const sunIntensity, float const ambientIntensity)
 {
     LightConstants lightData = LightConstants();
     lightData.SunDirection = sunDirection;
@@ -693,7 +651,7 @@ void Renderer::BindLightConstants(Vec3 const &sunDirection, float const sunInten
 
 #pragma region Public: GPU resource creation and cache access
 
-Shader *Renderer::CreateShader(char const *shaderName, VertexType vertexType)
+Shader* Renderer::CreateShader(char const* shaderName, VertexType vertexType)
 {
     GUARANTEE_OR_DIE(shaderName && shaderName[0], "CreateShader(shaderName): shaderName is null/empty");
 
@@ -707,41 +665,52 @@ Shader *Renderer::CreateShader(char const *shaderName, VertexType vertexType)
     return CreateShader(shaderName, shaderSource.c_str(), vertexType);
 }
 
-Texture *Renderer::CreateOrGetTextureFromFile(char const *imageFilePath)
+Texture* Renderer::CreateOrGetTextureFromFile(char const* imageFilePath)
 {
     // See if we already have this texture previously loaded
-    Texture *existingTexture = GetTextureFromFileName(imageFilePath); // You need to write this
+    Texture* existingTexture = GetTextureFromFileName(imageFilePath); // You need to write this
     if (existingTexture)
     {
         return existingTexture;
     }
 
     // Never seen this texture before!  Let's load it.
-    Texture *newTexture = CreateTextureFromFile(imageFilePath);
+    Texture* newTexture = CreateTextureFromFile(imageFilePath);
     return newTexture;
 }
 
-Texture *Renderer::CreateTextureFromImage(const Image &image)
+Texture* Renderer::CreateTextureFromImage(const Image& image)
 {
     return CreateTextureFromData(
         image.GetImageFilePath().c_str(),
         image.GetDimensions(),
         4,
-        (uint8_t *)image.GetRawData());
+        (uint8_t*)image.GetRawData());
 }
 
-Texture *Renderer::CreateTextureFromData(char const *name, IntVec2 dimensions, int bytesPerTexel, uint8_t *texelData)
+Texture* Renderer::CreateTextureFromData(
+    char const* name,
+    IntVec2 dimensions,
+    int bytesPerTexel,
+    uint8_t* texelData)
 {
+    auto failIfUnsuccessful = [&](HRESULT result, Texture* texture, char const* errorFormat)
+        {
+            if (!SUCCEEDED(result))
+            {
+                delete texture;
+                ERROR_AND_DIE(Stringf(errorFormat, name));
+            }
+        };
+
     GUARANTEE_OR_DIE(m_device, "CreateTextureFromData: m_device is null");
     GUARANTEE_OR_DIE(texelData, Stringf("CreateTextureFromData failed for \"%s\" - texelData was null!", name));
-    GUARANTEE_OR_DIE(dimensions.x > 0 && dimensions.y > 0,
-                     Stringf("CreateTextureFromData failed for \"%s\" - illegal texture dimensions (%i x %i)", name, dimensions.x, dimensions.y));
+    GUARANTEE_OR_DIE(dimensions.x > 0 && dimensions.y > 0, Stringf("CreateTextureFromData failed for \"%s\" - illegal texture dimensions (%i x %i)", name, dimensions.x, dimensions.y));
 
     // We only support RGBA8 format for now, so require 4 bytes per texel
-    GUARANTEE_OR_DIE(bytesPerTexel == 4,
-                     Stringf("CreateTextureFromData requires 4 bytes/texel (RGBA). Got %i for \"%s\"", bytesPerTexel, name));
+    GUARANTEE_OR_DIE(bytesPerTexel == 4, Stringf("CreateTextureFromData requires 4 bytes/texel (RGBA). Got %i for \"%s\"", bytesPerTexel, name));
 
-    Texture *newTexture = new Texture();
+    Texture* newTexture = new Texture();
     newTexture->m_name = name;
     newTexture->m_dimensions = dimensions;
 
@@ -751,33 +720,66 @@ Texture *Renderer::CreateTextureFromData(char const *name, IntVec2 dimensions, i
     textureDesc.MipLevels = 1;
     textureDesc.ArraySize = 1;
     textureDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-    textureDesc.SampleDesc.Count = 1;
     textureDesc.Usage = D3D11_USAGE_IMMUTABLE;
     textureDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+    textureDesc.SampleDesc.Count = 1;
 
     D3D11_SUBRESOURCE_DATA textureData = {};
     textureData.pSysMem = texelData;
     textureData.SysMemPitch = 4 * dimensions.x;
 
     HRESULT hr = m_device->CreateTexture2D(&textureDesc, &textureData, &newTexture->m_texture);
-    if (!SUCCEEDED(hr))
-    {
-        delete newTexture;
-        ERROR_AND_DIE(Stringf("CreateTexture2D failed for image file \"%s\".", name));
-    }
+    failIfUnsuccessful(hr, newTexture, "CreateTexture2D failed for image file \"%s\".");
 
     hr = m_device->CreateShaderResourceView(newTexture->m_texture, nullptr, &newTexture->m_shaderResourceView);
-    if (!SUCCEEDED(hr))
-    {
-        delete newTexture;
-        ERROR_AND_DIE(Stringf("CreateShaderResourceView failed for image file \"%s\".", name));
-    }
+    failIfUnsuccessful(hr, newTexture, "CreateShaderResourceView failed for image file \"%s\".");
 
     m_loadedTexturesDict[newTexture->m_name] = newTexture;
     return newTexture;
 }
 
-BitmapFont *Renderer::CreateOrGetBitmapFont(char const *fontFilePathNameWithNoExtension)
+Texture* Renderer::CreateRenderTargetTexture(char const* name, IntVec2 dimensions)
+{
+    auto failIfUnsuccessful = [&](HRESULT result, Texture* texture, char const* errorFormat)
+        {
+            if (!SUCCEEDED(result))
+            {
+                delete texture;
+                ERROR_AND_DIE(Stringf(errorFormat, name));
+            }
+        };
+
+    GUARANTEE_OR_DIE(m_device, "CreateRenderTargetTexture: m_device is null");
+    GUARANTEE_OR_DIE(dimensions.x > 0 && dimensions.y > 0, Stringf("CreateRenderTargetTexture failed for \"%s\" - illegal texture dimensions (%i x %i)", name, dimensions.x, dimensions.y));
+
+    Texture* newTexture = new Texture();
+    newTexture->m_name = name;
+    newTexture->m_dimensions = dimensions;
+
+    D3D11_TEXTURE2D_DESC textureDesc = {};
+    textureDesc.Width = (UINT)dimensions.x;
+    textureDesc.Height = (UINT)dimensions.y;
+    textureDesc.MipLevels = 1;
+    textureDesc.ArraySize = 1;
+    textureDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+    textureDesc.Usage = D3D11_USAGE_DEFAULT;
+    textureDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+    textureDesc.SampleDesc.Count = 1;
+
+    HRESULT hr = m_device->CreateTexture2D(&textureDesc, nullptr, &newTexture->m_texture);
+    failIfUnsuccessful(hr, newTexture, "CreateTexture2D failed for render target texture \"%s\".");
+
+    hr = m_device->CreateRenderTargetView(newTexture->m_texture, nullptr, &newTexture->m_renderTargetView);
+    failIfUnsuccessful(hr, newTexture, "CreateRenderTargetView failed for render target texture \"%s\".");
+
+    hr = m_device->CreateShaderResourceView(newTexture->m_texture, nullptr, &newTexture->m_shaderResourceView);
+    failIfUnsuccessful(hr, newTexture, "CreateShaderResourceView failed for render target texture \"%s\".");
+
+    m_loadedTexturesDict[newTexture->m_name] = newTexture;
+    return newTexture;
+}
+
+BitmapFont* Renderer::CreateOrGetBitmapFont(char const* fontFilePathNameWithNoExtension)
 {
     std::string fontKey = std::string(fontFilePathNameWithNoExtension);
     auto found = m_loadedFontsDict.find(fontKey);
@@ -786,23 +788,23 @@ BitmapFont *Renderer::CreateOrGetBitmapFont(char const *fontFilePathNameWithNoEx
         return found->second;
     }
 
-    Texture *fontTexture = CreateOrGetTextureFromFile(Stringf("%s.png", fontFilePathNameWithNoExtension).c_str());
-    BitmapFont *newBitmapFont = new BitmapFont(fontFilePathNameWithNoExtension, *fontTexture);
+    Texture* fontTexture = CreateOrGetTextureFromFile(Stringf("%s.png", fontFilePathNameWithNoExtension).c_str());
+    BitmapFont* newBitmapFont = new BitmapFont(fontFilePathNameWithNoExtension, *fontTexture);
     m_loadedFontsDict[fontKey] = newBitmapFont;
     return newBitmapFont;
 }
 
-VertexBuffer *Renderer::CreateVertexBuffer(const unsigned int size, unsigned int stride)
+VertexBuffer* Renderer::CreateVertexBuffer(const unsigned int size, unsigned int stride)
 {
     return new VertexBuffer(m_device, size, stride);
 }
 
-ConstantBuffer *Renderer::CreateConstantBuffer(const unsigned int size)
+ConstantBuffer* Renderer::CreateConstantBuffer(const unsigned int size)
 {
     return new ConstantBuffer(m_device, size);
 }
 
-IndexBuffer *Renderer::CreateIndexBuffer(const unsigned int size)
+IndexBuffer* Renderer::CreateIndexBuffer(const unsigned int size)
 {
     return new IndexBuffer(m_device, size);
 }
@@ -811,7 +813,7 @@ IndexBuffer *Renderer::CreateIndexBuffer(const unsigned int size)
 
 #pragma region Public: CPU -> GPU uploads
 
-void Renderer::CopyCPUToGPU(const void *data, unsigned int size, VertexBuffer *vertexBuffer)
+void Renderer::CopyCPUToGPU(const void* data, unsigned int size, VertexBuffer* vertexBuffer)
 {
     GUARANTEE_OR_DIE(m_deviceContext, "CopyCPUToGPU: m_deviceContext is null");
     GUARANTEE_OR_DIE(vertexBuffer, "CopyCPUToGPU: vertexBuffer is null");
@@ -832,7 +834,7 @@ void Renderer::CopyCPUToGPU(const void *data, unsigned int size, VertexBuffer *v
     m_deviceContext->Unmap(vertexBuffer->m_buffer, 0);
 }
 
-void Renderer::CopyCPUToGPU(const void *data, unsigned int size, ConstantBuffer *constantBuffer)
+void Renderer::CopyCPUToGPU(const void* data, unsigned int size, ConstantBuffer* constantBuffer)
 {
     GUARANTEE_OR_DIE(m_deviceContext, "CopyCPUToGPU: m_deviceContext is null");
     GUARANTEE_OR_DIE(constantBuffer, "CopyCPUToGPU: vertexBuffer is null");
@@ -852,7 +854,7 @@ void Renderer::CopyCPUToGPU(const void *data, unsigned int size, ConstantBuffer 
     m_deviceContext->Unmap(constantBuffer->m_buffer, 0);
 }
 
-void Renderer::CopyCPUToGPU(const void *data, unsigned int size, IndexBuffer *indexBuffer)
+void Renderer::CopyCPUToGPU(const void* data, unsigned int size, IndexBuffer* indexBuffer)
 {
     GUARANTEE_OR_DIE(m_deviceContext, "CopyCPUToGPU: m_deviceContext is null");
     GUARANTEE_OR_DIE(indexBuffer, "CopyCPUToGPU: vertexBuffer is null");
@@ -876,14 +878,14 @@ void Renderer::CopyCPUToGPU(const void *data, unsigned int size, IndexBuffer *in
 
 #pragma region Private: Texture cache internals
 
-Texture *Renderer::CreateTextureFromFile(char const *imageFilePath)
+Texture* Renderer::CreateTextureFromFile(char const* imageFilePath)
 {
     Image image(imageFilePath);
 
     return CreateTextureFromImage(image);
 }
 
-Texture *Renderer::GetTextureFromFileName(char const *imageFilePath)
+Texture* Renderer::GetTextureFromFileName(char const* imageFilePath)
 {
     if (imageFilePath == nullptr)
     {
@@ -904,7 +906,7 @@ Texture *Renderer::GetTextureFromFileName(char const *imageFilePath)
 
 #pragma region Private: Shader creation internals
 
-Shader *Renderer::CreateShader(char const *shaderName, char const *shaderSource, VertexType vertexType)
+Shader* Renderer::CreateShader(char const* shaderName, char const* shaderSource, VertexType vertexType)
 {
     GUARANTEE_OR_DIE(m_device, "CreateShader: m_device is null");
     GUARANTEE_OR_DIE(shaderName && shaderName[0], "CreateShader: shaderName is null/empty");
@@ -913,7 +915,7 @@ Shader *Renderer::CreateShader(char const *shaderName, char const *shaderSource,
     ShaderConfig config;
     config.m_name = shaderName;
 
-    Shader *shader = new Shader(config);
+    Shader* shader = new Shader(config);
 
     // Compile VS / PS
     std::vector<unsigned char> vsByteCode;
@@ -940,7 +942,7 @@ Shader *Renderer::CreateShader(char const *shaderName, char const *shaderSource,
         &shader->m_pixelShader);
     GUARANTEE_OR_DIE(SUCCEEDED(hr), Stringf("Could not create pixel shader for '%s'", shaderName));
 
-    D3D11_INPUT_ELEMENT_DESC const *inputElementDesc = nullptr;
+    D3D11_INPUT_ELEMENT_DESC const* inputElementDesc = nullptr;
     UINT inputElementCount = 0;
 
     switch (vertexType)
@@ -948,11 +950,11 @@ Shader *Renderer::CreateShader(char const *shaderName, char const *shaderSource,
     case VertexType::PCU:
     {
         static D3D11_INPUT_ELEMENT_DESC const pcuDesc[] =
-            {
-                {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
-                {"COLOR", 0, DXGI_FORMAT_R8G8B8A8_UNORM, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0},
-                {"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0},
-            };
+        {
+            {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
+            {"COLOR", 0, DXGI_FORMAT_R8G8B8A8_UNORM, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0},
+            {"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0},
+        };
 
         inputElementDesc = pcuDesc;
         inputElementCount = (UINT)ARRAYSIZE(pcuDesc);
@@ -962,14 +964,14 @@ Shader *Renderer::CreateShader(char const *shaderName, char const *shaderSource,
     case VertexType::PCUTBN:
     {
         static D3D11_INPUT_ELEMENT_DESC const pcutbnDesc[] =
-            {
-                {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
-                {"COLOR", 0, DXGI_FORMAT_R8G8B8A8_UNORM, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0},
-                {"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0},
-                {"TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0},
-                {"BITANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0},
-                {"NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0},
-            };
+        {
+            {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
+            {"COLOR", 0, DXGI_FORMAT_R8G8B8A8_UNORM, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0},
+            {"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0},
+            {"TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0},
+            {"BITANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0},
+            {"NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0},
+        };
 
         inputElementDesc = pcutbnDesc;
         inputElementCount = (UINT)ARRAYSIZE(pcutbnDesc);
@@ -997,11 +999,11 @@ Shader *Renderer::CreateShader(char const *shaderName, char const *shaderSource,
 }
 
 bool Renderer::CompileShaderToByteCode(
-    std::vector<unsigned char> &outByteCode,
-    char const *name,
-    char const *source,
-    char const *entryPoint,
-    char const *target)
+    std::vector<unsigned char>& outByteCode,
+    char const* name,
+    char const* source,
+    char const* entryPoint,
+    char const* target)
 {
     if (source == nullptr || entryPoint == nullptr || target == nullptr)
     {
@@ -1015,8 +1017,8 @@ bool Renderer::CompileShaderToByteCode(
     shaderFlags |= D3DCOMPILE_WARNINGS_ARE_ERRORS;
 #endif
 
-    ID3DBlob *shaderBlob = nullptr;
-    ID3DBlob *errorBlob = nullptr;
+    ID3DBlob* shaderBlob = nullptr;
+    ID3DBlob* errorBlob = nullptr;
 
     HRESULT hr = D3DCompile(
         source,
@@ -1035,7 +1037,7 @@ bool Renderer::CompileShaderToByteCode(
     {
         if (errorBlob)
         {
-            DebuggerPrintf((char *)errorBlob->GetBufferPointer());
+            DebuggerPrintf((char*)errorBlob->GetBufferPointer());
             errorBlob->Release();
         }
         if (shaderBlob)
@@ -1056,13 +1058,13 @@ bool Renderer::CompileShaderToByteCode(
 
 #pragma region Private: Low-level buffer binding to D3D context
 
-void Renderer::BindVertexBuffer(VertexBuffer *vertexBuffer)
+void Renderer::BindVertexBuffer(VertexBuffer* vertexBuffer)
 {
     GUARANTEE_OR_DIE(m_deviceContext, "BindVertexBuffer: m_deviceContext is null");
 
     if (vertexBuffer == nullptr)
     {
-        ID3D11Buffer *nullBuf = nullptr;
+        ID3D11Buffer* nullBuf = nullptr;
         UINT stride = 0;
         UINT offset = 0;
         m_deviceContext->IASetVertexBuffers(0, 1, &nullBuf, &stride, &offset);
@@ -1071,43 +1073,43 @@ void Renderer::BindVertexBuffer(VertexBuffer *vertexBuffer)
 
     UINT stride = vertexBuffer->GetStride();
     UINT offset = 0;
-    ID3D11Buffer *buf = vertexBuffer->m_buffer;
+    ID3D11Buffer* buf = vertexBuffer->m_buffer;
     m_deviceContext->IASetVertexBuffers(0, 1, &buf, &stride, &offset);
 }
 
-void Renderer::BindConstantBuffer(ConstantBuffer *constantBuffer, int slot)
+void Renderer::BindConstantBuffer(ConstantBuffer* constantBuffer, int slot)
 {
     GUARANTEE_OR_DIE(m_deviceContext, "BindConstantBuffer: m_deviceContext is null");
 
     if (constantBuffer == nullptr)
     {
-        ID3D11Buffer *nullBuf = nullptr;
+        ID3D11Buffer* nullBuf = nullptr;
         m_deviceContext->VSSetConstantBuffers(slot, 1, &nullBuf);
         m_deviceContext->PSSetConstantBuffers(slot, 1, &nullBuf);
         return;
     }
 
-    ID3D11Buffer *buf = constantBuffer->m_buffer;
+    ID3D11Buffer* buf = constantBuffer->m_buffer;
     GUARANTEE_OR_DIE(buf, "BindConstantBuffer: constantBuffer->m_buffer is null");
 
     m_deviceContext->VSSetConstantBuffers(slot, 1, &buf);
     m_deviceContext->PSSetConstantBuffers(slot, 1, &buf);
 }
 
-void Renderer::BindIndexBuffer(IndexBuffer *indexBuffer)
+void Renderer::BindIndexBuffer(IndexBuffer* indexBuffer)
 {
     GUARANTEE_OR_DIE(m_deviceContext, "BindVertexBuffer: m_deviceContext is null");
 
     if (indexBuffer == nullptr)
     {
-        ID3D11Buffer *nullBuf = nullptr;
+        ID3D11Buffer* nullBuf = nullptr;
         UINT stride = 0;
         UINT offset = 0;
         m_deviceContext->IASetVertexBuffers(0, 1, &nullBuf, &stride, &offset);
         return;
     }
 
-    ID3D11Buffer *buf = indexBuffer->m_buffer;
+    ID3D11Buffer* buf = indexBuffer->m_buffer;
     m_deviceContext->IASetIndexBuffer(buf, DXGI_FORMAT_R32_UINT, 0);
 }
 

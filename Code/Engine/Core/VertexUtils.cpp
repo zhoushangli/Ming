@@ -1,11 +1,10 @@
 #include "Engine/Core/VertexUtils.hpp"
 
-#include "Engine/Core/Vertex_PCU.hpp"
-#include "Engine/Core/Vertex_PCUTBN.hpp"
+#include "Engine/Core/Vertex.hpp"
 #include "Engine/Math/MathUtils.hpp"
 #include "VertexUtils.hpp"
 
-void TransformVertexArrayXY3D(int numVerts, Vertex_PCU *verts, float scaleXY,
+void TransformVertexArrayXY3D(int numVerts, Vertex *verts, float scaleXY,
                               float rotationDegreesAboutZ, Vec2 const &translationXY)
 {
     Vec2 iBasis = Vec2::MakeFromPolarDegrees(rotationDegreesAboutZ, scaleXY);
@@ -17,19 +16,19 @@ void TransformVertexArrayXY3D(int numVerts, Vertex_PCU *verts, float scaleXY,
     }
 }
 
-void TransformVertexArray3D(std::vector<Vertex_PCU> &verts, const Matrix4x4 &transform)
+void TransformVertexArray3D(std::vector<Vertex> &verts, const Matrix4x4 &transform)
 {
-    for (Vertex_PCU &vert : verts)
+    for (Vertex &vert : verts)
     {
         vert.m_position = transform.TransformPosition3D(vert.m_position);
     }
 }
 
-AABB2 GetVertexBounds2D(const std::vector<Vertex_PCU> &verts)
+AABB2 GetVertexBounds2D(const std::vector<Vertex> &verts)
 {
     AABB2 bounds;
 
-    for (const Vertex_PCU &vert : verts)
+    for (const Vertex &vert : verts)
     {
         bounds.StretchToIncludePoint(Vec2(vert.m_position.x, vert.m_position.y));
     }
@@ -37,12 +36,12 @@ AABB2 GetVertexBounds2D(const std::vector<Vertex_PCU> &verts)
     return bounds;
 }
 
-void AddVertsForAABB2D(std::vector<Vertex_PCU> &verts, AABB2 const &alignedBox, Rgba8 color)
+void AddVertsForAABB2D(std::vector<Vertex> &verts, AABB2 const &alignedBox, Rgba8 color)
 {
     AddVertsForAABB2D(verts, alignedBox, color, Vec2::ZERO, Vec2::ONE);
 }
 
-void AddVertsForAABB2D(std::vector<Vertex_PCU> &verts, AABB2 const &alignedBox, Rgba8 color, Vec2 uvAtMins, Vec2 uvAtMaxs)
+void AddVertsForAABB2D(std::vector<Vertex> &verts, AABB2 const &alignedBox, Rgba8 color, Vec2 uvAtMins, Vec2 uvAtMaxs)
 {
     Vec2 mins = alignedBox.m_mins;
     Vec2 maxs = alignedBox.m_maxs;
@@ -56,7 +55,7 @@ void AddVertsForAABB2D(std::vector<Vertex_PCU> &verts, AABB2 const &alignedBox, 
     verts.emplace_back(Vec3(mins.x, maxs.y, 0.f), color, Vec2(uvAtMins.x, uvAtMaxs.y));
 }
 
-void AddVertsForDisc2D(std::vector<Vertex_PCU> &verts, Vec2 discCenter, float discRadius, Rgba8 color)
+void AddVertsForDisc2D(std::vector<Vertex> &verts, Vec2 discCenter, float discRadius, Rgba8 color)
 {
     int numSides = (int)RangeMapClamped(discRadius, 1.f, 10.f, 36.f, 360.f);
 
@@ -74,7 +73,7 @@ void AddVertsForDisc2D(std::vector<Vertex_PCU> &verts, Vec2 discCenter, float di
     }
 }
 
-void AddVertsForRing2D(std::vector<Vertex_PCU> &verts, Vec2 ringCenter, float ringRadius, float thickness, Rgba8 color)
+void AddVertsForRing2D(std::vector<Vertex> &verts, Vec2 ringCenter, float ringRadius, float thickness, Rgba8 color)
 {
     int numSides = (int)RangeMapClamped(ringRadius, 1.f, 10.f, 36.f, 360.f);
 
@@ -103,7 +102,7 @@ void AddVertsForRing2D(std::vector<Vertex_PCU> &verts, Vec2 ringCenter, float ri
     }
 }
 
-void AddVertsForOBB2D(std::vector<Vertex_PCU> &verts, OBB2 const &orientedBox, Rgba8 color)
+void AddVertsForOBB2D(std::vector<Vertex> &verts, OBB2 const &orientedBox, Rgba8 color)
 {
     Vec2 corners[4];
     orientedBox.GetCornerPoints(corners);
@@ -118,7 +117,7 @@ void AddVertsForOBB2D(std::vector<Vertex_PCU> &verts, OBB2 const &orientedBox, R
     verts.emplace_back(Vec3(corners[3].x, corners[3].y, 0.f), color);
 }
 
-void AddVertsForSector2D(std::vector<Vertex_PCU> &verts, Vec2 sectorOrigin, float sectorForwardDegrees, float sectorApertureDegrees, float sectorRadius, Rgba8 color)
+void AddVertsForSector2D(std::vector<Vertex> &verts, Vec2 sectorOrigin, float sectorForwardDegrees, float sectorApertureDegrees, float sectorRadius, Rgba8 color)
 {
     // Clamp aperture to [0, 360]
     float aperture = GetClamped(sectorApertureDegrees, 0.f, 360.f);
@@ -146,7 +145,7 @@ void AddVertsForSector2D(std::vector<Vertex_PCU> &verts, Vec2 sectorOrigin, floa
     }
 }
 
-void AddVertsForCapsule2D(std::vector<Vertex_PCU> &verts, Vec2 boneStart, Vec2 boneEnd, float radius, Rgba8 color)
+void AddVertsForCapsule2D(std::vector<Vertex> &verts, Vec2 boneStart, Vec2 boneEnd, float radius, Rgba8 color)
 {
     // Draw the body as a rectangle using AddVertsForLineSegment2D
     Vec2 dir = (boneEnd - boneStart).GetNormalized();
@@ -166,14 +165,14 @@ void AddVertsForCapsule2D(std::vector<Vertex_PCU> &verts, Vec2 boneStart, Vec2 b
     AddVertsForSector2D(verts, boneEnd, forwardDegrees, 180.f, radius, color);
 }
 
-void AddVertsForTriangle2D(std::vector<Vertex_PCU> &verts, Vec2 ccw0, Vec2 ccw1, Vec2 ccw2, Rgba8 color)
+void AddVertsForTriangle2D(std::vector<Vertex> &verts, Vec2 ccw0, Vec2 ccw1, Vec2 ccw2, Rgba8 color)
 {
     verts.emplace_back(Vec3(ccw0.x, ccw0.y, 0.f), color);
     verts.emplace_back(Vec3(ccw1.x, ccw1.y, 0.f), color);
     verts.emplace_back(Vec3(ccw2.x, ccw2.y, 0.f), color);
 }
 
-void AddVertsForLineSegment2D(std::vector<Vertex_PCU> &verts, Vec2 start, Vec2 end, Vec2 thickness, Rgba8 color)
+void AddVertsForLineSegment2D(std::vector<Vertex> &verts, Vec2 start, Vec2 end, Vec2 thickness, Rgba8 color)
 {
     Vec2 dir = (end - start).GetNormalized();
     Vec2 right = dir.GetRotatedByMinus90Degrees();
@@ -193,14 +192,14 @@ void AddVertsForLineSegment2D(std::vector<Vertex_PCU> &verts, Vec2 start, Vec2 e
     verts.emplace_back(Vec3(p3.x, p3.y, 0.f), color);
 }
 
-void AddVertsForInfiniteLine2D(std::vector<Vertex_PCU> &verts, Vec2 pointOnLine, Vec2 anotherPointOnLine, float thickness, Rgba8 color)
+void AddVertsForInfiniteLine2D(std::vector<Vertex> &verts, Vec2 pointOnLine, Vec2 anotherPointOnLine, float thickness, Rgba8 color)
 {
     Vec2 direction = anotherPointOnLine - pointOnLine;
     AddVertsForLineSegment2D(verts, pointOnLine - direction.GetNormalized() * 10000.f,
                              pointOnLine + direction.GetNormalized() * 10000.f, Vec2(thickness, thickness), color);
 }
 
-void AddVertsForArrow2D(std::vector<Vertex_PCU> &verts, Vec2 tailPos, Vec2 tipPos, float arrowSize, float lineThickness, Rgba8 color)
+void AddVertsForArrow2D(std::vector<Vertex> &verts, Vec2 tailPos, Vec2 tipPos, float arrowSize, float lineThickness, Rgba8 color)
 {
     Vec2 dir = (tipPos - tailPos).GetNormalized();
     float length = (tipPos - tailPos).GetLength();
@@ -239,7 +238,7 @@ void AddVertsForArrow2D(std::vector<Vertex_PCU> &verts, Vec2 tailPos, Vec2 tipPo
     verts.emplace_back(Vec3(headRight.x, headRight.y, 0.f), color);
 }
 
-void AddVertsForQuad3D(std::vector<Vertex_PCU> &verts, const Vec3 &bottomLeft, const Vec3 &bottomRight, const Vec3 &topRight, const Vec3 &topLeft, const Rgba8 &color /*= Rgba8::WHITE*/, const AABB2 &UVs /*= AABB2::UNIT */)
+void AddVertsForQuad3D(std::vector<Vertex> &verts, const Vec3 &bottomLeft, const Vec3 &bottomRight, const Vec3 &topRight, const Vec3 &topLeft, const Rgba8 &color /*= Rgba8::WHITE*/, const AABB2 &UVs /*= AABB2::UNIT */)
 {
     Vec2 uvMins = UVs.m_mins;
     Vec2 uvMaxs = UVs.m_maxs;
@@ -253,28 +252,7 @@ void AddVertsForQuad3D(std::vector<Vertex_PCU> &verts, const Vec3 &bottomLeft, c
     verts.emplace_back(topLeft, color, Vec2(uvMins.x, uvMaxs.y));
 }
 
-void AddVertsForQuad3D(std::vector<Vertex_PCU> &verts, std::vector<unsigned int> &indexes, const Vec3 &bottomLeft, const Vec3 &bottomRight, const Vec3 &topRight, const Vec3 &topLeft, const Rgba8 &color /*= Rgba8::WHITE*/, const AABB2 &UVs /*= AABB2::UNIT */)
-{
-    Vec2 uvMins = UVs.m_mins;
-    Vec2 uvMaxs = UVs.m_maxs;
-
-    unsigned int startIndex = (unsigned int)verts.size();
-
-    verts.emplace_back(bottomLeft, color, Vec2(uvMins.x, uvMins.y));
-    verts.emplace_back(bottomRight, color, Vec2(uvMaxs.x, uvMins.y));
-    verts.emplace_back(topRight, color, Vec2(uvMaxs.x, uvMaxs.y));
-    verts.emplace_back(topLeft, color, Vec2(uvMins.x, uvMaxs.y));
-
-    indexes.push_back(startIndex + 0);
-    indexes.push_back(startIndex + 1);
-    indexes.push_back(startIndex + 2);
-
-    indexes.push_back(startIndex + 0);
-    indexes.push_back(startIndex + 2);
-    indexes.push_back(startIndex + 3);
-}
-
-void AddVertsForQuad3D(std::vector<Vertex_PCUTBN> &verts, std::vector<unsigned int> &indexes, const Vec3 &bottomLeft, const Vec3 &bottomRight, const Vec3 &topRight, const Vec3 &topLeft, const Rgba8 &color /*= Rgba8::WHITE*/, const AABB2 &UVs /*= AABB2::UNIT */)
+void AddVertsForQuad3D(std::vector<Vertex> &verts, std::vector<unsigned int> &indexes, const Vec3 &bottomLeft, const Vec3 &bottomRight, const Vec3 &topRight, const Vec3 &topLeft, const Rgba8 &color /*= Rgba8::WHITE*/, const AABB2 &UVs /*= AABB2::UNIT */)
 {
     Vec2 const uvMins = UVs.m_mins;
     Vec2 const uvMaxs = UVs.m_maxs;
@@ -299,7 +277,7 @@ void AddVertsForQuad3D(std::vector<Vertex_PCUTBN> &verts, std::vector<unsigned i
     indexes.push_back(startIndex + 3);
 }
 
-void AddVertsForAABB3D(std::vector<Vertex_PCU> &verts, const AABB3 &bounds, const Rgba8 &color /*= Rgba8::WHITE*/, const AABB2 &UVs /*= AABB2::UNIT*/)
+void AddVertsForAABB3D(std::vector<Vertex> &verts, const AABB3 &bounds, const Rgba8 &color /*= Rgba8::WHITE*/, const AABB2 &UVs /*= AABB2::UNIT*/)
 {
     Vec3 const &mins = bounds.m_mins;
     Vec3 const &maxs = bounds.m_maxs;
@@ -353,7 +331,7 @@ void AddVertsForAABB3D(std::vector<Vertex_PCU> &verts, const AABB3 &bounds, cons
                       color, UVs);
 }
 
-void AddVertsForAABB3D(std::vector<Vertex_PCU> &verts, std::vector<unsigned int> &indexes, const AABB3 &bounds, const Rgba8 &color, const AABB2 &UVs)
+void AddVertsForAABB3D(std::vector<Vertex> &verts, std::vector<unsigned int> &indexes, const AABB3 &bounds, const Rgba8 &color, const AABB2 &UVs)
 {
     Vec3 const &mins = bounds.m_mins;
     Vec3 const &maxs = bounds.m_maxs;
@@ -407,7 +385,7 @@ void AddVertsForAABB3D(std::vector<Vertex_PCU> &verts, std::vector<unsigned int>
                       color, UVs);
 }
 
-void AddVertsForSphere3D(std::vector<Vertex_PCU> &verts, const Vec3 &center, float radius, const Rgba8 &color /*= Rgba8::WHITE*/, const AABB2 &UVs /*= AABB2::UNIT*/, int numSlices /*= 32*/, int numStacks /*= 16*/)
+void AddVertsForSphere3D(std::vector<Vertex> &verts, const Vec3 &center, float radius, const Rgba8 &color /*= Rgba8::WHITE*/, const AABB2 &UVs /*= AABB2::UNIT*/, int numSlices /*= 32*/, int numStacks /*= 16*/)
 {
     if (radius <= 0.f)
     {
@@ -458,7 +436,7 @@ void AddVertsForSphere3D(std::vector<Vertex_PCU> &verts, const Vec3 &center, flo
     }
 }
 
-void AddVertsForCylinder3D(std::vector<Vertex_PCU> &verts, const Vec3 &start, const Vec3 &end, float radius, const Rgba8 &color /*= Rgba8::WHITE*/, const AABB2 &UVs /*= AABB2::UNIT*/, int numSlices /*= 32*/)
+void AddVertsForCylinder3D(std::vector<Vertex> &verts, const Vec3 &start, const Vec3 &end, float radius, const Rgba8 &color /*= Rgba8::WHITE*/, const AABB2 &UVs /*= AABB2::UNIT*/, int numSlices /*= 32*/)
 {
     if (radius <= 0.f)
     {
@@ -553,7 +531,7 @@ void AddVertsForCylinder3D(std::vector<Vertex_PCU> &verts, const Vec3 &start, co
     }
 }
 
-void AddVertsForCone3D(std::vector<Vertex_PCU> &verts, const Vec3 &start, const Vec3 &end, float radius, const Rgba8 &color /*= Rgba8::WHITE*/, const AABB2 &UVs /*= AABB2::UNIT*/, int numSlices /*= 32*/)
+void AddVertsForCone3D(std::vector<Vertex> &verts, const Vec3 &start, const Vec3 &end, float radius, const Rgba8 &color /*= Rgba8::WHITE*/, const AABB2 &UVs /*= AABB2::UNIT*/, int numSlices /*= 32*/)
 {
     if (radius <= 0.f)
     {
@@ -635,7 +613,7 @@ void AddVertsForCone3D(std::vector<Vertex_PCU> &verts, const Vec3 &start, const 
     }
 }
 
-void AddVertsForArrow3D(std::vector<Vertex_PCU> &verts, Vec3 const &start, Vec3 const &end, float radius, Rgba8 const &color /*= Rgba8::WHITE*/, int numSlices /*= 32*/)
+void AddVertsForArrow3D(std::vector<Vertex> &verts, Vec3 const &start, Vec3 const &end, float radius, Rgba8 const &color /*= Rgba8::WHITE*/, int numSlices /*= 32*/)
 {
     Vec3 dir = end - start;
     float length = dir.GetLength();
@@ -662,27 +640,27 @@ void AddVertsForArrow3D(std::vector<Vertex_PCU> &verts, Vec3 const &start, Vec3 
     AddVertsForCone3D(verts, shaftEnd, end, radius, color, AABB2::UNIT, numSlices);
 }
 
-void AddVertsForDisc2D(std::vector<Vertex_PCU> &verts, Disc2 const &disc, Rgba8 color)
+void AddVertsForDisc2D(std::vector<Vertex> &verts, Disc2 const &disc, Rgba8 color)
 {
     AddVertsForDisc2D(verts, disc.m_center, disc.m_radius, color);
 }
 
-void AddVertsForCapsule2D(std::vector<Vertex_PCU> &verts, Capsule2 const &capsule, Rgba8 color)
+void AddVertsForCapsule2D(std::vector<Vertex> &verts, Capsule2 const &capsule, Rgba8 color)
 {
     AddVertsForCapsule2D(verts, capsule.m_bone.m_start, capsule.m_bone.m_end, capsule.m_radius, color);
 }
 
-void AddVertsForTriangle2D(std::vector<Vertex_PCU> &verts, Triangle2 const &triangle, Rgba8 color)
+void AddVertsForTriangle2D(std::vector<Vertex> &verts, Triangle2 const &triangle, Rgba8 color)
 {
     AddVertsForTriangle2D(verts, triangle.m_pointsCounterClockwise[0], triangle.m_pointsCounterClockwise[1], triangle.m_pointsCounterClockwise[2], color);
 }
 
-void AddVertsForLineSegment2D(std::vector<Vertex_PCU> &verts, LineSegment2 const &lineSegment, float thickness, Rgba8 color)
+void AddVertsForLineSegment2D(std::vector<Vertex> &verts, LineSegment2 const &lineSegment, float thickness, Rgba8 color)
 {
     AddVertsForLineSegment2D(verts, lineSegment.m_start, lineSegment.m_end, Vec2(thickness, thickness), color);
 }
 
-void AddVertsForInfiniteLine2D(std::vector<Vertex_PCU> &verts, LineSegment2 const &infiniteLine, float thickness, Rgba8 color)
+void AddVertsForInfiniteLine2D(std::vector<Vertex> &verts, LineSegment2 const &infiniteLine, float thickness, Rgba8 color)
 {
     AddVertsForInfiniteLine2D(verts, infiniteLine.m_start, infiniteLine.m_end, thickness, color);
 }

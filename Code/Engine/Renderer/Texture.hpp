@@ -8,6 +8,7 @@
 
 struct ID3D11Texture2D;
 struct ID3D11ShaderResourceView;
+struct ID3D11RenderTargetView;
 
 class Texture
 {
@@ -26,8 +27,10 @@ protected:
 	std::string			m_name;			// Can't be char const* -- store a copy, in case it was temporary
 	IntVec2				m_dimensions;
 
+    ID3D11ShaderResourceView* m_shaderResourceView = nullptr;   // Read Handle
+    ID3D11RenderTargetView* m_renderTargetView = nullptr;       // Write Handle
+
     ID3D11Texture2D* m_texture = nullptr;
-    ID3D11ShaderResourceView* m_shaderResourceView = nullptr;
 };
 
 class SpriteSheet;

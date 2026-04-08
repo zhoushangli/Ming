@@ -2,6 +2,7 @@
 
 #include "Engine/Core/Engine.hpp"
 #include "Engine/Core/Timer.hpp"
+#include "Engine/Core/Vertex.hpp"
 #include "Engine/Core/ErrorWarningAssert.hpp"
 #include "Engine/Core/StringUtils.hpp"
 #include "Engine/Renderer/Renderer.hpp"
@@ -132,7 +133,7 @@ void DevConsole::Render(AABB2 const& bounds)
     g_engine->m_renderer->SetDepthMode(DepthMode::READ_ONLY_ALWAYS);
     g_engine->m_renderer->SetRasterizerMode(RasterizerMode::SOLID_CULL_BACK);
 
-    std::vector<Vertex_PCU> bgVerts;
+    std::vector<Vertex> bgVerts;
     AddVertsForAABB2D(bgVerts, bounds, Rgba8::TRANSLUCENT_BLACK);
 
     g_engine->m_renderer->BindTexture(nullptr);
@@ -182,7 +183,7 @@ void DevConsole::Render(AABB2 const& bounds)
     int const numVisualLines = (int)visualLines.size();
     int const linesToDraw = std::min(numVisualLines, maxLinesToDraw);
 
-    std::vector<Vertex_PCU> textVerts;
+    std::vector<Vertex> textVerts;
 
     // Draw lines from bottom up 
     for (int i = 0; i < linesToDraw; ++i)

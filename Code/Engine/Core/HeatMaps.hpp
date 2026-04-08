@@ -9,7 +9,7 @@
 
 float const TILE_HEAT_MAP_INVALID_VALUE = 1e9f;
 
-struct Vertex_PCU;
+struct Vertex;
 
 class TileHeatMap
 {
@@ -31,7 +31,7 @@ public:
     float GetMaxValue() const;
 
     void AddVertsForDebugDraw(
-        std::vector<Vertex_PCU>& verts,
+        std::vector<Vertex>& verts,
         AABB2 totalBounds     = AABB2::UNIT,
         FloatRange valueRange = FloatRange::ZERO_TO_ONE,
         Rgba8 lowColor        = Rgba8::BLACK,

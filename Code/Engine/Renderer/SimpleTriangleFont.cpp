@@ -8,7 +8,7 @@
 // require any external bitmap or TrueType fonts (or textures, or anything at all) in Data.
 //-----------------------------------------------------------------------------------------------
 #include "Engine/Renderer/SimpleTriangleFont.hpp"	// actually should be: "Engine/Renderer/SimpleTriangleFont.hpp"
-#include "Engine/Core/Vertex_PCU.hpp"				// actually should be: "Engine/Core/Vertex.hpp"
+#include "Engine/Core/Vertex.hpp"				// actually should be: "Engine/Core/Vertex.hpp"
 #include "Engine/Core/Rgba8.hpp"				// actually should be: "Engine/Core/Rgba8.hpp"
 #include "Engine/Math/AABB2.hpp"				// actually should be: "Engine/Math/AABB2.hpp"
 
@@ -43,7 +43,7 @@ const char* g_triTextFontData[ TRITEXT_NUM_ROWS ] =
 
 
 //------------------------------------------------------------------------------------------------
-void SimpleTriangleFont_AddVertsForAABB2D( std::vector<Vertex_PCU>& mesh, const AABB2& bounds, const Rgba8& tint, const Vec2& uvAtMins, const Vec2& uvAtMaxs )
+void SimpleTriangleFont_AddVertsForAABB2D( std::vector<Vertex>& mesh, const AABB2& bounds, const Rgba8& tint, const Vec2& uvAtMins, const Vec2& uvAtMaxs )
 {
 	Vec3 pos0( bounds.m_mins.x, bounds.m_mins.y, 0.f );
 	Vec3 pos1( bounds.m_maxs.x, bounds.m_mins.y, 0.f );
@@ -65,7 +65,7 @@ void SimpleTriangleFont_AddVertsForAABB2D( std::vector<Vertex_PCU>& mesh, const 
 
 
 //------------------------------------------------------------------------------------------------
-void AddVertsForGlyphTriangles2D( std::vector<Vertex_PCU>& verts, char glyph, const Vec2& cellMins, const Vec2& pixelSize, const Rgba8& color )
+void AddVertsForGlyphTriangles2D( std::vector<Vertex>& verts, char glyph, const Vec2& cellMins, const Vec2& pixelSize, const Rgba8& color )
 {
 	if( glyph < TRITEXT_FIRST_ASCII || glyph > TRITEXT_LAST_ASCII )
 		return;
@@ -93,7 +93,7 @@ void AddVertsForGlyphTriangles2D( std::vector<Vertex_PCU>& verts, char glyph, co
 
 
 //------------------------------------------------------------------------------------------------
-void AddVertsForTextTriangles2D( std::vector<Vertex_PCU>& verts, const std::string& text, const Vec2& startMins, float cellHeight, const Rgba8& color, float cellAspect, [[maybe_unused]] bool isFlipped, float spacingFraction )
+void AddVertsForTextTriangles2D( std::vector<Vertex>& verts, const std::string& text, const Vec2& startMins, float cellHeight, const Rgba8& color, float cellAspect, [[maybe_unused]] bool isFlipped, float spacingFraction )
 {
 	// #ToDo: Support flipped triangle fonts (e.g. when +Y is down)
 //	UNUSED( isFlipped );
