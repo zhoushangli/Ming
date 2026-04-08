@@ -227,6 +227,7 @@ private:
 
     // Testing render target
     Texture* m_testTexture = nullptr;
+    Shader* m_testShader = nullptr;
 
 #if defined(ENGINE_DEBUG_RENDER)
     void* m_dxgiDebug = nullptr;

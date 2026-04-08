@@ -228,9 +228,6 @@ void Renderer::Startup()
 
     // BILINEAR_CLAMP
     samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
-    samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
-    samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
-    samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
 
     hr = m_device->CreateSamplerState(
         &samplerDesc,
@@ -305,7 +302,9 @@ void Renderer::Startup()
 
 #pragma endregion
 
-    m_testTexture = CreateRenderTargetTexture("RenderTargetTest", IntVec2(200, 100));
+    Vec2 camDimensions = (Vec2)g_engine->m_window->GetClientDimensions();
+    m_testTexture = CreateRenderTargetTexture("RenderTargetTest", IntVec2(camDimensions));
+    m_testShader = CreateShader("Data/Shaders/TestShader");
 }
 
 void Renderer::Shutdown()
@@ -420,11 +419,49 @@ void Renderer::Shutdown()
 void Renderer::BeginFrame()
 {
     // Set render target
-    m_deviceContext->OMSetRenderTargets(1, &m_renderTargetView, m_depthStencilDSV);
+    m_deviceContext->OMSetRenderTargets(1, &m_testTexture->m_renderTargetView, m_depthStencilDSV);
+
+    SetDepthMode(DepthMode::READ_WRITE_LESS_EQUAL);
 }
 
 void Renderer::EndFrame()
 {
+    m_deviceContext->OMSetRenderTargets(1, &m_renderTargetView, nullptr);
+
+    // Set viewport
+    Vec2 camDimensions = (Vec2)g_engine->m_window->GetClientDimensions();
+
+    D3D11_VIEWPORT viewport = {};
+    viewport.TopLeftX = 0.f;
+    viewport.TopLeftY = 0.f;
+    viewport.Width = camDimensions.x;
+    viewport.Height = camDimensions.y;
+    viewport.MinDepth = 0.0f;
+    viewport.MaxDepth = 1.0f;
+
+    m_deviceContext->RSSetViewports(1, &viewport);
+
+    BindShader(m_testShader);
+    BindTexture(m_testTexture);
+    SetSamplerMode(SamplerMode::POINT_CLAMP);
+    SetBlendMode(BlendMode::OPAQUE);
+    SetDepthMode(DepthMode::READ_ONLY_ALWAYS);
+    SetRasterizerMode(RasterizerMode::SOLID_CULL_NONE);
+
+    Vertex fullscreenTriangleVerts[3] =
+    {
+        Vertex(Vec3(-1.f, -1.f, 0.f), Rgba8::WHITE, Vec2(0.f, 1.f)),
+        Vertex(Vec3( 3.f, -1.f, 0.f), Rgba8::WHITE, Vec2(2.f, 1.f)),
+        Vertex(Vec3(-1.f,  3.f, 0.f), Rgba8::WHITE, Vec2(0.f, -1.f))
+    };
+
+    DrawVertexArray(3, fullscreenTriangleVerts);
+
+    ID3D11ShaderResourceView* nullSrv = nullptr;
+    m_deviceContext->PSSetShaderResources(0, 1, &nullSrv);
+
+
+
     // Present
     HRESULT hr;
     hr = m_swapChain->Present(0, 0);
@@ -476,6 +513,8 @@ void Renderer::ClearScreen(Rgba8 const& clearColor)
     clearColor.GetAsFloats(colorAsFloats);
     m_deviceContext->ClearRenderTargetView(m_renderTargetView, colorAsFloats);
     m_deviceContext->ClearDepthStencilView(m_depthStencilDSV, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+    
+    m_deviceContext->ClearRenderTargetView(m_testTexture->m_renderTargetView, colorAsFloats);
 }
 
 void Renderer::SetBlendMode(BlendMode blendMode)
