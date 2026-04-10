@@ -163,25 +163,37 @@ Vec3 Vec3::GetRotatedAboutZRadians(float radians) const
 
 void Vec3::Normalize()
 {
-    float len = GetLength();
+	float lenSquared = GetLengthSquared();
+	if (lenSquared == 1.f) 
+	{
+		return;
+	}
+
+	float len = GetLength();
 	if (len > 0.f)
 	{
 		x /= len;
 		y /= len;
 		z /= len;
-    }
+	}
 }
 
 Vec3 Vec3::GetNormalized() const
 {
-    float len = GetLength();
-    if (len > 0.f)
+	float lenSquared = GetLengthSquared();
+	if (lenSquared == 1.f)
+	{
+		return *this;
+	}
+
+	float len = GetLength();
+	if (len > 0.f)
 	{
 		return Vec3(x / len, y / len, z / len);
-    }
+	}
 	else
 	{
-        return Vec3(0.f, 0.f, 0.f);
+		return Vec3(0.f, 0.f, 0.f);
 	}
 }
 

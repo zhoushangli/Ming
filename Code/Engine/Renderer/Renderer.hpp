@@ -72,13 +72,6 @@ enum class DepthMode
     COUNT
 };
 
-enum class VertexType
-{
-    PCU,
-    PCUTBN,
-    COUNT
-};
-
 struct RendererConfig
 {
     bool m_isEnable = true;
@@ -147,7 +140,7 @@ public:
     void BindLightConstants(Vec3 const& sunDirection, float const sunIntensity, float const ambientIntensity);
 
     // GPU resource creation and cache access
-    Shader* CreateShader(char const* shaderName, VertexType vertexType = VertexType::PCU);
+    Shader* CreateShader(char const* shaderName);
     Texture* CreateOrGetTextureFromFile(char const* fileDataPath);
     Texture* CreateTextureFromImage(const Image& image);
     Texture* CreateTextureFromData(
@@ -176,7 +169,7 @@ private:
     Texture* GetTextureFromFileName(char const* fileName);
 
     // Shader creation internals
-    Shader* CreateShader(char const* shaderName, char const* shaderSource, VertexType vertexType = VertexType::PCU);
+    Shader* CreateShader(char const* shaderName, char const* shaderSource);
     bool CompileShaderToByteCode(std::vector<unsigned char>& outByteCode, char const* name,
         char const* source, char const* entryPoint, char const* target);
 

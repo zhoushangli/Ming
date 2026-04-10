@@ -789,7 +789,7 @@ void Renderer::BindLightConstants(Vec3 const& sunDirection, float const sunInten
 
 #pragma region Public: GPU resource creation and cache access
 
-Shader* Renderer::CreateShader(char const* shaderName, VertexType vertexType)
+Shader* Renderer::CreateShader(char const* shaderName)
 {
 	GUARANTEE_OR_DIE(shaderName && shaderName[0], "CreateShader(shaderName): shaderName is null/empty");
 
@@ -800,7 +800,7 @@ Shader* Renderer::CreateShader(char const* shaderName, VertexType vertexType)
 
 	GUARANTEE_OR_DIE(bytesRead > 0, Stringf("Failed to read shader file \"%s\"", shaderFilename.c_str()));
 
-	return CreateShader(shaderName, shaderSource.c_str(), vertexType);
+  return CreateShader(shaderName, shaderSource.c_str());
 }
 
 Texture* Renderer::CreateOrGetTextureFromFile(char const* imageFilePath)
@@ -1049,7 +1049,7 @@ Texture* Renderer::GetTextureFromFileName(char const* imageFilePath)
 
 #pragma region Private: Shader creation internals
 
-Shader* Renderer::CreateShader(char const* shaderName, char const* shaderSource, VertexType vertexType)
+Shader* Renderer::CreateShader(char const* shaderName, char const* shaderSource)
 {
 	GUARANTEE_OR_DIE(m_d3dDevice, "CreateShader: m_d3dDevice is null");
 	GUARANTEE_OR_DIE(shaderName && shaderName[0], "CreateShader: shaderName is null/empty");
@@ -1085,48 +1085,18 @@ Shader* Renderer::CreateShader(char const* shaderName, char const* shaderSource,
 		&shader->m_pixelShader);
 	GUARANTEE_OR_DIE(SUCCEEDED(hr), Stringf("Could not create pixel shader for '%s'", shaderName));
 
-	D3D11_INPUT_ELEMENT_DESC const* inputElementDesc = nullptr;
-	UINT inputElementCount = 0;
-
-	switch (vertexType)
+ static D3D11_INPUT_ELEMENT_DESC const pcutbnDesc[] =
 	{
-	case VertexType::PCU:
-	{
-		static D3D11_INPUT_ELEMENT_DESC const pcuDesc[] =
-		{
-			{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
-			{"COLOR", 0, DXGI_FORMAT_R8G8B8A8_UNORM, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0},
-			{"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0},
-		};
+		{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
+		{"COLOR", 0, DXGI_FORMAT_R8G8B8A8_UNORM, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0},
+		{"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0},
+		{"TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0},
+		{"BITANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0},
+		{"NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0},
+	};
 
-		inputElementDesc = pcuDesc;
-		inputElementCount = (UINT)ARRAYSIZE(pcuDesc);
-		break;
-	}
-
-	case VertexType::PCUTBN:
-	{
-		static D3D11_INPUT_ELEMENT_DESC const pcutbnDesc[] =
-		{
-			{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
-			{"COLOR", 0, DXGI_FORMAT_R8G8B8A8_UNORM, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0},
-			{"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0},
-			{"TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0},
-			{"BITANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0},
-			{"NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0},
-		};
-
-		inputElementDesc = pcutbnDesc;
-		inputElementCount = (UINT)ARRAYSIZE(pcutbnDesc);
-		break;
-	}
-
-	default:
-	{
-		ERROR_AND_DIE("Unsupported vertex type");
-		break;
-	}
-	}
+	D3D11_INPUT_ELEMENT_DESC const* inputElementDesc = pcutbnDesc;
+	UINT inputElementCount = (UINT)ARRAYSIZE(pcutbnDesc);
 
 	hr = m_d3dDevice->CreateInputLayout(
 		inputElementDesc,
