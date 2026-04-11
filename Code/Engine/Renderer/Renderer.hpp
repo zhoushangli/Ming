@@ -131,7 +131,7 @@ public:
     void DrawVertexArray(std::vector<Vertex> const& verts) const;
     void DrawVertexArray(std::vector<Vertex> const& verts, std::vector<unsigned int> const& vertIndexs) const;
     void DrawVertexBuffer(VertexBuffer* vertexBuffer, unsigned int vertexCount);
-    void DrawIndexedVertexBuffer(VertexBuffer* vertexBuffer, IndexBuffer* indexBuffer, unsigned int indexCount);
+    void DrawIndexedVertexBuffer(VertexBuffer* vertexBuffer, IndexBuffer* indexBuffer);
 
     // High-level bind helpers used by gameplay/render features
     void BindTexture(Texture* textureOrNull);
@@ -152,8 +152,10 @@ public:
     BitmapFont* CreateOrGetBitmapFont(char const* fontFilePathNameWithNoExtension);
 
     VertexBuffer* CreateVertexBuffer(const unsigned int size, unsigned int stride);
+    VertexBuffer* CreateVertexBuffer(std::vector<Vertex> const& verts);
     ConstantBuffer* CreateConstantBuffer(const unsigned int size);
     IndexBuffer* CreateIndexBuffer(const unsigned int size);
+    IndexBuffer* CreateIndexBuffer(std::vector<unsigned int> const& indexes);
 
     // CPU -> GPU uploads
     void CopyCPUToGPU(const void* data, unsigned int size, VertexBuffer* vertexBuffer);

@@ -1,24 +1,24 @@
 #include "Engine/Renderer/Renderer.hpp"
 
 #include "Engine/Core/Engine.hpp"
-#include "Engine/Core/Vertex.hpp"
-#include "Engine/Core/FileUtils.hpp"
-#include "Engine/Core/VertexUtils.hpp"
-#include "Engine/Core/StringUtils.hpp"
 #include "Engine/Core/ErrorWarningAssert.hpp"
+#include "Engine/Core/FileUtils.hpp"
+#include "Engine/Core/StringUtils.hpp"
+#include "Engine/Core/Vertex.hpp"
+#include "Engine/Core/VertexUtils.hpp"
 #include "Engine/Renderer/Camera.hpp"
-#include "Engine/Renderer/Texture.hpp"
-#include "Engine/Renderer/VertexBuffer.hpp"
 #include "Engine/Renderer/ConstantBuffer.hpp"
 #include "Engine/Renderer/IndexBuffer.hpp"
+#include "Engine/Renderer/Texture.hpp"
+#include "Engine/Renderer/VertexBuffer.hpp"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "ThirdParty/stb/stb_image.h"
 
 #include <Windows.h>
-#include <d3dcompiler.h>
 #include <d3d11.h>
 #include <d3d11_1.h>
+#include <d3dcompiler.h>
 
 #if defined(OPAQUE)
 #undef OPAQUE
@@ -35,26 +35,33 @@
 
 HGLRC g_openGLRenderingContext = nullptr;
 
-const uint8_t k_defaultTexture[16] =
-{
-	0xFF, 0xFF, 0xFF, 0xFF, // (0,0)
-	0xFF, 0xFF, 0xFF, 0xFF, // (1,0)
-	0xFF, 0xFF, 0xFF, 0xFF, // (0,1)
-	0xFF, 0xFF, 0xFF, 0xFF  // (1,1)
+const uint8_t k_defaultTexture[16] = {
+	0xFF,
+	0xFF,
+	0xFF,
+	0xFF, // (0,0)
+	0xFF,
+	0xFF,
+	0xFF,
+	0xFF, // (1,0)
+	0xFF,
+	0xFF,
+	0xFF,
+	0xFF, // (0,1)
+	0xFF,
+	0xFF,
+	0xFF,
+	0xFF // (1,1)
 };
 
 //------------------------------------------------------------------------------------------------
 // Lifetime and frame loop
-Renderer::Renderer(RendererConfig config) : m_config(config)
-{
-}
+Renderer::Renderer(RendererConfig config) : m_config(config) {}
 
-Renderer::~Renderer()
-{
-}
+Renderer::~Renderer() {}
 
 #pragma region Public: Lifetime and frame loop
-void Renderer::Startup()
+void           Renderer::Startup()
 {
 	unsigned int deviceFlags = 0;
 #if defined(ENGINE_DEBUG_RENDER)
@@ -64,21 +71,31 @@ void Renderer::Startup()
 #pragma region Startup: Create device and swap chain
 
 	DXGI_SWAP_CHAIN_DESC swapChainDesc = {};
-	swapChainDesc.BufferDesc.Width = g_engine->m_window->GetClientDimensions().x;
-	swapChainDesc.BufferDesc.Height = g_engine->m_window->GetClientDimensions().y;
-	swapChainDesc.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-	swapChainDesc.SampleDesc.Count = 1;
-	swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-	swapChainDesc.BufferCount = 2;
-	swapChainDesc.OutputWindow = (HWND)g_engine->m_window->GetHwnd();
-	swapChainDesc.Windowed = true;
-	swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+	swapChainDesc.BufferDesc.Width     = g_engine->m_window->GetClientDimensions().x;
+	swapChainDesc.BufferDesc.Height    = g_engine->m_window->GetClientDimensions().y;
+	swapChainDesc.BufferDesc.Format    = DXGI_FORMAT_R8G8B8A8_UNORM;
+	swapChainDesc.SampleDesc.Count     = 1;
+	swapChainDesc.BufferUsage          = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+	swapChainDesc.BufferCount          = 2;
+	swapChainDesc.OutputWindow         = (HWND)g_engine->m_window->GetHwnd();
+	swapChainDesc.Windowed             = true;
+	swapChainDesc.SwapEffect           = DXGI_SWAP_EFFECT_FLIP_DISCARD;
 
 	HRESULT hr;
 	hr = D3D11CreateDeviceAndSwapChain(
-		nullptr, D3D_DRIVER_TYPE_HARDWARE, NULL, deviceFlags,
-		nullptr, 0, D3D11_SDK_VERSION, &swapChainDesc,
-		&m_d3dSwapChain, &m_d3dDevice, nullptr, &m_d3dDeviceContext);
+		nullptr,
+		D3D_DRIVER_TYPE_HARDWARE,
+		NULL,
+		deviceFlags,
+		nullptr,
+		0,
+		D3D11_SDK_VERSION,
+		&swapChainDesc,
+		&m_d3dSwapChain,
+		&m_d3dDevice,
+		nullptr,
+		&m_d3dDeviceContext
+	);
 
 	if (!SUCCEEDED(hr))
 	{
@@ -115,10 +132,10 @@ void Renderer::Startup()
 		ERROR_AND_DIE("Could not load dxgidebug.dll.");
 	}
 
-	typedef HRESULT(WINAPI* GetDebugModuleCB)(REFIID, void**);
-	((GetDebugModuleCB)::GetProcAddress(
-		(HMODULE)m_dxgiDebugModule,
-		"DXGIGetDebugInterface"))(__uuidof(IDXGIDebug), &m_dxgiDebug);
+	typedef HRESULT(WINAPI * GetDebugModuleCB)(REFIID, void**);
+	((
+		GetDebugModuleCB
+	)::GetProcAddress((HMODULE)m_dxgiDebugModule, "DXGIGetDebugInterface"))(__uuidof(IDXGIDebug), &m_dxgiDebug);
 
 	if (m_dxgiDebug == nullptr)
 	{
@@ -132,35 +149,33 @@ void Renderer::Startup()
 
 	// SOLID CULL NONE
 	D3D11_RASTERIZER_DESC rasterizerDesc = {};
-	rasterizerDesc.FillMode = D3D11_FILL_SOLID;
-	rasterizerDesc.CullMode = D3D11_CULL_NONE;
+	rasterizerDesc.FillMode              = D3D11_FILL_SOLID;
+	rasterizerDesc.CullMode              = D3D11_CULL_NONE;
 	rasterizerDesc.FrontCounterClockwise = true;
-	rasterizerDesc.DepthClipEnable = true;
+	rasterizerDesc.DepthClipEnable       = true;
 	rasterizerDesc.AntialiasedLineEnable = true;
-	hr = m_d3dDevice->CreateRasterizerState(
-		&rasterizerDesc,
-		&m_rasterizerStates[(int)RasterizerMode::SOLID_CULL_NONE]);
+	hr = m_d3dDevice->CreateRasterizerState(&rasterizerDesc, &m_rasterizerStates[(int)RasterizerMode::SOLID_CULL_NONE]);
 
 	// SOLID CULL BACK
 	rasterizerDesc.FillMode = D3D11_FILL_SOLID;
 	rasterizerDesc.CullMode = D3D11_CULL_BACK;
-	hr = m_d3dDevice->CreateRasterizerState(
-		&rasterizerDesc,
-		&m_rasterizerStates[(int)RasterizerMode::SOLID_CULL_BACK]);
+	hr = m_d3dDevice->CreateRasterizerState(&rasterizerDesc, &m_rasterizerStates[(int)RasterizerMode::SOLID_CULL_BACK]);
 
 	// WIREFRAME CULL NONE
 	rasterizerDesc.FillMode = D3D11_FILL_WIREFRAME;
 	rasterizerDesc.CullMode = D3D11_CULL_NONE;
-	hr = m_d3dDevice->CreateRasterizerState(
+	hr                      = m_d3dDevice->CreateRasterizerState(
 		&rasterizerDesc,
-		&m_rasterizerStates[(int)RasterizerMode::WIREFRAME_CULL_NONE]);
+		&m_rasterizerStates[(int)RasterizerMode::WIREFRAME_CULL_NONE]
+	);
 
 	// WIREFRAME CULL BACK
 	rasterizerDesc.FillMode = D3D11_FILL_WIREFRAME;
 	rasterizerDesc.CullMode = D3D11_CULL_BACK;
-	hr = m_d3dDevice->CreateRasterizerState(
+	hr                      = m_d3dDevice->CreateRasterizerState(
 		&rasterizerDesc,
-		&m_rasterizerStates[(int)RasterizerMode::WIREFRAME_CULL_BACK]);
+		&m_rasterizerStates[(int)RasterizerMode::WIREFRAME_CULL_BACK]
+	);
 
 	m_d3dDeviceContext->RSSetState(m_rasterizerStates[(int)RasterizerMode::SOLID_CULL_BACK]);
 
@@ -170,46 +185,40 @@ void Renderer::Startup()
 
 #pragma region Startup: Create buffers
 
-	m_currentVertexBuffer = CreateVertexBuffer(sizeof(Vertex) * 3, sizeof(Vertex));
-	m_currentIndexBuffer = CreateIndexBuffer(sizeof(unsigned int) * 3);
-	m_lightConstantBuffer = CreateConstantBuffer(sizeof(LightConstants));
+	m_currentVertexBuffer  = CreateVertexBuffer(sizeof(Vertex) * 3, sizeof(Vertex));
+	m_currentIndexBuffer   = CreateIndexBuffer(sizeof(unsigned int) * 3);
+	m_lightConstantBuffer  = CreateConstantBuffer(sizeof(LightConstants));
 	m_cameraConstantBuffer = CreateConstantBuffer(sizeof(CameraConstants));
-	m_modelConstantBuffer = CreateConstantBuffer(sizeof(ModelConstants));
+	m_modelConstantBuffer  = CreateConstantBuffer(sizeof(ModelConstants));
 
 #pragma endregion
 
 #pragma region Startup: Create blend states
 
-	D3D11_BLEND_DESC blendDesc = {};
-	blendDesc.RenderTarget[0].BlendEnable = TRUE;
-	blendDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_ONE;
-	blendDesc.RenderTarget[0].DestBlend = D3D11_BLEND_ZERO;
-	blendDesc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
-	blendDesc.RenderTarget[0].SrcBlendAlpha = blendDesc.RenderTarget[0].SrcBlend;
-	blendDesc.RenderTarget[0].DestBlendAlpha = blendDesc.RenderTarget[0].DestBlend;
-	blendDesc.RenderTarget[0].BlendOpAlpha = blendDesc.RenderTarget[0].BlendOp;
+	D3D11_BLEND_DESC blendDesc                      = {};
+	blendDesc.RenderTarget[0].BlendEnable           = TRUE;
+	blendDesc.RenderTarget[0].SrcBlend              = D3D11_BLEND_ONE;
+	blendDesc.RenderTarget[0].DestBlend             = D3D11_BLEND_ZERO;
+	blendDesc.RenderTarget[0].BlendOp               = D3D11_BLEND_OP_ADD;
+	blendDesc.RenderTarget[0].SrcBlendAlpha         = blendDesc.RenderTarget[0].SrcBlend;
+	blendDesc.RenderTarget[0].DestBlendAlpha        = blendDesc.RenderTarget[0].DestBlend;
+	blendDesc.RenderTarget[0].BlendOpAlpha          = blendDesc.RenderTarget[0].BlendOp;
 	blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
 
 	// OPAQUE
-	hr = m_d3dDevice->CreateBlendState(
-		&blendDesc,
-		&m_blendStates[(int)(BlendMode::OPAQUE)]);
+	hr = m_d3dDevice->CreateBlendState(&blendDesc, &m_blendStates[(int)(BlendMode::OPAQUE)]);
 
 	// ALPHA
-	blendDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;
+	blendDesc.RenderTarget[0].SrcBlend  = D3D11_BLEND_SRC_ALPHA;
 	blendDesc.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
 
-	hr = m_d3dDevice->CreateBlendState(
-		&blendDesc,
-		&m_blendStates[(int)(BlendMode::ALPHA)]);
+	hr = m_d3dDevice->CreateBlendState(&blendDesc, &m_blendStates[(int)(BlendMode::ALPHA)]);
 
 	// ADDITIVE
-	blendDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;
+	blendDesc.RenderTarget[0].SrcBlend  = D3D11_BLEND_SRC_ALPHA;
 	blendDesc.RenderTarget[0].DestBlend = D3D11_BLEND_ONE;
 
-	hr = m_d3dDevice->CreateBlendState(
-		&blendDesc,
-		&m_blendStates[(int)(BlendMode::ADDITIVE)]);
+	hr = m_d3dDevice->CreateBlendState(&blendDesc, &m_blendStates[(int)(BlendMode::ADDITIVE)]);
 
 #pragma endregion
 
@@ -218,23 +227,19 @@ void Renderer::Startup()
 	D3D11_SAMPLER_DESC samplerDesc = {};
 
 	// POINT_CLAMP
-	samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
-	samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
-	samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
-	samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
+	samplerDesc.Filter         = D3D11_FILTER_MIN_MAG_MIP_POINT;
+	samplerDesc.AddressU       = D3D11_TEXTURE_ADDRESS_CLAMP;
+	samplerDesc.AddressV       = D3D11_TEXTURE_ADDRESS_CLAMP;
+	samplerDesc.AddressW       = D3D11_TEXTURE_ADDRESS_CLAMP;
 	samplerDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
-	samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
+	samplerDesc.MaxLOD         = D3D11_FLOAT32_MAX;
 
-	hr = m_d3dDevice->CreateSamplerState(
-		&samplerDesc,
-		&m_samplerStates[(int)SamplerMode::POINT_CLAMP]);
+	hr = m_d3dDevice->CreateSamplerState(&samplerDesc, &m_samplerStates[(int)SamplerMode::POINT_CLAMP]);
 
 	// BILINEAR_CLAMP
 	samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
 
-	hr = m_d3dDevice->CreateSamplerState(
-		&samplerDesc,
-		&m_samplerStates[(int)SamplerMode::BILINEAR_CLAMP]);
+	hr = m_d3dDevice->CreateSamplerState(&samplerDesc, &m_samplerStates[(int)SamplerMode::BILINEAR_CLAMP]);
 
 #pragma endregion
 
@@ -242,48 +247,49 @@ void Renderer::Startup()
 
 	// Create depth stencil texture and view
 	D3D11_TEXTURE2D_DESC depthTextureDesc = {};
-	depthTextureDesc.Width = g_engine->m_window->GetClientDimensions().x;
-	depthTextureDesc.Height = g_engine->m_window->GetClientDimensions().y;
-	depthTextureDesc.MipLevels = 1;
-	depthTextureDesc.ArraySize = 1;
-	depthTextureDesc.Usage = D3D11_USAGE_DEFAULT;
-	depthTextureDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
-	depthTextureDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
-	depthTextureDesc.SampleDesc.Count = 1;
+	depthTextureDesc.Width                = g_engine->m_window->GetClientDimensions().x;
+	depthTextureDesc.Height               = g_engine->m_window->GetClientDimensions().y;
+	depthTextureDesc.MipLevels            = 1;
+	depthTextureDesc.ArraySize            = 1;
+	depthTextureDesc.Usage                = D3D11_USAGE_DEFAULT;
+	depthTextureDesc.Format               = DXGI_FORMAT_D24_UNORM_S8_UINT;
+	depthTextureDesc.BindFlags            = D3D11_BIND_DEPTH_STENCIL;
+	depthTextureDesc.SampleDesc.Count     = 1;
 
 	hr = m_d3dDevice->CreateTexture2D(&depthTextureDesc, nullptr, &m_depthStencilTexture);
 	hr = m_d3dDevice->CreateDepthStencilView(m_depthStencilTexture, nullptr, &m_depthStencilView);
 
 	// DISABLED
 	D3D11_DEPTH_STENCIL_DESC depthStencilDesc = {};
-	hr = m_d3dDevice->CreateDepthStencilState(
-		&depthStencilDesc,
-		&m_depthStencilStates[(int)DepthMode::DISABLED]);
+	hr = m_d3dDevice->CreateDepthStencilState(&depthStencilDesc, &m_depthStencilStates[(int)DepthMode::DISABLED]);
 
 	// READ_ONLY_ALWAYS
-	depthStencilDesc.DepthEnable = TRUE;
+	depthStencilDesc.DepthEnable    = TRUE;
 	depthStencilDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
-	depthStencilDesc.DepthFunc = D3D11_COMPARISON_ALWAYS;
+	depthStencilDesc.DepthFunc      = D3D11_COMPARISON_ALWAYS;
 
 	hr = m_d3dDevice->CreateDepthStencilState(
 		&depthStencilDesc,
-		&m_depthStencilStates[(int)DepthMode::READ_ONLY_ALWAYS]);
+		&m_depthStencilStates[(int)DepthMode::READ_ONLY_ALWAYS]
+	);
 
 	// READ_ONLY_LESS_EQUAL
 	depthStencilDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
-	depthStencilDesc.DepthFunc = D3D11_COMPARISON_LESS_EQUAL;
+	depthStencilDesc.DepthFunc      = D3D11_COMPARISON_LESS_EQUAL;
 
 	hr = m_d3dDevice->CreateDepthStencilState(
 		&depthStencilDesc,
-		&m_depthStencilStates[(int)DepthMode::READ_ONLY_LESS_EQUAL]);
+		&m_depthStencilStates[(int)DepthMode::READ_ONLY_LESS_EQUAL]
+	);
 
 	// READ_WRITE_LESS_EQUAL
 	depthStencilDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
-	depthStencilDesc.DepthFunc = D3D11_COMPARISON_LESS_EQUAL;
+	depthStencilDesc.DepthFunc      = D3D11_COMPARISON_LESS_EQUAL;
 
 	hr = m_d3dDevice->CreateDepthStencilState(
 		&depthStencilDesc,
-		&m_depthStencilStates[(int)DepthMode::READ_WRITE_LESS_EQUAL]);
+		&m_depthStencilStates[(int)DepthMode::READ_WRITE_LESS_EQUAL]
+	);
 
 #pragma endregion
 
@@ -296,21 +302,17 @@ void Renderer::Startup()
 
 #pragma region Startup: Create default texture
 
-	m_defaultTexture = CreateTextureFromData(
-		"Default",
-		IntVec2(2, 2),
-		4,
-		(uint8_t*)k_defaultTexture);
+	m_defaultTexture = CreateTextureFromData("Default", IntVec2(2, 2), 4, (uint8_t*)k_defaultTexture);
 	BindTexture(m_defaultTexture);
 
 #pragma endregion
 
 #pragma region Startup: Create post-process resources
 
-	Vec2 windowsDimensions = (Vec2)g_engine->m_window->GetClientDimensions();
-	m_sceneColorTexture = CreateRenderTargetTexture("RenderTargetTest", IntVec2(windowsDimensions));
-	m_postProcessTextureA = CreateRenderTargetTexture("PostProcessTextureA", IntVec2(windowsDimensions));
-	m_postProcessTextureB = CreateRenderTargetTexture("PostProcessTextureB", IntVec2(windowsDimensions));
+	Vec2 windowsDimensions  = (Vec2)g_engine->m_window->GetClientDimensions();
+	m_sceneColorTexture     = CreateRenderTargetTexture("RenderTargetTest", IntVec2(windowsDimensions));
+	m_postProcessTextureA   = CreateRenderTargetTexture("PostProcessTextureA", IntVec2(windowsDimensions));
+	m_postProcessTextureB   = CreateRenderTargetTexture("PostProcessTextureB", IntVec2(windowsDimensions));
 	m_postProcessCopyShader = CreateShader("Data/Shaders/PostProcessCopy");
 
 	m_d3dDeviceContext->QueryInterface(__uuidof(ID3DUserDefinedAnnotation), (void**)&m_d3dAnnotation);
@@ -423,7 +425,11 @@ void Renderer::Shutdown()
 
 	// Report error leaks and release debug module
 #if defined(ENGINE_DEBUG_RENDER)
-	((IDXGIDebug*)m_dxgiDebug)->ReportLiveObjects(DXGI_DEBUG_ALL, (DXGI_DEBUG_RLO_FLAGS)(DXGI_DEBUG_RLO_DETAIL | DXGI_DEBUG_RLO_IGNORE_INTERNAL));
+	((IDXGIDebug*)m_dxgiDebug)
+		->ReportLiveObjects(
+			DXGI_DEBUG_ALL,
+			(DXGI_DEBUG_RLO_FLAGS)(DXGI_DEBUG_RLO_DETAIL | DXGI_DEBUG_RLO_IGNORE_INTERNAL)
+		);
 
 	((IDXGIDebug*)m_dxgiDebug)->Release();
 	m_dxgiDebug = nullptr;
@@ -451,12 +457,12 @@ void Renderer::EndFrame()
 	Vec2 camDimensions = (Vec2)g_engine->m_window->GetClientDimensions();
 
 	D3D11_VIEWPORT viewport = {};
-	viewport.TopLeftX = 0.f;
-	viewport.TopLeftY = 0.f;
-	viewport.Width = camDimensions.x;
-	viewport.Height = camDimensions.y;
-	viewport.MinDepth = 0.0f;
-	viewport.MaxDepth = 1.0f;
+	viewport.TopLeftX       = 0.f;
+	viewport.TopLeftY       = 0.f;
+	viewport.Width          = camDimensions.x;
+	viewport.Height         = camDimensions.y;
+	viewport.MinDepth       = 0.0f;
+	viewport.MaxDepth       = 1.0f;
 
 	m_d3dDeviceContext->RSSetViewports(1, &viewport);
 
@@ -465,12 +471,9 @@ void Renderer::EndFrame()
 	SetRasterizerMode(RasterizerMode::SOLID_CULL_NONE);
 	SetDepthMode(DepthMode::READ_ONLY_ALWAYS);
 
-	Vertex fullscreenTriangleVerts[3] =
-	{
-		Vertex(Vec3(-1.f, -1.f, 0.f), Rgba8::WHITE, Vec2(0.f, 1.f)),
+	Vertex fullscreenTriangleVerts[3] = {Vertex(Vec3(-1.f, -1.f, 0.f), Rgba8::WHITE, Vec2(0.f, 1.f)),
 		Vertex(Vec3(3.f, -1.f, 0.f), Rgba8::WHITE, Vec2(2.f, 1.f)),
-		Vertex(Vec3(-1.f,  3.f, 0.f), Rgba8::WHITE, Vec2(0.f, -1.f))
-	};
+		Vertex(Vec3(-1.f, 3.f, 0.f), Rgba8::WHITE, Vec2(0.f, -1.f))};
 
 	std::vector<PostProcessPass> enabledPasses;
 	for (auto const& pass : m_postProcessPasses)
@@ -481,10 +484,10 @@ void Renderer::EndFrame()
 		}
 	}
 
-	Texture* inputTexture = m_sceneColorTexture;
-	ID3D11ShaderResourceView* inputSRV = inputTexture->m_shaderResourceView;
-	Texture* outputTexture = nullptr;
-	ID3D11RenderTargetView* outputRTV = m_d3dRenderTargetView;
+	Texture*                  inputTexture  = m_sceneColorTexture;
+	ID3D11ShaderResourceView* inputSRV      = inputTexture->m_shaderResourceView;
+	Texture*                  outputTexture = nullptr;
+	ID3D11RenderTargetView*   outputRTV     = m_d3dRenderTargetView;
 
 	if (enabledPasses.size() == 0)
 	{
@@ -522,25 +525,25 @@ void Renderer::EndFrame()
 				continue;
 			}
 
-			if (i == 0) 
+			if (i == 0)
 			{
-				inputTexture = m_sceneColorTexture;
-				inputSRV = inputTexture->m_shaderResourceView;
+				inputTexture  = m_sceneColorTexture;
+				inputSRV      = inputTexture->m_shaderResourceView;
 				outputTexture = useTextureA ? m_postProcessTextureA : m_postProcessTextureB;
-				outputRTV = outputTexture->m_renderTargetView;
+				outputRTV     = outputTexture->m_renderTargetView;
 			}
 			else if (i == enabledPasses.size() - 1)
 			{
-				inputTexture = useTextureA ? m_postProcessTextureB : m_postProcessTextureA;
+				inputTexture  = useTextureA ? m_postProcessTextureB : m_postProcessTextureA;
 				outputTexture = nullptr;
-				outputRTV = m_d3dRenderTargetView;
+				outputRTV     = m_d3dRenderTargetView;
 			}
 			else
 			{
-				inputTexture = useTextureA ? m_postProcessTextureB : m_postProcessTextureA;
-				inputSRV = inputTexture->m_shaderResourceView;
+				inputTexture  = useTextureA ? m_postProcessTextureB : m_postProcessTextureA;
+				inputSRV      = inputTexture->m_shaderResourceView;
 				outputTexture = useTextureA ? m_postProcessTextureA : m_postProcessTextureB;
-				outputRTV = outputTexture->m_renderTargetView;
+				outputRTV     = outputTexture->m_renderTargetView;
 			}
 
 			m_d3dDeviceContext->OMSetRenderTargets(1, &outputRTV, nullptr);
@@ -568,9 +571,7 @@ void Renderer::EndFrame()
 	}
 }
 
-void Renderer::CreateRenderingContext()
-{
-}
+void Renderer::CreateRenderingContext() {}
 
 #pragma endregion
 
@@ -578,32 +579,29 @@ void Renderer::CreateRenderingContext()
 
 void Renderer::BeginCamera(Camera const& camera)
 {
-
 	// Set viewport
 	Vec2 camDimensions = (Vec2)g_engine->m_window->GetClientDimensions();
 
 	D3D11_VIEWPORT viewport = {};
-	viewport.TopLeftX = 0.f;
-	viewport.TopLeftY = 0.f;
-	viewport.Width = camDimensions.x;
-	viewport.Height = camDimensions.y;
-	viewport.MinDepth = 0.0f;
-	viewport.MaxDepth = 1.0f;
+	viewport.TopLeftX       = 0.f;
+	viewport.TopLeftY       = 0.f;
+	viewport.Width          = camDimensions.x;
+	viewport.Height         = camDimensions.y;
+	viewport.MinDepth       = 0.0f;
+	viewport.MaxDepth       = 1.0f;
 
 	m_d3dDeviceContext->RSSetViewports(1, &viewport);
 
-	CameraConstants cameraData = CameraConstants();
-	cameraData.WorldToCameraTransform = camera.GetWorldToCameraTransform();
+	CameraConstants cameraData         = CameraConstants();
+	cameraData.WorldToCameraTransform  = camera.GetWorldToCameraTransform();
 	cameraData.CameraToRenderTransform = camera.GetCameraToRenderTransform();
-	cameraData.RenderToClipTransform = camera.GetRenderToClipTransform();
+	cameraData.RenderToClipTransform   = camera.GetRenderToClipTransform();
 
 	CopyCPUToGPU(&cameraData, sizeof(cameraData), m_cameraConstantBuffer);
 	BindConstantBuffer(m_cameraConstantBuffer, k_cameraConstantsSlot);
 }
 
-void Renderer::EndCamera()
-{
-}
+void Renderer::EndCamera() {}
 
 void Renderer::ClearScreen(Rgba8 const& clearColor)
 {
@@ -616,25 +614,13 @@ void Renderer::ClearScreen(Rgba8 const& clearColor)
 	m_d3dDeviceContext->ClearRenderTargetView(m_sceneColorTexture->m_renderTargetView, colorAsFloats);
 }
 
-void Renderer::SetBlendMode(BlendMode blendMode)
-{
-	m_desiredBlendMode = blendMode;
-}
+void Renderer::SetBlendMode(BlendMode blendMode) { m_desiredBlendMode = blendMode; }
 
-void Renderer::SetSamplerMode(SamplerMode samplerMode)
-{
-	m_desiredSamplerMode = samplerMode;
-}
+void Renderer::SetSamplerMode(SamplerMode samplerMode) { m_desiredSamplerMode = samplerMode; }
 
-void Renderer::SetRasterizerMode(RasterizerMode rasterizerMode)
-{
-	m_desiredRasterizerMode = rasterizerMode;
-}
+void Renderer::SetRasterizerMode(RasterizerMode rasterizerMode) { m_desiredRasterizerMode = rasterizerMode; }
 
-void Renderer::SetDepthMode(DepthMode depthMode)
-{
-	m_desiredDepthMode = depthMode;
-}
+void Renderer::SetDepthMode(DepthMode depthMode) { m_desiredDepthMode = depthMode; }
 
 void Renderer::SetStatesIfChanged()
 {
@@ -646,8 +632,8 @@ void Renderer::SetStatesIfChanged()
 	{
 		m_currentBlendState = desiredBlendState;
 
-		float blendFactor[4] = { 0.f, 0.f, 0.f, 0.f };
-		UINT sampleMask = 0xffffffff;
+		float blendFactor[4] = {0.f, 0.f, 0.f, 0.f};
+		UINT  sampleMask     = 0xffffffff;
 
 		m_d3dDeviceContext->OMSetBlendState(m_currentBlendState, blendFactor, sampleMask);
 	}
@@ -700,9 +686,9 @@ void Renderer::DrawVertexArray(std::vector<Vertex> const& verts) const
 
 void Renderer::DrawVertexArray(std::vector<Vertex> const& verts, std::vector<unsigned int> const& vertIndexes) const
 {
-	unsigned int vertsNum = static_cast<unsigned int>(verts.size());
-	unsigned int indexesNum = static_cast<unsigned int>(vertIndexes.size());
-	unsigned int vertsSize = vertsNum * sizeof(Vertex);
+	unsigned int vertsNum    = static_cast<unsigned int>(verts.size());
+	unsigned int indexesNum  = static_cast<unsigned int>(vertIndexes.size());
+	unsigned int vertsSize   = vertsNum * sizeof(Vertex);
 	unsigned int indexesSize = indexesNum * sizeof(unsigned int);
 
 	m_currentVertexBuffer->Resize(vertsSize);
@@ -711,7 +697,7 @@ void Renderer::DrawVertexArray(std::vector<Vertex> const& verts, std::vector<uns
 	g_engine->m_renderer->CopyCPUToGPU(verts.data(), vertsSize, m_currentVertexBuffer);
 	g_engine->m_renderer->CopyCPUToGPU(vertIndexes.data(), indexesSize, m_currentIndexBuffer);
 
-	g_engine->m_renderer->DrawIndexedVertexBuffer(m_currentVertexBuffer, m_currentIndexBuffer, indexesNum);
+	g_engine->m_renderer->DrawIndexedVertexBuffer(m_currentVertexBuffer, m_currentIndexBuffer);
 }
 
 void Renderer::DrawVertexBuffer(VertexBuffer* vertexBuffer, unsigned int vertexCount)
@@ -721,12 +707,12 @@ void Renderer::DrawVertexBuffer(VertexBuffer* vertexBuffer, unsigned int vertexC
 	m_d3dDeviceContext->Draw(vertexCount, 0);
 }
 
-void Renderer::DrawIndexedVertexBuffer(VertexBuffer* vertexBuffer, IndexBuffer* indexBuffer, unsigned int indexCount)
+void Renderer::DrawIndexedVertexBuffer(VertexBuffer* vertexBuffer, IndexBuffer* indexBuffer)
 {
 	SetStatesIfChanged();
 	BindVertexBuffer(vertexBuffer);
 	BindIndexBuffer(indexBuffer);
-	m_d3dDeviceContext->DrawIndexed(indexCount, 0, 0);
+	m_d3dDeviceContext->DrawIndexed(indexBuffer->GetCount(), 0, 0);
 }
 
 #pragma endregion
@@ -763,12 +749,12 @@ void Renderer::BindShader(Shader* shader)
 
 void Renderer::BindModelConstants(Matrix4x4 const& modelToWorldTransform, Rgba8 const& modelColor)
 {
-	ModelConstants modelData = ModelConstants();
+	ModelConstants modelData        = ModelConstants();
 	modelData.ModelToWorldTransform = modelToWorldTransform;
-	modelData.ModelColor[0] = modelColor.r / 255.f;
-	modelData.ModelColor[1] = modelColor.g / 255.f;
-	modelData.ModelColor[2] = modelColor.b / 255.f;
-	modelData.ModelColor[3] = modelColor.a / 255.f;
+	modelData.ModelColor[0]         = modelColor.r / 255.f;
+	modelData.ModelColor[1]         = modelColor.g / 255.f;
+	modelData.ModelColor[2]         = modelColor.b / 255.f;
+	modelData.ModelColor[3]         = modelColor.a / 255.f;
 
 	CopyCPUToGPU(&modelData, sizeof(modelData), m_modelConstantBuffer);
 	BindConstantBuffer(m_modelConstantBuffer, k_modelConstantsSlot);
@@ -776,9 +762,9 @@ void Renderer::BindModelConstants(Matrix4x4 const& modelToWorldTransform, Rgba8 
 
 void Renderer::BindLightConstants(Vec3 const& sunDirection, float const sunIntensity, float const ambientIntensity)
 {
-	LightConstants lightData = LightConstants();
-	lightData.SunDirection = sunDirection;
-	lightData.SunIntensity = sunIntensity;
+	LightConstants lightData   = LightConstants();
+	lightData.SunDirection     = sunDirection;
+	lightData.SunIntensity     = sunIntensity;
 	lightData.AmbientIntensity = ambientIntensity;
 
 	CopyCPUToGPU(&lightData, sizeof(lightData), m_lightConstantBuffer);
@@ -796,11 +782,11 @@ Shader* Renderer::CreateShader(char const* shaderName)
 	std::string shaderFilename = std::string(shaderName) + ".hlsl";
 
 	std::string shaderSource;
-	int bytesRead = FileReadToString(shaderSource, shaderFilename);
+	int         bytesRead = FileReadToString(shaderSource, shaderFilename);
 
 	GUARANTEE_OR_DIE(bytesRead > 0, Stringf("Failed to read shader file \"%s\"", shaderFilename.c_str()));
 
-  return CreateShader(shaderName, shaderSource.c_str());
+	return CreateShader(shaderName, shaderSource.c_str());
 }
 
 Texture* Renderer::CreateOrGetTextureFromFile(char const* imageFilePath)
@@ -823,48 +809,56 @@ Texture* Renderer::CreateTextureFromImage(const Image& image)
 		image.GetImageFilePath().c_str(),
 		image.GetDimensions(),
 		4,
-		(uint8_t*)image.GetRawData());
+		(uint8_t*)image.GetRawData()
+	);
 }
 
-Texture* Renderer::CreateTextureFromData(
-	char const* name,
-	IntVec2 dimensions,
-	int bytesPerTexel,
-	uint8_t* texelData)
+Texture* Renderer::CreateTextureFromData(char const* name, IntVec2 dimensions, int bytesPerTexel, uint8_t* texelData)
 {
 	auto failIfUnsuccessful = [&](HRESULT result, Texture* texture, char const* errorFormat)
+	{
+		if (!SUCCEEDED(result))
 		{
-			if (!SUCCEEDED(result))
-			{
-				delete texture;
-				ERROR_AND_DIE(Stringf(errorFormat, name));
-			}
-		};
+			delete texture;
+			ERROR_AND_DIE(Stringf(errorFormat, name));
+		}
+	};
 
 	GUARANTEE_OR_DIE(m_d3dDevice, "CreateTextureFromData: m_d3dDevice is null");
 	GUARANTEE_OR_DIE(texelData, Stringf("CreateTextureFromData failed for \"%s\" - texelData was null!", name));
-	GUARANTEE_OR_DIE(dimensions.x > 0 && dimensions.y > 0, Stringf("CreateTextureFromData failed for \"%s\" - illegal texture dimensions (%i x %i)", name, dimensions.x, dimensions.y));
+	GUARANTEE_OR_DIE(
+		dimensions.x > 0 && dimensions.y > 0,
+		Stringf(
+			"CreateTextureFromData failed for \"%s\" - illegal texture dimensions (%i x %i)",
+			name,
+			dimensions.x,
+			dimensions.y
+		)
+	);
 
 	// We only support RGBA8 format for now, so require 4 bytes per texel
-	GUARANTEE_OR_DIE(bytesPerTexel == 4, Stringf("CreateTextureFromData requires 4 bytes/texel (RGBA). Got %i for \"%s\"", bytesPerTexel, name));
+	GUARANTEE_OR_DIE(
+		bytesPerTexel == 4,
+		Stringf("CreateTextureFromData requires 4 bytes/texel (RGBA). Got %i for \"%s\"", bytesPerTexel, name)
+	);
 
-	Texture* newTexture = new Texture();
-	newTexture->m_name = name;
+	Texture* newTexture      = new Texture();
+	newTexture->m_name       = name;
 	newTexture->m_dimensions = dimensions;
 
 	D3D11_TEXTURE2D_DESC textureDesc = {};
-	textureDesc.Width = (UINT)dimensions.x;
-	textureDesc.Height = (UINT)dimensions.y;
-	textureDesc.MipLevels = 1;
-	textureDesc.ArraySize = 1;
-	textureDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-	textureDesc.Usage = D3D11_USAGE_IMMUTABLE;
-	textureDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
-	textureDesc.SampleDesc.Count = 1;
+	textureDesc.Width                = (UINT)dimensions.x;
+	textureDesc.Height               = (UINT)dimensions.y;
+	textureDesc.MipLevels            = 1;
+	textureDesc.ArraySize            = 1;
+	textureDesc.Format               = DXGI_FORMAT_R8G8B8A8_UNORM;
+	textureDesc.Usage                = D3D11_USAGE_IMMUTABLE;
+	textureDesc.BindFlags            = D3D11_BIND_SHADER_RESOURCE;
+	textureDesc.SampleDesc.Count     = 1;
 
 	D3D11_SUBRESOURCE_DATA textureData = {};
-	textureData.pSysMem = texelData;
-	textureData.SysMemPitch = 4 * dimensions.x;
+	textureData.pSysMem                = texelData;
+	textureData.SysMemPitch            = 4 * dimensions.x;
 
 	HRESULT hr = m_d3dDevice->CreateTexture2D(&textureDesc, &textureData, &newTexture->m_texture);
 	failIfUnsuccessful(hr, newTexture, "CreateTexture2D failed for image file \"%s\".");
@@ -879,30 +873,38 @@ Texture* Renderer::CreateTextureFromData(
 Texture* Renderer::CreateRenderTargetTexture(char const* name, IntVec2 dimensions)
 {
 	auto failIfUnsuccessful = [&](HRESULT result, Texture* texture, char const* errorFormat)
+	{
+		if (!SUCCEEDED(result))
 		{
-			if (!SUCCEEDED(result))
-			{
-				delete texture;
-				ERROR_AND_DIE(Stringf(errorFormat, name));
-			}
-		};
+			delete texture;
+			ERROR_AND_DIE(Stringf(errorFormat, name));
+		}
+	};
 
 	GUARANTEE_OR_DIE(m_d3dDevice, "CreateRenderTargetTexture: m_d3dDevice is null");
-	GUARANTEE_OR_DIE(dimensions.x > 0 && dimensions.y > 0, Stringf("CreateRenderTargetTexture failed for \"%s\" - illegal texture dimensions (%i x %i)", name, dimensions.x, dimensions.y));
+	GUARANTEE_OR_DIE(
+		dimensions.x > 0 && dimensions.y > 0,
+		Stringf(
+			"CreateRenderTargetTexture failed for \"%s\" - illegal texture dimensions (%i x %i)",
+			name,
+			dimensions.x,
+			dimensions.y
+		)
+	);
 
-	Texture* newTexture = new Texture();
-	newTexture->m_name = name;
+	Texture* newTexture      = new Texture();
+	newTexture->m_name       = name;
 	newTexture->m_dimensions = dimensions;
 
 	D3D11_TEXTURE2D_DESC textureDesc = {};
-	textureDesc.Width = (UINT)dimensions.x;
-	textureDesc.Height = (UINT)dimensions.y;
-	textureDesc.MipLevels = 1;
-	textureDesc.ArraySize = 1;
-	textureDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-	textureDesc.Usage = D3D11_USAGE_DEFAULT;
-	textureDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
-	textureDesc.SampleDesc.Count = 1;
+	textureDesc.Width                = (UINT)dimensions.x;
+	textureDesc.Height               = (UINT)dimensions.y;
+	textureDesc.MipLevels            = 1;
+	textureDesc.ArraySize            = 1;
+	textureDesc.Format               = DXGI_FORMAT_R8G8B8A8_UNORM;
+	textureDesc.Usage                = D3D11_USAGE_DEFAULT;
+	textureDesc.BindFlags            = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+	textureDesc.SampleDesc.Count     = 1;
 
 	HRESULT hr = m_d3dDevice->CreateTexture2D(&textureDesc, nullptr, &newTexture->m_texture);
 	failIfUnsuccessful(hr, newTexture, "CreateTexture2D failed for render target texture \"%s\".");
@@ -920,15 +922,15 @@ Texture* Renderer::CreateRenderTargetTexture(char const* name, IntVec2 dimension
 BitmapFont* Renderer::CreateOrGetBitmapFont(char const* fontFilePathNameWithNoExtension)
 {
 	std::string fontKey = std::string(fontFilePathNameWithNoExtension);
-	auto found = m_fontsByName.find(fontKey);
+	auto        found   = m_fontsByName.find(fontKey);
 	if (found != m_fontsByName.end())
 	{
 		return found->second;
 	}
 
-	Texture* fontTexture = CreateOrGetTextureFromFile(Stringf("%s.png", fontFilePathNameWithNoExtension).c_str());
+	Texture*    fontTexture   = CreateOrGetTextureFromFile(Stringf("%s.png", fontFilePathNameWithNoExtension).c_str());
 	BitmapFont* newBitmapFont = new BitmapFont(fontFilePathNameWithNoExtension, *fontTexture);
-	m_fontsByName[fontKey] = newBitmapFont;
+	m_fontsByName[fontKey]    = newBitmapFont;
 	return newBitmapFont;
 }
 
@@ -937,14 +939,37 @@ VertexBuffer* Renderer::CreateVertexBuffer(const unsigned int size, unsigned int
 	return new VertexBuffer(m_d3dDevice, size, stride);
 }
 
+VertexBuffer* Renderer::CreateVertexBuffer(std::vector<Vertex> const& verts)
+{
+	if (verts.empty())
+	{
+		return nullptr;
+	}
+
+	unsigned int const  vertsSize    = static_cast<unsigned int>(verts.size()) * sizeof(Vertex);
+	VertexBuffer* const vertexBuffer = CreateVertexBuffer(vertsSize, sizeof(Vertex));
+	CopyCPUToGPU(verts.data(), vertsSize, vertexBuffer);
+	return vertexBuffer;
+}
+
 ConstantBuffer* Renderer::CreateConstantBuffer(const unsigned int size)
 {
 	return new ConstantBuffer(m_d3dDevice, size);
 }
 
-IndexBuffer* Renderer::CreateIndexBuffer(const unsigned int size)
+IndexBuffer* Renderer::CreateIndexBuffer(const unsigned int size) { return new IndexBuffer(m_d3dDevice, size); }
+
+IndexBuffer* Renderer::CreateIndexBuffer(std::vector<unsigned int> const& indexes)
 {
-	return new IndexBuffer(m_d3dDevice, size);
+	if (indexes.empty())
+	{
+		return nullptr;
+	}
+
+	unsigned int const indexesSize = static_cast<unsigned int>(indexes.size()) * sizeof(unsigned int);
+	IndexBuffer* const indexBuffer = CreateIndexBuffer(indexesSize);
+	CopyCPUToGPU(indexes.data(), indexesSize, indexBuffer);
+	return indexBuffer;
 }
 
 #pragma endregion
@@ -1012,10 +1037,7 @@ void Renderer::CopyCPUToGPU(const void* data, unsigned int size, IndexBuffer* in
 	m_d3dDeviceContext->Unmap(indexBuffer->m_buffer, 0);
 }
 
-void Renderer::AddPostProcessPass(PostProcessPass const& pass)
-{
-	m_postProcessPasses.push_back(pass);
-}
+void Renderer::AddPostProcessPass(PostProcessPass const& pass) { m_postProcessPasses.push_back(pass); }
 
 #pragma endregion
 
@@ -1036,7 +1058,7 @@ Texture* Renderer::GetTextureFromFileName(char const* imageFilePath)
 	}
 
 	std::string filePath = std::string(imageFilePath);
-	auto found = m_texturesByName.find(filePath);
+	auto        found    = m_texturesByName.find(filePath);
 	if (found != m_texturesByName.end())
 	{
 		return found->second;
@@ -1064,29 +1086,23 @@ Shader* Renderer::CreateShader(char const* shaderName, char const* shaderSource)
 	std::vector<unsigned char> vsByteCode;
 	std::vector<unsigned char> psByteCode;
 
-	bool vsOK = CompileShaderToByteCode(vsByteCode, shaderName, shaderSource, config.m_vertexEntryPoint.c_str(), "vs_5_0");
+	bool vsOK =
+		CompileShaderToByteCode(vsByteCode, shaderName, shaderSource, config.m_vertexEntryPoint.c_str(), "vs_5_0");
 	GUARANTEE_OR_DIE(vsOK, Stringf("Could not compile vertex shader for '%s'", shaderName));
 
-	bool psOK = CompileShaderToByteCode(psByteCode, shaderName, shaderSource, config.m_pixelEntryPoint.c_str(), "ps_5_0");
+	bool psOK =
+		CompileShaderToByteCode(psByteCode, shaderName, shaderSource, config.m_pixelEntryPoint.c_str(), "ps_5_0");
 	GUARANTEE_OR_DIE(psOK, Stringf("Could not compile pixel shader for '%s'", shaderName));
 
 	// Create VS / PS
-	HRESULT hr = m_d3dDevice->CreateVertexShader(
-		vsByteCode.data(),
-		vsByteCode.size(),
-		nullptr,
-		&shader->m_vertexShader);
+	HRESULT hr =
+		m_d3dDevice->CreateVertexShader(vsByteCode.data(), vsByteCode.size(), nullptr, &shader->m_vertexShader);
 	GUARANTEE_OR_DIE(SUCCEEDED(hr), Stringf("Could not create vertex shader for '%s'", shaderName));
 
-	hr = m_d3dDevice->CreatePixelShader(
-		psByteCode.data(),
-		psByteCode.size(),
-		nullptr,
-		&shader->m_pixelShader);
+	hr = m_d3dDevice->CreatePixelShader(psByteCode.data(), psByteCode.size(), nullptr, &shader->m_pixelShader);
 	GUARANTEE_OR_DIE(SUCCEEDED(hr), Stringf("Could not create pixel shader for '%s'", shaderName));
 
- static D3D11_INPUT_ELEMENT_DESC const pcutbnDesc[] =
-	{
+	static D3D11_INPUT_ELEMENT_DESC const pcutbnDesc[] = {
 		{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
 		{"COLOR", 0, DXGI_FORMAT_R8G8B8A8_UNORM, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0},
 		{"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0},
@@ -1095,15 +1111,16 @@ Shader* Renderer::CreateShader(char const* shaderName, char const* shaderSource)
 		{"NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0},
 	};
 
-	D3D11_INPUT_ELEMENT_DESC const* inputElementDesc = pcutbnDesc;
-	UINT inputElementCount = (UINT)ARRAYSIZE(pcutbnDesc);
+	D3D11_INPUT_ELEMENT_DESC const* inputElementDesc  = pcutbnDesc;
+	UINT                            inputElementCount = (UINT)ARRAYSIZE(pcutbnDesc);
 
 	hr = m_d3dDevice->CreateInputLayout(
 		inputElementDesc,
 		inputElementCount,
 		vsByteCode.data(),
 		(UINT)vsByteCode.size(),
-		&shader->m_inputLayout);
+		&shader->m_inputLayout
+	);
 	GUARANTEE_OR_DIE(SUCCEEDED(hr), Stringf("Could not create input layout for '%s'", shaderName));
 
 	m_cachedShaders.push_back(shader);
@@ -1113,10 +1130,11 @@ Shader* Renderer::CreateShader(char const* shaderName, char const* shaderSource)
 
 bool Renderer::CompileShaderToByteCode(
 	std::vector<unsigned char>& outByteCode,
-	char const* name,
-	char const* source,
-	char const* entryPoint,
-	char const* target)
+	char const*                 name,
+	char const*                 source,
+	char const*                 entryPoint,
+	char const*                 target
+)
 {
 	if (source == nullptr || entryPoint == nullptr || target == nullptr)
 	{
@@ -1131,7 +1149,7 @@ bool Renderer::CompileShaderToByteCode(
 #endif
 
 	ID3DBlob* shaderBlob = nullptr;
-	ID3DBlob* errorBlob = nullptr;
+	ID3DBlob* errorBlob  = nullptr;
 
 	HRESULT hr = D3DCompile(
 		source,
@@ -1144,7 +1162,8 @@ bool Renderer::CompileShaderToByteCode(
 		shaderFlags,
 		0,
 		&shaderBlob,
-		&errorBlob);
+		&errorBlob
+	);
 
 	if (!SUCCEEDED(hr))
 	{
@@ -1178,15 +1197,15 @@ void Renderer::BindVertexBuffer(VertexBuffer* vertexBuffer)
 	if (vertexBuffer == nullptr)
 	{
 		ID3D11Buffer* nullBuf = nullptr;
-		UINT stride = 0;
-		UINT offset = 0;
+		UINT          stride  = 0;
+		UINT          offset  = 0;
 		m_d3dDeviceContext->IASetVertexBuffers(0, 1, &nullBuf, &stride, &offset);
 		return;
 	}
 
-	UINT stride = vertexBuffer->GetStride();
-	UINT offset = 0;
-	ID3D11Buffer* buf = vertexBuffer->m_buffer;
+	UINT          stride = vertexBuffer->GetStride();
+	UINT          offset = 0;
+	ID3D11Buffer* buf    = vertexBuffer->m_buffer;
 	m_d3dDeviceContext->IASetVertexBuffers(0, 1, &buf, &stride, &offset);
 }
 
@@ -1216,8 +1235,8 @@ void Renderer::BindIndexBuffer(IndexBuffer* indexBuffer)
 	if (indexBuffer == nullptr)
 	{
 		ID3D11Buffer* nullBuf = nullptr;
-		UINT stride = 0;
-		UINT offset = 0;
+		UINT          stride  = 0;
+		UINT          offset  = 0;
 		m_d3dDeviceContext->IASetVertexBuffers(0, 1, &nullBuf, &stride, &offset);
 		return;
 	}
