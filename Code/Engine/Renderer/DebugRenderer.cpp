@@ -465,7 +465,7 @@ void DebugAddMessage(const std::string &text, float duration, const Rgba8 &start
 {
     DebugObject object = MakeDebugObject(DebugObjectType::MESSAGE, duration, startColor, endColor, DebugRenderMode::ALWAYS);
     object.text = text;
-    object.textHeight = 20.f;
+    object.textHeight = 24.f;
     object.alignment = Vec2(0.f, 0.5f);
     s_debugMessages.push_back(object);
 }
