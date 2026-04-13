@@ -125,3 +125,15 @@ std::string ParseXmlAttribute(XmlElement const& element, char const* attributeNa
 {
     return ParseXmlAttribute(element, attributeName, std::string(defaultValue));
 }
+
+FloatRange ParseXmlAttribute(XmlElement const& element, char const* attributeName, FloatRange const& defaultValue)
+{
+	std::string value = ParseXmlAttribute(element, attributeName, "");
+	if (value.empty())
+	{
+		return defaultValue;
+	}
+
+	Strings values = SplitStringOnDelimiter(value, '~');
+	return FloatRange(static_cast<float>(atof(values[0].c_str())), static_cast<float>(atof(values[1].c_str())));
+}

@@ -676,7 +676,7 @@ void Renderer::DrawVertexArray(int numVertexes, Vertex const* vertexes) const
 
 	m_currentVertexBuffer->Resize(size);
 	g_engine->m_renderer->CopyCPUToGPU(vertexes, size, m_currentVertexBuffer);
-	g_engine->m_renderer->DrawVertexBuffer(m_currentVertexBuffer, numVertexes);
+	g_engine->m_renderer->DrawVertexBuffer(m_currentVertexBuffer);
 }
 
 void Renderer::DrawVertexArray(std::vector<Vertex> const& verts) const
@@ -700,11 +700,11 @@ void Renderer::DrawVertexArray(std::vector<Vertex> const& verts, std::vector<uns
 	g_engine->m_renderer->DrawIndexedVertexBuffer(m_currentVertexBuffer, m_currentIndexBuffer);
 }
 
-void Renderer::DrawVertexBuffer(VertexBuffer* vertexBuffer, unsigned int vertexCount)
+void Renderer::DrawVertexBuffer(VertexBuffer* vertexBuffer)
 {
 	SetStatesIfChanged();
 	BindVertexBuffer(vertexBuffer);
-	m_d3dDeviceContext->Draw(vertexCount, 0);
+	m_d3dDeviceContext->Draw(vertexBuffer->GetCount(), 0);
 }
 
 void Renderer::DrawIndexedVertexBuffer(VertexBuffer* vertexBuffer, IndexBuffer* indexBuffer)

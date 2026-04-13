@@ -1,19 +1,19 @@
 #pragma once
 
+#include "AABB3.hpp"
+#include "Engine/Math/AABB2.hpp"
+#include "Engine/Math/Capsule2.hpp"
+#include "Engine/Math/CylinderZ3.hpp"
+#include "Engine/Math/Disc2.hpp"
+#include "Engine/Math/FloatRange.hpp"
+#include "Engine/Math/IntVec2.hpp"
+#include "Engine/Math/Matrix4x4.hpp"
+#include "Engine/Math/OBB2.hpp"
+#include "Engine/Math/Sphere3.hpp"
+#include "Engine/Math/Triangle2.hpp"
 #include "Engine/Math/Vec2.hpp"
 #include "Engine/Math/Vec3.hpp"
 #include "Engine/Math/Vec4.hpp"
-#include "Engine/Math/AABB2.hpp"
-#include "Engine/Math/IntVec2.hpp"
-#include "Engine/Math/OBB2.hpp"
-#include "Engine/Math/Capsule2.hpp"
-#include "Engine/Math/Triangle2.hpp"
-#include "Engine/Math/Disc2.hpp"
-#include "Engine/Math/Sphere3.hpp"
-#include "Engine/Math/Matrix4x4.hpp"
-#include "Engine/Math/CylinderZ3.hpp"
-#include "Engine/Math/FloatRange.hpp"
-#include "AABB3.hpp"
 
 //------------------------------------------------------------------------------------------------
 // Constants
@@ -22,9 +22,9 @@
 
 float const DegreesToRadiansMultiplier = 0.017453292519943295f; // PI / 180
 float const RadiansToDegreesMultiplier = 57.29577951308232f;    // 180 / PI
-const float PI = 3.14159265358979323846f;
-const float TWO_PI = 6.28318530717958647692f;
-const float HALF_PI = 1.57079632679489661923f;
+const float PI                         = 3.14159265358979323846f;
+const float TWO_PI                     = 6.28318530717958647692f;
+const float HALF_PI                    = 1.57079632679489661923f;
 
 #pragma endregion
 
@@ -36,9 +36,9 @@ const float HALF_PI = 1.57079632679489661923f;
 float Abs(float value);
 float Sign(float value);
 float Min(float a, float b);
-int Min(int a, int b);
+int   Min(int a, int b);
 float Max(float a, float b);
-int Max(int a, int b);
+int   Max(int a, int b);
 
 #pragma endregion
 
@@ -79,19 +79,41 @@ float GetDistanceXYSquared3D(Vec3 const& a, Vec3 const& b);
 bool DoSpheresOverlap3D(Vec3 const& centerA, float radiusA, Vec3 const& centerB, float radiusB);
 bool DoSpheresOverlap3D(Sphere3 const& a, Sphere3 const& b);
 
-bool DoCylinderZsOverlap3D(Vec2 const& cylinder1CenterXY, float cylinder1Radius, FloatRange const& cylinder1MinMaxZ,
-	Vec2 const& cylinder2CenterXY, float cylinder2Radius, FloatRange const& cylinder2MinMaxZ);
-bool DoCylinderZsOverlap3D(Vec3 const& centerA, float radiusA, float heightA, Vec3 const& centerB, float radiusB, float heightB);
+bool DoCylinderZsOverlap3D(
+	Vec2 const&       cylinder1CenterXY,
+	float             cylinder1Radius,
+	FloatRange const& cylinder1MinMaxZ,
+	Vec2 const&       cylinder2CenterXY,
+	float             cylinder2Radius,
+	FloatRange const& cylinder2MinMaxZ
+);
+bool DoCylinderZsOverlap3D(
+	Vec3 const& centerA, float radiusA, float heightA, Vec3 const& centerB, float radiusB, float heightB
+);
 
 bool DoSphereAndAABBOverlap3D(Vec3 const& sphereCenter, float sphereRadius, Vec3 const& boxMins, Vec3 const& boxMaxs);
 bool DoSphereAndAABBOverlap3D(Vec3 const& sphereCenter, float sphereRadius, AABB3 const& box);
 bool DoSphereAndAABBOverlap3D(Sphere3 const& sphere, AABB3 const& box);
 
-bool DoCylinderZAndAABBOverlap3D(Vec2 const& cylinderCenterXY, float cylinderRadius, FloatRange const& cylinderMinMaxZ, Vec3 const& boxMins, Vec3 const& boxMaxs);
-bool DoCylinderZAndAABBOverlap3D(Vec2 const& cylinderCenterXY, float cylinderRadius, FloatRange const& cylinderMinMaxZ, AABB3 const& box);
+bool DoCylinderZAndAABBOverlap3D(
+	Vec2 const&       cylinderCenterXY,
+	float             cylinderRadius,
+	FloatRange const& cylinderMinMaxZ,
+	Vec3 const&       boxMins,
+	Vec3 const&       boxMaxs
+);
+bool DoCylinderZAndAABBOverlap3D(
+	Vec2 const& cylinderCenterXY, float cylinderRadius, FloatRange const& cylinderMinMaxZ, AABB3 const& box
+);
 bool DoCylinderZAndAABBOverlap3D(CylinderZ3 const& cylinder, AABB3 const& box);
 
-bool DoCylinderZAndSphereOverlap3D(Vec2 const& cylinderCenterXY, float cylinderRadius, FloatRange const& cylinderMinMaxZ, Vec3 const& sphereCenter, float sphereRadius);
+bool DoCylinderZAndSphereOverlap3D(
+	Vec2 const&       cylinderCenterXY,
+	float             cylinderRadius,
+	FloatRange const& cylinderMinMaxZ,
+	Vec3 const&       sphereCenter,
+	float             sphereRadius
+);
 bool DoCylinderZAndSphereOverlap3D(CylinderZ3 const& cylinder, Sphere3 const& sphere);
 
 #pragma endregion
@@ -114,15 +136,16 @@ void TransformPositionXY3D(Vec3& pos, Vec2 const& iBasisXY, Vec2 const& jBasisXY
 #pragma region Interpolation / Mapping / Clamping
 
 float Interpolate(float start, float end, float fraction);
+Vec3  Interpolate(Vec3 const& start, Vec3 const& end, float fraction);
 float InterpolateClamped(float start, float end, float fraction);
 float GetFractionWithinRange(float value, float start, float end);
 float RangeMap(float inValue, float inStart, float inEnd, float outStart, float outEnd);
 float RangeMapClamped(float inValue, float inStart, float inEnd, float outStart, float outEnd);
 
-int GetClamped(int value, int minValue, int maxValue);
+int   GetClamped(int value, int minValue, int maxValue);
 float GetClamped(float value, float minValue, float maxValue);
 float GetClampedZeroToOne(float value);
-int RoundDownToInt(float value);
+int   RoundDownToInt(float value);
 
 #pragma endregion
 
@@ -137,11 +160,11 @@ float DotProduct3D(Vec3 const& a, Vec3 const& b);
 float DotProduct4D(Vec4 const& a, Vec4 const& b);
 
 float CrossProduct2D(Vec2 const& a, Vec2 const& b);
-Vec3 CrossProduct3D(Vec3 const& a, Vec3 const& b);
+Vec3  CrossProduct3D(Vec3 const& a, Vec3 const& b);
 
 float GetProjectedLength2D(Vec2 const& vector, Vec2 const& basis);
-Vec2 GetProjectedVector2D(Vec2 const& vector, Vec2 const& basis);
-Vec3 GetProjectedVector3D(Vec3 const& vector, Vec3 const& basis);
+Vec2  GetProjectedVector2D(Vec2 const& vector, Vec2 const& basis);
+Vec3  GetProjectedVector3D(Vec3 const& vector, Vec3 const& basis);
 float GetAngleDegreesBetweenVectors2D(Vec2 const& a, Vec2 const& b);
 
 #pragma endregion
@@ -175,8 +198,12 @@ bool IsPointInsideCapsule2D(Vec2 point, Vec2 boneStart, Vec2 boneEnd, float radi
 bool IsPointInsideCapsule2D(Vec2 point, Capsule2 const& capsule);
 bool IsPointInsideTriangle2D(Vec2 point, Vec2 ccw0, Vec2 ccw1, Vec2 ccw2); // Counter-Clockwise (positive winding)
 bool IsPointInsideTriangle2D(Vec2 point, Triangle2 const& triangle);
-bool IsPointInsideOrientedSector2D(Vec2 point, Vec2 sectorOrigin, float sectorForwardDegrees, float sectorApertureDegrees, float sectorRadius);
-bool IsPointInsideDirectedSector2D(Vec2 point, Vec2 sectorOrigin, Vec2 sectorForwardNormal, float sectorApertureDegrees, float sectorRadius);
+bool IsPointInsideOrientedSector2D(
+	Vec2 point, Vec2 sectorOrigin, float sectorForwardDegrees, float sectorApertureDegrees, float sectorRadius
+);
+bool IsPointInsideDirectedSector2D(
+	Vec2 point, Vec2 sectorOrigin, Vec2 sectorForwardNormal, float sectorApertureDegrees, float sectorRadius
+);
 
 #pragma endregion
 
@@ -195,12 +222,16 @@ Vec2 GetNearestPointOnLineSegment2D(Vec2 referencePos, Vec2 start, Vec2 end);
 Vec2 GetNearestPointOnLineSegment2D(Vec2 referencePos, LineSegment2 const& lineSegment);
 Vec2 GetNearestPointOnCapsule2D(Vec2 referencePos, Vec2 boneStart, Vec2 boneEnd, float radius);
 Vec2 GetNearestPointOnCapsule2D(Vec2 referencePos, Capsule2 const& capsule);
-Vec2 GetNearestPointOnTriangle2D(Vec2 referencePos, Vec2 ccw0, Vec2 ccw1, Vec2 ccw2); // Counter-Clockwise (positive winding)
+Vec2 GetNearestPointOnTriangle2D(
+	Vec2 referencePos, Vec2 ccw0, Vec2 ccw1, Vec2 ccw2
+); // Counter-Clockwise (positive winding)
 Vec2 GetNearestPointOnTriangle2D(Vec2 referencePos, Triangle2 const& triangle);
 Vec3 GetNearestPointOnAABB3D(Vec3 referencePos, AABB3 const& alignedBox);
 Vec3 GetNearestPointOnAABB3D(Vec3 referencePos, Vec3 const& boxMins, Vec3 const& boxMaxs);
 Vec3 GetNearestPointOnZCylinder3D(Vec3 referencePos, CylinderZ3 const& cylinder);
-Vec3 GetNearestPointOnZCylinder3D(Vec3 referencePos, Vec3 const& cylinderStart, float cylinderHeight, float cylinderRadius);
+Vec3 GetNearestPointOnZCylinder3D(
+	Vec3 referencePos, Vec3 const& cylinderStart, float cylinderHeight, float cylinderRadius
+);
 Vec3 GetNearestPointOnSphere3D(Vec3 referencePos, Sphere3 const& sphere);
 Vec3 GetNearestPointOnSphere3D(Vec3 referencePos, Vec3 const& sphereCenter, float sphereRadius);
 
@@ -214,7 +245,7 @@ Vec3 GetNearestPointOnSphere3D(Vec3 referencePos, Vec3 const& sphereCenter, floa
 int GetTaxicabDistance2D(IntVec2 const& a, IntVec2 const& b);
 int GetTaxicabDistance2D(Vec2 const& a, Vec2 const& b);
 
-float NormalizeByte(unsigned char byteValue);
+float         NormalizeByte(unsigned char byteValue);
 unsigned char DenormalizeByte(float zeroToOne);
 
 #pragma endregion
@@ -235,9 +266,10 @@ enum class BillboardType
 };
 
 Matrix4x4 GetBillboardTransform(
-	BillboardType billboardType,
+	BillboardType    billboardType,
 	Matrix4x4 const& targetTransform,
-	const Vec3& billboardPosition,
-	const Vec2& billboardScale = Vec2(1.0f, 1.0f));
+	const Vec3&      billboardPosition,
+	const Vec2&      billboardScale = Vec2(1.0f, 1.0f)
+);
 
 #pragma endregion
