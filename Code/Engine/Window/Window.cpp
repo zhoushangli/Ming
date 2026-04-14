@@ -154,22 +154,10 @@ void Window::CreateOSWindow()
 	GetClientRect(desktopWindowHandle, &desktopRect);
 	float desktopWidth = (float)(desktopRect.right - desktopRect.left);
 	float desktopHeight = (float)(desktopRect.bottom - desktopRect.top);
-	float desktopAspect = desktopWidth / desktopHeight;
 
 	// Calculate maximum client size (as some % of desktop size)
-	constexpr float maxClientFractionOfDesktop = 0.90f;
-	float clientWidth = desktopWidth * maxClientFractionOfDesktop;
-	float clientHeight = desktopHeight * maxClientFractionOfDesktop;
-	if (m_config.m_clientAspect > desktopAspect)
-	{
-		// Client window has a wider aspect than desktop; shrink client height to match its width
-		clientHeight = clientWidth / m_config.m_clientAspect;
-	}
-	else
-	{
-		// Client window has a taller aspect than desktop; shrink client width to match its height
-		clientWidth = clientHeight * m_config.m_clientAspect;
-	}
+	float clientWidth = m_config.m_resolution.x;
+	float clientHeight = m_config.m_resolution.y;
 
 	// Calculate client rect bounds by centering the client area
 	float clientMarginX = 0.5f * (desktopWidth - clientWidth);

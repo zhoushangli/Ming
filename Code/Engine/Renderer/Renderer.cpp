@@ -29,6 +29,7 @@
 #pragma comment(lib, "d3dcompiler.lib")
 
 #if defined(ENGINE_DEBUG_RENDER)
+#include "Renderer.hpp"
 #include <dxgidebug.h>
 #pragma comment(lib, "dxguid.lib")
 #endif
@@ -245,19 +246,19 @@ void           Renderer::Startup()
 
 #pragma region Startup: Create depth stencil state
 
-	// Create depth stencil texture and view
-	D3D11_TEXTURE2D_DESC depthTextureDesc = {};
-	depthTextureDesc.Width                = g_engine->m_window->GetClientDimensions().x;
-	depthTextureDesc.Height               = g_engine->m_window->GetClientDimensions().y;
-	depthTextureDesc.MipLevels            = 1;
-	depthTextureDesc.ArraySize            = 1;
-	depthTextureDesc.Usage                = D3D11_USAGE_DEFAULT;
-	depthTextureDesc.Format               = DXGI_FORMAT_D24_UNORM_S8_UINT;
-	depthTextureDesc.BindFlags            = D3D11_BIND_DEPTH_STENCIL;
-	depthTextureDesc.SampleDesc.Count     = 1;
-
-	hr = m_d3dDevice->CreateTexture2D(&depthTextureDesc, nullptr, &m_depthStencilTexture);
-	hr = m_d3dDevice->CreateDepthStencilView(m_depthStencilTexture, nullptr, &m_depthStencilView);
+	// 	// Create depth stencil texture and view
+	// 	D3D11_TEXTURE2D_DESC depthTextureDesc = {};
+	// 	depthTextureDesc.Width                = g_engine->m_window->GetClientDimensions().x;
+	// 	depthTextureDesc.Height               = g_engine->m_window->GetClientDimensions().y;
+	// 	depthTextureDesc.MipLevels            = 1;
+	// 	depthTextureDesc.ArraySize            = 1;
+	// 	depthTextureDesc.Usage                = D3D11_USAGE_DEFAULT;
+	// 	depthTextureDesc.Format               = DXGI_FORMAT_D24_UNORM_S8_UINT;
+	// 	depthTextureDesc.BindFlags            = D3D11_BIND_DEPTH_STENCIL;
+	// 	depthTextureDesc.SampleDesc.Count     = 1;
+	//
+	// 	hr = m_d3dDevice->CreateTexture2D(&depthTextureDesc, nullptr, &m_depthStencilTexture);
+	// 	hr = m_d3dDevice->CreateDepthStencilView(m_depthStencilTexture, nullptr, &m_depthStencilView);
 
 	// DISABLED
 	D3D11_DEPTH_STENCIL_DESC depthStencilDesc = {};
@@ -295,7 +296,7 @@ void           Renderer::Startup()
 
 #pragma region Startup: Create default shader
 
-	m_defaultShader = CreateShader("Data/Shaders/Default");
+	m_defaultShader = CreateOrGetShader("Data/Shaders/Default");
 	BindShader(m_defaultShader);
 
 #pragma endregion
@@ -311,9 +312,11 @@ void           Renderer::Startup()
 
 	Vec2 windowsDimensions  = (Vec2)g_engine->m_window->GetClientDimensions();
 	m_sceneColorTexture     = CreateRenderTargetTexture("RenderTargetTest", IntVec2(windowsDimensions));
+	m_sceneDepthTexture     = CreateDepthStencilTexture("DepthStencilTest", IntVec2(windowsDimensions));
+	m_sceneNormalTexture    = CreateRenderTargetTexture("SceneNormalTexture", IntVec2(windowsDimensions));
 	m_postProcessTextureA   = CreateRenderTargetTexture("PostProcessTextureA", IntVec2(windowsDimensions));
 	m_postProcessTextureB   = CreateRenderTargetTexture("PostProcessTextureB", IntVec2(windowsDimensions));
-	m_postProcessCopyShader = CreateShader("Data/Shaders/PostProcessCopy");
+	m_postProcessCopyShader = CreateOrGetShader("Data/Shaders/PostProcessCopy");
 
 	m_d3dDeviceContext->QueryInterface(__uuidof(ID3DUserDefinedAnnotation), (void**)&m_d3dAnnotation);
 
@@ -345,18 +348,6 @@ void Renderer::Shutdown()
 
 	delete m_currentVertexBuffer;
 	m_currentVertexBuffer = nullptr;
-
-	if (m_depthStencilView)
-	{
-		m_depthStencilView->Release();
-		m_depthStencilView = nullptr;
-	}
-
-	if (m_depthStencilTexture)
-	{
-		m_depthStencilTexture->Release();
-		m_depthStencilTexture = nullptr;
-	}
 
 	for (auto& rasterizerState : m_rasterizerStates)
 	{
@@ -442,7 +433,8 @@ void Renderer::Shutdown()
 void Renderer::BeginFrame()
 {
 	// Set render target
-	m_d3dDeviceContext->OMSetRenderTargets(1, &m_sceneColorTexture->m_renderTargetView, m_depthStencilView);
+	m_d3dDeviceContext
+		->OMSetRenderTargets(1, &m_sceneColorTexture->m_renderTargetView, m_sceneDepthTexture->m_depthStencilView);
 
 	// Initialize states to default
 	SetBlendMode(BlendMode::ALPHA);
@@ -451,7 +443,9 @@ void Renderer::BeginFrame()
 	SetDepthMode(DepthMode::READ_WRITE_LESS_EQUAL);
 }
 
-void Renderer::EndFrame()
+// This function will run the post-process passes
+// And in the end the render target will be the back buffer, ready to present
+void Renderer::RenderPostProcess()
 {
 	// Set viewport
 	Vec2 camDimensions = (Vec2)g_engine->m_window->GetClientDimensions();
@@ -484,6 +478,17 @@ void Renderer::EndFrame()
 		}
 	}
 
+	// Render scene normal texture
+	Shader* normalShader = CreateOrGetShader("Data/Shaders/PostProcess/Normal");
+	m_d3dDeviceContext->OMSetRenderTargets(1, &m_sceneNormalTexture->m_renderTargetView, nullptr);
+	BindShader(normalShader);
+	BindTexture(m_sceneColorTexture);
+
+	m_d3dAnnotation->BeginEvent(L"Render Scene Normals");
+	DrawVertexArray(3, fullscreenTriangleVerts);
+	m_d3dAnnotation->EndEvent();
+
+	// Render post-process passes
 	Texture*                  inputTexture  = m_sceneColorTexture;
 	ID3D11ShaderResourceView* inputSRV      = inputTexture->m_shaderResourceView;
 	Texture*                  outputTexture = nullptr;
@@ -503,7 +508,8 @@ void Renderer::EndFrame()
 	{
 		m_d3dDeviceContext->OMSetRenderTargets(1, &outputRTV, nullptr);
 		BindShader(enabledPasses[0].m_postProcessShader);
-		BindTexture(inputTexture);
+		BindTexture(inputTexture, 0);
+		BindTexture(m_sceneDepthTexture, 1);
 
 		m_d3dAnnotation->BeginEvent(enabledPasses[0].m_wideName.c_str());
 		DrawVertexArray(3, fullscreenTriangleVerts);
@@ -549,7 +555,8 @@ void Renderer::EndFrame()
 			m_d3dDeviceContext->OMSetRenderTargets(1, &outputRTV, nullptr);
 
 			BindShader(pass.m_postProcessShader);
-			BindTexture(inputTexture);
+			BindTexture(inputTexture, 0);
+			BindTexture(m_sceneDepthTexture, 1);
 
 			m_d3dAnnotation->BeginEvent(pass.m_wideName.c_str());
 			DrawVertexArray(3, fullscreenTriangleVerts);
@@ -561,7 +568,10 @@ void Renderer::EndFrame()
 			useTextureA = !useTextureA;
 		}
 	}
+}
 
+void Renderer::EndFrame()
+{
 	// Present
 	HRESULT hr;
 	hr = m_d3dSwapChain->Present(0, 0);
@@ -609,7 +619,12 @@ void Renderer::ClearScreen(Rgba8 const& clearColor)
 	float colorAsFloats[4];
 	clearColor.GetAsFloats(colorAsFloats);
 	m_d3dDeviceContext->ClearRenderTargetView(m_d3dRenderTargetView, colorAsFloats);
-	m_d3dDeviceContext->ClearDepthStencilView(m_depthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+	m_d3dDeviceContext->ClearDepthStencilView(
+		m_sceneDepthTexture->m_depthStencilView,
+		D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL,
+		1.0f,
+		0
+	);
 
 	m_d3dDeviceContext->ClearRenderTargetView(m_sceneColorTexture->m_renderTargetView, colorAsFloats);
 }
@@ -719,18 +734,20 @@ void Renderer::DrawIndexedVertexBuffer(VertexBuffer* vertexBuffer, IndexBuffer* 
 
 #pragma region Public: High-level bind helpers used by gameplay/render features
 
-void Renderer::BindTexture(Texture* texture)
+void Renderer::BindTexture(Texture* textureOrNull) { BindTexture(textureOrNull, 0); }
+
+void Renderer::BindTexture(Texture* textureOrNull, unsigned int slot)
 {
 	GUARANTEE_OR_DIE(m_d3dDeviceContext, "BindTexture: m_d3dDeviceContext is null");
 
-	if (texture == nullptr)
+	if (textureOrNull == nullptr)
 	{
-		texture = m_defaultTexture;
+		textureOrNull = m_defaultTexture;
 	}
 
-	ID3D11ShaderResourceView* srv = texture->m_shaderResourceView;
-	m_d3dDeviceContext->PSSetShaderResources(0, 1, &srv);
-	m_d3dDeviceContext->PSSetSamplers(0, 1, &m_currentSamplerState);
+	ID3D11ShaderResourceView* srv = textureOrNull->m_shaderResourceView;
+	m_d3dDeviceContext->PSSetShaderResources(slot, 1, &srv);
+	m_d3dDeviceContext->PSSetSamplers(slot, 1, &m_currentSamplerState);
 }
 
 void Renderer::BindShader(Shader* shader)
@@ -775,9 +792,18 @@ void Renderer::BindLightConstants(Vec3 const& sunDirection, float const sunInten
 
 #pragma region Public: GPU resource creation and cache access
 
-Shader* Renderer::CreateShader(char const* shaderName)
+Shader* Renderer::CreateOrGetShader(char const* shaderName)
 {
 	GUARANTEE_OR_DIE(shaderName && shaderName[0], "CreateShader(shaderName): shaderName is null/empty");
+
+	std::string shaderKey = shaderName;
+	for (Shader* shader : m_cachedShaders)
+	{
+		if (shader->GetName() == shaderKey)
+		{
+			return shader;
+		}
+	}
 
 	std::string shaderFilename = std::string(shaderName) + ".hlsl";
 
@@ -913,6 +939,68 @@ Texture* Renderer::CreateRenderTargetTexture(char const* name, IntVec2 dimension
 	failIfUnsuccessful(hr, newTexture, "CreateRenderTargetView failed for render target texture \"%s\".");
 
 	hr = m_d3dDevice->CreateShaderResourceView(newTexture->m_texture, nullptr, &newTexture->m_shaderResourceView);
+	failIfUnsuccessful(hr, newTexture, "CreateShaderResourceView failed for render target texture \"%s\".");
+
+	m_texturesByName[newTexture->m_name] = newTexture;
+	return newTexture;
+}
+
+Texture* Renderer::CreateDepthStencilTexture(char const* name, IntVec2 dimensions)
+{
+	auto failIfUnsuccessful = [&](HRESULT result, Texture* texture, char const* errorFormat)
+	{
+		if (!SUCCEEDED(result))
+		{
+			delete texture;
+			ERROR_AND_DIE(Stringf(errorFormat, name));
+		}
+	};
+
+	GUARANTEE_OR_DIE(m_d3dDevice, "CreateRenderTargetTexture: m_d3dDevice is null");
+	GUARANTEE_OR_DIE(
+		dimensions.x > 0 && dimensions.y > 0,
+		Stringf(
+			"CreateRenderTargetTexture failed for \"%s\" - illegal texture dimensions (%i x %i)",
+			name,
+			dimensions.x,
+			dimensions.y
+		)
+	);
+
+	Texture* newTexture      = new Texture();
+	newTexture->m_name       = name;
+	newTexture->m_dimensions = dimensions;
+
+	// Create depth stencil texture and view
+	D3D11_TEXTURE2D_DESC depthTextureDesc = {};
+	depthTextureDesc.Width                = (UINT)dimensions.x;
+	depthTextureDesc.Height               = (UINT)dimensions.y;
+	depthTextureDesc.MipLevels            = 1;
+	depthTextureDesc.ArraySize            = 1;
+	depthTextureDesc.Usage                = D3D11_USAGE_DEFAULT;
+	depthTextureDesc.Format               = DXGI_FORMAT_R24G8_TYPELESS;
+	depthTextureDesc.BindFlags            = D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE;
+	depthTextureDesc.SampleDesc.Count     = 1;
+
+	HRESULT hr;
+	hr = m_d3dDevice->CreateTexture2D(&depthTextureDesc, nullptr, &newTexture->m_texture);
+	failIfUnsuccessful(hr, newTexture, "CreateTexture2D failed for render target texture \"%s\".");
+
+	D3D11_DEPTH_STENCIL_VIEW_DESC dsvDesc = {};
+	dsvDesc.Format                        = DXGI_FORMAT_D24_UNORM_S8_UINT;
+	dsvDesc.ViewDimension                 = D3D11_DSV_DIMENSION_TEXTURE2D;
+	dsvDesc.Texture2D.MipSlice            = 0;
+
+	hr = m_d3dDevice->CreateDepthStencilView(newTexture->m_texture, &dsvDesc, &newTexture->m_depthStencilView);
+	failIfUnsuccessful(hr, newTexture, "CreateDepthStencilView failed for render target texture \"%s\".");
+
+	D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+	srvDesc.Format                          = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
+	srvDesc.ViewDimension                   = D3D11_SRV_DIMENSION_TEXTURE2D;
+	srvDesc.Texture2D.MostDetailedMip       = 0;
+	srvDesc.Texture2D.MipLevels             = 1;
+
+	hr = m_d3dDevice->CreateShaderResourceView(newTexture->m_texture, &srvDesc, &newTexture->m_shaderResourceView);
 	failIfUnsuccessful(hr, newTexture, "CreateShaderResourceView failed for render target texture \"%s\".");
 
 	m_texturesByName[newTexture->m_name] = newTexture;

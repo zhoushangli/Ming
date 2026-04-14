@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Engine/Math/IntVec2.hpp"
 #include "Engine/Math/AABB2.hpp"
+#include "Engine/Math/IntVec2.hpp"
 
 #include <string>
 #include <vector>
@@ -9,28 +9,30 @@
 struct ID3D11Texture2D;
 struct ID3D11ShaderResourceView;
 struct ID3D11RenderTargetView;
+struct ID3D11DepthStencilView;
 
 class Texture
 {
 	friend class Renderer; // Only the Renderer can create new Texture objects!
 
 private:
-	Texture(); // can't instantiate directly; must ask Renderer to do it for you
+	Texture();                             // can't instantiate directly; must ask Renderer to do it for you
 	Texture(Texture const& copy) = delete; // No copying allowed!  This represents GPU memory.
 	~Texture();
 
 public:
-	IntVec2				GetDimensions() const { return m_dimensions; }
-	std::string const&  GetImageFilePath() const { return m_name; }
+	IntVec2            GetDimensions() const { return m_dimensions; }
+	std::string const& GetImageFilePath() const { return m_name; }
 
 protected:
-	std::string			m_name;			// Can't be char const* -- store a copy, in case it was temporary
-	IntVec2				m_dimensions;
+	std::string m_name; // Can't be char const* -- store a copy, in case it was temporary
+	IntVec2     m_dimensions;
 
-    ID3D11ShaderResourceView* m_shaderResourceView = nullptr;   // Read Handle
-    ID3D11RenderTargetView* m_renderTargetView = nullptr;       // Write Handle
+	ID3D11ShaderResourceView* m_shaderResourceView = nullptr; // Read Handle
+	ID3D11RenderTargetView*   m_renderTargetView   = nullptr; // Write Handle
+	ID3D11DepthStencilView*   m_depthStencilView    = nullptr; // Depth Handle
 
-    ID3D11Texture2D* m_texture = nullptr;
+	ID3D11Texture2D* m_texture = nullptr;
 };
 
 class SpriteSheet;
@@ -38,35 +40,37 @@ class SpriteSheet;
 class SpriteDefinition
 {
 public:
-    explicit SpriteDefinition(SpriteSheet const& spriteSheet, int spriteIndex, Vec2 const& uvAtMins, Vec2 const& uvAtMaxs);
+	explicit SpriteDefinition(
+		SpriteSheet const& spriteSheet, int spriteIndex, Vec2 const& uvAtMins, Vec2 const& uvAtMaxs
+	);
 
-    void                GetUVs(Vec2& out_uvAtMins, Vec2& out_uvAtMaxs) const;
-    AABB2               GetUVs() const;
-    SpriteSheet const&  GetSpriteSheet() const;
-    Texture&            GetTexture() const;
-    float               GetAspect() const;
+	void               GetUVs(Vec2& out_uvAtMins, Vec2& out_uvAtMaxs) const;
+	AABB2              GetUVs() const;
+	SpriteSheet const& GetSpriteSheet() const;
+	Texture&           GetTexture() const;
+	float              GetAspect() const;
 
 protected:
-    SpriteSheet const& m_spriteSheet;
-    int                  m_spriteIndex = -1;
-    Vec2                 m_uvAtMins = Vec2::ZERO;
-    Vec2                 m_uvAtMaxs = Vec2::ONE;
+	SpriteSheet const& m_spriteSheet;
+	int                m_spriteIndex = -1;
+	Vec2               m_uvAtMins    = Vec2::ZERO;
+	Vec2               m_uvAtMaxs    = Vec2::ONE;
 };
 
 class SpriteSheet
 {
 public:
-    explicit SpriteSheet(Texture& texture, IntVec2 const& dimension);
+	explicit SpriteSheet(Texture& texture, IntVec2 const& dimension);
 
-    Texture& GetTexture() const;
-    int                     GetNumSprites() const;
-    SpriteDefinition const& GetSpriteDef(int spriteIndex) const;
-    void                    GetSpriteUVs(Vec2& out_uvAtMins, Vec2& out_uvAtMaxs, int spriteIndex) const;
-    AABB2                   GetSpriteUVs(int spriteIndex) const;
-    AABB2                   GetSpriteUVs(IntVec2& spriteCoords) const;
+	Texture&                GetTexture() const;
+	int                     GetNumSprites() const;
+	SpriteDefinition const& GetSpriteDef(int spriteIndex) const;
+	void                    GetSpriteUVs(Vec2& out_uvAtMins, Vec2& out_uvAtMaxs, int spriteIndex) const;
+	AABB2                   GetSpriteUVs(int spriteIndex) const;
+	AABB2                   GetSpriteUVs(IntVec2& spriteCoords) const;
 
 protected:
-    IntVec2 m_dimension;
-    Texture& m_texture;      
-    std::vector<SpriteDefinition>    m_spriteDefs;
+	IntVec2                       m_dimension;
+	Texture&                      m_texture;
+	std::vector<SpriteDefinition> m_spriteDefs;
 };

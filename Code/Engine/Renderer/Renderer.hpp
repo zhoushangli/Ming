@@ -112,6 +112,7 @@ public:
 	void Startup();
 	void Shutdown();
 	void BeginFrame();
+	void RenderPostProcess();
 	void EndFrame();
 	void CreateRenderingContext();
 
@@ -135,16 +136,19 @@ public:
 
 	// High-level bind helpers used by gameplay/render features
 	void BindTexture(Texture* textureOrNull);
+	void BindTexture(Texture* textureOrNull, unsigned int slot);
 	void BindShader(Shader* shader);
 	void BindModelConstants(Matrix4x4 const& modelToWorldTransform, Rgba8 const& modelColor);
 	void BindLightConstants(Vec3 const& sunDirection, float const sunIntensity, float const ambientIntensity);
 
 	// GPU resource creation and cache access
-	Shader*     CreateShader(char const* shaderName);
+	Shader* CreateOrGetShader(char const* shaderName);
+
 	Texture*    CreateOrGetTextureFromFile(char const* fileDataPath);
 	Texture*    CreateTextureFromImage(const Image& image);
 	Texture*    CreateTextureFromData(char const* name, IntVec2 dimensions, int bytesPerTexel, uint8_t* texelData);
 	Texture*    CreateRenderTargetTexture(char const* name, IntVec2 dimensions);
+	Texture*    CreateDepthStencilTexture(char const* name, IntVec2 dimensions);
 	BitmapFont* CreateOrGetBitmapFont(char const* fontFilePathNameWithNoExtension);
 
 	VertexBuffer*   CreateVertexBuffer(const unsigned int size, unsigned int stride);
@@ -218,9 +222,6 @@ private:
 	DepthMode                m_desiredDepthMode                            = DepthMode::READ_WRITE_LESS_EQUAL;
 	ID3D11DepthStencilState* m_depthStencilStates[(int)(DepthMode::COUNT)] = {};
 
-	ID3D11Texture2D*        m_depthStencilTexture = nullptr;
-	ID3D11DepthStencilView* m_depthStencilView    = nullptr;
-
 	std::vector<Shader*> m_cachedShaders;
 	std::vector<uint8_t> m_vertexShaderByteCode;
 	std::vector<uint8_t> m_pixelShaderByteCode;
@@ -229,11 +230,14 @@ private:
 	std::map<std::string, BitmapFont*> m_fontsByName;
 
 	// Post-process pass resources
-	Texture*                     m_sceneColorTexture = nullptr;
+	Texture* m_sceneColorTexture     = nullptr;
+	Texture* m_sceneDepthTexture     = nullptr;
+	Texture* m_sceneNormalTexture    = nullptr;
+	Texture* m_postProcessTextureA   = nullptr;
+	Texture* m_postProcessTextureB   = nullptr;
+	Shader*  m_postProcessCopyShader = nullptr;
+
 	std::vector<PostProcessPass> m_postProcessPasses;
-	Texture*                     m_postProcessTextureA   = nullptr;
-	Texture*                     m_postProcessTextureB   = nullptr;
-	Shader*                      m_postProcessCopyShader = nullptr;
 
 #if defined(ENGINE_DEBUG_RENDER)
 	void* m_dxgiDebug       = nullptr;

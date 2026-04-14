@@ -22,6 +22,12 @@ Texture::~Texture()
         m_shaderResourceView = nullptr; 
     }
 
+    if (m_depthStencilView)
+    {
+        m_depthStencilView->Release();
+        m_depthStencilView = nullptr;
+    }
+
     if (m_texture) 
     { 
         m_texture->Release();            
