@@ -430,7 +430,7 @@ void Renderer::Shutdown()
 #endif
 }
 
-void Renderer::BeginFrame()
+void Renderer::BeginColorPass()
 {
 	// Set render target
 	m_d3dDeviceContext
@@ -441,6 +441,45 @@ void Renderer::BeginFrame()
 	SetSamplerMode(SamplerMode::POINT_CLAMP);
 	SetRasterizerMode(RasterizerMode::SOLID_CULL_BACK);
 	SetDepthMode(DepthMode::READ_WRITE_LESS_EQUAL);
+}
+
+void Renderer::BeginNormalPass()
+{
+	float clearColor[4] = {0.5f, 0.5f, 1.0f, 1.0f};
+
+	// Set render target
+	m_d3dDeviceContext
+		->OMSetRenderTargets(1, &m_sceneNormalTexture->m_renderTargetView, m_sceneDepthTexture->m_depthStencilView);
+	m_d3dDeviceContext->ClearRenderTargetView(m_sceneNormalTexture->m_renderTargetView, clearColor);
+
+	// Initialize states to default
+	SetBlendMode(BlendMode::OPAQUE);
+	SetSamplerMode(SamplerMode::POINT_CLAMP);
+	SetRasterizerMode(RasterizerMode::SOLID_CULL_BACK);
+	SetDepthMode(DepthMode::READ_ONLY_LESS_EQUAL);
+}
+
+void Renderer::BeginUIPass()
+{
+	// Set render target
+	m_d3dDeviceContext->OMSetRenderTargets(1, &m_d3dRenderTargetView, nullptr);
+
+	// Initialize states to default
+	SetBlendMode(BlendMode::ALPHA);
+	SetSamplerMode(SamplerMode::POINT_CLAMP);
+	SetRasterizerMode(RasterizerMode::SOLID_CULL_NONE);
+	SetDepthMode(DepthMode::READ_ONLY_ALWAYS);
+}
+
+void Renderer::EndFrame()
+{
+	// Present
+	HRESULT hr;
+	hr = m_d3dSwapChain->Present(0, 0);
+	if (hr == DXGI_ERROR_DEVICE_REMOVED || hr == DXGI_ERROR_DEVICE_RESET)
+	{
+		ERROR_AND_DIE("Device has been lost, application will now terminate.");
+	}
 }
 
 // This function will run the post-process passes
@@ -477,16 +516,6 @@ void Renderer::RenderPostProcess()
 			enabledPasses.push_back(pass);
 		}
 	}
-
-	// Render scene normal texture
-	Shader* normalShader = CreateOrGetShader("Data/Shaders/PostProcess/Normal");
-	m_d3dDeviceContext->OMSetRenderTargets(1, &m_sceneNormalTexture->m_renderTargetView, nullptr);
-	BindShader(normalShader);
-	BindTexture(m_sceneColorTexture);
-
-	m_d3dAnnotation->BeginEvent(L"Render Scene Normals");
-	DrawVertexArray(3, fullscreenTriangleVerts);
-	m_d3dAnnotation->EndEvent();
 
 	// Render post-process passes
 	Texture*                  inputTexture  = m_sceneColorTexture;
@@ -567,17 +596,6 @@ void Renderer::RenderPostProcess()
 
 			useTextureA = !useTextureA;
 		}
-	}
-}
-
-void Renderer::EndFrame()
-{
-	// Present
-	HRESULT hr;
-	hr = m_d3dSwapChain->Present(0, 0);
-	if (hr == DXGI_ERROR_DEVICE_REMOVED || hr == DXGI_ERROR_DEVICE_RESET)
-	{
-		ERROR_AND_DIE("Device has been lost, application will now terminate.");
 	}
 }
 
@@ -1126,6 +1144,21 @@ void Renderer::CopyCPUToGPU(const void* data, unsigned int size, IndexBuffer* in
 }
 
 void Renderer::AddPostProcessPass(PostProcessPass const& pass) { m_postProcessPasses.push_back(pass); }
+
+void Renderer::BeginEvent(std::string const& eventName) {
+	if (m_d3dAnnotation)
+	{
+		std::wstring wideEventName(eventName.begin(), eventName.end());
+		m_d3dAnnotation->BeginEvent(wideEventName.c_str());
+	}
+}
+
+void Renderer::EndEvent() {
+	if (m_d3dAnnotation)
+	{
+		m_d3dAnnotation->EndEvent();
+	}
+}
 
 #pragma endregion
 

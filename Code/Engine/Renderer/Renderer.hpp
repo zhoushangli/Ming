@@ -111,10 +111,13 @@ public:
 	// Lifetime and frame loop
 	void Startup();
 	void Shutdown();
-	void BeginFrame();
-	void RenderPostProcess();
+	void BeginColorPass();
+	void BeginNormalPass();
+	void BeginUIPass();
 	void EndFrame();
 	void CreateRenderingContext();
+
+	void RenderPostProcess();
 
 	// Camera and pipeline state
 	void BeginCamera(Camera const& camera);
@@ -164,6 +167,8 @@ public:
 
 	// Post-process pass management
 	void AddPostProcessPass(PostProcessPass const& pass);
+	void BeginEvent(std::string const& eventName);
+	void EndEvent();
 
 private:
 	// Texture cache internals

@@ -70,7 +70,7 @@ void Engine::BeginFrame()
     if (m_eventSystem != nullptr) m_eventSystem->BeginFrame();
     if (m_devConsole  != nullptr) m_devConsole->BeginFrame();
     if (m_window      != nullptr) m_window->BeginFrame();
-    if (m_renderer    != nullptr) m_renderer->BeginFrame();
+    if (m_renderer    != nullptr) m_renderer->BeginColorPass();
     if (m_input       != nullptr) m_input->BeginFrame();
     if (m_audio       != nullptr) m_audio->BeginFrame();
 }
