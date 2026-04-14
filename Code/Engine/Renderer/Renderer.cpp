@@ -539,6 +539,7 @@ void Renderer::RenderPostProcess()
 		BindShader(enabledPasses[0].m_postProcessShader);
 		BindTexture(inputTexture, 0);
 		BindTexture(m_sceneDepthTexture, 1);
+		BindTexture(m_sceneNormalTexture, 2);
 
 		m_d3dAnnotation->BeginEvent(enabledPasses[0].m_wideName.c_str());
 		DrawVertexArray(3, fullscreenTriangleVerts);
@@ -586,7 +587,8 @@ void Renderer::RenderPostProcess()
 			BindShader(pass.m_postProcessShader);
 			BindTexture(inputTexture, 0);
 			BindTexture(m_sceneDepthTexture, 1);
-
+			BindTexture(m_sceneNormalTexture, 2);
+			
 			m_d3dAnnotation->BeginEvent(pass.m_wideName.c_str());
 			DrawVertexArray(3, fullscreenTriangleVerts);
 			m_d3dAnnotation->EndEvent();
@@ -1145,7 +1147,8 @@ void Renderer::CopyCPUToGPU(const void* data, unsigned int size, IndexBuffer* in
 
 void Renderer::AddPostProcessPass(PostProcessPass const& pass) { m_postProcessPasses.push_back(pass); }
 
-void Renderer::BeginEvent(std::string const& eventName) {
+void Renderer::BeginEvent(std::string const& eventName)
+{
 	if (m_d3dAnnotation)
 	{
 		std::wstring wideEventName(eventName.begin(), eventName.end());
@@ -1153,7 +1156,8 @@ void Renderer::BeginEvent(std::string const& eventName) {
 	}
 }
 
-void Renderer::EndEvent() {
+void Renderer::EndEvent()
+{
 	if (m_d3dAnnotation)
 	{
 		m_d3dAnnotation->EndEvent();
