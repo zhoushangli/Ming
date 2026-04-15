@@ -102,6 +102,14 @@ struct ModelConstants
 };
 static const int k_modelConstantsSlot = 3;
 
+struct PostProcessConstants
+{
+	Vec2  ScreenDimensions;
+	float cameraNear;
+	float cameraFar;
+};
+static const int k_postProcessConstantsSlot = 4;
+
 class Renderer
 {
 public:
@@ -117,7 +125,7 @@ public:
 	void EndFrame();
 	void CreateRenderingContext();
 
-	void RenderPostProcess();
+	void RenderPostProcess(Camera const& camera);
 
 	// Camera and pipeline state
 	void BeginCamera(Camera const& camera);
@@ -143,6 +151,7 @@ public:
 	void BindShader(Shader* shader);
 	void BindModelConstants(Matrix4x4 const& modelToWorldTransform, Rgba8 const& modelColor);
 	void BindLightConstants(Vec3 const& sunDirection, float const sunIntensity, float const ambientIntensity);
+	void BindPostProcessConstants(Vec2 const& screenDimensions, float cameraNear, float cameraFar);
 
 	// GPU resource creation and cache access
 	Shader* CreateOrGetShader(char const* shaderName);
@@ -199,11 +208,12 @@ private:
 	Camera* m_currentCamera = nullptr;
 	Shader* m_currentShader = nullptr;
 
-	VertexBuffer*   m_currentVertexBuffer  = nullptr;
-	IndexBuffer*    m_currentIndexBuffer   = nullptr;
-	ConstantBuffer* m_lightConstantBuffer  = nullptr;
-	ConstantBuffer* m_cameraConstantBuffer = nullptr;
-	ConstantBuffer* m_modelConstantBuffer  = nullptr;
+	VertexBuffer*   m_currentVertexBuffer       = nullptr;
+	IndexBuffer*    m_currentIndexBuffer        = nullptr;
+	ConstantBuffer* m_lightConstantBuffer       = nullptr;
+	ConstantBuffer* m_cameraConstantBuffer      = nullptr;
+	ConstantBuffer* m_modelConstantBuffer       = nullptr;
+	ConstantBuffer* m_postProcessConstantBuffer = nullptr;
 
 	ID3D11Device*              m_d3dDevice           = nullptr;
 	ID3D11DeviceContext*       m_d3dDeviceContext    = nullptr;

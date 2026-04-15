@@ -41,6 +41,9 @@ public:
     Matrix4x4 GetPerspectiveMatrix() const;
     Matrix4x4 GetProjectionMatrix() const;
 
+    float GetNearZ() const;
+    float GetFarZ() const;
+
 protected:
     Mode m_mode = eMode_Orthographic;
 

@@ -186,11 +186,12 @@ void           Renderer::Startup()
 
 #pragma region Startup: Create buffers
 
-	m_currentVertexBuffer  = CreateVertexBuffer(sizeof(Vertex) * 3, sizeof(Vertex));
-	m_currentIndexBuffer   = CreateIndexBuffer(sizeof(unsigned int) * 3);
-	m_lightConstantBuffer  = CreateConstantBuffer(sizeof(LightConstants));
-	m_cameraConstantBuffer = CreateConstantBuffer(sizeof(CameraConstants));
-	m_modelConstantBuffer  = CreateConstantBuffer(sizeof(ModelConstants));
+	m_currentVertexBuffer       = CreateVertexBuffer(sizeof(Vertex) * 3, sizeof(Vertex));
+	m_currentIndexBuffer        = CreateIndexBuffer(sizeof(unsigned int) * 3);
+	m_lightConstantBuffer       = CreateConstantBuffer(sizeof(LightConstants));
+	m_cameraConstantBuffer      = CreateConstantBuffer(sizeof(CameraConstants));
+	m_modelConstantBuffer       = CreateConstantBuffer(sizeof(ModelConstants));
+	m_postProcessConstantBuffer = CreateConstantBuffer(sizeof(PostProcessConstants));
 
 #pragma endregion
 
@@ -343,6 +344,9 @@ void Renderer::Shutdown()
 	delete m_lightConstantBuffer;
 	m_lightConstantBuffer = nullptr;
 
+	delete m_postProcessConstantBuffer;
+	m_postProcessConstantBuffer = nullptr;
+
 	delete m_currentIndexBuffer;
 	m_currentIndexBuffer = nullptr;
 
@@ -445,7 +449,7 @@ void Renderer::BeginColorPass()
 
 void Renderer::BeginNormalPass()
 {
-	float clearColor[4] = {0.5f, 0.5f, 1.0f, 1.0f};
+	float clearColor[4] = {0.5f, 0.5f, 0.5f, 1.0f};
 
 	// Set render target
 	m_d3dDeviceContext
@@ -484,16 +488,16 @@ void Renderer::EndFrame()
 
 // This function will run the post-process passes
 // And in the end the render target will be the back buffer, ready to present
-void Renderer::RenderPostProcess()
+void Renderer::RenderPostProcess(Camera const& camera)
 {
 	// Set viewport
-	Vec2 camDimensions = (Vec2)g_engine->m_window->GetClientDimensions();
+	Vec2 resolutions = (Vec2)g_engine->m_window->GetClientDimensions();
 
 	D3D11_VIEWPORT viewport = {};
 	viewport.TopLeftX       = 0.f;
 	viewport.TopLeftY       = 0.f;
-	viewport.Width          = camDimensions.x;
-	viewport.Height         = camDimensions.y;
+	viewport.Width          = resolutions.x;
+	viewport.Height         = resolutions.y;
 	viewport.MinDepth       = 0.0f;
 	viewport.MaxDepth       = 1.0f;
 
@@ -540,6 +544,7 @@ void Renderer::RenderPostProcess()
 		BindTexture(inputTexture, 0);
 		BindTexture(m_sceneDepthTexture, 1);
 		BindTexture(m_sceneNormalTexture, 2);
+		BindPostProcessConstants(resolutions, camera.GetNearZ(), camera.GetFarZ());
 
 		m_d3dAnnotation->BeginEvent(enabledPasses[0].m_wideName.c_str());
 		DrawVertexArray(3, fullscreenTriangleVerts);
@@ -588,7 +593,8 @@ void Renderer::RenderPostProcess()
 			BindTexture(inputTexture, 0);
 			BindTexture(m_sceneDepthTexture, 1);
 			BindTexture(m_sceneNormalTexture, 2);
-			
+			BindPostProcessConstants(resolutions, camera.GetNearZ(), camera.GetFarZ());
+
 			m_d3dAnnotation->BeginEvent(pass.m_wideName.c_str());
 			DrawVertexArray(3, fullscreenTriangleVerts);
 			m_d3dAnnotation->EndEvent();
@@ -806,6 +812,17 @@ void Renderer::BindLightConstants(Vec3 const& sunDirection, float const sunInten
 
 	CopyCPUToGPU(&lightData, sizeof(lightData), m_lightConstantBuffer);
 	BindConstantBuffer(m_lightConstantBuffer, k_lightConstantsSlot);
+}
+
+void Renderer::BindPostProcessConstants(Vec2 const& screenDimensions, float nearZ, float farZ)
+{
+	PostProcessConstants postProcessData = PostProcessConstants();
+	postProcessData.ScreenDimensions     = screenDimensions;
+	postProcessData.cameraNear           = nearZ;
+	postProcessData.cameraFar            = farZ;
+
+	CopyCPUToGPU(&postProcessData, sizeof(postProcessData), m_postProcessConstantBuffer);
+	BindConstantBuffer(m_postProcessConstantBuffer, k_postProcessConstantsSlot);
 }
 
 #pragma endregion
