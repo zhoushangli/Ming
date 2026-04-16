@@ -21,7 +21,10 @@ void TransformVertexArray3D(std::vector<Vertex>& verts, const Matrix4x4& transfo
 {
 	for (Vertex& vert : verts)
 	{
-		vert.m_position = transform.TransformPosition3D(vert.m_position);
+		vert.m_position  = transform.TransformPosition3D(vert.m_position);
+		vert.m_tangent   = transform.TransformVectorQuantity3D(vert.m_tangent);
+		vert.m_bitangent = transform.TransformVectorQuantity3D(vert.m_bitangent);
+		vert.m_normal    = transform.TransformVectorQuantity3D(vert.m_normal);
 	}
 }
 
