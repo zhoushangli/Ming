@@ -27,6 +27,7 @@ public:
     Matrix4x4 GetCameraToWorldTransform() const;
     Matrix4x4 GetWorldToCameraTransform() const;
     AABB2 GetOrthographicBounds() const;
+    Mode GetMode() const;
 
     void SetCameraToRenderTransform(const Matrix4x4& m);
     Matrix4x4 GetCameraToRenderTransform() const;

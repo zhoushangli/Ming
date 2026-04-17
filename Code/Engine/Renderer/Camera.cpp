@@ -52,6 +52,8 @@ Matrix4x4 Camera::GetWorldToCameraTransform() const { return GetCameraToWorldTra
 
 AABB2 Camera::GetOrthographicBounds() const { return AABB2(m_orthographicBottomLeft, m_orthographicTopRight); }
 
+Camera::Mode Camera::GetMode() const { return m_mode; }
+
 void Camera::SetCameraToRenderTransform(const Matrix4x4& m) { m_cameraToRenderTransform = m; }
 
 Matrix4x4 Camera::GetCameraToRenderTransform() const { return m_cameraToRenderTransform; }
