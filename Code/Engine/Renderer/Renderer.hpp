@@ -199,6 +199,8 @@ private:
 	void BindConstantBuffer(ConstantBuffer* constantBuffer, int slot);
 	void BindIndexBuffer(IndexBuffer* indexBuffer);
 
+	void SetViewport(IntVec2 dimensions);
+
 private:
 	RendererConfig m_config;
 

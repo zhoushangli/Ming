@@ -491,17 +491,8 @@ void Renderer::EndFrame()
 void Renderer::RenderPostProcess(Camera const& camera)
 {
 	// Set viewport
-	Vec2 resolutions = (Vec2)g_engine->m_window->GetClientDimensions();
-
-	D3D11_VIEWPORT viewport = {};
-	viewport.TopLeftX       = 0.f;
-	viewport.TopLeftY       = 0.f;
-	viewport.Width          = resolutions.x;
-	viewport.Height         = resolutions.y;
-	viewport.MinDepth       = 0.0f;
-	viewport.MaxDepth       = 1.0f;
-
-	m_d3dDeviceContext->RSSetViewports(1, &viewport);
+	IntVec2 screenDimensions = g_engine->m_window->GetClientDimensions();
+	SetViewport(screenDimensions);
 
 	SetBlendMode(BlendMode::OPAQUE);
 	SetSamplerMode(SamplerMode::POINT_CLAMP);
@@ -544,7 +535,8 @@ void Renderer::RenderPostProcess(Camera const& camera)
 		BindTexture(inputTexture, 0);
 		BindTexture(m_sceneDepthTexture, 1);
 		BindTexture(m_sceneNormalTexture, 2);
-		BindPostProcessConstants(resolutions, camera.GetNearZ(), camera.GetFarZ());
+		BindPostProcessConstants((Vec2)screenDimensions, camera.GetNearZ(), camera.GetFarZ());
+		SetViewport(screenDimensions);
 
 		m_d3dAnnotation->BeginEvent(enabledPasses[0].m_wideName.c_str());
 		DrawVertexArray(3, fullscreenTriangleVerts);
@@ -593,7 +585,16 @@ void Renderer::RenderPostProcess(Camera const& camera)
 			BindTexture(inputTexture, 0);
 			BindTexture(m_sceneDepthTexture, 1);
 			BindTexture(m_sceneNormalTexture, 2);
-			BindPostProcessConstants(resolutions, camera.GetNearZ(), camera.GetFarZ());
+			BindPostProcessConstants((Vec2)pass.m_renderTargetSize, camera.GetNearZ(), camera.GetFarZ());
+
+			if (i == enabledPasses.size() - 1)
+			{
+				SetViewport((Vec2)g_engine->m_window->GetClientDimensions());
+			}
+			else
+			{
+				SetViewport(pass.m_renderTargetSize);
+			}
 
 			m_d3dAnnotation->BeginEvent(pass.m_wideName.c_str());
 			DrawVertexArray(3, fullscreenTriangleVerts);
@@ -616,17 +617,8 @@ void Renderer::CreateRenderingContext() {}
 void Renderer::BeginCamera(Camera const& camera)
 {
 	// Set viewport
-	Vec2 camDimensions = (Vec2)g_engine->m_window->GetClientDimensions();
-
-	D3D11_VIEWPORT viewport = {};
-	viewport.TopLeftX       = 0.f;
-	viewport.TopLeftY       = 0.f;
-	viewport.Width          = camDimensions.x;
-	viewport.Height         = camDimensions.y;
-	viewport.MinDepth       = 0.0f;
-	viewport.MaxDepth       = 1.0f;
-
-	m_d3dDeviceContext->RSSetViewports(1, &viewport);
+	Vec2 screenDimensions = (Vec2)g_engine->m_window->GetClientDimensions();
+	SetViewport(screenDimensions);
 
 	CameraConstants cameraData         = CameraConstants();
 	cameraData.WorldToCameraTransform  = camera.GetWorldToCameraTransform();
@@ -1385,6 +1377,21 @@ void Renderer::BindIndexBuffer(IndexBuffer* indexBuffer)
 
 	ID3D11Buffer* buf = indexBuffer->m_buffer;
 	m_d3dDeviceContext->IASetIndexBuffer(buf, DXGI_FORMAT_R32_UINT, 0);
+}
+
+void Renderer::SetViewport(IntVec2 dimensions)
+{
+	GUARANTEE_OR_DIE(dimensions.x > 0 && dimensions.y > 0, "SetViewport: Invalid dimensions");
+
+	D3D11_VIEWPORT viewport = {};
+	viewport.TopLeftX       = 0.f;
+	viewport.TopLeftY       = 0.f;
+	viewport.Width          = (FLOAT)dimensions.x;
+	viewport.Height         = (FLOAT)dimensions.y;
+	viewport.MinDepth       = 0.0f;
+	viewport.MaxDepth       = 1.0f;
+
+	m_d3dDeviceContext->RSSetViewports(1, &viewport);
 }
 
 #pragma endregion
