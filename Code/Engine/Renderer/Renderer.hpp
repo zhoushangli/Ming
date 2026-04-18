@@ -105,8 +105,8 @@ static const int k_modelConstantsSlot = 3;
 struct PostProcessConstants
 {
 	Vec2  ScreenDimensions;
-	float cameraNear;
-	float cameraFar;
+	float CameraNear;
+	float CameraFar;
 };
 static const int k_postProcessConstantsSlot = 4;
 
@@ -125,7 +125,7 @@ public:
 	void EndFrame();
 	void CreateRenderingContext();
 
-	void RenderPostProcess(Camera const& camera);
+	void RenderPostProcess(Camera const& camera, int downsampleFactor);
 
 	// Camera and pipeline state
 	void BeginCamera(Camera const& camera);

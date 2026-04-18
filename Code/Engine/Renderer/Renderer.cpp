@@ -312,9 +312,9 @@ void           Renderer::Startup()
 #pragma region Startup: Create post-process resources
 
 	Vec2 windowsDimensions  = (Vec2)g_engine->m_window->GetClientDimensions();
-	m_sceneColorTexture     = CreateRenderTargetTexture("RenderTargetTest", IntVec2(windowsDimensions));
-	m_sceneDepthTexture     = CreateDepthStencilTexture("DepthStencilTest", IntVec2(windowsDimensions));
-	m_sceneNormalTexture    = CreateRenderTargetTexture("SceneNormalTexture", IntVec2(windowsDimensions));
+	m_sceneColorTexture     = CreateRenderTargetTexture("SceneColor", IntVec2(windowsDimensions));
+	m_sceneDepthTexture     = CreateDepthStencilTexture("SceneDepth", IntVec2(windowsDimensions));
+	m_sceneNormalTexture    = CreateRenderTargetTexture("SceneNormal", IntVec2(windowsDimensions));
 	m_postProcessTextureA   = CreateRenderTargetTexture("PostProcessTextureA", IntVec2(windowsDimensions));
 	m_postProcessTextureB   = CreateRenderTargetTexture("PostProcessTextureB", IntVec2(windowsDimensions));
 	m_postProcessCopyShader = CreateOrGetShader("Data/Shaders/PostProcessCopy");
@@ -488,11 +488,13 @@ void Renderer::EndFrame()
 
 // This function will run the post-process passes
 // And in the end the render target will be the back buffer, ready to present
-void Renderer::RenderPostProcess(Camera const& camera)
+void Renderer::RenderPostProcess(Camera const& camera, int downsampleFactor)
 {
-	// Set viewport
-	IntVec2 screenDimensions = g_engine->m_window->GetClientDimensions();
-	SetViewport(screenDimensions);
+	IntVec2 const fullRes = g_engine->m_window->GetClientDimensions();
+	downsampleFactor      = max(1, downsampleFactor);
+
+	IntVec2    downRes(max(1, fullRes.x / downsampleFactor), max(1, fullRes.y / downsampleFactor));
+	bool const useDownsampledInputs = downsampleFactor > 1;
 
 	SetBlendMode(BlendMode::OPAQUE);
 	SetSamplerMode(SamplerMode::POINT_CLAMP);
@@ -503,6 +505,73 @@ void Renderer::RenderPostProcess(Camera const& camera)
 		Vertex(Vec3(3.f, -1.f, 0.f), Rgba8::WHITE, Vec2(2.f, 1.f)),
 		Vertex(Vec3(-1.f, 3.f, 0.f), Rgba8::WHITE, Vec2(0.f, -1.f))};
 
+	auto clearPostProcessSrvs = [&]()
+	{
+		ID3D11ShaderResourceView* nullSrvs[3] = {nullptr, nullptr, nullptr};
+		// We have 3 texture inputs bound for post-process shaders 
+		// (scene color, depth, normal)
+		m_d3dDeviceContext->PSSetShaderResources(0, 3, nullSrvs);
+	};
+
+	auto getOrCreateRT = [&](char const* name) -> Texture*
+	{
+		Texture* tex = GetTextureFromFileName(name);
+		if (tex == nullptr)
+		{
+			tex = CreateRenderTargetTexture(name, downRes);
+		}
+		return tex;
+	};
+
+	Texture* sceneColorInput  = m_sceneColorTexture;
+	Texture* sceneDepthInput  = m_sceneDepthTexture;
+	Texture* sceneNormalInput = m_sceneNormalTexture;
+
+	Texture* postTextureA = m_postProcessTextureA;
+	Texture* postTextureB = m_postProcessTextureB;
+
+	if (useDownsampledInputs)
+	{
+		std::string const colorName  = Stringf("SceneColor_%dx%d", downRes.x, downRes.y);
+		std::string const depthName  = Stringf("SceneDepth_%dx%d", downRes.x, downRes.y);
+		std::string const normalName = Stringf("SceneNormal_%dx%d", downRes.x, downRes.y);
+		std::string const postAName  = Stringf("PostA_%dx%d", downRes.x, downRes.y);
+		std::string const postBName  = Stringf("PostB_%dx%d", downRes.x, downRes.y);
+
+		Texture* downColor  = getOrCreateRT(colorName.c_str());
+		Texture* downDepth  = getOrCreateRT(depthName.c_str());
+		Texture* downNormal = getOrCreateRT(normalName.c_str());
+		postTextureA        = getOrCreateRT(postAName.c_str());
+		postTextureB        = getOrCreateRT(postBName.c_str());
+
+		SetViewport(downRes);
+		BindShader(m_postProcessCopyShader);
+
+		m_d3dAnnotation->BeginEvent(L"Downsample Inputs");
+		m_d3dDeviceContext->OMSetRenderTargets(1, &downColor->m_renderTargetView, nullptr);
+		BindTexture(m_sceneColorTexture, 0);
+		DrawVertexArray(3, fullscreenTriangleVerts);
+		clearPostProcessSrvs();
+
+		m_d3dDeviceContext->OMSetRenderTargets(1, &downDepth->m_renderTargetView, nullptr);
+		BindTexture(m_sceneDepthTexture, 0);
+		DrawVertexArray(3, fullscreenTriangleVerts);
+		clearPostProcessSrvs();
+
+		m_d3dDeviceContext->OMSetRenderTargets(1, &downNormal->m_renderTargetView, nullptr);
+		BindTexture(m_sceneNormalTexture, 0);
+		DrawVertexArray(3, fullscreenTriangleVerts);
+		clearPostProcessSrvs();
+		m_d3dAnnotation->EndEvent();
+
+		sceneColorInput  = downColor;
+		sceneDepthInput  = downDepth;
+		sceneNormalInput = downNormal;
+	}
+
+	IntVec2 const postProcessRes = useDownsampledInputs ? downRes : fullRes;
+	SetViewport(postProcessRes);
+
 	std::vector<PostProcessPass> enabledPasses;
 	for (auto const& pass : m_postProcessPasses)
 	{
@@ -512,44 +581,39 @@ void Renderer::RenderPostProcess(Camera const& camera)
 		}
 	}
 
-	// Render post-process passes
-	Texture*                  inputTexture  = m_sceneColorTexture;
-	ID3D11ShaderResourceView* inputSRV      = inputTexture->m_shaderResourceView;
-	Texture*                  outputTexture = nullptr;
-	ID3D11RenderTargetView*   outputRTV     = m_d3dRenderTargetView;
+	Texture*                inputTexture  = sceneColorInput;
+	Texture*                outputTexture = nullptr;
+	ID3D11RenderTargetView* outputRTV     = m_d3dRenderTargetView;
 
 	if (enabledPasses.size() == 0)
 	{
+		SetViewport(fullRes);
 		m_d3dDeviceContext->OMSetRenderTargets(1, &outputRTV, nullptr);
 		BindShader(m_postProcessCopyShader);
-		BindTexture(inputTexture);
+		BindTexture(inputTexture, 0);
 		DrawVertexArray(3, fullscreenTriangleVerts);
-
-		ID3D11ShaderResourceView* nullSrv = nullptr;
-		m_d3dDeviceContext->PSSetShaderResources(0, 1, &nullSrv);
+		clearPostProcessSrvs();
 	}
 	else if (enabledPasses.size() == 1)
 	{
+		SetViewport(fullRes);
 		m_d3dDeviceContext->OMSetRenderTargets(1, &outputRTV, nullptr);
 		BindShader(enabledPasses[0].m_postProcessShader);
 		BindTexture(inputTexture, 0);
-		BindTexture(m_sceneDepthTexture, 1);
-		BindTexture(m_sceneNormalTexture, 2);
-		BindPostProcessConstants((Vec2)screenDimensions, camera.GetNearZ(), camera.GetFarZ());
-		SetViewport(screenDimensions);
+		BindTexture(sceneDepthInput, 1);
+		BindTexture(sceneNormalInput, 2);
+		BindPostProcessConstants((Vec2)postProcessRes, camera.GetNearZ(), camera.GetFarZ());
 
 		m_d3dAnnotation->BeginEvent(enabledPasses[0].m_wideName.c_str());
 		DrawVertexArray(3, fullscreenTriangleVerts);
 		m_d3dAnnotation->EndEvent();
-
-		ID3D11ShaderResourceView* nullSrv = nullptr;
-		m_d3dDeviceContext->PSSetShaderResources(0, 1, &nullSrv);
+		clearPostProcessSrvs();
 	}
 	else if (enabledPasses.size() >= 2)
 	{
 		bool useTextureA = true;
 
-		for (int i = 0; i < enabledPasses.size(); ++i)
+		for (int i = 0; i < (int)enabledPasses.size(); ++i)
 		{
 			PostProcessPass const& pass = enabledPasses[i];
 
@@ -560,48 +624,38 @@ void Renderer::RenderPostProcess(Camera const& camera)
 
 			if (i == 0)
 			{
-				inputTexture  = m_sceneColorTexture;
-				inputSRV      = inputTexture->m_shaderResourceView;
-				outputTexture = useTextureA ? m_postProcessTextureA : m_postProcessTextureB;
+				inputTexture  = sceneColorInput;
+				outputTexture = useTextureA ? postTextureA : postTextureB;
 				outputRTV     = outputTexture->m_renderTargetView;
+				SetViewport(postProcessRes);
 			}
-			else if (i == enabledPasses.size() - 1)
+			else if (i == (int)enabledPasses.size() - 1)
 			{
-				inputTexture  = useTextureA ? m_postProcessTextureB : m_postProcessTextureA;
+				inputTexture  = useTextureA ? postTextureB : postTextureA;
 				outputTexture = nullptr;
 				outputRTV     = m_d3dRenderTargetView;
+				SetViewport(fullRes);
 			}
 			else
 			{
-				inputTexture  = useTextureA ? m_postProcessTextureB : m_postProcessTextureA;
-				inputSRV      = inputTexture->m_shaderResourceView;
-				outputTexture = useTextureA ? m_postProcessTextureA : m_postProcessTextureB;
+				inputTexture  = useTextureA ? postTextureB : postTextureA;
+				outputTexture = useTextureA ? postTextureA : postTextureB;
 				outputRTV     = outputTexture->m_renderTargetView;
+				SetViewport(postProcessRes);
 			}
 
 			m_d3dDeviceContext->OMSetRenderTargets(1, &outputRTV, nullptr);
 
 			BindShader(pass.m_postProcessShader);
 			BindTexture(inputTexture, 0);
-			BindTexture(m_sceneDepthTexture, 1);
-			BindTexture(m_sceneNormalTexture, 2);
-			BindPostProcessConstants((Vec2)pass.m_renderTargetSize, camera.GetNearZ(), camera.GetFarZ());
-
-			if (i == enabledPasses.size() - 1)
-			{
-				SetViewport((Vec2)g_engine->m_window->GetClientDimensions());
-			}
-			else
-			{
-				SetViewport(pass.m_renderTargetSize);
-			}
+			BindTexture(sceneDepthInput, 1);
+			BindTexture(sceneNormalInput, 2);
+			BindPostProcessConstants((Vec2)postProcessRes, camera.GetNearZ(), camera.GetFarZ());
 
 			m_d3dAnnotation->BeginEvent(pass.m_wideName.c_str());
 			DrawVertexArray(3, fullscreenTriangleVerts);
 			m_d3dAnnotation->EndEvent();
-
-			ID3D11ShaderResourceView* nullSrv = nullptr;
-			m_d3dDeviceContext->PSSetShaderResources(0, 1, &nullSrv);
+			clearPostProcessSrvs();
 
 			useTextureA = !useTextureA;
 		}
@@ -810,8 +864,8 @@ void Renderer::BindPostProcessConstants(Vec2 const& screenDimensions, float near
 {
 	PostProcessConstants postProcessData = PostProcessConstants();
 	postProcessData.ScreenDimensions     = screenDimensions;
-	postProcessData.cameraNear           = nearZ;
-	postProcessData.cameraFar            = farZ;
+	postProcessData.CameraNear           = nearZ;
+	postProcessData.CameraFar            = farZ;
 
 	CopyCPUToGPU(&postProcessData, sizeof(postProcessData), m_postProcessConstantBuffer);
 	BindConstantBuffer(m_postProcessConstantBuffer, k_postProcessConstantsSlot);

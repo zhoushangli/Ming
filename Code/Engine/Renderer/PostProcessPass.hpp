@@ -8,7 +8,7 @@
 class PostProcessPass
 {
 public:
-	PostProcessPass(std::string const& passName, std::string const& postProcessShaderName, IntVec2 renderTargetSize);
+	PostProcessPass(std::string const& passName, std::string const& postProcessShaderName);
 	~PostProcessPass();
 
 public:
@@ -17,5 +17,4 @@ public:
 	std::string m_name              = "Undefined";
 	std::wstring m_wideName; // For use in debug annotations
 	Shader*     m_postProcessShader = nullptr;
-	IntVec2     m_renderTargetSize  = IntVec2::ZERO;
 };
