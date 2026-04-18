@@ -1435,7 +1435,10 @@ void Renderer::BindIndexBuffer(IndexBuffer* indexBuffer)
 
 void Renderer::SetViewport(IntVec2 dimensions)
 {
-	GUARANTEE_OR_DIE(dimensions.x > 0 && dimensions.y > 0, "SetViewport: Invalid dimensions");
+	if (dimensions.x <= 0 || dimensions.y <= 0)
+	{
+		return;
+	}
 
 	D3D11_VIEWPORT viewport = {};
 	viewport.TopLeftX       = 0.f;
