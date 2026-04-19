@@ -68,6 +68,26 @@ void AABB2::SetDimensions(const Vec2& newDimensions)
 	m_maxs = m_mins + newDimensions;
 }
 
+void AABB2::Shrink(float uniformAmount)
+{
+	Shrink(uniformAmount, uniformAmount);
+}
+
+void AABB2::Shrink(float amountX, float amountY)
+{
+	Vec2 const dimensions = GetDimensions();
+	float const maxShrinkX = dimensions.x * 0.5f;
+	float const maxShrinkY = dimensions.y * 0.5f;
+
+	amountX = GetClamped(amountX, 0.f, maxShrinkX);
+	amountY = GetClamped(amountY, 0.f, maxShrinkY);
+
+	m_mins.x += amountX;
+	m_maxs.x -= amountX;
+	m_mins.y += amountY;
+	m_maxs.y -= amountY;
+}
+
 void AABB2::StretchToIncludePoint(const Vec2& point)
 {
 	if (point.x < m_mins.x)

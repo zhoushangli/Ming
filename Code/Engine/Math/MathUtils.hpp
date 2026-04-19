@@ -137,6 +137,51 @@ void TransformPositionXY3D(Vec3& pos, Vec2 const& iBasisXY, Vec2 const& jBasisXY
 
 float Interpolate(float start, float end, float fraction);
 Vec3  Interpolate(Vec3 const& start, Vec3 const& end, float fraction);
+
+float SmoothStart2(float t);
+float SmoothStart3(float t);
+float SmoothStart4(float t);
+float SmoothStart5(float t);
+float SmoothStart6(float t);
+
+float SmoothStop2(float t);
+float SmoothStop3(float t);
+float SmoothStop4(float t);
+float SmoothStop5(float t);
+float SmoothStop6(float t);
+
+float SmoothStep3(float t);
+float SmoothStep5(float t);
+float Hesitate3(float t);
+float Hesitate5(float t);
+
+float Spring(float t);
+
+float ComputeCubicBezier1D(float A, float B, float C, float D, float t);
+float ComputeQuinticBezier1D(float A, float B, float C, float D, float E, float F, float t);
+
+Vec2 ComputeCubicBezier2D(Vec2 const& A, Vec2 const& B, Vec2 const& C, Vec2 const& D, float t);
+Vec2 ComputeQuinticBezier2D(
+	Vec2 const& A,
+	Vec2 const& B,
+	Vec2 const& C,
+	Vec2 const& D,
+	Vec2 const& E,
+	Vec2 const& F,
+	float       t
+);
+
+Vec3 ComputeCubicBezier3D(Vec3 const& A, Vec3 const& B, Vec3 const& C, Vec3 const& D, float t);
+Vec3 ComputeQuinticBezier3D(
+	Vec3 const& A,
+	Vec3 const& B,
+	Vec3 const& C,
+	Vec3 const& D,
+	Vec3 const& E,
+	Vec3 const& F,
+	float       t
+);
+
 float InterpolateClamped(float start, float end, float fraction);
 float GetFractionWithinRange(float value, float start, float end);
 float RangeMap(float inValue, float inStart, float inEnd, float outStart, float outEnd);

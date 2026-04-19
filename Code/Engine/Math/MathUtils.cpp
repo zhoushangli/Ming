@@ -268,6 +268,216 @@ Vec3 Interpolate(Vec3 const& start, Vec3 const& end, float fraction)
 	);
 }
 
+float SmoothStart2(float t) { return t * t; }
+
+float SmoothStart3(float t)
+{
+	float const t2 = t * t;
+	return t2 * t;
+}
+
+float SmoothStart4(float t)
+{
+	float const t2 = t * t;
+	return t2 * t2;
+}
+
+float SmoothStart5(float t)
+{
+	float const t2 = t * t;
+	return t2 * t2 * t;
+}
+
+float SmoothStart6(float t)
+{
+	float const t2 = t * t;
+	return t2 * t2 * t2;
+}
+
+float SmoothStop2(float t)
+{
+	float const oneMinusT = 1.f - t;
+	return 1.f - oneMinusT * oneMinusT;
+}
+
+float SmoothStop3(float t)
+{
+	float const oneMinusT = 1.f - t;
+	float const omt2      = oneMinusT * oneMinusT;
+	return 1.f - omt2 * oneMinusT;
+}
+
+float SmoothStop4(float t)
+{
+	float const oneMinusT = 1.f - t;
+	float const omt2      = oneMinusT * oneMinusT;
+	return 1.f - omt2 * omt2;
+}
+
+float SmoothStop5(float t)
+{
+	float const oneMinusT = 1.f - t;
+	float const omt2      = oneMinusT * oneMinusT;
+	return 1.f - omt2 * omt2 * oneMinusT;
+}
+
+float SmoothStop6(float t)
+{
+	float const oneMinusT = 1.f - t;
+	float const omt2      = oneMinusT * oneMinusT;
+	return 1.f - omt2 * omt2 * omt2;
+}
+
+float SmoothStep3(float t)
+{
+	float const t2 = t * t;
+	return t2 * (3.f - 2.f * t);
+}
+
+float SmoothStep5(float t)
+{
+	float const t2 = t * t;
+	float const t3 = t2 * t;
+	return t3 * (t * (t * 6.f - 15.f) + 10.f);
+}
+
+float Hesitate3(float t)
+{
+	float const t2 = t * t;
+	float const t3 = t2 * t;
+	return 3.f * t - 6.f * t2 + 4.f * t3;
+}
+
+float Hesitate5(float t)
+{
+	float const t2 = t * t;
+	float const t3 = t2 * t;
+	float const t4 = t3 * t;
+	float const t5 = t4 * t;
+	return 5.f * t - 20.f * t2 + 40.f * t3 - 40.f * t4 + 16.f * t5;
+}
+
+float Spring(float t)
+{
+	auto fastExpDecay = [](float x) { return 1.0f / (1.0f + x + 0.5f * x * x); };
+
+	float frequency = 4.0f;
+	float decay     = 8.0f;
+	float d         = fastExpDecay(decay * t);
+	
+	// When cos == 1, tangent == 0
+	return 1.0f - d * CosDegrees(frequency * t * 360.f);
+}
+
+float ComputeCubicBezier1D(float A, float B, float C, float D, float t)
+{
+	float const ab = Interpolate(A, B, t);
+	float const bc = Interpolate(B, C, t);
+	float const cd = Interpolate(C, D, t);
+
+	float const abc = Interpolate(ab, bc, t);
+	float const bcd = Interpolate(bc, cd, t);
+
+	return Interpolate(abc, bcd, t);
+}
+
+float ComputeQuinticBezier1D(float A, float B, float C, float D, float E, float F, float t)
+{
+	float const ab = Interpolate(A, B, t);
+	float const bc = Interpolate(B, C, t);
+	float const cd = Interpolate(C, D, t);
+	float const de = Interpolate(D, E, t);
+	float const ef = Interpolate(E, F, t);
+
+	float const abc = Interpolate(ab, bc, t);
+	float const bcd = Interpolate(bc, cd, t);
+	float const cde = Interpolate(cd, de, t);
+	float const def = Interpolate(de, ef, t);
+
+	float const abcd = Interpolate(abc, bcd, t);
+	float const bcde = Interpolate(bcd, cde, t);
+	float const cdef = Interpolate(cde, def, t);
+
+	float const abcde = Interpolate(abcd, bcde, t);
+	float const bcdef = Interpolate(bcde, cdef, t);
+
+	return Interpolate(abcde, bcdef, t);
+}
+
+Vec2 ComputeCubicBezier2D(Vec2 const& A, Vec2 const& B, Vec2 const& C, Vec2 const& D, float t)
+{
+	Vec2 const ab = Vec2(Interpolate(A.x, B.x, t), Interpolate(A.y, B.y, t));
+	Vec2 const bc = Vec2(Interpolate(B.x, C.x, t), Interpolate(B.y, C.y, t));
+	Vec2 const cd = Vec2(Interpolate(C.x, D.x, t), Interpolate(C.y, D.y, t));
+
+	Vec2 const abc = Vec2(Interpolate(ab.x, bc.x, t), Interpolate(ab.y, bc.y, t));
+	Vec2 const bcd = Vec2(Interpolate(bc.x, cd.x, t), Interpolate(bc.y, cd.y, t));
+
+	return Vec2(Interpolate(abc.x, bcd.x, t), Interpolate(abc.y, bcd.y, t));
+}
+
+Vec2 ComputeQuinticBezier2D(
+	Vec2 const& A, Vec2 const& B, Vec2 const& C, Vec2 const& D, Vec2 const& E, Vec2 const& F, float t
+)
+{
+	Vec2 const ab = Vec2(Interpolate(A.x, B.x, t), Interpolate(A.y, B.y, t));
+	Vec2 const bc = Vec2(Interpolate(B.x, C.x, t), Interpolate(B.y, C.y, t));
+	Vec2 const cd = Vec2(Interpolate(C.x, D.x, t), Interpolate(C.y, D.y, t));
+	Vec2 const de = Vec2(Interpolate(D.x, E.x, t), Interpolate(D.y, E.y, t));
+	Vec2 const ef = Vec2(Interpolate(E.x, F.x, t), Interpolate(E.y, F.y, t));
+
+	Vec2 const abc = Vec2(Interpolate(ab.x, bc.x, t), Interpolate(ab.y, bc.y, t));
+	Vec2 const bcd = Vec2(Interpolate(bc.x, cd.x, t), Interpolate(bc.y, cd.y, t));
+	Vec2 const cde = Vec2(Interpolate(cd.x, de.x, t), Interpolate(cd.y, de.y, t));
+	Vec2 const def = Vec2(Interpolate(de.x, ef.x, t), Interpolate(de.y, ef.y, t));
+
+	Vec2 const abcd = Vec2(Interpolate(abc.x, bcd.x, t), Interpolate(abc.y, bcd.y, t));
+	Vec2 const bcde = Vec2(Interpolate(bcd.x, cde.x, t), Interpolate(bcd.y, cde.y, t));
+	Vec2 const cdef = Vec2(Interpolate(cde.x, def.x, t), Interpolate(cde.y, def.y, t));
+
+	Vec2 const abcde = Vec2(Interpolate(abcd.x, bcde.x, t), Interpolate(abcd.y, bcde.y, t));
+	Vec2 const bcdef = Vec2(Interpolate(bcde.x, cdef.x, t), Interpolate(bcde.y, cdef.y, t));
+
+	return Vec2(Interpolate(abcde.x, bcdef.x, t), Interpolate(abcde.y, bcdef.y, t));
+}
+
+Vec3 ComputeCubicBezier3D(Vec3 const& A, Vec3 const& B, Vec3 const& C, Vec3 const& D, float t)
+{
+	Vec3 const ab = Interpolate(A, B, t);
+	Vec3 const bc = Interpolate(B, C, t);
+	Vec3 const cd = Interpolate(C, D, t);
+
+	Vec3 const abc = Interpolate(ab, bc, t);
+	Vec3 const bcd = Interpolate(bc, cd, t);
+
+	return Interpolate(abc, bcd, t);
+}
+
+Vec3 ComputeQuinticBezier3D(
+	Vec3 const& A, Vec3 const& B, Vec3 const& C, Vec3 const& D, Vec3 const& E, Vec3 const& F, float t
+)
+{
+	Vec3 const ab = Interpolate(A, B, t);
+	Vec3 const bc = Interpolate(B, C, t);
+	Vec3 const cd = Interpolate(C, D, t);
+	Vec3 const de = Interpolate(D, E, t);
+	Vec3 const ef = Interpolate(E, F, t);
+
+	Vec3 const abc = Interpolate(ab, bc, t);
+	Vec3 const bcd = Interpolate(bc, cd, t);
+	Vec3 const cde = Interpolate(cd, de, t);
+	Vec3 const def = Interpolate(de, ef, t);
+
+	Vec3 const abcd = Interpolate(abc, bcd, t);
+	Vec3 const bcde = Interpolate(bcd, cde, t);
+	Vec3 const cdef = Interpolate(cde, def, t);
+
+	Vec3 const abcde = Interpolate(abcd, bcde, t);
+	Vec3 const bcdef = Interpolate(bcde, cdef, t);
+
+	return Interpolate(abcde, bcdef, t);
+}
+
 float InterpolateClamped(float start, float end, float fraction)
 {
 	float f = GetClampedZeroToOne(fraction);

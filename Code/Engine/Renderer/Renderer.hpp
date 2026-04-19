@@ -125,7 +125,7 @@ public:
 	void EndFrame();
 	void CreateRenderingContext();
 
-	void RenderPostProcess(Camera const& camera, int downsampleFactor);
+	void RenderPostProcess(Camera const& camera, int downsampleFactor = 1);
 
 	// Camera and pipeline state
 	void BeginCamera(Camera const& camera);

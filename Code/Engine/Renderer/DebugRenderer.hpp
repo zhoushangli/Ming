@@ -78,7 +78,7 @@ void DebugAddScreenText(const std::string &text, const AABB2 &box, float cellHei
                         const Vec2 &alignment, float duration,
                         const Rgba8 &startColor = Rgba8::WHITE, const Rgba8 &endColor = Rgba8::WHITE);
 
-void DebugAddMessage(const std::string &text, float duration,
+void DebugAddMessage(const std::string &text, float duration = 0.f,
                      const Rgba8 &startColor = Rgba8::WHITE, const Rgba8 &endColor = Rgba8::WHITE);
 
 void DebugAddWorldGrid(float duration = -1.f, int halfExtent = 50);

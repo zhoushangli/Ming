@@ -22,6 +22,8 @@ public:
 	void		Translate(const Vec2& translation);
 	void		SetCenter(const Vec2& newCenter);
 	void		SetDimensions(const Vec2& newDimensions);
+	void		Shrink(float uniformAmount);
+	void		Shrink(float amountX, float amountY);
 	void		StretchToIncludePoint(const Vec2& point);
 
 	bool operator==(const AABB2& other) const;
