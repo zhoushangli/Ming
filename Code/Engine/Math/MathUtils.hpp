@@ -1,10 +1,12 @@
 #pragma once
 
-#include "AABB3.hpp"
+#include "Engine/Core/Rgba8.hpp"
 #include "Engine/Math/AABB2.hpp"
+#include "Engine/Math/AABB3.hpp"
 #include "Engine/Math/Capsule2.hpp"
 #include "Engine/Math/CylinderZ3.hpp"
 #include "Engine/Math/Disc2.hpp"
+#include "Engine/Math/EulerAngles.hpp"
 #include "Engine/Math/FloatRange.hpp"
 #include "Engine/Math/IntVec2.hpp"
 #include "Engine/Math/Matrix4x4.hpp"
@@ -135,8 +137,10 @@ void TransformPositionXY3D(Vec3& pos, Vec2 const& iBasisXY, Vec2 const& jBasisXY
 //------------------------------------------------------------------------------------------------
 #pragma region Interpolation / Mapping / Clamping
 
-float Interpolate(float start, float end, float fraction);
-Vec3  Interpolate(Vec3 const& start, Vec3 const& end, float fraction);
+float       Interpolate(float start, float end, float fraction);
+Vec3        Interpolate(Vec3 const& start, Vec3 const& end, float fraction);
+Rgba8       Interpolate(Rgba8 const& start, Rgba8 const& end, float fraction);
+EulerAngles Interpolate(EulerAngles const& start, EulerAngles const& end, float fraction);
 
 float SmoothStart2(float t);
 float SmoothStart3(float t);
@@ -162,24 +166,12 @@ float ComputeQuinticBezier1D(float A, float B, float C, float D, float E, float 
 
 Vec2 ComputeCubicBezier2D(Vec2 const& A, Vec2 const& B, Vec2 const& C, Vec2 const& D, float t);
 Vec2 ComputeQuinticBezier2D(
-	Vec2 const& A,
-	Vec2 const& B,
-	Vec2 const& C,
-	Vec2 const& D,
-	Vec2 const& E,
-	Vec2 const& F,
-	float       t
+	Vec2 const& A, Vec2 const& B, Vec2 const& C, Vec2 const& D, Vec2 const& E, Vec2 const& F, float t
 );
 
 Vec3 ComputeCubicBezier3D(Vec3 const& A, Vec3 const& B, Vec3 const& C, Vec3 const& D, float t);
 Vec3 ComputeQuinticBezier3D(
-	Vec3 const& A,
-	Vec3 const& B,
-	Vec3 const& C,
-	Vec3 const& D,
-	Vec3 const& E,
-	Vec3 const& F,
-	float       t
+	Vec3 const& A, Vec3 const& B, Vec3 const& C, Vec3 const& D, Vec3 const& E, Vec3 const& F, float t
 );
 
 float InterpolateClamped(float start, float end, float fraction);

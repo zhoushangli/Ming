@@ -138,16 +138,6 @@ unsigned char DenormalizeByte(float normalizedValue)
     return static_cast<unsigned char>(GetClamped(v, 0.f, 255.f));
 }
 
-Rgba8 Interpolate(Rgba8 const& start, Rgba8 const& end, float fraction)
-{
-    float r = Interpolate(NormalizeByte(start.r), NormalizeByte(end.r), fraction);
-    float g = Interpolate(NormalizeByte(start.g), NormalizeByte(end.g), fraction);
-    float b = Interpolate(NormalizeByte(start.b), NormalizeByte(end.b), fraction);
-    float a = Interpolate(NormalizeByte(start.a), NormalizeByte(end.a), fraction);
-
-    return Rgba8(DenormalizeByte(r), DenormalizeByte(g), DenormalizeByte(b), DenormalizeByte(a));
-}
-
 Rgba8 const operator+(float value, Rgba8 const& color)
 {
     return color + value;

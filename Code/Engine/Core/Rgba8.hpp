@@ -1,5 +1,9 @@
 #pragma once
 
+#if defined(TRANSPARENT)
+    #undef TRANSPARENT
+#endif
+
 struct Rgba8
 {
 public:
@@ -47,7 +51,6 @@ public:
 
 float NormalizeByte(unsigned char byteValue);
 unsigned char DenormalizeByte(float normalizedValue);
-Rgba8 Interpolate(Rgba8 const& start, Rgba8 const& end, float fraction);
 
 Rgba8 const operator+(float value, Rgba8 const& color);
 Rgba8 const operator-(float value, Rgba8 const& color);

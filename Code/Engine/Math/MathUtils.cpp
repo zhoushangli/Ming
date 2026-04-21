@@ -268,6 +268,25 @@ Vec3 Interpolate(Vec3 const& start, Vec3 const& end, float fraction)
 	);
 }
 
+Rgba8 Interpolate(Rgba8 const& start, Rgba8 const& end, float fraction)
+{
+	float r = Interpolate(NormalizeByte(start.r), NormalizeByte(end.r), fraction);
+	float g = Interpolate(NormalizeByte(start.g), NormalizeByte(end.g), fraction);
+	float b = Interpolate(NormalizeByte(start.b), NormalizeByte(end.b), fraction);
+	float a = Interpolate(NormalizeByte(start.a), NormalizeByte(end.a), fraction);
+
+	return Rgba8(DenormalizeByte(r), DenormalizeByte(g), DenormalizeByte(b), DenormalizeByte(a));
+}
+
+EulerAngles Interpolate(EulerAngles const& start, EulerAngles const& end, float fraction)
+{
+	return EulerAngles(
+		Interpolate(start.m_yawDegrees, end.m_yawDegrees, fraction),
+		Interpolate(start.m_pitchDegrees, end.m_pitchDegrees, fraction),
+		Interpolate(start.m_rollDegrees, end.m_rollDegrees, fraction)
+	);
+}
+
 float SmoothStart2(float t) { return t * t; }
 
 float SmoothStart3(float t)
@@ -364,7 +383,7 @@ float Spring(float t)
 	float frequency = 4.0f;
 	float decay     = 8.0f;
 	float d         = fastExpDecay(decay * t);
-	
+
 	// When cos == 1, tangent == 0
 	return 1.0f - d * CosDegrees(frequency * t * 360.f);
 }

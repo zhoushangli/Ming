@@ -125,18 +125,3 @@ EulerAngles EulerAngles::operator*(float uniformScale) const
 {
 	return EulerAngles(m_yawDegrees * uniformScale, m_pitchDegrees * uniformScale, m_rollDegrees * uniformScale);
 }
-
-EulerAngles const Interpolate(EulerAngles const& from, EulerAngles const& to, float lerpFraction)
-{
-	EulerAngles result;
-
-	float yawDelta   = GetShortestAngularDispDegrees(from.m_yawDegrees, to.m_yawDegrees);
-	float pitchDelta = GetShortestAngularDispDegrees(from.m_pitchDegrees, to.m_pitchDegrees);
-	float rollDelta  = GetShortestAngularDispDegrees(from.m_rollDegrees, to.m_rollDegrees);
-
-	result.m_yawDegrees   = from.m_yawDegrees + yawDelta * lerpFraction;
-	result.m_pitchDegrees = from.m_pitchDegrees + pitchDelta * lerpFraction;
-	result.m_rollDegrees  = from.m_rollDegrees + rollDelta * lerpFraction;
-
-	return result;
-}

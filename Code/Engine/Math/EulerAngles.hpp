@@ -26,8 +26,6 @@ public:
 
     EulerAngles operator*(float uniformScale) const;
 
-    friend EulerAngles const Interpolate(EulerAngles const &from, EulerAngles const &to, float lerpFraction);
-
     static const EulerAngles ZERO;
 
 public:
