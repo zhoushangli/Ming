@@ -13,6 +13,8 @@ public:
 
 	// Methods to implement
 	bool		IsPointInside(const Vec2& point) const;
+	float const GetWidth() const;
+	float const GetHeight() const;
 	Vec2 const	GetCenter() const;
 	Vec2 const	GetDimensions() const;
 	Vec2 const	GetNearestPoint(const Vec2& point) const;

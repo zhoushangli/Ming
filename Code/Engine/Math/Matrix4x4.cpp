@@ -423,6 +423,14 @@ Vec3 const Matrix4x4::TransformPosition3D(Vec3 const position3D) const
     return Vec3(x, y, z);
 }
 
+Vec3 const Matrix4x4::TransformDirection3D(Vec3 const direction3D) const
+{
+    float x = m_values[Ix] * direction3D.x + m_values[Jx] * direction3D.y + m_values[Kx] * direction3D.z;
+    float y = m_values[Iy] * direction3D.x + m_values[Jy] * direction3D.y + m_values[Ky] * direction3D.z;
+    float z = m_values[Iz] * direction3D.x + m_values[Jz] * direction3D.y + m_values[Kz] * direction3D.z;
+    return Vec3(x, y, z);
+}
+
 Vec4 const Matrix4x4::TransformHomogeneous3D(Vec4 const homogeneous3D) const
 {
     float x = m_values[Ix] * homogeneous3D.x + m_values[Jx] * homogeneous3D.y + m_values[Kx] * homogeneous3D.z + m_values[Tx] * homogeneous3D.w;

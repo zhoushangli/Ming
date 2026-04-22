@@ -508,7 +508,7 @@ void Renderer::RenderPostProcess(Camera const& camera, int downsampleFactor)
 	auto clearPostProcessSrvs = [&]()
 	{
 		ID3D11ShaderResourceView* nullSrvs[3] = {nullptr, nullptr, nullptr};
-		// We have 3 texture inputs bound for post-process shaders 
+		// We have 3 texture inputs bound for post-process shaders
 		// (scene color, depth, normal)
 		m_d3dDeviceContext->PSSetShaderResources(0, 3, nullSrvs);
 	};
@@ -898,7 +898,7 @@ Shader* Renderer::CreateOrGetShader(char const* shaderName)
 	return CreateShader(shaderName, shaderSource.c_str());
 }
 
-Texture* Renderer::CreateOrGetTextureFromFile(char const* imageFilePath)
+Texture* Renderer::CreateOrGetTexture(char const* imageFilePath)
 {
 	// See if we already have this texture previously loaded
 	Texture* existingTexture = GetTextureFromFileName(imageFilePath); // You need to write this
@@ -1099,7 +1099,7 @@ BitmapFont* Renderer::CreateOrGetBitmapFont(char const* fontFilePathNameWithNoEx
 		return found->second;
 	}
 
-	Texture*    fontTexture   = CreateOrGetTextureFromFile(Stringf("%s.png", fontFilePathNameWithNoExtension).c_str());
+	Texture*    fontTexture   = CreateOrGetTexture(Stringf("%s.png", fontFilePathNameWithNoExtension).c_str());
 	BitmapFont* newBitmapFont = new BitmapFont(fontFilePathNameWithNoExtension, *fontTexture);
 	m_fontsByName[fontKey]    = newBitmapFont;
 	return newBitmapFont;

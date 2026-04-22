@@ -156,7 +156,7 @@ public:
 	// GPU resource creation and cache access
 	Shader* CreateOrGetShader(char const* shaderName);
 
-	Texture*    CreateOrGetTextureFromFile(char const* fileDataPath);
+	Texture*    CreateOrGetTexture(char const* fileDataPath);
 	Texture*    CreateTextureFromImage(const Image& image);
 	Texture*    CreateTextureFromData(char const* name, IntVec2 dimensions, int bytesPerTexel, uint8_t* texelData);
 	Texture*    CreateRenderTargetTexture(char const* name, IntVec2 dimensions);
