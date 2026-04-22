@@ -1,6 +1,7 @@
 #include "Engine/Renderer/PostProcessPass.hpp"
 
 #include "Engine/Core/Engine.hpp"
+#include "PostProcessPass.hpp"
 
 PostProcessPass::PostProcessPass(std::string const& passName, std::string const& postProcessShaderName)
 	: m_name(passName), m_wideName(passName.begin(), passName.end())
@@ -9,3 +10,22 @@ PostProcessPass::PostProcessPass(std::string const& passName, std::string const&
 }
 
 PostProcessPass::~PostProcessPass() {}
+
+bool PostProcessPass::HasCustomOutput() const
+{
+	{
+		return m_customOutput.IsValid();
+	};
+}
+
+bool PostProcessPass::HasCustomInputs() const
+{
+	for (const auto& input : m_customInputs)
+	{
+		if (input.IsValid())
+		{
+			return true;
+		}
+	}
+	return false;
+}

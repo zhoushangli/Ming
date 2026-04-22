@@ -597,82 +597,85 @@ void Renderer::RenderPostProcess(Camera const& camera, int downsampleFactor)
 	Texture*                outputTexture = nullptr;
 	ID3D11RenderTargetView* outputRTV     = m_d3dRenderTargetView;
 
-	if (enabledPasses.size() == 0)
-	{
-		SetViewport(fullRes);
-		m_d3dDeviceContext->OMSetRenderTargets(1, &outputRTV, nullptr);
-		BindShader(m_postProcessCopyShader);
-		BindTexture(inputTexture, 0);
+	bool useTextureA = true;
 
-		DrawVertexArray(3, fullscreenTriangleVerts);
-		clearPostProcessSrvs();
-	}
-	else if (enabledPasses.size() == 1)
+	for (int i = 0; i < (int)enabledPasses.size(); ++i)
 	{
-		SetViewport(fullRes);
-		m_d3dDeviceContext->OMSetRenderTargets(1, &outputRTV, nullptr);
-		BindShader(enabledPasses[0].m_postProcessShader);
+		PostProcessPass const& pass = enabledPasses[i];
+
+		if (!pass.m_isEnabled || pass.m_postProcessShader == nullptr)
+		{
+			continue;
+		}
+
+		if (i == 0)
+		{
+			inputTexture  = sceneColorInput;
+			outputTexture = useTextureA ? postTextureA : postTextureB;
+			outputRTV     = outputTexture->m_renderTargetView;
+			SetViewport(postProcessRes);
+		}
+		else
+		{
+			inputTexture  = useTextureA ? postTextureB : postTextureA;
+			outputTexture = useTextureA ? postTextureA : postTextureB;
+			outputRTV     = outputTexture->m_renderTargetView;
+			SetViewport(postProcessRes);
+		}
+
+		if (pass.HasCustomInputs())
+		{
+			for (auto const& customInput : pass.m_customInputs)
+			{
+				Texture* customInputTexture = GetTextureFromFileName(customInput.m_name.c_str());
+				if (customInputTexture)
+				{
+					BindTexture(customInputTexture, customInput.m_slot);
+				}
+			}
+		}
+
+		if (pass.HasCustomOutput())
+		{
+			Texture* customOutputTexture = getOrCreateRenderTarget(pass.m_customOutput.m_name.c_str());
+			outputRTV                    = customOutputTexture->m_renderTargetView;
+			m_d3dDeviceContext->OMSetRenderTargets(1, &customOutputTexture->m_renderTargetView, nullptr);
+		}
+		else
+		{
+			useTextureA = !useTextureA;
+			m_d3dDeviceContext->OMSetRenderTargets(1, &outputRTV, nullptr);
+		}
+
+		BindShader(pass.m_postProcessShader);
 		BindTexture(inputTexture, 0);
 		BindTexture(sceneDepthInput, 1);
 		BindTexture(sceneNormalInput, 2);
 		BindPostProcessConstants((Vec2)postProcessRes, camera.GetNearZ(), camera.GetFarZ());
 
-		m_d3dAnnotation->BeginEvent(enabledPasses[0].m_wideName.c_str());
+		m_d3dAnnotation->BeginEvent(pass.m_wideName.c_str());
 		DrawVertexArray(3, fullscreenTriangleVerts);
 		m_d3dAnnotation->EndEvent();
 		clearPostProcessSrvs();
 	}
-	else if (enabledPasses.size() >= 2)
-	{
-		bool useTextureA = true;
 
-		for (int i = 0; i < (int)enabledPasses.size(); ++i)
-		{
-			PostProcessPass const& pass = enabledPasses[i];
+	PostProcessPass pass();
 
-			if (!pass.m_isEnabled || pass.m_postProcessShader == nullptr)
-			{
-				continue;
-			}
+	inputTexture  = useTextureA ? postTextureB : postTextureA;
+	outputTexture = nullptr;
+	outputRTV     = m_d3dRenderTargetView;
+	SetViewport(fullRes);
 
-			if (i == 0)
-			{
-				inputTexture  = sceneColorInput;
-				outputTexture = useTextureA ? postTextureA : postTextureB;
-				outputRTV     = outputTexture->m_renderTargetView;
-				SetViewport(postProcessRes);
-			}
-			else if (i == (int)enabledPasses.size() - 1)
-			{
-				inputTexture  = useTextureA ? postTextureB : postTextureA;
-				outputTexture = nullptr;
-				outputRTV     = m_d3dRenderTargetView;
-				SetViewport(fullRes);
-			}
-			else
-			{
-				inputTexture  = useTextureA ? postTextureB : postTextureA;
-				outputTexture = useTextureA ? postTextureA : postTextureB;
-				outputRTV     = outputTexture->m_renderTargetView;
-				SetViewport(postProcessRes);
-			}
+	BindShader(pass.m_postProcessShader);
+	BindTexture(inputTexture, 0);
+	BindTexture(sceneDepthInput, 1);
+	BindTexture(sceneNormalInput, 2);
+	BindPostProcessConstants((Vec2)postProcessRes, camera.GetNearZ(), camera.GetFarZ());
 
-			m_d3dDeviceContext->OMSetRenderTargets(1, &outputRTV, nullptr);
-
-			BindShader(pass.m_postProcessShader);
-			BindTexture(inputTexture, 0);
-			BindTexture(sceneDepthInput, 1);
-			BindTexture(sceneNormalInput, 2);
-			BindPostProcessConstants((Vec2)postProcessRes, camera.GetNearZ(), camera.GetFarZ());
-
-			m_d3dAnnotation->BeginEvent(pass.m_wideName.c_str());
-			DrawVertexArray(3, fullscreenTriangleVerts);
-			m_d3dAnnotation->EndEvent();
-			clearPostProcessSrvs();
-
-			useTextureA = !useTextureA;
-		}
-	}
+	m_d3dAnnotation->BeginEvent(pass.m_wideName.c_str());
+	DrawVertexArray(3, fullscreenTriangleVerts);
+	m_d3dAnnotation->EndEvent();
+	clearPostProcessSrvs();
 }
 
 void Renderer::CreateRenderingContext() {}
