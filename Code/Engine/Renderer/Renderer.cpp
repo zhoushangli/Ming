@@ -496,6 +496,7 @@ void Renderer::RenderPostProcess(Camera const& camera, int downsampleFactor)
 	IntVec2    downRes(max(1, fullRes.x / downsampleFactor), max(1, fullRes.y / downsampleFactor));
 	bool const useDownsampledInputs = downsampleFactor > 1;
 
+	BeginCamera(camera);
 	SetBlendMode(BlendMode::OPAQUE);
 	SetSamplerMode(SamplerMode::POINT_CLAMP);
 	SetRasterizerMode(RasterizerMode::SOLID_CULL_NONE);
@@ -513,12 +514,22 @@ void Renderer::RenderPostProcess(Camera const& camera, int downsampleFactor)
 		m_d3dDeviceContext->PSSetShaderResources(0, 3, nullSrvs);
 	};
 
-	auto getOrCreateRT = [&](char const* name) -> Texture*
+	auto getOrCreateRenderTarget = [&](char const* name) -> Texture*
 	{
 		Texture* tex = GetTextureFromFileName(name);
 		if (tex == nullptr)
 		{
 			tex = CreateRenderTargetTexture(name, downRes);
+		}
+		return tex;
+	};
+
+	auto getOrCreateFloatRenderTarget = [&](char const* name) -> Texture*
+	{
+		Texture* tex = GetTextureFromFileName(name);
+		if (tex == nullptr)
+		{
+			tex = CreateFloatRenderTargetTexture(name, downRes);
 		}
 		return tex;
 	};
@@ -538,11 +549,12 @@ void Renderer::RenderPostProcess(Camera const& camera, int downsampleFactor)
 		std::string const postAName  = Stringf("PostA_%dx%d", downRes.x, downRes.y);
 		std::string const postBName  = Stringf("PostB_%dx%d", downRes.x, downRes.y);
 
-		Texture* downColor  = getOrCreateRT(colorName.c_str());
-		Texture* downDepth  = getOrCreateRT(depthName.c_str());
-		Texture* downNormal = getOrCreateRT(normalName.c_str());
-		postTextureA        = getOrCreateRT(postAName.c_str());
-		postTextureB        = getOrCreateRT(postBName.c_str());
+		// Depth often needs higher precision
+		Texture* downColor  = getOrCreateRenderTarget(colorName.c_str());
+		Texture* downDepth  = getOrCreateFloatRenderTarget(depthName.c_str());
+		Texture* downNormal = getOrCreateRenderTarget(normalName.c_str());
+		postTextureA        = getOrCreateRenderTarget(postAName.c_str());
+		postTextureB        = getOrCreateRenderTarget(postBName.c_str());
 
 		SetViewport(downRes);
 		BindShader(m_postProcessCopyShader);
@@ -591,6 +603,7 @@ void Renderer::RenderPostProcess(Camera const& camera, int downsampleFactor)
 		m_d3dDeviceContext->OMSetRenderTargets(1, &outputRTV, nullptr);
 		BindShader(m_postProcessCopyShader);
 		BindTexture(inputTexture, 0);
+
 		DrawVertexArray(3, fullscreenTriangleVerts);
 		clearPostProcessSrvs();
 	}
@@ -678,6 +691,8 @@ void Renderer::BeginCamera(Camera const& camera)
 	cameraData.WorldToCameraTransform  = camera.GetWorldToCameraTransform();
 	cameraData.CameraToRenderTransform = camera.GetCameraToRenderTransform();
 	cameraData.RenderToClipTransform   = camera.GetRenderToClipTransform();
+	cameraData.CameraToWorldTransform  = camera.GetCameraToWorldTransform();
+	cameraData.ClipToCameraTransform   = camera.GetClipToCameraTransform();
 
 	CopyCPUToGPU(&cameraData, sizeof(cameraData), m_cameraConstantBuffer);
 	BindConstantBuffer(m_cameraConstantBuffer, k_cameraConstantsSlot);
@@ -1011,6 +1026,55 @@ Texture* Renderer::CreateRenderTargetTexture(char const* name, IntVec2 dimension
 	textureDesc.MipLevels            = 1;
 	textureDesc.ArraySize            = 1;
 	textureDesc.Format               = DXGI_FORMAT_R8G8B8A8_UNORM;
+	textureDesc.Usage                = D3D11_USAGE_DEFAULT;
+	textureDesc.BindFlags            = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+	textureDesc.SampleDesc.Count     = 1;
+
+	HRESULT hr = m_d3dDevice->CreateTexture2D(&textureDesc, nullptr, &newTexture->m_texture);
+	failIfUnsuccessful(hr, newTexture, "CreateTexture2D failed for render target texture \"%s\".");
+
+	hr = m_d3dDevice->CreateRenderTargetView(newTexture->m_texture, nullptr, &newTexture->m_renderTargetView);
+	failIfUnsuccessful(hr, newTexture, "CreateRenderTargetView failed for render target texture \"%s\".");
+
+	hr = m_d3dDevice->CreateShaderResourceView(newTexture->m_texture, nullptr, &newTexture->m_shaderResourceView);
+	failIfUnsuccessful(hr, newTexture, "CreateShaderResourceView failed for render target texture \"%s\".");
+
+	m_texturesByName[newTexture->m_name] = newTexture;
+	return newTexture;
+}
+
+Texture* Renderer::CreateFloatRenderTargetTexture(char const* name, IntVec2 dimensions)
+{
+	auto failIfUnsuccessful = [&](HRESULT result, Texture* texture, char const* errorFormat)
+	{
+		if (!SUCCEEDED(result))
+		{
+			delete texture;
+			ERROR_AND_DIE(Stringf(errorFormat, name));
+		}
+	};
+
+	GUARANTEE_OR_DIE(m_d3dDevice, "CreateRenderTargetTexture: m_d3dDevice is null");
+	GUARANTEE_OR_DIE(
+		dimensions.x > 0 && dimensions.y > 0,
+		Stringf(
+			"CreateRenderTargetTexture failed for \"%s\" - illegal texture dimensions (%i x %i)",
+			name,
+			dimensions.x,
+			dimensions.y
+		)
+	);
+
+	Texture* newTexture      = new Texture();
+	newTexture->m_name       = name;
+	newTexture->m_dimensions = dimensions;
+
+	D3D11_TEXTURE2D_DESC textureDesc = {};
+	textureDesc.Width                = (UINT)dimensions.x;
+	textureDesc.Height               = (UINT)dimensions.y;
+	textureDesc.MipLevels            = 1;
+	textureDesc.ArraySize            = 1;
+	textureDesc.Format               = DXGI_FORMAT_R32_FLOAT;
 	textureDesc.Usage                = D3D11_USAGE_DEFAULT;
 	textureDesc.BindFlags            = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
 	textureDesc.SampleDesc.Count     = 1;

@@ -92,6 +92,8 @@ struct CameraConstants
 	Matrix4x4 WorldToCameraTransform;
 	Matrix4x4 CameraToRenderTransform;
 	Matrix4x4 RenderToClipTransform;
+	Matrix4x4 CameraToWorldTransform;
+	Matrix4x4 ClipToCameraTransform;
 };
 static const int k_cameraConstantsSlot = 2;
 
@@ -156,10 +158,13 @@ public:
 	// GPU resource creation and cache access
 	Shader* CreateOrGetShader(char const* shaderName);
 
-	Texture*    CreateOrGetTexture(char const* fileDataPath);
-	Texture*    CreateTextureFromImage(const Image& image);
-	Texture*    CreateTextureFromData(char const* name, IntVec2 dimensions, int bytesPerTexel, uint8_t* texelData);
-	Texture*    CreateRenderTargetTexture(char const* name, IntVec2 dimensions);
+	Texture* CreateOrGetTexture(char const* fileDataPath);
+	Texture* CreateTextureFromImage(const Image& image);
+	Texture* CreateTextureFromData(char const* name, IntVec2 dimensions, int bytesPerTexel, uint8_t* texelData);
+	Texture* CreateRenderTargetTexture(char const* name, IntVec2 dimensions);
+	// For Depth textures, we often want higher precision and don't need color data
+	// And compare to depth stencil, it provide render target view
+	Texture*    CreateFloatRenderTargetTexture(char const* name, IntVec2 dimensions);
 	Texture*    CreateDepthStencilTexture(char const* name, IntVec2 dimensions);
 	BitmapFont* CreateOrGetBitmapFont(char const* fontFilePathNameWithNoExtension);
 
