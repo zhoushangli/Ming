@@ -413,6 +413,7 @@ void Renderer::Shutdown()
 	}
 	m_postProcessPasses.clear();
 
+	m_d3dAnnotation->Release();
 	m_d3dRenderTargetView->Release();
 	m_d3dSwapChain->Release();
 	m_d3dDeviceContext->Release();
@@ -424,7 +425,7 @@ void Renderer::Shutdown()
 		->ReportLiveObjects(
 			DXGI_DEBUG_ALL,
 			(DXGI_DEBUG_RLO_FLAGS)(DXGI_DEBUG_RLO_DETAIL | DXGI_DEBUG_RLO_IGNORE_INTERNAL)
-		);
+		); 
 
 	((IDXGIDebug*)m_dxgiDebug)->Release();
 	m_dxgiDebug = nullptr;
