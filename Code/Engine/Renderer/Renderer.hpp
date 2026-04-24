@@ -121,8 +121,7 @@ public:
 	// Lifetime and frame loop
 	void Startup();
 	void Shutdown();
-	void BeginColorPass();
-	void BeginNormalPass();
+	void BeginScenePass();
 	void BeginUIPass();
 	void EndFrame();
 	void CreateRenderingContext();

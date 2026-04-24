@@ -425,7 +425,7 @@ void Renderer::Shutdown()
 		->ReportLiveObjects(
 			DXGI_DEBUG_ALL,
 			(DXGI_DEBUG_RLO_FLAGS)(DXGI_DEBUG_RLO_DETAIL | DXGI_DEBUG_RLO_IGNORE_INTERNAL)
-		); 
+		);
 
 	((IDXGIDebug*)m_dxgiDebug)->Release();
 	m_dxgiDebug = nullptr;
@@ -435,33 +435,19 @@ void Renderer::Shutdown()
 #endif
 }
 
-void Renderer::BeginColorPass()
+void Renderer::BeginScenePass()
 {
+	ID3D11RenderTargetView* renderingTargets[2] = {m_sceneColorTexture->m_renderTargetView,
+		m_sceneNormalTexture->m_renderTargetView};
+
 	// Set render target
-	m_d3dDeviceContext
-		->OMSetRenderTargets(1, &m_sceneColorTexture->m_renderTargetView, m_sceneDepthTexture->m_depthStencilView);
+	m_d3dDeviceContext->OMSetRenderTargets(2, renderingTargets, m_sceneDepthTexture->m_depthStencilView);
 
 	// Initialize states to default
 	SetBlendMode(BlendMode::ALPHA);
 	SetSamplerMode(SamplerMode::POINT_CLAMP);
 	SetRasterizerMode(RasterizerMode::SOLID_CULL_BACK);
 	SetDepthMode(DepthMode::READ_WRITE_LESS_EQUAL);
-}
-
-void Renderer::BeginNormalPass()
-{
-	float clearColor[4] = {0.5f, 0.5f, 0.5f, 1.0f};
-
-	// Set render target
-	m_d3dDeviceContext
-		->OMSetRenderTargets(1, &m_sceneNormalTexture->m_renderTargetView, m_sceneDepthTexture->m_depthStencilView);
-	m_d3dDeviceContext->ClearRenderTargetView(m_sceneNormalTexture->m_renderTargetView, clearColor);
-
-	// Initialize states to default
-	SetBlendMode(BlendMode::OPAQUE);
-	SetSamplerMode(SamplerMode::POINT_CLAMP);
-	SetRasterizerMode(RasterizerMode::SOLID_CULL_BACK);
-	SetDepthMode(DepthMode::READ_ONLY_LESS_EQUAL);
 }
 
 void Renderer::BeginUIPass()
@@ -721,16 +707,19 @@ void Renderer::ClearScreen(Rgba8 const& clearColor)
 {
 	// Clear the screen
 	float colorAsFloats[4];
+	float normalClearColor[4] = {0.5f, 0.5f, 0.5f, 1.0f};
 	clearColor.GetAsFloats(colorAsFloats);
+
 	m_d3dDeviceContext->ClearRenderTargetView(m_d3dRenderTargetView, colorAsFloats);
+	
+	m_d3dDeviceContext->ClearRenderTargetView(m_sceneColorTexture->m_renderTargetView, colorAsFloats);
+	m_d3dDeviceContext->ClearRenderTargetView(m_sceneNormalTexture->m_renderTargetView, normalClearColor);
 	m_d3dDeviceContext->ClearDepthStencilView(
 		m_sceneDepthTexture->m_depthStencilView,
 		D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL,
 		1.0f,
 		0
 	);
-
-	m_d3dDeviceContext->ClearRenderTargetView(m_sceneColorTexture->m_renderTargetView, colorAsFloats);
 }
 
 void Renderer::SetBlendMode(BlendMode blendMode) { m_desiredBlendMode = blendMode; }

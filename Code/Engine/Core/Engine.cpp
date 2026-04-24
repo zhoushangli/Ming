@@ -92,7 +92,7 @@ void Engine::BeginFrame()
 	if (m_window != nullptr)
 		m_window->BeginFrame();
 	if (m_renderer != nullptr)
-		m_renderer->BeginColorPass();
+		m_renderer->BeginScenePass();
 	if (m_input != nullptr)
 		m_input->BeginFrame();
 	if (m_audio != nullptr)
