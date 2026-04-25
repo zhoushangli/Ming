@@ -686,7 +686,7 @@ void Renderer::CreateRenderingContext() {}
 
 void Renderer::BeginCamera(Camera const& camera)
 {
-	IntVec2 const screenDimensions = g_engine->m_window->GetClientDimensions();
+	IntVec2 const screenDimensions   = g_engine->m_window->GetClientDimensions();
 	AABB2 const   normalizedViewport = camera.GetViewportNormalized();
 
 	int leftPixels   = (int)(normalizedViewport.m_mins.x * (float)screenDimensions.x);
@@ -734,7 +734,7 @@ void Renderer::ClearScreen(Rgba8 const& clearColor)
 	clearColor.GetAsFloats(colorAsFloats);
 
 	m_d3dDeviceContext->ClearRenderTargetView(m_d3dRenderTargetView, colorAsFloats);
-	
+
 	m_d3dDeviceContext->ClearRenderTargetView(m_sceneColorTexture->m_renderTargetView, colorAsFloats);
 	m_d3dDeviceContext->ClearRenderTargetView(m_sceneNormalTexture->m_renderTargetView, normalClearColor);
 	m_d3dDeviceContext->ClearDepthStencilView(
@@ -893,11 +893,14 @@ void Renderer::BindModelConstants(Matrix4x4 const& modelToWorldTransform, Rgba8 
 	BindConstantBuffer(m_modelConstantBuffer, k_modelConstantsSlot);
 }
 
-void Renderer::BindLightConstants(Vec3 const& sunDirection, float const sunIntensity, float const ambientIntensity)
+void Renderer::BindLightConstants(
+	Vec3 const& sunDirection, float sunIntensity, Rgba8 const& ambientColor, float ambientIntensity
+)
 {
 	LightConstants lightData   = LightConstants();
 	lightData.SunDirection     = sunDirection;
 	lightData.SunIntensity     = sunIntensity;
+	lightData.AmbientColor     = Vec3(ambientColor.r / 255.f, ambientColor.g / 255.f, ambientColor.b / 255.f);
 	lightData.AmbientIntensity = ambientIntensity;
 
 	CopyCPUToGPU(&lightData, sizeof(lightData), m_lightConstantBuffer);

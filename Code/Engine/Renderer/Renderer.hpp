@@ -77,13 +77,22 @@ struct RendererConfig
 	bool m_isEnable = true;
 };
 
+struct PointLight
+{
+	Vec3  Position;
+	float Range;
+	Vec3  Color;
+	float Intensity;
+};
+static const int MAX_POINT_LIGHTS = 64;
+
 struct LightConstants
 {
-	Vec3  SunDirection;
-	float SunIntensity;
-	float AmbientIntensity;
-
-	float padding[3]; // Padding to ensure the struct size is a multiple of 16 bytes for GPU constant buffer alignment
+	Vec3       SunDirection;
+	float      SunIntensity;
+	Vec3       AmbientColor;
+	float      AmbientIntensity;
+	PointLight PointLights[MAX_POINT_LIGHTS];
 };
 static const int k_lightConstantsSlot = 1;
 
@@ -151,7 +160,8 @@ public:
 	void BindTexture(Texture* textureOrNull, unsigned int slot);
 	void BindShader(Shader* shader);
 	void BindModelConstants(Matrix4x4 const& modelToWorldTransform, Rgba8 const& modelColor);
-	void BindLightConstants(Vec3 const& sunDirection, float const sunIntensity, float const ambientIntensity);
+	void
+	BindLightConstants(Vec3 const& sunDirection, float sunIntensity, Rgba8 const& ambientColor, float ambientIntensity);
 	void BindPostProcessConstants(Vec2 const& screenDimensions, float cameraNear, float cameraFar);
 
 	// GPU resource creation and cache access
