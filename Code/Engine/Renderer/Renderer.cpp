@@ -686,9 +686,32 @@ void Renderer::CreateRenderingContext() {}
 
 void Renderer::BeginCamera(Camera const& camera)
 {
-	// Set viewport
-	Vec2 screenDimensions = (Vec2)g_engine->m_window->GetClientDimensions();
-	SetViewport(screenDimensions);
+	IntVec2 const screenDimensions = g_engine->m_window->GetClientDimensions();
+	AABB2 const   normalizedViewport = camera.GetViewportNormalized();
+
+	int leftPixels   = (int)(normalizedViewport.m_mins.x * (float)screenDimensions.x);
+	int rightPixels  = (int)(normalizedViewport.m_maxs.x * (float)screenDimensions.x);
+	int bottomPixels = (int)(normalizedViewport.m_mins.y * (float)screenDimensions.y);
+	int topPixels    = (int)(normalizedViewport.m_maxs.y * (float)screenDimensions.y);
+
+	leftPixels   = leftPixels < 0 ? 0 : leftPixels;
+	rightPixels  = rightPixels > screenDimensions.x ? screenDimensions.x : rightPixels;
+	bottomPixels = bottomPixels < 0 ? 0 : bottomPixels;
+	topPixels    = topPixels > screenDimensions.y ? screenDimensions.y : topPixels;
+
+	int viewportWidth  = rightPixels - leftPixels;
+	int viewportHeight = topPixels - bottomPixels;
+	if (viewportWidth <= 0)
+	{
+		viewportWidth = 1;
+	}
+	if (viewportHeight <= 0)
+	{
+		viewportHeight = 1;
+	}
+
+	IntVec2 const viewportTopLeft(leftPixels, screenDimensions.y - topPixels);
+	SetViewport(IntVec2(viewportWidth, viewportHeight), viewportTopLeft);
 
 	CameraConstants cameraData         = CameraConstants();
 	cameraData.WorldToCameraTransform  = camera.GetWorldToCameraTransform();
@@ -1503,7 +1526,7 @@ void Renderer::BindIndexBuffer(IndexBuffer* indexBuffer)
 	m_d3dDeviceContext->IASetIndexBuffer(buf, DXGI_FORMAT_R32_UINT, 0);
 }
 
-void Renderer::SetViewport(IntVec2 dimensions)
+void Renderer::SetViewport(IntVec2 dimensions, IntVec2 topLeft)
 {
 	if (dimensions.x <= 0 || dimensions.y <= 0)
 	{
@@ -1511,8 +1534,8 @@ void Renderer::SetViewport(IntVec2 dimensions)
 	}
 
 	D3D11_VIEWPORT viewport = {};
-	viewport.TopLeftX       = 0.f;
-	viewport.TopLeftY       = 0.f;
+	viewport.TopLeftX       = (FLOAT)topLeft.x;
+	viewport.TopLeftY       = (FLOAT)topLeft.y;
 	viewport.Width          = (FLOAT)dimensions.x;
 	viewport.Height         = (FLOAT)dimensions.y;
 	viewport.MinDepth       = 0.0f;
