@@ -893,17 +893,23 @@ void Renderer::BindModelConstants(Matrix4x4 const& modelToWorldTransform, Rgba8 
 	BindConstantBuffer(m_modelConstantBuffer, k_modelConstantsSlot);
 }
 
+void Renderer::BindLightConstants(LightConstants const& lightConstants)
+{
+	CopyCPUToGPU(&lightConstants, sizeof(lightConstants), m_lightConstantBuffer);
+	BindConstantBuffer(m_lightConstantBuffer, k_lightConstantsSlot);
+}
+
 void Renderer::BindLightConstants(
 	Vec3 const& sunDirection, float sunIntensity, Rgba8 const& ambientColor, float ambientIntensity
 )
 {
-	LightConstants lightData   = LightConstants();
-	lightData.SunDirection     = sunDirection;
-	lightData.SunIntensity     = sunIntensity;
-	lightData.AmbientColor     = Vec3(ambientColor.r / 255.f, ambientColor.g / 255.f, ambientColor.b / 255.f);
-	lightData.AmbientIntensity = ambientIntensity;
+	LightConstants lightConstants        = LightConstants();
+	lightConstants.SunLight.SunDirection = sunDirection;
+	lightConstants.SunLight.SunIntensity = sunIntensity;
+	lightConstants.SunLight.AmbientColor = Vec3(ambientColor.r / 255.f, ambientColor.g / 255.f, ambientColor.b / 255.f);
+	lightConstants.SunLight.AmbientIntensity = ambientIntensity;
 
-	CopyCPUToGPU(&lightData, sizeof(lightData), m_lightConstantBuffer);
+	CopyCPUToGPU(&lightConstants, sizeof(lightConstants), m_lightConstantBuffer);
 	BindConstantBuffer(m_lightConstantBuffer, k_lightConstantsSlot);
 }
 
