@@ -9,24 +9,16 @@ struct Matrix4x4
 public:
 	Matrix4x4();
 	explicit Matrix4x4(float const* sixteenValuesBasisMajor);
+
+	// clang-format off
 	explicit Matrix4x4(
-		float ix,
-		float jx,
-		float kx,
-		float tx,
-		float iy,
-		float jy,
-		float ky,
-		float ty,
-		float iz,
-		float jz,
-		float kz,
-		float tz,
-		float iw,
-		float jw,
-		float kw,
-		float tw
+		float ix, float jx, float kx, float tx,
+		float iy, float jy, float ky, float ty,
+		float iz, float jz, float kz, float tz,
+		float iw, float jw, float kw, float tw
 	);
+	// clang-format on
+
 	explicit Matrix4x4(Vec2 const& iBasis2D, Vec2 const& jBasis2D, Vec2 const& translation2D);
 	explicit Matrix4x4(Vec3 const& iBasis3D, Vec3 const& jBasis3D, Vec3 const& kBasis3D, Vec3 const& translation3D);
 	explicit Matrix4x4(Vec2 const& iBasis2D, Vec2 const& jBasis2D, Vec2 const& kBasis2D, Vec4 const& translation4D);
@@ -61,10 +53,10 @@ public:
 	Vec2 const GetJBasis2D() const;
 	Vec2 const GetTranslation2D() const;
 
-	Vec3 const GetIBasis3D() const;
-	Vec3 const GetJBasis3D() const;
-	Vec3 const GetKBasis3D() const;
-	Vec3 const GetTranslation3D() const;
+	Vec3 const        GetIBasis3D() const;
+	Vec3 const        GetJBasis3D() const;
+	Vec3 const        GetKBasis3D() const;
+	Vec3 const        GetTranslation3D() const;
 
 	Vec4 const GetIBasis4D() const;
 	Vec4 const GetJBasis4D() const;
@@ -99,25 +91,15 @@ public:
 	static Matrix4x4 const IDENTITY;
 
 public:
+	// clang-format off
 	enum
 	{
-		Ix,
-		Iy,
-		Iz,
-		Iw,
-		Jx,
-		Jy,
-		Jz,
-		Jw,
-		Kx,
-		Ky,
-		Kz,
-		Kw,
-		Tx,
-		Ty,
-		Tz,
-		Tw
+		Ix, Iy, Iz, Iw,
+		Jx, Jy, Jz, Jw,
+		Kx, Ky, Kz, Kw,
+		Tx, Ty, Tz, Tw
 	}; // index nicknames
+	// clang-format on
 
 	float m_values[16];
 };
