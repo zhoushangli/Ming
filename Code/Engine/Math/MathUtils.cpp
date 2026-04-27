@@ -280,10 +280,14 @@ Rgba8 Interpolate(Rgba8 const& start, Rgba8 const& end, float fraction)
 
 EulerAngles Interpolate(EulerAngles const& start, EulerAngles const& end, float fraction)
 {
+	float yawDisp   = GetShortestAngularDispDegrees(start.m_yawDegrees, end.m_yawDegrees);
+	float pitchDisp = GetShortestAngularDispDegrees(start.m_pitchDegrees, end.m_pitchDegrees);
+	float rollDisp  = GetShortestAngularDispDegrees(start.m_rollDegrees, end.m_rollDegrees);
+
 	return EulerAngles(
-		Interpolate(start.m_yawDegrees, end.m_yawDegrees, fraction),
-		Interpolate(start.m_pitchDegrees, end.m_pitchDegrees, fraction),
-		Interpolate(start.m_rollDegrees, end.m_rollDegrees, fraction)
+		start.m_yawDegrees + yawDisp * fraction,
+		start.m_pitchDegrees + pitchDisp * fraction,
+		start.m_rollDegrees + rollDisp * fraction
 	);
 }
 
@@ -376,13 +380,23 @@ float Hesitate5(float t)
 	return 5.f * t - 20.f * t2 + 40.f * t3 - 40.f * t4 + 16.f * t5;
 }
 
-float Spring(float t)
+float String(float t)
 {
 	auto fastExpDecay = [](float x) { return 1.0f / (1.0f + x + 0.5f * x * x); };
 
 	float frequency = 4.0f;
 	float decay     = 8.0f;
 	float d         = fastExpDecay(decay * t);
+
+	// When cos == 1, tangent == 0
+	return 1.0f - d * CosDegrees(frequency * t * 360.f);
+}
+
+float String(float t, float frequency, float decay)
+{
+	auto fastExpDecay = [](float x) { return 1.0f / (1.0f + x + 0.5f * x * x); };
+
+	float d = fastExpDecay(decay * t);
 
 	// When cos == 1, tangent == 0
 	return 1.0f - d * CosDegrees(frequency * t * 360.f);

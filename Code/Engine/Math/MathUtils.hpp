@@ -159,7 +159,8 @@ float SmoothStep5(float t);
 float Hesitate3(float t);
 float Hesitate5(float t);
 
-float Spring(float t);
+float String(float t);
+float String(float t, float frequency, float decay);
 
 float ComputeCubicBezier1D(float A, float B, float C, float D, float t);
 float ComputeQuinticBezier1D(float A, float B, float C, float D, float E, float F, float t);
