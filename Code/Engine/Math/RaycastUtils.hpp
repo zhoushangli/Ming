@@ -6,6 +6,7 @@
 #include "Engine/Math/LineSegment2.hpp"
 #include "Engine/Math/AABB3.hpp"
 #include "Engine/Math/FloatRange.hpp"
+#include "Engine/Math/Sphere3.hpp"
 
 struct RaycastResult2D
 {
@@ -63,6 +64,13 @@ RaycastResult3D RaycastVsSphere3D(
     float rayLength,
     Vec3 sphereCenter,
     float sphereRadius
+);
+
+RaycastResult3D RaycastVsSphere3D(
+    Vec3 rayStart,
+    Vec3 rayForwardNormal,
+    float rayLength,
+    Sphere3 sphere
 );
 
 RaycastResult3D RaycastVsCylinderZ3D(
