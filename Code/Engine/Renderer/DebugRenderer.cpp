@@ -18,6 +18,8 @@ namespace
         WORLD_WIRE_SPHERE,
         WORLD_CYLINDER,
         WORLD_WIRE_CYLINDER,
+        WORLD_CAPSULE,
+        WORLD_WIRE_CAPSULE,
         WORLD_ARROW,
         WORLD_WIRE_ARROW,
         WORLD_TEXT,
@@ -137,6 +139,7 @@ namespace
             {
             case DebugObjectType::WORLD_WIRE_SPHERE:
             case DebugObjectType::WORLD_WIRE_CYLINDER:
+            case DebugObjectType::WORLD_WIRE_CAPSULE:
             case DebugObjectType::WORLD_WIRE_ARROW:
                 renderer->SetRasterizerMode(RasterizerMode::WIREFRAME_CULL_NONE);
                 break;
@@ -172,6 +175,14 @@ namespace
 
         case DebugObjectType::WORLD_WIRE_CYLINDER:
             AddVertsForCylinder3D(verts, obj.start, obj.end, obj.radius, color);
+            break;
+
+        case DebugObjectType::WORLD_CAPSULE:
+            AddVertsForCapsule3D(verts, obj.start, obj.end, obj.radius, color);
+            break;
+
+        case DebugObjectType::WORLD_WIRE_CAPSULE:
+            AddVertsForCapsule3D(verts, obj.start, obj.end, obj.radius, color);
             break;
 
         case DebugObjectType::WORLD_ARROW:
@@ -375,6 +386,26 @@ void DebugAddWorldWireCylinder(const Vec3 &start, const Vec3 &end, float radius,
                                const Rgba8 &startColor, const Rgba8 &endColor, DebugRenderMode mode)
 {
     DebugObject object = MakeDebugObject(DebugObjectType::WORLD_WIRE_CYLINDER, duration, startColor, endColor, mode);
+    object.start = start;
+    object.end = end;
+    object.radius = radius;
+    s_debugObjects.push_back(object);
+}
+
+void DebugAddWorldCapsule(const Vec3 &start, const Vec3 &end, float radius, float duration,
+                          const Rgba8 &startColor, const Rgba8 &endColor, DebugRenderMode mode)
+{
+    DebugObject object = MakeDebugObject(DebugObjectType::WORLD_CAPSULE, duration, startColor, endColor, mode);
+    object.start = start;
+    object.end = end;
+    object.radius = radius;
+    s_debugObjects.push_back(object);
+}
+
+void DebugAddWorldWireCapsule(const Vec3 &start, const Vec3 &end, float radius, float duration,
+                              const Rgba8 &startColor, const Rgba8 &endColor, DebugRenderMode mode)
+{
+    DebugObject object = MakeDebugObject(DebugObjectType::WORLD_WIRE_CAPSULE, duration, startColor, endColor, mode);
     object.start = start;
     object.end = end;
     object.radius = radius;
@@ -692,3 +723,5 @@ bool Command_DebugRenderToggle([[maybe_unused]] EventArgs &args)
     s_isVisible = !s_isVisible;
     return true;
 }
+
+

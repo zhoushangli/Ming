@@ -2,14 +2,19 @@
 
 #include "Engine/Core/Time.hpp"
 
+#include <thread>
+
 Clock* Clock::s_systemClock = nullptr;
 
 Clock::Clock()
 {
 	Clock& systemClock = GetSystemClock();
-	m_parent = &systemClock;
+	m_parent           = &systemClock;
 	m_parent->AddChild(this);
 	Reset();
+
+	m_maxDeltaSeconds = 1.f / MIN_FRAME_RATE;
+	m_minDeltaSeconds = 1.f / MAX_FRAME_RATE;
 }
 
 Clock::Clock(Clock& parent)
@@ -17,6 +22,9 @@ Clock::Clock(Clock& parent)
 	m_parent = &parent;
 	m_parent->AddChild(this);
 	Reset();
+
+	m_maxDeltaSeconds = 1.f / MIN_FRAME_RATE;
+	m_minDeltaSeconds = 1.f / MAX_FRAME_RATE;
 }
 
 Clock::Clock(bool isSystemClock)
@@ -28,9 +36,12 @@ Clock::Clock(bool isSystemClock)
 	else
 	{
 		Clock& systemClock = GetSystemClock();
-		m_parent = &systemClock;
+		m_parent           = &systemClock;
 		m_parent->AddChild(this);
-    }
+	}
+
+	m_maxDeltaSeconds = 1.f / MIN_FRAME_RATE;
+	m_minDeltaSeconds = 1.f / MAX_FRAME_RATE;
 }
 
 Clock::~Clock()
@@ -54,30 +65,20 @@ Clock::~Clock()
 void Clock::Reset()
 {
 	m_lastUpdateTimeInSeconds = GetCurrentTimeSeconds();
-	m_totalSeconds = 0.0;
-	m_deltaSeconds = 0.0;
-	m_frameCount = 0;
+	m_totalSeconds            = 0.0;
+	m_deltaSeconds            = 0.0;
+	m_frameCount              = 0;
 }
 
+bool Clock::IsPaused() const { return m_isPaused; }
 
-bool Clock::IsPaused() const
-{
-	return m_isPaused;
-}
-
-
-void Clock::Pause()
-{
-	m_isPaused = true;
-}
-
+void Clock::Pause() { m_isPaused = true; }
 
 void Clock::Unpause()
 {
-	m_isPaused = false;
+	m_isPaused        = false;
 	m_stepSingleFrame = false;
 }
-
 
 void Clock::TogglePause()
 {
@@ -88,37 +89,19 @@ void Clock::TogglePause()
 	}
 }
 
-
 void Clock::StepSingleFrame()
 {
-	m_isPaused = false;
+	m_isPaused        = false;
 	m_stepSingleFrame = true;
 }
 
+void Clock::SetTimeScale(double timeScale) { m_timeScale = timeScale; }
 
-void Clock::SetTimeScale(double timeScale)
-{
-	m_timeScale = timeScale;
-}
+double Clock::GetTimeScale() const { return m_timeScale; }
 
+double Clock::GetDeltaSeconds() const { return m_deltaSeconds; }
 
-double Clock::GetTimeScale() const
-{
-	return m_timeScale;
-}
-
-
-double Clock::GetDeltaSeconds() const
-{
-	return m_deltaSeconds;
-}
-
-
-double Clock::GetTotalSeconds() const
-{
-	return m_totalSeconds;
-}
-
+double Clock::GetTotalSeconds() const { return m_totalSeconds; }
 
 double Clock::GetFrameRate() const
 {
@@ -129,24 +112,18 @@ double Clock::GetFrameRate() const
 	return 1.0 / m_deltaSeconds;
 }
 
-
-int Clock::GetFrameCount() const
-{
-	return m_frameCount;
-}
-
+int Clock::GetFrameCount() const { return m_frameCount; }
 
 Clock& Clock::GetSystemClock()
 {
-    if (Clock::s_systemClock == nullptr)
-    {
-        Clock::s_systemClock = new Clock(true);
-        Clock::s_systemClock->Reset();
-    }
+	if (Clock::s_systemClock == nullptr)
+	{
+		Clock::s_systemClock = new Clock(true);
+		Clock::s_systemClock->Reset();
+	}
 
-    return *Clock::s_systemClock;
+	return *Clock::s_systemClock;
 }
-
 
 void Clock::TickSystemClock()
 {
@@ -154,14 +131,19 @@ void Clock::TickSystemClock()
 	systemClock.Tick();
 }
 
-
 void Clock::Tick()
 {
-	double const currentTimeSeconds = GetCurrentTimeSeconds();
-	double deltaSeconds = currentTimeSeconds - m_lastUpdateTimeInSeconds;
-	m_lastUpdateTimeInSeconds = currentTimeSeconds;
+	double currentTimeSeconds = GetCurrentTimeSeconds();
+	double deltaSeconds       = currentTimeSeconds - m_lastUpdateTimeInSeconds;
 
-	// Clamp (also handles negative deltas defensively)
+	while (deltaSeconds < m_minDeltaSeconds)
+	{
+		std::this_thread::yield();
+
+		currentTimeSeconds = GetCurrentTimeSeconds();
+		deltaSeconds       = currentTimeSeconds - m_lastUpdateTimeInSeconds;
+	}
+
 	if (deltaSeconds < 0.0)
 	{
 		deltaSeconds = 0.0;
@@ -171,9 +153,9 @@ void Clock::Tick()
 		deltaSeconds = m_maxDeltaSeconds;
 	}
 
+	m_lastUpdateTimeInSeconds = currentTimeSeconds;
 	Advance(deltaSeconds);
 }
-
 
 void Clock::Advance(double deltaTimeSeconds)
 {
@@ -205,10 +187,9 @@ void Clock::Advance(double deltaTimeSeconds)
 	if (m_stepSingleFrame)
 	{
 		m_stepSingleFrame = false;
-		m_isPaused = true;
+		m_isPaused        = true;
 	}
 }
-
 
 void Clock::AddChild(Clock* childClock)
 {
@@ -225,7 +206,6 @@ void Clock::AddChild(Clock* childClock)
 
 	m_children.push_back(childClock);
 }
-
 
 void Clock::RemoveChild(Clock* childClock)
 {

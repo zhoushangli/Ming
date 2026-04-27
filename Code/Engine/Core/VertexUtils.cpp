@@ -637,6 +637,133 @@ void AddVertsForCylinder3D(
 	}
 }
 
+void AddVertsForCapsule3D(
+	std::vector<Vertex>& verts,
+	Vec3 const&          start,
+	Vec3 const&          end,
+	float                radius,
+	Rgba8 const&         color /*= Rgba8::WHITE*/,
+	int                  numSlices /*= 32*/,
+	int                  numStacks /*= 16*/
+)
+{
+	if (radius <= 0.f)
+	{
+		return;
+	}
+
+	Vec3 const axis = end - start;
+	float const axisLength = axis.GetLength();
+	if (axisLength <= 0.f)
+	{
+		AddVertsForSphere3D(verts, start, radius, color, AABB2::UNIT, numSlices, numStacks);
+		return;
+	}
+
+	numSlices = Max(3, numSlices);
+	numStacks = Max(2, numStacks);
+
+	Vec3 kBasis = axis / axisLength;
+
+	Vec3 helper = (Abs(kBasis.z) < 0.999f) ? Vec3(0.f, 0.f, 1.f) : Vec3(0.f, 1.f, 0.f);
+	Vec3 iBasis = CrossProduct3D(helper, kBasis);
+	float iLen  = iBasis.GetLength();
+	if (iLen <= 0.f)
+	{
+		return;
+	}
+	iBasis /= iLen;
+	Vec3 jBasis = CrossProduct3D(kBasis, iBasis);
+
+	float const deltaYaw = TWO_PI / static_cast<float>(numSlices);
+	int const   hemiStacks = Max(1, numStacks / 2);
+
+	auto GetRadialDir = [&](float yaw) -> Vec3
+	{
+		return iBasis * cosf(yaw) + jBasis * sinf(yaw);
+	};
+
+	auto GetHemispherePoint = [&](Vec3 const& center, float yaw, float pitch) -> Vec3
+	{
+		float radialScale = cosf(pitch);
+		return center + GetRadialDir(yaw) * (radius * radialScale) + kBasis * (radius * sinf(pitch));
+	};
+
+	for (int sliceIndex = 0; sliceIndex < numSlices; ++sliceIndex)
+	{
+		float yaw0 = deltaYaw * static_cast<float>(sliceIndex);
+		float yaw1 = deltaYaw * static_cast<float>(sliceIndex + 1);
+
+		Vec3 rim0 = GetRadialDir(yaw0) * radius;
+		Vec3 rim1 = GetRadialDir(yaw1) * radius;
+
+		Vec3 b0 = start + rim0;
+		Vec3 b1 = start + rim1;
+		Vec3 t0 = end + rim0;
+		Vec3 t1 = end + rim1;
+
+		verts.emplace_back(b0, color);
+		verts.emplace_back(b1, color);
+		verts.emplace_back(t1, color);
+
+		verts.emplace_back(b0, color);
+		verts.emplace_back(t1, color);
+		verts.emplace_back(t0, color);
+	}
+
+	for (int stackIndex = 0; stackIndex < hemiStacks; ++stackIndex)
+	{
+		float lowerPitch0 = -HALF_PI + (HALF_PI * static_cast<float>(stackIndex) / static_cast<float>(hemiStacks));
+		float lowerPitch1 =
+			-HALF_PI + (HALF_PI * static_cast<float>(stackIndex + 1) / static_cast<float>(hemiStacks));
+		float upperPitch0 = HALF_PI * static_cast<float>(stackIndex) / static_cast<float>(hemiStacks);
+		float upperPitch1 = HALF_PI * static_cast<float>(stackIndex + 1) / static_cast<float>(hemiStacks);
+
+		for (int sliceIndex = 0; sliceIndex < numSlices; ++sliceIndex)
+		{
+			float yaw0 = deltaYaw * static_cast<float>(sliceIndex);
+			float yaw1 = deltaYaw * static_cast<float>(sliceIndex + 1);
+
+			Vec3 lower00 = GetHemispherePoint(start, yaw0, lowerPitch0);
+			Vec3 lower10 = GetHemispherePoint(start, yaw1, lowerPitch0);
+			Vec3 lower11 = GetHemispherePoint(start, yaw1, lowerPitch1);
+			Vec3 lower01 = GetHemispherePoint(start, yaw0, lowerPitch1);
+
+			verts.emplace_back(lower00, color);
+			verts.emplace_back(lower10, color);
+			verts.emplace_back(lower11, color);
+
+			verts.emplace_back(lower00, color);
+			verts.emplace_back(lower11, color);
+			verts.emplace_back(lower01, color);
+
+			Vec3 upper00 = GetHemispherePoint(end, yaw0, upperPitch0);
+			Vec3 upper10 = GetHemispherePoint(end, yaw1, upperPitch0);
+			Vec3 upper11 = GetHemispherePoint(end, yaw1, upperPitch1);
+			Vec3 upper01 = GetHemispherePoint(end, yaw0, upperPitch1);
+
+			verts.emplace_back(upper00, color);
+			verts.emplace_back(upper10, color);
+			verts.emplace_back(upper11, color);
+
+			verts.emplace_back(upper00, color);
+			verts.emplace_back(upper11, color);
+			verts.emplace_back(upper01, color);
+		}
+	}
+}
+
+void AddVertsForCapsule3D(
+	std::vector<Vertex>& verts,
+	Capsule3 const&      capsule,
+	Rgba8 const&         color /*= Rgba8::WHITE*/,
+	int                  numSlices /*= 32*/,
+	int                  numStacks /*= 16*/
+)
+{
+	AddVertsForCapsule3D(verts, capsule.m_start, capsule.m_end, capsule.m_radius, color, numSlices, numStacks);
+}
+
 void AddVertsForCone3D(
 	std::vector<Vertex>& verts,
 	const Vec3&          start,
@@ -793,3 +920,5 @@ void AddVertsForInfiniteLine2D(
 {
 	AddVertsForInfiniteLine2D(verts, infiniteLine.m_start, infiniteLine.m_end, thickness, color);
 }
+
+

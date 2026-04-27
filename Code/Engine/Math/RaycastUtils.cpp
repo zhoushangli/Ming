@@ -334,6 +334,37 @@ RaycastResult3D RaycastVsSphere3D(Vec3 rayStart, Vec3 rayForwardNormal, float ra
 	return RaycastVsSphere3D(rayStart, rayForwardNormal, rayLength, sphere.m_center, sphere.m_radius);
 }
 
+RaycastResult3D RaycastVsCapsule3D(
+	Vec3 rayStart, Vec3 rayForwardNormal, float rayLength, Vec3 capsuleStart, Vec3 capsuleEnd, float capsuleRadius
+)
+{
+	auto GetClosestImpact = [](RaycastResult3D const& resultA, RaycastResult3D const& resultB) -> RaycastResult3D
+	{
+		if (!resultA.m_didImpact)
+		{
+			return resultB;
+		}
+		if (!resultB.m_didImpact)
+		{
+			return resultA;
+		}
+
+		return resultA.m_impactDist < resultB.m_impactDist ? resultA : resultB;
+	};
+
+	RaycastResult3D resultA = RaycastVsSphere3D(rayStart, rayForwardNormal, rayLength, capsuleStart, capsuleRadius);
+	RaycastResult3D resultB = RaycastVsSphere3D(rayStart, rayForwardNormal, rayLength, capsuleEnd, capsuleRadius);
+	RaycastResult3D resultC =
+		RaycastVsCylinder3D(rayStart, rayForwardNormal, rayLength, capsuleStart, capsuleEnd, capsuleRadius);
+
+	return GetClosestImpact(GetClosestImpact(resultA, resultB), resultC);
+}
+
+RaycastResult3D RaycastVsCapsule3D(Vec3 rayStart, Vec3 rayForwardNormal, float rayLength, Capsule3 capsule)
+{
+	return RaycastVsCapsule3D(rayStart, rayForwardNormal, rayLength, capsule.m_start, capsule.m_end, capsule.m_radius);
+}
+
 RaycastResult3D RaycastVsCylinderZ3D(
 	Vec3              rayStart,
 	Vec3              rayForwardNormal,
@@ -443,4 +474,41 @@ RaycastResult3D RaycastVsCylinderZ3D(
 	}
 
 	return result;
+}
+
+RaycastResult3D RaycastVsCylinder3D(
+	Vec3        rayStart,
+	Vec3        rayForwardNormal,
+	float       rayLength,
+	Vec3 const& cylinderStart,
+	Vec3 const& cylinderEnd,
+	float       radiusXY
+)
+{
+	Vec3 localZ = (cylinderEnd - cylinderStart).GetNormalized();
+	Vec3 helper = (Abs(localZ.z) < 0.999f) ? Vec3::UP : Vec3::RIGHT;
+	Vec3 localX = CrossProduct3D(helper, localZ).GetNormalized();
+	Vec3 localY = CrossProduct3D(localZ, localX).GetNormalized();
+
+	Matrix4x4 localToWorld = Matrix4x4(localX, localY, localZ, cylinderStart);
+	Matrix4x4 worldToLocal = localToWorld.GetOrthonormalInverse();
+
+	Vec3 localRayStart      = worldToLocal.TransformPosition3D(rayStart);
+	Vec3 localRayForward    = worldToLocal.TransformDirection3D(rayForwardNormal);
+	Vec3 localCylinderStart = Vec3::ZERO;
+	Vec3 localCylinderEnd   = Vec3(0.f, 0.f, (cylinderEnd - cylinderStart).GetLength());
+
+	RaycastResult3D localResult = RaycastVsCylinderZ3D(
+		localRayStart,
+		localRayForward,
+		rayLength,
+		localCylinderStart,
+		FloatRange(0.f, localCylinderEnd.z),
+		radiusXY
+	);
+
+	RaycastResult3D worldResult = localResult;
+	worldResult.m_impactPos     = localToWorld.TransformPosition3D(localResult.m_impactPos);
+	worldResult.m_impactNormal  = localToWorld.TransformDirection3D(localResult.m_impactNormal);
+	return worldResult;
 }

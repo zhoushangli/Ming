@@ -8,6 +8,7 @@
 #include "Engine/Math/OBB2.hpp"
 #include "Engine/Math/AABB3.hpp"
 #include "Engine/Math/Capsule2.hpp"
+#include "Engine/Math/Capsule3.hpp"
 #include "Engine/Math/Matrix4x4.hpp"
 #include "Engine/Math/LineSegment2.hpp"
 
@@ -95,6 +96,20 @@ void AddVertsForCylinder3D(std::vector<Vertex> &verts,
                            const AABB2 &UVs = AABB2::UNIT,
                            int numSlices = 32);
 
+void AddVertsForCapsule3D(std::vector<Vertex> &verts,
+                          const Vec3 &start,
+                          const Vec3 &end,
+                          float radius,
+                          const Rgba8 &color = Rgba8::WHITE,
+                          int numSlices = 32,
+                          int numStacks = 16);
+
+void AddVertsForCapsule3D(std::vector<Vertex> &verts,
+                          Capsule3 const &capsule,
+                          const Rgba8 &color = Rgba8::WHITE,
+                          int numSlices = 32,
+                          int numStacks = 16);
+
 void AddVertsForCone3D(std::vector<Vertex> &verts,
                        const Vec3 &start,
                        const Vec3 &end,
@@ -111,3 +126,4 @@ void AddVertsForArrow3D(std::vector<Vertex> &verts,
                         int numSlices = 32);
 
 #pragma endregion
+

@@ -7,6 +7,7 @@
 #include "Engine/Math/AABB3.hpp"
 #include "Engine/Math/FloatRange.hpp"
 #include "Engine/Math/Sphere3.hpp"
+#include "Engine/Math/Capsule3.hpp"
 
 struct RaycastResult2D
 {
@@ -73,11 +74,36 @@ RaycastResult3D RaycastVsSphere3D(
     Sphere3 sphere
 );
 
+RaycastResult3D RaycastVsCapsule3D(
+    Vec3 rayStart,
+    Vec3 rayForwardNormal,
+    float rayLength,
+    Vec3 capsuleStart,
+    Vec3 capsuleEnd,
+    float capsuleRadius
+);
+
+RaycastResult3D RaycastVsCapsule3D(
+    Vec3 rayStart,
+    Vec3 rayForwardNormal,
+    float rayLength,
+    Capsule3 capsule
+);
+
 RaycastResult3D RaycastVsCylinderZ3D(
     Vec3 rayStart,
     Vec3 rayForwardNormal,
     float rayLength,
     Vec2 const& centerXY,
     FloatRange const& minMaxZ,
+    float radiusXY
+);
+
+RaycastResult3D RaycastVsCylinder3D(
+    Vec3 rayStart,
+    Vec3 rayForwardNormal,
+    float rayLength,
+    Vec3 const& cylinderStart,
+    Vec3 const& cylinderEnd,
     float radiusXY
 );

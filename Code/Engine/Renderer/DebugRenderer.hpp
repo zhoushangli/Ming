@@ -49,6 +49,14 @@ void DebugAddWorldWireCylinder(const Vec3 &start, const Vec3 &end, float radius,
                                const Rgba8 &startColor = Rgba8::WHITE, const Rgba8 &endColor = Rgba8::WHITE,
                                DebugRenderMode mode = DebugRenderMode::USE_DEPTH);
 
+void DebugAddWorldCapsule(const Vec3 &start, const Vec3 &end, float radius, float duration,
+                          const Rgba8 &startColor = Rgba8::WHITE, const Rgba8 &endColor = Rgba8::WHITE,
+                          DebugRenderMode mode = DebugRenderMode::USE_DEPTH);
+
+void DebugAddWorldWireCapsule(const Vec3 &start, const Vec3 &end, float radius, float duration,
+                              const Rgba8 &startColor = Rgba8::WHITE, const Rgba8 &endColor = Rgba8::WHITE,
+                              DebugRenderMode mode = DebugRenderMode::USE_DEPTH);
+
 void DebugAddWorldArrow(const Vec3 &start, const Vec3 &end, float radius, float duration,
                         const Rgba8 &startColor = Rgba8::WHITE, const Rgba8 &endColor = Rgba8::WHITE,
                         DebugRenderMode mode = DebugRenderMode::USE_DEPTH);
@@ -86,3 +94,5 @@ void DebugAddWorldGrid(float duration = -1.f, int halfExtent = 50);
 // Console commands
 bool Command_DebugRenderClear(EventArgs &args);
 bool Command_DebugRenderToggle(EventArgs &args);
+
+
