@@ -2,7 +2,6 @@
 
 #include "Engine/Core/Vertex.hpp"
 #include "Engine/Math/MathUtils.hpp"
-#include "VertexUtils.hpp"
 
 void TransformVertexArrayXY3D(
 	int numVerts, Vertex* verts, float scaleXY, float rotationDegreesAboutZ, Vec2 const& translationXY

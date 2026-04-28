@@ -1,6 +1,5 @@
 #include "Engine/Math/AABB2.hpp"
 
-#include "AABB2.hpp"
 #include "Engine/Math/MathUtils.hpp"
 
 const AABB2 AABB2::ZERO          = AABB2(0.f, 0.f, 0.f, 0.f);

@@ -1,5 +1,6 @@
 #include "Engine/Math/MathUtils.hpp"
 
+#include "MathUtils.hpp"
 #include <math.h>
 
 float Abs(float value) { return (value < 0.f) ? -value : value; }
@@ -87,6 +88,25 @@ bool DoDiscsOverlap2D(Vec2 const& centerA, float radiusA, Vec2 const& centerB, f
 	float distSquared = GetDistanceSquared2D(centerA, centerB);
 	float radiiSum    = radiusA + radiusB;
 	return distSquared <= (radiiSum * radiiSum);
+}
+
+bool DoDiscAndAABBOverlap2D(Vec2 const& discCenter, float discRadius, Vec2 const& boxMins, Vec2 const& boxMaxs)
+{
+	float nearestX = GetClamped(discCenter.x, boxMins.x, boxMaxs.x);
+	float nearestY = GetClamped(discCenter.y, boxMins.y, boxMaxs.y);
+	float dx       = discCenter.x - nearestX;
+	float dy       = discCenter.y - nearestY;
+	return (dx * dx + dy * dy) <= (discRadius * discRadius);
+}
+
+bool DoDiscAndAABBOverlap2D(Vec2 const& discCenter, float discRadius, AABB2 const& box)
+{
+	return DoDiscAndAABBOverlap2D(discCenter, discRadius, box.m_mins, box.m_maxs);
+}
+
+bool DoDiscAndAABBOverlap2D(Disc2 const& disc, AABB2 const& box)
+{
+	return DoDiscAndAABBOverlap2D(disc.m_center, disc.m_radius, box);
 }
 
 bool DoAABB3sOverlap3D(Vec3 const& firstMins, Vec3 const& firstMaxs, Vec3 const& secondMins, Vec3 const& secondMaxs)
@@ -864,6 +884,11 @@ bool PushDiscOutOfFixedAABB2D(Vec2& discCenter, float discRadius, AABB2 const& b
 	Vec2 pushDir = toCenter.GetNormalized();
 	discCenter   = nearest + pushDir * discRadius;
 	return true;
+}
+
+bool PushDiscOutOfFixedAABB2D(Disc2& discToPush, AABB2 const& box)
+{
+	return PushDiscOutOfFixedAABB2D(discToPush.m_center, discToPush.m_radius, box);
 }
 
 float GetProjectedLength2D(Vec2 const& vector, Vec2 const& basis)

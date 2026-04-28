@@ -29,7 +29,6 @@
 #pragma comment(lib, "d3dcompiler.lib")
 
 #if defined(ENGINE_DEBUG_RENDER)
-#include "Renderer.hpp"
 #include <dxgidebug.h>
 #pragma comment(lib, "dxguid.lib")
 #endif

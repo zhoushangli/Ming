@@ -1,6 +1,5 @@
 #include "Engine/Math/EulerAngles.hpp"
 #include "Engine/Math/MathUtils.hpp"
-#include "EulerAngles.hpp"
 
 const EulerAngles EulerAngles::ZERO = EulerAngles(0.f, 0.f, 0.f);
 

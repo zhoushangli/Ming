@@ -1,6 +1,5 @@
 #include "Engine/Renderer/Camera.hpp"
 
-#include "Camera.hpp"
 #include "Engine/Math/Matrix4x4.hpp"
 #include "Engine/Math/MathUtils.hpp"
 #include "Engine/Math/Vec2.hpp"

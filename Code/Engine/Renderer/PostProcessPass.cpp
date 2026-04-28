@@ -1,7 +1,6 @@
 #include "Engine/Renderer/PostProcessPass.hpp"
 
 #include "Engine/Core/Engine.hpp"
-#include "PostProcessPass.hpp"
 
 PostProcessPass::PostProcessPass(std::string const& passName, std::string const& postProcessShaderName)
 	: m_name(passName), m_wideName(passName.begin(), passName.end())

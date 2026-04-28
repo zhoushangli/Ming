@@ -69,6 +69,9 @@ float GetDistance2D(Vec2 const& a, Vec2 const& b);
 float GetDistanceSquared2D(Vec2 const& a, Vec2 const& b);
 
 bool DoDiscsOverlap2D(Vec2 const& centerA, float radiusA, Vec2 const& centerB, float radiusB);
+bool DoDiscAndAABBOverlap2D(Vec2 const& discCenter, float discRadius, Vec2 const& boxMins, Vec2 const& boxMaxs);
+bool DoDiscAndAABBOverlap2D(Vec2 const& discCenter, float discRadius, AABB2 const& box);
+bool DoDiscAndAABBOverlap2D(Disc2 const& disc, AABB2 const& box);
 
 bool DoAABB3sOverlap3D(Vec3 const& firstMins, Vec3 const& firstMaxs, Vec3 const& secondMins, Vec3 const& secondMaxs);
 bool DoAABB3sOverlap3D(AABB3 const& first, AABB3 const& second);
@@ -218,6 +221,7 @@ bool PushDiscOutOfFixedDisc2D(Disc2& discToPush, Disc2 const& fixedDisc);
 bool PushDiscsOutOfEachOther2D(Vec2& discCenterA, float discRadiusA, Vec2& discCenterB, float discRadiusB);
 bool PushDiscsOutOfEachOther2D(Disc2& discA, Disc2& discB);
 bool PushDiscOutOfFixedAABB2D(Vec2& discCenter, float discRadius, AABB2 const& box);
+bool PushDiscOutOfFixedAABB2D(Disc2& discToPush, AABB2 const& box);
 
 #pragma endregion
 

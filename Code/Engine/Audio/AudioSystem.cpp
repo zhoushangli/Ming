@@ -1,5 +1,4 @@
 #include "Engine/Audio/AudioSystem.hpp"
-#include "AudioSystem.hpp"
 #include "Engine/Core/ErrorWarningAssert.hpp"
 #include "Engine/Core/StringUtils.hpp"
 #include "Game/EngineBuildPreferences.hpp"
