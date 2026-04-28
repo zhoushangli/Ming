@@ -1,6 +1,5 @@
 #include "Engine/Math/MathUtils.hpp"
 
-#include "MathUtils.hpp"
 #include <math.h>
 
 float Abs(float value) { return (value < 0.f) ? -value : value; }
