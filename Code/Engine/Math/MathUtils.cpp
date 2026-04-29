@@ -872,18 +872,46 @@ bool PushDiscsOutOfEachOther2D(Disc2& discA, Disc2& discB)
 
 bool PushDiscOutOfFixedAABB2D(Vec2& discCenter, float discRadius, AABB2 const& box)
 {
+	float minDist             = 1e9f;
+	Vec2  minDir              = Vec2::ZERO;
+	auto  UpdateMinDistAndDir = [&](float dist, Vec2 const& dir)
+	{
+		if (dist < minDist)
+		{
+			minDist = dist;
+			minDir  = dir;
+		}
+	};
+
 	Vec2  nearest  = box.GetNearestPoint(discCenter);
 	Vec2  toCenter = discCenter - nearest;
 	float dist     = toCenter.GetLength();
 
-	if (dist >= discRadius || dist == 0.f)
+	if (dist >= discRadius)
 	{
 		return false;
 	}
+	else if (dist == 0.f)
+	{
+		float leftDist  = Abs(nearest.x - box.m_mins.x);
+		float rightDist = Abs(nearest.x - box.m_maxs.x);
+		float upDist    = Abs(nearest.y - box.m_maxs.y);
+		float downDist  = Abs(nearest.y - box.m_mins.y);
 
-	Vec2 pushDir = toCenter.GetNormalized();
-	discCenter   = nearest + pushDir * discRadius;
-	return true;
+		UpdateMinDistAndDir(leftDist, Vec2(-1.f, 0.f));
+		UpdateMinDistAndDir(rightDist, Vec2(1.f, 0.f));
+		UpdateMinDistAndDir(upDist, Vec2(0.f, 1.f));
+		UpdateMinDistAndDir(downDist, Vec2(0.f, -1.f));
+
+		discCenter = minDir * (discRadius + minDist) + nearest;
+		return true;
+	}
+	else
+	{
+		Vec2 pushDir = toCenter.GetNormalized();
+		discCenter   = nearest + pushDir * discRadius;
+		return true;
+	}
 }
 
 bool PushDiscOutOfFixedAABB2D(Disc2& discToPush, AABB2 const& box)
