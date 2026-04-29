@@ -35,6 +35,7 @@
 
 HGLRC g_openGLRenderingContext = nullptr;
 
+
 const uint8_t k_defaultTexture[16] = {
 	0xFF,
 	0xFF,

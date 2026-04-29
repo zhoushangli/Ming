@@ -201,6 +201,7 @@
     <ClCompile Include="Math\FloatRange.cpp" />
     <ClCompile Include="Math\IntRange.cpp" />
     <ClCompile Include="Math\IntVec2.cpp" />
+    <ClCompile Include="Math\IntVec3.cpp" />
     <ClCompile Include="Math\LineSegment2.cpp" />
     <ClCompile Include="Math\MathCommon.cpp" />
     <ClCompile Include="Math\MathUtils.cpp" />
@@ -270,6 +271,7 @@
     <ClInclude Include="Math\FloatRange.hpp" />
     <ClInclude Include="Math\IntRange.hpp" />
     <ClInclude Include="Math\IntVec2.hpp" />
+    <ClInclude Include="Math\IntVec3.hpp" />
     <ClInclude Include="Math\LineSegment2.hpp" />
     <ClInclude Include="Math\MathCommon.hpp" />
     <ClInclude Include="Math\MathUtils.hpp" />

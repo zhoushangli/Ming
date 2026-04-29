@@ -14,3 +14,11 @@ CylinderZ3::CylinderZ3(Vec2 const& centerXY, FloatRange const& minMaxZ, float ra
 }
 
 Vec3 const CylinderZ3::GetNearestPoint(Vec3 const& point) const { return GetNearestPointOnZCylinder3D(point, *this); }
+
+CylinderZ3 CylinderZ3::GetTransformed(Matrix4x4 const& transform) const
+{
+	Vec2 worldCenter = m_centerXY + transform.GetTranslation2D();
+	FloatRange worldMinMaxZ(m_minMaxZ.m_min + transform.GetTranslation3D().z, m_minMaxZ.m_max + transform.GetTranslation3D().z);
+
+	return CylinderZ3(worldCenter, worldMinMaxZ, m_radius);
+}

@@ -2,6 +2,7 @@
 
 #include "Engine/Core/Engine.hpp"
 #include "Engine/Core/EventSystem.hpp"
+#include "Engine/Math/CylinderZ3.hpp"
 
 enum class DebugRenderMode
 {
@@ -48,6 +49,8 @@ void DebugAddWorldCylinder(const Vec3 &start, const Vec3 &end, float radius, flo
 void DebugAddWorldWireCylinder(const Vec3 &start, const Vec3 &end, float radius, float duration,
                                const Rgba8 &startColor = Rgba8::WHITE, const Rgba8 &endColor = Rgba8::WHITE,
                                DebugRenderMode mode = DebugRenderMode::USE_DEPTH);
+
+void DebugAddWorldWireCylinder(const CylinderZ3 &cylinder, const Rgba8 &color, float duration, DebugRenderMode mode = DebugRenderMode::USE_DEPTH);
 
 void DebugAddWorldCapsule(const Vec3 &start, const Vec3 &end, float radius, float duration,
                           const Rgba8 &startColor = Rgba8::WHITE, const Rgba8 &endColor = Rgba8::WHITE,

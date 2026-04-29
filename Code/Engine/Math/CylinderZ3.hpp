@@ -1,8 +1,9 @@
 #pragma once
 
-#include "Vec2.hpp"
-#include "Vec3.hpp"
+#include "Engine/Math/Vec2.hpp"
+#include "Engine/Math/Vec3.hpp"
 #include "Engine/Math/FloatRange.hpp"
+#include "Engine/Math/Matrix4x4.hpp"
 
 class CylinderZ3
 {
@@ -13,6 +14,7 @@ public:
     ~CylinderZ3() = default;
 
     Vec3 const GetNearestPoint(Vec3 const &point) const;
+    CylinderZ3 GetTransformed(Matrix4x4 const &transform) const;
 
 public:
     Vec2 m_centerXY;
