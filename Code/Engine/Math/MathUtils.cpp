@@ -1382,3 +1382,9 @@ Vec3 GetNearestPointOnLine3D(Vec3 referencePos, Vec3 const& lineStart, Vec3 cons
 
 	return lineStart + lineDir * projectedLength;
 }
+
+Vec3 GetNearestPointOnCapsule3D(Vec3 referencePos, Capsule3 const& capsule)
+{
+	Vec3 nearestPointOnBone = GetNearestPointOnLine3D(referencePos, capsule.m_start, capsule.m_end);
+	return GetNearestPointOnSphere3D(referencePos, nearestPointOnBone, capsule.m_radius);
+}

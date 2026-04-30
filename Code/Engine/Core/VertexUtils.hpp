@@ -100,6 +100,22 @@ void AddVertsForCapsule3D(std::vector<Vertex> &verts,
                           const Vec3 &start,
                           const Vec3 &end,
                           float radius,
+                          const AABB2 &UVs,
+                          const Rgba8 &color = Rgba8::WHITE,
+                          int numSlices = 32,
+                          int numStacks = 16);
+
+void AddVertsForCapsule3D(std::vector<Vertex> &verts,
+                          const Vec3 &start,
+                          const Vec3 &end,
+                          float radius,
+                          const Rgba8 &color = Rgba8::WHITE,
+                          int numSlices = 32,
+                          int numStacks = 16);
+
+void AddVertsForCapsule3D(std::vector<Vertex> &verts,
+                          Capsule3 const &capsule,
+                          const AABB2 &UVs,
                           const Rgba8 &color = Rgba8::WHITE,
                           int numSlices = 32,
                           int numStacks = 16);

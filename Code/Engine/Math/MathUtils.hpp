@@ -281,6 +281,7 @@ Vec3 GetNearestPointOnSphere3D(Vec3 referencePos, Sphere3 const& sphere);
 Vec3 GetNearestPointOnSphere3D(Vec3 referencePos, Vec3 const& sphereCenter, float sphereRadius);
 
 Vec3 GetNearestPointOnLine3D(Vec3 referencePos, Vec3 const& lineStart, Vec3 const& lineEnd);
+Vec3 GetNearestPointOnCapsule3D(Vec3 referencePos, Capsule3 const& capsule);
 
 #pragma endregion
 

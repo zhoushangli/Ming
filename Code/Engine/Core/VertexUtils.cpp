@@ -641,6 +641,7 @@ void AddVertsForCapsule3D(
 	Vec3 const&          start,
 	Vec3 const&          end,
 	float                radius,
+	AABB2 const&         UVs,
 	Rgba8 const&         color /*= Rgba8::WHITE*/,
 	int                  numSlices /*= 32*/,
 	int                  numStacks /*= 16*/
@@ -655,7 +656,7 @@ void AddVertsForCapsule3D(
 	float const axisLength = axis.GetLength();
 	if (axisLength <= 0.f)
 	{
-		AddVertsForSphere3D(verts, start, radius, color, AABB2::UNIT, numSlices, numStacks);
+		AddVertsForSphere3D(verts, start, radius, color, UVs, numSlices, numStacks);
 		return;
 	}
 
@@ -674,8 +675,14 @@ void AddVertsForCapsule3D(
 	iBasis /= iLen;
 	Vec3 jBasis = CrossProduct3D(kBasis, iBasis);
 
-	float const deltaYaw = TWO_PI / static_cast<float>(numSlices);
+	float const deltaYaw   = TWO_PI / static_cast<float>(numSlices);
 	int const   hemiStacks = Max(1, numStacks / 2);
+
+	float const uRange       = UVs.m_maxs.x - UVs.m_mins.x;
+	float const vRange       = UVs.m_maxs.y - UVs.m_mins.y;
+	float const totalVLength = axisLength + 2.f * radius;
+	float const bodyVMinFrac = radius / totalVLength;
+	float const bodyVMaxFrac = (radius + axisLength) / totalVLength;
 
 	auto GetRadialDir = [&](float yaw) -> Vec3
 	{
@@ -688,68 +695,120 @@ void AddVertsForCapsule3D(
 		return center + GetRadialDir(yaw) * (radius * radialScale) + kBasis * (radius * sinf(pitch));
 	};
 
+	auto GetU = [&](float yawFrac) -> float
+	{
+		return UVs.m_mins.x + yawFrac * uRange;
+	};
+
+	auto GetV = [&](float vFrac) -> float
+	{
+		return UVs.m_mins.y + vFrac * vRange;
+	};
+
 	for (int sliceIndex = 0; sliceIndex < numSlices; ++sliceIndex)
 	{
-		float yaw0 = deltaYaw * static_cast<float>(sliceIndex);
-		float yaw1 = deltaYaw * static_cast<float>(sliceIndex + 1);
+		float const yaw0Frac = static_cast<float>(sliceIndex) / static_cast<float>(numSlices);
+		float const yaw1Frac = static_cast<float>(sliceIndex + 1) / static_cast<float>(numSlices);
+		float const yaw0     = deltaYaw * static_cast<float>(sliceIndex);
+		float const yaw1     = deltaYaw * static_cast<float>(sliceIndex + 1);
 
-		Vec3 rim0 = GetRadialDir(yaw0) * radius;
-		Vec3 rim1 = GetRadialDir(yaw1) * radius;
+		Vec3 const rim0 = GetRadialDir(yaw0) * radius;
+		Vec3 const rim1 = GetRadialDir(yaw1) * radius;
 
-		Vec3 b0 = start + rim0;
-		Vec3 b1 = start + rim1;
-		Vec3 t0 = end + rim0;
-		Vec3 t1 = end + rim1;
+		Vec3 const b0 = start + rim0;
+		Vec3 const b1 = start + rim1;
+		Vec3 const t0 = end + rim0;
+		Vec3 const t1 = end + rim1;
 
-		verts.emplace_back(b0, color);
-		verts.emplace_back(b1, color);
-		verts.emplace_back(t1, color);
+		float const u0      = GetU(yaw0Frac);
+		float const u1      = GetU(yaw1Frac);
+		float const vBottom = GetV(bodyVMinFrac);
+		float const vTop    = GetV(bodyVMaxFrac);
 
-		verts.emplace_back(b0, color);
-		verts.emplace_back(t1, color);
-		verts.emplace_back(t0, color);
+		verts.emplace_back(b0, color, Vec2(u0, vBottom));
+		verts.emplace_back(b1, color, Vec2(u1, vBottom));
+		verts.emplace_back(t1, color, Vec2(u1, vTop));
+
+		verts.emplace_back(b0, color, Vec2(u0, vBottom));
+		verts.emplace_back(t1, color, Vec2(u1, vTop));
+		verts.emplace_back(t0, color, Vec2(u0, vTop));
 	}
 
 	for (int stackIndex = 0; stackIndex < hemiStacks; ++stackIndex)
 	{
-		float lowerPitch0 = -HALF_PI + (HALF_PI * static_cast<float>(stackIndex) / static_cast<float>(hemiStacks));
-		float lowerPitch1 =
+		float const lowerPitch0 = -HALF_PI + (HALF_PI * static_cast<float>(stackIndex) / static_cast<float>(hemiStacks));
+		float const lowerPitch1 =
 			-HALF_PI + (HALF_PI * static_cast<float>(stackIndex + 1) / static_cast<float>(hemiStacks));
-		float upperPitch0 = HALF_PI * static_cast<float>(stackIndex) / static_cast<float>(hemiStacks);
-		float upperPitch1 = HALF_PI * static_cast<float>(stackIndex + 1) / static_cast<float>(hemiStacks);
+		float const upperPitch0 = HALF_PI * static_cast<float>(stackIndex) / static_cast<float>(hemiStacks);
+		float const upperPitch1 = HALF_PI * static_cast<float>(stackIndex + 1) / static_cast<float>(hemiStacks);
+
+		float const lowerV0Frac = (radius * (sinf(lowerPitch0) + 1.f) * 0.5f) / totalVLength;
+		float const lowerV1Frac = (radius * (sinf(lowerPitch1) + 1.f) * 0.5f) / totalVLength;
+		float const upperV0Frac = (radius + axisLength + radius * sinf(upperPitch0)) / totalVLength;
+		float const upperV1Frac = (radius + axisLength + radius * sinf(upperPitch1)) / totalVLength;
 
 		for (int sliceIndex = 0; sliceIndex < numSlices; ++sliceIndex)
 		{
-			float yaw0 = deltaYaw * static_cast<float>(sliceIndex);
-			float yaw1 = deltaYaw * static_cast<float>(sliceIndex + 1);
+			float const yaw0Frac = static_cast<float>(sliceIndex) / static_cast<float>(numSlices);
+			float const yaw1Frac = static_cast<float>(sliceIndex + 1) / static_cast<float>(numSlices);
+			float const yaw0     = deltaYaw * static_cast<float>(sliceIndex);
+			float const yaw1     = deltaYaw * static_cast<float>(sliceIndex + 1);
 
-			Vec3 lower00 = GetHemispherePoint(start, yaw0, lowerPitch0);
-			Vec3 lower10 = GetHemispherePoint(start, yaw1, lowerPitch0);
-			Vec3 lower11 = GetHemispherePoint(start, yaw1, lowerPitch1);
-			Vec3 lower01 = GetHemispherePoint(start, yaw0, lowerPitch1);
+			float const u0 = GetU(yaw0Frac);
+			float const u1 = GetU(yaw1Frac);
 
-			verts.emplace_back(lower00, color);
-			verts.emplace_back(lower10, color);
-			verts.emplace_back(lower11, color);
+			Vec3 const lower00 = GetHemispherePoint(start, yaw0, lowerPitch0);
+			Vec3 const lower10 = GetHemispherePoint(start, yaw1, lowerPitch0);
+			Vec3 const lower11 = GetHemispherePoint(start, yaw1, lowerPitch1);
+			Vec3 const lower01 = GetHemispherePoint(start, yaw0, lowerPitch1);
 
-			verts.emplace_back(lower00, color);
-			verts.emplace_back(lower11, color);
-			verts.emplace_back(lower01, color);
+			verts.emplace_back(lower00, color, Vec2(u0, GetV(lowerV0Frac)));
+			verts.emplace_back(lower10, color, Vec2(u1, GetV(lowerV0Frac)));
+			verts.emplace_back(lower11, color, Vec2(u1, GetV(lowerV1Frac)));
 
-			Vec3 upper00 = GetHemispherePoint(end, yaw0, upperPitch0);
-			Vec3 upper10 = GetHemispherePoint(end, yaw1, upperPitch0);
-			Vec3 upper11 = GetHemispherePoint(end, yaw1, upperPitch1);
-			Vec3 upper01 = GetHemispherePoint(end, yaw0, upperPitch1);
+			verts.emplace_back(lower00, color, Vec2(u0, GetV(lowerV0Frac)));
+			verts.emplace_back(lower11, color, Vec2(u1, GetV(lowerV1Frac)));
+			verts.emplace_back(lower01, color, Vec2(u0, GetV(lowerV1Frac)));
 
-			verts.emplace_back(upper00, color);
-			verts.emplace_back(upper10, color);
-			verts.emplace_back(upper11, color);
+			Vec3 const upper00 = GetHemispherePoint(end, yaw0, upperPitch0);
+			Vec3 const upper10 = GetHemispherePoint(end, yaw1, upperPitch0);
+			Vec3 const upper11 = GetHemispherePoint(end, yaw1, upperPitch1);
+			Vec3 const upper01 = GetHemispherePoint(end, yaw0, upperPitch1);
 
-			verts.emplace_back(upper00, color);
-			verts.emplace_back(upper11, color);
-			verts.emplace_back(upper01, color);
+			verts.emplace_back(upper00, color, Vec2(u0, GetV(upperV0Frac)));
+			verts.emplace_back(upper10, color, Vec2(u1, GetV(upperV0Frac)));
+			verts.emplace_back(upper11, color, Vec2(u1, GetV(upperV1Frac)));
+
+			verts.emplace_back(upper00, color, Vec2(u0, GetV(upperV0Frac)));
+			verts.emplace_back(upper11, color, Vec2(u1, GetV(upperV1Frac)));
+			verts.emplace_back(upper01, color, Vec2(u0, GetV(upperV1Frac)));
 		}
 	}
+}
+
+void AddVertsForCapsule3D(
+	std::vector<Vertex>& verts,
+	Vec3 const&          start,
+	Vec3 const&          end,
+	float                radius,
+	Rgba8 const&         color /*= Rgba8::WHITE*/,
+	int                  numSlices /*= 32*/,
+	int                  numStacks /*= 16*/
+)
+{
+	AddVertsForCapsule3D(verts, start, end, radius, AABB2::UNIT, color, numSlices, numStacks);
+}
+
+void AddVertsForCapsule3D(
+	std::vector<Vertex>& verts,
+	Capsule3 const&      capsule,
+	AABB2 const&         UVs,
+	Rgba8 const&         color /*= Rgba8::WHITE*/,
+	int                  numSlices /*= 32*/,
+	int                  numStacks /*= 16*/
+)
+{
+	AddVertsForCapsule3D(verts, capsule.m_start, capsule.m_end, capsule.m_radius, UVs, color, numSlices, numStacks);
 }
 
 void AddVertsForCapsule3D(
@@ -760,7 +819,7 @@ void AddVertsForCapsule3D(
 	int                  numStacks /*= 16*/
 )
 {
-	AddVertsForCapsule3D(verts, capsule.m_start, capsule.m_end, capsule.m_radius, color, numSlices, numStacks);
+	AddVertsForCapsule3D(verts, capsule.m_start, capsule.m_end, capsule.m_radius, AABB2::UNIT, color, numSlices, numStacks);
 }
 
 void AddVertsForCone3D(
