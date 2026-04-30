@@ -337,6 +337,11 @@ RaycastResult3D RaycastVsCapsule3D(
 	Vec3 rayStart, Vec3 rayForwardNormal, float rayLength, Vec3 capsuleStart, Vec3 capsuleEnd, float capsuleRadius
 )
 {
+	if (capsuleStart == capsuleEnd)
+	{
+		return RaycastVsSphere3D(rayStart, rayForwardNormal, rayLength, capsuleStart, capsuleRadius);
+	}
+
 	auto GetClosestImpact = [](RaycastResult3D const& resultA, RaycastResult3D const& resultB) -> RaycastResult3D
 	{
 		if (!resultA.m_didImpact)
