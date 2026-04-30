@@ -16,6 +16,7 @@
 #include "Engine/Math/Vec2.hpp"
 #include "Engine/Math/Vec3.hpp"
 #include "Engine/Math/Vec4.hpp"
+#include "Engine/Math/Capsule3.hpp"
 
 //------------------------------------------------------------------------------------------------
 // Constants
@@ -120,6 +121,8 @@ bool DoCylinderZAndSphereOverlap3D(
 	float             sphereRadius
 );
 bool DoCylinderZAndSphereOverlap3D(CylinderZ3 const& cylinder, Sphere3 const& sphere);
+
+bool DoCapsulesOverlap3D(Capsule3 const& capsuleA, Capsule3 const& capsuleB);
 
 #pragma endregion
 
@@ -276,6 +279,8 @@ Vec3 GetNearestPointOnZCylinder3D(
 );
 Vec3 GetNearestPointOnSphere3D(Vec3 referencePos, Sphere3 const& sphere);
 Vec3 GetNearestPointOnSphere3D(Vec3 referencePos, Vec3 const& sphereCenter, float sphereRadius);
+
+Vec3 GetNearestPointOnLine3D(Vec3 referencePos, Vec3 const& lineStart, Vec3 const& lineEnd);
 
 #pragma endregion
 

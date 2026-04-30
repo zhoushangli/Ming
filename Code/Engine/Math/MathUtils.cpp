@@ -244,6 +244,73 @@ bool DoCylinderZAndSphereOverlap3D(CylinderZ3 const& cylinder, Sphere3 const& sp
 	);
 }
 
+// Capsule overlap = closest distance between their center segments <= radius sum.
+// 1) Represent center segments as:
+//      P(t1) = A0 + t1 * d1,  Q(t2) = B0 + t2 * d2,  t1,t2 in [0,1]
+// 2) Minimize squared distance:
+//      F(t1,t2) = |P(t1) - Q(t2)|^2 = |r + t1*d1 - t2*d2|^2
+// 3) Set partial derivatives to zero and solve the 2x2 system:
+//      t1 = (b*f - c*e) / (a*e - b*b)
+//      t2 = (a*f - c*b) / (a*e - b*b)
+// 4) If t1,t2 are inside [0,1], use them; otherwise test endpoint projections.
+// 5) Capsules overlap if closestDistSq < (radiusA + radiusB)^2.
+bool DoCapsulesOverlap3D(Capsule3 const& capsuleA, Capsule3 const& capsuleB)
+{
+	Vec3 d1 = capsuleA.m_end - capsuleA.m_start;
+	Vec3 d2 = capsuleB.m_end - capsuleB.m_start;
+	Vec3 r  = capsuleA.m_start - capsuleB.m_start;
+
+	float a = DotProduct3D(d1, d1); // d1·d1
+	float e = DotProduct3D(d2, d2); // d2·d2
+	float b = DotProduct3D(d1, d2); // d1·d2
+	float c = DotProduct3D(d1, r);  // d1·r
+	float f = DotProduct3D(d2, r);  // d2·r
+
+	float denom = a * e - b * b;
+	float t1    = (b * f - c * e) / denom;
+	float t2    = (a * f - c * b) / denom;
+
+	Vec3 closestPointA = capsuleA.m_start + t1 * d1;
+	Vec3 closestPointB = capsuleB.m_start + t2 * d2;
+
+	if (t1 >= 0.f && t1 <= 1.f && t2 >= 0.f && t2 <= 1.f)
+	{
+		closestPointA = capsuleA.m_start + d1 * t1;
+		closestPointB = capsuleB.m_start + d2 * t2;
+	}
+	else
+	{
+		float bestDistSq         = 1e9f;
+		auto  UpdateClosestPoint = [&](Vec3 const& pointA, Vec3 const& pointB)
+		{
+			float distSq = (pointA - pointB).GetLengthSquared();
+
+			if (distSq < bestDistSq)
+			{
+				bestDistSq    = distSq;
+				closestPointA = pointA;
+				closestPointB = pointB;
+			}
+		};
+
+		UpdateClosestPoint(
+			capsuleA.m_start,
+			GetNearestPointOnLine3D(capsuleA.m_start, capsuleB.m_start, capsuleB.m_end)
+		);
+		UpdateClosestPoint(capsuleA.m_end, GetNearestPointOnLine3D(capsuleA.m_end, capsuleB.m_start, capsuleB.m_end));
+		UpdateClosestPoint(
+			capsuleB.m_start,
+			GetNearestPointOnLine3D(capsuleB.m_start, capsuleA.m_start, capsuleA.m_end)
+		);
+		UpdateClosestPoint(capsuleB.m_end, GetNearestPointOnLine3D(capsuleB.m_end, capsuleA.m_start, capsuleA.m_end));
+	}
+
+	float radiusSumSq = (capsuleA.m_radius + capsuleB.m_radius) * (capsuleA.m_radius + capsuleB.m_radius);
+	float distSq      = GetDistanceSquared3D(closestPointA, closestPointB);
+
+	return distSq < radiusSumSq;
+}
+
 void TransformPosition2D(Vec2& pos, float scale, float rotationDegrees, Vec2 const& translation)
 {
 	pos *= scale;
@@ -1290,4 +1357,28 @@ Vec3 GetNearestPointOnSphere3D(Vec3 referencePos, Vec3 const& sphereCenter, floa
 
 	Vec3 const outwardNormal = displacement / distance;
 	return sphereCenter + outwardNormal * sphereRadius;
+}
+
+Vec3 GetNearestPointOnLine3D(Vec3 referencePos, Vec3 const& lineStart, Vec3 const& lineEnd)
+{
+	if (lineStart == lineEnd)
+	{
+		return lineStart;
+	}
+
+	Vec3  startTooReference = referencePos - lineStart;
+	float lineLength        = (lineEnd - lineStart).GetLength();
+	Vec3  lineDir           = (lineEnd - lineStart) / lineLength;
+	float projectedLength   = DotProduct3D(startTooReference, lineDir);
+
+	if (projectedLength <= 0.f)
+	{
+		return lineStart;
+	}
+	else if (projectedLength >= lineLength)
+	{
+		return lineEnd;
+	}
+
+	return lineStart + lineDir * projectedLength;
 }
