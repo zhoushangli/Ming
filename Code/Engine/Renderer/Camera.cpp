@@ -1,7 +1,8 @@
 #include "Engine/Renderer/Camera.hpp"
 
-#include "Engine/Math/Matrix4x4.hpp"
+#include "Camera.hpp"
 #include "Engine/Math/MathUtils.hpp"
+#include "Engine/Math/Matrix4x4.hpp"
 #include "Engine/Math/Vec2.hpp"
 #include "Engine/Math/Vec3.hpp"
 
@@ -24,6 +25,12 @@ void Camera::SetPerspectiveView(float aspect, float fov, float near, float far)
 	m_perspectiveFOV    = fov;
 	m_perspectiveNear   = near;
 	m_perspectiveFar    = far;
+}
+
+void Camera::SetTransform(const Matrix4x4& cameraToWorld)
+{
+	m_position = cameraToWorld.GetTranslation3D();
+	m_orientation.SetFromMatrix_IFwd_JLeft_KUp(cameraToWorld);
 }
 
 void Camera::SetPositionAndOrientation(const Vec3& position, const EulerAngles& orientation)
@@ -142,7 +149,7 @@ Matrix4x4 Camera::GetOrthographicInverseMatrix() const
 	float n = m_orthographicNear;
 	float f = m_orthographicFar;
 
-	Matrix4x4 inverse = Matrix4x4::ZERO;
+	Matrix4x4 inverse               = Matrix4x4::ZERO;
 	inverse.m_values[Matrix4x4::Ix] = (r - l) * 0.5f;
 	inverse.m_values[Matrix4x4::Jy] = (t - b) * 0.5f;
 	inverse.m_values[Matrix4x4::Kz] = (f - n);
@@ -160,12 +167,12 @@ Matrix4x4 Camera::GetPerspectiveInverseMatrix() const
 	float scaleY = c / s;
 	float scaleX = scaleY / m_perspectiveAspect;
 
-	float zNear = m_perspectiveNear;
-	float zFar  = m_perspectiveFar;
-	float scaleZ = zFar / (zFar - zNear);
+	float zNear      = m_perspectiveNear;
+	float zFar       = m_perspectiveFar;
+	float scaleZ     = zFar / (zFar - zNear);
 	float translateZ = (zNear * zFar) / (zNear - zFar);
 
-	Matrix4x4 inverse = Matrix4x4::ZERO;
+	Matrix4x4 inverse               = Matrix4x4::ZERO;
 	inverse.m_values[Matrix4x4::Ix] = 1.0f / scaleX;
 	inverse.m_values[Matrix4x4::Jy] = 1.0f / scaleY;
 	inverse.m_values[Matrix4x4::Tz] = 1.0f;

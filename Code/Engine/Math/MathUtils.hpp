@@ -4,6 +4,7 @@
 #include "Engine/Math/AABB2.hpp"
 #include "Engine/Math/AABB3.hpp"
 #include "Engine/Math/Capsule2.hpp"
+#include "Engine/Math/Capsule3.hpp"
 #include "Engine/Math/CylinderZ3.hpp"
 #include "Engine/Math/Disc2.hpp"
 #include "Engine/Math/EulerAngles.hpp"
@@ -16,7 +17,6 @@
 #include "Engine/Math/Vec2.hpp"
 #include "Engine/Math/Vec3.hpp"
 #include "Engine/Math/Vec4.hpp"
-#include "Engine/Math/Capsule3.hpp"
 
 //------------------------------------------------------------------------------------------------
 // Constants
@@ -203,6 +203,11 @@ float DotProduct2D(Vec2 const& a, Vec2 const& b);
 float DotProduct3D(Vec3 const& a, Vec3 const& b);
 float DotProduct4D(Vec4 const& a, Vec4 const& b);
 
+// About the cross product direction
+// 1) Show your right hand!
+// 2) Point at the first vector with your index finger
+// 3) Point at the second vector with your middle finger
+// 4) Your thumb will now be pointing in the direction of the cross product result
 float CrossProduct2D(Vec2 const& a, Vec2 const& b);
 Vec3  CrossProduct3D(Vec3 const& a, Vec3 const& b);
 

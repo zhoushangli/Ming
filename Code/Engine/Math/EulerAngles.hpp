@@ -10,7 +10,6 @@ public:
     EulerAngles(float yawDegrees, float pitchDegrees, float rollDegrees);
 	static EulerAngles MakeFromForward(Vec3 const& forward);
 
-
     Vec3 GetForwardDir_IFwd_JLeft_KUp() const;
     Vec3 GetForwardDir_IRight_JUp_KFwd() const;
     void GetAsVectors_IFwd_JLeft_KUp(Vec3 &out_forwardIBasis, Vec3 &out_leftJBasis, Vec3 &out_upKBasis) const;

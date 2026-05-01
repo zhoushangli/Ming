@@ -96,7 +96,13 @@ void EulerAngles::SetFromMatrix_IFwd_JLeft_KUp(Matrix4x4 const& mat)
 
 void EulerAngles::SetForwardDir_IFwd(Vec3 const& forwardIBasis)
 {
-	Vec3 leftJBasis = CrossProduct3D(forwardIBasis, Vec3::UP);
+	Vec3 helperVector = Vec3::UP;
+	if (DotProduct3D(forwardIBasis, Vec3::UP) > 0.99f)
+	{
+		helperVector = Vec3::RIGHT;
+	}
+
+	Vec3 leftJBasis = CrossProduct3D(helperVector, forwardIBasis);
 	leftJBasis.Normalize();
 
 	Vec3 upZBasis = CrossProduct3D(forwardIBasis, leftJBasis);
