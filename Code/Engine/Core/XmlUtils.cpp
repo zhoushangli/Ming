@@ -85,6 +85,27 @@ Vec2 ParseXmlAttribute(XmlElement const& element, char const* attributeName, Vec
     return value;
 }
 
+Vec3 ParseXmlAttribute(XmlElement const& element, char const* attributeName, Vec3 const& defaultValue)
+{
+    char const* text = element.Attribute(attributeName);
+    if (text == nullptr)
+    {
+        return defaultValue;
+    }
+
+    Strings parts = SplitStringOnDelimiter(std::string(text), ',');
+    if (parts.size() < 3)
+    {
+        return defaultValue;
+    }
+
+    return Vec3(
+        static_cast<float>(atof(parts[0].c_str())),
+        static_cast<float>(atof(parts[1].c_str())),
+        static_cast<float>(atof(parts[2].c_str()))
+    );
+}
+
 IntVec2 ParseXmlAttribute(XmlElement const& element, char const* attributeName, IntVec2 const& defaultValue)
 {
     char const* text = element.Attribute(attributeName);
@@ -94,6 +115,20 @@ IntVec2 ParseXmlAttribute(XmlElement const& element, char const* attributeName, 
     }
 
     IntVec2 value;
+    value.SetFromText(text);
+
+    return value;
+}
+
+IntVec3 ParseXmlAttribute(XmlElement const& element, char const* attributeName, IntVec3 const& defaultValue)
+{
+    char const* text = element.Attribute(attributeName);
+    if (text == nullptr)
+    {
+        return defaultValue;
+    }
+
+    IntVec3 value;
     value.SetFromText(text);
 
     return value;
