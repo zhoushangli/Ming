@@ -1,4 +1,5 @@
 #include "Engine/Math/FloatRange.hpp"
+#include "Engine/Math/RandomNumberGenerator.hpp"
 
 // Static consts
 const FloatRange FloatRange::ZERO(0.f, 0.f);
@@ -50,4 +51,9 @@ bool FloatRange::IsOnRange(float value) const
 bool FloatRange::IsOverlap(const FloatRange &other) const
 {
     return (m_min < other.m_max) && (other.m_min < m_max);
+}
+
+float FloatRange::GetRandomInRange() const
+{
+    return RandomNumberGenerator::Get().RollRandomFloatInRange(m_min, m_max);
 }

@@ -148,6 +148,11 @@ Vec3        Interpolate(Vec3 const& start, Vec3 const& end, float fraction);
 Rgba8       Interpolate(Rgba8 const& start, Rgba8 const& end, float fraction);
 EulerAngles Interpolate(EulerAngles const& start, EulerAngles const& end, float fraction);
 
+float InterpolateClamped(float start, float end, float fraction);
+Vec3  InterpolateClamped(Vec3 const& start, Vec3 const& end, float fraction);
+Rgba8 InterpolateClamped(Rgba8 const& start, Rgba8 const& end, float fraction);
+EulerAngles InterpolateClamped(EulerAngles const& start, EulerAngles const& end, float fraction);
+
 float SmoothStart2(float t);
 float SmoothStart3(float t);
 float SmoothStart4(float t);
@@ -181,7 +186,6 @@ Vec3 ComputeQuinticBezier3D(
 	Vec3 const& A, Vec3 const& B, Vec3 const& C, Vec3 const& D, Vec3 const& E, Vec3 const& F, float t
 );
 
-float InterpolateClamped(float start, float end, float fraction);
 float GetFractionWithinRange(float value, float start, float end);
 float RangeMap(float inValue, float inStart, float inEnd, float outStart, float outEnd);
 float RangeMapClamped(float inValue, float inStart, float inEnd, float outStart, float outEnd);
@@ -321,8 +325,8 @@ enum class BillboardType
 Matrix4x4 GetBillboardTransform(
 	BillboardType    billboardType,
 	Matrix4x4 const& targetTransform,
-	const Vec3&      billboardPosition,
-	const Vec2&      billboardScale = Vec2(1.0f, 1.0f)
+	const Vec3&      billboardPosition = Vec3::ZERO,
+	const Vec2&      billboardScale    = Vec2::ONE
 );
 
 #pragma endregion

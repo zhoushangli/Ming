@@ -603,6 +603,24 @@ float InterpolateClamped(float start, float end, float fraction)
 	return Interpolate(start, end, f);
 }
 
+Vec3 InterpolateClamped(Vec3 const& start, Vec3 const& end, float fraction)
+{
+	float f = GetClampedZeroToOne(fraction);
+	return Interpolate(start, end, f);
+}
+
+Rgba8 InterpolateClamped(Rgba8 const& start, Rgba8 const& end, float fraction)
+{
+	float f = GetClampedZeroToOne(fraction);
+	return Interpolate(start, end, f);
+}
+
+EulerAngles InterpolateClamped(EulerAngles const& start, EulerAngles const& end, float fraction)
+{
+	float f = GetClampedZeroToOne(fraction);
+	return Interpolate(start, end, f);
+}
+
 float GetFractionWithinRange(float value, float start, float end) { return (value - start) / (end - start); }
 
 float RangeMap(float inValue, float inStart, float inEnd, float outStart, float outEnd)

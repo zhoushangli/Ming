@@ -29,6 +29,9 @@ public:
 	Rgba8(unsigned char red, unsigned char green, unsigned char blue, unsigned char alpha);
 	~Rgba8() = default;
 
+	bool operator==(Rgba8 const& other) const;
+	bool operator!=(Rgba8 const& other) const;
+
     Rgba8 const operator+(float value) const;
     Rgba8 const operator-(float value) const;
     Rgba8 const operator*(float value) const;

@@ -35,6 +35,16 @@ Rgba8::Rgba8(unsigned char red, unsigned char green, unsigned char blue, unsigne
     : r(red), g(green), b(blue), a(alpha)
 {}
 
+bool Rgba8::operator==(Rgba8 const& other) const
+{
+	return r == other.r && g == other.g && b == other.b && a == other.a;
+}
+
+bool Rgba8::operator!=(Rgba8 const& other) const
+{
+	return !(*this == other);
+}
+
 Rgba8 const Rgba8::operator+(float value) const
 {
     return Rgba8(

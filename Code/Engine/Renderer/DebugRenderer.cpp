@@ -86,6 +86,80 @@ DebugObject MakeDebugObject(
 	return object;
 }
 
+DebugObject MakeWorldSphereObject(
+	DebugObjectType type,
+	Vec3 const&     center,
+	float           radius,
+	float           duration,
+	Rgba8 const&    startColor,
+	Rgba8 const&    endColor,
+	DebugRenderMode mode
+)
+{
+	DebugObject object = MakeDebugObject(type, duration, startColor, endColor, mode);
+	object.center      = center;
+	object.radius      = radius;
+	AddVertsForSphere3D(object.verts, center, radius, startColor);
+	return object;
+}
+
+DebugObject MakeWorldCylinderObject(
+	DebugObjectType type,
+	Vec3 const&     start,
+	Vec3 const&     end,
+	float           radius,
+	float           duration,
+	Rgba8 const&    startColor,
+	Rgba8 const&    endColor,
+	DebugRenderMode mode
+)
+{
+	DebugObject object = MakeDebugObject(type, duration, startColor, endColor, mode);
+	object.start       = start;
+	object.end         = end;
+	object.radius      = radius;
+	AddVertsForCylinder3D(object.verts, start, end, radius, startColor);
+	return object;
+}
+
+DebugObject MakeWorldCapsuleObject(
+	DebugObjectType type,
+	Vec3 const&     start,
+	Vec3 const&     end,
+	float           radius,
+	float           duration,
+	Rgba8 const&    startColor,
+	Rgba8 const&    endColor,
+	DebugRenderMode mode
+)
+{
+	DebugObject object = MakeDebugObject(type, duration, startColor, endColor, mode);
+	object.start       = start;
+	object.end         = end;
+	object.radius      = radius;
+	AddVertsForCapsule3D(object.verts, start, end, radius, startColor);
+	return object;
+}
+
+DebugObject MakeWorldArrowObject(
+	DebugObjectType type,
+	Vec3 const&     start,
+	Vec3 const&     end,
+	float           radius,
+	float           duration,
+	Rgba8 const&    startColor,
+	Rgba8 const&    endColor,
+	DebugRenderMode mode
+)
+{
+	DebugObject object = MakeDebugObject(type, duration, startColor, endColor, mode);
+	object.start       = start;
+	object.end         = end;
+	object.radius      = radius;
+	AddVertsForArrow3D(object.verts, start, end, radius, startColor);
+	return object;
+}
+
 Rgba8 GetDebugObjectColor(DebugObject const& obj)
 {
 	if (obj.totalDuration < 0.f)
@@ -101,6 +175,25 @@ Rgba8 GetDebugObjectColor(DebugObject const& obj)
 	float t = 1.f - (obj.remainingDuration / obj.totalDuration);
 	t       = GetClamped(t, 0.f, 1.f);
 	return Interpolate(obj.startColor, obj.endColor, t);
+}
+
+bool IsUniformColorCachedWorldObject(DebugObject const& obj)
+{
+	switch (obj.type)
+	{
+	case DebugObjectType::WORLD_SPHERE:
+	case DebugObjectType::WORLD_WIRE_SPHERE:
+	case DebugObjectType::WORLD_CYLINDER:
+	case DebugObjectType::WORLD_WIRE_CYLINDER:
+	case DebugObjectType::WORLD_CAPSULE:
+	case DebugObjectType::WORLD_WIRE_CAPSULE:
+	case DebugObjectType::WORLD_ARROW:
+	case DebugObjectType::WORLD_WIRE_ARROW:
+		return true;
+
+	default:
+		return false;
+	}
 }
 
 void ApplyDebugRenderMode(Renderer* renderer, DebugObject const& obj)
@@ -159,43 +252,32 @@ void ApplyDebugRenderMode(Renderer* renderer, DebugObject const& obj)
 void DrawWorldObject(Renderer* renderer, BitmapFont* font, Camera const& camera, DebugObject const& obj)
 {
 	std::vector<Vertex> verts;
-	verts.reserve(2048);
-
-	Rgba8    color   = GetDebugObjectColor(obj);
 	Texture* texture = nullptr;
 
 	switch (obj.type)
 	{
 	case DebugObjectType::WORLD_SPHERE:
-		AddVertsForSphere3D(verts, obj.center, obj.radius, color);
-		break;
-
 	case DebugObjectType::WORLD_WIRE_SPHERE:
-		AddVertsForSphere3D(verts, obj.center, obj.radius, color);
-		break;
-
 	case DebugObjectType::WORLD_CYLINDER:
-		AddVertsForCylinder3D(verts, obj.start, obj.end, obj.radius, color);
-		break;
-
 	case DebugObjectType::WORLD_WIRE_CYLINDER:
-		AddVertsForCylinder3D(verts, obj.start, obj.end, obj.radius, color);
-		break;
-
 	case DebugObjectType::WORLD_CAPSULE:
-		AddVertsForCapsule3D(verts, obj.start, obj.end, obj.radius, color);
-		break;
-
 	case DebugObjectType::WORLD_WIRE_CAPSULE:
-		AddVertsForCapsule3D(verts, obj.start, obj.end, obj.radius, color);
-		break;
-
 	case DebugObjectType::WORLD_ARROW:
-		AddVertsForArrow3D(verts, obj.start, obj.end, obj.radius, color);
-		break;
-
 	case DebugObjectType::WORLD_WIRE_ARROW:
-		AddVertsForArrow3D(verts, obj.start, obj.end, obj.radius, color);
+	case DebugObjectType::WORLD_GRID:
+		verts = obj.verts;
+		if (IsUniformColorCachedWorldObject(obj))
+		{
+			Rgba8 color = GetDebugObjectColor(obj);
+			bool needsRecolor = (color != obj.startColor);
+			if (needsRecolor)
+			{
+				for (Vertex& vert : verts)
+				{
+					vert.m_color = color;
+				}
+			}
+		}
 		break;
 
 	case DebugObjectType::WORLD_TEXT:
@@ -205,6 +287,8 @@ void DrawWorldObject(Renderer* renderer, BitmapFont* font, Camera const& camera,
 			break;
 		}
 
+		Rgba8 color = GetDebugObjectColor(obj);
+		verts.reserve(1024);
 		font->AddVertsForText3DAtOriginXForward(verts, obj.textHeight, obj.text, color, 1.0f, obj.alignment);
 		TransformVertexArray3D(verts, obj.transform);
 		texture = &font->GetTexture();
@@ -218,20 +302,13 @@ void DrawWorldObject(Renderer* renderer, BitmapFont* font, Camera const& camera,
 			break;
 		}
 
+		Rgba8 color = GetDebugObjectColor(obj);
+		verts.reserve(1024);
 		font->AddVertsForText3DAtOriginXForward(verts, obj.textHeight, obj.text, color, 1.0f, obj.alignment);
 		Matrix4x4 billboard =
 			GetBillboardTransform(BillboardType::FULL_OPPOSING, camera.GetCameraToWorldTransform(), obj.center);
 		TransformVertexArray3D(verts, billboard);
 		texture = &font->GetTexture();
-	}
-	break;
-
-	case DebugObjectType::WORLD_GRID:
-	{
-		if (!obj.verts.empty())
-		{
-			verts = obj.verts;
-		}
 	}
 	break;
 
@@ -374,10 +451,9 @@ void DebugAddWorldSphere(
 	DebugRenderMode mode
 )
 {
-	DebugObject object = MakeDebugObject(DebugObjectType::WORLD_SPHERE, duration, startColor, endColor, mode);
-	object.center      = center;
-	object.radius      = radius;
-	s_debugObjects.push_back(object);
+	s_debugObjects.push_back(
+		MakeWorldSphereObject(DebugObjectType::WORLD_SPHERE, center, radius, duration, startColor, endColor, mode)
+	);
 }
 
 void DebugAddWorldWireSphere(
@@ -389,10 +465,15 @@ void DebugAddWorldWireSphere(
 	DebugRenderMode mode
 )
 {
-	DebugObject object = MakeDebugObject(DebugObjectType::WORLD_WIRE_SPHERE, duration, startColor, endColor, mode);
-	object.center      = center;
-	object.radius      = radius;
-	s_debugObjects.push_back(object);
+	s_debugObjects.push_back(MakeWorldSphereObject(
+		DebugObjectType::WORLD_WIRE_SPHERE,
+		center,
+		radius,
+		duration,
+		startColor,
+		endColor,
+		mode
+	));
 }
 
 void DebugAddWorldCylinder(
@@ -405,11 +486,16 @@ void DebugAddWorldCylinder(
 	DebugRenderMode mode
 )
 {
-	DebugObject object = MakeDebugObject(DebugObjectType::WORLD_CYLINDER, duration, startColor, endColor, mode);
-	object.start       = start;
-	object.end         = end;
-	object.radius      = radius;
-	s_debugObjects.push_back(object);
+	s_debugObjects.push_back(MakeWorldCylinderObject(
+		DebugObjectType::WORLD_CYLINDER,
+		start,
+		end,
+		radius,
+		duration,
+		startColor,
+		endColor,
+		mode
+	));
 }
 
 void DebugAddWorldWireCylinder(
@@ -422,20 +508,30 @@ void DebugAddWorldWireCylinder(
 	DebugRenderMode mode
 )
 {
-	DebugObject object = MakeDebugObject(DebugObjectType::WORLD_WIRE_CYLINDER, duration, startColor, endColor, mode);
-	object.start       = start;
-	object.end         = end;
-	object.radius      = radius;
-	s_debugObjects.push_back(object);
+	s_debugObjects.push_back(MakeWorldCylinderObject(
+		DebugObjectType::WORLD_WIRE_CYLINDER,
+		start,
+		end,
+		radius,
+		duration,
+		startColor,
+		endColor,
+		mode
+	));
 }
 
 void DebugAddWorldWireCylinder(const CylinderZ3& cylinder, const Rgba8& color, float duration, DebugRenderMode mode)
 {
-	DebugObject object = MakeDebugObject(DebugObjectType::WORLD_WIRE_CYLINDER, duration, color, color, mode);
-	object.start       = Vec3(cylinder.m_centerXY.x, cylinder.m_centerXY.y, cylinder.m_minMaxZ.m_min);
-	object.end         = Vec3(cylinder.m_centerXY.x, cylinder.m_centerXY.y, cylinder.m_minMaxZ.m_max);
-	object.radius      = cylinder.m_radius;
-	s_debugObjects.push_back(object);
+	s_debugObjects.push_back(MakeWorldCylinderObject(
+		DebugObjectType::WORLD_WIRE_CYLINDER,
+		Vec3(cylinder.m_centerXY.x, cylinder.m_centerXY.y, cylinder.m_minMaxZ.m_min),
+		Vec3(cylinder.m_centerXY.x, cylinder.m_centerXY.y, cylinder.m_minMaxZ.m_max),
+		cylinder.m_radius,
+		duration,
+		color,
+		color,
+		mode
+	));
 }
 
 void DebugAddWorldCapsule(
@@ -448,11 +544,16 @@ void DebugAddWorldCapsule(
 	DebugRenderMode mode
 )
 {
-	DebugObject object = MakeDebugObject(DebugObjectType::WORLD_CAPSULE, duration, startColor, endColor, mode);
-	object.start       = start;
-	object.end         = end;
-	object.radius      = radius;
-	s_debugObjects.push_back(object);
+	s_debugObjects.push_back(MakeWorldCapsuleObject(
+		DebugObjectType::WORLD_CAPSULE,
+		start,
+		end,
+		radius,
+		duration,
+		startColor,
+		endColor,
+		mode
+	));
 }
 
 void DebugAddWorldWireCapsule(
@@ -465,11 +566,16 @@ void DebugAddWorldWireCapsule(
 	DebugRenderMode mode
 )
 {
-	DebugObject object = MakeDebugObject(DebugObjectType::WORLD_WIRE_CAPSULE, duration, startColor, endColor, mode);
-	object.start       = start;
-	object.end         = end;
-	object.radius      = radius;
-	s_debugObjects.push_back(object);
+	s_debugObjects.push_back(MakeWorldCapsuleObject(
+		DebugObjectType::WORLD_WIRE_CAPSULE,
+		start,
+		end,
+		radius,
+		duration,
+		startColor,
+		endColor,
+		mode
+	));
 }
 
 void DebugAddWorldArrow(
@@ -482,11 +588,16 @@ void DebugAddWorldArrow(
 	DebugRenderMode mode
 )
 {
-	DebugObject object = MakeDebugObject(DebugObjectType::WORLD_ARROW, duration, startColor, endColor, mode);
-	object.start       = start;
-	object.end         = end;
-	object.radius      = radius;
-	s_debugObjects.push_back(object);
+	s_debugObjects.push_back(MakeWorldArrowObject(
+		DebugObjectType::WORLD_ARROW,
+		start,
+		end,
+		radius,
+		duration,
+		startColor,
+		endColor,
+		mode
+	));
 }
 
 void DebugAddWorldWireArrow(
@@ -499,11 +610,16 @@ void DebugAddWorldWireArrow(
 	DebugRenderMode mode
 )
 {
-	DebugObject object = MakeDebugObject(DebugObjectType::WORLD_WIRE_ARROW, duration, startColor, endColor, mode);
-	object.start       = start;
-	object.end         = end;
-	object.radius      = radius;
-	s_debugObjects.push_back(object);
+	s_debugObjects.push_back(MakeWorldArrowObject(
+		DebugObjectType::WORLD_WIRE_ARROW,
+		start,
+		end,
+		radius,
+		duration,
+		startColor,
+		endColor,
+		mode
+	));
 }
 
 void DebugAddBasis(

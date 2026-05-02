@@ -12,6 +12,7 @@ public:
 
     bool IsOnRange(float value) const;
     bool IsOverlap(const FloatRange &other) const;
+    float GetRandomInRange() const;
 
 public:
     float m_min = 0.f;

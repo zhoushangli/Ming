@@ -53,10 +53,10 @@ public:
 	Vec2 const GetJBasis2D() const;
 	Vec2 const GetTranslation2D() const;
 
-	Vec3 const        GetIBasis3D() const;
-	Vec3 const        GetJBasis3D() const;
-	Vec3 const        GetKBasis3D() const;
-	Vec3 const        GetTranslation3D() const;
+	Vec3 const GetIBasis3D() const;
+	Vec3 const GetJBasis3D() const;
+	Vec3 const GetKBasis3D() const;
+	Vec3 const GetTranslation3D() const;
 
 	Vec4 const GetIBasis4D() const;
 	Vec4 const GetJBasis4D() const;
