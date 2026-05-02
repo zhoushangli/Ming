@@ -10,6 +10,7 @@
 #include "Engine/Renderer/BitmapFont.hpp"
 #include "Engine/Renderer/Camera.hpp"
 #include "Engine/Renderer/Renderer.hpp"
+#include "Engine/Renderer/VertexBuffer.hpp"
 
 namespace
 {
@@ -32,6 +33,67 @@ enum class DebugObjectType
 
 struct DebugObject
 {
+	DebugObject() = default;
+	~DebugObject()
+	{
+		delete vertexBuffer;
+		vertexBuffer = nullptr;
+	}
+
+	DebugObject(DebugObject const& copy)            = delete;
+	DebugObject& operator=(DebugObject const& copy) = delete;
+
+	DebugObject(DebugObject&& other) noexcept
+		: type(other.type),
+		  mode(other.mode),
+		  totalDuration(other.totalDuration),
+		  remainingDuration(other.remainingDuration),
+		  startColor(other.startColor),
+		  endColor(other.endColor),
+		  start(other.start),
+		  end(other.end),
+		  center(other.center),
+		  radius(other.radius),
+		  transform(other.transform),
+		  text(std::move(other.text)),
+		  textHeight(other.textHeight),
+		  alignment(other.alignment),
+		  screenBox(other.screenBox),
+		  verts(std::move(other.verts)),
+		  vertexBuffer(other.vertexBuffer)
+	{
+		other.vertexBuffer = nullptr;
+	}
+
+	DebugObject& operator=(DebugObject&& other) noexcept
+	{
+		if (this != &other)
+		{
+			delete vertexBuffer;
+
+			type              = other.type;
+			mode              = other.mode;
+			totalDuration     = other.totalDuration;
+			remainingDuration = other.remainingDuration;
+			startColor        = other.startColor;
+			endColor          = other.endColor;
+			start             = other.start;
+			end               = other.end;
+			center            = other.center;
+			radius            = other.radius;
+			transform         = other.transform;
+			text              = std::move(other.text);
+			textHeight        = other.textHeight;
+			alignment         = other.alignment;
+			screenBox         = other.screenBox;
+			verts             = std::move(other.verts);
+			vertexBuffer      = other.vertexBuffer;
+
+			other.vertexBuffer = nullptr;
+		}
+		return *this;
+	}
+
 	DebugObjectType type;
 
 	DebugRenderMode mode = DebugRenderMode::USE_DEPTH;
@@ -59,8 +121,8 @@ struct DebugObject
 	// screen
 	AABB2 screenBox;
 
-	// grid (hard-coded in DebugAddWorldGrid; stored here so renderer doesn't need to regenerate)
 	std::vector<Vertex> verts;
+	VertexBuffer*       vertexBuffer = nullptr;
 };
 
 static DebugRenderConfig        s_debugRenderConfig;
@@ -86,6 +148,18 @@ DebugObject MakeDebugObject(
 	return object;
 }
 
+void CreateVertexBufferForObject(DebugObject& object)
+{
+	Renderer* renderer = s_debugRenderConfig.m_renderer;
+	if (renderer == nullptr || object.verts.empty())
+	{
+		return;
+	}
+
+	delete object.vertexBuffer;
+	object.vertexBuffer = renderer->CreateVertexBuffer(object.verts);
+}
+
 DebugObject MakeWorldSphereObject(
 	DebugObjectType type,
 	Vec3 const&     center,
@@ -100,6 +174,7 @@ DebugObject MakeWorldSphereObject(
 	object.center      = center;
 	object.radius      = radius;
 	AddVertsForSphere3D(object.verts, center, radius, startColor);
+	CreateVertexBufferForObject(object);
 	return object;
 }
 
@@ -119,6 +194,7 @@ DebugObject MakeWorldCylinderObject(
 	object.end         = end;
 	object.radius      = radius;
 	AddVertsForCylinder3D(object.verts, start, end, radius, startColor);
+	CreateVertexBufferForObject(object);
 	return object;
 }
 
@@ -138,6 +214,7 @@ DebugObject MakeWorldCapsuleObject(
 	object.end         = end;
 	object.radius      = radius;
 	AddVertsForCapsule3D(object.verts, start, end, radius, startColor);
+	CreateVertexBufferForObject(object);
 	return object;
 }
 
@@ -157,6 +234,7 @@ DebugObject MakeWorldArrowObject(
 	object.end         = end;
 	object.radius      = radius;
 	AddVertsForArrow3D(object.verts, start, end, radius, startColor);
+	CreateVertexBufferForObject(object);
 	return object;
 }
 
@@ -249,10 +327,28 @@ void ApplyDebugRenderMode(Renderer* renderer, DebugObject const& obj)
 	}
 }
 
-void DrawWorldObject(Renderer* renderer, BitmapFont* font, Camera const& camera, DebugObject const& obj)
+void DrawWorldObject(
+	Renderer* renderer,
+	BitmapFont* font,
+	Camera const& camera,
+	DebugObject& obj,
+	Rgba8 const* overrideStartColor = nullptr,
+	Rgba8 const* overrideEndColor   = nullptr
+)
 {
 	std::vector<Vertex> verts;
 	Texture* texture = nullptr;
+	Rgba8 const originalStartColor = obj.startColor;
+	Rgba8 const originalEndColor   = obj.endColor;
+
+	if (overrideStartColor != nullptr)
+	{
+		obj.startColor = *overrideStartColor;
+	}
+	if (overrideEndColor != nullptr)
+	{
+		obj.endColor = *overrideEndColor;
+	}
 
 	switch (obj.type)
 	{
@@ -265,18 +361,23 @@ void DrawWorldObject(Renderer* renderer, BitmapFont* font, Camera const& camera,
 	case DebugObjectType::WORLD_ARROW:
 	case DebugObjectType::WORLD_WIRE_ARROW:
 	case DebugObjectType::WORLD_GRID:
-		verts = obj.verts;
-		if (IsUniformColorCachedWorldObject(obj))
+		if (obj.vertexBuffer != nullptr)
 		{
-			Rgba8 color = GetDebugObjectColor(obj);
-			bool needsRecolor = (color != obj.startColor);
-			if (needsRecolor)
+			if (IsUniformColorCachedWorldObject(obj))
 			{
+				verts = obj.verts;
+				Rgba8 color = GetDebugObjectColor(obj);
 				for (Vertex& vert : verts)
 				{
 					vert.m_color = color;
 				}
+				renderer->CopyCPUToGPU(verts.data(), static_cast<unsigned int>(verts.size() * sizeof(Vertex)), obj.vertexBuffer);
 			}
+			renderer->BeginCamera(camera);
+			renderer->BindShader(nullptr);
+			renderer->BindTexture(nullptr);
+			renderer->BindModelConstants(Matrix4x4::IDENTITY, Rgba8::WHITE);
+			renderer->DrawVertexBuffer(obj.vertexBuffer);
 		}
 		break;
 
@@ -316,7 +417,9 @@ void DrawWorldObject(Renderer* renderer, BitmapFont* font, Camera const& camera,
 		break;
 	}
 
-	// Render if we have vertices
+	obj.startColor = originalStartColor;
+	obj.endColor   = originalEndColor;
+
 	if (!verts.empty())
 	{
 		renderer->BeginCamera(camera);
@@ -671,7 +774,7 @@ void DebugAddWorldText(
 	object.transform   = transform;
 	object.textHeight  = textHeight;
 	object.alignment   = alignment;
-	s_debugObjects.push_back(object);
+	s_debugObjects.push_back(std::move(object));
 }
 
 void DebugAddWorldBillboardText(
@@ -690,7 +793,7 @@ void DebugAddWorldBillboardText(
 	object.center      = origin;
 	object.textHeight  = textHeight;
 	object.alignment   = alignment;
-	s_debugObjects.push_back(object);
+	s_debugObjects.push_back(std::move(object));
 }
 
 void DebugAddScreenText(
@@ -709,7 +812,7 @@ void DebugAddScreenText(
 	object.screenBox  = box;
 	object.textHeight = cellHeight;
 	object.alignment  = alignment;
-	s_debugObjects.push_back(object);
+	s_debugObjects.push_back(std::move(object));
 }
 
 void DebugAddMessage(
@@ -724,7 +827,7 @@ void DebugAddMessage(
 	object.text       = text;
 	object.textHeight = 24.f;
 	object.alignment  = Vec2(0.f, 0.5f);
-	s_debugMessages.push_back(object);
+	s_debugMessages.push_back(std::move(object));
 }
 
 void DebugAddWorldGrid(float duration, int halfExtent)
@@ -831,6 +934,7 @@ void DebugAddWorldGrid(float duration, int halfExtent)
 		}
 	}
 
+	CreateVertexBufferForObject(object);
 	s_debugObjects.push_back(std::move(object));
 }
 
@@ -856,7 +960,7 @@ void DebugRenderWorld(const Camera& camera)
 
 	// First pass: X_RAY objects only, with modified alpha for see-through effect.
 	float const xrayAlphaMultiplier = 0.2f;
-	for (DebugObject const& obj : s_debugObjects)
+	for (DebugObject& obj : s_debugObjects)
 	{
 		if (obj.type == DebugObjectType::SCREEN_TEXT || obj.type == DebugObjectType::MESSAGE)
 		{
@@ -868,17 +972,20 @@ void DebugRenderWorld(const Camera& camera)
 			continue;
 		}
 
-		DebugObject xrayObject  = obj;
-		xrayObject.mode         = DebugRenderMode::ALWAYS;
-		xrayObject.startColor.a = (unsigned char)((float)xrayObject.startColor.a * xrayAlphaMultiplier);
-		xrayObject.endColor.a   = (unsigned char)((float)xrayObject.endColor.a * xrayAlphaMultiplier);
+		DebugRenderMode const originalMode = obj.mode;
+		Rgba8 startColor                   = obj.startColor;
+		Rgba8 endColor                     = obj.endColor;
+		startColor.a                       = (unsigned char)((float)startColor.a * xrayAlphaMultiplier);
+		endColor.a                         = (unsigned char)((float)endColor.a * xrayAlphaMultiplier);
 
-		ApplyDebugRenderMode(renderer, xrayObject);
-		DrawWorldObject(renderer, font, camera, xrayObject);
+		obj.mode = DebugRenderMode::ALWAYS;
+		ApplyDebugRenderMode(renderer, obj);
+		DrawWorldObject(renderer, font, camera, obj, &startColor, &endColor);
+		obj.mode = originalMode;
 	}
 
 	// Second pass: draw all world objects normally.
-	for (DebugObject const& obj : s_debugObjects)
+	for (DebugObject& obj : s_debugObjects)
 	{
 		if (obj.type == DebugObjectType::SCREEN_TEXT || obj.type == DebugObjectType::MESSAGE)
 		{
