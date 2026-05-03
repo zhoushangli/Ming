@@ -90,6 +90,11 @@ bool DoDiscsOverlap2D(Vec2 const& centerA, float radiusA, Vec2 const& centerB, f
 	return distSquared <= (radiiSum * radiiSum);
 }
 
+bool DoDiscsOverlap2D(Disc2 const& discA, Disc2 const& discB)
+{
+	return DoDiscsOverlap2D(discA.m_center, discA.m_radius, discB.m_center, discB.m_radius);
+}
+
 bool DoDiscAndAABBOverlap2D(Vec2 const& discCenter, float discRadius, Vec2 const& boxMins, Vec2 const& boxMaxs)
 {
 	float nearestX = GetClamped(discCenter.x, boxMins.x, boxMaxs.x);

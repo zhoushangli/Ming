@@ -70,6 +70,7 @@ float GetDistance2D(Vec2 const& a, Vec2 const& b);
 float GetDistanceSquared2D(Vec2 const& a, Vec2 const& b);
 
 bool DoDiscsOverlap2D(Vec2 const& centerA, float radiusA, Vec2 const& centerB, float radiusB);
+bool DoDiscsOverlap2D(Disc2 const& discA, Disc2 const& discB);
 bool DoDiscAndAABBOverlap2D(Vec2 const& discCenter, float discRadius, Vec2 const& boxMins, Vec2 const& boxMaxs);
 bool DoDiscAndAABBOverlap2D(Vec2 const& discCenter, float discRadius, AABB2 const& box);
 bool DoDiscAndAABBOverlap2D(Disc2 const& disc, AABB2 const& box);
