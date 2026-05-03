@@ -95,6 +95,18 @@ bool DoDiscsOverlap2D(Disc2 const& discA, Disc2 const& discB)
 	return DoDiscsOverlap2D(discA.m_center, discA.m_radius, discB.m_center, discB.m_radius);
 }
 
+bool DoDiscAndLineOverlap2D(Vec2 const& discCenter, float discRadius, Vec2 const& lineStart, Vec2 const& lineEnd)
+{
+	Vec2  nearestPoint = GetNearestPointOnLineSegment2D(discCenter, lineStart, lineEnd);
+	float distSquared  = GetDistanceSquared2D(discCenter, nearestPoint);
+	return distSquared <= (discRadius * discRadius);
+}
+
+bool DoDiscAndLineOverlap2D(Disc2 const& disc, LineSegment2 const& line)
+{
+	return DoDiscAndLineOverlap2D(disc.m_center, disc.m_radius, line.m_start, line.m_end);
+}
+
 bool DoDiscAndAABBOverlap2D(Vec2 const& discCenter, float discRadius, Vec2 const& boxMins, Vec2 const& boxMaxs)
 {
 	float nearestX = GetClamped(discCenter.x, boxMins.x, boxMaxs.x);
@@ -112,6 +124,39 @@ bool DoDiscAndAABBOverlap2D(Vec2 const& discCenter, float discRadius, AABB2 cons
 bool DoDiscAndAABBOverlap2D(Disc2 const& disc, AABB2 const& box)
 {
 	return DoDiscAndAABBOverlap2D(disc.m_center, disc.m_radius, box);
+}
+
+bool DoDiscAndCapsuleOverlap2D(
+	Vec2 const& discCenter, float discRadius, Vec2 const& capsuleStart, Vec2 const& capsuleEnd, float capsuleRadius
+)
+{
+	Vec2  nearestPoint = GetNearestPointOnLineSegment2D(discCenter, capsuleStart, capsuleEnd);
+	float distSquared  = GetDistanceSquared2D(discCenter, nearestPoint);
+	float radiiSum     = discRadius + capsuleRadius;
+	return distSquared <= (radiiSum * radiiSum);
+}
+
+bool DoDiscAndCapsuleOverlap2D(Disc2 const& disc, Capsule2 const& capsule)
+{
+	return DoDiscAndCapsuleOverlap2D(
+		disc.m_center,
+		disc.m_radius,
+		capsule.m_bone.m_start,
+		capsule.m_bone.m_end,
+		capsule.m_radius
+	);
+}
+
+bool DoDiscAndOBBOverlap2D(Vec2 const& discCenter, float discRadius, OBB2 const& box)
+{
+	Vec2  nearestPoint = GetNearestPointOnOBB2D(discCenter, box);
+	float distSquared  = GetDistanceSquared2D(discCenter, nearestPoint);
+	return distSquared <= (discRadius * discRadius);
+}
+
+bool DoDiscAndOBBOverlap2D(Disc2 const& disc, OBB2 const& box)
+{
+	return DoDiscAndOBBOverlap2D(disc.m_center, disc.m_radius, box);
 }
 
 bool DoAABB3sOverlap3D(Vec3 const& firstMins, Vec3 const& firstMaxs, Vec3 const& secondMins, Vec3 const& secondMaxs)
@@ -1007,6 +1052,46 @@ bool PushDiscOutOfFixedAABB2D(Vec2& discCenter, float discRadius, AABB2 const& b
 bool PushDiscOutOfFixedAABB2D(Disc2& discToPush, AABB2 const& box)
 {
 	return PushDiscOutOfFixedAABB2D(discToPush.m_center, discToPush.m_radius, box);
+}
+
+bool PushDiscOutOfFixedLine2D(Vec2& discCenter, float discRadius, Vec2 const& lineStart, Vec2 const& lineEnd)
+{
+	Vec2 nearest = GetNearestPointOnLineSegment2D(discCenter, lineStart, lineEnd);
+	return PushDiscOutOfFixedPoint2D(discCenter, discRadius, nearest);
+}
+
+bool PushDiscOutOfFixedLine2D(Disc2& discToPush, LineSegment2 const& line)
+{
+	return PushDiscOutOfFixedLine2D(discToPush.m_center, discToPush.m_radius, line.m_start, line.m_end);
+}
+
+bool PushDiscOutOfFixedCapsule2D(
+	Vec2& discCenter, float discRadius, Vec2 const& capsuleStart, Vec2 const& capsuleEnd, float capsuleRadius
+)
+{
+	return PushDiscOutOfFixedLine2D(discCenter, discRadius + capsuleRadius, capsuleStart, capsuleEnd);
+}
+
+bool PushDiscOutOfFixedCapsule2D(Disc2& discToPush, Capsule2 const& capsule)
+{
+	return PushDiscOutOfFixedCapsule2D(
+		discToPush.m_center,
+		discToPush.m_radius,
+		capsule.m_bone.m_start,
+		capsule.m_bone.m_end,
+		capsule.m_radius
+	);
+}
+
+bool PushDiscOutOfFixedOBB2D(Vec2& discCenter, float discRadius, OBB2 const& box)
+{
+	Vec2 nearestPoint = GetNearestPointOnOBB2D(discCenter, box);
+	return PushDiscOutOfFixedPoint2D(discCenter, discRadius, nearestPoint);
+}
+
+bool PushDiscOutOfFixedOBB2D(Disc2& discToPush, OBB2 const& box)
+{
+	return PushDiscOutOfFixedOBB2D(discToPush.m_center, discToPush.m_radius, box);
 }
 
 float GetProjectedLength2D(Vec2 const& vector, Vec2 const& basis)

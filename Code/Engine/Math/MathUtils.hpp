@@ -71,9 +71,15 @@ float GetDistanceSquared2D(Vec2 const& a, Vec2 const& b);
 
 bool DoDiscsOverlap2D(Vec2 const& centerA, float radiusA, Vec2 const& centerB, float radiusB);
 bool DoDiscsOverlap2D(Disc2 const& discA, Disc2 const& discB);
+bool DoDiscAndLineOverlap2D(Vec2 const& discCenter, float discRadius, Vec2 const& lineStart, Vec2 const& lineEnd);
+bool DoDiscAndLineOverlap2D(Disc2 const& disc, LineSegment2 const& line);
 bool DoDiscAndAABBOverlap2D(Vec2 const& discCenter, float discRadius, Vec2 const& boxMins, Vec2 const& boxMaxs);
 bool DoDiscAndAABBOverlap2D(Vec2 const& discCenter, float discRadius, AABB2 const& box);
 bool DoDiscAndAABBOverlap2D(Disc2 const& disc, AABB2 const& box);
+bool DoDiscAndCapsuleOverlap2D(Vec2 const& discCenter, float discRadius, Vec2 const& capsuleStart, Vec2 const& capsuleEnd, float capsuleRadius);
+bool DoDiscAndCapsuleOverlap2D(Disc2 const& disc, Capsule2 const& capsule);
+bool DoDiscAndOBBOverlap2D(Vec2 const& discCenter, float discRadius, OBB2 const& box);
+bool DoDiscAndOBBOverlap2D(Disc2 const& disc, OBB2 const& box);
 
 bool DoAABB3sOverlap3D(Vec3 const& firstMins, Vec3 const& firstMaxs, Vec3 const& secondMins, Vec3 const& secondMaxs);
 bool DoAABB3sOverlap3D(AABB3 const& first, AABB3 const& second);
@@ -149,9 +155,9 @@ Vec3        Interpolate(Vec3 const& start, Vec3 const& end, float fraction);
 Rgba8       Interpolate(Rgba8 const& start, Rgba8 const& end, float fraction);
 EulerAngles Interpolate(EulerAngles const& start, EulerAngles const& end, float fraction);
 
-float InterpolateClamped(float start, float end, float fraction);
-Vec3  InterpolateClamped(Vec3 const& start, Vec3 const& end, float fraction);
-Rgba8 InterpolateClamped(Rgba8 const& start, Rgba8 const& end, float fraction);
+float       InterpolateClamped(float start, float end, float fraction);
+Vec3        InterpolateClamped(Vec3 const& start, Vec3 const& end, float fraction);
+Rgba8       InterpolateClamped(Rgba8 const& start, Rgba8 const& end, float fraction);
 EulerAngles InterpolateClamped(EulerAngles const& start, EulerAngles const& end, float fraction);
 
 float SmoothStart2(float t);
@@ -235,6 +241,12 @@ bool PushDiscsOutOfEachOther2D(Vec2& discCenterA, float discRadiusA, Vec2& discC
 bool PushDiscsOutOfEachOther2D(Disc2& discA, Disc2& discB);
 bool PushDiscOutOfFixedAABB2D(Vec2& discCenter, float discRadius, AABB2 const& box);
 bool PushDiscOutOfFixedAABB2D(Disc2& discToPush, AABB2 const& box);
+bool PushDiscOutOfFixedLine2D(Vec2& discCenter, float discRadius, Vec2 const& lineStart, Vec2 const& lineEnd);
+bool PushDiscOutOfFixedLine2D(Disc2& discToPush, LineSegment2 const& line);
+bool PushDiscOutOfFixedCapsule2D(Vec2& discCenter, float discRadius, Vec2 const& capsuleStart, Vec2 const& capsuleEnd, float capsuleRadius);
+bool PushDiscOutOfFixedCapsule2D(Disc2& discToPush, Capsule2 const& capsule);
+bool PushDiscOutOfFixedOBB2D(Vec2& discCenter, float discRadius, OBB2 const& box);
+bool PushDiscOutOfFixedOBB2D(Disc2& discToPush, OBB2 const& box);
 
 #pragma endregion
 
