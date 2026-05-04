@@ -95,6 +95,18 @@ bool DoDiscsOverlap2D(Disc2 const& discA, Disc2 const& discB)
 	return DoDiscsOverlap2D(discA.m_center, discA.m_radius, discB.m_center, discB.m_radius);
 }
 
+bool DoDiscAndInfiniteLineOverlap2D(Vec2 const& discCenter, float discRadius, Vec2 const& lineStart, Vec2 const& lineEnd)
+{
+	Vec2  nearestPoint = GetNearestPointOnInfiniteLine2D(discCenter, lineStart, lineEnd);
+	float distSquared  = GetDistanceSquared2D(discCenter, nearestPoint);
+	return distSquared <= (discRadius * discRadius);
+}
+
+bool DoDiscAndInfiniteLineOverlap2D(Disc2 const& disc, LineSegment2 const& line)
+{
+	return DoDiscAndInfiniteLineOverlap2D(disc.m_center, disc.m_radius, line.m_start, line.m_end);
+}
+
 bool DoDiscAndLineOverlap2D(Vec2 const& discCenter, float discRadius, Vec2 const& lineStart, Vec2 const& lineEnd)
 {
 	Vec2  nearestPoint = GetNearestPointOnLineSegment2D(discCenter, lineStart, lineEnd);
@@ -984,17 +996,17 @@ bool PushDiscOutOfFixedDisc2D(Disc2& discToPush, Disc2 const& fixedDisc)
 
 bool PushDiscsOutOfEachOther2D(Vec2& discCenterA, float discRadiusA, Vec2& discCenterB, float discRadiusB)
 {
-	Vec2  between = discCenterA - discCenterB;
-	float dist    = between.GetLength();
+	Vec2  bToA = discCenterA - discCenterB;
+	float bToADist    = bToA.GetLength();
 	float minDist = discRadiusA + discRadiusB;
 
-	if (dist >= minDist || dist == 0.f)
+	if (bToADist >= minDist || bToADist == 0.f)
 	{
 		return false;
 	}
 
-	Vec2  pushDir = between.GetNormalized();
-	float overlap = minDist - dist;
+	Vec2  pushDir = bToA.GetNormalized();
+	float overlap = minDist - bToADist;
 	discCenterA += pushDir * (overlap * 0.5f);
 	discCenterB -= pushDir * (overlap * 0.5f);
 	return true;
@@ -1052,6 +1064,17 @@ bool PushDiscOutOfFixedAABB2D(Vec2& discCenter, float discRadius, AABB2 const& b
 bool PushDiscOutOfFixedAABB2D(Disc2& discToPush, AABB2 const& box)
 {
 	return PushDiscOutOfFixedAABB2D(discToPush.m_center, discToPush.m_radius, box);
+}
+
+bool PushDiscOutOfFixedInfiniteLine2D(Vec2& discCenter, float discRadius, Vec2 const& lineStart, Vec2 const& lineEnd)
+{
+	Vec2 nearestPoint = GetNearestPointOnInfiniteLine2D(discCenter, lineStart, lineEnd);
+	return PushDiscOutOfFixedPoint2D(discCenter, discRadius, nearestPoint);
+}
+
+bool PushDiscOutOfFixedInfiniteLine2D(Disc2& discToPush, LineSegment2 const& line)
+{
+	return PushDiscOutOfFixedInfiniteLine2D(discToPush.m_center, discToPush.m_radius, line.m_start, line.m_end);
 }
 
 bool PushDiscOutOfFixedLine2D(Vec2& discCenter, float discRadius, Vec2 const& lineStart, Vec2 const& lineEnd)

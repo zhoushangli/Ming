@@ -77,7 +77,7 @@ void AddVertsForAABB2D(std::vector<Vertex>& verts, AABB2 const& alignedBox, Rgba
 
 void AddVertsForDisc2D(std::vector<Vertex>& verts, Vec2 discCenter, float discRadius, Rgba8 color)
 {
-	int numSides = (int)RangeMapClamped(discRadius, 1.f, 10.f, 36.f, 360.f);
+	int numSides = (int)RangeMapClamped(discRadius, 1.f, 10.f, 12.f, 48.f);
 
 	float delta = 360.0f / (float)numSides;
 	for (int i = 0; i < numSides; ++i)
@@ -669,7 +669,7 @@ void AddVertsForCapsule3D(
 		return;
 	}
 
-	Vec3 const axis = end - start;
+	Vec3 const  axis       = end - start;
 	float const axisLength = axis.GetLength();
 	if (axisLength <= 0.f)
 	{
@@ -682,9 +682,9 @@ void AddVertsForCapsule3D(
 
 	Vec3 kBasis = axis / axisLength;
 
-	Vec3 helper = (Abs(kBasis.z) < 0.999f) ? Vec3(0.f, 0.f, 1.f) : Vec3(0.f, 1.f, 0.f);
-	Vec3 iBasis = CrossProduct3D(helper, kBasis);
-	float iLen  = iBasis.GetLength();
+	Vec3  helper = (Abs(kBasis.z) < 0.999f) ? Vec3(0.f, 0.f, 1.f) : Vec3(0.f, 1.f, 0.f);
+	Vec3  iBasis = CrossProduct3D(helper, kBasis);
+	float iLen   = iBasis.GetLength();
 	if (iLen <= 0.f)
 	{
 		return;
@@ -701,10 +701,7 @@ void AddVertsForCapsule3D(
 	float const bodyVMinFrac = radius / totalVLength;
 	float const bodyVMaxFrac = (radius + axisLength) / totalVLength;
 
-	auto GetRadialDir = [&](float yaw) -> Vec3
-	{
-		return iBasis * cosf(yaw) + jBasis * sinf(yaw);
-	};
+	auto GetRadialDir = [&](float yaw) -> Vec3 { return iBasis * cosf(yaw) + jBasis * sinf(yaw); };
 
 	auto GetHemispherePoint = [&](Vec3 const& center, float yaw, float pitch) -> Vec3
 	{
@@ -712,15 +709,9 @@ void AddVertsForCapsule3D(
 		return center + GetRadialDir(yaw) * (radius * radialScale) + kBasis * (radius * sinf(pitch));
 	};
 
-	auto GetU = [&](float yawFrac) -> float
-	{
-		return UVs.m_mins.x + yawFrac * uRange;
-	};
+	auto GetU = [&](float yawFrac) -> float { return UVs.m_mins.x + yawFrac * uRange; };
 
-	auto GetV = [&](float vFrac) -> float
-	{
-		return UVs.m_mins.y + vFrac * vRange;
-	};
+	auto GetV = [&](float vFrac) -> float { return UVs.m_mins.y + vFrac * vRange; };
 
 	for (int sliceIndex = 0; sliceIndex < numSlices; ++sliceIndex)
 	{
@@ -753,7 +744,8 @@ void AddVertsForCapsule3D(
 
 	for (int stackIndex = 0; stackIndex < hemiStacks; ++stackIndex)
 	{
-		float const lowerPitch0 = -HALF_PI + (HALF_PI * static_cast<float>(stackIndex) / static_cast<float>(hemiStacks));
+		float const lowerPitch0 =
+			-HALF_PI + (HALF_PI * static_cast<float>(stackIndex) / static_cast<float>(hemiStacks));
 		float const lowerPitch1 =
 			-HALF_PI + (HALF_PI * static_cast<float>(stackIndex + 1) / static_cast<float>(hemiStacks));
 		float const upperPitch0 = HALF_PI * static_cast<float>(stackIndex) / static_cast<float>(hemiStacks);
@@ -836,7 +828,16 @@ void AddVertsForCapsule3D(
 	int                  numStacks /*= 16*/
 )
 {
-	AddVertsForCapsule3D(verts, capsule.m_start, capsule.m_end, capsule.m_radius, AABB2::UNIT, color, numSlices, numStacks);
+	AddVertsForCapsule3D(
+		verts,
+		capsule.m_start,
+		capsule.m_end,
+		capsule.m_radius,
+		AABB2::UNIT,
+		color,
+		numSlices,
+		numStacks
+	);
 }
 
 void AddVertsForCone3D(
@@ -995,5 +996,3 @@ void AddVertsForInfiniteLine2D(
 {
 	AddVertsForInfiniteLine2D(verts, infiniteLine.m_start, infiniteLine.m_end, thickness, color);
 }
-
-
