@@ -125,7 +125,9 @@ bool DoDiscAndAABBOverlap2D(Vec2 const& discCenter, float discRadius, Vec2 const
 	float nearestY = GetClamped(discCenter.y, boxMins.y, boxMaxs.y);
 	float dx       = discCenter.x - nearestX;
 	float dy       = discCenter.y - nearestY;
-	return (dx * dx + dy * dy) <= (discRadius * discRadius);
+	float distSquared = dx * dx + dy * dy;
+	float radiusSquared = discRadius * discRadius;
+	return distSquared < radiusSquared;
 }
 
 bool DoDiscAndAABBOverlap2D(Vec2 const& discCenter, float discRadius, AABB2 const& box)
@@ -1034,7 +1036,7 @@ bool PushDiscOutOfFixedAABB2D(Vec2& discCenter, float discRadius, AABB2 const& b
 	Vec2  toCenter = discCenter - nearest;
 	float dist     = toCenter.GetLength();
 
-	if (dist >= discRadius)
+	if (!DoDiscAndAABBOverlap2D(discCenter, discRadius, box))
 	{
 		return false;
 	}
