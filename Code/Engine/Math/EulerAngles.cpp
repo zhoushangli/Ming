@@ -1,5 +1,6 @@
 #include "Engine/Math/EulerAngles.hpp"
 #include "Engine/Math/MathUtils.hpp"
+#include "EulerAngles.hpp"
 
 const EulerAngles EulerAngles::ZERO = EulerAngles(0.f, 0.f, 0.f);
 
@@ -110,6 +111,24 @@ void EulerAngles::SetForwardDir_IFwd(Vec3 const& forwardIBasis)
 
 	Matrix4x4 mat = Matrix4x4(forwardIBasis, leftJBasis, upZBasis, Vec3::ZERO);
 	SetFromMatrix_IFwd_JLeft_KUp(mat);
+}
+
+EulerAngles EulerAngles::operator+(EulerAngles const& anglesToAdd) const
+{
+	EulerAngles result = *this;
+	result.m_pitchDegrees += anglesToAdd.m_pitchDegrees;
+	result.m_yawDegrees += anglesToAdd.m_yawDegrees;
+	result.m_rollDegrees += anglesToAdd.m_rollDegrees;
+	return result;
+}
+
+EulerAngles EulerAngles::operator-(EulerAngles const& anglesToSubtract) const
+{
+	EulerAngles result = *this;
+	result.m_pitchDegrees -= anglesToSubtract.m_pitchDegrees;
+	result.m_yawDegrees -= anglesToSubtract.m_yawDegrees;
+	result.m_rollDegrees -= anglesToSubtract.m_rollDegrees;
+	return result;
 }
 
 void EulerAngles::operator*=(float uniformScale)

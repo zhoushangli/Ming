@@ -20,10 +20,11 @@ public:
 	void SetFromMatrix_IFwd_JLeft_KUp(Matrix4x4 const& mat);
 	void SetForwardDir_IFwd(Vec3 const& forwardIBasis);
 
+    EulerAngles operator+(EulerAngles const& anglesToAdd) const;
+    EulerAngles operator-(EulerAngles const& anglesToSubtract) const;
+    EulerAngles operator*(float uniformScale) const;
     void operator*=(float uniformScale);
     void operator+=(EulerAngles const &anglesToAdd);
-
-    EulerAngles operator*(float uniformScale) const;
 
     static const EulerAngles ZERO;
 
