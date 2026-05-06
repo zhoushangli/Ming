@@ -497,8 +497,8 @@ void AddVertsForSphere3D(
 	float                radius,
 	const Rgba8&         color /*= Rgba8::WHITE*/,
 	const AABB2&         UVs /*= AABB2::UNIT*/,
-	int                  numSlices /*= 32*/,
-	int                  numStacks /*= 16*/
+	int                  numSlices /*= 16*/,
+	int                  numStacks /*= 8*/
 )
 {
 	if (radius <= 0.f)
@@ -557,7 +557,7 @@ void AddVertsForCylinder3D(
 	float                radius,
 	const Rgba8&         color /*= Rgba8::WHITE*/,
 	const AABB2&         UVs /*= AABB2::UNIT*/,
-	int                  numSlices /*= 32*/
+	int                  numSlices /*= 16*/
 )
 {
 	if (radius <= 0.f)
@@ -660,8 +660,8 @@ void AddVertsForCapsule3D(
 	float                radius,
 	AABB2 const&         UVs,
 	Rgba8 const&         color /*= Rgba8::WHITE*/,
-	int                  numSlices /*= 32*/,
-	int                  numStacks /*= 16*/
+	int                  numSlices /*= 16*/,
+	int                  numStacks /*= 8*/
 )
 {
 	if (radius <= 0.f)
@@ -801,8 +801,8 @@ void AddVertsForCapsule3D(
 	Vec3 const&          end,
 	float                radius,
 	Rgba8 const&         color /*= Rgba8::WHITE*/,
-	int                  numSlices /*= 32*/,
-	int                  numStacks /*= 16*/
+	int                  numSlices /*= 16*/,
+	int                  numStacks /*= 8*/
 )
 {
 	AddVertsForCapsule3D(verts, start, end, radius, AABB2::UNIT, color, numSlices, numStacks);
@@ -813,8 +813,8 @@ void AddVertsForCapsule3D(
 	Capsule3 const&      capsule,
 	AABB2 const&         UVs,
 	Rgba8 const&         color /*= Rgba8::WHITE*/,
-	int                  numSlices /*= 32*/,
-	int                  numStacks /*= 16*/
+	int                  numSlices /*= 16*/,
+	int                  numStacks /*= 8*/
 )
 {
 	AddVertsForCapsule3D(verts, capsule.m_start, capsule.m_end, capsule.m_radius, UVs, color, numSlices, numStacks);
@@ -824,8 +824,8 @@ void AddVertsForCapsule3D(
 	std::vector<Vertex>& verts,
 	Capsule3 const&      capsule,
 	Rgba8 const&         color /*= Rgba8::WHITE*/,
-	int                  numSlices /*= 32*/,
-	int                  numStacks /*= 16*/
+	int                  numSlices /*= 16*/,
+	int                  numStacks /*= 8*/
 )
 {
 	AddVertsForCapsule3D(
@@ -936,7 +936,7 @@ void AddVertsForArrow3D(
 	Vec3 const&          end,
 	float                radius,
 	Rgba8 const&         color /*= Rgba8::WHITE*/,
-	int                  numSlices /*= 32*/
+	int                  numSlices /*= 16*/
 )
 {
 	Vec3  dir    = end - start;
