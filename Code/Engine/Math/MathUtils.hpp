@@ -37,6 +37,7 @@ const float HALF_PI                    = 1.57079632679489661923f;
 #pragma region Basic Math Helpers
 
 float Abs(float value);
+int   Abs(int value);
 float Sign(float value);
 float Min(float a, float b);
 int   Min(int a, int b);
@@ -71,14 +72,18 @@ float GetDistanceSquared2D(Vec2 const& a, Vec2 const& b);
 
 bool DoDiscsOverlap2D(Vec2 const& centerA, float radiusA, Vec2 const& centerB, float radiusB);
 bool DoDiscsOverlap2D(Disc2 const& discA, Disc2 const& discB);
-bool DoDiscAndInfiniteLineOverlap2D(Vec2 const& discCenter, float discRadius, Vec2 const& lineStart, Vec2 const& lineEnd);
+bool DoDiscAndInfiniteLineOverlap2D(
+	Vec2 const& discCenter, float discRadius, Vec2 const& lineStart, Vec2 const& lineEnd
+);
 bool DoDiscAndInfiniteLineOverlap2D(Disc2 const& disc, LineSegment2 const& line);
 bool DoDiscAndLineOverlap2D(Vec2 const& discCenter, float discRadius, Vec2 const& lineStart, Vec2 const& lineEnd);
 bool DoDiscAndLineOverlap2D(Disc2 const& disc, LineSegment2 const& line);
 bool DoDiscAndAABBOverlap2D(Vec2 const& discCenter, float discRadius, Vec2 const& boxMins, Vec2 const& boxMaxs);
 bool DoDiscAndAABBOverlap2D(Vec2 const& discCenter, float discRadius, AABB2 const& box);
 bool DoDiscAndAABBOverlap2D(Disc2 const& disc, AABB2 const& box);
-bool DoDiscAndCapsuleOverlap2D(Vec2 const& discCenter, float discRadius, Vec2 const& capsuleStart, Vec2 const& capsuleEnd, float capsuleRadius);
+bool DoDiscAndCapsuleOverlap2D(
+	Vec2 const& discCenter, float discRadius, Vec2 const& capsuleStart, Vec2 const& capsuleEnd, float capsuleRadius
+);
 bool DoDiscAndCapsuleOverlap2D(Disc2 const& disc, Capsule2 const& capsule);
 bool DoDiscAndOBBOverlap2D(Vec2 const& discCenter, float discRadius, OBB2 const& box);
 bool DoDiscAndOBBOverlap2D(Disc2 const& disc, OBB2 const& box);
@@ -247,7 +252,9 @@ bool PushDiscOutOfFixedInfiniteLine2D(Vec2& discCenter, float discRadius, Vec2 c
 bool PushDiscOutOfFixedInfiniteLine2D(Disc2& discToPush, LineSegment2 const& line);
 bool PushDiscOutOfFixedLine2D(Vec2& discCenter, float discRadius, Vec2 const& lineStart, Vec2 const& lineEnd);
 bool PushDiscOutOfFixedLine2D(Disc2& discToPush, LineSegment2 const& line);
-bool PushDiscOutOfFixedCapsule2D(Vec2& discCenter, float discRadius, Vec2 const& capsuleStart, Vec2 const& capsuleEnd, float capsuleRadius);
+bool PushDiscOutOfFixedCapsule2D(
+	Vec2& discCenter, float discRadius, Vec2 const& capsuleStart, Vec2 const& capsuleEnd, float capsuleRadius
+);
 bool PushDiscOutOfFixedCapsule2D(Disc2& discToPush, Capsule2 const& capsule);
 bool PushDiscOutOfFixedOBB2D(Vec2& discCenter, float discRadius, OBB2 const& box);
 bool PushDiscOutOfFixedOBB2D(Disc2& discToPush, OBB2 const& box);

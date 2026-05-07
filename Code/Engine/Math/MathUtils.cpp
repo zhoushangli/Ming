@@ -5,6 +5,8 @@
 
 float Abs(float value) { return (value < 0.f) ? -value : value; }
 
+int Abs(int value) { return (value < 0) ? -value : value; }
+
 float Sign(float value)
 {
 	if (value > 0.f)
