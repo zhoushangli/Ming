@@ -29,12 +29,12 @@
 #pragma comment(lib, "d3dcompiler.lib")
 
 #if defined(ENGINE_DEBUG_RENDER)
+#include "Renderer.hpp"
 #include <dxgidebug.h>
 #pragma comment(lib, "dxguid.lib")
 #endif
 
 HGLRC g_openGLRenderingContext = nullptr;
-
 
 const uint8_t k_defaultTexture[16] = {
 	0xFF,
@@ -435,6 +435,20 @@ void Renderer::Shutdown()
 #endif
 }
 
+void Renderer::BeginSkyboxPass()
+{
+	ID3D11RenderTargetView* renderingTarget = m_sceneColorTexture->m_renderTargetView;
+
+	// Set render target
+	m_d3dDeviceContext->OMSetRenderTargets(1, &renderingTarget, nullptr);
+
+	// Initialize states to default
+	SetBlendMode(BlendMode::ALPHA);
+	SetSamplerMode(SamplerMode::POINT_CLAMP);
+	SetRasterizerMode(RasterizerMode::SOLID_CULL_BACK);
+	SetDepthMode(DepthMode::READ_WRITE_LESS_EQUAL);
+}
+
 void Renderer::BeginScenePass()
 {
 	ID3D11RenderTargetView* renderingTargets[2] = {m_sceneColorTexture->m_renderTargetView,
@@ -471,6 +485,28 @@ void Renderer::EndFrame()
 	{
 		ERROR_AND_DIE("Device has been lost, application will now terminate.");
 	}
+}
+
+void Renderer::RenderSkybox(Camera const& camera, Shader* shader)
+{
+	IntVec2 const resolution            = g_engine->m_window->GetClientDimensions();
+	Vertex        fullscreenTriangle[3] = {Vertex(Vec3(-1.f, -1.f, 0.f), Rgba8::WHITE, Vec2(0.f, 1.f)),
+		Vertex(Vec3(3.f, -1.f, 0.f), Rgba8::WHITE, Vec2(2.f, 1.f)),
+		Vertex(Vec3(-1.f, 3.f, 0.f), Rgba8::WHITE, Vec2(0.f, -1.f))};
+
+	SetViewport(resolution);
+    BeginCamera(camera);
+
+    SetBlendMode(BlendMode::OPAQUE);
+    SetSamplerMode(SamplerMode::BILINEAR_CLAMP);
+    SetRasterizerMode(RasterizerMode::SOLID_CULL_NONE);
+    SetDepthMode(DepthMode::DISABLED);
+
+    BindShader(shader);
+
+	m_d3dAnnotation->BeginEvent(L"Render Skybox");
+	DrawVertexArray(3, fullscreenTriangle);
+	m_d3dAnnotation->EndEvent();
 }
 
 // This function will run the post-process passes

@@ -135,11 +135,13 @@ public:
 	// Lifetime and frame loop
 	void Startup();
 	void Shutdown();
+	void BeginSkyboxPass();
 	void BeginScenePass();
 	void BeginUIPass();
 	void EndFrame();
 	void CreateRenderingContext();
 
+	void RenderSkybox(Camera const& camera, Shader* shader = nullptr);
 	void RenderPostProcess(Camera const& camera, int downsampleFactor = 1);
 
 	// Camera and pipeline state
