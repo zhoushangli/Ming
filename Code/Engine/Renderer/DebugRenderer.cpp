@@ -376,6 +376,7 @@ void DrawWorldObject(
 			renderer->BeginCamera(camera);
 			renderer->BindShader(nullptr);
 			renderer->BindTexture(nullptr);
+			renderer->BindSampler(SamplerMode::POINT_CLAMP);
 			renderer->BindModelConstants(Matrix4x4::IDENTITY, Rgba8::WHITE);
 			renderer->DrawVertexBuffer(obj.vertexBuffer);
 		}
@@ -425,6 +426,7 @@ void DrawWorldObject(
 		renderer->BeginCamera(camera);
 		renderer->BindShader(nullptr);
 		renderer->BindTexture(texture);
+		renderer->BindSampler(SamplerMode::POINT_CLAMP);
 		renderer->BindModelConstants(Matrix4x4::IDENTITY, Rgba8::WHITE);
 		renderer->DrawVertexArray(verts);
 	}
@@ -474,6 +476,7 @@ void DrawScreenObject(
 	renderer->BeginCamera(camera);
 	renderer->BindShader(nullptr);
 	renderer->BindTexture(&font->GetTexture());
+	renderer->BindSampler(SamplerMode::POINT_CLAMP);
 	renderer->BindModelConstants(Matrix4x4::IDENTITY, Rgba8::WHITE);
 	renderer->DrawVertexArray(verts);
 }

@@ -51,6 +51,8 @@ enum class SamplerMode
 {
 	POINT_CLAMP,
 	BILINEAR_CLAMP,
+	POINT_WRAP,
+	BILINEAR_WRAP,
 	COUNT
 };
 
@@ -126,6 +128,13 @@ struct PostProcessConstants
 };
 static const int k_postProcessConstantsSlot = 4;
 
+struct SkyboxConstants
+{
+	float Time;
+	float Padding[3];
+};
+static const int k_skyboxConstantsSlot = 5;
+
 class Renderer
 {
 public:
@@ -141,7 +150,7 @@ public:
 	void EndFrame();
 	void CreateRenderingContext();
 
-	void RenderSkybox(Camera const& camera, Shader* shader = nullptr);
+	void RenderSkybox(Camera const& camera, Shader* shader = nullptr, float time = 0.f);
 	void RenderPostProcess(Camera const& camera, int downsampleFactor = 1);
 
 	// Camera and pipeline state
@@ -150,7 +159,6 @@ public:
 
 	void ClearScreen(Rgba8 const& clearColor);
 	void SetBlendMode(BlendMode blendMode);
-	void SetSamplerMode(SamplerMode samplerMode);
 	void SetRasterizerMode(RasterizerMode rasterizerMode);
 	void SetDepthMode(DepthMode depthMode);
 	void SetStatesIfChanged();
@@ -165,11 +173,13 @@ public:
 	// High-level bind helpers used by gameplay/render features
 	void BindTexture(Texture* textureOrNull);
 	void BindTexture(Texture* textureOrNull, unsigned int slot);
+	void BindSampler(SamplerMode samplerMode, unsigned int slot = 0);
 	void BindShader(Shader* shader);
 	void BindModelConstants(Matrix4x4 const& modelToWorldTransform, Rgba8 const& modelColor);
 	void BindLightConstants(LightConstants const& lightConstants);
 	void BindLightConstants(Vec3 const& sunDirection, float sunIntensity, Rgba8 const& ambientColor, float ambientIntensity);
 	void BindPostProcessConstants(Vec2 const& screenDimensions, float cameraNear, float cameraFar);
+	void BindSkyboxConstants(float time);
 
 	// GPU resource creation and cache access
 	Shader* CreateOrGetShader(char const* shaderName);
@@ -237,6 +247,7 @@ private:
 	ConstantBuffer* m_cameraConstantBuffer      = nullptr;
 	ConstantBuffer* m_modelConstantBuffer       = nullptr;
 	ConstantBuffer* m_postProcessConstantBuffer = nullptr;
+	ConstantBuffer* m_skyboxConstantBuffer      = nullptr;
 
 	ID3D11Device*              m_d3dDevice           = nullptr;
 	ID3D11DeviceContext*       m_d3dDeviceContext    = nullptr;
@@ -248,8 +259,9 @@ private:
 	BlendMode         m_desiredBlendMode                   = BlendMode::ALPHA;
 	ID3D11BlendState* m_blendStates[(int)BlendMode::COUNT] = {};
 
-	ID3D11SamplerState* m_currentSamplerState                      = nullptr;
-	SamplerMode         m_desiredSamplerMode                       = SamplerMode::POINT_CLAMP;
+	static constexpr int k_maxSamplerSlots = 16;
+
+	ID3D11SamplerState* m_currentSamplerStates[k_maxSamplerSlots]  = {};
 	ID3D11SamplerState* m_samplerStates[(int)(SamplerMode::COUNT)] = {};
 
 	ID3D11RasterizerState* m_currentRasterizerState                         = nullptr;

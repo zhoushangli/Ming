@@ -124,6 +124,7 @@ void DevConsole::Render()
 
 	g_engine->m_renderer->BeginCamera(m_uiCamera);
 	g_engine->m_renderer->BindTexture(nullptr);
+	g_engine->m_renderer->BindSampler(SamplerMode::POINT_CLAMP);
 	g_engine->m_renderer->BindShader(nullptr);
 	g_engine->m_renderer->BindModelConstants(Matrix4x4::IDENTITY, Rgba8::WHITE);
 
@@ -272,6 +273,7 @@ void DevConsole::Render()
 	}
 
 	g_engine->m_renderer->BindTexture(&font->GetTexture());
+	g_engine->m_renderer->BindSampler(SamplerMode::POINT_CLAMP);
 	g_engine->m_renderer->DrawVertexArray((int)textVerts.size(), textVerts.data());
 }
 

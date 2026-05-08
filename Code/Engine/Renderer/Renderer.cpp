@@ -36,6 +36,20 @@
 
 HGLRC g_openGLRenderingContext = nullptr;
 
+namespace
+{
+Vertex const* GetFullscreenTriangleBottomLeftUV()
+{
+	static Vertex const fullscreenTriangle[3] = {
+		Vertex(Vec3(-1.f, -1.f, 0.f), Rgba8::WHITE, Vec2(0.f, 0.f)),
+		Vertex(Vec3(3.f, -1.f, 0.f), Rgba8::WHITE, Vec2(2.f, 0.f)),
+		Vertex(Vec3(-1.f, 3.f, 0.f), Rgba8::WHITE, Vec2(0.f, 2.f)),
+	};
+
+	return fullscreenTriangle;
+}
+} // namespace
+
 const uint8_t k_defaultTexture[16] = {
 	0xFF,
 	0xFF,
@@ -192,6 +206,7 @@ void           Renderer::Startup()
 	m_cameraConstantBuffer      = CreateConstantBuffer(sizeof(CameraConstants));
 	m_modelConstantBuffer       = CreateConstantBuffer(sizeof(ModelConstants));
 	m_postProcessConstantBuffer = CreateConstantBuffer(sizeof(PostProcessConstants));
+	m_skyboxConstantBuffer      = CreateConstantBuffer(sizeof(SkyboxConstants));
 
 #pragma endregion
 
@@ -242,6 +257,22 @@ void           Renderer::Startup()
 	samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
 
 	hr = m_d3dDevice->CreateSamplerState(&samplerDesc, &m_samplerStates[(int)SamplerMode::BILINEAR_CLAMP]);
+
+	// POINT_WRAP
+	samplerDesc.Filter   = D3D11_FILTER_MIN_MAG_MIP_POINT;
+	samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
+	samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
+	samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
+
+	hr = m_d3dDevice->CreateSamplerState(&samplerDesc, &m_samplerStates[(int)SamplerMode::POINT_WRAP]);
+
+	// BILINEAR_WRAP
+	samplerDesc.Filter   = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+	samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
+	samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
+	samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
+
+	hr = m_d3dDevice->CreateSamplerState(&samplerDesc, &m_samplerStates[(int)SamplerMode::BILINEAR_WRAP]);
 
 #pragma endregion
 
@@ -347,6 +378,9 @@ void Renderer::Shutdown()
 	delete m_postProcessConstantBuffer;
 	m_postProcessConstantBuffer = nullptr;
 
+	delete m_skyboxConstantBuffer;
+	m_skyboxConstantBuffer = nullptr;
+
 	delete m_currentIndexBuffer;
 	m_currentIndexBuffer = nullptr;
 
@@ -444,7 +478,6 @@ void Renderer::BeginSkyboxPass()
 
 	// Initialize states to default
 	SetBlendMode(BlendMode::ALPHA);
-	SetSamplerMode(SamplerMode::POINT_CLAMP);
 	SetRasterizerMode(RasterizerMode::SOLID_CULL_BACK);
 	SetDepthMode(DepthMode::READ_WRITE_LESS_EQUAL);
 }
@@ -459,7 +492,6 @@ void Renderer::BeginScenePass()
 
 	// Initialize states to default
 	SetBlendMode(BlendMode::ALPHA);
-	SetSamplerMode(SamplerMode::POINT_CLAMP);
 	SetRasterizerMode(RasterizerMode::SOLID_CULL_BACK);
 	SetDepthMode(DepthMode::READ_WRITE_LESS_EQUAL);
 }
@@ -471,7 +503,6 @@ void Renderer::BeginUIPass()
 
 	// Initialize states to default
 	SetBlendMode(BlendMode::ALPHA);
-	SetSamplerMode(SamplerMode::POINT_CLAMP);
 	SetRasterizerMode(RasterizerMode::SOLID_CULL_NONE);
 	SetDepthMode(DepthMode::READ_ONLY_ALWAYS);
 }
@@ -487,25 +518,24 @@ void Renderer::EndFrame()
 	}
 }
 
-void Renderer::RenderSkybox(Camera const& camera, Shader* shader)
+void Renderer::RenderSkybox(Camera const& camera, Shader* shader, float time)
 {
-	IntVec2 const resolution            = g_engine->m_window->GetClientDimensions();
-	Vertex        fullscreenTriangle[3] = {Vertex(Vec3(-1.f, -1.f, 0.f), Rgba8::WHITE, Vec2(0.f, 1.f)),
-		Vertex(Vec3(3.f, -1.f, 0.f), Rgba8::WHITE, Vec2(2.f, 1.f)),
-		Vertex(Vec3(-1.f, 3.f, 0.f), Rgba8::WHITE, Vec2(0.f, -1.f))};
+	IntVec2 const resolution = g_engine->m_window->GetClientDimensions();
 
 	SetViewport(resolution);
-    BeginCamera(camera);
+	BeginCamera(camera);
 
-    SetBlendMode(BlendMode::OPAQUE);
-    SetSamplerMode(SamplerMode::BILINEAR_CLAMP);
-    SetRasterizerMode(RasterizerMode::SOLID_CULL_NONE);
-    SetDepthMode(DepthMode::DISABLED);
+	SetBlendMode(BlendMode::OPAQUE);
+	SetRasterizerMode(RasterizerMode::SOLID_CULL_NONE);
+	SetDepthMode(DepthMode::DISABLED);
 
-    BindShader(shader);
+	BindShader(shader);
+	BindTexture(CreateOrGetTexture("Data/Images/perlin_noise.png"), 3);
+	BindSampler(SamplerMode::BILINEAR_WRAP, 3);
+	BindSkyboxConstants(time);
 
 	m_d3dAnnotation->BeginEvent(L"Render Skybox");
-	DrawVertexArray(3, fullscreenTriangle);
+	DrawVertexArray(3, GetFullscreenTriangleBottomLeftUV());
 	m_d3dAnnotation->EndEvent();
 }
 
@@ -522,13 +552,8 @@ void Renderer::RenderPostProcess(Camera const& camera, int downsampleFactor)
 	);
 	BeginCamera(camera);
 	SetBlendMode(BlendMode::OPAQUE);
-	SetSamplerMode(SamplerMode::POINT_CLAMP);
 	SetRasterizerMode(RasterizerMode::SOLID_CULL_NONE);
 	SetDepthMode(DepthMode::READ_ONLY_ALWAYS);
-
-	Vertex fullscreenTriangle[3] = {Vertex(Vec3(-1.f, -1.f, 0.f), Rgba8::WHITE, Vec2(0.f, 1.f)),
-		Vertex(Vec3(3.f, -1.f, 0.f), Rgba8::WHITE, Vec2(2.f, 1.f)),
-		Vertex(Vec3(-1.f, 3.f, 0.f), Rgba8::WHITE, Vec2(0.f, -1.f))};
 
 	auto UnbindOutputAndInputs = [&]()
 	{
@@ -550,12 +575,15 @@ void Renderer::RenderPostProcess(Camera const& camera, int downsampleFactor)
 
 		BindShader(shader);
 		BindTexture(colorInput, 0);
+		BindSampler(SamplerMode::POINT_CLAMP, 0);
 		BindTexture(depthInput, 1);
+		BindSampler(SamplerMode::POINT_CLAMP, 1);
 		BindTexture(normalInput, 2);
+		BindSampler(SamplerMode::POINT_CLAMP, 2);
 		BindPostProcessConstants((Vec2)resolution, camera.GetNearZ(), camera.GetFarZ());
 
 		m_d3dAnnotation->BeginEvent(eventName);
-		DrawVertexArray(3, fullscreenTriangle);
+		DrawVertexArray(3, GetFullscreenTriangleBottomLeftUV());
 		m_d3dAnnotation->EndEvent();
 
 		UnbindOutputAndInputs();
@@ -672,6 +700,7 @@ void Renderer::RenderPostProcess(Camera const& camera, int downsampleFactor)
 				if (customTexture != nullptr)
 				{
 					BindTexture(customTexture, customInput.m_slot);
+					BindSampler(SamplerMode::POINT_CLAMP, customInput.m_slot);
 				}
 			}
 		}
@@ -783,8 +812,6 @@ void Renderer::ClearScreen(Rgba8 const& clearColor)
 
 void Renderer::SetBlendMode(BlendMode blendMode) { m_desiredBlendMode = blendMode; }
 
-void Renderer::SetSamplerMode(SamplerMode samplerMode) { m_desiredSamplerMode = samplerMode; }
-
 void Renderer::SetRasterizerMode(RasterizerMode rasterizerMode) { m_desiredRasterizerMode = rasterizerMode; }
 
 void Renderer::SetDepthMode(DepthMode depthMode) { m_desiredDepthMode = depthMode; }
@@ -803,14 +830,6 @@ void Renderer::SetStatesIfChanged()
 		UINT  sampleMask     = 0xffffffff;
 
 		m_d3dDeviceContext->OMSetBlendState(m_currentBlendState, blendFactor, sampleMask);
-	}
-
-	// Sampler state
-	ID3D11SamplerState* desiredSamplerState = m_samplerStates[(int)m_desiredSamplerMode];
-	if (m_currentSamplerState != desiredSamplerState)
-	{
-		m_currentSamplerState = desiredSamplerState;
-		m_d3dDeviceContext->PSSetSamplers(0, 1, &m_currentSamplerState);
 	}
 
 	ID3D11RasterizerState* desiredRasterizerState = m_rasterizerStates[(int)m_desiredRasterizerMode];
@@ -899,7 +918,19 @@ void Renderer::BindTexture(Texture* textureOrNull, unsigned int slot)
 
 	ID3D11ShaderResourceView* srv = textureOrNull->m_shaderResourceView;
 	m_d3dDeviceContext->PSSetShaderResources(slot, 1, &srv);
-	m_d3dDeviceContext->PSSetSamplers(slot, 1, &m_currentSamplerState);
+}
+
+void Renderer::BindSampler(SamplerMode samplerMode, unsigned int slot)
+{
+	GUARANTEE_OR_DIE(m_d3dDeviceContext, "BindSampler: m_d3dDeviceContext is null");
+	GUARANTEE_OR_DIE(slot < k_maxSamplerSlots, "BindSampler: slot out of range");
+
+	ID3D11SamplerState* samplerState = m_samplerStates[(int)samplerMode];
+	if (m_currentSamplerStates[slot] != samplerState)
+	{
+		m_currentSamplerStates[slot] = samplerState;
+		m_d3dDeviceContext->PSSetSamplers(slot, 1, &samplerState);
+	}
 }
 
 void Renderer::BindShader(Shader* shader)
@@ -958,6 +989,15 @@ void Renderer::BindPostProcessConstants(Vec2 const& screenDimensions, float near
 
 	CopyCPUToGPU(&postProcessData, sizeof(postProcessData), m_postProcessConstantBuffer);
 	BindConstantBuffer(m_postProcessConstantBuffer, k_postProcessConstantsSlot);
+}
+
+void Renderer::BindSkyboxConstants(float time)
+{
+	SkyboxConstants skyboxData = SkyboxConstants();
+	skyboxData.Time            = time;
+
+	CopyCPUToGPU(&skyboxData, sizeof(skyboxData), m_skyboxConstantBuffer);
+	BindConstantBuffer(m_skyboxConstantBuffer, k_skyboxConstantsSlot);
 }
 
 #pragma endregion
