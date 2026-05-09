@@ -13,7 +13,7 @@ public:
     void SetCenter(const Vec2& newCenter);
 
 public:
-    Vec2 m_center = Vec2::ZERO;
+    Vec2 m_center = Vec2::kZero;
     float m_radius = 0.f;
 };
 

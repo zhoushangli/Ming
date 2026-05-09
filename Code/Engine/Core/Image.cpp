@@ -8,7 +8,7 @@
 
 Image::Image()
 {
-    m_dimensions = IntVec2::ZERO;
+    m_dimensions = IntVec2::kZero;
 }
 
 Image::~Image()

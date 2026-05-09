@@ -26,7 +26,7 @@ public:
     void operator*=(float uniformScale);
     void operator+=(EulerAngles const &anglesToAdd);
 
-    static const EulerAngles ZERO;
+    static const EulerAngles kZero;
 
 public:
     float m_yawDegrees = 0.f;

@@ -2,8 +2,8 @@
 
 #include <math.h>
 
-const Vec4 Vec4::ZERO = Vec4(0.f, 0.f, 0.f, 0.f);
-const Vec4 Vec4::ONE  = Vec4(1.f, 1.f, 1.f, 1.f);
+const Vec4 Vec4::kZero = Vec4(0.f, 0.f, 0.f, 0.f);
+const Vec4 Vec4::kOne  = Vec4(1.f, 1.f, 1.f, 1.f);
 
 Vec4::Vec4() = default;
 Vec4::Vec4(Vec4 const& other) = default;

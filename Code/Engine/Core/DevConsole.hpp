@@ -70,12 +70,12 @@ public:
 
 	void HandleInput(unsigned char asKey);
 
-	static const Rgba8 ERROR;
-	static const Rgba8 WARNING;
-	static const Rgba8 INFO_MAJOR;
-	static const Rgba8 INFO_MINOR;
-	static const Rgba8 INPUT_TEXT;
-	static const Rgba8 INPUT_INSERTION_POINT;
+	static const Rgba8 kError;
+	static const Rgba8 kWarning;
+	static const Rgba8 kInfoMajor;
+	static const Rgba8 kInfoMinor;
+	static const Rgba8 kInputText;
+	static const Rgba8 kInputInsertionPoint;
 
 	// Handle key input.
 	static bool Event_KeyDown(EventArgs& args);

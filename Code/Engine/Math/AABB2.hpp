@@ -35,8 +35,8 @@ public:
 	Vec2 m_mins;
 	Vec2 m_maxs;
 
-	static const AABB2 ZERO;
-	static const AABB2 UNIT;
-    static const AABB2 CENTERED_UNIT;
+	static const AABB2 kZero;
+	static const AABB2 kUnit;
+    static const AABB2 kCenteredUnit;
 };
 

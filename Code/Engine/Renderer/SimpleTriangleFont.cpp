@@ -15,19 +15,19 @@
 
 
 //------------------------------------------------------------------------------------------------
-constexpr int TRITEXT_PIX_WIDE = 5;
-constexpr int TRITEXT_PIX_HIGH = 9;
-constexpr int TRITEXT_PIX_PER_GLYPH = TRITEXT_PIX_WIDE * TRITEXT_PIX_HIGH;
-constexpr int TRITEXT_FIRST_ASCII = 32;
-constexpr int TRITEXT_LAST_ASCII = 126;
-constexpr int TRITEXT_NUM_ASCIIS = 1 + TRITEXT_LAST_ASCII - TRITEXT_FIRST_ASCII;
-constexpr int TRITEXT_NUM_ROWS = TRITEXT_NUM_ASCIIS * TRITEXT_PIX_HIGH;
-constexpr int TRITEXT_NUM_PIXELS = TRITEXT_NUM_ASCIIS * TRITEXT_PIX_PER_GLYPH;
+constexpr int kTriTextPixWide = 5;
+constexpr int kTriTextPixHigh = 9;
+constexpr int kTriTextPixPerGlyph = kTriTextPixWide * kTriTextPixHigh;
+constexpr int kTriTextFirstAscii = 32;
+constexpr int kTriTextLastAscii = 126;
+constexpr int kTriTextNumAsciis = 1 + kTriTextLastAscii - kTriTextFirstAscii;
+constexpr int kTriTextNumRows = kTriTextNumAsciis * kTriTextPixHigh;
+constexpr int kTriTextNumPixels = kTriTextNumAsciis * kTriTextPixPerGlyph;
 
 //------------------------------------------------------------------------------------------------
 // 5x7 "pixel" data for each ASCII character from 32 (space) through 126 (~ tilde)
 // Note: indexes are offset by -32 from ASCII value, so space(32) is at [0] at A(65) is at [33]
-const char* g_triTextFontData[ TRITEXT_NUM_ROWS ] = 
+const char* g_triTextFontData[ kTriTextNumRows ] = 
 {
 	//SPACE	  33 !     34 "     35 #     36 $     37 %     38 &     39 '     40 (     41 )     42 *     43 +     44 ,     45 -     46 .     47 /     48 '0'   49 '1'   50 '2'   51 '3'   52 '4'   53 '5'   54 '6'   55 '7'   56 '8'   57 '9'   58 :     59 ;     60 <     61 =     62 >     63 ?     64 @     65 A     66 B     67 C     68 D     69 E     70 F     71 G     72 H     73 I     74 J     75 K     76 L     77 M     78 N     79 O     80 P     81 Q     82 R     83 S     84 T     85 U     86 V     87 W     88 X     89 Y     90 Z     91 [     92 \     93 ]     94 ^     95 _     96 `     97 a     98 b     99 c     100 d    101 e    102 f    103 g    104 h    105 i    106 j    107 k    108 l    109 m    110 n    111 o    112 p    113 q    114 r    115 s    116 t    117 u    118 v    119 w    120 x    121 y    122 z    123 {    124 |    125 }    126 ~   
 	".....", "..O..", ".O.O.", ".O.O.", "..O..", "OO..O", ".OO..", "..O..", "...O.", ".O...", "..O..", ".....", ".....", ".....", ".....", ".....", ".OOO.", "..O..", ".OOO.", ".OOO.", "O..O.", "OOOOO", ".OOO.", "OOOOO", ".OOO.", ".OOO.", ".....", ".....", "...O.", ".....", ".O...", ".OOO.", ".OOO.", ".OOO.", "OOOO.", ".OOO.", "OOOO.", "OOOOO", "OOOOO", ".OOO.", "O...O", "OOOOO", ".OOOO", "O...O", "O....", "OO.OO", "O...O", ".OOO.", "OOOO.", ".OOO.", "OOOO.", ".OOO.", "OOOOO", "O...O", "O...O", "O...O", "O...O", "O...O", "OOOOO", ".OOO.", ".....", ".OOO.", "..O..", ".....", ".OO..", ".....", "O....", ".....", "....O", ".....", "..OOO", ".....", "O....", "..O..", "...O.", "O....", ".OO..", ".....", ".....", ".....", ".....", ".....", ".....", ".....", ".O...", ".....", ".....", ".....", ".....", ".....", ".....", "..OO.", "..O..", ".OO..", ".....", 
@@ -67,18 +67,18 @@ void SimpleTriangleFont_AddVertsForAABB2D( std::vector<Vertex>& mesh, const AABB
 //------------------------------------------------------------------------------------------------
 void AddVertsForGlyphTriangles2D( std::vector<Vertex>& verts, char glyph, const Vec2& cellMins, const Vec2& pixelSize, const Rgba8& color )
 {
-	if( glyph < TRITEXT_FIRST_ASCII || glyph > TRITEXT_LAST_ASCII )
+	if( glyph < kTriTextFirstAscii || glyph > kTriTextLastAscii )
 		return;
 
-	int triTextGlyphIndex = glyph - TRITEXT_FIRST_ASCII;
-	for( int rowIndex = 0; rowIndex < TRITEXT_PIX_HIGH; ++ rowIndex )
+	int triTextGlyphIndex = glyph - kTriTextFirstAscii;
+	for( int rowIndex = 0; rowIndex < kTriTextPixHigh; ++ rowIndex )
 	{
-		float minY = cellMins.y + pixelSize.y * (float)(TRITEXT_PIX_HIGH - rowIndex - 1);
+		float minY = cellMins.y + pixelSize.y * (float)(kTriTextPixHigh - rowIndex - 1);
 		float maxY = minY + pixelSize.y;
-		int triTextFontDataIndex = triTextGlyphIndex + (rowIndex * TRITEXT_NUM_ASCIIS);
+		int triTextFontDataIndex = triTextGlyphIndex + (rowIndex * kTriTextNumAsciis);
 		const char* rowText = g_triTextFontData[ triTextFontDataIndex ];
 
-		for( int triTextCellIndex = 0; triTextCellIndex < TRITEXT_PIX_WIDE; ++ triTextCellIndex )
+		for( int triTextCellIndex = 0; triTextCellIndex < kTriTextPixWide; ++ triTextCellIndex )
 		{
 			if( rowText[ triTextCellIndex ] == '.' )
 				continue;
@@ -99,8 +99,8 @@ void AddVertsForTextTriangles2D( std::vector<Vertex>& verts, const std::string& 
 //	UNUSED( isFlipped );
 	
 	float cellWidth = cellHeight * cellAspect;
-	float pixelWidth = cellWidth * (1.f / (float) TRITEXT_PIX_WIDE);
-	float pixelHeight = cellHeight * (1.f / (float) TRITEXT_PIX_HIGH);
+	float pixelWidth = cellWidth * (1.f / (float) kTriTextPixWide);
+	float pixelHeight = cellHeight * (1.f / (float) kTriTextPixHigh);
 	float spacingWidth = cellWidth * spacingFraction;
 	Vec2 cellSize( cellWidth, cellHeight );
 	Vec2 pixelSize( pixelWidth, pixelHeight );

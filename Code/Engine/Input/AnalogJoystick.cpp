@@ -34,8 +34,8 @@ float AnalogJoystick::GetOuterDeadZoneFraction() const
 
 void AnalogJoystick::Reset()
 {
-    m_rawPosition = Vec2::ZERO;
-    m_correctedPosition = Vec2::ZERO;
+    m_rawPosition = Vec2::kZero;
+    m_correctedPosition = Vec2::kZero;
 }
 
 void AnalogJoystick::SetDeadZoneThresholds(float normalizedInnerDeadzoneThreshold, float normalizedOuterDeadzoneThreshold)
@@ -52,12 +52,12 @@ void AnalogJoystick::UpdatePosition(float rawNormalizedX, float rawNormalizedY)
 
     if (magnitude < m_innerDeadZoneFraction)
     {
-        m_correctedPosition = Vec2::ZERO;
+        m_correctedPosition = Vec2::kZero;
         return;
     }
 
     float correctedMagnitude = RangeMapClamped(magnitude, m_innerDeadZoneFraction, m_outerDeadZoneFraction, 0.f, 1.f);
 
-    Vec2 direction = (magnitude > 0.0f) ? m_rawPosition.GetNormalized() : Vec2::ZERO;
+    Vec2 direction = (magnitude > 0.0f) ? m_rawPosition.GetNormalized() : Vec2::kZero;
     m_correctedPosition = direction * correctedMagnitude;
 }

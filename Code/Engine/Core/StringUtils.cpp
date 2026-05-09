@@ -3,17 +3,17 @@
 #include <stdarg.h>
 
 
-constexpr int STRINGF_STACK_LOCAL_TEMP_LENGTH = 2048;
+constexpr int kStringfStackLocalTempLength = 2048;
 
 
 const std::string Stringf(char const* format, ...)
 {
-    char textLiteral[STRINGF_STACK_LOCAL_TEMP_LENGTH];
+    char textLiteral[kStringfStackLocalTempLength];
     va_list variableArgumentList;
     va_start(variableArgumentList, format);
-    vsnprintf_s(textLiteral, STRINGF_STACK_LOCAL_TEMP_LENGTH, _TRUNCATE, format, variableArgumentList);
+    vsnprintf_s(textLiteral, kStringfStackLocalTempLength, _TRUNCATE, format, variableArgumentList);
     va_end(variableArgumentList);
-    textLiteral[STRINGF_STACK_LOCAL_TEMP_LENGTH - 1] = '\0'; // In case vsnprintf overran (doesn't auto-terminate)
+    textLiteral[kStringfStackLocalTempLength - 1] = '\0'; // In case vsnprintf overran (doesn't auto-terminate)
 
     return std::string(textLiteral);
 }
@@ -21,9 +21,9 @@ const std::string Stringf(char const* format, ...)
 
 const std::string Stringf(int maxLength, char const* format, ...)
 {
-    char textLiteralSmall[STRINGF_STACK_LOCAL_TEMP_LENGTH];
+    char textLiteralSmall[kStringfStackLocalTempLength];
     char* textLiteral = textLiteralSmall;
-    if (maxLength > STRINGF_STACK_LOCAL_TEMP_LENGTH)
+    if (maxLength > kStringfStackLocalTempLength)
         textLiteral = new char[maxLength];
 
     va_list variableArgumentList;
@@ -33,7 +33,7 @@ const std::string Stringf(int maxLength, char const* format, ...)
     textLiteral[maxLength - 1] = '\0'; // In case vsnprintf overran (doesn't auto-terminate)
 
     std::string returnValue(textLiteral);
-    if (maxLength > STRINGF_STACK_LOCAL_TEMP_LENGTH)
+    if (maxLength > kStringfStackLocalTempLength)
         delete[] textLiteral;
 
     return returnValue;

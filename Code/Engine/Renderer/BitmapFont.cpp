@@ -10,19 +10,19 @@
 #include <string>
 #include <vector>
 
-int const FONT_SPRITE_SHEET_COLS = 16;
-int const FONT_SPRITE_SHEET_ROWS = 16;
+int const kFontSpriteSheetCols = 16;
+int const kFontSpriteSheetRows = 16;
 
 BitmapFont::BitmapFont(char const *fontFilePathNameWithNoExtension, Texture &fontTexture)
-    : m_fontFilePathNameWithNoExtension(fontFilePathNameWithNoExtension), m_fontGlyphsSpriteSheet(fontTexture, IntVec2(FONT_SPRITE_SHEET_COLS, FONT_SPRITE_SHEET_ROWS))
+    : m_fontFilePathNameWithNoExtension(fontFilePathNameWithNoExtension), m_fontGlyphsSpriteSheet(&fontTexture, IntVec2(kFontSpriteSheetCols, kFontSpriteSheetRows))
 {
     IntVec2 texDims = fontTexture.GetDimensions();
     float texAspect = (texDims.y == 0) ? 1.f : (float)texDims.x / (float)texDims.y;
-    float gridAspect = (float)FONT_SPRITE_SHEET_COLS / (float)FONT_SPRITE_SHEET_ROWS;
+    float gridAspect = (float)kFontSpriteSheetCols / (float)kFontSpriteSheetRows;
     m_fontDefaultAspect = texAspect / gridAspect;
 }
 
-Texture &BitmapFont::GetTexture()
+Texture* BitmapFont::GetTexture()
 {
     return m_fontGlyphsSpriteSheet.GetTexture();
 }
@@ -119,7 +119,7 @@ void BitmapFont::AddVertsForText3DAtOriginXForward(
     std::vector<Vertex> &verts,
     float cellHeight,
     std::string const &text,
-    Rgba8 const &tint /*= Rgba8::WHITE*/,
+    Rgba8 const &tint /*= Rgba8::kWhite*/,
     float cellAspect /*= 1.0f*/,
     Vec2 const &alignment /*= Vec2(0.5f, 0.5f)*/,
     int maxGlyphsToDraw /*= 999*/)

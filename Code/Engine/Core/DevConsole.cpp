@@ -10,12 +10,12 @@
 #include "Engine/Renderer/BitmapFont.hpp"
 #include "Engine/Renderer/Renderer.hpp"
 
-Rgba8 const DevConsole::ERROR                 = Rgba8(255, 0, 0, 255);     // Red
-Rgba8 const DevConsole::WARNING               = Rgba8(255, 255, 0, 255);   // Yellow
-Rgba8 const DevConsole::INFO_MAJOR            = Rgba8(0, 255, 0, 255);     // Green
-Rgba8 const DevConsole::INFO_MINOR            = Rgba8(0, 255, 255, 255);   // Cyan
-Rgba8 const DevConsole::INPUT_TEXT            = Rgba8(255, 255, 255, 255); // White
-Rgba8 const DevConsole::INPUT_INSERTION_POINT = Rgba8(255, 255, 255, 255); // White
+Rgba8 const DevConsole::kError                 = Rgba8(255, 0, 0, 255);     // Red
+Rgba8 const DevConsole::kWarning               = Rgba8(255, 255, 0, 255);   // Yellow
+Rgba8 const DevConsole::kInfoMajor            = Rgba8(0, 255, 0, 255);     // Green
+Rgba8 const DevConsole::kInfoMinor            = Rgba8(0, 255, 255, 255);   // Cyan
+Rgba8 const DevConsole::kInputText            = Rgba8(255, 255, 255, 255); // White
+Rgba8 const DevConsole::kInputInsertionPoint = Rgba8(255, 255, 255, 255); // White
 
 DevConsole::DevConsole(DevConsoleConfig const& config) : m_config(config), m_uiCamera() {}
 
@@ -29,7 +29,7 @@ void DevConsole::Startup()
 	m_isOpen = m_config.m_startOpen;
 
 	Vec2 screenSize = (Vec2)g_engine->m_window->GetClientDimensions();
-	m_uiCamera.SetOrthographicView(Vec2::ZERO, screenSize, 0.f, 1.f);
+	m_uiCamera.SetOrthographicView(Vec2::kZero, screenSize, 0.f, 1.f);
 
 	m_inputText.clear();
 	m_insertionPointPosition = 0;
@@ -39,7 +39,7 @@ void DevConsole::Startup()
 	m_insertionPointBlinkTimer->Start();
 	m_insertionPointVisible = true;
 
-	AddLine(INFO_MAJOR, "DevConsole started");
+	AddLine(kInfoMajor, "DevConsole started");
 
 	g_engine->m_eventSystem->SubscribeEventCallbackFunction("KeyDown", DevConsole::Event_KeyDown);
 	g_engine->m_eventSystem->SubscribeEventCallbackFunction("CharInput", DevConsole::Event_CharInput);
@@ -95,14 +95,14 @@ void DevConsole::Execute(std::string const& consoleContext, bool echoCommand)
 	{
 		if (echoCommand)
 		{
-			AddLine(INPUT_TEXT, consoleContext);
+			AddLine(kInputText, consoleContext);
 		}
 		m_commandHistory.push_back(consoleContext);
 		g_engine->m_eventSystem->FireEvent(commandName, args);
 	}
 	else
 	{
-		AddLine(ERROR, Stringf("Unknown command: %s", consoleContext.c_str()));
+		AddLine(kError, Stringf("Unknown command: %s", consoleContext.c_str()));
 		return;
 	}
 }
@@ -126,14 +126,14 @@ void DevConsole::Render()
 	g_engine->m_renderer->BindTexture(nullptr);
 	g_engine->m_renderer->BindSampler(SamplerMode::POINT_CLAMP);
 	g_engine->m_renderer->BindShader(nullptr);
-	g_engine->m_renderer->BindModelConstants(Matrix4x4::IDENTITY, Rgba8::WHITE);
+	g_engine->m_renderer->BindModelConstants(Matrix4x4::kIdentity, Rgba8::kWhite);
 
 	g_engine->m_renderer->SetBlendMode(BlendMode::ALPHA);
 	g_engine->m_renderer->SetDepthMode(DepthMode::READ_ONLY_ALWAYS);
 	g_engine->m_renderer->SetRasterizerMode(RasterizerMode::SOLID_CULL_BACK);
 
 	std::vector<Vertex> bgVerts;
-	AddVertsForAABB2D(bgVerts, uiBounds, Rgba8::TRANSLUCENT_BLACK);
+	AddVertsForAABB2D(bgVerts, uiBounds, Rgba8::kTranslucentBlack);
 
 	g_engine->m_renderer->DrawVertexArray((int)bgVerts.size(), bgVerts.data());
 
@@ -222,7 +222,7 @@ void DevConsole::Render()
 		prompt,
 		inputBox,
 		cellHeight * 0.9f,
-		INPUT_TEXT,
+		kInputText,
 		m_config.m_fontAspect,
 		Vec2(0.f, 0.5f),
 		TextBoxMode::SHRINK_TO_FIT
@@ -263,7 +263,7 @@ void DevConsole::Render()
 			"|",
 			cursorBox,
 			inputCellHeight,
-			INPUT_INSERTION_POINT,
+			kInputInsertionPoint,
 			m_config.m_fontAspect,
 			Vec2(0.5f, 0.5f),
 			TextBoxMode::SHRINK_TO_FIT
@@ -272,7 +272,7 @@ void DevConsole::Render()
 #pragma endregion
 	}
 
-	g_engine->m_renderer->BindTexture(&font->GetTexture());
+	g_engine->m_renderer->BindTexture(font->GetTexture());
 	g_engine->m_renderer->BindSampler(SamplerMode::POINT_CLAMP);
 	g_engine->m_renderer->DrawVertexArray((int)textVerts.size(), textVerts.data());
 }
@@ -311,7 +311,7 @@ bool DevConsole::Event_KeyDown(EventArgs& args)
 {
 	unsigned char asKey = (unsigned char)std::stoi(args.GetValue("asKey", "0"));
 
-	if (asKey == KEYCODE_TILDE)
+	if (asKey == kKeyCodeTilde)
 	{
 		g_engine->m_devConsole->ToggleOpen();
 		return true;
@@ -320,7 +320,7 @@ bool DevConsole::Event_KeyDown(EventArgs& args)
 	if (g_engine->m_devConsole == nullptr || !g_engine->m_devConsole->IsOpen())
 		return false;
 
-	if (asKey == KEYCODE_ENTER)
+	if (asKey == kKeyCodeEnter)
 	{
 		std::string command = g_engine->m_devConsole->m_inputText;
 		g_engine->m_devConsole->m_inputText.clear();
@@ -340,7 +340,7 @@ bool DevConsole::Event_KeyDown(EventArgs& args)
 		return true;
 	}
 
-	if (asKey == KEYCODE_ESC)
+	if (asKey == kKeyCodeEsc)
 	{
 		if (g_engine->m_devConsole->m_inputText.empty())
 		{
@@ -357,7 +357,7 @@ bool DevConsole::Event_KeyDown(EventArgs& args)
 		return true;
 	}
 
-	if (asKey == KEYCODE_HOME)
+	if (asKey == kKeyCodeHome)
 	{
 		g_engine->m_devConsole->m_insertionPointPosition = 0;
 		g_engine->m_devConsole->m_insertionPointVisible  = true;
@@ -365,7 +365,7 @@ bool DevConsole::Event_KeyDown(EventArgs& args)
 		return true;
 	}
 
-	if (asKey == KEYCODE_END)
+	if (asKey == kKeyCodeEnd)
 	{
 		g_engine->m_devConsole->m_insertionPointPosition = (int)g_engine->m_devConsole->m_inputText.size();
 		g_engine->m_devConsole->m_insertionPointVisible  = true;
@@ -373,7 +373,7 @@ bool DevConsole::Event_KeyDown(EventArgs& args)
 		return true;
 	}
 
-	if (asKey == KEYCODE_DELETE)
+	if (asKey == kKeyCodeDelete)
 	{
 		int&         pos  = g_engine->m_devConsole->m_insertionPointPosition;
 		std::string& text = g_engine->m_devConsole->m_inputText;
@@ -389,7 +389,7 @@ bool DevConsole::Event_KeyDown(EventArgs& args)
 		return true;
 	}
 
-	if (asKey == KEYCODE_BACKSPACE)
+	if (asKey == kKeyCodeBackspace)
 	{
 		int&         pos  = g_engine->m_devConsole->m_insertionPointPosition;
 		std::string& text = g_engine->m_devConsole->m_inputText;
@@ -406,7 +406,7 @@ bool DevConsole::Event_KeyDown(EventArgs& args)
 		return true;
 	}
 
-	if (asKey == KEYCODE_LEFTARROW)
+	if (asKey == kKeyCodeLeftArrow)
 	{
 		g_engine->m_devConsole->m_insertionPointPosition =
 			std::max(0, g_engine->m_devConsole->m_insertionPointPosition - 1);
@@ -415,7 +415,7 @@ bool DevConsole::Event_KeyDown(EventArgs& args)
 		return true;
 	}
 
-	if (asKey == KEYCODE_RIGHTARROW)
+	if (asKey == kKeyCodeRightArrow)
 	{
 		g_engine->m_devConsole->m_insertionPointPosition = std::min(
 			(int)g_engine->m_devConsole->m_inputText.size(),
@@ -426,7 +426,7 @@ bool DevConsole::Event_KeyDown(EventArgs& args)
 		return true;
 	}
 
-	if (asKey == KEYCODE_UPARROW)
+	if (asKey == kKeyCodeUpArrow)
 	{
 		DevConsole* dc           = g_engine->m_devConsole;
 		int const   historyCount = (int)dc->m_commandHistory.size();
@@ -447,7 +447,7 @@ bool DevConsole::Event_KeyDown(EventArgs& args)
 		return true;
 	}
 
-	if (asKey == KEYCODE_DOWNARROW)
+	if (asKey == kKeyCodeDownArrow)
 	{
 		DevConsole* dc           = g_engine->m_devConsole;
 		int const   historyCount = (int)dc->m_commandHistory.size();
@@ -528,6 +528,6 @@ bool DevConsole::Command_Help([[maybe_unused]] EventArgs& args)
 		helpText += name.substr(kDevPrefix.size());
 	}
 
-	g_engine->m_devConsole->AddLine(DevConsole::INFO_MINOR, helpText);
+	g_engine->m_devConsole->AddLine(DevConsole::kInfoMinor, helpText);
 	return true;
 }

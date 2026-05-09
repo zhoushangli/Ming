@@ -12,6 +12,6 @@ public:
     Vec3 const GetNearestPoint(Vec3 const &point) const;
 
 public:
-    Vec3 m_center = Vec3::ZERO;
+    Vec3 m_center = Vec3::kZero;
     float m_radius = 0.f;
 };

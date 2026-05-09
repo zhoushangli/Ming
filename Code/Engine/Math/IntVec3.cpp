@@ -6,7 +6,7 @@
 
 #include <string>
 
-IntVec3 const IntVec3::ZERO = IntVec3(0, 0, 0);
+IntVec3 const IntVec3::kZero = IntVec3(0, 0, 0);
 
 IntVec3::IntVec3(Vec3 const& copyFrom)
 	: x(RoundDownToInt(copyFrom.x)), y(RoundDownToInt(copyFrom.y)), z(RoundDownToInt(copyFrom.z))

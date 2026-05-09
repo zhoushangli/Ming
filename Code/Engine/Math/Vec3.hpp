@@ -53,13 +53,13 @@ public:
     static Vec3 MakeFromPolarRadians(float pitchRadians, float yawRadians, float length = 1.0f);
     static Vec3 MakeFromPolarDegrees(float pitchDegrees, float yawDegrees, float length = 1.0f);
 
-    static const Vec3 ZERO;
-	static const Vec3 ONE;
-    static const Vec3 FORWARD;
-    static const Vec3 BACKWARD;
-    static const Vec3 LEFT;
-    static const Vec3 RIGHT;
-    static const Vec3 UP;
-    static const Vec3 DOWN;
+    static const Vec3 kZero;
+	static const Vec3 kOne;
+    static const Vec3 kForward;
+    static const Vec3 kBackward;
+    static const Vec3 kLeft;
+    static const Vec3 kRight;
+    static const Vec3 kUp;
+    static const Vec3 kDown;
 };
 

@@ -6,7 +6,7 @@
 
 #include <math.h>
 
-const IntVec2 IntVec2::ZERO = IntVec2(0, 0);
+const IntVec2 IntVec2::kZero = IntVec2(0, 0);
 
 IntVec2::IntVec2(int initialX, int initialY) : x(initialX), y(initialY)
 {

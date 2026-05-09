@@ -87,8 +87,8 @@ public:
 	void      Orthonormalize_XFwd_YLeft_ZUp2();
 	Matrix4x4 GetOrthonormalInverse();
 
-	static Matrix4x4 const ZERO;
-	static Matrix4x4 const IDENTITY;
+	static Matrix4x4 const kZero;
+	static Matrix4x4 const kIdentity;
 
 public:
 	// clang-format off

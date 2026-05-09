@@ -2,9 +2,9 @@
 #include "Engine/Math/RandomNumberGenerator.hpp"
 
 // Static consts
-const FloatRange FloatRange::ZERO(0.f, 0.f);
-const FloatRange FloatRange::ONE(1.f, 1.f);
-const FloatRange FloatRange::ZERO_TO_ONE(0.f, 1.f);
+const FloatRange FloatRange::kZero(0.f, 0.f);
+const FloatRange FloatRange::kOne(1.f, 1.f);
+const FloatRange FloatRange::kZeroToOne(0.f, 1.f);
 
 // Constructors
 FloatRange::FloatRange(float min, float max)

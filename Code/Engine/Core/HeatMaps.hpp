@@ -7,7 +7,7 @@
 
 #include <vector>
 
-float const TILE_HEAT_MAP_INVALID_VALUE = 1e9f;
+float const kTileHeatMapInvalidValue = 1e9f;
 
 struct Vertex;
 
@@ -32,12 +32,12 @@ public:
 
     void AddVertsForDebugDraw(
         std::vector<Vertex>& verts,
-        AABB2 totalBounds     = AABB2::UNIT,
-        FloatRange valueRange = FloatRange::ZERO_TO_ONE,
-        Rgba8 lowColor        = Rgba8::BLACK,
-        Rgba8 highColor       = Rgba8::WHITE,
+        AABB2 totalBounds     = AABB2::kUnit,
+        FloatRange valueRange = FloatRange::kZeroToOne,
+        Rgba8 lowColor        = Rgba8::kBlack,
+        Rgba8 highColor       = Rgba8::kWhite,
         float specialValue    = -1,
-        Rgba8 specialColor    = Rgba8::BLACK) const;
+        Rgba8 specialColor    = Rgba8::kBlack) const;
 
     IntVec2 GetDimensions() const { return m_dimensions; }
 

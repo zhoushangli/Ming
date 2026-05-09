@@ -46,13 +46,13 @@ bool IsDebuggerAvailable()
 //-----------------------------------------------------------------------------------------------
 void DebuggerPrintf( char const* messageFormat, ... )
 {
-	const int MESSAGE_MAX_LENGTH = 2048;
-	char messageLiteral[ MESSAGE_MAX_LENGTH ];
+	const int kMessageMaxLength = 2048;
+	char messageLiteral[ kMessageMaxLength ];
 	va_list variableArgumentList;
 	va_start( variableArgumentList, messageFormat );
-	vsnprintf_s( messageLiteral, MESSAGE_MAX_LENGTH, _TRUNCATE, messageFormat, variableArgumentList );
+	vsnprintf_s( messageLiteral, kMessageMaxLength, _TRUNCATE, messageFormat, variableArgumentList );
 	va_end( variableArgumentList );
-	messageLiteral[ MESSAGE_MAX_LENGTH - 1 ] = '\0'; // In case vsnprintf overran (doesn't auto-terminate)
+	messageLiteral[ kMessageMaxLength - 1 ] = '\0'; // In case vsnprintf overran (doesn't auto-terminate)
 
 #if defined( PLATFORM_WINDOWS )
 	if( IsDebuggerAvailable() )
@@ -190,7 +190,7 @@ __declspec( noreturn ) void FatalError( char const* filePath, char const* functi
 	if( reasonForError.empty() )
 	{
 		if( conditionText )
-			errorMessage = Stringf( "ERROR: \"%s\" is false!", conditionText );
+			errorMessage = Stringf( "Error: \"%s\" is false!", conditionText );
 		else
 			errorMessage = "Unspecified fatal error";
 	}
@@ -249,7 +249,7 @@ void RecoverableWarning( char const* filePath, char const* functionName, int lin
 	if( reasonForWarning.empty() )
 	{
 		if( conditionText )
-			errorMessage = Stringf( "WARNING: \"%s\" is false!", conditionText );
+			errorMessage = Stringf( "Warning: \"%s\" is false!", conditionText );
 		else
 			errorMessage = "Unspecified warning";
 	}

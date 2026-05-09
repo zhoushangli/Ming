@@ -7,22 +7,22 @@
 struct Rgba8
 {
 public:
-    static const Rgba8 WHITE;
-    static const Rgba8 BLACK;
-    static const Rgba8 RED;
-    static const Rgba8 GREEN;
-    static const Rgba8 BLUE;
-    static const Rgba8 YELLOW;
-    static const Rgba8 CYAN;
-    static const Rgba8 MAGENTA;
-    static const Rgba8 ORANGE;
-    static const Rgba8 PURPLE;
-    static const Rgba8 PINK;
-    static const Rgba8 GRAY;
-    static const Rgba8 LIGHT_GRAY;
-    static const Rgba8 DARK_GRAY;
-    static const Rgba8 TRANSLUCENT_BLACK;
-    static const Rgba8 TRANSPARENT;
+    static const Rgba8 kWhite;
+    static const Rgba8 kBlack;
+    static const Rgba8 kRed;
+    static const Rgba8 kGreen;
+    static const Rgba8 kBlue;
+    static const Rgba8 kYellow;
+    static const Rgba8 kCyan;
+    static const Rgba8 kMagenta;
+    static const Rgba8 kOrange;
+    static const Rgba8 kPurple;
+    static const Rgba8 kPink;
+    static const Rgba8 kGray;
+    static const Rgba8 kLightGray;
+    static const Rgba8 kDarkGray;
+    static const Rgba8 kTranslucentBlack;
+    static const Rgba8 kTransparent;
 
 	Rgba8();
 	Rgba8(unsigned char red, unsigned char green, unsigned char blue);

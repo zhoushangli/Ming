@@ -5,14 +5,14 @@
 
 #include <math.h>
 
-const Vec3 Vec3::ZERO = Vec3(0.f, 0.f, 0.f);
-const Vec3 Vec3::ONE = Vec3(1.f, 1.f, 1.f);
-const Vec3 Vec3::FORWARD = Vec3(1.f, 0.f, 0.f);
-const Vec3 Vec3::BACKWARD = Vec3(-1.f, 0.f, 0.f);
-const Vec3 Vec3::LEFT = Vec3(0.f, 1.f, 0.f);
-const Vec3 Vec3::RIGHT = Vec3(0.f, -1.f, 0.f);
-const Vec3 Vec3::UP = Vec3(0.f, 0.f, 1.f);
-const Vec3 Vec3::DOWN = Vec3(0.f, 0.f, -1.f);
+const Vec3 Vec3::kZero = Vec3(0.f, 0.f, 0.f);
+const Vec3 Vec3::kOne = Vec3(1.f, 1.f, 1.f);
+const Vec3 Vec3::kForward = Vec3(1.f, 0.f, 0.f);
+const Vec3 Vec3::kBackward = Vec3(-1.f, 0.f, 0.f);
+const Vec3 Vec3::kLeft = Vec3(0.f, 1.f, 0.f);
+const Vec3 Vec3::kRight = Vec3(0.f, -1.f, 0.f);
+const Vec3 Vec3::kUp = Vec3(0.f, 0.f, 1.f);
+const Vec3 Vec3::kDown = Vec3(0.f, 0.f, -1.f);
 
 Vec3::Vec3() = default;
 
@@ -213,7 +213,7 @@ Vec3 Vec3::MakeFromPolarRadians(float pitchRadians, float yawRadians, float leng
 
 Vec3 Vec3::MakeFromPolarDegrees(float pitchDegrees, float yawDegrees, float length /*= 1.0f*/)
 {
-	float pitchRadians = pitchDegrees * DegreesToRadiansMultiplier;
-	float yawRadians = yawDegrees * DegreesToRadiansMultiplier;
+	float pitchRadians = pitchDegrees * kDegreesToRadiansMultiplier;
+	float yawRadians = yawDegrees * kDegreesToRadiansMultiplier;
 	return MakeFromPolarRadians(pitchRadians, yawRadians, length);
 }

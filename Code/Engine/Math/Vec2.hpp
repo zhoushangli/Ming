@@ -80,6 +80,6 @@ public: // NOTE: this is one of the few cases where we break both the "m_" namin
     float y = 0.f;
 
     // Zero vector constant
-    static const Vec2 ZERO;
-    static const Vec2 ONE;
+    static const Vec2 kZero;
+    static const Vec2 kOne;
 };

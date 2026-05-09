@@ -13,8 +13,8 @@ Clock::Clock()
 	m_parent->AddChild(this);
 	Reset();
 
-	m_maxDeltaSeconds = 1.f / MIN_FRAME_RATE;
-	m_minDeltaSeconds = 1.f / MAX_FRAME_RATE;
+	m_maxDeltaSeconds = 1.f / kMinFrameRate;
+	m_minDeltaSeconds = 1.f / kMaxFrameRate;
 }
 
 Clock::Clock(Clock& parent)
@@ -23,8 +23,8 @@ Clock::Clock(Clock& parent)
 	m_parent->AddChild(this);
 	Reset();
 
-	m_maxDeltaSeconds = 1.f / MIN_FRAME_RATE;
-	m_minDeltaSeconds = 1.f / MAX_FRAME_RATE;
+	m_maxDeltaSeconds = 1.f / kMinFrameRate;
+	m_minDeltaSeconds = 1.f / kMaxFrameRate;
 }
 
 Clock::Clock(bool isSystemClock)
@@ -40,8 +40,8 @@ Clock::Clock(bool isSystemClock)
 		m_parent->AddChild(this);
 	}
 
-	m_maxDeltaSeconds = 1.f / MIN_FRAME_RATE;
-	m_minDeltaSeconds = 1.f / MAX_FRAME_RATE;
+	m_maxDeltaSeconds = 1.f / kMinFrameRate;
+	m_minDeltaSeconds = 1.f / kMaxFrameRate;
 }
 
 Clock::~Clock()

@@ -17,7 +17,7 @@ private:
     BitmapFont(char const* fontFilePathNameWithNoExtension, Texture& fontTexture);
 
 public:
-    Texture& GetTexture();
+    Texture* GetTexture();
 
 #pragma region 2D
 
@@ -26,7 +26,7 @@ public:
         Vec2 textMins,
         float cellHeight, 
         std::string const& text, 
-        Rgba8 tint = Rgba8::WHITE, 
+        Rgba8 tint = Rgba8::kWhite, 
         float cellAspectScale = 1.f);
 
     void AddVertsForTextInBox2D(
@@ -34,7 +34,7 @@ public:
         std::string const& text, 
         AABB2 const& box, 
         float cellHeight, 
-        Rgba8 tint = Rgba8::WHITE,
+        Rgba8 tint = Rgba8::kWhite,
         float cellAspectScale = 1.f, 
         Vec2 alignment = Vec2(.5f, .5f), 
         TextBoxMode mode = TextBoxMode::SHRINK_TO_FIT, 
@@ -45,7 +45,7 @@ public:
 #pragma region 3D
 
     void AddVertsForText3DAtOriginXForward(std::vector<Vertex>& verts,
-        float cellHeight, std::string const& text, Rgba8 const& tint = Rgba8::WHITE,
+        float cellHeight, std::string const& text, Rgba8 const& tint = Rgba8::kWhite,
         float cellAspect = 1.0f, Vec2 const& alignment = Vec2(0.5f, 0.5f),
         int maxGlyphsToDraw = 999);
 

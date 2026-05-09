@@ -2,9 +2,9 @@
 
 #include "Engine/Math/MathUtils.hpp"
 
-const AABB3 AABB3::ZERO          = AABB3(0.f, 0.f, 0.f, 0.f, 0.f, 0.f);
-const AABB3 AABB3::UNIT          = AABB3(0.f, 0.f, 0.f, 1.f, 1.f, 1.f);
-const AABB3 AABB3::CENTERED_UNIT = AABB3(-0.5f, -0.5f, -0.5f, 0.5f, 0.5f, 0.5f);
+const AABB3 AABB3::kZero          = AABB3(0.f, 0.f, 0.f, 0.f, 0.f, 0.f);
+const AABB3 AABB3::kUnit          = AABB3(0.f, 0.f, 0.f, 1.f, 1.f, 1.f);
+const AABB3 AABB3::kCenteredUnit = AABB3(-0.5f, -0.5f, -0.5f, 0.5f, 0.5f, 0.5f);
 
 AABB3::AABB3(const Vec3& mins, const Vec3& maxs)
 	: m_mins(mins)

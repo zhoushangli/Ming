@@ -23,11 +23,11 @@
 //------------------------------------------------------------------------------------------------
 #pragma region Constants
 
-float const DegreesToRadiansMultiplier = 0.017453292519943295f; // PI / 180
-float const RadiansToDegreesMultiplier = 57.29577951308232f;    // 180 / PI
-const float PI                         = 3.14159265358979323846f;
-const float TWO_PI                     = 6.28318530717958647692f;
-const float HALF_PI                    = 1.57079632679489661923f;
+float const kDegreesToRadiansMultiplier = 0.017453292519943295f; // kPi / 180
+float const kRadiansToDegreesMultiplier = 57.29577951308232f;    // 180 / kPi
+const float kPi                         = 3.14159265358979323846f;
+const float kTwoPi                     = 6.28318530717958647692f;
+const float kHalfPi                    = 1.57079632679489661923f;
 
 #pragma endregion
 
@@ -349,8 +349,8 @@ enum class BillboardType
 Matrix4x4 GetBillboardTransform(
 	BillboardType    billboardType,
 	Matrix4x4 const& targetTransform,
-	const Vec3&      billboardPosition = Vec3::ZERO,
-	const Vec2&      billboardScale    = Vec2::ONE
+	const Vec3&      billboardPosition = Vec3::kZero,
+	const Vec2&      billboardScale    = Vec2::kOne
 );
 
 #pragma endregion

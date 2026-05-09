@@ -31,9 +31,9 @@ float Max(float a, float b) { return (a > b) ? a : b; }
 
 int Max(int a, int b) { return (a > b) ? a : b; }
 
-float ConvertDegreesToRadians(float degrees) { return degrees * DegreesToRadiansMultiplier; }
+float ConvertDegreesToRadians(float degrees) { return degrees * kDegreesToRadiansMultiplier; }
 
-float ConvertRadiansToDegrees(float radians) { return radians * RadiansToDegreesMultiplier; }
+float ConvertRadiansToDegrees(float radians) { return radians * kRadiansToDegreesMultiplier; }
 
 float CosDegrees(float degrees) { return cosf(ConvertDegreesToRadians(degrees)); }
 
@@ -841,7 +841,7 @@ Matrix4x4 GetBillboardTransform(
 
 	case BillboardType::WORLD_UP_FACING:
 	{
-		Vec3 worldUp      = Vec3::UP;
+		Vec3 worldUp      = Vec3::kUp;
 		Vec3 toTarget     = targetTransform.GetTranslation3D() - billboardPosition;
 		Vec3 toTargetOnXY = toTarget - GetProjectedVector3D(toTarget, worldUp);
 
@@ -852,7 +852,7 @@ Matrix4x4 GetBillboardTransform(
 
 			if (toTargetOnXY.GetLengthSquared() <= 1e-5f)
 			{
-				toTarget     = Vec3::FORWARD;
+				toTarget     = Vec3::kForward;
 				toTargetOnXY = toTarget - GetProjectedVector3D(toTarget, worldUp);
 			}
 		}
@@ -868,7 +868,7 @@ Matrix4x4 GetBillboardTransform(
 
 	case BillboardType::WORLD_UP_OPPOSING:
 	{
-		Vec3 worldUp        = Vec3::UP;
+		Vec3 worldUp        = Vec3::kUp;
 		Vec3 invTarget      = -targetTransform.GetIBasis3D();
 		Vec3 fromTargetOnXY = invTarget - GetProjectedVector3D(invTarget, worldUp);
 
@@ -879,7 +879,7 @@ Matrix4x4 GetBillboardTransform(
 
 			if (fromTargetOnXY.GetLengthSquared() <= 1e-5f)
 			{
-				invTarget      = Vec3::FORWARD;
+				invTarget      = Vec3::kForward;
 				fromTargetOnXY = invTarget - GetProjectedVector3D(invTarget, worldUp);
 			}
 		}
@@ -900,7 +900,7 @@ Matrix4x4 GetBillboardTransform(
 		Vec3 referenceUp = targetTransform.GetKBasis3D();
 		if (referenceUp.GetLengthSquared() <= 1e-5f)
 		{
-			referenceUp = Vec3::UP;
+			referenceUp = Vec3::kUp;
 		}
 
 		Vec3 jBasis = CrossProduct3D(referenceUp, iBasis);
@@ -911,7 +911,7 @@ Matrix4x4 GetBillboardTransform(
 
 			if (jBasis.GetLengthSquared() <= 1e-5f)
 			{
-				referenceUp = Vec3::UP;
+				referenceUp = Vec3::kUp;
 				jBasis      = CrossProduct3D(referenceUp, iBasis);
 			}
 		}
@@ -932,7 +932,7 @@ Matrix4x4 GetBillboardTransform(
 		Vec3 referenceUp = targetTransform.GetKBasis3D();
 		if (referenceUp.GetLengthSquared() <= 1e-5f)
 		{
-			referenceUp = Vec3::UP;
+			referenceUp = Vec3::kUp;
 		}
 
 		Vec3 jBasis = CrossProduct3D(referenceUp, iBasis);
@@ -943,7 +943,7 @@ Matrix4x4 GetBillboardTransform(
 
 			if (jBasis.GetLengthSquared() <= 1e-5f)
 			{
-				referenceUp = Vec3::UP;
+				referenceUp = Vec3::kUp;
 				jBasis      = CrossProduct3D(referenceUp, iBasis);
 			}
 		}
@@ -1024,7 +1024,7 @@ bool PushDiscsOutOfEachOther2D(Disc2& discA, Disc2& discB)
 bool PushDiscOutOfFixedAABB2D(Vec2& discCenter, float discRadius, AABB2 const& box)
 {
 	float minDist             = 1e9f;
-	Vec2  minDir              = Vec2::ZERO;
+	Vec2  minDir              = Vec2::kZero;
 	auto  UpdateMinDistAndDir = [&](float dist, Vec2 const& dir)
 	{
 		if (dist < minDist)

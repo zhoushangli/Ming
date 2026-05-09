@@ -35,37 +35,37 @@ void DebugRenderEndFrame();
 
 // Geometry
 void DebugAddWorldSphere(const Vec3 &center, float radius, float duration,
-                         const Rgba8 &startColor = Rgba8::WHITE, const Rgba8 &endColor = Rgba8::WHITE,
+                         const Rgba8 &startColor = Rgba8::kWhite, const Rgba8 &endColor = Rgba8::kWhite,
                          DebugRenderMode mode = DebugRenderMode::USE_DEPTH);
 
 void DebugAddWorldWireSphere(const Vec3 &center, float radius, float duration,
-                             const Rgba8 &startColor = Rgba8::WHITE, const Rgba8 &endColor = Rgba8::WHITE,
+                             const Rgba8 &startColor = Rgba8::kWhite, const Rgba8 &endColor = Rgba8::kWhite,
                              DebugRenderMode mode = DebugRenderMode::USE_DEPTH);
 
 void DebugAddWorldCylinder(const Vec3 &start, const Vec3 &end, float radius, float duration,
-                           const Rgba8 &startColor = Rgba8::WHITE, const Rgba8 &endColor = Rgba8::WHITE,
+                           const Rgba8 &startColor = Rgba8::kWhite, const Rgba8 &endColor = Rgba8::kWhite,
                            DebugRenderMode mode = DebugRenderMode::USE_DEPTH);
 
 void DebugAddWorldWireCylinder(const Vec3 &start, const Vec3 &end, float radius, float duration,
-                               const Rgba8 &startColor = Rgba8::WHITE, const Rgba8 &endColor = Rgba8::WHITE,
+                               const Rgba8 &startColor = Rgba8::kWhite, const Rgba8 &endColor = Rgba8::kWhite,
                                DebugRenderMode mode = DebugRenderMode::USE_DEPTH);
 
 void DebugAddWorldWireCylinder(const CylinderZ3 &cylinder, const Rgba8 &color, float duration, DebugRenderMode mode = DebugRenderMode::USE_DEPTH);
 
 void DebugAddWorldCapsule(const Vec3 &start, const Vec3 &end, float radius, float duration,
-                          const Rgba8 &startColor = Rgba8::WHITE, const Rgba8 &endColor = Rgba8::WHITE,
+                          const Rgba8 &startColor = Rgba8::kWhite, const Rgba8 &endColor = Rgba8::kWhite,
                           DebugRenderMode mode = DebugRenderMode::USE_DEPTH);
 
 void DebugAddWorldWireCapsule(const Vec3 &start, const Vec3 &end, float radius, float duration,
-                              const Rgba8 &startColor = Rgba8::WHITE, const Rgba8 &endColor = Rgba8::WHITE,
+                              const Rgba8 &startColor = Rgba8::kWhite, const Rgba8 &endColor = Rgba8::kWhite,
                               DebugRenderMode mode = DebugRenderMode::USE_DEPTH);
 
 void DebugAddWorldArrow(const Vec3 &start, const Vec3 &end, float radius, float duration,
-                        const Rgba8 &startColor = Rgba8::WHITE, const Rgba8 &endColor = Rgba8::WHITE,
+                        const Rgba8 &startColor = Rgba8::kWhite, const Rgba8 &endColor = Rgba8::kWhite,
                         DebugRenderMode mode = DebugRenderMode::USE_DEPTH);
 
 void DebugAddWorldWireArrow(const Vec3 &start, const Vec3 &end, float radius, float duration,
-                            const Rgba8 &startColor = Rgba8::WHITE, const Rgba8 &endColor = Rgba8::WHITE,
+                            const Rgba8 &startColor = Rgba8::kWhite, const Rgba8 &endColor = Rgba8::kWhite,
                             DebugRenderMode mode = DebugRenderMode::USE_DEPTH);
 
 void DebugAddBasis(const Matrix4x4 &transform, float duration, float length, float radius,
@@ -77,20 +77,20 @@ void DebugAddWorldBasis(const Matrix4x4 &transform, float duration,
 
 void DebugAddWorldText(const std::string &text, const Matrix4x4 &transform, float textHeight,
                        const Vec2 &alignment, float duration,
-                       const Rgba8 &startColor = Rgba8::WHITE, const Rgba8 &endColor = Rgba8::WHITE,
+                       const Rgba8 &startColor = Rgba8::kWhite, const Rgba8 &endColor = Rgba8::kWhite,
                        DebugRenderMode mode = DebugRenderMode::USE_DEPTH);
 
 void DebugAddWorldBillboardText(const std::string &text, const Vec3 &origin, float textHeight,
                                 const Vec2 &alignment, float duration,
-                                const Rgba8 &startColor = Rgba8::WHITE, const Rgba8 &endColor = Rgba8::WHITE,
+                                const Rgba8 &startColor = Rgba8::kWhite, const Rgba8 &endColor = Rgba8::kWhite,
                                 DebugRenderMode mode = DebugRenderMode::USE_DEPTH);
 
 void DebugAddScreenText(const std::string &text, const AABB2 &box, float cellHeight,
                         const Vec2 &alignment, float duration,
-                        const Rgba8 &startColor = Rgba8::WHITE, const Rgba8 &endColor = Rgba8::WHITE);
+                        const Rgba8 &startColor = Rgba8::kWhite, const Rgba8 &endColor = Rgba8::kWhite);
 
 void DebugAddMessage(const std::string &text, float duration = 0.f,
-                     const Rgba8 &startColor = Rgba8::WHITE, const Rgba8 &endColor = Rgba8::WHITE);
+                     const Rgba8 &startColor = Rgba8::kWhite, const Rgba8 &endColor = Rgba8::kWhite);
 
 void DebugAddWorldGrid(float duration = -1.f, int halfExtent = 50);
 

@@ -42,6 +42,6 @@ public:
 	float z = 0.f;
 	float w = 0.f;
 
-	static const Vec4 ZERO;
-	static const Vec4 ONE;
+	static const Vec4 kZero;
+	static const Vec4 kOne;
 };

@@ -6,8 +6,8 @@
 
 #include <math.h>
 
-const Vec2 Vec2::ZERO = Vec2(0.f, 0.f);
-const Vec2 Vec2::ONE = Vec2(1.f, 1.f);
+const Vec2 Vec2::kZero = Vec2(0.f, 0.f);
+const Vec2 Vec2::kOne = Vec2(1.f, 1.f);
 
 //-----------------------------------------------------------------------------------------------
 Vec2::Vec2() = default;
@@ -135,7 +135,7 @@ bool Vec2::operator!=(Vec2 const& compare) const
 // Static factory methods
 Vec2 Vec2::MakeFromPolarDegrees(float degrees, float length)
 {
-    float radians = degrees * DegreesToRadiansMultiplier;
+    float radians = degrees * kDegreesToRadiansMultiplier;
     return Vec2(cosf(radians) * length, sinf(radians) * length);
 }
 
@@ -157,7 +157,7 @@ float Vec2::GetLengthSquared() const
 
 float Vec2::GetOrientationDegrees() const
 {
-    return atan2f(y, x) * RadiansToDegreesMultiplier;
+    return atan2f(y, x) * kRadiansToDegreesMultiplier;
 }
 
 float Vec2::GetOrientationRadians() const
@@ -177,7 +177,7 @@ Vec2 Vec2::GetRotatedByMinus90Degrees() const
 
 Vec2 Vec2::GetRotatedByDegrees(float degrees) const
 {
-    float radians = degrees * DegreesToRadiansMultiplier;
+    float radians = degrees * kDegreesToRadiansMultiplier;
     return GetRotatedByRadians(radians);
 }
 
@@ -192,7 +192,7 @@ Vec2 Vec2::GetRotatedByRadians(float radians) const
 void Vec2::SetOrientationDegrees(float degrees)
 {
     float length = GetLength();
-    float radians = degrees * DegreesToRadiansMultiplier;
+    float radians = degrees * kDegreesToRadiansMultiplier;
     x = cosf(radians) * length;
     y = sinf(radians) * length;
 }
@@ -206,7 +206,7 @@ void Vec2::SetOrientationRadians(float radians)
 
 void Vec2::SetPolarDegrees(float degrees, float length)
 {
-    float radians = degrees * DegreesToRadiansMultiplier;
+    float radians = degrees * kDegreesToRadiansMultiplier;
     x = cosf(radians) * length;
     y = sinf(radians) * length;
 }
@@ -219,7 +219,7 @@ void Vec2::SetPolarRadians(float radians, float length)
 
 void Vec2::RotateDegrees(float degrees)
 {
-    float radians = degrees * DegreesToRadiansMultiplier;
+    float radians = degrees * kDegreesToRadiansMultiplier;
     RotateRadians(radians);
 }
 

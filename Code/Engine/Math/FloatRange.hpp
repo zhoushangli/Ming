@@ -18,7 +18,7 @@ public:
     float m_min = 0.f;
     float m_max = 0.f;
 
-    static const FloatRange ZERO;
-    static const FloatRange ONE;
-    static const FloatRange ZERO_TO_ONE;
+    static const FloatRange kZero;
+    static const FloatRange kOne;
+    static const FloatRange kZeroToOne;
 };

@@ -78,7 +78,7 @@ float TileHeatMap::GetMinValue() const
         {
             IntVec2 coords(x, y);
             float value = GetValue(coords);
-            if (value < minValue && value != TILE_HEAT_MAP_INVALID_VALUE)
+            if (value < minValue && value != kTileHeatMapInvalidValue)
             {
                 minValue = value;
             }
@@ -98,7 +98,7 @@ float TileHeatMap::GetMaxValue() const
         {
             IntVec2 coords(x, y);
             float value = GetValue(coords);
-            if (value > maxValue && value != TILE_HEAT_MAP_INVALID_VALUE)
+            if (value > maxValue && value != kTileHeatMapInvalidValue)
             {
                 maxValue = value;
             }
@@ -192,7 +192,7 @@ void TileHeatMap::GeneratePath(std::vector<Vec2>& path, Vec2 position)
             }
 
             float nv = GetValue(n.x, n.y);
-            if (nv != TILE_HEAT_MAP_INVALID_VALUE && nv < bestValue)
+            if (nv != kTileHeatMapInvalidValue && nv < bestValue)
             {
                 bestValue = nv;
                 bestNeighbor = n;

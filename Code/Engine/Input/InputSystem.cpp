@@ -6,34 +6,34 @@
 
 #include <Windows.h>
 
-unsigned char const KEYCODE_F1			= VK_F1;
-unsigned char const KEYCODE_F2			= VK_F2;
-unsigned char const KEYCODE_F3			= VK_F3;
-unsigned char const KEYCODE_F4			= VK_F4;
-unsigned char const KEYCODE_F5			= VK_F5;
-unsigned char const KEYCODE_F6			= VK_F6;
-unsigned char const KEYCODE_F7			= VK_F7;
-unsigned char const KEYCODE_F8			= VK_F8;
-unsigned char const KEYCODE_F9			= VK_F9;
-unsigned char const KEYCODE_F10			= VK_F10;
-unsigned char const KEYCODE_F11			= VK_F11;
-unsigned char const KEYCODE_F12			= VK_F12;
-unsigned char const KEYCODE_TILDE       = VK_OEM_3;
-unsigned char const KEYCODE_ESC			= VK_ESCAPE;
-unsigned char const KEYCODE_UPARROW		= VK_UP;
-unsigned char const KEYCODE_DOWNARROW	= VK_DOWN;
-unsigned char const KEYCODE_LEFTARROW	= VK_LEFT;
-unsigned char const KEYCODE_RIGHTARROW	= VK_RIGHT;
-unsigned char const KEYCODE_LEFT_MOUSE  = VK_LBUTTON;
-unsigned char const KEYCODE_RIGHT_MOUSE = VK_RBUTTON;
+unsigned char const kKeyCodeF1			= VK_F1;
+unsigned char const kKeyCodeF2			= VK_F2;
+unsigned char const kKeyCodeF3			= VK_F3;
+unsigned char const kKeyCodeF4			= VK_F4;
+unsigned char const kKeyCodeF5			= VK_F5;
+unsigned char const kKeyCodeF6			= VK_F6;
+unsigned char const kKeyCodeF7			= VK_F7;
+unsigned char const kKeyCodeF8			= VK_F8;
+unsigned char const kKeyCodeF9			= VK_F9;
+unsigned char const kKeyCodeF10			= VK_F10;
+unsigned char const kKeyCodeF11			= VK_F11;
+unsigned char const kKeyCodeF12			= VK_F12;
+unsigned char const kKeyCodeTilde       = VK_OEM_3;
+unsigned char const kKeyCodeEsc			= VK_ESCAPE;
+unsigned char const kKeyCodeUpArrow		= VK_UP;
+unsigned char const kKeyCodeDownArrow	= VK_DOWN;
+unsigned char const kKeyCodeLeftArrow	= VK_LEFT;
+unsigned char const kKeyCodeRightArrow	= VK_RIGHT;
+unsigned char const kKeyCodeLeftMouse  = VK_LBUTTON;
+unsigned char const kKeyCodeRightMouse = VK_RBUTTON;
 
-unsigned char const KEYCODE_SHIFT     = VK_SHIFT;
-unsigned char const KEYCODE_ENTER     = VK_RETURN;
-unsigned char const KEYCODE_BACKSPACE = VK_BACK;
-unsigned char const KEYCODE_INSERT    = VK_INSERT;
-unsigned char const KEYCODE_DELETE    = VK_DELETE;
-unsigned char const KEYCODE_HOME      = VK_HOME;
-unsigned char const KEYCODE_END       = VK_END;
+unsigned char const kKeyCodeShift     = VK_SHIFT;
+unsigned char const kKeyCodeEnter     = VK_RETURN;
+unsigned char const kKeyCodeBackspace = VK_BACK;
+unsigned char const kKeyCodeInsert    = VK_INSERT;
+unsigned char const kKeyCodeDelete    = VK_DELETE;
+unsigned char const kKeyCodeHome      = VK_HOME;
+unsigned char const kKeyCodeEnd       = VK_END;
 
 
 InputSystem::InputSystem(InputConfig config) : m_config(config)
@@ -76,7 +76,7 @@ void InputSystem::Shutdown()
 
 void InputSystem::BeginFrame()
 {
-	for (int i = 0; i < NUM_XBOX_CONTROLLERS; ++i)
+	for (int i = 0; i < kNumXboxControllers; ++i)
 	{
 		m_controllers[i].Update();
 	}
@@ -137,7 +137,7 @@ void InputSystem::BeginFrame()
             else
             {
                 // 5) Pointer mode: no relative delta
-                m_cursorClientDelta = IntVec2::ZERO;
+                m_cursorClientDelta = IntVec2::kZero;
             }
         }
     }
@@ -178,7 +178,7 @@ void InputSystem::HandleKeyReleased(unsigned char keyCode)
 
 XboxController const& InputSystem::GetController(int controllerID)
 {
-	if (controllerID < 0 || controllerID >= NUM_XBOX_CONTROLLERS) 
+	if (controllerID < 0 || controllerID >= kNumXboxControllers) 
 	{
 		return m_controllers[0];
 	}
@@ -194,7 +194,7 @@ void InputSystem::ClearAllInputStates()
 		m_keyStates[key].m_prevState = false;
 	}
 
-	for (int i = 0; i < NUM_XBOX_CONTROLLERS; ++i)
+	for (int i = 0; i < kNumXboxControllers; ++i)
 	{
 		m_controllers[i].Reset();
 	}
@@ -252,7 +252,7 @@ Vec2 InputSystem::GetCursorNormalizedPosition() const
 
 void InputSystem::ClearCursorDelta()
 {
-    m_cursorClientDelta = IntVec2::ZERO;
+    m_cursorClientDelta = IntVec2::kZero;
 }
 
 bool InputSystem::Event_KeyDown(EventArgs& args)

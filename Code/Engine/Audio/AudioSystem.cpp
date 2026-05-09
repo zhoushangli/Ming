@@ -101,7 +101,7 @@ SoundID AudioSystem::CreateOrGetSound(const std::string& soundFilePath, FMOD_MOD
 		}
 	}
 
-	return MISSING_SOUND_ID;
+	return kMissingSoundId;
 }
 
 //-----------------------------------------------------------------------------------------------
@@ -110,11 +110,11 @@ AudioSystem::StartSound(SoundID soundID, bool isLooped, float volume, float bala
 {
 	size_t numSounds = m_registeredSounds.size();
 	if (soundID < 0 || soundID >= numSounds)
-		return MISSING_SOUND_ID;
+		return kMissingSoundId;
 
 	FMOD::Sound* sound = m_registeredSounds[soundID];
 	if (!sound)
-		return MISSING_SOUND_ID;
+		return kMissingSoundId;
 
 	FMOD::Channel* channelAssignedToSound = nullptr;
 	m_fmodSystem->playSound(sound, nullptr, true, &channelAssignedToSound);
@@ -138,9 +138,9 @@ AudioSystem::StartSound(SoundID soundID, bool isLooped, float volume, float bala
 //-----------------------------------------------------------------------------------------------
 void AudioSystem::StopSound(SoundPlaybackID soundPlaybackID)
 {
-	if (soundPlaybackID == MISSING_SOUND_ID)
+	if (soundPlaybackID == kMissingSoundId)
 	{
-		ERROR_RECOVERABLE("WARNING: attempt to stop sound on missing sound playback ID!");
+		ERROR_RECOVERABLE("Warning: attempt to stop sound on missing sound playback ID!");
 		return;
 	}
 
@@ -153,9 +153,9 @@ void AudioSystem::StopSound(SoundPlaybackID soundPlaybackID)
 //
 void AudioSystem::SetSoundPlaybackVolume(SoundPlaybackID soundPlaybackID, float volume)
 {
-	if (soundPlaybackID == MISSING_SOUND_ID)
+	if (soundPlaybackID == kMissingSoundId)
 	{
-		ERROR_RECOVERABLE("WARNING: attempt to set volume on missing sound playback ID!");
+		ERROR_RECOVERABLE("Warning: attempt to set volume on missing sound playback ID!");
 		return;
 	}
 
@@ -168,9 +168,9 @@ void AudioSystem::SetSoundPlaybackVolume(SoundPlaybackID soundPlaybackID, float 
 //
 void AudioSystem::SetSoundPlaybackBalance(SoundPlaybackID soundPlaybackID, float balance)
 {
-	if (soundPlaybackID == MISSING_SOUND_ID)
+	if (soundPlaybackID == kMissingSoundId)
 	{
-		ERROR_RECOVERABLE("WARNING: attempt to set balance on missing sound playback ID!");
+		ERROR_RECOVERABLE("Warning: attempt to set balance on missing sound playback ID!");
 		return;
 	}
 
@@ -185,9 +185,9 @@ void AudioSystem::SetSoundPlaybackBalance(SoundPlaybackID soundPlaybackID, float
 //
 void AudioSystem::SetSoundPlaybackSpeed(SoundPlaybackID soundPlaybackID, float speed)
 {
-	if (soundPlaybackID == MISSING_SOUND_ID)
+	if (soundPlaybackID == kMissingSoundId)
 	{
-		ERROR_RECOVERABLE("WARNING: attempt to set speed on missing sound playback ID!");
+		ERROR_RECOVERABLE("Warning: attempt to set speed on missing sound playback ID!");
 		return;
 	}
 
@@ -236,11 +236,11 @@ SoundPlaybackID AudioSystem::StartSoundAt(
 {
 	size_t numSounds = m_registeredSounds.size();
 	if (soundID < 0 || soundID >= numSounds)
-		return MISSING_SOUND_ID;
+		return kMissingSoundId;
 
 	FMOD::Sound* sound = m_registeredSounds[soundID];
 	if (!sound)
-		return MISSING_SOUND_ID;
+		return kMissingSoundId;
 
 	FMOD::Channel* channelAssignedToSound = nullptr;
 	m_fmodSystem->playSound(sound, nullptr, true, &channelAssignedToSound);
@@ -267,9 +267,9 @@ SoundPlaybackID AudioSystem::StartSoundAt(
 
 void AudioSystem::SetSoundPosition(SoundPlaybackID soundPlaybackID, const Vec3& soundPosition)
 {
-	if (soundPlaybackID == MISSING_SOUND_ID)
+	if (soundPlaybackID == kMissingSoundId)
 	{
-		ERROR_RECOVERABLE("WARNING: attempt to set sound position on missing sound playback ID!");
+		ERROR_RECOVERABLE("Warning: attempt to set sound position on missing sound playback ID!");
 		return;
 	}
 
@@ -280,9 +280,9 @@ void AudioSystem::SetSoundPosition(SoundPlaybackID soundPlaybackID, const Vec3& 
 
 bool AudioSystem::IsPlaying(SoundPlaybackID soundPlaybackID)
 {
-	if (soundPlaybackID == MISSING_SOUND_ID)
+	if (soundPlaybackID == kMissingSoundId)
 	{
-		ERROR_RECOVERABLE("WARNING: attempt to check isPlaying on missing sound playback ID!");
+		ERROR_RECOVERABLE("Warning: attempt to check isPlaying on missing sound playback ID!");
 		return false;
 	}
 

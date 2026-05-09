@@ -30,7 +30,7 @@ protected:
 
 	ID3D11ShaderResourceView* m_shaderResourceView = nullptr; // Read Handle
 	ID3D11RenderTargetView*   m_renderTargetView   = nullptr; // Write Handle
-	ID3D11DepthStencilView*   m_depthStencilView    = nullptr; // Depth Handle
+	ID3D11DepthStencilView*   m_depthStencilView    = nullptr; // kDepth Handle
 
 	ID3D11Texture2D* m_texture = nullptr;
 };
@@ -47,22 +47,24 @@ public:
 	void               GetUVs(Vec2& out_uvAtMins, Vec2& out_uvAtMaxs) const;
 	AABB2              GetUVs() const;
 	SpriteSheet const& GetSpriteSheet() const;
-	Texture&           GetTexture() const;
+	Texture*           GetTexture() const;
 	float              GetAspect() const;
 
 protected:
 	SpriteSheet const& m_spriteSheet;
 	int                m_spriteIndex = -1;
-	Vec2               m_uvAtMins    = Vec2::ZERO;
-	Vec2               m_uvAtMaxs    = Vec2::ONE;
+	Vec2               m_uvAtMins    = Vec2::kZero;
+	Vec2               m_uvAtMaxs    = Vec2::kOne;
 };
 
 class SpriteSheet
 {
 public:
-	explicit SpriteSheet(Texture& texture, IntVec2 const& dimension);
+	explicit SpriteSheet(Texture* colorTexture, IntVec2 const& dimension);
+	explicit SpriteSheet(Texture* colorTexture, Texture* emissiveTexture, IntVec2 const& dimension);
 
-	Texture&                GetTexture() const;
+	Texture*                GetTexture() const;
+	Texture*                GetEmissiveTexture() const;
 	int                     GetNumSprites() const;
 	SpriteDefinition const& GetSpriteDef(int spriteIndex) const;
 	void                    GetSpriteUVs(Vec2& out_uvAtMins, Vec2& out_uvAtMaxs, int spriteIndex) const;
@@ -71,6 +73,7 @@ public:
 
 protected:
 	IntVec2                       m_dimension;
-	Texture&                      m_texture;
+	Texture*                      m_colorTexture    = nullptr;
+	Texture*                      m_emissiveTexture = nullptr;
 	std::vector<SpriteDefinition> m_spriteDefs;
 };

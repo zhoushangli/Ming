@@ -20,8 +20,8 @@ public:
     bool IsOverlappingWith(const IntRange& other) const;
 
     // Named static consts
-    static const IntRange ZERO;
-    static const IntRange ONE;
-    static const IntRange ZERO_TO_ONE;
+    static const IntRange kZero;
+    static const IntRange kOne;
+    static const IntRange kZeroToOne;
 };
 

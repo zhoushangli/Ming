@@ -1,5 +1,6 @@
 #include "Engine/Renderer/Texture.hpp"
 
+#include "Engine/Core/ErrorWarningAssert.hpp"
 #include "Engine/Math/AABB2.hpp"
 
 #include <d3d11.h>
@@ -60,7 +61,7 @@ SpriteSheet const& SpriteDefinition::GetSpriteSheet() const
     return m_spriteSheet;
 }
 
-Texture& SpriteDefinition::GetTexture() const
+Texture* SpriteDefinition::GetTexture() const
 {
     return m_spriteSheet.GetTexture();
 }
@@ -74,17 +75,24 @@ float SpriteDefinition::GetAspect() const
 }
 
 // SpriteSheet
-SpriteSheet::SpriteSheet(Texture& texture, IntVec2 const& dimension)
-    : m_texture(texture), m_dimension(dimension)
+SpriteSheet::SpriteSheet(Texture* colorTexture, IntVec2 const& dimension)
+    : SpriteSheet(colorTexture, nullptr, dimension)
 {
+}
+
+SpriteSheet::SpriteSheet(Texture* colorTexture, Texture* emissiveTexture, IntVec2 const& dimension)
+    : m_colorTexture(colorTexture), m_emissiveTexture(emissiveTexture), m_dimension(dimension)
+{
+    GUARANTEE_OR_DIE(m_colorTexture != nullptr, "SpriteSheet requires a color texture");
+
     int numSprites = dimension.x * dimension.y;
     m_spriteDefs.reserve(numSprites);
 
     float cellWidth = 1.0f / static_cast<float>(dimension.x);
     float cellHeight = 1.0f / static_cast<float>(dimension.y);
 
-    float texelWidth = 1.0f / static_cast<float>(m_texture.GetDimensions().x);
-    float texelHeight = 1.0f / static_cast<float>(m_texture.GetDimensions().y);
+    float texelWidth = 1.0f / static_cast<float>(m_colorTexture->GetDimensions().x);
+    float texelHeight = 1.0f / static_cast<float>(m_colorTexture->GetDimensions().y);
     Vec2 texelOffset(texelWidth / 128.f, texelHeight / 128.f);
 
     for (int y = dimension.y - 1; y >= 0; --y) {
@@ -99,9 +107,14 @@ SpriteSheet::SpriteSheet(Texture& texture, IntVec2 const& dimension)
     }
 }
 
-Texture& SpriteSheet::GetTexture() const
+Texture* SpriteSheet::GetTexture() const
 {
-    return m_texture;
+    return m_colorTexture;
+}
+
+Texture* SpriteSheet::GetEmissiveTexture() const
+{
+    return m_emissiveTexture;
 }
 
 int SpriteSheet::GetNumSprites() const

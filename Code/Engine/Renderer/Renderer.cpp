@@ -41,33 +41,32 @@ namespace
 Vertex const* GetFullscreenTriangleBottomLeftUV()
 {
 	static Vertex const fullscreenTriangle[3] = {
-		Vertex(Vec3(-1.f, -1.f, 0.f), Rgba8::WHITE, Vec2(0.f, 0.f)),
-		Vertex(Vec3(3.f, -1.f, 0.f), Rgba8::WHITE, Vec2(2.f, 0.f)),
-		Vertex(Vec3(-1.f, 3.f, 0.f), Rgba8::WHITE, Vec2(0.f, 2.f)),
+		Vertex(Vec3(-1.f, -1.f, 0.f), Rgba8::kWhite, Vec2(0.f, 0.f)),
+		Vertex(Vec3(3.f, -1.f, 0.f), Rgba8::kWhite, Vec2(2.f, 0.f)),
+		Vertex(Vec3(-1.f, 3.f, 0.f), Rgba8::kWhite, Vec2(0.f, 2.f)),
 	};
 
 	return fullscreenTriangle;
 }
 } // namespace
 
-const uint8_t k_defaultTexture[16] = {
-	0xFF,
-	0xFF,
-	0xFF,
-	0xFF, // (0,0)
-	0xFF,
-	0xFF,
-	0xFF,
-	0xFF, // (1,0)
-	0xFF,
-	0xFF,
-	0xFF,
-	0xFF, // (0,1)
-	0xFF,
-	0xFF,
-	0xFF,
-	0xFF // (1,1)
+// clang-format off
+const uint8_t kDefaultWhiteTexture[16] = 
+{
+	0xFF, 0xFF, 0xFF, 0xFF, // (0,0)
+	0xFF, 0xFF, 0xFF, 0xFF, // (1,0)
+	0xFF, 0xFF, 0xFF, 0xFF, // (0,1)
+	0xFF, 0xFF, 0xFF, 0xFF  // (1,1)
 };
+
+const uint8_t kDefaultBlackTexture[16] = 
+{
+	0x00, 0x00, 0x00, 0xFF, // (0,0)
+	0x00, 0x00, 0x00, 0xFF, // (1,0)
+	0x00, 0x00, 0x00, 0xFF, // (0,1)
+	0x00, 0x00, 0x00, 0xFF  // (1,1)
+};
+// clang-format on
 
 //------------------------------------------------------------------------------------------------
 // Lifetime and frame loop
@@ -335,8 +334,9 @@ void           Renderer::Startup()
 
 #pragma region Startup: Create default texture
 
-	m_defaultTexture = CreateTextureFromData("Default", IntVec2(2, 2), 4, (uint8_t*)k_defaultTexture);
-	BindTexture(m_defaultTexture);
+	m_defaultWhiteTexture = CreateTextureFromData("DefaultWhite", IntVec2(2, 2), 4, (uint8_t*)kDefaultWhiteTexture);
+	m_defaultBlackTexture = CreateTextureFromData("DefaultBlack", IntVec2(2, 2), 4, (uint8_t*)kDefaultBlackTexture);
+	BindTexture(m_defaultWhiteTexture);
 
 #pragma endregion
 
@@ -615,10 +615,10 @@ void Renderer::RenderPostProcess(Camera const& camera, int downsampleFactor)
 		return texture;
 	};
 
-	Texture* sceneColor     = m_sceneColorTexture;
-	Texture* sceneDepth     = m_sceneDepthTexture;
-	Texture* sceneNormal    = m_sceneNormalTexture;
-	Texture* sceneEmissive  = m_sceneEmissiveTexture;
+	Texture* sceneColor    = m_sceneColorTexture;
+	Texture* sceneDepth    = m_sceneDepthTexture;
+	Texture* sceneNormal   = m_sceneNormalTexture;
+	Texture* sceneEmissive = m_sceneEmissiveTexture;
 
 	Texture* ping = m_postProcessTextureA;
 	Texture* pong = m_postProcessTextureB;
@@ -626,19 +626,19 @@ void Renderer::RenderPostProcess(Camera const& camera, int downsampleFactor)
 	bool const useDownsample = (downsampleFactor > 1);
 	if (useDownsample)
 	{
-		std::string colorName     = Stringf("SceneColor_%dx%d", workingResolution.x, workingResolution.y);
-		std::string depthName     = Stringf("SceneDepth_%dx%d", workingResolution.x, workingResolution.y);
-		std::string normalName    = Stringf("SceneNormal_%dx%d", workingResolution.x, workingResolution.y);
-		std::string emissiveName  = Stringf("SceneEmissive_%dx%d", workingResolution.x, workingResolution.y);
-		std::string pingName      = Stringf("PostA_%dx%d", workingResolution.x, workingResolution.y);
-		std::string pongName      = Stringf("PostB_%dx%d", workingResolution.x, workingResolution.y);
+		std::string colorName    = Stringf("SceneColor_%dx%d", workingResolution.x, workingResolution.y);
+		std::string depthName    = Stringf("SceneDepth_%dx%d", workingResolution.x, workingResolution.y);
+		std::string normalName   = Stringf("SceneNormal_%dx%d", workingResolution.x, workingResolution.y);
+		std::string emissiveName = Stringf("SceneEmissive_%dx%d", workingResolution.x, workingResolution.y);
+		std::string pingName     = Stringf("PostA_%dx%d", workingResolution.x, workingResolution.y);
+		std::string pongName     = Stringf("PostB_%dx%d", workingResolution.x, workingResolution.y);
 
-		Texture* downsampledColor     = GetOrCreateColorTarget(colorName, workingResolution);
-		Texture* downsampledDepth     = GetOrCreateFloatTarget(depthName, workingResolution);
-		Texture* downsampledNormal    = GetOrCreateColorTarget(normalName, workingResolution);
+		Texture* downsampledColor    = GetOrCreateColorTarget(colorName, workingResolution);
+		Texture* downsampledDepth    = GetOrCreateFloatTarget(depthName, workingResolution);
+		Texture* downsampledNormal   = GetOrCreateColorTarget(normalName, workingResolution);
 		Texture* downsampledEmissive = GetOrCreateColorTarget(emissiveName, workingResolution);
-		ping                          = GetOrCreateColorTarget(pingName, workingResolution);
-		pong                          = GetOrCreateColorTarget(pongName, workingResolution);
+		ping                         = GetOrCreateColorTarget(pingName, workingResolution);
+		pong                         = GetOrCreateColorTarget(pongName, workingResolution);
 
 		m_d3dAnnotation->BeginEvent(L"Downsample Inputs");
 
@@ -688,10 +688,10 @@ void Renderer::RenderPostProcess(Camera const& camera, int downsampleFactor)
 
 		m_d3dAnnotation->EndEvent();
 
-		sceneColor     = downsampledColor;
-		sceneDepth     = downsampledDepth;
-		sceneNormal    = downsampledNormal;
-		sceneEmissive  = downsampledEmissive;
+		sceneColor    = downsampledColor;
+		sceneDepth    = downsampledDepth;
+		sceneNormal   = downsampledNormal;
+		sceneEmissive = downsampledEmissive;
 	}
 
 	std::vector<PostProcessPass const*> enabledPasses;
@@ -726,23 +726,24 @@ void Renderer::RenderPostProcess(Camera const& camera, int downsampleFactor)
 				}
 
 				GUARANTEE_OR_DIE(
-					customInput.m_slot >= k_postProcessCustomInputStartSlot,
+					customInput.m_slot >= PostProcessTextureSlot::kCustomInputStart,
 					Stringf(
-						"PostProcessPass '%s' custom input '%s' uses reserved texture slot %d; custom inputs must use slot %d or higher",
+						"PostProcessPass '%s' custom input '%s' uses reserved texture slot %d; custom inputs must use "
+						"slot %d or higher",
 						pass->m_name.c_str(),
 						customInput.m_name.c_str(),
 						customInput.m_slot,
-						k_postProcessCustomInputStartSlot
+						PostProcessTextureSlot::kCustomInputStart
 					)
 				);
 				GUARANTEE_OR_DIE(
-					customInput.m_slot < k_maxSamplerSlots,
+					customInput.m_slot < PostProcessTextureSlot::kMaxSamplerSlots,
 					Stringf(
 						"PostProcessPass '%s' custom input '%s' uses texture slot %d, but max supported slot is %d",
 						pass->m_name.c_str(),
 						customInput.m_name.c_str(),
 						customInput.m_slot,
-						k_maxSamplerSlots - 1
+						PostProcessTextureSlot::kMaxSamplerSlots - 1
 					)
 				);
 
@@ -838,7 +839,7 @@ void Renderer::BeginCamera(Camera const& camera)
 	cameraData.ClipToCameraTransform   = camera.GetClipToCameraTransform();
 
 	CopyCPUToGPU(&cameraData, sizeof(cameraData), m_cameraConstantBuffer);
-	BindConstantBuffer(m_cameraConstantBuffer, k_cameraConstantsSlot);
+	BindConstantBuffer(m_cameraConstantBuffer, kCameraConstantsSlot);
 }
 
 void Renderer::EndCamera() {}
@@ -848,6 +849,7 @@ void Renderer::ClearScreen(Rgba8 const& clearColor)
 	// Clear the screen
 	float colorAsFloats[4];
 	float normalClearColor[4] = {0.5f, 0.5f, 0.5f, 1.0f};
+	float emissiveClearColor[4] = {0.0f, 0.0f, 0.0f, 1.0f};
 	clearColor.GetAsFloats(colorAsFloats);
 
 	m_d3dDeviceContext->ClearRenderTargetView(m_d3dRenderTargetView, colorAsFloats);
@@ -860,7 +862,7 @@ void Renderer::ClearScreen(Rgba8 const& clearColor)
 		1.0f,
 		0
 	);
-	m_d3dDeviceContext->ClearRenderTargetView(m_sceneEmissiveTexture->m_renderTargetView, colorAsFloats);
+	m_d3dDeviceContext->ClearRenderTargetView(m_sceneEmissiveTexture->m_renderTargetView, emissiveClearColor);
 }
 
 void Renderer::SetBlendMode(BlendMode blendMode) { m_desiredBlendMode = blendMode; }
@@ -966,7 +968,16 @@ void Renderer::BindTexture(Texture* textureOrNull, unsigned int slot)
 
 	if (textureOrNull == nullptr)
 	{
-		textureOrNull = m_defaultTexture;
+		if (slot == SurfaceTextureSlot::kEmissive)
+		{
+			// For emissive slot, black is the default "null" texture 
+			textureOrNull = m_defaultBlackTexture;
+		}
+		else
+		{
+			// For others, we use white as the default "null" texture
+			textureOrNull = m_defaultWhiteTexture;
+		}
 	}
 
 	ID3D11ShaderResourceView* srv = textureOrNull->m_shaderResourceView;
@@ -976,7 +987,7 @@ void Renderer::BindTexture(Texture* textureOrNull, unsigned int slot)
 void Renderer::BindSampler(SamplerMode samplerMode, unsigned int slot)
 {
 	GUARANTEE_OR_DIE(m_d3dDeviceContext, "BindSampler: m_d3dDeviceContext is null");
-	GUARANTEE_OR_DIE(slot < k_maxSamplerSlots, "BindSampler: slot out of range");
+	GUARANTEE_OR_DIE(slot < PostProcessTextureSlot::kMaxSamplerSlots, "BindSampler: slot out of range");
 
 	ID3D11SamplerState* samplerState = m_samplerStates[(int)samplerMode];
 	if (m_currentSamplerStates[slot] != samplerState)
@@ -1010,13 +1021,13 @@ void Renderer::BindModelConstants(Matrix4x4 const& modelToWorldTransform, Rgba8 
 	modelData.ModelColor[3]         = modelColor.a / 255.f;
 
 	CopyCPUToGPU(&modelData, sizeof(modelData), m_modelConstantBuffer);
-	BindConstantBuffer(m_modelConstantBuffer, k_modelConstantsSlot);
+	BindConstantBuffer(m_modelConstantBuffer, kModelConstantsSlot);
 }
 
 void Renderer::BindLightConstants(LightConstants const& lightConstants)
 {
 	CopyCPUToGPU(&lightConstants, sizeof(lightConstants), m_lightConstantBuffer);
-	BindConstantBuffer(m_lightConstantBuffer, k_lightConstantsSlot);
+	BindConstantBuffer(m_lightConstantBuffer, kLightConstantsSlot);
 }
 
 void Renderer::BindLightConstants(
@@ -1030,7 +1041,7 @@ void Renderer::BindLightConstants(
 	lightConstants.SunLight.AmbientIntensity = ambientIntensity;
 
 	CopyCPUToGPU(&lightConstants, sizeof(lightConstants), m_lightConstantBuffer);
-	BindConstantBuffer(m_lightConstantBuffer, k_lightConstantsSlot);
+	BindConstantBuffer(m_lightConstantBuffer, kLightConstantsSlot);
 }
 
 void Renderer::BindPostProcessConstants(Vec2 const& screenDimensions, float nearZ, float farZ)
@@ -1041,7 +1052,7 @@ void Renderer::BindPostProcessConstants(Vec2 const& screenDimensions, float near
 	postProcessData.CameraFar            = farZ;
 
 	CopyCPUToGPU(&postProcessData, sizeof(postProcessData), m_postProcessConstantBuffer);
-	BindConstantBuffer(m_postProcessConstantBuffer, k_postProcessConstantsSlot);
+	BindConstantBuffer(m_postProcessConstantBuffer, kPostProcessConstantsSlot);
 }
 
 void Renderer::BindSkyboxConstants(float time)
@@ -1050,7 +1061,7 @@ void Renderer::BindSkyboxConstants(float time)
 	skyboxData.Time            = time;
 
 	CopyCPUToGPU(&skyboxData, sizeof(skyboxData), m_skyboxConstantBuffer);
-	BindConstantBuffer(m_skyboxConstantBuffer, k_skyboxConstantsSlot);
+	BindConstantBuffer(m_skyboxConstantBuffer, kSkyboxConstantsSlot);
 }
 
 #pragma endregion
@@ -1521,7 +1532,7 @@ Shader* Renderer::CreateShader(char const* shaderName, char const* shaderSource)
 	hr = m_d3dDevice->CreatePixelShader(psByteCode.data(), psByteCode.size(), nullptr, &shader->m_pixelShader);
 	GUARANTEE_OR_DIE(SUCCEEDED(hr), Stringf("Could not create pixel shader for '%s'", shaderName));
 
-	static D3D11_INPUT_ELEMENT_DESC const pcutbnDesc[] = {
+	static D3D11_INPUT_ELEMENT_DESC const kPcutbnDesc[] = {
 		{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
 		{"COLOR", 0, DXGI_FORMAT_R8G8B8A8_UNORM, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0},
 		{"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0},
@@ -1530,8 +1541,8 @@ Shader* Renderer::CreateShader(char const* shaderName, char const* shaderSource)
 		{"NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0},
 	};
 
-	D3D11_INPUT_ELEMENT_DESC const* inputElementDesc  = pcutbnDesc;
-	UINT                            inputElementCount = (UINT)ARRAYSIZE(pcutbnDesc);
+	D3D11_INPUT_ELEMENT_DESC const* inputElementDesc  = kPcutbnDesc;
+	UINT                            inputElementCount = (UINT)ARRAYSIZE(kPcutbnDesc);
 
 	hr = m_d3dDevice->CreateInputLayout(
 		inputElementDesc,

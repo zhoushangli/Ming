@@ -1,9 +1,9 @@
 #include "Engine/Math/IntRange.hpp"
 
 // Static consts
-const IntRange IntRange::ZERO(0, 0);
-const IntRange IntRange::ONE(1, 1);
-const IntRange IntRange::ZERO_TO_ONE(0, 1);
+const IntRange IntRange::kZero(0, 0);
+const IntRange IntRange::kOne(1, 1);
+const IntRange IntRange::kZeroToOne(0, 1);
 
 // Constructors
 IntRange::IntRange(int min, int max)

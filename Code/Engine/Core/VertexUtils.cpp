@@ -43,7 +43,7 @@ AABB3 GetVertexBounds3D(std::vector<Vertex> const& vertices)
 {
 	if (vertices.empty())
 	{
-		return AABB3::ZERO;
+		return AABB3::kZero;
 	}
 
 	AABB3 bounds;
@@ -58,7 +58,7 @@ AABB3 GetVertexBounds3D(std::vector<Vertex> const& vertices)
 
 void AddVertsForAABB2D(std::vector<Vertex>& verts, AABB2 const& alignedBox, Rgba8 color)
 {
-	AddVertsForAABB2D(verts, alignedBox, color, Vec2::ZERO, Vec2::ONE);
+	AddVertsForAABB2D(verts, alignedBox, color, Vec2::kZero, Vec2::kOne);
 }
 
 void AddVertsForAABB2D(std::vector<Vertex>& verts, AABB2 const& alignedBox, Rgba8 color, Vec2 uvAtMins, Vec2 uvAtMaxs)
@@ -280,8 +280,8 @@ void AddVertsForQuad3D(
 	const Vec3&          bottomRight,
 	const Vec3&          topRight,
 	const Vec3&          topLeft,
-	const Rgba8&         color /*= Rgba8::WHITE*/,
-	const AABB2&         UVs /*= AABB2::UNIT */
+	const Rgba8&         color /*= Rgba8::kWhite*/,
+	const AABB2&         UVs /*= AABB2::kUnit */
 )
 {
 	Vec2 uvMins = UVs.m_mins;
@@ -303,8 +303,8 @@ void AddVertsForQuad3D(
 	const Vec3&                bottomRight,
 	const Vec3&                topRight,
 	const Vec3&                topLeft,
-	const Rgba8&               color /*= Rgba8::WHITE*/,
-	const AABB2&               UVs /*= AABB2::UNIT */
+	const Rgba8&               color /*= Rgba8::kWhite*/,
+	const AABB2&               UVs /*= AABB2::kUnit */
 )
 {
 	Vec2 const uvMins = UVs.m_mins;
@@ -333,8 +333,8 @@ void AddVertsForQuad3D(
 void AddVertsForAABB3D(
 	std::vector<Vertex>& verts,
 	const AABB3&         bounds,
-	const Rgba8&         color /*= Rgba8::WHITE*/,
-	const AABB2&         UVs /*= AABB2::UNIT*/
+	const Rgba8&         color /*= Rgba8::kWhite*/,
+	const AABB2&         UVs /*= AABB2::kUnit*/
 )
 {
 	Vec3 const& mins = bounds.m_mins;
@@ -495,8 +495,8 @@ void AddVertsForSphere3D(
 	std::vector<Vertex>& verts,
 	const Vec3&          center,
 	float                radius,
-	const Rgba8&         color /*= Rgba8::WHITE*/,
-	const AABB2&         UVs /*= AABB2::UNIT*/,
+	const Rgba8&         color /*= Rgba8::kWhite*/,
+	const AABB2&         UVs /*= AABB2::kUnit*/,
 	int                  numSlices /*= 16*/,
 	int                  numStacks /*= 8*/
 )
@@ -517,8 +517,8 @@ void AddVertsForSphere3D(
 		float v0Frac = static_cast<float>(stackIndex) / static_cast<float>(numStacks);
 		float v1Frac = static_cast<float>(stackIndex + 1) / static_cast<float>(numStacks);
 
-		float pitch0 = -HALF_PI + v0Frac * PI;
-		float pitch1 = -HALF_PI + v1Frac * PI;
+		float pitch0 = -kHalfPi + v0Frac * kPi;
+		float pitch1 = -kHalfPi + v1Frac * kPi;
 
 		float v0 = UVs.m_mins.y + v0Frac * vRange;
 		float v1 = UVs.m_mins.y + v1Frac * vRange;
@@ -528,8 +528,8 @@ void AddVertsForSphere3D(
 			float u0Frac = static_cast<float>(sliceIndex) / static_cast<float>(numSlices);
 			float u1Frac = static_cast<float>(sliceIndex + 1) / static_cast<float>(numSlices);
 
-			float yaw0 = u0Frac * TWO_PI;
-			float yaw1 = u1Frac * TWO_PI;
+			float yaw0 = u0Frac * kTwoPi;
+			float yaw1 = u1Frac * kTwoPi;
 
 			Vec3 p00 = center + Vec3::MakeFromPolarRadians(pitch0, yaw0, radius);
 			Vec3 p10 = center + Vec3::MakeFromPolarRadians(pitch0, yaw1, radius);
@@ -555,8 +555,8 @@ void AddVertsForCylinder3D(
 	const Vec3&          start,
 	const Vec3&          end,
 	float                radius,
-	const Rgba8&         color /*= Rgba8::WHITE*/,
-	const AABB2&         UVs /*= AABB2::UNIT*/,
+	const Rgba8&         color /*= Rgba8::kWhite*/,
+	const AABB2&         UVs /*= AABB2::kUnit*/,
 	int                  numSlices /*= 16*/
 )
 {
@@ -592,7 +592,7 @@ void AddVertsForCylinder3D(
 	float uRange = UVs.m_maxs.x - UVs.m_mins.x;
 	float vRange = UVs.m_maxs.y - UVs.m_mins.y;
 
-	float deltaYaw = TWO_PI / static_cast<float>(numSlices);
+	float deltaYaw = kTwoPi / static_cast<float>(numSlices);
 
 	for (int sliceIndex = 0; sliceIndex < numSlices; ++sliceIndex)
 	{
@@ -659,7 +659,7 @@ void AddVertsForCapsule3D(
 	Vec3 const&          end,
 	float                radius,
 	AABB2 const&         UVs,
-	Rgba8 const&         color /*= Rgba8::WHITE*/,
+	Rgba8 const&         color /*= Rgba8::kWhite*/,
 	int                  numSlices /*= 16*/,
 	int                  numStacks /*= 8*/
 )
@@ -692,7 +692,7 @@ void AddVertsForCapsule3D(
 	iBasis /= iLen;
 	Vec3 jBasis = CrossProduct3D(kBasis, iBasis);
 
-	float const deltaYaw   = TWO_PI / static_cast<float>(numSlices);
+	float const deltaYaw   = kTwoPi / static_cast<float>(numSlices);
 	int const   hemiStacks = Max(1, numStacks / 2);
 
 	float const uRange       = UVs.m_maxs.x - UVs.m_mins.x;
@@ -745,11 +745,11 @@ void AddVertsForCapsule3D(
 	for (int stackIndex = 0; stackIndex < hemiStacks; ++stackIndex)
 	{
 		float const lowerPitch0 =
-			-HALF_PI + (HALF_PI * static_cast<float>(stackIndex) / static_cast<float>(hemiStacks));
+			-kHalfPi + (kHalfPi * static_cast<float>(stackIndex) / static_cast<float>(hemiStacks));
 		float const lowerPitch1 =
-			-HALF_PI + (HALF_PI * static_cast<float>(stackIndex + 1) / static_cast<float>(hemiStacks));
-		float const upperPitch0 = HALF_PI * static_cast<float>(stackIndex) / static_cast<float>(hemiStacks);
-		float const upperPitch1 = HALF_PI * static_cast<float>(stackIndex + 1) / static_cast<float>(hemiStacks);
+			-kHalfPi + (kHalfPi * static_cast<float>(stackIndex + 1) / static_cast<float>(hemiStacks));
+		float const upperPitch0 = kHalfPi * static_cast<float>(stackIndex) / static_cast<float>(hemiStacks);
+		float const upperPitch1 = kHalfPi * static_cast<float>(stackIndex + 1) / static_cast<float>(hemiStacks);
 
 		float const lowerV0Frac = (radius * (sinf(lowerPitch0) + 1.f) * 0.5f) / totalVLength;
 		float const lowerV1Frac = (radius * (sinf(lowerPitch1) + 1.f) * 0.5f) / totalVLength;
@@ -800,19 +800,19 @@ void AddVertsForCapsule3D(
 	Vec3 const&          start,
 	Vec3 const&          end,
 	float                radius,
-	Rgba8 const&         color /*= Rgba8::WHITE*/,
+	Rgba8 const&         color /*= Rgba8::kWhite*/,
 	int                  numSlices /*= 16*/,
 	int                  numStacks /*= 8*/
 )
 {
-	AddVertsForCapsule3D(verts, start, end, radius, AABB2::UNIT, color, numSlices, numStacks);
+	AddVertsForCapsule3D(verts, start, end, radius, AABB2::kUnit, color, numSlices, numStacks);
 }
 
 void AddVertsForCapsule3D(
 	std::vector<Vertex>& verts,
 	Capsule3 const&      capsule,
 	AABB2 const&         UVs,
-	Rgba8 const&         color /*= Rgba8::WHITE*/,
+	Rgba8 const&         color /*= Rgba8::kWhite*/,
 	int                  numSlices /*= 16*/,
 	int                  numStacks /*= 8*/
 )
@@ -823,7 +823,7 @@ void AddVertsForCapsule3D(
 void AddVertsForCapsule3D(
 	std::vector<Vertex>& verts,
 	Capsule3 const&      capsule,
-	Rgba8 const&         color /*= Rgba8::WHITE*/,
+	Rgba8 const&         color /*= Rgba8::kWhite*/,
 	int                  numSlices /*= 16*/,
 	int                  numStacks /*= 8*/
 )
@@ -833,7 +833,7 @@ void AddVertsForCapsule3D(
 		capsule.m_start,
 		capsule.m_end,
 		capsule.m_radius,
-		AABB2::UNIT,
+		AABB2::kUnit,
 		color,
 		numSlices,
 		numStacks
@@ -845,8 +845,8 @@ void AddVertsForCone3D(
 	const Vec3&          start,
 	const Vec3&          end,
 	float                radius,
-	const Rgba8&         color /*= Rgba8::WHITE*/,
-	const AABB2&         UVs /*= AABB2::UNIT*/,
+	const Rgba8&         color /*= Rgba8::kWhite*/,
+	const AABB2&         UVs /*= AABB2::kUnit*/,
 	int                  numSlices /*= 32*/
 )
 {
@@ -881,7 +881,7 @@ void AddVertsForCone3D(
 	float uRange = UVs.m_maxs.x - UVs.m_mins.x;
 	float vRange = UVs.m_maxs.y - UVs.m_mins.y;
 
-	float deltaYaw = TWO_PI / static_cast<float>(numSlices);
+	float deltaYaw = kTwoPi / static_cast<float>(numSlices);
 
 	for (int sliceIndex = 0; sliceIndex < numSlices; ++sliceIndex)
 	{
@@ -935,7 +935,7 @@ void AddVertsForArrow3D(
 	Vec3 const&          start,
 	Vec3 const&          end,
 	float                radius,
-	Rgba8 const&         color /*= Rgba8::WHITE*/,
+	Rgba8 const&         color /*= Rgba8::kWhite*/,
 	int                  numSlices /*= 16*/
 )
 {
@@ -960,8 +960,8 @@ void AddVertsForArrow3D(
 	Vec3  shaftEnd    = start + (dir / length) * shaftLength;
 	float shaftRadius = radius * 0.30f;
 
-	AddVertsForCylinder3D(verts, start, shaftEnd, shaftRadius, color, AABB2::UNIT, numSlices);
-	AddVertsForCone3D(verts, shaftEnd, end, radius, color, AABB2::UNIT, numSlices);
+	AddVertsForCylinder3D(verts, start, shaftEnd, shaftRadius, color, AABB2::kUnit, numSlices);
+	AddVertsForCone3D(verts, shaftEnd, end, radius, color, AABB2::kUnit, numSlices);
 }
 
 void AddVertsForDisc2D(std::vector<Vertex>& verts, Disc2 const& disc, Rgba8 color)

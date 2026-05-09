@@ -31,7 +31,7 @@ public:
 	Vec3 m_mins;
 	Vec3 m_maxs;
 
-	static const AABB3 ZERO;
-	static const AABB3 UNIT;
-	static const AABB3 CENTERED_UNIT;
+	static const AABB3 kZero;
+	static const AABB3 kUnit;
+	static const AABB3 kCenteredUnit;
 };

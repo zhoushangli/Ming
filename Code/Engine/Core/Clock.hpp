@@ -72,10 +72,10 @@ private:
 	explicit Clock(bool isSystemClock);
 
 public:
-	static double constexpr MIN_FRAME_RATE    = 1.0;
-	static double constexpr MAX_FRAME_RATE    = 120.0;
-	static double constexpr MIN_DELTA_SECONDS = 1.0 / MAX_FRAME_RATE;
-	static double constexpr MAX_DELTA_SECONDS = 1.0 / MIN_FRAME_RATE;
+	static double constexpr kMinFrameRate    = 1.0;
+	static double constexpr kMaxFrameRate    = 120.0;
+	static double constexpr kMinDeltaSeconds = 1.0 / kMaxFrameRate;
+	static double constexpr kMaxDeltaSeconds = 1.0 / kMinFrameRate;
 
 protected:
 	// Parent clock. Will be nullptr for the root clock.

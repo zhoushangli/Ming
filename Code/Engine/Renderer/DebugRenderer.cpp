@@ -101,13 +101,13 @@ struct DebugObject
 	float totalDuration     = 0.f;
 	float remainingDuration = 0.f;
 
-	Rgba8 startColor = Rgba8::WHITE;
-	Rgba8 endColor   = Rgba8::WHITE;
+	Rgba8 startColor = Rgba8::kWhite;
+	Rgba8 endColor   = Rgba8::kWhite;
 
 	// geometry
-	Vec3  start  = Vec3::ZERO;
-	Vec3  end    = Vec3::ZERO;
-	Vec3  center = Vec3::ZERO;
+	Vec3  start  = Vec3::kZero;
+	Vec3  end    = Vec3::kZero;
+	Vec3  center = Vec3::kZero;
 	float radius = 0.f;
 
 	// transform
@@ -377,7 +377,7 @@ void DrawWorldObject(
 			renderer->BindShader(nullptr);
 			renderer->BindTexture(nullptr);
 			renderer->BindSampler(SamplerMode::POINT_CLAMP);
-			renderer->BindModelConstants(Matrix4x4::IDENTITY, Rgba8::WHITE);
+			renderer->BindModelConstants(Matrix4x4::kIdentity, Rgba8::kWhite);
 			renderer->DrawVertexBuffer(obj.vertexBuffer);
 		}
 		break;
@@ -393,7 +393,7 @@ void DrawWorldObject(
 		verts.reserve(1024);
 		font->AddVertsForText3DAtOriginXForward(verts, obj.textHeight, obj.text, color, 1.0f, obj.alignment);
 		TransformVertexArray3D(verts, obj.transform);
-		texture = &font->GetTexture();
+		texture = font->GetTexture();
 	}
 	break;
 
@@ -410,7 +410,7 @@ void DrawWorldObject(
 		Matrix4x4 billboard =
 			GetBillboardTransform(BillboardType::FULL_OPPOSING, camera.GetCameraToWorldTransform(), obj.center);
 		TransformVertexArray3D(verts, billboard);
-		texture = &font->GetTexture();
+		texture = font->GetTexture();
 	}
 	break;
 
@@ -427,7 +427,7 @@ void DrawWorldObject(
 		renderer->BindShader(nullptr);
 		renderer->BindTexture(texture);
 		renderer->BindSampler(SamplerMode::POINT_CLAMP);
-		renderer->BindModelConstants(Matrix4x4::IDENTITY, Rgba8::WHITE);
+		renderer->BindModelConstants(Matrix4x4::kIdentity, Rgba8::kWhite);
 		renderer->DrawVertexArray(verts);
 	}
 }
@@ -475,9 +475,9 @@ void DrawScreenObject(
 
 	renderer->BeginCamera(camera);
 	renderer->BindShader(nullptr);
-	renderer->BindTexture(&font->GetTexture());
+	renderer->BindTexture(font->GetTexture());
 	renderer->BindSampler(SamplerMode::POINT_CLAMP);
-	renderer->BindModelConstants(Matrix4x4::IDENTITY, Rgba8::WHITE);
+	renderer->BindModelConstants(Matrix4x4::kIdentity, Rgba8::kWhite);
 	renderer->DrawVertexArray(verts);
 }
 
@@ -743,9 +743,9 @@ void DebugAddBasis(
 	Vec3 yEnd   = transform.TransformPosition3D(Vec3(0.f, length, 0.f));
 	Vec3 zEnd   = transform.TransformPosition3D(Vec3(0.f, 0.f, length));
 
-	Rgba8 xColor = Interpolate(Rgba8::BLACK, Rgba8::RED, colorScale);
-	Rgba8 yColor = Interpolate(Rgba8::BLACK, Rgba8::GREEN, colorScale);
-	Rgba8 zColor = Interpolate(Rgba8::BLACK, Rgba8::BLUE, colorScale);
+	Rgba8 xColor = Interpolate(Rgba8::kBlack, Rgba8::kRed, colorScale);
+	Rgba8 yColor = Interpolate(Rgba8::kBlack, Rgba8::kGreen, colorScale);
+	Rgba8 zColor = Interpolate(Rgba8::kBlack, Rgba8::kBlue, colorScale);
 
 	xColor.a = (unsigned char)GetClamped((float)xColor.a * alphaScale, 0.f, 255.f);
 	yColor.a = (unsigned char)GetClamped((float)yColor.a * alphaScale, 0.f, 255.f);
@@ -805,8 +805,8 @@ void DebugAddScreenText(
 	float              cellHeight,
 	const Vec2&        alignment,
 	float              duration,
-	const Rgba8&       startColor /*= Rgba8::WHITE*/,
-	const Rgba8&       endColor /*= Rgba8::WHITE*/
+	const Rgba8&       startColor /*= Rgba8::kWhite*/,
+	const Rgba8&       endColor /*= Rgba8::kWhite*/
 )
 {
 	DebugObject object =
@@ -821,8 +821,8 @@ void DebugAddScreenText(
 void DebugAddMessage(
 	const std::string& text,
 	float              duration,
-	const Rgba8&       startColor /*= Rgba8::WHITE*/,
-	const Rgba8&       endColor /*= Rgba8::WHITE*/
+	const Rgba8&       startColor /*= Rgba8::kWhite*/,
+	const Rgba8&       endColor /*= Rgba8::kWhite*/
 )
 {
 	DebugObject object =
@@ -856,7 +856,7 @@ void DebugAddWorldGrid(float duration, int halfExtent)
 	int const clampedHalfExtent = halfExtent < 0 ? 0 : halfExtent;
 
 	DebugObject object =
-		MakeDebugObject(DebugObjectType::WORLD_GRID, duration, Rgba8::WHITE, Rgba8::WHITE, DebugRenderMode::USE_DEPTH);
+		MakeDebugObject(DebugObjectType::WORLD_GRID, duration, Rgba8::kWhite, Rgba8::kWhite, DebugRenderMode::USE_DEPTH);
 	object.verts.clear();
 	object.verts.reserve((clampedHalfExtent * 2 + 1) * 2 * 36);
 
@@ -891,13 +891,13 @@ void DebugAddWorldGrid(float duration, int halfExtent)
 		float const lineOffset    = static_cast<float>(lineIndex);
 		float const halfThickness = lineThickness * 0.5f;
 
-		Rgba8 xParallelColor = Rgba8::RED * brightness;
-		Rgba8 yParallelColor = Rgba8::GREEN * brightness;
+		Rgba8 xParallelColor = Rgba8::kRed * brightness;
+		Rgba8 yParallelColor = Rgba8::kGreen * brightness;
 
 		if (!isAxis)
 		{
-			xParallelColor = Rgba8::GRAY;
-			yParallelColor = Rgba8::GRAY;
+			xParallelColor = Rgba8::kGray;
+			yParallelColor = Rgba8::kGray;
 		}
 
 		// Split each long strip into small segments along its length.

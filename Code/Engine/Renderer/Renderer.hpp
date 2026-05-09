@@ -41,18 +41,18 @@ struct ID3D11DepthStencilState;
 
 namespace SurfaceTextureSlot
 {
-static const unsigned int Diffuse  = 0;
-static const unsigned int Emissive = 1;
+static const unsigned int kDiffuse  = 0;
+static const unsigned int kEmissive = 1;
 } // namespace SurfaceTextureSlot
 
 namespace PostProcessTextureSlot
 {
-static const unsigned int Color            = 0;
-static const unsigned int Depth            = 1;
-static const unsigned int Normal           = 2;
-static const unsigned int Emissive         = 3;
-static const unsigned int CustomInputStart = 8;
-static const unsigned int MaxSamplerSlots  = 16;
+static const unsigned int kColor            = 0;
+static const unsigned int kDepth            = 1;
+static const unsigned int kNormal           = 2;
+static const unsigned int kEmissive         = 3;
+static const unsigned int kCustomInputStart = 8;
+static const unsigned int kMaxSamplerSlots  = 16;
 } // namespace PostProcessTextureSlot
 
 enum class BlendMode
@@ -110,14 +110,14 @@ struct GPUPointLight
 	Vec3  Color;
 	float Intensity;
 };
-static const int MAX_POINT_LIGHTS = 64;
+static const int kMaxPointLights = 64;
 
 struct LightConstants
 {
 	GPUDirectionalLight SunLight;
-	GPUPointLight       PointLights[MAX_POINT_LIGHTS];
+	GPUPointLight       PointLights[kMaxPointLights];
 };
-static const int k_lightConstantsSlot = 1;
+static const int kLightConstantsSlot = 1;
 
 struct CameraConstants
 {
@@ -127,14 +127,14 @@ struct CameraConstants
 	Matrix4x4 CameraToWorldTransform;
 	Matrix4x4 ClipToCameraTransform;
 };
-static const int k_cameraConstantsSlot = 2;
+static const int kCameraConstantsSlot = 2;
 
 struct ModelConstants
 {
 	Matrix4x4 ModelToWorldTransform;
 	float     ModelColor[4];
 };
-static const int k_modelConstantsSlot = 3;
+static const int kModelConstantsSlot = 3;
 
 struct PostProcessConstants
 {
@@ -142,14 +142,14 @@ struct PostProcessConstants
 	float CameraNear;
 	float CameraFar;
 };
-static const int k_postProcessConstantsSlot = 4;
+static const int kPostProcessConstantsSlot = 4;
 
 struct SkyboxConstants
 {
 	float Time;
 	float Padding[3];
 };
-static const int k_skyboxConstantsSlot = 5;
+static const int kSkyboxConstantsSlot = 5;
 
 class Renderer
 {
@@ -205,7 +205,7 @@ public:
 	Texture* CreateTextureFromImage(const Image& image);
 	Texture* CreateTextureFromData(char const* name, IntVec2 dimensions, int bytesPerTexel, uint8_t* texelData);
 	Texture* CreateRenderTargetTexture(char const* name, IntVec2 dimensions);
-	// For Depth textures, we often want higher precision and don't need color data
+	// For kDepth textures, we often want higher precision and don't need color data
 	// And compare to depth stencil, it provide render target view
 	Texture*    CreateFloatRenderTargetTexture(char const* name, IntVec2 dimensions);
 	Texture*    CreateDepthStencilTexture(char const* name, IntVec2 dimensions);
@@ -247,13 +247,14 @@ private:
 	void BindConstantBuffer(ConstantBuffer* constantBuffer, int slot);
 	void BindIndexBuffer(IndexBuffer* indexBuffer);
 
-	void SetViewport(IntVec2 dimensions, IntVec2 topLeft = IntVec2::ZERO);
+	void SetViewport(IntVec2 dimensions, IntVec2 topLeft = IntVec2::kZero);
 
 private:
 	RendererConfig m_config;
 
-	Shader*  m_defaultShader  = nullptr;
-	Texture* m_defaultTexture = nullptr;
+	Shader*  m_defaultShader       = nullptr;
+	Texture* m_defaultWhiteTexture = nullptr;
+	Texture* m_defaultBlackTexture = nullptr;
 
 	Camera* m_currentCamera = nullptr;
 	Shader* m_currentShader = nullptr;
@@ -276,8 +277,8 @@ private:
 	BlendMode         m_desiredBlendMode                   = BlendMode::ALPHA;
 	ID3D11BlendState* m_blendStates[(int)BlendMode::COUNT] = {};
 
-	ID3D11SamplerState* m_currentSamplerStates[PostProcessTextureSlot::MaxSamplerSlots]    = {};
-	ID3D11SamplerState* m_samplerStates[(int)(SamplerMode::COUNT)] = {};
+	ID3D11SamplerState* m_currentSamplerStates[PostProcessTextureSlot::kMaxSamplerSlots] = {};
+	ID3D11SamplerState* m_samplerStates[(int)(SamplerMode::COUNT)]                       = {};
 
 	ID3D11RasterizerState* m_currentRasterizerState                         = nullptr;
 	RasterizerMode         m_desiredRasterizerMode                          = RasterizerMode::SOLID_CULL_BACK;

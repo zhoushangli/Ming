@@ -24,5 +24,5 @@ public:
 	int y = 0;
 	int z = 0;
 
-	static IntVec3 const ZERO;
+	static IntVec3 const kZero;
 };
