@@ -342,10 +342,12 @@ void           Renderer::Startup()
 
 #pragma region Startup: Create post-process resources
 
-	Vec2 windowsDimensions  = (Vec2)g_engine->m_window->GetClientDimensions();
-	m_sceneColorTexture     = CreateRenderTargetTexture("SceneColor", IntVec2(windowsDimensions));
-	m_sceneDepthTexture     = CreateDepthStencilTexture("SceneDepth", IntVec2(windowsDimensions));
-	m_sceneNormalTexture    = CreateRenderTargetTexture("SceneNormal", IntVec2(windowsDimensions));
+	Vec2 windowsDimensions = (Vec2)g_engine->m_window->GetClientDimensions();
+	m_sceneColorTexture    = CreateRenderTargetTexture("SceneColor", IntVec2(windowsDimensions));
+	m_sceneDepthTexture    = CreateDepthStencilTexture("SceneDepth", IntVec2(windowsDimensions));
+	m_sceneNormalTexture   = CreateRenderTargetTexture("SceneNormal", IntVec2(windowsDimensions));
+	m_sceneEmissiveTexture = CreateRenderTargetTexture("SceneEmissive", IntVec2(windowsDimensions));
+
 	m_postProcessTextureA   = CreateRenderTargetTexture("PostProcessTextureA", IntVec2(windowsDimensions));
 	m_postProcessTextureB   = CreateRenderTargetTexture("PostProcessTextureB", IntVec2(windowsDimensions));
 	m_postProcessCopyShader = CreateOrGetShader("Data/Shaders/PostProcessCopy");
@@ -484,11 +486,12 @@ void Renderer::BeginSkyboxPass()
 
 void Renderer::BeginScenePass()
 {
-	ID3D11RenderTargetView* renderingTargets[2] = {m_sceneColorTexture->m_renderTargetView,
-		m_sceneNormalTexture->m_renderTargetView};
+	ID3D11RenderTargetView* renderingTargets[3] = {m_sceneColorTexture->m_renderTargetView,
+		m_sceneNormalTexture->m_renderTargetView,
+		m_sceneEmissiveTexture->m_renderTargetView};
 
 	// Set render target
-	m_d3dDeviceContext->OMSetRenderTargets(2, renderingTargets, m_sceneDepthTexture->m_depthStencilView);
+	m_d3dDeviceContext->OMSetRenderTargets(3, renderingTargets, m_sceneDepthTexture->m_depthStencilView);
 
 	// Initialize states to default
 	SetBlendMode(BlendMode::ALPHA);
@@ -566,6 +569,7 @@ void Renderer::RenderPostProcess(Camera const& camera, int downsampleFactor)
 								  Texture*                colorInput,
 								  Texture*                depthInput,
 								  Texture*                normalInput,
+								  Texture*                emissiveInput,
 								  ID3D11RenderTargetView* target,
 								  IntVec2 const&          resolution,
 								  wchar_t const*          eventName)
@@ -580,6 +584,8 @@ void Renderer::RenderPostProcess(Camera const& camera, int downsampleFactor)
 		BindSampler(SamplerMode::POINT_CLAMP, 1);
 		BindTexture(normalInput, 2);
 		BindSampler(SamplerMode::POINT_CLAMP, 2);
+		BindTexture(emissiveInput, 3);
+		BindSampler(SamplerMode::POINT_CLAMP, 3);
 		BindPostProcessConstants((Vec2)resolution, camera.GetNearZ(), camera.GetFarZ());
 
 		m_d3dAnnotation->BeginEvent(eventName);
@@ -609,9 +615,10 @@ void Renderer::RenderPostProcess(Camera const& camera, int downsampleFactor)
 		return texture;
 	};
 
-	Texture* sceneColor  = m_sceneColorTexture;
-	Texture* sceneDepth  = m_sceneDepthTexture;
-	Texture* sceneNormal = m_sceneNormalTexture;
+	Texture* sceneColor     = m_sceneColorTexture;
+	Texture* sceneDepth     = m_sceneDepthTexture;
+	Texture* sceneNormal    = m_sceneNormalTexture;
+	Texture* sceneEmissive  = m_sceneEmissiveTexture;
 
 	Texture* ping = m_postProcessTextureA;
 	Texture* pong = m_postProcessTextureB;
@@ -619,23 +626,26 @@ void Renderer::RenderPostProcess(Camera const& camera, int downsampleFactor)
 	bool const useDownsample = (downsampleFactor > 1);
 	if (useDownsample)
 	{
-		std::string colorName  = Stringf("SceneColor_%dx%d", workingResolution.x, workingResolution.y);
-		std::string depthName  = Stringf("SceneDepth_%dx%d", workingResolution.x, workingResolution.y);
-		std::string normalName = Stringf("SceneNormal_%dx%d", workingResolution.x, workingResolution.y);
-		std::string pingName   = Stringf("PostA_%dx%d", workingResolution.x, workingResolution.y);
-		std::string pongName   = Stringf("PostB_%dx%d", workingResolution.x, workingResolution.y);
+		std::string colorName     = Stringf("SceneColor_%dx%d", workingResolution.x, workingResolution.y);
+		std::string depthName     = Stringf("SceneDepth_%dx%d", workingResolution.x, workingResolution.y);
+		std::string normalName    = Stringf("SceneNormal_%dx%d", workingResolution.x, workingResolution.y);
+		std::string emissiveName  = Stringf("SceneEmissive_%dx%d", workingResolution.x, workingResolution.y);
+		std::string pingName      = Stringf("PostA_%dx%d", workingResolution.x, workingResolution.y);
+		std::string pongName      = Stringf("PostB_%dx%d", workingResolution.x, workingResolution.y);
 
-		Texture* downsampledColor  = GetOrCreateColorTarget(colorName, workingResolution);
-		Texture* downsampledDepth  = GetOrCreateFloatTarget(depthName, workingResolution);
-		Texture* downsampledNormal = GetOrCreateColorTarget(normalName, workingResolution);
-		ping                       = GetOrCreateColorTarget(pingName, workingResolution);
-		pong                       = GetOrCreateColorTarget(pongName, workingResolution);
+		Texture* downsampledColor     = GetOrCreateColorTarget(colorName, workingResolution);
+		Texture* downsampledDepth     = GetOrCreateFloatTarget(depthName, workingResolution);
+		Texture* downsampledNormal    = GetOrCreateColorTarget(normalName, workingResolution);
+		Texture* downsampledEmissive = GetOrCreateColorTarget(emissiveName, workingResolution);
+		ping                          = GetOrCreateColorTarget(pingName, workingResolution);
+		pong                          = GetOrCreateColorTarget(pongName, workingResolution);
 
 		m_d3dAnnotation->BeginEvent(L"Downsample Inputs");
 
 		DrawFullscreenPass(
 			m_postProcessCopyShader,
 			m_sceneColorTexture,
+			nullptr,
 			nullptr,
 			nullptr,
 			downsampledColor->m_renderTargetView,
@@ -648,6 +658,7 @@ void Renderer::RenderPostProcess(Camera const& camera, int downsampleFactor)
 			m_sceneDepthTexture,
 			nullptr,
 			nullptr,
+			nullptr,
 			downsampledDepth->m_renderTargetView,
 			workingResolution,
 			L"Downsample Scene Depth"
@@ -658,16 +669,29 @@ void Renderer::RenderPostProcess(Camera const& camera, int downsampleFactor)
 			m_sceneNormalTexture,
 			nullptr,
 			nullptr,
+			nullptr,
 			downsampledNormal->m_renderTargetView,
 			workingResolution,
 			L"Downsample Scene Normal"
 		);
 
+		DrawFullscreenPass(
+			m_postProcessCopyShader,
+			m_sceneEmissiveTexture,
+			nullptr,
+			nullptr,
+			nullptr,
+			downsampledEmissive->m_renderTargetView,
+			workingResolution,
+			L"Downsample Scene Emissive"
+		);
+
 		m_d3dAnnotation->EndEvent();
 
-		sceneColor  = downsampledColor;
-		sceneDepth  = downsampledDepth;
-		sceneNormal = downsampledNormal;
+		sceneColor     = downsampledColor;
+		sceneDepth     = downsampledDepth;
+		sceneNormal    = downsampledNormal;
+		sceneEmissive  = downsampledEmissive;
 	}
 
 	std::vector<PostProcessPass const*> enabledPasses;
@@ -696,6 +720,32 @@ void Renderer::RenderPostProcess(Camera const& camera, int downsampleFactor)
 		{
 			for (auto const& customInput : pass->m_customInputs)
 			{
+				if (!customInput.IsValid())
+				{
+					continue;
+				}
+
+				GUARANTEE_OR_DIE(
+					customInput.m_slot >= k_postProcessCustomInputStartSlot,
+					Stringf(
+						"PostProcessPass '%s' custom input '%s' uses reserved texture slot %d; custom inputs must use slot %d or higher",
+						pass->m_name.c_str(),
+						customInput.m_name.c_str(),
+						customInput.m_slot,
+						k_postProcessCustomInputStartSlot
+					)
+				);
+				GUARANTEE_OR_DIE(
+					customInput.m_slot < k_maxSamplerSlots,
+					Stringf(
+						"PostProcessPass '%s' custom input '%s' uses texture slot %d, but max supported slot is %d",
+						pass->m_name.c_str(),
+						customInput.m_name.c_str(),
+						customInput.m_slot,
+						k_maxSamplerSlots - 1
+					)
+				);
+
 				Texture* customTexture = GetTextureFromFileName(customInput.m_name.c_str());
 				if (customTexture != nullptr)
 				{
@@ -723,6 +773,7 @@ void Renderer::RenderPostProcess(Camera const& camera, int downsampleFactor)
 			mainChainColorTexture,
 			sceneDepth,
 			sceneNormal,
+			sceneEmissive,
 			outputView,
 			workingResolution,
 			pass->m_wideName.c_str()
@@ -735,6 +786,7 @@ void Renderer::RenderPostProcess(Camera const& camera, int downsampleFactor)
 	DrawFullscreenPass(
 		m_postProcessCopyShader,
 		mainChainColorTexture,
+		nullptr,
 		nullptr,
 		nullptr,
 		m_d3dRenderTargetView,
@@ -808,6 +860,7 @@ void Renderer::ClearScreen(Rgba8 const& clearColor)
 		1.0f,
 		0
 	);
+	m_d3dDeviceContext->ClearRenderTargetView(m_sceneEmissiveTexture->m_renderTargetView, colorAsFloats);
 }
 
 void Renderer::SetBlendMode(BlendMode blendMode) { m_desiredBlendMode = blendMode; }

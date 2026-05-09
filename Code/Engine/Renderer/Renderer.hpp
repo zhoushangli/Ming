@@ -39,6 +39,22 @@ struct ID3D11Texture2D;
 struct ID3D11DepthStencilView;
 struct ID3D11DepthStencilState;
 
+namespace SurfaceTextureSlot
+{
+static const unsigned int Diffuse  = 0;
+static const unsigned int Emissive = 1;
+} // namespace SurfaceTextureSlot
+
+namespace PostProcessTextureSlot
+{
+static const unsigned int Color            = 0;
+static const unsigned int Depth            = 1;
+static const unsigned int Normal           = 2;
+static const unsigned int Emissive         = 3;
+static const unsigned int CustomInputStart = 8;
+static const unsigned int MaxSamplerSlots  = 16;
+} // namespace PostProcessTextureSlot
+
 enum class BlendMode
 {
 	ALPHA,
@@ -177,7 +193,8 @@ public:
 	void BindShader(Shader* shader);
 	void BindModelConstants(Matrix4x4 const& modelToWorldTransform, Rgba8 const& modelColor);
 	void BindLightConstants(LightConstants const& lightConstants);
-	void BindLightConstants(Vec3 const& sunDirection, float sunIntensity, Rgba8 const& ambientColor, float ambientIntensity);
+	void
+	BindLightConstants(Vec3 const& sunDirection, float sunIntensity, Rgba8 const& ambientColor, float ambientIntensity);
 	void BindPostProcessConstants(Vec2 const& screenDimensions, float cameraNear, float cameraFar);
 	void BindSkyboxConstants(float time);
 
@@ -259,9 +276,7 @@ private:
 	BlendMode         m_desiredBlendMode                   = BlendMode::ALPHA;
 	ID3D11BlendState* m_blendStates[(int)BlendMode::COUNT] = {};
 
-	static constexpr int k_maxSamplerSlots = 16;
-
-	ID3D11SamplerState* m_currentSamplerStates[k_maxSamplerSlots]  = {};
+	ID3D11SamplerState* m_currentSamplerStates[PostProcessTextureSlot::MaxSamplerSlots]    = {};
 	ID3D11SamplerState* m_samplerStates[(int)(SamplerMode::COUNT)] = {};
 
 	ID3D11RasterizerState* m_currentRasterizerState                         = nullptr;
@@ -283,6 +298,7 @@ private:
 	Texture* m_sceneColorTexture     = nullptr;
 	Texture* m_sceneDepthTexture     = nullptr;
 	Texture* m_sceneNormalTexture    = nullptr;
+	Texture* m_sceneEmissiveTexture  = nullptr;
 	Texture* m_postProcessTextureA   = nullptr;
 	Texture* m_postProcessTextureB   = nullptr;
 	Shader*  m_postProcessCopyShader = nullptr;
