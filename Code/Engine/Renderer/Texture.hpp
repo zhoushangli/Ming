@@ -30,7 +30,7 @@ protected:
 
 	ID3D11ShaderResourceView* m_shaderResourceView = nullptr; // Read Handle
 	ID3D11RenderTargetView*   m_renderTargetView   = nullptr; // Write Handle
-	ID3D11DepthStencilView*   m_depthStencilView    = nullptr; // kDepth Handle
+	ID3D11DepthStencilView*   m_depthStencilView   = nullptr; // kDepth Handle
 
 	ID3D11Texture2D* m_texture = nullptr;
 };
@@ -53,8 +53,8 @@ public:
 protected:
 	SpriteSheet const& m_spriteSheet;
 	int                m_spriteIndex = -1;
-	Vec2               m_uvAtMins    = Vec2::kZero;
-	Vec2               m_uvAtMaxs    = Vec2::kOne;
+	Vec2               m_uvAtMins    = Vec2::Zero;
+	Vec2               m_uvAtMaxs    = Vec2::One;
 };
 
 class SpriteSheet

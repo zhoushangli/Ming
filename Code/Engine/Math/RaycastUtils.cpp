@@ -199,7 +199,7 @@ RaycastResult3D RaycastVsAABB3D(Vec3 rayStart, Vec3 rayForwardNormal, float rayL
 
 	float tMin         = 0.f;
 	float tMax         = rayLength;
-	Vec3  impactNormal = Vec3::kZero;
+	Vec3  impactNormal = Vec3::Zero;
 
 	auto UpdateSlab =
 		[&](float start, float dir, float minValue, float maxValue, Vec3 const& minNormal, Vec3 const& maxNormal)
@@ -490,7 +490,7 @@ RaycastResult3D RaycastVsCylinder3D(
 )
 {
 	Vec3 localZ = (cylinderEnd - cylinderStart).GetNormalized();
-	Vec3 helper = (Abs(localZ.z) < 0.999f) ? Vec3::kUp : Vec3::kRight;
+	Vec3 helper = (Abs(localZ.z) < 0.999f) ? Vec3::Up : Vec3::Right;
 	Vec3 localX = CrossProduct3D(helper, localZ).GetNormalized();
 	Vec3 localY = CrossProduct3D(localZ, localX).GetNormalized();
 
@@ -499,7 +499,7 @@ RaycastResult3D RaycastVsCylinder3D(
 
 	Vec3 localRayStart      = worldToLocal.TransformPosition3D(rayStart);
 	Vec3 localRayForward    = worldToLocal.TransformDirection3D(rayForwardNormal);
-	Vec3 localCylinderStart = Vec3::kZero;
+	Vec3 localCylinderStart = Vec3::Zero;
 	Vec3 localCylinderEnd   = Vec3(0.f, 0.f, (cylinderEnd - cylinderStart).GetLength());
 
 	RaycastResult3D localResult = RaycastVsCylinderZ3D(

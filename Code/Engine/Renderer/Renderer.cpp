@@ -41,9 +41,9 @@ namespace
 Vertex const* GetFullscreenTriangleBottomLeftUV()
 {
 	static Vertex const fullscreenTriangle[3] = {
-		Vertex(Vec3(-1.f, -1.f, 0.f), Rgba8::kWhite, Vec2(0.f, 0.f)),
-		Vertex(Vec3(3.f, -1.f, 0.f), Rgba8::kWhite, Vec2(2.f, 0.f)),
-		Vertex(Vec3(-1.f, 3.f, 0.f), Rgba8::kWhite, Vec2(0.f, 2.f)),
+		Vertex(Vec3(-1.f, -1.f, 0.f), Rgba8::White, Vec2(0.f, 0.f)),
+		Vertex(Vec3(3.f, -1.f, 0.f), Rgba8::White, Vec2(2.f, 0.f)),
+		Vertex(Vec3(-1.f, 3.f, 0.f), Rgba8::White, Vec2(0.f, 2.f)),
 	};
 
 	return fullscreenTriangle;
@@ -848,7 +848,7 @@ void Renderer::ClearScreen(Rgba8 const& clearColor)
 {
 	// Clear the screen
 	float colorAsFloats[4];
-	float normalClearColor[4] = {0.5f, 0.5f, 0.5f, 1.0f};
+	float normalClearColor[4]   = {0.5f, 0.5f, 0.5f, 1.0f};
 	float emissiveClearColor[4] = {0.0f, 0.0f, 0.0f, 1.0f};
 	clearColor.GetAsFloats(colorAsFloats);
 
@@ -960,9 +960,7 @@ void Renderer::DrawIndexedVertexBuffer(VertexBuffer* vertexBuffer, IndexBuffer* 
 
 #pragma region Public: High-level bind helpers used by gameplay/render features
 
-void Renderer::BindTexture(Texture* textureOrNull) { 
-	BindTexture(textureOrNull, 0); 
-}
+void Renderer::BindTexture(Texture* textureOrNull) { BindTexture(textureOrNull, 0); }
 
 void Renderer::BindTexture(Texture* textureOrNull, unsigned int slot)
 {
@@ -972,7 +970,7 @@ void Renderer::BindTexture(Texture* textureOrNull, unsigned int slot)
 	{
 		if (slot == SurfaceTextureSlot::kEmissive)
 		{
-			// For emissive slot, black is the default "null" texture 
+			// For emissive slot, black is the default "null" texture
 			textureOrNull = m_defaultBlackTexture;
 		}
 		else

@@ -83,25 +83,25 @@ LRESULT CALLBACK WindowsMessageHandlingProcedure(HWND windowHandle, UINT wmMessa
 
 	case WM_LBUTTONDOWN:
 	{
-		g_engine->m_input->HandleKeyPressed(kKeyCodeLeftMouse);
+		g_engine->m_input->HandleKeyPressed(KeyCodeLeftMouse);
 		break;
 	}
 
 	case WM_LBUTTONUP:
 	{
-		g_engine->m_input->HandleKeyReleased(kKeyCodeLeftMouse);
+		g_engine->m_input->HandleKeyReleased(KeyCodeLeftMouse);
 		break;
 	}
 
 	case WM_RBUTTONDOWN:
 	{
-		g_engine->m_input->HandleKeyPressed(kKeyCodeRightMouse);
+		g_engine->m_input->HandleKeyPressed(KeyCodeRightMouse);
 		break;
 	}
 
 	case WM_RBUTTONUP:
 	{
-		g_engine->m_input->HandleKeyReleased(kKeyCodeRightMouse);
+		g_engine->m_input->HandleKeyReleased(KeyCodeRightMouse);
 		break;
 	}
 	}

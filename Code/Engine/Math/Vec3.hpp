@@ -18,48 +18,47 @@ public:
 	explicit Vec3(float initialX, float initialY);
 
 	// Operators (const)
-	bool		operator==(Vec3 const& compare) const;
-	bool		operator!=(Vec3 const& compare) const;
-	Vec3 const	operator+(Vec3 const& vecToAdd) const;
-	Vec3 const	operator-(Vec3 const& vecToSubtract) const;
-	Vec3 const	operator-() const;
-	Vec3 const	operator*(float uniformScale) const;
-	Vec3 const	operator*(Vec3 const& vecToMultiply) const;
-	Vec3 const	operator/(float inverseScale) const;
+	bool       operator==(Vec3 const& compare) const;
+	bool       operator!=(Vec3 const& compare) const;
+	Vec3 const operator+(Vec3 const& vecToAdd) const;
+	Vec3 const operator-(Vec3 const& vecToSubtract) const;
+	Vec3 const operator-() const;
+	Vec3 const operator*(float uniformScale) const;
+	Vec3 const operator*(Vec3 const& vecToMultiply) const;
+	Vec3 const operator/(float inverseScale) const;
 
 	// Operators (self-mutating / non-const)
-	void		operator+=(Vec3 const& vecToAdd);
-	void		operator-=(Vec3 const& vecToSubtract);
-	void		operator*=(const float uniformScale);
-	void		operator/=(const float uniformDivisor);
-	void		operator=(Vec3 const& copyFrom);
+	void operator+=(Vec3 const& vecToAdd);
+	void operator-=(Vec3 const& vecToSubtract);
+	void operator*=(const float uniformScale);
+	void operator/=(const float uniformDivisor);
+	void operator=(Vec3 const& copyFrom);
 
 	// Standalone "friend" functions
 	friend Vec3 const operator*(float uniformScale, Vec3 const& vecToScale);
 
 	// Vec3 methods
-	float		GetLength() const;
-	float		GetLengthXY() const;
-	float		GetLengthSquared() const;
-	float		GetLengthXYSquared() const;
-	float		GetOrientationAboutZDegrees() const;
-	float		GetOrientationAboutZRadians() const;
-	Vec3		GetRotatedAboutZDegrees(float degrees) const;
-	Vec3		GetRotatedAboutZRadians(float radians) const;
+	float GetLength() const;
+	float GetLengthXY() const;
+	float GetLengthSquared() const;
+	float GetLengthXYSquared() const;
+	float GetOrientationAboutZDegrees() const;
+	float GetOrientationAboutZRadians() const;
+	Vec3  GetRotatedAboutZDegrees(float degrees) const;
+	Vec3  GetRotatedAboutZRadians(float radians) const;
 
-    void        Normalize();
-    Vec3		GetNormalized() const;
+	void Normalize();
+	Vec3 GetNormalized() const;
 
-    static Vec3 MakeFromPolarRadians(float pitchRadians, float yawRadians, float length = 1.0f);
-    static Vec3 MakeFromPolarDegrees(float pitchDegrees, float yawDegrees, float length = 1.0f);
+	static Vec3 MakeFromPolarRadians(float pitchRadians, float yawRadians, float length = 1.0f);
+	static Vec3 MakeFromPolarDegrees(float pitchDegrees, float yawDegrees, float length = 1.0f);
 
-    static const Vec3 kZero;
-	static const Vec3 kOne;
-    static const Vec3 kForward;
-    static const Vec3 kBackward;
-    static const Vec3 kLeft;
-    static const Vec3 kRight;
-    static const Vec3 kUp;
-    static const Vec3 kDown;
+	static const Vec3 Zero;
+	static const Vec3 One;
+	static const Vec3 Forward;
+	static const Vec3 Backward;
+	static const Vec3 Left;
+	static const Vec3 Right;
+	static const Vec3 Up;
+	static const Vec3 Down;
 };
-

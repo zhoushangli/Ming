@@ -43,7 +43,7 @@ AABB3 GetVertexBounds3D(std::vector<Vertex> const& vertices)
 {
 	if (vertices.empty())
 	{
-		return AABB3::kZero;
+		return AABB3::Zero;
 	}
 
 	AABB3 bounds;
@@ -58,7 +58,7 @@ AABB3 GetVertexBounds3D(std::vector<Vertex> const& vertices)
 
 void AddVertsForAABB2D(std::vector<Vertex>& verts, AABB2 const& alignedBox, Rgba8 color)
 {
-	AddVertsForAABB2D(verts, alignedBox, color, Vec2::kZero, Vec2::kOne);
+	AddVertsForAABB2D(verts, alignedBox, color, Vec2::Zero, Vec2::One);
 }
 
 void AddVertsForAABB2D(std::vector<Vertex>& verts, AABB2 const& alignedBox, Rgba8 color, Vec2 uvAtMins, Vec2 uvAtMaxs)

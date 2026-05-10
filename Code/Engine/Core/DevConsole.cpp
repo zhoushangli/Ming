@@ -10,11 +10,11 @@
 #include "Engine/Renderer/BitmapFont.hpp"
 #include "Engine/Renderer/Renderer.hpp"
 
-Rgba8 const DevConsole::kError                 = Rgba8(255, 0, 0, 255);     // Red
-Rgba8 const DevConsole::kWarning               = Rgba8(255, 255, 0, 255);   // Yellow
-Rgba8 const DevConsole::kInfoMajor            = Rgba8(0, 255, 0, 255);     // Green
-Rgba8 const DevConsole::kInfoMinor            = Rgba8(0, 255, 255, 255);   // Cyan
-Rgba8 const DevConsole::kInputText            = Rgba8(255, 255, 255, 255); // White
+Rgba8 const DevConsole::kError               = Rgba8(255, 0, 0, 255);     // Red
+Rgba8 const DevConsole::kWarning             = Rgba8(255, 255, 0, 255);   // Yellow
+Rgba8 const DevConsole::kInfoMajor           = Rgba8(0, 255, 0, 255);     // Green
+Rgba8 const DevConsole::kInfoMinor           = Rgba8(0, 255, 255, 255);   // Cyan
+Rgba8 const DevConsole::kInputText           = Rgba8(255, 255, 255, 255); // White
 Rgba8 const DevConsole::kInputInsertionPoint = Rgba8(255, 255, 255, 255); // White
 
 DevConsole::DevConsole(DevConsoleConfig const& config) : m_config(config), m_uiCamera() {}
@@ -29,7 +29,7 @@ void DevConsole::Startup()
 	m_isOpen = m_config.m_startOpen;
 
 	Vec2 screenSize = (Vec2)g_engine->m_window->GetClientDimensions();
-	m_uiCamera.SetOrthographicView(Vec2::kZero, screenSize, 0.f, 1.f);
+	m_uiCamera.SetOrthographicView(Vec2::Zero, screenSize, 0.f, 1.f);
 
 	m_inputText.clear();
 	m_insertionPointPosition = 0;
@@ -126,14 +126,14 @@ void DevConsole::Render()
 	g_engine->m_renderer->BindTexture(nullptr);
 	g_engine->m_renderer->BindSampler(SamplerMode::POINT_CLAMP);
 	g_engine->m_renderer->BindShader(nullptr);
-	g_engine->m_renderer->BindModelConstants(Matrix4x4::kIdentity, Rgba8::kWhite);
+	g_engine->m_renderer->BindModelConstants(Matrix4x4::Identity, Rgba8::White);
 
 	g_engine->m_renderer->SetBlendMode(BlendMode::ALPHA);
 	g_engine->m_renderer->SetDepthMode(DepthMode::READ_ONLY_ALWAYS);
 	g_engine->m_renderer->SetRasterizerMode(RasterizerMode::SOLID_CULL_BACK);
 
 	std::vector<Vertex> bgVerts;
-	AddVertsForAABB2D(bgVerts, uiBounds, Rgba8::kTranslucentBlack);
+	AddVertsForAABB2D(bgVerts, uiBounds, Rgba8::TranslucentBlack);
 
 	g_engine->m_renderer->DrawVertexArray((int)bgVerts.size(), bgVerts.data());
 
@@ -311,7 +311,7 @@ bool DevConsole::Event_KeyDown(EventArgs& args)
 {
 	unsigned char asKey = (unsigned char)std::stoi(args.GetValue("asKey", "0"));
 
-	if (asKey == kKeyCodeTilde)
+	if (asKey == KeyCodeTilde)
 	{
 		g_engine->m_devConsole->ToggleOpen();
 		return true;
@@ -320,7 +320,7 @@ bool DevConsole::Event_KeyDown(EventArgs& args)
 	if (g_engine->m_devConsole == nullptr || !g_engine->m_devConsole->IsOpen())
 		return false;
 
-	if (asKey == kKeyCodeEnter)
+	if (asKey == KeyCodeEnter)
 	{
 		std::string command = g_engine->m_devConsole->m_inputText;
 		g_engine->m_devConsole->m_inputText.clear();
@@ -340,7 +340,7 @@ bool DevConsole::Event_KeyDown(EventArgs& args)
 		return true;
 	}
 
-	if (asKey == kKeyCodeEsc)
+	if (asKey == KeyCodeEsc)
 	{
 		if (g_engine->m_devConsole->m_inputText.empty())
 		{
@@ -357,7 +357,7 @@ bool DevConsole::Event_KeyDown(EventArgs& args)
 		return true;
 	}
 
-	if (asKey == kKeyCodeHome)
+	if (asKey == KeyCodeHome)
 	{
 		g_engine->m_devConsole->m_insertionPointPosition = 0;
 		g_engine->m_devConsole->m_insertionPointVisible  = true;
@@ -365,7 +365,7 @@ bool DevConsole::Event_KeyDown(EventArgs& args)
 		return true;
 	}
 
-	if (asKey == kKeyCodeEnd)
+	if (asKey == KeyCodeEnd)
 	{
 		g_engine->m_devConsole->m_insertionPointPosition = (int)g_engine->m_devConsole->m_inputText.size();
 		g_engine->m_devConsole->m_insertionPointVisible  = true;
@@ -373,7 +373,7 @@ bool DevConsole::Event_KeyDown(EventArgs& args)
 		return true;
 	}
 
-	if (asKey == kKeyCodeDelete)
+	if (asKey == KeyCodeDelete)
 	{
 		int&         pos  = g_engine->m_devConsole->m_insertionPointPosition;
 		std::string& text = g_engine->m_devConsole->m_inputText;
@@ -389,7 +389,7 @@ bool DevConsole::Event_KeyDown(EventArgs& args)
 		return true;
 	}
 
-	if (asKey == kKeyCodeBackspace)
+	if (asKey == KeyCodeBackspace)
 	{
 		int&         pos  = g_engine->m_devConsole->m_insertionPointPosition;
 		std::string& text = g_engine->m_devConsole->m_inputText;
@@ -406,7 +406,7 @@ bool DevConsole::Event_KeyDown(EventArgs& args)
 		return true;
 	}
 
-	if (asKey == kKeyCodeLeftArrow)
+	if (asKey == KeyCodeLeftArrow)
 	{
 		g_engine->m_devConsole->m_insertionPointPosition =
 			std::max(0, g_engine->m_devConsole->m_insertionPointPosition - 1);
@@ -415,7 +415,7 @@ bool DevConsole::Event_KeyDown(EventArgs& args)
 		return true;
 	}
 
-	if (asKey == kKeyCodeRightArrow)
+	if (asKey == KeyCodeRightArrow)
 	{
 		g_engine->m_devConsole->m_insertionPointPosition = std::min(
 			(int)g_engine->m_devConsole->m_inputText.size(),
@@ -426,7 +426,7 @@ bool DevConsole::Event_KeyDown(EventArgs& args)
 		return true;
 	}
 
-	if (asKey == kKeyCodeUpArrow)
+	if (asKey == KeyCodeUpArrow)
 	{
 		DevConsole* dc           = g_engine->m_devConsole;
 		int const   historyCount = (int)dc->m_commandHistory.size();
@@ -447,7 +447,7 @@ bool DevConsole::Event_KeyDown(EventArgs& args)
 		return true;
 	}
 
-	if (asKey == kKeyCodeDownArrow)
+	if (asKey == KeyCodeDownArrow)
 	{
 		DevConsole* dc           = g_engine->m_devConsole;
 		int const   historyCount = (int)dc->m_commandHistory.size();

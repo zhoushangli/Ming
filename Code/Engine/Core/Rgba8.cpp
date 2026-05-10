@@ -3,22 +3,22 @@
 #include "Engine/Core/StringUtils.hpp"
 #include "Engine/Math/MathUtils.hpp"
 
-Rgba8 const Rgba8::kWhite             = Rgba8(255, 255, 255);
-Rgba8 const Rgba8::kBlack             = Rgba8(0, 0, 0);
-Rgba8 const Rgba8::kRed               = Rgba8(255, 0, 0);
-Rgba8 const Rgba8::kGreen             = Rgba8(0, 255, 0);
-Rgba8 const Rgba8::kBlue              = Rgba8(0, 0, 255);
-Rgba8 const Rgba8::kYellow            = Rgba8(255, 255, 0);
-Rgba8 const Rgba8::kCyan              = Rgba8(0, 255, 255);
-Rgba8 const Rgba8::kMagenta           = Rgba8(255, 0, 255);
-Rgba8 const Rgba8::kOrange            = Rgba8(255, 165, 0);
-Rgba8 const Rgba8::kPurple            = Rgba8(128, 0, 128);
-Rgba8 const Rgba8::kPink              = Rgba8(255, 182, 193);
-Rgba8 const Rgba8::kGray              = Rgba8(128, 128, 128);
-Rgba8 const Rgba8::kLightGray        = Rgba8(176, 176, 176);
-Rgba8 const Rgba8::kDarkGray         = Rgba8(32, 32, 32);
-Rgba8 const Rgba8::kTranslucentBlack = Rgba8(0, 0, 0, 128);
-Rgba8 const Rgba8::kTransparent       = Rgba8(0, 0, 0, 0);
+Rgba8 const Rgba8::White            = Rgba8(255, 255, 255);
+Rgba8 const Rgba8::Black            = Rgba8(0, 0, 0);
+Rgba8 const Rgba8::Red              = Rgba8(255, 0, 0);
+Rgba8 const Rgba8::Green            = Rgba8(0, 255, 0);
+Rgba8 const Rgba8::Blue             = Rgba8(0, 0, 255);
+Rgba8 const Rgba8::Yellow           = Rgba8(255, 255, 0);
+Rgba8 const Rgba8::Cyan             = Rgba8(0, 255, 255);
+Rgba8 const Rgba8::Magenta          = Rgba8(255, 0, 255);
+Rgba8 const Rgba8::Orange           = Rgba8(255, 165, 0);
+Rgba8 const Rgba8::Purple           = Rgba8(128, 0, 128);
+Rgba8 const Rgba8::Pink             = Rgba8(255, 182, 193);
+Rgba8 const Rgba8::Gray             = Rgba8(128, 128, 128);
+Rgba8 const Rgba8::LightGray        = Rgba8(176, 176, 176);
+Rgba8 const Rgba8::DarkGray         = Rgba8(32, 32, 32);
+Rgba8 const Rgba8::TranslucentBlack = Rgba8(0, 0, 0, 128);
+Rgba8 const Rgba8::Transparent      = Rgba8(0, 0, 0, 0);
 
 Rgba8::Rgba8() : r(255), g(255), b(255), a(255) {}
 

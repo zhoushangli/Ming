@@ -5,7 +5,7 @@ struct Vec3;
 struct IntVec3
 {
 public:
-	IntVec3() = default;
+	IntVec3()                        = default;
 	IntVec3(IntVec3 const& copyFrom) = default;
 	explicit IntVec3(Vec3 const& copyFrom);
 	explicit IntVec3(int initialX, int initialY, int initialZ);
@@ -24,5 +24,5 @@ public:
 	int y = 0;
 	int z = 0;
 
-	static IntVec3 const kZero;
+	static IntVec3 const Zero;
 };

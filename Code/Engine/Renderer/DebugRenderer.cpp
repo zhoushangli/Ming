@@ -44,23 +44,11 @@ struct DebugObject
 	DebugObject& operator=(DebugObject const& copy) = delete;
 
 	DebugObject(DebugObject&& other) noexcept
-		: type(other.type),
-		  mode(other.mode),
-		  totalDuration(other.totalDuration),
-		  remainingDuration(other.remainingDuration),
-		  startColor(other.startColor),
-		  endColor(other.endColor),
-		  start(other.start),
-		  end(other.end),
-		  center(other.center),
-		  radius(other.radius),
-		  transform(other.transform),
-		  text(std::move(other.text)),
-		  textHeight(other.textHeight),
-		  alignment(other.alignment),
-		  screenBox(other.screenBox),
-		  verts(std::move(other.verts)),
-		  vertexBuffer(other.vertexBuffer)
+		: type(other.type), mode(other.mode), totalDuration(other.totalDuration),
+		  remainingDuration(other.remainingDuration), startColor(other.startColor), endColor(other.endColor),
+		  start(other.start), end(other.end), center(other.center), radius(other.radius), transform(other.transform),
+		  text(std::move(other.text)), textHeight(other.textHeight), alignment(other.alignment),
+		  screenBox(other.screenBox), verts(std::move(other.verts)), vertexBuffer(other.vertexBuffer)
 	{
 		other.vertexBuffer = nullptr;
 	}
@@ -101,13 +89,13 @@ struct DebugObject
 	float totalDuration     = 0.f;
 	float remainingDuration = 0.f;
 
-	Rgba8 startColor = Rgba8::kWhite;
-	Rgba8 endColor   = Rgba8::kWhite;
+	Rgba8 startColor = Rgba8::White;
+	Rgba8 endColor   = Rgba8::White;
 
 	// geometry
-	Vec3  start  = Vec3::kZero;
-	Vec3  end    = Vec3::kZero;
-	Vec3  center = Vec3::kZero;
+	Vec3  start  = Vec3::Zero;
+	Vec3  end    = Vec3::Zero;
+	Vec3  center = Vec3::Zero;
 	float radius = 0.f;
 
 	// transform
@@ -328,18 +316,18 @@ void ApplyDebugRenderMode(Renderer* renderer, DebugObject const& obj)
 }
 
 void DrawWorldObject(
-	Renderer* renderer,
-	BitmapFont* font,
+	Renderer*     renderer,
+	BitmapFont*   font,
 	Camera const& camera,
-	DebugObject& obj,
-	Rgba8 const* overrideStartColor = nullptr,
-	Rgba8 const* overrideEndColor   = nullptr
+	DebugObject&  obj,
+	Rgba8 const*  overrideStartColor = nullptr,
+	Rgba8 const*  overrideEndColor   = nullptr
 )
 {
 	std::vector<Vertex> verts;
-	Texture* texture = nullptr;
-	Rgba8 const originalStartColor = obj.startColor;
-	Rgba8 const originalEndColor   = obj.endColor;
+	Texture*            texture            = nullptr;
+	Rgba8 const         originalStartColor = obj.startColor;
+	Rgba8 const         originalEndColor   = obj.endColor;
 
 	if (overrideStartColor != nullptr)
 	{
@@ -365,19 +353,23 @@ void DrawWorldObject(
 		{
 			if (IsUniformColorCachedWorldObject(obj))
 			{
-				verts = obj.verts;
+				verts       = obj.verts;
 				Rgba8 color = GetDebugObjectColor(obj);
 				for (Vertex& vert : verts)
 				{
 					vert.m_color = color;
 				}
-				renderer->CopyCPUToGPU(verts.data(), static_cast<unsigned int>(verts.size() * sizeof(Vertex)), obj.vertexBuffer);
+				renderer->CopyCPUToGPU(
+					verts.data(),
+					static_cast<unsigned int>(verts.size() * sizeof(Vertex)),
+					obj.vertexBuffer
+				);
 			}
 			renderer->BeginCamera(camera);
 			renderer->BindShader(nullptr);
 			renderer->BindTexture(nullptr);
 			renderer->BindSampler(SamplerMode::POINT_CLAMP);
-			renderer->BindModelConstants(Matrix4x4::kIdentity, Rgba8::kWhite);
+			renderer->BindModelConstants(Matrix4x4::Identity, Rgba8::White);
 			renderer->DrawVertexBuffer(obj.vertexBuffer);
 		}
 		break;
@@ -427,7 +419,7 @@ void DrawWorldObject(
 		renderer->BindShader(nullptr);
 		renderer->BindTexture(texture);
 		renderer->BindSampler(SamplerMode::POINT_CLAMP);
-		renderer->BindModelConstants(Matrix4x4::kIdentity, Rgba8::kWhite);
+		renderer->BindModelConstants(Matrix4x4::Identity, Rgba8::White);
 		renderer->DrawVertexArray(verts);
 	}
 }
@@ -477,7 +469,7 @@ void DrawScreenObject(
 	renderer->BindShader(nullptr);
 	renderer->BindTexture(font->GetTexture());
 	renderer->BindSampler(SamplerMode::POINT_CLAMP);
-	renderer->BindModelConstants(Matrix4x4::kIdentity, Rgba8::kWhite);
+	renderer->BindModelConstants(Matrix4x4::Identity, Rgba8::White);
 	renderer->DrawVertexArray(verts);
 }
 
@@ -571,15 +563,9 @@ void DebugAddWorldWireSphere(
 	DebugRenderMode mode
 )
 {
-	s_debugObjects.push_back(MakeWorldSphereObject(
-		DebugObjectType::WORLD_WIRE_SPHERE,
-		center,
-		radius,
-		duration,
-		startColor,
-		endColor,
-		mode
-	));
+	s_debugObjects.push_back(
+		MakeWorldSphereObject(DebugObjectType::WORLD_WIRE_SPHERE, center, radius, duration, startColor, endColor, mode)
+	);
 }
 
 void DebugAddWorldCylinder(
@@ -650,16 +636,9 @@ void DebugAddWorldCapsule(
 	DebugRenderMode mode
 )
 {
-	s_debugObjects.push_back(MakeWorldCapsuleObject(
-		DebugObjectType::WORLD_CAPSULE,
-		start,
-		end,
-		radius,
-		duration,
-		startColor,
-		endColor,
-		mode
-	));
+	s_debugObjects.push_back(
+		MakeWorldCapsuleObject(DebugObjectType::WORLD_CAPSULE, start, end, radius, duration, startColor, endColor, mode)
+	);
 }
 
 void DebugAddWorldWireCapsule(
@@ -694,16 +673,9 @@ void DebugAddWorldArrow(
 	DebugRenderMode mode
 )
 {
-	s_debugObjects.push_back(MakeWorldArrowObject(
-		DebugObjectType::WORLD_ARROW,
-		start,
-		end,
-		radius,
-		duration,
-		startColor,
-		endColor,
-		mode
-	));
+	s_debugObjects.push_back(
+		MakeWorldArrowObject(DebugObjectType::WORLD_ARROW, start, end, radius, duration, startColor, endColor, mode)
+	);
 }
 
 void DebugAddWorldWireArrow(
@@ -743,9 +715,9 @@ void DebugAddBasis(
 	Vec3 yEnd   = transform.TransformPosition3D(Vec3(0.f, length, 0.f));
 	Vec3 zEnd   = transform.TransformPosition3D(Vec3(0.f, 0.f, length));
 
-	Rgba8 xColor = Interpolate(Rgba8::kBlack, Rgba8::kRed, colorScale);
-	Rgba8 yColor = Interpolate(Rgba8::kBlack, Rgba8::kGreen, colorScale);
-	Rgba8 zColor = Interpolate(Rgba8::kBlack, Rgba8::kBlue, colorScale);
+	Rgba8 xColor = Interpolate(Rgba8::Black, Rgba8::Red, colorScale);
+	Rgba8 yColor = Interpolate(Rgba8::Black, Rgba8::Green, colorScale);
+	Rgba8 zColor = Interpolate(Rgba8::Black, Rgba8::Blue, colorScale);
 
 	xColor.a = (unsigned char)GetClamped((float)xColor.a * alphaScale, 0.f, 255.f);
 	yColor.a = (unsigned char)GetClamped((float)yColor.a * alphaScale, 0.f, 255.f);
@@ -856,7 +828,7 @@ void DebugAddWorldGrid(float duration, int halfExtent)
 	int const clampedHalfExtent = halfExtent < 0 ? 0 : halfExtent;
 
 	DebugObject object =
-		MakeDebugObject(DebugObjectType::WORLD_GRID, duration, Rgba8::kWhite, Rgba8::kWhite, DebugRenderMode::USE_DEPTH);
+		MakeDebugObject(DebugObjectType::WORLD_GRID, duration, Rgba8::White, Rgba8::White, DebugRenderMode::USE_DEPTH);
 	object.verts.clear();
 	object.verts.reserve((clampedHalfExtent * 2 + 1) * 2 * 36);
 
@@ -891,13 +863,13 @@ void DebugAddWorldGrid(float duration, int halfExtent)
 		float const lineOffset    = static_cast<float>(lineIndex);
 		float const halfThickness = lineThickness * 0.5f;
 
-		Rgba8 xParallelColor = Rgba8::kRed * brightness;
-		Rgba8 yParallelColor = Rgba8::kGreen * brightness;
+		Rgba8 xParallelColor = Rgba8::Red * brightness;
+		Rgba8 yParallelColor = Rgba8::Green * brightness;
 
 		if (!isAxis)
 		{
-			xParallelColor = Rgba8::kGray;
-			yParallelColor = Rgba8::kGray;
+			xParallelColor = Rgba8::Gray;
+			yParallelColor = Rgba8::Gray;
 		}
 
 		// Split each long strip into small segments along its length.
@@ -976,8 +948,8 @@ void DebugRenderWorld(const Camera& camera)
 		}
 
 		DebugRenderMode const originalMode = obj.mode;
-		Rgba8 startColor                   = obj.startColor;
-		Rgba8 endColor                     = obj.endColor;
+		Rgba8                 startColor   = obj.startColor;
+		Rgba8                 endColor     = obj.endColor;
 		startColor.a                       = (unsigned char)((float)startColor.a * xrayAlphaMultiplier);
 		endColor.a                         = (unsigned char)((float)endColor.a * xrayAlphaMultiplier);
 

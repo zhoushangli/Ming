@@ -149,7 +149,7 @@ Matrix4x4 Camera::GetOrthographicInverseMatrix() const
 	float n = m_orthographicNear;
 	float f = m_orthographicFar;
 
-	Matrix4x4 inverse               = Matrix4x4::kZero;
+	Matrix4x4 inverse               = Matrix4x4::Zero;
 	inverse.m_values[Matrix4x4::Ix] = (r - l) * 0.5f;
 	inverse.m_values[Matrix4x4::Jy] = (t - b) * 0.5f;
 	inverse.m_values[Matrix4x4::Kz] = (f - n);
@@ -172,7 +172,7 @@ Matrix4x4 Camera::GetPerspectiveInverseMatrix() const
 	float scaleZ     = zFar / (zFar - zNear);
 	float translateZ = (zNear * zFar) / (zNear - zFar);
 
-	Matrix4x4 inverse               = Matrix4x4::kZero;
+	Matrix4x4 inverse               = Matrix4x4::Zero;
 	inverse.m_values[Matrix4x4::Ix] = 1.0f / scaleX;
 	inverse.m_values[Matrix4x4::Jy] = 1.0f / scaleY;
 	inverse.m_values[Matrix4x4::Tz] = 1.0f;

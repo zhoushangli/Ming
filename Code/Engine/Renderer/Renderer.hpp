@@ -247,7 +247,7 @@ private:
 	void BindConstantBuffer(ConstantBuffer* constantBuffer, int slot);
 	void BindIndexBuffer(IndexBuffer* indexBuffer);
 
-	void SetViewport(IntVec2 dimensions, IntVec2 topLeft = IntVec2::kZero);
+	void SetViewport(IntVec2 dimensions, IntVec2 topLeft = IntVec2::Zero);
 
 private:
 	RendererConfig m_config;

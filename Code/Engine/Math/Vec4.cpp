@@ -2,20 +2,14 @@
 
 #include <math.h>
 
-const Vec4 Vec4::kZero = Vec4(0.f, 0.f, 0.f, 0.f);
-const Vec4 Vec4::kOne  = Vec4(1.f, 1.f, 1.f, 1.f);
+const Vec4 Vec4::Zero = Vec4(0.f, 0.f, 0.f, 0.f);
+const Vec4 Vec4::One  = Vec4(1.f, 1.f, 1.f, 1.f);
 
-Vec4::Vec4() = default;
+Vec4::Vec4()                  = default;
 Vec4::Vec4(Vec4 const& other) = default;
-Vec4::~Vec4() = default;
+Vec4::~Vec4()                 = default;
 
-Vec4::Vec4(float xVal, float yVal, float zVal, float wVal)
-	: x(xVal)
-	, y(yVal)
-	, z(zVal)
-	, w(wVal)
-{
-}
+Vec4::Vec4(float xVal, float yVal, float zVal, float wVal) : x(xVal), y(yVal), z(zVal), w(wVal) {}
 
 bool Vec4::operator==(Vec4 const& compare) const
 {
@@ -37,10 +31,7 @@ Vec4 const Vec4::operator-(Vec4 const& vecToSubtract) const
 	return Vec4(x - vecToSubtract.x, y - vecToSubtract.y, z - vecToSubtract.z, w - vecToSubtract.w);
 }
 
-Vec4 const Vec4::operator-() const
-{
-	return Vec4(-x, -y, -z, -w);
-}
+Vec4 const Vec4::operator-() const { return Vec4(-x, -y, -z, -w); }
 
 Vec4 const Vec4::operator*(float uniformScale) const
 {
@@ -107,22 +98,10 @@ Vec4 const operator*(float uniformScale, Vec4 const& vecToScale)
 	);
 }
 
-float Vec4::GetLength() const
-{
-	return sqrtf(GetLengthSquared());
-}
+float Vec4::GetLength() const { return sqrtf(GetLengthSquared()); }
 
-float Vec4::GetLengthSquared() const
-{
-	return x * x + y * y + z * z + w * w;
-}
+float Vec4::GetLengthSquared() const { return x * x + y * y + z * z + w * w; }
 
-void Vec4::Normalize()
-{
-    *this /= GetLength();
-}
+void Vec4::Normalize() { *this /= GetLength(); }
 
-Vec4 Vec4::GetNormalized() const
-{
-	return *this / GetLength();
-}
+Vec4 Vec4::GetNormalized() const { return *this / GetLength(); }

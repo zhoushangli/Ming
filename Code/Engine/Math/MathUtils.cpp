@@ -97,7 +97,9 @@ bool DoDiscsOverlap2D(Disc2 const& discA, Disc2 const& discB)
 	return DoDiscsOverlap2D(discA.m_center, discA.m_radius, discB.m_center, discB.m_radius);
 }
 
-bool DoDiscAndInfiniteLineOverlap2D(Vec2 const& discCenter, float discRadius, Vec2 const& lineStart, Vec2 const& lineEnd)
+bool DoDiscAndInfiniteLineOverlap2D(
+	Vec2 const& discCenter, float discRadius, Vec2 const& lineStart, Vec2 const& lineEnd
+)
 {
 	Vec2  nearestPoint = GetNearestPointOnInfiniteLine2D(discCenter, lineStart, lineEnd);
 	float distSquared  = GetDistanceSquared2D(discCenter, nearestPoint);
@@ -123,11 +125,11 @@ bool DoDiscAndLineOverlap2D(Disc2 const& disc, LineSegment2 const& line)
 
 bool DoDiscAndAABBOverlap2D(Vec2 const& discCenter, float discRadius, Vec2 const& boxMins, Vec2 const& boxMaxs)
 {
-	float nearestX = GetClamped(discCenter.x, boxMins.x, boxMaxs.x);
-	float nearestY = GetClamped(discCenter.y, boxMins.y, boxMaxs.y);
-	float dx       = discCenter.x - nearestX;
-	float dy       = discCenter.y - nearestY;
-	float distSquared = dx * dx + dy * dy;
+	float nearestX      = GetClamped(discCenter.x, boxMins.x, boxMaxs.x);
+	float nearestY      = GetClamped(discCenter.y, boxMins.y, boxMaxs.y);
+	float dx            = discCenter.x - nearestX;
+	float dy            = discCenter.y - nearestY;
+	float distSquared   = dx * dx + dy * dy;
 	float radiusSquared = discRadius * discRadius;
 	return distSquared < radiusSquared;
 }
@@ -841,7 +843,7 @@ Matrix4x4 GetBillboardTransform(
 
 	case BillboardType::WORLD_UP_FACING:
 	{
-		Vec3 worldUp      = Vec3::kUp;
+		Vec3 worldUp      = Vec3::Up;
 		Vec3 toTarget     = targetTransform.GetTranslation3D() - billboardPosition;
 		Vec3 toTargetOnXY = toTarget - GetProjectedVector3D(toTarget, worldUp);
 
@@ -852,7 +854,7 @@ Matrix4x4 GetBillboardTransform(
 
 			if (toTargetOnXY.GetLengthSquared() <= 1e-5f)
 			{
-				toTarget     = Vec3::kForward;
+				toTarget     = Vec3::Forward;
 				toTargetOnXY = toTarget - GetProjectedVector3D(toTarget, worldUp);
 			}
 		}
@@ -868,7 +870,7 @@ Matrix4x4 GetBillboardTransform(
 
 	case BillboardType::WORLD_UP_OPPOSING:
 	{
-		Vec3 worldUp        = Vec3::kUp;
+		Vec3 worldUp        = Vec3::Up;
 		Vec3 invTarget      = -targetTransform.GetIBasis3D();
 		Vec3 fromTargetOnXY = invTarget - GetProjectedVector3D(invTarget, worldUp);
 
@@ -879,7 +881,7 @@ Matrix4x4 GetBillboardTransform(
 
 			if (fromTargetOnXY.GetLengthSquared() <= 1e-5f)
 			{
-				invTarget      = Vec3::kForward;
+				invTarget      = Vec3::Forward;
 				fromTargetOnXY = invTarget - GetProjectedVector3D(invTarget, worldUp);
 			}
 		}
@@ -900,7 +902,7 @@ Matrix4x4 GetBillboardTransform(
 		Vec3 referenceUp = targetTransform.GetKBasis3D();
 		if (referenceUp.GetLengthSquared() <= 1e-5f)
 		{
-			referenceUp = Vec3::kUp;
+			referenceUp = Vec3::Up;
 		}
 
 		Vec3 jBasis = CrossProduct3D(referenceUp, iBasis);
@@ -911,7 +913,7 @@ Matrix4x4 GetBillboardTransform(
 
 			if (jBasis.GetLengthSquared() <= 1e-5f)
 			{
-				referenceUp = Vec3::kUp;
+				referenceUp = Vec3::Up;
 				jBasis      = CrossProduct3D(referenceUp, iBasis);
 			}
 		}
@@ -932,7 +934,7 @@ Matrix4x4 GetBillboardTransform(
 		Vec3 referenceUp = targetTransform.GetKBasis3D();
 		if (referenceUp.GetLengthSquared() <= 1e-5f)
 		{
-			referenceUp = Vec3::kUp;
+			referenceUp = Vec3::Up;
 		}
 
 		Vec3 jBasis = CrossProduct3D(referenceUp, iBasis);
@@ -943,7 +945,7 @@ Matrix4x4 GetBillboardTransform(
 
 			if (jBasis.GetLengthSquared() <= 1e-5f)
 			{
-				referenceUp = Vec3::kUp;
+				referenceUp = Vec3::Up;
 				jBasis      = CrossProduct3D(referenceUp, iBasis);
 			}
 		}
@@ -1000,9 +1002,9 @@ bool PushDiscOutOfFixedDisc2D(Disc2& discToPush, Disc2 const& fixedDisc)
 
 bool PushDiscsOutOfEachOther2D(Vec2& discCenterA, float discRadiusA, Vec2& discCenterB, float discRadiusB)
 {
-	Vec2  bToA = discCenterA - discCenterB;
-	float bToADist    = bToA.GetLength();
-	float minDist = discRadiusA + discRadiusB;
+	Vec2  bToA     = discCenterA - discCenterB;
+	float bToADist = bToA.GetLength();
+	float minDist  = discRadiusA + discRadiusB;
 
 	if (bToADist >= minDist || bToADist == 0.f)
 	{
@@ -1024,7 +1026,7 @@ bool PushDiscsOutOfEachOther2D(Disc2& discA, Disc2& discB)
 bool PushDiscOutOfFixedAABB2D(Vec2& discCenter, float discRadius, AABB2 const& box)
 {
 	float minDist             = 1e9f;
-	Vec2  minDir              = Vec2::kZero;
+	Vec2  minDir              = Vec2::Zero;
 	auto  UpdateMinDistAndDir = [&](float dist, Vec2 const& dir)
 	{
 		if (dist < minDist)

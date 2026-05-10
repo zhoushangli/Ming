@@ -2,7 +2,7 @@
 
 #include "Engine/Math/MathUtils.hpp"
 
-const AABB2 AABB2::kZero          = AABB2(0.f, 0.f, 0.f, 0.f);
+const AABB2 AABB2::Zero          = AABB2(0.f, 0.f, 0.f, 0.f);
 const AABB2 AABB2::kUnit          = AABB2(0.f, 0.f, 1.f, 1.f);
 const AABB2 AABB2::kCenteredUnit = AABB2(-0.5f, -0.5f, 0.5f, 0.5f);
 

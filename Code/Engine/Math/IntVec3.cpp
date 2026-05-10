@@ -6,7 +6,7 @@
 
 #include <string>
 
-IntVec3 const IntVec3::kZero = IntVec3(0, 0, 0);
+IntVec3 const IntVec3::Zero = IntVec3(0, 0, 0);
 
 IntVec3::IntVec3(Vec3 const& copyFrom)
 	: x(RoundDownToInt(copyFrom.x)), y(RoundDownToInt(copyFrom.y)), z(RoundDownToInt(copyFrom.z))
@@ -23,7 +23,8 @@ void IntVec3::SetFromText(char const* text)
 	size_t const      firstComma  = value.find(',');
 	size_t const      secondComma = value.find(',', firstComma == std::string::npos ? firstComma : firstComma + 1);
 	GUARANTEE_OR_DIE(
-		firstComma != std::string::npos && secondComma != std::string::npos && value.find(',', secondComma + 1) == std::string::npos,
+		firstComma != std::string::npos && secondComma != std::string::npos
+			&& value.find(',', secondComma + 1) == std::string::npos,
 		"IntVec3 text must be formatted as x,y,z"
 	);
 
@@ -36,7 +37,10 @@ bool IntVec3::operator==(IntVec3 const& compare) const { return x == compare.x &
 
 bool IntVec3::operator!=(IntVec3 const& compare) const { return !(*this == compare); }
 
-IntVec3 IntVec3::operator+(IntVec3 const& vecToAdd) const { return IntVec3(x + vecToAdd.x, y + vecToAdd.y, z + vecToAdd.z); }
+IntVec3 IntVec3::operator+(IntVec3 const& vecToAdd) const
+{
+	return IntVec3(x + vecToAdd.x, y + vecToAdd.y, z + vecToAdd.z);
+}
 
 IntVec3 IntVec3::operator-(IntVec3 const& vecToSubtract) const
 {

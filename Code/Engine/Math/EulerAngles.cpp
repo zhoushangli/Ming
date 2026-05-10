@@ -2,7 +2,7 @@
 #include "Engine/Math/MathUtils.hpp"
 #include "EulerAngles.hpp"
 
-const EulerAngles EulerAngles::kZero = EulerAngles(0.f, 0.f, 0.f);
+const EulerAngles EulerAngles::Zero = EulerAngles(0.f, 0.f, 0.f);
 
 EulerAngles::EulerAngles(float yawDegrees, float pitchDegrees, float rollDegrees)
 	: m_yawDegrees(yawDegrees), m_pitchDegrees(pitchDegrees), m_rollDegrees(rollDegrees)
@@ -97,10 +97,10 @@ void EulerAngles::SetFromMatrix_IFwd_JLeft_KUp(Matrix4x4 const& mat)
 
 void EulerAngles::SetForwardDir_IFwd(Vec3 const& forwardIBasis)
 {
-	Vec3 helperVector = Vec3::kUp;
-	if (DotProduct3D(forwardIBasis, Vec3::kUp) > 0.99f)
+	Vec3 helperVector = Vec3::Up;
+	if (DotProduct3D(forwardIBasis, Vec3::Up) > 0.99f)
 	{
-		helperVector = Vec3::kRight;
+		helperVector = Vec3::Right;
 	}
 
 	Vec3 leftJBasis = CrossProduct3D(helperVector, forwardIBasis);
@@ -109,7 +109,7 @@ void EulerAngles::SetForwardDir_IFwd(Vec3 const& forwardIBasis)
 	Vec3 upZBasis = CrossProduct3D(forwardIBasis, leftJBasis);
 	upZBasis.Normalize();
 
-	Matrix4x4 mat = Matrix4x4(forwardIBasis, leftJBasis, upZBasis, Vec3::kZero);
+	Matrix4x4 mat = Matrix4x4(forwardIBasis, leftJBasis, upZBasis, Vec3::Zero);
 	SetFromMatrix_IFwd_JLeft_KUp(mat);
 }
 
