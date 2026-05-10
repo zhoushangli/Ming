@@ -960,7 +960,9 @@ void Renderer::DrawIndexedVertexBuffer(VertexBuffer* vertexBuffer, IndexBuffer* 
 
 #pragma region Public: High-level bind helpers used by gameplay/render features
 
-void Renderer::BindTexture(Texture* textureOrNull) { BindTexture(textureOrNull, 0); }
+void Renderer::BindTexture(Texture* textureOrNull) { 
+	BindTexture(textureOrNull, 0); 
+}
 
 void Renderer::BindTexture(Texture* textureOrNull, unsigned int slot)
 {
