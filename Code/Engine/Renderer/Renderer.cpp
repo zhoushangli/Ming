@@ -982,6 +982,7 @@ void Renderer::BindTexture(Texture* textureOrNull, unsigned int slot)
 
 	ID3D11ShaderResourceView* srv = textureOrNull->m_shaderResourceView;
 	m_d3dDeviceContext->PSSetShaderResources(slot, 1, &srv);
+	m_d3dDeviceContext->VSSetShaderResources(slot, 1, &srv);
 }
 
 void Renderer::BindSampler(SamplerMode samplerMode, unsigned int slot)
@@ -994,6 +995,7 @@ void Renderer::BindSampler(SamplerMode samplerMode, unsigned int slot)
 	{
 		m_currentSamplerStates[slot] = samplerState;
 		m_d3dDeviceContext->PSSetSamplers(slot, 1, &samplerState);
+		m_d3dDeviceContext->VSSetSamplers(slot, 1, &samplerState);
 	}
 }
 
