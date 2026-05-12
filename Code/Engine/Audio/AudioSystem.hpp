@@ -69,7 +69,9 @@ public:
 		float       volume   = 1.0f,
 		float       balance  = 0.0f,
 		float       speed    = 1.0f,
-		bool        isPaused = false
+		bool        isPaused = false,
+		float       minDistance = 1.0f,
+		float       maxDistance = 10.0f
 	);
 	virtual void SetSoundPosition(SoundPlaybackID soundPlaybackID, const Vec3& soundPosition);
 	bool         IsPlaying(SoundPlaybackID soundPlaybackID);

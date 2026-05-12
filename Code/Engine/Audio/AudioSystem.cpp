@@ -15,6 +15,11 @@ FMOD_VECTOR EngineToFMODTransform(Vec3 const& position)
 	return fmod;
 }
 
+std::string GetSoundCacheKey(std::string const& soundFilePath, FMOD_MODE mode)
+{
+	return soundFilePath + "|" + std::to_string(static_cast<unsigned int>(mode));
+}
+
 } // namespace
 
 //-----------------------------------------------------------------------------------------------
@@ -83,7 +88,8 @@ void AudioSystem::EndFrame() {}
 //-----------------------------------------------------------------------------------------------
 SoundID AudioSystem::CreateOrGetSound(const std::string& soundFilePath, FMOD_MODE mode)
 {
-	std::map<std::string, SoundID>::iterator found = m_registeredSoundIDs.find(soundFilePath);
+	std::string const cacheKey = GetSoundCacheKey(soundFilePath, mode);
+	std::map<std::string, SoundID>::iterator found = m_registeredSoundIDs.find(cacheKey);
 	if (found != m_registeredSoundIDs.end())
 	{
 		return found->second;
@@ -94,8 +100,8 @@ SoundID AudioSystem::CreateOrGetSound(const std::string& soundFilePath, FMOD_MOD
 		m_fmodSystem->createSound(soundFilePath.c_str(), mode, nullptr, &newSound);
 		if (newSound)
 		{
-			SoundID newSoundID                  = m_registeredSounds.size();
-			m_registeredSoundIDs[soundFilePath] = newSoundID;
+			SoundID newSoundID             = m_registeredSounds.size();
+			m_registeredSoundIDs[cacheKey] = newSoundID;
 			m_registeredSounds.push_back(newSound);
 			return newSoundID;
 		}
@@ -225,13 +231,20 @@ void AudioSystem::UpdateListener(
 	FMOD_VECTOR fmodListenerForward  = EngineToFMODTransform(listenerForward);
 	FMOD_VECTOR fmodListenerUp       = EngineToFMODTransform(listenerUp);
 
-	m_fmodSystem->set3DListenerAttributes(
-		listenerIndex, &fmodListenerPosition, nullptr, &fmodListenerForward, &fmodListenerUp
-	);
+	m_fmodSystem
+		->set3DListenerAttributes(listenerIndex, &fmodListenerPosition, nullptr, &fmodListenerForward, &fmodListenerUp);
 }
 
 SoundPlaybackID AudioSystem::StartSoundAt(
-	SoundID soundID, const Vec3& soundPosition, bool isLooped, float volume, float balance, float speed, bool isPaused
+	SoundID     soundID,
+	const Vec3& soundPosition,
+	bool        isLooped,
+	float       volume,
+	float       balance,
+	float       speed,
+	bool        isPaused,
+	float       minDistance,
+	float       maxDistance
 )
 {
 	size_t numSounds = m_registeredSounds.size();
@@ -260,6 +273,7 @@ SoundPlaybackID AudioSystem::StartSoundAt(
 		channelAssignedToSound->setLoopCount(loopCount);
 		channelAssignedToSound->setPaused(isPaused);
 		channelAssignedToSound->set3DAttributes(&position, nullptr);
+		channelAssignedToSound->set3DMinMaxDistance(minDistance, maxDistance);
 	}
 
 	return (SoundPlaybackID)channelAssignedToSound;
