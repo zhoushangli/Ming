@@ -12,7 +12,7 @@
 
 typedef size_t   SoundID;
 typedef size_t   SoundPlaybackID;
-constexpr size_t kMissingSoundId = (size_t)(-1); // for bad SoundIDs and SoundPlaybackIDs
+constexpr size_t MissingSoundId = (size_t)(-1); // for bad SoundIDs and SoundPlaybackIDs
 
 class AudioSystem;
 
@@ -65,11 +65,11 @@ public:
 	virtual SoundPlaybackID StartSoundAt(
 		SoundID     soundID,
 		const Vec3& soundPosition,
-		bool        isLooped = false,
-		float       volume   = 1.0f,
-		float       balance  = 0.0f,
-		float       speed    = 1.0f,
-		bool        isPaused = false,
+		bool        isLooped    = false,
+		float       volume      = 1.0f,
+		float       balance     = 0.0f,
+		float       speed       = 1.0f,
+		bool        isPaused    = false,
 		float       minDistance = 1.0f,
 		float       maxDistance = 10.0f
 	);
