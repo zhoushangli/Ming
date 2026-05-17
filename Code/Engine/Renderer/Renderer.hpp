@@ -144,12 +144,13 @@ struct PostProcessConstants
 };
 static const int kPostProcessConstantsSlot = 4;
 
-struct SkyboxConstants
+struct FrameConstants
 {
 	float Time;
-	float Padding[3];
+	float DeltaSeconds;
+	float Padding[2];
 };
-static const int kSkyboxConstantsSlot = 5;
+static const int kFrameConstantsSlot = 5;
 
 class Renderer
 {
@@ -166,7 +167,7 @@ public:
 	void EndFrame();
 	void CreateRenderingContext();
 
-	void RenderSkybox(Camera const& camera, Shader* shader = nullptr, float time = 0.f);
+	void RenderSkybox(Camera const& camera, Shader* shader = nullptr, float time = 0.f, float deltaSeconds = 0.f);
 	void RenderPostProcess(Camera const& camera, int downsampleFactor = 1);
 
 	// Camera and pipeline state
@@ -196,7 +197,7 @@ public:
 	void
 	BindLightConstants(Vec3 const& sunDirection, float sunIntensity, Rgba8 const& ambientColor, float ambientIntensity);
 	void BindPostProcessConstants(Vec2 const& screenDimensions, float cameraNear, float cameraFar);
-	void BindSkyboxConstants(float time);
+	void BindFrameConstants(float time, float deltaSeconds);
 
 	// GPU resource creation and cache access
 	Shader* CreateOrGetShader(char const* shaderName);
@@ -265,7 +266,7 @@ private:
 	ConstantBuffer* m_cameraConstantBuffer      = nullptr;
 	ConstantBuffer* m_modelConstantBuffer       = nullptr;
 	ConstantBuffer* m_postProcessConstantBuffer = nullptr;
-	ConstantBuffer* m_skyboxConstantBuffer      = nullptr;
+	ConstantBuffer* m_frameConstantBuffer       = nullptr;
 
 	ID3D11Device*              m_d3dDevice           = nullptr;
 	ID3D11DeviceContext*       m_d3dDeviceContext    = nullptr;

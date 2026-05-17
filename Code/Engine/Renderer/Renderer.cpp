@@ -205,7 +205,7 @@ void           Renderer::Startup()
 	m_cameraConstantBuffer      = CreateConstantBuffer(sizeof(CameraConstants));
 	m_modelConstantBuffer       = CreateConstantBuffer(sizeof(ModelConstants));
 	m_postProcessConstantBuffer = CreateConstantBuffer(sizeof(PostProcessConstants));
-	m_skyboxConstantBuffer      = CreateConstantBuffer(sizeof(SkyboxConstants));
+	m_frameConstantBuffer       = CreateConstantBuffer(sizeof(FrameConstants));
 
 #pragma endregion
 
@@ -380,8 +380,8 @@ void Renderer::Shutdown()
 	delete m_postProcessConstantBuffer;
 	m_postProcessConstantBuffer = nullptr;
 
-	delete m_skyboxConstantBuffer;
-	m_skyboxConstantBuffer = nullptr;
+	delete m_frameConstantBuffer;
+	m_frameConstantBuffer = nullptr;
 
 	delete m_currentIndexBuffer;
 	m_currentIndexBuffer = nullptr;
@@ -521,7 +521,7 @@ void Renderer::EndFrame()
 	}
 }
 
-void Renderer::RenderSkybox(Camera const& camera, Shader* shader, float time)
+void Renderer::RenderSkybox(Camera const& camera, Shader* shader, float time, float deltaSeconds)
 {
 	IntVec2 const resolution = g_engine->m_window->GetClientDimensions();
 
@@ -535,7 +535,7 @@ void Renderer::RenderSkybox(Camera const& camera, Shader* shader, float time)
 	BindShader(shader);
 	BindTexture(CreateOrGetTexture("Data/Images/perlin_noise.png"), 3);
 	BindSampler(SamplerMode::BILINEAR_WRAP, 3);
-	BindSkyboxConstants(time);
+	BindFrameConstants(time, deltaSeconds);
 
 	m_d3dAnnotation->BeginEvent(L"Render Skybox");
 	DrawVertexArray(3, GetFullscreenTriangleBottomLeftUV());
@@ -1057,13 +1057,14 @@ void Renderer::BindPostProcessConstants(Vec2 const& screenDimensions, float near
 	BindConstantBuffer(m_postProcessConstantBuffer, kPostProcessConstantsSlot);
 }
 
-void Renderer::BindSkyboxConstants(float time)
+void Renderer::BindFrameConstants(float time, float deltaSeconds)
 {
-	SkyboxConstants skyboxData = SkyboxConstants();
-	skyboxData.Time            = time;
+	FrameConstants frameData = FrameConstants();
+	frameData.Time           = time;
+	frameData.DeltaSeconds   = deltaSeconds;
 
-	CopyCPUToGPU(&skyboxData, sizeof(skyboxData), m_skyboxConstantBuffer);
-	BindConstantBuffer(m_skyboxConstantBuffer, kSkyboxConstantsSlot);
+	CopyCPUToGPU(&frameData, sizeof(frameData), m_frameConstantBuffer);
+	BindConstantBuffer(m_frameConstantBuffer, kFrameConstantsSlot);
 }
 
 #pragma endregion
