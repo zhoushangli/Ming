@@ -1525,3 +1525,81 @@ Vec3 GetNearestPointOnCapsule3D(Vec3 referencePos, Capsule3 const& capsule)
 	Vec3 nearestPointOnBone = GetNearestPointOnLine3D(referencePos, capsule.m_start, capsule.m_end);
 	return GetNearestPointOnSphere3D(referencePos, nearestPointOnBone, capsule.m_radius);
 }
+
+// Use voronoi region-based closest point on triangle algorithm
+Vec3 GetNearestPointOnTriangle3D(Vec3 referencePos, Vec3 const& v0, Vec3 const& v1, Vec3 const& v2)
+{
+	Vec3 ab = v1 - v0;
+	Vec3 ac = v2 - v0;
+	Vec3 ap = referencePos - v0;
+
+	float d1 = DotProduct3D(ab, ap);
+	float d2 = DotProduct3D(ac, ap);
+
+	// closest to v0
+	if (d1 <= 0.f && d2 <= 0.f)
+	{
+		return v0;
+	}
+
+	Vec3  bp = referencePos - v1;
+	float d3 = DotProduct3D(ab, bp);
+	float d4 = DotProduct3D(ac, bp);
+
+	// closest to v1
+	if (d3 >= 0.f && d4 <= d3)
+	{
+		return v1;
+	}
+
+	// closest on edge v0-v1
+	float vc = d1 * d4 - d3 * d2;
+	if (vc <= 0.f && d1 >= 0.f && d3 <= 0.f)
+	{
+		float t = d1 / (d1 - d3);
+		return v0 + t * ab;
+	}
+
+	Vec3  cp = referencePos - v2;
+	float d5 = DotProduct3D(ab, cp);
+	float d6 = DotProduct3D(ac, cp);
+
+	// closest to v2
+	if (d6 >= 0.f && d5 <= d6)
+	{
+		return v2;
+	}
+
+	// closest on edge v0-v2
+	float vb = d5 * d2 - d1 * d6;
+	if (vb <= 0.f && d2 >= 0.f && d6 <= 0.f)
+	{
+		float t = d2 / (d2 - d6);
+		return v0 + t * ac;
+	}
+
+	// closest on edge v1-v2
+	float va = d3 * d6 - d5 * d4;
+	if (va <= 0.f && (d4 - d3) >= 0.f && (d5 - d6) >= 0.f)
+	{
+		float t = (d4 - d3) / ((d4 - d3) + (d5 - d6));
+		return v1 + t * (v2 - v1);
+	}
+
+	// inside face region
+	float denom = 1.f / (va + vb + vc);
+	float v     = vb * denom;
+	float w     = vc * denom;
+
+	return v0 + ab * v + ac * w;
+}
+
+Vec3 GetNearestPointOnTriangle3D(Vec3 referencePos, Triangle3 const& triangle)
+{
+	return GetNearestPointOnTriangle3D(
+		referencePos,
+		triangle.m_pointsCounterClockwise[0],
+		triangle.m_pointsCounterClockwise[1],
+		triangle.m_pointsCounterClockwise[2]
+	);
+}

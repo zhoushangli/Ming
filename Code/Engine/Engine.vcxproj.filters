@@ -198,6 +198,9 @@
     <ClCompile Include="Math\Sphere3.cpp">
       <Filter>Math\Shapes\3D</Filter>
     </ClCompile>
+    <ClCompile Include="Math\Triangle3.cpp">
+      <Filter>Math\Shapes\3D</Filter>
+    </ClCompile>
     <ClCompile Include="Core\Vertex.cpp">
       <Filter>Core</Filter>
     </ClCompile>
@@ -402,6 +405,9 @@
       <Filter>Math\Shapes\3D</Filter>
     </ClInclude>
     <ClInclude Include="Math\Sphere3.hpp">
+      <Filter>Math\Shapes\3D</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Triangle3.hpp">
       <Filter>Math\Shapes\3D</Filter>
     </ClInclude>
     <ClInclude Include="Core\Vertex.hpp">

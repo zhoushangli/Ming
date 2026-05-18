@@ -14,6 +14,7 @@
 #include "Engine/Math/OBB2.hpp"
 #include "Engine/Math/Sphere3.hpp"
 #include "Engine/Math/Triangle2.hpp"
+#include "Engine/Math/Triangle3.hpp"
 #include "Engine/Math/Vec2.hpp"
 #include "Engine/Math/Vec3.hpp"
 #include "Engine/Math/Vec4.hpp"
@@ -315,6 +316,8 @@ Vec3 GetNearestPointOnSphere3D(Vec3 referencePos, Vec3 const& sphereCenter, floa
 
 Vec3 GetNearestPointOnLine3D(Vec3 referencePos, Vec3 const& lineStart, Vec3 const& lineEnd);
 Vec3 GetNearestPointOnCapsule3D(Vec3 referencePos, Capsule3 const& capsule);
+Vec3 GetNearestPointOnTriangle3D(Vec3 referencePos, Vec3 const& v0, Vec3 const& v1, Vec3 const& v2);
+Vec3 GetNearestPointOnTriangle3D(Vec3 referencePos, Triangle3 const& triangle);
 
 #pragma endregion
 

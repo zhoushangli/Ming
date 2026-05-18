@@ -8,6 +8,7 @@
 #include "Engine/Math/FloatRange.hpp"
 #include "Engine/Math/Sphere3.hpp"
 #include "Engine/Math/Capsule3.hpp"
+#include "Engine/Math/Triangle3.hpp"
 
 struct RaycastResult2D
 {
@@ -106,4 +107,20 @@ RaycastResult3D RaycastVsCylinder3D(
     Vec3 const& cylinderStart,
     Vec3 const& cylinderEnd,
     float radiusXY
+);
+
+RaycastResult3D RaycastVsTriangle3D(
+    Vec3 rayStart,
+    Vec3 rayForwardNormal,
+    float rayLength,
+    Vec3 const& v0,
+    Vec3 const& v1,
+    Vec3 const& v2
+);
+
+RaycastResult3D RaycastVsTriangle3D(
+    Vec3 rayStart,
+    Vec3 rayForwardNormal,
+    float rayLength,
+    Triangle3 const& triangle
 );

@@ -2,6 +2,7 @@
 
 #include "Engine/Math/MathUtils.hpp"
 
+#include "RaycastUtils.hpp"
 #include <math.h>
 #include <utility>
 
@@ -515,4 +516,59 @@ RaycastResult3D RaycastVsCylinder3D(
 	worldResult.m_impactPos     = localToWorld.TransformPosition3D(localResult.m_impactPos);
 	worldResult.m_impactNormal  = localToWorld.TransformDirection3D(localResult.m_impactNormal);
 	return worldResult;
+}
+
+RaycastResult3D RaycastVsTriangle3D(
+	Vec3 rayStart, Vec3 rayForwardNormal, float rayLength, Vec3 const& v0, Vec3 const& v1, Vec3 const& v2
+)
+{
+	RaycastResult3D result(rayStart, rayForwardNormal, rayLength);
+
+	Vec3  edge1    = v1 - v0;
+	Vec3  edge2    = v2 - v0;
+	Vec3  T        = rayStart - v0;
+	Vec3  dCrossE2 = CrossProduct3D(rayForwardNormal, edge2);
+	Vec3  tCrossE1 = CrossProduct3D(T, edge1);
+	float det      = DotProduct3D(edge1, dCrossE2);
+
+	// Parrallel or backfacing
+	if (Abs(det) < 1e-9f)
+	{
+		return result;
+	}
+
+	float invDet = 1.f / det;
+	float u      = DotProduct3D(T, dCrossE2) * invDet;
+	float v      = DotProduct3D(rayForwardNormal, tCrossE1) * invDet;
+	float t      = DotProduct3D(edge2, tCrossE1) * invDet;
+
+	// didn't hit or hit beyond ray length
+	if (u < 0.f || u > 1.f || v < 0.f || u + v > 1.f || t < 0.f || t > rayLength)
+	{
+		return result;
+	}
+
+	result.m_didImpact    = true;
+	result.m_impactDist   = t;
+	result.m_impactPos    = rayStart + rayForwardNormal * t;
+	result.m_impactNormal = CrossProduct3D(edge1, edge2).GetNormalized();
+
+	if (DotProduct3D(result.m_impactNormal, rayForwardNormal) > 0.f)
+	{
+		result.m_impactNormal = -result.m_impactNormal;
+	}
+
+	return result;
+}
+
+RaycastResult3D RaycastVsTriangle3D(Vec3 rayStart, Vec3 rayForwardNormal, float rayLength, Triangle3 const& triangle)
+{
+	return RaycastVsTriangle3D(
+		rayStart,
+		rayForwardNormal,
+		rayLength,
+		triangle.m_pointsCounterClockwise[0],
+		triangle.m_pointsCounterClockwise[1],
+		triangle.m_pointsCounterClockwise[2]
+	);
 }
