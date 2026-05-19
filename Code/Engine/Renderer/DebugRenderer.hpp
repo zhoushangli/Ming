@@ -2,6 +2,7 @@
 
 #include "Engine/Core/Engine.hpp"
 #include "Engine/Core/EventSystem.hpp"
+#include "Engine/Math/AABB3.hpp"
 #include "Engine/Math/CylinderZ3.hpp"
 
 enum class DebugRenderMode
@@ -74,6 +75,40 @@ void DebugAddWorldWireCylinder(
 
 void DebugAddWorldWireCylinder(
 	const CylinderZ3& cylinder, const Rgba8& color, float duration, DebugRenderMode mode = DebugRenderMode::USE_DEPTH
+);
+
+void DebugAddWorldAABB(
+	const AABB3&     bounds,
+	float            duration,
+	const Rgba8&     startColor = Rgba8::White,
+	const Rgba8&     endColor   = Rgba8::White,
+	DebugRenderMode  mode       = DebugRenderMode::USE_DEPTH
+);
+
+void DebugAddWorldAABB(
+	const AABB3&     bounds,
+	const Matrix4x4& transform,
+	float            duration,
+	const Rgba8&     startColor = Rgba8::White,
+	const Rgba8&     endColor   = Rgba8::White,
+	DebugRenderMode  mode       = DebugRenderMode::USE_DEPTH
+);
+
+void DebugAddWorldWireAABB(
+	const AABB3&     bounds,
+	float            duration,
+	const Rgba8&     startColor = Rgba8::White,
+	const Rgba8&     endColor   = Rgba8::White,
+	DebugRenderMode  mode       = DebugRenderMode::USE_DEPTH
+);
+
+void DebugAddWorldWireAABB(
+	const AABB3&     bounds,
+	const Matrix4x4& transform,
+	float            duration,
+	const Rgba8&     startColor = Rgba8::White,
+	const Rgba8&     endColor   = Rgba8::White,
+	DebugRenderMode  mode       = DebugRenderMode::USE_DEPTH
 );
 
 void DebugAddWorldCapsule(

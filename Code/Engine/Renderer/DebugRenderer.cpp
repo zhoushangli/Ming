@@ -24,6 +24,8 @@ enum class DebugObjectType
 	WORLD_WIRE_CAPSULE,
 	WORLD_ARROW,
 	WORLD_WIRE_ARROW,
+	WORLD_AABB,
+	WORLD_WIRE_AABB,
 	WORLD_TEXT,
 	WORLD_BILLBOARD_TEXT,
 	WORLD_GRID,
@@ -226,6 +228,24 @@ DebugObject MakeWorldArrowObject(
 	return object;
 }
 
+DebugObject MakeWorldAABBObject(
+	DebugObjectType type,
+	AABB3 const&    bounds,
+	Matrix4x4 const& transform,
+	float           duration,
+	Rgba8 const&    startColor,
+	Rgba8 const&    endColor,
+	DebugRenderMode mode
+)
+{
+	DebugObject object = MakeDebugObject(type, duration, startColor, endColor, mode);
+	object.transform   = transform;
+	AddVertsForAABB3D(object.verts, bounds, startColor);
+	TransformVertexArray3D(object.verts, transform);
+	CreateVertexBufferForObject(object);
+	return object;
+}
+
 Rgba8 GetDebugObjectColor(DebugObject const& obj)
 {
 	if (obj.totalDuration < 0.f)
@@ -255,6 +275,8 @@ bool IsUniformColorCachedWorldObject(DebugObject const& obj)
 	case DebugObjectType::WORLD_WIRE_CAPSULE:
 	case DebugObjectType::WORLD_ARROW:
 	case DebugObjectType::WORLD_WIRE_ARROW:
+	case DebugObjectType::WORLD_AABB:
+	case DebugObjectType::WORLD_WIRE_AABB:
 		return true;
 
 	default:
@@ -305,6 +327,7 @@ void ApplyDebugRenderMode(Renderer* renderer, DebugObject const& obj)
 		case DebugObjectType::WORLD_WIRE_CYLINDER:
 		case DebugObjectType::WORLD_WIRE_CAPSULE:
 		case DebugObjectType::WORLD_WIRE_ARROW:
+		case DebugObjectType::WORLD_WIRE_AABB:
 			renderer->SetRasterizerMode(RasterizerMode::WIREFRAME_CULL_NONE);
 			break;
 
@@ -348,6 +371,8 @@ void DrawWorldObject(
 	case DebugObjectType::WORLD_WIRE_CAPSULE:
 	case DebugObjectType::WORLD_ARROW:
 	case DebugObjectType::WORLD_WIRE_ARROW:
+	case DebugObjectType::WORLD_AABB:
+	case DebugObjectType::WORLD_WIRE_AABB:
 	case DebugObjectType::WORLD_GRID:
 		if (obj.vertexBuffer != nullptr)
 		{
@@ -624,6 +649,64 @@ void DebugAddWorldWireCylinder(const CylinderZ3& cylinder, const Rgba8& color, f
 		color,
 		mode
 	));
+}
+
+void DebugAddWorldAABB(
+	const AABB3&    bounds,
+	float           duration,
+	const Rgba8&    startColor,
+	const Rgba8&    endColor,
+	DebugRenderMode mode
+)
+{
+	s_debugObjects.push_back(
+		MakeWorldAABBObject(DebugObjectType::WORLD_AABB, bounds, Matrix4x4::Identity, duration, startColor, endColor, mode)
+	);
+}
+
+void DebugAddWorldAABB(
+	const AABB3&     bounds,
+	const Matrix4x4& transform,
+	float            duration,
+	const Rgba8&     startColor,
+	const Rgba8&     endColor,
+	DebugRenderMode  mode
+)
+{
+	s_debugObjects.push_back(MakeWorldAABBObject(DebugObjectType::WORLD_AABB, bounds, transform, duration, startColor, endColor, mode));
+}
+
+void DebugAddWorldWireAABB(
+	const AABB3&    bounds,
+	float           duration,
+	const Rgba8&    startColor,
+	const Rgba8&    endColor,
+	DebugRenderMode mode
+)
+{
+	s_debugObjects.push_back(MakeWorldAABBObject(
+		DebugObjectType::WORLD_WIRE_AABB,
+		bounds,
+		Matrix4x4::Identity,
+		duration,
+		startColor,
+		endColor,
+		mode
+	));
+}
+
+void DebugAddWorldWireAABB(
+	const AABB3&     bounds,
+	const Matrix4x4& transform,
+	float            duration,
+	const Rgba8&     startColor,
+	const Rgba8&     endColor,
+	DebugRenderMode  mode
+)
+{
+	s_debugObjects.push_back(
+		MakeWorldAABBObject(DebugObjectType::WORLD_WIRE_AABB, bounds, transform, duration, startColor, endColor, mode)
+	);
 }
 
 void DebugAddWorldCapsule(
