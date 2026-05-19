@@ -710,14 +710,18 @@ void DebugAddBasis(
 	DebugRenderMode  mode
 )
 {
+	Rgba8 const kAxisXColor(255, 70, 105, 255);
+	Rgba8 const kAxisYColor(155, 225, 20, 255);
+	Rgba8 const kAxisZColor(55, 160, 255, 255);
+
 	Vec3 origin = transform.GetTranslation3D();
 	Vec3 xEnd   = transform.TransformPosition3D(Vec3(length, 0.f, 0.f));
 	Vec3 yEnd   = transform.TransformPosition3D(Vec3(0.f, length, 0.f));
 	Vec3 zEnd   = transform.TransformPosition3D(Vec3(0.f, 0.f, length));
 
-	Rgba8 xColor = Interpolate(Rgba8::Black, Rgba8::Red, colorScale);
-	Rgba8 yColor = Interpolate(Rgba8::Black, Rgba8::Green, colorScale);
-	Rgba8 zColor = Interpolate(Rgba8::Black, Rgba8::Blue, colorScale);
+	Rgba8 xColor = Interpolate(Rgba8::Black, kAxisXColor, colorScale);
+	Rgba8 yColor = Interpolate(Rgba8::Black, kAxisYColor, colorScale);
+	Rgba8 zColor = Interpolate(Rgba8::Black, kAxisZColor, colorScale);
 
 	xColor.a = (unsigned char)GetClamped((float)xColor.a * alphaScale, 0.f, 255.f);
 	yColor.a = (unsigned char)GetClamped((float)yColor.a * alphaScale, 0.f, 255.f);
@@ -807,23 +811,26 @@ void DebugAddMessage(
 
 void DebugAddWorldGrid(float duration, int halfExtent)
 {
+	Rgba8 const kAxisXColor(255, 70, 105, 255);
+	Rgba8 const kAxisYColor(155, 225, 20, 255);
+
 	// Configurable parameters for grid generation.
-	constexpr float kLineHeight = 0.01f;
+	const float kLineHeight = 0.01f;
 
 	// Thickness: only Base + Axis (Major treated same as Base)
-	constexpr float kBaseThickness = 0.005f;
-	constexpr float kAxisThickness = 0.02f;
+	const float kBaseThickness = 0.002f;
+	const float kAxisThickness = 0.01f;
 
 	// Brightness: only Base + Axis (Major treated same as Base)
-	constexpr float kBaseBrightness = 0.25f;
-	constexpr float kAxisBrightness = 1.f;
+	const float kBaseBrightness = 0.25f;
+	const float kAxisBrightness = 1.f;
 
 	// Fade settings (hard-coded)
-	constexpr float kFadeStart = 10.f;
-	constexpr float kFadeEnd   = 30.f;
+	const float kFadeStart = 10.f;
+	const float kFadeEnd   = 30.f;
 
 	// Segment size (hard-coded): smaller => smoother fade, more verts
-	constexpr float kSegmentLength = 1.f;
+	const float kSegmentLength = 1.f;
 
 	int const clampedHalfExtent = halfExtent < 0 ? 0 : halfExtent;
 
@@ -863,8 +870,8 @@ void DebugAddWorldGrid(float duration, int halfExtent)
 		float const lineOffset    = static_cast<float>(lineIndex);
 		float const halfThickness = lineThickness * 0.5f;
 
-		Rgba8 xParallelColor = Rgba8::Red * brightness;
-		Rgba8 yParallelColor = Rgba8::Green * brightness;
+		Rgba8 xParallelColor = kAxisXColor * brightness;
+		Rgba8 yParallelColor = kAxisYColor * brightness;
 
 		if (!isAxis)
 		{
