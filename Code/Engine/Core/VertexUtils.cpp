@@ -287,13 +287,17 @@ void AddVertsForQuad3D(
 	Vec2 uvMins = UVs.m_mins;
 	Vec2 uvMaxs = UVs.m_maxs;
 
-	verts.emplace_back(bottomLeft, color, Vec2(uvMins.x, uvMins.y));
-	verts.emplace_back(bottomRight, color, Vec2(uvMaxs.x, uvMins.y));
-	verts.emplace_back(topRight, color, Vec2(uvMaxs.x, uvMaxs.y));
+	Vec3 const tangent   = (bottomRight - bottomLeft).GetNormalized();
+	Vec3 const bitangent = (topLeft - bottomLeft).GetNormalized();
+	Vec3 const normal    = CrossProduct3D(tangent, bitangent).GetNormalized();
 
-	verts.emplace_back(bottomLeft, color, Vec2(uvMins.x, uvMins.y));
-	verts.emplace_back(topRight, color, Vec2(uvMaxs.x, uvMaxs.y));
-	verts.emplace_back(topLeft, color, Vec2(uvMins.x, uvMaxs.y));
+	verts.emplace_back(bottomLeft, color, Vec2(uvMins.x, uvMins.y), tangent, bitangent, normal);
+	verts.emplace_back(bottomRight, color, Vec2(uvMaxs.x, uvMins.y), tangent, bitangent, normal);
+	verts.emplace_back(topRight, color, Vec2(uvMaxs.x, uvMaxs.y), tangent, bitangent, normal);
+
+	verts.emplace_back(bottomLeft, color, Vec2(uvMins.x, uvMins.y), tangent, bitangent, normal);
+	verts.emplace_back(topRight, color, Vec2(uvMaxs.x, uvMaxs.y), tangent, bitangent, normal);
+	verts.emplace_back(topLeft, color, Vec2(uvMins.x, uvMaxs.y), tangent, bitangent, normal);
 }
 
 void AddVertsForQuad3D(
