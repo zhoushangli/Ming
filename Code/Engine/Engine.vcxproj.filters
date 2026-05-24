@@ -28,6 +28,9 @@
     <Filter Include="Math\Shapes\3D">
       <UniqueIdentifier>{d65801d4-5b4c-4b6b-81fa-28a0dfbe43ef}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ThirdParty">
+      <UniqueIdentifier>{81c4102d-70cc-4b9c-9e48-b9d63a36499e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\Engine\Code\Engine\Math\Vec2.cpp">
@@ -112,9 +115,6 @@
       <Filter>Core</Filter>
     </ClCompile>
     <ClCompile Include="Core\EngineCommon.cpp">
-      <Filter>Core</Filter>
-    </ClCompile>
-    <ClCompile Include="..\ThirdParty\tinyxml2\tinyxml2.cpp">
       <Filter>Core</Filter>
     </ClCompile>
     <ClCompile Include="Renderer\BitmapFont.cpp">
@@ -210,6 +210,9 @@
     <ClCompile Include="Math\IntVec3.cpp">
       <Filter>Math</Filter>
     </ClCompile>
+    <ClCompile Include="..\ThirdParty\tinyxml2\tinyxml2.cpp">
+      <Filter>ThirdParty</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\Engine\Code\Engine\Math\Vec2.hpp">
@@ -272,30 +275,6 @@
     <ClInclude Include="Renderer\SimpleTriangleFont.hpp">
       <Filter>Renderer</Filter>
     </ClInclude>
-    <ClInclude Include="..\ThirdParty\fmod\fmod.h">
-      <Filter>Audio</Filter>
-    </ClInclude>
-    <ClInclude Include="..\ThirdParty\fmod\fmod.hpp">
-      <Filter>Audio</Filter>
-    </ClInclude>
-    <ClInclude Include="..\ThirdParty\fmod\fmod_codec.h">
-      <Filter>Audio</Filter>
-    </ClInclude>
-    <ClInclude Include="..\ThirdParty\fmod\fmod_common.h">
-      <Filter>Audio</Filter>
-    </ClInclude>
-    <ClInclude Include="..\ThirdParty\fmod\fmod_dsp.h">
-      <Filter>Audio</Filter>
-    </ClInclude>
-    <ClInclude Include="..\ThirdParty\fmod\fmod_dsp_effects.h">
-      <Filter>Audio</Filter>
-    </ClInclude>
-    <ClInclude Include="..\ThirdParty\fmod\fmod_errors.h">
-      <Filter>Audio</Filter>
-    </ClInclude>
-    <ClInclude Include="..\ThirdParty\fmod\fmod_output.h">
-      <Filter>Audio</Filter>
-    </ClInclude>
     <ClInclude Include="Math\FloatRange.hpp">
       <Filter>Math</Filter>
     </ClInclude>
@@ -305,9 +284,6 @@
     <ClInclude Include="Math\MathCommon.hpp">
       <Filter>Math</Filter>
     </ClInclude>
-    <ClInclude Include="..\ThirdParty\stb\stb_image.h">
-      <Filter>Core</Filter>
-    </ClInclude>
     <ClInclude Include="Renderer\Texture.hpp">
       <Filter>Renderer</Filter>
     </ClInclude>
@@ -315,9 +291,6 @@
       <Filter>Math</Filter>
     </ClInclude>
     <ClInclude Include="Core\XmlUtils.hpp">
-      <Filter>Core</Filter>
-    </ClInclude>
-    <ClInclude Include="..\ThirdParty\tinyxml2\tinyxml2.h">
       <Filter>Core</Filter>
     </ClInclude>
     <ClInclude Include="Core\NamedStrings.hpp">
@@ -418,6 +391,48 @@
     </ClInclude>
     <ClInclude Include="Math\IntVec3.hpp">
       <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ThirdParty\fmod\fmod.h">
+      <Filter>ThirdParty</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ThirdParty\fmod\fmod.hpp">
+      <Filter>ThirdParty</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ThirdParty\fmod\fmod_codec.h">
+      <Filter>ThirdParty</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ThirdParty\fmod\fmod_common.h">
+      <Filter>ThirdParty</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ThirdParty\fmod\fmod_dsp.h">
+      <Filter>ThirdParty</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ThirdParty\fmod\fmod_dsp_effects.h">
+      <Filter>ThirdParty</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ThirdParty\fmod\fmod_errors.h">
+      <Filter>ThirdParty</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ThirdParty\fmod\fmod_output.h">
+      <Filter>ThirdParty</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ThirdParty\FastNoiseLite\FastNoiseLite.h">
+      <Filter>ThirdParty</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ThirdParty\nlohmann\json.hpp">
+      <Filter>ThirdParty</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ThirdParty\tinygltf\tiny_gltf_v3.h">
+      <Filter>ThirdParty</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ThirdParty\tinygltf\tinygltf_json.h">
+      <Filter>ThirdParty</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ThirdParty\tinyxml2\tinyxml2.h">
+      <Filter>ThirdParty</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ThirdParty\stb\stb_image.h">
+      <Filter>ThirdParty</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

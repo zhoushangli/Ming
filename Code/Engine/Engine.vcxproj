@@ -308,6 +308,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\Engine\Code\Engine\Math\Vec2.hpp" />
+    <ClInclude Include="..\ThirdParty\FastNoiseLite\FastNoiseLite.h" />
     <ClInclude Include="..\ThirdParty\fmod\fmod.h" />
     <ClInclude Include="..\ThirdParty\fmod\fmod.hpp" />
     <ClInclude Include="..\ThirdParty\fmod\fmod_codec.h" />
@@ -316,7 +317,10 @@
     <ClInclude Include="..\ThirdParty\fmod\fmod_dsp_effects.h" />
     <ClInclude Include="..\ThirdParty\fmod\fmod_errors.h" />
     <ClInclude Include="..\ThirdParty\fmod\fmod_output.h" />
+    <ClInclude Include="..\ThirdParty\nlohmann\json.hpp" />
     <ClInclude Include="..\ThirdParty\stb\stb_image.h" />
+    <ClInclude Include="..\ThirdParty\tinygltf\tinygltf_json.h" />
+    <ClInclude Include="..\ThirdParty\tinygltf\tiny_gltf_v3.h" />
     <ClInclude Include="..\ThirdParty\tinyxml2\tinyxml2.h" />
     <ClInclude Include="Audio\AudioSystem.hpp" />
     <ClInclude Include="Core\Clock.hpp" />
