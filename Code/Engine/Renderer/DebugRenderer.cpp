@@ -922,7 +922,7 @@ void DebugAddWorldGrid(float duration, int halfExtent)
 	object.verts.clear();
 	object.verts.reserve((clampedHalfExtent * 2 + 1) * 2 * 36);
 
-	auto ComputeAlphaForDistance = [](float d) -> unsigned char
+	auto ComputeAlphaForDistance = [&](float d) -> unsigned char
 	{
 		float a = RangeMapClamped(d, kFadeStart, kFadeEnd, 255.f, 0.f);
 		return (unsigned char)GetClamped(a, 0.f, 255.f);
