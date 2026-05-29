@@ -76,12 +76,7 @@ float SpriteDefinition::GetAspect() const
 
 // SpriteSheet
 SpriteSheet::SpriteSheet(Texture* colorTexture, IntVec2 const& dimension)
-    : SpriteSheet(colorTexture, nullptr, dimension)
-{
-}
-
-SpriteSheet::SpriteSheet(Texture* colorTexture, Texture* emissiveTexture, IntVec2 const& dimension)
-    : m_colorTexture(colorTexture), m_emissiveTexture(emissiveTexture), m_dimension(dimension)
+    : m_dimension(dimension), m_colorTexture(colorTexture)
 {
     GUARANTEE_OR_DIE(m_colorTexture != nullptr, "SpriteSheet requires a color texture");
 
@@ -110,11 +105,6 @@ SpriteSheet::SpriteSheet(Texture* colorTexture, Texture* emissiveTexture, IntVec
 Texture* SpriteSheet::GetTexture() const
 {
     return m_colorTexture;
-}
-
-Texture* SpriteSheet::GetEmissiveTexture() const
-{
-    return m_emissiveTexture;
 }
 
 int SpriteSheet::GetNumSprites() const

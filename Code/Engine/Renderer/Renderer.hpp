@@ -41,8 +41,7 @@ struct ID3D11DepthStencilState;
 
 namespace SurfaceTextureSlot
 {
-static const unsigned int Diffuse  = 0;
-static const unsigned int Emissive = 1;
+static const unsigned int Diffuse = 0;
 } // namespace SurfaceTextureSlot
 
 namespace PostProcessTextureSlot
@@ -50,7 +49,6 @@ namespace PostProcessTextureSlot
 static const unsigned int kColor            = 0;
 static const unsigned int kDepth            = 1;
 static const unsigned int kNormal           = 2;
-static const unsigned int kEmissive         = 3;
 static const unsigned int kCustomInputStart = 8;
 static const unsigned int kMaxSamplerSlots  = 16;
 } // namespace PostProcessTextureSlot
@@ -300,7 +298,6 @@ private:
 	Texture* m_sceneColorTexture     = nullptr;
 	Texture* m_sceneDepthTexture     = nullptr;
 	Texture* m_sceneNormalTexture    = nullptr;
-	Texture* m_sceneEmissiveTexture  = nullptr;
 	Texture* m_postProcessTextureA   = nullptr;
 	Texture* m_postProcessTextureB   = nullptr;
 	Shader*  m_postProcessCopyShader = nullptr;

@@ -61,10 +61,8 @@ class SpriteSheet
 {
 public:
 	explicit SpriteSheet(Texture* colorTexture, IntVec2 const& dimension);
-	explicit SpriteSheet(Texture* colorTexture, Texture* emissiveTexture, IntVec2 const& dimension);
 
 	Texture*                GetTexture() const;
-	Texture*                GetEmissiveTexture() const;
 	int                     GetNumSprites() const;
 	SpriteDefinition const& GetSpriteDef(int spriteIndex) const;
 	void                    GetSpriteUVs(Vec2& out_uvAtMins, Vec2& out_uvAtMaxs, int spriteIndex) const;
@@ -73,7 +71,6 @@ public:
 
 protected:
 	IntVec2                       m_dimension;
-	Texture*                      m_colorTexture    = nullptr;
-	Texture*                      m_emissiveTexture = nullptr;
+	Texture*                      m_colorTexture = nullptr;
 	std::vector<SpriteDefinition> m_spriteDefs;
 };
