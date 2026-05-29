@@ -434,5 +434,11 @@
     <ClInclude Include="..\ThirdParty\stb\stb_image.h">
       <Filter>ThirdParty</Filter>
     </ClInclude>
+    <ClInclude Include="..\ThirdParty\GLFW\glfw3.h">
+      <Filter>ThirdParty</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ThirdParty\GLFW\glfw3native.h">
+      <Filter>ThirdParty</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

@@ -309,7 +309,7 @@ void DevConsole::HandleInput(unsigned char asKey)
 
 bool DevConsole::Event_KeyDown(EventArgs& args)
 {
-	unsigned char asKey = (unsigned char)std::stoi(args.GetValue("asKey", "0"));
+	int asKey = std::stoi(args.GetValue("asKey", "0"));
 
 	if (asKey == KeyCodeTilde)
 	{

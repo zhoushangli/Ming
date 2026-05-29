@@ -2,6 +2,8 @@
 
 #include "Engine/Math/Vec2.hpp"
 
+struct GLFWwindow;
+
 #include <string>
 
 struct WindowConfig
@@ -23,18 +25,17 @@ public:
 	void BeginFrame();
 	void EndFrame();
 
-	Vec2 GetNormalizedMouseUV() const;
-
-	void*   GetHwnd() const;
-	IntVec2 GetClientDimensions() const;
+	GLFWwindow* GetGLFWWindow() const;
+	void*       GetHwnd() const;
+	IntVec2     GetClientDimensions() const;
 
 private:
-	void CreateOSWindow();
+	void CreateGLFWWindow();
 	void RunMessagePump();
 
 public:
-	void* m_windowHandle         = 0;
-	void* m_displayDeviceContext = 0;
+	void*       m_windowHandle = 0;
+	GLFWwindow* m_glfwWindow   = nullptr;
 
 private:
 	WindowConfig m_config;

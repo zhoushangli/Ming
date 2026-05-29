@@ -4,42 +4,47 @@
 #include "Engine/Core/ErrorWarningAssert.hpp"
 #include "Engine/Math/MathUtils.hpp"
 
-#include <Windows.h>
+#define WIN32_LEAN_AND_MEAN
+#define GLFW_EXPOSE_NATIVE_WIN32
+#include "ThirdParty/GLFW/glfw3.h"
+#include "ThirdParty/GLFW/glfw3native.h"
 
-unsigned char const KeyCodeF1         = VK_F1;
-unsigned char const KeyCodeF2         = VK_F2;
-unsigned char const KeyCodeF3         = VK_F3;
-unsigned char const KeyCodeF4         = VK_F4;
-unsigned char const KeyCodeF5         = VK_F5;
-unsigned char const KeyCodeF6         = VK_F6;
-unsigned char const KeyCodeF7         = VK_F7;
-unsigned char const KeyCodeF8         = VK_F8;
-unsigned char const KeyCodeF9         = VK_F9;
-unsigned char const KeyCodeF10        = VK_F10;
-unsigned char const KeyCodeF11        = VK_F11;
-unsigned char const KeyCodeF12        = VK_F12;
-unsigned char const KeyCodeTilde      = VK_OEM_3;
-unsigned char const KeyCodeEsc        = VK_ESCAPE;
-unsigned char const KeyCodeUpArrow    = VK_UP;
-unsigned char const KeyCodeDownArrow  = VK_DOWN;
-unsigned char const KeyCodeLeftArrow  = VK_LEFT;
-unsigned char const KeyCodeRightArrow = VK_RIGHT;
-unsigned char const KeyCodeLeftMouse  = VK_LBUTTON;
-unsigned char const KeyCodeRightMouse = VK_RBUTTON;
+static_assert(LastGlfwKeyCode == GLFW_KEY_LAST);
 
-unsigned char const KeyCodeShift     = VK_SHIFT;
-unsigned char const KeyCodeEnter     = VK_RETURN;
-unsigned char const KeyCodeBackspace = VK_BACK;
-unsigned char const KeyCodeInsert    = VK_INSERT;
-unsigned char const KeyCodeDelete    = VK_DELETE;
-unsigned char const KeyCodeHome      = VK_HOME;
-unsigned char const KeyCodeEnd       = VK_END;
+int const KeyCodeF1         = GLFW_KEY_F1;
+int const KeyCodeF2         = GLFW_KEY_F2;
+int const KeyCodeF3         = GLFW_KEY_F3;
+int const KeyCodeF4         = GLFW_KEY_F4;
+int const KeyCodeF5         = GLFW_KEY_F5;
+int const KeyCodeF6         = GLFW_KEY_F6;
+int const KeyCodeF7         = GLFW_KEY_F7;
+int const KeyCodeF8         = GLFW_KEY_F8;
+int const KeyCodeF9         = GLFW_KEY_F9;
+int const KeyCodeF10        = GLFW_KEY_F10;
+int const KeyCodeF11        = GLFW_KEY_F11;
+int const KeyCodeF12        = GLFW_KEY_F12;
+int const KeyCodeTilde      = GLFW_KEY_GRAVE_ACCENT;
+int const KeyCodeEsc        = GLFW_KEY_ESCAPE;
+int const KeyCodeUpArrow    = GLFW_KEY_UP;
+int const KeyCodeDownArrow  = GLFW_KEY_DOWN;
+int const KeyCodeLeftArrow  = GLFW_KEY_LEFT;
+int const KeyCodeRightArrow = GLFW_KEY_RIGHT;
+int const KeyCodeLeftMouse  = GLFW_KEY_LAST + 1;
+int const KeyCodeRightMouse = GLFW_KEY_LAST + 2;
+
+int const KeyCodeShift     = GLFW_KEY_LEFT_SHIFT;
+int const KeyCodeEnter     = GLFW_KEY_ENTER;
+int const KeyCodeBackspace = GLFW_KEY_BACKSPACE;
+int const KeyCodeInsert    = GLFW_KEY_INSERT;
+int const KeyCodeDelete    = GLFW_KEY_DELETE;
+int const KeyCodeHome      = GLFW_KEY_HOME;
+int const KeyCodeEnd       = GLFW_KEY_END;
 
 InputSystem::InputSystem(InputConfig config) : m_config(config) {}
 
 InputSystem::~InputSystem()
 {
-	for (int key = 0; key < 256; ++key)
+	for (int key = 0; key < NumKeyCodes; ++key)
 	{
 		m_keyStates[key].m_state     = false;
 		m_keyStates[key].m_prevState = false;
@@ -48,7 +53,7 @@ InputSystem::~InputSystem()
 
 void InputSystem::Startup()
 {
-	for (int key = 0; key < 256; ++key)
+	for (int key = 0; key < NumKeyCodes; ++key)
 	{
 		m_keyStates[key].m_state     = false;
 		m_keyStates[key].m_prevState = false;
@@ -63,7 +68,7 @@ void InputSystem::Shutdown()
 	g_engine->m_eventSystem->UnsubscribeEventCallbackFunction("KeyDown", Event_KeyDown);
 	g_engine->m_eventSystem->UnsubscribeEventCallbackFunction("KeyUp", Event_KeyUp);
 
-	for (int key = 0; key < 256; ++key)
+	for (int key = 0; key < NumKeyCodes; ++key)
 	{
 		m_keyStates[key].m_state     = false;
 		m_keyStates[key].m_prevState = false;
@@ -72,104 +77,97 @@ void InputSystem::Shutdown()
 
 void InputSystem::BeginFrame()
 {
-	for (int i = 0; i < kNumXboxControllers; ++i)
+	for (int i = 0; i < NumXboxControllers; ++i)
 	{
 		m_controllers[i].Update();
 	}
 
 	if (g_engine != nullptr && g_engine->m_window != nullptr)
 	{
-		HWND hwnd = (HWND)g_engine->m_window->GetHwnd();
-		if (hwnd != nullptr)
+		m_prevCursorClientPosition = m_cursorClientPosition;
+
+		GLFWwindow* window  = g_engine->m_window->GetGLFWWindow();
+		double      cursorX = 0.0;
+		double      cursorY = 0.0;
+		glfwGetCursorPos(window, &cursorX, &cursorY);
+		m_cursorClientPosition = IntVec2((int)cursorX, (int)cursorY);
+
+		if (m_cursorMode == CursorMode::FPS)
 		{
-			// 1) Cursor visibility (Windows uses an internal show/hide counter)
-			bool const shouldHideCursor = (m_cursorMode == CursorMode::FPS);
-			if (shouldHideCursor)
-			{
-				while (::ShowCursor(FALSE) >= 0)
-				{
-				}
-			}
-			else
-			{
-				while (::ShowCursor(TRUE) < 0)
-				{
-				}
-			}
+			glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
-			// 2) Cache last frame cursor position
-			m_prevCursorClientPosition = m_cursorClientPosition;
+			m_cursorClientDelta = m_cursorClientPosition - m_prevCursorClientPosition;
+		}
+		else if (m_cursorMode == CursorMode::POINTER)
+		{
+			glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 
-			// 3) Read current cursor position (client pixels)
-			auto GetCursorClientPosInt = [hwnd]() -> IntVec2
-			{
-				POINT cursorScreen{};
-				::GetCursorPos(&cursorScreen);
-
-				POINT cursorClient = cursorScreen;
-				::ScreenToClient(hwnd, &cursorClient);
-
-				return IntVec2(cursorClient.x, cursorClient.y);
-			};
-
-			m_cursorClientPosition = GetCursorClientPosInt();
-
-			// 4) Relative mode: compute delta then recenter to client middle
-			if (m_cursorMode == CursorMode::FPS)
-			{
-				m_cursorClientDelta = m_cursorClientPosition - m_prevCursorClientPosition;
-
-				RECT clientRect{};
-				::GetClientRect(hwnd, &clientRect);
-
-				int const clientWidth  = clientRect.right - clientRect.left;
-				int const clientHeight = clientRect.bottom - clientRect.top;
-
-				POINT clientCenter{clientWidth / 2, clientHeight / 2};
-
-				POINT centerScreen = clientCenter;
-				::ClientToScreen(hwnd, &centerScreen);
-				::SetCursorPos(centerScreen.x, centerScreen.y);
-
-				// Re-read (Windows may delay the SetCursorPos)
-				m_cursorClientPosition = GetCursorClientPosInt();
-			}
-			else
-			{
-				// 5) Pointer mode: no relative delta
-				m_cursorClientDelta = IntVec2::Zero;
-			}
+			m_cursorClientDelta = IntVec2::Zero;
 		}
 	}
 }
 
 void InputSystem::EndFrame()
 {
-	for (int key = 0; key < 256; ++key)
+	for (int key = 0; key < NumKeyCodes; ++key)
 	{
 		m_keyStates[key].m_prevState = m_keyStates[key].m_state;
 	}
 }
 
-bool InputSystem::WasKeyJustPressed(unsigned char keyCode)
+bool InputSystem::WasKeyJustPressed(int keyCode)
 {
+	if (keyCode < 0 || keyCode >= NumKeyCodes)
+	{
+		return false;
+	}
+
 	return m_keyStates[keyCode].m_state && !m_keyStates[keyCode].m_prevState;
 }
 
-bool InputSystem::WasKeyJustReleased(unsigned char keyCode)
+bool InputSystem::WasKeyJustReleased(int keyCode)
 {
+	if (keyCode < 0 || keyCode >= NumKeyCodes)
+	{
+		return false;
+	}
+
 	return !m_keyStates[keyCode].m_state && m_keyStates[keyCode].m_prevState;
 }
 
-bool InputSystem::IsKeyDown(unsigned char keyCode) { return m_keyStates[keyCode].m_state; }
+bool InputSystem::IsKeyDown(int keyCode)
+{
+	if (keyCode < 0 || keyCode >= NumKeyCodes)
+	{
+		return false;
+	}
 
-void InputSystem::HandleKeyPressed(unsigned char keyCode) { m_keyStates[keyCode].m_state = true; }
+	return m_keyStates[keyCode].m_state;
+}
 
-void InputSystem::HandleKeyReleased(unsigned char keyCode) { m_keyStates[keyCode].m_state = false; }
+void InputSystem::HandleKeyPressed(int keyCode)
+{
+	if (keyCode < 0 || keyCode >= NumKeyCodes)
+	{
+		return;
+	}
+
+	m_keyStates[keyCode].m_state = true;
+}
+
+void InputSystem::HandleKeyReleased(int keyCode)
+{
+	if (keyCode < 0 || keyCode >= NumKeyCodes)
+	{
+		return;
+	}
+
+	m_keyStates[keyCode].m_state = false;
+}
 
 XboxController const& InputSystem::GetController(int controllerID)
 {
-	if (controllerID < 0 || controllerID >= kNumXboxControllers)
+	if (controllerID < 0 || controllerID >= NumXboxControllers)
 	{
 		return m_controllers[0];
 	}
@@ -179,13 +177,13 @@ XboxController const& InputSystem::GetController(int controllerID)
 
 void InputSystem::ClearAllInputStates()
 {
-	for (int key = 0; key < 256; ++key)
+	for (int key = 0; key < NumKeyCodes; ++key)
 	{
 		m_keyStates[key].m_state     = false;
 		m_keyStates[key].m_prevState = false;
 	}
 
-	for (int i = 0; i < kNumXboxControllers; ++i)
+	for (int i = 0; i < NumXboxControllers; ++i)
 	{
 		m_controllers[i].Reset();
 	}
@@ -201,29 +199,19 @@ Vec2 InputSystem::GetCursorNormalizedPosition() const
 {
 	if (g_engine == nullptr || g_engine->m_window == nullptr)
 	{
-		return Vec2(0.f, 0.f);
+		return Vec2::Zero;
 	}
 
-	HWND hwnd = (HWND)g_engine->m_window->GetHwnd();
-	if (hwnd == nullptr)
+	IntVec2 clientDimensions = g_engine->m_window->GetClientDimensions();
+	if (clientDimensions.x <= 0 || clientDimensions.y <= 0)
 	{
-		return Vec2(0.f, 0.f);
-	}
-
-	RECT clientRect{};
-	::GetClientRect(hwnd, &clientRect);
-
-	float const clientWidth  = (float)(clientRect.right - clientRect.left);
-	float const clientHeight = (float)(clientRect.bottom - clientRect.top);
-	if (clientWidth <= 0.f || clientHeight <= 0.f)
-	{
-		return Vec2(0.f, 0.f);
+		return Vec2::Zero;
 	}
 
 	Vec2 clientPos = GetCursorClientPosition();
 
-	float u = clientPos.x / clientWidth;
-	float v = clientPos.y / clientHeight;
+	float u = clientPos.x / (float)clientDimensions.x;
+	float v = clientPos.y / (float)clientDimensions.y;
 
 	u = GetClamped(u, 0.f, 1.f);
 	v = GetClamped(v, 0.f, 1.f);
@@ -236,14 +224,14 @@ void InputSystem::ClearCursorDelta() { m_cursorClientDelta = IntVec2::Zero; }
 
 bool InputSystem::Event_KeyDown(EventArgs& args)
 {
-	unsigned char asKey = (unsigned char)std::stoi(args.GetValue("asKey", "0"));
+	int asKey = std::stoi(args.GetValue("asKey", "0"));
 	g_engine->m_input->HandleKeyPressed(asKey);
 	return true;
 }
 
 bool InputSystem::Event_KeyUp(EventArgs& args)
 {
-	unsigned char asKey = (unsigned char)std::stoi(args.GetValue("asKey", "0"));
+	int asKey = std::stoi(args.GetValue("asKey", "0"));
 	g_engine->m_input->HandleKeyReleased(asKey);
 	return true;
 }

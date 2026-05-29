@@ -2,142 +2,127 @@
 
 #include "Engine/Core/Engine.hpp"
 #include "Engine/Core/ErrorWarningAssert.hpp"
+#include "Engine/Input/InputSystem.hpp"
 
 #define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
+#define GLFW_EXPOSE_NATIVE_WIN32
+#include "ThirdParty/GLFW/glfw3.h"
+#include "ThirdParty/GLFW/glfw3native.h"
+
+#pragma comment(lib, "ThirdParty/GLFW/glfw3.lib")
+
+namespace
+{
+static void GLFWKeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+	(void)window;
+	(void)scancode;
+	(void)mods;
+
+	if (key < 0)
+	{
+		return;
+	}
+
+	EventArgs args;
+	args.SetValue("asKey", std::to_string(key));
+
+	if (action == GLFW_PRESS)
+	{
+		FireEvent("KeyDown", args);
+	}
+	else if (action == GLFW_RELEASE)
+	{
+		FireEvent("KeyUp", args);
+	}
+}
+
+static void GLFWMouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
+{
+	(void)window;
+	(void)mods;
+
+	// To simplify things, we'll treat mouse buttons as "keys" in our input system
+	// And view them as just additional key codes that come after the last GLFW key code
+	int keyCode = -1;
+	if (button == GLFW_MOUSE_BUTTON_LEFT)
+	{
+		keyCode = KeyCodeLeftMouse;
+	}
+	else if (button == GLFW_MOUSE_BUTTON_RIGHT)
+	{
+		keyCode = KeyCodeRightMouse;
+	}
+
+	if (keyCode < 0)
+	{
+		return;
+	}
+
+	if (action == GLFW_PRESS)
+	{
+		g_engine->m_input->HandleKeyPressed(keyCode);
+	}
+	else if (action == GLFW_RELEASE)
+	{
+		g_engine->m_input->HandleKeyReleased(keyCode);
+	}
+}
+
+static void GLFWCharCallback(GLFWwindow* window, unsigned int codepoint)
+{
+	(void)window;
+
+	if (codepoint > 255)
+	{
+		return;
+	}
+
+	EventArgs args;
+	args.SetValue("asKey", std::to_string(codepoint));
+	FireEvent("CharInput", args);
+}
+} // namespace
 
 Window::Window(WindowConfig config) : m_config(config) {}
 
 Window::~Window() {}
 
-void Window::Startup() { CreateOSWindow(); }
+void Window::Startup()
+{
+	if (!glfwInit())
+	{
+		ERROR_AND_DIE("Failed to initialize GLFW");
+	}
 
-void Window::Shutdown() {}
+	CreateGLFWWindow();
+}
+
+void Window::Shutdown()
+{
+	if (m_glfwWindow != nullptr)
+	{
+		glfwDestroyWindow(m_glfwWindow);
+		m_glfwWindow = nullptr;
+	}
+
+	glfwTerminate();
+}
 
 void Window::BeginFrame() { RunMessagePump(); }
 
 void Window::EndFrame() {}
 
-Vec2 Window::GetNormalizedMouseUV() const
+void Window::CreateGLFWWindow()
 {
-	HWND  windowHandle = static_cast<HWND>(m_windowHandle); // Need to add this new void* member!
-	POINT cursorCoords;
-	RECT  clientRect;
+	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+	glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
-	::GetCursorPos(&cursorCoords);                 // in Windows screen coordinates; (0,0) is top-left
-	::ScreenToClient(windowHandle, &cursorCoords); // get relative to this window's client area
-	::GetClientRect(windowHandle, &clientRect);    // dimensions of client area (0,0 to width,height)
-	float cursorX = static_cast<float>(cursorCoords.x) / static_cast<float>(clientRect.right);
-	float cursorY = static_cast<float>(cursorCoords.y) / static_cast<float>(clientRect.bottom);
-	return Vec2(cursorX, 1.f - cursorY); // Flip Y; we want (0,0) bottom-left, not top-left
-}
+	GLFWmonitor*       primaryMonitor = glfwGetPrimaryMonitor();
+	GLFWvidmode const* videoMode      = primaryMonitor != nullptr ? glfwGetVideoMode(primaryMonitor) : nullptr;
 
-LRESULT CALLBACK WindowsMessageHandlingProcedure(HWND windowHandle, UINT wmMessageCode, WPARAM wParam, LPARAM lParam)
-{
-	switch (wmMessageCode)
-	{
-	case WM_CLOSE:
-	{
-		FireEvent("Quit");
-		break;
-	}
-
-	case WM_KEYDOWN:
-	{
-		EventArgs     args  = EventArgs();
-		unsigned char asKey = (unsigned char)wParam;
-
-		// This is a special "key" that Windows sends when IME (Input Method Editor) is active
-		// which is used for inputting complex characters in languages like Chinese, Japanese, and Korean.
-		// The actual key code is encoded in lParam instead of wParam in this case.
-		if (asKey == VK_PROCESSKEY)
-		{
-			UINT sc  = (lParam >> 16) & 0xFF;
-			UINT vk2 = MapVirtualKey(sc, MAPVK_VSC_TO_VK_EX);
-			if (vk2 != 0)
-				asKey = (unsigned char)vk2;
-		}
-
-		args.SetValue("asKey", std::to_string(asKey));
-		FireEvent("KeyDown", args);
-		break;
-	}
-
-	case WM_KEYUP:
-	{
-		EventArgs     args  = EventArgs();
-		unsigned char asKey = (unsigned char)wParam;
-		args.SetValue("asKey", std::to_string(asKey));
-		FireEvent("KeyUp", args);
-		break;
-	}
-
-	case WM_CHAR:
-	{
-		EventArgs     args  = EventArgs();
-		unsigned char asKey = (unsigned char)wParam;
-		args.SetValue("asKey", std::to_string(asKey));
-		FireEvent("CharInput", args);
-		break;
-	}
-
-	case WM_LBUTTONDOWN:
-	{
-		g_engine->m_input->HandleKeyPressed(KeyCodeLeftMouse);
-		break;
-	}
-
-	case WM_LBUTTONUP:
-	{
-		g_engine->m_input->HandleKeyReleased(KeyCodeLeftMouse);
-		break;
-	}
-
-	case WM_RBUTTONDOWN:
-	{
-		g_engine->m_input->HandleKeyPressed(KeyCodeRightMouse);
-		break;
-	}
-
-	case WM_RBUTTONUP:
-	{
-		g_engine->m_input->HandleKeyReleased(KeyCodeRightMouse);
-		break;
-	}
-	}
-
-	return DefWindowProc(windowHandle, wmMessageCode, wParam, lParam);
-}
-
-void Window::CreateOSWindow()
-{
-	HINSTANCE applicationInstanceHandle = ::GetModuleHandle(NULL);
-
-	SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
-
-	// Define a window style/class
-	WNDCLASSEX windowClassDescription;
-	memset(&windowClassDescription, 0, sizeof(windowClassDescription));
-	windowClassDescription.cbSize = sizeof(windowClassDescription);
-	windowClassDescription.style  = CS_OWNDC; // Redraw on move, request own Display Context
-	windowClassDescription.lpfnWndProc =
-		static_cast<WNDPROC>(WindowsMessageHandlingProcedure); // Register our Windows message-handling function
-	windowClassDescription.hInstance     = applicationInstanceHandle;
-	windowClassDescription.hIcon         = NULL;
-	windowClassDescription.hCursor       = NULL;
-	windowClassDescription.lpszClassName = TEXT("Simple Window Class");
-	RegisterClassEx(&windowClassDescription);
-
-	// #SD1ToDo: Add support for fullscreen mode (requires different window style flags than windowed mode)
-	DWORD const windowStyleFlags   = WS_CAPTION | WS_BORDER | WS_SYSMENU | WS_OVERLAPPED;
-	DWORD const windowStyleExFlags = WS_EX_APPWINDOW;
-
-	// Get desktop rect, dimensions, aspect
-	RECT desktopRect;
-	HWND desktopWindowHandle = GetDesktopWindow();
-	GetClientRect(desktopWindowHandle, &desktopRect);
-	float desktopWidth  = (float)(desktopRect.right - desktopRect.left);
-	float desktopHeight = (float)(desktopRect.bottom - desktopRect.top);
+	float desktopWidth  = videoMode != nullptr ? (float)videoMode->width : 1920.f;
+	float desktopHeight = videoMode != nullptr ? (float)videoMode->height : 1080.f;
 
 	// Calculate maximum client size (as some % of desktop size)
 	float clientWidth  = desktopWidth * 0.8f;
@@ -150,80 +135,50 @@ void Window::CreateOSWindow()
 	{
 		clientHeight = clientWidth / m_config.m_clientAspect;
 	}
-
-	// Calculate client rect bounds by centering the client area
 	float clientMarginX = 0.5f * (desktopWidth - clientWidth);
 	float clientMarginY = 0.5f * (desktopHeight - clientHeight);
-	RECT  clientRect;
-	clientRect.left   = (int)clientMarginX;
-	clientRect.right  = clientRect.left + (int)clientWidth;
-	clientRect.top    = (int)clientMarginY;
-	clientRect.bottom = clientRect.top + (int)clientHeight;
 
-	// Calculate the outer dimensions of the physical window, including frame et. al.
-	RECT windowRect = clientRect;
-	AdjustWindowRectEx(&windowRect, windowStyleFlags, FALSE, windowStyleExFlags);
+	m_glfwWindow = glfwCreateWindow((int)clientWidth, (int)clientHeight, m_config.m_appName.c_str(), nullptr, nullptr);
 
-	WCHAR windowTitle[1024];
-	MultiByteToWideChar(
-		GetACP(),
-		0,
-		m_config.m_appName.c_str(),
-		-1,
-		windowTitle,
-		sizeof(windowTitle) / sizeof(windowTitle[0])
-	);
+	if (m_glfwWindow == nullptr)
+	{
+		ERROR_AND_DIE("Failed to create GLFW window");
+	}
 
-	HWND hWnd = CreateWindowEx(
-		windowStyleExFlags,
-		windowClassDescription.lpszClassName,
-		windowTitle,
-		windowStyleFlags,
-		windowRect.left,
-		windowRect.top,
-		windowRect.right - windowRect.left,
-		windowRect.bottom - windowRect.top,
-		NULL,
-		NULL,
-		(HINSTANCE)applicationInstanceHandle,
-		NULL
-	);
+	glfwSetKeyCallback(m_glfwWindow, GLFWKeyCallback);
+	glfwSetMouseButtonCallback(m_glfwWindow, GLFWMouseButtonCallback);
+	glfwSetCharCallback(m_glfwWindow, GLFWCharCallback);
 
-	ShowWindow(hWnd, SW_SHOW);
-	SetForegroundWindow(hWnd);
-	SetFocus(hWnd);
+	glfwSetWindowPos(m_glfwWindow, (int)clientMarginX, (int)clientMarginY);
+	glfwShowWindow(m_glfwWindow);
 
-	m_windowHandle         = static_cast<void*>(hWnd);
-	m_displayDeviceContext = GetDC(hWnd);
-
-	HCURSOR cursor = LoadCursor(NULL, IDC_ARROW);
-	SetCursor(cursor);
+	HWND hWnd      = glfwGetWin32Window(m_glfwWindow);
+	m_windowHandle = static_cast<void*>(hWnd);
 }
 
 void Window::RunMessagePump()
 {
-	MSG queuedMessage;
-	for (;;)
-	{
-		BOOL const wasMessagePresent = PeekMessage(&queuedMessage, NULL, 0, 0, PM_REMOVE);
-		if (!wasMessagePresent)
-		{
-			break;
-		}
+	glfwPollEvents();
 
-		TranslateMessage(&queuedMessage);
-		DispatchMessage(&queuedMessage);
+	if (m_glfwWindow != nullptr && glfwWindowShouldClose(m_glfwWindow))
+	{
+		FireEvent("Quit");
 	}
 }
 
 void* Window::GetHwnd() const { return m_windowHandle; }
 
+GLFWwindow* Window::GetGLFWWindow() const { return m_glfwWindow; }
+
 IntVec2 Window::GetClientDimensions() const
 {
-	HWND hwnd = static_cast<HWND>(m_windowHandle);
-	RECT clientRect;
-	::GetClientRect(hwnd, &clientRect);
-	int width  = clientRect.right - clientRect.left;
-	int height = clientRect.bottom - clientRect.top;
+	if (m_glfwWindow == nullptr)
+	{
+		return IntVec2::Zero;
+	}
+
+	int width  = 0;
+	int height = 0;
+	glfwGetWindowSize(m_glfwWindow, &width, &height);
 	return IntVec2(width, height);
 }

@@ -968,7 +968,7 @@ void Renderer::BindTexture(Texture* textureOrNull, unsigned int slot)
 
 	if (textureOrNull == nullptr)
 	{
-		if (slot == SurfaceTextureSlot::kEmissive)
+		if (slot == SurfaceTextureSlot::Emissive)
 		{
 			// For emissive slot, black is the default "null" texture
 			textureOrNull = m_defaultBlackTexture;

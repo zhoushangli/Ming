@@ -1,7 +1,9 @@
 #include "Engine/Audio/AudioSystem.hpp"
+
+#include "Game/EngineBuildPreferences.hpp"
+
 #include "Engine/Core/ErrorWarningAssert.hpp"
 #include "Engine/Core/StringUtils.hpp"
-#include "Game/EngineBuildPreferences.hpp"
 
 namespace
 {

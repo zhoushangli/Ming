@@ -4,37 +4,38 @@
 #include "Engine/Input/KeyButtonState.hpp"
 #include "Engine/Input/XboxController.hpp"
 
-extern unsigned char const KeyCodeF1;
-extern unsigned char const KeyCodeF2;
-extern unsigned char const KeyCodeF3;
-extern unsigned char const KeyCodeF4;
-extern unsigned char const KeyCodeF5;
-extern unsigned char const KeyCodeF6;
-extern unsigned char const KeyCodeF7;
-extern unsigned char const KeyCodeF8;
-extern unsigned char const KeyCodeF9;
-extern unsigned char const KeyCodeF10;
-extern unsigned char const KeyCodeF11;
-extern unsigned char const KeyCodeF12;
-extern unsigned char const KeyCodeTilde;
-extern unsigned char const KeyCodeEsc;
-extern unsigned char const KeyCodeUpArrow;
-extern unsigned char const KeyCodeDownArrow;
-extern unsigned char const KeyCodeLeftArrow;
-extern unsigned char const KeyCodeRightArrow;
-extern unsigned char const KeyCodeLeftMouse;
-extern unsigned char const KeyCodeRightMouse;
+extern int const KeyCodeF1;
+extern int const KeyCodeF2;
+extern int const KeyCodeF3;
+extern int const KeyCodeF4;
+extern int const KeyCodeF5;
+extern int const KeyCodeF6;
+extern int const KeyCodeF7;
+extern int const KeyCodeF8;
+extern int const KeyCodeF9;
+extern int const KeyCodeF10;
+extern int const KeyCodeF11;
+extern int const KeyCodeF12;
+extern int const KeyCodeTilde;
+extern int const KeyCodeEsc;
+extern int const KeyCodeUpArrow;
+extern int const KeyCodeDownArrow;
+extern int const KeyCodeLeftArrow;
+extern int const KeyCodeRightArrow;
+extern int const KeyCodeLeftMouse;
+extern int const KeyCodeRightMouse;
 
-extern unsigned char const KeyCodeShift;
-extern unsigned char const KeyCodeEnter;
-extern unsigned char const KeyCodeBackspace;
-extern unsigned char const KeyCodeInsert;
-extern unsigned char const KeyCodeDelete;
-extern unsigned char const KeyCodeHome;
-extern unsigned char const KeyCodeEnd;
+extern int const KeyCodeShift;
+extern int const KeyCodeEnter;
+extern int const KeyCodeBackspace;
+extern int const KeyCodeInsert;
+extern int const KeyCodeDelete;
+extern int const KeyCodeHome;
+extern int const KeyCodeEnd;
 
-constexpr int kNumKeyCodes        = 256;
-constexpr int kNumXboxControllers = 4;
+constexpr int LastGlfwKeyCode    = 348;
+constexpr int NumKeyCodes        = LastGlfwKeyCode + 3;
+constexpr int NumXboxControllers = 4;
 
 enum class CursorMode
 {
@@ -67,12 +68,12 @@ public:
 	void BeginFrame();
 	void EndFrame();
 
-	bool WasKeyJustPressed(unsigned char keyCode);
-	bool WasKeyJustReleased(unsigned char keyCode);
-	bool IsKeyDown(unsigned char keyCode);
+	bool WasKeyJustPressed(int keyCode);
+	bool WasKeyJustReleased(int keyCode);
+	bool IsKeyDown(int keyCode);
 
-	void                  HandleKeyPressed(unsigned char keyCode);
-	void                  HandleKeyReleased(unsigned char keyCode);
+	void                  HandleKeyPressed(int keyCode);
+	void                  HandleKeyReleased(int keyCode);
 	XboxController const& GetController(int controllerID);
 
 	void ClearAllInputStates();
@@ -109,7 +110,7 @@ protected:
 	IntVec2 m_prevCursorClientPosition = IntVec2::Zero;
 	IntVec2 m_cursorClientDelta        = IntVec2::Zero;
 
-	KeyButtonState m_keyStates[kNumKeyCodes];
-	XboxController m_controllers[kNumXboxControllers] = {
+	KeyButtonState m_keyStates[NumKeyCodes];
+	XboxController m_controllers[NumXboxControllers] = {
 		XboxController(0), XboxController(1), XboxController(2), XboxController(3)};
 };

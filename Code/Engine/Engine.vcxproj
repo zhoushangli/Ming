@@ -330,6 +330,8 @@
     <ClInclude Include="..\ThirdParty\fmod\fmod_dsp_effects.h" />
     <ClInclude Include="..\ThirdParty\fmod\fmod_errors.h" />
     <ClInclude Include="..\ThirdParty\fmod\fmod_output.h" />
+    <ClInclude Include="..\ThirdParty\GLFW\glfw3.h" />
+    <ClInclude Include="..\ThirdParty\GLFW\glfw3native.h" />
     <ClInclude Include="..\ThirdParty\nlohmann\json.hpp" />
     <ClInclude Include="..\ThirdParty\stb\stb_image.h" />
     <ClInclude Include="..\ThirdParty\tinygltf\tinygltf_json.h" />

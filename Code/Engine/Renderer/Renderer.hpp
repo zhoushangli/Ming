@@ -41,8 +41,8 @@ struct ID3D11DepthStencilState;
 
 namespace SurfaceTextureSlot
 {
-static const unsigned int kDiffuse  = 0;
-static const unsigned int kEmissive = 1;
+static const unsigned int Diffuse  = 0;
+static const unsigned int Emissive = 1;
 } // namespace SurfaceTextureSlot
 
 namespace PostProcessTextureSlot
