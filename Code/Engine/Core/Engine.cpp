@@ -24,6 +24,8 @@ Engine::Engine(EngineConfig config) : m_config(config)
 		m_input = new InputSystem(config.m_inputConfig);
 	if (config.m_audioConfig.m_isEnable)
 		m_audio = new AudioSystem(config.m_audioConfig);
+	if (config.m_imguiConfig.m_isEnable)
+		m_imgui = new ImGuiSystem(config.m_imguiConfig);
 
 	Startup();
 }
@@ -31,6 +33,9 @@ Engine::Engine(EngineConfig config) : m_config(config)
 Engine::~Engine()
 {
 	Shutdown();
+
+	delete m_imgui;
+	m_imgui = nullptr;
 
 	delete m_audio;
 	m_audio = nullptr;
@@ -61,6 +66,8 @@ void Engine::Startup()
 		m_devConsole->Startup();
 	if (m_renderer != nullptr)
 		m_renderer->Startup();
+	if (m_imgui != nullptr)
+		m_imgui->Startup();
 	if (m_input != nullptr)
 		m_input->Startup();
 	if (m_audio != nullptr)
@@ -73,6 +80,8 @@ void Engine::Shutdown()
 		m_audio->Shutdown();
 	if (m_input != nullptr)
 		m_input->Shutdown();
+	if (m_imgui != nullptr)
+		m_imgui->Shutdown();
 	if (m_renderer != nullptr)
 		m_renderer->Shutdown();
 	if (m_devConsole != nullptr)
@@ -91,6 +100,8 @@ void Engine::BeginFrame()
 		m_devConsole->BeginFrame();
 	if (m_window != nullptr)
 		m_window->BeginFrame();
+	if (m_imgui != nullptr)
+		m_imgui->BeginFrame();
 	if (m_renderer != nullptr)
 		m_renderer->BeginScenePass();
 	if (m_input != nullptr)
@@ -107,6 +118,8 @@ void Engine::EndFrame()
 		m_devConsole->EndFrame();
 	if (m_window != nullptr)
 		m_window->EndFrame();
+	if (m_imgui != nullptr)
+		m_imgui->EndFrame();
 	if (m_renderer != nullptr)
 		m_renderer->EndFrame();
 	if (m_input != nullptr)

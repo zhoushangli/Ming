@@ -226,6 +226,9 @@ public:
 	void BeginEvent(std::string const& eventName);
 	void EndEvent();
 
+	ID3D11Device* GetD3DDevice() const;
+	ID3D11DeviceContext* GetD3DDeviceContext() const;
+
 private:
 	// Texture cache internals
 	Texture* CreateTextureFromFile(char const* fileDataPath);

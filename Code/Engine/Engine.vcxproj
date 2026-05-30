@@ -259,6 +259,14 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\Engine\Code\Engine\Math\Vec2.cpp" />
+    <ClCompile Include="..\ThirdParty\imgui\backends\imgui_impl_dx11.cpp" />
+    <ClCompile Include="..\ThirdParty\imgui\backends\imgui_impl_glfw.cpp" />
+    <ClCompile Include="..\ThirdParty\imgui\imgui.cpp" />
+    <ClCompile Include="..\ThirdParty\imgui\imgui_demo.cpp" />
+    <ClCompile Include="..\ThirdParty\imgui\imgui_draw.cpp" />
+    <ClCompile Include="..\ThirdParty\imgui\imgui_tables.cpp" />
+    <ClCompile Include="..\ThirdParty\imgui\imgui_widgets.cpp" />
+    <ClCompile Include="..\ThirdParty\imgui\misc\cpp\imgui_stdlib.cpp" />
     <ClCompile Include="..\ThirdParty\tinyxml2\tinyxml2.cpp" />
     <ClCompile Include="Audio\AudioSystem.cpp" />
     <ClCompile Include="Core\Clock.cpp" />
@@ -278,6 +286,7 @@
     <ClCompile Include="Core\Vertex.cpp" />
     <ClCompile Include="Core\VertexUtils.cpp" />
     <ClCompile Include="Core\XmlUtils.cpp" />
+    <ClCompile Include="ImGUI\ImGuiSystem.cpp" />
     <ClCompile Include="Input\AnalogJoystick.cpp" />
     <ClCompile Include="Input\InputSystem.cpp" />
     <ClCompile Include="Input\KeyButtonState.cpp" />
@@ -332,6 +341,15 @@
     <ClInclude Include="..\ThirdParty\fmod\fmod_output.h" />
     <ClInclude Include="..\ThirdParty\GLFW\glfw3.h" />
     <ClInclude Include="..\ThirdParty\GLFW\glfw3native.h" />
+    <ClInclude Include="..\ThirdParty\imgui\backends\imgui_impl_dx11.h" />
+    <ClInclude Include="..\ThirdParty\imgui\backends\imgui_impl_glfw.h" />
+    <ClInclude Include="..\ThirdParty\imgui\imconfig.h" />
+    <ClInclude Include="..\ThirdParty\imgui\imgui.h" />
+    <ClInclude Include="..\ThirdParty\imgui\imgui_internal.h" />
+    <ClInclude Include="..\ThirdParty\imgui\imstb_rectpack.h" />
+    <ClInclude Include="..\ThirdParty\imgui\imstb_textedit.h" />
+    <ClInclude Include="..\ThirdParty\imgui\imstb_truetype.h" />
+    <ClInclude Include="..\ThirdParty\imgui\misc\cpp\imgui_stdlib.h" />
     <ClInclude Include="..\ThirdParty\nlohmann\json.hpp" />
     <ClInclude Include="..\ThirdParty\stb\stb_image.h" />
     <ClInclude Include="..\ThirdParty\tinygltf\tinygltf_json.h" />
@@ -355,6 +373,7 @@
     <ClInclude Include="Core\Vertex.hpp" />
     <ClInclude Include="Core\VertexUtils.hpp" />
     <ClInclude Include="Core\XmlUtils.hpp" />
+    <ClInclude Include="ImGUI\ImGuiSystem.hpp" />
     <ClInclude Include="Input\AnalogJoystick.hpp" />
     <ClInclude Include="Input\InputSystem.hpp" />
     <ClInclude Include="Input\KeyButtonState.hpp" />

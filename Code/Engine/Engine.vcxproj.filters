@@ -31,6 +31,39 @@
     <Filter Include="ThirdParty">
       <UniqueIdentifier>{81c4102d-70cc-4b9c-9e48-b9d63a36499e}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ThirdParty\fmod">
+      <UniqueIdentifier>{9dc0dafa-0ab1-4b11-8ba1-6492148dba1f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ThirdParty\tinygltf">
+      <UniqueIdentifier>{70392349-40f5-4136-9850-4f87f770cf47}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ThirdParty\tinyxml2">
+      <UniqueIdentifier>{9cce3500-5d98-46b8-ae28-4166dd8a5b4d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ThirdParty\GLFW">
+      <UniqueIdentifier>{f3398132-a800-46ce-a8f5-b5853de5ee0d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ThirdParty\FastNoiseLite">
+      <UniqueIdentifier>{040f9b4e-6fd1-4de1-8fc9-d5d85ee980c6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ThirdParty\nlohmann">
+      <UniqueIdentifier>{745b0740-0275-42d5-a01c-8393f3350940}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ThirdParty\stb">
+      <UniqueIdentifier>{12f896a9-008e-4afb-91ec-6f7006a068af}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ThirdParty\imgui">
+      <UniqueIdentifier>{36c1e4c1-381e-4cd8-8b05-7eec6dce3749}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ThirdParty\imgui\backends">
+      <UniqueIdentifier>{e9c7fcb4-b214-4fbe-8b45-6e88f625d8c1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ThirdParty\imgui\misc">
+      <UniqueIdentifier>{4ee15a8d-558c-4425-adea-c48196b53ba8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ImGUI">
+      <UniqueIdentifier>{489b7e0c-3ad5-4101-8825-2da275796dcb}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\Engine\Code\Engine\Math\Vec2.cpp">
@@ -211,7 +244,34 @@
       <Filter>Math</Filter>
     </ClCompile>
     <ClCompile Include="..\ThirdParty\tinyxml2\tinyxml2.cpp">
-      <Filter>ThirdParty</Filter>
+      <Filter>ThirdParty\tinyxml2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ThirdParty\imgui\imgui.cpp">
+      <Filter>ThirdParty\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ThirdParty\imgui\imgui_demo.cpp">
+      <Filter>ThirdParty\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ThirdParty\imgui\imgui_draw.cpp">
+      <Filter>ThirdParty\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ThirdParty\imgui\imgui_tables.cpp">
+      <Filter>ThirdParty\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ThirdParty\imgui\imgui_widgets.cpp">
+      <Filter>ThirdParty\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ThirdParty\imgui\backends\imgui_impl_dx11.cpp">
+      <Filter>ThirdParty\imgui\backends</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ThirdParty\imgui\backends\imgui_impl_glfw.cpp">
+      <Filter>ThirdParty\imgui\backends</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ThirdParty\imgui\misc\cpp\imgui_stdlib.cpp">
+      <Filter>ThirdParty\imgui\misc</Filter>
+    </ClCompile>
+    <ClCompile Include="ImGUI\ImGuiSystem.cpp">
+      <Filter>ImGUI</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -393,52 +453,82 @@
       <Filter>Math</Filter>
     </ClInclude>
     <ClInclude Include="..\ThirdParty\fmod\fmod.h">
-      <Filter>ThirdParty</Filter>
+      <Filter>ThirdParty\fmod</Filter>
     </ClInclude>
     <ClInclude Include="..\ThirdParty\fmod\fmod.hpp">
-      <Filter>ThirdParty</Filter>
+      <Filter>ThirdParty\fmod</Filter>
     </ClInclude>
     <ClInclude Include="..\ThirdParty\fmod\fmod_codec.h">
-      <Filter>ThirdParty</Filter>
+      <Filter>ThirdParty\fmod</Filter>
     </ClInclude>
     <ClInclude Include="..\ThirdParty\fmod\fmod_common.h">
-      <Filter>ThirdParty</Filter>
+      <Filter>ThirdParty\fmod</Filter>
     </ClInclude>
     <ClInclude Include="..\ThirdParty\fmod\fmod_dsp.h">
-      <Filter>ThirdParty</Filter>
+      <Filter>ThirdParty\fmod</Filter>
     </ClInclude>
     <ClInclude Include="..\ThirdParty\fmod\fmod_dsp_effects.h">
-      <Filter>ThirdParty</Filter>
+      <Filter>ThirdParty\fmod</Filter>
     </ClInclude>
     <ClInclude Include="..\ThirdParty\fmod\fmod_errors.h">
-      <Filter>ThirdParty</Filter>
+      <Filter>ThirdParty\fmod</Filter>
     </ClInclude>
     <ClInclude Include="..\ThirdParty\fmod\fmod_output.h">
-      <Filter>ThirdParty</Filter>
-    </ClInclude>
-    <ClInclude Include="..\ThirdParty\FastNoiseLite\FastNoiseLite.h">
-      <Filter>ThirdParty</Filter>
-    </ClInclude>
-    <ClInclude Include="..\ThirdParty\nlohmann\json.hpp">
-      <Filter>ThirdParty</Filter>
-    </ClInclude>
-    <ClInclude Include="..\ThirdParty\tinygltf\tiny_gltf_v3.h">
-      <Filter>ThirdParty</Filter>
+      <Filter>ThirdParty\fmod</Filter>
     </ClInclude>
     <ClInclude Include="..\ThirdParty\tinygltf\tinygltf_json.h">
-      <Filter>ThirdParty</Filter>
+      <Filter>ThirdParty\tinygltf</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ThirdParty\tinygltf\tiny_gltf_v3.h">
+      <Filter>ThirdParty\tinygltf</Filter>
     </ClInclude>
     <ClInclude Include="..\ThirdParty\tinyxml2\tinyxml2.h">
-      <Filter>ThirdParty</Filter>
-    </ClInclude>
-    <ClInclude Include="..\ThirdParty\stb\stb_image.h">
-      <Filter>ThirdParty</Filter>
-    </ClInclude>
-    <ClInclude Include="..\ThirdParty\GLFW\glfw3.h">
-      <Filter>ThirdParty</Filter>
+      <Filter>ThirdParty\tinyxml2</Filter>
     </ClInclude>
     <ClInclude Include="..\ThirdParty\GLFW\glfw3native.h">
-      <Filter>ThirdParty</Filter>
+      <Filter>ThirdParty\GLFW</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ThirdParty\GLFW\glfw3.h">
+      <Filter>ThirdParty\GLFW</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ThirdParty\FastNoiseLite\FastNoiseLite.h">
+      <Filter>ThirdParty\FastNoiseLite</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ThirdParty\nlohmann\json.hpp">
+      <Filter>ThirdParty\nlohmann</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ThirdParty\stb\stb_image.h">
+      <Filter>ThirdParty\stb</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ThirdParty\imgui\imconfig.h">
+      <Filter>ThirdParty\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ThirdParty\imgui\imgui.h">
+      <Filter>ThirdParty\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ThirdParty\imgui\imgui_internal.h">
+      <Filter>ThirdParty\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ThirdParty\imgui\imstb_rectpack.h">
+      <Filter>ThirdParty\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ThirdParty\imgui\imstb_textedit.h">
+      <Filter>ThirdParty\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ThirdParty\imgui\imstb_truetype.h">
+      <Filter>ThirdParty\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ThirdParty\imgui\backends\imgui_impl_dx11.h">
+      <Filter>ThirdParty\imgui\backends</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ThirdParty\imgui\backends\imgui_impl_glfw.h">
+      <Filter>ThirdParty\imgui\backends</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ThirdParty\imgui\misc\cpp\imgui_stdlib.h">
+      <Filter>ThirdParty\imgui\misc</Filter>
+    </ClInclude>
+    <ClInclude Include="ImGUI\ImGuiSystem.hpp">
+      <Filter>ImGUI</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

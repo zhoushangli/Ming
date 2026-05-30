@@ -1661,4 +1661,8 @@ void Renderer::SetViewport(IntVec2 dimensions, IntVec2 topLeft)
 	m_d3dDeviceContext->RSSetViewports(1, &viewport);
 }
 
+ID3D11Device* Renderer::GetD3DDevice() const { return m_d3dDevice; }
+
+ID3D11DeviceContext* Renderer::GetD3DDeviceContext() const { return m_d3dDeviceContext; }
+
 #pragma endregion
