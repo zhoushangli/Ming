@@ -2,43 +2,44 @@
 
 #include "Engine/Core/NamedStrings.hpp"
 
+#include <functional>
+#include <map>
 #include <string>
 #include <vector>
-#include <map>
 
-using EventArgs = NamedStrings;
-using EventSystemCallbackFunctionPtr = bool (*)(EventArgs&);
+using EventArgs                = NamedStrings;
+using EventCallbackFunctionPtr = bool (*)(EventArgs&);
 
 struct EventSystemConfig
 {
-    bool m_isEnable = true;
+	bool m_isEnable = true;
 };
 
 class EventSystem
 {
 public:
-    EventSystem(EventSystemConfig const& config);
-    ~EventSystem();
+	EventSystem(EventSystemConfig const& config);
+	~EventSystem();
 
-    void Startup();
-    void Shutdown();
-    void BeginFrame();
-    void EndFrame();
+	void Startup();
+	void Shutdown();
+	void BeginFrame();
+	void EndFrame();
 
-    void SubscribeEventCallbackFunction(std::string const& eventName, EventSystemCallbackFunctionPtr ptr);
-    void UnsubscribeEventCallbackFunction(std::string const& eventName, EventSystemCallbackFunctionPtr ptr);
-    int  FireEvent(std::string const& eventName, EventArgs& args);
-    int  FireEvent(std::string const& eventName);
+	void RegisterEvent(std::string const& eventName, EventCallbackFunctionPtr ptr);
+	void UnregisterEvent(std::string const& eventName, EventCallbackFunctionPtr ptr);
+	int  FireEvent(std::string const& eventName, EventArgs& args);
+	int  FireEvent(std::string const& eventName);
 
-    bool IsEventRegistered(std::string const& eventName) const;
-    Strings GetRegisteredEventNames() const;
+	bool    IsEventRegistered(std::string const& eventName) const;
+	Strings GetRegisteredEventNames() const;
 
 protected:
-    EventSystemConfig m_config;
-    std::map<std::string, std::vector<EventSystemCallbackFunctionPtr>> m_subscriptionListsByEventName;
+	EventSystemConfig                                            m_config;
+	std::map<std::string, std::vector<EventCallbackFunctionPtr>> m_subscriptionListsByEventName;
 };
 
-void SubscribeEventCallbackFunction(std::string const& eventName, EventSystemCallbackFunctionPtr ptr);
-void UnsubscribeEventCallbackFunction(std::string const& eventName, EventSystemCallbackFunctionPtr ptr);
-int FireEvent(std::string const& eventName);
-int FireEvent(std::string const& eventName, EventArgs& args);
+void RegisterEvent(std::string const& eventName, EventCallbackFunctionPtr ptr);
+void UnregisterEvent(std::string const& eventName, EventCallbackFunctionPtr ptr);
+int  FireEvent(std::string const& eventName);
+int  FireEvent(std::string const& eventName, EventArgs& args);

@@ -538,14 +538,14 @@ void DebugRenderSystemStartup(const DebugRenderConfig& config)
 	s_debugMessages.clear();
 	s_isVisible = true;
 
-	g_engine->m_eventSystem->SubscribeEventCallbackFunction("Dev_DebugRenderClear", Command_DebugRenderClear);
-	g_engine->m_eventSystem->SubscribeEventCallbackFunction("Dev_DebugRenderToggle", Command_DebugRenderToggle);
+	g_engine->m_eventSystem->RegisterEvent("Dev_DebugRenderClear", Command_DebugRenderClear);
+	g_engine->m_eventSystem->RegisterEvent("Dev_DebugRenderToggle", Command_DebugRenderToggle);
 }
 
 void DebugRenderSystemShutdown()
 {
-	g_engine->m_eventSystem->UnsubscribeEventCallbackFunction("Dev_DebugRenderClear", Command_DebugRenderClear);
-	g_engine->m_eventSystem->UnsubscribeEventCallbackFunction("Dev_DebugRenderToggle", Command_DebugRenderToggle);
+	g_engine->m_eventSystem->UnregisterEvent("Dev_DebugRenderClear", Command_DebugRenderClear);
+	g_engine->m_eventSystem->UnregisterEvent("Dev_DebugRenderToggle", Command_DebugRenderToggle);
 
 	s_debugRenderConfig.m_renderer = nullptr;
 	s_debugObjects.clear();

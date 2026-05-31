@@ -41,22 +41,22 @@ void DevConsole::Startup()
 
 	AddLine(kInfoMajor, "DevConsole started");
 
-	g_engine->m_eventSystem->SubscribeEventCallbackFunction("KeyDown", DevConsole::Event_KeyDown);
-	g_engine->m_eventSystem->SubscribeEventCallbackFunction("CharInput", DevConsole::Event_CharInput);
+	g_engine->m_eventSystem->RegisterEvent("KeyDown", DevConsole::Event_KeyDown);
+	g_engine->m_eventSystem->RegisterEvent("CharInput", DevConsole::Event_CharInput);
 
-	g_engine->m_eventSystem->SubscribeEventCallbackFunction("Dev_Quit", DevConsole::Command_Quit);
-	g_engine->m_eventSystem->SubscribeEventCallbackFunction("Dev_Clear", DevConsole::Command_Clear);
-	g_engine->m_eventSystem->SubscribeEventCallbackFunction("Dev_Help", DevConsole::Command_Help);
+	g_engine->m_eventSystem->RegisterEvent("Dev_Quit", DevConsole::Command_Quit);
+	g_engine->m_eventSystem->RegisterEvent("Dev_Clear", DevConsole::Command_Clear);
+	g_engine->m_eventSystem->RegisterEvent("Dev_Help", DevConsole::Command_Help);
 }
 
 void DevConsole::Shutdown()
 {
-	g_engine->m_eventSystem->UnsubscribeEventCallbackFunction("Dev_Help", DevConsole::Command_Help);
-	g_engine->m_eventSystem->UnsubscribeEventCallbackFunction("Dev_Clear", DevConsole::Command_Clear);
-	g_engine->m_eventSystem->UnsubscribeEventCallbackFunction("Dev_Quit", DevConsole::Command_Quit);
+	g_engine->m_eventSystem->UnregisterEvent("Dev_Help", DevConsole::Command_Help);
+	g_engine->m_eventSystem->UnregisterEvent("Dev_Clear", DevConsole::Command_Clear);
+	g_engine->m_eventSystem->UnregisterEvent("Dev_Quit", DevConsole::Command_Quit);
 
-	g_engine->m_eventSystem->UnsubscribeEventCallbackFunction("CharInput", DevConsole::Event_CharInput);
-	g_engine->m_eventSystem->UnsubscribeEventCallbackFunction("KeyDown", DevConsole::Event_KeyDown);
+	g_engine->m_eventSystem->UnregisterEvent("CharInput", DevConsole::Event_CharInput);
+	g_engine->m_eventSystem->UnregisterEvent("KeyDown", DevConsole::Event_KeyDown);
 
 	m_lines.clear();
 	m_commandHistory.clear();

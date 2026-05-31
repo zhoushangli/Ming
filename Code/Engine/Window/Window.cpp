@@ -82,6 +82,16 @@ static void GLFWCharCallback(GLFWwindow* window, unsigned int codepoint)
 	args.SetValue("asKey", std::to_string(codepoint));
 	FireEvent("CharInput", args);
 }
+
+static void GLFWFramebufferSizeCallback(GLFWwindow* window, int width, int height)
+{
+	(void)window;
+
+	EventArgs args;
+	args.SetValue("width", std::to_string(width));
+	args.SetValue("height", std::to_string(height));
+	FireEvent("WindowResized", args);
+}
 } // namespace
 
 Window::Window(WindowConfig config) : m_config(config) {}
@@ -116,29 +126,13 @@ void Window::EndFrame() {}
 void Window::CreateGLFWWindow()
 {
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-	glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+	glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
+	glfwWindowHint(GLFW_DECORATED, GLFW_TRUE);
 
 	GLFWmonitor*       primaryMonitor = glfwGetPrimaryMonitor();
 	GLFWvidmode const* videoMode      = primaryMonitor != nullptr ? glfwGetVideoMode(primaryMonitor) : nullptr;
 
-	float desktopWidth  = videoMode != nullptr ? (float)videoMode->width : 1920.f;
-	float desktopHeight = videoMode != nullptr ? (float)videoMode->height : 1080.f;
-
-	// Calculate maximum client size (as some % of desktop size)
-	float clientWidth  = desktopWidth * 0.8f;
-	float clientHeight = desktopHeight * 0.8f;
-	if (clientWidth / clientHeight > m_config.m_clientAspect)
-	{
-		clientWidth = clientHeight * m_config.m_clientAspect;
-	}
-	else
-	{
-		clientHeight = clientWidth / m_config.m_clientAspect;
-	}
-	float clientMarginX = 0.5f * (desktopWidth - clientWidth);
-	float clientMarginY = 0.5f * (desktopHeight - clientHeight);
-
-	m_glfwWindow = glfwCreateWindow((int)clientWidth, (int)clientHeight, m_config.m_appName.c_str(), nullptr, nullptr);
+	m_glfwWindow = glfwCreateWindow(videoMode->width, videoMode->height, m_config.m_appName.c_str(), nullptr, nullptr);
 
 	if (m_glfwWindow == nullptr)
 	{
@@ -148,8 +142,9 @@ void Window::CreateGLFWWindow()
 	glfwSetKeyCallback(m_glfwWindow, GLFWKeyCallback);
 	glfwSetMouseButtonCallback(m_glfwWindow, GLFWMouseButtonCallback);
 	glfwSetCharCallback(m_glfwWindow, GLFWCharCallback);
+	glfwSetFramebufferSizeCallback(m_glfwWindow, GLFWFramebufferSizeCallback);
 
-	glfwSetWindowPos(m_glfwWindow, (int)clientMarginX, (int)clientMarginY);
+	glfwMaximizeWindow(m_glfwWindow);
 	glfwShowWindow(m_glfwWindow);
 
 	HWND hWnd      = glfwGetWin32Window(m_glfwWindow);
@@ -179,6 +174,6 @@ IntVec2 Window::GetClientDimensions() const
 
 	int width  = 0;
 	int height = 0;
-	glfwGetWindowSize(m_glfwWindow, &width, &height);
+	glfwGetFramebufferSize(m_glfwWindow, &width, &height);
 	return IntVec2(width, height);
 }

@@ -354,6 +354,12 @@ void           Renderer::Startup()
 	m_d3dDeviceContext->QueryInterface(__uuidof(ID3DUserDefinedAnnotation), (void**)&m_d3dAnnotation);
 
 #pragma endregion
+
+#pragma region Startup: Register events
+
+	RegisterEvent("Event_WindowResized", Renderer::Event_WindowResized);
+
+#pragma endregion
 }
 
 void Renderer::Shutdown()
@@ -1664,5 +1670,12 @@ void Renderer::SetViewport(IntVec2 dimensions, IntVec2 topLeft)
 ID3D11Device* Renderer::GetD3DDevice() const { return m_d3dDevice; }
 
 ID3D11DeviceContext* Renderer::GetD3DDeviceContext() const { return m_d3dDeviceContext; }
+
+bool Renderer::Event_WindowResized(EventArgs& args) { return true; }
+
+void Renderer::ResizeViewport(IntVec2 newDimensions)
+{
+	
+}
 
 #pragma endregion

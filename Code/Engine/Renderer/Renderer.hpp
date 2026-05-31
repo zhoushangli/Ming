@@ -8,6 +8,7 @@
 #include "Engine/Renderer/BitmapFont.hpp"
 #include "Engine/Renderer/PostProcessPass.hpp"
 #include "Engine/Renderer/Shader.hpp"
+#include "Engine/Core/EventSystem.hpp"
 
 #include <map>
 #include <vector>
@@ -192,8 +193,7 @@ public:
 	void BindShader(Shader* shader);
 	void BindModelConstants(Matrix4x4 const& modelToWorldTransform, Rgba8 const& modelColor);
 	void BindLightConstants(LightConstants const& lightConstants);
-	void
-	BindLightConstants(Vec3 const& sunDirection, float sunIntensity, Rgba8 const& ambientColor, float ambientIntensity);
+	void BindLightConstants(Vec3 const& sunDirection, float sunIntensity, Rgba8 const& ambientColor, float ambientIntensity);
 	void BindPostProcessConstants(Vec2 const& screenDimensions, float cameraNear, float cameraFar);
 	void BindFrameConstants(float time, float deltaSeconds);
 
@@ -226,7 +226,7 @@ public:
 	void BeginEvent(std::string const& eventName);
 	void EndEvent();
 
-	ID3D11Device* GetD3DDevice() const;
+	ID3D11Device*        GetD3DDevice() const;
 	ID3D11DeviceContext* GetD3DDeviceContext() const;
 
 private:
@@ -250,6 +250,9 @@ private:
 	void BindIndexBuffer(IndexBuffer* indexBuffer);
 
 	void SetViewport(IntVec2 dimensions, IntVec2 topLeft = IntVec2::Zero);
+
+	static bool Event_WindowResized(EventArgs& args);
+	void ResizeViewport(IntVec2 newDimensions);
 
 private:
 	RendererConfig m_config;

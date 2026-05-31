@@ -8,9 +8,12 @@ struct GLFWwindow;
 
 struct WindowConfig
 {
-	bool        m_isEnable     = true;
-	float       m_clientAspect = 16.0f / 9.0f;
-	std::string m_appName      = "Unnamed SD Application";
+	bool        m_isEnable               = true;
+	float       m_clientAspect           = 16.0f / 9.0f;
+	std::string m_appName                = "Unnamed SD Application";
+	bool        m_isFullscreen           = false;
+	bool        m_isResizable            = false;
+	bool        m_isBorderlessFullscreen = true;
 };
 
 class Window

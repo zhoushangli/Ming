@@ -59,14 +59,14 @@ void InputSystem::Startup()
 		m_keyStates[key].m_prevState = false;
 	}
 
-	g_engine->m_eventSystem->SubscribeEventCallbackFunction("KeyUp", InputSystem::Event_KeyUp);
-	g_engine->m_eventSystem->SubscribeEventCallbackFunction("KeyDown", InputSystem::Event_KeyDown);
+	g_engine->m_eventSystem->RegisterEvent("KeyUp", InputSystem::Event_KeyUp);
+	g_engine->m_eventSystem->RegisterEvent("KeyDown", InputSystem::Event_KeyDown);
 }
 
 void InputSystem::Shutdown()
 {
-	g_engine->m_eventSystem->UnsubscribeEventCallbackFunction("KeyDown", Event_KeyDown);
-	g_engine->m_eventSystem->UnsubscribeEventCallbackFunction("KeyUp", Event_KeyUp);
+	g_engine->m_eventSystem->UnregisterEvent("KeyDown", Event_KeyDown);
+	g_engine->m_eventSystem->UnregisterEvent("KeyUp", Event_KeyUp);
 
 	for (int key = 0; key < NumKeyCodes; ++key)
 	{

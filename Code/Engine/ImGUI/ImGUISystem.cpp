@@ -369,9 +369,9 @@ void ImGuiSystem::RenderInspectorPanel()
 		static float rotation[3] = {0.f, 0.f, 0.f};
 		static float scale[3]    = {1.f, 1.f, 1.f};
 
-		ImGui::DragFloat3("Position", position, 0.1f);
-		ImGui::DragFloat3("Rotation", rotation, 0.1f);
-		ImGui::DragFloat3("Scale", scale, 0.1f);
+		ImGui::DragFloat3("Position", position, 0.1f, 0.0f, 0.f, "%.1f");
+		ImGui::DragFloat3("Rotation", rotation, 0.1f, 0.0f, 0.f, "%.1f");
+		ImGui::DragFloat3("Scale", scale, 0.1f, 0.0f, 0.f, "%.1f");
 	}
 
 	if (ImGui::CollapsingHeader("Rendering", ImGuiTreeNodeFlags_DefaultOpen))

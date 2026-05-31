@@ -2,111 +2,94 @@
 
 #include "Engine/Core/Engine.hpp"
 
-EventSystem::EventSystem(EventSystemConfig const& config) : m_config(config)
-{
-}
+EventSystem::EventSystem(EventSystemConfig const& config) : m_config(config) {}
 
-EventSystem::~EventSystem()
-{
+EventSystem::~EventSystem() {}
 
-}
-
-void EventSystem::Startup()
-{
-
-}
+void EventSystem::Startup() {}
 
 void EventSystem::Shutdown()
 {
-    for (auto& pair : m_subscriptionListsByEventName)
-    {
-        pair.second.clear();
-    }
-    m_subscriptionListsByEventName.clear();
+	for (auto& pair : m_subscriptionListsByEventName)
+	{
+		pair.second.clear();
+	}
+	m_subscriptionListsByEventName.clear();
 }
 
-void EventSystem::BeginFrame()
-{
+void EventSystem::BeginFrame() {}
 
+void EventSystem::EndFrame() {}
+
+void EventSystem::RegisterEvent(std::string const& eventName, EventCallbackFunctionPtr ptr)
+{
+	m_subscriptionListsByEventName[eventName].push_back(ptr);
 }
 
-void EventSystem::EndFrame()
+void EventSystem::UnregisterEvent(std::string const& eventName, EventCallbackFunctionPtr ptr)
 {
-
-}
-
-void EventSystem::SubscribeEventCallbackFunction(std::string const& eventName, EventSystemCallbackFunctionPtr ptr)
-{
-    m_subscriptionListsByEventName[eventName].push_back(ptr);
-}
-
-void EventSystem::UnsubscribeEventCallbackFunction(std::string const& eventName, EventSystemCallbackFunctionPtr ptr)
-{
-    auto& callbackList = m_subscriptionListsByEventName[eventName];
-    auto it = std::find(callbackList.begin(), callbackList.end(), ptr);
-    if (it != callbackList.end())
-    {
-        callbackList.erase(it);
-    }
+	auto& callbackList = m_subscriptionListsByEventName[eventName];
+	auto  it           = std::find(callbackList.begin(), callbackList.end(), ptr);
+	if (it != callbackList.end())
+	{
+		callbackList.erase(it);
+	}
 }
 
 int EventSystem::FireEvent(std::string const& eventName, EventArgs& args)
 {
-    auto& callbackList = m_subscriptionListsByEventName[eventName];
-    int numCallbacks = 0;
-    for (auto& callback : callbackList)
-    {
-        numCallbacks++;
-        if (callback(args))
-        {
-            break; // Stop propagation if callback returns true
-        }
-    }
+	auto& callbackList = m_subscriptionListsByEventName[eventName];
+	int   numCallbacks = 0;
+	for (auto& callback : callbackList)
+	{
+		numCallbacks++;
+		if (callback(args))
+		{
+			break; // Stop propagation if callback returns true
+		}
+	}
 
-    return numCallbacks;
+	return numCallbacks;
 }
 
 int EventSystem::FireEvent(std::string const& eventName)
 {
-    NamedStrings args;
-    return FireEvent(eventName, args);
+	NamedStrings args;
+	return FireEvent(eventName, args);
 }
 
 bool EventSystem::IsEventRegistered(std::string const& eventName) const
 {
-    auto it = m_subscriptionListsByEventName.find(eventName);
-    return it != m_subscriptionListsByEventName.end();
+	auto it = m_subscriptionListsByEventName.find(eventName);
+	return it != m_subscriptionListsByEventName.end();
 }
 
 Strings EventSystem::GetRegisteredEventNames() const
 {
-    Strings registeredEventNames;
-    registeredEventNames.reserve(m_subscriptionListsByEventName.size());
+	Strings registeredEventNames;
+	registeredEventNames.reserve(m_subscriptionListsByEventName.size());
 
-    for (auto const& pair : m_subscriptionListsByEventName)
-    {
-        registeredEventNames.push_back(pair.first);
-    }
+	for (auto const& pair : m_subscriptionListsByEventName)
+	{
+		registeredEventNames.push_back(pair.first);
+	}
 
-    return registeredEventNames;
+	return registeredEventNames;
 }
 
-void SubscribeEventCallbackFunction(std::string const& eventName, EventSystemCallbackFunctionPtr ptr)
+void RegisterEvent(std::string const& eventName, EventCallbackFunctionPtr ptr)
 {
-    g_engine->m_eventSystem->SubscribeEventCallbackFunction(eventName, ptr);
+	g_engine->m_eventSystem->RegisterEvent(eventName, ptr);
 }
 
-void UnsubscribeEventCallbackFunction(std::string const& eventName, EventSystemCallbackFunctionPtr ptr)
+void UnregisterEvent(std::string const& eventName, EventCallbackFunctionPtr ptr)
 {
-    g_engine->m_eventSystem->UnsubscribeEventCallbackFunction(eventName, ptr);
+	g_engine->m_eventSystem->UnregisterEvent(eventName, ptr);
 }
 
-int FireEvent(std::string const& eventName)
-{
-    return g_engine->m_eventSystem->FireEvent(eventName);
-}
+int FireEvent(std::string const& eventName) { return g_engine->m_eventSystem->FireEvent(eventName); }
 
 int FireEvent(std::string const& eventName, EventArgs& args)
 {
-    return g_engine->m_eventSystem->FireEvent(eventName, args);
+	return g_engine->m_eventSystem->FireEvent(eventName, args);
 }
