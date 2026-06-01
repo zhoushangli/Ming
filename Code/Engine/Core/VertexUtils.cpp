@@ -281,7 +281,7 @@ void AddVertsForQuad3D(
 	const Vec3&          topRight,
 	const Vec3&          topLeft,
 	const Rgba8&         color /*= Rgba8::kWhite*/,
-	const AABB2&         UVs /*= AABB2::kUnit */
+	const AABB2&         UVs /*= AABB2::Unit */
 )
 {
 	Vec2 uvMins = UVs.m_mins;
@@ -308,7 +308,7 @@ void AddVertsForQuad3D(
 	const Vec3&                topRight,
 	const Vec3&                topLeft,
 	const Rgba8&               color /*= Rgba8::kWhite*/,
-	const AABB2&               UVs /*= AABB2::kUnit */
+	const AABB2&               UVs /*= AABB2::Unit */
 )
 {
 	Vec2 const uvMins = UVs.m_mins;
@@ -338,7 +338,7 @@ void AddVertsForAABB3D(
 	std::vector<Vertex>& verts,
 	const AABB3&         bounds,
 	const Rgba8&         color /*= Rgba8::kWhite*/,
-	const AABB2&         UVs /*= AABB2::kUnit*/
+	const AABB2&         UVs /*= AABB2::Unit*/
 )
 {
 	Vec3 const& mins = bounds.m_mins;
@@ -500,7 +500,7 @@ void AddVertsForSphere3D(
 	const Vec3&          center,
 	float                radius,
 	const Rgba8&         color /*= Rgba8::kWhite*/,
-	const AABB2&         UVs /*= AABB2::kUnit*/,
+	const AABB2&         UVs /*= AABB2::Unit*/,
 	int                  numSlices /*= 16*/,
 	int                  numStacks /*= 8*/
 )
@@ -560,7 +560,7 @@ void AddVertsForCylinder3D(
 	const Vec3&          end,
 	float                radius,
 	const Rgba8&         color /*= Rgba8::kWhite*/,
-	const AABB2&         UVs /*= AABB2::kUnit*/,
+	const AABB2&         UVs /*= AABB2::Unit*/,
 	int                  numSlices /*= 16*/
 )
 {
@@ -809,7 +809,7 @@ void AddVertsForCapsule3D(
 	int                  numStacks /*= 8*/
 )
 {
-	AddVertsForCapsule3D(verts, start, end, radius, AABB2::kUnit, color, numSlices, numStacks);
+	AddVertsForCapsule3D(verts, start, end, radius, AABB2::Unit, color, numSlices, numStacks);
 }
 
 void AddVertsForCapsule3D(
@@ -837,7 +837,7 @@ void AddVertsForCapsule3D(
 		capsule.m_start,
 		capsule.m_end,
 		capsule.m_radius,
-		AABB2::kUnit,
+		AABB2::Unit,
 		color,
 		numSlices,
 		numStacks
@@ -850,7 +850,7 @@ void AddVertsForCone3D(
 	const Vec3&          end,
 	float                radius,
 	const Rgba8&         color /*= Rgba8::kWhite*/,
-	const AABB2&         UVs /*= AABB2::kUnit*/,
+	const AABB2&         UVs /*= AABB2::Unit*/,
 	int                  numSlices /*= 32*/
 )
 {
@@ -964,8 +964,8 @@ void AddVertsForArrow3D(
 	Vec3  shaftEnd    = start + (dir / length) * shaftLength;
 	float shaftRadius = radius * 0.30f;
 
-	AddVertsForCylinder3D(verts, start, shaftEnd, shaftRadius, color, AABB2::kUnit, numSlices);
-	AddVertsForCone3D(verts, shaftEnd, end, radius, color, AABB2::kUnit, numSlices);
+	AddVertsForCylinder3D(verts, start, shaftEnd, shaftRadius, color, AABB2::Unit, numSlices);
+	AddVertsForCone3D(verts, shaftEnd, end, radius, color, AABB2::Unit, numSlices);
 }
 
 void AddVertsForDisc2D(std::vector<Vertex>& verts, Disc2 const& disc, Rgba8 color)

@@ -2,13 +2,13 @@
 
 #include "Game/EngineBuildPreferences.hpp"
 
+#include "Engine/Core/EventSystem.hpp"
 #include "Engine/Core/Image.hpp"
 #include "Engine/Math/IntVec2.hpp"
 #include "Engine/Math/Matrix4x4.hpp"
 #include "Engine/Renderer/BitmapFont.hpp"
 #include "Engine/Renderer/PostProcessPass.hpp"
 #include "Engine/Renderer/Shader.hpp"
-#include "Engine/Core/EventSystem.hpp"
 
 #include <map>
 #include <vector>
@@ -151,6 +151,13 @@ struct FrameConstants
 };
 static const int kFrameConstantsSlot = 5;
 
+struct RenderTargetSet
+{
+	Texture* colorTexture  = nullptr;
+	Texture* depthTexture  = nullptr;
+	Texture* normalTexture = nullptr;
+};
+
 class Renderer
 {
 public:
@@ -160,14 +167,11 @@ public:
 	// Lifetime and frame loop
 	void Startup();
 	void Shutdown();
-	void BeginSkyboxPass();
-	void BeginScenePass();
-	void BeginUIPass();
+	void BeginFrame();
 	void EndFrame();
 	void CreateRenderingContext();
 
-	void RenderSkybox(Camera const& camera, Shader* shader = nullptr, float time = 0.f, float deltaSeconds = 0.f);
-	void RenderPostProcess(Camera const& camera, int downsampleFactor = 1);
+	void RenderPostProcess(Camera const& camera, IntVec2 const& outputResolution);
 
 	// Camera and pipeline state
 	void BeginCamera(Camera const& camera);
@@ -193,7 +197,8 @@ public:
 	void BindShader(Shader* shader);
 	void BindModelConstants(Matrix4x4 const& modelToWorldTransform, Rgba8 const& modelColor);
 	void BindLightConstants(LightConstants const& lightConstants);
-	void BindLightConstants(Vec3 const& sunDirection, float sunIntensity, Rgba8 const& ambientColor, float ambientIntensity);
+	void
+	BindLightConstants(Vec3 const& sunDirection, float sunIntensity, Rgba8 const& ambientColor, float ambientIntensity);
 	void BindPostProcessConstants(Vec2 const& screenDimensions, float cameraNear, float cameraFar);
 	void BindFrameConstants(float time, float deltaSeconds);
 
@@ -229,6 +234,14 @@ public:
 	ID3D11Device*        GetD3DDevice() const;
 	ID3D11DeviceContext* GetD3DDeviceContext() const;
 
+	RenderTargetSet GetRenderTargetSet() const;
+	void            BindRenderTargetSet(RenderTargetSet const& renderTargetSet);
+	void            SetViewport(IntVec2 dimensions, IntVec2 topLeft = IntVec2::Zero);
+	void            ResizeRenderTargetSet(IntVec2 newDimensions);
+	void            FinalBlitToBackBuffer();
+	void            BindFinalBlit();
+	void            ResizeBackBuffer(IntVec2 newDimensions);
+
 private:
 	// Texture cache internals
 	Texture* CreateTextureFromFile(char const* fileDataPath);
@@ -249,10 +262,19 @@ private:
 	void BindConstantBuffer(ConstantBuffer* constantBuffer, int slot);
 	void BindIndexBuffer(IndexBuffer* indexBuffer);
 
-	void SetViewport(IntVec2 dimensions, IntVec2 topLeft = IntVec2::Zero);
-
 	static bool Event_WindowResized(EventArgs& args);
-	void ResizeViewport(IntVec2 newDimensions);
+	void        ResizeViewport(IntVec2 newDimensions);
+
+	void DrawFullscreenPass(
+		Shader*        shader,
+		Texture*       colorInput,
+		Texture*       depthInput,
+		Texture*       normalInput,
+		Texture*       outputTarget,
+		wchar_t const* eventName
+	);
+	void UnbindAllShaderResourceViews();
+	void BindBackBuffer();
 
 private:
 	RendererConfig m_config;
@@ -299,6 +321,8 @@ private:
 
 	std::map<std::string, Texture*>    m_texturesByName;
 	std::map<std::string, BitmapFont*> m_fontsByName;
+
+	Texture* m_finalBlit = nullptr; // This is the back buffer render target view wrapped in a Texture for convenience
 
 	// Post-process pass resources
 	Texture* m_sceneColorTexture     = nullptr;

@@ -141,14 +141,13 @@ void ImGuiSystem::BeginFrame()
 	ImGui_ImplGlfw_NewFrame();
 	ImGui::NewFrame();
 
-	RenderEditorUI();
+	// RenderEditorUI();
 }
 
 void ImGuiSystem::EndFrame()
 {
 	ImGui::Render();
 
-	g_engine->m_renderer->BeginUIPass();
 	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
 }
 

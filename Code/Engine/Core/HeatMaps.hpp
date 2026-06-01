@@ -32,7 +32,7 @@ public:
 
 	void AddVertsForDebugDraw(
 		std::vector<Vertex>& verts,
-		AABB2                totalBounds  = AABB2::kUnit,
+		AABB2                totalBounds  = AABB2::Unit,
 		FloatRange           valueRange   = FloatRange::ZeroToOne,
 		Rgba8                lowColor     = Rgba8::Black,
 		Rgba8                highColor    = Rgba8::White,

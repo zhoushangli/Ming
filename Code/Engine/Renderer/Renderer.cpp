@@ -48,6 +48,7 @@ Vertex const* GetFullscreenTriangleTopLeftUV()
 
 	return fullscreenTriangle;
 }
+
 } // namespace
 
 // clang-format off
@@ -343,6 +344,7 @@ void           Renderer::Startup()
 #pragma region Startup: Create post-process resources
 
 	Vec2 windowsDimensions = (Vec2)g_engine->m_window->GetClientDimensions();
+	m_finalBlit            = CreateRenderTargetTexture("FinalBlit", IntVec2(windowsDimensions));
 	m_sceneColorTexture    = CreateRenderTargetTexture("SceneColor", IntVec2(windowsDimensions));
 	m_sceneDepthTexture    = CreateDepthStencilTexture("SceneDepth", IntVec2(windowsDimensions));
 	m_sceneNormalTexture   = CreateRenderTargetTexture("SceneNormal", IntVec2(windowsDimensions));
@@ -357,7 +359,7 @@ void           Renderer::Startup()
 
 #pragma region Startup: Register events
 
-	RegisterEvent("Event_WindowResized", Renderer::Event_WindowResized);
+	RegisterEvent("WindowResized", Renderer::Event_WindowResized);
 
 #pragma endregion
 }
@@ -476,43 +478,7 @@ void Renderer::Shutdown()
 #endif
 }
 
-void Renderer::BeginSkyboxPass()
-{
-	ID3D11RenderTargetView* renderingTarget = m_sceneColorTexture->m_renderTargetView;
-
-	// Set render target
-	m_d3dDeviceContext->OMSetRenderTargets(1, &renderingTarget, nullptr);
-
-	// Initialize states to default
-	SetBlendMode(BlendMode::ALPHA);
-	SetRasterizerMode(RasterizerMode::SOLID_CULL_BACK);
-	SetDepthMode(DepthMode::READ_WRITE_LESS_EQUAL);
-}
-
-void Renderer::BeginScenePass()
-{
-	ID3D11RenderTargetView* renderingTargets[2] = {m_sceneColorTexture->m_renderTargetView,
-		m_sceneNormalTexture->m_renderTargetView};
-
-	// Set render target
-	m_d3dDeviceContext->OMSetRenderTargets(2, renderingTargets, m_sceneDepthTexture->m_depthStencilView);
-
-	// Initialize states to default
-	SetBlendMode(BlendMode::ALPHA);
-	SetRasterizerMode(RasterizerMode::SOLID_CULL_BACK);
-	SetDepthMode(DepthMode::READ_WRITE_LESS_EQUAL);
-}
-
-void Renderer::BeginUIPass()
-{
-	// Set render target
-	m_d3dDeviceContext->OMSetRenderTargets(1, &m_d3dRenderTargetView, nullptr);
-
-	// Initialize states to default
-	SetBlendMode(BlendMode::ALPHA);
-	SetRasterizerMode(RasterizerMode::SOLID_CULL_NONE);
-	SetDepthMode(DepthMode::READ_ONLY_ALWAYS);
-}
+void Renderer::BeginFrame() {}
 
 void Renderer::EndFrame()
 {
@@ -525,97 +491,16 @@ void Renderer::EndFrame()
 	}
 }
 
-void Renderer::RenderSkybox(Camera const& camera, Shader* shader, float time, float deltaSeconds)
-{
-	IntVec2 const resolution = g_engine->m_window->GetClientDimensions();
-
-	SetViewport(resolution);
-	BeginCamera(camera);
-
-	SetBlendMode(BlendMode::OPAQUE);
-	SetRasterizerMode(RasterizerMode::SOLID_CULL_NONE);
-	SetDepthMode(DepthMode::DISABLED);
-
-	BindShader(shader);
-	BindTexture(CreateOrGetTexture("Data/Images/perlin_noise.png"), 3);
-	BindSampler(SamplerMode::BILINEAR_WRAP, 3);
-	BindFrameConstants(time, deltaSeconds);
-
-	m_d3dAnnotation->BeginEvent(L"Render Skybox");
-	DrawVertexArray(3, GetFullscreenTriangleTopLeftUV());
-	m_d3dAnnotation->EndEvent();
-}
-
 // This function will run the post-process passes
 // And in the end the render target will be the back buffer, ready to present
-void Renderer::RenderPostProcess(Camera const& camera, int downsampleFactor)
+void Renderer::RenderPostProcess(Camera const& camera, IntVec2 const& outputResolution)
 {
 	IntVec2 const fullResolution = g_engine->m_window->GetClientDimensions();
-	downsampleFactor             = max(1, downsampleFactor);
 
-	IntVec2 const workingResolution(
-		max(1, fullResolution.x / downsampleFactor),
-		max(1, fullResolution.y / downsampleFactor)
-	);
 	BeginCamera(camera);
 	SetBlendMode(BlendMode::OPAQUE);
 	SetRasterizerMode(RasterizerMode::SOLID_CULL_NONE);
 	SetDepthMode(DepthMode::READ_ONLY_ALWAYS);
-
-	auto UnbindOutputAndInputs = [&]()
-	{
-		ID3D11ShaderResourceView* nullSrvs[16] = {nullptr};
-		m_d3dDeviceContext->OMSetRenderTargets(1, &m_d3dRenderTargetView, nullptr);
-		m_d3dDeviceContext->PSSetShaderResources(0, 16, nullSrvs);
-		m_d3dDeviceContext->VSSetShaderResources(0, 16, nullSrvs);
-	};
-
-	auto DrawFullscreenPass = [&](Shader*                 shader,
-								  Texture*                colorInput,
-								  Texture*                depthInput,
-								  Texture*                normalInput,
-								  ID3D11RenderTargetView* target,
-								  IntVec2 const&          resolution,
-								  wchar_t const*          eventName)
-	{
-		SetViewport(resolution);
-		m_d3dDeviceContext->OMSetRenderTargets(1, &target, nullptr);
-
-		BindShader(shader);
-		BindTexture(colorInput, 0);
-		BindSampler(SamplerMode::POINT_CLAMP, 0);
-		BindTexture(depthInput, 1);
-		BindSampler(SamplerMode::POINT_CLAMP, 1);
-		BindTexture(normalInput, 2);
-		BindSampler(SamplerMode::POINT_CLAMP, 2);
-		BindPostProcessConstants((Vec2)resolution, camera.GetNearZ(), camera.GetFarZ());
-
-		m_d3dAnnotation->BeginEvent(eventName);
-		DrawVertexArray(3, GetFullscreenTriangleTopLeftUV());
-		m_d3dAnnotation->EndEvent();
-
-		UnbindOutputAndInputs();
-	};
-
-	auto GetOrCreateColorTarget = [&](std::string const& name, IntVec2 const& resolution) -> Texture*
-	{
-		Texture* texture = GetTextureFromFileName(name.c_str());
-		if (texture == nullptr)
-		{
-			texture = CreateRenderTargetTexture(name.c_str(), resolution);
-		}
-		return texture;
-	};
-
-	auto GetOrCreateFloatTarget = [&](std::string const& name, IntVec2 const& resolution) -> Texture*
-	{
-		Texture* texture = GetTextureFromFileName(name.c_str());
-		if (texture == nullptr)
-		{
-			texture = CreateFloatRenderTargetTexture(name.c_str(), resolution);
-		}
-		return texture;
-	};
 
 	Texture* sceneColor  = m_sceneColorTexture;
 	Texture* sceneDepth  = m_sceneDepthTexture;
@@ -623,60 +508,6 @@ void Renderer::RenderPostProcess(Camera const& camera, int downsampleFactor)
 
 	Texture* ping = m_postProcessTextureA;
 	Texture* pong = m_postProcessTextureB;
-
-	bool const useDownsample = (downsampleFactor > 1);
-	if (useDownsample)
-	{
-		std::string colorName  = Stringf("SceneColor_%dx%d", workingResolution.x, workingResolution.y);
-		std::string depthName  = Stringf("SceneDepth_%dx%d", workingResolution.x, workingResolution.y);
-		std::string normalName = Stringf("SceneNormal_%dx%d", workingResolution.x, workingResolution.y);
-		std::string pingName   = Stringf("PostA_%dx%d", workingResolution.x, workingResolution.y);
-		std::string pongName   = Stringf("PostB_%dx%d", workingResolution.x, workingResolution.y);
-
-		Texture* downsampledColor  = GetOrCreateColorTarget(colorName, workingResolution);
-		Texture* downsampledDepth  = GetOrCreateFloatTarget(depthName, workingResolution);
-		Texture* downsampledNormal = GetOrCreateColorTarget(normalName, workingResolution);
-		ping                       = GetOrCreateColorTarget(pingName, workingResolution);
-		pong                       = GetOrCreateColorTarget(pongName, workingResolution);
-
-		m_d3dAnnotation->BeginEvent(L"Downsample Inputs");
-
-		DrawFullscreenPass(
-			m_postProcessCopyShader,
-			m_sceneColorTexture,
-			nullptr,
-			nullptr,
-			downsampledColor->m_renderTargetView,
-			workingResolution,
-			L"Downsample Scene Color"
-		);
-
-		DrawFullscreenPass(
-			m_postProcessCopyShader,
-			m_sceneDepthTexture,
-			nullptr,
-			nullptr,
-			downsampledDepth->m_renderTargetView,
-			workingResolution,
-			L"Downsample Scene Depth"
-		);
-
-		DrawFullscreenPass(
-			m_postProcessCopyShader,
-			m_sceneNormalTexture,
-			nullptr,
-			nullptr,
-			downsampledNormal->m_renderTargetView,
-			workingResolution,
-			L"Downsample Scene Normal"
-		);
-
-		m_d3dAnnotation->EndEvent();
-
-		sceneColor  = downsampledColor;
-		sceneDepth  = downsampledDepth;
-		sceneNormal = downsampledNormal;
-	}
 
 	std::vector<PostProcessPass const*> enabledPasses;
 	enabledPasses.reserve(m_postProcessPasses.size());
@@ -743,7 +574,7 @@ void Renderer::RenderPostProcess(Camera const& camera, int downsampleFactor)
 		bool usesMainChainColor = false;
 		if (pass->HasCustomOutput())
 		{
-			outputTexture = GetOrCreateColorTarget(pass->m_customOutput.m_name, workingResolution);
+			outputTexture = GetTextureFromFileName(pass->m_customOutput.m_name.c_str());
 		}
 		else
 		{
@@ -751,31 +582,31 @@ void Renderer::RenderPostProcess(Camera const& camera, int downsampleFactor)
 			outputTexture      = (mainChainColorTexture == ping) ? pong : ping;
 		}
 
-		outputView = outputTexture->m_renderTargetView;
-
+		BindPostProcessConstants((Vec2)outputResolution, camera.GetNearZ(), camera.GetFarZ());
 		DrawFullscreenPass(
 			pass->m_postProcessShader,
 			mainChainColorTexture,
 			sceneDepth,
 			sceneNormal,
-			outputView,
-			workingResolution,
+			outputTexture,
 			pass->m_wideName.c_str()
 		);
+		UnbindAllShaderResourceViews();
 
 		if (usesMainChainColor)
 			mainChainColorTexture = outputTexture;
 	}
 
+	BindPostProcessConstants((Vec2)outputResolution, camera.GetNearZ(), camera.GetFarZ());
 	DrawFullscreenPass(
 		m_postProcessCopyShader,
 		mainChainColorTexture,
 		nullptr,
 		nullptr,
-		m_d3dRenderTargetView,
-		fullResolution,
-		L"Final Blit"
+		m_finalBlit,
+		L"PostProcessFinalCopy"
 	);
+	UnbindAllShaderResourceViews();
 }
 
 void Renderer::CreateRenderingContext() {}
@@ -1667,15 +1498,148 @@ void Renderer::SetViewport(IntVec2 dimensions, IntVec2 topLeft)
 	m_d3dDeviceContext->RSSetViewports(1, &viewport);
 }
 
+void Renderer::ResizeRenderTargetSet(IntVec2 newDimensions)
+{
+	if (newDimensions.x <= 0 || newDimensions.y <= 0)
+	{
+		return;
+	}
+
+	if (newDimensions == m_finalBlit->m_dimensions && newDimensions == m_sceneColorTexture->m_dimensions
+		&& newDimensions == m_sceneDepthTexture->m_dimensions && newDimensions == m_sceneNormalTexture->m_dimensions)
+	{
+		return;
+	}
+
+	delete m_finalBlit;
+	delete m_sceneColorTexture;
+	delete m_sceneDepthTexture;
+	delete m_sceneNormalTexture;
+
+	// Recreate scene render target textures with new dimensions
+	m_finalBlit          = CreateRenderTargetTexture("FinalBlit", newDimensions);
+	m_sceneColorTexture  = CreateRenderTargetTexture("SceneColor", newDimensions);
+	m_sceneDepthTexture  = CreateDepthStencilTexture("SceneDepth", newDimensions);
+	m_sceneNormalTexture = CreateRenderTargetTexture("SceneNormal", newDimensions);
+
+	float normalClearColor[4] = {0.5f, 0.5f, 0.5f, 1.0f};
+	m_d3dDeviceContext->ClearRenderTargetView(m_sceneNormalTexture->m_renderTargetView, normalClearColor);
+	m_d3dDeviceContext->ClearDepthStencilView(
+		m_sceneDepthTexture->m_depthStencilView,
+		D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL,
+		1.0f,
+		0
+	);
+}
+
+void Renderer::FinalBlitToBackBuffer()
+{
+	BindBackBuffer();
+	DrawFullscreenPass(m_postProcessCopyShader, m_sceneColorTexture, nullptr, nullptr, m_finalBlit, L"Final Blit");
+	UnbindAllShaderResourceViews();
+}
+
+void Renderer::BindFinalBlit() { m_d3dDeviceContext->OMSetRenderTargets(1, &m_finalBlit->m_renderTargetView, nullptr); }
+
+void Renderer::ResizeBackBuffer(IntVec2 newDimensions)
+{
+	if (newDimensions.x <= 0 || newDimensions.y <= 0)
+	{
+		return;
+	}
+
+	// 1) Unbind backbuffer RTV
+	ID3D11RenderTargetView* nullRTV = nullptr;
+	m_d3dDeviceContext->OMSetRenderTargets(1, &nullRTV, nullptr);
+
+	if (m_d3dRenderTargetView != nullptr)
+	{
+		m_d3dRenderTargetView->Release();
+		m_d3dRenderTargetView = nullptr;
+	}
+
+	HRESULT hr = m_d3dSwapChain->ResizeBuffers(0, newDimensions.x, newDimensions.y, DXGI_FORMAT_UNKNOWN, 0);
+
+	GUARANTEE_OR_DIE(SUCCEEDED(hr), "Could not resize swap chain buffers.");
+
+	ID3D11Texture2D* backBuffer = nullptr;
+	hr                          = m_d3dSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)&backBuffer);
+
+	GUARANTEE_OR_DIE(SUCCEEDED(hr), "Could not get resized swap chain buffer.");
+
+	hr = m_d3dDevice->CreateRenderTargetView(backBuffer, nullptr, &m_d3dRenderTargetView);
+
+	backBuffer->Release();
+
+	GUARANTEE_OR_DIE(SUCCEEDED(hr), "Could not create resized back buffer RTV.");
+}
+
 ID3D11Device* Renderer::GetD3DDevice() const { return m_d3dDevice; }
 
 ID3D11DeviceContext* Renderer::GetD3DDeviceContext() const { return m_d3dDeviceContext; }
 
+RenderTargetSet Renderer::GetRenderTargetSet() const
+{
+	RenderTargetSet result;
+	result.colorTexture  = m_sceneColorTexture;
+	result.depthTexture  = m_sceneDepthTexture;
+	result.normalTexture = m_sceneNormalTexture;
+	return result;
+}
+
+void Renderer::BindRenderTargetSet(RenderTargetSet const& renderTargetSet)
+{
+	ID3D11RenderTargetView* renderTargetViews[2] = {nullptr, nullptr};
+
+	if (renderTargetSet.colorTexture)
+	{
+		renderTargetViews[0] = renderTargetSet.colorTexture->m_renderTargetView;
+	}
+
+	if (renderTargetSet.normalTexture)
+	{
+		renderTargetViews[1] = renderTargetSet.normalTexture->m_renderTargetView;
+	}
+
+	m_d3dDeviceContext->OMSetRenderTargets(2, renderTargetViews, renderTargetSet.depthTexture->m_depthStencilView);
+}
+
 bool Renderer::Event_WindowResized(EventArgs& args) { return true; }
 
-void Renderer::ResizeViewport(IntVec2 newDimensions)
+void Renderer::ResizeViewport(IntVec2 newDimensions) {}
+
+void Renderer::DrawFullscreenPass(
+	Shader*        shader,
+	Texture*       colorInput,
+	Texture*       depthInput,
+	Texture*       normalInput,
+	Texture*       outputTarget,
+	wchar_t const* eventName
+)
 {
-	
+	m_d3dDeviceContext->OMSetRenderTargets(1, &outputTarget->m_renderTargetView, nullptr);
+
+	BindShader(shader);
+	BindTexture(colorInput, 0);
+	BindSampler(SamplerMode::POINT_CLAMP, 0);
+	BindTexture(depthInput, 1);
+	BindSampler(SamplerMode::POINT_CLAMP, 1);
+	BindTexture(normalInput, 2);
+	BindSampler(SamplerMode::POINT_CLAMP, 2);
+
+	m_d3dAnnotation->BeginEvent(eventName);
+	DrawVertexArray(3, GetFullscreenTriangleTopLeftUV());
+	m_d3dAnnotation->EndEvent();
 }
+
+void Renderer::UnbindAllShaderResourceViews()
+{
+	ID3D11ShaderResourceView* nullSrvs[16] = {nullptr};
+	m_d3dDeviceContext->OMSetRenderTargets(1, &m_d3dRenderTargetView, nullptr);
+	m_d3dDeviceContext->PSSetShaderResources(0, 16, nullSrvs);
+	m_d3dDeviceContext->VSSetShaderResources(0, 16, nullSrvs);
+}
+
+void Renderer::BindBackBuffer() { m_d3dDeviceContext->OMSetRenderTargets(1, &m_d3dRenderTargetView, nullptr); }
 
 #pragma endregion

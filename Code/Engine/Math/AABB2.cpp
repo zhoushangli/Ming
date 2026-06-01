@@ -3,7 +3,7 @@
 #include "Engine/Math/MathUtils.hpp"
 
 const AABB2 AABB2::Zero          = AABB2(0.f, 0.f, 0.f, 0.f);
-const AABB2 AABB2::kUnit          = AABB2(0.f, 0.f, 1.f, 1.f);
+const AABB2 AABB2::Unit          = AABB2(0.f, 0.f, 1.f, 1.f);
 const AABB2 AABB2::kCenteredUnit = AABB2(-0.5f, -0.5f, 0.5f, 0.5f);
 
 AABB2::AABB2(const Vec2& mins, const Vec2& maxs) : m_mins(mins), m_maxs(maxs) {}

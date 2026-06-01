@@ -90,7 +90,7 @@ void AddVertsForQuad3D(
 	const Vec3&          topRight,
 	const Vec3&          topLeft,
 	const Rgba8&         color = Rgba8::White,
-	const AABB2&         UVs   = AABB2::kUnit
+	const AABB2&         UVs   = AABB2::Unit
 );
 
 void AddVertsForQuad3D(
@@ -101,11 +101,11 @@ void AddVertsForQuad3D(
 	const Vec3&                topRight,
 	const Vec3&                topLeft,
 	const Rgba8&               color = Rgba8::White,
-	const AABB2&               UVs   = AABB2::kUnit
+	const AABB2&               UVs   = AABB2::Unit
 );
 
 void AddVertsForAABB3D(
-	std::vector<Vertex>& verts, const AABB3& bounds, const Rgba8& color = Rgba8::White, const AABB2& UVs = AABB2::kUnit
+	std::vector<Vertex>& verts, const AABB3& bounds, const Rgba8& color = Rgba8::White, const AABB2& UVs = AABB2::Unit
 );
 
 void AddVertsForAABB3D(
@@ -113,7 +113,7 @@ void AddVertsForAABB3D(
 	std::vector<unsigned int>& indexes,
 	const AABB3&               bounds,
 	const Rgba8&               color = Rgba8::White,
-	const AABB2&               UVs   = AABB2::kUnit
+	const AABB2&               UVs   = AABB2::Unit
 );
 
 void AddVertsForSphere3D(
@@ -121,7 +121,7 @@ void AddVertsForSphere3D(
 	const Vec3&          center,
 	float                radius,
 	const Rgba8&         color     = Rgba8::White,
-	const AABB2&         UVs       = AABB2::kUnit,
+	const AABB2&         UVs       = AABB2::Unit,
 	int                  numSlices = 16,
 	int                  numStacks = 8
 );
@@ -132,7 +132,7 @@ void AddVertsForCylinder3D(
 	const Vec3&          end,
 	float                radius,
 	const Rgba8&         color     = Rgba8::White,
-	const AABB2&         UVs       = AABB2::kUnit,
+	const AABB2&         UVs       = AABB2::Unit,
 	int                  numSlices = 16
 );
 
@@ -180,7 +180,7 @@ void AddVertsForCone3D(
 	const Vec3&          end,
 	float                radius,
 	const Rgba8&         color     = Rgba8::White,
-	const AABB2&         UVs       = AABB2::kUnit,
+	const AABB2&         UVs       = AABB2::Unit,
 	int                  numSlices = 16
 );
 

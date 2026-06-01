@@ -103,7 +103,7 @@ void Engine::BeginFrame()
 	if (m_imgui != nullptr)
 		m_imgui->BeginFrame();
 	if (m_renderer != nullptr)
-		m_renderer->BeginScenePass();
+		m_renderer->BeginFrame();
 	if (m_input != nullptr)
 		m_input->BeginFrame();
 	if (m_audio != nullptr)
