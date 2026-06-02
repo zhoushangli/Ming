@@ -121,20 +121,17 @@ void           Renderer::Startup()
 
 #pragma region Startup: Get back buffer texture
 
-	ID3D11Texture2D* backBuffer;
-	hr = m_d3dSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)&backBuffer);
+	hr = m_d3dSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)&m_d3dBackBuffer);
 	if (!SUCCEEDED(hr))
 	{
 		ERROR_AND_DIE("Could not get swap chain buffer.");
 	}
 
-	hr = m_d3dDevice->CreateRenderTargetView(backBuffer, NULL, &m_d3dRenderTargetView);
+	hr = m_d3dDevice->CreateRenderTargetView(m_d3dBackBuffer, NULL, &m_d3dRenderTargetView);
 	if (!SUCCEEDED(hr))
 	{
 		ERROR_AND_DIE("Could create render target view for swap chain buffer.");
 	}
-
-	backBuffer->Release();
 
 #pragma endregion
 
@@ -528,8 +525,7 @@ void Renderer::RenderPostProcess(Camera const& camera, IntVec2 const& outputReso
 
 	for (PostProcessPass const* pass : enabledPasses)
 	{
-		Texture*                outputTexture = nullptr;
-		ID3D11RenderTargetView* outputView    = nullptr;
+		Texture* outputTexture = nullptr;
 
 		if (pass->HasCustomInputs())
 		{
@@ -922,36 +918,11 @@ Texture* Renderer::CreateTextureFromImage(const Image& image)
 
 Texture* Renderer::CreateTextureFromData(char const* name, IntVec2 dimensions, int bytesPerTexel, uint8_t* texelData)
 {
-	auto failIfUnsuccessful = [&](HRESULT result, Texture* texture, char const* errorFormat)
-	{
-		if (!SUCCEEDED(result))
-		{
-			delete texture;
-			ERROR_AND_DIE(Stringf(errorFormat, name));
-		}
-	};
-
-	GUARANTEE_OR_DIE(m_d3dDevice, "CreateTextureFromData: m_d3dDevice is null");
-	GUARANTEE_OR_DIE(texelData, Stringf("CreateTextureFromData failed for \"%s\" - texelData was null!", name));
-	GUARANTEE_OR_DIE(
-		dimensions.x > 0 && dimensions.y > 0,
-		Stringf(
-			"CreateTextureFromData failed for \"%s\" - illegal texture dimensions (%i x %i)",
-			name,
-			dimensions.x,
-			dimensions.y
-		)
-	);
-
 	// We only support RGBA8 format for now, so require 4 bytes per texel
 	GUARANTEE_OR_DIE(
 		bytesPerTexel == 4,
 		Stringf("CreateTextureFromData requires 4 bytes/texel (RGBA). Got %i for \"%s\"", bytesPerTexel, name)
 	);
-
-	Texture* newTexture      = new Texture();
-	newTexture->m_name       = name;
-	newTexture->m_dimensions = dimensions;
 
 	D3D11_TEXTURE2D_DESC textureDesc = {};
 	textureDesc.Width                = (UINT)dimensions.x;
@@ -967,42 +938,13 @@ Texture* Renderer::CreateTextureFromData(char const* name, IntVec2 dimensions, i
 	textureData.pSysMem                = texelData;
 	textureData.SysMemPitch            = 4 * dimensions.x;
 
-	HRESULT hr = m_d3dDevice->CreateTexture2D(&textureDesc, &textureData, &newTexture->m_texture);
-	failIfUnsuccessful(hr, newTexture, "CreateTexture2D failed for image file \"%s\".");
+	Texture* newTexture = CreateTextureInternal(name, dimensions, &textureDesc, &textureData);
 
-	hr = m_d3dDevice->CreateShaderResourceView(newTexture->m_texture, nullptr, &newTexture->m_shaderResourceView);
-	failIfUnsuccessful(hr, newTexture, "CreateShaderResourceView failed for image file \"%s\".");
-
-	m_texturesByName[newTexture->m_name] = newTexture;
 	return newTexture;
 }
 
 Texture* Renderer::CreateRenderTargetTexture(char const* name, IntVec2 dimensions)
 {
-	auto failIfUnsuccessful = [&](HRESULT result, Texture* texture, char const* errorFormat)
-	{
-		if (!SUCCEEDED(result))
-		{
-			delete texture;
-			ERROR_AND_DIE(Stringf(errorFormat, name));
-		}
-	};
-
-	GUARANTEE_OR_DIE(m_d3dDevice, "CreateRenderTargetTexture: m_d3dDevice is null");
-	GUARANTEE_OR_DIE(
-		dimensions.x > 0 && dimensions.y > 0,
-		Stringf(
-			"CreateRenderTargetTexture failed for \"%s\" - illegal texture dimensions (%i x %i)",
-			name,
-			dimensions.x,
-			dimensions.y
-		)
-	);
-
-	Texture* newTexture      = new Texture();
-	newTexture->m_name       = name;
-	newTexture->m_dimensions = dimensions;
-
 	D3D11_TEXTURE2D_DESC textureDesc = {};
 	textureDesc.Width                = (UINT)dimensions.x;
 	textureDesc.Height               = (UINT)dimensions.y;
@@ -1013,95 +955,13 @@ Texture* Renderer::CreateRenderTargetTexture(char const* name, IntVec2 dimension
 	textureDesc.BindFlags            = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
 	textureDesc.SampleDesc.Count     = 1;
 
-	HRESULT hr = m_d3dDevice->CreateTexture2D(&textureDesc, nullptr, &newTexture->m_texture);
-	failIfUnsuccessful(hr, newTexture, "CreateTexture2D failed for render target texture \"%s\".");
+	Texture* newTexture = CreateTextureInternal(name, dimensions, &textureDesc, nullptr);
 
-	hr = m_d3dDevice->CreateRenderTargetView(newTexture->m_texture, nullptr, &newTexture->m_renderTargetView);
-	failIfUnsuccessful(hr, newTexture, "CreateRenderTargetView failed for render target texture \"%s\".");
-
-	hr = m_d3dDevice->CreateShaderResourceView(newTexture->m_texture, nullptr, &newTexture->m_shaderResourceView);
-	failIfUnsuccessful(hr, newTexture, "CreateShaderResourceView failed for render target texture \"%s\".");
-
-	m_texturesByName[newTexture->m_name] = newTexture;
-	return newTexture;
-}
-
-Texture* Renderer::CreateFloatRenderTargetTexture(char const* name, IntVec2 dimensions)
-{
-	auto failIfUnsuccessful = [&](HRESULT result, Texture* texture, char const* errorFormat)
-	{
-		if (!SUCCEEDED(result))
-		{
-			delete texture;
-			ERROR_AND_DIE(Stringf(errorFormat, name));
-		}
-	};
-
-	GUARANTEE_OR_DIE(m_d3dDevice, "CreateRenderTargetTexture: m_d3dDevice is null");
-	GUARANTEE_OR_DIE(
-		dimensions.x > 0 && dimensions.y > 0,
-		Stringf(
-			"CreateRenderTargetTexture failed for \"%s\" - illegal texture dimensions (%i x %i)",
-			name,
-			dimensions.x,
-			dimensions.y
-		)
-	);
-
-	Texture* newTexture      = new Texture();
-	newTexture->m_name       = name;
-	newTexture->m_dimensions = dimensions;
-
-	D3D11_TEXTURE2D_DESC textureDesc = {};
-	textureDesc.Width                = (UINT)dimensions.x;
-	textureDesc.Height               = (UINT)dimensions.y;
-	textureDesc.MipLevels            = 1;
-	textureDesc.ArraySize            = 1;
-	textureDesc.Format               = DXGI_FORMAT_R32_FLOAT;
-	textureDesc.Usage                = D3D11_USAGE_DEFAULT;
-	textureDesc.BindFlags            = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
-	textureDesc.SampleDesc.Count     = 1;
-
-	HRESULT hr = m_d3dDevice->CreateTexture2D(&textureDesc, nullptr, &newTexture->m_texture);
-	failIfUnsuccessful(hr, newTexture, "CreateTexture2D failed for render target texture \"%s\".");
-
-	hr = m_d3dDevice->CreateRenderTargetView(newTexture->m_texture, nullptr, &newTexture->m_renderTargetView);
-	failIfUnsuccessful(hr, newTexture, "CreateRenderTargetView failed for render target texture \"%s\".");
-
-	hr = m_d3dDevice->CreateShaderResourceView(newTexture->m_texture, nullptr, &newTexture->m_shaderResourceView);
-	failIfUnsuccessful(hr, newTexture, "CreateShaderResourceView failed for render target texture \"%s\".");
-
-	m_texturesByName[newTexture->m_name] = newTexture;
 	return newTexture;
 }
 
 Texture* Renderer::CreateDepthStencilTexture(char const* name, IntVec2 dimensions)
 {
-	auto failIfUnsuccessful = [&](HRESULT result, Texture* texture, char const* errorFormat)
-	{
-		if (!SUCCEEDED(result))
-		{
-			delete texture;
-			ERROR_AND_DIE(Stringf(errorFormat, name));
-		}
-	};
-
-	GUARANTEE_OR_DIE(m_d3dDevice, "CreateRenderTargetTexture: m_d3dDevice is null");
-	GUARANTEE_OR_DIE(
-		dimensions.x > 0 && dimensions.y > 0,
-		Stringf(
-			"CreateRenderTargetTexture failed for \"%s\" - illegal texture dimensions (%i x %i)",
-			name,
-			dimensions.x,
-			dimensions.y
-		)
-	);
-
-	Texture* newTexture      = new Texture();
-	newTexture->m_name       = name;
-	newTexture->m_dimensions = dimensions;
-
-	// Create depth stencil texture and view
 	D3D11_TEXTURE2D_DESC depthTextureDesc = {};
 	depthTextureDesc.Width                = (UINT)dimensions.x;
 	depthTextureDesc.Height               = (UINT)dimensions.y;
@@ -1112,17 +972,10 @@ Texture* Renderer::CreateDepthStencilTexture(char const* name, IntVec2 dimension
 	depthTextureDesc.BindFlags            = D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE;
 	depthTextureDesc.SampleDesc.Count     = 1;
 
-	HRESULT hr;
-	hr = m_d3dDevice->CreateTexture2D(&depthTextureDesc, nullptr, &newTexture->m_texture);
-	failIfUnsuccessful(hr, newTexture, "CreateTexture2D failed for render target texture \"%s\".");
-
 	D3D11_DEPTH_STENCIL_VIEW_DESC dsvDesc = {};
 	dsvDesc.Format                        = DXGI_FORMAT_D24_UNORM_S8_UINT;
 	dsvDesc.ViewDimension                 = D3D11_DSV_DIMENSION_TEXTURE2D;
 	dsvDesc.Texture2D.MipSlice            = 0;
-
-	hr = m_d3dDevice->CreateDepthStencilView(newTexture->m_texture, &dsvDesc, &newTexture->m_depthStencilView);
-	failIfUnsuccessful(hr, newTexture, "CreateDepthStencilView failed for render target texture \"%s\".");
 
 	D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
 	srvDesc.Format                          = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
@@ -1130,10 +983,9 @@ Texture* Renderer::CreateDepthStencilTexture(char const* name, IntVec2 dimension
 	srvDesc.Texture2D.MostDetailedMip       = 0;
 	srvDesc.Texture2D.MipLevels             = 1;
 
-	hr = m_d3dDevice->CreateShaderResourceView(newTexture->m_texture, &srvDesc, &newTexture->m_shaderResourceView);
-	failIfUnsuccessful(hr, newTexture, "CreateShaderResourceView failed for render target texture \"%s\".");
+	Texture* newTexture =
+		CreateTextureInternal(name, dimensions, &depthTextureDesc, nullptr, nullptr, &srvDesc, &dsvDesc);
 
-	m_texturesByName[newTexture->m_name] = newTexture;
 	return newTexture;
 }
 
@@ -1498,7 +1350,7 @@ void Renderer::SetViewport(IntVec2 dimensions, IntVec2 topLeft)
 	m_d3dDeviceContext->RSSetViewports(1, &viewport);
 }
 
-void Renderer::ResizeRenderTargetSet(IntVec2 newDimensions)
+void Renderer::ResizeSceneTargets(IntVec2 newDimensions)
 {
 	if (newDimensions.x <= 0 || newDimensions.y <= 0)
 	{
@@ -1535,7 +1387,17 @@ void Renderer::ResizeRenderTargetSet(IntVec2 newDimensions)
 void Renderer::FinalBlitToBackBuffer()
 {
 	BindBackBuffer();
-	DrawFullscreenPass(m_postProcessCopyShader, m_sceneColorTexture, nullptr, nullptr, m_finalBlit, L"Final Blit");
+
+	m_d3dDeviceContext->OMSetRenderTargets(1, &m_d3dRenderTargetView, nullptr);
+
+	BindShader(m_postProcessCopyShader);
+	BindTexture(m_finalBlit, 0);
+	BindSampler(SamplerMode::POINT_CLAMP, 0);
+
+	m_d3dAnnotation->BeginEvent(L"Final Blit");
+	DrawVertexArray(3, GetFullscreenTriangleTopLeftUV());
+	m_d3dAnnotation->EndEvent();
+
 	UnbindAllShaderResourceViews();
 }
 
@@ -1578,7 +1440,7 @@ ID3D11Device* Renderer::GetD3DDevice() const { return m_d3dDevice; }
 
 ID3D11DeviceContext* Renderer::GetD3DDeviceContext() const { return m_d3dDeviceContext; }
 
-RenderTargetSet Renderer::GetRenderTargetSet() const
+RenderTargetSet Renderer::GetSceneRenderTargetSet() const
 {
 	RenderTargetSet result;
 	result.colorTexture  = m_sceneColorTexture;
@@ -1641,5 +1503,55 @@ void Renderer::UnbindAllShaderResourceViews()
 }
 
 void Renderer::BindBackBuffer() { m_d3dDeviceContext->OMSetRenderTargets(1, &m_d3dRenderTargetView, nullptr); }
+
+Texture* Renderer::CreateTextureInternal(
+	char const*                            name,
+	IntVec2                                dimensions,
+	D3D11_TEXTURE2D_DESC const*            textureDesc,
+	D3D11_SUBRESOURCE_DATA const*          initialData,
+	D3D11_RENDER_TARGET_VIEW_DESC const*   rtvDesc,
+	D3D11_SHADER_RESOURCE_VIEW_DESC const* srvDesc,
+	D3D11_DEPTH_STENCIL_VIEW_DESC const*   dsvDesc
+)
+{
+	GUARANTEE_OR_DIE(
+		dimensions.x > 0 && dimensions.y > 0,
+		Stringf(
+			"CreateTextureFromData failed for \"%s\" - illegal texture dimensions (%i x %i)",
+			name,
+			dimensions.x,
+			dimensions.y
+		)
+	);
+
+	GUARANTEE_OR_DIE(textureDesc, Stringf("CreateTextureFromData failed for \"%s\" - textureDesc is null", name));
+
+	Texture* newTexture      = new Texture();
+	newTexture->m_name       = name;
+	newTexture->m_dimensions = dimensions;
+
+	HRESULT hr = m_d3dDevice->CreateTexture2D(textureDesc, initialData, &newTexture->m_texture);
+
+	GUARANTEE_OR_DIE(SUCCEEDED(hr), "Could not create texture.");
+
+	if ((textureDesc->BindFlags & D3D11_BIND_RENDER_TARGET) != 0)
+	{
+		m_d3dDevice->CreateRenderTargetView(newTexture->m_texture, rtvDesc, &newTexture->m_renderTargetView);
+	}
+
+	if ((textureDesc->BindFlags & D3D11_BIND_SHADER_RESOURCE) != 0)
+	{
+		m_d3dDevice->CreateShaderResourceView(newTexture->m_texture, srvDesc, &newTexture->m_shaderResourceView);
+	}
+
+	if ((textureDesc->BindFlags & D3D11_BIND_DEPTH_STENCIL) != 0)
+	{
+		m_d3dDevice->CreateDepthStencilView(newTexture->m_texture, dsvDesc, &newTexture->m_depthStencilView);
+	}
+
+	m_texturesByName[newTexture->m_name] = newTexture;
+
+	return newTexture;
+}
 
 #pragma endregion

@@ -39,6 +39,12 @@ struct ID3D11SamplerState;
 struct ID3D11Texture2D;
 struct ID3D11DepthStencilView;
 struct ID3D11DepthStencilState;
+struct ID3D11ShaderResourceView;
+struct D3D11_TEXTURE2D_DESC;
+struct D3D11_SUBRESOURCE_DATA;
+struct D3D11_RENDER_TARGET_VIEW_DESC;
+struct D3D11_SHADER_RESOURCE_VIEW_DESC;
+struct D3D11_DEPTH_STENCIL_VIEW_DESC;
 
 namespace SurfaceTextureSlot
 {
@@ -205,13 +211,10 @@ public:
 	// GPU resource creation and cache access
 	Shader* CreateOrGetShader(char const* shaderName);
 
-	Texture* CreateOrGetTexture(char const* fileDataPath);
-	Texture* CreateTextureFromImage(const Image& image);
-	Texture* CreateTextureFromData(char const* name, IntVec2 dimensions, int bytesPerTexel, uint8_t* texelData);
-	Texture* CreateRenderTargetTexture(char const* name, IntVec2 dimensions);
-	// For kDepth textures, we often want higher precision and don't need color data
-	// And compare to depth stencil, it provide render target view
-	Texture*    CreateFloatRenderTargetTexture(char const* name, IntVec2 dimensions);
+	Texture*    CreateOrGetTexture(char const* fileDataPath);
+	Texture*    CreateTextureFromImage(const Image& image);
+	Texture*    CreateTextureFromData(char const* name, IntVec2 dimensions, int bytesPerTexel, uint8_t* texelData);
+	Texture*    CreateRenderTargetTexture(char const* name, IntVec2 dimensions);
 	Texture*    CreateDepthStencilTexture(char const* name, IntVec2 dimensions);
 	BitmapFont* CreateOrGetBitmapFont(char const* fontFilePathNameWithNoExtension);
 
@@ -234,10 +237,10 @@ public:
 	ID3D11Device*        GetD3DDevice() const;
 	ID3D11DeviceContext* GetD3DDeviceContext() const;
 
-	RenderTargetSet GetRenderTargetSet() const;
+	RenderTargetSet GetSceneRenderTargetSet() const;
 	void            BindRenderTargetSet(RenderTargetSet const& renderTargetSet);
 	void            SetViewport(IntVec2 dimensions, IntVec2 topLeft = IntVec2::Zero);
-	void            ResizeRenderTargetSet(IntVec2 newDimensions);
+	void            ResizeSceneTargets(IntVec2 newDimensions);
 	void            FinalBlitToBackBuffer();
 	void            BindFinalBlit();
 	void            ResizeBackBuffer(IntVec2 newDimensions);
@@ -276,6 +279,16 @@ private:
 	void UnbindAllShaderResourceViews();
 	void BindBackBuffer();
 
+	Texture* CreateTextureInternal(
+		char const*                            name,
+		IntVec2                                dimensions,
+		D3D11_TEXTURE2D_DESC const*            textureDesc,
+		D3D11_SUBRESOURCE_DATA const*          initialData,
+		D3D11_RENDER_TARGET_VIEW_DESC const*   rtvDesc = nullptr,
+		D3D11_SHADER_RESOURCE_VIEW_DESC const* srvDesc = nullptr,
+		D3D11_DEPTH_STENCIL_VIEW_DESC const*   dsvDesc = nullptr
+	);
+
 private:
 	RendererConfig m_config;
 
@@ -297,8 +310,10 @@ private:
 	ID3D11Device*              m_d3dDevice           = nullptr;
 	ID3D11DeviceContext*       m_d3dDeviceContext    = nullptr;
 	IDXGISwapChain*            m_d3dSwapChain        = nullptr;
+	ID3D11Texture2D*           m_d3dBackBuffer       = nullptr;
 	ID3D11RenderTargetView*    m_d3dRenderTargetView = nullptr;
 	ID3DUserDefinedAnnotation* m_d3dAnnotation       = nullptr;
+	Texture*                   m_backBufferTexture   = nullptr;
 
 	ID3D11BlendState* m_currentBlendState                  = nullptr;
 	BlendMode         m_desiredBlendMode                   = BlendMode::ALPHA;
