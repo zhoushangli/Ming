@@ -11,7 +11,7 @@ enum class TextBoxMode
 
 class BitmapFont
 {
-	friend class Renderer; // Only the Renderer can create new BitmapFont objects!
+	friend class D3D11RenderBackend; // Only the Renderer can create new BitmapFont objects!
 
 private:
 	BitmapFont(char const* fontFilePathNameWithNoExtension, Texture& fontTexture);

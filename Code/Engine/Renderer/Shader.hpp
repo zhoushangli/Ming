@@ -15,7 +15,7 @@ struct ShaderConfig
 
 class Shader
 {
-    friend class Renderer;
+    friend class D3D11RenderBackend;
 
 public:
     Shader(const ShaderConfig& config);

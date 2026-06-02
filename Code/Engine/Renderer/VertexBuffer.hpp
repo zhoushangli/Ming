@@ -5,7 +5,7 @@ struct ID3D11Buffer;
 
 class VertexBuffer
 {
-	friend class Renderer;
+	friend class D3D11RenderBackend;
 
 public:
 	VertexBuffer(ID3D11Device* device, unsigned int size, unsigned int stride);

@@ -153,6 +153,9 @@
     <ClCompile Include="Renderer\BitmapFont.cpp">
       <Filter>Renderer</Filter>
     </ClCompile>
+    <ClCompile Include="Renderer\D3D11RenderBackend.cpp">
+      <Filter>Renderer</Filter>
+    </ClCompile>
     <ClCompile Include="Core\HeatMaps.cpp">
       <Filter>Core</Filter>
     </ClCompile>
@@ -237,7 +240,7 @@
     <ClCompile Include="Core\Vertex.cpp">
       <Filter>Core</Filter>
     </ClCompile>
-    <ClCompile Include="Renderer\PostProcessPass.cpp">
+    <ClCompile Include="Renderer\PostProcessChain.cpp">
       <Filter>Renderer</Filter>
     </ClCompile>
     <ClCompile Include="Math\IntVec3.cpp">
@@ -362,6 +365,9 @@
     <ClInclude Include="Renderer\BitmapFont.hpp">
       <Filter>Renderer</Filter>
     </ClInclude>
+    <ClInclude Include="Renderer\D3D11RenderBackend.hpp">
+      <Filter>Renderer</Filter>
+    </ClInclude>
     <ClInclude Include="Core\HeatMaps.hpp">
       <Filter>Core</Filter>
     </ClInclude>
@@ -390,6 +396,9 @@
       <Filter>Renderer</Filter>
     </ClInclude>
     <ClInclude Include="Renderer\VertexBuffer.hpp">
+      <Filter>Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer\Viewport.hpp">
       <Filter>Renderer</Filter>
     </ClInclude>
     <ClInclude Include="Core\FileUtils.hpp">
@@ -446,7 +455,7 @@
     <ClInclude Include="Core\Vertex.hpp">
       <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="Renderer\PostProcessPass.hpp">
+    <ClInclude Include="Renderer\PostProcessChain.hpp">
       <Filter>Renderer</Filter>
     </ClInclude>
     <ClInclude Include="Math\IntVec3.hpp">

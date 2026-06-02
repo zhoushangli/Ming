@@ -13,7 +13,7 @@ struct ID3D11DepthStencilView;
 
 class Texture
 {
-	friend class Renderer; // Only the Renderer can create new Texture objects!
+	friend class D3D11RenderBackend; // Only the Renderer can create new Texture objects!
 
 private:
 	Texture();                             // can't instantiate directly; must ask Renderer to do it for you

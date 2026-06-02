@@ -1,1557 +1,384 @@
 #include "Engine/Renderer/Renderer.hpp"
 
-#include "Engine/Core/Engine.hpp"
-#include "Engine/Core/ErrorWarningAssert.hpp"
-#include "Engine/Core/FileUtils.hpp"
-#include "Engine/Core/StringUtils.hpp"
-#include "Engine/Core/Vertex.hpp"
-#include "Engine/Core/VertexUtils.hpp"
 #include "Engine/Renderer/Camera.hpp"
-#include "Engine/Renderer/ConstantBuffer.hpp"
-#include "Engine/Renderer/IndexBuffer.hpp"
-#include "Engine/Renderer/Texture.hpp"
-#include "Engine/Renderer/VertexBuffer.hpp"
-
-#define STB_IMAGE_IMPLEMENTATION
-#include "ThirdParty/stb/stb_image.h"
-
-#include <Windows.h>
-#include <d3d11.h>
-#include <d3d11_1.h>
-#include <d3dcompiler.h>
-
-#if defined(OPAQUE)
-#undef OPAQUE
-#endif
-
-#pragma comment(lib, "d3d11.lib")
-#pragma comment(lib, "dxgi.lib")
-#pragma comment(lib, "d3dcompiler.lib")
-
-#if defined(ENGINE_DEBUG_RENDER)
+#include "Engine/Renderer/DebugRenderer.hpp"
+#include "Engine/Renderer/PostProcessChain.hpp"
 #include "Renderer.hpp"
-#include <dxgidebug.h>
-#pragma comment(lib, "dxguid.lib")
-#endif
 
-HGLRC g_openGLRenderingContext = nullptr;
-
-namespace
-{
-Vertex const* GetFullscreenTriangleTopLeftUV()
-{
-	static Vertex const fullscreenTriangle[3] = {
-		Vertex(Vec3(-1.f, -1.f, 0.f), Rgba8::White, Vec2(0.f, 1.f)),
-		Vertex(Vec3(3.f, -1.f, 0.f), Rgba8::White, Vec2(2.f, 1.f)),
-		Vertex(Vec3(-1.f, 3.f, 0.f), Rgba8::White, Vec2(0.f, -1.f)),
-	};
-
-	return fullscreenTriangle;
-}
-
-} // namespace
-
-// clang-format off
-const uint8_t kDefaultWhiteTexture[16] = 
-{
-	0xFF, 0xFF, 0xFF, 0xFF, // (0,0)
-	0xFF, 0xFF, 0xFF, 0xFF, // (1,0)
-	0xFF, 0xFF, 0xFF, 0xFF, // (0,1)
-	0xFF, 0xFF, 0xFF, 0xFF  // (1,1)
-};
-
-const uint8_t kDefaultBlackTexture[16] = 
-{
-	0x00, 0x00, 0x00, 0xFF, // (0,0)
-	0x00, 0x00, 0x00, 0xFF, // (1,0)
-	0x00, 0x00, 0x00, 0xFF, // (0,1)
-	0x00, 0x00, 0x00, 0xFF  // (1,1)
-};
-// clang-format on
-
-//------------------------------------------------------------------------------------------------
-// Lifetime and frame loop
 Renderer::Renderer(RendererConfig config) : m_config(config) {}
 
-Renderer::~Renderer() {}
+Renderer::~Renderer() { Shutdown(); }
 
-#pragma region Public: Lifetime and frame loop
-void           Renderer::Startup()
+void Renderer::Startup()
 {
-	unsigned int deviceFlags = 0;
-#if defined(ENGINE_DEBUG_RENDER)
-	deviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
-#endif
-
-#pragma region Startup: Create device and swap chain
-
-	DXGI_SWAP_CHAIN_DESC swapChainDesc = {};
-	swapChainDesc.BufferDesc.Width     = g_engine->m_window->GetClientDimensions().x;
-	swapChainDesc.BufferDesc.Height    = g_engine->m_window->GetClientDimensions().y;
-	swapChainDesc.BufferDesc.Format    = DXGI_FORMAT_R8G8B8A8_UNORM;
-	swapChainDesc.SampleDesc.Count     = 1;
-	swapChainDesc.BufferUsage          = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-	swapChainDesc.BufferCount          = 2;
-	swapChainDesc.OutputWindow         = (HWND)g_engine->m_window->GetHwnd();
-	swapChainDesc.Windowed             = true;
-	swapChainDesc.SwapEffect           = DXGI_SWAP_EFFECT_FLIP_DISCARD;
-
-	HRESULT hr;
-	hr = D3D11CreateDeviceAndSwapChain(
-		nullptr,
-		D3D_DRIVER_TYPE_HARDWARE,
-		NULL,
-		deviceFlags,
-		nullptr,
-		0,
-		D3D11_SDK_VERSION,
-		&swapChainDesc,
-		&m_d3dSwapChain,
-		&m_d3dDevice,
-		nullptr,
-		&m_d3dDeviceContext
-	);
-
-	if (!SUCCEEDED(hr))
+	if (m_renderBackend != nullptr)
 	{
-		ERROR_AND_DIE("Could not create D3D 11 device and swap chain.");
+		return;
 	}
 
-#pragma endregion
-
-#pragma region Startup: Get back buffer texture
-
-	hr = m_d3dSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)&m_d3dBackBuffer);
-	if (!SUCCEEDED(hr))
-	{
-		ERROR_AND_DIE("Could not get swap chain buffer.");
-	}
-
-	hr = m_d3dDevice->CreateRenderTargetView(m_d3dBackBuffer, NULL, &m_d3dRenderTargetView);
-	if (!SUCCEEDED(hr))
-	{
-		ERROR_AND_DIE("Could create render target view for swap chain buffer.");
-	}
-
-#pragma endregion
-
-#pragma region Startup: Create debug module
-
-#if defined(ENGINE_DEBUG_RENDER)
-	m_dxgiDebugModule = (void*)::LoadLibraryA("dxgidebug.dll");
-	if (m_dxgiDebugModule == nullptr)
-	{
-		ERROR_AND_DIE("Could not load dxgidebug.dll.");
-	}
-
-	typedef HRESULT(WINAPI * GetDebugModuleCB)(REFIID, void**);
-	((
-		GetDebugModuleCB
-	)::GetProcAddress((HMODULE)m_dxgiDebugModule, "DXGIGetDebugInterface"))(__uuidof(IDXGIDebug), &m_dxgiDebug);
-
-	if (m_dxgiDebug == nullptr)
-	{
-		ERROR_AND_DIE("Could not load debug module.");
-	}
-#endif
-
-#pragma endregion
-
-#pragma region Startup: Rasterizer states
-
-	// SOLID CULL NONE
-	D3D11_RASTERIZER_DESC rasterizerDesc = {};
-	rasterizerDesc.FillMode              = D3D11_FILL_SOLID;
-	rasterizerDesc.CullMode              = D3D11_CULL_NONE;
-	rasterizerDesc.FrontCounterClockwise = true;
-	rasterizerDesc.DepthClipEnable       = true;
-	rasterizerDesc.AntialiasedLineEnable = true;
-	hr = m_d3dDevice->CreateRasterizerState(&rasterizerDesc, &m_rasterizerStates[(int)RasterizerMode::SOLID_CULL_NONE]);
-
-	// SOLID CULL BACK
-	rasterizerDesc.FillMode = D3D11_FILL_SOLID;
-	rasterizerDesc.CullMode = D3D11_CULL_BACK;
-	hr = m_d3dDevice->CreateRasterizerState(&rasterizerDesc, &m_rasterizerStates[(int)RasterizerMode::SOLID_CULL_BACK]);
-
-	// WIREFRAME CULL NONE
-	rasterizerDesc.FillMode = D3D11_FILL_WIREFRAME;
-	rasterizerDesc.CullMode = D3D11_CULL_NONE;
-	hr                      = m_d3dDevice->CreateRasterizerState(
-		&rasterizerDesc,
-		&m_rasterizerStates[(int)RasterizerMode::WIREFRAME_CULL_NONE]
-	);
-
-	// WIREFRAME CULL BACK
-	rasterizerDesc.FillMode = D3D11_FILL_WIREFRAME;
-	rasterizerDesc.CullMode = D3D11_CULL_BACK;
-	hr                      = m_d3dDevice->CreateRasterizerState(
-		&rasterizerDesc,
-		&m_rasterizerStates[(int)RasterizerMode::WIREFRAME_CULL_BACK]
-	);
-
-	m_d3dDeviceContext->RSSetState(m_rasterizerStates[(int)RasterizerMode::SOLID_CULL_BACK]);
-
-	m_d3dDeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
-#pragma endregion
-
-#pragma region Startup: Create buffers
-
-	m_currentVertexBuffer       = CreateVertexBuffer(sizeof(Vertex) * 3, sizeof(Vertex));
-	m_currentIndexBuffer        = CreateIndexBuffer(sizeof(unsigned int) * 3);
-	m_lightConstantBuffer       = CreateConstantBuffer(sizeof(LightConstants));
-	m_cameraConstantBuffer      = CreateConstantBuffer(sizeof(CameraConstants));
-	m_modelConstantBuffer       = CreateConstantBuffer(sizeof(ModelConstants));
-	m_postProcessConstantBuffer = CreateConstantBuffer(sizeof(PostProcessConstants));
-	m_frameConstantBuffer       = CreateConstantBuffer(sizeof(FrameConstants));
-
-#pragma endregion
-
-#pragma region Startup: Create blend states
-
-	D3D11_BLEND_DESC blendDesc                      = {};
-	blendDesc.RenderTarget[0].BlendEnable           = TRUE;
-	blendDesc.RenderTarget[0].SrcBlend              = D3D11_BLEND_ONE;
-	blendDesc.RenderTarget[0].DestBlend             = D3D11_BLEND_ZERO;
-	blendDesc.RenderTarget[0].BlendOp               = D3D11_BLEND_OP_ADD;
-	blendDesc.RenderTarget[0].SrcBlendAlpha         = blendDesc.RenderTarget[0].SrcBlend;
-	blendDesc.RenderTarget[0].DestBlendAlpha        = blendDesc.RenderTarget[0].DestBlend;
-	blendDesc.RenderTarget[0].BlendOpAlpha          = blendDesc.RenderTarget[0].BlendOp;
-	blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
-
-	// OPAQUE
-	hr = m_d3dDevice->CreateBlendState(&blendDesc, &m_blendStates[(int)(BlendMode::OPAQUE)]);
-
-	// ALPHA
-	blendDesc.RenderTarget[0].SrcBlend  = D3D11_BLEND_SRC_ALPHA;
-	blendDesc.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
-
-	hr = m_d3dDevice->CreateBlendState(&blendDesc, &m_blendStates[(int)(BlendMode::ALPHA)]);
-
-	// ADDITIVE
-	blendDesc.RenderTarget[0].SrcBlend  = D3D11_BLEND_SRC_ALPHA;
-	blendDesc.RenderTarget[0].DestBlend = D3D11_BLEND_ONE;
-
-	hr = m_d3dDevice->CreateBlendState(&blendDesc, &m_blendStates[(int)(BlendMode::ADDITIVE)]);
-
-#pragma endregion
-
-#pragma region Startup: Create sampler states
-
-	D3D11_SAMPLER_DESC samplerDesc = {};
-
-	// POINT_CLAMP
-	samplerDesc.Filter         = D3D11_FILTER_MIN_MAG_MIP_POINT;
-	samplerDesc.AddressU       = D3D11_TEXTURE_ADDRESS_CLAMP;
-	samplerDesc.AddressV       = D3D11_TEXTURE_ADDRESS_CLAMP;
-	samplerDesc.AddressW       = D3D11_TEXTURE_ADDRESS_CLAMP;
-	samplerDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
-	samplerDesc.MaxLOD         = D3D11_FLOAT32_MAX;
-
-	hr = m_d3dDevice->CreateSamplerState(&samplerDesc, &m_samplerStates[(int)SamplerMode::POINT_CLAMP]);
-
-	// BILINEAR_CLAMP
-	samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
-
-	hr = m_d3dDevice->CreateSamplerState(&samplerDesc, &m_samplerStates[(int)SamplerMode::BILINEAR_CLAMP]);
-
-	// POINT_WRAP
-	samplerDesc.Filter   = D3D11_FILTER_MIN_MAG_MIP_POINT;
-	samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
-	samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
-	samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
-
-	hr = m_d3dDevice->CreateSamplerState(&samplerDesc, &m_samplerStates[(int)SamplerMode::POINT_WRAP]);
-
-	// BILINEAR_WRAP
-	samplerDesc.Filter   = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
-	samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
-	samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
-	samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
-
-	hr = m_d3dDevice->CreateSamplerState(&samplerDesc, &m_samplerStates[(int)SamplerMode::BILINEAR_WRAP]);
-
-#pragma endregion
-
-#pragma region Startup: Create depth stencil state
-
-	// 	// Create depth stencil texture and view
-	// 	D3D11_TEXTURE2D_DESC depthTextureDesc = {};
-	// 	depthTextureDesc.Width                = g_engine->m_window->GetClientDimensions().x;
-	// 	depthTextureDesc.Height               = g_engine->m_window->GetClientDimensions().y;
-	// 	depthTextureDesc.MipLevels            = 1;
-	// 	depthTextureDesc.ArraySize            = 1;
-	// 	depthTextureDesc.Usage                = D3D11_USAGE_DEFAULT;
-	// 	depthTextureDesc.Format               = DXGI_FORMAT_D24_UNORM_S8_UINT;
-	// 	depthTextureDesc.BindFlags            = D3D11_BIND_DEPTH_STENCIL;
-	// 	depthTextureDesc.SampleDesc.Count     = 1;
-	//
-	// 	hr = m_d3dDevice->CreateTexture2D(&depthTextureDesc, nullptr, &m_depthStencilTexture);
-	// 	hr = m_d3dDevice->CreateDepthStencilView(m_depthStencilTexture, nullptr, &m_depthStencilView);
-
-	// DISABLED
-	D3D11_DEPTH_STENCIL_DESC depthStencilDesc = {};
-	hr = m_d3dDevice->CreateDepthStencilState(&depthStencilDesc, &m_depthStencilStates[(int)DepthMode::DISABLED]);
-
-	// READ_ONLY_ALWAYS
-	depthStencilDesc.DepthEnable    = TRUE;
-	depthStencilDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
-	depthStencilDesc.DepthFunc      = D3D11_COMPARISON_ALWAYS;
-
-	hr = m_d3dDevice->CreateDepthStencilState(
-		&depthStencilDesc,
-		&m_depthStencilStates[(int)DepthMode::READ_ONLY_ALWAYS]
-	);
-
-	// READ_ONLY_LESS_EQUAL
-	depthStencilDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
-	depthStencilDesc.DepthFunc      = D3D11_COMPARISON_LESS_EQUAL;
-
-	hr = m_d3dDevice->CreateDepthStencilState(
-		&depthStencilDesc,
-		&m_depthStencilStates[(int)DepthMode::READ_ONLY_LESS_EQUAL]
-	);
-
-	// READ_WRITE_LESS_EQUAL
-	depthStencilDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
-	depthStencilDesc.DepthFunc      = D3D11_COMPARISON_LESS_EQUAL;
-
-	hr = m_d3dDevice->CreateDepthStencilState(
-		&depthStencilDesc,
-		&m_depthStencilStates[(int)DepthMode::READ_WRITE_LESS_EQUAL]
-	);
-
-#pragma endregion
-
-#pragma region Startup: Create default shader
-
-	m_defaultShader = CreateOrGetShader("Data/Shaders/DefaultUnlit");
-	BindShader(m_defaultShader);
-
-#pragma endregion
-
-#pragma region Startup: Create default texture
-
-	m_defaultWhiteTexture = CreateTextureFromData("DefaultWhite", IntVec2(2, 2), 4, (uint8_t*)kDefaultWhiteTexture);
-	m_defaultBlackTexture = CreateTextureFromData("DefaultBlack", IntVec2(2, 2), 4, (uint8_t*)kDefaultBlackTexture);
-	BindTexture(m_defaultWhiteTexture);
-
-#pragma endregion
-
-#pragma region Startup: Create post-process resources
-
-	Vec2 windowsDimensions = (Vec2)g_engine->m_window->GetClientDimensions();
-	m_finalBlit            = CreateRenderTargetTexture("FinalBlit", IntVec2(windowsDimensions));
-	m_sceneColorTexture    = CreateRenderTargetTexture("SceneColor", IntVec2(windowsDimensions));
-	m_sceneDepthTexture    = CreateDepthStencilTexture("SceneDepth", IntVec2(windowsDimensions));
-	m_sceneNormalTexture   = CreateRenderTargetTexture("SceneNormal", IntVec2(windowsDimensions));
-
-	m_postProcessTextureA   = CreateRenderTargetTexture("PostProcessTextureA", IntVec2(windowsDimensions));
-	m_postProcessTextureB   = CreateRenderTargetTexture("PostProcessTextureB", IntVec2(windowsDimensions));
-	m_postProcessCopyShader = CreateOrGetShader("Data/Shaders/PostProcessCopy");
-
-	m_d3dDeviceContext->QueryInterface(__uuidof(ID3DUserDefinedAnnotation), (void**)&m_d3dAnnotation);
-
-#pragma endregion
-
-#pragma region Startup: Register events
-
-	RegisterEvent("WindowResized", Renderer::Event_WindowResized);
-
-#pragma endregion
+	m_renderBackend = new D3D11RenderBackend(m_config);
+	m_renderBackend->Startup();
+	m_postProcessCopyShader = m_renderBackend->CreateOrGetShader("Data/Shaders/PostProcessCopy");
+	ResizeSceneTargets(g_engine->m_window->GetClientDimensions());
+	m_postProcessChain = new PostProcessChain();
 }
 
 void Renderer::Shutdown()
 {
-	m_currentCamera = nullptr;
-	m_currentShader = nullptr;
+	delete m_postProcessChain;
+	m_postProcessChain = nullptr;
 
-	if (m_d3dDeviceContext)
+	if (m_renderBackend != nullptr)
 	{
-		m_d3dDeviceContext->ClearState();
-		m_d3dDeviceContext->Flush();
+		DestroySceneTargets();
+		m_renderBackend->Shutdown();
+		delete m_renderBackend;
+		m_renderBackend = nullptr;
 	}
 
-	delete m_modelConstantBuffer;
-	m_modelConstantBuffer = nullptr;
-
-	delete m_cameraConstantBuffer;
-	m_cameraConstantBuffer = nullptr;
-
-	delete m_lightConstantBuffer;
-	m_lightConstantBuffer = nullptr;
-
-	delete m_postProcessConstantBuffer;
-	m_postProcessConstantBuffer = nullptr;
-
-	delete m_frameConstantBuffer;
-	m_frameConstantBuffer = nullptr;
-
-	delete m_currentIndexBuffer;
-	m_currentIndexBuffer = nullptr;
-
-	delete m_currentVertexBuffer;
-	m_currentVertexBuffer = nullptr;
-
-	for (auto& rasterizerState : m_rasterizerStates)
-	{
-		if (rasterizerState)
-		{
-			rasterizerState->Release();
-			rasterizerState = nullptr;
-		}
-	}
-
-	for (auto& depthStencilState : m_depthStencilStates)
-	{
-		if (depthStencilState)
-		{
-			depthStencilState->Release();
-			depthStencilState = nullptr;
-		}
-	}
-
-	for (auto& blendState : m_blendStates)
-	{
-		if (blendState)
-		{
-			blendState->Release();
-			blendState = nullptr;
-		}
-	}
-
-	for (auto& samplerState : m_samplerStates)
-	{
-		if (samplerState)
-		{
-			samplerState->Release();
-			samplerState = nullptr;
-		}
-	}
-
-	for (auto& shader : m_cachedShaders)
-	{
-		delete shader;
-	}
-	m_cachedShaders.clear();
-
-	for (auto& pair : m_texturesByName)
-	{
-		delete pair.second;
-	}
-	m_texturesByName.clear();
-
-	for (auto& pair : m_fontsByName)
-	{
-		delete pair.second;
-	}
-	m_fontsByName.clear();
-
-	for (auto& pass : m_postProcessPasses)
-	{
-		pass.m_postProcessShader = nullptr;
-	}
-	m_postProcessPasses.clear();
-
-	m_d3dAnnotation->Release();
-	m_d3dRenderTargetView->Release();
-	m_d3dSwapChain->Release();
-	m_d3dDeviceContext->Release();
-	m_d3dDevice->Release();
-
-	// Report error leaks and release debug module
-#if defined(ENGINE_DEBUG_RENDER)
-	((IDXGIDebug*)m_dxgiDebug)
-		->ReportLiveObjects(
-			DXGI_DEBUG_ALL,
-			(DXGI_DEBUG_RLO_FLAGS)(DXGI_DEBUG_RLO_DETAIL | DXGI_DEBUG_RLO_IGNORE_INTERNAL)
-		);
-
-	((IDXGIDebug*)m_dxgiDebug)->Release();
-	m_dxgiDebug = nullptr;
-
-	::FreeLibrary((HMODULE)m_dxgiDebugModule);
-	m_dxgiDebugModule = nullptr;
-#endif
+	m_postProcessCopyShader = nullptr;
 }
 
-void Renderer::BeginFrame() {}
+void Renderer::BeginFrame()
+{
+	if (m_renderBackend != nullptr)
+	{
+		m_renderBackend->BeginFrame();
+	}
+}
 
 void Renderer::EndFrame()
 {
-	// Present
-	HRESULT hr;
-	hr = m_d3dSwapChain->Present(0, 0);
-	if (hr == DXGI_ERROR_DEVICE_REMOVED || hr == DXGI_ERROR_DEVICE_RESET)
+	if (m_renderBackend != nullptr)
 	{
-		ERROR_AND_DIE("Device has been lost, application will now terminate.");
+		m_renderBackend->EndFrame();
 	}
 }
 
-// This function will run the post-process passes
-// And in the end the render target will be the back buffer, ready to present
-void Renderer::RenderPostProcess(Camera const& camera, IntVec2 const& outputResolution)
+void Renderer::CreateRenderingContext() { m_renderBackend->CreateRenderingContext(); }
+
+void Renderer::SubmitRenderRequest(RenderRequestInfo const& request)
 {
-	IntVec2 const fullResolution = g_engine->m_window->GetClientDimensions();
-
-	BeginCamera(camera);
-	SetBlendMode(BlendMode::OPAQUE);
-	SetRasterizerMode(RasterizerMode::SOLID_CULL_NONE);
-	SetDepthMode(DepthMode::READ_ONLY_ALWAYS);
-
-	Texture* sceneColor  = m_sceneColorTexture;
-	Texture* sceneDepth  = m_sceneDepthTexture;
-	Texture* sceneNormal = m_sceneNormalTexture;
-
-	Texture* ping = m_postProcessTextureA;
-	Texture* pong = m_postProcessTextureB;
-
-	std::vector<PostProcessPass const*> enabledPasses;
-	enabledPasses.reserve(m_postProcessPasses.size());
-
-	for (PostProcessPass const& pass : m_postProcessPasses)
-	{
-		if (pass.m_isEnabled && pass.m_postProcessShader != nullptr)
-		{
-			enabledPasses.push_back(&pass);
-		}
-	}
-
-	// Main Chain Color is the final scene color
-	// We keep track of it so when case like
-	// PingPong ---> CustomOutput --(used as input in later pass)--> PingPong
-	// We can bind the correct texture as input for the later pass
-	Texture* mainChainColorTexture = sceneColor;
-
-	for (PostProcessPass const* pass : enabledPasses)
-	{
-		Texture* outputTexture = nullptr;
-
-		if (pass->HasCustomInputs())
-		{
-			for (auto const& customInput : pass->m_customInputs)
-			{
-				if (!customInput.IsValid())
-				{
-					continue;
-				}
-
-				GUARANTEE_OR_DIE(
-					customInput.m_slot >= PostProcessTextureSlot::kCustomInputStart,
-					Stringf(
-						"PostProcessPass '%s' custom input '%s' uses reserved texture slot %d; custom inputs must use "
-						"slot %d or higher",
-						pass->m_name.c_str(),
-						customInput.m_name.c_str(),
-						customInput.m_slot,
-						PostProcessTextureSlot::kCustomInputStart
-					)
-				);
-				GUARANTEE_OR_DIE(
-					customInput.m_slot < PostProcessTextureSlot::kMaxSamplerSlots,
-					Stringf(
-						"PostProcessPass '%s' custom input '%s' uses texture slot %d, but max supported slot is %d",
-						pass->m_name.c_str(),
-						customInput.m_name.c_str(),
-						customInput.m_slot,
-						PostProcessTextureSlot::kMaxSamplerSlots - 1
-					)
-				);
-
-				Texture* customTexture = GetTextureFromFileName(customInput.m_name.c_str());
-				if (customTexture != nullptr)
-				{
-					BindTexture(customTexture, customInput.m_slot);
-					BindSampler(SamplerMode::POINT_CLAMP, customInput.m_slot);
-				}
-			}
-		}
-
-		bool usesMainChainColor = false;
-		if (pass->HasCustomOutput())
-		{
-			outputTexture = GetTextureFromFileName(pass->m_customOutput.m_name.c_str());
-		}
-		else
-		{
-			usesMainChainColor = true;
-			outputTexture      = (mainChainColorTexture == ping) ? pong : ping;
-		}
-
-		BindPostProcessConstants((Vec2)outputResolution, camera.GetNearZ(), camera.GetFarZ());
-		DrawFullscreenPass(
-			pass->m_postProcessShader,
-			mainChainColorTexture,
-			sceneDepth,
-			sceneNormal,
-			outputTexture,
-			pass->m_wideName.c_str()
-		);
-		UnbindAllShaderResourceViews();
-
-		if (usesMainChainColor)
-			mainChainColorTexture = outputTexture;
-	}
-
-	BindPostProcessConstants((Vec2)outputResolution, camera.GetNearZ(), camera.GetFarZ());
-	DrawFullscreenPass(
-		m_postProcessCopyShader,
-		mainChainColorTexture,
-		nullptr,
-		nullptr,
-		m_finalBlit,
-		L"PostProcessFinalCopy"
-	);
-	UnbindAllShaderResourceViews();
+	auto& requestList = m_renderRequests[request.m_pass];
+	requestList.push_back(request);
 }
 
-void Renderer::CreateRenderingContext() {}
-
-#pragma endregion
-
-#pragma region Public: Camera and pipeline state
-
-void Renderer::BeginCamera(Camera const& camera)
+void Renderer::ClearRenderRequests()
 {
-	IntVec2 const screenDimensions   = g_engine->m_window->GetClientDimensions();
-	AABB2 const   normalizedViewport = camera.GetViewportNormalized();
-
-	int leftPixels   = (int)(normalizedViewport.m_mins.x * (float)screenDimensions.x);
-	int rightPixels  = (int)(normalizedViewport.m_maxs.x * (float)screenDimensions.x);
-	int bottomPixels = (int)(normalizedViewport.m_mins.y * (float)screenDimensions.y);
-	int topPixels    = (int)(normalizedViewport.m_maxs.y * (float)screenDimensions.y);
-
-	leftPixels   = leftPixels < 0 ? 0 : leftPixels;
-	rightPixels  = rightPixels > screenDimensions.x ? screenDimensions.x : rightPixels;
-	bottomPixels = bottomPixels < 0 ? 0 : bottomPixels;
-	topPixels    = topPixels > screenDimensions.y ? screenDimensions.y : topPixels;
-
-	int viewportWidth  = rightPixels - leftPixels;
-	int viewportHeight = topPixels - bottomPixels;
-	if (viewportWidth <= 0)
+	for (auto& pair : m_renderRequests)
 	{
-		viewportWidth = 1;
-	}
-	if (viewportHeight <= 0)
-	{
-		viewportHeight = 1;
-	}
-
-	IntVec2 const viewportTopLeft(leftPixels, screenDimensions.y - topPixels);
-	SetViewport(IntVec2(viewportWidth, viewportHeight), viewportTopLeft);
-
-	CameraConstants cameraData         = CameraConstants();
-	cameraData.WorldToCameraTransform  = camera.GetWorldToCameraTransform();
-	cameraData.CameraToRenderTransform = camera.GetCameraToRenderTransform();
-	cameraData.RenderToClipTransform   = camera.GetRenderToClipTransform();
-	cameraData.CameraToWorldTransform  = camera.GetCameraToWorldTransform();
-	cameraData.ClipToCameraTransform   = camera.GetClipToCameraTransform();
-
-	CopyCPUToGPU(&cameraData, sizeof(cameraData), m_cameraConstantBuffer);
-	BindConstantBuffer(m_cameraConstantBuffer, kCameraConstantsSlot);
-}
-
-void Renderer::EndCamera() {}
-
-void Renderer::ClearScreen(Rgba8 const& clearColor)
-{
-	// Clear the screen
-	float colorAsFloats[4];
-	float normalClearColor[4] = {0.5f, 0.5f, 0.5f, 1.0f};
-	clearColor.GetAsFloats(colorAsFloats);
-
-	m_d3dDeviceContext->ClearRenderTargetView(m_d3dRenderTargetView, colorAsFloats);
-
-	m_d3dDeviceContext->ClearRenderTargetView(m_sceneColorTexture->m_renderTargetView, colorAsFloats);
-	m_d3dDeviceContext->ClearRenderTargetView(m_sceneNormalTexture->m_renderTargetView, normalClearColor);
-	m_d3dDeviceContext->ClearDepthStencilView(
-		m_sceneDepthTexture->m_depthStencilView,
-		D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL,
-		1.0f,
-		0
-	);
-}
-
-void Renderer::SetBlendMode(BlendMode blendMode) { m_desiredBlendMode = blendMode; }
-
-void Renderer::SetRasterizerMode(RasterizerMode rasterizerMode) { m_desiredRasterizerMode = rasterizerMode; }
-
-void Renderer::SetDepthMode(DepthMode depthMode) { m_desiredDepthMode = depthMode; }
-
-void Renderer::SetStatesIfChanged()
-{
-	GUARANTEE_OR_DIE(m_d3dDeviceContext, "SetStatesIfChanged: m_d3dDeviceContext is null");
-
-	// Blend state
-	ID3D11BlendState* desiredBlendState = m_blendStates[(int)m_desiredBlendMode];
-	if (m_currentBlendState != desiredBlendState)
-	{
-		m_currentBlendState = desiredBlendState;
-
-		float blendFactor[4] = {0.f, 0.f, 0.f, 0.f};
-		UINT  sampleMask     = 0xffffffff;
-
-		m_d3dDeviceContext->OMSetBlendState(m_currentBlendState, blendFactor, sampleMask);
-	}
-
-	ID3D11RasterizerState* desiredRasterizerState = m_rasterizerStates[(int)m_desiredRasterizerMode];
-	if (m_currentRasterizerState != desiredRasterizerState)
-	{
-		m_currentRasterizerState = desiredRasterizerState;
-		m_d3dDeviceContext->RSSetState(m_currentRasterizerState);
-	}
-
-	ID3D11DepthStencilState* desiredDepthStencilState = m_depthStencilStates[(int)m_desiredDepthMode];
-	if (m_currentDepthStencilState != desiredDepthStencilState)
-	{
-		m_currentDepthStencilState = desiredDepthStencilState;
-		m_d3dDeviceContext->OMSetDepthStencilState(m_currentDepthStencilState, 0);
+		pair.second.clear();
 	}
 }
 
-#pragma endregion
-
-#pragma region Public: Draw entry points
-
-void Renderer::DrawVertexArray(int numVertexes, Vertex const* vertexes) const
+void Renderer::RenderViewport(Viewport const& viewport)
 {
-	if (numVertexes % 3 != 0 || vertexes == nullptr)
+	EnsureViewport(viewport);
+	RenderOpaque(viewport);
+	RenderSkybox(viewport);
+	RenderPostProcess(viewport);
+	RenderUI(viewport);
+
+	ClearRenderRequests();
+}
+
+void Renderer::RenderRequest(RenderRequestInfo const& request)
+{
+	m_renderBackend->BindShader(request.m_shader);
+	m_renderBackend->BindTexture(request.m_diffuseTexture);
+	m_renderBackend->BindModelConstants(request.m_modelToWorld, request.m_tint);
+	m_renderBackend->SetBlendMode(request.m_blendMode);
+	m_renderBackend->SetRasterizerMode(request.m_rasterizerMode);
+	m_renderBackend->SetDepthMode(request.m_depthMode);
+
+	if (request.m_indexBuffer != nullptr)
 	{
-		return;
+		m_renderBackend->DrawIndexedVertexBuffer(request.m_vertexBuffer, request.m_indexBuffer);
 	}
-
-	unsigned int size = numVertexes * sizeof(Vertex);
-
-	m_currentVertexBuffer->Resize(size);
-	g_engine->m_renderer->CopyCPUToGPU(vertexes, size, m_currentVertexBuffer);
-	g_engine->m_renderer->DrawVertexBuffer(m_currentVertexBuffer);
-}
-
-void Renderer::DrawVertexArray(std::vector<Vertex> const& verts) const
-{
-	DrawVertexArray(static_cast<int>(verts.size()), verts.data());
-}
-
-void Renderer::DrawVertexArray(std::vector<Vertex> const& verts, std::vector<unsigned int> const& vertIndexes) const
-{
-	unsigned int vertsNum    = static_cast<unsigned int>(verts.size());
-	unsigned int indexesNum  = static_cast<unsigned int>(vertIndexes.size());
-	unsigned int vertsSize   = vertsNum * sizeof(Vertex);
-	unsigned int indexesSize = indexesNum * sizeof(unsigned int);
-
-	m_currentVertexBuffer->Resize(vertsSize);
-	m_currentIndexBuffer->Resize(indexesSize);
-
-	g_engine->m_renderer->CopyCPUToGPU(verts.data(), vertsSize, m_currentVertexBuffer);
-	g_engine->m_renderer->CopyCPUToGPU(vertIndexes.data(), indexesSize, m_currentIndexBuffer);
-
-	g_engine->m_renderer->DrawIndexedVertexBuffer(m_currentVertexBuffer, m_currentIndexBuffer);
-}
-
-void Renderer::DrawVertexBuffer(VertexBuffer* vertexBuffer)
-{
-	SetStatesIfChanged();
-	BindVertexBuffer(vertexBuffer);
-	m_d3dDeviceContext->Draw(vertexBuffer->GetCount(), 0);
-}
-
-void Renderer::DrawIndexedVertexBuffer(VertexBuffer* vertexBuffer, IndexBuffer* indexBuffer)
-{
-	SetStatesIfChanged();
-	BindVertexBuffer(vertexBuffer);
-	BindIndexBuffer(indexBuffer);
-	m_d3dDeviceContext->DrawIndexed(indexBuffer->GetCount(), 0, 0);
-}
-
-#pragma endregion
-
-#pragma region Public: High-level bind helpers used by gameplay/render features
-
-void Renderer::BindTexture(Texture* textureOrNull) { BindTexture(textureOrNull, 0); }
-
-void Renderer::BindTexture(Texture* textureOrNull, unsigned int slot)
-{
-	GUARANTEE_OR_DIE(m_d3dDeviceContext, "BindTexture: m_d3dDeviceContext is null");
-
-	if (textureOrNull == nullptr)
+	else if (request.m_vertexBuffer != nullptr)
 	{
-		textureOrNull = m_defaultWhiteTexture;
-	}
-
-	ID3D11ShaderResourceView* srv = textureOrNull->m_shaderResourceView;
-	m_d3dDeviceContext->PSSetShaderResources(slot, 1, &srv);
-	m_d3dDeviceContext->VSSetShaderResources(slot, 1, &srv);
-}
-
-void Renderer::BindSampler(SamplerMode samplerMode, unsigned int slot)
-{
-	GUARANTEE_OR_DIE(m_d3dDeviceContext, "BindSampler: m_d3dDeviceContext is null");
-	GUARANTEE_OR_DIE(slot < PostProcessTextureSlot::kMaxSamplerSlots, "BindSampler: slot out of range");
-
-	ID3D11SamplerState* samplerState = m_samplerStates[(int)samplerMode];
-	if (m_currentSamplerStates[slot] != samplerState)
-	{
-		m_currentSamplerStates[slot] = samplerState;
-		m_d3dDeviceContext->PSSetSamplers(slot, 1, &samplerState);
-		m_d3dDeviceContext->VSSetSamplers(slot, 1, &samplerState);
+		m_renderBackend->DrawVertexBuffer(request.m_vertexBuffer);
 	}
 }
 
-void Renderer::BindShader(Shader* shader)
+void Renderer::EnsureViewport(Viewport const& viewport)
 {
-	GUARANTEE_OR_DIE(m_d3dDeviceContext, "BindShader: m_d3dDeviceContext is null");
+	ResizeSceneTargets(viewport.m_outputResolution);
+	m_postProcessChain->Resize(*m_renderBackend, viewport.m_outputResolution);
 
-	if (shader == nullptr)
-	{
-		shader = m_defaultShader;
-	}
-
-	m_d3dDeviceContext->IASetInputLayout(shader->m_inputLayout);
-	m_d3dDeviceContext->VSSetShader(shader->m_vertexShader, nullptr, 0);
-	m_d3dDeviceContext->PSSetShader(shader->m_pixelShader, nullptr, 0);
+	IntVec2 topLeft       = (IntVec2)viewport.m_outputRect.m_mins;
+	IntVec2 rectDimension = (IntVec2)viewport.m_outputRect.GetDimensions();
+	m_renderBackend->SetViewport(rectDimension, topLeft);
 }
 
-void Renderer::BindModelConstants(Matrix4x4 const& modelToWorldTransform, Rgba8 const& modelColor)
-{
-	ModelConstants modelData        = ModelConstants();
-	modelData.ModelToWorldTransform = modelToWorldTransform;
-	modelData.ModelColor[0]         = modelColor.r / 255.f;
-	modelData.ModelColor[1]         = modelColor.g / 255.f;
-	modelData.ModelColor[2]         = modelColor.b / 255.f;
-	modelData.ModelColor[3]         = modelColor.a / 255.f;
-
-	CopyCPUToGPU(&modelData, sizeof(modelData), m_modelConstantBuffer);
-	BindConstantBuffer(m_modelConstantBuffer, kModelConstantsSlot);
-}
-
-void Renderer::BindLightConstants(LightConstants const& lightConstants)
-{
-	CopyCPUToGPU(&lightConstants, sizeof(lightConstants), m_lightConstantBuffer);
-	BindConstantBuffer(m_lightConstantBuffer, kLightConstantsSlot);
-}
-
-void Renderer::BindLightConstants(
-	Vec3 const& sunDirection, float sunIntensity, Rgba8 const& ambientColor, float ambientIntensity
-)
-{
-	LightConstants lightConstants        = LightConstants();
-	lightConstants.SunLight.SunDirection = sunDirection;
-	lightConstants.SunLight.SunIntensity = sunIntensity;
-	lightConstants.SunLight.AmbientColor = Vec3(ambientColor.r / 255.f, ambientColor.g / 255.f, ambientColor.b / 255.f);
-	lightConstants.SunLight.AmbientIntensity = ambientIntensity;
-
-	CopyCPUToGPU(&lightConstants, sizeof(lightConstants), m_lightConstantBuffer);
-	BindConstantBuffer(m_lightConstantBuffer, kLightConstantsSlot);
-}
-
-void Renderer::BindPostProcessConstants(Vec2 const& screenDimensions, float nearZ, float farZ)
-{
-	PostProcessConstants postProcessData = PostProcessConstants();
-	postProcessData.ScreenDimensions     = screenDimensions;
-	postProcessData.CameraNear           = nearZ;
-	postProcessData.CameraFar            = farZ;
-
-	CopyCPUToGPU(&postProcessData, sizeof(postProcessData), m_postProcessConstantBuffer);
-	BindConstantBuffer(m_postProcessConstantBuffer, kPostProcessConstantsSlot);
-}
-
-void Renderer::BindFrameConstants(float time, float deltaSeconds)
-{
-	FrameConstants frameData = FrameConstants();
-	frameData.Time           = time;
-	frameData.DeltaSeconds   = deltaSeconds;
-
-	CopyCPUToGPU(&frameData, sizeof(frameData), m_frameConstantBuffer);
-	BindConstantBuffer(m_frameConstantBuffer, kFrameConstantsSlot);
-}
-
-#pragma endregion
-
-#pragma region Public: GPU resource creation and cache access
-
-Shader* Renderer::CreateOrGetShader(char const* shaderName)
-{
-	GUARANTEE_OR_DIE(shaderName && shaderName[0], "CreateShader(shaderName): shaderName is null/empty");
-
-	std::string shaderKey = shaderName;
-	for (Shader* shader : m_cachedShaders)
-	{
-		if (shader->GetName() == shaderKey)
-		{
-			return shader;
-		}
-	}
-
-	std::string shaderFilename = std::string(shaderName) + ".hlsl";
-
-	std::string shaderSource;
-	int         bytesRead = FileReadToString(shaderSource, shaderFilename);
-
-	GUARANTEE_OR_DIE(bytesRead > 0, Stringf("Failed to read shader file \"%s\"", shaderFilename.c_str()));
-
-	return CreateShader(shaderName, shaderSource.c_str());
-}
-
-Texture* Renderer::CreateOrGetTexture(char const* imageFilePath)
-{
-	// See if we already have this texture previously loaded
-	Texture* existingTexture = GetTextureFromFileName(imageFilePath); // You need to write this
-	if (existingTexture)
-	{
-		return existingTexture;
-	}
-
-	// Never seen this texture before!  Let's load it.
-	Texture* newTexture = CreateTextureFromFile(imageFilePath);
-	return newTexture;
-}
-
-Texture* Renderer::CreateTextureFromImage(const Image& image)
-{
-	return CreateTextureFromData(
-		image.GetImageFilePath().c_str(),
-		image.GetDimensions(),
-		4,
-		(uint8_t*)image.GetRawData()
-	);
-}
-
-Texture* Renderer::CreateTextureFromData(char const* name, IntVec2 dimensions, int bytesPerTexel, uint8_t* texelData)
-{
-	// We only support RGBA8 format for now, so require 4 bytes per texel
-	GUARANTEE_OR_DIE(
-		bytesPerTexel == 4,
-		Stringf("CreateTextureFromData requires 4 bytes/texel (RGBA). Got %i for \"%s\"", bytesPerTexel, name)
-	);
-
-	D3D11_TEXTURE2D_DESC textureDesc = {};
-	textureDesc.Width                = (UINT)dimensions.x;
-	textureDesc.Height               = (UINT)dimensions.y;
-	textureDesc.MipLevels            = 1;
-	textureDesc.ArraySize            = 1;
-	textureDesc.Format               = DXGI_FORMAT_R8G8B8A8_UNORM;
-	textureDesc.Usage                = D3D11_USAGE_IMMUTABLE;
-	textureDesc.BindFlags            = D3D11_BIND_SHADER_RESOURCE;
-	textureDesc.SampleDesc.Count     = 1;
-
-	D3D11_SUBRESOURCE_DATA textureData = {};
-	textureData.pSysMem                = texelData;
-	textureData.SysMemPitch            = 4 * dimensions.x;
-
-	Texture* newTexture = CreateTextureInternal(name, dimensions, &textureDesc, &textureData);
-
-	return newTexture;
-}
-
-Texture* Renderer::CreateRenderTargetTexture(char const* name, IntVec2 dimensions)
-{
-	D3D11_TEXTURE2D_DESC textureDesc = {};
-	textureDesc.Width                = (UINT)dimensions.x;
-	textureDesc.Height               = (UINT)dimensions.y;
-	textureDesc.MipLevels            = 1;
-	textureDesc.ArraySize            = 1;
-	textureDesc.Format               = DXGI_FORMAT_R8G8B8A8_UNORM;
-	textureDesc.Usage                = D3D11_USAGE_DEFAULT;
-	textureDesc.BindFlags            = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
-	textureDesc.SampleDesc.Count     = 1;
-
-	Texture* newTexture = CreateTextureInternal(name, dimensions, &textureDesc, nullptr);
-
-	return newTexture;
-}
-
-Texture* Renderer::CreateDepthStencilTexture(char const* name, IntVec2 dimensions)
-{
-	D3D11_TEXTURE2D_DESC depthTextureDesc = {};
-	depthTextureDesc.Width                = (UINT)dimensions.x;
-	depthTextureDesc.Height               = (UINT)dimensions.y;
-	depthTextureDesc.MipLevels            = 1;
-	depthTextureDesc.ArraySize            = 1;
-	depthTextureDesc.Usage                = D3D11_USAGE_DEFAULT;
-	depthTextureDesc.Format               = DXGI_FORMAT_R24G8_TYPELESS;
-	depthTextureDesc.BindFlags            = D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE;
-	depthTextureDesc.SampleDesc.Count     = 1;
-
-	D3D11_DEPTH_STENCIL_VIEW_DESC dsvDesc = {};
-	dsvDesc.Format                        = DXGI_FORMAT_D24_UNORM_S8_UINT;
-	dsvDesc.ViewDimension                 = D3D11_DSV_DIMENSION_TEXTURE2D;
-	dsvDesc.Texture2D.MipSlice            = 0;
-
-	D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
-	srvDesc.Format                          = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
-	srvDesc.ViewDimension                   = D3D11_SRV_DIMENSION_TEXTURE2D;
-	srvDesc.Texture2D.MostDetailedMip       = 0;
-	srvDesc.Texture2D.MipLevels             = 1;
-
-	Texture* newTexture =
-		CreateTextureInternal(name, dimensions, &depthTextureDesc, nullptr, nullptr, &srvDesc, &dsvDesc);
-
-	return newTexture;
-}
-
-BitmapFont* Renderer::CreateOrGetBitmapFont(char const* fontFilePathNameWithNoExtension)
-{
-	std::string fontKey = std::string(fontFilePathNameWithNoExtension);
-	auto        found   = m_fontsByName.find(fontKey);
-	if (found != m_fontsByName.end())
-	{
-		return found->second;
-	}
-
-	Texture*    fontTexture   = CreateOrGetTexture(Stringf("%s.png", fontFilePathNameWithNoExtension).c_str());
-	BitmapFont* newBitmapFont = new BitmapFont(fontFilePathNameWithNoExtension, *fontTexture);
-	m_fontsByName[fontKey]    = newBitmapFont;
-	return newBitmapFont;
-}
-
-VertexBuffer* Renderer::CreateVertexBuffer(const unsigned int size, unsigned int stride)
-{
-	return new VertexBuffer(m_d3dDevice, size, stride);
-}
-
-VertexBuffer* Renderer::CreateVertexBuffer(std::vector<Vertex> const& verts)
-{
-	if (verts.empty())
-	{
-		return nullptr;
-	}
-
-	unsigned int const  vertsSize    = static_cast<unsigned int>(verts.size()) * sizeof(Vertex);
-	VertexBuffer* const vertexBuffer = CreateVertexBuffer(vertsSize, sizeof(Vertex));
-	CopyCPUToGPU(verts.data(), vertsSize, vertexBuffer);
-	return vertexBuffer;
-}
-
-ConstantBuffer* Renderer::CreateConstantBuffer(const unsigned int size)
-{
-	return new ConstantBuffer(m_d3dDevice, size);
-}
-
-IndexBuffer* Renderer::CreateIndexBuffer(const unsigned int size) { return new IndexBuffer(m_d3dDevice, size); }
-
-IndexBuffer* Renderer::CreateIndexBuffer(std::vector<unsigned int> const& indexes)
-{
-	if (indexes.empty())
-	{
-		return nullptr;
-	}
-
-	unsigned int const indexesSize = static_cast<unsigned int>(indexes.size()) * sizeof(unsigned int);
-	IndexBuffer* const indexBuffer = CreateIndexBuffer(indexesSize);
-	CopyCPUToGPU(indexes.data(), indexesSize, indexBuffer);
-	return indexBuffer;
-}
-
-#pragma endregion
-
-#pragma region Public: CPU -> GPU uploads
-
-void Renderer::CopyCPUToGPU(const void* data, unsigned int size, VertexBuffer* vertexBuffer)
-{
-	GUARANTEE_OR_DIE(m_d3dDeviceContext, "CopyCPUToGPU: m_d3dDeviceContext is null");
-	GUARANTEE_OR_DIE(vertexBuffer, "CopyCPUToGPU: vertexBuffer is null");
-	GUARANTEE_OR_DIE(data, "CopyCPUToGPU: data is null");
-	GUARANTEE_OR_DIE(size > 0, "CopyCPUToGPU: size is 0");
-
-	if (vertexBuffer->m_size > 0)
-	{
-		GUARANTEE_OR_DIE(size <= vertexBuffer->m_size, "CopyCPUToGPU: upload size exceeds vertex buffer capacity");
-	}
-
-	D3D11_MAPPED_SUBRESOURCE mapped = {};
-	HRESULT hr = m_d3dDeviceContext->Map(vertexBuffer->m_buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
-	GUARANTEE_OR_DIE(SUCCEEDED(hr), "CopyCPUToGPU: Map failed");
-
-	memcpy(mapped.pData, data, size);
-
-	m_d3dDeviceContext->Unmap(vertexBuffer->m_buffer, 0);
-}
-
-void Renderer::CopyCPUToGPU(const void* data, unsigned int size, ConstantBuffer* constantBuffer)
-{
-	GUARANTEE_OR_DIE(m_d3dDeviceContext, "CopyCPUToGPU: m_d3dDeviceContext is null");
-	GUARANTEE_OR_DIE(constantBuffer, "CopyCPUToGPU: vertexBuffer is null");
-	GUARANTEE_OR_DIE(data, "CopyCPUToGPU: data is null");
-
-	if (constantBuffer->m_size > 0)
-	{
-		GUARANTEE_OR_DIE(size <= constantBuffer->m_size, "CopyCPUToGPU: upload size exceeds constant buffer capacity");
-	}
-
-	D3D11_MAPPED_SUBRESOURCE mapped = {};
-	HRESULT hr = m_d3dDeviceContext->Map(constantBuffer->m_buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
-	GUARANTEE_OR_DIE(SUCCEEDED(hr), "CopyCPUToGPU: Map failed");
-
-	memcpy(mapped.pData, data, size);
-
-	m_d3dDeviceContext->Unmap(constantBuffer->m_buffer, 0);
-}
-
-void Renderer::CopyCPUToGPU(const void* data, unsigned int size, IndexBuffer* indexBuffer)
-{
-	GUARANTEE_OR_DIE(m_d3dDeviceContext, "CopyCPUToGPU: m_d3dDeviceContext is null");
-	GUARANTEE_OR_DIE(indexBuffer, "CopyCPUToGPU: vertexBuffer is null");
-	GUARANTEE_OR_DIE(data, "CopyCPUToGPU: data is null");
-
-	if (indexBuffer->m_size > 0)
-	{
-		GUARANTEE_OR_DIE(size <= indexBuffer->m_size, "CopyCPUToGPU: upload size exceeds constant buffer capacity");
-	}
-
-	D3D11_MAPPED_SUBRESOURCE mapped = {};
-	HRESULT hr = m_d3dDeviceContext->Map(indexBuffer->m_buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
-	GUARANTEE_OR_DIE(SUCCEEDED(hr), "CopyCPUToGPU: Map failed");
-
-	memcpy(mapped.pData, data, size);
-
-	m_d3dDeviceContext->Unmap(indexBuffer->m_buffer, 0);
-}
-
-void Renderer::AddPostProcessPass(PostProcessPass const& pass) { m_postProcessPasses.push_back(pass); }
-
-void Renderer::BeginEvent(std::string const& eventName)
-{
-	if (m_d3dAnnotation)
-	{
-		std::wstring wideEventName(eventName.begin(), eventName.end());
-		m_d3dAnnotation->BeginEvent(wideEventName.c_str());
-	}
-}
-
-void Renderer::EndEvent()
-{
-	if (m_d3dAnnotation)
-	{
-		m_d3dAnnotation->EndEvent();
-	}
-}
-
-#pragma endregion
-
-#pragma region Private: Texture cache internals
-
-Texture* Renderer::CreateTextureFromFile(char const* imageFilePath)
-{
-	Image image(imageFilePath);
-
-	return CreateTextureFromImage(image);
-}
-
-Texture* Renderer::GetTextureFromFileName(char const* imageFilePath)
-{
-	if (imageFilePath == nullptr)
-	{
-		return nullptr;
-	}
-
-	std::string filePath = std::string(imageFilePath);
-	auto        found    = m_texturesByName.find(filePath);
-	if (found != m_texturesByName.end())
-	{
-		return found->second;
-	}
-
-	return nullptr;
-}
-
-#pragma endregion
-
-#pragma region Private: Shader creation internals
-
-Shader* Renderer::CreateShader(char const* shaderName, char const* shaderSource)
-{
-	GUARANTEE_OR_DIE(m_d3dDevice, "CreateShader: m_d3dDevice is null");
-	GUARANTEE_OR_DIE(shaderName && shaderName[0], "CreateShader: shaderName is null/empty");
-	GUARANTEE_OR_DIE(shaderSource, "CreateShader: shaderSource is null");
-
-	ShaderConfig config;
-	config.m_name = shaderName;
-
-	Shader* shader = new Shader(config);
-
-	// Compile VS / PS
-	std::vector<unsigned char> vsByteCode;
-	std::vector<unsigned char> psByteCode;
-
-	bool vsOK =
-		CompileShaderToByteCode(vsByteCode, shaderName, shaderSource, config.m_vertexEntryPoint.c_str(), "vs_5_0");
-	GUARANTEE_OR_DIE(vsOK, Stringf("Could not compile vertex shader for '%s'", shaderName));
-
-	bool psOK =
-		CompileShaderToByteCode(psByteCode, shaderName, shaderSource, config.m_pixelEntryPoint.c_str(), "ps_5_0");
-	GUARANTEE_OR_DIE(psOK, Stringf("Could not compile pixel shader for '%s'", shaderName));
-
-	// Create VS / PS
-	HRESULT hr =
-		m_d3dDevice->CreateVertexShader(vsByteCode.data(), vsByteCode.size(), nullptr, &shader->m_vertexShader);
-	GUARANTEE_OR_DIE(SUCCEEDED(hr), Stringf("Could not create vertex shader for '%s'", shaderName));
-
-	hr = m_d3dDevice->CreatePixelShader(psByteCode.data(), psByteCode.size(), nullptr, &shader->m_pixelShader);
-	GUARANTEE_OR_DIE(SUCCEEDED(hr), Stringf("Could not create pixel shader for '%s'", shaderName));
-
-	static D3D11_INPUT_ELEMENT_DESC const kPcutbnDesc[] = {
-		{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
-		{"COLOR", 0, DXGI_FORMAT_R8G8B8A8_UNORM, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0},
-		{"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0},
-		{"TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0},
-		{"BITANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0},
-		{"NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0},
-	};
-
-	D3D11_INPUT_ELEMENT_DESC const* inputElementDesc  = kPcutbnDesc;
-	UINT                            inputElementCount = (UINT)ARRAYSIZE(kPcutbnDesc);
-
-	hr = m_d3dDevice->CreateInputLayout(
-		inputElementDesc,
-		inputElementCount,
-		vsByteCode.data(),
-		(UINT)vsByteCode.size(),
-		&shader->m_inputLayout
-	);
-	GUARANTEE_OR_DIE(SUCCEEDED(hr), Stringf("Could not create input layout for '%s'", shaderName));
-
-	m_cachedShaders.push_back(shader);
-
-	return shader;
-}
-
-bool Renderer::CompileShaderToByteCode(
-	std::vector<unsigned char>& outByteCode,
-	char const*                 name,
-	char const*                 source,
-	char const*                 entryPoint,
-	char const*                 target
-)
-{
-	if (source == nullptr || entryPoint == nullptr || target == nullptr)
-	{
-		return false;
-	}
-
-	DWORD shaderFlags = D3DCOMPILE_OPTIMIZATION_LEVEL3;
-#if defined(ENGINE_DEBUG_RENDER)
-	shaderFlags = D3DCOMPILE_DEBUG;
-	shaderFlags |= D3DCOMPILE_SKIP_OPTIMIZATION;
-	shaderFlags |= D3DCOMPILE_WARNINGS_ARE_ERRORS;
-#endif
-
-	ID3DBlob* shaderBlob = nullptr;
-	ID3DBlob* errorBlob  = nullptr;
-
-	HRESULT hr = D3DCompile(
-		source,
-		strlen(source),
-		name,
-		nullptr,
-		D3D_COMPILE_STANDARD_FILE_INCLUDE,
-		entryPoint,
-		target,
-		shaderFlags,
-		0,
-		&shaderBlob,
-		&errorBlob
-	);
-
-	if (!SUCCEEDED(hr))
-	{
-		if (errorBlob)
-		{
-			DebuggerPrintf((char*)errorBlob->GetBufferPointer());
-			errorBlob->Release();
-		}
-		if (shaderBlob)
-			shaderBlob->Release();
-		return false;
-	}
-
-	outByteCode.resize(shaderBlob->GetBufferSize());
-	memcpy(outByteCode.data(), shaderBlob->GetBufferPointer(), shaderBlob->GetBufferSize());
-
-	shaderBlob->Release();
-	if (errorBlob)
-		errorBlob->Release();
-	return true;
-}
-
-#pragma endregion
-
-#pragma region Private: Low-level buffer binding to D3D context
-
-void Renderer::BindVertexBuffer(VertexBuffer* vertexBuffer)
-{
-	GUARANTEE_OR_DIE(m_d3dDeviceContext, "BindVertexBuffer: m_d3dDeviceContext is null");
-
-	if (vertexBuffer == nullptr)
-	{
-		ID3D11Buffer* nullBuf = nullptr;
-		UINT          stride  = 0;
-		UINT          offset  = 0;
-		m_d3dDeviceContext->IASetVertexBuffers(0, 1, &nullBuf, &stride, &offset);
-		return;
-	}
-
-	UINT          stride = vertexBuffer->GetStride();
-	UINT          offset = 0;
-	ID3D11Buffer* buf    = vertexBuffer->m_buffer;
-	m_d3dDeviceContext->IASetVertexBuffers(0, 1, &buf, &stride, &offset);
-}
-
-void Renderer::BindConstantBuffer(ConstantBuffer* constantBuffer, int slot)
-{
-	GUARANTEE_OR_DIE(m_d3dDeviceContext, "BindConstantBuffer: m_d3dDeviceContext is null");
-
-	if (constantBuffer == nullptr)
-	{
-		ID3D11Buffer* nullBuf = nullptr;
-		m_d3dDeviceContext->VSSetConstantBuffers(slot, 1, &nullBuf);
-		m_d3dDeviceContext->PSSetConstantBuffers(slot, 1, &nullBuf);
-		return;
-	}
-
-	ID3D11Buffer* buf = constantBuffer->m_buffer;
-	GUARANTEE_OR_DIE(buf, "BindConstantBuffer: constantBuffer->m_buffer is null");
-
-	m_d3dDeviceContext->VSSetConstantBuffers(slot, 1, &buf);
-	m_d3dDeviceContext->PSSetConstantBuffers(slot, 1, &buf);
-}
-
-void Renderer::BindIndexBuffer(IndexBuffer* indexBuffer)
-{
-	GUARANTEE_OR_DIE(m_d3dDeviceContext, "BindVertexBuffer: m_d3dDeviceContext is null");
-
-	if (indexBuffer == nullptr)
-	{
-		ID3D11Buffer* nullBuf = nullptr;
-		UINT          stride  = 0;
-		UINT          offset  = 0;
-		m_d3dDeviceContext->IASetVertexBuffers(0, 1, &nullBuf, &stride, &offset);
-		return;
-	}
-
-	ID3D11Buffer* buf = indexBuffer->m_buffer;
-	m_d3dDeviceContext->IASetIndexBuffer(buf, DXGI_FORMAT_R32_UINT, 0);
-}
-
-void Renderer::SetViewport(IntVec2 dimensions, IntVec2 topLeft)
+void Renderer::ResizeSceneTargets(IntVec2 dimensions)
 {
 	if (dimensions.x <= 0 || dimensions.y <= 0)
 	{
 		return;
 	}
 
-	D3D11_VIEWPORT viewport = {};
-	viewport.TopLeftX       = (FLOAT)topLeft.x;
-	viewport.TopLeftY       = (FLOAT)topLeft.y;
-	viewport.Width          = (FLOAT)dimensions.x;
-	viewport.Height         = (FLOAT)dimensions.y;
-	viewport.MinDepth       = 0.0f;
-	viewport.MaxDepth       = 1.0f;
-
-	m_d3dDeviceContext->RSSetViewports(1, &viewport);
-}
-
-void Renderer::ResizeSceneTargets(IntVec2 newDimensions)
-{
-	if (newDimensions.x <= 0 || newDimensions.y <= 0)
+	if (dimensions == m_sceneTargetDimensions && m_sceneColorTexture != nullptr && m_sceneDepthTexture != nullptr
+		&& m_sceneNormalTexture != nullptr)
 	{
 		return;
 	}
 
-	if (newDimensions == m_finalBlit->m_dimensions && newDimensions == m_sceneColorTexture->m_dimensions
-		&& newDimensions == m_sceneDepthTexture->m_dimensions && newDimensions == m_sceneNormalTexture->m_dimensions)
+	DestroySceneTargets();
+
+	m_sceneColorTexture      = m_renderBackend->CreateRenderTargetTexture("SceneColor", dimensions);
+	m_sceneDepthTexture      = m_renderBackend->CreateDepthStencilTexture("SceneDepth", dimensions);
+	m_sceneNormalTexture     = m_renderBackend->CreateRenderTargetTexture("SceneNormal", dimensions);
+	m_sceneTargetDimensions = dimensions;
+
+	m_renderBackend->ClearRenderTarget(m_sceneNormalTexture, Rgba8(128, 128, 128, 255));
+	m_renderBackend->ClearDepthStencil(m_sceneDepthTexture);
+}
+
+void Renderer::DestroySceneTargets()
+{
+	if (m_renderBackend == nullptr)
+	{
+		m_sceneColorTexture      = nullptr;
+		m_sceneDepthTexture      = nullptr;
+		m_sceneNormalTexture     = nullptr;
+		m_sceneTargetDimensions = IntVec2::Zero;
+		return;
+	}
+
+	m_renderBackend->DestroyTexture(m_sceneColorTexture);
+	m_renderBackend->DestroyTexture(m_sceneDepthTexture);
+	m_renderBackend->DestroyTexture(m_sceneNormalTexture);
+	m_sceneTargetDimensions = IntVec2::Zero;
+}
+
+void Renderer::ClearSceneTargets(Rgba8 const& clearColor)
+{
+	m_renderBackend->ClearRenderTarget(m_sceneColorTexture, clearColor);
+	m_renderBackend->ClearRenderTarget(m_sceneNormalTexture, Rgba8(128, 128, 128, 255));
+	m_renderBackend->ClearDepthStencil(m_sceneDepthTexture);
+}
+
+void Renderer::BindSceneTargets(bool bindNormal)
+{
+	Texture* normalTarget = bindNormal ? m_sceneNormalTexture : nullptr;
+	m_renderBackend->BindRenderTargets(m_sceneColorTexture, m_sceneDepthTexture, normalTarget);
+}
+
+void Renderer::CopyTextureToBackBuffer(Texture* colorTexture)
+{
+	if (colorTexture == nullptr)
 	{
 		return;
 	}
 
-	delete m_finalBlit;
-	delete m_sceneColorTexture;
-	delete m_sceneDepthTexture;
-	delete m_sceneNormalTexture;
-
-	// Recreate scene render target textures with new dimensions
-	m_finalBlit          = CreateRenderTargetTexture("FinalBlit", newDimensions);
-	m_sceneColorTexture  = CreateRenderTargetTexture("SceneColor", newDimensions);
-	m_sceneDepthTexture  = CreateDepthStencilTexture("SceneDepth", newDimensions);
-	m_sceneNormalTexture = CreateRenderTargetTexture("SceneNormal", newDimensions);
-
-	float normalClearColor[4] = {0.5f, 0.5f, 0.5f, 1.0f};
-	m_d3dDeviceContext->ClearRenderTargetView(m_sceneNormalTexture->m_renderTargetView, normalClearColor);
-	m_d3dDeviceContext->ClearDepthStencilView(
-		m_sceneDepthTexture->m_depthStencilView,
-		D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL,
-		1.0f,
-		0
-	);
+	m_renderBackend->BindBackBuffer();
+	m_renderBackend->BindPostProcessInputs(colorTexture, nullptr, nullptr);
+	m_renderBackend->DrawFullscreenTriangle(m_postProcessCopyShader, L"FinalCopyToBackBuffer");
+	m_renderBackend->UnbindAllShaderResourceViews();
 }
 
-void Renderer::FinalBlitToBackBuffer()
+void Renderer::RenderOpaque(Viewport const& viewport)
 {
-	BindBackBuffer();
-
-	m_d3dDeviceContext->OMSetRenderTargets(1, &m_d3dRenderTargetView, nullptr);
-
-	BindShader(m_postProcessCopyShader);
-	BindTexture(m_finalBlit, 0);
-	BindSampler(SamplerMode::POINT_CLAMP, 0);
-
-	m_d3dAnnotation->BeginEvent(L"Final Blit");
-	DrawVertexArray(3, GetFullscreenTriangleTopLeftUV());
-	m_d3dAnnotation->EndEvent();
-
-	UnbindAllShaderResourceViews();
-}
-
-void Renderer::BindFinalBlit() { m_d3dDeviceContext->OMSetRenderTargets(1, &m_finalBlit->m_renderTargetView, nullptr); }
-
-void Renderer::ResizeBackBuffer(IntVec2 newDimensions)
-{
-	if (newDimensions.x <= 0 || newDimensions.y <= 0)
+	if (viewport.m_worldCamera == nullptr)
 	{
 		return;
 	}
 
-	// 1) Unbind backbuffer RTV
-	ID3D11RenderTargetView* nullRTV = nullptr;
-	m_d3dDeviceContext->OMSetRenderTargets(1, &nullRTV, nullptr);
+	BindSceneTargets(true);
 
-	if (m_d3dRenderTargetView != nullptr)
+	m_renderBackend->SetBlendMode(BlendMode::ALPHA);
+	m_renderBackend->SetRasterizerMode(RasterizerMode::SOLID_CULL_BACK);
+	m_renderBackend->SetDepthMode(DepthMode::READ_WRITE_LESS_EQUAL);
+	m_renderBackend->BeginCamera(*viewport.m_worldCamera);
+
+	for (RenderRequestInfo const& request : m_renderRequests[RenderRequestPass::Opaque])
 	{
-		m_d3dRenderTargetView->Release();
-		m_d3dRenderTargetView = nullptr;
+		RenderRequest(request);
 	}
 
-	HRESULT hr = m_d3dSwapChain->ResizeBuffers(0, newDimensions.x, newDimensions.y, DXGI_FORMAT_UNKNOWN, 0);
-
-	GUARANTEE_OR_DIE(SUCCEEDED(hr), "Could not resize swap chain buffers.");
-
-	ID3D11Texture2D* backBuffer = nullptr;
-	hr                          = m_d3dSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)&backBuffer);
-
-	GUARANTEE_OR_DIE(SUCCEEDED(hr), "Could not get resized swap chain buffer.");
-
-	hr = m_d3dDevice->CreateRenderTargetView(backBuffer, nullptr, &m_d3dRenderTargetView);
-
-	backBuffer->Release();
-
-	GUARANTEE_OR_DIE(SUCCEEDED(hr), "Could not create resized back buffer RTV.");
+	DebugRenderWorld(*viewport.m_worldCamera);
 }
 
-ID3D11Device* Renderer::GetD3DDevice() const { return m_d3dDevice; }
-
-ID3D11DeviceContext* Renderer::GetD3DDeviceContext() const { return m_d3dDeviceContext; }
-
-RenderTargetSet Renderer::GetSceneRenderTargetSet() const
+void Renderer::RenderSkybox(Viewport const& viewport)
 {
-	RenderTargetSet result;
-	result.colorTexture  = m_sceneColorTexture;
-	result.depthTexture  = m_sceneDepthTexture;
-	result.normalTexture = m_sceneNormalTexture;
-	return result;
+	if (viewport.m_worldCamera == nullptr)
+	{
+		return;
+	}
+
+	BindSceneTargets(false);
+
+	m_renderBackend->SetBlendMode(BlendMode::ALPHA);
+	m_renderBackend->SetRasterizerMode(RasterizerMode::SOLID_CULL_BACK);
+	m_renderBackend->SetDepthMode(DepthMode::READ_WRITE_LESS_EQUAL);
+
+	for (RenderRequestInfo const& request : m_renderRequests[RenderRequestPass::Skybox])
+	{
+		RenderRequest(request);
+	}
 }
 
-void Renderer::BindRenderTargetSet(RenderTargetSet const& renderTargetSet)
+void Renderer::RenderPostProcess(Viewport const& viewport)
 {
-	ID3D11RenderTargetView* renderTargetViews[2] = {nullptr, nullptr};
-
-	if (renderTargetSet.colorTexture)
+	if (viewport.m_worldCamera == nullptr)
 	{
-		renderTargetViews[0] = renderTargetSet.colorTexture->m_renderTargetView;
+		return;
 	}
 
-	if (renderTargetSet.normalTexture)
-	{
-		renderTargetViews[1] = renderTargetSet.normalTexture->m_renderTargetView;
-	}
+	PostProcessContext context;
+	context.m_camera           = viewport.m_worldCamera;
+	context.m_sceneColor       = m_sceneColorTexture;
+	context.m_sceneDepth       = m_sceneDepthTexture;
+	context.m_sceneNormal      = m_sceneNormalTexture;
+	context.m_outputResolution = viewport.m_outputResolution;
 
-	m_d3dDeviceContext->OMSetRenderTargets(2, renderTargetViews, renderTargetSet.depthTexture->m_depthStencilView);
+	Texture* finalColor = m_postProcessChain->Render(*m_renderBackend, context);
+	CopyTextureToBackBuffer(finalColor);
 }
 
-bool Renderer::Event_WindowResized(EventArgs& args) { return true; }
+void Renderer::RenderUI(Viewport const& viewport)
+{
+	if (viewport.m_uiCamera == nullptr)
+	{
+		return;
+	}
 
-void Renderer::ResizeViewport(IntVec2 newDimensions) {}
+	m_renderBackend->BindBackBuffer();
+	m_renderBackend->SetBlendMode(BlendMode::ALPHA);
+	m_renderBackend->SetRasterizerMode(RasterizerMode::SOLID_CULL_NONE);
+	m_renderBackend->SetDepthMode(DepthMode::READ_ONLY_ALWAYS);
+	m_renderBackend->BeginCamera(*viewport.m_uiCamera);
 
-void Renderer::DrawFullscreenPass(
-	Shader*        shader,
-	Texture*       colorInput,
-	Texture*       depthInput,
-	Texture*       normalInput,
-	Texture*       outputTarget,
-	wchar_t const* eventName
+	for (RenderRequestInfo const& request : m_renderRequests[RenderRequestPass::UI])
+	{
+		RenderRequest(request);
+	}
+
+	DebugRenderScreen(*viewport.m_uiCamera);
+}
+void Renderer::BeginCamera(Camera const& camera) { m_renderBackend->BeginCamera(camera); }
+void Renderer::EndCamera() { m_renderBackend->EndCamera(); }
+void Renderer::ClearScreen(Rgba8 const& clearColor)
+{
+	m_renderBackend->ClearScreen(clearColor);
+	ClearSceneTargets(clearColor);
+}
+void Renderer::SetBlendMode(BlendMode blendMode) { m_renderBackend->SetBlendMode(blendMode); }
+void Renderer::SetRasterizerMode(RasterizerMode rasterizerMode) { m_renderBackend->SetRasterizerMode(rasterizerMode); }
+void Renderer::SetDepthMode(DepthMode depthMode) { m_renderBackend->SetDepthMode(depthMode); }
+void Renderer::SetStatesIfChanged() { m_renderBackend->SetStatesIfChanged(); }
+
+void Renderer::DrawVertexArray(int numVertexes, Vertex const* vertexes)
+{
+	m_renderBackend->DrawVertexArray(numVertexes, vertexes);
+}
+void Renderer::DrawVertexArray(std::vector<Vertex> const& verts) { m_renderBackend->DrawVertexArray(verts); }
+void Renderer::DrawVertexArray(std::vector<Vertex> const& verts, std::vector<unsigned int> const& vertIndexs)
+{
+	m_renderBackend->DrawVertexArray(verts, vertIndexs);
+}
+void Renderer::DrawVertexBuffer(VertexBuffer* vertexBuffer) { m_renderBackend->DrawVertexBuffer(vertexBuffer); }
+void Renderer::DrawIndexedVertexBuffer(VertexBuffer* vertexBuffer, IndexBuffer* indexBuffer)
+{
+	m_renderBackend->DrawIndexedVertexBuffer(vertexBuffer, indexBuffer);
+}
+
+void Renderer::BindTexture(Texture* textureOrNull) { m_renderBackend->BindTexture(textureOrNull); }
+void Renderer::BindTexture(Texture* textureOrNull, unsigned int slot)
+{
+	m_renderBackend->BindTexture(textureOrNull, slot);
+}
+void Renderer::BindSampler(SamplerMode samplerMode, unsigned int slot)
+{
+	m_renderBackend->BindSampler(samplerMode, slot);
+}
+void Renderer::BindShader(Shader* shader) { m_renderBackend->BindShader(shader); }
+void Renderer::BindModelConstants(Matrix4x4 const& modelToWorldTransform, Rgba8 const& modelColor)
+{
+	m_renderBackend->BindModelConstants(modelToWorldTransform, modelColor);
+}
+void Renderer::BindLightConstants(LightConstants const& lightConstants)
+{
+	m_renderBackend->BindLightConstants(lightConstants);
+}
+void Renderer::BindLightConstants(
+	Vec3 const& sunDirection, float sunIntensity, Rgba8 const& ambientColor, float ambientIntensity
 )
 {
-	m_d3dDeviceContext->OMSetRenderTargets(1, &outputTarget->m_renderTargetView, nullptr);
-
-	BindShader(shader);
-	BindTexture(colorInput, 0);
-	BindSampler(SamplerMode::POINT_CLAMP, 0);
-	BindTexture(depthInput, 1);
-	BindSampler(SamplerMode::POINT_CLAMP, 1);
-	BindTexture(normalInput, 2);
-	BindSampler(SamplerMode::POINT_CLAMP, 2);
-
-	m_d3dAnnotation->BeginEvent(eventName);
-	DrawVertexArray(3, GetFullscreenTriangleTopLeftUV());
-	m_d3dAnnotation->EndEvent();
+	m_renderBackend->BindLightConstants(sunDirection, sunIntensity, ambientColor, ambientIntensity);
 }
-
-void Renderer::UnbindAllShaderResourceViews()
+void Renderer::BindPostProcessConstants(Vec2 const& screenDimensions, float cameraNear, float cameraFar)
 {
-	ID3D11ShaderResourceView* nullSrvs[16] = {nullptr};
-	m_d3dDeviceContext->OMSetRenderTargets(1, &m_d3dRenderTargetView, nullptr);
-	m_d3dDeviceContext->PSSetShaderResources(0, 16, nullSrvs);
-	m_d3dDeviceContext->VSSetShaderResources(0, 16, nullSrvs);
+	m_renderBackend->BindPostProcessConstants(screenDimensions, cameraNear, cameraFar);
 }
-
-void Renderer::BindBackBuffer() { m_d3dDeviceContext->OMSetRenderTargets(1, &m_d3dRenderTargetView, nullptr); }
-
-Texture* Renderer::CreateTextureInternal(
-	char const*                            name,
-	IntVec2                                dimensions,
-	D3D11_TEXTURE2D_DESC const*            textureDesc,
-	D3D11_SUBRESOURCE_DATA const*          initialData,
-	D3D11_RENDER_TARGET_VIEW_DESC const*   rtvDesc,
-	D3D11_SHADER_RESOURCE_VIEW_DESC const* srvDesc,
-	D3D11_DEPTH_STENCIL_VIEW_DESC const*   dsvDesc
-)
+void Renderer::BindFrameConstants(float time, float deltaSeconds)
 {
-	GUARANTEE_OR_DIE(
-		dimensions.x > 0 && dimensions.y > 0,
-		Stringf(
-			"CreateTextureFromData failed for \"%s\" - illegal texture dimensions (%i x %i)",
-			name,
-			dimensions.x,
-			dimensions.y
-		)
-	);
-
-	GUARANTEE_OR_DIE(textureDesc, Stringf("CreateTextureFromData failed for \"%s\" - textureDesc is null", name));
-
-	Texture* newTexture      = new Texture();
-	newTexture->m_name       = name;
-	newTexture->m_dimensions = dimensions;
-
-	HRESULT hr = m_d3dDevice->CreateTexture2D(textureDesc, initialData, &newTexture->m_texture);
-
-	GUARANTEE_OR_DIE(SUCCEEDED(hr), "Could not create texture.");
-
-	if ((textureDesc->BindFlags & D3D11_BIND_RENDER_TARGET) != 0)
-	{
-		m_d3dDevice->CreateRenderTargetView(newTexture->m_texture, rtvDesc, &newTexture->m_renderTargetView);
-	}
-
-	if ((textureDesc->BindFlags & D3D11_BIND_SHADER_RESOURCE) != 0)
-	{
-		m_d3dDevice->CreateShaderResourceView(newTexture->m_texture, srvDesc, &newTexture->m_shaderResourceView);
-	}
-
-	if ((textureDesc->BindFlags & D3D11_BIND_DEPTH_STENCIL) != 0)
-	{
-		m_d3dDevice->CreateDepthStencilView(newTexture->m_texture, dsvDesc, &newTexture->m_depthStencilView);
-	}
-
-	m_texturesByName[newTexture->m_name] = newTexture;
-
-	return newTexture;
+	m_renderBackend->BindFrameConstants(time, deltaSeconds);
 }
 
-#pragma endregion
+Shader*  Renderer::CreateOrGetShader(char const* shaderName) { return m_renderBackend->CreateOrGetShader(shaderName); }
+Texture* Renderer::CreateOrGetTexture(char const* fileDataPath)
+{
+	return m_renderBackend->CreateOrGetTexture(fileDataPath);
+}
+Texture* Renderer::CreateTextureFromImage(const Image& image) { return m_renderBackend->CreateTextureFromImage(image); }
+Texture* Renderer::CreateTextureFromData(char const* name, IntVec2 dimensions, int bytesPerTexel, uint8_t* texelData)
+{
+	return m_renderBackend->CreateTextureFromData(name, dimensions, bytesPerTexel, texelData);
+}
+Texture* Renderer::CreateRenderTargetTexture(char const* name, IntVec2 dimensions)
+{
+	return m_renderBackend->CreateRenderTargetTexture(name, dimensions);
+}
+Texture* Renderer::CreateDepthStencilTexture(char const* name, IntVec2 dimensions)
+{
+	return m_renderBackend->CreateDepthStencilTexture(name, dimensions);
+}
+BitmapFont* Renderer::CreateOrGetBitmapFont(char const* fontFilePathNameWithNoExtension)
+{
+	return m_renderBackend->CreateOrGetBitmapFont(fontFilePathNameWithNoExtension);
+}
+
+VertexBuffer* Renderer::CreateVertexBuffer(const unsigned int size, unsigned int stride)
+{
+	return m_renderBackend->CreateVertexBuffer(size, stride);
+}
+VertexBuffer* Renderer::CreateVertexBuffer(std::vector<Vertex> const& verts)
+{
+	return m_renderBackend->CreateVertexBuffer(verts);
+}
+ConstantBuffer* Renderer::CreateConstantBuffer(const unsigned int size)
+{
+	return m_renderBackend->CreateConstantBuffer(size);
+}
+IndexBuffer* Renderer::CreateIndexBuffer(const unsigned int size) { return m_renderBackend->CreateIndexBuffer(size); }
+IndexBuffer* Renderer::CreateIndexBuffer(std::vector<unsigned int> const& indexes)
+{
+	return m_renderBackend->CreateIndexBuffer(indexes);
+}
+
+void Renderer::CopyCPUToGPU(const void* data, unsigned int size, VertexBuffer* vertexBuffer)
+{
+	m_renderBackend->CopyCPUToGPU(data, size, vertexBuffer);
+}
+void Renderer::CopyCPUToGPU(const void* data, unsigned int size, ConstantBuffer* constantBuffer)
+{
+	m_renderBackend->CopyCPUToGPU(data, size, constantBuffer);
+}
+void Renderer::CopyCPUToGPU(const void* data, unsigned int size, IndexBuffer* indexBuffer)
+{
+	m_renderBackend->CopyCPUToGPU(data, size, indexBuffer);
+}
+
+void                 Renderer::BeginEvent(std::string const& eventName) { m_renderBackend->BeginEvent(eventName); }
+void                 Renderer::EndEvent() { m_renderBackend->EndEvent(); }
+ID3D11Device*        Renderer::GetD3DDevice() const { return m_renderBackend->GetD3DDevice(); }
+ID3D11DeviceContext* Renderer::GetD3DDeviceContext() const { return m_renderBackend->GetD3DDeviceContext(); }
+
+void Renderer::SetViewport(IntVec2 dimensions, IntVec2 topLeft) { m_renderBackend->SetViewport(dimensions, topLeft); }
+void Renderer::ResizeBackBuffer(IntVec2 newDimensions) { m_renderBackend->ResizeBackBuffer(newDimensions); }
+Texture* Renderer::GetTextureFromFileName(char const* fileName)
+{
+	return m_renderBackend->GetTextureFromFileName(fileName);
+}

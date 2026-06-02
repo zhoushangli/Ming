@@ -1,10 +1,14 @@
 #pragma once
 
 #include "Engine/Math/IntVec2.hpp"
-#include "Engine/Renderer/Shader.hpp"
+#include "Engine/Renderer/Camera.hpp"
 
 #include <string>
 #include <vector>
+
+class D3D11RenderBackend;
+class Texture;
+class Shader;
 
 struct OutputTextureRef
 {
@@ -45,4 +49,30 @@ public:
 
 	OutputTextureRef             m_customOutput = OutputTextureRef("Undefined");
 	std::vector<InputTextureRef> m_customInputs;
+};
+
+struct PostProcessContext
+{
+	Camera const*  m_camera;
+	Texture* m_sceneColor;
+	Texture* m_sceneDepth;
+	Texture* m_sceneNormal;
+	IntVec2  m_outputResolution;
+};
+
+class PostProcessChain
+{
+public:
+	PostProcessChain();
+	~PostProcessChain();
+
+	void AddPass(PostProcessPass const& pass);
+	void Resize(D3D11RenderBackend& renderer, IntVec2 dimensions);
+	Texture* Render(D3D11RenderBackend& renderer, PostProcessContext const& context);
+
+private:
+	std::vector<PostProcessPass> m_passes;
+	Shader*                      m_postProcessCopyShader = nullptr;
+	Texture*                     m_ping                  = nullptr;
+	Texture*                     m_pong                  = nullptr;
 };
