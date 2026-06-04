@@ -2,6 +2,7 @@
 
 #include "Engine/Core/StringUtils.hpp"
 #include "Engine/Math/MathUtils.hpp"
+#include "Rgba8.hpp"
 
 Rgba8 const Rgba8::White            = Rgba8(255, 255, 255);
 Rgba8 const Rgba8::Black            = Rgba8(0, 0, 0);
@@ -38,32 +39,26 @@ bool Rgba8::operator!=(Rgba8 const& other) const { return !(*this == other); }
 
 Rgba8 const Rgba8::operator+(float value) const
 {
-	return Rgba8(
-		static_cast<unsigned char>(GetClamped(static_cast<float>(r) + value, 0.f, 255.f)),
+	return Rgba8(static_cast<unsigned char>(GetClamped(static_cast<float>(r) + value, 0.f, 255.f)),
 		static_cast<unsigned char>(GetClamped(static_cast<float>(g) + value, 0.f, 255.f)),
 		static_cast<unsigned char>(GetClamped(static_cast<float>(b) + value, 0.f, 255.f)),
-		static_cast<unsigned char>(GetClamped(static_cast<float>(a) + value, 0.f, 255.f))
-	);
+		static_cast<unsigned char>(GetClamped(static_cast<float>(a) + value, 0.f, 255.f)));
 }
 
 Rgba8 const Rgba8::operator-(float value) const
 {
-	return Rgba8(
-		static_cast<unsigned char>(GetClamped(static_cast<float>(r) - value, 0.f, 255.f)),
+	return Rgba8(static_cast<unsigned char>(GetClamped(static_cast<float>(r) - value, 0.f, 255.f)),
 		static_cast<unsigned char>(GetClamped(static_cast<float>(g) - value, 0.f, 255.f)),
 		static_cast<unsigned char>(GetClamped(static_cast<float>(b) - value, 0.f, 255.f)),
-		static_cast<unsigned char>(GetClamped(static_cast<float>(a) - value, 0.f, 255.f))
-	);
+		static_cast<unsigned char>(GetClamped(static_cast<float>(a) - value, 0.f, 255.f)));
 }
 
 Rgba8 const Rgba8::operator*(float value) const
 {
-	return Rgba8(
-		static_cast<unsigned char>(GetClamped(static_cast<float>(r) * value, 0.f, 255.f)),
+	return Rgba8(static_cast<unsigned char>(GetClamped(static_cast<float>(r) * value, 0.f, 255.f)),
 		static_cast<unsigned char>(GetClamped(static_cast<float>(g) * value, 0.f, 255.f)),
 		static_cast<unsigned char>(GetClamped(static_cast<float>(b) * value, 0.f, 255.f)),
-		static_cast<unsigned char>(GetClamped(static_cast<float>(a) * value, 0.f, 255.f))
-	);
+		static_cast<unsigned char>(GetClamped(static_cast<float>(a) * value, 0.f, 255.f)));
 }
 
 Rgba8 const Rgba8::operator/(float value) const
@@ -73,12 +68,10 @@ Rgba8 const Rgba8::operator/(float value) const
 		return *this;
 	}
 
-	return Rgba8(
-		static_cast<unsigned char>(GetClamped(static_cast<float>(r) / value, 0.f, 255.f)),
+	return Rgba8(static_cast<unsigned char>(GetClamped(static_cast<float>(r) / value, 0.f, 255.f)),
 		static_cast<unsigned char>(GetClamped(static_cast<float>(g) / value, 0.f, 255.f)),
 		static_cast<unsigned char>(GetClamped(static_cast<float>(b) / value, 0.f, 255.f)),
-		static_cast<unsigned char>(GetClamped(static_cast<float>(a) / value, 0.f, 255.f))
-	);
+		static_cast<unsigned char>(GetClamped(static_cast<float>(a) / value, 0.f, 255.f)));
 }
 
 void Rgba8::operator+=(float value) { *this = *this + value; }
@@ -131,22 +124,19 @@ Rgba8 const operator+(float value, Rgba8 const& color) { return color + value; }
 
 Rgba8 const operator-(float value, Rgba8 const& color)
 {
-	return Rgba8(
-		static_cast<unsigned char>(GetClamped(value - static_cast<float>(color.r), 0.f, 255.f)),
+	return Rgba8(static_cast<unsigned char>(GetClamped(value - static_cast<float>(color.r), 0.f, 255.f)),
 		static_cast<unsigned char>(GetClamped(value - static_cast<float>(color.g), 0.f, 255.f)),
 		static_cast<unsigned char>(GetClamped(value - static_cast<float>(color.b), 0.f, 255.f)),
-		static_cast<unsigned char>(GetClamped(value - static_cast<float>(color.a), 0.f, 255.f))
-	);
+		static_cast<unsigned char>(GetClamped(value - static_cast<float>(color.a), 0.f, 255.f)));
 }
 
 Rgba8 const operator*(float value, Rgba8 const& color) { return color * value; }
 
 Rgba8 const operator/(float value, Rgba8 const& color)
 {
-	return Rgba8(
-		color.r == 0 ? 255 : static_cast<unsigned char>(GetClamped(value / static_cast<float>(color.r), 0.f, 255.f)),
+	return Rgba8(color.r == 0 ? 255
+							  : static_cast<unsigned char>(GetClamped(value / static_cast<float>(color.r), 0.f, 255.f)),
 		color.g == 0 ? 255 : static_cast<unsigned char>(GetClamped(value / static_cast<float>(color.g), 0.f, 255.f)),
 		color.b == 0 ? 255 : static_cast<unsigned char>(GetClamped(value / static_cast<float>(color.b), 0.f, 255.f)),
-		color.a == 0 ? 255 : static_cast<unsigned char>(GetClamped(value / static_cast<float>(color.a), 0.f, 255.f))
-	);
+		color.a == 0 ? 255 : static_cast<unsigned char>(GetClamped(value / static_cast<float>(color.a), 0.f, 255.f)));
 }

@@ -13,6 +13,7 @@ class Renderer;
 class Camera;
 class BitmapFont;
 class Timer;
+class VertexBuffer;
 
 // Stores the text and color for an individual line of text
 struct DevConsoleLine
@@ -112,6 +113,9 @@ protected:
 
 	// Timer for controlling insertion point visibility.
 	Timer* m_insertionPointBlinkTimer;
+
+	VertexBuffer* m_backgroundVertexBuffer = nullptr;
+	VertexBuffer* m_textVertexBuffer       = nullptr;
 
 	// History of all commands executed.
 	std::vector<std::string> m_commandHistory;

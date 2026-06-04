@@ -3,7 +3,7 @@
 #include "Engine/Renderer/D3D11RenderBackend.hpp"
 #include "Engine/Renderer/Viewport.hpp"
 
-#include <unordered_map>
+#include <array>
 
 class PostProcessChain;
 
@@ -13,9 +13,10 @@ enum class RenderRequestPass
 	Skybox,
 	Transparent,
 	UI,
+	Count
 };
 
-struct RenderRequestInfo
+struct RenderRequest
 {
 	RenderRequestPass m_pass = RenderRequestPass::Opaque;
 
@@ -34,6 +35,36 @@ struct RenderRequestInfo
 	SamplerMode    m_samplerMode    = SamplerMode::POINT_CLAMP;
 };
 
+enum class LightType
+{
+	POINT,
+	DIRECTIONAL,
+};
+
+struct LightInfo
+{
+	bool m_isActive = false;
+
+	LightType m_type;
+
+	Rgba8 m_color;
+	Vec3  m_direction;
+	float m_intensity;
+	Vec3  m_position;
+	float m_range;
+};
+
+struct LightHandle
+{
+public:
+	bool IsValid() const { return m_index != Invalid.m_index; }
+
+public:
+	static const LightHandle Invalid;
+
+	size_t m_index;
+};
+
 class Renderer
 {
 public:
@@ -49,35 +80,12 @@ public:
 	// Render Viewport is the main entry point for rendering a frame
 	// It will execute all render requests that have been submitted, and then clear the list of render requests.
 	void RenderViewport(Viewport const& viewport);
-	void SubmitRenderRequest(RenderRequestInfo const& request);
+	void SubmitRenderRequest(RenderRequest const& request);
 	void ClearRenderRequests();
 
-	// Temporary backend API forwarding. These keep existing callers compiling until render requests replace direct draw
-	// calls.
-	void BeginCamera(Camera const& camera);
-	void EndCamera();
-	void ClearScreen(Rgba8 const& clearColor);
-	void SetBlendMode(BlendMode blendMode);
-	void SetRasterizerMode(RasterizerMode rasterizerMode);
-	void SetDepthMode(DepthMode depthMode);
-	void SetStatesIfChanged();
-
-	void DrawVertexArray(int numVertexes, Vertex const* vertexes);
-	void DrawVertexArray(std::vector<Vertex> const& verts);
-	void DrawVertexArray(std::vector<Vertex> const& verts, std::vector<unsigned int> const& vertIndexs);
-	void DrawVertexBuffer(VertexBuffer* vertexBuffer);
-	void DrawIndexedVertexBuffer(VertexBuffer* vertexBuffer, IndexBuffer* indexBuffer);
-
-	void BindTexture(Texture* textureOrNull);
-	void BindTexture(Texture* textureOrNull, unsigned int slot);
-	void BindSampler(SamplerMode samplerMode, unsigned int slot = 0);
-	void BindShader(Shader* shader);
-	void BindModelConstants(Matrix4x4 const& modelToWorldTransform, Rgba8 const& modelColor);
-	void BindLightConstants(LightConstants const& lightConstants);
-	void
-	BindLightConstants(Vec3 const& sunDirection, float sunIntensity, Rgba8 const& ambientColor, float ambientIntensity);
-	void BindPostProcessConstants(Vec2 const& screenDimensions, float cameraNear, float cameraFar);
-	void BindFrameConstants(float time, float deltaSeconds);
+	LightHandle RegisterLight();
+	void        UnregisterLight(LightHandle handle);
+	void        UpdateLight(LightHandle handle, LightInfo const& info);
 
 	Shader* CreateOrGetShader(char const* shaderName);
 
@@ -103,18 +111,19 @@ public:
 
 	ID3D11Device*        GetD3DDevice() const;
 	ID3D11DeviceContext* GetD3DDeviceContext() const;
-	void            SetViewport(IntVec2 dimensions, IntVec2 topLeft = IntVec2::Zero);
-	void            ResizeBackBuffer(IntVec2 newDimensions);
-	Texture*        GetTextureFromFileName(char const* fileName);
+	void                 SetViewport(IntVec2 dimensions, IntVec2 topLeft = IntVec2::Zero);
+	void                 ResizeBackBuffer(IntVec2 newDimensions);
+	Texture*             GetTextureFromFileName(char const* fileName);
 
 private:
-	void RenderRequest(RenderRequestInfo const& request);
+	void ExecuteRenderRequest(RenderRequest const& request);
 	void EnsureViewport(Viewport const& viewport);
 	void ResizeSceneTargets(IntVec2 dimensions);
-	void DestroySceneTargets();
 	void ClearSceneTargets(Rgba8 const& clearColor);
 	void BindSceneTargets(bool bindNormal);
 	void CopyTextureToBackBuffer(Texture* colorTexture);
+
+	void PrepareConstants(Viewport const& viewport);
 	void RenderOpaque(Viewport const& viewport);
 	void RenderSkybox(Viewport const& viewport);
 	void RenderPostProcess(Viewport const& viewport);
@@ -122,14 +131,16 @@ private:
 
 private:
 	RendererConfig      m_config;
-	D3D11RenderBackend* m_renderBackend    = nullptr;
-	PostProcessChain*   m_postProcessChain = nullptr;
+	D3D11RenderBackend* m_renderBackend         = nullptr;
+	PostProcessChain*   m_postProcessChain      = nullptr;
 	Shader*             m_postProcessCopyShader = nullptr;
 
-	Texture* m_sceneColorTexture  = nullptr;
-	Texture* m_sceneDepthTexture  = nullptr;
-	Texture* m_sceneNormalTexture = nullptr;
+	Texture* m_sceneColorTexture     = nullptr;
+	Texture* m_sceneDepthTexture     = nullptr;
+	Texture* m_sceneNormalTexture    = nullptr;
 	IntVec2  m_sceneTargetDimensions = IntVec2::Zero;
 
-	std::unordered_map<RenderRequestPass, std::vector<RenderRequestInfo>> m_renderRequests;
+	std::array<std::vector<RenderRequest>, static_cast<size_t>(RenderRequestPass::Count)> m_renderRequests;
+
+	std::vector<LightInfo> m_lights;
 };

@@ -102,25 +102,25 @@ struct RendererConfig
 
 struct GPUDirectionalLight
 {
-	Vec3  SunDirection;
-	float SunIntensity;
-	Vec3  AmbientColor;
-	float AmbientIntensity;
+	Vec3  m_direction;
+	float m_intensity;
 };
 
 struct GPUPointLight
 {
-	Vec3  Position;
-	float Range;
-	Vec3  Color;
-	float Intensity;
+	Vec3  m_position;
+	float m_range;
+	Vec3  m_color;
+	float m_intensity;
 };
 static const int kMaxPointLights = 64;
 
 struct LightConstants
 {
-	GPUDirectionalLight SunLight;
-	GPUPointLight       PointLights[kMaxPointLights];
+	GPUDirectionalLight m_directionalLight;
+	int                 m_pointLightCount;
+	float               m_padding[3]; // Pad to 16 bytes for array alignment
+	GPUPointLight       m_pointLights[kMaxPointLights];
 };
 static const int kLightConstantsSlot = 1;
 
@@ -136,27 +136,51 @@ static const int kCameraConstantsSlot = 2;
 
 struct ModelConstants
 {
-	Matrix4x4 ModelToWorldTransform;
+	Matrix4x4 ModelToWorld;
 	float     ModelColor[4];
 };
 static const int kModelConstantsSlot = 3;
 
 struct PostProcessConstants
 {
-	Vec2  ScreenDimensions;
-	float CameraNear;
-	float CameraFar;
+	Vec2  m_screenDimensions;
+	float m_cameraNear;
+	float m_cameraFar;
 };
 static const int kPostProcessConstantsSlot = 4;
 
 struct FrameConstants
 {
-	float Time;
-	float DeltaSeconds;
+	float m_time;
+	float m_deltaSeconds;
 	float Padding[2];
 };
 static const int kFrameConstantsSlot = 5;
 
+enum class BuiltinConstantBufferType
+{
+	Light,
+	Camera,
+	Model,
+	PostProcess,
+	Frame,
+	Count
+};
+
+struct BuiltinConstantBufferDesc
+{
+	char const* name = nullptr;
+	size_t      size = 0;
+	int         slot = 0;
+};
+
+static BuiltinConstantBufferDesc const kBuiltinConstantBufferDescs[] = {
+	{ "Light", sizeof(LightConstants), kLightConstantsSlot },
+	{ "Camera", sizeof(CameraConstants), kCameraConstantsSlot },
+	{ "Model", sizeof(ModelConstants), kModelConstantsSlot },
+	{ "PostProcess", sizeof(PostProcessConstants), kPostProcessConstantsSlot },
+	{ "Frame", sizeof(FrameConstants), kFrameConstantsSlot },
+};
 
 class D3D11RenderBackend
 {
@@ -171,9 +195,9 @@ public:
 	void EndFrame();
 	void CreateRenderingContext();
 
-	// Camera and pipeline state
-	void BeginCamera(Camera const& camera);
-	void EndCamera();
+	// We still need bind camera 
+	// because we need to bind both world camera and UI camera in one render
+	void BindCamera(Camera const& camera);
 
 	void ClearScreen(Rgba8 const& clearColor);
 	void SetBlendMode(BlendMode blendMode);
@@ -193,12 +217,9 @@ public:
 	void BindTexture(Texture* textureOrNull, unsigned int slot);
 	void BindSampler(SamplerMode samplerMode, unsigned int slot = 0);
 	void BindShader(Shader* shader);
-	void BindModelConstants(Matrix4x4 const& modelToWorldTransform, Rgba8 const& modelColor);
-	void BindLightConstants(LightConstants const& lightConstants);
-	void
-	BindLightConstants(Vec3 const& sunDirection, float sunIntensity, Rgba8 const& ambientColor, float ambientIntensity);
-	void BindPostProcessConstants(Vec2 const& screenDimensions, float cameraNear, float cameraFar);
-	void BindFrameConstants(float time, float deltaSeconds);
+
+	void            BindConstantBuffer(ConstantBuffer* constantBuffer, int slot);
+	ConstantBuffer* GetBuiltinConstantBuffer(BuiltinConstantBufferType id);
 
 	// GPU resource creation and cache access
 	Shader* CreateOrGetShader(char const* shaderName);
@@ -227,18 +248,34 @@ public:
 
 	ID3D11Device*        GetD3DDevice() const;
 	ID3D11DeviceContext* GetD3DDeviceContext() const;
-	void            SetViewport(IntVec2 dimensions, IntVec2 topLeft = IntVec2::Zero);
-	void            ResizeBackBuffer(IntVec2 newDimensions);
-	Texture*        GetTextureFromFileName(char const* fileName);
-	void DestroyTexture(Texture*& texture);
-	void ClearRenderTarget(Texture* renderTarget, Rgba8 const& clearColor);
-	void ClearDepthStencil(Texture* depthTexture);
-	void BindRenderTargets(Texture* colorTarget, Texture* depthTarget, Texture* normalTarget);
-	void BindRenderTarget(Texture* colorTarget, Texture* depthTarget = nullptr);
-	void BindPostProcessInputs(Texture* colorInput, Texture* depthInput, Texture* normalInput);
-	void DrawFullscreenTriangle(Shader* shader, wchar_t const* eventName);
-	void UnbindAllShaderResourceViews();
-	void BindBackBuffer();
+	void                 SetViewport(IntVec2 dimensions, IntVec2 topLeft = IntVec2::Zero);
+	void                 ResizeBackBuffer(IntVec2 newDimensions);
+	Texture*             GetTextureFromFileName(char const* fileName);
+	void                 ClearRenderTarget(Texture* renderTarget, Rgba8 const& clearColor);
+	void                 ClearDepthStencil(Texture* depthTexture);
+	void                 BindRenderTargets(Texture* colorTarget, Texture* depthTarget, Texture* normalTarget);
+	void                 BindRenderTarget(Texture* colorTarget, Texture* depthTarget = nullptr);
+	void                 BindPostProcessInputs(Texture* colorInput, Texture* depthInput, Texture* normalInput);
+	void                 DrawFullscreenTriangle(Shader* shader, wchar_t const* eventName);
+	void                 UnbindAllShaderResourceViews();
+	void                 BindBackBuffer();
+
+	template <typename T>
+	void UpdateConstantBuffer(ConstantBuffer* constantBuffer, const T& data)
+	{
+		CopyCPUToGPU(&data, sizeof(T), constantBuffer);
+	}
+
+	template <typename T>
+	void UpdateAndBindConstantBuffer(BuiltinConstantBufferType id, T const& data)
+	{
+		int const                        index = (int)id;
+		BuiltinConstantBufferDesc const& desc  = kBuiltinConstantBufferDescs[index];
+
+		ConstantBuffer* buffer = m_builtinConstantBuffers[index];
+		UpdateConstantBuffer(buffer, data);
+		BindConstantBuffer(buffer, desc.slot);
+	}
 
 private:
 	// Texture cache internals
@@ -246,31 +283,26 @@ private:
 
 	// Shader creation internals
 	Shader* CreateShader(char const* shaderName, char const* shaderSource);
-	bool    CompileShaderToByteCode(
-		std::vector<unsigned char>& outByteCode,
-		char const*                 name,
-		char const*                 source,
-		char const*                 entryPoint,
-		char const*                 target
-	);
+	bool    CompileShaderToByteCode(std::vector<unsigned char>& outByteCode,
+		char const*                                          name,
+		char const*                                          source,
+		char const*                                          entryPoint,
+		char const*                                          target);
 
 	// Low-level buffer binding to D3D context
 	void BindVertexBuffer(VertexBuffer* vertexBuffer);
-	void BindConstantBuffer(ConstantBuffer* constantBuffer, int slot);
 	void BindIndexBuffer(IndexBuffer* indexBuffer);
 
 	static bool Event_WindowResized(EventArgs& args);
 	void        ResizeViewport(IntVec2 newDimensions);
 
-	Texture* CreateTextureInternal(
-		char const*                            name,
+	Texture* CreateTextureInternal(char const* name,
 		IntVec2                                dimensions,
 		D3D11_TEXTURE2D_DESC const*            textureDesc,
 		D3D11_SUBRESOURCE_DATA const*          initialData,
 		D3D11_RENDER_TARGET_VIEW_DESC const*   rtvDesc = nullptr,
 		D3D11_SHADER_RESOURCE_VIEW_DESC const* srvDesc = nullptr,
-		D3D11_DEPTH_STENCIL_VIEW_DESC const*   dsvDesc = nullptr
-	);
+		D3D11_DEPTH_STENCIL_VIEW_DESC const*   dsvDesc = nullptr);
 
 private:
 	RendererConfig m_config;
@@ -282,13 +314,9 @@ private:
 	Camera* m_currentCamera = nullptr;
 	Shader* m_currentShader = nullptr;
 
-	VertexBuffer*   m_currentVertexBuffer       = nullptr;
-	IndexBuffer*    m_currentIndexBuffer        = nullptr;
-	ConstantBuffer* m_lightConstantBuffer       = nullptr;
-	ConstantBuffer* m_cameraConstantBuffer      = nullptr;
-	ConstantBuffer* m_modelConstantBuffer       = nullptr;
-	ConstantBuffer* m_postProcessConstantBuffer = nullptr;
-	ConstantBuffer* m_frameConstantBuffer       = nullptr;
+	VertexBuffer*   m_currentVertexBuffer                                           = nullptr;
+	IndexBuffer*    m_currentIndexBuffer                                            = nullptr;
+	ConstantBuffer* m_builtinConstantBuffers[(int)BuiltinConstantBufferType::Count] = {};
 
 	ID3D11Device*              m_d3dDevice           = nullptr;
 	ID3D11DeviceContext*       m_d3dDeviceContext    = nullptr;

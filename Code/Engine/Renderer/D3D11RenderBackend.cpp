@@ -97,8 +97,7 @@ void           D3D11RenderBackend::Startup()
 	swapChainDesc.SwapEffect           = DXGI_SWAP_EFFECT_FLIP_DISCARD;
 
 	HRESULT hr;
-	hr = D3D11CreateDeviceAndSwapChain(
-		nullptr,
+	hr = D3D11CreateDeviceAndSwapChain(nullptr,
 		D3D_DRIVER_TYPE_HARDWARE,
 		NULL,
 		deviceFlags,
@@ -109,8 +108,7 @@ void           D3D11RenderBackend::Startup()
 		&m_d3dSwapChain,
 		&m_d3dDevice,
 		nullptr,
-		&m_d3dDeviceContext
-	);
+		&m_d3dDeviceContext);
 
 	if (!SUCCEEDED(hr))
 	{
@@ -145,9 +143,8 @@ void           D3D11RenderBackend::Startup()
 	}
 
 	typedef HRESULT(WINAPI * GetDebugModuleCB)(REFIID, void**);
-	((
-		GetDebugModuleCB
-	)::GetProcAddress((HMODULE)m_dxgiDebugModule, "DXGIGetDebugInterface"))(__uuidof(IDXGIDebug), &m_dxgiDebug);
+	((GetDebugModuleCB)::GetProcAddress((HMODULE)m_dxgiDebugModule, "DXGIGetDebugInterface"))(__uuidof(IDXGIDebug),
+		&m_dxgiDebug);
 
 	if (m_dxgiDebug == nullptr)
 	{
@@ -176,18 +173,14 @@ void           D3D11RenderBackend::Startup()
 	// WIREFRAME CULL NONE
 	rasterizerDesc.FillMode = D3D11_FILL_WIREFRAME;
 	rasterizerDesc.CullMode = D3D11_CULL_NONE;
-	hr                      = m_d3dDevice->CreateRasterizerState(
-		&rasterizerDesc,
-		&m_rasterizerStates[(int)RasterizerMode::WIREFRAME_CULL_NONE]
-	);
+	hr                      = m_d3dDevice->CreateRasterizerState(&rasterizerDesc,
+		&m_rasterizerStates[(int)RasterizerMode::WIREFRAME_CULL_NONE]);
 
 	// WIREFRAME CULL BACK
 	rasterizerDesc.FillMode = D3D11_FILL_WIREFRAME;
 	rasterizerDesc.CullMode = D3D11_CULL_BACK;
-	hr                      = m_d3dDevice->CreateRasterizerState(
-		&rasterizerDesc,
-		&m_rasterizerStates[(int)RasterizerMode::WIREFRAME_CULL_BACK]
-	);
+	hr                      = m_d3dDevice->CreateRasterizerState(&rasterizerDesc,
+		&m_rasterizerStates[(int)RasterizerMode::WIREFRAME_CULL_BACK]);
 
 	m_d3dDeviceContext->RSSetState(m_rasterizerStates[(int)RasterizerMode::SOLID_CULL_BACK]);
 
@@ -197,13 +190,14 @@ void           D3D11RenderBackend::Startup()
 
 #pragma region Startup: Create buffers
 
-	m_currentVertexBuffer       = CreateVertexBuffer(sizeof(Vertex) * 3, sizeof(Vertex));
-	m_currentIndexBuffer        = CreateIndexBuffer(sizeof(unsigned int) * 3);
-	m_lightConstantBuffer       = CreateConstantBuffer(sizeof(LightConstants));
-	m_cameraConstantBuffer      = CreateConstantBuffer(sizeof(CameraConstants));
-	m_modelConstantBuffer       = CreateConstantBuffer(sizeof(ModelConstants));
-	m_postProcessConstantBuffer = CreateConstantBuffer(sizeof(PostProcessConstants));
-	m_frameConstantBuffer       = CreateConstantBuffer(sizeof(FrameConstants));
+	m_currentVertexBuffer = CreateVertexBuffer(sizeof(Vertex) * 3, sizeof(Vertex));
+	m_currentIndexBuffer  = CreateIndexBuffer(sizeof(unsigned int) * 3);
+
+	for (int i = 0; i < (int)BuiltinConstantBufferType::Count; i++)
+	{
+		BuiltinConstantBufferDesc const& desc = kBuiltinConstantBufferDescs[i];
+		m_builtinConstantBuffers[i]           = CreateConstantBuffer(desc.size);
+	}
 
 #pragma endregion
 
@@ -298,28 +292,22 @@ void           D3D11RenderBackend::Startup()
 	depthStencilDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
 	depthStencilDesc.DepthFunc      = D3D11_COMPARISON_ALWAYS;
 
-	hr = m_d3dDevice->CreateDepthStencilState(
-		&depthStencilDesc,
-		&m_depthStencilStates[(int)DepthMode::READ_ONLY_ALWAYS]
-	);
+	hr = m_d3dDevice->CreateDepthStencilState(&depthStencilDesc,
+		&m_depthStencilStates[(int)DepthMode::READ_ONLY_ALWAYS]);
 
 	// READ_ONLY_LESS_EQUAL
 	depthStencilDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
 	depthStencilDesc.DepthFunc      = D3D11_COMPARISON_LESS_EQUAL;
 
-	hr = m_d3dDevice->CreateDepthStencilState(
-		&depthStencilDesc,
-		&m_depthStencilStates[(int)DepthMode::READ_ONLY_LESS_EQUAL]
-	);
+	hr = m_d3dDevice->CreateDepthStencilState(&depthStencilDesc,
+		&m_depthStencilStates[(int)DepthMode::READ_ONLY_LESS_EQUAL]);
 
 	// READ_WRITE_LESS_EQUAL
 	depthStencilDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
 	depthStencilDesc.DepthFunc      = D3D11_COMPARISON_LESS_EQUAL;
 
-	hr = m_d3dDevice->CreateDepthStencilState(
-		&depthStencilDesc,
-		&m_depthStencilStates[(int)DepthMode::READ_WRITE_LESS_EQUAL]
-	);
+	hr = m_d3dDevice->CreateDepthStencilState(&depthStencilDesc,
+		&m_depthStencilStates[(int)DepthMode::READ_WRITE_LESS_EQUAL]);
 
 #pragma endregion
 
@@ -362,20 +350,11 @@ void D3D11RenderBackend::Shutdown()
 		m_d3dDeviceContext->Flush();
 	}
 
-	delete m_modelConstantBuffer;
-	m_modelConstantBuffer = nullptr;
-
-	delete m_cameraConstantBuffer;
-	m_cameraConstantBuffer = nullptr;
-
-	delete m_lightConstantBuffer;
-	m_lightConstantBuffer = nullptr;
-
-	delete m_postProcessConstantBuffer;
-	m_postProcessConstantBuffer = nullptr;
-
-	delete m_frameConstantBuffer;
-	m_frameConstantBuffer = nullptr;
+	for (ConstantBuffer*& buffer : m_builtinConstantBuffers)
+	{
+		delete buffer;
+		buffer = nullptr;
+	}
 
 	delete m_currentIndexBuffer;
 	m_currentIndexBuffer = nullptr;
@@ -446,10 +425,8 @@ void D3D11RenderBackend::Shutdown()
 	// Report error leaks and release debug module
 #if defined(ENGINE_DEBUG_RENDER)
 	((IDXGIDebug*)m_dxgiDebug)
-		->ReportLiveObjects(
-			DXGI_DEBUG_ALL,
-			(DXGI_DEBUG_RLO_FLAGS)(DXGI_DEBUG_RLO_DETAIL | DXGI_DEBUG_RLO_IGNORE_INTERNAL)
-		);
+		->ReportLiveObjects(DXGI_DEBUG_ALL,
+			(DXGI_DEBUG_RLO_FLAGS)(DXGI_DEBUG_RLO_DETAIL | DXGI_DEBUG_RLO_IGNORE_INTERNAL));
 
 	((IDXGIDebug*)m_dxgiDebug)->Release();
 	m_dxgiDebug = nullptr;
@@ -478,35 +455,8 @@ void D3D11RenderBackend::CreateRenderingContext() {}
 
 #pragma region Public: Camera and pipeline state
 
-void D3D11RenderBackend::BeginCamera(Camera const& camera)
+void D3D11RenderBackend::BindCamera(Camera const& camera)
 {
-	IntVec2 const screenDimensions   = g_engine->m_window->GetClientDimensions();
-	AABB2 const   normalizedViewport = camera.GetViewportNormalized();
-
-	int leftPixels   = (int)(normalizedViewport.m_mins.x * (float)screenDimensions.x);
-	int rightPixels  = (int)(normalizedViewport.m_maxs.x * (float)screenDimensions.x);
-	int bottomPixels = (int)(normalizedViewport.m_mins.y * (float)screenDimensions.y);
-	int topPixels    = (int)(normalizedViewport.m_maxs.y * (float)screenDimensions.y);
-
-	leftPixels   = leftPixels < 0 ? 0 : leftPixels;
-	rightPixels  = rightPixels > screenDimensions.x ? screenDimensions.x : rightPixels;
-	bottomPixels = bottomPixels < 0 ? 0 : bottomPixels;
-	topPixels    = topPixels > screenDimensions.y ? screenDimensions.y : topPixels;
-
-	int viewportWidth  = rightPixels - leftPixels;
-	int viewportHeight = topPixels - bottomPixels;
-	if (viewportWidth <= 0)
-	{
-		viewportWidth = 1;
-	}
-	if (viewportHeight <= 0)
-	{
-		viewportHeight = 1;
-	}
-
-	IntVec2 const viewportTopLeft(leftPixels, screenDimensions.y - topPixels);
-	SetViewport(IntVec2(viewportWidth, viewportHeight), viewportTopLeft);
-
 	CameraConstants cameraData         = CameraConstants();
 	cameraData.WorldToCameraTransform  = camera.GetWorldToCameraTransform();
 	cameraData.CameraToRenderTransform = camera.GetCameraToRenderTransform();
@@ -514,11 +464,8 @@ void D3D11RenderBackend::BeginCamera(Camera const& camera)
 	cameraData.CameraToWorldTransform  = camera.GetCameraToWorldTransform();
 	cameraData.ClipToCameraTransform   = camera.GetClipToCameraTransform();
 
-	CopyCPUToGPU(&cameraData, sizeof(cameraData), m_cameraConstantBuffer);
-	BindConstantBuffer(m_cameraConstantBuffer, kCameraConstantsSlot);
+	UpdateAndBindConstantBuffer(BuiltinConstantBufferType::Camera, cameraData);
 }
-
-void D3D11RenderBackend::EndCamera() {}
 
 void D3D11RenderBackend::ClearScreen(Rgba8 const& clearColor)
 {
@@ -544,7 +491,7 @@ void D3D11RenderBackend::SetStatesIfChanged()
 	{
 		m_currentBlendState = desiredBlendState;
 
-		float blendFactor[4] = {0.f, 0.f, 0.f, 0.f};
+		float blendFactor[4] = { 0.f, 0.f, 0.f, 0.f };
 		UINT  sampleMask     = 0xffffffff;
 
 		m_d3dDeviceContext->OMSetBlendState(m_currentBlendState, blendFactor, sampleMask);
@@ -667,60 +614,6 @@ void D3D11RenderBackend::BindShader(Shader* shader)
 	m_d3dDeviceContext->PSSetShader(shader->m_pixelShader, nullptr, 0);
 }
 
-void D3D11RenderBackend::BindModelConstants(Matrix4x4 const& modelToWorldTransform, Rgba8 const& modelColor)
-{
-	ModelConstants modelData        = ModelConstants();
-	modelData.ModelToWorldTransform = modelToWorldTransform;
-	modelData.ModelColor[0]         = modelColor.r / 255.f;
-	modelData.ModelColor[1]         = modelColor.g / 255.f;
-	modelData.ModelColor[2]         = modelColor.b / 255.f;
-	modelData.ModelColor[3]         = modelColor.a / 255.f;
-
-	CopyCPUToGPU(&modelData, sizeof(modelData), m_modelConstantBuffer);
-	BindConstantBuffer(m_modelConstantBuffer, kModelConstantsSlot);
-}
-
-void D3D11RenderBackend::BindLightConstants(LightConstants const& lightConstants)
-{
-	CopyCPUToGPU(&lightConstants, sizeof(lightConstants), m_lightConstantBuffer);
-	BindConstantBuffer(m_lightConstantBuffer, kLightConstantsSlot);
-}
-
-void D3D11RenderBackend::BindLightConstants(
-	Vec3 const& sunDirection, float sunIntensity, Rgba8 const& ambientColor, float ambientIntensity
-)
-{
-	LightConstants lightConstants        = LightConstants();
-	lightConstants.SunLight.SunDirection = sunDirection;
-	lightConstants.SunLight.SunIntensity = sunIntensity;
-	lightConstants.SunLight.AmbientColor = Vec3(ambientColor.r / 255.f, ambientColor.g / 255.f, ambientColor.b / 255.f);
-	lightConstants.SunLight.AmbientIntensity = ambientIntensity;
-
-	CopyCPUToGPU(&lightConstants, sizeof(lightConstants), m_lightConstantBuffer);
-	BindConstantBuffer(m_lightConstantBuffer, kLightConstantsSlot);
-}
-
-void D3D11RenderBackend::BindPostProcessConstants(Vec2 const& screenDimensions, float nearZ, float farZ)
-{
-	PostProcessConstants postProcessData = PostProcessConstants();
-	postProcessData.ScreenDimensions     = screenDimensions;
-	postProcessData.CameraNear           = nearZ;
-	postProcessData.CameraFar            = farZ;
-
-	CopyCPUToGPU(&postProcessData, sizeof(postProcessData), m_postProcessConstantBuffer);
-	BindConstantBuffer(m_postProcessConstantBuffer, kPostProcessConstantsSlot);
-}
-
-void D3D11RenderBackend::BindFrameConstants(float time, float deltaSeconds)
-{
-	FrameConstants frameData = FrameConstants();
-	frameData.Time           = time;
-	frameData.DeltaSeconds   = deltaSeconds;
-
-	CopyCPUToGPU(&frameData, sizeof(frameData), m_frameConstantBuffer);
-	BindConstantBuffer(m_frameConstantBuffer, kFrameConstantsSlot);
-}
-
 #pragma endregion
 
 #pragma region Public: GPU resource creation and cache access
@@ -764,21 +657,18 @@ Texture* D3D11RenderBackend::CreateOrGetTexture(char const* imageFilePath)
 
 Texture* D3D11RenderBackend::CreateTextureFromImage(const Image& image)
 {
-	return CreateTextureFromData(
-		image.GetImageFilePath().c_str(),
+	return CreateTextureFromData(image.GetImageFilePath().c_str(),
 		image.GetDimensions(),
 		4,
-		(uint8_t*)image.GetRawData()
-	);
+		(uint8_t*)image.GetRawData());
 }
 
-Texture* D3D11RenderBackend::CreateTextureFromData(char const* name, IntVec2 dimensions, int bytesPerTexel, uint8_t* texelData)
+Texture* D3D11RenderBackend::CreateTextureFromData(
+	char const* name, IntVec2 dimensions, int bytesPerTexel, uint8_t* texelData)
 {
 	// We only support RGBA8 format for now, so require 4 bytes per texel
-	GUARANTEE_OR_DIE(
-		bytesPerTexel == 4,
-		Stringf("CreateTextureFromData requires 4 bytes/texel (RGBA). Got %i for \"%s\"", bytesPerTexel, name)
-	);
+	GUARANTEE_OR_DIE(bytesPerTexel == 4,
+		Stringf("CreateTextureFromData requires 4 bytes/texel (RGBA). Got %i for \"%s\"", bytesPerTexel, name));
 
 	D3D11_TEXTURE2D_DESC textureDesc = {};
 	textureDesc.Width                = (UINT)dimensions.x;
@@ -883,7 +773,10 @@ ConstantBuffer* D3D11RenderBackend::CreateConstantBuffer(const unsigned int size
 	return new ConstantBuffer(m_d3dDevice, size);
 }
 
-IndexBuffer* D3D11RenderBackend::CreateIndexBuffer(const unsigned int size) { return new IndexBuffer(m_d3dDevice, size); }
+IndexBuffer* D3D11RenderBackend::CreateIndexBuffer(const unsigned int size)
+{
+	return new IndexBuffer(m_d3dDevice, size);
+}
 
 IndexBuffer* D3D11RenderBackend::CreateIndexBuffer(std::vector<unsigned int> const& indexes)
 {
@@ -962,7 +855,6 @@ void D3D11RenderBackend::CopyCPUToGPU(const void* data, unsigned int size, Index
 
 	m_d3dDeviceContext->Unmap(indexBuffer->m_buffer, 0);
 }
-
 
 void D3D11RenderBackend::BeginEvent(std::string const& eventName)
 {
@@ -1045,24 +937,28 @@ Shader* D3D11RenderBackend::CreateShader(char const* shaderName, char const* sha
 	GUARANTEE_OR_DIE(SUCCEEDED(hr), Stringf("Could not create pixel shader for '%s'", shaderName));
 
 	static D3D11_INPUT_ELEMENT_DESC const kPcutbnDesc[] = {
-		{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
-		{"COLOR", 0, DXGI_FORMAT_R8G8B8A8_UNORM, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0},
-		{"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0},
-		{"TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0},
-		{"BITANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0},
-		{"NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0},
+		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "COLOR", 0, DXGI_FORMAT_R8G8B8A8_UNORM, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "BITANGENT",
+			0,
+			DXGI_FORMAT_R32G32B32_FLOAT,
+			0,
+			D3D11_APPEND_ALIGNED_ELEMENT,
+			D3D11_INPUT_PER_VERTEX_DATA,
+			0 },
+		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 	};
 
 	D3D11_INPUT_ELEMENT_DESC const* inputElementDesc  = kPcutbnDesc;
 	UINT                            inputElementCount = (UINT)ARRAYSIZE(kPcutbnDesc);
 
-	hr = m_d3dDevice->CreateInputLayout(
-		inputElementDesc,
+	hr = m_d3dDevice->CreateInputLayout(inputElementDesc,
 		inputElementCount,
 		vsByteCode.data(),
 		(UINT)vsByteCode.size(),
-		&shader->m_inputLayout
-	);
+		&shader->m_inputLayout);
 	GUARANTEE_OR_DIE(SUCCEEDED(hr), Stringf("Could not create input layout for '%s'", shaderName));
 
 	m_cachedShaders.push_back(shader);
@@ -1070,13 +966,11 @@ Shader* D3D11RenderBackend::CreateShader(char const* shaderName, char const* sha
 	return shader;
 }
 
-bool D3D11RenderBackend::CompileShaderToByteCode(
-	std::vector<unsigned char>& outByteCode,
-	char const*                 name,
-	char const*                 source,
-	char const*                 entryPoint,
-	char const*                 target
-)
+bool D3D11RenderBackend::CompileShaderToByteCode(std::vector<unsigned char>& outByteCode,
+	char const*                                                              name,
+	char const*                                                              source,
+	char const*                                                              entryPoint,
+	char const*                                                              target)
 {
 	if (source == nullptr || entryPoint == nullptr || target == nullptr)
 	{
@@ -1093,8 +987,7 @@ bool D3D11RenderBackend::CompileShaderToByteCode(
 	ID3DBlob* shaderBlob = nullptr;
 	ID3DBlob* errorBlob  = nullptr;
 
-	HRESULT hr = D3DCompile(
-		source,
+	HRESULT hr = D3DCompile(source,
 		strlen(source),
 		name,
 		nullptr,
@@ -1104,8 +997,7 @@ bool D3D11RenderBackend::CompileShaderToByteCode(
 		shaderFlags,
 		0,
 		&shaderBlob,
-		&errorBlob
-	);
+		&errorBlob);
 
 	if (!SUCCEEDED(hr))
 	{
@@ -1179,7 +1071,7 @@ void D3D11RenderBackend::BindIndexBuffer(IndexBuffer* indexBuffer)
 		ID3D11Buffer* nullBuf = nullptr;
 		UINT          stride  = 0;
 		UINT          offset  = 0;
-		m_d3dDeviceContext->IASetVertexBuffers(0, 1, &nullBuf, &stride, &offset);
+		m_d3dDeviceContext->IASetIndexBuffer(nullBuf, DXGI_FORMAT_R32_UINT, 0);
 		return;
 	}
 
@@ -1246,12 +1138,6 @@ bool D3D11RenderBackend::Event_WindowResized(EventArgs& args) { return true; }
 
 void D3D11RenderBackend::ResizeViewport(IntVec2 newDimensions) {}
 
-void D3D11RenderBackend::DestroyTexture(Texture*& texture)
-{
-	delete texture;
-	texture = nullptr;
-}
-
 void D3D11RenderBackend::ClearRenderTarget(Texture* renderTarget, Rgba8 const& clearColor)
 {
 	if (renderTarget == nullptr || renderTarget->m_renderTargetView == nullptr)
@@ -1271,17 +1157,15 @@ void D3D11RenderBackend::ClearDepthStencil(Texture* depthTexture)
 		return;
 	}
 
-	m_d3dDeviceContext->ClearDepthStencilView(
-		depthTexture->m_depthStencilView,
+	m_d3dDeviceContext->ClearDepthStencilView(depthTexture->m_depthStencilView,
 		D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL,
 		1.0f,
-		0
-	);
+		0);
 }
 
 void D3D11RenderBackend::BindRenderTargets(Texture* colorTarget, Texture* depthTarget, Texture* normalTarget)
 {
-	ID3D11RenderTargetView* renderTargetViews[2] = {nullptr, nullptr};
+	ID3D11RenderTargetView* renderTargetViews[2] = { nullptr, nullptr };
 
 	if (colorTarget != nullptr)
 	{
@@ -1324,32 +1208,29 @@ void D3D11RenderBackend::DrawFullscreenTriangle(Shader* shader, wchar_t const* e
 
 void D3D11RenderBackend::UnbindAllShaderResourceViews()
 {
-	ID3D11ShaderResourceView* nullSrvs[16] = {nullptr};
+	ID3D11ShaderResourceView* nullSrvs[16] = { nullptr };
 	m_d3dDeviceContext->OMSetRenderTargets(1, &m_d3dRenderTargetView, nullptr);
 	m_d3dDeviceContext->PSSetShaderResources(0, 16, nullSrvs);
 	m_d3dDeviceContext->VSSetShaderResources(0, 16, nullSrvs);
 }
 
-void D3D11RenderBackend::BindBackBuffer() { m_d3dDeviceContext->OMSetRenderTargets(1, &m_d3dRenderTargetView, nullptr); }
-Texture* D3D11RenderBackend::CreateTextureInternal(
-	char const*                            name,
-	IntVec2                                dimensions,
-	D3D11_TEXTURE2D_DESC const*            textureDesc,
-	D3D11_SUBRESOURCE_DATA const*          initialData,
-	D3D11_RENDER_TARGET_VIEW_DESC const*   rtvDesc,
-	D3D11_SHADER_RESOURCE_VIEW_DESC const* srvDesc,
-	D3D11_DEPTH_STENCIL_VIEW_DESC const*   dsvDesc
-)
+void D3D11RenderBackend::BindBackBuffer()
 {
-	GUARANTEE_OR_DIE(
-		dimensions.x > 0 && dimensions.y > 0,
-		Stringf(
-			"CreateTextureFromData failed for \"%s\" - illegal texture dimensions (%i x %i)",
+	m_d3dDeviceContext->OMSetRenderTargets(1, &m_d3dRenderTargetView, nullptr);
+}
+Texture* D3D11RenderBackend::CreateTextureInternal(char const* name,
+	IntVec2                                                    dimensions,
+	D3D11_TEXTURE2D_DESC const*                                textureDesc,
+	D3D11_SUBRESOURCE_DATA const*                              initialData,
+	D3D11_RENDER_TARGET_VIEW_DESC const*                       rtvDesc,
+	D3D11_SHADER_RESOURCE_VIEW_DESC const*                     srvDesc,
+	D3D11_DEPTH_STENCIL_VIEW_DESC const*                       dsvDesc)
+{
+	GUARANTEE_OR_DIE(dimensions.x > 0 && dimensions.y > 0,
+		Stringf("CreateTextureFromData failed for \"%s\" - illegal texture dimensions (%i x %i)",
 			name,
 			dimensions.x,
-			dimensions.y
-		)
-	);
+			dimensions.y));
 
 	GUARANTEE_OR_DIE(textureDesc, Stringf("CreateTextureFromData failed for \"%s\" - textureDesc is null", name));
 

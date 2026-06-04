@@ -120,13 +120,11 @@ static std::vector<DebugObject> s_debugObjects;
 static std::vector<DebugObject> s_debugMessages;
 static bool                     s_isVisible = true;
 
-DebugObject MakeDebugObject(
-	DebugObjectType type,
-	float           duration,
-	Rgba8 const&    startColor,
-	Rgba8 const&    endColor,
-	DebugRenderMode mode = DebugRenderMode::USE_DEPTH
-)
+DebugObject MakeDebugObject(DebugObjectType type,
+	float                                   duration,
+	Rgba8 const&                            startColor,
+	Rgba8 const&                            endColor,
+	DebugRenderMode                         mode = DebugRenderMode::USE_DEPTH)
 {
 	DebugObject object;
 	object.type              = type;
@@ -150,15 +148,13 @@ void CreateVertexBufferForObject(DebugObject& object)
 	object.vertexBuffer = renderer->CreateVertexBuffer(object.verts);
 }
 
-DebugObject MakeWorldSphereObject(
-	DebugObjectType type,
-	Vec3 const&     center,
-	float           radius,
-	float           duration,
-	Rgba8 const&    startColor,
-	Rgba8 const&    endColor,
-	DebugRenderMode mode
-)
+DebugObject MakeWorldSphereObject(DebugObjectType type,
+	Vec3 const&                                   center,
+	float                                         radius,
+	float                                         duration,
+	Rgba8 const&                                  startColor,
+	Rgba8 const&                                  endColor,
+	DebugRenderMode                               mode)
 {
 	DebugObject object = MakeDebugObject(type, duration, startColor, endColor, mode);
 	object.center      = center;
@@ -168,16 +164,14 @@ DebugObject MakeWorldSphereObject(
 	return object;
 }
 
-DebugObject MakeWorldCylinderObject(
-	DebugObjectType type,
-	Vec3 const&     start,
-	Vec3 const&     end,
-	float           radius,
-	float           duration,
-	Rgba8 const&    startColor,
-	Rgba8 const&    endColor,
-	DebugRenderMode mode
-)
+DebugObject MakeWorldCylinderObject(DebugObjectType type,
+	Vec3 const&                                     start,
+	Vec3 const&                                     end,
+	float                                           radius,
+	float                                           duration,
+	Rgba8 const&                                    startColor,
+	Rgba8 const&                                    endColor,
+	DebugRenderMode                                 mode)
 {
 	DebugObject object = MakeDebugObject(type, duration, startColor, endColor, mode);
 	object.start       = start;
@@ -188,16 +182,14 @@ DebugObject MakeWorldCylinderObject(
 	return object;
 }
 
-DebugObject MakeWorldCapsuleObject(
-	DebugObjectType type,
-	Vec3 const&     start,
-	Vec3 const&     end,
-	float           radius,
-	float           duration,
-	Rgba8 const&    startColor,
-	Rgba8 const&    endColor,
-	DebugRenderMode mode
-)
+DebugObject MakeWorldCapsuleObject(DebugObjectType type,
+	Vec3 const&                                    start,
+	Vec3 const&                                    end,
+	float                                          radius,
+	float                                          duration,
+	Rgba8 const&                                   startColor,
+	Rgba8 const&                                   endColor,
+	DebugRenderMode                                mode)
 {
 	DebugObject object = MakeDebugObject(type, duration, startColor, endColor, mode);
 	object.start       = start;
@@ -208,16 +200,14 @@ DebugObject MakeWorldCapsuleObject(
 	return object;
 }
 
-DebugObject MakeWorldArrowObject(
-	DebugObjectType type,
-	Vec3 const&     start,
-	Vec3 const&     end,
-	float           radius,
-	float           duration,
-	Rgba8 const&    startColor,
-	Rgba8 const&    endColor,
-	DebugRenderMode mode
-)
+DebugObject MakeWorldArrowObject(DebugObjectType type,
+	Vec3 const&                                  start,
+	Vec3 const&                                  end,
+	float                                        radius,
+	float                                        duration,
+	Rgba8 const&                                 startColor,
+	Rgba8 const&                                 endColor,
+	DebugRenderMode                              mode)
 {
 	DebugObject object = MakeDebugObject(type, duration, startColor, endColor, mode);
 	object.start       = start;
@@ -228,15 +218,13 @@ DebugObject MakeWorldArrowObject(
 	return object;
 }
 
-DebugObject MakeWorldAABBObject(
-	DebugObjectType type,
-	AABB3 const&    bounds,
-	Matrix4x4 const& transform,
-	float           duration,
-	Rgba8 const&    startColor,
-	Rgba8 const&    endColor,
-	DebugRenderMode mode
-)
+DebugObject MakeWorldAABBObject(DebugObjectType type,
+	AABB3 const&                                bounds,
+	Matrix4x4 const&                            transform,
+	float                                       duration,
+	Rgba8 const&                                startColor,
+	Rgba8 const&                                endColor,
+	DebugRenderMode                             mode)
 {
 	DebugObject object = MakeDebugObject(type, duration, startColor, endColor, mode);
 	object.transform   = transform;
@@ -284,68 +272,91 @@ bool IsUniformColorCachedWorldObject(DebugObject const& obj)
 	}
 }
 
-void ApplyDebugRenderMode(Renderer* renderer, DebugObject const& obj)
+void UploadVertsToBuffer(Renderer* renderer, std::vector<Vertex> const& verts, VertexBuffer*& vertexBuffer)
 {
-	if (renderer == nullptr)
+	if (renderer == nullptr || verts.empty())
 	{
 		return;
 	}
 
+	unsigned int const size = static_cast<unsigned int>(verts.size() * sizeof(Vertex));
+	if (vertexBuffer == nullptr)
+	{
+		vertexBuffer = renderer->CreateVertexBuffer(size, sizeof(Vertex));
+	}
+	else if (vertexBuffer->GetSize() < size)
+	{
+		vertexBuffer->Resize(size);
+	}
+
+	renderer->CopyCPUToGPU(verts.data(), size, vertexBuffer);
+}
+
+DepthMode GetDebugDepthMode(DebugObject const& obj)
+{
 	if (obj.type == DebugObjectType::SCREEN_TEXT || obj.type == DebugObjectType::MESSAGE)
 	{
-		renderer->SetBlendMode(BlendMode::ALPHA);
-		renderer->SetDepthMode(DepthMode::READ_ONLY_ALWAYS);
-		renderer->SetRasterizerMode(RasterizerMode::SOLID_CULL_NONE);
-		return;
+		return DepthMode::READ_ONLY_ALWAYS;
 	}
-	else
+
+	switch (obj.mode)
 	{
-		renderer->SetBlendMode(BlendMode::ALPHA);
-
-		switch (obj.mode)
-		{
-		case DebugRenderMode::ALWAYS:
-			renderer->SetDepthMode(DepthMode::DISABLED);
-			break;
-
-		case DebugRenderMode::USE_DEPTH:
-			renderer->SetDepthMode(DepthMode::READ_WRITE_LESS_EQUAL);
-			break;
-
-		case DebugRenderMode::X_RAY:
-			renderer->SetDepthMode(DepthMode::READ_WRITE_LESS_EQUAL);
-			break;
-
-		default:
-			renderer->SetDepthMode(DepthMode::READ_WRITE_LESS_EQUAL);
-			break;
-		}
-
-		switch (obj.type)
-		{
-		case DebugObjectType::WORLD_WIRE_SPHERE:
-		case DebugObjectType::WORLD_WIRE_CYLINDER:
-		case DebugObjectType::WORLD_WIRE_CAPSULE:
-		case DebugObjectType::WORLD_WIRE_ARROW:
-		case DebugObjectType::WORLD_WIRE_AABB:
-			renderer->SetRasterizerMode(RasterizerMode::WIREFRAME_CULL_NONE);
-			break;
-
-		default:
-			renderer->SetRasterizerMode(RasterizerMode::SOLID_CULL_NONE);
-			break;
-		}
+	case DebugRenderMode::ALWAYS:
+	case DebugRenderMode::X_RAY:
+		return DepthMode::DISABLED;
+	case DebugRenderMode::USE_DEPTH:
+	default:
+		return DepthMode::READ_WRITE_LESS_EQUAL;
 	}
 }
 
-void DrawWorldObject(
-	Renderer*     renderer,
-	BitmapFont*   font,
-	Camera const& camera,
-	DebugObject&  obj,
-	Rgba8 const*  overrideStartColor = nullptr,
-	Rgba8 const*  overrideEndColor   = nullptr
-)
+RasterizerMode GetDebugRasterizerMode(DebugObject const& obj)
+{
+	if (obj.type == DebugObjectType::SCREEN_TEXT || obj.type == DebugObjectType::MESSAGE)
+	{
+		return RasterizerMode::SOLID_CULL_NONE;
+	}
+
+	switch (obj.type)
+	{
+	case DebugObjectType::WORLD_WIRE_SPHERE:
+	case DebugObjectType::WORLD_WIRE_CYLINDER:
+	case DebugObjectType::WORLD_WIRE_CAPSULE:
+	case DebugObjectType::WORLD_WIRE_ARROW:
+	case DebugObjectType::WORLD_WIRE_AABB:
+		return RasterizerMode::WIREFRAME_CULL_NONE;
+	default:
+		return RasterizerMode::SOLID_CULL_NONE;
+	}
+}
+
+void SubmitDebugRequest(Renderer* renderer, DebugObject const& obj, RenderRequestPass pass, Texture* texture)
+{
+	if (renderer == nullptr || obj.vertexBuffer == nullptr)
+	{
+		return;
+	}
+
+	RenderRequest request;
+	request.m_pass           = pass;
+	request.m_modelToWorld   = Matrix4x4::Identity;
+	request.m_tint           = Rgba8::White;
+	request.m_vertexBuffer   = obj.vertexBuffer;
+	request.m_diffuseTexture = texture;
+	request.m_shader         = nullptr;
+	request.m_blendMode      = BlendMode::ALPHA;
+	request.m_depthMode      = GetDebugDepthMode(obj);
+	request.m_rasterizerMode = GetDebugRasterizerMode(obj);
+	request.m_samplerMode    = SamplerMode::POINT_CLAMP;
+	renderer->SubmitRenderRequest(request);
+}
+
+void SubmitWorldObject(Renderer* renderer,
+	BitmapFont*                  font,
+	Camera const&                camera,
+	DebugObject&                 obj,
+	Rgba8 const*                 overrideStartColor = nullptr,
+	Rgba8 const*                 overrideEndColor   = nullptr)
 {
 	std::vector<Vertex> verts;
 	Texture*            texture            = nullptr;
@@ -384,18 +395,11 @@ void DrawWorldObject(
 				{
 					vert.m_color = color;
 				}
-				renderer->CopyCPUToGPU(
-					verts.data(),
+				renderer->CopyCPUToGPU(verts.data(),
 					static_cast<unsigned int>(verts.size() * sizeof(Vertex)),
-					obj.vertexBuffer
-				);
+					obj.vertexBuffer);
 			}
-			renderer->BeginCamera(camera);
-			renderer->BindShader(nullptr);
-			renderer->BindTexture(nullptr);
-			renderer->BindSampler(SamplerMode::POINT_CLAMP);
-			renderer->BindModelConstants(Matrix4x4::Identity, Rgba8::White);
-			renderer->DrawVertexBuffer(obj.vertexBuffer);
+			SubmitDebugRequest(renderer, obj, RenderRequestPass::Opaque, nullptr);
 		}
 		break;
 
@@ -440,18 +444,12 @@ void DrawWorldObject(
 
 	if (!verts.empty())
 	{
-		renderer->BeginCamera(camera);
-		renderer->BindShader(nullptr);
-		renderer->BindTexture(texture);
-		renderer->BindSampler(SamplerMode::POINT_CLAMP);
-		renderer->BindModelConstants(Matrix4x4::Identity, Rgba8::White);
-		renderer->DrawVertexArray(verts);
+		UploadVertsToBuffer(renderer, verts, obj.vertexBuffer);
+		SubmitDebugRequest(renderer, obj, RenderRequestPass::Opaque, texture);
 	}
 }
 
-void DrawScreenObject(
-	Renderer* renderer, BitmapFont* font, Camera const& camera, DebugObject const& obj, int lineNum = -1
-)
+void SubmitScreenObject(Renderer* renderer, BitmapFont* font, Camera const& camera, DebugObject& obj, int lineNum = -1)
 {
 	if (renderer == nullptr || font == nullptr)
 	{
@@ -479,23 +477,17 @@ void DrawScreenObject(
 	verts.reserve(1024);
 
 	float cellHeight = obj.textHeight > 0.f ? obj.textHeight : 20.f;
-	font->AddVertsForTextInBox2D(
-		verts,
+	font->AddVertsForTextInBox2D(verts,
 		obj.text,
 		box,
 		cellHeight,
 		color,
 		1.f,
 		obj.alignment,
-		TextBoxMode::SHRINK_TO_FIT
-	);
+		TextBoxMode::SHRINK_TO_FIT);
 
-	renderer->BeginCamera(camera);
-	renderer->BindShader(nullptr);
-	renderer->BindTexture(font->GetTexture());
-	renderer->BindSampler(SamplerMode::POINT_CLAMP);
-	renderer->BindModelConstants(Matrix4x4::Identity, Rgba8::White);
-	renderer->DrawVertexArray(verts);
+	UploadVertsToBuffer(renderer, verts, obj.vertexBuffer);
+	SubmitDebugRequest(renderer, obj, RenderRequestPass::UI, font->GetTexture());
 }
 
 void UpdateDebugObjectLifetimes(std::vector<DebugObject>& objects, float deltaSeconds)
@@ -516,17 +508,6 @@ void UpdateDebugObjectLifetimes(std::vector<DebugObject>& objects, float deltaSe
 			objects.erase(objects.begin() + i);
 		}
 	}
-}
-
-void ResetRendererStates(Renderer* renderer)
-{
-	if (renderer == nullptr)
-	{
-		return;
-	}
-	renderer->SetBlendMode(BlendMode::ALPHA);
-	renderer->SetDepthMode(DepthMode::READ_WRITE_LESS_EQUAL);
-	renderer->SetRasterizerMode(RasterizerMode::SOLID_CULL_BACK);
 }
 } // namespace
 
@@ -565,233 +546,200 @@ void DebugRenderClear()
 }
 
 // Geometry
-void DebugAddWorldSphere(
-	const Vec3&     center,
-	float           radius,
-	float           duration,
-	const Rgba8&    startColor,
-	const Rgba8&    endColor,
-	DebugRenderMode mode
-)
+void DebugAddWorldSphere(const Vec3& center,
+	float                            radius,
+	float                            duration,
+	const Rgba8&                     startColor,
+	const Rgba8&                     endColor,
+	DebugRenderMode                  mode)
 {
 	s_debugObjects.push_back(
-		MakeWorldSphereObject(DebugObjectType::WORLD_SPHERE, center, radius, duration, startColor, endColor, mode)
-	);
+		MakeWorldSphereObject(DebugObjectType::WORLD_SPHERE, center, radius, duration, startColor, endColor, mode));
 }
 
-void DebugAddWorldWireSphere(
-	const Vec3&     center,
-	float           radius,
-	float           duration,
-	const Rgba8&    startColor,
-	const Rgba8&    endColor,
-	DebugRenderMode mode
-)
+void DebugAddWorldWireSphere(const Vec3& center,
+	float                                radius,
+	float                                duration,
+	const Rgba8&                         startColor,
+	const Rgba8&                         endColor,
+	DebugRenderMode                      mode)
 {
-	s_debugObjects.push_back(
-		MakeWorldSphereObject(DebugObjectType::WORLD_WIRE_SPHERE, center, radius, duration, startColor, endColor, mode)
-	);
+	s_debugObjects.push_back(MakeWorldSphereObject(DebugObjectType::WORLD_WIRE_SPHERE,
+		center,
+		radius,
+		duration,
+		startColor,
+		endColor,
+		mode));
 }
 
-void DebugAddWorldCylinder(
-	const Vec3&     start,
-	const Vec3&     end,
-	float           radius,
-	float           duration,
-	const Rgba8&    startColor,
-	const Rgba8&    endColor,
-	DebugRenderMode mode
-)
+void DebugAddWorldCylinder(const Vec3& start,
+	const Vec3&                        end,
+	float                              radius,
+	float                              duration,
+	const Rgba8&                       startColor,
+	const Rgba8&                       endColor,
+	DebugRenderMode                    mode)
 {
-	s_debugObjects.push_back(MakeWorldCylinderObject(
-		DebugObjectType::WORLD_CYLINDER,
+	s_debugObjects.push_back(MakeWorldCylinderObject(DebugObjectType::WORLD_CYLINDER,
 		start,
 		end,
 		radius,
 		duration,
 		startColor,
 		endColor,
-		mode
-	));
+		mode));
 }
 
-void DebugAddWorldWireCylinder(
-	const Vec3&     start,
-	const Vec3&     end,
-	float           radius,
-	float           duration,
-	const Rgba8&    startColor,
-	const Rgba8&    endColor,
-	DebugRenderMode mode
-)
+void DebugAddWorldWireCylinder(const Vec3& start,
+	const Vec3&                            end,
+	float                                  radius,
+	float                                  duration,
+	const Rgba8&                           startColor,
+	const Rgba8&                           endColor,
+	DebugRenderMode                        mode)
 {
-	s_debugObjects.push_back(MakeWorldCylinderObject(
-		DebugObjectType::WORLD_WIRE_CYLINDER,
+	s_debugObjects.push_back(MakeWorldCylinderObject(DebugObjectType::WORLD_WIRE_CYLINDER,
 		start,
 		end,
 		radius,
 		duration,
 		startColor,
 		endColor,
-		mode
-	));
+		mode));
 }
 
 void DebugAddWorldWireCylinder(const CylinderZ3& cylinder, const Rgba8& color, float duration, DebugRenderMode mode)
 {
-	s_debugObjects.push_back(MakeWorldCylinderObject(
-		DebugObjectType::WORLD_WIRE_CYLINDER,
+	s_debugObjects.push_back(MakeWorldCylinderObject(DebugObjectType::WORLD_WIRE_CYLINDER,
 		Vec3(cylinder.m_centerXY.x, cylinder.m_centerXY.y, cylinder.m_minMaxZ.m_min),
 		Vec3(cylinder.m_centerXY.x, cylinder.m_centerXY.y, cylinder.m_minMaxZ.m_max),
 		cylinder.m_radius,
 		duration,
 		color,
 		color,
-		mode
-	));
+		mode));
 }
 
 void DebugAddWorldAABB(
-	const AABB3&    bounds,
-	float           duration,
-	const Rgba8&    startColor,
-	const Rgba8&    endColor,
-	DebugRenderMode mode
-)
+	const AABB3& bounds, float duration, const Rgba8& startColor, const Rgba8& endColor, DebugRenderMode mode)
 {
-	s_debugObjects.push_back(
-		MakeWorldAABBObject(DebugObjectType::WORLD_AABB, bounds, Matrix4x4::Identity, duration, startColor, endColor, mode)
-	);
-}
-
-void DebugAddWorldAABB(
-	const AABB3&     bounds,
-	const Matrix4x4& transform,
-	float            duration,
-	const Rgba8&     startColor,
-	const Rgba8&     endColor,
-	DebugRenderMode  mode
-)
-{
-	s_debugObjects.push_back(MakeWorldAABBObject(DebugObjectType::WORLD_AABB, bounds, transform, duration, startColor, endColor, mode));
-}
-
-void DebugAddWorldWireAABB(
-	const AABB3&    bounds,
-	float           duration,
-	const Rgba8&    startColor,
-	const Rgba8&    endColor,
-	DebugRenderMode mode
-)
-{
-	s_debugObjects.push_back(MakeWorldAABBObject(
-		DebugObjectType::WORLD_WIRE_AABB,
+	s_debugObjects.push_back(MakeWorldAABBObject(DebugObjectType::WORLD_AABB,
 		bounds,
 		Matrix4x4::Identity,
 		duration,
 		startColor,
 		endColor,
-		mode
-	));
+		mode));
+}
+
+void DebugAddWorldAABB(const AABB3& bounds,
+	const Matrix4x4&                transform,
+	float                           duration,
+	const Rgba8&                    startColor,
+	const Rgba8&                    endColor,
+	DebugRenderMode                 mode)
+{
+	s_debugObjects.push_back(
+		MakeWorldAABBObject(DebugObjectType::WORLD_AABB, bounds, transform, duration, startColor, endColor, mode));
 }
 
 void DebugAddWorldWireAABB(
-	const AABB3&     bounds,
-	const Matrix4x4& transform,
-	float            duration,
-	const Rgba8&     startColor,
-	const Rgba8&     endColor,
-	DebugRenderMode  mode
-)
+	const AABB3& bounds, float duration, const Rgba8& startColor, const Rgba8& endColor, DebugRenderMode mode)
 {
-	s_debugObjects.push_back(
-		MakeWorldAABBObject(DebugObjectType::WORLD_WIRE_AABB, bounds, transform, duration, startColor, endColor, mode)
-	);
+	s_debugObjects.push_back(MakeWorldAABBObject(DebugObjectType::WORLD_WIRE_AABB,
+		bounds,
+		Matrix4x4::Identity,
+		duration,
+		startColor,
+		endColor,
+		mode));
 }
 
-void DebugAddWorldCapsule(
-	const Vec3&     start,
-	const Vec3&     end,
-	float           radius,
-	float           duration,
-	const Rgba8&    startColor,
-	const Rgba8&    endColor,
-	DebugRenderMode mode
-)
+void DebugAddWorldWireAABB(const AABB3& bounds,
+	const Matrix4x4&                    transform,
+	float                               duration,
+	const Rgba8&                        startColor,
+	const Rgba8&                        endColor,
+	DebugRenderMode                     mode)
 {
 	s_debugObjects.push_back(
-		MakeWorldCapsuleObject(DebugObjectType::WORLD_CAPSULE, start, end, radius, duration, startColor, endColor, mode)
-	);
+		MakeWorldAABBObject(DebugObjectType::WORLD_WIRE_AABB, bounds, transform, duration, startColor, endColor, mode));
 }
 
-void DebugAddWorldWireCapsule(
-	const Vec3&     start,
-	const Vec3&     end,
-	float           radius,
-	float           duration,
-	const Rgba8&    startColor,
-	const Rgba8&    endColor,
-	DebugRenderMode mode
-)
+void DebugAddWorldCapsule(const Vec3& start,
+	const Vec3&                       end,
+	float                             radius,
+	float                             duration,
+	const Rgba8&                      startColor,
+	const Rgba8&                      endColor,
+	DebugRenderMode                   mode)
 {
-	s_debugObjects.push_back(MakeWorldCapsuleObject(
-		DebugObjectType::WORLD_WIRE_CAPSULE,
+	s_debugObjects.push_back(MakeWorldCapsuleObject(DebugObjectType::WORLD_CAPSULE,
 		start,
 		end,
 		radius,
 		duration,
 		startColor,
 		endColor,
-		mode
-	));
+		mode));
 }
 
-void DebugAddWorldArrow(
-	const Vec3&     start,
-	const Vec3&     end,
-	float           radius,
-	float           duration,
-	const Rgba8&    startColor,
-	const Rgba8&    endColor,
-	DebugRenderMode mode
-)
+void DebugAddWorldWireCapsule(const Vec3& start,
+	const Vec3&                           end,
+	float                                 radius,
+	float                                 duration,
+	const Rgba8&                          startColor,
+	const Rgba8&                          endColor,
+	DebugRenderMode                       mode)
 {
-	s_debugObjects.push_back(
-		MakeWorldArrowObject(DebugObjectType::WORLD_ARROW, start, end, radius, duration, startColor, endColor, mode)
-	);
-}
-
-void DebugAddWorldWireArrow(
-	const Vec3&     start,
-	const Vec3&     end,
-	float           radius,
-	float           duration,
-	const Rgba8&    startColor,
-	const Rgba8&    endColor,
-	DebugRenderMode mode
-)
-{
-	s_debugObjects.push_back(MakeWorldArrowObject(
-		DebugObjectType::WORLD_WIRE_ARROW,
+	s_debugObjects.push_back(MakeWorldCapsuleObject(DebugObjectType::WORLD_WIRE_CAPSULE,
 		start,
 		end,
 		radius,
 		duration,
 		startColor,
 		endColor,
-		mode
-	));
+		mode));
 }
 
-void DebugAddBasis(
-	const Matrix4x4& transform,
-	float            duration,
-	float            length,
-	float            radius,
-	float            colorScale,
-	float            alphaScale,
-	DebugRenderMode  mode
-)
+void DebugAddWorldArrow(const Vec3& start,
+	const Vec3&                     end,
+	float                           radius,
+	float                           duration,
+	const Rgba8&                    startColor,
+	const Rgba8&                    endColor,
+	DebugRenderMode                 mode)
+{
+	s_debugObjects.push_back(
+		MakeWorldArrowObject(DebugObjectType::WORLD_ARROW, start, end, radius, duration, startColor, endColor, mode));
+}
+
+void DebugAddWorldWireArrow(const Vec3& start,
+	const Vec3&                         end,
+	float                               radius,
+	float                               duration,
+	const Rgba8&                        startColor,
+	const Rgba8&                        endColor,
+	DebugRenderMode                     mode)
+{
+	s_debugObjects.push_back(MakeWorldArrowObject(DebugObjectType::WORLD_WIRE_ARROW,
+		start,
+		end,
+		radius,
+		duration,
+		startColor,
+		endColor,
+		mode));
+}
+
+void DebugAddBasis(const Matrix4x4& transform,
+	float                           duration,
+	float                           length,
+	float                           radius,
+	float                           colorScale,
+	float                           alphaScale,
+	DebugRenderMode                 mode)
 {
 	Rgba8 const kAxisXColor(255, 70, 105, 255);
 	Rgba8 const kAxisYColor(155, 225, 20, 255);
@@ -820,16 +768,14 @@ void DebugAddWorldBasis(const Matrix4x4& transform, float duration, DebugRenderM
 	DebugAddBasis(transform, duration, 1.0f, 0.1f, 1.0f, 1.0f, mode);
 }
 
-void DebugAddWorldText(
-	const std::string& text,
-	const Matrix4x4&   transform,
-	float              textHeight,
-	const Vec2&        alignment,
-	float              duration,
-	const Rgba8&       startColor,
-	const Rgba8&       endColor,
-	DebugRenderMode    mode
-)
+void DebugAddWorldText(const std::string& text,
+	const Matrix4x4&                      transform,
+	float                                 textHeight,
+	const Vec2&                           alignment,
+	float                                 duration,
+	const Rgba8&                          startColor,
+	const Rgba8&                          endColor,
+	DebugRenderMode                       mode)
 {
 	DebugObject object = MakeDebugObject(DebugObjectType::WORLD_TEXT, duration, startColor, endColor, mode);
 	object.text        = text;
@@ -839,16 +785,14 @@ void DebugAddWorldText(
 	s_debugObjects.push_back(std::move(object));
 }
 
-void DebugAddWorldBillboardText(
-	const std::string& text,
-	const Vec3&        origin,
-	float              textHeight,
-	const Vec2&        alignment,
-	float              duration,
-	const Rgba8&       startColor,
-	const Rgba8&       endColor,
-	DebugRenderMode    mode
-)
+void DebugAddWorldBillboardText(const std::string& text,
+	const Vec3&                                    origin,
+	float                                          textHeight,
+	const Vec2&                                    alignment,
+	float                                          duration,
+	const Rgba8&                                   startColor,
+	const Rgba8&                                   endColor,
+	DebugRenderMode                                mode)
 {
 	DebugObject object = MakeDebugObject(DebugObjectType::WORLD_BILLBOARD_TEXT, duration, startColor, endColor, mode);
 	object.text        = text;
@@ -858,14 +802,13 @@ void DebugAddWorldBillboardText(
 	s_debugObjects.push_back(std::move(object));
 }
 
-void DebugAddScreenText(
-	const std::string& text,
-	const AABB2&       box,
-	float              cellHeight,
-	const Vec2&        alignment,
-	float              duration,
-	const Rgba8&       startColor /*= Rgba8::kWhite*/,
-	const Rgba8&       endColor /*= Rgba8::kWhite*/
+void DebugAddScreenText(const std::string& text,
+	const AABB2&                           box,
+	float                                  cellHeight,
+	const Vec2&                            alignment,
+	float                                  duration,
+	const Rgba8&                           startColor /*= Rgba8::kWhite*/,
+	const Rgba8&                           endColor /*= Rgba8::kWhite*/
 )
 {
 	DebugObject object =
@@ -877,11 +820,10 @@ void DebugAddScreenText(
 	s_debugObjects.push_back(std::move(object));
 }
 
-void DebugAddMessage(
-	const std::string& text,
-	float              duration,
-	const Rgba8&       startColor /*= Rgba8::kWhite*/,
-	const Rgba8&       endColor /*= Rgba8::kWhite*/
+void DebugAddMessage(const std::string& text,
+	float                               duration,
+	const Rgba8&                        startColor /*= Rgba8::kWhite*/,
+	const Rgba8&                        endColor /*= Rgba8::kWhite*/
 )
 {
 	DebugObject object =
@@ -978,8 +920,7 @@ void DebugAddWorldGrid(float duration, int halfExtent)
 
 			AddSegmentAABB(
 				AABB3(Vec3(x0, lineOffset - halfThickness, 0.f), Vec3(x1, lineOffset + halfThickness, kLineHeight)),
-				xParallelColor
-			);
+				xParallelColor);
 		}
 
 		// Y-axis parallel lines (vary X, span Y)
@@ -994,8 +935,7 @@ void DebugAddWorldGrid(float duration, int halfExtent)
 
 			AddSegmentAABB(
 				AABB3(Vec3(lineOffset - halfThickness, y0, 0.f), Vec3(lineOffset + halfThickness, y1, kLineHeight)),
-				yParallelColor
-			);
+				yParallelColor);
 		}
 	}
 
@@ -1020,11 +960,8 @@ void DebugRenderWorld(const Camera& camera)
 	}
 
 	BitmapFont* font = renderer->CreateOrGetBitmapFont(
-		Stringf("%s%s", s_debugRenderConfig.m_fontPath.c_str(), s_debugRenderConfig.m_fontName.c_str()).c_str()
-	);
+		Stringf("%s%s", s_debugRenderConfig.m_fontPath.c_str(), s_debugRenderConfig.m_fontName.c_str()).c_str());
 
-	// First pass: X_RAY objects only, with modified alpha for see-through effect.
-	float const xrayAlphaMultiplier = 0.2f;
 	for (DebugObject& obj : s_debugObjects)
 	{
 		if (obj.type == DebugObjectType::SCREEN_TEXT || obj.type == DebugObjectType::MESSAGE)
@@ -1032,36 +969,8 @@ void DebugRenderWorld(const Camera& camera)
 			continue;
 		}
 
-		if (obj.mode != DebugRenderMode::X_RAY)
-		{
-			continue;
-		}
-
-		DebugRenderMode const originalMode = obj.mode;
-		Rgba8                 startColor   = obj.startColor;
-		Rgba8                 endColor     = obj.endColor;
-		startColor.a                       = (unsigned char)((float)startColor.a * xrayAlphaMultiplier);
-		endColor.a                         = (unsigned char)((float)endColor.a * xrayAlphaMultiplier);
-
-		obj.mode = DebugRenderMode::ALWAYS;
-		ApplyDebugRenderMode(renderer, obj);
-		DrawWorldObject(renderer, font, camera, obj, &startColor, &endColor);
-		obj.mode = originalMode;
+		SubmitWorldObject(renderer, font, camera, obj);
 	}
-
-	// Second pass: draw all world objects normally.
-	for (DebugObject& obj : s_debugObjects)
-	{
-		if (obj.type == DebugObjectType::SCREEN_TEXT || obj.type == DebugObjectType::MESSAGE)
-		{
-			continue;
-		}
-
-		ApplyDebugRenderMode(renderer, obj);
-		DrawWorldObject(renderer, font, camera, obj);
-	}
-
-	ResetRendererStates(renderer);
 }
 
 void DebugRenderScreen(const Camera& camera)
@@ -1078,28 +987,23 @@ void DebugRenderScreen(const Camera& camera)
 	}
 
 	BitmapFont* font = renderer->CreateOrGetBitmapFont(
-		Stringf("%s%s", s_debugRenderConfig.m_fontPath.c_str(), s_debugRenderConfig.m_fontName.c_str()).c_str()
-	);
+		Stringf("%s%s", s_debugRenderConfig.m_fontPath.c_str(), s_debugRenderConfig.m_fontName.c_str()).c_str());
 
-	for (DebugObject const& obj : s_debugObjects)
+	for (DebugObject& obj : s_debugObjects)
 	{
 		if (obj.type != DebugObjectType::SCREEN_TEXT)
 		{
 			continue;
 		}
 
-		ApplyDebugRenderMode(renderer, obj);
-		DrawScreenObject(renderer, font, camera, obj);
+		SubmitScreenObject(renderer, font, camera, obj);
 	}
 
 	for (int messageIndex = 0; messageIndex < (int)s_debugMessages.size(); ++messageIndex)
 	{
-		DebugObject const& obj = s_debugMessages[messageIndex];
-		ApplyDebugRenderMode(renderer, obj);
-		DrawScreenObject(renderer, font, camera, obj, (int)s_debugMessages.size() - messageIndex - 1);
+		DebugObject& obj = s_debugMessages[messageIndex];
+		SubmitScreenObject(renderer, font, camera, obj, (int)s_debugMessages.size() - messageIndex - 1);
 	}
-
-	ResetRendererStates(renderer);
 }
 
 void DebugRenderEndFrame()

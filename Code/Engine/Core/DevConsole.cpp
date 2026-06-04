@@ -9,6 +9,7 @@
 #include "Engine/Math/MathUtils.hpp"
 #include "Engine/Renderer/BitmapFont.hpp"
 #include "Engine/Renderer/Renderer.hpp"
+#include "Engine/Renderer/VertexBuffer.hpp"
 
 Rgba8 const DevConsole::kError               = Rgba8(255, 0, 0, 255);     // Red
 Rgba8 const DevConsole::kWarning             = Rgba8(255, 255, 0, 255);   // Yellow
@@ -17,9 +18,58 @@ Rgba8 const DevConsole::kInfoMinor           = Rgba8(0, 255, 255, 255);   // Cya
 Rgba8 const DevConsole::kInputText           = Rgba8(255, 255, 255, 255); // White
 Rgba8 const DevConsole::kInputInsertionPoint = Rgba8(255, 255, 255, 255); // White
 
+namespace
+{
+void UploadVertsToBuffer(std::vector<Vertex> const& verts, VertexBuffer*& vertexBuffer)
+{
+	if (verts.empty() || g_engine == nullptr || g_engine->m_renderer == nullptr)
+	{
+		return;
+	}
+
+	unsigned int const size = static_cast<unsigned int>(verts.size() * sizeof(Vertex));
+	if (vertexBuffer == nullptr)
+	{
+		vertexBuffer = g_engine->m_renderer->CreateVertexBuffer(size, sizeof(Vertex));
+	}
+	else if (vertexBuffer->GetSize() < size)
+	{
+		vertexBuffer->Resize(size);
+	}
+
+	g_engine->m_renderer->CopyCPUToGPU(verts.data(), size, vertexBuffer);
+}
+
+void SubmitUIVerts(VertexBuffer* vertexBuffer, Texture* texture)
+{
+	if (vertexBuffer == nullptr || g_engine == nullptr || g_engine->m_renderer == nullptr)
+	{
+		return;
+	}
+
+	RenderRequest request;
+	request.m_pass           = RenderRequestPass::UI;
+	request.m_vertexBuffer   = vertexBuffer;
+	request.m_diffuseTexture = texture;
+	request.m_shader         = nullptr;
+	request.m_blendMode      = BlendMode::ALPHA;
+	request.m_depthMode      = DepthMode::READ_ONLY_ALWAYS;
+	request.m_rasterizerMode = RasterizerMode::SOLID_CULL_NONE;
+	request.m_samplerMode    = SamplerMode::POINT_CLAMP;
+	g_engine->m_renderer->SubmitRenderRequest(request);
+}
+} // namespace
+
 DevConsole::DevConsole(DevConsoleConfig const& config) : m_config(config), m_uiCamera() {}
 
-DevConsole::~DevConsole() {}
+DevConsole::~DevConsole()
+{
+	delete m_backgroundVertexBuffer;
+	m_backgroundVertexBuffer = nullptr;
+
+	delete m_textVertexBuffer;
+	m_textVertexBuffer = nullptr;
+}
 
 void DevConsole::Startup()
 {
@@ -66,6 +116,12 @@ void DevConsole::Shutdown()
 		delete m_insertionPointBlinkTimer;
 		m_insertionPointBlinkTimer = nullptr;
 	}
+
+	delete m_backgroundVertexBuffer;
+	m_backgroundVertexBuffer = nullptr;
+
+	delete m_textVertexBuffer;
+	m_textVertexBuffer = nullptr;
 }
 
 void DevConsole::BeginFrame() {}
@@ -122,20 +178,10 @@ void DevConsole::Render()
 
 	AABB2 const uiBounds = m_uiCamera.GetOrthographicBounds();
 
-	g_engine->m_renderer->BeginCamera(m_uiCamera);
-	g_engine->m_renderer->BindTexture(nullptr);
-	g_engine->m_renderer->BindSampler(SamplerMode::POINT_CLAMP);
-	g_engine->m_renderer->BindShader(nullptr);
-	g_engine->m_renderer->BindModelConstants(Matrix4x4::Identity, Rgba8::White);
-
-	g_engine->m_renderer->SetBlendMode(BlendMode::ALPHA);
-	g_engine->m_renderer->SetDepthMode(DepthMode::READ_ONLY_ALWAYS);
-	g_engine->m_renderer->SetRasterizerMode(RasterizerMode::SOLID_CULL_BACK);
-
 	std::vector<Vertex> bgVerts;
 	AddVertsForAABB2D(bgVerts, uiBounds, Rgba8::TranslucentBlack);
-
-	g_engine->m_renderer->DrawVertexArray((int)bgVerts.size(), bgVerts.data());
+	UploadVertsToBuffer(bgVerts, m_backgroundVertexBuffer);
+	SubmitUIVerts(m_backgroundVertexBuffer, nullptr);
 
 	std::string const fontFullPath = m_config.m_fontPath + "/" + m_config.m_fontName;
 	BitmapFont*       font         = g_engine->m_renderer->CreateOrGetBitmapFont(fontFullPath.c_str());
@@ -168,7 +214,7 @@ void DevConsole::Render()
 				part.replace(tabPos, 1, "    ");
 			}
 
-			visualLines.push_back(VisualLine{line.m_color, part, i == 0});
+			visualLines.push_back(VisualLine{ line.m_color, part, i == 0 });
 		}
 	}
 
@@ -190,16 +236,14 @@ void DevConsole::Render()
 
 		AABB2 lineBox(Vec2(uiBounds.m_mins.x, y), Vec2(uiBounds.m_maxs.x, y + cellHeight));
 
-		font->AddVertsForTextInBox2D(
-			textVerts,
+		font->AddVertsForTextInBox2D(textVerts,
 			text,
 			lineBox,
 			cellHeight * 0.9f,
 			vline.color,
 			m_config.m_fontAspect,
 			Vec2(0.f, 0.5f),
-			TextBoxMode::SHRINK_TO_FIT
-		);
+			TextBoxMode::SHRINK_TO_FIT);
 	}
 
 	// Input line
@@ -217,16 +261,14 @@ void DevConsole::Render()
 	// Draw input text normally
 	std::string const prompt = "> " + m_inputText;
 
-	font->AddVertsForTextInBox2D(
-		textVerts,
+	font->AddVertsForTextInBox2D(textVerts,
 		prompt,
 		inputBox,
 		cellHeight * 0.9f,
 		kInputText,
 		m_config.m_fontAspect,
 		Vec2(0.f, 0.5f),
-		TextBoxMode::SHRINK_TO_FIT
-	);
+		TextBoxMode::SHRINK_TO_FIT);
 
 	if (m_insertionPointVisible)
 	{
@@ -258,23 +300,20 @@ void DevConsole::Render()
 
 		AABB2 cursorBox(Vec2(cursorMinsX, inputBox.m_mins.y), Vec2(cursorMaxsX, inputBox.m_maxs.y));
 
-		font->AddVertsForTextInBox2D(
-			textVerts,
+		font->AddVertsForTextInBox2D(textVerts,
 			"|",
 			cursorBox,
 			inputCellHeight,
 			kInputInsertionPoint,
 			m_config.m_fontAspect,
 			Vec2(0.5f, 0.5f),
-			TextBoxMode::SHRINK_TO_FIT
-		);
+			TextBoxMode::SHRINK_TO_FIT);
 
 #pragma endregion
 	}
 
-	g_engine->m_renderer->BindTexture(font->GetTexture());
-	g_engine->m_renderer->BindSampler(SamplerMode::POINT_CLAMP);
-	g_engine->m_renderer->DrawVertexArray((int)textVerts.size(), textVerts.data());
+	UploadVertsToBuffer(textVerts, m_textVertexBuffer);
+	SubmitUIVerts(m_textVertexBuffer, font->GetTexture());
 }
 
 void DevConsole::ToggleOpen()
@@ -417,11 +456,9 @@ bool DevConsole::Event_KeyDown(EventArgs& args)
 
 	if (asKey == KeyCodeRightArrow)
 	{
-		g_engine->m_devConsole->m_insertionPointPosition = std::min(
-			(int)g_engine->m_devConsole->m_inputText.size(),
-			g_engine->m_devConsole->m_insertionPointPosition + 1
-		);
-		g_engine->m_devConsole->m_insertionPointVisible = true;
+		g_engine->m_devConsole->m_insertionPointPosition = std::min((int)g_engine->m_devConsole->m_inputText.size(),
+			g_engine->m_devConsole->m_insertionPointPosition + 1);
+		g_engine->m_devConsole->m_insertionPointVisible  = true;
 		g_engine->m_devConsole->m_insertionPointBlinkTimer->Start();
 		return true;
 	}

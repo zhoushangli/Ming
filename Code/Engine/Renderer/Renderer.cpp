@@ -5,9 +5,11 @@
 #include "Engine/Renderer/PostProcessChain.hpp"
 #include "Renderer.hpp"
 
+const LightHandle LightHandle::Invalid = LightHandle{ static_cast<size_t>(-1) };
+
 Renderer::Renderer(RendererConfig config) : m_config(config) {}
 
-Renderer::~Renderer() { Shutdown(); }
+Renderer::~Renderer() {}
 
 void Renderer::Startup()
 {
@@ -30,7 +32,10 @@ void Renderer::Shutdown()
 
 	if (m_renderBackend != nullptr)
 	{
-		DestroySceneTargets();
+		m_sceneColorTexture  = nullptr;
+		m_sceneDepthTexture  = nullptr;
+		m_sceneNormalTexture = nullptr;
+
 		m_renderBackend->Shutdown();
 		delete m_renderBackend;
 		m_renderBackend = nullptr;
@@ -57,36 +62,86 @@ void Renderer::EndFrame()
 
 void Renderer::CreateRenderingContext() { m_renderBackend->CreateRenderingContext(); }
 
-void Renderer::SubmitRenderRequest(RenderRequestInfo const& request)
+void Renderer::SubmitRenderRequest(RenderRequest const& request)
 {
-	auto& requestList = m_renderRequests[request.m_pass];
+	auto& requestList = m_renderRequests[(int)request.m_pass];
 	requestList.push_back(request);
 }
 
 void Renderer::ClearRenderRequests()
 {
-	for (auto& pair : m_renderRequests)
+	for (auto& requestList : m_renderRequests)
 	{
-		pair.second.clear();
+		requestList.clear();
+	}
+}
+
+LightHandle Renderer::RegisterLight()
+{
+	for (size_t i = 0; i < m_lights.size(); ++i)
+	{
+		if (!m_lights[i].m_isActive)
+		{
+			m_lights[i].m_isActive = true;
+			return LightHandle{ i };
+		}
+	}
+
+	LightInfo newLight;
+	newLight.m_isActive = true;
+	m_lights.push_back(newLight);
+
+	return LightHandle{ m_lights.size() - 1 };
+}
+
+void Renderer::UnregisterLight(LightHandle handle)
+{
+	if (handle.IsValid() && handle.m_index < m_lights.size())
+	{
+		m_lights[handle.m_index].m_isActive = false;
+	}
+}
+
+void Renderer::UpdateLight(LightHandle handle, LightInfo const& info)
+{
+	if (handle.IsValid() && handle.m_index < m_lights.size())
+	{
+		m_lights[handle.m_index] = info;
 	}
 }
 
 void Renderer::RenderViewport(Viewport const& viewport)
 {
 	EnsureViewport(viewport);
+	m_renderBackend->ClearScreen(viewport.m_clearColor);
+	ClearSceneTargets(viewport.m_clearColor);
+
+	m_renderBackend->BindCamera(*viewport.m_worldCamera);
+	PrepareConstants(viewport);
+
 	RenderOpaque(viewport);
 	RenderSkybox(viewport);
 	RenderPostProcess(viewport);
+
+	m_renderBackend->BindCamera(*viewport.m_uiCamera);
 	RenderUI(viewport);
 
 	ClearRenderRequests();
 }
 
-void Renderer::RenderRequest(RenderRequestInfo const& request)
+void Renderer::ExecuteRenderRequest(RenderRequest const& request)
 {
+	ModelConstants modelData = ModelConstants();
+	modelData.ModelToWorld   = request.m_modelToWorld;
+	modelData.ModelColor[0]  = request.m_tint.r / 255.f;
+	modelData.ModelColor[1]  = request.m_tint.g / 255.f;
+	modelData.ModelColor[2]  = request.m_tint.b / 255.f;
+	modelData.ModelColor[3]  = request.m_tint.a / 255.f;
+	m_renderBackend->UpdateAndBindConstantBuffer(BuiltinConstantBufferType::Model, modelData);
+
 	m_renderBackend->BindShader(request.m_shader);
 	m_renderBackend->BindTexture(request.m_diffuseTexture);
-	m_renderBackend->BindModelConstants(request.m_modelToWorld, request.m_tint);
+	m_renderBackend->BindSampler(request.m_samplerMode);
 	m_renderBackend->SetBlendMode(request.m_blendMode);
 	m_renderBackend->SetRasterizerMode(request.m_rasterizerMode);
 	m_renderBackend->SetDepthMode(request.m_depthMode);
@@ -124,32 +179,16 @@ void Renderer::ResizeSceneTargets(IntVec2 dimensions)
 		return;
 	}
 
-	DestroySceneTargets();
+	// TODO: Should complete destroy logic
+	// DestroySceneTargets();
 
-	m_sceneColorTexture      = m_renderBackend->CreateRenderTargetTexture("SceneColor", dimensions);
-	m_sceneDepthTexture      = m_renderBackend->CreateDepthStencilTexture("SceneDepth", dimensions);
-	m_sceneNormalTexture     = m_renderBackend->CreateRenderTargetTexture("SceneNormal", dimensions);
+	m_sceneColorTexture     = m_renderBackend->CreateRenderTargetTexture("SceneColor", dimensions);
+	m_sceneDepthTexture     = m_renderBackend->CreateDepthStencilTexture("SceneDepth", dimensions);
+	m_sceneNormalTexture    = m_renderBackend->CreateRenderTargetTexture("SceneNormal", dimensions);
 	m_sceneTargetDimensions = dimensions;
 
 	m_renderBackend->ClearRenderTarget(m_sceneNormalTexture, Rgba8(128, 128, 128, 255));
 	m_renderBackend->ClearDepthStencil(m_sceneDepthTexture);
-}
-
-void Renderer::DestroySceneTargets()
-{
-	if (m_renderBackend == nullptr)
-	{
-		m_sceneColorTexture      = nullptr;
-		m_sceneDepthTexture      = nullptr;
-		m_sceneNormalTexture     = nullptr;
-		m_sceneTargetDimensions = IntVec2::Zero;
-		return;
-	}
-
-	m_renderBackend->DestroyTexture(m_sceneColorTexture);
-	m_renderBackend->DestroyTexture(m_sceneDepthTexture);
-	m_renderBackend->DestroyTexture(m_sceneNormalTexture);
-	m_sceneTargetDimensions = IntVec2::Zero;
 }
 
 void Renderer::ClearSceneTargets(Rgba8 const& clearColor)
@@ -178,6 +217,59 @@ void Renderer::CopyTextureToBackBuffer(Texture* colorTexture)
 	m_renderBackend->UnbindAllShaderResourceViews();
 }
 
+void Renderer::PrepareConstants(Viewport const& viewport)
+{
+	// Prepare light constants
+	LightConstants lightConstants  = LightConstants();
+	int            pointLightCount = 0;
+	for (size_t i = 0; i < m_lights.size(); ++i)
+	{
+		if (m_lights[i].m_isActive)
+		{
+			switch (m_lights[i].m_type)
+			{
+			case LightType::DIRECTIONAL:
+				lightConstants.m_directionalLight.m_direction = m_lights[i].m_direction;
+				lightConstants.m_directionalLight.m_intensity = m_lights[i].m_intensity;
+				break;
+			case LightType::POINT:
+				if (pointLightCount < kMaxPointLights)
+				{
+					Vec3 gpuColor;
+					gpuColor.x = m_lights[i].m_color.r / 255.f;
+					gpuColor.y = m_lights[i].m_color.g / 255.f;
+					gpuColor.z = m_lights[i].m_color.b / 255.f;
+
+					lightConstants.m_pointLights[pointLightCount].m_position  = m_lights[i].m_position;
+					lightConstants.m_pointLights[pointLightCount].m_intensity = m_lights[i].m_intensity;
+					lightConstants.m_pointLights[pointLightCount].m_color     = gpuColor;
+					lightConstants.m_pointLights[pointLightCount].m_range     = m_lights[i].m_range;
+					++pointLightCount;
+				}
+				break;
+			}
+		}
+	}
+	lightConstants.m_pointLightCount = pointLightCount;
+	m_renderBackend->UpdateAndBindConstantBuffer(BuiltinConstantBufferType::Light, lightConstants);
+
+	// Prepare post-process constants
+	PostProcessConstants postProcessConstants;
+	postProcessConstants.m_screenDimensions = (Vec2)viewport.m_outputResolution;
+	postProcessConstants.m_cameraNear       = viewport.m_worldCamera->GetNearZ();
+	postProcessConstants.m_cameraFar        = viewport.m_worldCamera->GetFarZ();
+	m_renderBackend->UpdateAndBindConstantBuffer(BuiltinConstantBufferType::PostProcess, postProcessConstants);
+
+	// Prepare frame constants
+	// TODO: Actually the renderer should not be responsible for tracking time
+	// this should be passed in from the game or engine layer
+	FrameConstants frameConstants;
+	Clock&         systemClock    = Clock::GetSystemClock();
+	frameConstants.m_time         = systemClock.GetTotalSeconds();
+	frameConstants.m_deltaSeconds = systemClock.GetDeltaSeconds();
+	m_renderBackend->UpdateAndBindConstantBuffer(BuiltinConstantBufferType::Frame, frameConstants);
+}
+
 void Renderer::RenderOpaque(Viewport const& viewport)
 {
 	if (viewport.m_worldCamera == nullptr)
@@ -190,14 +282,13 @@ void Renderer::RenderOpaque(Viewport const& viewport)
 	m_renderBackend->SetBlendMode(BlendMode::ALPHA);
 	m_renderBackend->SetRasterizerMode(RasterizerMode::SOLID_CULL_BACK);
 	m_renderBackend->SetDepthMode(DepthMode::READ_WRITE_LESS_EQUAL);
-	m_renderBackend->BeginCamera(*viewport.m_worldCamera);
-
-	for (RenderRequestInfo const& request : m_renderRequests[RenderRequestPass::Opaque])
-	{
-		RenderRequest(request);
-	}
 
 	DebugRenderWorld(*viewport.m_worldCamera);
+
+	for (RenderRequest const& request : m_renderRequests[(int)RenderRequestPass::Opaque])
+	{
+		ExecuteRenderRequest(request);
+	}
 }
 
 void Renderer::RenderSkybox(Viewport const& viewport)
@@ -213,9 +304,9 @@ void Renderer::RenderSkybox(Viewport const& viewport)
 	m_renderBackend->SetRasterizerMode(RasterizerMode::SOLID_CULL_BACK);
 	m_renderBackend->SetDepthMode(DepthMode::READ_WRITE_LESS_EQUAL);
 
-	for (RenderRequestInfo const& request : m_renderRequests[RenderRequestPass::Skybox])
+	for (RenderRequest const& request : m_renderRequests[(int)RenderRequestPass::Skybox])
 	{
-		RenderRequest(request);
+		ExecuteRenderRequest(request);
 	}
 }
 
@@ -248,73 +339,21 @@ void Renderer::RenderUI(Viewport const& viewport)
 	m_renderBackend->SetBlendMode(BlendMode::ALPHA);
 	m_renderBackend->SetRasterizerMode(RasterizerMode::SOLID_CULL_NONE);
 	m_renderBackend->SetDepthMode(DepthMode::READ_ONLY_ALWAYS);
-	m_renderBackend->BeginCamera(*viewport.m_uiCamera);
+	m_renderBackend->BindCamera(*viewport.m_uiCamera);
 
-	for (RenderRequestInfo const& request : m_renderRequests[RenderRequestPass::UI])
+	size_t const existingUIRequestCount = m_renderRequests[(int)RenderRequestPass::UI].size();
+	DebugRenderScreen(*viewport.m_uiCamera);
+
+	std::vector<RenderRequest> const& uiRequests = m_renderRequests[(int)RenderRequestPass::UI];
+	for (size_t requestIndex = existingUIRequestCount; requestIndex < uiRequests.size(); ++requestIndex)
 	{
-		RenderRequest(request);
+		ExecuteRenderRequest(uiRequests[requestIndex]);
 	}
 
-	DebugRenderScreen(*viewport.m_uiCamera);
-}
-void Renderer::BeginCamera(Camera const& camera) { m_renderBackend->BeginCamera(camera); }
-void Renderer::EndCamera() { m_renderBackend->EndCamera(); }
-void Renderer::ClearScreen(Rgba8 const& clearColor)
-{
-	m_renderBackend->ClearScreen(clearColor);
-	ClearSceneTargets(clearColor);
-}
-void Renderer::SetBlendMode(BlendMode blendMode) { m_renderBackend->SetBlendMode(blendMode); }
-void Renderer::SetRasterizerMode(RasterizerMode rasterizerMode) { m_renderBackend->SetRasterizerMode(rasterizerMode); }
-void Renderer::SetDepthMode(DepthMode depthMode) { m_renderBackend->SetDepthMode(depthMode); }
-void Renderer::SetStatesIfChanged() { m_renderBackend->SetStatesIfChanged(); }
-
-void Renderer::DrawVertexArray(int numVertexes, Vertex const* vertexes)
-{
-	m_renderBackend->DrawVertexArray(numVertexes, vertexes);
-}
-void Renderer::DrawVertexArray(std::vector<Vertex> const& verts) { m_renderBackend->DrawVertexArray(verts); }
-void Renderer::DrawVertexArray(std::vector<Vertex> const& verts, std::vector<unsigned int> const& vertIndexs)
-{
-	m_renderBackend->DrawVertexArray(verts, vertIndexs);
-}
-void Renderer::DrawVertexBuffer(VertexBuffer* vertexBuffer) { m_renderBackend->DrawVertexBuffer(vertexBuffer); }
-void Renderer::DrawIndexedVertexBuffer(VertexBuffer* vertexBuffer, IndexBuffer* indexBuffer)
-{
-	m_renderBackend->DrawIndexedVertexBuffer(vertexBuffer, indexBuffer);
-}
-
-void Renderer::BindTexture(Texture* textureOrNull) { m_renderBackend->BindTexture(textureOrNull); }
-void Renderer::BindTexture(Texture* textureOrNull, unsigned int slot)
-{
-	m_renderBackend->BindTexture(textureOrNull, slot);
-}
-void Renderer::BindSampler(SamplerMode samplerMode, unsigned int slot)
-{
-	m_renderBackend->BindSampler(samplerMode, slot);
-}
-void Renderer::BindShader(Shader* shader) { m_renderBackend->BindShader(shader); }
-void Renderer::BindModelConstants(Matrix4x4 const& modelToWorldTransform, Rgba8 const& modelColor)
-{
-	m_renderBackend->BindModelConstants(modelToWorldTransform, modelColor);
-}
-void Renderer::BindLightConstants(LightConstants const& lightConstants)
-{
-	m_renderBackend->BindLightConstants(lightConstants);
-}
-void Renderer::BindLightConstants(
-	Vec3 const& sunDirection, float sunIntensity, Rgba8 const& ambientColor, float ambientIntensity
-)
-{
-	m_renderBackend->BindLightConstants(sunDirection, sunIntensity, ambientColor, ambientIntensity);
-}
-void Renderer::BindPostProcessConstants(Vec2 const& screenDimensions, float cameraNear, float cameraFar)
-{
-	m_renderBackend->BindPostProcessConstants(screenDimensions, cameraNear, cameraFar);
-}
-void Renderer::BindFrameConstants(float time, float deltaSeconds)
-{
-	m_renderBackend->BindFrameConstants(time, deltaSeconds);
+	for (size_t requestIndex = 0; requestIndex < existingUIRequestCount; ++requestIndex)
+	{
+		ExecuteRenderRequest(uiRequests[requestIndex]);
+	}
 }
 
 Shader*  Renderer::CreateOrGetShader(char const* shaderName) { return m_renderBackend->CreateOrGetShader(shaderName); }

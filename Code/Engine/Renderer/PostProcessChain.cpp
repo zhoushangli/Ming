@@ -51,7 +51,7 @@ Texture* PostProcessChain::Render(D3D11RenderBackend& renderer, PostProcessConte
 {
 	IntVec2 const fullResolution = g_engine->m_window->GetClientDimensions();
 
-	renderer.BeginCamera(*context.m_camera);
+	renderer.BindCamera(*context.m_camera);
 	renderer.SetBlendMode(BlendMode::OPAQUE);
 	renderer.SetRasterizerMode(RasterizerMode::SOLID_CULL_NONE);
 	renderer.SetDepthMode(DepthMode::READ_ONLY_ALWAYS);
@@ -93,27 +93,20 @@ Texture* PostProcessChain::Render(D3D11RenderBackend& renderer, PostProcessConte
 					continue;
 				}
 
-				GUARANTEE_OR_DIE(
-					customInput.m_slot >= PostProcessTextureSlot::CustomInputStart,
+				GUARANTEE_OR_DIE(customInput.m_slot >= PostProcessTextureSlot::CustomInputStart,
 					Stringf(
 						"PostProcessPass '%s' custom input '%s' uses reserved texture slot %d; custom inputs must use "
 						"slot %d or higher",
 						pass->m_name.c_str(),
 						customInput.m_name.c_str(),
 						customInput.m_slot,
-						PostProcessTextureSlot::CustomInputStart
-					)
-				);
-				GUARANTEE_OR_DIE(
-					customInput.m_slot < PostProcessTextureSlot::MaxSamplerSlots,
-					Stringf(
-						"PostProcessPass '%s' custom input '%s' uses texture slot %d, but max supported slot is %d",
+						PostProcessTextureSlot::CustomInputStart));
+				GUARANTEE_OR_DIE(customInput.m_slot < PostProcessTextureSlot::MaxSamplerSlots,
+					Stringf("PostProcessPass '%s' custom input '%s' uses texture slot %d, but max supported slot is %d",
 						pass->m_name.c_str(),
 						customInput.m_name.c_str(),
 						customInput.m_slot,
-						PostProcessTextureSlot::MaxSamplerSlots - 1
-					)
-				);
+						PostProcessTextureSlot::MaxSamplerSlots - 1));
 
 				Texture* customTexture = renderer.GetTextureFromFileName(customInput.m_name.c_str());
 				if (customTexture != nullptr)
@@ -135,11 +128,6 @@ Texture* PostProcessChain::Render(D3D11RenderBackend& renderer, PostProcessConte
 			outputTexture      = (mainChainColorTexture == ping) ? pong : ping;
 		}
 
-		renderer.BindPostProcessConstants(
-			(Vec2)context.m_outputResolution,
-			context.m_camera->GetNearZ(),
-			context.m_camera->GetFarZ()
-		);
 		renderer.BindRenderTarget(outputTexture);
 		renderer.BindPostProcessInputs(mainChainColorTexture, sceneDepth, sceneNormal);
 		renderer.DrawFullscreenTriangle(pass->m_postProcessShader, pass->m_wideName.c_str());

@@ -2,6 +2,7 @@
 
 #include "Engine/Math/AABB2.hpp"
 #include "Engine/Math/IntVec2.hpp"
+#include "Engine/Core/Rgba8.hpp"
 
 class Camera;
 
@@ -15,4 +16,5 @@ public:
 	// output rect indicates the portion of the render target to render to
 	IntVec2 m_outputResolution = IntVec2::Zero;
 	AABB2   m_outputRect       = AABB2::Unit;
+	Rgba8   m_clearColor       = Rgba8(47, 54, 65, 255);
 };
