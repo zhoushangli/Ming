@@ -79,7 +79,7 @@ public:
 
 	// Render Viewport is the main entry point for rendering a frame
 	// It will execute all render requests that have been submitted, and then clear the list of render requests.
-	void RenderViewport(Viewport const& viewport);
+	void RenderViewport(ViewportInfo const& viewport);
 	void SubmitRenderRequest(RenderRequest const& request);
 	void ClearRenderRequests();
 
@@ -106,39 +106,40 @@ public:
 	void CopyCPUToGPU(const void* data, unsigned int size, ConstantBuffer* constantBuffer);
 	void CopyCPUToGPU(const void* data, unsigned int size, IndexBuffer* indexBuffer);
 
-	void BeginEvent(std::string const& eventName);
-	void EndEvent();
+	Texture* GetTextureFromFileName(char const* fileName);
 
-	ID3D11Device*        GetD3DDevice() const;
-	ID3D11DeviceContext* GetD3DDeviceContext() const;
-	void                 SetViewport(IntVec2 dimensions, IntVec2 topLeft = IntVec2::Zero);
-	void                 ResizeBackBuffer(IntVec2 newDimensions);
-	Texture*             GetTextureFromFileName(char const* fileName);
+	// This function is specifically for initializing the ImGui D3D11 backend in ImGuiSystem
+	void     InitImGuiD3D11Backend();
+	Texture* GetViewportOutputTexture() const;
+	void     BindBackBuffer();
 
 private:
 	void ExecuteRenderRequest(RenderRequest const& request);
-	void EnsureViewport(Viewport const& viewport);
-	void ResizeSceneTargets(IntVec2 dimensions);
+	void EnsureViewport(ViewportInfo const& viewport);
+	void Resize(IntVec2 dimensions);
 	void ClearSceneTargets(Rgba8 const& clearColor);
-	void BindSceneTargets(bool bindNormal);
 	void CopyTextureToBackBuffer(Texture* colorTexture);
 
-	void PrepareConstants(Viewport const& viewport);
-	void RenderOpaque(Viewport const& viewport);
-	void RenderSkybox(Viewport const& viewport);
-	void RenderPostProcess(Viewport const& viewport);
-	void RenderUI(Viewport const& viewport);
+	void PrepareConstants(ViewportInfo const& viewport);
+	void RenderOpaque(ViewportInfo const& viewport);
+	void RenderSkybox(ViewportInfo const& viewport);
+	void RenderPostProcess(ViewportInfo const& viewport);
+	void RenderUI(ViewportInfo const& viewport);
 
 private:
 	RendererConfig      m_config;
-	D3D11RenderBackend* m_renderBackend         = nullptr;
-	PostProcessChain*   m_postProcessChain      = nullptr;
-	Shader*             m_postProcessCopyShader = nullptr;
+	D3D11RenderBackend* m_renderBackend    = nullptr;
+	PostProcessChain*   m_postProcessChain = nullptr;
 
+	Texture* m_viewportOutputTexture = nullptr;
 	Texture* m_sceneColorTexture     = nullptr;
 	Texture* m_sceneDepthTexture     = nullptr;
 	Texture* m_sceneNormalTexture    = nullptr;
-	IntVec2  m_sceneTargetDimensions = IntVec2::Zero;
+	Texture* m_pingTexture           = nullptr;
+	Texture* m_pongTexture           = nullptr;
+
+	IntVec2 m_sceneTargetDimensions = IntVec2::Zero;
+	Shader* m_postProcessCopyShader = nullptr;
 
 	std::array<std::vector<RenderRequest>, static_cast<size_t>(RenderRequestPass::Count)> m_renderRequests;
 

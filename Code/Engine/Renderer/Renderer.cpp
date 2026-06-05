@@ -3,7 +3,9 @@
 #include "Engine/Renderer/Camera.hpp"
 #include "Engine/Renderer/DebugRenderer.hpp"
 #include "Engine/Renderer/PostProcessChain.hpp"
+
 #include "Renderer.hpp"
+#include "ThirdParty/imgui/backends/imgui_impl_dx11.h"
 
 const LightHandle LightHandle::Invalid = LightHandle{ static_cast<size_t>(-1) };
 
@@ -21,7 +23,7 @@ void Renderer::Startup()
 	m_renderBackend = new D3D11RenderBackend(m_config);
 	m_renderBackend->Startup();
 	m_postProcessCopyShader = m_renderBackend->CreateOrGetShader("Data/Shaders/PostProcessCopy");
-	ResizeSceneTargets(g_engine->m_window->GetClientDimensions());
+	Resize(g_engine->m_window->GetClientDimensions());
 	m_postProcessChain = new PostProcessChain();
 }
 
@@ -110,7 +112,7 @@ void Renderer::UpdateLight(LightHandle handle, LightInfo const& info)
 	}
 }
 
-void Renderer::RenderViewport(Viewport const& viewport)
+void Renderer::RenderViewport(ViewportInfo const& viewport)
 {
 	EnsureViewport(viewport);
 	m_renderBackend->ClearScreen(viewport.m_clearColor);
@@ -125,6 +127,8 @@ void Renderer::RenderViewport(Viewport const& viewport)
 
 	m_renderBackend->BindCamera(*viewport.m_uiCamera);
 	RenderUI(viewport);
+
+	CopyTextureToBackBuffer(m_viewportOutputTexture);
 
 	ClearRenderRequests();
 }
@@ -156,36 +160,58 @@ void Renderer::ExecuteRenderRequest(RenderRequest const& request)
 	}
 }
 
-void Renderer::EnsureViewport(Viewport const& viewport)
+void Renderer::EnsureViewport(ViewportInfo const& viewport)
 {
-	ResizeSceneTargets(viewport.m_outputResolution);
-	m_postProcessChain->Resize(*m_renderBackend, viewport.m_outputResolution);
+	if (viewport.m_outputResolution != m_sceneTargetDimensions)
+	{
+		Resize(viewport.m_outputResolution);
+		m_renderBackend->ResizeBackBuffer(viewport.m_outputResolution);
+		m_sceneTargetDimensions = viewport.m_outputResolution;
+	}
 
 	IntVec2 topLeft       = (IntVec2)viewport.m_outputRect.m_mins;
 	IntVec2 rectDimension = (IntVec2)viewport.m_outputRect.GetDimensions();
 	m_renderBackend->SetViewport(rectDimension, topLeft);
 }
 
-void Renderer::ResizeSceneTargets(IntVec2 dimensions)
+void Renderer::Resize(IntVec2 dimensions)
 {
 	if (dimensions.x <= 0 || dimensions.y <= 0)
 	{
 		return;
 	}
 
-	if (dimensions == m_sceneTargetDimensions && m_sceneColorTexture != nullptr && m_sceneDepthTexture != nullptr
-		&& m_sceneNormalTexture != nullptr)
+	if (m_viewportOutputTexture)
 	{
-		return;
+		m_renderBackend->DestroyTexture(m_viewportOutputTexture);
+	}
+	if (m_sceneColorTexture)
+	{
+		m_renderBackend->DestroyTexture(m_sceneColorTexture);
+	}
+	if (m_sceneDepthTexture)
+	{
+		m_renderBackend->DestroyTexture(m_sceneDepthTexture);
+	}
+	if (m_sceneNormalTexture)
+	{
+		m_renderBackend->DestroyTexture(m_sceneNormalTexture);
+	}
+	if (m_pingTexture)
+	{
+		m_renderBackend->DestroyTexture(m_pingTexture);
+	}
+	if (m_pongTexture)
+	{
+		m_renderBackend->DestroyTexture(m_pongTexture);
 	}
 
-	// TODO: Should complete destroy logic
-	// DestroySceneTargets();
-
+	m_viewportOutputTexture = m_renderBackend->CreateRenderTargetTexture("ViewportOutput", dimensions);
 	m_sceneColorTexture     = m_renderBackend->CreateRenderTargetTexture("SceneColor", dimensions);
 	m_sceneDepthTexture     = m_renderBackend->CreateDepthStencilTexture("SceneDepth", dimensions);
 	m_sceneNormalTexture    = m_renderBackend->CreateRenderTargetTexture("SceneNormal", dimensions);
-	m_sceneTargetDimensions = dimensions;
+	m_pingTexture           = m_renderBackend->CreateRenderTargetTexture("Ping", dimensions);
+	m_pongTexture           = m_renderBackend->CreateRenderTargetTexture("Pong", dimensions);
 
 	m_renderBackend->ClearRenderTarget(m_sceneNormalTexture, Rgba8(128, 128, 128, 255));
 	m_renderBackend->ClearDepthStencil(m_sceneDepthTexture);
@@ -193,15 +219,10 @@ void Renderer::ResizeSceneTargets(IntVec2 dimensions)
 
 void Renderer::ClearSceneTargets(Rgba8 const& clearColor)
 {
+	m_renderBackend->ClearRenderTarget(m_viewportOutputTexture, clearColor);
 	m_renderBackend->ClearRenderTarget(m_sceneColorTexture, clearColor);
 	m_renderBackend->ClearRenderTarget(m_sceneNormalTexture, Rgba8(128, 128, 128, 255));
 	m_renderBackend->ClearDepthStencil(m_sceneDepthTexture);
-}
-
-void Renderer::BindSceneTargets(bool bindNormal)
-{
-	Texture* normalTarget = bindNormal ? m_sceneNormalTexture : nullptr;
-	m_renderBackend->BindRenderTargets(m_sceneColorTexture, m_sceneDepthTexture, normalTarget);
 }
 
 void Renderer::CopyTextureToBackBuffer(Texture* colorTexture)
@@ -217,7 +238,7 @@ void Renderer::CopyTextureToBackBuffer(Texture* colorTexture)
 	m_renderBackend->UnbindAllShaderResourceViews();
 }
 
-void Renderer::PrepareConstants(Viewport const& viewport)
+void Renderer::PrepareConstants(ViewportInfo const& viewport)
 {
 	// Prepare light constants
 	LightConstants lightConstants  = LightConstants();
@@ -265,19 +286,19 @@ void Renderer::PrepareConstants(Viewport const& viewport)
 	// this should be passed in from the game or engine layer
 	FrameConstants frameConstants;
 	Clock&         systemClock    = Clock::GetSystemClock();
-	frameConstants.m_time         = systemClock.GetTotalSeconds();
-	frameConstants.m_deltaSeconds = systemClock.GetDeltaSeconds();
+	frameConstants.m_time         = (float)systemClock.GetTotalSeconds();
+	frameConstants.m_deltaSeconds = (float)systemClock.GetDeltaSeconds();
 	m_renderBackend->UpdateAndBindConstantBuffer(BuiltinConstantBufferType::Frame, frameConstants);
 }
 
-void Renderer::RenderOpaque(Viewport const& viewport)
+void Renderer::RenderOpaque(ViewportInfo const& viewport)
 {
 	if (viewport.m_worldCamera == nullptr)
 	{
 		return;
 	}
 
-	BindSceneTargets(true);
+	m_renderBackend->BindRenderTargets(m_sceneColorTexture, m_sceneDepthTexture, m_sceneNormalTexture);
 
 	m_renderBackend->SetBlendMode(BlendMode::ALPHA);
 	m_renderBackend->SetRasterizerMode(RasterizerMode::SOLID_CULL_BACK);
@@ -291,14 +312,14 @@ void Renderer::RenderOpaque(Viewport const& viewport)
 	}
 }
 
-void Renderer::RenderSkybox(Viewport const& viewport)
+void Renderer::RenderSkybox(ViewportInfo const& viewport)
 {
 	if (viewport.m_worldCamera == nullptr)
 	{
 		return;
 	}
 
-	BindSceneTargets(false);
+	m_renderBackend->BindRenderTargets(m_sceneColorTexture, m_sceneDepthTexture, nullptr);
 
 	m_renderBackend->SetBlendMode(BlendMode::ALPHA);
 	m_renderBackend->SetRasterizerMode(RasterizerMode::SOLID_CULL_BACK);
@@ -310,7 +331,7 @@ void Renderer::RenderSkybox(Viewport const& viewport)
 	}
 }
 
-void Renderer::RenderPostProcess(Viewport const& viewport)
+void Renderer::RenderPostProcess(ViewportInfo const& viewport)
 {
 	if (viewport.m_worldCamera == nullptr)
 	{
@@ -322,20 +343,26 @@ void Renderer::RenderPostProcess(Viewport const& viewport)
 	context.m_sceneColor       = m_sceneColorTexture;
 	context.m_sceneDepth       = m_sceneDepthTexture;
 	context.m_sceneNormal      = m_sceneNormalTexture;
+	context.m_ping             = m_pingTexture;
+	context.m_pong             = m_pongTexture;
 	context.m_outputResolution = viewport.m_outputResolution;
 
 	Texture* finalColor = m_postProcessChain->Render(*m_renderBackend, context);
-	CopyTextureToBackBuffer(finalColor);
+
+	m_renderBackend->BindRenderTarget(m_viewportOutputTexture);
+	m_renderBackend->BindPostProcessInputs(finalColor, m_sceneDepthTexture, m_sceneNormalTexture);
+	m_renderBackend->DrawFullscreenTriangle(m_postProcessCopyShader, L"CopyPostProcessToOutput");
+	m_renderBackend->UnbindAllShaderResourceViews();
 }
 
-void Renderer::RenderUI(Viewport const& viewport)
+void Renderer::RenderUI(ViewportInfo const& viewport)
 {
 	if (viewport.m_uiCamera == nullptr)
 	{
 		return;
 	}
 
-	m_renderBackend->BindBackBuffer();
+	m_renderBackend->BindRenderTarget(m_viewportOutputTexture);
 	m_renderBackend->SetBlendMode(BlendMode::ALPHA);
 	m_renderBackend->SetRasterizerMode(RasterizerMode::SOLID_CULL_NONE);
 	m_renderBackend->SetDepthMode(DepthMode::READ_ONLY_ALWAYS);
@@ -409,15 +436,16 @@ void Renderer::CopyCPUToGPU(const void* data, unsigned int size, IndexBuffer* in
 {
 	m_renderBackend->CopyCPUToGPU(data, size, indexBuffer);
 }
-
-void                 Renderer::BeginEvent(std::string const& eventName) { m_renderBackend->BeginEvent(eventName); }
-void                 Renderer::EndEvent() { m_renderBackend->EndEvent(); }
-ID3D11Device*        Renderer::GetD3DDevice() const { return m_renderBackend->GetD3DDevice(); }
-ID3D11DeviceContext* Renderer::GetD3DDeviceContext() const { return m_renderBackend->GetD3DDeviceContext(); }
-
-void Renderer::SetViewport(IntVec2 dimensions, IntVec2 topLeft) { m_renderBackend->SetViewport(dimensions, topLeft); }
-void Renderer::ResizeBackBuffer(IntVec2 newDimensions) { m_renderBackend->ResizeBackBuffer(newDimensions); }
 Texture* Renderer::GetTextureFromFileName(char const* fileName)
 {
 	return m_renderBackend->GetTextureFromFileName(fileName);
 }
+
+void Renderer::InitImGuiD3D11Backend()
+{
+	ImGui_ImplDX11_Init(m_renderBackend->GetD3DDevice(), m_renderBackend->GetD3DDeviceContext());
+}
+
+Texture* Renderer::GetViewportOutputTexture() const { return m_viewportOutputTexture; }
+
+void Renderer::BindBackBuffer() { m_renderBackend->BindBackBuffer(); }

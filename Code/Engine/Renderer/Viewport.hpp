@@ -1,12 +1,12 @@
 #pragma once
 
+#include "Engine/Core/Rgba8.hpp"
 #include "Engine/Math/AABB2.hpp"
 #include "Engine/Math/IntVec2.hpp"
-#include "Engine/Core/Rgba8.hpp"
 
 class Camera;
 
-class Viewport
+class ViewportInfo
 {
 public:
 	Camera const* m_worldCamera = nullptr;

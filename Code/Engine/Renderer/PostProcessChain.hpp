@@ -53,11 +53,13 @@ public:
 
 struct PostProcessContext
 {
-	Camera const*  m_camera;
-	Texture* m_sceneColor;
-	Texture* m_sceneDepth;
-	Texture* m_sceneNormal;
-	IntVec2  m_outputResolution;
+	Camera const* m_camera;
+	Texture*      m_sceneColor;
+	Texture*      m_sceneDepth;
+	Texture*      m_sceneNormal;
+	Texture*      m_ping;
+	Texture*      m_pong;
+	IntVec2       m_outputResolution;
 };
 
 class PostProcessChain
@@ -66,13 +68,9 @@ public:
 	PostProcessChain();
 	~PostProcessChain();
 
-	void AddPass(PostProcessPass const& pass);
-	void Resize(D3D11RenderBackend& renderer, IntVec2 dimensions);
+	void     AddPass(PostProcessPass const& pass);
 	Texture* Render(D3D11RenderBackend& renderer, PostProcessContext const& context);
 
 private:
 	std::vector<PostProcessPass> m_passes;
-	Shader*                      m_postProcessCopyShader = nullptr;
-	Texture*                     m_ping                  = nullptr;
-	Texture*                     m_pong                  = nullptr;
 };

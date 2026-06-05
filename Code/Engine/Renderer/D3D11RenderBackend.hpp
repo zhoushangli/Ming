@@ -195,7 +195,7 @@ public:
 	void EndFrame();
 	void CreateRenderingContext();
 
-	// We still need bind camera 
+	// We still need bind camera
 	// because we need to bind both world camera and UI camera in one render
 	void BindCamera(Camera const& camera);
 
@@ -224,11 +224,13 @@ public:
 	// GPU resource creation and cache access
 	Shader* CreateOrGetShader(char const* shaderName);
 
-	Texture*    CreateOrGetTexture(char const* fileDataPath);
-	Texture*    CreateTextureFromImage(const Image& image);
-	Texture*    CreateTextureFromData(char const* name, IntVec2 dimensions, int bytesPerTexel, uint8_t* texelData);
-	Texture*    CreateRenderTargetTexture(char const* name, IntVec2 dimensions);
-	Texture*    CreateDepthStencilTexture(char const* name, IntVec2 dimensions);
+	Texture* CreateOrGetTexture(char const* fileDataPath);
+	Texture* CreateTextureFromImage(const Image& image);
+	Texture* CreateTextureFromData(char const* name, IntVec2 dimensions, int bytesPerTexel, uint8_t* texelData);
+	Texture* CreateRenderTargetTexture(char const* name, IntVec2 dimensions);
+	Texture* CreateDepthStencilTexture(char const* name, IntVec2 dimensions);
+	void     DestroyTexture(Texture* texture);
+
 	BitmapFont* CreateOrGetBitmapFont(char const* fontFilePathNameWithNoExtension);
 
 	VertexBuffer*   CreateVertexBuffer(const unsigned int size, unsigned int stride);
@@ -321,7 +323,6 @@ private:
 	ID3D11Device*              m_d3dDevice           = nullptr;
 	ID3D11DeviceContext*       m_d3dDeviceContext    = nullptr;
 	IDXGISwapChain*            m_d3dSwapChain        = nullptr;
-	ID3D11Texture2D*           m_d3dBackBuffer       = nullptr;
 	ID3D11RenderTargetView*    m_d3dRenderTargetView = nullptr;
 	ID3DUserDefinedAnnotation* m_d3dAnnotation       = nullptr;
 	Texture*                   m_backBufferTexture   = nullptr;

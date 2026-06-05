@@ -38,8 +38,6 @@ public:
 	Vec2  GetOrthographicBottomLeft() const;
 	Vec2  GetOrthographicTopRight() const;
 	void  Translate2D(Vec2 const& translation);
-	void  SetViewportNormalized(AABB2 const& viewportNormalized);
-	AABB2 GetViewportNormalized() const;
 
 	Matrix4x4 GetOrthographicMatrix() const;
 	Matrix4x4 GetPerspectiveMatrix() const;
@@ -66,7 +64,6 @@ protected:
 	float m_perspectiveFOV;
 	float m_perspectiveNear;
 	float m_perspectiveFar;
-	AABB2 m_viewportNormalized = AABB2(Vec2(0.f, 0.f), Vec2(1.f, 1.f));
 
 	Matrix4x4 m_cameraToRenderTransform;
 };

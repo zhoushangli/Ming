@@ -37,15 +37,9 @@ void PostProcessChain::AddPass(PostProcessPass const& pass) {}
 PostProcessChain::PostProcessChain()
 {
 	IntVec2 const fullResolution = g_engine->m_window->GetClientDimensions();
-
-	m_postProcessCopyShader = g_engine->m_renderer->CreateOrGetShader("Data/Shaders/PostProcessCopy");
-	m_ping                  = g_engine->m_renderer->CreateRenderTargetTexture("PostProcessPing", fullResolution);
-	m_pong                  = g_engine->m_renderer->CreateRenderTargetTexture("PostProcessPong", fullResolution);
 }
 
 PostProcessChain::~PostProcessChain() {}
-
-void PostProcessChain::Resize(D3D11RenderBackend& renderer, IntVec2 dimensions) {}
 
 Texture* PostProcessChain::Render(D3D11RenderBackend& renderer, PostProcessContext const& context)
 {
@@ -60,8 +54,8 @@ Texture* PostProcessChain::Render(D3D11RenderBackend& renderer, PostProcessConte
 	Texture* sceneDepth  = context.m_sceneDepth;
 	Texture* sceneNormal = context.m_sceneNormal;
 
-	Texture* ping = m_ping;
-	Texture* pong = m_pong;
+	Texture* ping = context.m_ping;
+	Texture* pong = context.m_pong;
 
 	std::vector<PostProcessPass const*> enabledPasses;
 	enabledPasses.reserve(m_passes.size());

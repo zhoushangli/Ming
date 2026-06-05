@@ -24,6 +24,10 @@ public:
 	IntVec2            GetDimensions() const { return m_dimensions; }
 	std::string const& GetImageFilePath() const { return m_name; }
 
+	ID3D11ShaderResourceView* GetShaderResourceView() const { return m_shaderResourceView; }
+	ID3D11RenderTargetView*   GetRenderTargetView() const { return m_renderTargetView; }
+	ID3D11DepthStencilView*   GetDepthStencilView() const { return m_depthStencilView; }
+
 protected:
 	std::string m_name; // Can't be char const* -- store a copy, in case it was temporary
 	IntVec2     m_dimensions;

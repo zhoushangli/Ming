@@ -119,17 +119,19 @@ void           D3D11RenderBackend::Startup()
 
 #pragma region Startup: Get back buffer texture
 
-	hr = m_d3dSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)&m_d3dBackBuffer);
+	ID3D11Texture2D* backBuffer = nullptr;
+	hr = m_d3dSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)&backBuffer);
 	if (!SUCCEEDED(hr))
 	{
 		ERROR_AND_DIE("Could not get swap chain buffer.");
 	}
 
-	hr = m_d3dDevice->CreateRenderTargetView(m_d3dBackBuffer, NULL, &m_d3dRenderTargetView);
+	hr = m_d3dDevice->CreateRenderTargetView(backBuffer, NULL, &m_d3dRenderTargetView);
 	if (!SUCCEEDED(hr))
 	{
 		ERROR_AND_DIE("Could create render target view for swap chain buffer.");
 	}
+	backBuffer->Release();
 
 #pragma endregion
 
@@ -735,6 +737,17 @@ Texture* D3D11RenderBackend::CreateDepthStencilTexture(char const* name, IntVec2
 	return newTexture;
 }
 
+void D3D11RenderBackend::DestroyTexture(Texture* texture)
+{
+	if (texture)
+	{
+		std::string textureName       = texture->m_name;
+		m_texturesByName[textureName] = nullptr;
+
+		delete texture;
+	}
+}
+
 BitmapFont* D3D11RenderBackend::CreateOrGetBitmapFont(char const* fontFilePathNameWithNoExtension)
 {
 	std::string fontKey = std::string(fontFilePathNameWithNoExtension);
@@ -941,13 +954,7 @@ Shader* D3D11RenderBackend::CreateShader(char const* shaderName, char const* sha
 		{ "COLOR", 0, DXGI_FORMAT_R8G8B8A8_UNORM, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 		{ "TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "BITANGENT",
-			0,
-			DXGI_FORMAT_R32G32B32_FLOAT,
-			0,
-			D3D11_APPEND_ALIGNED_ELEMENT,
-			D3D11_INPUT_PER_VERTEX_DATA,
-			0 },
+		{ "BITANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 	};
 
@@ -1105,8 +1112,7 @@ void D3D11RenderBackend::ResizeBackBuffer(IntVec2 newDimensions)
 	}
 
 	// 1) Unbind backbuffer RTV
-	ID3D11RenderTargetView* nullRTV = nullptr;
-	m_d3dDeviceContext->OMSetRenderTargets(1, &nullRTV, nullptr);
+	UnbindAllShaderResourceViews();
 
 	if (m_d3dRenderTargetView != nullptr)
 	{
@@ -1119,7 +1125,8 @@ void D3D11RenderBackend::ResizeBackBuffer(IntVec2 newDimensions)
 	GUARANTEE_OR_DIE(SUCCEEDED(hr), "Could not resize swap chain buffers.");
 
 	ID3D11Texture2D* backBuffer = nullptr;
-	hr                          = m_d3dSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)&backBuffer);
+
+	hr = m_d3dSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)&backBuffer);
 
 	GUARANTEE_OR_DIE(SUCCEEDED(hr), "Could not get resized swap chain buffer.");
 
@@ -1208,8 +1215,10 @@ void D3D11RenderBackend::DrawFullscreenTriangle(Shader* shader, wchar_t const* e
 
 void D3D11RenderBackend::UnbindAllShaderResourceViews()
 {
+	ID3D11RenderTargetView*   nullRTV      = nullptr;
 	ID3D11ShaderResourceView* nullSrvs[16] = { nullptr };
-	m_d3dDeviceContext->OMSetRenderTargets(1, &m_d3dRenderTargetView, nullptr);
+	m_d3dDeviceContext->OMSetRenderTargets(0, nullptr, nullptr);
+	m_d3dDeviceContext->OMSetRenderTargets(1, &nullRTV, nullptr);
 	m_d3dDeviceContext->PSSetShaderResources(0, 16, nullSrvs);
 	m_d3dDeviceContext->VSSetShaderResources(0, 16, nullSrvs);
 }

@@ -88,31 +88,6 @@ void Camera::Translate2D(Vec2 const& translation)
 	m_orthographicTopRight += translation;
 }
 
-void Camera::SetViewportNormalized(AABB2 const& viewportNormalized)
-{
-	float minX = GetClamped(viewportNormalized.m_mins.x, 0.f, 1.f);
-	float minY = GetClamped(viewportNormalized.m_mins.y, 0.f, 1.f);
-	float maxX = GetClamped(viewportNormalized.m_maxs.x, 0.f, 1.f);
-	float maxY = GetClamped(viewportNormalized.m_maxs.y, 0.f, 1.f);
-
-	if (maxX < minX)
-	{
-		float const temp = maxX;
-		maxX             = minX;
-		minX             = temp;
-	}
-	if (maxY < minY)
-	{
-		float const temp = maxY;
-		maxY             = minY;
-		minY             = temp;
-	}
-
-	m_viewportNormalized = AABB2(Vec2(minX, minY), Vec2(maxX, maxY));
-}
-
-AABB2 Camera::GetViewportNormalized() const { return m_viewportNormalized; }
-
 Matrix4x4 Camera::GetOrthographicMatrix() const
 {
 	return Matrix4x4::MakeOrthoProjection(
