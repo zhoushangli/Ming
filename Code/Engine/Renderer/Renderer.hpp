@@ -1,69 +1,9 @@
 #pragma once
 
 #include "Engine/Renderer/D3D11RenderBackend.hpp"
-#include "Engine/Renderer/Viewport.hpp"
 
-#include <array>
-
-class PostProcessChain;
-
-enum class RenderRequestPass
-{
-	Opaque,
-	Skybox,
-	Transparent,
-	UI,
-	Count
-};
-
-struct RenderRequest
-{
-	RenderRequestPass m_pass = RenderRequestPass::Opaque;
-
-	Matrix4x4 m_modelToWorld = Matrix4x4::Identity;
-	Rgba8     m_tint         = Rgba8::White;
-
-	VertexBuffer* m_vertexBuffer = nullptr;
-	IndexBuffer*  m_indexBuffer  = nullptr;
-
-	Texture* m_diffuseTexture = nullptr;
-	Shader*  m_shader         = nullptr;
-
-	BlendMode      m_blendMode      = BlendMode::OPAQUE;
-	DepthMode      m_depthMode      = DepthMode::READ_WRITE_LESS_EQUAL;
-	RasterizerMode m_rasterizerMode = RasterizerMode::SOLID_CULL_BACK;
-	SamplerMode    m_samplerMode    = SamplerMode::POINT_CLAMP;
-};
-
-enum class LightType
-{
-	POINT,
-	DIRECTIONAL,
-};
-
-struct LightInfo
-{
-	bool m_isActive = false;
-
-	LightType m_type;
-
-	Rgba8 m_color;
-	Vec3  m_direction;
-	float m_intensity;
-	Vec3  m_position;
-	float m_range;
-};
-
-struct LightHandle
-{
-public:
-	bool IsValid() const { return m_index != Invalid.m_index; }
-
-public:
-	static const LightHandle Invalid;
-
-	size_t m_index;
-};
+class ViewportInfo;
+struct RenderRequest;
 
 class Renderer
 {
@@ -77,15 +17,15 @@ public:
 	void EndFrame();
 	void CreateRenderingContext();
 
-	// Render Viewport is the main entry point for rendering a frame
-	// It will execute all render requests that have been submitted, and then clear the list of render requests.
-	void RenderViewport(ViewportInfo const& viewport);
-	void SubmitRenderRequest(RenderRequest const& request);
-	void ClearRenderRequests();
-
-	LightHandle RegisterLight();
-	void        UnregisterLight(LightHandle handle);
-	void        UpdateLight(LightHandle handle, LightInfo const& info);
+	// Per-Viewport resource lifetime:
+	// 1) Create lazily before the first render.
+	// 2) Resize only this Viewport's targets.
+	// 3) Destroy before the owning Viewport or Renderer shuts down.
+	void CreateViewportResources(ViewportInfo& viewport);
+	void ResizeViewport(ViewportInfo& viewport, IntVec2 dimensions);
+	void DestroyViewportResources(ViewportInfo& viewport);
+	void RenderViewport(ViewportInfo& viewport);
+	void CopyViewportToBackBuffer(ViewportInfo const& viewport);
 
 	Shader* CreateOrGetShader(char const* shaderName);
 
@@ -110,38 +50,22 @@ public:
 
 	// This function is specifically for initializing the ImGui D3D11 backend in ImGuiSystem
 	void     InitImGuiD3D11Backend();
-	Texture* GetViewportOutputTexture() const;
 	void     BindBackBuffer();
 
 private:
 	void ExecuteRenderRequest(RenderRequest const& request);
-	void EnsureViewport(ViewportInfo const& viewport);
-	void Resize(IntVec2 dimensions);
-	void ClearSceneTargets(Rgba8 const& clearColor);
+	void EnsureViewport(ViewportInfo& viewport);
+	void ClearSceneTargets(ViewportInfo const& viewport);
 	void CopyTextureToBackBuffer(Texture* colorTexture);
 
 	void PrepareConstants(ViewportInfo const& viewport);
 	void RenderOpaque(ViewportInfo const& viewport);
 	void RenderSkybox(ViewportInfo const& viewport);
-	void RenderPostProcess(ViewportInfo const& viewport);
+	void RenderPostProcess(ViewportInfo& viewport);
 	void RenderUI(ViewportInfo const& viewport);
 
 private:
 	RendererConfig      m_config;
-	D3D11RenderBackend* m_renderBackend    = nullptr;
-	PostProcessChain*   m_postProcessChain = nullptr;
-
-	Texture* m_viewportOutputTexture = nullptr;
-	Texture* m_sceneColorTexture     = nullptr;
-	Texture* m_sceneDepthTexture     = nullptr;
-	Texture* m_sceneNormalTexture    = nullptr;
-	Texture* m_pingTexture           = nullptr;
-	Texture* m_pongTexture           = nullptr;
-
-	IntVec2 m_sceneTargetDimensions = IntVec2::Zero;
+	D3D11RenderBackend* m_renderBackend = nullptr;
 	Shader* m_postProcessCopyShader = nullptr;
-
-	std::array<std::vector<RenderRequest>, static_cast<size_t>(RenderRequestPass::Count)> m_renderRequests;
-
-	std::vector<LightInfo> m_lights;
 };

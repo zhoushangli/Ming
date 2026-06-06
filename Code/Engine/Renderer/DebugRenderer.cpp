@@ -9,6 +9,7 @@
 #include "Engine/Math/MathUtils.hpp"
 #include "Engine/Renderer/BitmapFont.hpp"
 #include "Engine/Renderer/Camera.hpp"
+#include "Engine/Renderer/RenderContext.hpp"
 #include "Engine/Renderer/Renderer.hpp"
 #include "Engine/Renderer/VertexBuffer.hpp"
 
@@ -332,23 +333,14 @@ RasterizerMode GetDebugRasterizerMode(DebugObject const& obj)
 
 void SubmitDebugRequest(Renderer* renderer, DebugObject const& obj, RenderRequestPass pass, Texture* texture)
 {
-	if (renderer == nullptr || obj.vertexBuffer == nullptr)
-	{
-		return;
-	}
-
-	RenderRequest request;
-	request.m_pass           = pass;
-	request.m_modelToWorld   = Matrix4x4::Identity;
-	request.m_tint           = Rgba8::White;
-	request.m_vertexBuffer   = obj.vertexBuffer;
-	request.m_diffuseTexture = texture;
-	request.m_shader         = nullptr;
-	request.m_blendMode      = BlendMode::ALPHA;
-	request.m_depthMode      = GetDebugDepthMode(obj);
-	request.m_rasterizerMode = GetDebugRasterizerMode(obj);
-	request.m_samplerMode    = SamplerMode::POINT_CLAMP;
-	renderer->SubmitRenderRequest(request);
+	// Temporary migration behavior:
+	// 1) DebugRenderer still updates object lifetime and GPU geometry.
+	// 2) Requests are intentionally not submitted to global Renderer state.
+	// 3) A later migration will register debug drawing with a target Viewport.
+	(void)renderer;
+	(void)obj;
+	(void)pass;
+	(void)texture;
 }
 
 void SubmitWorldObject(Renderer* renderer,

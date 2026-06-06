@@ -415,7 +415,7 @@
     <ClInclude Include="Renderer\SpriteAnimDefinition.hpp" />
     <ClInclude Include="Renderer\Texture.hpp" />
     <ClInclude Include="Renderer\VertexBuffer.hpp" />
-    <ClInclude Include="Renderer\Viewport.hpp" />
+    <ClInclude Include="Renderer\RenderContext.hpp" />
     <ClInclude Include="Window\Window.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -42,21 +42,12 @@ void UploadVertsToBuffer(std::vector<Vertex> const& verts, VertexBuffer*& vertex
 
 void SubmitUIVerts(VertexBuffer* vertexBuffer, Texture* texture)
 {
-	if (vertexBuffer == nullptr || g_engine == nullptr || g_engine->m_renderer == nullptr)
-	{
-		return;
-	}
-
-	RenderRequest request;
-	request.m_pass           = RenderRequestPass::UI;
-	request.m_vertexBuffer   = vertexBuffer;
-	request.m_diffuseTexture = texture;
-	request.m_shader         = nullptr;
-	request.m_blendMode      = BlendMode::ALPHA;
-	request.m_depthMode      = DepthMode::READ_ONLY_ALWAYS;
-	request.m_rasterizerMode = RasterizerMode::SOLID_CULL_NONE;
-	request.m_samplerMode    = SamplerMode::POINT_CLAMP;
-	g_engine->m_renderer->SubmitRenderRequest(request);
+	// Temporary migration behavior:
+	// 1) DevConsole still builds and uploads its geometry.
+	// 2) Global Renderer submission no longer exists.
+	// 3) A later UI migration will submit this through a Viewport.
+	(void)vertexBuffer;
+	(void)texture;
 }
 } // namespace
 

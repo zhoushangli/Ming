@@ -398,7 +398,7 @@
     <ClInclude Include="Renderer\VertexBuffer.hpp">
       <Filter>Renderer</Filter>
     </ClInclude>
-    <ClInclude Include="Renderer\Viewport.hpp">
+    <ClInclude Include="Renderer\RenderContext.hpp">
       <Filter>Renderer</Filter>
     </ClInclude>
     <ClInclude Include="Core\FileUtils.hpp">
