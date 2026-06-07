@@ -1,4 +1,4 @@
-#include "MingEngine/Engine/Application/Application.hpp"
+#include "MingEngine/Engine/Application/App.hpp"
 
 #include "MingEngine/Engine/Core/Clock.hpp"
 #include "MingEngine/Engine/Console/DevConsole.hpp"

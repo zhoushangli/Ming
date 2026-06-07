@@ -1,6 +1,6 @@
 #include "MingEngine/Editor/EditorApplication.hpp"
 
-#include "MingEngine/Engine/Application/Application.hpp"
+#include "MingEngine/Engine/Application/App.hpp"
 
 #include "MingEngine/Editor/EditorController.hpp"
 #include "MingEngine/Editor/EditorNode.hpp"

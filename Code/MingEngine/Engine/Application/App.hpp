@@ -32,7 +32,7 @@ namespace MingEngine
 {
 int Run(IProjectModule& project);
 int Run(IProjectModule& project, MingRunConfig const& config);
-}
+} // namespace MingEngine
 
 class App
 {
