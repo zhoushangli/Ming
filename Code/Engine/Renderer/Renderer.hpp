@@ -21,7 +21,6 @@ public:
 	// 1) Create lazily before the first render.
 	// 2) Resize only this Viewport's targets.
 	// 3) Destroy before the owning Viewport or Renderer shuts down.
-	void CreateViewportResources(ViewportInfo& viewport);
 	void ResizeViewport(ViewportInfo& viewport, IntVec2 dimensions);
 	void DestroyViewportResources(ViewportInfo& viewport);
 	void RenderViewport(ViewportInfo& viewport);

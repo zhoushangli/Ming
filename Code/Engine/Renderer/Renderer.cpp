@@ -104,11 +104,6 @@ void Renderer::ExecuteRenderRequest(RenderRequest const& request)
 	}
 }
 
-void Renderer::CreateViewportResources(ViewportInfo& viewport)
-{
-	ResizeViewport(viewport, viewport.m_outputResolution);
-}
-
 void Renderer::ResizeViewport(ViewportInfo& viewport, IntVec2 dimensions)
 {
 	if (dimensions.x <= 0 || dimensions.y <= 0)
