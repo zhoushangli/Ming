@@ -13,7 +13,7 @@
 
 namespace
 {
-static void GLFWKeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
+static void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
 	(void)window;
 	(void)scancode;
@@ -37,7 +37,7 @@ static void GLFWKeyCallback(GLFWwindow* window, int key, int scancode, int actio
 	}
 }
 
-static void GLFWMouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
+static void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
 {
 	(void)window;
 	(void)mods;
@@ -69,7 +69,7 @@ static void GLFWMouseButtonCallback(GLFWwindow* window, int button, int action, 
 	}
 }
 
-static void GLFWCharCallback(GLFWwindow* window, unsigned int codepoint)
+static void CharCallback(GLFWwindow* window, unsigned int codepoint)
 {
 	(void)window;
 
@@ -83,7 +83,7 @@ static void GLFWCharCallback(GLFWwindow* window, unsigned int codepoint)
 	FireEvent("CharInput", args);
 }
 
-static void GLFWFramebufferSizeCallback(GLFWwindow* window, int width, int height)
+static void FramebufferSizeCallback(GLFWwindow* window, int width, int height)
 {
 	(void)window;
 
@@ -139,10 +139,11 @@ void Window::CreateGLFWWindow()
 		ERROR_AND_DIE("Failed to create GLFW window");
 	}
 
-	glfwSetKeyCallback(m_glfwWindow, GLFWKeyCallback);
-	glfwSetMouseButtonCallback(m_glfwWindow, GLFWMouseButtonCallback);
-	glfwSetCharCallback(m_glfwWindow, GLFWCharCallback);
-	glfwSetFramebufferSizeCallback(m_glfwWindow, GLFWFramebufferSizeCallback);
+	glfwSetKeyCallback(m_glfwWindow, KeyCallback);
+	glfwSetMouseButtonCallback(m_glfwWindow, MouseButtonCallback);
+	glfwSetCharCallback(m_glfwWindow, CharCallback);
+	glfwSetFramebufferSizeCallback(m_glfwWindow, FramebufferSizeCallback);
+
 
 	glfwMaximizeWindow(m_glfwWindow);
 	glfwShowWindow(m_glfwWindow);

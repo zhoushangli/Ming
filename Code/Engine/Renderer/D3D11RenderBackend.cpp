@@ -6,7 +6,7 @@
 #include "Engine/Core/StringUtils.hpp"
 #include "Engine/Core/Vertex.hpp"
 #include "Engine/Core/VertexUtils.hpp"
-#include "Engine/Renderer/Camera.hpp"
+#include "Engine/Renderer/CameraContext.hpp"
 #include "Engine/Renderer/ConstantBuffer.hpp"
 #include "Engine/Renderer/IndexBuffer.hpp"
 #include "Engine/Renderer/Texture.hpp"
@@ -334,11 +334,6 @@ void           D3D11RenderBackend::Startup()
 
 #pragma endregion
 
-#pragma region Startup: Register events
-
-	RegisterEvent("WindowResized", D3D11RenderBackend::Event_WindowResized);
-
-#pragma endregion
 }
 
 void D3D11RenderBackend::Shutdown()
@@ -457,7 +452,7 @@ void D3D11RenderBackend::CreateRenderingContext() {}
 
 #pragma region Public: Camera and pipeline state
 
-void D3D11RenderBackend::BindCamera(Camera const& camera)
+void D3D11RenderBackend::BindCamera(CameraContext const& camera)
 {
 	CameraConstants cameraData         = CameraConstants();
 	cameraData.WorldToCameraTransform  = camera.GetWorldToCameraTransform();
@@ -1140,10 +1135,6 @@ void D3D11RenderBackend::ResizeBackBuffer(IntVec2 newDimensions)
 ID3D11Device* D3D11RenderBackend::GetD3DDevice() const { return m_d3dDevice; }
 
 ID3D11DeviceContext* D3D11RenderBackend::GetD3DDeviceContext() const { return m_d3dDeviceContext; }
-
-bool D3D11RenderBackend::Event_WindowResized(EventArgs& args) { return true; }
-
-void D3D11RenderBackend::ResizeViewport(IntVec2 newDimensions) {}
 
 void D3D11RenderBackend::ClearRenderTarget(Texture* renderTarget, Rgba8 const& clearColor)
 {

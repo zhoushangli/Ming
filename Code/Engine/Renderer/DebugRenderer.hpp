@@ -30,8 +30,8 @@ void DebugRenderClear();
 
 // Output
 void DebugRenderBeginFrame();
-void DebugRenderWorld(const Camera& camera);
-void DebugRenderScreen(const Camera& camera);
+void DebugRenderWorld(const CameraContext& camera);
+void DebugRenderScreen(const CameraContext& camera);
 void DebugRenderEndFrame();
 
 // Geometry

@@ -13,7 +13,7 @@
 #include <map>
 #include <vector>
 
-class Camera;
+class CameraContext;
 class Texture;
 
 class VertexBuffer;
@@ -197,7 +197,7 @@ public:
 
 	// We still need bind camera
 	// because we need to bind both world camera and UI camera in one render
-	void BindCamera(Camera const& camera);
+	void BindCamera(CameraContext const& camera);
 
 	void ClearScreen(Rgba8 const& clearColor);
 	void SetBlendMode(BlendMode blendMode);
@@ -295,9 +295,6 @@ private:
 	void BindVertexBuffer(VertexBuffer* vertexBuffer);
 	void BindIndexBuffer(IndexBuffer* indexBuffer);
 
-	static bool Event_WindowResized(EventArgs& args);
-	void        ResizeViewport(IntVec2 newDimensions);
-
 	Texture* CreateTextureInternal(char const* name,
 		IntVec2                                dimensions,
 		D3D11_TEXTURE2D_DESC const*            textureDesc,
@@ -313,7 +310,7 @@ private:
 	Texture* m_defaultWhiteTexture = nullptr;
 	Texture* m_defaultBlackTexture = nullptr;
 
-	Camera* m_currentCamera = nullptr;
+	CameraContext* m_currentCamera = nullptr;
 	Shader* m_currentShader = nullptr;
 
 	VertexBuffer*   m_currentVertexBuffer                                           = nullptr;

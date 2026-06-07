@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Engine/Math/IntVec2.hpp"
-#include "Engine/Renderer/Camera.hpp"
+#include "Engine/Renderer/CameraContext.hpp"
 
 #include <string>
 #include <vector>
@@ -53,7 +53,7 @@ public:
 
 struct PostProcessContext
 {
-	Camera const* m_camera;
+	CameraContext const* m_camera;
 	Texture*      m_sceneColor;
 	Texture*      m_sceneDepth;
 	Texture*      m_sceneNormal;

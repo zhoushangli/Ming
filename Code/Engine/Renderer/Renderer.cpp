@@ -1,6 +1,6 @@
 #include "Engine/Renderer/Renderer.hpp"
 
-#include "Engine/Renderer/Camera.hpp"
+#include "Engine/Renderer/CameraContext.hpp"
 #include "Engine/Renderer/DebugRenderer.hpp"
 #include "Engine/Renderer/PostProcessChain.hpp"
 #include "Engine/Renderer/RenderContext.hpp"
@@ -59,13 +59,10 @@ void Renderer::RenderViewport(ViewportInfo& viewport)
 	// 1) Ensure this Viewport owns correctly sized targets.
 	// 2) Render world passes and post process into the output texture.
 	// 3) Render UI on top without presenting to the back buffer here.
-	EnsureViewport(viewport);
 	if (viewport.m_worldCamera == nullptr || viewport.m_viewportOutputTexture == nullptr)
 	{
 		return;
 	}
-
-	ClearSceneTargets(viewport);
 
 	m_renderBackend->BindCamera(*viewport.m_worldCamera);
 	PrepareConstants(viewport);
@@ -110,24 +107,6 @@ void Renderer::ExecuteRenderRequest(RenderRequest const& request)
 void Renderer::CreateViewportResources(ViewportInfo& viewport)
 {
 	ResizeViewport(viewport, viewport.m_outputResolution);
-}
-
-void Renderer::EnsureViewport(ViewportInfo& viewport)
-{
-	if (viewport.m_outputResolution.x <= 0 || viewport.m_outputResolution.y <= 0)
-	{
-		return;
-	}
-
-	if (viewport.m_viewportOutputTexture == nullptr
-		|| viewport.m_viewportOutputTexture->GetDimensions() != viewport.m_outputResolution)
-	{
-		ResizeViewport(viewport, viewport.m_outputResolution);
-	}
-
-	IntVec2 topLeft       = (IntVec2)viewport.m_outputRect.m_mins;
-	IntVec2 rectDimension = (IntVec2)viewport.m_outputRect.GetDimensions();
-	m_renderBackend->SetViewport(rectDimension, topLeft);
 }
 
 void Renderer::ResizeViewport(ViewportInfo& viewport, IntVec2 dimensions)
@@ -175,6 +154,8 @@ void Renderer::DestroyViewportResources(ViewportInfo& viewport)
 		}
 	}
 }
+
+void Renderer::SetViewport(IntVec2 dimensions, IntVec2 topLeft) { m_renderBackend->SetViewport(dimensions, topLeft); }
 
 void Renderer::ClearSceneTargets(ViewportInfo const& viewport)
 {
@@ -404,10 +385,6 @@ void Renderer::InitImGuiD3D11Backend()
 	ImGui_ImplDX11_Init(m_renderBackend->GetD3DDevice(), m_renderBackend->GetD3DDeviceContext());
 }
 
-void Renderer::CopyViewportToBackBuffer(ViewportInfo const& viewport)
-{
-	// Presentation is explicit so off-screen editor Viewports remain texture-only.
-	CopyTextureToBackBuffer(viewport.m_viewportOutputTexture);
-}
-
 void Renderer::BindBackBuffer() { m_renderBackend->BindBackBuffer(); }
+
+void Renderer::ResizeBackBuffer(IntVec2 newDimensions) { m_renderBackend->ResizeBackBuffer(newDimensions); }

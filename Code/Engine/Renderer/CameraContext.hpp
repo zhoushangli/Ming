@@ -4,19 +4,18 @@
 #include "Engine/Math/EulerAngles.hpp"
 #include "Engine/Math/Vec2.hpp"
 
-class Camera
+class CameraContext
 {
 public:
 	enum Mode
 	{
-		eMode_Orthographic,
-		eMode_Perspective,
-
-		eMode_Count
+		Orthographic,
+		Perspective,
+		Count
 	};
 
-	void SetOrthographicView(Vec2 const& bottomLeft, Vec2 const& topRight, float near = 0.0f, float far = 1.0f);
-	void SetPerspectiveView(float aspect, float fov, float near, float far);
+	void SetOrthogonal(Vec2 const& bottomLeft, Vec2 const& topRight, float near = 0.0f, float far = 1.0f);
+	void SetPerspective(float aspect, float fov, float near, float far);
 
 	void        SetTransform(const Matrix4x4& cameraToWorld);
 	void        SetPositionAndOrientation(const Vec3& position, const EulerAngles& orientation);
@@ -35,9 +34,9 @@ public:
 	Matrix4x4 GetRenderToClipTransform() const;
 	Matrix4x4 GetClipToCameraTransform() const;
 
-	Vec2  GetOrthographicBottomLeft() const;
-	Vec2  GetOrthographicTopRight() const;
-	void  Translate2D(Vec2 const& translation);
+	Vec2 GetOrthographicBottomLeft() const;
+	Vec2 GetOrthographicTopRight() const;
+	void Translate2D(Vec2 const& translation);
 
 	Matrix4x4 GetOrthographicMatrix() const;
 	Matrix4x4 GetPerspectiveMatrix() const;
@@ -50,20 +49,20 @@ public:
 	float GetFarZ() const;
 
 protected:
-	Mode m_mode = eMode_Orthographic;
+	Mode m_mode = Orthographic;
 
-	Vec3        m_position;
-	EulerAngles m_orientation;
+	Vec3        m_position    = Vec3::Zero;
+	EulerAngles m_orientation = EulerAngles::Zero;
 
-	Vec2  m_orthographicBottomLeft;
-	Vec2  m_orthographicTopRight;
-	float m_orthographicNear;
-	float m_orthographicFar;
+	Vec2  m_orthographicBottomLeft = Vec2::Zero;
+	Vec2  m_orthographicTopRight   = Vec2::Zero;
+	float m_orthographicNear       = 0.0f;
+	float m_orthographicFar        = 1.0f;
 
-	float m_perspectiveAspect;
-	float m_perspectiveFOV;
-	float m_perspectiveNear;
-	float m_perspectiveFar;
+	float m_perspectiveAspect = 1.0f;
+	float m_perspectiveFOV    = 0.0f;
+	float m_perspectiveNear   = 0.0f;
+	float m_perspectiveFar    = 1.0f;
 
-	Matrix4x4 m_cameraToRenderTransform;
+	Matrix4x4 m_cameraToRenderTransform = Matrix4x4::Identity;
 };

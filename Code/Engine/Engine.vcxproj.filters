@@ -84,7 +84,7 @@
     <ClCompile Include="Core\Rgba8.cpp">
       <Filter>Core</Filter>
     </ClCompile>
-    <ClCompile Include="Renderer\Camera.cpp">
+    <ClCompile Include="Renderer\CameraContext.cpp">
       <Filter>Renderer</Filter>
     </ClCompile>
     <ClCompile Include="Renderer\Renderer.cpp">
@@ -296,7 +296,7 @@
     <ClInclude Include="Core\Rgba8.hpp">
       <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="Renderer\Camera.hpp">
+    <ClInclude Include="Renderer\CameraContext.hpp">
       <Filter>Renderer</Filter>
     </ClInclude>
     <ClInclude Include="Renderer\Renderer.hpp">

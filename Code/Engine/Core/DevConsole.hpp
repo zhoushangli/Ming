@@ -4,13 +4,13 @@
 #include "Engine/Core/EngineCommon.hpp"
 #include "Engine/Core/EventSystem.hpp"
 #include "Engine/Core/Rgba8.hpp"
-#include "Engine/Renderer/Camera.hpp"
+#include "Engine/Renderer/CameraContext.hpp"
 
 #include <string>
 #include <vector>
 
 class Renderer;
-class Camera;
+class CameraContext;
 class BitmapFont;
 class Timer;
 class VertexBuffer;
@@ -22,7 +22,7 @@ struct DevConsoleLine
 	std::string m_text;
 };
 
-// Dev console defaults. A Renderer and Camera must be provided.
+// Dev console defaults. A Renderer and CameraContext must be provided.
 struct DevConsoleConfig
 {
 	bool m_isEnable = true;
@@ -94,7 +94,7 @@ public:
 
 protected:
 	DevConsoleConfig m_config;
-	Camera           m_uiCamera;
+	CameraContext           m_uiCamera;
 
 	// True if the dev console is currently visible and accepting input.
 	bool m_isOpen = false;

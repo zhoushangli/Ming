@@ -70,7 +70,7 @@ void DevConsole::Startup()
 	m_isOpen = m_config.m_startOpen;
 
 	Vec2 screenSize = (Vec2)g_engine->m_window->GetClientDimensions();
-	m_uiCamera.SetOrthographicView(Vec2::Zero, screenSize, 0.f, 1.f);
+	m_uiCamera.SetOrthogonal(Vec2::Zero, screenSize, 0.f, 1.f);
 
 	m_inputText.clear();
 	m_insertionPointPosition = 0;

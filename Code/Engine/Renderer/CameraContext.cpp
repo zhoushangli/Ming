@@ -1,15 +1,14 @@
-#include "Engine/Renderer/Camera.hpp"
+#include "Engine/Renderer/CameraContext.hpp"
 
-#include "Camera.hpp"
+#include "CameraContext.hpp"
 #include "Engine/Math/MathUtils.hpp"
 #include "Engine/Math/Matrix4x4.hpp"
 #include "Engine/Math/Vec2.hpp"
 #include "Engine/Math/Vec3.hpp"
 
-void Camera::
-	SetOrthographicView(Vec2 const& bottomLeft, Vec2 const& topRight, float near /*= 0.0f*/, float far /*= 1.0f*/)
+void CameraContext::SetOrthogonal(Vec2 const& bottomLeft, Vec2 const& topRight, float near /*= 0.0f*/, float far /*= 1.0f*/)
 {
-	m_mode = eMode_Orthographic;
+	m_mode = Orthographic;
 
 	m_orthographicBottomLeft = bottomLeft;
 	m_orthographicTopRight   = topRight;
@@ -17,9 +16,9 @@ void Camera::
 	m_orthographicFar        = far;
 }
 
-void Camera::SetPerspectiveView(float aspect, float fov, float near, float far)
+void CameraContext::SetPerspective(float aspect, float fov, float near, float far)
 {
-	m_mode = eMode_Perspective;
+	m_mode = Perspective;
 
 	m_perspectiveAspect = aspect;
 	m_perspectiveFOV    = fov;
@@ -27,27 +26,27 @@ void Camera::SetPerspectiveView(float aspect, float fov, float near, float far)
 	m_perspectiveFar    = far;
 }
 
-void Camera::SetTransform(const Matrix4x4& cameraToWorld)
+void CameraContext::SetTransform(const Matrix4x4& cameraToWorld)
 {
 	m_position = cameraToWorld.GetTranslation3D();
 	m_orientation.SetFromMatrix_IFwd_JLeft_KUp(cameraToWorld);
 }
 
-void Camera::SetPositionAndOrientation(const Vec3& position, const EulerAngles& orientation)
+void CameraContext::SetPositionAndOrientation(const Vec3& position, const EulerAngles& orientation)
 {
 	m_position    = position;
 	m_orientation = orientation;
 }
 
-void Camera::SetPosition(const Vec3& position) { m_position = position; }
+void CameraContext::SetPosition(const Vec3& position) { m_position = position; }
 
-Vec3 Camera::GetPosition() const { return m_position; }
+Vec3 CameraContext::GetPosition() const { return m_position; }
 
-void Camera::SetOrientation(const EulerAngles& orientation) { m_orientation = orientation; }
+void CameraContext::SetOrientation(const EulerAngles& orientation) { m_orientation = orientation; }
 
-EulerAngles Camera::GetOrientation() const { return m_orientation; }
+EulerAngles CameraContext::GetOrientation() const { return m_orientation; }
 
-Matrix4x4 Camera::GetCameraToWorldTransform() const
+Matrix4x4 CameraContext::GetCameraToWorldTransform() const
 {
 	Matrix4x4 camToWorld;
 	camToWorld.SetTranslation3D(m_position);
@@ -55,19 +54,19 @@ Matrix4x4 Camera::GetCameraToWorldTransform() const
 	return camToWorld;
 }
 
-Matrix4x4 Camera::GetWorldToCameraTransform() const { return GetCameraToWorldTransform().GetOrthonormalInverse(); }
+Matrix4x4 CameraContext::GetWorldToCameraTransform() const { return GetCameraToWorldTransform().GetOrthonormalInverse(); }
 
-AABB2 Camera::GetOrthographicBounds() const { return AABB2(m_orthographicBottomLeft, m_orthographicTopRight); }
+AABB2 CameraContext::GetOrthographicBounds() const { return AABB2(m_orthographicBottomLeft, m_orthographicTopRight); }
 
-Camera::Mode Camera::GetMode() const { return m_mode; }
+CameraContext::Mode CameraContext::GetMode() const { return m_mode; }
 
-void Camera::SetCameraToRenderTransform(const Matrix4x4& m) { m_cameraToRenderTransform = m; }
+void CameraContext::SetCameraToRenderTransform(const Matrix4x4& m) { m_cameraToRenderTransform = m; }
 
-Matrix4x4 Camera::GetCameraToRenderTransform() const { return m_cameraToRenderTransform; }
+Matrix4x4 CameraContext::GetCameraToRenderTransform() const { return m_cameraToRenderTransform; }
 
-Matrix4x4 Camera::GetRenderToClipTransform() const { return GetProjectionMatrix(); }
+Matrix4x4 CameraContext::GetRenderToClipTransform() const { return GetProjectionMatrix(); }
 
-Matrix4x4 Camera::GetClipToCameraTransform() const
+Matrix4x4 CameraContext::GetClipToCameraTransform() const
 {
 	Matrix4x4 clipToRender   = GetProjectionInverseMatrix();
 	Matrix4x4 renderToCamera = GetCameraToRenderTransform().GetOrthonormalInverse();
@@ -75,11 +74,11 @@ Matrix4x4 Camera::GetClipToCameraTransform() const
 	return renderToCamera;
 }
 
-Vec2 Camera::GetOrthographicBottomLeft() const { return m_orthographicBottomLeft; }
+Vec2 CameraContext::GetOrthographicBottomLeft() const { return m_orthographicBottomLeft; }
 
-Vec2 Camera::GetOrthographicTopRight() const { return m_orthographicTopRight; }
+Vec2 CameraContext::GetOrthographicTopRight() const { return m_orthographicTopRight; }
 
-void Camera::Translate2D(Vec2 const& translation)
+void CameraContext::Translate2D(Vec2 const& translation)
 {
 	m_position.x += translation.x;
 	m_position.y += translation.y;
@@ -88,34 +87,30 @@ void Camera::Translate2D(Vec2 const& translation)
 	m_orthographicTopRight += translation;
 }
 
-Matrix4x4 Camera::GetOrthographicMatrix() const
+Matrix4x4 CameraContext::GetOrthographicMatrix() const
 {
-	return Matrix4x4::MakeOrthoProjection(
-		m_orthographicBottomLeft.x,
+	return Matrix4x4::MakeOrthoProjection(m_orthographicBottomLeft.x,
 		m_orthographicTopRight.x,
 		m_orthographicBottomLeft.y,
 		m_orthographicTopRight.y,
 		m_orthographicNear,
-		m_orthographicFar
-	);
+		m_orthographicFar);
 }
 
-Matrix4x4 Camera::GetPerspectiveMatrix() const
+Matrix4x4 CameraContext::GetPerspectiveMatrix() const
 {
-	return Matrix4x4::MakePerspectiveProjection(
-		m_perspectiveFOV,
+	return Matrix4x4::MakePerspectiveProjection(m_perspectiveFOV,
 		m_perspectiveAspect,
 		m_perspectiveNear,
-		m_perspectiveFar
-	);
+		m_perspectiveFar);
 }
 
-Matrix4x4 Camera::GetProjectionMatrix() const
+Matrix4x4 CameraContext::GetProjectionMatrix() const
 {
-	return (m_mode == eMode_Perspective) ? GetPerspectiveMatrix() : GetOrthographicMatrix();
+	return (m_mode == Perspective) ? GetPerspectiveMatrix() : GetOrthographicMatrix();
 }
 
-Matrix4x4 Camera::GetOrthographicInverseMatrix() const
+Matrix4x4 CameraContext::GetOrthographicInverseMatrix() const
 {
 	float l = m_orthographicBottomLeft.x;
 	float r = m_orthographicTopRight.x;
@@ -135,7 +130,7 @@ Matrix4x4 Camera::GetOrthographicInverseMatrix() const
 	return inverse;
 }
 
-Matrix4x4 Camera::GetPerspectiveInverseMatrix() const
+Matrix4x4 CameraContext::GetPerspectiveInverseMatrix() const
 {
 	float c      = CosDegrees(m_perspectiveFOV * 0.5f);
 	float s      = SinDegrees(m_perspectiveFOV * 0.5f);
@@ -156,22 +151,22 @@ Matrix4x4 Camera::GetPerspectiveInverseMatrix() const
 	return inverse;
 }
 
-Matrix4x4 Camera::GetProjectionInverseMatrix() const
+Matrix4x4 CameraContext::GetProjectionInverseMatrix() const
 {
-	return (m_mode == eMode_Perspective) ? GetPerspectiveInverseMatrix() : GetOrthographicInverseMatrix();
+	return (m_mode == Perspective) ? GetPerspectiveInverseMatrix() : GetOrthographicInverseMatrix();
 }
 
-float Camera::GetNearZ() const
+float CameraContext::GetNearZ() const
 {
-	if (m_mode == eMode_Perspective)
+	if (m_mode == Perspective)
 		return m_perspectiveNear;
 	else
 		return m_orthographicNear;
 }
 
-float Camera::GetFarZ() const
+float CameraContext::GetFarZ() const
 {
-	if (m_mode == eMode_Perspective)
+	if (m_mode == Perspective)
 		return m_perspectiveFar;
 	else
 		return m_orthographicFar;

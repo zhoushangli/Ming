@@ -25,7 +25,7 @@ public:
 	void ResizeViewport(ViewportInfo& viewport, IntVec2 dimensions);
 	void DestroyViewportResources(ViewportInfo& viewport);
 	void RenderViewport(ViewportInfo& viewport);
-	void CopyViewportToBackBuffer(ViewportInfo const& viewport);
+	void CopyTextureToBackBuffer(Texture* colorTexture);
 
 	Shader* CreateOrGetShader(char const* shaderName);
 
@@ -49,15 +49,16 @@ public:
 	Texture* GetTextureFromFileName(char const* fileName);
 
 	// This function is specifically for initializing the ImGui D3D11 backend in ImGuiSystem
-	void     InitImGuiD3D11Backend();
-	void     BindBackBuffer();
+	void InitImGuiD3D11Backend();
+	void BindBackBuffer();
+	void ResizeBackBuffer(IntVec2 newDimensions);
+
+	void SetViewport(IntVec2 dimensions, IntVec2 topLeft = IntVec2::Zero);
+	void ClearSceneTargets(ViewportInfo const& viewport);
 
 private:
 	void ExecuteRenderRequest(RenderRequest const& request);
-	void EnsureViewport(ViewportInfo& viewport);
-	void ClearSceneTargets(ViewportInfo const& viewport);
-	void CopyTextureToBackBuffer(Texture* colorTexture);
-
+	
 	void PrepareConstants(ViewportInfo const& viewport);
 	void RenderOpaque(ViewportInfo const& viewport);
 	void RenderSkybox(ViewportInfo const& viewport);
@@ -66,6 +67,6 @@ private:
 
 private:
 	RendererConfig      m_config;
-	D3D11RenderBackend* m_renderBackend = nullptr;
-	Shader* m_postProcessCopyShader = nullptr;
+	D3D11RenderBackend* m_renderBackend         = nullptr;
+	Shader*             m_postProcessCopyShader = nullptr;
 };

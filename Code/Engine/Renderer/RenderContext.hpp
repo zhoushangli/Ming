@@ -10,7 +10,7 @@
 #include <array>
 #include <vector>
 
-class Camera;
+class CameraContext;
 class IndexBuffer;
 class Shader;
 class Texture;
@@ -40,7 +40,7 @@ struct RenderRequest
 	IndexBuffer*  m_indexBuffer  = nullptr;
 
 	std::array<Texture*, PostProcessTextureSlot::MaxSamplerSlots> m_textures = {};
-	Shader* m_shader = nullptr;
+	Shader*                                                       m_shader   = nullptr;
 
 	BlendMode      m_blendMode      = BlendMode::OPAQUE;
 	DepthMode      m_depthMode      = DepthMode::READ_WRITE_LESS_EQUAL;
@@ -71,8 +71,8 @@ public:
 	// 1) Game fills cameras, dimensions, requests, lights, and post-process passes.
 	// 2) Renderer creates and resizes the GPU textures below.
 	// 3) All transient data and GPU resources belong to this Viewport only.
-	Camera const* m_worldCamera = nullptr;
-	Camera const* m_uiCamera    = nullptr;
+	CameraContext* m_worldCamera;
+	CameraContext* m_uiCamera;
 
 	// output resolution indicates the size of the render target
 	// output rect indicates the portion of the render target to render to
@@ -88,6 +88,7 @@ public:
 	Texture* m_pongTexture           = nullptr;
 
 	std::array<std::vector<RenderRequest>, static_cast<size_t>(RenderRequestPass::Count)> m_renderRequests;
+
 	std::vector<LightInfo> m_lights;
 	PostProcessChain       m_postProcessChain;
 };

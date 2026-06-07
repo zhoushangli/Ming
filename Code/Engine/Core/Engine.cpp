@@ -26,14 +26,10 @@ Engine::Engine(EngineConfig config) : m_config(config)
 		m_audio = new AudioSystem(config.m_audioConfig);
 	if (config.m_imguiConfig.m_isEnable)
 		m_imgui = new ImGuiSystem(config.m_imguiConfig);
-
-	Startup();
 }
 
 Engine::~Engine()
 {
-	Shutdown();
-
 	delete m_imgui;
 	m_imgui = nullptr;
 

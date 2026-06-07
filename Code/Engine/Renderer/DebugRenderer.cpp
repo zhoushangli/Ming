@@ -8,7 +8,7 @@
 #include "Engine/Core/VertexUtils.hpp"
 #include "Engine/Math/MathUtils.hpp"
 #include "Engine/Renderer/BitmapFont.hpp"
-#include "Engine/Renderer/Camera.hpp"
+#include "Engine/Renderer/CameraContext.hpp"
 #include "Engine/Renderer/RenderContext.hpp"
 #include "Engine/Renderer/Renderer.hpp"
 #include "Engine/Renderer/VertexBuffer.hpp"
@@ -345,7 +345,7 @@ void SubmitDebugRequest(Renderer* renderer, DebugObject const& obj, RenderReques
 
 void SubmitWorldObject(Renderer* renderer,
 	BitmapFont*                  font,
-	Camera const&                camera,
+	CameraContext const&                camera,
 	DebugObject&                 obj,
 	Rgba8 const*                 overrideStartColor = nullptr,
 	Rgba8 const*                 overrideEndColor   = nullptr)
@@ -441,7 +441,7 @@ void SubmitWorldObject(Renderer* renderer,
 	}
 }
 
-void SubmitScreenObject(Renderer* renderer, BitmapFont* font, Camera const& camera, DebugObject& obj, int lineNum = -1)
+void SubmitScreenObject(Renderer* renderer, BitmapFont* font, CameraContext const& camera, DebugObject& obj, int lineNum = -1)
 {
 	if (renderer == nullptr || font == nullptr)
 	{
@@ -938,7 +938,7 @@ void DebugAddWorldGrid(float duration, int halfExtent)
 // Output
 void DebugRenderBeginFrame() {}
 
-void DebugRenderWorld(const Camera& camera)
+void DebugRenderWorld(const CameraContext& camera)
 {
 	if (!s_isVisible)
 	{
@@ -965,7 +965,7 @@ void DebugRenderWorld(const Camera& camera)
 	}
 }
 
-void DebugRenderScreen(const Camera& camera)
+void DebugRenderScreen(const CameraContext& camera)
 {
 	if (!s_isVisible)
 	{
