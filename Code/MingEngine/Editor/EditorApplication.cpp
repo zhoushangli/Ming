@@ -3,6 +3,7 @@
 #include "MingEngine/Engine/Application/App.hpp"
 
 #include "MingEngine/Editor/EditorController.hpp"
+#include "MingEngine/Editor/EditorGizmos.hpp"
 #include "MingEngine/Editor/EditorNode.hpp"
 #include "MingEngine/Scene/3D/Camera3D.hpp"
 #include "MingEngine/Scene/3D/Light3D.hpp"
@@ -25,6 +26,7 @@
 void RegisterEditorTypes()
 {
 	ClassDatabase::RegisterClass<EditorNode>();
+	ClassDatabase::RegisterClass<EditorGizmos>();
 	ClassDatabase::RegisterClass<EditorController>();
 	ClassDatabase::RegisterClass<TestCube>();
 }
@@ -86,47 +88,8 @@ void AppEditorState::BuildEditorScene()
 
 	m_editorController = new EditorController();
 	m_editorController->SetName("EditorController");
-	m_editorController->SetLocalPosition(Vec3(10.f, 0.f, 5.f));
-	m_editorController->SetLocalOrientation(EulerAngles(225.f, 45.f, 0.f));
+	m_editorController->SetLocalPosition(Vec3(0.f, 0.f, 5.f));
 	m_sceneTree->GetRoot()->AddNode(m_editorController);
-
-	Node* editorScene = m_project.CreateInitialScene();
-	if (editorScene == nullptr)
-	{
-		editorScene = new Node();
-		editorScene->SetName("EditorScene");
-	}
-
-	auto directionalLight = new DirectionalLight3D();
-	directionalLight->SetName("DirectionalLight3D");
-	directionalLight->SetDirection(Vec3(-1.f, -1.f, -1.f).GetNormalized());
-	directionalLight->SetColor(Rgba8::White);
-	directionalLight->SetIntensity(0.5f);
-	editorScene->AddNode(directionalLight);
-
-	TestCube* testCube = new TestCube();
-	testCube->SetName("TestCube");
-	editorScene->AddNode(testCube);
-
-	// std::vector<Vec3> splinePositions;
-	// splinePositions.push_back(Vec3(0.f, 2.f, 0.5f));
-	// splinePositions.push_back(Vec3(2.f, 3.f, 1.5f));
-	// splinePositions.push_back(Vec3(4.f, 1.f, 1.f));
-	// splinePositions.push_back(Vec3(6.f, 3.f, 2.f));
-
-	// std::vector<Vec3> splineVelocities;
-	// splineVelocities.push_back(Vec3(1.f, 0.f, 0.f));
-	// splineVelocities.push_back(Vec3(1.5f, 0.5f, 0.f));
-	// splineVelocities.push_back(Vec3(1.5f, -0.5f, 0.25f));
-	// splineVelocities.push_back(Vec3(1.f, 0.f, 0.f));
-
-	// Spline3D* spline = new Spline3D(splinePositions, splineVelocities);
-	// spline->SetName("Spline3D");
-	// editorScene->AddNode(spline);
-
-	// StoneStairGraph* stoneStairGraph = new StoneStairGraph(spline);
-	// stoneStairGraph->SetName("StoneStairGraph");
-	// editorScene->AddNode(stoneStairGraph);
 
 	IntVec2 screenDimensions = g_engine->m_window->GetClientDimensions();
 
@@ -135,12 +98,9 @@ void AppEditorState::BuildEditorScene()
 	uiCamera->SetOrthogonal((float)screenDimensions.y, 0.f, 1.f);
 	m_sceneTree->GetRoot()->AddNode(uiCamera);
 
-	m_sceneTree->ChangeScene(editorScene);
 	m_sceneTree->SetWorldCamera(m_editorController->GetCamera());
 	m_sceneTree->SetUICamera(uiCamera);
 
-	DebugAddWorldBasis(Matrix4x4::Identity, -1.f, DebugRenderMode::USE_DEPTH);
-	DebugAddWorldGrid();
 }
 
 void AppEditorState::HandleDebugInput()

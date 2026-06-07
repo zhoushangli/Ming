@@ -78,8 +78,10 @@
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
-  <ImportGroup Label="ExtensionSettings"></ImportGroup>
-  <ImportGroup Label="Shared"></ImportGroup>
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
@@ -134,7 +136,8 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
-      <SubSystem></SubSystem>
+      <SubSystem>
+      </SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <Lib>
@@ -152,7 +155,8 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
-      <SubSystem></SubSystem>
+      <SubSystem>
+      </SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <Lib>
@@ -170,7 +174,8 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
-      <SubSystem></SubSystem>
+      <SubSystem>
+      </SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <Lib>
@@ -188,7 +193,8 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
-      <SubSystem></SubSystem>
+      <SubSystem>
+      </SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <Lib>
@@ -206,7 +212,8 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
-      <SubSystem></SubSystem>
+      <SubSystem>
+      </SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <Lib>
@@ -224,7 +231,8 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
-      <SubSystem></SubSystem>
+      <SubSystem>
+      </SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <Lib>
@@ -253,13 +261,17 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
   </ItemDefinitionGroup>
-  <ItemGroup></ItemGroup>
-  <ItemGroup></ItemGroup>
-  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
-  <ItemGroup></ItemGroup>
-  <ItemGroup></ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Engine\Application\Application.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ItemGroup>
+  </ItemGroup>
+  <ItemGroup>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Engine\Application\App.cpp" />
     <ClCompile Include="Engine\Core\Clock.cpp" />
     <ClCompile Include="Engine\Console\DevConsole.cpp" />
     <ClCompile Include="Engine\Application\Engine.cpp" />
@@ -328,6 +340,8 @@
     <ClCompile Include="Engine\Render\SpriteAnimDefinition.cpp" />
     <ClCompile Include="Engine\Render\Texture.cpp" />
     <ClCompile Include="Engine\Render\VertexBuffer.cpp" />
+    <ClCompile Include="Editor\EditorGizmos.cpp" />
+    <ClCompile Include="Editor\GizmosShapes.cpp" />
     <ClCompile Include="Scene\3D\Camera3D.cpp" />
     <ClCompile Include="Scene\3D\Light3D.cpp" />
     <ClCompile Include="Scene\3D\Mesh3D.cpp" />
@@ -368,7 +382,7 @@
     <ClCompile Include="..\ThirdParty\tinyxml2\tinyxml2.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Engine\Application\Application.hpp" />
+    <ClInclude Include="Engine\Application\App.hpp" />
     <ClInclude Include="Engine\Core\Clock.hpp" />
     <ClInclude Include="Engine\Console\DevConsole.hpp" />
     <ClInclude Include="Engine\Application\Engine.hpp" />
@@ -439,6 +453,8 @@
     <ClInclude Include="Engine\Render\SpriteAnimDefinition.hpp" />
     <ClInclude Include="Engine\Render\Texture.hpp" />
     <ClInclude Include="Engine\Render\VertexBuffer.hpp" />
+    <ClInclude Include="Editor\EditorGizmos.hpp" />
+    <ClInclude Include="Editor\GizmosShapes.hpp" />
     <ClInclude Include="Scene\3D\Camera3D.hpp" />
     <ClInclude Include="Scene\3D\Light3D.hpp" />
     <ClInclude Include="Scene\3D\Mesh3D.hpp" />
@@ -496,5 +512,6 @@
     <ClInclude Include="..\ThirdParty\tinygltf\tinygltf_json.h" />
     <ClInclude Include="..\ThirdParty\tinyxml2\tinyxml2.h" />
   </ItemGroup>
-  <ImportGroup Label="ExtensionTargets"></ImportGroup>
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
 </Project>

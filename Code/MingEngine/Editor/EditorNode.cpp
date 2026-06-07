@@ -1,5 +1,6 @@
 #include "MingEngine/Editor/EditorNode.hpp"
 
+#include "MingEngine/Editor/EditorGizmos.hpp"
 #include "MingEngine/Scene/3D/Camera3D.hpp"
 #include "MingEngine/Scene/3D/Node3D.hpp"
 #include "MingEngine/Scene/Physics/AABBCollider3D.hpp"
@@ -96,7 +97,15 @@ void EditorSelection::SetSelected(NodeHandle handle)
 
 void EditorSelection::Clear() { SetSelected(NodeHandle::Invalid); }
 
-EditorNode::EditorNode() { s_instance = this; }
+EditorNode::EditorNode()
+{
+	s_instance = this;
+
+	EditorGizmos* editorGizmos = new EditorGizmos();
+	editorGizmos->SetName("EditorGizmos");
+	editorGizmos->SetSerializable(false);
+	AddNode(editorGizmos);
+}
 
 EditorNode::~EditorNode()
 {

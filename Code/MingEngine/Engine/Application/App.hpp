@@ -23,14 +23,12 @@ public:
 
 	virtual char const* GetProjectName() const = 0;
 	virtual void        RegisterTypes()        = 0;
-	virtual Node*       CreateInitialScene()   = 0;
 	virtual void        Startup() {}
 	virtual void        Shutdown() {}
 };
 
 namespace MingEngine
 {
-int Run(IProjectModule& project);
 int Run(IProjectModule& project, MingRunConfig const& config);
 } // namespace MingEngine
 

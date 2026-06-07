@@ -198,7 +198,7 @@ void           D3D11RenderBackend::Startup()
 	for (int i = 0; i < (int)BuiltinConstantBufferType::Count; i++)
 	{
 		BuiltinConstantBufferDesc const& desc = kBuiltinConstantBufferDescs[i];
-		m_builtinConstantBuffers[i]           = CreateConstantBuffer(desc.size);
+		m_builtinConstantBuffers[i]           = CreateConstantBuffer((unsigned int)desc.size);
 	}
 
 #pragma endregion
@@ -1071,8 +1071,6 @@ void D3D11RenderBackend::BindIndexBuffer(IndexBuffer* indexBuffer)
 	if (indexBuffer == nullptr)
 	{
 		ID3D11Buffer* nullBuf = nullptr;
-		UINT          stride  = 0;
-		UINT          offset  = 0;
 		m_d3dDeviceContext->IASetIndexBuffer(nullBuf, DXGI_FORMAT_R32_UINT, 0);
 		return;
 	}

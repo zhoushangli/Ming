@@ -15,9 +15,7 @@
 
 App* g_app = nullptr;
 
-App::App(IProjectModule& project, MingRunConfig const& config)
-	: m_project(project)
-	, m_runConfig(config)
+App::App(IProjectModule& project, MingRunConfig const& config) : m_project(project), m_runConfig(config)
 {
 	EngineConfig engineConfig;
 	engineConfig.m_windowConfig.m_clientAspect = m_runConfig.m_windowAspect;
@@ -47,10 +45,9 @@ void App::Startup()
 {
 	ClassDatabase::Startup();
 	RegisterEditorTypes();
+
 	m_project.RegisterTypes();
 	m_project.Startup();
-
-	RegisterEvent("Quit", App::OnQuit);
 
 	DebugRenderConfig debugRenderConfig;
 	debugRenderConfig.m_renderer = g_engine->m_renderer;
@@ -59,6 +56,8 @@ void App::Startup()
 
 	m_stateMachine = new AppStateMachine();
 	m_stateMachine->Startup(AppStateType::Editor, m_project);
+	
+	RegisterEvent("Quit", App::OnQuit);
 }
 
 void App::Shutdown()
@@ -187,11 +186,6 @@ void App::RestartImmediately()
 	delete m_stateMachine;
 	m_stateMachine = new AppStateMachine();
 	m_stateMachine->Startup(AppStateType::Editor, m_project);
-}
-
-int MingEngine::Run(IProjectModule& project)
-{
-	return Run(project, MingRunConfig());
 }
 
 int MingEngine::Run(IProjectModule& project, MingRunConfig const& config)

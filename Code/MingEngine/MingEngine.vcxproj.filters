@@ -102,9 +102,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Engine\Application\Application.cpp">
-      <Filter>Engine\Application</Filter>
-    </ClCompile>
     <ClCompile Include="Engine\Core\Clock.cpp">
       <Filter>Engine\Core</Filter>
     </ClCompile>
@@ -309,6 +306,12 @@
     <ClCompile Include="Engine\Render\VertexBuffer.cpp">
       <Filter>Engine\Render</Filter>
     </ClCompile>
+    <ClCompile Include="Editor\EditorGizmos.cpp">
+      <Filter>Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\GizmosShapes.cpp">
+      <Filter>Editor</Filter>
+    </ClCompile>
     <ClCompile Include="Scene\3D\Camera3D.cpp">
       <Filter>Scene\3D</Filter>
     </ClCompile>
@@ -423,11 +426,11 @@
     <ClCompile Include="..\ThirdParty\tinyxml2\tinyxml2.cpp">
       <Filter>ThirdParty\tinyxml2</Filter>
     </ClCompile>
+    <ClCompile Include="Engine\Application\App.cpp">
+      <Filter>Engine\Application</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Engine\Application\Application.hpp">
-      <Filter>Engine\Application</Filter>
-    </ClInclude>
     <ClInclude Include="Engine\Core\Clock.hpp">
       <Filter>Engine\Core</Filter>
     </ClInclude>
@@ -638,6 +641,12 @@
     <ClInclude Include="Engine\Render\VertexBuffer.hpp">
       <Filter>Engine\Render</Filter>
     </ClInclude>
+    <ClInclude Include="Editor\EditorGizmos.hpp">
+      <Filter>Editor</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\GizmosShapes.hpp">
+      <Filter>Editor</Filter>
+    </ClInclude>
     <ClInclude Include="Scene\3D\Camera3D.hpp">
       <Filter>Scene\3D</Filter>
     </ClInclude>
@@ -805,6 +814,9 @@
     </ClInclude>
     <ClInclude Include="..\ThirdParty\tinyxml2\tinyxml2.h">
       <Filter>ThirdParty\tinyxml2</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Application\App.hpp">
+      <Filter>Engine\Application</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
