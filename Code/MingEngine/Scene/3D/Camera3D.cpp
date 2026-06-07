@@ -1,0 +1,67 @@
+#include "MingEngine/Scene/3D/Camera3D.hpp"
+
+#include "Camera3D.hpp"
+#include "MingEngine/Scene/SceneCommon.hpp"
+
+Camera3D::Camera3D(float fovDegrees, float nearClip, float farClip)
+	: m_mode(CameraContext::Perspective)
+	, m_nearClip(nearClip)
+	, m_farClip(farClip)
+	, m_fovDegrees(fovDegrees)
+	, m_size(1.f)
+{
+}
+
+CameraContext Camera3D::GetCamera(float aspect) const
+{
+	CameraContext camera;
+	camera.SetTransform(GetWorldTransform());
+
+	if (m_mode == CameraContext::Orthographic)
+	{
+		camera.SetCameraToRenderTransform(Matrix4x4::Identity);
+		camera.SetOrthogonal(Vec2::Zero, Vec2(m_size * aspect, m_size), m_nearClip, m_farClip);
+	}
+	else if (m_mode == CameraContext::Perspective)
+	{
+		camera.SetCameraToRenderTransform(CameraToRenderTransform_Perspective);
+		camera.SetPerspective(aspect, m_fovDegrees, m_nearClip, m_farClip);
+	}
+	return camera;
+}
+
+void Camera3D::SetOrthogonal(float size, float nearClip, float farClip)
+{
+	m_mode     = CameraContext::Orthographic;
+	m_size     = size;
+	m_nearClip = nearClip;
+	m_farClip  = farClip;
+}
+
+void Camera3D::SetPerspective(float fovDegrees, float nearClip, float farClip)
+{
+	m_mode       = CameraContext::Perspective;
+	m_fovDegrees = fovDegrees;
+	m_nearClip   = nearClip;
+	m_farClip    = farClip;
+}
+
+CameraContext::Mode Camera3D::GetMode() const { return m_mode; }
+
+void Camera3D::SetMode(CameraContext::Mode mode) { m_mode = mode; }
+
+float Camera3D::GetNearClip() const { return m_nearClip; }
+
+void Camera3D::SetNearClip(float nearClip) { m_nearClip = nearClip; }
+
+float Camera3D::GetFarClip() const { return m_farClip; }
+
+void Camera3D::SetFarClip(float farClip) { m_farClip = farClip; }
+
+float Camera3D::GetFovDegrees() const { return m_fovDegrees; }
+
+void Camera3D::SetFovDegrees(float fovDegrees) { m_fovDegrees = fovDegrees; }
+
+float Camera3D::GetSize() const { return m_size; }
+
+void Camera3D::SetSize(float size) { m_size = size; }

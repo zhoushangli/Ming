@@ -1,0 +1,500 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="DebugInline|Win32">
+      <Configuration>DebugInline</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="DebugInline|x64">
+      <Configuration>DebugInline</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="FastBreak|x64">
+      <Configuration>FastBreak</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>17.0</VCProjectVersion>
+    <Keyword>Win32Proj</Keyword>
+    <ProjectGuid>{dda81a11-ff9b-4b77-835f-a6323d431aed}</ProjectGuid>
+    <RootNamespace>MingEngine</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <ProjectName>MingEngine</ProjectName>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugInline|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugInline|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings"></ImportGroup>
+  <ImportGroup Label="Shared"></ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='DebugInline|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='DebugInline|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <OutDir>$(SolutionDir)Temporary\$(ProjectName)_$(PlatformShortName)_$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)Temporary\$(ProjectName)_$(PlatformShortName)_$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugInline|Win32'">
+    <OutDir>$(SolutionDir)Temporary\$(ProjectName)_$(PlatformShortName)_$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)Temporary\$(ProjectName)_$(PlatformShortName)_$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <OutDir>$(SolutionDir)Temporary\$(ProjectName)_$(PlatformShortName)_$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)Temporary\$(ProjectName)_$(PlatformShortName)_$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <OutDir>$(SolutionDir)Temporary\$(ProjectName)_$(PlatformShortName)_$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)Temporary\$(ProjectName)_$(PlatformShortName)_$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugInline|x64'">
+    <OutDir>$(SolutionDir)Temporary\$(ProjectName)_$(PlatformShortName)_$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)Temporary\$(ProjectName)_$(PlatformShortName)_$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <OutDir>$(SolutionDir)Temporary\$(ProjectName)_$(PlatformShortName)_$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)Temporary\$(ProjectName)_$(PlatformShortName)_$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level4</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+    </ClCompile>
+    <Link>
+      <SubSystem></SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+    <Lib>
+      <AdditionalLibraryDirectories>$(SolutionDir)Code/;$(SolutionDir)../Engine/Code/</AdditionalLibraryDirectories>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='DebugInline|Win32'">
+    <ClCompile>
+      <WarningLevel>Level4</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+    </ClCompile>
+    <Link>
+      <SubSystem></SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+    <Lib>
+      <AdditionalLibraryDirectories>$(SolutionDir)Code/;$(SolutionDir)../Engine/Code/</AdditionalLibraryDirectories>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level4</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+    </ClCompile>
+    <Link>
+      <SubSystem></SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+    <Lib>
+      <AdditionalLibraryDirectories>$(SolutionDir)Code/;$(SolutionDir)../Engine/Code/</AdditionalLibraryDirectories>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <WarningLevel>Level4</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+    </ClCompile>
+    <Link>
+      <SubSystem></SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+    <Lib>
+      <AdditionalLibraryDirectories>$(SolutionDir)Code/;$(SolutionDir)../Engine/Code/</AdditionalLibraryDirectories>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='DebugInline|x64'">
+    <ClCompile>
+      <WarningLevel>Level4</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+    </ClCompile>
+    <Link>
+      <SubSystem></SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+    <Lib>
+      <AdditionalLibraryDirectories>$(SolutionDir)Code/;$(SolutionDir)../Engine/Code/</AdditionalLibraryDirectories>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level4</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+    </ClCompile>
+    <Link>
+      <SubSystem></SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+    <Lib>
+      <AdditionalLibraryDirectories>$(SolutionDir)Code/;$(SolutionDir)../Engine/Code/</AdditionalLibraryDirectories>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='FastBreak|x64'">
+    <ClCompile>
+      <WarningLevel>Level4</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='FastBreak|x64'">
+    <ClCompile>
+      <WarningLevel>Level4</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemGroup></ItemGroup>
+  <ItemGroup></ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ItemGroup></ItemGroup>
+  <ItemGroup></ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Engine\Application\Application.cpp" />
+    <ClCompile Include="Engine\Core\Clock.cpp" />
+    <ClCompile Include="Engine\Console\DevConsole.cpp" />
+    <ClCompile Include="Engine\Application\Engine.cpp" />
+    <ClCompile Include="Engine\Application\EngineCommon.cpp" />
+    <ClCompile Include="Engine\Core\ErrorWarningAssert.cpp" />
+    <ClCompile Include="Engine\Event\EventSystem.cpp" />
+    <ClCompile Include="Engine\Core\FileUtils.cpp" />
+    <ClCompile Include="Engine\Render\HeatMaps.cpp" />
+    <ClCompile Include="Engine\Core\Image.cpp" />
+    <ClCompile Include="Engine\Core\NamedStrings.cpp" />
+    <ClCompile Include="Engine\Render\Rgba8.cpp" />
+    <ClCompile Include="Engine\Core\StringUtils.cpp" />
+    <ClCompile Include="Engine\Core\Time.cpp" />
+    <ClCompile Include="Engine\Core\Timer.cpp" />
+    <ClCompile Include="Engine\Render\Vertex.cpp" />
+    <ClCompile Include="Engine\Render\VertexUtils.cpp" />
+    <ClCompile Include="Engine\Core\XmlUtils.cpp" />
+    <ClCompile Include="Editor\EditorApplication.cpp" />
+    <ClCompile Include="Editor\EditorController.cpp" />
+    <ClCompile Include="Editor\EditorNode.cpp" />
+    <ClCompile Include="Editor\GizmoComponent.cpp" />
+    <ClCompile Include="Editor\TestCube.cpp" />
+    <ClCompile Include="Editor\TransformGizmo.cpp" />
+    <ClCompile Include="Engine\ImGui\ImGuiSystem.cpp" />
+    <ClCompile Include="Engine\Math\AABB2.cpp" />
+    <ClCompile Include="Engine\Math\AABB3.cpp" />
+    <ClCompile Include="Engine\Math\Capsule2.cpp" />
+    <ClCompile Include="Engine\Math\Capsule3.cpp" />
+    <ClCompile Include="Engine\Math\Cylinder3.cpp" />
+    <ClCompile Include="Engine\Math\CylinderZ3.cpp" />
+    <ClCompile Include="Engine\Math\Disc2.cpp" />
+    <ClCompile Include="Engine\Math\EulerAngles.cpp" />
+    <ClCompile Include="Engine\Math\FloatRange.cpp" />
+    <ClCompile Include="Engine\Math\IntRange.cpp" />
+    <ClCompile Include="Engine\Math\IntVec2.cpp" />
+    <ClCompile Include="Engine\Math\IntVec3.cpp" />
+    <ClCompile Include="Engine\Math\LineSegment2.cpp" />
+    <ClCompile Include="Engine\Math\MathCommon.cpp" />
+    <ClCompile Include="Engine\Math\MathUtils.cpp" />
+    <ClCompile Include="Engine\Math\Matrix4x4.cpp" />
+    <ClCompile Include="Engine\Math\OBB2.cpp" />
+    <ClCompile Include="Engine\Math\RandomNumberGenerator.cpp" />
+    <ClCompile Include="Engine\Math\RaycastUtils.cpp" />
+    <ClCompile Include="Engine\Math\Sphere3.cpp" />
+    <ClCompile Include="Engine\Math\Triangle2.cpp" />
+    <ClCompile Include="Engine\Math\Triangle3.cpp" />
+    <ClCompile Include="Engine\Math\Vec2.cpp" />
+    <ClCompile Include="Engine\Math\Vec3.cpp" />
+    <ClCompile Include="Engine\Math\Vec4.cpp" />
+    <ClCompile Include="Engine\Audio\AudioSystem.cpp" />
+    <ClCompile Include="Engine\Input\AnalogJoystick.cpp" />
+    <ClCompile Include="Engine\Input\InputSystem.cpp" />
+    <ClCompile Include="Engine\Input\KeyButtonState.cpp" />
+    <ClCompile Include="Engine\Input\XboxController.cpp" />
+    <ClCompile Include="Engine\Window\Window.cpp" />
+    <ClCompile Include="Engine\Render\BitmapFont.cpp" />
+    <ClCompile Include="Engine\Render\CameraContext.cpp" />
+    <ClCompile Include="Engine\Render\ConstantBuffer.cpp" />
+    <ClCompile Include="Engine\Render\D3D11RenderBackend.cpp" />
+    <ClCompile Include="Engine\Render\DebugRenderer.cpp" />
+    <ClCompile Include="Engine\Render\IndexBuffer.cpp" />
+    <ClCompile Include="Engine\Render\PostProcessChain.cpp" />
+    <ClCompile Include="Engine\Render\Renderer.cpp" />
+    <ClCompile Include="Engine\Render\Shader.cpp" />
+    <ClCompile Include="Engine\Render\SimpleTriangleFont.cpp" />
+    <ClCompile Include="Engine\Render\SpriteAnimDefinition.cpp" />
+    <ClCompile Include="Engine\Render\Texture.cpp" />
+    <ClCompile Include="Engine\Render\VertexBuffer.cpp" />
+    <ClCompile Include="Scene\3D\Camera3D.cpp" />
+    <ClCompile Include="Scene\3D\Light3D.cpp" />
+    <ClCompile Include="Scene\3D\Mesh3D.cpp" />
+    <ClCompile Include="Scene\3D\Node3D.cpp" />
+    <ClCompile Include="Scene\3D\Particles3D.cpp" />
+    <ClCompile Include="Scene\Physics\AABBCollider3D.cpp" />
+    <ClCompile Include="Scene\Physics\CapsuleCollider3D.cpp" />
+    <ClCompile Include="Scene\Physics\Collider3D.cpp" />
+    <ClCompile Include="Scene\Physics\CylinderZCollider3D.cpp" />
+    <ClCompile Include="Scene\Physics\NodeRaycastUtils.cpp" />
+    <ClCompile Include="Scene\Physics\TriangleMeshCollider3D.cpp" />
+    <ClCompile Include="Scene\3D\Skybox3D.cpp" />
+    <ClCompile Include="Scene\3D\Transform3D.cpp" />
+    <ClCompile Include="Scene\3D\VisualizeInstance3D.cpp" />
+    <ClCompile Include="Scene\3D\WorldEnvironment.cpp" />
+    <ClCompile Include="EngineService\EngineService.cpp" />
+    <ClCompile Include="Scene\Import\GLBLoader.cpp" />
+    <ClCompile Include="Scene\Import\JsonLoader.cpp" />
+    <ClCompile Include="Scene\Import\OBJLoader.cpp" />
+    <ClCompile Include="Scene\Core\ClassDatabase.cpp" />
+    <ClCompile Include="Scene\Core\Node.cpp" />
+    <ClCompile Include="Scene\Core\NodeHandle.cpp" />
+    <ClCompile Include="Scene\Core\Object.cpp" />
+    <ClCompile Include="Scene\Core\PackedScene.cpp" />
+    <ClCompile Include="Scene\Core\SceneTree.cpp" />
+    <ClCompile Include="Scene\Core\Viewport.cpp" />
+    <ClCompile Include="EngineService\RenderService.cpp" />
+    <ClCompile Include="Scene\Resource\MeshResource.cpp" />
+    <ClCompile Include="Scene\SceneCommon.cpp" />
+    <ClCompile Include="..\ThirdParty\imgui\backends\imgui_impl_dx11.cpp" />
+    <ClCompile Include="..\ThirdParty\imgui\backends\imgui_impl_glfw.cpp" />
+    <ClCompile Include="..\ThirdParty\imgui\imgui.cpp" />
+    <ClCompile Include="..\ThirdParty\imgui\imgui_demo.cpp" />
+    <ClCompile Include="..\ThirdParty\imgui\imgui_draw.cpp" />
+    <ClCompile Include="..\ThirdParty\imgui\imgui_tables.cpp" />
+    <ClCompile Include="..\ThirdParty\imgui\imgui_widgets.cpp" />
+    <ClCompile Include="..\ThirdParty\imgui\misc\cpp\imgui_stdlib.cpp" />
+    <ClCompile Include="..\ThirdParty\tinyxml2\tinyxml2.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Engine\Application\Application.hpp" />
+    <ClInclude Include="Engine\Core\Clock.hpp" />
+    <ClInclude Include="Engine\Console\DevConsole.hpp" />
+    <ClInclude Include="Engine\Application\Engine.hpp" />
+    <ClInclude Include="Engine\Application\EngineBuildPreferences.hpp" />
+    <ClInclude Include="Engine\Application\EngineCommon.hpp" />
+    <ClInclude Include="Engine\Core\ErrorWarningAssert.hpp" />
+    <ClInclude Include="Engine\Event\EventSystem.hpp" />
+    <ClInclude Include="Engine\Core\FileUtils.hpp" />
+    <ClInclude Include="Engine\Render\HeatMaps.hpp" />
+    <ClInclude Include="Engine\Core\Image.hpp" />
+    <ClInclude Include="Engine\Core\NamedStrings.hpp" />
+    <ClInclude Include="Engine\Render\Rgba8.hpp" />
+    <ClInclude Include="Engine\Core\StringUtils.hpp" />
+    <ClInclude Include="Engine\Core\Time.hpp" />
+    <ClInclude Include="Engine\Core\Timer.hpp" />
+    <ClInclude Include="Engine\Render\Vertex.hpp" />
+    <ClInclude Include="Engine\Render\VertexUtils.hpp" />
+    <ClInclude Include="Engine\Core\XmlUtils.hpp" />
+    <ClInclude Include="Editor\EditorApplication.hpp" />
+    <ClInclude Include="Editor\EditorController.hpp" />
+    <ClInclude Include="Editor\EditorNode.hpp" />
+    <ClInclude Include="Editor\GizmoComponent.hpp" />
+    <ClInclude Include="Editor\TestCube.hpp" />
+    <ClInclude Include="Editor\TransformGizmo.hpp" />
+    <ClInclude Include="Engine\ImGui\ImGuiSystem.hpp" />
+    <ClInclude Include="Engine\Math\AABB2.hpp" />
+    <ClInclude Include="Engine\Math\AABB3.hpp" />
+    <ClInclude Include="Engine\Math\Capsule2.hpp" />
+    <ClInclude Include="Engine\Math\Capsule3.hpp" />
+    <ClInclude Include="Engine\Math\Cylinder3.hpp" />
+    <ClInclude Include="Engine\Math\CylinderZ3.hpp" />
+    <ClInclude Include="Engine\Math\Disc2.hpp" />
+    <ClInclude Include="Engine\Math\EulerAngles.hpp" />
+    <ClInclude Include="Engine\Math\FloatRange.hpp" />
+    <ClInclude Include="Engine\Math\IntRange.hpp" />
+    <ClInclude Include="Engine\Math\IntVec2.hpp" />
+    <ClInclude Include="Engine\Math\IntVec3.hpp" />
+    <ClInclude Include="Engine\Math\LineSegment2.hpp" />
+    <ClInclude Include="Engine\Math\MathCommon.hpp" />
+    <ClInclude Include="Engine\Math\MathUtils.hpp" />
+    <ClInclude Include="Engine\Math\Matrix4x4.hpp" />
+    <ClInclude Include="Engine\Math\OBB2.hpp" />
+    <ClInclude Include="Engine\Math\RandomNumberGenerator.hpp" />
+    <ClInclude Include="Engine\Math\RaycastUtils.hpp" />
+    <ClInclude Include="Engine\Math\Sphere3.hpp" />
+    <ClInclude Include="Engine\Math\Triangle2.hpp" />
+    <ClInclude Include="Engine\Math\Triangle3.hpp" />
+    <ClInclude Include="Engine\Math\Vec2.hpp" />
+    <ClInclude Include="Engine\Math\Vec3.hpp" />
+    <ClInclude Include="Engine\Math\Vec4.hpp" />
+    <ClInclude Include="Engine\Audio\AudioSystem.hpp" />
+    <ClInclude Include="Engine\Input\AnalogJoystick.hpp" />
+    <ClInclude Include="Engine\Input\InputSystem.hpp" />
+    <ClInclude Include="Engine\Input\KeyButtonState.hpp" />
+    <ClInclude Include="Engine\Input\XboxController.hpp" />
+    <ClInclude Include="Engine\Window\Window.hpp" />
+    <ClInclude Include="Engine\Render\BitmapFont.hpp" />
+    <ClInclude Include="Engine\Render\CameraContext.hpp" />
+    <ClInclude Include="Engine\Render\ConstantBuffer.hpp" />
+    <ClInclude Include="Engine\Render\D3D11RenderBackend.hpp" />
+    <ClInclude Include="Engine\Render\DebugRenderer.hpp" />
+    <ClInclude Include="Engine\Render\IndexBuffer.hpp" />
+    <ClInclude Include="Engine\Render\PostProcessChain.hpp" />
+    <ClInclude Include="Engine\Render\RenderContext.hpp" />
+    <ClInclude Include="Engine\Render\Renderer.hpp" />
+    <ClInclude Include="Engine\Render\Shader.hpp" />
+    <ClInclude Include="Engine\Render\SimpleTriangleFont.hpp" />
+    <ClInclude Include="Engine\Render\SpriteAnimDefinition.hpp" />
+    <ClInclude Include="Engine\Render\Texture.hpp" />
+    <ClInclude Include="Engine\Render\VertexBuffer.hpp" />
+    <ClInclude Include="Scene\3D\Camera3D.hpp" />
+    <ClInclude Include="Scene\3D\Light3D.hpp" />
+    <ClInclude Include="Scene\3D\Mesh3D.hpp" />
+    <ClInclude Include="Scene\3D\Node3D.hpp" />
+    <ClInclude Include="Scene\3D\Particles3D.hpp" />
+    <ClInclude Include="Scene\Physics\AABBCollider3D.hpp" />
+    <ClInclude Include="Scene\Physics\CapsuleCollider3D.hpp" />
+    <ClInclude Include="Scene\Physics\Collider3D.hpp" />
+    <ClInclude Include="Scene\Physics\CylinderZCollider3D.hpp" />
+    <ClInclude Include="Scene\Physics\NodeRaycastUtils.hpp" />
+    <ClInclude Include="Scene\Physics\TriangleMeshCollider3D.hpp" />
+    <ClInclude Include="Scene\3D\Skybox3D.hpp" />
+    <ClInclude Include="Scene\3D\Transform3D.hpp" />
+    <ClInclude Include="Scene\3D\VisualizeInstance3D.hpp" />
+    <ClInclude Include="Scene\3D\WorldEnvironment.hpp" />
+    <ClInclude Include="EngineService\EngineService.hpp" />
+    <ClInclude Include="Scene\Import\GLBLoader.hpp" />
+    <ClInclude Include="Scene\Import\JsonLoader.hpp" />
+    <ClInclude Include="Scene\Import\OBJLoader.hpp" />
+    <ClInclude Include="Scene\Core\ClassDatabase.hpp" />
+    <ClInclude Include="Scene\Core\Node.hpp" />
+    <ClInclude Include="Scene\Core\NodeHandle.hpp" />
+    <ClInclude Include="Scene\Core\Object.hpp" />
+    <ClInclude Include="Scene\Core\PackedScene.hpp" />
+    <ClInclude Include="Scene\Core\SceneTree.hpp" />
+    <ClInclude Include="Scene\Core\Viewport.hpp" />
+    <ClInclude Include="EngineService\RenderService.hpp" />
+    <ClInclude Include="Scene\Resource\MeshResource.hpp" />
+    <ClInclude Include="Scene\SceneCommon.hpp" />
+    <ClInclude Include="..\ThirdParty\FastNoiseLite\FastNoiseLite.h" />
+    <ClInclude Include="..\ThirdParty\fmod\fmod.h" />
+    <ClInclude Include="..\ThirdParty\fmod\fmod.hpp" />
+    <ClInclude Include="..\ThirdParty\fmod\fmod_codec.h" />
+    <ClInclude Include="..\ThirdParty\fmod\fmod_common.h" />
+    <ClInclude Include="..\ThirdParty\fmod\fmod_dsp.h" />
+    <ClInclude Include="..\ThirdParty\fmod\fmod_dsp_effects.h" />
+    <ClInclude Include="..\ThirdParty\fmod\fmod_errors.h" />
+    <ClInclude Include="..\ThirdParty\fmod\fmod_output.h" />
+    <ClInclude Include="..\ThirdParty\GLFW\glfw3.h" />
+    <ClInclude Include="..\ThirdParty\GLFW\glfw3native.h" />
+    <ClInclude Include="..\ThirdParty\imgui\backends\imgui_impl_dx11.h" />
+    <ClInclude Include="..\ThirdParty\imgui\backends\imgui_impl_glfw.h" />
+    <ClInclude Include="..\ThirdParty\imgui\imconfig.h" />
+    <ClInclude Include="..\ThirdParty\imgui\imgui.h" />
+    <ClInclude Include="..\ThirdParty\imgui\imgui_internal.h" />
+    <ClInclude Include="..\ThirdParty\imgui\imstb_rectpack.h" />
+    <ClInclude Include="..\ThirdParty\imgui\imstb_textedit.h" />
+    <ClInclude Include="..\ThirdParty\imgui\imstb_truetype.h" />
+    <ClInclude Include="..\ThirdParty\imgui\misc\cpp\imgui_stdlib.h" />
+    <ClInclude Include="..\ThirdParty\imgui\misc\freetype\imgui_freetype.h" />
+    <ClInclude Include="..\ThirdParty\imgui\misc\single_file\imgui_single_file.h" />
+    <ClInclude Include="..\ThirdParty\nlohmann\json.hpp" />
+    <ClInclude Include="..\ThirdParty\stb\stb_image.h" />
+    <ClInclude Include="..\ThirdParty\tinygltf\tiny_gltf_v3.h" />
+    <ClInclude Include="..\ThirdParty\tinygltf\tinygltf_json.h" />
+    <ClInclude Include="..\ThirdParty\tinyxml2\tinyxml2.h" />
+  </ItemGroup>
+  <ImportGroup Label="ExtensionTargets"></ImportGroup>
+</Project>

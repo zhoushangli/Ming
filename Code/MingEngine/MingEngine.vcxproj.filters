@@ -1,0 +1,810 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Editor">
+      <UniqueIdentifier>{C9BF96AB-D8A3-49B8-B20B-4680B90E7402}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Engine">
+      <UniqueIdentifier>{A296CB04-0DAA-496A-8399-293A2B880853}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Engine\Application">
+      <UniqueIdentifier>{586CDEE2-7C40-4783-8787-61A81D558608}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Engine\Audio">
+      <UniqueIdentifier>{3E58DBDD-334E-4B20-B258-A95AAAA90C70}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Engine\Console">
+      <UniqueIdentifier>{9315B5CB-8E8E-43F9-8B23-B7C6FE749814}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Engine\Core">
+      <UniqueIdentifier>{B78E0A61-909B-4F5C-A05F-4DEFDE31BD22}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Engine\Event">
+      <UniqueIdentifier>{A40215AC-BB45-4374-B795-20BBC53ACBDF}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Engine\ImGui">
+      <UniqueIdentifier>{F5A6429A-96DA-4C13-96AD-ADDCE59A52F8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Engine\Input">
+      <UniqueIdentifier>{BDF5B220-91C8-4225-A7FB-97025589FB92}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Engine\Math">
+      <UniqueIdentifier>{5E941C45-B564-4D4E-974F-334B5426C836}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Engine\Render">
+      <UniqueIdentifier>{ADF335F8-5225-4485-BBB0-B95D85004C63}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Engine\Window">
+      <UniqueIdentifier>{D18B34FA-A728-4D97-8A0A-06E38553F2F1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="EngineService">
+      <UniqueIdentifier>{CCFE32C9-D746-4F7C-AC74-DDC44A39F06F}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Scene">
+      <UniqueIdentifier>{1CCDAC95-AC80-40F2-86F6-637873E5CB3A}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Scene\3D">
+      <UniqueIdentifier>{1E92DCC9-D8F0-4A48-B780-DC5358C2806E}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Scene\Core">
+      <UniqueIdentifier>{4F21D01C-8451-4760-BDF2-F6E55D327144}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Scene\Import">
+      <UniqueIdentifier>{4D6B3428-FC4F-4FAD-A9ED-F46B6CEC4C85}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Scene\Physics">
+      <UniqueIdentifier>{F891985C-4CC9-4FDE-AA27-5E93A18234C3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Scene\Resource">
+      <UniqueIdentifier>{77706308-3EE6-4FBD-8150-603F627724BC}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ThirdParty">
+      <UniqueIdentifier>{66728401-E569-487D-944D-3079E98658E6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ThirdParty\FastNoiseLite">
+      <UniqueIdentifier>{BAD439FE-56E9-4ED8-8F25-A545D0C14D9A}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ThirdParty\fmod">
+      <UniqueIdentifier>{20D350C1-375B-4E4D-B4C9-136BF51037CC}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ThirdParty\GLFW">
+      <UniqueIdentifier>{36662DE9-B2E1-4A65-B47B-3920E5C99886}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ThirdParty\imgui">
+      <UniqueIdentifier>{CBE94843-C844-4E1C-9A54-AF578EDCCAEA}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ThirdParty\imgui\backends">
+      <UniqueIdentifier>{A9416A4B-41DD-4FA0-9197-E48D957D7E4E}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ThirdParty\imgui\misc">
+      <UniqueIdentifier>{39050CF9-A102-4BE3-B54D-164A0DB17B23}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ThirdParty\imgui\misc\cpp">
+      <UniqueIdentifier>{FE9F3117-945C-467C-B4FB-53D3B457E76C}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ThirdParty\imgui\misc\freetype">
+      <UniqueIdentifier>{A938F49C-D1BD-465C-BADE-EE9976797937}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ThirdParty\imgui\misc\single_file">
+      <UniqueIdentifier>{EFFF3233-1DF7-4298-88EE-8C2B0E9BB2ED}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ThirdParty\nlohmann">
+      <UniqueIdentifier>{098CD665-9AB9-48AE-8B65-7E7A417915C9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ThirdParty\stb">
+      <UniqueIdentifier>{715AE4F0-390D-426A-B464-54F19B000955}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ThirdParty\tinygltf">
+      <UniqueIdentifier>{CC09BD3D-BCD5-4551-9561-D0C96895230A}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ThirdParty\tinyxml2">
+      <UniqueIdentifier>{6AC4441D-6D65-46C5-8EA7-40EBD7945B73}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Engine\Application\Application.cpp">
+      <Filter>Engine\Application</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Core\Clock.cpp">
+      <Filter>Engine\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Console\DevConsole.cpp">
+      <Filter>Engine\Console</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Application\Engine.cpp">
+      <Filter>Engine\Application</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Application\EngineCommon.cpp">
+      <Filter>Engine\Application</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Core\ErrorWarningAssert.cpp">
+      <Filter>Engine\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Event\EventSystem.cpp">
+      <Filter>Engine\Event</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Core\FileUtils.cpp">
+      <Filter>Engine\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Render\HeatMaps.cpp">
+      <Filter>Engine\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Core\Image.cpp">
+      <Filter>Engine\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Core\NamedStrings.cpp">
+      <Filter>Engine\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Render\Rgba8.cpp">
+      <Filter>Engine\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Core\StringUtils.cpp">
+      <Filter>Engine\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Core\Time.cpp">
+      <Filter>Engine\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Core\Timer.cpp">
+      <Filter>Engine\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Render\Vertex.cpp">
+      <Filter>Engine\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Render\VertexUtils.cpp">
+      <Filter>Engine\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Core\XmlUtils.cpp">
+      <Filter>Engine\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\EditorApplication.cpp">
+      <Filter>Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\EditorController.cpp">
+      <Filter>Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\EditorNode.cpp">
+      <Filter>Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\GizmoComponent.cpp">
+      <Filter>Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\TestCube.cpp">
+      <Filter>Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\TransformGizmo.cpp">
+      <Filter>Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\ImGui\ImGuiSystem.cpp">
+      <Filter>Engine\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Math\AABB2.cpp">
+      <Filter>Engine\Math</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Math\AABB3.cpp">
+      <Filter>Engine\Math</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Math\Capsule2.cpp">
+      <Filter>Engine\Math</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Math\Capsule3.cpp">
+      <Filter>Engine\Math</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Math\Cylinder3.cpp">
+      <Filter>Engine\Math</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Math\CylinderZ3.cpp">
+      <Filter>Engine\Math</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Math\Disc2.cpp">
+      <Filter>Engine\Math</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Math\EulerAngles.cpp">
+      <Filter>Engine\Math</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Math\FloatRange.cpp">
+      <Filter>Engine\Math</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Math\IntRange.cpp">
+      <Filter>Engine\Math</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Math\IntVec2.cpp">
+      <Filter>Engine\Math</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Math\IntVec3.cpp">
+      <Filter>Engine\Math</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Math\LineSegment2.cpp">
+      <Filter>Engine\Math</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Math\MathCommon.cpp">
+      <Filter>Engine\Math</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Math\MathUtils.cpp">
+      <Filter>Engine\Math</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Math\Matrix4x4.cpp">
+      <Filter>Engine\Math</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Math\OBB2.cpp">
+      <Filter>Engine\Math</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Math\RandomNumberGenerator.cpp">
+      <Filter>Engine\Math</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Math\RaycastUtils.cpp">
+      <Filter>Engine\Math</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Math\Sphere3.cpp">
+      <Filter>Engine\Math</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Math\Triangle2.cpp">
+      <Filter>Engine\Math</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Math\Triangle3.cpp">
+      <Filter>Engine\Math</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Math\Vec2.cpp">
+      <Filter>Engine\Math</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Math\Vec3.cpp">
+      <Filter>Engine\Math</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Math\Vec4.cpp">
+      <Filter>Engine\Math</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Audio\AudioSystem.cpp">
+      <Filter>Engine\Audio</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Input\AnalogJoystick.cpp">
+      <Filter>Engine\Input</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Input\InputSystem.cpp">
+      <Filter>Engine\Input</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Input\KeyButtonState.cpp">
+      <Filter>Engine\Input</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Input\XboxController.cpp">
+      <Filter>Engine\Input</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Window\Window.cpp">
+      <Filter>Engine\Window</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Render\BitmapFont.cpp">
+      <Filter>Engine\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Render\CameraContext.cpp">
+      <Filter>Engine\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Render\ConstantBuffer.cpp">
+      <Filter>Engine\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Render\D3D11RenderBackend.cpp">
+      <Filter>Engine\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Render\DebugRenderer.cpp">
+      <Filter>Engine\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Render\IndexBuffer.cpp">
+      <Filter>Engine\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Render\PostProcessChain.cpp">
+      <Filter>Engine\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Render\Renderer.cpp">
+      <Filter>Engine\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Render\Shader.cpp">
+      <Filter>Engine\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Render\SimpleTriangleFont.cpp">
+      <Filter>Engine\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Render\SpriteAnimDefinition.cpp">
+      <Filter>Engine\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Render\Texture.cpp">
+      <Filter>Engine\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Render\VertexBuffer.cpp">
+      <Filter>Engine\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene\3D\Camera3D.cpp">
+      <Filter>Scene\3D</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene\3D\Light3D.cpp">
+      <Filter>Scene\3D</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene\3D\Mesh3D.cpp">
+      <Filter>Scene\3D</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene\3D\Node3D.cpp">
+      <Filter>Scene\3D</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene\3D\Particles3D.cpp">
+      <Filter>Scene\3D</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene\Physics\AABBCollider3D.cpp">
+      <Filter>Scene\Physics</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene\Physics\CapsuleCollider3D.cpp">
+      <Filter>Scene\Physics</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene\Physics\Collider3D.cpp">
+      <Filter>Scene\Physics</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene\Physics\CylinderZCollider3D.cpp">
+      <Filter>Scene\Physics</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene\Physics\NodeRaycastUtils.cpp">
+      <Filter>Scene\Physics</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene\Physics\TriangleMeshCollider3D.cpp">
+      <Filter>Scene\Physics</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene\3D\Skybox3D.cpp">
+      <Filter>Scene\3D</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene\3D\Transform3D.cpp">
+      <Filter>Scene\3D</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene\3D\VisualizeInstance3D.cpp">
+      <Filter>Scene\3D</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene\3D\WorldEnvironment.cpp">
+      <Filter>Scene\3D</Filter>
+    </ClCompile>
+    <ClCompile Include="EngineService\EngineService.cpp">
+      <Filter>EngineService</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene\Import\GLBLoader.cpp">
+      <Filter>Scene\Import</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene\Import\JsonLoader.cpp">
+      <Filter>Scene\Import</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene\Import\OBJLoader.cpp">
+      <Filter>Scene\Import</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene\Core\ClassDatabase.cpp">
+      <Filter>Scene\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene\Core\Node.cpp">
+      <Filter>Scene\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene\Core\NodeHandle.cpp">
+      <Filter>Scene\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene\Core\Object.cpp">
+      <Filter>Scene\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene\Core\PackedScene.cpp">
+      <Filter>Scene\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene\Core\SceneTree.cpp">
+      <Filter>Scene\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene\Core\Viewport.cpp">
+      <Filter>Scene\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="EngineService\RenderService.cpp">
+      <Filter>EngineService</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene\Resource\MeshResource.cpp">
+      <Filter>Scene\Resource</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene\SceneCommon.cpp">
+      <Filter>Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ThirdParty\imgui\backends\imgui_impl_dx11.cpp">
+      <Filter>ThirdParty\imgui\backends</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ThirdParty\imgui\backends\imgui_impl_glfw.cpp">
+      <Filter>ThirdParty\imgui\backends</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ThirdParty\imgui\imgui.cpp">
+      <Filter>ThirdParty\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ThirdParty\imgui\imgui_demo.cpp">
+      <Filter>ThirdParty\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ThirdParty\imgui\imgui_draw.cpp">
+      <Filter>ThirdParty\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ThirdParty\imgui\imgui_tables.cpp">
+      <Filter>ThirdParty\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ThirdParty\imgui\imgui_widgets.cpp">
+      <Filter>ThirdParty\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ThirdParty\imgui\misc\cpp\imgui_stdlib.cpp">
+      <Filter>ThirdParty\imgui\misc\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ThirdParty\tinyxml2\tinyxml2.cpp">
+      <Filter>ThirdParty\tinyxml2</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Engine\Application\Application.hpp">
+      <Filter>Engine\Application</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Core\Clock.hpp">
+      <Filter>Engine\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Console\DevConsole.hpp">
+      <Filter>Engine\Console</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Application\Engine.hpp">
+      <Filter>Engine\Application</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Application\EngineBuildPreferences.hpp">
+      <Filter>Engine\Application</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Application\EngineCommon.hpp">
+      <Filter>Engine\Application</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Core\ErrorWarningAssert.hpp">
+      <Filter>Engine\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Event\EventSystem.hpp">
+      <Filter>Engine\Event</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Core\FileUtils.hpp">
+      <Filter>Engine\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Render\HeatMaps.hpp">
+      <Filter>Engine\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Core\Image.hpp">
+      <Filter>Engine\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Core\NamedStrings.hpp">
+      <Filter>Engine\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Render\Rgba8.hpp">
+      <Filter>Engine\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Core\StringUtils.hpp">
+      <Filter>Engine\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Core\Time.hpp">
+      <Filter>Engine\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Core\Timer.hpp">
+      <Filter>Engine\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Render\Vertex.hpp">
+      <Filter>Engine\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Render\VertexUtils.hpp">
+      <Filter>Engine\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Core\XmlUtils.hpp">
+      <Filter>Engine\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\EditorApplication.hpp">
+      <Filter>Editor</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\EditorController.hpp">
+      <Filter>Editor</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\EditorNode.hpp">
+      <Filter>Editor</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\GizmoComponent.hpp">
+      <Filter>Editor</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\TestCube.hpp">
+      <Filter>Editor</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\TransformGizmo.hpp">
+      <Filter>Editor</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\ImGui\ImGuiSystem.hpp">
+      <Filter>Engine\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Math\AABB2.hpp">
+      <Filter>Engine\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Math\AABB3.hpp">
+      <Filter>Engine\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Math\Capsule2.hpp">
+      <Filter>Engine\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Math\Capsule3.hpp">
+      <Filter>Engine\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Math\Cylinder3.hpp">
+      <Filter>Engine\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Math\CylinderZ3.hpp">
+      <Filter>Engine\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Math\Disc2.hpp">
+      <Filter>Engine\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Math\EulerAngles.hpp">
+      <Filter>Engine\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Math\FloatRange.hpp">
+      <Filter>Engine\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Math\IntRange.hpp">
+      <Filter>Engine\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Math\IntVec2.hpp">
+      <Filter>Engine\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Math\IntVec3.hpp">
+      <Filter>Engine\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Math\LineSegment2.hpp">
+      <Filter>Engine\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Math\MathCommon.hpp">
+      <Filter>Engine\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Math\MathUtils.hpp">
+      <Filter>Engine\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Math\Matrix4x4.hpp">
+      <Filter>Engine\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Math\OBB2.hpp">
+      <Filter>Engine\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Math\RandomNumberGenerator.hpp">
+      <Filter>Engine\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Math\RaycastUtils.hpp">
+      <Filter>Engine\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Math\Sphere3.hpp">
+      <Filter>Engine\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Math\Triangle2.hpp">
+      <Filter>Engine\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Math\Triangle3.hpp">
+      <Filter>Engine\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Math\Vec2.hpp">
+      <Filter>Engine\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Math\Vec3.hpp">
+      <Filter>Engine\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Math\Vec4.hpp">
+      <Filter>Engine\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Audio\AudioSystem.hpp">
+      <Filter>Engine\Audio</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Input\AnalogJoystick.hpp">
+      <Filter>Engine\Input</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Input\InputSystem.hpp">
+      <Filter>Engine\Input</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Input\KeyButtonState.hpp">
+      <Filter>Engine\Input</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Input\XboxController.hpp">
+      <Filter>Engine\Input</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Window\Window.hpp">
+      <Filter>Engine\Window</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Render\BitmapFont.hpp">
+      <Filter>Engine\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Render\CameraContext.hpp">
+      <Filter>Engine\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Render\ConstantBuffer.hpp">
+      <Filter>Engine\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Render\D3D11RenderBackend.hpp">
+      <Filter>Engine\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Render\DebugRenderer.hpp">
+      <Filter>Engine\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Render\IndexBuffer.hpp">
+      <Filter>Engine\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Render\PostProcessChain.hpp">
+      <Filter>Engine\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Render\RenderContext.hpp">
+      <Filter>Engine\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Render\Renderer.hpp">
+      <Filter>Engine\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Render\Shader.hpp">
+      <Filter>Engine\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Render\SimpleTriangleFont.hpp">
+      <Filter>Engine\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Render\SpriteAnimDefinition.hpp">
+      <Filter>Engine\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Render\Texture.hpp">
+      <Filter>Engine\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Render\VertexBuffer.hpp">
+      <Filter>Engine\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\3D\Camera3D.hpp">
+      <Filter>Scene\3D</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\3D\Light3D.hpp">
+      <Filter>Scene\3D</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\3D\Mesh3D.hpp">
+      <Filter>Scene\3D</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\3D\Node3D.hpp">
+      <Filter>Scene\3D</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\3D\Particles3D.hpp">
+      <Filter>Scene\3D</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\Physics\AABBCollider3D.hpp">
+      <Filter>Scene\Physics</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\Physics\CapsuleCollider3D.hpp">
+      <Filter>Scene\Physics</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\Physics\Collider3D.hpp">
+      <Filter>Scene\Physics</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\Physics\CylinderZCollider3D.hpp">
+      <Filter>Scene\Physics</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\Physics\NodeRaycastUtils.hpp">
+      <Filter>Scene\Physics</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\Physics\TriangleMeshCollider3D.hpp">
+      <Filter>Scene\Physics</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\3D\Skybox3D.hpp">
+      <Filter>Scene\3D</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\3D\Transform3D.hpp">
+      <Filter>Scene\3D</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\3D\VisualizeInstance3D.hpp">
+      <Filter>Scene\3D</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\3D\WorldEnvironment.hpp">
+      <Filter>Scene\3D</Filter>
+    </ClInclude>
+    <ClInclude Include="EngineService\EngineService.hpp">
+      <Filter>EngineService</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\Import\GLBLoader.hpp">
+      <Filter>Scene\Import</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\Import\JsonLoader.hpp">
+      <Filter>Scene\Import</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\Import\OBJLoader.hpp">
+      <Filter>Scene\Import</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\Core\ClassDatabase.hpp">
+      <Filter>Scene\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\Core\Node.hpp">
+      <Filter>Scene\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\Core\NodeHandle.hpp">
+      <Filter>Scene\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\Core\Object.hpp">
+      <Filter>Scene\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\Core\PackedScene.hpp">
+      <Filter>Scene\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\Core\SceneTree.hpp">
+      <Filter>Scene\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\Core\Viewport.hpp">
+      <Filter>Scene\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="EngineService\RenderService.hpp">
+      <Filter>EngineService</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\Resource\MeshResource.hpp">
+      <Filter>Scene\Resource</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\SceneCommon.hpp">
+      <Filter>Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ThirdParty\FastNoiseLite\FastNoiseLite.h">
+      <Filter>ThirdParty\FastNoiseLite</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ThirdParty\fmod\fmod.h">
+      <Filter>ThirdParty\fmod</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ThirdParty\fmod\fmod.hpp">
+      <Filter>ThirdParty\fmod</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ThirdParty\fmod\fmod_codec.h">
+      <Filter>ThirdParty\fmod</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ThirdParty\fmod\fmod_common.h">
+      <Filter>ThirdParty\fmod</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ThirdParty\fmod\fmod_dsp.h">
+      <Filter>ThirdParty\fmod</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ThirdParty\fmod\fmod_dsp_effects.h">
+      <Filter>ThirdParty\fmod</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ThirdParty\fmod\fmod_errors.h">
+      <Filter>ThirdParty\fmod</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ThirdParty\fmod\fmod_output.h">
+      <Filter>ThirdParty\fmod</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ThirdParty\GLFW\glfw3.h">
+      <Filter>ThirdParty\GLFW</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ThirdParty\GLFW\glfw3native.h">
+      <Filter>ThirdParty\GLFW</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ThirdParty\imgui\backends\imgui_impl_dx11.h">
+      <Filter>ThirdParty\imgui\backends</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ThirdParty\imgui\backends\imgui_impl_glfw.h">
+      <Filter>ThirdParty\imgui\backends</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ThirdParty\imgui\imconfig.h">
+      <Filter>ThirdParty\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ThirdParty\imgui\imgui.h">
+      <Filter>ThirdParty\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ThirdParty\imgui\imgui_internal.h">
+      <Filter>ThirdParty\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ThirdParty\imgui\imstb_rectpack.h">
+      <Filter>ThirdParty\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ThirdParty\imgui\imstb_textedit.h">
+      <Filter>ThirdParty\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ThirdParty\imgui\imstb_truetype.h">
+      <Filter>ThirdParty\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ThirdParty\imgui\misc\cpp\imgui_stdlib.h">
+      <Filter>ThirdParty\imgui\misc\cpp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ThirdParty\imgui\misc\freetype\imgui_freetype.h">
+      <Filter>ThirdParty\imgui\misc\freetype</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ThirdParty\imgui\misc\single_file\imgui_single_file.h">
+      <Filter>ThirdParty\imgui\misc\single_file</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ThirdParty\nlohmann\json.hpp">
+      <Filter>ThirdParty\nlohmann</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ThirdParty\stb\stb_image.h">
+      <Filter>ThirdParty\stb</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ThirdParty\tinygltf\tiny_gltf_v3.h">
+      <Filter>ThirdParty\tinygltf</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ThirdParty\tinygltf\tinygltf_json.h">
+      <Filter>ThirdParty\tinygltf</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ThirdParty\tinyxml2\tinyxml2.h">
+      <Filter>ThirdParty\tinyxml2</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>
