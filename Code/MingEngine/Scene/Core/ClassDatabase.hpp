@@ -8,6 +8,7 @@
 
 #include <functional>
 #include <string>
+#include <type_traits>
 #include <unordered_map>
 #include <variant>
 #include <vector>
@@ -47,6 +48,7 @@ public:
 		std::string               m_className;
 		std::string               m_parentClassName;
 		std::function<Object*()>  m_creator;
+		bool                      m_canCreateInEditor = true;
 		std::vector<PropertyInfo> m_properties;
 	};
 
@@ -59,15 +61,21 @@ public:
 
 	static Object*          CreateInstance(std::string const& className);
 	static ClassInfo const* GetClassInfo(std::string const& className);
+	static std::vector<ClassInfo const*> GetRegisteredClasses();
+	static bool IsSubclassOf(std::string const& className, std::string const& baseClassName);
 
 	template <typename T>
-	static void RegisterClass()
+	static void RegisterClass(bool canCreateInEditor = true)
 	{
 		std::string className = T::GetStaticClassName();
 		ClassInfo   classInfo;
 		classInfo.m_className       = className;
 		classInfo.m_parentClassName = T::Super::GetStaticClassName();
-		classInfo.m_creator         = &Creator<T>;
+		if constexpr (!std::is_abstract_v<T>)
+		{
+			classInfo.m_creator = &Creator<T>;
+		}
+		classInfo.m_canCreateInEditor = canCreateInEditor;
 		m_classInfoMap[className]   = classInfo;
 		T::InitializeClass();
 	}

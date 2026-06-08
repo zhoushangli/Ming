@@ -5,7 +5,7 @@
 
 class EditorGizmos : public Node
 {
-	CLASS(EditorGizmos, Node);
+	MCLASS(EditorGizmos, Node);
 
 public:
 	EditorGizmos()           = default;

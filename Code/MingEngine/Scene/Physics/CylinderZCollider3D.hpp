@@ -7,7 +7,7 @@
 
 class CylinderZCollider3D : public Collider3D
 {
-	CLASS(CylinderZCollider3D, Collider3D);
+	MCLASS(CylinderZCollider3D, Collider3D);
 
 public:
 	CylinderZCollider3D()           = default;

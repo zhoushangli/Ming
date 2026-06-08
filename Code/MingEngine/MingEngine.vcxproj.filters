@@ -4,6 +4,9 @@
     <Filter Include="Editor">
       <UniqueIdentifier>{C9BF96AB-D8A3-49B8-B20B-4680B90E7402}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Editor\UI">
+      <UniqueIdentifier>{D2A02EA8-4D3D-45C2-BCDA-D44BE0D3C4B1}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Engine">
       <UniqueIdentifier>{A296CB04-0DAA-496A-8399-293A2B880853}</UniqueIdentifier>
     </Filter>
@@ -162,10 +165,31 @@
     <ClCompile Include="Editor\EditorNode.cpp">
       <Filter>Editor</Filter>
     </ClCompile>
-    <ClCompile Include="Editor\GizmoComponent.cpp">
-      <Filter>Editor</Filter>
+    <ClCompile Include="Editor\UI\CreateNodePanel.cpp">
+      <Filter>Editor\UI</Filter>
     </ClCompile>
-    <ClCompile Include="Editor\TestCube.cpp">
+    <ClCompile Include="Editor\UI\EditorPanel.cpp">
+      <Filter>Editor\UI</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\UI\EditorUI.cpp">
+      <Filter>Editor\UI</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\UI\FileSystemPanel.cpp">
+      <Filter>Editor\UI</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\UI\InspectorPanel.cpp">
+      <Filter>Editor\UI</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\UI\OutputPanel.cpp">
+      <Filter>Editor\UI</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\UI\ScenePanel.cpp">
+      <Filter>Editor\UI</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\UI\ViewportPanel.cpp">
+      <Filter>Editor\UI</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\GizmoComponent.cpp">
       <Filter>Editor</Filter>
     </ClCompile>
     <ClCompile Include="Editor\TransformGizmo.cpp">
@@ -494,10 +518,34 @@
     <ClInclude Include="Editor\EditorNode.hpp">
       <Filter>Editor</Filter>
     </ClInclude>
-    <ClInclude Include="Editor\GizmoComponent.hpp">
-      <Filter>Editor</Filter>
+    <ClInclude Include="Editor\UI\CreateNodePanel.hpp">
+      <Filter>Editor\UI</Filter>
     </ClInclude>
-    <ClInclude Include="Editor\TestCube.hpp">
+    <ClInclude Include="Editor\UI\EditorPanel.hpp">
+      <Filter>Editor\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\UI\EditorUI.hpp">
+      <Filter>Editor\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\UI\EditorUIContext.hpp">
+      <Filter>Editor\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\UI\FileSystemPanel.hpp">
+      <Filter>Editor\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\UI\InspectorPanel.hpp">
+      <Filter>Editor\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\UI\OutputPanel.hpp">
+      <Filter>Editor\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\UI\ScenePanel.hpp">
+      <Filter>Editor\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\UI\ViewportPanel.hpp">
+      <Filter>Editor\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\GizmoComponent.hpp">
       <Filter>Editor</Filter>
     </ClInclude>
     <ClInclude Include="Editor\TransformGizmo.hpp">

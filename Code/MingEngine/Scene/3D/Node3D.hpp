@@ -9,7 +9,7 @@
 
 class Node3D : public Node
 {
-	CLASS(Node3D, Node);
+	MCLASS(Node3D, Node);
 
 	friend class SceneTree;
 

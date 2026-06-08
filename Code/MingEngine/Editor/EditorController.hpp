@@ -8,7 +8,7 @@ class Camera3D;
 
 class EditorController : public Node3D
 {
-	CLASS(EditorController, Node3D);
+	MCLASS(EditorController, Node3D);
 
 public:
     enum class EditorControlState

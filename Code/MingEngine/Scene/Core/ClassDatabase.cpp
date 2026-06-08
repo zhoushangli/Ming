@@ -20,6 +20,7 @@ void ClassDatabase::Startup()
 	RegisterClass<Camera3D>();
 	RegisterClass<DirectionalLight3D>();
 	RegisterClass<PointLight3D>();
+	RegisterClass<Collider3D>(false);
 	RegisterClass<AABBCollider3D>();
 	RegisterClass<CapsuleCollider3D>();
 	RegisterClass<CylinderZCollider3D>();
@@ -37,6 +38,10 @@ Object* ClassDatabase::CreateInstance(std::string const& className)
 	}
 
 	ClassInfo const& classInfo = iter->second;
+	if (!classInfo.m_creator)
+	{
+		return nullptr;
+	}
 	return classInfo.m_creator();
 }
 
@@ -49,6 +54,38 @@ ClassDatabase::ClassInfo const* ClassDatabase::GetClassInfo(std::string const& c
 	}
 
 	return &iter->second;
+}
+
+std::vector<ClassDatabase::ClassInfo const*> ClassDatabase::GetRegisteredClasses()
+{
+	std::vector<ClassInfo const*> classes;
+	classes.reserve(m_classInfoMap.size());
+	for (auto const& classEntry : m_classInfoMap)
+	{
+		classes.push_back(&classEntry.second);
+	}
+	return classes;
+}
+
+bool ClassDatabase::IsSubclassOf(std::string const& className, std::string const& baseClassName)
+{
+	std::string currentClassName = className;
+	for (size_t depth = 0; depth <= m_classInfoMap.size(); ++depth)
+	{
+		if (currentClassName == baseClassName)
+		{
+			return true;
+		}
+
+		ClassInfo const* classInfo = GetClassInfo(currentClassName);
+		if (classInfo == nullptr || classInfo->m_parentClassName == currentClassName)
+		{
+			return false;
+		}
+		currentClassName = classInfo->m_parentClassName;
+	}
+
+	return false;
 }
 
 std::vector<ClassDatabase::PropertyInfo> ClassDatabase::GetProperties(std::string const& className)

@@ -17,7 +17,7 @@ struct CollideInfo
 
 class Collider3D : public Node3D
 {
-	CLASS(Collider3D, Node3D);
+	MCLASS(Collider3D, Node3D);
 
 	using CollideCallbackFunction = std::function<void(CollideInfo const&)>;
 

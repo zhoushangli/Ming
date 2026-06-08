@@ -8,7 +8,7 @@
 
 class Light3D : public Node
 {
-	CLASS(Light3D, Node);
+	MCLASS(Light3D, Node);
 
 public:
 	Light3D();
@@ -37,7 +37,7 @@ protected:
 
 class PointLight3D : public Light3D
 {
-	CLASS(PointLight3D, Node);
+	MCLASS(PointLight3D, Node);
 
 public:
 	PointLight3D();
@@ -46,7 +46,7 @@ public:
 
 class DirectionalLight3D : public Light3D
 {
-	CLASS(DirectionalLight3D, Node);
+	MCLASS(DirectionalLight3D, Node);
 
 public:
 	DirectionalLight3D();

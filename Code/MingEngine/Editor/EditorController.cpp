@@ -208,11 +208,13 @@ void EditorController::BeginPointerClick(Vec2 const& cursorPos)
 	m_lastCursorClientPos = cursorPos;
 	m_isDragging          = false;
 
-	EditorNode* editorNode = EditorNode::Get();
-	if (editorNode != nullptr && m_camera != nullptr)
-	{
-		editorNode->HandleSelectionClick(*m_camera, cursorPos);
-	}
+	// Viewport picking is paused while editor selection is driven by the Scene panel.
+	// The raycast selection path remains available for a later picking redesign.
+	// EditorNode* editorNode = EditorNode::Get();
+	// if (editorNode != nullptr && m_camera != nullptr)
+	// {
+	// 	editorNode->HandleSelectionClick(*m_camera, cursorPos);
+	// }
 }
 
 void EditorController::UpdatePointerDrag(Vec2 const& cursorPos)

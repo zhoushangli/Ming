@@ -6,7 +6,7 @@
 
 class AABBCollider3D : public Collider3D
 {
-	CLASS(AABBCollider3D, Collider3D);
+	MCLASS(AABBCollider3D, Collider3D);
 
 public:
 	AABBCollider3D()           = default;

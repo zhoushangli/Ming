@@ -7,7 +7,6 @@
 #include "MingEngine/Editor/EditorNode.hpp"
 #include "MingEngine/Scene/3D/Camera3D.hpp"
 #include "MingEngine/Scene/3D/Light3D.hpp"
-#include "MingEngine/Editor/TestCube.hpp"
 #include "MingEngine/Scene/Core/Node.hpp"
 #include "MingEngine/Scene/Core/ClassDatabase.hpp"
 #include "MingEngine/Scene/Core/SceneTree.hpp"
@@ -25,10 +24,9 @@
 
 void RegisterEditorTypes()
 {
-	ClassDatabase::RegisterClass<EditorNode>();
-	ClassDatabase::RegisterClass<EditorGizmos>();
-	ClassDatabase::RegisterClass<EditorController>();
-	ClassDatabase::RegisterClass<TestCube>();
+	ClassDatabase::RegisterClass<EditorNode>(false);
+	ClassDatabase::RegisterClass<EditorGizmos>(false);
+	ClassDatabase::RegisterClass<EditorController>(false);
 }
 
 AppEditorState::AppEditorState(IProjectModule& project)
@@ -88,8 +86,15 @@ void AppEditorState::BuildEditorScene()
 
 	m_editorController = new EditorController();
 	m_editorController->SetName("EditorController");
-	m_editorController->SetLocalPosition(Vec3(0.f, 0.f, 5.f));
+	Vec3 const editorStartPosition(-8.f, -8.f, 8.f);
+	m_editorController->SetLocalPosition(editorStartPosition);
+	m_editorController->SetLocalOrientation(EulerAngles::MakeFromForward(-editorStartPosition.GetNormalized()));
 	m_sceneTree->GetRoot()->AddNode(m_editorController);
+
+	if (Node* projectScene = m_project.CreateEditorScene())
+	{
+		m_sceneTree->ChangeScene(projectScene);
+	}
 
 	IntVec2 screenDimensions = g_engine->m_window->GetClientDimensions();
 
@@ -232,10 +237,6 @@ void AppRuntimeState::BuildRuntimeScene()
 	directionalLight->SetColor(Rgba8::White);
 	directionalLight->SetIntensity(0.5f);
 	runtimeScene->AddNode(directionalLight);
-
-	TestCube* testCube = new TestCube();
-	testCube->SetName("RuntimeTestCube");
-	runtimeScene->AddNode(testCube);
 
 	m_sceneTree->ChangeScene(runtimeScene);
 }

@@ -516,6 +516,14 @@ void AddVertsForSphere3D(
 	float uRange = UVs.m_maxs.x - UVs.m_mins.x;
 	float vRange = UVs.m_maxs.y - UVs.m_mins.y;
 
+	auto AddSphereVertex = [&](Vec3 const& position, float u, float v, float yaw)
+	{
+		Vec3 const normal    = (position - center).GetNormalized();
+		Vec3 const tangent   = Vec3(-sinf(yaw), cosf(yaw), 0.f).GetNormalized();
+		Vec3 const bitangent = CrossProduct3D(normal, tangent).GetNormalized();
+		verts.emplace_back(position, color, Vec2(u, v), tangent, bitangent, normal);
+	};
+
 	for (int stackIndex = 0; stackIndex < numStacks; ++stackIndex)
 	{
 		float v0Frac = static_cast<float>(stackIndex) / static_cast<float>(numStacks);
@@ -543,13 +551,13 @@ void AddVertsForSphere3D(
 			float u0 = UVs.m_mins.x + u0Frac * uRange;
 			float u1 = UVs.m_mins.x + u1Frac * uRange;
 
-			verts.emplace_back(p00, color, Vec2(u0, v0));
-			verts.emplace_back(p10, color, Vec2(u1, v0));
-			verts.emplace_back(p11, color, Vec2(u1, v1));
+			AddSphereVertex(p00, u0, v0, yaw0);
+			AddSphereVertex(p10, u1, v0, yaw1);
+			AddSphereVertex(p11, u1, v1, yaw1);
 
-			verts.emplace_back(p00, color, Vec2(u0, v0));
-			verts.emplace_back(p11, color, Vec2(u1, v1));
-			verts.emplace_back(p01, color, Vec2(u0, v1));
+			AddSphereVertex(p00, u0, v0, yaw0);
+			AddSphereVertex(p11, u1, v1, yaw1);
+			AddSphereVertex(p01, u0, v1, yaw0);
 		}
 	}
 }
@@ -616,6 +624,12 @@ void AddVertsForCylinder3D(
 		Vec3 t0 = end + rim0;
 		Vec3 t1 = end + rim1;
 
+		Vec3 const radial0    = rim0.GetNormalized();
+		Vec3 const radial1    = rim1.GetNormalized();
+		Vec3 const tangent0   = (-iBasis * sin0 + jBasis * cos0).GetNormalized();
+		Vec3 const tangent1   = (-iBasis * sin1 + jBasis * cos1).GetNormalized();
+		Vec3 const sideBitangent = kBasis;
+
 		float u0Frac = static_cast<float>(sliceIndex) / static_cast<float>(numSlices);
 		float u1Frac = static_cast<float>(sliceIndex + 1) / static_cast<float>(numSlices);
 
@@ -626,13 +640,13 @@ void AddVertsForCylinder3D(
 		float vTop    = UVs.m_mins.y + vRange;
 
 		// Side quad (two triangles)
-		verts.emplace_back(b0, color, Vec2(u0, vBottom));
-		verts.emplace_back(b1, color, Vec2(u1, vBottom));
-		verts.emplace_back(t1, color, Vec2(u1, vTop));
+		verts.emplace_back(b0, color, Vec2(u0, vBottom), tangent0, sideBitangent, radial0);
+		verts.emplace_back(b1, color, Vec2(u1, vBottom), tangent1, sideBitangent, radial1);
+		verts.emplace_back(t1, color, Vec2(u1, vTop), tangent1, sideBitangent, radial1);
 
-		verts.emplace_back(b0, color, Vec2(u0, vBottom));
-		verts.emplace_back(t1, color, Vec2(u1, vTop));
-		verts.emplace_back(t0, color, Vec2(u0, vTop));
+		verts.emplace_back(b0, color, Vec2(u0, vBottom), tangent0, sideBitangent, radial0);
+		verts.emplace_back(t1, color, Vec2(u1, vTop), tangent1, sideBitangent, radial1);
+		verts.emplace_back(t0, color, Vec2(u0, vTop), tangent0, sideBitangent, radial0);
 
 		// Bottom cap (-kBasis) - triangle fan
 		Vec3  cB  = start;
@@ -644,16 +658,19 @@ void AddVertsForCylinder3D(
 		float cvC = UVs.m_mins.y + 0.5f * vRange;
 
 		// Winding chosen to face outward on bottom
-		verts.emplace_back(cB, color, Vec2(cuC, cvC));
-		verts.emplace_back(b1, color, Vec2(cu1, cv1));
-		verts.emplace_back(b0, color, Vec2(cu0, cv0));
+		Vec3 const bottomNormal    = -kBasis;
+		Vec3 const bottomTangent   = iBasis;
+		Vec3 const bottomBitangent = -jBasis;
+		verts.emplace_back(cB, color, Vec2(cuC, cvC), bottomTangent, bottomBitangent, bottomNormal);
+		verts.emplace_back(b1, color, Vec2(cu1, cv1), bottomTangent, bottomBitangent, bottomNormal);
+		verts.emplace_back(b0, color, Vec2(cu0, cv0), bottomTangent, bottomBitangent, bottomNormal);
 
 		// Top cap (+kBasis)
 		Vec3 cT = end;
 		// Winding chosen to face outward on top
-		verts.emplace_back(cT, color, Vec2(cuC, cvC));
-		verts.emplace_back(t0, color, Vec2(cu0, cv0));
-		verts.emplace_back(t1, color, Vec2(cu1, cv1));
+		verts.emplace_back(cT, color, Vec2(cuC, cvC), iBasis, jBasis, kBasis);
+		verts.emplace_back(t0, color, Vec2(cu0, cv0), iBasis, jBasis, kBasis);
+		verts.emplace_back(t1, color, Vec2(cu1, cv1), iBasis, jBasis, kBasis);
 	}
 }
 
@@ -717,6 +734,13 @@ void AddVertsForCapsule3D(
 
 	auto GetV = [&](float vFrac) -> float { return UVs.m_mins.y + vFrac * vRange; };
 
+	auto AddCapsuleVertex = [&](Vec3 const& position, Vec3 const& normal, float yaw, float u, float v)
+	{
+		Vec3 const tangent = (-iBasis * sinf(yaw) + jBasis * cosf(yaw)).GetNormalized();
+		Vec3 const bitangent = CrossProduct3D(normal, tangent).GetNormalized();
+		verts.emplace_back(position, color, Vec2(u, v), tangent, bitangent, normal);
+	};
+
 	for (int sliceIndex = 0; sliceIndex < numSlices; ++sliceIndex)
 	{
 		float const yaw0Frac = static_cast<float>(sliceIndex) / static_cast<float>(numSlices);
@@ -731,19 +755,21 @@ void AddVertsForCapsule3D(
 		Vec3 const b1 = start + rim1;
 		Vec3 const t0 = end + rim0;
 		Vec3 const t1 = end + rim1;
+		Vec3 const normal0 = rim0.GetNormalized();
+		Vec3 const normal1 = rim1.GetNormalized();
 
 		float const u0      = GetU(yaw0Frac);
 		float const u1      = GetU(yaw1Frac);
 		float const vBottom = GetV(bodyVMinFrac);
 		float const vTop    = GetV(bodyVMaxFrac);
 
-		verts.emplace_back(b0, color, Vec2(u0, vBottom));
-		verts.emplace_back(b1, color, Vec2(u1, vBottom));
-		verts.emplace_back(t1, color, Vec2(u1, vTop));
+		AddCapsuleVertex(b0, normal0, yaw0, u0, vBottom);
+		AddCapsuleVertex(b1, normal1, yaw1, u1, vBottom);
+		AddCapsuleVertex(t1, normal1, yaw1, u1, vTop);
 
-		verts.emplace_back(b0, color, Vec2(u0, vBottom));
-		verts.emplace_back(t1, color, Vec2(u1, vTop));
-		verts.emplace_back(t0, color, Vec2(u0, vTop));
+		AddCapsuleVertex(b0, normal0, yaw0, u0, vBottom);
+		AddCapsuleVertex(t1, normal1, yaw1, u1, vTop);
+		AddCapsuleVertex(t0, normal0, yaw0, u0, vTop);
 	}
 
 	for (int stackIndex = 0; stackIndex < hemiStacks; ++stackIndex)
@@ -775,26 +801,26 @@ void AddVertsForCapsule3D(
 			Vec3 const lower11 = GetHemispherePoint(start, yaw1, lowerPitch1);
 			Vec3 const lower01 = GetHemispherePoint(start, yaw0, lowerPitch1);
 
-			verts.emplace_back(lower00, color, Vec2(u0, GetV(lowerV0Frac)));
-			verts.emplace_back(lower10, color, Vec2(u1, GetV(lowerV0Frac)));
-			verts.emplace_back(lower11, color, Vec2(u1, GetV(lowerV1Frac)));
+			AddCapsuleVertex(lower00, (lower00 - start).GetNormalized(), yaw0, u0, GetV(lowerV0Frac));
+			AddCapsuleVertex(lower10, (lower10 - start).GetNormalized(), yaw1, u1, GetV(lowerV0Frac));
+			AddCapsuleVertex(lower11, (lower11 - start).GetNormalized(), yaw1, u1, GetV(lowerV1Frac));
 
-			verts.emplace_back(lower00, color, Vec2(u0, GetV(lowerV0Frac)));
-			verts.emplace_back(lower11, color, Vec2(u1, GetV(lowerV1Frac)));
-			verts.emplace_back(lower01, color, Vec2(u0, GetV(lowerV1Frac)));
+			AddCapsuleVertex(lower00, (lower00 - start).GetNormalized(), yaw0, u0, GetV(lowerV0Frac));
+			AddCapsuleVertex(lower11, (lower11 - start).GetNormalized(), yaw1, u1, GetV(lowerV1Frac));
+			AddCapsuleVertex(lower01, (lower01 - start).GetNormalized(), yaw0, u0, GetV(lowerV1Frac));
 
 			Vec3 const upper00 = GetHemispherePoint(end, yaw0, upperPitch0);
 			Vec3 const upper10 = GetHemispherePoint(end, yaw1, upperPitch0);
 			Vec3 const upper11 = GetHemispherePoint(end, yaw1, upperPitch1);
 			Vec3 const upper01 = GetHemispherePoint(end, yaw0, upperPitch1);
 
-			verts.emplace_back(upper00, color, Vec2(u0, GetV(upperV0Frac)));
-			verts.emplace_back(upper10, color, Vec2(u1, GetV(upperV0Frac)));
-			verts.emplace_back(upper11, color, Vec2(u1, GetV(upperV1Frac)));
+			AddCapsuleVertex(upper00, (upper00 - end).GetNormalized(), yaw0, u0, GetV(upperV0Frac));
+			AddCapsuleVertex(upper10, (upper10 - end).GetNormalized(), yaw1, u1, GetV(upperV0Frac));
+			AddCapsuleVertex(upper11, (upper11 - end).GetNormalized(), yaw1, u1, GetV(upperV1Frac));
 
-			verts.emplace_back(upper00, color, Vec2(u0, GetV(upperV0Frac)));
-			verts.emplace_back(upper11, color, Vec2(u1, GetV(upperV1Frac)));
-			verts.emplace_back(upper01, color, Vec2(u0, GetV(upperV1Frac)));
+			AddCapsuleVertex(upper00, (upper00 - end).GetNormalized(), yaw0, u0, GetV(upperV0Frac));
+			AddCapsuleVertex(upper11, (upper11 - end).GetNormalized(), yaw1, u1, GetV(upperV1Frac));
+			AddCapsuleVertex(upper01, (upper01 - end).GetNormalized(), yaw0, u0, GetV(upperV1Frac));
 		}
 	}
 }
@@ -903,6 +929,15 @@ void AddVertsForCone3D(
 		Vec3 b0  = start + rim0;
 		Vec3 b1  = start + rim1;
 		Vec3 tip = end;
+		Vec3 tangent0 = (-iBasis * sin0 + jBasis * cos0).GetNormalized();
+		Vec3 tangent1 = (-iBasis * sin1 + jBasis * cos1).GetNormalized();
+		Vec3 bitangent0 = (kBasis * height - rim0).GetNormalized();
+		Vec3 bitangent1 = (kBasis * height - rim1).GetNormalized();
+		Vec3 normal0 = CrossProduct3D(tangent0, bitangent0).GetNormalized();
+		Vec3 normal1 = CrossProduct3D(tangent1, bitangent1).GetNormalized();
+		Vec3 tipTangent = (tangent0 + tangent1).GetNormalized();
+		Vec3 tipBitangent = (bitangent0 + bitangent1).GetNormalized();
+		Vec3 tipNormal = CrossProduct3D(tipTangent, tipBitangent).GetNormalized();
 
 		float u0Frac = static_cast<float>(sliceIndex) / static_cast<float>(numSlices);
 		float u1Frac = static_cast<float>(sliceIndex + 1) / static_cast<float>(numSlices);
@@ -914,9 +949,9 @@ void AddVertsForCone3D(
 		float vTip  = UVs.m_mins.y + vRange;
 
 		// Side triangle
-		verts.emplace_back(b0, color, Vec2(u0, vBase));
-		verts.emplace_back(b1, color, Vec2(u1, vBase));
-		verts.emplace_back(tip, color, Vec2((u0 + u1) * 0.5f, vTip));
+		verts.emplace_back(b0, color, Vec2(u0, vBase), tangent0, bitangent0, normal0);
+		verts.emplace_back(b1, color, Vec2(u1, vBase), tangent1, bitangent1, normal1);
+		verts.emplace_back(tip, color, Vec2((u0 + u1) * 0.5f, vTip), tipTangent, tipBitangent, tipNormal);
 
 		// Base cap (faces outward opposite to +kBasis => -kBasis)
 		Vec3 cB = start;
@@ -928,9 +963,12 @@ void AddVertsForCone3D(
 		float cuC = UVs.m_mins.x + 0.5f * uRange;
 		float cvC = UVs.m_mins.y + 0.5f * vRange;
 
-		verts.emplace_back(cB, color, Vec2(cuC, cvC));
-		verts.emplace_back(b1, color, Vec2(cu1, cv1));
-		verts.emplace_back(b0, color, Vec2(cu0, cv0));
+		Vec3 const baseNormal    = -kBasis;
+		Vec3 const baseTangent   = iBasis;
+		Vec3 const baseBitangent = -jBasis;
+		verts.emplace_back(cB, color, Vec2(cuC, cvC), baseTangent, baseBitangent, baseNormal);
+		verts.emplace_back(b1, color, Vec2(cu1, cv1), baseTangent, baseBitangent, baseNormal);
+		verts.emplace_back(b0, color, Vec2(cu0, cv0), baseTangent, baseBitangent, baseNormal);
 	}
 }
 

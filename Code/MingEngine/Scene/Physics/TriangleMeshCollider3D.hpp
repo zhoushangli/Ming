@@ -8,7 +8,7 @@
 
 class TriangleMeshCollider3D : public Collider3D
 {
-	CLASS(TriangleMeshCollider3D, Collider3D);
+	MCLASS(TriangleMeshCollider3D, Collider3D);
 
 public:
 	TriangleMeshCollider3D()           = default;

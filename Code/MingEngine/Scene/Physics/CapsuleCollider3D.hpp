@@ -7,7 +7,7 @@
 
 class CapsuleCollider3D : public Collider3D
 {
-	CLASS(CapsuleCollider3D, Collider3D);
+	MCLASS(CapsuleCollider3D, Collider3D);
 
 public:
 	CapsuleCollider3D()           = default;

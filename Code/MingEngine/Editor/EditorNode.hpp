@@ -11,6 +11,7 @@
 #include <vector>
 
 class Camera3D;
+class EditorUI;
 
 class EditorSelection
 {
@@ -25,7 +26,7 @@ private:
 
 class EditorNode : public Node
 {
-	CLASS(EditorNode, Node);
+	MCLASS(EditorNode, Node);
 
 public:
 	EditorNode();
@@ -51,18 +52,6 @@ private:
 
 	void Update(float deltaSeconds) override;
 
-	// RenderEditorUI is giving instructions ImGui
-	// which will render to the backbuffer in ImGuiSystem::EndFrame
-	void RenderEditorUI();
-	void RenderMainMenuBar();
-	void RenderDockSpace();
-
-	void RenderScenePanel();
-	void RenderFileSystemPanel();
-	void RenderViewportPanel();
-	void RenderInspectorPanel();
-	void RenderOutputPanel();
-
 	GameRaycastResult Raycast(
 		RaycastInfo const& info, NodeHandle& outCoarseCollider, NodeHandle& outFineCollider, NodeHandle& outSelectNode);
 
@@ -71,14 +60,7 @@ private:
 private:
 	EditorSelection                        m_selection;
 	std::map<NodeHandle, EditorSelectable> m_selectables;
+	EditorUI*                              m_editorUI = nullptr;
 
 	static EditorNode* s_instance;
-
-	bool m_showScenePanel      = true;
-	bool m_showFileSystemPanel = true;
-	bool m_showViewportPanel   = true;
-	bool m_showInspectorPanel  = true;
-	bool m_showOutputPanel     = true;
-
-	IntVec2 m_viewportPanelDimension = IntVec2::Zero;
 };

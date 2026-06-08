@@ -18,7 +18,7 @@ class Viewport;
 // 3) In-tree nodes receive lifecycle callbacks through the SceneTree traversal.
 class Node : public Object
 {
-	CLASS(Node, Object);
+	MCLASS(Node, Object);
 
 	friend class SceneTree;
 

@@ -6,7 +6,7 @@
 
 class Camera3D : public Node3D
 {
-	CLASS(Camera3D, Node3D);
+	MCLASS(Camera3D, Node3D);
 
 public:
 	Camera3D(float fovDegrees = 60.f, float nearClip = 0.1f, float farClip = 100.f);

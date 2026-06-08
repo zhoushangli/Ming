@@ -2,7 +2,7 @@
 
 #include <string>
 
-#define CLASS(className, inheritName)                                                                                  \
+#define MCLASS(className, inheritName)                                                                                  \
 public:                                                                                                                \
 	using Super = inheritName;                                                                                         \
 	static std::string     GetStaticClassName() { return #className; }                                                 \
