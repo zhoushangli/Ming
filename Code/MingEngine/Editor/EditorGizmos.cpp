@@ -1,5 +1,6 @@
 #include "MingEngine/Editor/EditorGizmos.hpp"
 
+#include "EditorGizmos.hpp"
 #include "MingEngine/Editor/GizmosShapes.hpp"
 #include "MingEngine/Scene/Core/SceneTree.hpp"
 
@@ -10,10 +11,18 @@ void EditorGizmos::OnReady()
 	SetWorldAxisVisible(true);
 }
 
+EditorGizmos::EditorGizmos()
+{
+	SetReady(true);
+	SetProcess(true);
+}
+
+EditorGizmos::~EditorGizmos() {}
+
 void EditorGizmos::SetWorldGridVisible(bool visible)
 {
 	SceneTree* sceneTree = GetSceneTree();
-	Node* worldGrid = sceneTree != nullptr ? sceneTree->ResolveNode(m_worldGridHandle) : nullptr;
+	Node*      worldGrid = sceneTree != nullptr ? sceneTree->ResolveNode(m_worldGridHandle) : nullptr;
 
 	if (visible)
 	{
@@ -38,7 +47,7 @@ void EditorGizmos::SetWorldGridVisible(bool visible)
 void EditorGizmos::SetWorldAxisVisible(bool visible)
 {
 	SceneTree* sceneTree = GetSceneTree();
-	Node* worldAxis = sceneTree != nullptr ? sceneTree->ResolveNode(m_worldAxisHandle) : nullptr;
+	Node*      worldAxis = sceneTree != nullptr ? sceneTree->ResolveNode(m_worldAxisHandle) : nullptr;
 
 	if (visible)
 	{

@@ -248,7 +248,7 @@ void Particles3D::OnReady()
 	}
 }
 
-void Particles3D::Update(float deltaSeconds)
+void Particles3D::OnProcess(float deltaSeconds)
 {
 	if (m_isEmitting)
 	{

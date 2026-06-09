@@ -32,7 +32,7 @@ GameRaycastResult AABBCollider3D::Raycast(RaycastInfo const& info) const
 	return raycastResult;
 }
 
-void AABBCollider3D::Update(float deltaSeconds) { Node3D::Update(deltaSeconds); }
+void AABBCollider3D::OnProcess(float deltaSeconds) { Node3D::OnProcess(deltaSeconds); }
 
 void AABBCollider3D::RenderDebug() const
 {

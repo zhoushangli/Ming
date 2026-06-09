@@ -34,10 +34,16 @@ public:
 	NodeHandle                GetHandle() const;
 	std::vector<Node*> const& GetChildren() const;
 	std::string const&        GetName() const;
-	void                      SetName(std::string const& name);
-	bool                      IsSerializable() const;
-	void                      SetSerializable(bool isSerializable);
-	Node*                     FindChildByName(std::string const& name) const;
+	bool                      GetSerializable() const;
+	bool                      GetReady() const;
+	bool                      GetProcess() const;
+
+	void SetName(std::string const& name);
+	void SetSerializable(bool isSerializable);
+	void SetReady(bool isReady);
+	void SetProcess(bool isProcess);
+
+	Node* FindChildByName(std::string const& name) const;
 
 	SceneTree* GetSceneTree() const;
 
@@ -56,11 +62,11 @@ protected:
 	// 1) OnEnterTree is called after this node receives a SceneTree and NodeHandle.
 	// 2) OnExitTree is called before this node unregisters from its SceneTree.
 	// 3) OnReady is called after this node and its children enter a SceneTree.
-	// 4) Update is called once per frame by SceneTree::UpdateScene.
+	// 4) OnProcess is called once per frame by SceneTree::UpdateScene.
 	virtual void OnEnterTree();
 	virtual void OnExitTree();
 	virtual void OnReady();
-	virtual void Update(float deltaSeconds);
+	virtual void OnProcess(float deltaSeconds);
 
 	// Immediate hierarchy operations:
 	// 1) Used by Node and SceneTree after mutation has been validated.
@@ -89,6 +95,14 @@ protected:
 		NodeHandle         m_handle;
 		bool               m_isPendingDestroy = false;
 		bool               m_isSerializable   = true;
+
+#if defined(MING_EDITOR)
+		bool m_enableReady   = false;
+		bool m_enableProcess = false;
+#else
+		bool m_enableReady   = true;
+		bool m_enableProcess = true;
+#endif
 	};
 
 	NodeData m_data;

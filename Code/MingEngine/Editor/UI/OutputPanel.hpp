@@ -2,16 +2,11 @@
 
 #include "MingEngine/Editor/UI/EditorPanel.hpp"
 
-class OutputPanel
+class OutputPanel final : public EditorPanel
 {
 public:
 	OutputPanel();
 
-	void Render();
-
-	EditorPanel&       GetPanel();
-	EditorPanel const& GetPanel() const;
-
 private:
-	EditorPanel m_panel;
+	void OnRender(EditorUIContext& context) override;
 };

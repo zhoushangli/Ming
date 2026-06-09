@@ -38,7 +38,7 @@ public:
 	Vec3        GetWorldForward() const;
 
 protected:
-	void Update(float deltaSeconds) override;
+	void OnProcess(float deltaSeconds) override;
 
 	virtual void OnTransformChanged();
 	void         PropagateTransformChanged();

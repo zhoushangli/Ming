@@ -11,18 +11,13 @@
 #include "ThirdParty/imgui/imgui.h"
 
 ViewportPanel::ViewportPanel()
-	: m_panel("Viewport")
+	: EditorPanel("Viewport")
 {
 }
 
-void ViewportPanel::Render(EditorUIContext& context)
+void ViewportPanel::OnRender(EditorUIContext& context)
 {
-	if (!m_panel.IsOpen())
-	{
-		return;
-	}
-
-	ImGui::Begin(m_panel.GetTitle(), m_panel.GetOpenState());
+	ImGui::Begin(GetTitle(), GetOpenState());
 	ImGui::Button("Select");
 	ImGui::SameLine();
 	ImGui::Button("Move");
@@ -62,7 +57,3 @@ void ViewportPanel::Render(EditorUIContext& context)
 	}
 	ImGui::End();
 }
-
-EditorPanel& ViewportPanel::GetPanel() { return m_panel; }
-
-EditorPanel const& ViewportPanel::GetPanel() const { return m_panel; }

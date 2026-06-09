@@ -2,20 +2,17 @@
 
 #include "MingEngine/Editor/UI/EditorPanel.hpp"
 
-class InspectorPanel
+class InspectorPanel final : public EditorPanel
 {
 public:
 	InspectorPanel();
 
-	void Render();
-
-	EditorPanel&       GetPanel();
-	EditorPanel const& GetPanel() const;
+private:
+	void OnRender(EditorUIContext& context) override;
 
 private:
-	EditorPanel m_panel;
-	float       m_position[3] = { 0.f, 0.f, 0.f };
-	float       m_rotation[3] = { 0.f, 0.f, 0.f };
-	float       m_scale[3]    = { 1.f, 1.f, 1.f };
-	bool        m_visible     = true;
+	float m_position[3] = { 0.f, 0.f, 0.f };
+	float m_rotation[3] = { 0.f, 0.f, 0.f };
+	float m_scale[3]    = { 1.f, 1.f, 1.f };
+	bool  m_visible     = true;
 };

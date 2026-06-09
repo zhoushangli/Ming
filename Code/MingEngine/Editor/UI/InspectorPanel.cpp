@@ -3,18 +3,13 @@
 #include "ThirdParty/imgui/imgui.h"
 
 InspectorPanel::InspectorPanel()
-	: m_panel("Inspector")
+	: EditorPanel("Inspector")
 {
 }
 
-void InspectorPanel::Render()
+void InspectorPanel::OnRender([[maybe_unused]] EditorUIContext& context)
 {
-	if (!m_panel.IsOpen())
-	{
-		return;
-	}
-
-	ImGui::Begin(m_panel.GetTitle(), m_panel.GetOpenState());
+	ImGui::Begin(GetTitle(), GetOpenState());
 	ImGui::TextUnformatted("Selected: Player");
 	ImGui::Separator();
 
@@ -33,7 +28,3 @@ void InspectorPanel::Render()
 	}
 	ImGui::End();
 }
-
-EditorPanel& InspectorPanel::GetPanel() { return m_panel; }
-
-EditorPanel const& InspectorPanel::GetPanel() const { return m_panel; }

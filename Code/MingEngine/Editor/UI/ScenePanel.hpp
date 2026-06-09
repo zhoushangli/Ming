@@ -1,29 +1,36 @@
 #pragma once
 
 #include "MingEngine/Editor/UI/EditorPanel.hpp"
+#include "MingEngine/Scene/Core/NodeHandle.hpp"
 
 #include <string>
 
 struct EditorUIContext;
-class CreateNodePanel;
 class Node;
 
-class ScenePanel
+class ScenePanel final : public EditorPanel
 {
 public:
 	ScenePanel();
 
-	void Render(EditorUIContext& context, CreateNodePanel& createNodePanel);
-
-	EditorPanel&       GetPanel();
-	EditorPanel const& GetPanel() const;
-
 private:
-	void RenderNode(
-		Node* node, std::string const& filterText, EditorUIContext& context, CreateNodePanel& createNodePanel);
+	void OnRender(EditorUIContext& context) override;
+	void RenderNode(Node* node, std::string const& filterText, EditorUIContext& context);
 	bool DoesNodeMatchFilter(Node const* node, std::string const& filterText) const;
 
 private:
-	EditorPanel m_panel;
-	char        m_filter[64] = {};
+	char m_filter[64] = {};
+
+	struct PendingReparent
+	{
+		void Clear()
+		{
+			m_child  = NodeHandle::Invalid;
+			m_parent = NodeHandle::Invalid;
+		}
+
+		NodeHandle m_child;
+		NodeHandle m_parent;
+	};
+	PendingReparent m_pendingReparent;
 };

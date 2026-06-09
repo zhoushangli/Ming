@@ -26,21 +26,19 @@ Node* Node::GetRoot() const
 	return current;
 }
 
-Node* Node::GetParent() const { return m_data.m_parent; }
-
-SceneTree* Node::GetSceneTree() const { return m_data.m_sceneTree; }
-
-NodeHandle Node::GetHandle() const { return m_data.m_handle; }
-
+Node*                     Node::GetParent() const { return m_data.m_parent; }
+SceneTree*                Node::GetSceneTree() const { return m_data.m_sceneTree; }
+NodeHandle                Node::GetHandle() const { return m_data.m_handle; }
 std::vector<Node*> const& Node::GetChildren() const { return m_data.m_children; }
-
-std::string const& Node::GetName() const { return m_data.m_name; }
+std::string const&        Node::GetName() const { return m_data.m_name; }
+bool                      Node::GetSerializable() const { return m_data.m_isSerializable; }
+bool                      Node::GetReady() const { return m_data.m_enableReady; }
+bool                      Node::GetProcess() const { return m_data.m_enableProcess; }
 
 void Node::SetName(std::string const& name) { m_data.m_name = name; }
-
-bool Node::IsSerializable() const { return m_data.m_isSerializable; }
-
 void Node::SetSerializable(bool isSerializable) { m_data.m_isSerializable = isSerializable; }
+void Node::SetReady(bool isReady) { m_data.m_enableReady = isReady; }
+void Node::SetProcess(bool isProcess) { m_data.m_enableProcess = isProcess; }
 
 Node* Node::FindChildByName(std::string const& name) const
 {
@@ -106,6 +104,7 @@ void Node::AddNode(Node* child)
 
 void Node::DeleteNode()
 {
+	// If the node is not in a scene, we can delete it immediately
 	if (m_data.m_sceneTree == nullptr)
 	{
 		if (m_data.m_parent != nullptr)
@@ -117,6 +116,7 @@ void Node::DeleteNode()
 		return;
 	}
 
+	// Otherwise, we need to queue the node for destruction
 	m_data.m_sceneTree->QueueDestroyNode(this);
 }
 
@@ -258,6 +258,11 @@ void Node::PropagateExitTree()
 
 void Node::PropagateReady()
 {
+	if (!m_data.m_enableReady)
+	{
+		return;
+	}
+
 	std::vector<Node*> children = m_data.m_children;
 
 	for (Node* child : children)
@@ -277,4 +282,4 @@ void Node::OnExitTree() {}
 
 void Node::OnReady() {}
 
-void Node::Update([[maybe_unused]] float deltaSeconds) {}
+void Node::OnProcess([[maybe_unused]] float deltaSeconds) {}

@@ -172,7 +172,7 @@ void Node3D::PropagateTransformChanged()
 	}
 }
 
-void Node3D::Update(float deltaSeconds)
+void Node3D::OnProcess(float deltaSeconds)
 {
 	bool const positionChanged    = m_velocity != Vec3::Zero;
 	bool const orientationChanged = m_angularVelocity.m_yawDegrees != 0.f || m_angularVelocity.m_pitchDegrees != 0.f

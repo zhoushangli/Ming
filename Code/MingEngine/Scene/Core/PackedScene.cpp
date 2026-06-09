@@ -107,24 +107,20 @@ ClassDatabase::PropertyValue DeserializePropertyValue(std::string const& text)
 	if (text.rfind("Vec3(", 0) == 0)
 	{
 		Strings parts = GetFunctionParts(text, "Vec3", 3);
-		return Vec3(
-			static_cast<float>(atof(parts[0].c_str())),
+		return Vec3(static_cast<float>(atof(parts[0].c_str())),
 			static_cast<float>(atof(parts[1].c_str())),
-			static_cast<float>(atof(parts[2].c_str()))
-		);
+			static_cast<float>(atof(parts[2].c_str())));
 	}
 	if (text.rfind("EulerAngles(", 0) == 0)
 	{
 		Strings parts = GetFunctionParts(text, "EulerAngles", 3);
-		return EulerAngles(
-			static_cast<float>(atof(parts[0].c_str())),
+		return EulerAngles(static_cast<float>(atof(parts[0].c_str())),
 			static_cast<float>(atof(parts[1].c_str())),
-			static_cast<float>(atof(parts[2].c_str()))
-		);
+			static_cast<float>(atof(parts[2].c_str())));
 	}
 	if (text.rfind("Matrix4x4(", 0) == 0)
 	{
-		Strings parts  = GetFunctionParts(text, "Matrix4x4", 16);
+		Strings parts      = GetFunctionParts(text, "Matrix4x4", 16);
 		float   values[16] = {};
 		for (int valueIndex = 0; valueIndex < 16; ++valueIndex)
 		{
@@ -194,15 +190,11 @@ bool ArePropertyValuesEqual(ClassDatabase::PropertyValue const& left, ClassDatab
 } // namespace
 
 PackedScene::PackedProperty::PackedProperty(std::string const& name, ClassDatabase::PropertyValue const& value)
-	: m_name(name)
-	, m_value(value)
+	: m_name(name), m_value(value)
 {
 }
 
-std::string PackedScene::PackedProperty::Serialize() const
-{
-	return m_name + ": " + SerializePropertyValue(m_value);
-}
+std::string PackedScene::PackedProperty::Serialize() const { return m_name + ": " + SerializePropertyValue(m_value); }
 
 PackedScene::PackedProperty PackedScene::PackedProperty::Deserialize(std::string const& text)
 {
@@ -302,21 +294,17 @@ Node* PackedScene::Instantiate() const
 				ClassDatabase::FindProperty(packedNode.m_type, runtimeProperty.m_name);
 			if (property == nullptr)
 			{
-				DebuggerPrintf(
-					"PackedScene: skipping unknown property '%s' on type '%s'.\n",
+				DebuggerPrintf("PackedScene: skipping unknown property '%s' on type '%s'.\n",
 					runtimeProperty.m_name.c_str(),
-					packedNode.m_type.c_str()
-				);
+					packedNode.m_type.c_str());
 				continue;
 			}
 
 			if (!runtimeProperty.CanApplyTo(*property))
 			{
-				DebuggerPrintf(
-					"PackedScene: skipping incompatible property '%s' on type '%s'.\n",
+				DebuggerPrintf("PackedScene: skipping incompatible property '%s' on type '%s'.\n",
 					runtimeProperty.m_name.c_str(),
-					packedNode.m_type.c_str()
-				);
+					packedNode.m_type.c_str());
 				continue;
 			}
 
@@ -326,11 +314,9 @@ Node* PackedScene::Instantiate() const
 			}
 			catch (std::exception const&)
 			{
-				DebuggerPrintf(
-					"PackedScene: failed to apply property '%s' on type '%s'.\n",
+				DebuggerPrintf("PackedScene: failed to apply property '%s' on type '%s'.\n",
 					runtimeProperty.m_name.c_str(),
-					packedNode.m_type.c_str()
-				);
+					packedNode.m_type.c_str());
 			}
 		}
 		nodes.push_back(node);
@@ -446,7 +432,7 @@ bool PackedScene::LoadFromFile(std::string const& filename)
 
 void PackedScene::ParseNodeRecursively(Node const* node, std::vector<PackedNode>& outNodes)
 {
-	if (node == nullptr || !node->IsSerializable())
+	if (node == nullptr || !node->GetSerializable())
 	{
 		return;
 	}
@@ -502,11 +488,9 @@ void PackedScene::ParseNodeRecursively(Node const* node, std::vector<PackedNode>
 		}
 		catch (std::exception const&)
 		{
-			DebuggerPrintf(
-				"PackedScene: failed to read property '%s' on type '%s'.\n",
+			DebuggerPrintf("PackedScene: failed to read property '%s' on type '%s'.\n",
 				property->m_name.c_str(),
-				packedNode.m_type.c_str()
-			);
+				packedNode.m_type.c_str());
 		}
 	}
 

@@ -56,7 +56,7 @@ AABB3 CalculateLocalBounds(std::vector<Vertex> const& verts)
 
 EditorNode* EditorNode::s_instance = nullptr;
 
-NodeHandle EditorSelection::GetSelectedNodeHandle() const { return m_selectedNodeHandle; }
+NodeHandle EditorSelection::GetSelected() const { return m_selectedNodeHandle; }
 
 void EditorSelection::SetSelected(NodeHandle handle)
 {
@@ -101,10 +101,13 @@ EditorNode::EditorNode()
 	s_instance = this;
 	m_editorUI = new EditorUI();
 
-	EditorGizmos* editorGizmos = new EditorGizmos();
-	editorGizmos->SetName("EditorGizmos");
-	editorGizmos->SetSerializable(false);
-	AddNode(editorGizmos);
+	m_editorGizmos = new EditorGizmos();
+	m_editorGizmos->SetName("EditorGizmos");
+	m_editorGizmos->SetSerializable(false);
+	AddNode(m_editorGizmos);
+
+	SetReady(true);
+	SetProcess(true);
 }
 
 EditorNode::~EditorNode()
@@ -204,7 +207,7 @@ void EditorNode::UnregisterSelectable(NodeHandle ownerHandle)
 	}
 
 	m_selectables.erase(foundSelectable);
-	if (m_selection.GetSelectedNodeHandle() == ownerHandle)
+	if (m_selection.GetSelected() == ownerHandle)
 	{
 		m_selection.Clear();
 	}
@@ -309,7 +312,7 @@ void EditorNode::HandleSelectionClick(Camera3D const& cameraNode, Vec2 const& cl
 	m_selection.SetSelected(selectNode);
 }
 
-void EditorNode::Update([[maybe_unused]] float deltaSeconds)
+void EditorNode::OnProcess([[maybe_unused]] float deltaSeconds)
 {
 	if (g_engine->m_input->WasKeyJustPressed('1'))
 	{

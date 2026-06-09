@@ -33,7 +33,7 @@ GameRaycastResult CapsuleCollider3D::Raycast(RaycastInfo const& info) const
 	return raycastResult;
 }
 
-void CapsuleCollider3D::Update(float deltaSeconds) { Node3D::Update(deltaSeconds); }
+void CapsuleCollider3D::OnProcess(float deltaSeconds) { Node3D::OnProcess(deltaSeconds); }
 
 void CapsuleCollider3D::RenderDebug() const
 {

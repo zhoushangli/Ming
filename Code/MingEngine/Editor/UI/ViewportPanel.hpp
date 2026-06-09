@@ -6,18 +6,15 @@
 
 struct EditorUIContext;
 
-class ViewportPanel
+class ViewportPanel final : public EditorPanel
 {
 public:
 	ViewportPanel();
 
-	void Render(EditorUIContext& context);
-
-	EditorPanel&       GetPanel();
-	EditorPanel const& GetPanel() const;
+private:
+	void OnRender(EditorUIContext& context) override;
 
 private:
-	EditorPanel m_panel;
-	IntVec2     m_dimensions = IntVec2::Zero;
-	bool        m_snap       = false;
+	IntVec2 m_dimensions = IntVec2::Zero;
+	bool    m_snap       = false;
 };

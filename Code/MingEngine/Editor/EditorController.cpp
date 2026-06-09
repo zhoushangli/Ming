@@ -21,9 +21,12 @@ EditorController::EditorController()
 
 	m_camera = new Camera3D(60.f, 0.1f, 100.f);
 	AddNode(m_camera);
+
+	SetReady(true);
+	SetProcess(true);
 }
 
-void EditorController::Update(float deltaSeconds)
+void EditorController::OnProcess(float deltaSeconds)
 {
 	// PCG editor commands will move to a scene-local world/editor manager.
 

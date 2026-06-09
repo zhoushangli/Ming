@@ -3,18 +3,13 @@
 #include "ThirdParty/imgui/imgui.h"
 
 OutputPanel::OutputPanel()
-	: m_panel("Output")
+	: EditorPanel("Output")
 {
 }
 
-void OutputPanel::Render()
+void OutputPanel::OnRender([[maybe_unused]] EditorUIContext& context)
 {
-	if (!m_panel.IsOpen())
-	{
-		return;
-	}
-
-	ImGui::Begin(m_panel.GetTitle(), m_panel.GetOpenState());
+	ImGui::Begin(GetTitle(), GetOpenState());
 	if (ImGui::BeginTabBar("OutputTabs"))
 	{
 		if (ImGui::BeginTabItem("Output"))
@@ -39,7 +34,3 @@ void OutputPanel::Render()
 	}
 	ImGui::End();
 }
-
-EditorPanel& OutputPanel::GetPanel() { return m_panel; }
-
-EditorPanel const& OutputPanel::GetPanel() const { return m_panel; }

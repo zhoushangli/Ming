@@ -33,7 +33,7 @@ GameRaycastResult CylinderZCollider3D::Raycast(RaycastInfo const& info) const
 	return raycastResult;
 }
 
-void CylinderZCollider3D::Update(float deltaSeconds) { Node3D::Update(deltaSeconds); }
+void CylinderZCollider3D::OnProcess(float deltaSeconds) { Node3D::OnProcess(deltaSeconds); }
 
 void CylinderZCollider3D::RenderDebug() const
 {

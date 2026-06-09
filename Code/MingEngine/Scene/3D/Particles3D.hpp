@@ -52,7 +52,7 @@ public:
 	~Particles3D() override;
 
 	void OnReady() override;
-	void Update(float deltaSeconds) override;
+	void OnProcess(float deltaSeconds) override;
 	RenderRequest SubmitRenderRequest() const override;
 
 	void SpawnNewParticle(Vec3 const& position);

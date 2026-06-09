@@ -1,49 +1,154 @@
 #pragma once
 
-#include "MingEngine/Engine/Math/EulerAngles.hpp"
-#include "MingEngine/Engine/Math/Matrix4x4.hpp"
-#include "MingEngine/Engine/Math/Vec3.hpp"
+#include "MingEngine/Scene/Core/Object.hpp"
+#include "MingEngine/Scene/Core/Variant.hpp"
 
-#include <string>
+#include <stdexcept>
 #include <utility>
-#include <variant>
+#include <vector>
 
-class Variant
+class MethodBind
 {
 public:
-	// The type of the underlying storage for the variant.
-	using Storage = std::variant<std::monostate, bool, int, float, std::string, Vec3, EulerAngles, Matrix4x4>;
+	virtual ~MethodBind() = default;
+
+	virtual Variant Invoke(Object& object, std::vector<Variant> const& arguments) const = 0;
+};
+
+template <typename ClassType, typename... Args>
+class VoidMethodBind final : public MethodBind
+{
+public:
+	using Method = void (ClassType::*)(Args...);
 
 public:
-	Variant() = default;
+	explicit VoidMethodBind(Method method) : m_method(method) {}
 
-	template <typename T>
-	Variant(T&& value) : m_value(std::forward<T>(value))
+	Variant Invoke(Object& object, std::vector<Variant> const& arguments) const override
 	{
+		if (arguments.size() != sizeof...(Args))
+		{
+			throw std::invalid_argument("Incorrect method argument count");
+		}
+
+		ClassType& instance = static_cast<ClassType&>(object);
+
+		InvokeMethod(instance, arguments, std::index_sequence_for<Args...>{});
+
+		return {};
 	}
-
-	bool IsEmpty() const;
-
-	template <typename T>
-	bool Is() const
-	{
-		return std::holds_alternative<T>(m_value);
-	}
-
-	template <typename T>
-	T& As()
-	{
-		return std::get<T>(m_value);
-	}
-
-	template <typename T>
-	T const& As()
-	{
-		return std::get<T>(m_value);
-	}
-
-	Storage const& GetStorage() const;
 
 private:
-	Storage m_value;
+	template <std::size_t... Indices>
+	void InvokeMethod(ClassType& instance, std::vector<Variant> const& arguments, std::index_sequence<Indices...>) const
+	{
+		(instance.*m_method)(VariantCaster<Args>::Cast(arguments[Indices])...);
+	}
+
+private:
+	Method m_method;
+};
+
+template <typename ClassType, typename ReturnType, typename... Args>
+class ReturnMethodBind final : public MethodBind
+{
+public:
+	using Method = ReturnType (ClassType::*)(Args...);
+
+public:
+	explicit ReturnMethodBind(Method method) : m_method(method) {}
+
+	Variant Invoke(Object& object, std::vector<Variant> const& arguments) const override
+	{
+		if (arguments.size() != sizeof...(Args))
+		{
+			throw std::invalid_argument("Incorrect method argument count");
+		}
+
+		ClassType& instance = static_cast<ClassType&>(object);
+
+		return InvokeMethod(instance, arguments, std::index_sequence_for<Args...>{});
+	}
+
+private:
+	template <std::size_t... Indices>
+	Variant InvokeMethod(
+		ClassType& instance, std::vector<Variant> const& arguments, std::index_sequence<Indices...>) const
+	{
+		ReturnType result = (instance.*m_method)(VariantCaster<Args>::Cast(arguments[Indices])...);
+
+		return Variant(result);
+	}
+
+private:
+	Method m_method;
+};
+
+template <typename ClassType, typename... Args>
+class ConstVoidMethodBind final : public MethodBind
+{
+public:
+	using Method = void (ClassType::*)(Args...) const;
+
+public:
+	explicit ConstVoidMethodBind(Method method) : m_method(method) {}
+
+	Variant Invoke(Object& object, std::vector<Variant> const& arguments) const override
+	{
+		if (arguments.size() != sizeof...(Args))
+		{
+			throw std::invalid_argument("Incorrect method argument count");
+		}
+
+		ClassType const& instance = static_cast<ClassType const&>(object);
+
+		InvokeMethod(instance, arguments, std::index_sequence_for<Args...>{});
+
+		return {};
+	}
+
+private:
+	template <std::size_t... Indices>
+	void InvokeMethod(ClassType const& instance, std::vector<Variant> const& arguments, std::index_sequence<Indices...>) const
+	{
+		(instance.*m_method)(VariantCaster<Args>::Cast(arguments[Indices])...);
+	}
+
+private:
+	Method m_method;
+};
+
+template <typename ClassType, typename ReturnType, typename... Args>
+class ConstReturnMethodBind final : public MethodBind
+{
+public:
+	using Method = ReturnType (ClassType::*)(Args...) const;
+
+public:
+	explicit ConstReturnMethodBind(Method method) : m_method(method) {}
+
+	Variant Invoke(Object& object, std::vector<Variant> const& arguments) const override
+	{
+		if (arguments.size() != sizeof...(Args))
+		{
+			throw std::invalid_argument("Incorrect method argument count");
+		}
+
+		ClassType const& instance = static_cast<ClassType const&>(object);
+
+		return InvokeMethod(instance, arguments, std::index_sequence_for<Args...>{});
+	}
+
+private:
+	template <std::size_t... Indices>
+	Variant InvokeMethod(
+		ClassType const& instance, std::vector<Variant> const& arguments, std::index_sequence<Indices...>) const
+	{
+		ReturnType result = (instance.*m_method)(VariantCaster<Args>::Cast(arguments[Indices])...);
+
+		return Variant(result);
+	}
+
+private:
+	Method m_method;
 };

@@ -2,17 +2,14 @@
 
 #include "MingEngine/Editor/UI/EditorPanel.hpp"
 
-class FileSystemPanel
+class FileSystemPanel final : public EditorPanel
 {
 public:
 	FileSystemPanel();
 
-	void Render();
-
-	EditorPanel&       GetPanel();
-	EditorPanel const& GetPanel() const;
+private:
+	void OnRender(EditorUIContext& context) override;
 
 private:
-	EditorPanel m_panel;
-	char        m_filter[64] = {};
+	char m_filter[64] = {};
 };

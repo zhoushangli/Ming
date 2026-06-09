@@ -21,7 +21,7 @@ public:
     EditorController();
     ~EditorController() override = default;
 
-    void Update(float deltaSeconds) override;
+    void OnProcess(float deltaSeconds) override;
     Camera3D* GetCamera() const;
 
 private:

@@ -149,7 +149,10 @@ void SceneTree::UpdateScene(float deltaSeconds)
 			continue;
 		}
 
-		node->Update(deltaSeconds);
+		if (node->m_data.m_enableProcess)
+		{
+			node->OnProcess(deltaSeconds);
+		}
 	}
 
 	UpdatePhysics(deltaSeconds);

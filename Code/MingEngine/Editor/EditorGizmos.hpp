@@ -8,8 +8,8 @@ class EditorGizmos : public Node
 	MCLASS(EditorGizmos, Node);
 
 public:
-	EditorGizmos()           = default;
-	~EditorGizmos() override = default;
+	EditorGizmos();
+	~EditorGizmos() override;
 
 	void SetWorldGridVisible(bool visible);
 	void SetWorldAxisVisible(bool visible);

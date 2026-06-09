@@ -19,7 +19,7 @@ public:
 	GameRaycastResult Raycast(RaycastInfo const& info) const override;
 
 protected:
-	void Update(float deltaSeconds) override;
+	void OnProcess(float deltaSeconds) override;
 
 private:
 	std::vector<Vertex> m_vertices;

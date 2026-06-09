@@ -3,18 +3,13 @@
 #include "ThirdParty/imgui/imgui.h"
 
 FileSystemPanel::FileSystemPanel()
-	: m_panel("FileSystem")
+	: EditorPanel("FileSystem")
 {
 }
 
-void FileSystemPanel::Render()
+void FileSystemPanel::OnRender([[maybe_unused]] EditorUIContext& context)
 {
-	if (!m_panel.IsOpen())
-	{
-		return;
-	}
-
-	ImGui::Begin(m_panel.GetTitle(), m_panel.GetOpenState());
+	ImGui::Begin(GetTitle(), GetOpenState());
 	ImGui::TextUnformatted("res://");
 	ImGui::Separator();
 	ImGui::InputTextWithHint("##FilterFiles", "Filter Files", m_filter, sizeof(m_filter));
@@ -34,7 +29,3 @@ void FileSystemPanel::Render()
 	}
 	ImGui::End();
 }
-
-EditorPanel& FileSystemPanel::GetPanel() { return m_panel; }
-
-EditorPanel const& FileSystemPanel::GetPanel() const { return m_panel; }

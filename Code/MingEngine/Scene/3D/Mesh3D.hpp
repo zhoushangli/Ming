@@ -20,7 +20,7 @@ public:
 	void  SetUseMaterialTextures(bool useMaterialTextures);
 
 protected:
-	void Update(float deltaSeconds) override;
+	void OnProcess(float deltaSeconds) override;
 	RenderRequest SubmitRenderRequest() const override;
 
 protected:

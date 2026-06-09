@@ -1,22 +1,23 @@
 #pragma once
 
-#include "MingEngine/Scene/Physics/NodeRaycastUtils.hpp"
 #include "MingEngine/Scene/Core/Node.hpp"
 #include "MingEngine/Scene/Core/NodeHandle.hpp"
+#include "MingEngine/Scene/Physics/NodeRaycastUtils.hpp"
 
-#include "MingEngine/Engine/Render/Vertex.hpp"
 #include "MingEngine/Engine/Math/Vec2.hpp"
+#include "MingEngine/Engine/Render/Vertex.hpp"
 
 #include <map>
 #include <vector>
 
 class Camera3D;
 class EditorUI;
+class EditorGizmos;
 
 class EditorSelection
 {
 public:
-	NodeHandle GetSelectedNodeHandle() const;
+	NodeHandle GetSelected() const;
 	void       SetSelected(NodeHandle handle);
 	void       Clear();
 
@@ -50,7 +51,7 @@ private:
 		NodeHandle m_fineColliderHandle   = NodeHandle::Invalid;
 	};
 
-	void Update(float deltaSeconds) override;
+	void OnProcess(float deltaSeconds) override;
 
 	GameRaycastResult Raycast(
 		RaycastInfo const& info, NodeHandle& outCoarseCollider, NodeHandle& outFineCollider, NodeHandle& outSelectNode);
@@ -60,7 +61,8 @@ private:
 private:
 	EditorSelection                        m_selection;
 	std::map<NodeHandle, EditorSelectable> m_selectables;
-	EditorUI*                              m_editorUI = nullptr;
+	EditorGizmos*                          m_editorGizmos = nullptr;
+	EditorUI*                              m_editorUI     = nullptr;
 
 	static EditorNode* s_instance;
 };

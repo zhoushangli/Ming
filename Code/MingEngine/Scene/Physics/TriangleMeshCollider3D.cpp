@@ -61,4 +61,4 @@ GameRaycastResult TriangleMeshCollider3D::Raycast(RaycastInfo const& info) const
 	return bestResult;
 }
 
-void TriangleMeshCollider3D::Update(float deltaSeconds) { Node3D::Update(deltaSeconds); }
+void TriangleMeshCollider3D::OnProcess(float deltaSeconds) { Node3D::OnProcess(deltaSeconds); }

@@ -4,16 +4,38 @@
 
 #include "ThirdParty/imgui/imgui.h"
 
+namespace
+{
+void RenderPanelMenuItem(EditorPanel& panel)
+{
+	if (!ImGui::MenuItem(panel.GetTitle(), nullptr, panel.IsOpen()))
+	{
+		return;
+	}
+
+	if (panel.IsOpen())
+	{
+		panel.Close();
+	}
+	else
+	{
+		panel.Open();
+	}
+}
+} // namespace
+
 void EditorUI::Render(EditorUIContext& context)
 {
+	context.m_editorUI = this;
+
 	RenderMainMenuBar();
 	RenderDockSpace();
 
-	m_scenePanel.Render(context, m_createNodePanel);
-	m_fileSystemPanel.Render();
+	m_scenePanel.Render(context);
+	m_fileSystemPanel.Render(context);
 	m_viewportPanel.Render(context);
-	m_inspectorPanel.Render();
-	m_outputPanel.Render();
+	m_inspectorPanel.Render(context);
+	m_outputPanel.Render(context);
 	m_createNodePanel.Render(context);
 }
 
@@ -55,11 +77,11 @@ void EditorUI::RenderMainMenuBar()
 	}
 	if (ImGui::BeginMenu("Window"))
 	{
-		ImGui::MenuItem("Scene", nullptr, m_scenePanel.GetPanel().GetOpenState());
-		ImGui::MenuItem("FileSystem", nullptr, m_fileSystemPanel.GetPanel().GetOpenState());
-		ImGui::MenuItem("Viewport", nullptr, m_viewportPanel.GetPanel().GetOpenState());
-		ImGui::MenuItem("Inspector", nullptr, m_inspectorPanel.GetPanel().GetOpenState());
-		ImGui::MenuItem("Output", nullptr, m_outputPanel.GetPanel().GetOpenState());
+		RenderPanelMenuItem(m_scenePanel);
+		RenderPanelMenuItem(m_fileSystemPanel);
+		RenderPanelMenuItem(m_viewportPanel);
+		RenderPanelMenuItem(m_inspectorPanel);
+		RenderPanelMenuItem(m_outputPanel);
 		ImGui::EndMenu();
 	}
 	if (ImGui::BeginMenu("Help"))

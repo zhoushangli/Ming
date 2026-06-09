@@ -5,6 +5,8 @@
 #include "MingEngine/Scene/Core/Node.hpp"
 #include "MingEngine/Scene/Core/SceneTree.hpp"
 
+#include "MingEngine/Engine/Core/ErrorWarningAssert.hpp"
+
 #include "ThirdParty/imgui/imgui.h"
 
 #include <algorithm>
@@ -28,36 +30,36 @@ bool ContainsCaseInsensitive(std::string const& text, std::string const& filterT
 }
 } // namespace
 
-void CreateNodePanel::Open(NodeHandle parentHandle)
-{
-	m_parentHandle  = parentHandle;
-	m_selectedClass.clear();
-	m_filter[0] = '\0';
-	m_openPopup = true;
-	m_isOpen    = true;
-}
+CreateNodePanel::CreateNodePanel() : EditorPanel("Create New Node", false) {}
 
-void CreateNodePanel::Render(EditorUIContext& context)
+void CreateNodePanel::OnOpen(UIData const& data)
 {
-	if (m_openPopup)
+	CreateNodePanelData const* createData = dynamic_cast<CreateNodePanelData const*>(&data);
+	ASSERT_RECOVERABLE(createData != nullptr, "CreateNodePanel opened with invalid UIData.");
+	if (createData == nullptr)
 	{
-		ImGui::OpenPopup("Create New Node");
-		m_openPopup = false;
-	}
-
-	if (!m_isOpen)
-	{
+		Close();
 		return;
 	}
 
-	ImGui::SetNextWindowSize(ImVec2(620.f, 540.f), ImGuiCond_FirstUseEver);
-	bool keepOpen = true;
-	if (!ImGui::BeginPopupModal("Create New Node", &keepOpen, ImGuiWindowFlags_NoCollapse))
+	Reset();
+	m_parentHandle = createData->m_parentHandle;
+	m_openPopup    = true;
+}
+
+void CreateNodePanel::OnClose() { Reset(); }
+
+void CreateNodePanel::OnRender(EditorUIContext& context)
+{
+	if (m_openPopup)
 	{
-		if (!keepOpen)
-		{
-			Reset();
-		}
+		ImGui::OpenPopup(GetTitle());
+		m_openPopup = false;
+	}
+
+	ImGui::SetNextWindowSize(ImVec2(620.f, 540.f), ImGuiCond_FirstUseEver);
+	if (!ImGui::BeginPopupModal(GetTitle(), GetOpenState(), ImGuiWindowFlags_NoCollapse))
+	{
 		return;
 	}
 
@@ -71,12 +73,10 @@ void CreateNodePanel::Render(EditorUIContext& context)
 	std::sort(classes.begin(),
 		classes.end(),
 		[](ClassDatabase::ClassInfo const* a, ClassDatabase::ClassInfo const* b)
-		{
-			return a != nullptr && b != nullptr && a->m_className < b->m_className;
-		});
+		{ return a != nullptr && b != nullptr && a->m_className < b->m_className; });
 
 	std::map<std::string, std::vector<ClassDatabase::ClassInfo const*>> childrenByClass;
-	ClassDatabase::ClassInfo const* nodeClass = nullptr;
+	ClassDatabase::ClassInfo const*                                     nodeClass = nullptr;
 	for (ClassDatabase::ClassInfo const* classInfo : classes)
 	{
 		if (classInfo == nullptr)
@@ -130,41 +130,33 @@ void CreateNodePanel::Render(EditorUIContext& context)
 	if (ImGui::Button("Cancel", ImVec2(120.f, 0.f)))
 	{
 		ImGui::CloseCurrentPopup();
-		Reset();
+		Close();
 	}
 	else if (createPressed && CreateSelectedNode(context))
 	{
 		ImGui::CloseCurrentPopup();
-		Reset();
+		Close();
 	}
 
 	ImGui::EndPopup();
-	if (!keepOpen)
-	{
-		Reset();
-	}
 }
 
-bool CreateNodePanel::IsOpen() const { return m_isOpen; }
-
-bool CreateNodePanel::RenderClassNode(ClassDatabase::ClassInfo const* classInfo,
+bool CreateNodePanel::RenderClassNode(ClassDatabase::ClassInfo const*          classInfo,
 	std::map<std::string, std::vector<ClassDatabase::ClassInfo const*>> const& childrenByClass,
-	std::string const& filterText,
-	EditorUIContext& context)
+	std::string const&                                                         filterText,
+	EditorUIContext&                                                           context)
 {
 	if (classInfo == nullptr || !DoesClassBranchMatch(classInfo, childrenByClass, filterText))
 	{
 		return false;
 	}
 
-	auto const childrenIter = childrenByClass.find(classInfo->m_className);
+	auto const childrenIter       = childrenByClass.find(classInfo->m_className);
 	bool const hasVisibleChildren = childrenIter != childrenByClass.end()
-		&& std::any_of(childrenIter->second.begin(),
-			childrenIter->second.end(),
-			[this, &childrenByClass, &filterText](ClassDatabase::ClassInfo const* child)
-			{
-				return DoesClassBranchMatch(child, childrenByClass, filterText);
-			});
+									&& std::any_of(childrenIter->second.begin(),
+										childrenIter->second.end(),
+										[this, &childrenByClass, &filterText](ClassDatabase::ClassInfo const* child)
+										{ return DoesClassBranchMatch(child, childrenByClass, filterText); });
 
 	ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth;
 	if (!hasVisibleChildren)
@@ -188,7 +180,7 @@ bool CreateNodePanel::RenderClassNode(ClassDatabase::ClassInfo const* classInfo,
 		if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left) && CreateSelectedNode(context))
 		{
 			ImGui::CloseCurrentPopup();
-			Reset();
+			Close();
 			if (isOpen && hasVisibleChildren)
 			{
 				ImGui::TreePop();
@@ -216,9 +208,9 @@ bool CreateNodePanel::RenderClassNode(ClassDatabase::ClassInfo const* classInfo,
 	return false;
 }
 
-bool CreateNodePanel::DoesClassBranchMatch(ClassDatabase::ClassInfo const* classInfo,
+bool CreateNodePanel::DoesClassBranchMatch(ClassDatabase::ClassInfo const*     classInfo,
 	std::map<std::string, std::vector<ClassDatabase::ClassInfo const*>> const& childrenByClass,
-	std::string const& filterText) const
+	std::string const&                                                         filterText) const
 {
 	if (classInfo == nullptr)
 	{
@@ -298,7 +290,7 @@ Node* CreateNodePanel::ResolveCreateParent(EditorUIContext const& context) const
 
 	// Resolve at creation time because the context node may disappear while the modal is open.
 	Node* parent = context.m_sceneTree->ResolveNode(m_parentHandle);
-	if (parent == nullptr || !parent->IsSerializable())
+	if (parent == nullptr || !parent->GetSerializable())
 	{
 		return nullptr;
 	}
@@ -343,5 +335,4 @@ void CreateNodePanel::Reset()
 	m_filter[0]    = '\0';
 	m_parentHandle = NodeHandle::Invalid;
 	m_openPopup    = false;
-	m_isOpen       = false;
 }
