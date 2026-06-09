@@ -7,239 +7,158 @@
 
 #include "ThirdParty/nlohmann/json.hpp"
 
-#include <cstdlib>
 #include <exception>
 #include <fstream>
-#include <sstream>
 
 namespace
 {
 unsigned int const kInvalidNodeId = 0xffffffffu;
+using Json                        = nlohmann::ordered_json;
 
-std::string ToString(float value)
+Json SerializeVariant(Variant const& value)
 {
-	std::ostringstream stream;
-	stream << value;
-	return stream.str();
-}
-
-Strings GetFunctionParts(std::string const& text, std::string const& functionName, int expectedCount)
-{
-	std::string prefix = functionName + "(";
-	if (text.rfind(prefix, 0) != 0 || text.back() != ')')
+	switch (value.GetType())
 	{
-		ERROR_AND_DIE(Stringf("Invalid %s property value: %s", functionName.c_str(), text.c_str()));
+	case Variant::Type::Bool:
+		return value.As<bool>();
+	case Variant::Type::Int:
+		return value.As<int>();
+	case Variant::Type::Float:
+		return value.As<float>();
+	case Variant::Type::String:
+		return value.As<std::string>();
+	case Variant::Type::Vec3:
+	{
+		Vec3 const& vector = value.As<Vec3>();
+		return Json::array({ vector.x, vector.y, vector.z });
 	}
-
-	std::string arguments = text.substr(prefix.size(), text.size() - prefix.size() - 1);
-	Strings     parts     = SplitStringOnDelimiter(arguments, ',');
-	if (static_cast<int>(parts.size()) != expectedCount)
+	case Variant::Type::EulerAngles:
 	{
-		ERROR_AND_DIE(Stringf("Invalid %s property value: %s", functionName.c_str(), text.c_str()));
+		EulerAngles const& angles = value.As<EulerAngles>();
+		return Json::array({ angles.m_yawDegrees, angles.m_pitchDegrees, angles.m_rollDegrees });
 	}
-
-	return parts;
-}
-
-std::string SerializePropertyValue(ClassDatabase::PropertyValue const& value)
-{
-	if (std::holds_alternative<bool>(value))
+	case Variant::Type::Matrix4x4:
 	{
-		return std::get<bool>(value) ? "true" : "false";
-	}
-	if (std::holds_alternative<int>(value))
-	{
-		return std::to_string(std::get<int>(value));
-	}
-	if (std::holds_alternative<float>(value))
-	{
-		return ToString(std::get<float>(value));
-	}
-	if (std::holds_alternative<std::string>(value))
-	{
-		return "\"" + std::get<std::string>(value) + "\"";
-	}
-	if (std::holds_alternative<Vec3>(value))
-	{
-		Vec3 const& vec = std::get<Vec3>(value);
-		return "Vec3(" + ToString(vec.x) + ", " + ToString(vec.y) + ", " + ToString(vec.z) + ")";
-	}
-	if (std::holds_alternative<EulerAngles>(value))
-	{
-		EulerAngles const& angles = std::get<EulerAngles>(value);
-		return "EulerAngles(" + ToString(angles.m_yawDegrees) + ", " + ToString(angles.m_pitchDegrees) + ", "
-			   + ToString(angles.m_rollDegrees) + ")";
-	}
-	if (std::holds_alternative<Matrix4x4>(value))
-	{
-		float const*       matrix = std::get<Matrix4x4>(value).GetAsFloatArray();
-		std::ostringstream stream;
-		stream << "Matrix4x4(";
-		for (int valueIndex = 0; valueIndex < 16; ++valueIndex)
+		Json         result = Json::array();
+		float const* matrix = value.As<Matrix4x4>().GetAsFloatArray();
+		for (int index = 0; index < 16; ++index)
 		{
-			if (valueIndex > 0)
-			{
-				stream << ", ";
-			}
-			stream << ToString(matrix[valueIndex]);
+			result.push_back(matrix[index]);
 		}
-		stream << ")";
-		return stream.str();
+		return result;
+	}
+	case Variant::Type::Empty:
+		return nullptr;
 	}
 
-	ERROR_AND_DIE("PackedScene: unknown property value type.");
+	return nullptr;
 }
 
-ClassDatabase::PropertyValue DeserializePropertyValue(std::string const& text)
+bool IsNumberArray(Json const& json, size_t expectedSize)
 {
-	if (text == "true")
-	{
-		return true;
-	}
-	if (text == "false")
-	{
-		return false;
-	}
-	if (text.size() >= 2 && text.front() == '"' && text.back() == '"')
-	{
-		return text.substr(1, text.size() - 2);
-	}
-	if (text.rfind("Vec3(", 0) == 0)
-	{
-		Strings parts = GetFunctionParts(text, "Vec3", 3);
-		return Vec3(static_cast<float>(atof(parts[0].c_str())),
-			static_cast<float>(atof(parts[1].c_str())),
-			static_cast<float>(atof(parts[2].c_str())));
-	}
-	if (text.rfind("EulerAngles(", 0) == 0)
-	{
-		Strings parts = GetFunctionParts(text, "EulerAngles", 3);
-		return EulerAngles(static_cast<float>(atof(parts[0].c_str())),
-			static_cast<float>(atof(parts[1].c_str())),
-			static_cast<float>(atof(parts[2].c_str())));
-	}
-	if (text.rfind("Matrix4x4(", 0) == 0)
-	{
-		Strings parts      = GetFunctionParts(text, "Matrix4x4", 16);
-		float   values[16] = {};
-		for (int valueIndex = 0; valueIndex < 16; ++valueIndex)
-		{
-			values[valueIndex] = static_cast<float>(atof(parts[valueIndex].c_str()));
-		}
-		return Matrix4x4(values);
-	}
-
-	if (text.find('.') != std::string::npos)
-	{
-		return static_cast<float>(atof(text.c_str()));
-	}
-
-	return atoi(text.c_str());
-}
-
-bool ArePropertyValuesEqual(ClassDatabase::PropertyValue const& left, ClassDatabase::PropertyValue const& right)
-{
-	if (left.index() != right.index())
+	if (!json.is_array() || json.size() != expectedSize)
 	{
 		return false;
 	}
 
-	if (std::holds_alternative<bool>(left))
+	for (Json const& entry : json)
 	{
-		return std::get<bool>(left) == std::get<bool>(right);
-	}
-	if (std::holds_alternative<int>(left))
-	{
-		return std::get<int>(left) == std::get<int>(right);
-	}
-	if (std::holds_alternative<float>(left))
-	{
-		return std::get<float>(left) == std::get<float>(right);
-	}
-	if (std::holds_alternative<std::string>(left))
-	{
-		return std::get<std::string>(left) == std::get<std::string>(right);
-	}
-	if (std::holds_alternative<Vec3>(left))
-	{
-		return std::get<Vec3>(left) == std::get<Vec3>(right);
-	}
-	if (std::holds_alternative<EulerAngles>(left))
-	{
-		EulerAngles const& a = std::get<EulerAngles>(left);
-		EulerAngles const& b = std::get<EulerAngles>(right);
-		return a.m_yawDegrees == b.m_yawDegrees && a.m_pitchDegrees == b.m_pitchDegrees
-			   && a.m_rollDegrees == b.m_rollDegrees;
-	}
-	if (std::holds_alternative<Matrix4x4>(left))
-	{
-		float const* a = std::get<Matrix4x4>(left).GetAsFloatArray();
-		float const* b = std::get<Matrix4x4>(right).GetAsFloatArray();
-		for (int valueIndex = 0; valueIndex < 16; ++valueIndex)
+		if (!entry.is_number())
 		{
-			if (a[valueIndex] != b[valueIndex])
-			{
-				return false;
-			}
+			return false;
 		}
-		return true;
+	}
+	return true;
+}
+
+bool TryDeserializeVariant(Json const& json, Variant::Type expectedType, Variant& outValue)
+{
+	try
+	{
+		switch (expectedType)
+		{
+		case Variant::Type::Bool:
+			if (json.is_boolean())
+			{
+				outValue = Variant(json.get<bool>());
+				return true;
+			}
+			break;
+		case Variant::Type::Int:
+			if (json.is_number_integer())
+			{
+				outValue = Variant(json.get<int>());
+				return true;
+			}
+			break;
+		case Variant::Type::Float:
+			if (json.is_number())
+			{
+				outValue = Variant(json.get<float>());
+				return true;
+			}
+			break;
+		case Variant::Type::String:
+			if (json.is_string())
+			{
+				outValue = Variant(json.get<std::string>());
+				return true;
+			}
+			break;
+		case Variant::Type::Vec3:
+			if (IsNumberArray(json, 3))
+			{
+				outValue = Variant(Vec3(json[0].get<float>(), json[1].get<float>(), json[2].get<float>()));
+				return true;
+			}
+			break;
+		case Variant::Type::EulerAngles:
+			if (IsNumberArray(json, 3))
+			{
+				outValue =
+					Variant(EulerAngles(json[0].get<float>(), json[1].get<float>(), json[2].get<float>()));
+				return true;
+			}
+			break;
+		case Variant::Type::Matrix4x4:
+			if (IsNumberArray(json, 16))
+			{
+				float matrixValues[16] = {};
+				for (int index = 0; index < 16; ++index)
+				{
+					matrixValues[index] = json[index].get<float>();
+				}
+				outValue = Variant(Matrix4x4(matrixValues));
+				return true;
+			}
+			break;
+		case Variant::Type::Empty:
+			if (json.is_null())
+			{
+				outValue = Variant();
+				return true;
+			}
+			break;
+		}
+	}
+	catch (std::exception const&)
+	{
+		return false;
 	}
 
 	return false;
 }
 } // namespace
 
-PackedScene::PackedProperty::PackedProperty(std::string const& name, ClassDatabase::PropertyValue const& value)
-	: m_name(name), m_value(value)
+PackedScene::PackedProperty::PackedProperty(std::string const& name, Variant const& value)
+	: m_name(name)
+	, m_value(value)
 {
-}
-
-std::string PackedScene::PackedProperty::Serialize() const { return m_name + ": " + SerializePropertyValue(m_value); }
-
-PackedScene::PackedProperty PackedScene::PackedProperty::Deserialize(std::string const& text)
-{
-	size_t separatorIndex = text.find(": ");
-	if (separatorIndex == std::string::npos)
-	{
-		ERROR_AND_DIE(Stringf("Invalid packed property: %s", text.c_str()));
-	}
-
-	std::string name      = text.substr(0, separatorIndex);
-	std::string valueText = text.substr(separatorIndex + 2);
-	if (name.empty() || valueText.empty())
-	{
-		ERROR_AND_DIE(Stringf("Invalid packed property: %s", text.c_str()));
-	}
-
-	return PackedProperty(name, DeserializePropertyValue(valueText));
 }
 
 bool PackedScene::PackedProperty::CanApplyTo(ClassDatabase::PropertyInfo const& propertyInfo) const
 {
-	if (!propertyInfo.m_setter)
-	{
-		return false;
-	}
-
-	switch (propertyInfo.m_type)
-	{
-	case ClassDatabase::PropertyType::Bool:
-		return std::holds_alternative<bool>(m_value);
-	case ClassDatabase::PropertyType::Int:
-		return std::holds_alternative<int>(m_value);
-	case ClassDatabase::PropertyType::Float:
-		return std::holds_alternative<float>(m_value);
-	case ClassDatabase::PropertyType::String:
-		return std::holds_alternative<std::string>(m_value);
-	case ClassDatabase::PropertyType::Vec3:
-		return std::holds_alternative<Vec3>(m_value);
-	case ClassDatabase::PropertyType::EulerAngles:
-		return std::holds_alternative<EulerAngles>(m_value);
-	case ClassDatabase::PropertyType::Matrix4x4:
-		return std::holds_alternative<Matrix4x4>(m_value);
-	}
-
-	return false;
+	return propertyInfo.GetSetter() != nullptr && propertyInfo.m_type == m_value.GetType();
 }
 
 bool PackedScene::Pack(Node const* node)
@@ -254,72 +173,97 @@ bool PackedScene::Pack(Node const* node)
 	}
 
 	ParseNodeRecursively(node, m_packedNodes);
-
 	return true;
 }
 
 Node* PackedScene::Instantiate() const
 {
+	if (m_packedNodes.empty())
+	{
+		return nullptr;
+	}
+
 	Node*              root = nullptr;
 	std::vector<Node*> nodes;
 	nodes.reserve(m_packedNodes.size());
 
+	// Phase 1: create every node and rebuild the detached scene hierarchy.
+	// Packed nodes are parent-first, so each parent exists before its children are attached.
 	for (PackedNode const& packedNode : m_packedNodes)
 	{
 		Object* object = ClassDatabase::CreateInstance(packedNode.m_type);
 		Node*   node   = dynamic_cast<Node*>(object);
-
 		if (node == nullptr)
 		{
-			ERROR_AND_DIE(Stringf("Type %s is not a subclass of Node.", packedNode.m_type.c_str()));
+			delete object;
+			delete root;
+			DebuggerPrintf("PackedScene: type '%s' is not a creatable Node.\n", packedNode.m_type.c_str());
 			return nullptr;
 		}
 
 		node->SetName(packedNode.m_name);
-
 		if (packedNode.m_parentIndex == kInvalidNodeId)
 		{
+			if (root != nullptr)
+			{
+				delete node;
+				delete root;
+				DebuggerPrintf("PackedScene: scene contains more than one root node.\n");
+				return nullptr;
+			}
 			root = node;
 		}
 		else
 		{
-			// When we store the PackedScene
-			// we guarantee that parent nodes are always stored first
+			if (packedNode.m_parentIndex >= nodes.size())
+			{
+				delete node;
+				delete root;
+				DebuggerPrintf("PackedScene: node '%s' has an invalid parent index.\n", packedNode.m_name.c_str());
+				return nullptr;
+			}
 			nodes[packedNode.m_parentIndex]->AddNode(node);
 		}
+		nodes.push_back(node);
+	}
 
-		for (PackedScene::PackedProperty const& runtimeProperty : packedNode.m_properties)
+	// Phase 2: apply properties after the complete hierarchy exists. Setters may safely
+	// inspect parents or children, while SceneTree lifecycle callbacks have not started yet.
+	for (size_t nodeIndex = 0; nodeIndex < m_packedNodes.size(); ++nodeIndex)
+	{
+		PackedNode const& packedNode = m_packedNodes[nodeIndex];
+		Node*             node       = nodes[nodeIndex];
+		for (PackedProperty const& packedProperty : packedNode.m_properties)
 		{
 			ClassDatabase::PropertyInfo const* property =
-				ClassDatabase::FindProperty(packedNode.m_type, runtimeProperty.m_name);
+				ClassDatabase::FindProperty(packedNode.m_type, packedProperty.m_name);
 			if (property == nullptr)
 			{
 				DebuggerPrintf("PackedScene: skipping unknown property '%s' on type '%s'.\n",
-					runtimeProperty.m_name.c_str(),
+					packedProperty.m_name.c_str(),
 					packedNode.m_type.c_str());
 				continue;
 			}
-
-			if (!runtimeProperty.CanApplyTo(*property))
+			if (!packedProperty.CanApplyTo(*property))
 			{
 				DebuggerPrintf("PackedScene: skipping incompatible property '%s' on type '%s'.\n",
-					runtimeProperty.m_name.c_str(),
+					packedProperty.m_name.c_str(),
 					packedNode.m_type.c_str());
 				continue;
 			}
 
 			try
 			{
-				property->m_setter(*node, runtimeProperty.m_value);
+				property->GetSetter()->Invoke(*node, { packedProperty.m_value });
 			}
-			catch (std::exception const&)
+			catch (std::exception const& error)
 			{
-				DebuggerPrintf("PackedScene: failed to apply property '%s' on type '%s'.\n",
-					runtimeProperty.m_name.c_str(),
-					packedNode.m_type.c_str());
+				DebuggerPrintf("PackedScene: failed to apply property '%s' on type '%s': %s\n",
+					packedProperty.m_name.c_str(),
+					packedNode.m_type.c_str(),
+					error.what());
 			}
 		}
-		nodes.push_back(node);
 	}
 
 	return root;
@@ -332,32 +276,25 @@ bool PackedScene::SaveToFile(std::string const& filename) const
 		return false;
 	}
 
-	nlohmann::ordered_json root;
+	Json root;
 	root["version"] = 1;
-	root["nodes"]   = nlohmann::json::array();
+	root["nodes"]   = Json::array();
 
 	for (PackedNode const& node : m_packedNodes)
 	{
-		nlohmann::ordered_json nodeJson;
-		nodeJson["id"]   = node.m_id;
-		nodeJson["name"] = node.m_name;
-		nodeJson["type"] = node.m_type;
+		Json nodeJson;
+		nodeJson["id"]     = node.m_id;
+		nodeJson["name"]   = node.m_name;
+		nodeJson["type"]   = node.m_type;
+		nodeJson["parent"] = node.m_parentIndex == kInvalidNodeId
+								 ? Json(nullptr)
+								 : Json(node.m_parentIndex);
 
-		if (node.m_parentIndex == kInvalidNodeId)
-		{
-			nodeJson["parent"] = nullptr;
-		}
-		else
-		{
-			nodeJson["parent"] = node.m_parentIndex;
-		}
-
-		nodeJson["properties"] = nlohmann::json::array();
+		nodeJson["properties"] = Json::object();
 		for (PackedProperty const& property : node.m_properties)
 		{
-			nodeJson["properties"].push_back(property.Serialize());
+			nodeJson["properties"][property.m_name] = SerializeVariant(property.m_value);
 		}
-
 		root["nodes"].push_back(nodeJson);
 	}
 
@@ -371,9 +308,9 @@ bool PackedScene::SaveToFile(std::string const& filename) const
 	{
 		output << root.dump(4);
 	}
-	catch (nlohmann::json::parse_error const& error)
+	catch (std::exception const& error)
 	{
-		ERROR_AND_DIE(Stringf("Failed to serialize PackedScene to JSON: %s", error.what()));
+		DebuggerPrintf("PackedScene: failed to save '%s': %s\n", filename.c_str(), error.what());
 		return false;
 	}
 
@@ -388,43 +325,67 @@ bool PackedScene::LoadFromFile(std::string const& filename)
 		return false;
 	}
 
-	nlohmann::ordered_json root;
+	Json root;
 	try
 	{
 		input >> root;
-	}
-	catch (nlohmann::json::parse_error const& error)
-	{
-		ERROR_AND_DIE(Stringf("Failed to deserialize PackedScene from JSON: %s", error.what()));
-		return false;
-	}
-
-	if (!root.contains("version") || !root.contains("nodes"))
-	{
-		return false;
-	}
-
-	m_packedNodes.clear();
-	for (auto const& nodeJson : root["nodes"])
-	{
-		PackedNode packedNode;
-		packedNode.m_id   = nodeJson["id"].get<unsigned int>();
-		packedNode.m_name = nodeJson["name"].get<std::string>();
-		packedNode.m_type = nodeJson["type"].get<std::string>();
-		packedNode.m_parentIndex =
-			nodeJson["parent"].is_null() ? kInvalidNodeId : nodeJson["parent"].get<unsigned int>();
-
-		for (auto const& propertyJson : nodeJson["properties"])
+		if (!root.contains("version") || root["version"].get<int>() != 1 || !root.contains("nodes")
+			|| !root["nodes"].is_array())
 		{
-			if (!propertyJson.is_string())
-			{
-				ERROR_AND_DIE("PackedScene: property entries must be serialized strings.");
-			}
-
-			packedNode.m_properties.push_back(PackedProperty::Deserialize(propertyJson.get<std::string>()));
+			return false;
 		}
 
-		m_packedNodes.push_back(packedNode);
+		std::vector<PackedNode> loadedNodes;
+		for (Json const& nodeJson : root["nodes"])
+		{
+			if (!nodeJson.contains("id") || !nodeJson.contains("name") || !nodeJson.contains("type")
+				|| !nodeJson.contains("parent") || !nodeJson.contains("properties")
+				|| !nodeJson["properties"].is_object())
+			{
+				return false;
+			}
+
+			PackedNode packedNode;
+			packedNode.m_id   = nodeJson["id"].get<unsigned int>();
+			packedNode.m_name = nodeJson["name"].get<std::string>();
+			packedNode.m_type = nodeJson["type"].get<std::string>();
+			packedNode.m_parentIndex =
+				nodeJson["parent"].is_null() ? kInvalidNodeId : nodeJson["parent"].get<unsigned int>();
+
+			for (auto propertyEntry = nodeJson["properties"].begin();
+				 propertyEntry != nodeJson["properties"].end();
+				 ++propertyEntry)
+			{
+				std::string const propertyName = propertyEntry.key();
+				ClassDatabase::PropertyInfo const* property =
+					ClassDatabase::FindProperty(packedNode.m_type, propertyName);
+				if (property == nullptr)
+				{
+					DebuggerPrintf("PackedScene: skipping unknown property '%s' on type '%s'.\n",
+						propertyName.c_str(),
+						packedNode.m_type.c_str());
+					continue;
+				}
+
+				Variant value;
+				if (!TryDeserializeVariant(propertyEntry.value(), property->m_type, value))
+				{
+					DebuggerPrintf("PackedScene: skipping property '%s' with an incompatible JSON value on type '%s'.\n",
+						propertyName.c_str(),
+						packedNode.m_type.c_str());
+					continue;
+				}
+				packedNode.m_properties.emplace_back(propertyName, value);
+			}
+			loadedNodes.push_back(std::move(packedNode));
+		}
+
+		m_packedNodes = std::move(loadedNodes);
+	}
+	catch (std::exception const& error)
+	{
+		DebuggerPrintf("PackedScene: failed to load '%s': %s\n", filename.c_str(), error.what());
+		return false;
 	}
 
 	return true;
@@ -441,25 +402,15 @@ void PackedScene::ParseNodeRecursively(Node const* node, std::vector<PackedNode>
 	packedNode.m_name = node->GetName();
 	packedNode.m_type = node->GetClassName();
 	packedNode.m_id   = m_nextNodeId++;
+	m_nodeToId[node]  = packedNode.m_id;
 
-	m_nodeToId[node] = packedNode.m_id;
-
-	unsigned int parentId = kInvalidNodeId;
-	Node const*  parent   = node->GetParent();
-	if (parent != nullptr)
-	{
-		auto iter = m_nodeToId.find(parent);
-		if (iter != m_nodeToId.end())
-		{
-			parentId = iter->second;
-		}
-	}
-	packedNode.m_parentIndex = parentId;
+	Node const* parent = node->GetParent();
+	auto const  parentEntry = parent != nullptr ? m_nodeToId.find(parent) : m_nodeToId.end();
+	packedNode.m_parentIndex = parentEntry != m_nodeToId.end() ? parentEntry->second : kInvalidNodeId;
 
 	Object* defaultObject = ClassDatabase::CreateInstance(packedNode.m_type);
 	Node*   defaultNode   = dynamic_cast<Node*>(defaultObject);
-	bool    hasDefault    = defaultNode != nullptr;
-	if (defaultObject != nullptr && !hasDefault)
+	if (defaultObject != nullptr && defaultNode == nullptr)
 	{
 		DebuggerPrintf("PackedScene: default object for type '%s' is not a Node.\n", packedNode.m_type.c_str());
 	}
@@ -467,39 +418,39 @@ void PackedScene::ParseNodeRecursively(Node const* node, std::vector<PackedNode>
 	std::vector<ClassDatabase::PropertyInfo const*> properties = ClassDatabase::GetAllProperties(packedNode.m_type);
 	for (ClassDatabase::PropertyInfo const* property : properties)
 	{
-		if (property == nullptr || !property->m_getter)
+		if (property == nullptr
+			|| !property->HasUsage(ClassDatabase::PropertyInfo::PropertyUsageFlags::Storage)
+			|| property->GetGetter() == nullptr)
 		{
 			continue;
 		}
 
 		try
 		{
-			ClassDatabase::PropertyValue value = property->m_getter(*node);
-			if (hasDefault)
+			Variant value = property->GetGetter()->Invoke(const_cast<Node&>(*node), {});
+			if (defaultNode != nullptr)
 			{
-				ClassDatabase::PropertyValue defaultValue = property->m_getter(*defaultNode);
-				if (ArePropertyValuesEqual(value, defaultValue))
+				Variant defaultValue = property->GetGetter()->Invoke(*defaultNode, {});
+				if (value == defaultValue)
 				{
 					continue;
 				}
 			}
-
 			packedNode.m_properties.emplace_back(property->m_name, value);
 		}
-		catch (std::exception const&)
+		catch (std::exception const& error)
 		{
-			DebuggerPrintf("PackedScene: failed to read property '%s' on type '%s'.\n",
+			DebuggerPrintf("PackedScene: failed to read property '%s' on type '%s': %s\n",
 				property->m_name.c_str(),
-				packedNode.m_type.c_str());
+				packedNode.m_type.c_str(),
+				error.what());
 		}
 	}
 
 	delete defaultObject;
+	outNodes.push_back(std::move(packedNode));
 
-	outNodes.push_back(packedNode);
-
-	std::vector<Node*> const& children = node->GetChildren();
-	for (Node const* child : children)
+	for (Node const* child : node->GetChildren())
 	{
 		ParseNodeRecursively(child, outNodes);
 	}

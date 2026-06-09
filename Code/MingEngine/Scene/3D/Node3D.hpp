@@ -22,8 +22,8 @@ public:
 
 	Matrix4x4 GetLocalTransform() const;
 	Matrix4x4 GetWorldTransform() const;
-	void      SetLocalTransform(Matrix4x4 const& localTransform);
-	void      SetWorldTransform(Matrix4x4 const& worldTransform);
+	void SetLocalTransform(Matrix4x4 const& localTransform);
+	void SetWorldTransform(Matrix4x4 const& worldTransform);
 
 	Vec3 GetLocalPosition() const;
 	Vec3 GetWorldPosition() const;
@@ -32,20 +32,23 @@ public:
 
 	EulerAngles GetLocalOrientation() const;
 	EulerAngles GetWorldOrientation() const;
-	void        SetLocalOrientation(EulerAngles const& localOrientation);
-	void        SetWorldOrientation(EulerAngles const& worldOrientation);
-	void        SetWorldForward(Vec3 const& forward);
-	Vec3        GetWorldForward() const;
+	void SetLocalOrientation(EulerAngles const& localOrientation);
+	void SetWorldOrientation(EulerAngles const& worldOrientation);
+	void SetWorldForward(Vec3 const& forward);
+	Vec3 GetWorldForward() const;
+
+	Vec3 GetLocalScale() const;
+	void SetLocalScale(Vec3 const& scale);
 
 protected:
 	void OnProcess(float deltaSeconds) override;
 
 	virtual void OnTransformChanged();
-	void         PropagateTransformChanged();
-	Matrix4x4    GetWorldInverseTransform() const;
+	void PropagateTransformChanged();
+	Matrix4x4 GetWorldInverseTransform() const;
 
 protected:
 	Transform3D m_transform;
-	Vec3        m_velocity        = Vec3::Zero;
+	Vec3 m_velocity               = Vec3::Zero;
 	EulerAngles m_angularVelocity = EulerAngles::Zero;
 };

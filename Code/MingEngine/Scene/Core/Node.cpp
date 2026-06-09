@@ -132,7 +132,23 @@ void Node::Reparent(Node* newParent, [[maybe_unused]] bool keepWorldTransform)
 	newParent->AddNode(this);
 }
 
-void Node::BindMethods() {}
+void Node::BindMethods()
+{
+	ClassDatabase::BindMethod("SetName", &Node::SetName);
+	ClassDatabase::BindMethod("GetName", &Node::GetName);
+	ClassDatabase::BindMethod("SetSerializable", &Node::SetSerializable);
+	ClassDatabase::BindMethod("GetSerializable", &Node::GetSerializable);
+	ClassDatabase::BindMethod("SetReady", &Node::SetReady);
+	ClassDatabase::BindMethod("GetReady", &Node::GetReady);
+	ClassDatabase::BindMethod("SetProcess", &Node::SetProcess);
+	ClassDatabase::BindMethod("GetProcess", &Node::GetProcess);
+
+	ADD_PROPERTY(ClassDatabase::PropertyInfo(Variant::Type::String,
+					 "name",
+					 ClassDatabase::PropertyInfo::PropertyUsageFlags::Editor),
+		"SetName",
+		"GetName");
+}
 
 void Node::AttachChildImmediately(Node* child)
 {

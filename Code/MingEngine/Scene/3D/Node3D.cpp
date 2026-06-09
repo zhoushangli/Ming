@@ -18,9 +18,46 @@ void Node3D::Reparent(Node* newParent, bool keepWorldTransform)
 
 void Node3D::BindMethods()
 {
-	ClassDatabase::AddProperty(ClassDatabase::PropertyInfo(ClassDatabase::PropertyType::Matrix4x4, "transform"),
-		&Node3D::GetLocalTransform,
-		&Node3D::SetLocalTransform);
+	ClassDatabase::BindMethod("SetLocalTransform", &Node3D::SetLocalTransform);
+	ClassDatabase::BindMethod("GetLocalTransform", &Node3D::GetLocalTransform);
+	ClassDatabase::BindMethod("SetLocalPosition", &Node3D::SetLocalPosition);
+	ClassDatabase::BindMethod("GetLocalPosition", &Node3D::GetLocalPosition);
+	ClassDatabase::BindMethod("SetLocalOrientation", &Node3D::SetLocalOrientation);
+	ClassDatabase::BindMethod("GetLocalOrientation", &Node3D::GetLocalOrientation);
+	ClassDatabase::BindMethod("SetLocalScale", &Node3D::SetLocalScale);
+	ClassDatabase::BindMethod("GetLocalScale", &Node3D::GetLocalScale);
+
+	ADD_PROPERTY(
+		ClassDatabase::PropertyInfo(
+			Variant::Type::Matrix4x4,
+			"transform",
+			ClassDatabase::PropertyInfo::PropertyUsageFlags::Storage),
+		"SetLocalTransform",
+		"GetLocalTransform");
+
+	ADD_PROPERTY(
+		ClassDatabase::PropertyInfo(
+			Variant::Type::Vec3,
+			"position",
+			ClassDatabase::PropertyInfo::PropertyUsageFlags::Editor),
+		"SetLocalPosition",
+		"GetLocalPosition");
+
+	ADD_PROPERTY(
+		ClassDatabase::PropertyInfo(
+			Variant::Type::EulerAngles,
+			"rotation",
+			ClassDatabase::PropertyInfo::PropertyUsageFlags::Editor),
+		"SetLocalOrientation",
+		"GetLocalOrientation");
+
+	ADD_PROPERTY(
+		ClassDatabase::PropertyInfo(
+			Variant::Type::Vec3,
+			"scale",
+			ClassDatabase::PropertyInfo::PropertyUsageFlags::Editor),
+		"SetLocalScale",
+		"GetLocalScale");
 }
 
 Matrix4x4 Node3D::GetLocalTransform() const { return m_transform.GetMatrix(); }
@@ -28,7 +65,7 @@ Matrix4x4 Node3D::GetLocalTransform() const { return m_transform.GetMatrix(); }
 Matrix4x4 Node3D::GetWorldTransform() const
 {
 	Matrix4x4 worldTransform = GetLocalTransform();
-	Node3D*   parent3D       = dynamic_cast<Node3D*>(m_data.m_parent);
+	Node3D* parent3D         = dynamic_cast<Node3D*>(m_data.m_parent);
 	if (parent3D != nullptr)
 	{
 		Matrix4x4 parentTransform = parent3D->GetWorldTransform();
@@ -42,7 +79,7 @@ Matrix4x4 Node3D::GetWorldTransform() const
 Matrix4x4 Node3D::GetWorldInverseTransform() const
 {
 	Matrix4x4 worldInverseTransform = m_transform.GetInverseMatrix();
-	Node3D*   parent3D              = dynamic_cast<Node3D*>(m_data.m_parent);
+	Node3D* parent3D                = dynamic_cast<Node3D*>(m_data.m_parent);
 	if (parent3D != nullptr)
 	{
 		worldInverseTransform.Append(parent3D->GetWorldInverseTransform());
@@ -86,6 +123,14 @@ void Node3D::SetLocalPosition(Vec3 const& localPosition)
 	PropagateTransformChanged();
 }
 
+Vec3 Node3D::GetLocalScale() const { return m_transform.GetScale(); }
+
+void Node3D::SetLocalScale(Vec3 const& scale)
+{
+	m_transform.SetScale(scale);
+	PropagateTransformChanged();
+}
+
 void Node3D::SetWorldPosition(Vec3 const& worldPosition)
 {
 	Node3D* parent3D = dynamic_cast<Node3D*>(m_data.m_parent);
@@ -104,7 +149,7 @@ EulerAngles Node3D::GetLocalOrientation() const { return m_transform.GetOrientat
 
 EulerAngles Node3D::GetWorldOrientation() const
 {
-	Matrix4x4   worldTransform = GetWorldTransform();
+	Matrix4x4 worldTransform = GetWorldTransform();
 	EulerAngles worldOrientation;
 	worldOrientation.SetFromMatrix_IFwd_JLeft_KUp(worldTransform);
 

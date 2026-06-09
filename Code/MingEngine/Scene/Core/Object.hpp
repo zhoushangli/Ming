@@ -2,7 +2,10 @@
 
 #include <string>
 
-#define MCLASS(className, inheritName)                                                                                  \
+#define ADD_PROPERTY(propertyName, setterName, getterName)                                                             \
+	ClassDatabase::AddProperty(GetStaticClassName(), propertyName, setterName, getterName)
+
+#define MCLASS(className, inheritName)                                                                                 \
 public:                                                                                                                \
 	using Super = inheritName;                                                                                         \
 	static std::string     GetStaticClassName() { return #className; }                                                 \
@@ -15,8 +18,8 @@ public:                                                                         
 		{                                                                                                              \
 			return;                                                                                                    \
 		}                                                                                                              \
-		Super::InitializeClass();                                                                                \
-		if (className::GetBindMethodsFunc() != Super::GetBindMethodsFunc())                                      \
+		Super::InitializeClass();                                                                                      \
+		if (className::GetBindMethodsFunc() != Super::GetBindMethodsFunc())                                            \
 		{                                                                                                              \
 			className::BindMethods();                                                                                  \
 		}                                                                                                              \

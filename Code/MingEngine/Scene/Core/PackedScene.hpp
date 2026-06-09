@@ -1,8 +1,8 @@
 #pragma once
 
 #include "MingEngine/Scene/Core/Node.hpp"
+#include "MingEngine/Scene/Core/Variant.hpp"
 
-#include <map>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -17,14 +17,12 @@ protected:
 	struct PackedProperty
 	{
 		PackedProperty() = default;
-		PackedProperty(std::string const& name, ClassDatabase::PropertyValue const& value);
+		PackedProperty(std::string const& name, Variant const& value);
 
-		std::string Serialize() const;
-		static PackedProperty Deserialize(std::string const& text);
-		bool        CanApplyTo(ClassDatabase::PropertyInfo const& propertyInfo) const;
+		bool CanApplyTo(ClassDatabase::PropertyInfo const& propertyInfo) const;
 
-		std::string                  m_name;
-		ClassDatabase::PropertyValue m_value;
+		std::string m_name;
+		Variant     m_value;
 	};
 
 	struct PackedNode

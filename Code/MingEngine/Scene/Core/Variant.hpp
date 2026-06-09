@@ -10,15 +10,19 @@
 class Variant
 {
 public:
-	using Storage = std::variant<
-		std::monostate,
-		bool,
-		int,
-		float,
-		std::string,
+	using Storage = std::variant<std::monostate, bool, int, float, std::string, Vec3, EulerAngles, Matrix4x4>;
+
+	enum class Type
+	{
+		Empty,
+		Bool,
+		Int,
+		Float,
+		String,
 		Vec3,
 		EulerAngles,
-		Matrix4x4>;
+		Matrix4x4,
+	};
 
 public:
 	Variant() = default;
@@ -33,6 +37,9 @@ public:
 	Variant(Matrix4x4 const& value);
 
 	bool IsEmpty() const;
+	Type GetType() const;
+	bool operator==(Variant const& other) const;
+	bool operator!=(Variant const& other) const;
 
 	template <typename T>
 	bool Is() const
@@ -53,6 +60,7 @@ public:
 	}
 
 private:
+	Type m_type = Type::Empty;
 	Storage m_value;
 };
 
@@ -62,62 +70,65 @@ struct VariantCaster;
 template <>
 struct VariantCaster<bool>
 {
-	static bool Cast(Variant const& value)
-	{
-		return value.As<bool>();
-	}
+	static bool Cast(Variant const& value) { return value.As<bool>(); }
 };
 
 template <>
 struct VariantCaster<int>
 {
-	static int Cast(Variant const& value)
-	{
-		return value.As<int>();
-	}
+	static int Cast(Variant const& value) { return value.As<int>(); }
 };
 
 template <>
 struct VariantCaster<float>
 {
-	static float Cast(Variant const& value)
-	{
-		return value.As<float>();
-	}
+	static float Cast(Variant const& value) { return value.As<float>(); }
 };
 
 template <>
 struct VariantCaster<Vec3>
 {
-	static Vec3 Cast(Variant const& value)
-	{
-		return value.As<Vec3>();
-	}
+	static Vec3 Cast(Variant const& value) { return value.As<Vec3>(); }
 };
 
 template <>
 struct VariantCaster<Vec3 const&>
 {
-	static Vec3 const& Cast(Variant const& value)
-	{
-		return value.As<Vec3>();
-	}
+	static Vec3 const& Cast(Variant const& value) { return value.As<Vec3>(); }
+};
+
+template <>
+struct VariantCaster<EulerAngles>
+{
+	static EulerAngles Cast(Variant const& value) { return value.As<EulerAngles>(); }
+};
+
+template <>
+struct VariantCaster<EulerAngles const&>
+{
+	static EulerAngles const& Cast(Variant const& value) { return value.As<EulerAngles>(); }
+};
+
+template <>
+struct VariantCaster<Matrix4x4>
+{
+	static Matrix4x4 Cast(Variant const& value) { return value.As<Matrix4x4>(); }
+};
+
+template <>
+struct VariantCaster<Matrix4x4 const&>
+{
+	static Matrix4x4 const& Cast(Variant const& value) { return value.As<Matrix4x4>(); }
 };
 
 template <>
 struct VariantCaster<std::string>
 {
-	static std::string Cast(Variant const& value)
-	{
-		return value.As<std::string>();
-	}
+	static std::string Cast(Variant const& value) { return value.As<std::string>(); }
 };
 
 template <>
 struct VariantCaster<std::string const&>
 {
-	static std::string const& Cast(Variant const& value)
-	{
-		return value.As<std::string>();
-	}
+	static std::string const& Cast(Variant const& value) { return value.As<std::string>(); }
 };

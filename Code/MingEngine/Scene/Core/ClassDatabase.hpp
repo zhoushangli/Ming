@@ -14,55 +14,76 @@
 #include <variant>
 #include <vector>
 
+class PackedScene;
+
 class ClassDatabase
 {
 public:
-	using PropertyValue = std::variant<bool, int, float, std::string, Vec3, EulerAngles, Matrix4x4>;
-	enum class PropertyType
-	{
-		Bool,
-		Int,
-		Float,
-		String,
-		Vec3,
-		EulerAngles,
-		Matrix4x4,
-	};
-
 	// Because of the use of unique_ptr
 	// MethodInfo and ClassInfo must be moved, not copied
 	// We indeed need to use std::unique_ptr here
 	// Because we want method info deconstruct when the class info is destroyed
 	struct MethodInfo
 	{
-		std::string                 m_name;
+		std::string m_name;
 		std::unique_ptr<MethodBind> m_bind;
 	};
 
 	struct PropertyInfo
 	{
+		friend class ClassDatabase;
+		friend class PackedScene;
+
+	public:
+		enum class PropertyUsageFlags : unsigned int
+		{
+			None    = 0,
+			Storage = 1 << 0,
+			Editor  = 1 << 1,
+			Default = (1 << 0) | (1 << 1)
+		};
+
+		friend constexpr PropertyUsageFlags operator|(PropertyUsageFlags left, PropertyUsageFlags right)
+		{
+			return static_cast<PropertyUsageFlags>(
+				static_cast<unsigned int>(left) | static_cast<unsigned int>(right));
+		}
+
+	public:
 		PropertyInfo() = default;
-		PropertyInfo(PropertyType type, std::string name) : m_type(type), m_name(name) {}
+		PropertyInfo(Variant::Type type, std::string name, PropertyUsageFlags usageFlags)
+			: m_type(type), m_name(name), m_usageFlags(usageFlags)
+		{
+		}
 
-		PropertyType m_type;
-		std::string  m_name;
+		static constexpr bool HasFlag(PropertyUsageFlags value, PropertyUsageFlags flag)
+		{
+			return (static_cast<unsigned int>(value) & static_cast<unsigned int>(flag)) != 0;
+		}
+		bool HasUsage(PropertyUsageFlags usage) const { return HasFlag(m_usageFlags, usage); }
+		MethodBind const* GetSetter() const { return m_setter; }
+		MethodBind const* GetGetter() const { return m_getter; }
 
-		// The following getters and setters are expected to be set by AddProperty()
-		// Because of the use of std::function, they can not directly point to member functions
-		// but must be wrapped in lambdas that perform the appropriate casts
-		std::function<PropertyValue(Object const&)>        m_getter;
-		std::function<void(Object&, PropertyValue const&)> m_setter;
+		Variant::Type     m_type       = Variant::Type::Empty;
+		std::string       m_name;
+		PropertyUsageFlags m_usageFlags = PropertyUsageFlags::None;
+
+	private:
+		std::string m_setterName;
+		std::string m_getterName;
+		MethodBind const* m_setter = nullptr;
+		MethodBind const* m_getter = nullptr;
 	};
 
 	struct ClassInfo
 	{
-		std::string              m_className;
-		std::string              m_parentClassName;
+		std::string m_className;
+		std::string m_parentClassName;
 		std::function<Object*()> m_creator;
-		bool                     m_canCreateInEditor = true;
+		bool m_canCreateInEditor = true;
 
 		std::vector<PropertyInfo> m_properties;
-		std::vector<MethodInfo>   m_methods;
+		std::vector<MethodInfo> m_methods;
 	};
 
 public:
@@ -72,16 +93,26 @@ public:
 	static void Startup();
 	static void Shutdown();
 
-	static Object*                       CreateInstance(std::string const& className);
-	static ClassInfo const*              GetClassInfo(std::string const& className);
+	static Object* CreateInstance(std::string const& className);
+	static ClassInfo const* GetClassInfo(std::string const& className);
 	static std::vector<ClassInfo const*> GetRegisteredClasses();
-	static bool                          IsSubclassOf(std::string const& className, std::string const& baseClassName);
+	static bool IsSubclassOf(std::string const& className, std::string const& baseClassName);
+
+	static std::vector<PropertyInfo> GetProperties(std::string const& className);
+	static std::vector<PropertyInfo const*> GetAllProperties(std::string const& className);
+	static PropertyInfo const* FindProperty(std::string const& className, std::string const& propertyName);
+
+	static MethodBind const* GetMethodBind(std::string const& className, std::string const& methodName);
+	static void AddProperty(std::string const& className,
+		PropertyInfo propertyInfo,
+		std::string const& setterName,
+		std::string const& getterName);
 
 	template <typename T>
 	static void RegisterClass(bool canCreateInEditor = true)
 	{
 		std::string className = T::GetStaticClassName();
-		ClassInfo   classInfo;
+		ClassInfo classInfo;
 		classInfo.m_className       = className;
 		classInfo.m_parentClassName = T::Super::GetStaticClassName();
 		if constexpr (!std::is_abstract_v<T>)
@@ -98,25 +129,6 @@ public:
 	{
 		Object* object = new T();
 		return object;
-	}
-
-	template <typename ClassType, typename ValueType>
-	static void AddProperty(
-		PropertyInfo property, ValueType (ClassType::*getter)() const, void (ClassType::*setter)(ValueType const&))
-	{
-		property.m_getter = [getter](Object const& object) -> PropertyValue
-		{
-			ClassType const& typedObject = static_cast<ClassType const&>(object);
-			return (typedObject.*getter)();
-		};
-
-		property.m_setter = [setter](Object& object, PropertyValue const& value)
-		{
-			ClassType& typedObject = static_cast<ClassType&>(object);
-			(typedObject.*setter)(std::get<ValueType>(value));
-		};
-
-		m_classInfoMap[ClassType::GetStaticClassName()].m_properties.push_back(property);
 	}
 
 	template <typename ClassType, typename... Args>
@@ -154,12 +166,6 @@ public:
 		methodInfo.m_bind = std::make_unique<ConstReturnMethodBind<ClassType, ReturnType, Args...>>(method);
 		m_classInfoMap[ClassType::GetStaticClassName()].m_methods.push_back(std::move(methodInfo));
 	}
-
-	template <typename ClassType, typename... Args>
-
-	static std::vector<PropertyInfo>        GetProperties(std::string const& className);
-	static std::vector<PropertyInfo const*> GetAllProperties(std::string const& className);
-	static PropertyInfo const*              FindProperty(std::string const& className, std::string const& propertyName);
 
 private:
 	static std::unordered_map<std::string, ClassInfo> m_classInfoMap;

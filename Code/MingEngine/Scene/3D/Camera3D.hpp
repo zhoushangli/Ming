@@ -31,6 +31,8 @@ public:
 	void SetFovDegrees(float fovDegrees);
 	void SetSize(float size);
 
+	static void BindMethods();
+
 private:
 	CameraContext::Mode m_mode;
 	float        m_nearClip;

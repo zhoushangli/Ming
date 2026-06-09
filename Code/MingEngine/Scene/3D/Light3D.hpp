@@ -27,6 +27,8 @@ public:
 	float            GetRange() const;
 	LightInfo const& GetLightInfo() const;
 
+	static void BindMethods();
+
 protected:
 	void OnEnterTree() override;
 	void OnExitTree() override;
@@ -37,7 +39,7 @@ protected:
 
 class PointLight3D : public Light3D
 {
-	MCLASS(PointLight3D, Node);
+	MCLASS(PointLight3D, Light3D);
 
 public:
 	PointLight3D();
@@ -46,7 +48,7 @@ public:
 
 class DirectionalLight3D : public Light3D
 {
-	MCLASS(DirectionalLight3D, Node);
+	MCLASS(DirectionalLight3D, Light3D);
 
 public:
 	DirectionalLight3D();

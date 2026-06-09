@@ -34,7 +34,7 @@ RenderRequest EditorGizmoVisual3D::SubmitRenderRequest() const
 
 EditorWorldGrid3D::EditorWorldGrid3D()
 {
-	constexpr int   kHalfExtent     = 30;
+	constexpr int   kHalfExtent     = 50;
 	constexpr float kLineHeight     = 0.01f;
 	constexpr float kBaseThickness  = 0.002f;
 	constexpr float kAxisThickness  = 0.01f;

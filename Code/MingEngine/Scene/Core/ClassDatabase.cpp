@@ -9,6 +9,9 @@
 #include "MingEngine/Scene/Physics/TriangleMeshCollider3D.hpp"
 #include "MingEngine/Scene/Core/Node.hpp"
 
+#include "MingEngine/Engine/Core/ErrorWarningAssert.hpp"
+#include "MingEngine/Engine/Core/StringUtils.hpp"
+
 std::unordered_map<std::string, ClassDatabase::ClassInfo> ClassDatabase::m_classInfoMap;
 
 void ClassDatabase::Startup()
@@ -18,6 +21,7 @@ void ClassDatabase::Startup()
 	RegisterClass<Node>();
 	RegisterClass<Node3D>();
 	RegisterClass<Camera3D>();
+	RegisterClass<Light3D>(false);
 	RegisterClass<DirectionalLight3D>();
 	RegisterClass<PointLight3D>();
 	RegisterClass<Collider3D>(false);
@@ -130,4 +134,41 @@ ClassDatabase::PropertyInfo const* ClassDatabase::FindProperty(std::string const
 	}
 
 	return nullptr;
+}
+
+MethodBind const* ClassDatabase::GetMethodBind(std::string const& className, std::string const& methodName)
+{
+	ClassInfo const* classInfo = GetClassInfo(className);
+	if (classInfo == nullptr)
+	{
+		return nullptr;
+	}
+
+	for (auto const& method : classInfo->m_methods)
+	{
+		if (method.m_name == methodName)
+		{
+			return method.m_bind.get();
+		}
+	}
+
+	return nullptr;
+}
+
+void ClassDatabase::AddProperty(std::string const& className,
+	PropertyInfo propertyInfo,
+	std::string const& setterName,
+	std::string const& getterName)
+{
+	propertyInfo.m_setterName = setterName;
+	propertyInfo.m_getterName = getterName;
+	propertyInfo.m_setter     = GetMethodBind(className, setterName);
+	propertyInfo.m_getter     = GetMethodBind(className, getterName);
+
+	GUARANTEE_OR_DIE(propertyInfo.m_setter != nullptr,
+		Stringf("ClassDatabase: setter '%s' is not bound on class '%s'.", setterName.c_str(), className.c_str()));
+	GUARANTEE_OR_DIE(propertyInfo.m_getter != nullptr,
+		Stringf("ClassDatabase: getter '%s' is not bound on class '%s'.", getterName.c_str(), className.c_str()));
+
+	m_classInfoMap[className].m_properties.push_back(std::move(propertyInfo));
 }
