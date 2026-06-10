@@ -1,4 +1,4 @@
-#include "MingEngine/Editor/GizmosShapes.hpp"
+#include "MingEngine/Editor/Gizmos/GizmosShapes.hpp"
 
 #include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Engine/Math/AABB3.hpp"
@@ -46,7 +46,7 @@ EditorWorldGrid3D::EditorWorldGrid3D()
 		Vec3 const  center   = bounds.GetCenter();
 		float const distance = sqrtf(center.x * center.x + center.y * center.y);
 		color.a = static_cast<unsigned char>(RangeMapClamped(distance, kFadeStart, kFadeEnd, 255.f, 0.f));
-		AddVertsForAABB3D(m_vertices, bounds, color);
+		AddVertsForAABB3D(m_verts, bounds, color);
 	};
 
 	for (int lineIndex = -kHalfExtent; lineIndex <= kHalfExtent; ++lineIndex)
@@ -74,9 +74,9 @@ EditorWorldGrid3D::EditorWorldGrid3D()
 		}
 	}
 
-	if (!m_vertices.empty() && g_engine != nullptr && g_engine->m_renderer != nullptr)
+	if (!m_verts.empty() && g_engine != nullptr && g_engine->m_renderer != nullptr)
 	{
-		m_vertexBuffer = g_engine->m_renderer->CreateVertexBuffer(m_vertices);
+		m_vertexBuffer = g_engine->m_renderer->CreateVertexBuffer(m_verts);
 	}
 }
 
@@ -85,12 +85,12 @@ EditorWorldAxis3D::EditorWorldAxis3D()
 	constexpr float kAxisLength = 1.f;
 	constexpr float kAxisRadius = 0.03f;
 
-	AddVertsForArrow3D(m_vertices, Vec3::Zero, Vec3(kAxisLength, 0.f, 0.f), kAxisRadius, kAxisXColor);
-	AddVertsForArrow3D(m_vertices, Vec3::Zero, Vec3(0.f, kAxisLength, 0.f), kAxisRadius, kAxisYColor);
-	AddVertsForArrow3D(m_vertices, Vec3::Zero, Vec3(0.f, 0.f, kAxisLength), kAxisRadius, kAxisZColor);
+	AddVertsForArrow3D(m_verts, Vec3::Zero, Vec3(kAxisLength, 0.f, 0.f), kAxisRadius, kAxisXColor);
+	AddVertsForArrow3D(m_verts, Vec3::Zero, Vec3(0.f, kAxisLength, 0.f), kAxisRadius, kAxisYColor);
+	AddVertsForArrow3D(m_verts, Vec3::Zero, Vec3(0.f, 0.f, kAxisLength), kAxisRadius, kAxisZColor);
 
-	if (!m_vertices.empty() && g_engine != nullptr && g_engine->m_renderer != nullptr)
+	if (!m_verts.empty() && g_engine != nullptr && g_engine->m_renderer != nullptr)
 	{
-		m_vertexBuffer = g_engine->m_renderer->CreateVertexBuffer(m_vertices);
+		m_vertexBuffer = g_engine->m_renderer->CreateVertexBuffer(m_verts);
 	}
 }

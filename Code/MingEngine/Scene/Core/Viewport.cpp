@@ -127,6 +127,8 @@ Camera3D* Viewport::GetUICamera() const
 	return sceneTree != nullptr ? dynamic_cast<Camera3D*>(sceneTree->ResolveNode(m_uiCameraHandle)) : nullptr;
 }
 
+IntVec2 Viewport::GetOutputResolution() const { return m_viewportInfo.m_outputResolution; }
+
 void Viewport::SetOutputResolution(IntVec2 dimensions)
 {
 	if (dimensions.x <= 0 || dimensions.y <= 0)
@@ -141,6 +143,12 @@ void Viewport::SetOutputResolution(IntVec2 dimensions)
 
 	m_viewportInfo.m_outputResolution = dimensions;
 	m_viewportInfo.m_outputRect       = AABB2(Vec2::Zero, (Vec2)dimensions);
+
+	Camera3D* uiCamera = GetUICamera();
+	if (uiCamera != nullptr)
+	{
+		uiCamera->SetSize((float)dimensions.y);
+	}
 
 	g_engine->m_renderer->ResizeViewport(m_viewportInfo, dimensions);
 }

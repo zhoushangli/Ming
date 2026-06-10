@@ -79,16 +79,13 @@ void AppEditorState::BuildEditorScene()
 		return;
 	}
 
+	m_editorController = new EditorController();
+	m_editorController->SetName("EditorController");
+	m_sceneTree->GetRoot()->AddNode(m_editorController);
+
 	EditorNode* editorNode = new EditorNode();
 	editorNode->SetName("EditorNode");
 	m_sceneTree->GetRoot()->AddNode(editorNode);
-
-	m_editorController = new EditorController();
-	m_editorController->SetName("EditorController");
-	Vec3 const editorStartPosition(-8.f, -8.f, 8.f);
-	m_editorController->SetLocalPosition(editorStartPosition);
-	m_editorController->SetLocalOrientation(EulerAngles::MakeFromForward(-editorStartPosition.GetNormalized()));
-	m_sceneTree->GetRoot()->AddNode(m_editorController);
 
 	IntVec2 screenDimensions = g_engine->m_window->GetClientDimensions();
 

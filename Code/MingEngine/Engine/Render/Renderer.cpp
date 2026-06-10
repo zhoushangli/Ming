@@ -4,8 +4,8 @@
 #include "MingEngine/Engine/Render/DebugRenderer.hpp"
 #include "MingEngine/Engine/Render/PostProcessChain.hpp"
 #include "MingEngine/Engine/Render/RenderContext.hpp"
+#include "MingEngine/Engine/Render/VertexBuffer.hpp"
 
-#include "Renderer.hpp"
 #include "ThirdParty/imgui/backends/imgui_impl_dx11.h"
 
 Renderer::Renderer(RendererConfig config) : m_config(config) {}
@@ -132,12 +132,8 @@ void Renderer::DestroyViewportResources(ViewportInfo& viewport)
 {
 	// Keep destruction centralized so every raw pointer is cleared immediately.
 	Texture** textures[] = {
-		&viewport.m_viewportOutputTexture,
-		&viewport.m_sceneColorTexture,
-		&viewport.m_sceneDepthTexture,
-		&viewport.m_sceneNormalTexture,
-		&viewport.m_pingTexture,
-		&viewport.m_pongTexture,
+		&viewport.m_viewportOutputTexture, &viewport.m_sceneColorTexture, &viewport.m_sceneDepthTexture,
+		&viewport.m_sceneNormalTexture,    &viewport.m_pingTexture,       &viewport.m_pongTexture,
 	};
 
 	for (Texture** texture : textures)
@@ -176,8 +172,8 @@ void Renderer::CopyTextureToBackBuffer(Texture* colorTexture)
 void Renderer::PrepareConstants(ViewportInfo const& viewport)
 {
 	// Prepare light constants
-	LightConstants lightConstants  = LightConstants();
-	int            pointLightCount = 0;
+	LightConstants lightConstants = LightConstants();
+	int pointLightCount           = 0;
 	for (LightInfo const& light : viewport.m_lights)
 	{
 		switch (light.m_type)
@@ -217,7 +213,7 @@ void Renderer::PrepareConstants(ViewportInfo const& viewport)
 	// TODO: Actually the renderer should not be responsible for tracking time
 	// this should be passed in from the game or engine layer
 	FrameConstants frameConstants;
-	Clock&         systemClock    = Clock::GetSystemClock();
+	Clock& systemClock            = Clock::GetSystemClock();
 	frameConstants.m_time         = (float)systemClock.GetTotalSeconds();
 	frameConstants.m_deltaSeconds = (float)systemClock.GetDeltaSeconds();
 	m_renderBackend->UpdateAndBindConstantBuffer(BuiltinConstantBufferType::Frame, frameConstants);
@@ -230,7 +226,8 @@ void Renderer::RenderOpaque(ViewportInfo const& viewport)
 		return;
 	}
 
-	m_renderBackend->BindRenderTargets(viewport.m_sceneColorTexture,
+	m_renderBackend->BindRenderTargets(
+		viewport.m_sceneColorTexture,
 		viewport.m_sceneDepthTexture,
 		viewport.m_sceneNormalTexture);
 
@@ -302,22 +299,14 @@ void Renderer::RenderUI(ViewportInfo const& viewport)
 	m_renderBackend->SetDepthMode(DepthMode::READ_ONLY_ALWAYS);
 	m_renderBackend->BindCamera(*viewport.m_uiCamera);
 
-	size_t const existingUIRequestCount = viewport.m_renderRequests[(int)RenderRequestPass::UI].size();
-	DebugRenderScreen(*viewport.m_uiCamera);
-
 	std::vector<RenderRequest> const& uiRequests = viewport.m_renderRequests[(int)RenderRequestPass::UI];
-	for (size_t requestIndex = existingUIRequestCount; requestIndex < uiRequests.size(); ++requestIndex)
-	{
-		ExecuteRenderRequest(uiRequests[requestIndex]);
-	}
-
-	for (size_t requestIndex = 0; requestIndex < existingUIRequestCount; ++requestIndex)
+	for (size_t requestIndex = 0; requestIndex < uiRequests.size(); ++requestIndex)
 	{
 		ExecuteRenderRequest(uiRequests[requestIndex]);
 	}
 }
 
-Shader*  Renderer::CreateOrGetShader(char const* shaderName) { return m_renderBackend->CreateOrGetShader(shaderName); }
+Shader* Renderer::CreateOrGetShader(char const* shaderName) { return m_renderBackend->CreateOrGetShader(shaderName); }
 Texture* Renderer::CreateOrGetTexture(char const* fileDataPath)
 {
 	return m_renderBackend->CreateOrGetTexture(fileDataPath);
@@ -356,6 +345,18 @@ IndexBuffer* Renderer::CreateIndexBuffer(const unsigned int size) { return m_ren
 IndexBuffer* Renderer::CreateIndexBuffer(std::vector<unsigned int> const& indexes)
 {
 	return m_renderBackend->CreateIndexBuffer(indexes);
+}
+
+void Renderer::UpdateVertexBuffer(VertexBuffer* vertexBuffer, std::vector<Vertex> const& verts) 
+{
+	if (vertexBuffer == nullptr)
+	{
+		return;
+	}
+
+	unsigned int vertsSize = static_cast<unsigned int>(verts.size()) * sizeof(Vertex);
+	vertexBuffer->Resize(vertsSize);
+	CopyCPUToGPU(verts.data(), vertsSize, vertexBuffer);
 }
 
 void Renderer::CopyCPUToGPU(const void* data, unsigned int size, VertexBuffer* vertexBuffer)

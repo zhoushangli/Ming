@@ -23,10 +23,11 @@ public:
 
 	void SetWorldCamera(Camera3D* camera);
 	void SetUICamera(Camera3D* camera);
+	void SetOutputResolution(IntVec2 dimensions);
+
 	Camera3D* GetWorldCamera() const;
 	Camera3D* GetUICamera() const;
-
-	void SetOutputResolution(IntVec2 dimensions);
+	IntVec2 GetOutputResolution() const;
 
 	// Per-frame preparation:
 	// 1) Resolve cameras and update their projection.
@@ -34,7 +35,7 @@ public:
 	// 3) Resolve registered handles and collect current render data.
 	void PrepareRenderData();
 
-	ViewportInfo&       GetViewportInfo();
+	ViewportInfo& GetViewportInfo();
 	ViewportInfo const& GetViewportInfo() const;
 
 protected:

@@ -42,21 +42,8 @@ EditorGizmos::EditorGizmos()
 
 EditorGizmos::~EditorGizmos() {}
 
-void EditorGizmos::OnProcess(float deltaSeconds)
+void EditorGizmos::OnProcess([[maybe_unused]] float deltaSeconds)
 {
-	Node::OnProcess(deltaSeconds);
-
-	Camera3D* camera = EditorController::Get() ? EditorController::Get()->GetCamera() : nullptr;
-	if (camera != nullptr)
-	{
-		// Rebuild transform gizmo vertices each frame
-		// Vec2 const cursorPos   = g_engine->m_input->GetCursorClientPosition();
-		// GizmoContext const ctx = BuildGizmoContext(*camera, cursorPos);
-		// m_transformGizmo->Render(ctx);
-
-		// Update axis indicator if camera changed
-		// m_axisIndicator->UpdateIfCameraChanged(*camera);
-	}
 }
 
 void EditorGizmos::SetWorldGridVisible(bool visible)

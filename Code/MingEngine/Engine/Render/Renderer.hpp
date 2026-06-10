@@ -41,6 +41,8 @@ public:
 	IndexBuffer*    CreateIndexBuffer(const unsigned int size);
 	IndexBuffer*    CreateIndexBuffer(std::vector<unsigned int> const& indexes);
 
+	void UpdateVertexBuffer(VertexBuffer* vertexBuffer, std::vector<Vertex> const& verts);
+
 	void CopyCPUToGPU(const void* data, unsigned int size, VertexBuffer* vertexBuffer);
 	void CopyCPUToGPU(const void* data, unsigned int size, ConstantBuffer* constantBuffer);
 	void CopyCPUToGPU(const void* data, unsigned int size, IndexBuffer* indexBuffer);

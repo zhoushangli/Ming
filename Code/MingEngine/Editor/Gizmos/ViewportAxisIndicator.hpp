@@ -3,7 +3,19 @@
 #include "MingEngine/Editor/Gizmos/GizmosShapes.hpp"
 #include "MingEngine/Engine/Math/Matrix4x4.hpp"
 
+#include <array>
+
 class Camera3D;
+
+// yz are used to determine the position of the axis circle
+// x is used to determine the depth of the axis circle
+struct Axis2D
+{
+	Vec2 m_yz;
+	float m_x;
+	int m_axis; // 0 = x, 1 = y, 2 = z, 3 = -x, 4 = -y, 5 = -z
+	bool m_isPositive;
+};
 
 class ViewportAxisIndicator : public EditorGizmoVisual3D
 {
@@ -12,6 +24,7 @@ public:
 	~ViewportAxisIndicator() override;
 
 protected:
+	void OnEnterTree() override;
 	void OnProcess(float deltaSeconds) override;
 	RenderRequest SubmitRenderRequest() const override;
 
@@ -20,4 +33,5 @@ private:
 
 private:
 	EulerAngles m_lastCameraRotation = EulerAngles::Zero;
+	std::array<Axis2D, 6> m_axises;
 };

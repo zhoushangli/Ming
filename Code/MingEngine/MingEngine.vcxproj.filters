@@ -339,9 +339,6 @@
     <ClCompile Include="Editor\Gizmos\EditorGizmos.cpp">
       <Filter>Editor\Gizmos</Filter>
     </ClCompile>
-    <ClCompile Include="Editor\Gizmos\GizmosShapes.cpp">
-      <Filter>Editor\Gizmos</Filter>
-    </ClCompile>
     <ClCompile Include="Editor\Gizmos\ViewportAxisIndicator.cpp">
       <Filter>Editor\Gizmos</Filter>
     </ClCompile>
@@ -467,6 +464,9 @@
     </ClCompile>
     <ClCompile Include="Scene\Core\MethodBind.cpp">
       <Filter>Scene\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\Gizmos\GizmosShapes.cpp">
+      <Filter>Editor\Gizmos</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -707,9 +707,6 @@
     <ClInclude Include="Editor\Gizmos\EditorGizmos.hpp">
       <Filter>Editor\Gizmos</Filter>
     </ClInclude>
-    <ClInclude Include="Editor\Gizmos\GizmosShapes.hpp">
-      <Filter>Editor\Gizmos</Filter>
-    </ClInclude>
     <ClInclude Include="Editor\Gizmos\ViewportAxisIndicator.hpp">
       <Filter>Editor\Gizmos</Filter>
     </ClInclude>
@@ -889,6 +886,16 @@
     </ClInclude>
     <ClInclude Include="Scene\Core\MethodBind.hpp">
       <Filter>Scene\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\UI\InspectorProperty.hpp" />
+    <ClInclude Include="Editor\UI\InspectorPropertyBool.hpp" />
+    <ClInclude Include="Editor\UI\InspectorPropertyEuler.hpp" />
+    <ClInclude Include="Editor\UI\InspectorPropertyFloat.hpp" />
+    <ClInclude Include="Editor\UI\InspectorPropertyInt.hpp" />
+    <ClInclude Include="Editor\UI\InspectorPropertyString.hpp" />
+    <ClInclude Include="Editor\UI\InspectorPropertyVec3.hpp" />
+    <ClInclude Include="Editor\Gizmos\GizmosShapes.hpp">
+      <Filter>Editor\Gizmos</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
