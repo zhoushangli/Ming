@@ -9,14 +9,16 @@
 
 #include <cmath>
 
-constexpr float kMouseLookSensitivity           = 0.125f;
-constexpr float kMoveSpeedUnitsPerSec           = 4.f;
-constexpr float kSprintMultiplier               = 3.f;
-constexpr float kMaxPitchDeg                    = 85.f;
-constexpr float kPointerDragStartDistancePixels = 4.f;
+constexpr float kMouseLookSensitivity = 0.125f;
+constexpr float kMoveSpeedUnitsPerSec = 4.f;
+constexpr float kSprintMultiplier     = 3.f;
+constexpr float kMaxPitchDeg          = 85.f;
+
+EditorController* EditorController::s_instance = nullptr;
 
 EditorController::EditorController()
 {
+	s_instance = this;
 	SetLocalPosition(Vec3(-2.f, 0.f, 0.f));
 
 	m_camera = new Camera3D(60.f, 0.1f, 100.f);
@@ -25,6 +27,16 @@ EditorController::EditorController()
 	SetReady(true);
 	SetProcess(true);
 }
+
+EditorController::~EditorController()
+{
+	if (s_instance == this)
+	{
+		s_instance = nullptr;
+	}
+}
+
+EditorController* EditorController::Get() { return s_instance; }
 
 void EditorController::OnProcess(float deltaSeconds)
 {
@@ -71,11 +83,6 @@ void EditorController::EnterControlState(EditorControlState nextState)
 	if (m_controlState == nextState)
 	{
 		return;
-	}
-
-	if (m_controlState == EditorControlState::Pointer)
-	{
-		m_isDragging = false;
 	}
 
 	m_controlState = nextState;
@@ -163,35 +170,28 @@ void EditorController::UpdateFlyThrough(float deltaSeconds)
 
 void EditorController::UpdatePointer([[maybe_unused]] float deltaSeconds)
 {
-	InputSystem* input   = g_engine->m_input;
-	Vec2 const cursorPos = input->GetCursorClientPosition();
-	if (input->WasKeyJustPressed(KeyCodeLeftMouse))
-	{
-		BeginPointerClick(cursorPos);
-	}
-
-	if (input->IsKeyDown(KeyCodeLeftMouse))
-	{
-		Vec2 const dragDelta = cursorPos - m_dragStartClientPos;
-		if (!m_isDragging
-			&& dragDelta.GetLengthSquared() >= kPointerDragStartDistancePixels * kPointerDragStartDistancePixels)
-		{
-			m_isDragging = true;
-		}
-
-		if (m_isDragging)
-		{
-			UpdatePointerDrag(cursorPos);
-		}
-	}
-
-	if (input->WasKeyJustReleased(KeyCodeLeftMouse))
-	{
-		EndPointerClick(cursorPos);
-	}
-
-	m_velocity            = Vec3::Zero;
+	InputSystem* input    = g_engine->m_input;
+	Vec2 const cursorPos  = input->GetCursorClientPosition();
+	Vec2 const delta      = cursorPos - m_lastCursorClientPos;
 	m_lastCursorClientPos = cursorPos;
+
+	EditorNode* editorNode = EditorNode::Get();
+	if (editorNode != nullptr)
+	{
+		editorNode->OnMouseMove(cursorPos, delta);
+
+		if (input->WasKeyJustPressed(KeyCodeLeftMouse))
+		{
+			editorNode->OnMouseDown(KeyCodeLeftMouse, cursorPos);
+		}
+
+		if (input->WasKeyJustReleased(KeyCodeLeftMouse))
+		{
+			editorNode->OnMouseUp(KeyCodeLeftMouse, cursorPos);
+		}
+	}
+
+	m_velocity = Vec3::Zero;
 }
 
 void EditorController::UpdateCameraChild()
@@ -204,32 +204,5 @@ void EditorController::UpdateCameraChild()
 	m_camera->SetLocalPosition(Vec3::Zero);
 	m_camera->SetLocalOrientation(EulerAngles::Zero);
 }
-
-void EditorController::BeginPointerClick(Vec2 const& cursorPos)
-{
-	m_dragStartClientPos  = cursorPos;
-	m_lastCursorClientPos = cursorPos;
-	m_isDragging          = false;
-
-	// Viewport picking is paused while editor selection is driven by the Scene panel.
-	// The raycast selection path remains available for a later picking redesign.
-	// EditorNode* editorNode = EditorNode::Get();
-	// if (editorNode != nullptr && m_camera != nullptr)
-	// {
-	// 	editorNode->HandleSelectionClick(*m_camera, cursorPos);
-	// }
-}
-
-void EditorController::UpdatePointerDrag(Vec2 const& cursorPos)
-{
-	m_lastCursorClientPos = cursorPos;
-}
-
-void EditorController::EndPointerClick(Vec2 const& cursorPos)
-{
-	m_lastCursorClientPos = cursorPos;
-	m_isDragging          = false;
-}
-
 
 Camera3D* EditorController::GetCamera() const { return m_camera; }

@@ -3,22 +3,22 @@
 #include "MingEngine/Engine/Application/App.hpp"
 
 #include "MingEngine/Editor/EditorController.hpp"
-#include "MingEngine/Editor/EditorGizmos.hpp"
 #include "MingEngine/Editor/EditorNode.hpp"
+#include "MingEngine/Editor/Gizmos/EditorGizmos.hpp"
 #include "MingEngine/Scene/3D/Camera3D.hpp"
 #include "MingEngine/Scene/3D/Light3D.hpp"
-#include "MingEngine/Scene/Core/Node.hpp"
 #include "MingEngine/Scene/Core/ClassDatabase.hpp"
+#include "MingEngine/Scene/Core/Node.hpp"
 #include "MingEngine/Scene/Core/SceneTree.hpp"
 
-#include "MingEngine/Engine/Core/Clock.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
-#include "MingEngine/Engine/Render/Rgba8.hpp"
+#include "MingEngine/Engine/Core/Clock.hpp"
 #include "MingEngine/Engine/Core/StringUtils.hpp"
 #include "MingEngine/Engine/Input/InputSystem.hpp"
 #include "MingEngine/Engine/Math/MathUtils.hpp"
 #include "MingEngine/Engine/Render/DebugRenderer.hpp"
 #include "MingEngine/Engine/Render/Renderer.hpp"
+#include "MingEngine/Engine/Render/Rgba8.hpp"
 
 #include <vector>
 
@@ -29,8 +29,7 @@ void RegisterEditorTypes()
 	ClassDatabase::RegisterClass<EditorController>(false);
 }
 
-AppEditorState::AppEditorState(IProjectModule& project)
-	: m_project(project)
+AppEditorState::AppEditorState(IProjectModule& project) : m_project(project)
 {
 	m_editorClock = new Clock();
 	m_sceneTree   = new SceneTree();
@@ -91,11 +90,6 @@ void AppEditorState::BuildEditorScene()
 	m_editorController->SetLocalOrientation(EulerAngles::MakeFromForward(-editorStartPosition.GetNormalized()));
 	m_sceneTree->GetRoot()->AddNode(m_editorController);
 
-	if (Node* projectScene = m_project.CreateEditorScene())
-	{
-		m_sceneTree->ChangeScene(projectScene);
-	}
-
 	IntVec2 screenDimensions = g_engine->m_window->GetClientDimensions();
 
 	auto uiCamera = new Camera3D();
@@ -105,7 +99,6 @@ void AppEditorState::BuildEditorScene()
 
 	m_sceneTree->SetWorldCamera(m_editorController->GetCamera());
 	m_sceneTree->SetUICamera(uiCamera);
-
 }
 
 void AppEditorState::HandleDebugInput()
@@ -158,17 +151,20 @@ void AppEditorState::UpdateDebugOverlay(float systemDeltaSeconds)
 		return;
 	}
 
-	Vec3        editorControllerPosition    = m_editorController->GetWorldPosition();
+	Vec3 editorControllerPosition           = m_editorController->GetWorldPosition();
 	EulerAngles editorControllerOrientation = m_editorController->GetWorldOrientation();
-	Vec3        editorControllerForward     = editorControllerOrientation.GetForwardDir_IFwd_JLeft_KUp();
-	Vec2        screenDimensions            = (Vec2)g_engine->m_window->GetClientDimensions();
-	float       frameRate                   = systemDeltaSeconds > 0.f ? 1.f / systemDeltaSeconds : 0.f;
+	Vec3 editorControllerForward            = editorControllerOrientation.GetForwardDir_IFwd_JLeft_KUp();
+	Vec2 screenDimensions                   = (Vec2)g_engine->m_window->GetClientDimensions();
+	float frameRate                         = systemDeltaSeconds > 0.f ? 1.f / systemDeltaSeconds : 0.f;
 
-	DebugAddScreenText(Stringf("Time: %4.1f --- FPS: %3.0f --- Time Dilation: %1.2fx",
-						   (float)m_editorClock->GetTotalSeconds(),
-						   frameRate,
-						   (float)m_editorClock->GetTimeScale()),
-		AABB2(Vec2(screenDimensions.x - 800.f, screenDimensions.y - 58.f),
+	DebugAddScreenText(
+		Stringf(
+			"Time: %4.1f --- FPS: %3.0f --- Time Dilation: %1.2fx",
+			(float)m_editorClock->GetTotalSeconds(),
+			frameRate,
+			(float)m_editorClock->GetTimeScale()),
+		AABB2(
+			Vec2(screenDimensions.x - 800.f, screenDimensions.y - 58.f),
 			Vec2(screenDimensions.x - 10.f, screenDimensions.y - 10.f)),
 		32.f,
 		Vec2(1.f, 0.5f),
@@ -176,13 +172,15 @@ void AppEditorState::UpdateDebugOverlay(float systemDeltaSeconds)
 		Rgba8::White,
 		Rgba8::White);
 
-	DebugAddMessage(Stringf("EditorController Pos: (%.2f, %.2f, %.2f) Fwd: (%.2f, %.2f, %.2f)",
-						editorControllerPosition.x,
-						editorControllerPosition.y,
-						editorControllerPosition.z,
-						editorControllerForward.x,
-						editorControllerForward.y,
-						editorControllerForward.z),
+	DebugAddMessage(
+		Stringf(
+			"EditorController Pos: (%.2f, %.2f, %.2f) Fwd: (%.2f, %.2f, %.2f)",
+			editorControllerPosition.x,
+			editorControllerPosition.y,
+			editorControllerPosition.z,
+			editorControllerForward.x,
+			editorControllerForward.y,
+			editorControllerForward.z),
 		0.f,
 		Rgba8::White,
 		Rgba8::White);

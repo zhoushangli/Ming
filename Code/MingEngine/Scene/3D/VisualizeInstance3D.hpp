@@ -13,5 +13,11 @@ public:
 	void OnEnterTree() override;
 	void OnExitTree() override;
 
+	void SetVisible(bool visible);
+	bool GetVisible() const;
+
 	virtual RenderRequest SubmitRenderRequest() const = 0;
+
+public:
+	bool m_isVisible = true;
 };

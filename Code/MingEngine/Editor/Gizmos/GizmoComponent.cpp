@@ -1,4 +1,4 @@
-#include "MingEngine/Editor/GizmoComponent.hpp"
+#include "MingEngine/Editor/Gizmos/GizmoComponent.hpp"
 
 #include "MingEngine/Scene/3D/Node3D.hpp"
 
@@ -7,6 +7,9 @@
 #include "MingEngine/Engine/Math/AABB3.hpp"
 #include "MingEngine/Engine/Math/MathUtils.hpp"
 #include "MingEngine/Engine/Render/DebugRenderer.hpp"
+#include "MingEngine/Engine/Render/Renderer.hpp"
+#include "MingEngine/Engine/Render/VertexBuffer.hpp"
+#include "MingEngine/Engine/Render/VertexUtils.hpp"
 
 #include <cmath>
 
@@ -20,7 +23,7 @@ float constexpr kGizmoPlaneSize         = 0.22f;
 float constexpr kGizmoPlanePickSize     = 0.30f;
 float constexpr kGizmoRotationRadius    = 0.88f;
 float constexpr kGizmoRotationPickWidth = 0.10f;
-int constexpr   kGizmoArcSegments       = 32;
+int constexpr kGizmoArcSegments         = 32;
 
 Rgba8 const kHoverColor(255, 235, 90, 255);
 Rgba8 const kActiveColor(255, 170, 30, 255);
@@ -28,12 +31,12 @@ Rgba8 const kGuideColor(220, 220, 220, 255);
 
 float GetRayPointAxisT(Vec3 const& rayStart, Vec3 const& rayForward, Vec3 const& lineOrigin, Vec3 const& lineAxis)
 {
-	Vec3 const  w0 = rayStart - lineOrigin;
-	float const a  = DotProduct3D(rayForward, rayForward);
-	float const b  = DotProduct3D(rayForward, lineAxis);
-	float const c  = DotProduct3D(lineAxis, lineAxis);
-	float const d  = DotProduct3D(rayForward, w0);
-	float const e  = DotProduct3D(lineAxis, w0);
+	Vec3 const w0           = rayStart - lineOrigin;
+	float const a           = DotProduct3D(rayForward, rayForward);
+	float const b           = DotProduct3D(rayForward, lineAxis);
+	float const c           = DotProduct3D(lineAxis, lineAxis);
+	float const d           = DotProduct3D(rayForward, w0);
+	float const e           = DotProduct3D(lineAxis, w0);
 	float const denominator = a * c - b * b;
 	if (Abs(denominator) <= 0.000001f)
 	{
@@ -48,9 +51,8 @@ float GetDistanceRayToSegment(
 	Vec3 const& rayForward,
 	Vec3 const& segmentStart,
 	Vec3 const& segmentEnd,
-	float&      outRayT,
-	float&      outSegmentT
-)
+	float& outRayT,
+	float& outSegmentT)
 {
 	Vec3 const segment     = segmentEnd - segmentStart;
 	float const segmentLen = segment.GetLength();
@@ -62,22 +64,16 @@ float GetDistanceRayToSegment(
 	}
 
 	Vec3 const segmentAxis = segment / segmentLen;
-	outSegmentT           = GetRayPointAxisT(rayStart, rayForward, segmentStart, segmentAxis);
-	outSegmentT           = GetClamped(outSegmentT, 0.f, segmentLen);
-	Vec3 const segmentPos = segmentStart + segmentAxis * outSegmentT;
-	outRayT               = DotProduct3D(segmentPos - rayStart, rayForward);
-	outRayT               = Max(0.f, outRayT);
-	Vec3 const rayPos     = rayStart + rayForward * outRayT;
+	outSegmentT            = GetRayPointAxisT(rayStart, rayForward, segmentStart, segmentAxis);
+	outSegmentT            = GetClamped(outSegmentT, 0.f, segmentLen);
+	Vec3 const segmentPos  = segmentStart + segmentAxis * outSegmentT;
+	outRayT                = DotProduct3D(segmentPos - rayStart, rayForward);
+	outRayT                = Max(0.f, outRayT);
+	Vec3 const rayPos      = rayStart + rayForward * outRayT;
 	return GetDistance3D(rayPos, segmentPos);
 }
 
-bool RaycastPlane(
-	RaycastInfo const& ray,
-	Vec3 const&        planePoint,
-	Vec3 const&        planeNormal,
-	Vec3&              outHit,
-	float&             outDist
-)
+bool RaycastPlane(RaycastInfo const& ray, Vec3 const& planePoint, Vec3 const& planeNormal, Vec3& outHit, float& outDist)
 {
 	float const denominator = DotProduct3D(ray.m_forwardNormal, planeNormal);
 	if (Abs(denominator) <= 0.000001f)
@@ -95,21 +91,35 @@ bool RaycastPlane(
 	return true;
 }
 
-void DrawLineAsCylinder(Vec3 const& start, Vec3 const& end, float radius, Rgba8 const& color)
+void UploadVertices(std::vector<Vertex>& verts, VertexBuffer*& buffer)
 {
-	DebugAddWorldCylinder(start, end, radius, 0.f, color, color, DebugRenderMode::ALWAYS);
+	if (verts.empty())
+	{
+		return;
+	}
+
+	if (buffer != nullptr)
+	{
+		delete buffer;
+		buffer = nullptr;
+	}
+
+	if (g_engine != nullptr && g_engine->m_renderer != nullptr)
+	{
+		buffer = g_engine->m_renderer->CreateVertexBuffer(verts);
+	}
 }
 
-void DrawArc(
-	Vec3 const&  origin,
-	Vec3 const&  u,
-	Vec3 const&  v,
-	float        radius,
-	float        startDegrees,
-	float        endDegrees,
-	float        lineRadius,
-	Rgba8 const& color
-)
+void AddVertsForTorusArc3D(
+	std::vector<Vertex>& verts,
+	Vec3 const& origin,
+	Vec3 const& u,
+	Vec3 const& v,
+	float radius,
+	float startDegrees,
+	float endDegrees,
+	float tubeRadius,
+	Rgba8 const& color)
 {
 	Vec3 previous = origin + u * (CosDegrees(startDegrees) * radius) + v * (SinDegrees(startDegrees) * radius);
 	for (int segmentIndex = 1; segmentIndex <= kGizmoArcSegments; ++segmentIndex)
@@ -117,7 +127,7 @@ void DrawArc(
 		float const t       = (float)segmentIndex / (float)kGizmoArcSegments;
 		float const degrees = Interpolate(startDegrees, endDegrees, t);
 		Vec3 const current  = origin + u * (CosDegrees(degrees) * radius) + v * (SinDegrees(degrees) * radius);
-		DrawLineAsCylinder(previous, current, lineRadius, color);
+		AddVertsForCylinder3D(verts, previous, current, tubeRadius, color);
 		previous = current;
 	}
 }
@@ -127,31 +137,31 @@ EulerAngles GetEulerWithAxisDelta(EulerAngles const& start, GizmoAxis axis, floa
 	EulerAngles result = start;
 	switch (axis)
 	{
-	case GizmoAxis::X: result.m_rollDegrees += degrees; break;
-	case GizmoAxis::Y: result.m_pitchDegrees += degrees; break;
-	case GizmoAxis::Z: result.m_yawDegrees += degrees; break;
+	case GizmoAxis::X:
+		result.m_rollDegrees += degrees;
+		break;
+	case GizmoAxis::Y:
+		result.m_pitchDegrees += degrees;
+		break;
+	case GizmoAxis::Z:
+		result.m_yawDegrees += degrees;
+		break;
 	}
 	return result;
 }
-}
+} // namespace
 
-GizmoComponent::GizmoComponent(GizmoAxis axis, Rgba8 const& color)
-	: m_axis(axis)
-	, m_baseColor(color)
-{
-}
+GizmoComponent::GizmoComponent(GizmoAxis axis, Rgba8 const& color) : m_axis(axis), m_baseColor(color) {}
 
-void GizmoComponent::OnBeginDrag([[maybe_unused]] GizmoContext const& context, [[maybe_unused]] GizmoRaycastResult const& hit)
+void GizmoComponent::OnBeginDrag(
+	[[maybe_unused]] GizmoContext const& context, [[maybe_unused]] GizmoRaycastResult const& hit)
 {
 	m_isDragging = true;
 }
 
 void GizmoComponent::OnDrag([[maybe_unused]] GizmoContext const& context, [[maybe_unused]] RaycastInfo const& ray) {}
 
-void GizmoComponent::OnEndDrag([[maybe_unused]] GizmoContext const& context)
-{
-	m_isDragging = false;
-}
+void GizmoComponent::OnEndDrag([[maybe_unused]] GizmoContext const& context) { m_isDragging = false; }
 
 void GizmoComponent::SetHovered(bool isHovered) { m_isHovered = isHovered; }
 
@@ -165,9 +175,12 @@ Vec3 GizmoComponent::GetAxisWorld() const
 {
 	switch (m_axis)
 	{
-	case GizmoAxis::X: return Vec3::Forward;
-	case GizmoAxis::Y: return Vec3::Left;
-	case GizmoAxis::Z: return Vec3::Up;
+	case GizmoAxis::X:
+		return Vec3::Forward;
+	case GizmoAxis::Y:
+		return Vec3::Left;
+	case GizmoAxis::Z:
+		return Vec3::Up;
 	}
 
 	return Vec3::Forward;
@@ -177,9 +190,12 @@ Vec3 GizmoComponent::GetPlaneU() const
 {
 	switch (m_axis)
 	{
-	case GizmoAxis::X: return Vec3::Left;
-	case GizmoAxis::Y: return Vec3::Forward;
-	case GizmoAxis::Z: return Vec3::Forward;
+	case GizmoAxis::X:
+		return Vec3::Left;
+	case GizmoAxis::Y:
+		return Vec3::Forward;
+	case GizmoAxis::Z:
+		return Vec3::Forward;
 	}
 
 	return Vec3::Forward;
@@ -189,9 +205,12 @@ Vec3 GizmoComponent::GetPlaneV() const
 {
 	switch (m_axis)
 	{
-	case GizmoAxis::X: return Vec3::Up;
-	case GizmoAxis::Y: return Vec3::Up;
-	case GizmoAxis::Z: return Vec3::Left;
+	case GizmoAxis::X:
+		return Vec3::Up;
+	case GizmoAxis::Y:
+		return Vec3::Up;
+	case GizmoAxis::Z:
+		return Vec3::Left;
 	}
 
 	return Vec3::Up;
@@ -212,10 +231,7 @@ Rgba8 GizmoComponent::GetDrawColor() const
 	return m_baseColor;
 }
 
-GizmoAxisArrow::GizmoAxisArrow(GizmoAxis axis, Rgba8 const& color)
-	: GizmoComponent(axis, color)
-{
-}
+GizmoAxisArrow::GizmoAxisArrow(GizmoAxis axis, Rgba8 const& color) : GizmoComponent(axis, color) {}
 
 GizmoRaycastResult GizmoAxisArrow::Raycast(GizmoContext const& context, RaycastInfo const& ray)
 {
@@ -223,8 +239,8 @@ GizmoRaycastResult GizmoAxisArrow::Raycast(GizmoContext const& context, RaycastI
 	Vec3 const axis     = GetAxisWorld();
 	Vec3 const start    = context.m_originWorld + axis * (0.18f * context.m_scale);
 	Vec3 const end      = context.m_originWorld + axis * (kGizmoAxisLength * context.m_scale);
-	float      rayT     = 0.f;
-	float      axisT    = 0.f;
+	float rayT          = 0.f;
+	float axisT         = 0.f;
 	float const dist    = GetDistanceRayToSegment(ray.m_startPos, ray.m_forwardNormal, start, end, rayT, axisT);
 	float const pickRad = kGizmoAxisPickRadius * context.m_scale;
 	if (dist > pickRad || rayT > ray.m_maxLength)
@@ -239,25 +255,22 @@ GizmoRaycastResult GizmoAxisArrow::Raycast(GizmoContext const& context, RaycastI
 	return result;
 }
 
-void GizmoAxisArrow::Render(GizmoContext const& context) const
+void GizmoAxisArrow::RebuildVertices(GizmoContext const& context)
 {
+	m_verts.clear();
+
 	if (context.m_isRotationActive)
 	{
+		UploadVertices(m_verts, m_vertexBuffer);
 		return;
 	}
 
 	Vec3 const axis  = GetAxisWorld();
 	Vec3 const start = context.m_originWorld;
 	Vec3 const end   = context.m_originWorld + axis * (kGizmoAxisLength * context.m_scale);
-	DebugAddWorldArrow(
-		start,
-		end,
-		kGizmoArrowRadius * context.m_scale,
-		0.f,
-		GetDrawColor(),
-		GetDrawColor(),
-		DebugRenderMode::ALWAYS
-	);
+	AddVertsForArrow3D(m_verts, start, end, kGizmoArrowRadius * context.m_scale, GetDrawColor());
+
+	UploadVertices(m_verts, m_vertexBuffer);
 }
 
 void GizmoAxisArrow::OnBeginDrag(GizmoContext const& context, GizmoRaycastResult const& hit)
@@ -280,16 +293,13 @@ void GizmoAxisArrow::OnDrag(GizmoContext const& context, RaycastInfo const& ray)
 		return;
 	}
 
-	Vec3 const  axis         = GetAxisWorld();
+	Vec3 const axis          = GetAxisWorld();
 	float const currentAxisT = GetRayPointAxisT(ray.m_startPos, ray.m_forwardNormal, m_dragOrigin, axis);
 	float const delta        = currentAxisT - m_startAxisT;
 	context.m_selectedNode3D->SetWorldPosition(m_startPosition + axis * delta);
 }
 
-GizmoPlaneSquare::GizmoPlaneSquare(GizmoAxis axis, Rgba8 const& color)
-	: GizmoComponent(axis, color)
-{
-}
+GizmoPlaneSquare::GizmoPlaneSquare(GizmoAxis axis, Rgba8 const& color) : GizmoComponent(axis, color) {}
 
 GizmoRaycastResult GizmoPlaneSquare::Raycast(GizmoContext const& context, RaycastInfo const& ray)
 {
@@ -298,14 +308,14 @@ GizmoRaycastResult GizmoPlaneSquare::Raycast(GizmoContext const& context, Raycas
 	Vec3 const u      = GetPlaneU();
 	Vec3 const v      = GetPlaneV();
 	Vec3 const center = context.m_originWorld + (u + v) * (kGizmoPlaneOffset * context.m_scale);
-	Vec3       hit;
-	float      dist = 0.f;
+	Vec3 hit;
+	float dist = 0.f;
 	if (!RaycastPlane(ray, center, normal, hit, dist))
 	{
 		return result;
 	}
 
-	Vec3 const local = hit - center;
+	Vec3 const local     = hit - center;
 	float const halfSize = kGizmoPlanePickSize * context.m_scale * 0.5f;
 	if (Abs(DotProduct3D(local, u)) > halfSize || Abs(DotProduct3D(local, v)) > halfSize)
 	{
@@ -319,10 +329,13 @@ GizmoRaycastResult GizmoPlaneSquare::Raycast(GizmoContext const& context, Raycas
 	return result;
 }
 
-void GizmoPlaneSquare::Render(GizmoContext const& context) const
+void GizmoPlaneSquare::RebuildVertices(GizmoContext const& context)
 {
+	m_verts.clear();
+
 	if (context.m_isRotationActive)
 	{
+		UploadVertices(m_verts, m_vertexBuffer);
 		return;
 	}
 
@@ -330,17 +343,33 @@ void GizmoPlaneSquare::Render(GizmoContext const& context) const
 	Vec3 const v      = GetPlaneV();
 	Vec3 const center = context.m_originWorld + (u + v) * (kGizmoPlaneOffset * context.m_scale);
 	float const half  = kGizmoPlaneSize * context.m_scale * 0.5f;
-	float const thickness = kGizmoArrowRadius * 0.25f * context.m_scale;
-	Matrix4x4 transform(u, v, GetAxisWorld(), center);
-	Rgba8 const color  = GetDrawColor();
-	DebugAddWorldAABB(
-		AABB3(Vec3(-half, -half, -thickness), Vec3(half, half, thickness)),
-		transform,
-		0.f,
-		color,
-		color,
-		DebugRenderMode::ALWAYS
-	);
+	Rgba8 const color = GetDrawColor();
+
+	Matrix4x4 const localToWorld(u, v, GetAxisWorld(), center);
+	Vec3 const minCorner = Vec3(-half, -half, 0.f);
+	Vec3 const maxCorner = Vec3(half, half, 0.f);
+
+	// Two triangles forming a square in the plane
+	Vec3 const p00 = minCorner;
+	Vec3 const p10 = Vec3(maxCorner.x, minCorner.y, 0.f);
+	Vec3 const p11 = maxCorner;
+	Vec3 const p01 = Vec3(minCorner.x, maxCorner.y, 0.f);
+
+	Vertex v00(p00, color, Vec2(0.f, 0.f));
+	Vertex v10(p10, color, Vec2(1.f, 0.f));
+	Vertex v11(p11, color, Vec2(1.f, 1.f));
+	Vertex v01(p01, color, Vec2(0.f, 1.f));
+
+	m_verts.push_back(v00);
+	m_verts.push_back(v10);
+	m_verts.push_back(v11);
+
+	m_verts.push_back(v00);
+	m_verts.push_back(v11);
+	m_verts.push_back(v01);
+
+	TransformVertexArray3D(m_verts, localToWorld);
+	UploadVertices(m_verts, m_vertexBuffer);
 }
 
 void GizmoPlaneSquare::OnBeginDrag(GizmoContext const& context, GizmoRaycastResult const& hit)
@@ -372,10 +401,7 @@ void GizmoPlaneSquare::OnDrag(GizmoContext const& context, RaycastInfo const& ra
 	context.m_selectedNode3D->SetWorldPosition(m_startPosition + (hit - m_startHitWorld));
 }
 
-GizmoRotationArc::GizmoRotationArc(GizmoAxis axis, Rgba8 const& color)
-	: GizmoComponent(axis, color)
-{
-}
+GizmoRotationArc::GizmoRotationArc(GizmoAxis axis, Rgba8 const& color) : GizmoComponent(axis, color) {}
 
 GizmoRaycastResult GizmoRotationArc::Raycast(GizmoContext const& context, RaycastInfo const& ray)
 {
@@ -387,8 +413,8 @@ GizmoRaycastResult GizmoRotationArc::Raycast(GizmoContext const& context, Raycas
 		return result;
 	}
 
-	Vec3 const fromOrigin = hit - context.m_originWorld;
-	float const radius = fromOrigin.GetLength();
+	Vec3 const fromOrigin    = hit - context.m_originWorld;
+	float const radius       = fromOrigin.GetLength();
 	float const targetRadius = kGizmoRotationRadius * context.m_scale;
 	if (Abs(radius - targetRadius) > kGizmoRotationPickWidth * context.m_scale)
 	{
@@ -402,28 +428,31 @@ GizmoRaycastResult GizmoRotationArc::Raycast(GizmoContext const& context, Raycas
 	return result;
 }
 
-void GizmoRotationArc::Render(GizmoContext const& context) const
+void GizmoRotationArc::RebuildVertices(GizmoContext const& context)
 {
+	m_verts.clear();
+
 	if (context.m_isRotationActive && context.m_activeComponent != this)
 	{
+		UploadVertices(m_verts, m_vertexBuffer);
 		return;
 	}
 
-	Vec3 const u = GetPlaneU();
-	Vec3 const v = GetPlaneV();
-	float const radius = kGizmoRotationRadius * context.m_scale;
+	Vec3 const u           = GetPlaneU();
+	Vec3 const v           = GetPlaneV();
+	float const radius     = kGizmoRotationRadius * context.m_scale;
 	float const lineRadius = kGizmoArrowRadius * 0.45f * context.m_scale;
-	Rgba8 const color = GetDrawColor();
+	Rgba8 const color      = GetDrawColor();
 
 	if (m_isDragging)
 	{
-		DrawArc(context.m_originWorld, u, v, radius, 0.f, 360.f, lineRadius, color);
-		DrawLineAsCylinder(context.m_originWorld, m_currentHitWorld, lineRadius, kGuideColor);
-		DebugAddMessage(Stringf("Rotating %.1f degrees.", m_currentDegrees), 0.f, Rgba8::White, Rgba8::White);
+		AddVertsForTorusArc3D(m_verts, context.m_originWorld, u, v, radius, 0.f, 360.f, lineRadius, color);
+		UploadVertices(m_verts, m_vertexBuffer);
 		return;
 	}
 
-	DrawArc(context.m_originWorld, u, v, radius, -125.f, 125.f, lineRadius, color);
+	AddVertsForTorusArc3D(m_verts, context.m_originWorld, u, v, radius, -125.f, 125.f, lineRadius, color);
+	UploadVertices(m_verts, m_vertexBuffer);
 }
 
 void GizmoRotationArc::OnBeginDrag(GizmoContext const& context, GizmoRaycastResult const& hit)

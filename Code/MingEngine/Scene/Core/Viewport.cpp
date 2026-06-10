@@ -161,19 +161,19 @@ void Viewport::PrepareRenderData()
 	}
 
 	// 1) CameraContext pointers are transient because NodeHandles may change after reparenting.
-	float     aspect             = m_viewportInfo.m_outputResolution.x / (float)m_viewportInfo.m_outputResolution.y;
+	float aspect                 = m_viewportInfo.m_outputResolution.x / (float)m_viewportInfo.m_outputResolution.y;
 	Camera3D* worldCamera        = GetWorldCamera();
 	Camera3D* uiCamera           = GetUICamera();
 	m_viewportInfo.m_worldCamera = nullptr;
 	m_viewportInfo.m_uiCamera    = nullptr;
 	if (worldCamera != nullptr)
 	{
-		m_tmpWorldCamera = worldCamera->GetCamera(aspect);
+		m_tmpWorldCamera             = worldCamera->GetCamera(aspect);
 		m_viewportInfo.m_worldCamera = &m_tmpWorldCamera;
 	}
 	if (uiCamera != nullptr)
 	{
-		m_tmpUICamera = uiCamera->GetCamera(aspect);
+		m_tmpUICamera             = uiCamera->GetCamera(aspect);
 		m_viewportInfo.m_uiCamera = &m_tmpUICamera;
 	}
 
@@ -194,11 +194,15 @@ void Viewport::PrepareRenderData()
 			continue;
 		}
 
-		RenderRequest request = instance->SubmitRenderRequest();
-		if (request.IsValid())
+		if (instance->GetVisible())
 		{
-			m_viewportInfo.m_renderRequests[(size_t)request.m_pass].push_back(request);
+			RenderRequest request = instance->SubmitRenderRequest();
+			if (request.IsValid())
+			{
+				m_viewportInfo.m_renderRequests[(size_t)request.m_pass].push_back(request);
+			}
 		}
+
 		++instanceIter;
 	}
 

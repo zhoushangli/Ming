@@ -1,56 +1,23 @@
 #include "MingEngine/Editor/EditorNode.hpp"
 
-#include "MingEngine/Editor/EditorGizmos.hpp"
+#include "MingEngine/Editor/Gizmos/EditorGizmos.hpp"
 #include "MingEngine/Editor/UI/EditorUI.hpp"
 #include "MingEngine/Editor/UI/EditorUIContext.hpp"
 #include "MingEngine/Scene/3D/Camera3D.hpp"
 #include "MingEngine/Scene/3D/Node3D.hpp"
 #include "MingEngine/Scene/Core/PackedScene.hpp"
 #include "MingEngine/Scene/Core/SceneTree.hpp"
-#include "MingEngine/Scene/Physics/AABBCollider3D.hpp"
-#include "MingEngine/Scene/Physics/Collider3D.hpp"
-#include "MingEngine/Scene/Physics/NodeRaycastUtils.hpp"
-#include "MingEngine/Scene/Physics/TriangleMeshCollider3D.hpp"
 
 #include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Engine/Core/StringUtils.hpp"
-#include "MingEngine/Engine/Math/AABB3.hpp"
-#include "MingEngine/Engine/Math/MathUtils.hpp"
-#include "MingEngine/Engine/Render/CameraContext.hpp"
+#include "MingEngine/Engine/Input/InputSystem.hpp"
 #include "MingEngine/Engine/Render/DebugRenderer.hpp"
 
 namespace
 {
-float constexpr kEditorSelectionRaycastLength = 10000.f;
-float constexpr kEditorColliderPadding        = 0.001f;
-
 std::string FormatNodeHandle(NodeHandle handle)
 {
 	return Stringf("uid=%u index=%u", handle.GetUID(), handle.GetIndex());
-}
-
-AABB3 CalculateLocalBounds(std::vector<Vertex> const& verts)
-{
-	if (verts.empty())
-	{
-		return AABB3();
-	}
-
-	Vec3 mins = verts[0].m_position;
-	Vec3 maxs = verts[0].m_position;
-	for (Vertex const& vertex : verts)
-	{
-		mins.x = Min(mins.x, vertex.m_position.x);
-		mins.y = Min(mins.y, vertex.m_position.y);
-		mins.z = Min(mins.z, vertex.m_position.z);
-		maxs.x = Max(maxs.x, vertex.m_position.x);
-		maxs.y = Max(maxs.y, vertex.m_position.y);
-		maxs.z = Max(maxs.z, vertex.m_position.z);
-	}
-
-	mins -= Vec3(kEditorColliderPadding, kEditorColliderPadding, kEditorColliderPadding);
-	maxs += Vec3(kEditorColliderPadding, kEditorColliderPadding, kEditorColliderPadding);
-	return AABB3(mins, maxs);
 }
 } // namespace
 
@@ -70,7 +37,8 @@ void EditorSelection::SetSelected(NodeHandle handle)
 
 	if (!previousHandle.IsValid() && m_selectedNodeHandle.IsValid())
 	{
-		DebugAddMessage(Stringf("Selected Node: %s", FormatNodeHandle(m_selectedNodeHandle).c_str()),
+		DebugAddMessage(
+			Stringf("Selected Node: %s", FormatNodeHandle(m_selectedNodeHandle).c_str()),
 			5.f,
 			Rgba8::White,
 			Rgba8::White);
@@ -79,9 +47,11 @@ void EditorSelection::SetSelected(NodeHandle handle)
 
 	if (previousHandle.IsValid() && m_selectedNodeHandle.IsValid())
 	{
-		DebugAddMessage(Stringf("Selection Changed: %s -> %s",
-							FormatNodeHandle(previousHandle).c_str(),
-							FormatNodeHandle(m_selectedNodeHandle).c_str()),
+		DebugAddMessage(
+			Stringf(
+				"Selection Changed: %s -> %s",
+				FormatNodeHandle(previousHandle).c_str(),
+				FormatNodeHandle(m_selectedNodeHandle).c_str()),
 			5.f,
 			Rgba8::White,
 			Rgba8::White);
@@ -145,171 +115,66 @@ void EditorNode::SaveSceneToFile(Node const* sceneRoot, std::string const& filen
 	packedScene.SaveToFile(outputFilename);
 }
 
-void EditorNode::RegisterSelectableMesh(std::vector<Vertex> const& verts, NodeHandle ownerHandle)
+void EditorNode::SetActiveCamera(Camera3D* camera) { m_activeCamera = camera; }
+
+void EditorNode::OnMouseMove(Vec2 screenPos, [[maybe_unused]] Vec2 delta)
 {
-	if (verts.empty() || !ownerHandle.IsValid())
+	if (m_editorGizmos == nullptr || m_activeCamera == nullptr)
 	{
 		return;
 	}
 
-	SceneTree* sceneTree = GetSceneTree();
-	if (sceneTree == nullptr)
+	if (m_editorGizmos->IsDragging())
 	{
-		return;
+		m_editorGizmos->OnDrag(*m_activeCamera, screenPos);
 	}
-
-	Node3D* owner = dynamic_cast<Node3D*>(sceneTree->ResolveNode(ownerHandle));
-	if (owner == nullptr)
+	else
 	{
-		return;
+		m_editorGizmos->OnMouseMove(*m_activeCamera, screenPos);
 	}
-
-	UnregisterSelectable(ownerHandle);
-
-	AABBCollider3D*         coarseCollider = new AABBCollider3D(CalculateLocalBounds(verts));
-	TriangleMeshCollider3D* fineCollider   = new TriangleMeshCollider3D();
-	fineCollider->SetMesh(verts);
-	coarseCollider->SetSerializable(false);
-	fineCollider->SetSerializable(false);
-
-	owner->AddNode(coarseCollider);
-	owner->AddNode(fineCollider);
-
-	EditorSelectable selectable;
-	selectable.m_ownerHandle          = ownerHandle;
-	selectable.m_coarseColliderHandle = coarseCollider->GetHandle();
-	selectable.m_fineColliderHandle   = fineCollider->GetHandle();
-	m_selectables[ownerHandle]        = selectable;
 }
 
-void EditorNode::UnregisterSelectable(NodeHandle ownerHandle)
+void EditorNode::OnMouseDown(int keyCode, Vec2 screenPos)
 {
-	auto const foundSelectable = m_selectables.find(ownerHandle);
-	if (foundSelectable == m_selectables.end())
+	if (keyCode != KeyCodeLeftMouse)
 	{
 		return;
 	}
 
-	SceneTree* sceneTree = GetSceneTree();
-	if (sceneTree != nullptr)
+	if (m_editorGizmos == nullptr || m_activeCamera == nullptr)
 	{
-		Node* coarseCollider = sceneTree->ResolveNode(foundSelectable->second.m_coarseColliderHandle);
-		if (coarseCollider != nullptr)
-		{
-			coarseCollider->DeleteNode();
-		}
-
-		Node* fineCollider = sceneTree->ResolveNode(foundSelectable->second.m_fineColliderHandle);
-		if (fineCollider != nullptr)
-		{
-			fineCollider->DeleteNode();
-		}
+		return;
 	}
 
-	m_selectables.erase(foundSelectable);
-	if (m_selection.GetSelected() == ownerHandle)
+	// 1. Let gizmos try first
+	if (m_editorGizmos->OnBeginDrag(*m_activeCamera, screenPos))
+	{
+		return; // gizmo ate the event
+	}
+
+	// 2. Gizmo didn't eat — try scene selection
+	NodeHandle hit = m_editorGizmos->Raycast(*m_activeCamera, screenPos);
+	if (hit.IsValid())
+	{
+		m_selection.SetSelected(hit);
+	}
+	else
 	{
 		m_selection.Clear();
 	}
 }
 
-GameRaycastResult EditorNode::Raycast(
-	RaycastInfo const& info, NodeHandle& outCoarseCollider, NodeHandle& outFineCollider, NodeHandle& outSelectNode)
+void EditorNode::OnMouseUp(int keyCode, [[maybe_unused]] Vec2 screenPos)
 {
-	GameRaycastResult bestResult;
-	bestResult.m_rayStartPos  = info.m_startPos;
-	bestResult.m_rayFwdNormal = info.m_forwardNormal;
-	bestResult.m_rayMaxLength = info.m_maxLength;
-	outCoarseCollider         = NodeHandle::Invalid;
-	outFineCollider           = NodeHandle::Invalid;
-	outSelectNode             = NodeHandle::Invalid;
-
-	SceneTree* sceneTree = GetSceneTree();
-	if (sceneTree == nullptr)
+	if (keyCode != KeyCodeLeftMouse)
 	{
-		return bestResult;
-	}
-
-	for (auto selectableIter = m_selectables.begin(); selectableIter != m_selectables.end();)
-	{
-		EditorSelectable const& selectable     = selectableIter->second;
-		Node*                   coarseNode     = sceneTree->ResolveNode(selectable.m_coarseColliderHandle);
-		Node*                   fineNode       = sceneTree->ResolveNode(selectable.m_fineColliderHandle);
-		Node*                   selectNode     = sceneTree->ResolveNode(selectable.m_ownerHandle);
-		Collider3D*             coarseCollider = dynamic_cast<Collider3D*>(coarseNode);
-		Collider3D*             fineCollider   = dynamic_cast<Collider3D*>(fineNode);
-
-		if (coarseCollider == nullptr || fineCollider == nullptr || selectNode == nullptr)
-		{
-			selectableIter = m_selectables.erase(selectableIter);
-			continue;
-		}
-
-		if (!coarseCollider->m_isEnabled || !fineCollider->m_isEnabled)
-		{
-			++selectableIter;
-			continue;
-		}
-
-		GameRaycastResult const coarseResult = coarseCollider->Raycast(info);
-		if (!coarseResult.m_didImpact)
-		{
-			++selectableIter;
-			continue;
-		}
-
-		GameRaycastResult const fineResult = fineCollider->Raycast(info);
-		if (fineResult.m_didImpact && (!bestResult.m_didImpact || fineResult.m_impactDist < bestResult.m_impactDist))
-		{
-			bestResult        = fineResult;
-			outCoarseCollider = selectable.m_coarseColliderHandle;
-			outFineCollider   = selectable.m_fineColliderHandle;
-			outSelectNode     = selectable.m_ownerHandle;
-		}
-
-		++selectableIter;
-	}
-
-	return bestResult;
-}
-
-void EditorNode::HandleSelectionClick(Camera3D const& cameraNode, Vec2 const& clientPos)
-{
-	SceneTree* sceneTree = GetSceneTree();
-	if (sceneTree == nullptr || g_engine == nullptr || g_engine->m_window == nullptr)
-	{
-		m_selection.Clear();
 		return;
 	}
 
-	Vec2 const    clientDimensions = (Vec2)g_engine->m_window->GetClientDimensions();
-	float const   aspect           = clientDimensions.x / clientDimensions.y;
-	CameraContext camera           = cameraNode.GetCamera(aspect);
-	RaycastInfo raycastInfo = BuildRaycastFromMouse(camera, clientPos, clientDimensions, kEditorSelectionRaycastLength);
-	NodeHandle  coarseCollider     = NodeHandle::Invalid;
-	NodeHandle  fineCollider       = NodeHandle::Invalid;
-	NodeHandle  selectNode         = NodeHandle::Invalid;
-	GameRaycastResult const result = Raycast(raycastInfo, coarseCollider, fineCollider, selectNode);
-
-	if (!result.m_didImpact || !selectNode.IsValid())
+	if (m_editorGizmos != nullptr && m_editorGizmos->IsDragging())
 	{
-		DebugAddMessage("Editor Pick Miss", 5.f, Rgba8::White, Rgba8::White);
-		m_selection.Clear();
-		return;
+		m_editorGizmos->OnEndDrag();
 	}
-
-	DebugAddMessage(Stringf("Editor Pick Hit: coarse=%s fine=%s selected=%s dist=%.2f pos=(%.2f, %.2f, %.2f)",
-						FormatNodeHandle(coarseCollider).c_str(),
-						FormatNodeHandle(fineCollider).c_str(),
-						FormatNodeHandle(selectNode).c_str(),
-						result.m_impactDist,
-						result.m_impactPos.x,
-						result.m_impactPos.y,
-						result.m_impactPos.z),
-		5.f,
-		Rgba8::White,
-		Rgba8::White);
-	m_selection.SetSelected(selectNode);
 }
 
 void EditorNode::OnProcess([[maybe_unused]] float deltaSeconds)

@@ -23,7 +23,6 @@ public:
 
 	virtual char const* GetProjectName() const = 0;
 	virtual void        RegisterTypes()        = 0;
-	virtual Node*       CreateEditorScene() { return nullptr; }
 	virtual void        Startup() {}
 	virtual void        Shutdown() {}
 };

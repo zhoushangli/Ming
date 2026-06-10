@@ -21,3 +21,6 @@ void VisualizeInstance3D::OnExitTree()
 	}
 	Node3D::OnExitTree();
 }
+
+void VisualizeInstance3D::SetVisible(bool visible) { m_isVisible = visible; }
+bool VisualizeInstance3D::GetVisible() const { return m_isVisible; }

@@ -17,7 +17,7 @@ public:
 protected:
 	RenderRequest SubmitRenderRequest() const override;
 
-	std::vector<Vertex> m_vertices;
+	std::vector<Vertex> m_verts;
 	VertexBuffer*       m_vertexBuffer = nullptr;
 };
 

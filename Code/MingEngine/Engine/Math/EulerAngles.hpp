@@ -25,6 +25,8 @@ public:
 	EulerAngles operator*(float uniformScale) const;
 	void        operator*=(float uniformScale);
 	void        operator+=(EulerAngles const& anglesToAdd);
+	bool		operator==(EulerAngles const& compare) const;
+	bool		operator!=(EulerAngles const& compare) const;
 
 	static const EulerAngles Zero;
 

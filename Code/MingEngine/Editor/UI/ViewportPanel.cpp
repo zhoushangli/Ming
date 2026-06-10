@@ -10,10 +10,7 @@
 
 #include "ThirdParty/imgui/imgui.h"
 
-ViewportPanel::ViewportPanel()
-	: EditorPanel("Viewport")
-{
-}
+ViewportPanel::ViewportPanel() : EditorPanel("Viewport") {}
 
 void ViewportPanel::OnRender(EditorUIContext& context)
 {
@@ -31,8 +28,8 @@ void ViewportPanel::OnRender(EditorUIContext& context)
 
 	// Resize before reading the output texture so this frame uses the current viewport dimensions.
 	ImVec2 const availableSize = ImGui::GetContentRegionAvail();
-	int          width         = Max(static_cast<int>(availableSize.x), 1);
-	int          height        = Max(static_cast<int>(availableSize.y), 1);
+	int width                  = Max(static_cast<int>(availableSize.x), 1);
+	int height                 = Max(static_cast<int>(availableSize.y), 1);
 	IntVec2 const panelDimensions(width, height);
 	if (panelDimensions != m_dimensions)
 	{
@@ -50,7 +47,7 @@ void ViewportPanel::OnRender(EditorUIContext& context)
 		Texture* viewportTexture = viewport->GetViewportInfo().m_viewportOutputTexture;
 		if (viewportTexture != nullptr)
 		{
-			ImTextureID  textureId  = (ImTextureID)(intptr_t)viewportTexture->GetShaderResourceView();
+			ImTextureID textureId   = (ImTextureID)(intptr_t)viewportTexture->GetShaderResourceView();
 			ImTextureRef textureRef = ImTextureRef(textureId);
 			ImGui::Image(textureRef, availableSize);
 		}

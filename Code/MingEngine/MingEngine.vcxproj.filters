@@ -4,6 +4,9 @@
     <Filter Include="Editor">
       <UniqueIdentifier>{C9BF96AB-D8A3-49B8-B20B-4680B90E7402}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Editor\Gizmos">
+      <UniqueIdentifier>{E1A2B3C4-D5E6-7890-ABCD-EF1234567890}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Editor\UI">
       <UniqueIdentifier>{D2A02EA8-4D3D-45C2-BCDA-D44BE0D3C4B1}</UniqueIdentifier>
     </Filter>
@@ -192,11 +195,11 @@
     <ClCompile Include="Editor\UI\ViewportPanel.cpp">
       <Filter>Editor\UI</Filter>
     </ClCompile>
-    <ClCompile Include="Editor\GizmoComponent.cpp">
-      <Filter>Editor</Filter>
+    <ClCompile Include="Editor\Gizmos\GizmoComponent.cpp">
+      <Filter>Editor\Gizmos</Filter>
     </ClCompile>
-    <ClCompile Include="Editor\TransformGizmo.cpp">
-      <Filter>Editor</Filter>
+    <ClCompile Include="Editor\Gizmos\TransformGizmo3D.cpp">
+      <Filter>Editor\Gizmos</Filter>
     </ClCompile>
     <ClCompile Include="Engine\ImGui\ImGuiSystem.cpp">
       <Filter>Engine\ImGui</Filter>
@@ -333,11 +336,14 @@
     <ClCompile Include="Engine\Render\VertexBuffer.cpp">
       <Filter>Engine\Render</Filter>
     </ClCompile>
-    <ClCompile Include="Editor\EditorGizmos.cpp">
-      <Filter>Editor</Filter>
+    <ClCompile Include="Editor\Gizmos\EditorGizmos.cpp">
+      <Filter>Editor\Gizmos</Filter>
     </ClCompile>
-    <ClCompile Include="Editor\GizmosShapes.cpp">
-      <Filter>Editor</Filter>
+    <ClCompile Include="Editor\Gizmos\GizmosShapes.cpp">
+      <Filter>Editor\Gizmos</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\Gizmos\ViewportAxisIndicator.cpp">
+      <Filter>Editor\Gizmos</Filter>
     </ClCompile>
     <ClCompile Include="Scene\3D\Camera3D.cpp">
       <Filter>Scene\3D</Filter>
@@ -554,11 +560,11 @@
     <ClInclude Include="Editor\UI\ViewportPanel.hpp">
       <Filter>Editor\UI</Filter>
     </ClInclude>
-    <ClInclude Include="Editor\GizmoComponent.hpp">
-      <Filter>Editor</Filter>
+    <ClInclude Include="Editor\Gizmos\GizmoComponent.hpp">
+      <Filter>Editor\Gizmos</Filter>
     </ClInclude>
-    <ClInclude Include="Editor\TransformGizmo.hpp">
-      <Filter>Editor</Filter>
+    <ClInclude Include="Editor\Gizmos\TransformGizmo3D.hpp">
+      <Filter>Editor\Gizmos</Filter>
     </ClInclude>
     <ClInclude Include="Engine\ImGui\ImGuiSystem.hpp">
       <Filter>Engine\ImGui</Filter>
@@ -698,11 +704,14 @@
     <ClInclude Include="Engine\Render\VertexBuffer.hpp">
       <Filter>Engine\Render</Filter>
     </ClInclude>
-    <ClInclude Include="Editor\EditorGizmos.hpp">
-      <Filter>Editor</Filter>
+    <ClInclude Include="Editor\Gizmos\EditorGizmos.hpp">
+      <Filter>Editor\Gizmos</Filter>
     </ClInclude>
-    <ClInclude Include="Editor\GizmosShapes.hpp">
-      <Filter>Editor</Filter>
+    <ClInclude Include="Editor\Gizmos\GizmosShapes.hpp">
+      <Filter>Editor\Gizmos</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\Gizmos\ViewportAxisIndicator.hpp">
+      <Filter>Editor\Gizmos</Filter>
     </ClInclude>
     <ClInclude Include="Scene\3D\Camera3D.hpp">
       <Filter>Scene\3D</Filter>
