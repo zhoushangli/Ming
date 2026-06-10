@@ -1,14 +1,14 @@
 #pragma once
 
-#include "MingEngine/Scene/Core/Node.hpp"
+#include "MingEngine/Scene/3D/Node3D.hpp"
 
 #include "MingEngine/Engine/Render/Rgba8.hpp"
 #include "MingEngine/Engine/Math/Vec3.hpp"
 #include "MingEngine/Engine/Render/RenderContext.hpp"
 
-class Light3D : public Node
+class Light3D : public Node3D
 {
-	MCLASS(Light3D, Node);
+	MCLASS(Light3D, Node3D);
 
 public:
 	Light3D();

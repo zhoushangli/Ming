@@ -27,21 +27,23 @@ private:
 	void OnOpen(UIData const& data) override;
 	void OnClose() override;
 	void OnRender(EditorUIContext& context) override;
-	bool RenderClassNode(ClassDatabase::ClassInfo const* classInfo,
-		std::map<std::string, std::vector<ClassDatabase::ClassInfo const*>> const& childrenByClass,
+	bool RenderClassNode(
+		ClassInfo const* classInfo,
+		std::map<std::string, std::vector<ClassInfo const*>> const& childrenByClass,
 		std::string const& filterText,
 		EditorUIContext& context);
-	bool DoesClassBranchMatch(ClassDatabase::ClassInfo const* classInfo,
-		std::map<std::string, std::vector<ClassDatabase::ClassInfo const*>> const& childrenByClass,
+	bool DoesClassBranchMatch(
+		ClassInfo const* classInfo,
+		std::map<std::string, std::vector<ClassInfo const*>> const& childrenByClass,
 		std::string const& filterText) const;
-	bool        CreateSelectedNode(EditorUIContext& context);
-	Node*       ResolveCreateParent(EditorUIContext const& context) const;
+	bool CreateSelectedNode(EditorUIContext& context);
+	Node* ResolveCreateParent(EditorUIContext const& context) const;
 	std::string MakeUniqueNodeName(Node const* parent, std::string const& className) const;
-	void        Reset();
+	void Reset();
 
 private:
-	char        m_filter[128] = {};
+	char m_filter[128] = {};
 	std::string m_selectedClass;
-	NodeHandle  m_parentHandle = NodeHandle::Invalid;
-	bool        m_openPopup    = false;
+	NodeHandle m_parentHandle = NodeHandle::Invalid;
+	bool m_openPopup          = false;
 };

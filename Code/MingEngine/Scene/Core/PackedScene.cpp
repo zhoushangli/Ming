@@ -39,7 +39,7 @@ Json SerializeVariant(Variant const& value)
 	}
 	case Variant::Type::Matrix4x4:
 	{
-		Json         result = Json::array();
+		Json result         = Json::array();
 		float const* matrix = value.As<Matrix4x4>().GetAsFloatArray();
 		for (int index = 0; index < 16; ++index)
 		{
@@ -115,8 +115,7 @@ bool TryDeserializeVariant(Json const& json, Variant::Type expectedType, Variant
 		case Variant::Type::EulerAngles:
 			if (IsNumberArray(json, 3))
 			{
-				outValue =
-					Variant(EulerAngles(json[0].get<float>(), json[1].get<float>(), json[2].get<float>()));
+				outValue = Variant(EulerAngles(json[0].get<float>(), json[1].get<float>(), json[2].get<float>()));
 				return true;
 			}
 			break;
@@ -151,12 +150,11 @@ bool TryDeserializeVariant(Json const& json, Variant::Type expectedType, Variant
 } // namespace
 
 PackedScene::PackedProperty::PackedProperty(std::string const& name, Variant const& value)
-	: m_name(name)
-	, m_value(value)
+	: m_name(name), m_value(value)
 {
 }
 
-bool PackedScene::PackedProperty::CanApplyTo(ClassDatabase::PropertyInfo const& propertyInfo) const
+bool PackedScene::PackedProperty::CanApplyTo(PropertyInfo const& propertyInfo) const
 {
 	return propertyInfo.GetSetter() != nullptr && propertyInfo.m_type == m_value.GetType();
 }
@@ -183,7 +181,7 @@ Node* PackedScene::Instantiate() const
 		return nullptr;
 	}
 
-	Node*              root = nullptr;
+	Node* root = nullptr;
 	std::vector<Node*> nodes;
 	nodes.reserve(m_packedNodes.size());
 
@@ -192,7 +190,7 @@ Node* PackedScene::Instantiate() const
 	for (PackedNode const& packedNode : m_packedNodes)
 	{
 		Object* object = ClassDatabase::CreateInstance(packedNode.m_type);
-		Node*   node   = dynamic_cast<Node*>(object);
+		Node* node     = dynamic_cast<Node*>(object);
 		if (node == nullptr)
 		{
 			delete object;
@@ -232,21 +230,22 @@ Node* PackedScene::Instantiate() const
 	for (size_t nodeIndex = 0; nodeIndex < m_packedNodes.size(); ++nodeIndex)
 	{
 		PackedNode const& packedNode = m_packedNodes[nodeIndex];
-		Node*             node       = nodes[nodeIndex];
+		Node* node                   = nodes[nodeIndex];
 		for (PackedProperty const& packedProperty : packedNode.m_properties)
 		{
-			ClassDatabase::PropertyInfo const* property =
-				ClassDatabase::FindProperty(packedNode.m_type, packedProperty.m_name);
+			PropertyInfo const* property = ClassDatabase::FindProperty(packedNode.m_type, packedProperty.m_name);
 			if (property == nullptr)
 			{
-				DebuggerPrintf("PackedScene: skipping unknown property '%s' on type '%s'.\n",
+				DebuggerPrintf(
+					"PackedScene: skipping unknown property '%s' on type '%s'.\n",
 					packedProperty.m_name.c_str(),
 					packedNode.m_type.c_str());
 				continue;
 			}
 			if (!packedProperty.CanApplyTo(*property))
 			{
-				DebuggerPrintf("PackedScene: skipping incompatible property '%s' on type '%s'.\n",
+				DebuggerPrintf(
+					"PackedScene: skipping incompatible property '%s' on type '%s'.\n",
 					packedProperty.m_name.c_str(),
 					packedNode.m_type.c_str());
 				continue;
@@ -258,7 +257,8 @@ Node* PackedScene::Instantiate() const
 			}
 			catch (std::exception const& error)
 			{
-				DebuggerPrintf("PackedScene: failed to apply property '%s' on type '%s': %s\n",
+				DebuggerPrintf(
+					"PackedScene: failed to apply property '%s' on type '%s': %s\n",
 					packedProperty.m_name.c_str(),
 					packedNode.m_type.c_str(),
 					error.what());
@@ -286,9 +286,7 @@ bool PackedScene::SaveToFile(std::string const& filename) const
 		nodeJson["id"]     = node.m_id;
 		nodeJson["name"]   = node.m_name;
 		nodeJson["type"]   = node.m_type;
-		nodeJson["parent"] = node.m_parentIndex == kInvalidNodeId
-								 ? Json(nullptr)
-								 : Json(node.m_parentIndex);
+		nodeJson["parent"] = node.m_parentIndex == kInvalidNodeId ? Json(nullptr) : Json(node.m_parentIndex);
 
 		nodeJson["properties"] = Json::object();
 		for (PackedProperty const& property : node.m_properties)
@@ -352,16 +350,15 @@ bool PackedScene::LoadFromFile(std::string const& filename)
 			packedNode.m_parentIndex =
 				nodeJson["parent"].is_null() ? kInvalidNodeId : nodeJson["parent"].get<unsigned int>();
 
-			for (auto propertyEntry = nodeJson["properties"].begin();
-				 propertyEntry != nodeJson["properties"].end();
+			for (auto propertyEntry = nodeJson["properties"].begin(); propertyEntry != nodeJson["properties"].end();
 				 ++propertyEntry)
 			{
 				std::string const propertyName = propertyEntry.key();
-				ClassDatabase::PropertyInfo const* property =
-					ClassDatabase::FindProperty(packedNode.m_type, propertyName);
+				PropertyInfo const* property   = ClassDatabase::FindProperty(packedNode.m_type, propertyName);
 				if (property == nullptr)
 				{
-					DebuggerPrintf("PackedScene: skipping unknown property '%s' on type '%s'.\n",
+					DebuggerPrintf(
+						"PackedScene: skipping unknown property '%s' on type '%s'.\n",
 						propertyName.c_str(),
 						packedNode.m_type.c_str());
 					continue;
@@ -370,7 +367,8 @@ bool PackedScene::LoadFromFile(std::string const& filename)
 				Variant value;
 				if (!TryDeserializeVariant(propertyEntry.value(), property->m_type, value))
 				{
-					DebuggerPrintf("PackedScene: skipping property '%s' with an incompatible JSON value on type '%s'.\n",
+					DebuggerPrintf(
+						"PackedScene: skipping property '%s' with an incompatible JSON value on type '%s'.\n",
 						propertyName.c_str(),
 						packedNode.m_type.c_str());
 					continue;
@@ -404,22 +402,21 @@ void PackedScene::ParseNodeRecursively(Node const* node, std::vector<PackedNode>
 	packedNode.m_id   = m_nextNodeId++;
 	m_nodeToId[node]  = packedNode.m_id;
 
-	Node const* parent = node->GetParent();
-	auto const  parentEntry = parent != nullptr ? m_nodeToId.find(parent) : m_nodeToId.end();
+	Node const* parent       = node->GetParent();
+	auto const parentEntry   = parent != nullptr ? m_nodeToId.find(parent) : m_nodeToId.end();
 	packedNode.m_parentIndex = parentEntry != m_nodeToId.end() ? parentEntry->second : kInvalidNodeId;
 
 	Object* defaultObject = ClassDatabase::CreateInstance(packedNode.m_type);
-	Node*   defaultNode   = dynamic_cast<Node*>(defaultObject);
+	Node* defaultNode     = dynamic_cast<Node*>(defaultObject);
 	if (defaultObject != nullptr && defaultNode == nullptr)
 	{
 		DebuggerPrintf("PackedScene: default object for type '%s' is not a Node.\n", packedNode.m_type.c_str());
 	}
 
-	std::vector<ClassDatabase::PropertyInfo const*> properties = ClassDatabase::GetAllProperties(packedNode.m_type);
-	for (ClassDatabase::PropertyInfo const* property : properties)
+	std::vector<PropertyInfo const*> properties = ClassDatabase::GetAllProperties(packedNode.m_type);
+	for (PropertyInfo const* property : properties)
 	{
-		if (property == nullptr
-			|| !property->HasUsage(ClassDatabase::PropertyInfo::PropertyUsageFlags::Storage)
+		if (property == nullptr || !property->HasUsage(PropertyInfo::UsageFlags::Storage)
 			|| property->GetGetter() == nullptr)
 		{
 			continue;
@@ -440,7 +437,8 @@ void PackedScene::ParseNodeRecursively(Node const* node, std::vector<PackedNode>
 		}
 		catch (std::exception const& error)
 		{
-			DebuggerPrintf("PackedScene: failed to read property '%s' on type '%s': %s\n",
+			DebuggerPrintf(
+				"PackedScene: failed to read property '%s' on type '%s': %s\n",
 				property->m_name.c_str(),
 				packedNode.m_type.c_str(),
 				error.what());

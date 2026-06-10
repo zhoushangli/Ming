@@ -4,11 +4,8 @@
 #include "MingEngine/Scene/SceneCommon.hpp"
 
 Camera3D::Camera3D(float fovDegrees, float nearClip, float farClip)
-	: m_mode(CameraContext::Perspective)
-	, m_nearClip(nearClip)
-	, m_farClip(farClip)
-	, m_fovDegrees(fovDegrees)
-	, m_size(1.f)
+	: m_mode(CameraContext::Perspective), m_nearClip(nearClip), m_farClip(farClip), m_fovDegrees(fovDegrees),
+	  m_size(1.f)
 {
 }
 
@@ -23,16 +20,11 @@ void Camera3D::BindMethods()
 	ClassDatabase::BindMethod("SetSize", &Camera3D::SetSize);
 	ClassDatabase::BindMethod("GetSize", &Camera3D::GetSize);
 
-	ClassDatabase::PropertyInfo::PropertyUsageFlags const usage =
-		ClassDatabase::PropertyInfo::PropertyUsageFlags::Default;
-	ADD_PROPERTY(ClassDatabase::PropertyInfo(Variant::Type::Float, "near_clip", usage),
-		"SetNearClip",
-		"GetNearClip");
-	ADD_PROPERTY(ClassDatabase::PropertyInfo(Variant::Type::Float, "far_clip", usage), "SetFarClip", "GetFarClip");
-	ADD_PROPERTY(ClassDatabase::PropertyInfo(Variant::Type::Float, "fov_degrees", usage),
-		"SetFovDegrees",
-		"GetFovDegrees");
-	ADD_PROPERTY(ClassDatabase::PropertyInfo(Variant::Type::Float, "size", usage), "SetSize", "GetSize");
+	PropertyInfo::UsageFlags const usage = PropertyInfo::UsageFlags::Default;
+	ADD_PROPERTY(PropertyInfo(Variant::Type::Float, "near_clip", usage), "SetNearClip", "GetNearClip");
+	ADD_PROPERTY(PropertyInfo(Variant::Type::Float, "far_clip", usage), "SetFarClip", "GetFarClip");
+	ADD_PROPERTY(PropertyInfo(Variant::Type::Float, "fov_degrees", usage), "SetFovDegrees", "GetFovDegrees");
+	ADD_PROPERTY(PropertyInfo(Variant::Type::Float, "size", usage), "SetSize", "GetSize");
 }
 
 CameraContext Camera3D::GetCamera(float aspect) const

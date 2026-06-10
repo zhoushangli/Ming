@@ -17,7 +17,8 @@ namespace
 std::string ToLower(std::string const& text)
 {
 	std::string lowerText = text;
-	std::transform(lowerText.begin(),
+	std::transform(
+		lowerText.begin(),
 		lowerText.end(),
 		lowerText.begin(),
 		[](unsigned char character) { return static_cast<char>(std::tolower(character)); });
@@ -69,15 +70,16 @@ void CreateNodePanel::OnRender(EditorUIContext& context)
 	ImGui::InputTextWithHint("##CreateNodeSearch", "Search node types", m_filter, sizeof(m_filter));
 	ImGui::Separator();
 
-	std::vector<ClassDatabase::ClassInfo const*> classes = ClassDatabase::GetRegisteredClasses();
-	std::sort(classes.begin(),
+	std::vector<ClassInfo const*> classes = ClassDatabase::GetRegisteredClasses();
+	std::sort(
+		classes.begin(),
 		classes.end(),
-		[](ClassDatabase::ClassInfo const* a, ClassDatabase::ClassInfo const* b)
+		[](ClassInfo const* a, ClassInfo const* b)
 		{ return a != nullptr && b != nullptr && a->m_className < b->m_className; });
 
-	std::map<std::string, std::vector<ClassDatabase::ClassInfo const*>> childrenByClass;
-	ClassDatabase::ClassInfo const*                                     nodeClass = nullptr;
-	for (ClassDatabase::ClassInfo const* classInfo : classes)
+	std::map<std::string, std::vector<ClassInfo const*>> childrenByClass;
+	ClassInfo const* nodeClass = nullptr;
+	for (ClassInfo const* classInfo : classes)
 	{
 		if (classInfo == nullptr)
 		{
@@ -97,7 +99,7 @@ void CreateNodePanel::OnRender(EditorUIContext& context)
 		std::string parentClassName = classInfo->m_parentClassName;
 		while (parentClassName != Node::GetStaticClassName())
 		{
-			ClassDatabase::ClassInfo const* parentInfo = ClassDatabase::GetClassInfo(parentClassName);
+			ClassInfo const* parentInfo = ClassDatabase::GetClassInfo(parentClassName);
 			if (parentInfo == nullptr)
 			{
 				parentClassName = Node::GetStaticClassName();
@@ -141,10 +143,11 @@ void CreateNodePanel::OnRender(EditorUIContext& context)
 	ImGui::EndPopup();
 }
 
-bool CreateNodePanel::RenderClassNode(ClassDatabase::ClassInfo const*          classInfo,
-	std::map<std::string, std::vector<ClassDatabase::ClassInfo const*>> const& childrenByClass,
-	std::string const&                                                         filterText,
-	EditorUIContext&                                                           context)
+bool CreateNodePanel::RenderClassNode(
+	ClassInfo const* classInfo,
+	std::map<std::string, std::vector<ClassInfo const*>> const& childrenByClass,
+	std::string const& filterText,
+	EditorUIContext& context)
 {
 	if (classInfo == nullptr || !DoesClassBranchMatch(classInfo, childrenByClass, filterText))
 	{
@@ -153,9 +156,10 @@ bool CreateNodePanel::RenderClassNode(ClassDatabase::ClassInfo const*          c
 
 	auto const childrenIter       = childrenByClass.find(classInfo->m_className);
 	bool const hasVisibleChildren = childrenIter != childrenByClass.end()
-									&& std::any_of(childrenIter->second.begin(),
+									&& std::any_of(
+										childrenIter->second.begin(),
 										childrenIter->second.end(),
-										[this, &childrenByClass, &filterText](ClassDatabase::ClassInfo const* child)
+										[this, &childrenByClass, &filterText](ClassInfo const* child)
 										{ return DoesClassBranchMatch(child, childrenByClass, filterText); });
 
 	ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth;
@@ -192,7 +196,7 @@ bool CreateNodePanel::RenderClassNode(ClassDatabase::ClassInfo const*          c
 
 	if (isOpen && hasVisibleChildren)
 	{
-		for (ClassDatabase::ClassInfo const* child : childrenIter->second)
+		for (ClassInfo const* child : childrenIter->second)
 		{
 			if (RenderClassNode(child, childrenByClass, filterText, context))
 			{
@@ -208,9 +212,10 @@ bool CreateNodePanel::RenderClassNode(ClassDatabase::ClassInfo const*          c
 	return false;
 }
 
-bool CreateNodePanel::DoesClassBranchMatch(ClassDatabase::ClassInfo const*     classInfo,
-	std::map<std::string, std::vector<ClassDatabase::ClassInfo const*>> const& childrenByClass,
-	std::string const&                                                         filterText) const
+bool CreateNodePanel::DoesClassBranchMatch(
+	ClassInfo const* classInfo,
+	std::map<std::string, std::vector<ClassInfo const*>> const& childrenByClass,
+	std::string const& filterText) const
 {
 	if (classInfo == nullptr)
 	{
@@ -226,7 +231,7 @@ bool CreateNodePanel::DoesClassBranchMatch(ClassDatabase::ClassInfo const*     c
 	{
 		return false;
 	}
-	for (ClassDatabase::ClassInfo const* child : childrenIter->second)
+	for (ClassInfo const* child : childrenIter->second)
 	{
 		if (DoesClassBranchMatch(child, childrenByClass, filterText))
 		{
@@ -244,7 +249,7 @@ bool CreateNodePanel::CreateSelectedNode(EditorUIContext& context)
 	}
 
 	Object* object = ClassDatabase::CreateInstance(m_selectedClass);
-	Node*   node   = dynamic_cast<Node*>(object);
+	Node* node     = dynamic_cast<Node*>(object);
 	if (node == nullptr)
 	{
 		delete object;

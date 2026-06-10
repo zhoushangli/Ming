@@ -143,9 +143,9 @@ void Node::BindMethods()
 	ClassDatabase::BindMethod("SetProcess", &Node::SetProcess);
 	ClassDatabase::BindMethod("GetProcess", &Node::GetProcess);
 
-	ADD_PROPERTY(ClassDatabase::PropertyInfo(Variant::Type::String,
+	ADD_PROPERTY(PropertyInfo(Variant::Type::String,
 					 "name",
-					 ClassDatabase::PropertyInfo::PropertyUsageFlags::Editor),
+					 PropertyInfo::UsageFlags::Inspector),
 		"SetName",
 		"GetName");
 }

@@ -19,10 +19,10 @@ protected:
 		PackedProperty() = default;
 		PackedProperty(std::string const& name, Variant const& value);
 
-		bool CanApplyTo(ClassDatabase::PropertyInfo const& propertyInfo) const;
+		bool CanApplyTo(PropertyInfo const& propertyInfo) const;
 
 		std::string m_name;
-		Variant     m_value;
+		Variant m_value;
 	};
 
 	struct PackedNode
@@ -31,8 +31,8 @@ protected:
 		std::string m_type;
 		// The ID here refers to the index of the node in the PackedScene's m_nodes vector
 		// It is not a unique identifier. (Like node handle ID)
-		unsigned int                m_id          = 0;
-		unsigned int                m_parentIndex = 0;
+		unsigned int m_id          = 0;
+		unsigned int m_parentIndex = 0;
 		std::vector<PackedProperty> m_properties;
 	};
 
@@ -40,7 +40,7 @@ public:
 	PackedScene()  = default;
 	~PackedScene() = default;
 
-	bool  Pack(Node const* node);
+	bool Pack(Node const* node);
 	Node* Instantiate() const;
 
 	bool SaveToFile(std::string const& filename) const;
@@ -52,6 +52,6 @@ protected:
 protected:
 	std::vector<PackedNode> m_packedNodes;
 
-	unsigned int                                  m_nextNodeId = 0;
+	unsigned int m_nextNodeId = 0;
 	std::unordered_map<Node const*, unsigned int> m_nodeToId;
 };

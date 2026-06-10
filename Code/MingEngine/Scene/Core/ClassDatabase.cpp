@@ -3,16 +3,16 @@
 #include "MingEngine/Scene/3D/Camera3D.hpp"
 #include "MingEngine/Scene/3D/Light3D.hpp"
 #include "MingEngine/Scene/3D/Node3D.hpp"
+#include "MingEngine/Scene/Core/Node.hpp"
 #include "MingEngine/Scene/Physics/AABBCollider3D.hpp"
 #include "MingEngine/Scene/Physics/CapsuleCollider3D.hpp"
 #include "MingEngine/Scene/Physics/CylinderZCollider3D.hpp"
 #include "MingEngine/Scene/Physics/TriangleMeshCollider3D.hpp"
-#include "MingEngine/Scene/Core/Node.hpp"
 
 #include "MingEngine/Engine/Core/ErrorWarningAssert.hpp"
 #include "MingEngine/Engine/Core/StringUtils.hpp"
 
-std::unordered_map<std::string, ClassDatabase::ClassInfo> ClassDatabase::m_classInfoMap;
+std::unordered_map<std::string, ClassInfo> ClassDatabase::m_classInfoMap;
 
 void ClassDatabase::Startup()
 {
@@ -49,7 +49,7 @@ Object* ClassDatabase::CreateInstance(std::string const& className)
 	return classInfo.m_creator();
 }
 
-ClassDatabase::ClassInfo const* ClassDatabase::GetClassInfo(std::string const& className)
+ClassInfo const* ClassDatabase::GetClassInfo(std::string const& className)
 {
 	auto iter = m_classInfoMap.find(className);
 	if (iter == m_classInfoMap.end())
@@ -60,7 +60,7 @@ ClassDatabase::ClassInfo const* ClassDatabase::GetClassInfo(std::string const& c
 	return &iter->second;
 }
 
-std::vector<ClassDatabase::ClassInfo const*> ClassDatabase::GetRegisteredClasses()
+std::vector<ClassInfo const*> ClassDatabase::GetRegisteredClasses()
 {
 	std::vector<ClassInfo const*> classes;
 	classes.reserve(m_classInfoMap.size());
@@ -92,7 +92,7 @@ bool ClassDatabase::IsSubclassOf(std::string const& className, std::string const
 	return false;
 }
 
-std::vector<ClassDatabase::PropertyInfo> ClassDatabase::GetProperties(std::string const& className)
+std::vector<PropertyInfo> ClassDatabase::GetProperties(std::string const& className)
 {
 	auto iter = m_classInfoMap.find(className);
 	if (iter == m_classInfoMap.end())
@@ -103,7 +103,7 @@ std::vector<ClassDatabase::PropertyInfo> ClassDatabase::GetProperties(std::strin
 	return iter->second.m_properties;
 }
 
-std::vector<ClassDatabase::PropertyInfo const*> ClassDatabase::GetAllProperties(std::string const& className)
+std::vector<PropertyInfo const*> ClassDatabase::GetAllProperties(std::string const& className)
 {
 	auto iter = m_classInfoMap.find(className);
 	if (iter == m_classInfoMap.end())
@@ -120,8 +120,7 @@ std::vector<ClassDatabase::PropertyInfo const*> ClassDatabase::GetAllProperties(
 	return properties;
 }
 
-ClassDatabase::PropertyInfo const* ClassDatabase::FindProperty(std::string const& className,
-	std::string const&                                                            propertyName)
+PropertyInfo const* ClassDatabase::FindProperty(std::string const& className, std::string const& propertyName)
 {
 	std::vector<PropertyInfo const*> properties = GetAllProperties(className);
 	for (auto iter = properties.rbegin(); iter != properties.rend(); ++iter)
@@ -155,7 +154,8 @@ MethodBind const* ClassDatabase::GetMethodBind(std::string const& className, std
 	return nullptr;
 }
 
-void ClassDatabase::AddProperty(std::string const& className,
+void ClassDatabase::AddProperty(
+	std::string const& className,
 	PropertyInfo propertyInfo,
 	std::string const& setterName,
 	std::string const& getterName)
@@ -165,9 +165,11 @@ void ClassDatabase::AddProperty(std::string const& className,
 	propertyInfo.m_setter     = GetMethodBind(className, setterName);
 	propertyInfo.m_getter     = GetMethodBind(className, getterName);
 
-	GUARANTEE_OR_DIE(propertyInfo.m_setter != nullptr,
+	GUARANTEE_OR_DIE(
+		propertyInfo.m_setter != nullptr,
 		Stringf("ClassDatabase: setter '%s' is not bound on class '%s'.", setterName.c_str(), className.c_str()));
-	GUARANTEE_OR_DIE(propertyInfo.m_getter != nullptr,
+	GUARANTEE_OR_DIE(
+		propertyInfo.m_getter != nullptr,
 		Stringf("ClassDatabase: getter '%s' is not bound on class '%s'.", getterName.c_str(), className.c_str()));
 
 	m_classInfoMap[className].m_properties.push_back(std::move(propertyInfo));

@@ -180,6 +180,9 @@
     <ClCompile Include="Editor\UI\InspectorPanel.cpp">
       <Filter>Editor\UI</Filter>
     </ClCompile>
+    <ClCompile Include="Editor\UI\InspectorProperty.cpp">
+      <Filter>Editor\UI</Filter>
+    </ClCompile>
     <ClCompile Include="Editor\UI\OutputPanel.cpp">
       <Filter>Editor\UI</Filter>
     </ClCompile>
