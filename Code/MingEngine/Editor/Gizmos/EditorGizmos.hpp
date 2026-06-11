@@ -9,7 +9,6 @@
 class Camera3D;
 class TransformGizmo3D;
 class ViewportAxisIndicator;
-struct GizmoContext;
 
 class EditorGizmos : public Node
 {
@@ -19,9 +18,6 @@ public:
 	EditorGizmos();
 	~EditorGizmos() override;
 
-	void SetWorldGridVisible(bool visible);
-	void SetWorldAxisVisible(bool visible);
-
 	// --- Gizmo event routing ---
 	void OnMouseMove(Camera3D const& camera, Vec2 screenPos);
 	bool OnBeginDrag(Camera3D const& camera, Vec2 screenPos);
@@ -30,16 +26,9 @@ public:
 	bool IsDragging() const;
 	NodeHandle Raycast(Camera3D const& camera, Vec2 screenPos) const;
 
-protected:
-	void OnReady() override;
-	void OnProcess(float deltaSeconds) override;
-
 private:
-	GizmoContext BuildGizmoContext(Camera3D const& camera, Vec2 screenPos) const;
-
-private:
-	NodeHandle m_worldGridHandle           = NodeHandle::Invalid;
-	NodeHandle m_worldAxisHandle           = NodeHandle::Invalid;
+	EditorWorldGrid3D* m_worldGrid          = nullptr;
+	EditorWorldAxis3D* m_worldAxis          = nullptr;
 	TransformGizmo3D* m_transformGizmo     = nullptr;
 	ViewportAxisIndicator* m_axisIndicator = nullptr;
 };

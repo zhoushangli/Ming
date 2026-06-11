@@ -24,17 +24,17 @@ enum class GizmoAxis
 
 struct GizmoContext
 {
-	SceneTree* m_sceneTree                  = nullptr;
-	Camera3D const* m_camera                = nullptr;
-	NodeHandle m_selectedNode               = NodeHandle::Invalid;
-	Node3D* m_selectedNode3D                = nullptr;
-	Vec3 m_originWorld                      = Vec3::Zero;
-	float m_scale                           = 1.f;
-	Vec2 m_clientPos                        = Vec2::Zero;
-	Vec2 m_clientDimensions                 = Vec2::Zero;
-	bool m_isRotationActive                 = false;
-	GizmoComponent const* m_activeComponent = nullptr;
+	SceneTree* m_sceneTree        = nullptr;
+	Camera3D const* m_camera      = nullptr;
+	NodeHandle m_selectedNode     = NodeHandle::Invalid;
+	Node3D* m_selectedNode3D      = nullptr;
+	Vec3 m_originWorld            = Vec3::Zero;
+	float m_scale                 = 1.f;
+	Vec2 m_clientPos              = Vec2::Zero;
+	Vec2 m_clientDimensions       = Vec2::Zero;
 };
+
+GizmoContext BuildGizmoContext(SceneTree* sceneTree, Camera3D const& camera, Vec2 clientPos = Vec2::Zero);
 
 struct GizmoRaycastResult
 {

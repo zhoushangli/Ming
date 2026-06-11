@@ -1,6 +1,9 @@
 #include "MingEngine/Editor/Gizmos/TransformGizmo3D.hpp"
 
+#include "MingEngine/Editor/EditorController.hpp"
+#include "MingEngine/Scene/3D/Camera3D.hpp"
 #include "MingEngine/Scene/3D/Node3D.hpp"
+#include "MingEngine/Scene/Core/SceneTree.hpp"
 
 namespace
 {
@@ -11,15 +14,18 @@ Rgba8 const kAxisZColor(55, 160, 255, 255);
 
 TransformGizmo3D::TransformGizmo3D()
 {
+	SetReady(true);
+	SetProcess(true);
+
 	GizmoAxisArrow* arrowX   = new GizmoAxisArrow(GizmoAxis::X, kAxisXColor);
 	GizmoAxisArrow* arrowY   = new GizmoAxisArrow(GizmoAxis::Y, kAxisYColor);
 	GizmoAxisArrow* arrowZ   = new GizmoAxisArrow(GizmoAxis::Z, kAxisZColor);
 	GizmoPlaneSquare* planeX = new GizmoPlaneSquare(GizmoAxis::X, kAxisXColor);
 	GizmoPlaneSquare* planeY = new GizmoPlaneSquare(GizmoAxis::Y, kAxisYColor);
 	GizmoPlaneSquare* planeZ = new GizmoPlaneSquare(GizmoAxis::Z, kAxisZColor);
-	GizmoRotationArc* arcX   = new GizmoRotationArc(GizmoAxis::X, kAxisXColor);
-	GizmoRotationArc* arcY   = new GizmoRotationArc(GizmoAxis::Y, kAxisYColor);
-	GizmoRotationArc* arcZ   = new GizmoRotationArc(GizmoAxis::Z, kAxisZColor);
+	// GizmoRotationArc* arcX   = new GizmoRotationArc(GizmoAxis::X, kAxisXColor);
+	// GizmoRotationArc* arcY   = new GizmoRotationArc(GizmoAxis::Y, kAxisYColor);
+	// GizmoRotationArc* arcZ   = new GizmoRotationArc(GizmoAxis::Z, kAxisZColor);
 
 	arrowX->SetSerializable(false);
 	arrowY->SetSerializable(false);
@@ -27,9 +33,9 @@ TransformGizmo3D::TransformGizmo3D()
 	planeX->SetSerializable(false);
 	planeY->SetSerializable(false);
 	planeZ->SetSerializable(false);
-	arcX->SetSerializable(false);
-	arcY->SetSerializable(false);
-	arcZ->SetSerializable(false);
+	// arcX->SetSerializable(false);
+	// arcY->SetSerializable(false);
+	// arcZ->SetSerializable(false);
 
 	AddNode(arrowX);
 	AddNode(arrowY);
@@ -37,9 +43,9 @@ TransformGizmo3D::TransformGizmo3D()
 	AddNode(planeX);
 	AddNode(planeY);
 	AddNode(planeZ);
-	AddNode(arcX);
-	AddNode(arcY);
-	AddNode(arcZ);
+	// AddNode(arcX);
+	// AddNode(arcY);
+	// AddNode(arcZ);
 
 	m_components.push_back(arrowX);
 	m_components.push_back(arrowY);
@@ -47,9 +53,9 @@ TransformGizmo3D::TransformGizmo3D()
 	m_components.push_back(planeX);
 	m_components.push_back(planeY);
 	m_components.push_back(planeZ);
-	m_components.push_back(arcX);
-	m_components.push_back(arcY);
-	m_components.push_back(arcZ);
+	// m_components.push_back(arcX);
+	// m_components.push_back(arcY);
+	// m_components.push_back(arcZ);
 }
 
 TransformGizmo3D::~TransformGizmo3D() { m_components.clear(); }
@@ -77,7 +83,7 @@ void TransformGizmo3D::UpdateHover(GizmoContext const& context, RaycastInfo cons
 	}
 }
 
-bool TransformGizmo3D::TryBeginDrag(GizmoContext const& context, RaycastInfo const& ray)
+bool TransformGizmo3D::BeginDrag(GizmoContext const& context, RaycastInfo const& ray)
 {
 	GizmoRaycastResult const result = Raycast(context, ray);
 	if (!result.m_didImpact || result.m_component == nullptr)
@@ -97,7 +103,7 @@ bool TransformGizmo3D::TryBeginDrag(GizmoContext const& context, RaycastInfo con
 	return true;
 }
 
-void TransformGizmo3D::UpdateDrag(GizmoContext const& context, RaycastInfo const& ray)
+void TransformGizmo3D::OnDrag(GizmoContext const& context, RaycastInfo const& ray)
 {
 	if (m_activeComponent != nullptr)
 	{
@@ -114,21 +120,31 @@ void TransformGizmo3D::EndDrag(GizmoContext const& context)
 	}
 }
 
-void TransformGizmo3D::Render(GizmoContext const& context)
+void TransformGizmo3D::OnProcess([[maybe_unused]] float deltaSeconds)
 {
-	if (context.m_selectedNode3D == nullptr)
+	EditorController* editorController = EditorController::Get();
+	Camera3D* camera                   = editorController != nullptr ? editorController->GetCamera() : nullptr;
+	if (camera == nullptr)
 	{
+		for (GizmoComponent* component : m_components)
+		{
+			component->SetVisible(false);
+		}
 		return;
 	}
 
-	GizmoContext renderContext       = context;
-	renderContext.m_isRotationActive = m_activeComponent != nullptr && m_activeComponent->IsRotationGizmo();
-	renderContext.m_activeComponent  = m_activeComponent;
+	GizmoContext const context = BuildGizmoContext(GetSceneTree(), *camera);
+	bool const hasSelection    = context.m_selectedNode3D != nullptr;
+	bool const rotationActive  = m_activeComponent != nullptr && m_activeComponent->IsRotationGizmo();
 
-	// Rebuild vertex data for each component
 	for (GizmoComponent* component : m_components)
 	{
-		component->RebuildVertices(renderContext);
+		bool const isVisible = hasSelection && (!rotationActive || component == m_activeComponent);
+		component->SetVisible(isVisible);
+		if (isVisible)
+		{
+			component->RebuildVertices(context);
+		}
 	}
 }
 
@@ -137,8 +153,18 @@ bool TransformGizmo3D::IsDragging() const { return m_activeComponent != nullptr;
 GizmoRaycastResult TransformGizmo3D::Raycast(GizmoContext const& context, RaycastInfo const& ray) const
 {
 	GizmoRaycastResult bestResult;
+	if (context.m_selectedNode3D == nullptr)
+	{
+		return bestResult;
+	}
+
 	for (GizmoComponent* component : m_components)
 	{
+		if (!component->GetVisible())
+		{
+			continue;
+		}
+
 		GizmoRaycastResult const result = component->Raycast(context, ray);
 		if (!result.m_didImpact)
 		{

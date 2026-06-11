@@ -17,14 +17,18 @@ public:
 protected:
 	RenderRequest SubmitRenderRequest() const override;
 
+protected:
 	std::vector<Vertex> m_verts;
-	VertexBuffer*       m_vertexBuffer = nullptr;
+	VertexBuffer* m_vertexBuffer = nullptr;
 };
 
 class EditorWorldGrid3D : public EditorGizmoVisual3D
 {
 public:
 	EditorWorldGrid3D();
+
+protected:
+	RenderRequest SubmitRenderRequest() const override;
 };
 
 class EditorWorldAxis3D : public EditorGizmoVisual3D

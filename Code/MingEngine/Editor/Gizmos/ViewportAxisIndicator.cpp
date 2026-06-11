@@ -101,9 +101,14 @@ void ViewportAxisIndicator::OnProcess([[maybe_unused]] float deltaSeconds)
 	Camera3D* editorCamera     = EditorController::Get()->GetCamera();
 	EulerAngles cameraRotation = editorCamera->GetWorldOrientation();
 
-	if (cameraRotation != m_lastCameraRotation)
+	// We just hardcode the position
+	IntVec2 dimensions = m_data.m_viewport->GetOutputResolution();
+	Vec2 center        = (Vec2)dimensions - Vec2(100.f, 100.f);
+
+	if (cameraRotation != m_lastCameraRotation || center != m_center)
 	{
 		m_lastCameraRotation = cameraRotation;
+		m_center = center;
 		RebuildVertexBuffer();
 	}
 }
@@ -151,10 +156,6 @@ void ViewportAxisIndicator::RebuildVertexBuffer()
 
 	std::sort(m_axises.begin(), m_axises.end(), [](Axis2D const& a, Axis2D const& b) { return a.m_x > b.m_x; });
 
-	// We just hardcode the position
-	IntVec2 dimensions = m_data.m_viewport->GetOutputResolution();
-	Vec2 center        = (Vec2)dimensions - Vec2(100.f, 100.f);
-
 	for (Axis2D const& axis : m_axises)
 	{
 		Rgba8 axisColor = Rgba8::White;
@@ -169,12 +170,12 @@ void ViewportAxisIndicator::RebuildVertexBuffer()
 
 		if (axis.m_isPositive)
 		{
-			AddVertsForAxisLine(m_verts, center, center + kLineLength * axis.m_yz, kLineWidth, axisColor);
+			AddVertsForAxisLine(m_verts, m_center, m_center + kLineLength * axis.m_yz, kLineWidth, axisColor);
 		}
 
 		AddVertsForAxisPoint(
 			m_verts,
-			center + (kLineLength + kCircleRadius) * axis.m_yz,
+			m_center + (kLineLength + kCircleRadius) * axis.m_yz,
 			kCircleRadius,
 			kLineWidth,
 			axisColor);

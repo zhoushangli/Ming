@@ -11,69 +11,120 @@ public:
 
 	void Render() override
 	{
-		EulerAngles e = m_value.As<EulerAngles>();
+		EulerAngles v = m_value.As<EulerAngles>();
 
-		// Row 1) Label
 		ImGui::TextUnformatted(GetDisplayName().c_str());
 
-		// Row 2) Draw one continuous dark background, then overlay controls
+		ImGuiStyle const& style = ImGui::GetStyle();
+
 		ImVec2 const barPos   = ImGui::GetCursorScreenPos();
 		float const barWidth  = ImGui::GetContentRegionAvail().x;
 		float const barHeight = ImGui::GetFrameHeight();
-		float const third     = barWidth / 3.0f;
+
+		float constexpr groupGap      = 6.f;
+		float constexpr innerPad      = 8.f;
+		float constexpr labelValueGap = 8.f;
+
+		float const groupWidth = (barWidth - groupGap * 2.f) / 3.f;
 
 		ImDrawList* dl = ImGui::GetWindowDrawList();
 		dl->AddRectFilled(
 			barPos,
 			ImVec2(barPos.x + barWidth, barPos.y + barHeight),
 			IM_COL32(27, 33, 42, 255),
-			ImGui::GetStyle().FrameRounding);
+			style.FrameRounding);
 
-		// Transparent FrameBg — the drawn rect is the background
-		ImGui::PushStyleColor(ImGuiCol_FrameBg, IM_COL32(0, 0, 0, 0));
-		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, ImGui::GetStyle().ItemSpacing.y));
 		ImGui::PushID(m_labelId.c_str());
 
-		float const labelXw = ImGui::CalcTextSize("x").x;
-		float const labelYw = ImGui::CalcTextSize("y").x;
-		float const labelZw = ImGui::CalcTextSize("z").x;
+		ImGui::Dummy(ImVec2(barWidth, barHeight));
+
+		ImGui::PushStyleColor(ImGuiCol_FrameBg, IM_COL32(0, 0, 0, 0));
+		ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, IM_COL32(45, 52, 64, 180));
+		ImGui::PushStyleColor(ImGuiCol_FrameBgActive, IM_COL32(55, 62, 76, 220));
+		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0.f, style.FramePadding.y));
 
 		bool edited = false;
 
-		// Yaw / X (red label, white number)
-		ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.9f, 0.25f, 0.25f, 1.0f));
-		ImGui::TextUnformatted("x");
-		ImGui::PopStyleColor();
-		ImGui::SameLine(0, 0);
-		ImGui::SetNextItemWidth(third - labelXw);
-		edited = ImGui::DragFloat("##yaw", &e.m_yawDegrees, 0.1f, 0.0f, 0.0f, "%.1f");
-		ImGui::SameLine(0, 0);
+		edited |= DrawComponent(
+			"x",
+			v.m_rollDegrees,
+			ImVec4(0.9f, 0.25f, 0.25f, 1.f),
+			barPos,
+			0,
+			groupWidth,
+			groupGap,
+			innerPad,
+			labelValueGap,
+			barHeight);
 
-		// Pitch / Y (green label, white number)
-		ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.35f, 0.8f, 0.35f, 1.0f));
-		ImGui::TextUnformatted("y");
-		ImGui::PopStyleColor();
-		ImGui::SameLine(0, 0);
-		ImGui::SetNextItemWidth(third - labelYw);
-		edited |= ImGui::DragFloat("##pitch", &e.m_pitchDegrees, 0.1f, 0.0f, 0.0f, "%.1f");
-		ImGui::SameLine(0, 0);
+		edited |= DrawComponent(
+			"y",
+			v.m_pitchDegrees,
+			ImVec4(0.35f, 0.8f, 0.35f, 1.f),
+			barPos,
+			1,
+			groupWidth,
+			groupGap,
+			innerPad,
+			labelValueGap,
+			barHeight);
 
-		// Roll / Z (blue label, white number)
-		ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.35f, 0.5f, 0.9f, 1.0f));
-		ImGui::TextUnformatted("z");
-		ImGui::PopStyleColor();
-		ImGui::SameLine(0, 0);
-		ImGui::SetNextItemWidth(third - labelZw);
-		edited |= ImGui::DragFloat("##roll", &e.m_rollDegrees, 0.1f, 0.0f, 0.0f, "%.1f");
+		edited |= DrawComponent(
+			"z",
+			v.m_yawDegrees,
+			ImVec4(0.35f, 0.5f, 0.9f, 1.f),
+			barPos,
+			2,
+			groupWidth,
+			groupGap,
+			innerPad,
+			labelValueGap,
+			barHeight);
 
-		ImGui::PopID();
 		ImGui::PopStyleVar();
-		ImGui::PopStyleColor();
+		ImGui::PopStyleColor(3);
+		ImGui::PopID();
 
 		if (edited)
 		{
-			m_value  = Variant(e);
+			m_value  = Variant(v);
 			m_edited = true;
 		}
+	}
+
+private:
+	static bool DrawComponent(
+		char const* label,
+		float& value,
+		ImVec4 const& labelColor,
+		ImVec2 const& barPos,
+		int index,
+		float groupWidth,
+		float groupGap,
+		float innerPad,
+		float labelValueGap,
+		float barHeight)
+	{
+		float const groupX = barPos.x + index * (groupWidth + groupGap);
+		float const groupY = barPos.y;
+
+		float const labelWidth = ImGui::CalcTextSize(label).x;
+
+		ImGui::SetCursorScreenPos(ImVec2(groupX + innerPad, groupY));
+
+		ImGui::PushStyleColor(ImGuiCol_Text, labelColor);
+		ImGui::TextUnformatted(label);
+		ImGui::PopStyleColor();
+
+		float const dragX = groupX + innerPad + labelWidth + labelValueGap;
+		float const dragW = groupWidth - innerPad * 2.f - labelWidth - labelValueGap;
+
+		ImGui::SetCursorScreenPos(ImVec2(dragX, groupY));
+		ImGui::SetNextItemWidth(dragW);
+
+		char id[16];
+		snprintf(id, sizeof(id), "##%s", label);
+
+		return ImGui::DragFloat(id, &value, 0.1f, 0.0f, 0.0f, "%.2f");
 	}
 };

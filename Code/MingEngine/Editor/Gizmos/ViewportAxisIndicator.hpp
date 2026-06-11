@@ -33,5 +33,6 @@ private:
 
 private:
 	EulerAngles m_lastCameraRotation = EulerAngles::Zero;
+	Vec2 m_center = Vec2(0.f, 0.f);
 	std::array<Axis2D, 6> m_axises;
 };

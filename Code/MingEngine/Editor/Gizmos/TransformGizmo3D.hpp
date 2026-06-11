@@ -14,14 +14,16 @@ public:
 	~TransformGizmo3D() override;
 
 	void UpdateHover(GizmoContext const& context, RaycastInfo const& ray);
-	bool TryBeginDrag(GizmoContext const& context, RaycastInfo const& ray);
-	void UpdateDrag(GizmoContext const& context, RaycastInfo const& ray);
+	bool BeginDrag(GizmoContext const& context, RaycastInfo const& ray);
+	void OnDrag(GizmoContext const& context, RaycastInfo const& ray);
 	void EndDrag(GizmoContext const& context);
-	void Render(GizmoContext const& context);
 
 	bool IsDragging() const;
 
 	GizmoRaycastResult Raycast(GizmoContext const& context, RaycastInfo const& ray) const;
+
+protected:
+	void OnProcess(float deltaSeconds) override;
 
 private:
 	std::vector<GizmoComponent*> m_components;

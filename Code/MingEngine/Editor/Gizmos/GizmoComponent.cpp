@@ -1,6 +1,9 @@
 #include "MingEngine/Editor/Gizmos/GizmoComponent.hpp"
 
+#include "MingEngine/Editor/EditorNode.hpp"
+#include "MingEngine/Scene/3D/Camera3D.hpp"
 #include "MingEngine/Scene/3D/Node3D.hpp"
+#include "MingEngine/Scene/Core/SceneTree.hpp"
 
 #include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Engine/Core/StringUtils.hpp"
@@ -91,23 +94,14 @@ bool RaycastPlane(RaycastInfo const& ray, Vec3 const& planePoint, Vec3 const& pl
 	return true;
 }
 
-void UploadVertices(std::vector<Vertex>& verts, VertexBuffer*& buffer)
+void UploadVertices(std::vector<Vertex> const& verts, VertexBuffer* buffer)
 {
-	if (verts.empty())
+	if (verts.empty() || buffer == nullptr || g_engine == nullptr || g_engine->m_renderer == nullptr)
 	{
 		return;
 	}
 
-	if (buffer != nullptr)
-	{
-		delete buffer;
-		buffer = nullptr;
-	}
-
-	if (g_engine != nullptr && g_engine->m_renderer != nullptr)
-	{
-		buffer = g_engine->m_renderer->CreateVertexBuffer(verts);
-	}
+	g_engine->m_renderer->UpdateVertexBuffer(buffer, verts);
 }
 
 void AddVertsForTorusArc3D(
@@ -151,7 +145,41 @@ EulerAngles GetEulerWithAxisDelta(EulerAngles const& start, GizmoAxis axis, floa
 }
 } // namespace
 
-GizmoComponent::GizmoComponent(GizmoAxis axis, Rgba8 const& color) : m_axis(axis), m_baseColor(color) {}
+GizmoContext BuildGizmoContext(SceneTree* sceneTree, Camera3D const& camera, Vec2 clientPos)
+{
+	GizmoContext context;
+	context.m_sceneTree        = sceneTree;
+	context.m_camera           = &camera;
+	context.m_clientPos        = clientPos;
+	context.m_clientDimensions =
+		g_engine && g_engine->m_window ? (Vec2)g_engine->m_window->GetClientDimensions() : Vec2::One;
+
+	EditorNode* editorNode = EditorNode::Get();
+	if (editorNode != nullptr)
+	{
+		context.m_selectedNode = editorNode->GetSelection().GetSelected();
+		context.m_selectedNode3D =
+			dynamic_cast<Node3D*>(sceneTree != nullptr ? sceneTree->ResolveNode(context.m_selectedNode) : nullptr);
+	}
+
+	if (context.m_selectedNode3D != nullptr)
+	{
+		context.m_originWorld = context.m_selectedNode3D->GetWorldPosition();
+		float const cameraDist = (context.m_originWorld - camera.GetWorldPosition()).GetLength();
+		context.m_scale        = Max(0.1f, cameraDist) * 0.15f;
+	}
+
+	return context;
+}
+
+GizmoComponent::GizmoComponent(GizmoAxis axis, Rgba8 const& color) : m_axis(axis), m_baseColor(color)
+{
+	if (g_engine != nullptr && g_engine->m_renderer != nullptr)
+	{
+		m_vertexBuffer =
+			g_engine->m_renderer->CreateVertexBuffer(std::vector<Vertex>{ Vertex(Vec3::Zero, Rgba8::White) });
+	}
+}
 
 void GizmoComponent::OnBeginDrag(
 	[[maybe_unused]] GizmoContext const& context, [[maybe_unused]] GizmoRaycastResult const& hit)
@@ -259,12 +287,6 @@ void GizmoAxisArrow::RebuildVertices(GizmoContext const& context)
 {
 	m_verts.clear();
 
-	if (context.m_isRotationActive)
-	{
-		UploadVertices(m_verts, m_vertexBuffer);
-		return;
-	}
-
 	Vec3 const axis  = GetAxisWorld();
 	Vec3 const start = context.m_originWorld;
 	Vec3 const end   = context.m_originWorld + axis * (kGizmoAxisLength * context.m_scale);
@@ -332,12 +354,6 @@ GizmoRaycastResult GizmoPlaneSquare::Raycast(GizmoContext const& context, Raycas
 void GizmoPlaneSquare::RebuildVertices(GizmoContext const& context)
 {
 	m_verts.clear();
-
-	if (context.m_isRotationActive)
-	{
-		UploadVertices(m_verts, m_vertexBuffer);
-		return;
-	}
 
 	Vec3 const u      = GetPlaneU();
 	Vec3 const v      = GetPlaneV();
@@ -431,12 +447,6 @@ GizmoRaycastResult GizmoRotationArc::Raycast(GizmoContext const& context, Raycas
 void GizmoRotationArc::RebuildVertices(GizmoContext const& context)
 {
 	m_verts.clear();
-
-	if (context.m_isRotationActive && context.m_activeComponent != this)
-	{
-		UploadVertices(m_verts, m_vertexBuffer);
-		return;
-	}
 
 	Vec3 const u           = GetPlaneU();
 	Vec3 const v           = GetPlaneV();
