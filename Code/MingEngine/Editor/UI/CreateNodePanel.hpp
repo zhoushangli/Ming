@@ -46,4 +46,5 @@ private:
 	std::string m_selectedClass;
 	NodeHandle m_parentHandle = NodeHandle::Invalid;
 	bool m_openPopup          = false;
+	bool m_openWarningPopup   = false;
 };

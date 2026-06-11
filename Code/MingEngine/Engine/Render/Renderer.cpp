@@ -288,16 +288,14 @@ void Renderer::RenderPostProcess(ViewportInfo& viewport)
 
 void Renderer::RenderUI(ViewportInfo const& viewport)
 {
-	if (viewport.m_uiCamera == nullptr)
-	{
-		return;
-	}
+	CameraContext uiCameraData = CameraContext();
+	uiCameraData.SetOrthogonal(Vec2::Zero, (Vec2)viewport.m_outputResolution, 0.f, 1.f);
+	m_renderBackend->BindCamera(uiCameraData);
 
 	m_renderBackend->BindRenderTarget(viewport.m_viewportOutputTexture);
 	m_renderBackend->SetBlendMode(BlendMode::ALPHA);
 	m_renderBackend->SetRasterizerMode(RasterizerMode::SOLID_CULL_NONE);
 	m_renderBackend->SetDepthMode(DepthMode::READ_ONLY_ALWAYS);
-	m_renderBackend->BindCamera(*viewport.m_uiCamera);
 
 	std::vector<RenderRequest> const& uiRequests = viewport.m_renderRequests[(int)RenderRequestPass::UI];
 	for (size_t requestIndex = 0; requestIndex < uiRequests.size(); ++requestIndex)

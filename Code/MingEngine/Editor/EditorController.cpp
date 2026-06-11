@@ -19,7 +19,6 @@ EditorController* EditorController::s_instance = nullptr;
 EditorController::EditorController()
 {
 	s_instance = this;
-	SetLocalPosition(Vec3(-2.f, 0.f, 0.f));
 
 	m_camera = new Camera3D(60.f, 0.1f, 100.f);
 	AddNode(m_camera);

@@ -4,13 +4,13 @@
 #include "MingEngine/Engine/Core/ErrorWarningAssert.hpp"
 #include "MingEngine/Engine/Core/FileUtils.hpp"
 #include "MingEngine/Engine/Core/StringUtils.hpp"
-#include "MingEngine/Engine/Render/Vertex.hpp"
-#include "MingEngine/Engine/Render/VertexUtils.hpp"
 #include "MingEngine/Engine/Render/CameraContext.hpp"
 #include "MingEngine/Engine/Render/ConstantBuffer.hpp"
 #include "MingEngine/Engine/Render/IndexBuffer.hpp"
 #include "MingEngine/Engine/Render/Texture.hpp"
+#include "MingEngine/Engine/Render/Vertex.hpp"
 #include "MingEngine/Engine/Render/VertexBuffer.hpp"
+#include "MingEngine/Engine/Render/VertexUtils.hpp"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "ThirdParty/stb/stb_image.h"
@@ -76,7 +76,7 @@ D3D11RenderBackend::D3D11RenderBackend(RendererConfig config) : m_config(config)
 D3D11RenderBackend::~D3D11RenderBackend() {}
 
 #pragma region Public: Lifetime and frame loop
-void           D3D11RenderBackend::Startup()
+void D3D11RenderBackend::Startup()
 {
 	unsigned int deviceFlags = 0;
 #if defined(ENGINE_DEBUG_RENDER)
@@ -97,7 +97,8 @@ void           D3D11RenderBackend::Startup()
 	swapChainDesc.SwapEffect           = DXGI_SWAP_EFFECT_FLIP_DISCARD;
 
 	HRESULT hr;
-	hr = D3D11CreateDeviceAndSwapChain(nullptr,
+	hr = D3D11CreateDeviceAndSwapChain(
+		nullptr,
 		D3D_DRIVER_TYPE_HARDWARE,
 		NULL,
 		deviceFlags,
@@ -120,7 +121,7 @@ void           D3D11RenderBackend::Startup()
 #pragma region Startup: Get back buffer texture
 
 	ID3D11Texture2D* backBuffer = nullptr;
-	hr = m_d3dSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)&backBuffer);
+	hr                          = m_d3dSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)&backBuffer);
 	if (!SUCCEEDED(hr))
 	{
 		ERROR_AND_DIE("Could not get swap chain buffer.");
@@ -145,7 +146,8 @@ void           D3D11RenderBackend::Startup()
 	}
 
 	typedef HRESULT(WINAPI * GetDebugModuleCB)(REFIID, void**);
-	((GetDebugModuleCB)::GetProcAddress((HMODULE)m_dxgiDebugModule, "DXGIGetDebugInterface"))(__uuidof(IDXGIDebug),
+	((GetDebugModuleCB)::GetProcAddress((HMODULE)m_dxgiDebugModule, "DXGIGetDebugInterface"))(
+		__uuidof(IDXGIDebug),
 		&m_dxgiDebug);
 
 	if (m_dxgiDebug == nullptr)
@@ -175,13 +177,15 @@ void           D3D11RenderBackend::Startup()
 	// WIREFRAME CULL NONE
 	rasterizerDesc.FillMode = D3D11_FILL_WIREFRAME;
 	rasterizerDesc.CullMode = D3D11_CULL_NONE;
-	hr                      = m_d3dDevice->CreateRasterizerState(&rasterizerDesc,
+	hr                      = m_d3dDevice->CreateRasterizerState(
+		&rasterizerDesc,
 		&m_rasterizerStates[(int)RasterizerMode::WIREFRAME_CULL_NONE]);
 
 	// WIREFRAME CULL BACK
 	rasterizerDesc.FillMode = D3D11_FILL_WIREFRAME;
 	rasterizerDesc.CullMode = D3D11_CULL_BACK;
-	hr                      = m_d3dDevice->CreateRasterizerState(&rasterizerDesc,
+	hr                      = m_d3dDevice->CreateRasterizerState(
+		&rasterizerDesc,
 		&m_rasterizerStates[(int)RasterizerMode::WIREFRAME_CULL_BACK]);
 
 	m_d3dDeviceContext->RSSetState(m_rasterizerStates[(int)RasterizerMode::SOLID_CULL_BACK]);
@@ -294,21 +298,24 @@ void           D3D11RenderBackend::Startup()
 	depthStencilDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
 	depthStencilDesc.DepthFunc      = D3D11_COMPARISON_ALWAYS;
 
-	hr = m_d3dDevice->CreateDepthStencilState(&depthStencilDesc,
+	hr = m_d3dDevice->CreateDepthStencilState(
+		&depthStencilDesc,
 		&m_depthStencilStates[(int)DepthMode::READ_ONLY_ALWAYS]);
 
 	// READ_ONLY_LESS_EQUAL
 	depthStencilDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
 	depthStencilDesc.DepthFunc      = D3D11_COMPARISON_LESS_EQUAL;
 
-	hr = m_d3dDevice->CreateDepthStencilState(&depthStencilDesc,
+	hr = m_d3dDevice->CreateDepthStencilState(
+		&depthStencilDesc,
 		&m_depthStencilStates[(int)DepthMode::READ_ONLY_LESS_EQUAL]);
 
 	// READ_WRITE_LESS_EQUAL
 	depthStencilDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
 	depthStencilDesc.DepthFunc      = D3D11_COMPARISON_LESS_EQUAL;
 
-	hr = m_d3dDevice->CreateDepthStencilState(&depthStencilDesc,
+	hr = m_d3dDevice->CreateDepthStencilState(
+		&depthStencilDesc,
 		&m_depthStencilStates[(int)DepthMode::READ_WRITE_LESS_EQUAL]);
 
 #pragma endregion
@@ -333,7 +340,6 @@ void           D3D11RenderBackend::Startup()
 	m_d3dDeviceContext->QueryInterface(__uuidof(ID3DUserDefinedAnnotation), (void**)&m_d3dAnnotation);
 
 #pragma endregion
-
 }
 
 void D3D11RenderBackend::Shutdown()
@@ -422,7 +428,8 @@ void D3D11RenderBackend::Shutdown()
 	// Report error leaks and release debug module
 #if defined(ENGINE_DEBUG_RENDER)
 	((IDXGIDebug*)m_dxgiDebug)
-		->ReportLiveObjects(DXGI_DEBUG_ALL,
+		->ReportLiveObjects(
+			DXGI_DEBUG_ALL,
 			(DXGI_DEBUG_RLO_FLAGS)(DXGI_DEBUG_RLO_DETAIL | DXGI_DEBUG_RLO_IGNORE_INTERNAL));
 
 	((IDXGIDebug*)m_dxgiDebug)->Release();
@@ -489,7 +496,7 @@ void D3D11RenderBackend::SetStatesIfChanged()
 		m_currentBlendState = desiredBlendState;
 
 		float blendFactor[4] = { 0.f, 0.f, 0.f, 0.f };
-		UINT  sampleMask     = 0xffffffff;
+		UINT sampleMask      = 0xffffffff;
 
 		m_d3dDeviceContext->OMSetBlendState(m_currentBlendState, blendFactor, sampleMask);
 	}
@@ -631,7 +638,7 @@ Shader* D3D11RenderBackend::CreateOrGetShader(char const* shaderName)
 	std::string shaderFilename = std::string(shaderName) + ".hlsl";
 
 	std::string shaderSource;
-	int         bytesRead = FileReadToString(shaderSource, shaderFilename);
+	int bytesRead = FileReadToString(shaderSource, shaderFilename);
 
 	GUARANTEE_OR_DIE(bytesRead > 0, Stringf("Failed to read shader file \"%s\"", shaderFilename.c_str()));
 
@@ -654,17 +661,19 @@ Texture* D3D11RenderBackend::CreateOrGetTexture(char const* imageFilePath)
 
 Texture* D3D11RenderBackend::CreateTextureFromImage(const Image& image)
 {
-	return CreateTextureFromData(image.GetImageFilePath().c_str(),
+	return CreateTextureFromData(
+		image.GetImageFilePath().c_str(),
 		image.GetDimensions(),
 		4,
 		(uint8_t*)image.GetRawData());
 }
 
-Texture* D3D11RenderBackend::CreateTextureFromData(
-	char const* name, IntVec2 dimensions, int bytesPerTexel, uint8_t* texelData)
+Texture*
+D3D11RenderBackend::CreateTextureFromData(char const* name, IntVec2 dimensions, int bytesPerTexel, uint8_t* texelData)
 {
 	// We only support RGBA8 format for now, so require 4 bytes per texel
-	GUARANTEE_OR_DIE(bytesPerTexel == 4,
+	GUARANTEE_OR_DIE(
+		bytesPerTexel == 4,
 		Stringf("CreateTextureFromData requires 4 bytes/texel (RGBA). Got %i for \"%s\"", bytesPerTexel, name));
 
 	D3D11_TEXTURE2D_DESC textureDesc = {};
@@ -746,13 +755,13 @@ void D3D11RenderBackend::DestroyTexture(Texture* texture)
 BitmapFont* D3D11RenderBackend::CreateOrGetBitmapFont(char const* fontFilePathNameWithNoExtension)
 {
 	std::string fontKey = std::string(fontFilePathNameWithNoExtension);
-	auto        found   = m_fontsByName.find(fontKey);
+	auto found          = m_fontsByName.find(fontKey);
 	if (found != m_fontsByName.end())
 	{
 		return found->second;
 	}
 
-	Texture*    fontTexture   = CreateOrGetTexture(Stringf("%s.png", fontFilePathNameWithNoExtension).c_str());
+	Texture* fontTexture      = CreateOrGetTexture(Stringf("%s.png", fontFilePathNameWithNoExtension).c_str());
 	BitmapFont* newBitmapFont = new BitmapFont(fontFilePathNameWithNoExtension, *fontTexture);
 	m_fontsByName[fontKey]    = newBitmapFont;
 	return newBitmapFont;
@@ -770,7 +779,7 @@ VertexBuffer* D3D11RenderBackend::CreateVertexBuffer(std::vector<Vertex> const& 
 		return nullptr;
 	}
 
-	unsigned int const  vertsSize    = static_cast<unsigned int>(verts.size()) * sizeof(Vertex);
+	unsigned int const vertsSize     = static_cast<unsigned int>(verts.size()) * sizeof(Vertex);
 	VertexBuffer* const vertexBuffer = CreateVertexBuffer(vertsSize, sizeof(Vertex));
 	CopyCPUToGPU(verts.data(), vertsSize, vertexBuffer);
 	return vertexBuffer;
@@ -900,7 +909,7 @@ Texture* D3D11RenderBackend::GetTextureFromFileName(char const* imageFilePath)
 	}
 
 	std::string filePath = std::string(imageFilePath);
-	auto        found    = m_texturesByName.find(filePath);
+	auto found           = m_texturesByName.find(filePath);
 	if (found != m_texturesByName.end())
 	{
 		return found->second;
@@ -949,14 +958,21 @@ Shader* D3D11RenderBackend::CreateShader(char const* shaderName, char const* sha
 		{ "COLOR", 0, DXGI_FORMAT_R8G8B8A8_UNORM, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 		{ "TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "BITANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "BITANGENT",
+		  0,
+		  DXGI_FORMAT_R32G32B32_FLOAT,
+		  0,
+		  D3D11_APPEND_ALIGNED_ELEMENT,
+		  D3D11_INPUT_PER_VERTEX_DATA,
+		  0 },
 		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 	};
 
-	D3D11_INPUT_ELEMENT_DESC const* inputElementDesc  = kPcutbnDesc;
-	UINT                            inputElementCount = (UINT)ARRAYSIZE(kPcutbnDesc);
+	D3D11_INPUT_ELEMENT_DESC const* inputElementDesc = kPcutbnDesc;
+	UINT inputElementCount                           = (UINT)ARRAYSIZE(kPcutbnDesc);
 
-	hr = m_d3dDevice->CreateInputLayout(inputElementDesc,
+	hr = m_d3dDevice->CreateInputLayout(
+		inputElementDesc,
 		inputElementCount,
 		vsByteCode.data(),
 		(UINT)vsByteCode.size(),
@@ -968,11 +984,12 @@ Shader* D3D11RenderBackend::CreateShader(char const* shaderName, char const* sha
 	return shader;
 }
 
-bool D3D11RenderBackend::CompileShaderToByteCode(std::vector<unsigned char>& outByteCode,
-	char const*                                                              name,
-	char const*                                                              source,
-	char const*                                                              entryPoint,
-	char const*                                                              target)
+bool D3D11RenderBackend::CompileShaderToByteCode(
+	std::vector<unsigned char>& outByteCode,
+	char const* name,
+	char const* source,
+	char const* entryPoint,
+	char const* target)
 {
 	if (source == nullptr || entryPoint == nullptr || target == nullptr)
 	{
@@ -989,7 +1006,8 @@ bool D3D11RenderBackend::CompileShaderToByteCode(std::vector<unsigned char>& out
 	ID3DBlob* shaderBlob = nullptr;
 	ID3DBlob* errorBlob  = nullptr;
 
-	HRESULT hr = D3DCompile(source,
+	HRESULT hr = D3DCompile(
+		source,
 		strlen(source),
 		name,
 		nullptr,
@@ -1033,15 +1051,15 @@ void D3D11RenderBackend::BindVertexBuffer(VertexBuffer* vertexBuffer)
 	if (vertexBuffer == nullptr)
 	{
 		ID3D11Buffer* nullBuf = nullptr;
-		UINT          stride  = 0;
-		UINT          offset  = 0;
+		UINT stride           = 0;
+		UINT offset           = 0;
 		m_d3dDeviceContext->IASetVertexBuffers(0, 1, &nullBuf, &stride, &offset);
 		return;
 	}
 
-	UINT          stride = vertexBuffer->GetStride();
-	UINT          offset = 0;
-	ID3D11Buffer* buf    = vertexBuffer->m_buffer;
+	UINT stride       = vertexBuffer->GetStride();
+	UINT offset       = 0;
+	ID3D11Buffer* buf = vertexBuffer->m_buffer;
 	m_d3dDeviceContext->IASetVertexBuffers(0, 1, &buf, &stride, &offset);
 }
 
@@ -1153,10 +1171,8 @@ void D3D11RenderBackend::ClearDepthStencil(Texture* depthTexture)
 		return;
 	}
 
-	m_d3dDeviceContext->ClearDepthStencilView(depthTexture->m_depthStencilView,
-		D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL,
-		1.0f,
-		0);
+	m_d3dDeviceContext
+		->ClearDepthStencilView(depthTexture->m_depthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 }
 
 void D3D11RenderBackend::BindRenderTargets(Texture* colorTarget, Texture* depthTarget, Texture* normalTarget)
@@ -1204,7 +1220,7 @@ void D3D11RenderBackend::DrawFullscreenTriangle(Shader* shader, wchar_t const* e
 
 void D3D11RenderBackend::UnbindAllShaderResourceViews()
 {
-	ID3D11RenderTargetView*   nullRTV      = nullptr;
+	ID3D11RenderTargetView* nullRTV        = nullptr;
 	ID3D11ShaderResourceView* nullSrvs[16] = { nullptr };
 	m_d3dDeviceContext->OMSetRenderTargets(0, nullptr, nullptr);
 	m_d3dDeviceContext->OMSetRenderTargets(1, &nullRTV, nullptr);
@@ -1216,16 +1232,19 @@ void D3D11RenderBackend::BindBackBuffer()
 {
 	m_d3dDeviceContext->OMSetRenderTargets(1, &m_d3dRenderTargetView, nullptr);
 }
-Texture* D3D11RenderBackend::CreateTextureInternal(char const* name,
-	IntVec2                                                    dimensions,
-	D3D11_TEXTURE2D_DESC const*                                textureDesc,
-	D3D11_SUBRESOURCE_DATA const*                              initialData,
-	D3D11_RENDER_TARGET_VIEW_DESC const*                       rtvDesc,
-	D3D11_SHADER_RESOURCE_VIEW_DESC const*                     srvDesc,
-	D3D11_DEPTH_STENCIL_VIEW_DESC const*                       dsvDesc)
+Texture* D3D11RenderBackend::CreateTextureInternal(
+	char const* name,
+	IntVec2 dimensions,
+	D3D11_TEXTURE2D_DESC const* textureDesc,
+	D3D11_SUBRESOURCE_DATA const* initialData,
+	D3D11_RENDER_TARGET_VIEW_DESC const* rtvDesc,
+	D3D11_SHADER_RESOURCE_VIEW_DESC const* srvDesc,
+	D3D11_DEPTH_STENCIL_VIEW_DESC const* dsvDesc)
 {
-	GUARANTEE_OR_DIE(dimensions.x > 0 && dimensions.y > 0,
-		Stringf("CreateTextureFromData failed for \"%s\" - illegal texture dimensions (%i x %i)",
+	GUARANTEE_OR_DIE(
+		dimensions.x > 0 && dimensions.y > 0,
+		Stringf(
+			"CreateTextureFromData failed for \"%s\" - illegal texture dimensions (%i x %i)",
 			name,
 			dimensions.x,
 			dimensions.y));

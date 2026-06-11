@@ -18,15 +18,15 @@ public:
 	// cannot leave raw instance or light pointers in the Viewport.
 	void RegisterVisualizeInstance(VisualizeInstance3D* visualizeInstance);
 	void UnregisterVisualizeInstance(VisualizeInstance3D* visualizeInstance);
+
 	void RegisterLight(Light3D* light);
 	void UnregisterLight(Light3D* light);
 
-	void SetWorldCamera(Camera3D* camera);
-	void SetUICamera(Camera3D* camera);
-	void SetOutputResolution(IntVec2 dimensions);
-
+	void RegisterWorldCamera(Camera3D* camera);
+	void UnregisterWorldCamera(Camera3D* camera);
 	Camera3D* GetWorldCamera() const;
-	Camera3D* GetUICamera() const;
+
+	void SetOutputResolution(IntVec2 dimensions);
 	IntVec2 GetOutputResolution() const;
 
 	// Per-frame preparation:
@@ -46,12 +46,9 @@ private:
 	std::vector<NodeHandle> m_instances;
 	std::vector<NodeHandle> m_lights;
 
+	std::vector<NodeHandle> m_worldCameraInstances;
 	NodeHandle m_worldCameraHandle = NodeHandle::Invalid;
-	NodeHandle m_uiCameraHandle    = NodeHandle::Invalid;
-
-	// Transient data used during PrepareRenderData
 	CameraContext m_tmpWorldCamera;
-	CameraContext m_tmpUICamera;
 
 	ViewportInfo m_viewportInfo;
 };

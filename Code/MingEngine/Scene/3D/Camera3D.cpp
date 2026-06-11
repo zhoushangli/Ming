@@ -1,6 +1,6 @@
 #include "MingEngine/Scene/3D/Camera3D.hpp"
 
-#include "Camera3D.hpp"
+#include "MingEngine/Scene/Core/Viewport.hpp"
 #include "MingEngine/Scene/SceneCommon.hpp"
 
 Camera3D::Camera3D(float fovDegrees, float nearClip, float farClip)
@@ -26,6 +26,10 @@ void Camera3D::BindMethods()
 	ADD_PROPERTY(PropertyInfo(Variant::Type::Float, "fov_degrees", usage), "SetFovDegrees", "GetFovDegrees");
 	ADD_PROPERTY(PropertyInfo(Variant::Type::Float, "size", usage), "SetSize", "GetSize");
 }
+
+void Camera3D::OnEnterTree() { m_data.m_viewport->RegisterWorldCamera(this); }
+
+void Camera3D::OnExitTree() { m_data.m_viewport->UnregisterWorldCamera(this); }
 
 CameraContext Camera3D::GetCamera(float aspect) const
 {

@@ -11,19 +11,28 @@ struct EditorUIContext;
 
 class EditorUI
 {
+private:
+	struct WarningData
+	{
+		std::string m_title;
+		std::string m_message;
+	};
+
 public:
 	void Render(EditorUIContext& context);
 
-	template<typename TPanel>
+	void Warning(std::string const& title, std::string const& message);
+
+	template <typename TPanel>
 	TPanel& GetPanel();
 
-	template<typename TPanel>
+	template <typename TPanel>
 	void OpenPanel(typename TPanel::Data const& data)
 	{
 		GetPanel<TPanel>().Open(data);
 	}
 
-	template<typename TPanel>
+	template <typename TPanel>
 	void ClosePanel()
 	{
 		GetPanel<TPanel>().Close();
@@ -32,47 +41,51 @@ public:
 private:
 	void RenderMainMenuBar();
 	void RenderDockSpace();
+	void RenderWarningPopup();
 
 private:
-	ScenePanel      m_scenePanel;
+	ScenePanel m_scenePanel;
 	CreateNodePanel m_createNodePanel;
 	FileSystemPanel m_fileSystemPanel;
-	ViewportPanel   m_viewportPanel;
-	InspectorPanel  m_inspectorPanel;
-	OutputPanel     m_outputPanel;
+	ViewportPanel m_viewportPanel;
+	InspectorPanel m_inspectorPanel;
+	OutputPanel m_outputPanel;
+
+	bool m_showWarningPopup = false;
+	WarningData m_warningData;
 };
 
-template<>
+template <>
 inline ScenePanel& EditorUI::GetPanel<ScenePanel>()
 {
 	return m_scenePanel;
 }
 
-template<>
+template <>
 inline CreateNodePanel& EditorUI::GetPanel<CreateNodePanel>()
 {
 	return m_createNodePanel;
 }
 
-template<>
+template <>
 inline FileSystemPanel& EditorUI::GetPanel<FileSystemPanel>()
 {
 	return m_fileSystemPanel;
 }
 
-template<>
+template <>
 inline ViewportPanel& EditorUI::GetPanel<ViewportPanel>()
 {
 	return m_viewportPanel;
 }
 
-template<>
+template <>
 inline InspectorPanel& EditorUI::GetPanel<InspectorPanel>()
 {
 	return m_inspectorPanel;
 }
 
-template<>
+template <>
 inline OutputPanel& EditorUI::GetPanel<OutputPanel>()
 {
 	return m_outputPanel;

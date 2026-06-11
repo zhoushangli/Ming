@@ -159,9 +159,6 @@
     <ClCompile Include="Engine\Core\XmlUtils.cpp">
       <Filter>Engine\Core</Filter>
     </ClCompile>
-    <ClCompile Include="Editor\EditorApplication.cpp">
-      <Filter>Editor</Filter>
-    </ClCompile>
     <ClCompile Include="Editor\EditorController.cpp">
       <Filter>Editor</Filter>
     </ClCompile>
@@ -524,9 +521,6 @@
     <ClInclude Include="Engine\Core\XmlUtils.hpp">
       <Filter>Engine\Core</Filter>
     </ClInclude>
-    <ClInclude Include="Editor\EditorApplication.hpp">
-      <Filter>Editor</Filter>
-    </ClInclude>
     <ClInclude Include="Editor\EditorController.hpp">
       <Filter>Editor</Filter>
     </ClInclude>
@@ -887,15 +881,29 @@
     <ClInclude Include="Scene\Core\MethodBind.hpp">
       <Filter>Scene\Core</Filter>
     </ClInclude>
-    <ClInclude Include="Editor\UI\InspectorProperty.hpp" />
-    <ClInclude Include="Editor\UI\InspectorPropertyBool.hpp" />
-    <ClInclude Include="Editor\UI\InspectorPropertyEuler.hpp" />
-    <ClInclude Include="Editor\UI\InspectorPropertyFloat.hpp" />
-    <ClInclude Include="Editor\UI\InspectorPropertyInt.hpp" />
-    <ClInclude Include="Editor\UI\InspectorPropertyString.hpp" />
-    <ClInclude Include="Editor\UI\InspectorPropertyVec3.hpp" />
     <ClInclude Include="Editor\Gizmos\GizmosShapes.hpp">
       <Filter>Editor\Gizmos</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\UI\InspectorPropertyVec3.hpp">
+      <Filter>Editor\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\UI\InspectorProperty.hpp">
+      <Filter>Editor\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\UI\InspectorPropertyBool.hpp">
+      <Filter>Editor\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\UI\InspectorPropertyEuler.hpp">
+      <Filter>Editor\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\UI\InspectorPropertyFloat.hpp">
+      <Filter>Editor\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\UI\InspectorPropertyInt.hpp">
+      <Filter>Editor\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\UI\InspectorPropertyString.hpp">
+      <Filter>Editor\UI</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

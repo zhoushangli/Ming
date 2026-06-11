@@ -73,7 +73,6 @@ public:
 	// 2) Renderer creates and resizes the GPU textures below.
 	// 3) All transient data and GPU resources belong to this Viewport only.
 	CameraContext* m_worldCamera;
-	CameraContext* m_uiCamera;
 
 	// output resolution indicates the size of the render target
 	// output rect indicates the portion of the render target to render to

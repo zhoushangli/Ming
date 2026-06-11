@@ -337,7 +337,6 @@
     <ClCompile Include="Engine\Render\Vertex.cpp" />
     <ClCompile Include="Engine\Render\VertexUtils.cpp" />
     <ClCompile Include="Engine\Core\XmlUtils.cpp" />
-    <ClCompile Include="Editor\EditorApplication.cpp" />
     <ClCompile Include="Editor\EditorController.cpp" />
     <ClCompile Include="Editor\EditorNode.cpp" />
     <ClCompile Include="Editor\UI\CreateNodePanel.cpp" />
@@ -460,7 +459,6 @@
     <ClInclude Include="Engine\Render\Vertex.hpp" />
     <ClInclude Include="Engine\Render\VertexUtils.hpp" />
     <ClInclude Include="Engine\Core\XmlUtils.hpp" />
-    <ClInclude Include="Editor\EditorApplication.hpp" />
     <ClInclude Include="Editor\EditorController.hpp" />
     <ClInclude Include="Editor\EditorNode.hpp" />
     <ClInclude Include="Editor\UI\CreateNodePanel.hpp" />

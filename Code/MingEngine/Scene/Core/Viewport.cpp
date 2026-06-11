@@ -12,6 +12,7 @@
 #include "MingEngine/Engine/Render/Renderer.hpp"
 #include "MingEngine/Engine/Window/Window.hpp"
 
+#include "Viewport.hpp"
 #include <algorithm>
 
 Viewport::Viewport()
@@ -105,26 +106,55 @@ void Viewport::UnregisterLight(Light3D* light)
 	}
 }
 
-void Viewport::SetWorldCamera(Camera3D* camera)
+void Viewport::RegisterWorldCamera(Camera3D* camera)
 {
-	m_worldCameraHandle = camera != nullptr ? camera->GetHandle() : NodeHandle::Invalid;
+	if (camera == nullptr)
+	{
+		return;
+	}
+
+	NodeHandle handle = camera->GetHandle();
+	if (!handle.IsValid())
+	{
+		return;
+	}
+
+	if (std::find(m_worldCameraInstances.begin(), m_worldCameraInstances.end(), handle) == m_worldCameraInstances.end())
+	{
+		m_worldCameraInstances.push_back(handle);
+
+		if (m_worldCameraHandle == NodeHandle::Invalid)
+		{
+			m_worldCameraHandle = handle;
+		}
+	}
 }
 
-void Viewport::SetUICamera(Camera3D* camera)
+void Viewport::UnregisterWorldCamera(Camera3D* camera)
 {
-	m_uiCameraHandle = camera != nullptr ? camera->GetHandle() : NodeHandle::Invalid;
+	if (camera == nullptr)
+	{
+		return;
+	}
+
+	NodeHandle handle      = camera->GetHandle();
+	auto const foundCamera = std::find(m_worldCameraInstances.begin(), m_worldCameraInstances.end(), handle);
+	if (foundCamera != m_worldCameraInstances.end())
+	{
+		m_worldCameraInstances.erase(foundCamera);
+
+		if (m_worldCameraHandle == handle)
+		{
+			m_worldCameraHandle = m_worldCameraInstances.empty() ? NodeHandle::Invalid : m_worldCameraInstances.front();
+		}
+	}
 }
 
 Camera3D* Viewport::GetWorldCamera() const
 {
 	SceneTree* sceneTree = GetSceneTree();
-	return sceneTree != nullptr ? dynamic_cast<Camera3D*>(sceneTree->ResolveNode(m_worldCameraHandle)) : nullptr;
-}
-
-Camera3D* Viewport::GetUICamera() const
-{
-	SceneTree* sceneTree = GetSceneTree();
-	return sceneTree != nullptr ? dynamic_cast<Camera3D*>(sceneTree->ResolveNode(m_uiCameraHandle)) : nullptr;
+	Camera3D* camera     = dynamic_cast<Camera3D*>(sceneTree->ResolveNode(m_worldCameraHandle));
+	return camera;
 }
 
 IntVec2 Viewport::GetOutputResolution() const { return m_viewportInfo.m_outputResolution; }
@@ -143,12 +173,6 @@ void Viewport::SetOutputResolution(IntVec2 dimensions)
 
 	m_viewportInfo.m_outputResolution = dimensions;
 	m_viewportInfo.m_outputRect       = AABB2(Vec2::Zero, (Vec2)dimensions);
-
-	Camera3D* uiCamera = GetUICamera();
-	if (uiCamera != nullptr)
-	{
-		uiCamera->SetSize((float)dimensions.y);
-	}
 
 	g_engine->m_renderer->ResizeViewport(m_viewportInfo, dimensions);
 }
@@ -171,18 +195,11 @@ void Viewport::PrepareRenderData()
 	// 1) CameraContext pointers are transient because NodeHandles may change after reparenting.
 	float aspect                 = m_viewportInfo.m_outputResolution.x / (float)m_viewportInfo.m_outputResolution.y;
 	Camera3D* worldCamera        = GetWorldCamera();
-	Camera3D* uiCamera           = GetUICamera();
 	m_viewportInfo.m_worldCamera = nullptr;
-	m_viewportInfo.m_uiCamera    = nullptr;
 	if (worldCamera != nullptr)
 	{
 		m_tmpWorldCamera             = worldCamera->GetCamera(aspect);
 		m_viewportInfo.m_worldCamera = &m_tmpWorldCamera;
-	}
-	if (uiCamera != nullptr)
-	{
-		m_tmpUICamera             = uiCamera->GetCamera(aspect);
-		m_viewportInfo.m_uiCamera = &m_tmpUICamera;
 	}
 
 	// 2) Requests and lights describe only the current frame.

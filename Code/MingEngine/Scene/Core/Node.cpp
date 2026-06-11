@@ -26,14 +26,14 @@ Node* Node::GetRoot() const
 	return current;
 }
 
-Node*                     Node::GetParent() const { return m_data.m_parent; }
-SceneTree*                Node::GetSceneTree() const { return m_data.m_sceneTree; }
-NodeHandle                Node::GetHandle() const { return m_data.m_handle; }
+Node* Node::GetParent() const { return m_data.m_parent; }
+SceneTree* Node::GetSceneTree() const { return m_data.m_sceneTree; }
+NodeHandle Node::GetHandle() const { return m_data.m_handle; }
 std::vector<Node*> const& Node::GetChildren() const { return m_data.m_children; }
-std::string const&        Node::GetName() const { return m_data.m_name; }
-bool                      Node::GetSerializable() const { return m_data.m_isSerializable; }
-bool                      Node::GetReady() const { return m_data.m_enableReady; }
-bool                      Node::GetProcess() const { return m_data.m_enableProcess; }
+std::string const& Node::GetName() const { return m_data.m_name; }
+bool Node::GetSerializable() const { return m_data.m_isSerializable; }
+bool Node::GetReady() const { return m_data.m_enableReady; }
+bool Node::GetProcess() const { return m_data.m_enableProcess; }
 
 void Node::SetName(std::string const& name) { m_data.m_name = name; }
 void Node::SetSerializable(bool isSerializable) { m_data.m_isSerializable = isSerializable; }
@@ -143,9 +143,8 @@ void Node::BindMethods()
 	ClassDatabase::BindMethod("SetProcess", &Node::SetProcess);
 	ClassDatabase::BindMethod("GetProcess", &Node::GetProcess);
 
-	ADD_PROPERTY(PropertyInfo(Variant::Type::String,
-					 "name",
-					 PropertyInfo::UsageFlags::Inspector),
+	ADD_PROPERTY(
+		PropertyInfo(Variant::Type::String, "name", PropertyInfo::UsageFlags::Inspector),
 		"SetName",
 		"GetName");
 }
@@ -218,7 +217,7 @@ void Node::PropagateEnterTree()
 {
 	// 1) Set tree and viewport from parent
 	// sceneTree root do not have parent, so it will keep itself
-	Node*              parent   = m_data.m_parent;
+	Node* parent                = m_data.m_parent;
 	std::vector<Node*> children = m_data.m_children;
 	if (parent != nullptr)
 	{
@@ -274,11 +273,6 @@ void Node::PropagateExitTree()
 
 void Node::PropagateReady()
 {
-	if (!m_data.m_enableReady)
-	{
-		return;
-	}
-
 	std::vector<Node*> children = m_data.m_children;
 
 	for (Node* child : children)
@@ -289,7 +283,10 @@ void Node::PropagateReady()
 		}
 	}
 
-	OnReady();
+	if (m_data.m_enableReady)
+	{
+		OnReady();
+	}
 }
 
 void Node::OnEnterTree() {}

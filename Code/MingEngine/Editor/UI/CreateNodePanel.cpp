@@ -1,6 +1,7 @@
 #include "MingEngine/Editor/UI/CreateNodePanel.hpp"
 
 #include "MingEngine/Editor/EditorNode.hpp"
+#include "MingEngine/Editor/UI/EditorUI.hpp"
 #include "MingEngine/Editor/UI/EditorUIContext.hpp"
 #include "MingEngine/Scene/Core/Node.hpp"
 #include "MingEngine/Scene/Core/SceneTree.hpp"
@@ -78,7 +79,7 @@ void CreateNodePanel::OnRender(EditorUIContext& context)
 		{ return a != nullptr && b != nullptr && a->m_className < b->m_className; });
 
 	std::map<std::string, std::vector<ClassInfo const*>> childrenByClass;
-	ClassInfo const* nodeClass = nullptr;
+	ClassInfo const*                                     nodeClass = nullptr;
 	for (ClassInfo const* classInfo : classes)
 	{
 		if (classInfo == nullptr)
@@ -144,10 +145,10 @@ void CreateNodePanel::OnRender(EditorUIContext& context)
 }
 
 bool CreateNodePanel::RenderClassNode(
-	ClassInfo const* classInfo,
+	ClassInfo const*                                            classInfo,
 	std::map<std::string, std::vector<ClassInfo const*>> const& childrenByClass,
-	std::string const& filterText,
-	EditorUIContext& context)
+	std::string const&                                          filterText,
+	EditorUIContext&                                            context)
 {
 	if (classInfo == nullptr || !DoesClassBranchMatch(classInfo, childrenByClass, filterText))
 	{
@@ -213,9 +214,9 @@ bool CreateNodePanel::RenderClassNode(
 }
 
 bool CreateNodePanel::DoesClassBranchMatch(
-	ClassInfo const* classInfo,
+	ClassInfo const*                                            classInfo,
 	std::map<std::string, std::vector<ClassInfo const*>> const& childrenByClass,
-	std::string const& filterText) const
+	std::string const&                                          filterText) const
 {
 	if (classInfo == nullptr)
 	{
@@ -249,7 +250,7 @@ bool CreateNodePanel::CreateSelectedNode(EditorUIContext& context)
 	}
 
 	Object* object = ClassDatabase::CreateInstance(m_selectedClass);
-	Node* node     = dynamic_cast<Node*>(object);
+	Node*   node   = dynamic_cast<Node*>(object);
 	if (node == nullptr)
 	{
 		delete object;
@@ -295,10 +296,17 @@ Node* CreateNodePanel::ResolveCreateParent(EditorUIContext const& context) const
 
 	// Resolve at creation time because the context node may disappear while the modal is open.
 	Node* parent = context.m_sceneTree->ResolveNode(m_parentHandle);
-	if (parent == nullptr || !parent->GetSerializable())
+	if (parent == nullptr)
 	{
 		return nullptr;
 	}
+
+	if (!parent->GetSerializable())
+	{
+		EditorNode::Get()->m_editorUI->Warning("Cannot Create Node", "Cannot add a child to a non-serializable node.");
+		return nullptr;
+	}
+
 	return parent;
 }
 

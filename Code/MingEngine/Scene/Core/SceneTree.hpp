@@ -38,7 +38,6 @@ public:
 
 	Node* ResolveNode(NodeHandle handle) const;
 
-	void      SetWorldCamera(Camera3D* camera);
 	void      SetUICamera(Camera3D* camera);
 	Camera3D* GetWorldCamera() const;
 	Camera3D* GetUICamera() const;

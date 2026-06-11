@@ -183,19 +183,7 @@ void SceneTree::ChangeScene(Node* newSceneNode)
 	m_sceneHandle = newSceneNode->GetHandle();
 }
 
-void SceneTree::SetWorldCamera(Camera3D* camera)
-{
-	m_root->SetWorldCamera(camera);
-}
-
-void SceneTree::SetUICamera(Camera3D* camera)
-{
-	m_root->SetUICamera(camera);
-}
-
 Camera3D* SceneTree::GetWorldCamera() const { return m_root->GetWorldCamera(); }
-
-Camera3D* SceneTree::GetUICamera() const { return m_root->GetUICamera(); }
 
 GameRaycastResult SceneTree::Raycast(RaycastInfo const& info) const
 {

@@ -2,18 +2,14 @@
 
 #include "MingEngine/Engine/Event/EventSystem.hpp"
 
-class AppStateMachine;
+class Clock;
+class EditorController;
 class Node;
-
-enum class MingRunMode
-{
-	Editor,
-};
+class SceneTree;
 
 struct MingRunConfig
 {
-	MingRunMode m_mode         = MingRunMode::Editor;
-	float       m_windowAspect = 16.f / 9.f;
+	float m_windowAspect = 16.f / 9.f;
 };
 
 class IProjectModule
@@ -22,9 +18,9 @@ public:
 	virtual ~IProjectModule() = default;
 
 	virtual char const* GetProjectName() const = 0;
-	virtual void        RegisterTypes()        = 0;
-	virtual void        Startup() {}
-	virtual void        Shutdown() {}
+	virtual void RegisterTypes()               = 0;
+	virtual void Startup() {}
+	virtual void Shutdown() {}
 };
 
 namespace MingEngine
@@ -55,14 +51,22 @@ private:
 	void BeginFrame();
 	void EndFrame();
 	void RestartImmediately();
+	void StartupScene();
+	void ShutdownScene();
 
 private:
 	bool m_shouldRestart = false;
 	bool m_shouldQuit    = false;
 
-	AppStateMachine* m_stateMachine = nullptr;
-	IProjectModule&  m_project;
-	MingRunConfig    m_runConfig;
+	Clock*          m_clock     = nullptr;
+	SceneTree*      m_sceneTree = nullptr;
+	IProjectModule& m_project;
+	MingRunConfig   m_runConfig;
+
+#if defined(MING_EDITOR)
+	EditorController* m_editorController = nullptr;
+	bool              m_isSlowMode       = false;
+#endif
 };
 
 extern App* g_app;

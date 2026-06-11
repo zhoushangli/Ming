@@ -17,7 +17,8 @@ namespace
 std::string ToLower(std::string const& text)
 {
 	std::string lowerText = text;
-	std::transform(lowerText.begin(),
+	std::transform(
+		lowerText.begin(),
 		lowerText.end(),
 		lowerText.begin(),
 		[](unsigned char character) { return static_cast<char>(std::tolower(character)); });
@@ -47,7 +48,9 @@ void ScenePanel::OnRender(EditorUIContext& context)
 	}
 
 	// If the user right-clicks on the window, show the context menu
-	if (ImGui::BeginPopupContextWindow("ScenePanelContext"))
+	if (ImGui::BeginPopupContextWindow(
+			"ScenePanelContext",
+			ImGuiPopupFlags_MouseButtonRight | ImGuiPopupFlags_NoOpenOverItems))
 	{
 		if (ImGui::MenuItem("Add Child Node..."))
 		{
@@ -95,7 +98,7 @@ void ScenePanel::OnRender(EditorUIContext& context)
 
 void ScenePanel::RenderNode(Node* node, std::string const& filterText, EditorUIContext& context)
 {
-	if (node == nullptr || !node->GetSerializable() || !DoesNodeMatchFilter(node, filterText))
+	if (node == nullptr || !DoesNodeMatchFilter(node, filterText))
 	{
 		return;
 	}
@@ -103,7 +106,7 @@ void ScenePanel::RenderNode(Node* node, std::string const& filterText, EditorUIC
 	bool hasVisibleChildren = false;
 	for (Node const* child : node->GetChildren())
 	{
-		if (child != nullptr && child->GetSerializable() && DoesNodeMatchFilter(child, filterText))
+		if (child != nullptr && DoesNodeMatchFilter(child, filterText))
 		{
 			hasVisibleChildren = true;
 			break;
@@ -189,7 +192,7 @@ void ScenePanel::RenderNode(Node* node, std::string const& filterText, EditorUIC
 
 bool ScenePanel::DoesNodeMatchFilter(Node const* node, std::string const& filterText) const
 {
-	if (node == nullptr || !node->GetSerializable())
+	if (node == nullptr)
 	{
 		return false;
 	}

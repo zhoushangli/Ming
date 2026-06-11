@@ -13,8 +13,8 @@ class EditorSelection
 {
 public:
 	NodeHandle GetSelected() const;
-	void SetSelected(NodeHandle handle);
-	void Clear();
+	void       SetSelected(NodeHandle handle);
+	void       Clear();
 
 private:
 	NodeHandle m_selectedNodeHandle = NodeHandle::Invalid;
@@ -30,7 +30,7 @@ public:
 
 	static EditorNode* Get();
 
-	EditorSelection& GetSelection();
+	EditorSelection&       GetSelection();
 	EditorSelection const& GetSelection() const;
 
 	void SetActiveCamera(Camera3D* camera);
@@ -45,11 +45,12 @@ private:
 
 	void SaveSceneToFile(Node const* sceneRoot, std::string const& filename);
 
-private:
+public:
 	EditorSelection m_selection;
-	EditorGizmos* m_editorGizmos = nullptr;
-	EditorUI* m_editorUI         = nullptr;
-	Camera3D* m_activeCamera     = nullptr;
+	EditorGizmos*   m_editorGizmos = nullptr;
+	EditorUI*       m_editorUI     = nullptr;
+	Camera3D*       m_activeCamera = nullptr;
 
+private:
 	static EditorNode* s_instance;
 };

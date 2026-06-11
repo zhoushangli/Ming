@@ -27,8 +27,8 @@ public:
 	NodeHandle Raycast(Camera3D const& camera, Vec2 screenPos) const;
 
 private:
-	EditorWorldGrid3D* m_worldGrid          = nullptr;
-	EditorWorldAxis3D* m_worldAxis          = nullptr;
+	EditorWorldGrid3D* m_worldGrid         = nullptr;
+	EditorWorldAxis3D* m_worldAxis         = nullptr;
 	TransformGizmo3D* m_transformGizmo     = nullptr;
 	ViewportAxisIndicator* m_axisIndicator = nullptr;
 };
