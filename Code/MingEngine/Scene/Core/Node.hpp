@@ -2,6 +2,7 @@
 
 #include "MingEngine/Scene/Core/ClassDatabase.hpp"
 #include "MingEngine/Scene/Core/NodeHandle.hpp"
+#include "MingEngine/Scene/Core/NodePath.hpp"
 #include "MingEngine/Scene/Core/Object.hpp"
 
 #include "MingEngine/Engine/Application/Engine.hpp"
@@ -44,6 +45,7 @@ public:
 	void SetProcess(bool isProcess);
 
 	Node* FindChildByName(std::string const& name) const;
+	Node* GetNode(NodePath const& path) const;
 
 	SceneTree* GetSceneTree() const;
 
@@ -58,6 +60,8 @@ public:
 	static void BindMethods();
 
 protected:
+	std::string EnsureUniqueName(std::string const& requestedName) const;
+
 	// Lifecycle callbacks:
 	// 1) OnEnterTree is called after this node receives a SceneTree and NodeHandle.
 	// 2) OnExitTree is called before this node unregisters from its SceneTree.

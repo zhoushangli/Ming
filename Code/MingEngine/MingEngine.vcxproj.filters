@@ -465,6 +465,9 @@
     <ClCompile Include="Editor\Gizmos\GizmosShapes.cpp">
       <Filter>Editor\Gizmos</Filter>
     </ClCompile>
+    <ClCompile Include="Scene\Core\NodePath.cpp">
+      <Filter>Scene\Core</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Engine\Core\Clock.hpp">
@@ -765,6 +768,9 @@
       <Filter>Scene\Core</Filter>
     </ClInclude>
     <ClInclude Include="Scene\Core\Node.hpp">
+      <Filter>Scene\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\Core\NodePath.hpp">
       <Filter>Scene\Core</Filter>
     </ClInclude>
     <ClInclude Include="Scene\Core\NodeHandle.hpp">

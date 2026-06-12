@@ -11,6 +11,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cstring>
 
 namespace
 {
@@ -38,6 +39,12 @@ void ScenePanel::OnRender(EditorUIContext& context)
 	m_pendingReparent.Clear();
 
 	ImGui::Begin(GetTitle(), GetOpenState());
+	if (context.m_sceneTree == nullptr
+		|| (m_renamingNode.IsValid() && context.m_sceneTree->ResolveNode(m_renamingNode) == nullptr))
+	{
+		ClearRename();
+	}
+
 	ImGui::InputTextWithHint("##FilterNodes", "Filter Nodes", m_filter, sizeof(m_filter));
 	ImGui::Separator();
 
@@ -76,6 +83,10 @@ void ScenePanel::OnRender(EditorUIContext& context)
 
 		if (selectedNode)
 		{
+			if (selectedHandle == m_renamingNode)
+			{
+				ClearRename();
+			}
 			selectedNode->DeleteNode();
 		}
 	}
@@ -132,16 +143,56 @@ void ScenePanel::RenderNode(Node* node, std::string const& filterText, EditorUIC
 	ImGui::PushID(static_cast<int>(handle.GetIndex()));
 
 	std::string const displayName = node->GetName().empty() ? node->GetClassName() : node->GetName();
-	bool const        isOpen      = ImGui::TreeNodeEx(displayName.c_str(), flags);
+	bool const        isRenaming  = m_renamingNode == handle;
+	bool const        isOpen      = ImGui::TreeNodeEx(isRenaming ? "##RenamingNode" : displayName.c_str(), flags);
+	bool const        treeClicked = ImGui::IsItemClicked(ImGuiMouseButton_Left);
+	bool const        treeDoubleClicked =
+		ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left);
 
 	// If the item is clicked, select the node
-	if (ImGui::IsItemClicked(ImGuiMouseButton_Left) && context.m_selection != nullptr)
+	if (treeClicked && context.m_selection != nullptr)
 	{
 		context.m_selection->SetSelected(handle);
 	}
 
+	if (treeDoubleClicked && !isRenaming)
+	{
+		BeginRename(node);
+		if (context.m_selection != nullptr)
+		{
+			context.m_selection->SetSelected(handle);
+		}
+	}
+
+	if (isRenaming)
+	{
+		ImGui::SameLine();
+		ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+		if (m_focusRenameInput)
+		{
+			ImGui::SetKeyboardFocusHere();
+			m_focusRenameInput = false;
+		}
+
+		bool const submitted = ImGui::InputText(
+			"##NodeName",
+			m_renameBuffer,
+			sizeof(m_renameBuffer),
+			ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll);
+		bool const cancelled = ImGui::IsItemActive() && ImGui::IsKeyPressed(ImGuiKey_Escape);
+		bool const deactivated = ImGui::IsItemDeactivated();
+		if (cancelled)
+		{
+			FinishRename(node, false);
+		}
+		else if (submitted || deactivated)
+		{
+			FinishRename(node, true);
+		}
+	}
+
 	// If the item is dragged, start a drag and drop operation
-	if (ImGui::BeginDragDropSource())
+	if (!isRenaming && ImGui::BeginDragDropSource())
 	{
 		ImGui::SetDragDropPayload("SCENE_NODE", &handle, sizeof(handle));
 
@@ -149,7 +200,7 @@ void ScenePanel::RenderNode(Node* node, std::string const& filterText, EditorUIC
 		ImGui::EndDragDropSource();
 	}
 
-	if (ImGui::BeginDragDropTarget())
+	if (!isRenaming && ImGui::BeginDragDropTarget())
 	{
 		if (ImGuiPayload const* payload = ImGui::AcceptDragDropPayload("SCENE_NODE"))
 		{
@@ -210,4 +261,34 @@ bool ScenePanel::DoesNodeMatchFilter(Node const* node, std::string const& filter
 		}
 	}
 	return false;
+}
+
+void ScenePanel::BeginRename(Node* node)
+{
+	if (node == nullptr)
+	{
+		return;
+	}
+
+	m_renamingNode  = node->GetHandle();
+	m_originalName  = node->GetName();
+	m_focusRenameInput = true;
+	strncpy_s(m_renameBuffer, m_originalName.c_str(), sizeof(m_renameBuffer) - 1);
+}
+
+void ScenePanel::FinishRename(Node* node, bool apply)
+{
+	if (node != nullptr)
+	{
+		node->SetName(apply ? m_renameBuffer : m_originalName);
+	}
+	ClearRename();
+}
+
+void ScenePanel::ClearRename()
+{
+	m_renamingNode = NodeHandle::Invalid;
+	m_originalName.clear();
+	m_renameBuffer[0] = '\0';
+	m_focusRenameInput = false;
 }

@@ -105,6 +105,7 @@ private:
 		float labelValueGap,
 		float barHeight)
 	{
+		barHeight;
 		float const groupX = barPos.x + index * (groupWidth + groupGap);
 		float const groupY = barPos.y;
 

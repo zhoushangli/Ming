@@ -404,6 +404,7 @@
     <ClCompile Include="Scene\3D\Node3D.cpp" />
     <ClCompile Include="Scene\3D\Particles3D.cpp" />
     <ClCompile Include="Scene\Core\MethodBind.cpp" />
+    <ClCompile Include="Scene\Core\NodePath.cpp" />
     <ClCompile Include="Scene\Core\Variant.cpp" />
     <ClCompile Include="Scene\Physics\AABBCollider3D.cpp" />
     <ClCompile Include="Scene\Physics\CapsuleCollider3D.cpp" />
@@ -551,6 +552,7 @@
     <ClInclude Include="Scene\Import\OBJLoader.hpp" />
     <ClInclude Include="Scene\Core\ClassDatabase.hpp" />
     <ClInclude Include="Scene\Core\Node.hpp" />
+    <ClInclude Include="Scene\Core\NodePath.hpp" />
     <ClInclude Include="Scene\Core\NodeHandle.hpp" />
     <ClInclude Include="Scene\Core\Object.hpp" />
     <ClInclude Include="Scene\Core\PackedScene.hpp" />

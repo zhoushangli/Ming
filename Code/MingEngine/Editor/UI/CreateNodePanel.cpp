@@ -268,7 +268,7 @@ bool CreateNodePanel::CreateSelectedNode(EditorUIContext& context)
 	{
 		parent = sceneRoot;
 	}
-	node->SetName(MakeUniqueNodeName(parent, m_selectedClass));
+	node->SetName(m_selectedClass);
 
 	if (sceneRoot == nullptr)
 	{
@@ -308,38 +308,6 @@ Node* CreateNodePanel::ResolveCreateParent(EditorUIContext const& context) const
 	}
 
 	return parent;
-}
-
-std::string CreateNodePanel::MakeUniqueNodeName(Node const* parent, std::string const& className) const
-{
-	auto hasSiblingWithName = [parent](std::string const& name)
-	{
-		if (parent == nullptr)
-		{
-			return false;
-		}
-		for (Node const* child : parent->GetChildren())
-		{
-			if (child != nullptr && child->GetName() == name)
-			{
-				return true;
-			}
-		}
-		return false;
-	};
-
-	if (!hasSiblingWithName(className))
-	{
-		return className;
-	}
-	for (int suffix = 2;; ++suffix)
-	{
-		std::string const candidate = className + std::to_string(suffix);
-		if (!hasSiblingWithName(candidate))
-		{
-			return candidate;
-		}
-	}
 }
 
 void CreateNodePanel::Reset()

@@ -6,6 +6,9 @@
 
 #include "MingEngine/Engine/Core/ErrorWarningAssert.hpp"
 
+#include <cctype>
+#include <exception>
+
 Node::~Node()
 {
 	for (Node* child : m_data.m_children)
@@ -26,16 +29,16 @@ Node* Node::GetRoot() const
 	return current;
 }
 
-Node* Node::GetParent() const { return m_data.m_parent; }
-SceneTree* Node::GetSceneTree() const { return m_data.m_sceneTree; }
-NodeHandle Node::GetHandle() const { return m_data.m_handle; }
+Node*                     Node::GetParent() const { return m_data.m_parent; }
+SceneTree*                Node::GetSceneTree() const { return m_data.m_sceneTree; }
+NodeHandle                Node::GetHandle() const { return m_data.m_handle; }
 std::vector<Node*> const& Node::GetChildren() const { return m_data.m_children; }
-std::string const& Node::GetName() const { return m_data.m_name; }
-bool Node::GetSerializable() const { return m_data.m_isSerializable; }
-bool Node::GetReady() const { return m_data.m_enableReady; }
-bool Node::GetProcess() const { return m_data.m_enableProcess; }
+std::string const&        Node::GetName() const { return m_data.m_name; }
+bool                      Node::GetSerializable() const { return m_data.m_isSerializable; }
+bool                      Node::GetReady() const { return m_data.m_enableReady; }
+bool                      Node::GetProcess() const { return m_data.m_enableProcess; }
 
-void Node::SetName(std::string const& name) { m_data.m_name = name; }
+void Node::SetName(std::string const& name) { m_data.m_name = EnsureUniqueName(name); }
 void Node::SetSerializable(bool isSerializable) { m_data.m_isSerializable = isSerializable; }
 void Node::SetReady(bool isReady) { m_data.m_enableReady = isReady; }
 void Node::SetProcess(bool isProcess) { m_data.m_enableProcess = isProcess; }
@@ -62,6 +65,52 @@ Node* Node::FindChildByName(std::string const& name) const
 	}
 
 	return nullptr;
+}
+
+Node* Node::GetNode(NodePath const& path) const
+{
+	if (!path.IsValid())
+	{
+		return nullptr;
+	}
+
+	Node* current = path.IsAbsolute() ? GetRoot() : const_cast<Node*>(this);
+	if (path.IsCurrent())
+	{
+		return current;
+	}
+
+	size_t nameIndex = 0;
+	std::vector<std::string> const& paths = path.GetPaths();
+	if (path.IsAbsolute())
+	{
+		if (paths.empty() || paths[0] != current->GetName())
+		{
+			return nullptr;
+		}
+		nameIndex = 1;
+	}
+
+	for (; nameIndex < paths.size(); ++nameIndex)
+	{
+		Node* next = nullptr;
+		for (Node* child : current->m_data.m_children)
+		{
+			if (child != nullptr && child->GetName() == paths[nameIndex])
+			{
+				next = child;
+				break;
+			}
+		}
+
+		if (next == nullptr)
+		{
+			return nullptr;
+		}
+		current = next;
+	}
+
+	return current;
 }
 
 void Node::AddNode(Node* child)
@@ -143,10 +192,7 @@ void Node::BindMethods()
 	ClassDatabase::BindMethod("SetProcess", &Node::SetProcess);
 	ClassDatabase::BindMethod("GetProcess", &Node::GetProcess);
 
-	ADD_PROPERTY(
-		PropertyInfo(Variant::Type::String, "name", PropertyInfo::UsageFlags::Inspector),
-		"SetName",
-		"GetName");
+	ADD_PROPERTY(PropertyInfo(Variant::Type::String, "name", PropertyInfo::UsageFlags::None), "SetName", "GetName");
 }
 
 void Node::AttachChildImmediately(Node* child)
@@ -163,6 +209,7 @@ void Node::AttachChildImmediately(Node* child)
 
 	child->m_data.m_parent = this;
 	m_data.m_children.push_back(child);
+	child->m_data.m_name = child->EnsureUniqueName(child->m_data.m_name);
 }
 
 void Node::DetachChildImmediately(Node* child)
@@ -197,6 +244,61 @@ bool Node::IsAncestorOf(Node const* other) const
 	return false;
 }
 
+std::string Node::EnsureUniqueName(std::string const& requestedName) const
+{
+	std::string const normalizedName = requestedName.empty() ? GetClassName() : requestedName;
+	if (m_data.m_parent == nullptr)
+	{
+		return normalizedName;
+	}
+
+	auto isAvailable = [this](std::string const& candidate)
+	{
+		for (Node const* sibling : m_data.m_parent->m_data.m_children)
+		{
+			if (sibling != nullptr && sibling != this && sibling->m_data.m_name == candidate)
+			{
+				return false;
+			}
+		}
+		return true;
+	};
+
+	if (isAvailable(normalizedName))
+	{
+		return normalizedName;
+	}
+
+	size_t suffixStart = normalizedName.size();
+	while (suffixStart > 0 && std::isdigit(static_cast<unsigned char>(normalizedName[suffixStart - 1])))
+	{
+		--suffixStart;
+	}
+
+	std::string const  baseName = normalizedName.substr(0, suffixStart);
+	unsigned long long suffix   = 1;
+	if (suffixStart < normalizedName.size())
+	{
+		try
+		{
+			suffix = std::stoull(normalizedName.substr(suffixStart)) + 1;
+		}
+		catch (std::exception const&)
+		{
+			suffix = 1;
+		}
+	}
+
+	for (;; ++suffix)
+	{
+		std::string const candidate = baseName + std::to_string(suffix);
+		if (isAvailable(candidate))
+		{
+			return candidate;
+		}
+	}
+}
+
 void Node::MoveToSceneTree(SceneTree* sceneTree)
 {
 	if (m_data.m_sceneTree)
@@ -217,7 +319,7 @@ void Node::PropagateEnterTree()
 {
 	// 1) Set tree and viewport from parent
 	// sceneTree root do not have parent, so it will keep itself
-	Node* parent                = m_data.m_parent;
+	Node*              parent   = m_data.m_parent;
 	std::vector<Node*> children = m_data.m_children;
 	if (parent != nullptr)
 	{

@@ -12,8 +12,7 @@
 
 namespace
 {
-unsigned int const kInvalidNodeId = 0xffffffffu;
-using Json                        = nlohmann::ordered_json;
+using Json = nlohmann::ordered_json;
 
 Json SerializeVariant(Variant const& value)
 {
@@ -39,7 +38,7 @@ Json SerializeVariant(Variant const& value)
 	}
 	case Variant::Type::Matrix4x4:
 	{
-		Json result         = Json::array();
+		Json         result = Json::array();
 		float const* matrix = value.As<Matrix4x4>().GetAsFloatArray();
 		for (int index = 0; index < 16; ++index)
 		{
@@ -147,50 +146,151 @@ bool TryDeserializeVariant(Json const& json, Variant::Type expectedType, Variant
 
 	return false;
 }
-} // namespace
 
-PackedScene::PackedProperty::PackedProperty(std::string const& name, Variant const& value)
-	: m_name(name), m_value(value)
+bool TryParseProperties(Json const& nodeJson, PackedNode& outNode)
 {
+	if (!nodeJson.contains("properties"))
+	{
+		return true;
+	}
+
+	Json const& propertiesJson = nodeJson["properties"];
+	if (!propertiesJson.is_object())
+	{
+		DebuggerPrintf("PackedScene: properties for node '%s' must be an object.\n", outNode.m_name.c_str());
+		return false;
+	}
+
+	for (auto propertyEntry = propertiesJson.begin(); propertyEntry != propertiesJson.end(); ++propertyEntry)
+	{
+		std::string const   propertyName = propertyEntry.key();
+		PropertyInfo const* property     = ClassDatabase::FindProperty(outNode.m_type, propertyName);
+		if (property == nullptr)
+		{
+			DebuggerPrintf(
+				"PackedScene: skipping unknown property '%s' on type '%s'.\n",
+				propertyName.c_str(),
+				outNode.m_type.c_str());
+			continue;
+		}
+
+		Variant value;
+		if (!TryDeserializeVariant(propertyEntry.value(), property->m_type, value))
+		{
+			DebuggerPrintf(
+				"PackedScene: skipping property '%s' with an incompatible JSON value on type '%s'.\n",
+				propertyName.c_str(),
+				outNode.m_type.c_str());
+			continue;
+		}
+
+		outNode.m_properties.emplace_back(propertyName, value);
+	}
+
+	return true;
 }
 
-bool PackedScene::PackedProperty::CanApplyTo(PropertyInfo const& propertyInfo) const
+bool TryParseNode(Json const& nodeJson, PackedSceneData& sceneData)
+{
+	if (!nodeJson.contains("name") || !nodeJson["name"].is_string() || !nodeJson.contains("type")
+		|| !nodeJson["type"].is_string())
+	{
+		DebuggerPrintf("PackedScene: every node must contain string fields 'name' and 'type'.\n");
+		return false;
+	}
+
+	PackedNode packedNode;
+	packedNode.m_name = nodeJson["name"].get<std::string>();
+	packedNode.m_type = nodeJson["type"].get<std::string>();
+	// "." is reserved for the scene root, and "/" separates path components.
+	if (packedNode.m_name.empty() || packedNode.m_name == "." || packedNode.m_name.find('/') != std::string::npos)
+	{
+		DebuggerPrintf(
+			"PackedScene: node name '%s' cannot be represented in a scene path.\n",
+			packedNode.m_name.c_str());
+		return false;
+	}
+
+	if (!nodeJson.contains("parent"))
+	{
+		return false;
+	}
+
+	packedNode.m_parentPath = nodeJson["parent"].get<std::string>();
+
+	if (!TryParseProperties(nodeJson, packedNode))
+	{
+		return false;
+	}
+
+	sceneData.m_packedNodes.push_back(std::move(packedNode));
+	return true;
+}
+
+bool TryParseScene(Json const& root, PackedSceneData& outData)
+{
+	if (!root.contains("nodes") || !root["nodes"].is_array() || root["nodes"].empty())
+	{
+		DebuggerPrintf("PackedScene: the root JSON must contain a non-empty 'nodes' array.\n");
+		return false;
+	}
+
+	Json const& nodesJson = root["nodes"];
+	for (size_t nodeIndex = 0; nodeIndex < nodesJson.size(); ++nodeIndex)
+	{
+		if (!TryParseNode(nodesJson[nodeIndex], outData))
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+} // namespace
+
+PackedProperty::PackedProperty(std::string const& name, Variant const& value) : m_name(name), m_value(value) {}
+
+bool PackedProperty::CanApplyTo(PropertyInfo const& propertyInfo) const
 {
 	return propertyInfo.GetSetter() != nullptr && propertyInfo.m_type == m_value.GetType();
 }
 
 bool PackedScene::Pack(Node const* node)
 {
-	m_packedNodes.clear();
-	m_nodeToId.clear();
-	m_nextNodeId = 0;
+	m_data.m_packedNodes.clear();
 
 	if (node == nullptr)
 	{
 		return false;
 	}
 
-	ParseNodeRecursively(node, m_packedNodes);
-	return true;
+	if (!ParseNodeRecursively(node, "", m_data.m_packedNodes))
+	{
+		m_data.m_packedNodes.clear();
+		return false;
+	}
+
+	return !m_data.m_packedNodes.empty();
 }
 
 Node* PackedScene::Instantiate() const
 {
-	if (m_packedNodes.empty())
+	if (m_data.m_packedNodes.empty())
 	{
 		return nullptr;
 	}
 
-	Node* root = nullptr;
+	Node*              root = nullptr;
 	std::vector<Node*> nodes;
-	nodes.reserve(m_packedNodes.size());
+	nodes.reserve(m_data.m_packedNodes.size());
 
 	// Phase 1: create every node and rebuild the detached scene hierarchy.
-	// Packed nodes are parent-first, so each parent exists before its children are attached.
-	for (PackedNode const& packedNode : m_packedNodes)
+	// Packed nodes are parent-first, so every parent path resolves before its children are attached.
+	for (size_t nodeIndex = 0; nodeIndex < m_data.m_packedNodes.size(); ++nodeIndex)
 	{
-		Object* object = ClassDatabase::CreateInstance(packedNode.m_type);
-		Node* node     = dynamic_cast<Node*>(object);
+		PackedNode const& packedNode = m_data.m_packedNodes[nodeIndex];
+		Object*           object     = ClassDatabase::CreateInstance(packedNode.m_type);
+		Node*             node       = dynamic_cast<Node*>(object);
 		if (node == nullptr)
 		{
 			delete object;
@@ -200,37 +300,76 @@ Node* PackedScene::Instantiate() const
 		}
 
 		node->SetName(packedNode.m_name);
-		if (packedNode.m_parentIndex == kInvalidNodeId)
+		if (nodeIndex == 0)
 		{
-			if (root != nullptr)
+			if (!packedNode.m_parentPath.empty())
 			{
 				delete node;
-				delete root;
-				DebuggerPrintf("PackedScene: scene contains more than one root node.\n");
+				DebuggerPrintf("PackedScene: the first node must be the scene root and have no parent path.\n");
 				return nullptr;
 			}
 			root = node;
 		}
 		else
 		{
-			if (packedNode.m_parentIndex >= nodes.size())
+			if (packedNode.m_parentPath.empty())
 			{
 				delete node;
 				delete root;
-				DebuggerPrintf("PackedScene: node '%s' has an invalid parent index.\n", packedNode.m_name.c_str());
+				DebuggerPrintf("PackedScene: node '%s' creates an additional scene root.\n", packedNode.m_name.c_str());
 				return nullptr;
 			}
-			nodes[packedNode.m_parentIndex]->AddNode(node);
+
+			NodePath const parentPath(packedNode.m_parentPath);
+			if (!parentPath.IsValid() || parentPath.IsAbsolute())
+			{
+				delete node;
+				delete root;
+				DebuggerPrintf(
+					"PackedScene: node '%s' has invalid scene-relative parent path '%s'.\n",
+					packedNode.m_name.c_str(),
+					packedNode.m_parentPath.c_str());
+				return nullptr;
+			}
+
+			Node* parent = root->GetNode(parentPath);
+			if (parent == nullptr)
+			{
+				delete node;
+				delete root;
+				DebuggerPrintf(
+					"PackedScene: node '%s' has unresolved parent path '%s'.\n",
+					packedNode.m_name.c_str(),
+					packedNode.m_parentPath.c_str());
+				return nullptr;
+			}
+
+			std::string const requestedName = node->GetName();
+			parent->AddNode(node);
+			if (node->GetParent() != parent || node->GetName() != requestedName)
+			{
+				std::string const actualName = node->GetName();
+				if (node->GetParent() == nullptr)
+				{
+					delete node;
+				}
+				delete root;
+				DebuggerPrintf(
+					"PackedScene: sibling name '%s' is not unique; AddNode produced '%s'.\n",
+					requestedName.c_str(),
+					actualName.c_str());
+				return nullptr;
+			}
 		}
 		nodes.push_back(node);
 	}
 
 	// Phase 2: apply properties after the complete hierarchy exists. Setters may safely
 	// inspect parents or children, while SceneTree lifecycle callbacks have not started yet.
-	for (size_t nodeIndex = 0; nodeIndex < m_packedNodes.size(); ++nodeIndex)
+	for (size_t nodeIndex = 0; nodeIndex < m_data.m_packedNodes.size(); ++nodeIndex)
 	{
-		PackedNode const& packedNode = m_packedNodes[nodeIndex];
-		Node* node                   = nodes[nodeIndex];
+		PackedNode const& packedNode = m_data.m_packedNodes[nodeIndex];
+		Node*             node       = nodes[nodeIndex];
 		for (PackedProperty const& packedProperty : packedNode.m_properties)
 		{
 			PropertyInfo const* property = ClassDatabase::FindProperty(packedNode.m_type, packedProperty.m_name);
@@ -276,23 +415,25 @@ bool PackedScene::SaveToFile(std::string const& filename) const
 		return false;
 	}
 
-	Json root;
-	root["version"] = 1;
-	root["nodes"]   = Json::array();
+	Json root     = Json::object();
+	root["nodes"] = Json::array();
 
-	for (PackedNode const& node : m_packedNodes)
+	for (PackedNode const& node : m_data.m_packedNodes)
 	{
 		Json nodeJson;
-		nodeJson["id"]     = node.m_id;
 		nodeJson["name"]   = node.m_name;
 		nodeJson["type"]   = node.m_type;
-		nodeJson["parent"] = node.m_parentIndex == kInvalidNodeId ? Json(nullptr) : Json(node.m_parentIndex);
+		nodeJson["parent"] = node.m_parentPath;
 
-		nodeJson["properties"] = Json::object();
-		for (PackedProperty const& property : node.m_properties)
+		if (!node.m_properties.empty())
 		{
-			nodeJson["properties"][property.m_name] = SerializeVariant(property.m_value);
+			nodeJson["properties"] = Json::object();
+			for (PackedProperty const& property : node.m_properties)
+			{
+				nodeJson["properties"][property.m_name] = SerializeVariant(property.m_value);
+			}
 		}
+
 		root["nodes"].push_back(nodeJson);
 	}
 
@@ -317,68 +458,30 @@ bool PackedScene::SaveToFile(std::string const& filename) const
 
 bool PackedScene::LoadFromFile(std::string const& filename)
 {
+	if (filename.empty())
+	{
+		return false;
+	}
+
 	std::ifstream input(filename);
 	if (!input.is_open())
 	{
 		return false;
 	}
 
-	Json root;
 	try
 	{
+		Json root;
 		input >> root;
-		if (!root.contains("version") || root["version"].get<int>() != 1 || !root.contains("nodes")
-			|| !root["nodes"].is_array())
+
+		// Parse into temporary data so a failed load does not modify the current scene.
+		PackedSceneData loadedData;
+		if (!TryParseScene(root, loadedData))
 		{
 			return false;
 		}
 
-		std::vector<PackedNode> loadedNodes;
-		for (Json const& nodeJson : root["nodes"])
-		{
-			if (!nodeJson.contains("id") || !nodeJson.contains("name") || !nodeJson.contains("type")
-				|| !nodeJson.contains("parent") || !nodeJson.contains("properties")
-				|| !nodeJson["properties"].is_object())
-			{
-				return false;
-			}
-
-			PackedNode packedNode;
-			packedNode.m_id   = nodeJson["id"].get<unsigned int>();
-			packedNode.m_name = nodeJson["name"].get<std::string>();
-			packedNode.m_type = nodeJson["type"].get<std::string>();
-			packedNode.m_parentIndex =
-				nodeJson["parent"].is_null() ? kInvalidNodeId : nodeJson["parent"].get<unsigned int>();
-
-			for (auto propertyEntry = nodeJson["properties"].begin(); propertyEntry != nodeJson["properties"].end();
-				 ++propertyEntry)
-			{
-				std::string const propertyName = propertyEntry.key();
-				PropertyInfo const* property   = ClassDatabase::FindProperty(packedNode.m_type, propertyName);
-				if (property == nullptr)
-				{
-					DebuggerPrintf(
-						"PackedScene: skipping unknown property '%s' on type '%s'.\n",
-						propertyName.c_str(),
-						packedNode.m_type.c_str());
-					continue;
-				}
-
-				Variant value;
-				if (!TryDeserializeVariant(propertyEntry.value(), property->m_type, value))
-				{
-					DebuggerPrintf(
-						"PackedScene: skipping property '%s' with an incompatible JSON value on type '%s'.\n",
-						propertyName.c_str(),
-						packedNode.m_type.c_str());
-					continue;
-				}
-				packedNode.m_properties.emplace_back(propertyName, value);
-			}
-			loadedNodes.push_back(std::move(packedNode));
-		}
-
-		m_packedNodes = std::move(loadedNodes);
+		m_data = std::move(loadedData);
 	}
 	catch (std::exception const& error)
 	{
@@ -389,25 +492,28 @@ bool PackedScene::LoadFromFile(std::string const& filename)
 	return true;
 }
 
-void PackedScene::ParseNodeRecursively(Node const* node, std::vector<PackedNode>& outNodes)
+bool PackedScene::ParseNodeRecursively(
+	Node const* node, std::string const& parentPath, std::vector<PackedNode>& outNodes)
 {
 	if (node == nullptr || !node->GetSerializable())
 	{
-		return;
+		return true;
 	}
 
 	PackedNode packedNode;
-	packedNode.m_name = node->GetName();
-	packedNode.m_type = node->GetClassName();
-	packedNode.m_id   = m_nextNodeId++;
-	m_nodeToId[node]  = packedNode.m_id;
-
-	Node const* parent       = node->GetParent();
-	auto const parentEntry   = parent != nullptr ? m_nodeToId.find(parent) : m_nodeToId.end();
-	packedNode.m_parentIndex = parentEntry != m_nodeToId.end() ? parentEntry->second : kInvalidNodeId;
+	packedNode.m_name       = node->GetName();
+	packedNode.m_type       = node->GetClassName();
+	packedNode.m_parentPath = parentPath;
+	if (packedNode.m_name.empty() || packedNode.m_name == "." || packedNode.m_name.find('/') != std::string::npos)
+	{
+		DebuggerPrintf(
+			"PackedScene: node name '%s' cannot be represented in a scene path.\n",
+			packedNode.m_name.c_str());
+		return false;
+	}
 
 	Object* defaultObject = ClassDatabase::CreateInstance(packedNode.m_type);
-	Node* defaultNode     = dynamic_cast<Node*>(defaultObject);
+	Node*   defaultNode   = dynamic_cast<Node*>(defaultObject);
 	if (defaultObject != nullptr && defaultNode == nullptr)
 	{
 		DebuggerPrintf("PackedScene: default object for type '%s' is not a Node.\n", packedNode.m_type.c_str());
@@ -448,8 +554,15 @@ void PackedScene::ParseNodeRecursively(Node const* node, std::vector<PackedNode>
 	delete defaultObject;
 	outNodes.push_back(std::move(packedNode));
 
+	std::string const nodePath =
+		parentPath.empty() ? "." : (parentPath == "." ? node->GetName() : parentPath + "/" + node->GetName());
 	for (Node const* child : node->GetChildren())
 	{
-		ParseNodeRecursively(child, outNodes);
+		if (!ParseNodeRecursively(child, nodePath, outNodes))
+		{
+			return false;
+		}
 	}
+
+	return true;
 }

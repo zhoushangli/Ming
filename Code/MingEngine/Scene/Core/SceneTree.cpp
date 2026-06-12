@@ -2,8 +2,8 @@
 
 #include "MingEngine/Scene/3D/Light3D.hpp"
 #include "MingEngine/Scene/3D/Node3D.hpp"
-#include "MingEngine/Scene/Physics/Collider3D.hpp"
 #include "MingEngine/Scene/Core/Viewport.hpp"
+#include "MingEngine/Scene/Physics/Collider3D.hpp"
 
 #include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Engine/Math/MathUtils.hpp"
@@ -22,6 +22,7 @@ SceneTree::SceneTree()
 	// 1) Every SceneTree owns exactly one root Viewport.
 	// 2) Entering the tree registers that Viewport with RenderService.
 	m_root = new Viewport();
+	m_root->SetName("Root");
 
 	m_root->MoveToSceneTree(this);
 }
@@ -32,7 +33,7 @@ SceneTree::~SceneTree()
 	{
 		// 1) Propagate exit so instances, lights, and the Viewport unregister.
 		// 2) Delete the root only after all lifecycle callbacks have completed.
-		m_root->PropagateExitTree();
+		m_root->MoveToSceneTree(nullptr);
 		delete m_root;
 		m_root = nullptr;
 	}
@@ -75,6 +76,23 @@ void SceneTree::QueueDestroyNode(NodeHandle handle)
 
 void SceneTree::FlushPendingNode()
 {
+	// Flush pending scene 
+	if (m_pendingScene != nullptr)
+	{
+		Node* previousScene = ResolveNode(m_sceneHandle);
+		if (previousScene != nullptr)
+		{
+			m_root->DetachChildImmediately(previousScene);
+			previousScene->MoveToSceneTree(nullptr);
+			delete previousScene;
+		}
+
+		m_root->AddNode(m_pendingScene);
+		m_sceneHandle  = m_pendingScene->GetHandle();
+		m_pendingScene = nullptr;
+	}
+
+	// Flush pending destroy nodes
 	std::vector<NodeHandle> pendingDestroyNodes = m_pendingDestroyNodes;
 	m_pendingDestroyNodes.clear();
 
@@ -95,7 +113,7 @@ void SceneTree::FlushPendingNode()
 		{
 			node->m_data.m_parent->DetachChildImmediately(node);
 		}
-		node->PropagateExitTree();
+		node->MoveToSceneTree(nullptr);
 		delete node;
 	}
 }
@@ -166,7 +184,6 @@ Node* SceneTree::GetScene() const { return ResolveNode(m_sceneHandle); }
 void SceneTree::ClearScene()
 {
 	Node* sceneRoot = GetScene();
-	m_sceneHandle   = NodeHandle::Invalid;
 	if (sceneRoot == nullptr)
 	{
 		return;
@@ -179,8 +196,7 @@ void SceneTree::ChangeScene(Node* newSceneNode)
 {
 	ClearScene();
 
-	m_root->AddNode(newSceneNode);
-	m_sceneHandle = newSceneNode->GetHandle();
+	m_pendingScene = newSceneNode;
 }
 
 Camera3D* SceneTree::GetWorldCamera() const { return m_root->GetWorldCamera(); }

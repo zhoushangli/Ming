@@ -1,9 +1,9 @@
 #pragma once
 
 #include "MingEngine/Scene/3D/Camera3D.hpp"
-#include "MingEngine/Scene/Physics/Collider3D.hpp"
 #include "MingEngine/Scene/Core/Node.hpp"
 #include "MingEngine/Scene/Core/NodeHandle.hpp"
+#include "MingEngine/Scene/Physics/Collider3D.hpp"
 
 #include "MingEngine/Engine/Math/RaycastUtils.hpp"
 
@@ -30,7 +30,7 @@ public:
 	void QueueTransformChangedNode(NodeHandle node);
 	void FlushTransformChangedNodes();
 
-	void UpdateScene(float deltaSeconds);
+	void  UpdateScene(float deltaSeconds);
 	Node* GetRoot() const;
 	Node* GetScene() const;
 	void  ClearScene();
@@ -65,11 +65,13 @@ protected:
 	std::vector<NodeHandle> m_transformChangedNodes;
 
 	std::vector<Node*> m_registeredNodes;
-	unsigned int       m_nextNodeUID       = 1u;
+	unsigned int       m_nextNodeUID = 1u;
 
 	// tree -> root -> scene node
-	Viewport*  m_root        = nullptr;
-	NodeHandle m_sceneHandle = NodeHandle::Invalid;
+	// Scene also need pending, because the old scene needs pending to destroy safely
+	Viewport*  m_root         = nullptr;
+	NodeHandle m_sceneHandle  = NodeHandle::Invalid;
+	Node*      m_pendingScene = nullptr;
 
 	float m_physicsUpdateTimer    = 0.f;
 	float m_physicsUpdateInterval = 1.f / 60.f;

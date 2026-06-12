@@ -17,9 +17,16 @@ private:
 	void OnRender(EditorUIContext& context) override;
 	void RenderNode(Node* node, std::string const& filterText, EditorUIContext& context);
 	bool DoesNodeMatchFilter(Node const* node, std::string const& filterText) const;
+	void BeginRename(Node* node);
+	void FinishRename(Node* node, bool apply);
+	void ClearRename();
 
 private:
 	char m_filter[64] = {};
+	char m_renameBuffer[256] = {};
+	NodeHandle m_renamingNode = NodeHandle::Invalid;
+	std::string m_originalName;
+	bool m_focusRenameInput = false;
 
 	struct PendingReparent
 	{

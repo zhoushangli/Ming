@@ -38,7 +38,6 @@ private:
 		std::string const& filterText) const;
 	bool CreateSelectedNode(EditorUIContext& context);
 	Node* ResolveCreateParent(EditorUIContext const& context) const;
-	std::string MakeUniqueNodeName(Node const* parent, std::string const& className) const;
 	void Reset();
 
 private:
