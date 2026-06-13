@@ -1,0 +1,20 @@
+#pragma once
+
+#include <string>
+
+class VirtualPath
+{
+public:
+	// Wrong cases:
+	// 1) Empty path
+	// 2) res://
+	// 3) res://../Secret.txt
+	// 4) res://Assets/../Secret.txt
+	// 5) C:/Game/Test.as
+	bool Parse(std::string const& path);
+
+	std::string const& GetRelativePath() const;
+
+private:
+	std::string m_relativePath;
+};
