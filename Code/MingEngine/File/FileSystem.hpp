@@ -1,20 +1,20 @@
 #pragma once
 
+#include <filesystem>
 #include <string>
 
-class VirtualPath
+class FileSystem
 {
 public:
-	// Wrong cases:
-	// 1) Empty path
-	// 2) res://
-	// 3) res://../Secret.txt
-	// 4) res://Assets/../Secret.txt
-	// 5) C:/Game/Test.as
-	bool Parse(std::string const& path);
+	explicit FileSystem(std::filesystem::path const& resourceRoot);
 
-	std::string const& GetRelativePath() const;
+	bool Exists(std::string const& virtualPath) const;
+
+	bool ReadText(std::string const& virtualPath, std::string& outText) const;
 
 private:
-	std::string m_relativePath;
+	bool ResolvePath(std::string const& virtualPath, std::filesystem::path& outPhysicalPath) const;
+
+private:
+	std::filesystem::path m_resourceRoot;
 };

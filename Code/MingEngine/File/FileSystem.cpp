@@ -1,40 +1,63 @@
+#include "MingEngine/File/FileSystem.hpp"
+
 #include "MingEngine/File/VirtualPath.hpp"
 
-bool VirtualPath::Parse(std::string const& path)
+#include <fstream>
+#include <sstream>
+
+FileSystem::FileSystem(std::filesystem::path const& resourceRoot) : m_resourceRoot(resourceRoot) {}
+
+bool FileSystem::Exists(std::string const& virtualPath) const
 {
-	m_relativePath.clear();
-
-	if (path.empty())
+	std::filesystem::path physicalPath;
+	if (!ResolvePath(virtualPath, physicalPath))
 	{
 		return false;
 	}
 
-	std::string const prefix = "res://";
+	return std::filesystem::exists(physicalPath) && std::filesystem::is_regular_file(physicalPath);
+}
 
-	if (path.compare(0, prefix.size(), prefix) != 0)
+bool FileSystem::ReadText(std::string const& virtualPath, std::string& outText) const
+{
+	outText.clear();
+
+	std::filesystem::path physicalPath;
+	if (!ResolvePath(virtualPath, physicalPath))
 	{
 		return false;
 	}
 
-	m_relativePath = path.substr(prefix.size());
-
-	if (m_relativePath.empty())
+	std::ifstream file(physicalPath);
+	if (!file.is_open())
 	{
 		return false;
 	}
 
-	if (m_relativePath.find('\\') != std::string::npos)
+	std::ostringstream stream;
+	stream << file.rdbuf();
+
+	if (file.bad())
 	{
 		return false;
 	}
 
-	if (m_relativePath == ".." || m_relativePath.starts_with("../") || m_relativePath.find("/../") != std::string::npos
-		|| m_relativePath.ends_with("/.."))
-	{
-		return false;
-	}
-
+	outText = stream.str();
 	return true;
 }
 
-std::string const& VirtualPath::GetRelativePath() const { return m_relativePath; }
+bool FileSystem::ResolvePath(std::string const& virtualPath, std::filesystem::path& outPhysicalPath) const
+{
+	outPhysicalPath.clear();
+
+	VirtualPath parsedPath;
+
+	if (!parsedPath.Parse(virtualPath))
+	{
+		return false;
+	}
+
+	outPhysicalPath = m_resourceRoot / parsedPath.GetRelativePath();
+
+	return true;
+}

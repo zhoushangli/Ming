@@ -8,6 +8,7 @@
 #include "MingEngine/Engine/Render/DebugRenderer.hpp"
 #include "MingEngine/Engine/Render/Renderer.hpp"
 #include "MingEngine/Engine/Window/Window.hpp"
+#include "MingEngine/File/FileSystem.hpp"
 
 class RandomNumberGenerator;
 class Window;
@@ -43,6 +44,7 @@ public:
 	EventSystem* m_eventSystem = nullptr;
 	DevConsole*  m_devConsole  = nullptr;
 	Window*      m_window      = nullptr;
+	FileSystem*  m_fileSystem  = nullptr;
 	Renderer*    m_renderer    = nullptr;
 	InputSystem* m_input       = nullptr;
 	AudioSystem* m_audio       = nullptr;

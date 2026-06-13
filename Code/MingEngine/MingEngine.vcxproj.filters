@@ -106,6 +106,9 @@
     <Filter Include="ThirdParty\tinyxml2">
       <UniqueIdentifier>{6AC4441D-6D65-46C5-8EA7-40EBD7945B73}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Engine\File">
+      <UniqueIdentifier>{1253d6d0-59a2-44eb-a0a5-588b5fd0a140}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Engine\Core\Clock.cpp">
@@ -467,6 +470,12 @@
     </ClCompile>
     <ClCompile Include="Scene\Core\NodePath.cpp">
       <Filter>Scene\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="File\VirtualPath.cpp">
+      <Filter>Engine\File</Filter>
+    </ClCompile>
+    <ClCompile Include="File\FileSystem.cpp">
+      <Filter>Engine\File</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -910,6 +919,12 @@
     </ClInclude>
     <ClInclude Include="Editor\UI\InspectorPropertyString.hpp">
       <Filter>Editor\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="File\VirtualPath.hpp">
+      <Filter>Engine\File</Filter>
+    </ClInclude>
+    <ClInclude Include="File\FileSystem.hpp">
+      <Filter>Engine\File</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

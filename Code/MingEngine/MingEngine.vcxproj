@@ -398,6 +398,8 @@
     <ClCompile Include="Editor\Gizmos\EditorGizmos.cpp" />
     <ClCompile Include="Editor\Gizmos\GizmosShapes.cpp" />
     <ClCompile Include="Editor\Gizmos\ViewportAxisIndicator.cpp" />
+    <ClCompile Include="File\FileSystem.cpp" />
+    <ClCompile Include="File\VirtualPath.cpp" />
     <ClCompile Include="Scene\3D\Camera3D.cpp" />
     <ClCompile Include="Scene\3D\Light3D.cpp" />
     <ClCompile Include="Scene\3D\Mesh3D.cpp" />
@@ -529,6 +531,8 @@
     <ClInclude Include="Editor\Gizmos\EditorGizmos.hpp" />
     <ClInclude Include="Editor\Gizmos\GizmosShapes.hpp" />
     <ClInclude Include="Editor\Gizmos\ViewportAxisIndicator.hpp" />
+    <ClInclude Include="File\FileSystem.hpp" />
+    <ClInclude Include="File\VirtualPath.hpp" />
     <ClInclude Include="Scene\3D\Camera3D.hpp" />
     <ClInclude Include="Scene\3D\Light3D.hpp" />
     <ClInclude Include="Scene\3D\Mesh3D.hpp" />

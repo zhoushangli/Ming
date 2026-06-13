@@ -157,7 +157,6 @@ bool TryParseProperties(Json const& nodeJson, PackedNode& outNode)
 	Json const& propertiesJson = nodeJson["properties"];
 	if (!propertiesJson.is_object())
 	{
-		DebuggerPrintf("PackedScene: properties for node '%s' must be an object.\n", outNode.m_name.c_str());
 		return false;
 	}
 
