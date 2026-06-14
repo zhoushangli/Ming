@@ -1,13 +1,18 @@
-#include "MingEngine/File/FileSystem.hpp"
+#include "MingEngine/Engine/File/FileSystem.hpp"
 
-#include "MingEngine/File/VirtualPath.hpp"
+#include "MingEngine/Engine/File/VirtualPath.hpp"
 
 #include <fstream>
 #include <sstream>
 
-FileSystem::FileSystem(std::filesystem::path const& resourceRoot) : m_resourceRoot(resourceRoot) {}
+FileSystem::FileSystem(FileSystemConfig const& config) : m_resourceRoot(config.m_resourceRoot) {}
 
-bool FileSystem::Exists(std::string const& virtualPath) const
+void FileSystem::Startup() {}
+void FileSystem::Shutdown() {}
+void FileSystem::BeginFrame() {}
+void FileSystem::EndFrame() {}
+
+bool FileSystem::Exists(VirtualPath const& virtualPath) const
 {
 	std::filesystem::path physicalPath;
 	if (!ResolvePath(virtualPath, physicalPath))
@@ -18,7 +23,7 @@ bool FileSystem::Exists(std::string const& virtualPath) const
 	return std::filesystem::exists(physicalPath) && std::filesystem::is_regular_file(physicalPath);
 }
 
-bool FileSystem::ReadText(std::string const& virtualPath, std::string& outText) const
+bool FileSystem::ReadText(VirtualPath const& virtualPath, std::string& outText) const
 {
 	outText.clear();
 
@@ -46,18 +51,11 @@ bool FileSystem::ReadText(std::string const& virtualPath, std::string& outText) 
 	return true;
 }
 
-bool FileSystem::ResolvePath(std::string const& virtualPath, std::filesystem::path& outPhysicalPath) const
+bool FileSystem::ResolvePath(VirtualPath const& virtualPath, std::filesystem::path& outPhysicalPath) const
 {
 	outPhysicalPath.clear();
 
-	VirtualPath parsedPath;
-
-	if (!parsedPath.Parse(virtualPath))
-	{
-		return false;
-	}
-
-	outPhysicalPath = m_resourceRoot / parsedPath.GetRelativePath();
+	outPhysicalPath = m_resourceRoot / virtualPath.GetRelativePath();
 
 	return true;
 }

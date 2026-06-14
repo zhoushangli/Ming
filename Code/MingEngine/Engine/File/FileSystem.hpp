@@ -1,19 +1,32 @@
 #pragma once
 
+#include "MingEngine/Engine/File/VirtualPath.hpp"
+
 #include <filesystem>
 #include <string>
+
+struct FileSystemConfig
+{
+	bool                  m_isEnable     = true;
+	std::filesystem::path m_resourceRoot = "Data/";
+};
 
 class FileSystem
 {
 public:
-	explicit FileSystem(std::filesystem::path const& resourceRoot);
+	FileSystem(FileSystemConfig const& config);
 
-	bool Exists(std::string const& virtualPath) const;
+	void Startup();
+	void Shutdown();
+	void BeginFrame();
+	void EndFrame();
 
-	bool ReadText(std::string const& virtualPath, std::string& outText) const;
+	bool Exists(VirtualPath const& virtualPath) const;
+
+	bool ReadText(VirtualPath const& virtualPath, std::string& outText) const;
 
 private:
-	bool ResolvePath(std::string const& virtualPath, std::filesystem::path& outPhysicalPath) const;
+	bool ResolvePath(VirtualPath const& virtualPath, std::filesystem::path& outPhysicalPath) const;
 
 private:
 	std::filesystem::path m_resourceRoot;

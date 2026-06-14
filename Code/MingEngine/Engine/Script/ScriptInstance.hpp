@@ -1,27 +1,45 @@
 #pragma once
 
-#include "MingEngine/Engine/Script/ScriptResourceIdentity.hpp"
 #include "MingEngine/Engine/Script/ScriptModule.hpp"
+#include "MingEngine/Scene/Core/Object.hpp"
 
-#include <unordered_map>
+#include <memory>
 
-struct ScriptSystemConfig
+class asIScriptObject;
+class asIScriptFunction;
+class asIScriptContext;
+
+class ScriptInstance
 {
-	bool m_isEnabled = true;
-};
+	friend class ScriptSystem; // Only the ScriptSystem can create new ScriptInstance objects
 
-class ScriptSystem
-{
 public:
-	ScriptSystem(ScriptSystemConfig const& config);
+	~ScriptInstance();
 
-	void Startup();
-	void Shutdown();
-	void BeginFrame();
-	void EndFrame();
-
-	ScriptModule* LoadScript(VirtualPath const& path);
+	bool CallReady();
+	bool CallProcess(float deltaSeconds);
 
 private:
-	std::unordered_map<VirtualPath, ScriptModule> m_loadedScripts;
+	ScriptInstance() = default;
+
+	ScriptInstance(ScriptInstance const&)            = delete;
+	ScriptInstance& operator=(ScriptInstance const&) = delete;
+
+	static std::unique_ptr<ScriptInstance> Create(ScriptModule& module, Object& owner);
+
+	void Destroy();
+
+	bool Execute(asIScriptFunction* function);
+	bool Execute(asIScriptFunction* function, float deltaSeconds);
+
+	Object* GetOwner() const;
+
+private:
+	Object* m_owner;
+
+	ScriptModule*    m_module = nullptr;
+	asIScriptObject* m_object = nullptr;
+
+	asIScriptFunction* m_readyFunction   = nullptr;
+	asIScriptFunction* m_processFunction = nullptr;
 };

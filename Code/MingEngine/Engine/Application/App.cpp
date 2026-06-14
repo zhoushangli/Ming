@@ -15,8 +15,8 @@
 #include "MingEngine/Scene/3D/Light3D.hpp"
 #include "MingEngine/Scene/Core/ClassDatabase.hpp"
 #include "MingEngine/Scene/Core/Node.hpp"
-#include "MingEngine/Scene/Core/SceneTree.hpp"
 #include "MingEngine/Scene/Core/PackedScene.hpp"
+#include "MingEngine/Scene/Core/SceneTree.hpp"
 
 #if defined(MING_EDITOR)
 
@@ -35,7 +35,7 @@ App::App(IProjectModule& project, MingRunConfig const& config) : m_project(proje
 	EngineConfig engineConfig;
 	engineConfig.m_windowConfig.m_clientAspect = m_runConfig.m_windowAspect;
 	engineConfig.m_windowConfig.m_appName      = m_project.GetProjectName();
-	engineConfig.m_devConsoleConfig.m_fontName = "pixel_operator";
+	// engineConfig.m_devConsoleConfig.m_fontName = "pixel_operator";
 
 	g_engine        = new Engine(engineConfig);
 	g_engineService = new EngineService();
@@ -75,6 +75,10 @@ void App::Startup()
 
 	StartupScene();
 	RegisterEvent("Quit", App::OnQuit);
+
+	// auto testInstance = g_engine->m_scriptSystem->CreateInstance("res://Script/Test.as");
+	// testInstance->CallReady();
+	// testInstance->CallProcess(0.016f);
 }
 
 void App::Shutdown()
@@ -104,11 +108,11 @@ void App::RunMainLoop()
 
 void App::Update(float deltaSeconds)
 {
-	GLFWwindow* window       = g_engine->m_window->GetGLFWWindow();
-	bool const hasFocus      = window != nullptr && glfwGetWindowAttrib(window, GLFW_FOCUSED);
-	bool const isConsoleOpen = g_engine->m_devConsole != nullptr && g_engine->m_devConsole->IsOpen();
+	GLFWwindow* window   = g_engine->m_window->GetGLFWWindow();
+	bool const  hasFocus = window != nullptr && glfwGetWindowAttrib(window, GLFW_FOCUSED);
+	// bool const isConsoleOpen = g_engine->m_devConsole != nullptr && g_engine->m_devConsole->IsOpen();
 
-	if (!hasFocus || isConsoleOpen)
+	if (!hasFocus)
 	{
 		g_engine->m_input->SetCursorMode(CursorMode::POINTER);
 		if (!hasFocus)

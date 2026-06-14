@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <memory>
 
 #define ADD_PROPERTY(propertyName, setterName, getterName)                                                             \
 	ClassDatabase::AddProperty(GetStaticClassName(), propertyName, setterName, getterName)
@@ -26,6 +27,8 @@ public:                                                                         
 		isClassInitialized = true;                                                                                     \
 	}
 
+class ScriptInstance;
+
 class Object
 {
 public:
@@ -33,7 +36,7 @@ public:
 
 public:
 	Object()          = default;
-	virtual ~Object() = default;
+	virtual ~Object();
 
 	static void            BindMethods() {}
 	static BindMethodsFunc GetBindMethodsFunc();
@@ -41,4 +44,10 @@ public:
 	static std::string  GetStaticClassName();
 	virtual std::string GetClassName() const;
 	static void         InitializeClass();
+
+	void SetScript(std::unique_ptr<ScriptInstance> scriptInstance);
+	std::unique_ptr<ScriptInstance>& GetScript();
+
+private:
+	std::unique_ptr<ScriptInstance> m_scriptInstance;
 };

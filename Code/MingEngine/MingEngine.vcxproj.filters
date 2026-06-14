@@ -109,6 +109,9 @@
     <Filter Include="Engine\File">
       <UniqueIdentifier>{1253d6d0-59a2-44eb-a0a5-588b5fd0a140}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Engine\Script">
+      <UniqueIdentifier>{1f8df884-bc4f-4a63-ba1c-1db40755e4bf}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Engine\Core\Clock.cpp">
@@ -471,11 +474,23 @@
     <ClCompile Include="Scene\Core\NodePath.cpp">
       <Filter>Scene\Core</Filter>
     </ClCompile>
-    <ClCompile Include="File\VirtualPath.cpp">
+    <ClCompile Include="Engine\File\FileSystem.cpp">
       <Filter>Engine\File</Filter>
     </ClCompile>
-    <ClCompile Include="File\FileSystem.cpp">
+    <ClCompile Include="Engine\File\VirtualPath.cpp">
       <Filter>Engine\File</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Script\ScriptResourceIdentity.cpp">
+      <Filter>Engine\Script</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Script\ScriptSystem.cpp">
+      <Filter>Engine\Script</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Script\ScriptModule.cpp">
+      <Filter>Engine\Script</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Script\ScriptInstance.cpp">
+      <Filter>Engine\Script</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -920,11 +935,23 @@
     <ClInclude Include="Editor\UI\InspectorPropertyString.hpp">
       <Filter>Editor\UI</Filter>
     </ClInclude>
-    <ClInclude Include="File\VirtualPath.hpp">
+    <ClInclude Include="Engine\File\FileSystem.hpp">
       <Filter>Engine\File</Filter>
     </ClInclude>
-    <ClInclude Include="File\FileSystem.hpp">
+    <ClInclude Include="Engine\File\VirtualPath.hpp">
       <Filter>Engine\File</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Script\ScriptResourceIdentity.hpp">
+      <Filter>Engine\Script</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Script\ScriptSystem.hpp">
+      <Filter>Engine\Script</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Script\ScriptModule.hpp">
+      <Filter>Engine\Script</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Script\ScriptInstance.hpp">
+      <Filter>Engine\Script</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

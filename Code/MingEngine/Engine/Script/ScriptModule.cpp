@@ -1,65 +1,21 @@
-#include "ScriptResourceIdentity.hpp"
-#include "MingEngine/Engine/File/VirtualPath.hpp"
+#include "MingEngine/Engine/Script/ScriptModule.hpp"
 
-bool VirtualPath::Parse(std::string const& path)
+ScriptModule::ScriptModule(ScriptResourceIdentity identity, asIScriptModule* scriptModule, asITypeInfo* scriptType)
+    : m_identity(identity), m_scriptModule(scriptModule), m_scriptType(scriptType)
 {
-	m_relativePath.clear();
-
-	if (path.empty())
-	{
-		return false;
-	}
-
-	std::string const prefix = "res://";
-
-	if (path.compare(0, prefix.size(), prefix) != 0)
-	{
-		return false;
-	}
-
-	m_relativePath = path.substr(prefix.size());
-
-	if (m_relativePath.empty())
-	{
-		return false;
-	}
-
-	if (m_relativePath.find('\\') != std::string::npos)
-	{
-		return false;
-	}
-
-	if (m_relativePath == ".." || m_relativePath.starts_with("../") || m_relativePath.find("/../") != std::string::npos
-		|| m_relativePath.ends_with("/.."))
-	{
-		return false;
-	}
-
-	return true;
 }
 
-std::string const& VirtualPath::GetRelativePath() const { return m_relativePath; }
-
-bool MakeScriptResourceIdentity(std::string const& scriptPath, ScriptResourceIdentity& outIdentity)
+ScriptResourceIdentity const& ScriptModule::GetIdentity() const
 {
-	VirtualPath vp;
-	if (!vp.Parse(scriptPath))
-	{
-		return false;
-	}
+	return m_identity;
+}
 
-	// Wheather the file extension is ".as"
-	std::string const& relativePath = vp.GetRelativePath();
-	if (relativePath.size() < 3 || relativePath.compare(relativePath.size() - 3, 3, ".as") != 0)
-	{
-		return false;
-	}
+asIScriptModule* ScriptModule::GetScriptModule() const
+{
+	return m_scriptModule;
+}
 
-	// Get indentity
-	size_t const fileNameBegin  = relativePath.find_last_of('/');
-	size_t const fileNameEnd = relativePath.size() - 3; // Exclude ".as" extension
-	outIdentity.m_path = scriptPath;
-	outIdentity.m_className = relativePath.substr(fileNameBegin + 1, fileNameEnd - fileNameBegin - 1);
-
-	return true;
+asITypeInfo* ScriptModule::GetScriptType() const
+{
+	return m_scriptType;
 }

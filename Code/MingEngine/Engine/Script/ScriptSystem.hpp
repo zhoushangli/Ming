@@ -1,11 +1,39 @@
 #pragma once
 
-#include <string>
+#include "MingEngine/Scene/Core/Object.hpp"
 
-struct ScriptResourceIdentity
+#include "MingEngine/Engine/File/VirtualPath.hpp"
+#include "MingEngine/Engine/Script/ScriptInstance.hpp"
+#include "MingEngine/Engine/Script/ScriptModule.hpp"
+#include "MingEngine/Engine/Script/ScriptResourceIdentity.hpp"
+
+#include <unordered_map>
+
+class asIScriptEngine;
+
+struct ScriptSystemConfig
 {
-	std::string m_path;
-	std::string m_className;
+	bool m_isEnabled = true;
 };
 
-bool MakeScriptResourceIdentity(std::string const& scriptPath, ScriptResourceIdentity& outIdentity);
+class ScriptSystem
+{
+public:
+	ScriptSystem(ScriptSystemConfig const& config);
+
+	void Startup();
+	void Shutdown();
+	void BeginFrame();
+	void EndFrame();
+
+	std::unique_ptr<ScriptInstance> CreateInstance(std::string const& path, Object& owner);
+
+private:
+	ScriptModule* GetOrCreateModule(std::string const& path);
+	ScriptModule* GetOrCreateModule(VirtualPath const& virtualPath);
+
+private:
+	std::unordered_map<VirtualPath, ScriptModule, VirtualPathHash> m_loadedScripts;
+
+	asIScriptEngine* m_scriptEngine = nullptr;
+};

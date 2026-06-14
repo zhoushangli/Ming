@@ -327,6 +327,8 @@
     <ClCompile Include="Engine\Core\ErrorWarningAssert.cpp" />
     <ClCompile Include="Engine\Event\EventSystem.cpp" />
     <ClCompile Include="Engine\Core\FileUtils.cpp" />
+    <ClCompile Include="Engine\File\FileSystem.cpp" />
+    <ClCompile Include="Engine\File\VirtualPath.cpp" />
     <ClCompile Include="Engine\Render\HeatMaps.cpp" />
     <ClCompile Include="Engine\Core\Image.cpp" />
     <ClCompile Include="Engine\Core\NamedStrings.cpp" />
@@ -381,6 +383,10 @@
     <ClCompile Include="Engine\Input\InputSystem.cpp" />
     <ClCompile Include="Engine\Input\KeyButtonState.cpp" />
     <ClCompile Include="Engine\Input\XboxController.cpp" />
+    <ClCompile Include="Engine\Script\ScriptInstance.cpp" />
+    <ClCompile Include="Engine\Script\ScriptModule.cpp" />
+    <ClCompile Include="Engine\Script\ScriptResourceIdentity.cpp" />
+    <ClCompile Include="Engine\Script\ScriptSystem.cpp" />
     <ClCompile Include="Engine\Window\Window.cpp" />
     <ClCompile Include="Engine\Render\BitmapFont.cpp" />
     <ClCompile Include="Engine\Render\CameraContext.cpp" />
@@ -398,8 +404,6 @@
     <ClCompile Include="Editor\Gizmos\EditorGizmos.cpp" />
     <ClCompile Include="Editor\Gizmos\GizmosShapes.cpp" />
     <ClCompile Include="Editor\Gizmos\ViewportAxisIndicator.cpp" />
-    <ClCompile Include="File\FileSystem.cpp" />
-    <ClCompile Include="File\VirtualPath.cpp" />
     <ClCompile Include="Scene\3D\Camera3D.cpp" />
     <ClCompile Include="Scene\3D\Light3D.cpp" />
     <ClCompile Include="Scene\3D\Mesh3D.cpp" />
@@ -452,6 +456,8 @@
     <ClInclude Include="Engine\Core\ErrorWarningAssert.hpp" />
     <ClInclude Include="Engine\Event\EventSystem.hpp" />
     <ClInclude Include="Engine\Core\FileUtils.hpp" />
+    <ClInclude Include="Engine\File\FileSystem.hpp" />
+    <ClInclude Include="Engine\File\VirtualPath.hpp" />
     <ClInclude Include="Engine\Render\HeatMaps.hpp" />
     <ClInclude Include="Engine\Core\Image.hpp" />
     <ClInclude Include="Engine\Core\NamedStrings.hpp" />
@@ -513,6 +519,10 @@
     <ClInclude Include="Engine\Input\InputSystem.hpp" />
     <ClInclude Include="Engine\Input\KeyButtonState.hpp" />
     <ClInclude Include="Engine\Input\XboxController.hpp" />
+    <ClInclude Include="Engine\Script\ScriptInstance.hpp" />
+    <ClInclude Include="Engine\Script\ScriptModule.hpp" />
+    <ClInclude Include="Engine\Script\ScriptResourceIdentity.hpp" />
+    <ClInclude Include="Engine\Script\ScriptSystem.hpp" />
     <ClInclude Include="Engine\Window\Window.hpp" />
     <ClInclude Include="Engine\Render\BitmapFont.hpp" />
     <ClInclude Include="Engine\Render\CameraContext.hpp" />
@@ -531,8 +541,6 @@
     <ClInclude Include="Editor\Gizmos\EditorGizmos.hpp" />
     <ClInclude Include="Editor\Gizmos\GizmosShapes.hpp" />
     <ClInclude Include="Editor\Gizmos\ViewportAxisIndicator.hpp" />
-    <ClInclude Include="File\FileSystem.hpp" />
-    <ClInclude Include="File\VirtualPath.hpp" />
     <ClInclude Include="Scene\3D\Camera3D.hpp" />
     <ClInclude Include="Scene\3D\Light3D.hpp" />
     <ClInclude Include="Scene\3D\Mesh3D.hpp" />

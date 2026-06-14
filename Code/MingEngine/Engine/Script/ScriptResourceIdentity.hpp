@@ -1,20 +1,20 @@
 #pragma once
 
+#include "MingEngine/Engine/File/VirtualPath.hpp"
+
 #include <string>
 
-class VirtualPath
+struct ScriptResourceIdentity
 {
 public:
-	// Wrong cases:
-	// 1) Empty path
-	// 2) res://
-	// 3) res://../Secret.txt
-	// 4) res://Assets/../Secret.txt
-	// 5) C:/Game/Test.as
-	bool Parse(std::string const& path);
+	ScriptResourceIdentity() = default;
 
-	std::string const& GetRelativePath() const;
+	static bool Create(VirtualPath const& path, ScriptResourceIdentity& outIdentity);
+
+	VirtualPath const&  GetPath() const;
+	std::string const& GetClassName() const;
 
 private:
-	std::string m_relativePath;
+	VirtualPath m_path;
+	std::string m_className;
 };

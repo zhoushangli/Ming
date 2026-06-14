@@ -1,65 +1,155 @@
-#include "ScriptResourceIdentity.hpp"
-#include "MingEngine/Engine/File/VirtualPath.hpp"
+#include "MingEngine/Engine/Script/ScriptSystem.hpp"
 
-bool VirtualPath::Parse(std::string const& path)
+#include "MingEngine/Engine/Application/Engine.hpp"
+#include "MingEngine/Engine/Core/ErrorWarningAssert.hpp"
+#include "MingEngine/Engine/File/FileSystem.hpp"
+
+#include "ThirdParty/angelscript/include/angelscript.h"
+
+#if defined(_DEBUG)
+#pragma comment(lib, "ThirdParty/angelscript/lib/angelscript64d.lib")
+#else
+#pragma comment(lib, "ThirdParty/angelscript/lib/angelscript64.lib")
+#endif
+
+namespace
 {
-	m_relativePath.clear();
+void ScriptMessageCallback(asSMessageInfo const* message, void*)
+{
+	char const* type = "Info";
 
-	if (path.empty())
-	{
-		return false;
-	}
+	if (message->type == asMSGTYPE_WARNING)
+		type = "Warning";
+	else if (message->type == asMSGTYPE_ERROR)
+		type = "Error";
 
-	std::string const prefix = "res://";
+	DebuggerPrintf("%s (%d, %d): %s: %s\n", message->section, message->row, message->col, type, message->message);
+}
+} // namespace
 
-	if (path.compare(0, prefix.size(), prefix) != 0)
-	{
-		return false;
-	}
+ScriptSystem::ScriptSystem([[maybe_unused]] ScriptSystemConfig const& config) {}
 
-	m_relativePath = path.substr(prefix.size());
+void ScriptSystem::Startup()
+{
+	m_scriptEngine = asCreateScriptEngine();
 
-	if (m_relativePath.empty())
-	{
-		return false;
-	}
+	GUARANTEE_OR_DIE(m_scriptEngine != nullptr, "Failed to create AngelScript engine.");
 
-	if (m_relativePath.find('\\') != std::string::npos)
-	{
-		return false;
-	}
+	int result = m_scriptEngine->SetMessageCallback(asFUNCTION(ScriptMessageCallback), nullptr, asCALL_CDECL);
 
-	if (m_relativePath == ".." || m_relativePath.starts_with("../") || m_relativePath.find("/../") != std::string::npos
-		|| m_relativePath.ends_with("/.."))
-	{
-		return false;
-	}
-
-	return true;
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register AngelScript message callback.");
 }
 
-std::string const& VirtualPath::GetRelativePath() const { return m_relativePath; }
-
-bool MakeScriptResourceIdentity(std::string const& scriptPath, ScriptResourceIdentity& outIdentity)
+void ScriptSystem::Shutdown()
 {
-	VirtualPath vp;
-	if (!vp.Parse(scriptPath))
+	m_loadedScripts.clear();
+
+	if (m_scriptEngine != nullptr)
 	{
-		return false;
+		m_scriptEngine->ShutDownAndRelease();
+		m_scriptEngine = nullptr;
+	}
+}
+
+void ScriptSystem::BeginFrame() {}
+
+void ScriptSystem::EndFrame() {}
+
+std::unique_ptr<ScriptInstance> ScriptSystem::CreateInstance(std::string const& path, Object& owner)
+{
+	ScriptModule* scriptModule = GetOrCreateModule(path);
+	if (scriptModule == nullptr)
+	{
+		DebuggerPrintf("Failed to load script module for path: %s\n", path.c_str());
+		return std::unique_ptr<ScriptInstance>();
 	}
 
-	// Wheather the file extension is ".as"
-	std::string const& relativePath = vp.GetRelativePath();
-	if (relativePath.size() < 3 || relativePath.compare(relativePath.size() - 3, 3, ".as") != 0)
+	std::unique_ptr<ScriptInstance> instance = ScriptInstance::Create(*scriptModule, owner);
+	if (instance == nullptr)
 	{
-		return false;
+		return nullptr;
 	}
 
-	// Get indentity
-	size_t const fileNameBegin  = relativePath.find_last_of('/');
-	size_t const fileNameEnd = relativePath.size() - 3; // Exclude ".as" extension
-	outIdentity.m_path = scriptPath;
-	outIdentity.m_className = relativePath.substr(fileNameBegin + 1, fileNameEnd - fileNameBegin - 1);
+	return instance;
+}
 
-	return true;
+ScriptModule* ScriptSystem::GetOrCreateModule(std::string const& path)
+{
+	VirtualPath virtualPath;
+	if (!virtualPath.Parse(std::string(path)))
+	{
+		return nullptr;
+	}
+
+	return GetOrCreateModule(virtualPath);
+}
+
+ScriptModule* ScriptSystem::GetOrCreateModule(VirtualPath const& virtualPath)
+{
+	auto it = m_loadedScripts.find(virtualPath);
+	if (it != m_loadedScripts.end())
+	{
+		return &it->second;
+	}
+
+	ScriptResourceIdentity identity;
+
+	if (!ScriptResourceIdentity::Create(virtualPath, identity))
+	{
+		DebuggerPrintf("Invalid script path: %s\n", virtualPath.ToString().c_str());
+		return nullptr;
+	}
+
+	std::string scriptText;
+	if (!g_engine->m_fileSystem->ReadText(virtualPath, scriptText))
+	{
+		DebuggerPrintf("Failed to read script file: %s\n", virtualPath.ToString().c_str());
+		return nullptr;
+	}
+
+	// asIScriptModule is an empty handle managed by the AngelScript engine
+	// When we call m_scriptEngine->ShutDownAndRelease(); all asIScriptModule instances will be invalidated, so we don't
+	// need to worry about cleaning them up individually
+	std::string      moduleName   = virtualPath.ToString();
+	asIScriptModule* scriptModule = m_scriptEngine->GetModule(moduleName.c_str(), asGM_ALWAYS_CREATE);
+
+	if (scriptModule == nullptr)
+	{
+		DebuggerPrintf("Failed to create script module for: %s\n", virtualPath.ToString().c_str());
+		return nullptr;
+	}
+
+	int result = scriptModule->AddScriptSection(virtualPath.ToString().c_str(), scriptText.c_str(), scriptText.size());
+
+	if (result < 0)
+	{
+		m_scriptEngine->DiscardModule(moduleName.c_str());
+		return nullptr;
+	}
+
+	result = scriptModule->Build();
+	if (result < 0)
+	{
+		m_scriptEngine->DiscardModule(moduleName.c_str());
+		return nullptr;
+	}
+
+	asITypeInfo* scriptType = scriptModule->GetTypeInfoByName(identity.GetClassName().c_str());
+
+	if (scriptType == nullptr)
+	{
+		DebuggerPrintf(
+			"Script '%s' does not define class '%s'.\n",
+			virtualPath.ToString().c_str(),
+			identity.GetClassName().c_str());
+
+		m_scriptEngine->DiscardModule(moduleName.c_str());
+		return nullptr;
+	}
+
+	ScriptModule module(std::move(identity), scriptModule, scriptType);
+
+	m_loadedScripts[virtualPath] = std::move(module);
+
+	return &m_loadedScripts[virtualPath];
 }

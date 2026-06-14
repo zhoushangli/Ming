@@ -1,4 +1,4 @@
-#include "MingEngine/File/VirtualPath.hpp"
+#include "MingEngine/Engine/File/VirtualPath.hpp"
 
 bool VirtualPath::Parse(std::string const& path)
 {
@@ -28,8 +28,9 @@ bool VirtualPath::Parse(std::string const& path)
 		return false;
 	}
 
-	if (m_relativePath == ".." || m_relativePath.starts_with("../") || m_relativePath.find("/../") != std::string::npos
-		|| m_relativePath.ends_with("/.."))
+	if (m_relativePath == ".." || m_relativePath.compare(0, 3, "../") == 0
+		|| m_relativePath.find("/../") != std::string::npos
+		|| (m_relativePath.size() >= 3 && m_relativePath.compare(m_relativePath.size() - 3, 3, "/..") == 0))
 	{
 		return false;
 	}
@@ -38,3 +39,7 @@ bool VirtualPath::Parse(std::string const& path)
 }
 
 std::string const& VirtualPath::GetRelativePath() const { return m_relativePath; }
+
+bool VirtualPath::operator==(VirtualPath const& other) const { return m_relativePath == other.m_relativePath; }
+
+std::string VirtualPath::ToString() const { return "res://" + m_relativePath; }

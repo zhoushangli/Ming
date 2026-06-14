@@ -32,12 +32,9 @@ bool PostProcessPass::HasCustomInputs() const
 	return false;
 }
 
-void PostProcessChain::AddPass(PostProcessPass const& pass) {}
+void PostProcessChain::AddPass(PostProcessPass const& pass) { m_passes.push_back(pass); }
 
-PostProcessChain::PostProcessChain()
-{
-	IntVec2 const fullResolution = g_engine->m_window->GetClientDimensions();
-}
+PostProcessChain::PostProcessChain() { IntVec2 const fullResolution = g_engine->m_window->GetClientDimensions(); }
 
 PostProcessChain::~PostProcessChain() {}
 
@@ -87,7 +84,8 @@ Texture* PostProcessChain::Render(D3D11RenderBackend& renderer, PostProcessConte
 					continue;
 				}
 
-				GUARANTEE_OR_DIE(customInput.m_slot >= PostProcessTextureSlot::CustomInputStart,
+				GUARANTEE_OR_DIE(
+					customInput.m_slot >= PostProcessTextureSlot::CustomInputStart,
 					Stringf(
 						"PostProcessPass '%s' custom input '%s' uses reserved texture slot %d; custom inputs must use "
 						"slot %d or higher",
@@ -95,8 +93,10 @@ Texture* PostProcessChain::Render(D3D11RenderBackend& renderer, PostProcessConte
 						customInput.m_name.c_str(),
 						customInput.m_slot,
 						PostProcessTextureSlot::CustomInputStart));
-				GUARANTEE_OR_DIE(customInput.m_slot < PostProcessTextureSlot::MaxSamplerSlots,
-					Stringf("PostProcessPass '%s' custom input '%s' uses texture slot %d, but max supported slot is %d",
+				GUARANTEE_OR_DIE(
+					customInput.m_slot < PostProcessTextureSlot::MaxSamplerSlots,
+					Stringf(
+						"PostProcessPass '%s' custom input '%s' uses texture slot %d, but max supported slot is %d",
 						pass->m_name.c_str(),
 						customInput.m_name.c_str(),
 						customInput.m_slot,

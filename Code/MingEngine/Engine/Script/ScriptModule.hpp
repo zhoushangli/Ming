@@ -1,11 +1,28 @@
 #pragma once
 
-#include <string>
+#include "MingEngine/Engine/Script/ScriptResourceIdentity.hpp"
 
-struct ScriptResourceIdentity
+class asIScriptModule;
+class asITypeInfo;
+
+class ScriptModule
 {
-	std::string m_path;
-	std::string m_className;
-};
+	friend class ScriptSystem; // Only the ScriptSystem can create new ScriptModule objects
 
-bool MakeScriptResourceIdentity(std::string const& scriptPath, ScriptResourceIdentity& outIdentity);
+public:
+	ScriptModule() = default;
+
+	ScriptModule(ScriptModule const&) = delete;
+
+	ScriptResourceIdentity const& GetIdentity() const;
+	asIScriptModule*              GetScriptModule() const;
+	asITypeInfo*                  GetScriptType() const;
+
+private:
+	ScriptModule(ScriptResourceIdentity identity, asIScriptModule* scriptModule, asITypeInfo* scriptType);
+
+private:
+	ScriptResourceIdentity m_identity;
+	asIScriptModule*       m_scriptModule = nullptr;
+	asITypeInfo*           m_scriptType   = nullptr;
+};
