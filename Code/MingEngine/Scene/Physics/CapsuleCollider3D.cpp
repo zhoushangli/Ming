@@ -1,8 +1,8 @@
 #include "MingEngine/Scene/Physics/CapsuleCollider3D.hpp"
 
-#include "MingEngine/Engine/Render/Rgba8.hpp"
-#include "MingEngine/Engine/Math/Matrix4x4.hpp"
-#include "MingEngine/Engine/Math/RaycastUtils.hpp"
+#include "MingEngine/Core/Render/Rgba8.hpp"
+#include "MingEngine/Core/Math/Matrix4x4.hpp"
+#include "MingEngine/Core/Math/RaycastUtils.hpp"
 #include "MingEngine/Engine/Render/DebugRenderer.hpp"
 
 CapsuleCollider3D::CapsuleCollider3D(Capsule3 const& capsule)
@@ -33,7 +33,7 @@ GameRaycastResult CapsuleCollider3D::Raycast(RaycastInfo const& info) const
 	return raycastResult;
 }
 
-void CapsuleCollider3D::OnProcess(float deltaSeconds) { Node3D::OnProcess(deltaSeconds); }
+void CapsuleCollider3D::OnProcess([[maybe_unused]] float deltaSeconds) { }
 
 void CapsuleCollider3D::RenderDebug() const
 {
@@ -42,3 +42,4 @@ void CapsuleCollider3D::RenderDebug() const
 
 	DebugAddWorldWireCapsule(worldStart, worldEnd, m_radius, 0.f, Rgba8::Orange, Rgba8::Orange);
 }
+

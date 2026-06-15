@@ -2,8 +2,8 @@
 
 #include "ThirdParty/nlohmann/json.hpp"
 
-#include "MingEngine/Engine/Math/Vec2.hpp"
-#include "MingEngine/Engine/Math/Vec3.hpp"
+#include "MingEngine/Core/Math/Vec2.hpp"
+#include "MingEngine/Core/Math/Vec3.hpp"
 
 #include <fstream>
 
@@ -166,3 +166,4 @@ bool JsonLoader::LoadFromFile(char const* filePath, MeshData& outMesh, JsonLoadO
 
 	return !outMesh.IsEmpty();
 }
+

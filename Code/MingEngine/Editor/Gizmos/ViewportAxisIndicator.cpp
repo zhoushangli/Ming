@@ -6,7 +6,7 @@
 #include "MingEngine/Scene/Core/Viewport.hpp"
 
 #include "MingEngine/Engine/Application/Engine.hpp"
-#include "MingEngine/Engine/Math/MathUtils.hpp"
+#include "MingEngine/Core/Math/MathUtils.hpp"
 #include "MingEngine/Engine/Render/Renderer.hpp"
 #include "MingEngine/Engine/Render/VertexBuffer.hpp"
 
@@ -183,3 +183,4 @@ void ViewportAxisIndicator::RebuildVertexBuffer()
 
 	g_engine->m_renderer->UpdateVertexBuffer(m_vertexBuffer, m_verts);
 }
+

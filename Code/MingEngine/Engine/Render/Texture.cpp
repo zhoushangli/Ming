@@ -1,7 +1,7 @@
 #include "MingEngine/Engine/Render/Texture.hpp"
 
-#include "MingEngine/Engine/Core/ErrorWarningAssert.hpp"
-#include "MingEngine/Engine/Math/AABB2.hpp"
+#include "MingEngine/Core/ErrorWarningAssert.hpp"
+#include "MingEngine/Core/Math/AABB2.hpp"
 
 #include <d3d11.h>
 
@@ -132,4 +132,5 @@ AABB2 SpriteSheet::GetSpriteUVs(IntVec2& spriteCoords) const
     int spriteIndex = spriteCoords.y * m_dimension.x + spriteCoords.x;
     return GetSpriteUVs(spriteIndex);
 }
+
 

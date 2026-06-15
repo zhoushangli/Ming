@@ -2,7 +2,7 @@
 
 #include "MingEngine/Scene/Resource/MeshResource.hpp"
 
-#include "MingEngine/Engine/Render/Rgba8.hpp"
+#include "MingEngine/Core/Render/Rgba8.hpp"
 
 struct JsonLoadOptions
 {
@@ -18,3 +18,4 @@ class JsonLoader
 public:
 	static bool LoadFromFile(char const* filePath, MeshData& outMesh, JsonLoadOptions const& options = JsonLoadOptions());
 };
+

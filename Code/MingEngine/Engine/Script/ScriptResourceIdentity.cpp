@@ -1,6 +1,6 @@
 #include "MingEngine/Engine/Script/ScriptResourceIdentity.hpp"
 
-#include "MingEngine/Engine/Core/ErrorWarningAssert.hpp"
+#include "MingEngine/Core/ErrorWarningAssert.hpp"
 
 #include <cctype>
 

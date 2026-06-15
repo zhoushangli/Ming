@@ -6,7 +6,7 @@
 #include "MingEngine/Scene/Core/Node.hpp"
 #include "MingEngine/Scene/Core/SceneTree.hpp"
 
-#include "MingEngine/Engine/Core/ErrorWarningAssert.hpp"
+#include "MingEngine/Core/ErrorWarningAssert.hpp"
 
 #include "ThirdParty/imgui/imgui.h"
 
@@ -317,3 +317,4 @@ void CreateNodePanel::Reset()
 	m_parentHandle = NodeHandle::Invalid;
 	m_openPopup    = false;
 }
+

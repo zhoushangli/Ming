@@ -1,8 +1,8 @@
 #include "MingEngine/Engine/Input/InputSystem.hpp"
 
 #include "MingEngine/Engine/Application/Engine.hpp"
-#include "MingEngine/Engine/Core/ErrorWarningAssert.hpp"
-#include "MingEngine/Engine/Math/MathUtils.hpp"
+#include "MingEngine/Core/ErrorWarningAssert.hpp"
+#include "MingEngine/Core/Math/MathUtils.hpp"
 
 #define WIN32_LEAN_AND_MEAN
 #define GLFW_EXPOSE_NATIVE_WIN32
@@ -235,3 +235,4 @@ bool InputSystem::Event_KeyUp(EventArgs& args)
 	g_engine->m_input->HandleKeyReleased(asKey);
 	return true;
 }
+

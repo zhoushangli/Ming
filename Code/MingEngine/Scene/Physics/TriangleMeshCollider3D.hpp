@@ -2,7 +2,7 @@
 
 #include "MingEngine/Scene/Physics/Collider3D.hpp"
 
-#include "MingEngine/Engine/Render/Vertex.hpp"
+#include "MingEngine/Core/Render/Vertex.hpp"
 
 #include <vector>
 
@@ -24,3 +24,4 @@ protected:
 private:
 	std::vector<Vertex> m_vertices;
 };
+

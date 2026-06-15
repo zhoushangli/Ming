@@ -1,8 +1,8 @@
 #pragma once
 
-#include "MingEngine/Engine/Math/EulerAngles.hpp"
-#include "MingEngine/Engine/Math/Matrix4x4.hpp"
-#include "MingEngine/Engine/Math/Vec3.hpp"
+#include "MingEngine/Core/Math/EulerAngles.hpp"
+#include "MingEngine/Core/Math/Matrix4x4.hpp"
+#include "MingEngine/Core/Math/Vec3.hpp"
 
 class Transform3D
 {
@@ -32,3 +32,4 @@ private:
 	mutable bool      m_isMatrixDirty        = true;
 	mutable bool      m_isInverseMatrixDirty = true;
 };
+

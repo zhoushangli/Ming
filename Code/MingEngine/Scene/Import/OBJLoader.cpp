@@ -1,10 +1,10 @@
 #include "MingEngine/Scene/Import/OBJLoader.hpp"
 
 #include "MingEngine/Engine/Application/Engine.hpp"
-#include "MingEngine/Engine/Math/MathUtils.hpp"
-#include "MingEngine/Engine/Math/Vec2.hpp"
-#include "MingEngine/Engine/Math/Vec3.hpp"
-#include "MingEngine/Engine/Core/ErrorWarningAssert.hpp"
+#include "MingEngine/Core/Math/MathUtils.hpp"
+#include "MingEngine/Core/Math/Vec2.hpp"
+#include "MingEngine/Core/Math/Vec3.hpp"
+#include "MingEngine/Core/ErrorWarningAssert.hpp"
 
 #include <cstdlib>
 #include <cstring>
@@ -603,3 +603,4 @@ void OBJLoader::GenerateNormalsIfNeeded(MeshData& mesh)
 		}
 	}
 }
+

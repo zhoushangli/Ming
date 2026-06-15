@@ -1,8 +1,8 @@
 #include "MingEngine/Scene/3D/Skybox3D.hpp"
 
 #include "MingEngine/Engine/Application/Engine.hpp"
-#include "MingEngine/Engine/Render/Vertex.hpp"
-#include "MingEngine/Engine/Math/MathUtils.hpp"
+#include "MingEngine/Core/Render/Vertex.hpp"
+#include "MingEngine/Core/Math/MathUtils.hpp"
 #include "MingEngine/Engine/Render/IndexBuffer.hpp"
 #include "MingEngine/Engine/Render/Renderer.hpp"
 #include "MingEngine/Engine/Render/VertexBuffer.hpp"
@@ -180,3 +180,4 @@ RenderRequest Skybox3D::SubmitRenderRequest() const
 	request.m_samplerMode    = SamplerMode::POINT_CLAMP;
 	return request;
 }
+

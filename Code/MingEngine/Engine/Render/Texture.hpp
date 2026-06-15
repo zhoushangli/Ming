@@ -1,7 +1,7 @@
 #pragma once
 
-#include "MingEngine/Engine/Math/AABB2.hpp"
-#include "MingEngine/Engine/Math/IntVec2.hpp"
+#include "MingEngine/Core/Math/AABB2.hpp"
+#include "MingEngine/Core/Math/IntVec2.hpp"
 
 #include <string>
 #include <vector>
@@ -78,3 +78,4 @@ protected:
 	Texture*                      m_colorTexture = nullptr;
 	std::vector<SpriteDefinition> m_spriteDefs;
 };
+

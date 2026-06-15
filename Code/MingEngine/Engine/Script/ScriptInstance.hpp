@@ -1,7 +1,7 @@
 #pragma once
 
+#include "MingEngine/Core/Object/Object.hpp"
 #include "MingEngine/Engine/Script/ScriptModule.hpp"
-#include "MingEngine/Scene/Core/Object.hpp"
 
 #include <memory>
 
@@ -16,8 +16,14 @@ class ScriptInstance
 public:
 	~ScriptInstance();
 
+	void Notification(int notification, bool reverse = false);
+
 	bool CallReady();
 	bool CallProcess(float deltaSeconds);
+	bool CallEnterTree();
+	bool CallExitTree();
+
+	Object* GetOwner() const;
 
 private:
 	ScriptInstance() = default;
@@ -32,14 +38,15 @@ private:
 	bool Execute(asIScriptFunction* function);
 	bool Execute(asIScriptFunction* function, float deltaSeconds);
 
-	Object* GetOwner() const;
-
 private:
-	Object* m_owner;
+	Object* m_owner = nullptr;
 
 	ScriptModule*    m_module = nullptr;
 	asIScriptObject* m_object = nullptr;
 
-	asIScriptFunction* m_readyFunction   = nullptr;
-	asIScriptFunction* m_processFunction = nullptr;
+	asIScriptFunction* m_enterTreeFunction = nullptr;
+	asIScriptFunction* m_exitTreeFunction  = nullptr;
+	asIScriptFunction* m_readyFunction     = nullptr;
+	asIScriptFunction* m_processFunction   = nullptr;
 };
+

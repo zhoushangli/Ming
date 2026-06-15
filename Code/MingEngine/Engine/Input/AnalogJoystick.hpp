@@ -1,6 +1,6 @@
 #pragma once
 
-#include "MingEngine/Engine/Math/Vec2.hpp"
+#include "MingEngine/Core/Math/Vec2.hpp"
 
 class AnalogJoystick
 {
@@ -24,3 +24,4 @@ protected:
     float m_innerDeadZoneFraction = 0.3f;   // If R < this%, R = 0; "input range start" for corrective range map
     float m_outerDeadZoneFraction = 0.95f;  // if R > this%, R = 1; "input range end" for corrective range map
 };
+

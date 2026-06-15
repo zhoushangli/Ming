@@ -1,13 +1,14 @@
 #include "MingEngine/Engine/Window/Window.hpp"
 
 #include "MingEngine/Engine/Application/Engine.hpp"
-#include "MingEngine/Engine/Core/ErrorWarningAssert.hpp"
+#include "MingEngine/Core/ErrorWarningAssert.hpp"
 #include "MingEngine/Engine/Input/InputSystem.hpp"
 
 #define WIN32_LEAN_AND_MEAN
 #define GLFW_EXPOSE_NATIVE_WIN32
 #include "ThirdParty/GLFW/glfw3.h"
 #include "ThirdParty/GLFW/glfw3native.h"
+#include "ThirdParty/imgui/backends/imgui_impl_glfw.h"
 
 #pragma comment(lib, "ThirdParty/GLFW/glfw3.lib")
 
@@ -15,6 +16,8 @@ namespace
 {
 static void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
+	ImGui_ImplGlfw_KeyCallback(window, key, scancode, action, mods);
+
 	(void)window;
 	(void)scancode;
 	(void)mods;
@@ -39,6 +42,8 @@ static void KeyCallback(GLFWwindow* window, int key, int scancode, int action, i
 
 static void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
 {
+	ImGui_ImplGlfw_MouseButtonCallback(window, button, action, mods);
+
 	(void)window;
 	(void)mods;
 
@@ -71,6 +76,8 @@ static void MouseButtonCallback(GLFWwindow* window, int button, int action, int 
 
 static void CharCallback(GLFWwindow* window, unsigned int codepoint)
 {
+	ImGui_ImplGlfw_CharCallback(window, codepoint);
+
 	(void)window;
 
 	if (codepoint > 255)
@@ -178,3 +185,4 @@ IntVec2 Window::GetClientDimensions() const
 	glfwGetFramebufferSize(m_glfwWindow, &width, &height);
 	return IntVec2(width, height);
 }
+

@@ -2,9 +2,9 @@
 
 #include "MingEngine/Scene/Core/NodeHandle.hpp"
 
-#include "MingEngine/Engine/Math/RaycastUtils.hpp"
-#include "MingEngine/Engine/Math/Vec2.hpp"
-#include "MingEngine/Engine/Math/Vec3.hpp"
+#include "MingEngine/Core/Math/RaycastUtils.hpp"
+#include "MingEngine/Core/Math/Vec2.hpp"
+#include "MingEngine/Core/Math/Vec3.hpp"
 
 class CameraContext;
 
@@ -25,3 +25,4 @@ struct RaycastInfo
 
 RaycastInfo
 BuildRaycastFromMouse(CameraContext const& camera, Vec2 const& clientPos, Vec2 const& clientDimensions, float maxLength);
+

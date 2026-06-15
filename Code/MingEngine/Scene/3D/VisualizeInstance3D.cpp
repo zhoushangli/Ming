@@ -19,7 +19,6 @@ void VisualizeInstance3D::OnExitTree()
 	{
 		m_data.m_viewport->UnregisterVisualizeInstance(this);
 	}
-	Node3D::OnExitTree();
 }
 
 void VisualizeInstance3D::SetVisible(bool visible) { m_isVisible = visible; }

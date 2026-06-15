@@ -2,7 +2,7 @@
 
 #include "MingEngine/Scene/3D/Node3D.hpp"
 
-#include "MingEngine/Engine/Math/Vec2.hpp"
+#include "MingEngine/Core/Math/Vec2.hpp"
 
 class Camera3D;
 
@@ -41,3 +41,4 @@ private:
 
 	static EditorController* s_instance;
 };
+

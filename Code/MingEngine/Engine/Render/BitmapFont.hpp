@@ -1,6 +1,6 @@
 #pragma once
 
-#include "MingEngine/Engine/Render/Vertex.hpp"
+#include "MingEngine/Core/Render/Vertex.hpp"
 #include "MingEngine/Engine/Render/Texture.hpp"
 
 enum class TextBoxMode
@@ -70,3 +70,4 @@ protected:
 	SpriteSheet m_fontGlyphsSpriteSheet;
 	float m_fontDefaultAspect = 1.0f; // For basic (tier 1) fonts, set this to the aspect of the sprite sheet texture
 };
+

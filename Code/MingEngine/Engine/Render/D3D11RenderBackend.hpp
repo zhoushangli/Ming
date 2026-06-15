@@ -2,10 +2,10 @@
 
 #include "MingEngine/Engine/Application/EngineBuildPreferences.hpp"
 
+#include "MingEngine/Core/Image.hpp"
 #include "MingEngine/Engine/Event/EventSystem.hpp"
-#include "MingEngine/Engine/Core/Image.hpp"
-#include "MingEngine/Engine/Math/IntVec2.hpp"
-#include "MingEngine/Engine/Math/Matrix4x4.hpp"
+#include "MingEngine/Core/Math/IntVec2.hpp"
+#include "MingEngine/Core/Math/Matrix4x4.hpp"
 #include "MingEngine/Engine/Render/BitmapFont.hpp"
 #include "MingEngine/Engine/Render/PostProcessChain.hpp"
 #include "MingEngine/Engine/Render/Shader.hpp"
@@ -174,7 +174,7 @@ struct BuiltinConstantBufferDesc
 	int         slot = 0;
 };
 
-static BuiltinConstantBufferDesc const kBuiltinConstantBufferDescs[] = {
+static BuiltinConstantBufferDesc const BuiltinConstantBufferDescs[] = {
 	{ "Light", sizeof(LightConstants), kLightConstantsSlot },
 	{ "Camera", sizeof(CameraConstants), kCameraConstantsSlot },
 	{ "Model", sizeof(ModelConstants), kModelConstantsSlot },
@@ -272,7 +272,7 @@ public:
 	void UpdateAndBindConstantBuffer(BuiltinConstantBufferType id, T const& data)
 	{
 		int const                        index = (int)id;
-		BuiltinConstantBufferDesc const& desc  = kBuiltinConstantBufferDescs[index];
+		BuiltinConstantBufferDesc const& desc  = BuiltinConstantBufferDescs[index];
 
 		ConstantBuffer* buffer = m_builtinConstantBuffers[index];
 		UpdateConstantBuffer(buffer, data);
@@ -285,17 +285,19 @@ private:
 
 	// Shader creation internals
 	Shader* CreateShader(char const* shaderName, char const* shaderSource);
-	bool    CompileShaderToByteCode(std::vector<unsigned char>& outByteCode,
-		char const*                                          name,
-		char const*                                          source,
-		char const*                                          entryPoint,
-		char const*                                          target);
+	bool    CompileShaderToByteCode(
+		std::vector<unsigned char>& outByteCode,
+		char const*                 name,
+		char const*                 source,
+		char const*                 entryPoint,
+		char const*                 target);
 
 	// Low-level buffer binding to D3D context
 	void BindVertexBuffer(VertexBuffer* vertexBuffer);
 	void BindIndexBuffer(IndexBuffer* indexBuffer);
 
-	Texture* CreateTextureInternal(char const* name,
+	Texture* CreateTextureInternal(
+		char const*                            name,
 		IntVec2                                dimensions,
 		D3D11_TEXTURE2D_DESC const*            textureDesc,
 		D3D11_SUBRESOURCE_DATA const*          initialData,
@@ -311,7 +313,7 @@ private:
 	Texture* m_defaultBlackTexture = nullptr;
 
 	CameraContext* m_currentCamera = nullptr;
-	Shader* m_currentShader = nullptr;
+	Shader*        m_currentShader = nullptr;
 
 	VertexBuffer*   m_currentVertexBuffer                                           = nullptr;
 	IndexBuffer*    m_currentIndexBuffer                                            = nullptr;
@@ -351,3 +353,4 @@ private:
 	void* m_dxgiDebugModule = nullptr;
 #endif
 };
+

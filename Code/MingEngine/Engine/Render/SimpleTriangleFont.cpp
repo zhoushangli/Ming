@@ -8,9 +8,9 @@
 // require any external bitmap or TrueType fonts (or textures, or anything at all) in Data.
 //-----------------------------------------------------------------------------------------------
 #include "MingEngine/Engine/Render/SimpleTriangleFont.hpp"	// actually should be: "MingEngine/Engine/Render/SimpleTriangleFont.hpp"
-#include "MingEngine/Engine/Render/Vertex.hpp"				// actually should be: "MingEngine/Engine/Render/Vertex.hpp"
-#include "MingEngine/Engine/Render/Rgba8.hpp"				// actually should be: "MingEngine/Engine/Render/Rgba8.hpp"
-#include "MingEngine/Engine/Math/AABB2.hpp"				// actually should be: "MingEngine/Engine/Math/AABB2.hpp"
+#include "MingEngine/Core/Render/Vertex.hpp"				// actually should be: "MingEngine/Core/Render/Vertex.hpp"
+#include "MingEngine/Core/Render/Rgba8.hpp"				// actually should be: "MingEngine/Core/Render/Rgba8.hpp"
+#include "MingEngine/Core/Math/AABB2.hpp"				// actually should be: "MingEngine/Core/Math/AABB2.hpp"
 
 
 
@@ -130,5 +130,6 @@ float GetSimpleTriangleStringWidth( const std::string& text, float cellHeight, f
 	float totalWidth = (numCells * cellWidth) + (numGaps * gapWidth);
 	return totalWidth;
 }
+
 
 

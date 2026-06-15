@@ -1,6 +1,6 @@
 #pragma once
 
-#include "MingEngine/Engine/Core/NamedStrings.hpp"
+#include "MingEngine/Core/NamedStrings.hpp"
 
 #include <functional>
 #include <map>

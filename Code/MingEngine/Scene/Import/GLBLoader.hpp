@@ -2,7 +2,7 @@
 
 #include "MingEngine/Scene/Resource/MeshResource.hpp"
 
-#include "MingEngine/Engine/Render/Rgba8.hpp"
+#include "MingEngine/Core/Render/Rgba8.hpp"
 
 struct GLBLoadOptions
 {
@@ -15,3 +15,4 @@ class GLBLoader
 public:
 	static bool LoadFromFile(char const* filePath, MeshData& outMesh, GLBLoadOptions const& options = GLBLoadOptions());
 };
+

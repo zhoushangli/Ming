@@ -1,9 +1,9 @@
 #pragma once
 
-#include "MingEngine/Engine/Render/Rgba8.hpp"
-#include "MingEngine/Engine/Math/AABB2.hpp"
-#include "MingEngine/Engine/Math/FloatRange.hpp"
-#include "MingEngine/Engine/Math/IntVec2.hpp"
+#include "MingEngine/Core/Render/Rgba8.hpp"
+#include "MingEngine/Core/Math/AABB2.hpp"
+#include "MingEngine/Core/Math/FloatRange.hpp"
+#include "MingEngine/Core/Math/IntVec2.hpp"
 
 #include <vector>
 
@@ -52,3 +52,4 @@ private:
 	IntVec2 m_dimensions;
 	float*  m_values = nullptr;
 };
+

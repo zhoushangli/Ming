@@ -1,1 +1,0 @@
-#include "MingEngine/Scene/Core/MethodBind.hpp"

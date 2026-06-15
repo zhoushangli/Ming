@@ -1,6 +1,6 @@
 #pragma once
 
-#include "MingEngine/Scene/Core/Object.hpp"
+#include "MingEngine/Core/Object/Object.hpp"
 
 #include "MingEngine/Engine/File/VirtualPath.hpp"
 #include "MingEngine/Engine/Script/ScriptInstance.hpp"
@@ -37,3 +37,4 @@ private:
 
 	asIScriptEngine* m_scriptEngine = nullptr;
 };
+

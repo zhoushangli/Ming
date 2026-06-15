@@ -1,7 +1,7 @@
 #pragma once
 
 #include "MingEngine/Editor/UI/InspectorProperty.hpp"
-#include "MingEngine/Engine/Math/EulerAngles.hpp"
+#include "MingEngine/Core/Math/EulerAngles.hpp"
 #include "ThirdParty/imgui/imgui.h"
 
 class InspectorPropertyEuler final : public InspectorProperty
@@ -129,3 +129,4 @@ private:
 		return ImGui::DragFloat(id, &value, 0.1f, 0.0f, 0.0f, "%.2f");
 	}
 };
+

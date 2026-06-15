@@ -12,7 +12,7 @@ Mesh3D::Mesh3D(std::string const& modelFilePath, float scale) : VisualizeInstanc
 
 Mesh3D::~Mesh3D() {}
 
-void Mesh3D::OnProcess(float deltaSeconds) { Node3D::OnProcess(deltaSeconds); }
+void Mesh3D::OnProcess([[maybe_unused]] float deltaSeconds) { }
 
 AABB3 Mesh3D::GetLocalBounds() const { return m_meshResource != nullptr ? m_meshResource->m_localBounds : AABB3(); }
 

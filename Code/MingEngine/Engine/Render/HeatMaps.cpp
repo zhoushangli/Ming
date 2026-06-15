@@ -1,7 +1,7 @@
 #include "MingEngine/Engine/Render/HeatMaps.hpp"
 
-#include "MingEngine/Engine/Render/Vertex.hpp"
-#include "MingEngine/Engine/Math/MathUtils.hpp"
+#include "MingEngine/Core/Render/Vertex.hpp"
+#include "MingEngine/Core/Math/MathUtils.hpp"
 
 TileHeatMap::TileHeatMap(IntVec2 const& dimensions) : m_dimensions(dimensions)
 {
@@ -210,4 +210,5 @@ void TileHeatMap::GeneratePath(std::vector<Vec2>& path, Vec2 position)
 
     std::reverse(path.begin(), path.end());
 }
+
 

@@ -1,16 +1,16 @@
 #include "MingEngine/Engine/Render/D3D11RenderBackend.hpp"
 
 #include "MingEngine/Engine/Application/Engine.hpp"
-#include "MingEngine/Engine/Core/ErrorWarningAssert.hpp"
-#include "MingEngine/Engine/Core/FileUtils.hpp"
-#include "MingEngine/Engine/Core/StringUtils.hpp"
+#include "MingEngine/Core/ErrorWarningAssert.hpp"
+#include "MingEngine/Core/FileUtils.hpp"
+#include "MingEngine/Core/StringUtils.hpp"
 #include "MingEngine/Engine/Render/CameraContext.hpp"
 #include "MingEngine/Engine/Render/ConstantBuffer.hpp"
 #include "MingEngine/Engine/Render/IndexBuffer.hpp"
 #include "MingEngine/Engine/Render/Texture.hpp"
-#include "MingEngine/Engine/Render/Vertex.hpp"
+#include "MingEngine/Core/Render/Vertex.hpp"
 #include "MingEngine/Engine/Render/VertexBuffer.hpp"
-#include "MingEngine/Engine/Render/VertexUtils.hpp"
+#include "MingEngine/Core/Render/VertexUtils.hpp"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "ThirdParty/stb/stb_image.h"
@@ -76,7 +76,7 @@ D3D11RenderBackend::D3D11RenderBackend(RendererConfig config) : m_config(config)
 D3D11RenderBackend::~D3D11RenderBackend() {}
 
 #pragma region Public: Lifetime and frame loop
-void D3D11RenderBackend::Startup()
+void           D3D11RenderBackend::Startup()
 {
 	unsigned int deviceFlags = 0;
 #if defined(ENGINE_DEBUG_RENDER)
@@ -201,7 +201,7 @@ void D3D11RenderBackend::Startup()
 
 	for (int i = 0; i < (int)BuiltinConstantBufferType::Count; i++)
 	{
-		BuiltinConstantBufferDesc const& desc = kBuiltinConstantBufferDescs[i];
+		BuiltinConstantBufferDesc const& desc = BuiltinConstantBufferDescs[i];
 		m_builtinConstantBuffers[i]           = CreateConstantBuffer((unsigned int)desc.size);
 	}
 
@@ -496,7 +496,7 @@ void D3D11RenderBackend::SetStatesIfChanged()
 		m_currentBlendState = desiredBlendState;
 
 		float blendFactor[4] = { 0.f, 0.f, 0.f, 0.f };
-		UINT sampleMask      = 0xffffffff;
+		UINT  sampleMask     = 0xffffffff;
 
 		m_d3dDeviceContext->OMSetBlendState(m_currentBlendState, blendFactor, sampleMask);
 	}
@@ -638,7 +638,7 @@ Shader* D3D11RenderBackend::CreateOrGetShader(char const* shaderName)
 	std::string shaderFilename = std::string(shaderName) + ".hlsl";
 
 	std::string shaderSource;
-	int bytesRead = FileReadToString(shaderSource, shaderFilename);
+	int         bytesRead = FileReadToString(shaderSource, shaderFilename);
 
 	GUARANTEE_OR_DIE(bytesRead > 0, Stringf("Failed to read shader file \"%s\"", shaderFilename.c_str()));
 
@@ -755,13 +755,13 @@ void D3D11RenderBackend::DestroyTexture(Texture* texture)
 BitmapFont* D3D11RenderBackend::CreateOrGetBitmapFont(char const* fontFilePathNameWithNoExtension)
 {
 	std::string fontKey = std::string(fontFilePathNameWithNoExtension);
-	auto found          = m_fontsByName.find(fontKey);
+	auto        found   = m_fontsByName.find(fontKey);
 	if (found != m_fontsByName.end())
 	{
 		return found->second;
 	}
 
-	Texture* fontTexture      = CreateOrGetTexture(Stringf("%s.png", fontFilePathNameWithNoExtension).c_str());
+	Texture*    fontTexture   = CreateOrGetTexture(Stringf("%s.png", fontFilePathNameWithNoExtension).c_str());
 	BitmapFont* newBitmapFont = new BitmapFont(fontFilePathNameWithNoExtension, *fontTexture);
 	m_fontsByName[fontKey]    = newBitmapFont;
 	return newBitmapFont;
@@ -779,7 +779,7 @@ VertexBuffer* D3D11RenderBackend::CreateVertexBuffer(std::vector<Vertex> const& 
 		return nullptr;
 	}
 
-	unsigned int const vertsSize     = static_cast<unsigned int>(verts.size()) * sizeof(Vertex);
+	unsigned int const  vertsSize    = static_cast<unsigned int>(verts.size()) * sizeof(Vertex);
 	VertexBuffer* const vertexBuffer = CreateVertexBuffer(vertsSize, sizeof(Vertex));
 	CopyCPUToGPU(verts.data(), vertsSize, vertexBuffer);
 	return vertexBuffer;
@@ -909,7 +909,7 @@ Texture* D3D11RenderBackend::GetTextureFromFileName(char const* imageFilePath)
 	}
 
 	std::string filePath = std::string(imageFilePath);
-	auto found           = m_texturesByName.find(filePath);
+	auto        found    = m_texturesByName.find(filePath);
 	if (found != m_texturesByName.end())
 	{
 		return found->second;
@@ -968,8 +968,8 @@ Shader* D3D11RenderBackend::CreateShader(char const* shaderName, char const* sha
 		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 	};
 
-	D3D11_INPUT_ELEMENT_DESC const* inputElementDesc = kPcutbnDesc;
-	UINT inputElementCount                           = (UINT)ARRAYSIZE(kPcutbnDesc);
+	D3D11_INPUT_ELEMENT_DESC const* inputElementDesc  = kPcutbnDesc;
+	UINT                            inputElementCount = (UINT)ARRAYSIZE(kPcutbnDesc);
 
 	hr = m_d3dDevice->CreateInputLayout(
 		inputElementDesc,
@@ -986,10 +986,10 @@ Shader* D3D11RenderBackend::CreateShader(char const* shaderName, char const* sha
 
 bool D3D11RenderBackend::CompileShaderToByteCode(
 	std::vector<unsigned char>& outByteCode,
-	char const* name,
-	char const* source,
-	char const* entryPoint,
-	char const* target)
+	char const*                 name,
+	char const*                 source,
+	char const*                 entryPoint,
+	char const*                 target)
 {
 	if (source == nullptr || entryPoint == nullptr || target == nullptr)
 	{
@@ -1051,15 +1051,15 @@ void D3D11RenderBackend::BindVertexBuffer(VertexBuffer* vertexBuffer)
 	if (vertexBuffer == nullptr)
 	{
 		ID3D11Buffer* nullBuf = nullptr;
-		UINT stride           = 0;
-		UINT offset           = 0;
+		UINT          stride  = 0;
+		UINT          offset  = 0;
 		m_d3dDeviceContext->IASetVertexBuffers(0, 1, &nullBuf, &stride, &offset);
 		return;
 	}
 
-	UINT stride       = vertexBuffer->GetStride();
-	UINT offset       = 0;
-	ID3D11Buffer* buf = vertexBuffer->m_buffer;
+	UINT          stride = vertexBuffer->GetStride();
+	UINT          offset = 0;
+	ID3D11Buffer* buf    = vertexBuffer->m_buffer;
 	m_d3dDeviceContext->IASetVertexBuffers(0, 1, &buf, &stride, &offset);
 }
 
@@ -1220,7 +1220,7 @@ void D3D11RenderBackend::DrawFullscreenTriangle(Shader* shader, wchar_t const* e
 
 void D3D11RenderBackend::UnbindAllShaderResourceViews()
 {
-	ID3D11RenderTargetView* nullRTV        = nullptr;
+	ID3D11RenderTargetView*   nullRTV      = nullptr;
 	ID3D11ShaderResourceView* nullSrvs[16] = { nullptr };
 	m_d3dDeviceContext->OMSetRenderTargets(0, nullptr, nullptr);
 	m_d3dDeviceContext->OMSetRenderTargets(1, &nullRTV, nullptr);
@@ -1233,13 +1233,13 @@ void D3D11RenderBackend::BindBackBuffer()
 	m_d3dDeviceContext->OMSetRenderTargets(1, &m_d3dRenderTargetView, nullptr);
 }
 Texture* D3D11RenderBackend::CreateTextureInternal(
-	char const* name,
-	IntVec2 dimensions,
-	D3D11_TEXTURE2D_DESC const* textureDesc,
-	D3D11_SUBRESOURCE_DATA const* initialData,
-	D3D11_RENDER_TARGET_VIEW_DESC const* rtvDesc,
+	char const*                            name,
+	IntVec2                                dimensions,
+	D3D11_TEXTURE2D_DESC const*            textureDesc,
+	D3D11_SUBRESOURCE_DATA const*          initialData,
+	D3D11_RENDER_TARGET_VIEW_DESC const*   rtvDesc,
 	D3D11_SHADER_RESOURCE_VIEW_DESC const* srvDesc,
-	D3D11_DEPTH_STENCIL_VIEW_DESC const* dsvDesc)
+	D3D11_DEPTH_STENCIL_VIEW_DESC const*   dsvDesc)
 {
 	GUARANTEE_OR_DIE(
 		dimensions.x > 0 && dimensions.y > 0,
@@ -1280,3 +1280,4 @@ Texture* D3D11RenderBackend::CreateTextureInternal(
 }
 
 #pragma endregion
+

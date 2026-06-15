@@ -2,7 +2,7 @@
 
 #include "MingEngine/Scene/Physics/Collider3D.hpp"
 
-#include "MingEngine/Engine/Math/AABB3.hpp"
+#include "MingEngine/Core/Math/AABB3.hpp"
 
 class AABBCollider3D : public Collider3D
 {
@@ -22,3 +22,4 @@ protected:
 public:
 	AABB3 m_localBounds;
 };
+

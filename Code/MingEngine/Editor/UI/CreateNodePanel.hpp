@@ -1,7 +1,7 @@
 #pragma once
 
 #include "MingEngine/Editor/UI/EditorPanel.hpp"
-#include "MingEngine/Scene/Core/ClassDatabase.hpp"
+#include "MingEngine/Core/Object/ClassDatabase.hpp"
 #include "MingEngine/Scene/Core/NodeHandle.hpp"
 
 #include <map>
@@ -47,3 +47,4 @@ private:
 	bool m_openPopup          = false;
 	bool m_openWarningPopup   = false;
 };
+

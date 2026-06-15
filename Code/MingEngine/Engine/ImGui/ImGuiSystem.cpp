@@ -124,7 +124,7 @@ void ImGuiSystem::Startup()
 
 	ApplyGodotImGuiTheme();
 
-	ImGui_ImplGlfw_InitForOther(g_engine->m_window->GetGLFWWindow(), true);
+	ImGui_ImplGlfw_InitForOther(g_engine->m_window->GetGLFWWindow(), false);
 	g_engine->m_renderer->InitImGuiD3D11Backend();
 }
 

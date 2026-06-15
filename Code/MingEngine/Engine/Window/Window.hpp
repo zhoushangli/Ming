@@ -1,6 +1,6 @@
 #pragma once
 
-#include "MingEngine/Engine/Math/Vec2.hpp"
+#include "MingEngine/Core/Math/Vec2.hpp"
 
 struct GLFWwindow;
 
@@ -43,3 +43,4 @@ public:
 private:
 	WindowConfig m_config;
 };
+

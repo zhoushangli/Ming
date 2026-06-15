@@ -1,8 +1,8 @@
 #pragma once
 
-#include "MingEngine/Engine/Math/AABB2.hpp"
-#include "MingEngine/Engine/Math/EulerAngles.hpp"
-#include "MingEngine/Engine/Math/Vec2.hpp"
+#include "MingEngine/Core/Math/AABB2.hpp"
+#include "MingEngine/Core/Math/EulerAngles.hpp"
+#include "MingEngine/Core/Math/Vec2.hpp"
 
 class CameraContext
 {
@@ -66,3 +66,4 @@ protected:
 
 	Matrix4x4 m_cameraToRenderTransform = Matrix4x4::Identity;
 };
+

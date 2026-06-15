@@ -2,10 +2,10 @@
 
 #include "GizmosShapes.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
-#include "MingEngine/Engine/Math/AABB3.hpp"
+#include "MingEngine/Core/Math/AABB3.hpp"
 #include "MingEngine/Engine/Render/Renderer.hpp"
 #include "MingEngine/Engine/Render/VertexBuffer.hpp"
-#include "MingEngine/Engine/Render/VertexUtils.hpp"
+#include "MingEngine/Core/Render/VertexUtils.hpp"
 
 namespace
 {
@@ -94,3 +94,4 @@ EditorWorldAxis3D::EditorWorldAxis3D()
 		m_vertexBuffer = g_engine->m_renderer->CreateVertexBuffer(m_verts);
 	}
 }
+

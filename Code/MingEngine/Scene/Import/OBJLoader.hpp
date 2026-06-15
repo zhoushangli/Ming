@@ -2,7 +2,7 @@
 
 #include "MingEngine/Scene/Resource/MeshResource.hpp"
 
-#include "MingEngine/Engine/Render/Rgba8.hpp"
+#include "MingEngine/Core/Render/Rgba8.hpp"
 
 #include <string>
 
@@ -44,3 +44,4 @@ public:
 private:
 	static void GenerateNormalsIfNeeded(MeshData& mesh);
 };
+

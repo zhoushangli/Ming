@@ -1,15 +1,38 @@
 #include "MingEngine/Engine/Script/ScriptInstance.hpp"
 
-#include "MingEngine/Engine/Core/ErrorWarningAssert.hpp"
+#include "MingEngine/Scene/Core/Node.hpp"
+
+#include "MingEngine/Core/ErrorWarningAssert.hpp"
 
 #include "ThirdParty/angelscript/include/angelscript.h"
 
 ScriptInstance::~ScriptInstance() { Destroy(); }
 
+void ScriptInstance::Notification(int notification, bool reverse)
+{
+	notification;
+	reverse;
+	// switch (notification)
+	// {
+	// case (int)Node::NotificationType::EnterTree:
+	// 	CallEnterTree();
+	// 	break;
+	// case (int)Node::NotificationType::ExitTree:
+	// 	CallExitTree();
+	// 	break;
+	// case (int)Node::NotificationType::Ready:
+	// 	CallReady();
+	// 	break;
+	// case (int)Node::NotificationType::Process:
+	// 	CallProcess(0.0f);
+	// 	break;
+	// }
+}
+
 std::unique_ptr<ScriptInstance> ScriptInstance::Create(ScriptModule& module, Object& owner)
 {
 	std::unique_ptr<ScriptInstance> instance(new ScriptInstance());
-	
+
 	instance->m_owner = &owner;
 
 	asIScriptModule* scriptModule = module.GetScriptModule();
@@ -38,8 +61,26 @@ std::unique_ptr<ScriptInstance> ScriptInstance::Create(ScriptModule& module, Obj
 	instance->m_module = &module;
 	instance->m_object = static_cast<asIScriptObject*>(object);
 
-	instance->m_readyFunction   = scriptType->GetMethodByDecl("void _Ready()");
-	instance->m_processFunction = scriptType->GetMethodByDecl("void _Process(float)");
+	instance->m_enterTreeFunction = scriptType->GetMethodByDecl("void _EnterTree()");
+	instance->m_exitTreeFunction  = scriptType->GetMethodByDecl("void _ExitTree()");
+	instance->m_readyFunction     = scriptType->GetMethodByDecl("void _Ready()");
+	instance->m_processFunction   = scriptType->GetMethodByDecl("void _Process(float)");
+
+	// Inject in properties
+	// int nodeHandleTypeId = engine->GetTypeIdByDecl("Object@");
+	// for (asUINT i = 0; i < scriptType->GetPropertyCount(); ++i)
+	// {
+	// 	char const* name   = nullptr;
+	// 	int         typeId = 0;
+	// 	scriptType->GetProperty(i, &name, &typeId);
+
+	// 	if (std::string_view(name) == "owner" && typeId == nodeHandleTypeId)
+	// 	{
+	// 		void* address                 = instance->m_object->GetAddressOfProperty(i);
+	// 		*static_cast<Object**>(address) = dynamic_cast<Object*>(&owner);
+	// 		break;
+	// 	}
+	// }
 
 	return instance;
 }
@@ -52,14 +93,23 @@ void ScriptInstance::Destroy()
 		m_object = nullptr;
 	}
 
-	m_readyFunction   = nullptr;
-	m_processFunction = nullptr;
-	m_module          = nullptr;
+	m_enterTreeFunction = nullptr;
+	m_exitTreeFunction  = nullptr;
+	m_readyFunction     = nullptr;
+	m_processFunction   = nullptr;
+	m_module            = nullptr;
+	m_owner             = nullptr;
 }
 
 bool ScriptInstance::CallReady() { return Execute(m_readyFunction); }
 
 bool ScriptInstance::CallProcess(float deltaSeconds) { return Execute(m_processFunction, deltaSeconds); }
+
+bool ScriptInstance::CallEnterTree() { return Execute(m_enterTreeFunction); }
+
+bool ScriptInstance::CallExitTree() { return Execute(m_exitTreeFunction); }
+
+Object* ScriptInstance::GetOwner() const { return m_owner; }
 
 bool ScriptInstance::Execute(asIScriptFunction* function)
 {
@@ -145,3 +195,4 @@ bool ScriptInstance::Execute(asIScriptFunction* function, float deltaSeconds)
 
 	return result == asEXECUTION_FINISHED;
 }
+

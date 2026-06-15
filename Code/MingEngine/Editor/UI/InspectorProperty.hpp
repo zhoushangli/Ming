@@ -1,7 +1,7 @@
 #pragma once
 
-#include "MingEngine/Scene/Core/ClassDatabase.hpp"
-#include "MingEngine/Scene/Core/Variant.hpp"
+#include "MingEngine/Core/Object/ClassDatabase.hpp"
+#include "MingEngine/Core/Object/Variant.hpp"
 
 #include <string>
 
@@ -31,3 +31,4 @@ protected:
 	std::string m_labelId;
 	bool m_edited = false;
 };
+

@@ -1,10 +1,10 @@
 #include "MingEngine/Scene/Core/Node.hpp"
 
-#include "MingEngine/Scene/Core/ClassDatabase.hpp"
+#include "MingEngine/Core/Object/ClassDatabase.hpp"
 #include "MingEngine/Scene/Core/SceneTree.hpp"
 #include "MingEngine/Scene/Core/Viewport.hpp"
 
-#include "MingEngine/Engine/Core/ErrorWarningAssert.hpp"
+#include "MingEngine/Core/ErrorWarningAssert.hpp"
 
 #include <cctype>
 #include <exception>
@@ -80,8 +80,8 @@ Node* Node::GetNode(NodePath const& path) const
 		return current;
 	}
 
-	size_t nameIndex = 0;
-	std::vector<std::string> const& paths = path.GetPaths();
+	size_t                          nameIndex = 0;
+	std::vector<std::string> const& paths     = path.GetPaths();
 	if (path.IsAbsolute())
 	{
 		if (paths.empty() || paths[0] != current->GetName())
@@ -244,6 +244,59 @@ bool Node::IsAncestorOf(Node const* other) const
 	return false;
 }
 
+void Node::OnNotification(int notification)
+{
+	switch (static_cast<NotificationType>(notification))
+	{
+	case NotificationType::EnterTree:
+	{
+		OnEnterTree();
+		if (m_scriptInstance != nullptr)
+		{
+			m_scriptInstance->CallEnterTree();
+		}
+		break;
+	}
+	case NotificationType::ExitTree:
+	{
+		OnExitTree();
+		if (m_scriptInstance != nullptr)
+		{
+			m_scriptInstance->CallExitTree();
+		}
+		break;
+	}
+	case NotificationType::Ready:
+	{
+		OnReady();
+		if (m_scriptInstance != nullptr)
+		{
+			m_scriptInstance->CallReady();
+		}
+		break;
+	}
+	case NotificationType::Process:
+	{
+		float      deltaSeconds = 0.f;
+		SceneTree* sceneTree    = GetSceneTree();
+		if (sceneTree != nullptr)
+		{
+			deltaSeconds = sceneTree->GetDeltaSeconds();
+		}
+
+		OnProcess(deltaSeconds);
+
+		if (m_scriptInstance != nullptr)
+		{
+			m_scriptInstance->CallProcess(deltaSeconds);
+		}
+		break;
+	}
+	default:
+		break;
+	}
+}
+
 std::string Node::EnsureUniqueName(std::string const& requestedName) const
 {
 	std::string const normalizedName = requestedName.empty() ? GetClassName() : requestedName;
@@ -341,7 +394,7 @@ void Node::PropagateEnterTree()
 	// TODO: In future we should change this to object database and object handle
 	m_data.m_sceneTree->RegisterNode(this);
 
-	OnEnterTree();
+	Notification((int)NotificationType::EnterTree);
 
 	for (Node* child : children)
 	{
@@ -364,7 +417,7 @@ void Node::PropagateExitTree()
 		}
 	}
 
-	OnExitTree();
+	Notification((int)NotificationType::ExitTree, true);
 
 	m_data.m_sceneTree->UnregisterNode(this);
 
@@ -387,7 +440,7 @@ void Node::PropagateReady()
 
 	if (m_data.m_enableReady)
 	{
-		OnReady();
+		Notification((int)NotificationType::Ready);
 	}
 }
 
@@ -398,3 +451,4 @@ void Node::OnExitTree() {}
 void Node::OnReady() {}
 
 void Node::OnProcess([[maybe_unused]] float deltaSeconds) {}
+

@@ -3,9 +3,9 @@
 #include "MingEngine/Scene/3D/Transform3D.hpp"
 #include "MingEngine/Scene/Core/Node.hpp"
 
-#include "MingEngine/Engine/Math/EulerAngles.hpp"
-#include "MingEngine/Engine/Math/Matrix4x4.hpp"
-#include "MingEngine/Engine/Math/Vec3.hpp"
+#include "MingEngine/Core/Math/EulerAngles.hpp"
+#include "MingEngine/Core/Math/Matrix4x4.hpp"
+#include "MingEngine/Core/Math/Vec3.hpp"
 
 class Node3D : public Node
 {
@@ -52,3 +52,4 @@ protected:
 	Vec3 m_velocity               = Vec3::Zero;
 	EulerAngles m_angularVelocity = EulerAngles::Zero;
 };
+

@@ -1,5 +1,5 @@
 #pragma once
 
-#include "MingEngine/Engine/Core/NamedStrings.hpp"
+#include "MingEngine/Core/NamedStrings.hpp"
 
 extern NamedStrings g_gameConfigBlackBoard;

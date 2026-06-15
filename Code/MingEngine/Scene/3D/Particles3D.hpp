@@ -2,8 +2,8 @@
 
 #include "MingEngine/Scene/3D/VisualizeInstance3D.hpp"
 
-#include "MingEngine/Engine/Render/Rgba8.hpp"
-#include "MingEngine/Engine/Math/MathUtils.hpp"
+#include "MingEngine/Core/Render/Rgba8.hpp"
+#include "MingEngine/Core/Math/MathUtils.hpp"
 
 #include <string>
 
@@ -108,3 +108,4 @@ public:
 	// Burst mode properties
 	int m_burstCount = 20;
 };
+

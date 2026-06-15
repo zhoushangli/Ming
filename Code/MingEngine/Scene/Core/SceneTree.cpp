@@ -6,10 +6,9 @@
 #include "MingEngine/Scene/Physics/Collider3D.hpp"
 
 #include "MingEngine/Engine/Application/Engine.hpp"
-#include "MingEngine/Engine/Math/MathUtils.hpp"
+#include "MingEngine/Core/Math/MathUtils.hpp"
 #include "MingEngine/Engine/Render/Renderer.hpp"
 
-#include "SceneTree.hpp"
 #include <algorithm>
 
 namespace
@@ -76,7 +75,7 @@ void SceneTree::QueueDestroyNode(NodeHandle handle)
 
 void SceneTree::FlushPendingNode()
 {
-	// Flush pending scene 
+	// Flush pending scene
 	if (m_pendingScene != nullptr)
 	{
 		Node* previousScene = ResolveNode(m_sceneHandle);
@@ -152,6 +151,7 @@ void SceneTree::FlushTransformChangedNodes()
 
 void SceneTree::UpdateScene(float deltaSeconds)
 {
+	m_deltaSeconds = deltaSeconds;
 	m_physicsUpdateTimer += deltaSeconds;
 	while (m_physicsUpdateTimer >= m_physicsUpdateInterval)
 	{
@@ -169,7 +169,7 @@ void SceneTree::UpdateScene(float deltaSeconds)
 
 		if (node->m_data.m_enableProcess)
 		{
-			node->OnProcess(deltaSeconds);
+			node->Notification((int)Node::NotificationType::Process);
 		}
 	}
 
@@ -209,6 +209,8 @@ GameRaycastResult SceneTree::Raycast(RaycastInfo const& info) const
 	result.m_rayMaxLength = info.m_maxLength;
 	return result;
 }
+
+float SceneTree::GetDeltaSeconds() const { return m_deltaSeconds; }
 
 Node* SceneTree::ResolveNode(NodeHandle handle) const
 {
@@ -296,3 +298,4 @@ unsigned int SceneTree::FindAvailableNodeIndex() const
 void SceneTree::UpdatePhysics([[maybe_unused]] float deltaSeconds) {
 
 };
+

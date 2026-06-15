@@ -25,6 +25,9 @@
     <Filter Include="Engine\Core">
       <UniqueIdentifier>{B78E0A61-909B-4F5C-A05F-4DEFDE31BD22}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Engine\Core\Object">
+      <UniqueIdentifier>{85A6A2C3-2F43-49A8-A471-73C5F5966CF4}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Engine\Event">
       <UniqueIdentifier>{A40215AC-BB45-4374-B795-20BBC53ACBDF}</UniqueIdentifier>
     </Filter>
@@ -114,10 +117,10 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Engine\Core\Clock.cpp">
+    <ClCompile Include="Core\Clock.cpp">
       <Filter>Engine\Core</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Console\DevConsole.cpp">
+    <ClCompile Include="EngineService\DevConsole.cpp">
       <Filter>Engine\Console</Filter>
     </ClCompile>
     <ClCompile Include="Engine\Application\Engine.cpp">
@@ -126,43 +129,43 @@
     <ClCompile Include="Engine\Application\EngineCommon.cpp">
       <Filter>Engine\Application</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Core\ErrorWarningAssert.cpp">
+    <ClCompile Include="Core\ErrorWarningAssert.cpp">
       <Filter>Engine\Core</Filter>
     </ClCompile>
     <ClCompile Include="Engine\Event\EventSystem.cpp">
       <Filter>Engine\Event</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Core\FileUtils.cpp">
+    <ClCompile Include="Core\FileUtils.cpp">
       <Filter>Engine\Core</Filter>
     </ClCompile>
     <ClCompile Include="Engine\Render\HeatMaps.cpp">
       <Filter>Engine\Render</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Core\Image.cpp">
+    <ClCompile Include="Core\Image.cpp">
       <Filter>Engine\Core</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Core\NamedStrings.cpp">
+    <ClCompile Include="Core\NamedStrings.cpp">
       <Filter>Engine\Core</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Render\Rgba8.cpp">
+    <ClCompile Include="Core\Render\Rgba8.cpp">
       <Filter>Engine\Render</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Core\StringUtils.cpp">
+    <ClCompile Include="Core\StringUtils.cpp">
       <Filter>Engine\Core</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Core\Time.cpp">
+    <ClCompile Include="Core\Time.cpp">
       <Filter>Engine\Core</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Core\Timer.cpp">
+    <ClCompile Include="Core\Timer.cpp">
       <Filter>Engine\Core</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Render\Vertex.cpp">
+    <ClCompile Include="Core\Render\Vertex.cpp">
       <Filter>Engine\Render</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Render\VertexUtils.cpp">
+    <ClCompile Include="Core\Render\VertexUtils.cpp">
       <Filter>Engine\Render</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Core\XmlUtils.cpp">
+    <ClCompile Include="Core\XmlUtils.cpp">
       <Filter>Engine\Core</Filter>
     </ClCompile>
     <ClCompile Include="Editor\EditorController.cpp">
@@ -207,79 +210,79 @@
     <ClCompile Include="Engine\ImGui\ImGuiSystem.cpp">
       <Filter>Engine\ImGui</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Math\AABB2.cpp">
+    <ClCompile Include="Core\Math\AABB2.cpp">
       <Filter>Engine\Math</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Math\AABB3.cpp">
+    <ClCompile Include="Core\Math\AABB3.cpp">
       <Filter>Engine\Math</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Math\Capsule2.cpp">
+    <ClCompile Include="Core\Math\Capsule2.cpp">
       <Filter>Engine\Math</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Math\Capsule3.cpp">
+    <ClCompile Include="Core\Math\Capsule3.cpp">
       <Filter>Engine\Math</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Math\Cylinder3.cpp">
+    <ClCompile Include="Core\Math\Cylinder3.cpp">
       <Filter>Engine\Math</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Math\CylinderZ3.cpp">
+    <ClCompile Include="Core\Math\CylinderZ3.cpp">
       <Filter>Engine\Math</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Math\Disc2.cpp">
+    <ClCompile Include="Core\Math\Disc2.cpp">
       <Filter>Engine\Math</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Math\EulerAngles.cpp">
+    <ClCompile Include="Core\Math\EulerAngles.cpp">
       <Filter>Engine\Math</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Math\FloatRange.cpp">
+    <ClCompile Include="Core\Math\FloatRange.cpp">
       <Filter>Engine\Math</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Math\IntRange.cpp">
+    <ClCompile Include="Core\Math\IntRange.cpp">
       <Filter>Engine\Math</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Math\IntVec2.cpp">
+    <ClCompile Include="Core\Math\IntVec2.cpp">
       <Filter>Engine\Math</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Math\IntVec3.cpp">
+    <ClCompile Include="Core\Math\IntVec3.cpp">
       <Filter>Engine\Math</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Math\LineSegment2.cpp">
+    <ClCompile Include="Core\Math\LineSegment2.cpp">
       <Filter>Engine\Math</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Math\MathCommon.cpp">
+    <ClCompile Include="Core\Math\MathCommon.cpp">
       <Filter>Engine\Math</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Math\MathUtils.cpp">
+    <ClCompile Include="Core\Math\MathUtils.cpp">
       <Filter>Engine\Math</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Math\Matrix4x4.cpp">
+    <ClCompile Include="Core\Math\Matrix4x4.cpp">
       <Filter>Engine\Math</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Math\OBB2.cpp">
+    <ClCompile Include="Core\Math\OBB2.cpp">
       <Filter>Engine\Math</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Math\RandomNumberGenerator.cpp">
+    <ClCompile Include="Core\Math\RandomNumberGenerator.cpp">
       <Filter>Engine\Math</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Math\RaycastUtils.cpp">
+    <ClCompile Include="Core\Math\RaycastUtils.cpp">
       <Filter>Engine\Math</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Math\Sphere3.cpp">
+    <ClCompile Include="Core\Math\Sphere3.cpp">
       <Filter>Engine\Math</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Math\Triangle2.cpp">
+    <ClCompile Include="Core\Math\Triangle2.cpp">
       <Filter>Engine\Math</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Math\Triangle3.cpp">
+    <ClCompile Include="Core\Math\Triangle3.cpp">
       <Filter>Engine\Math</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Math\Vec2.cpp">
+    <ClCompile Include="Core\Math\Vec2.cpp">
       <Filter>Engine\Math</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Math\Vec3.cpp">
+    <ClCompile Include="Core\Math\Vec3.cpp">
       <Filter>Engine\Math</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Math\Vec4.cpp">
+    <ClCompile Include="Core\Math\Vec4.cpp">
       <Filter>Engine\Math</Filter>
     </ClCompile>
     <ClCompile Include="Engine\Audio\AudioSystem.cpp">
@@ -402,16 +405,13 @@
     <ClCompile Include="Scene\Import\OBJLoader.cpp">
       <Filter>Scene\Import</Filter>
     </ClCompile>
-    <ClCompile Include="Scene\Core\ClassDatabase.cpp">
-      <Filter>Scene\Core</Filter>
+    <ClCompile Include="Core\Object\ClassDatabase.cpp">
+      <Filter>Engine\Core\Object</Filter>
     </ClCompile>
     <ClCompile Include="Scene\Core\Node.cpp">
       <Filter>Scene\Core</Filter>
     </ClCompile>
     <ClCompile Include="Scene\Core\NodeHandle.cpp">
-      <Filter>Scene\Core</Filter>
-    </ClCompile>
-    <ClCompile Include="Scene\Core\Object.cpp">
       <Filter>Scene\Core</Filter>
     </ClCompile>
     <ClCompile Include="Scene\Core\PackedScene.cpp">
@@ -462,11 +462,11 @@
     <ClCompile Include="Engine\Application\App.cpp">
       <Filter>Engine\Application</Filter>
     </ClCompile>
-    <ClCompile Include="Scene\Core\Variant.cpp">
-      <Filter>Scene\Core</Filter>
+    <ClCompile Include="Core\Object\Variant.cpp">
+      <Filter>Engine\Core\Object</Filter>
     </ClCompile>
-    <ClCompile Include="Scene\Core\MethodBind.cpp">
-      <Filter>Scene\Core</Filter>
+    <ClCompile Include="Core\Object\MethodBind.cpp">
+      <Filter>Engine\Core\Object</Filter>
     </ClCompile>
     <ClCompile Include="Editor\Gizmos\GizmosShapes.cpp">
       <Filter>Editor\Gizmos</Filter>
@@ -492,12 +492,18 @@
     <ClCompile Include="Engine\Script\ScriptInstance.cpp">
       <Filter>Engine\Script</Filter>
     </ClCompile>
+    <ClCompile Include="Core\Object\Object.cpp">
+      <Filter>Engine\Core\Object</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene\RegisterSceneTypes.cpp">
+      <Filter>Scene</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Engine\Core\Clock.hpp">
+    <ClInclude Include="Core\Clock.hpp">
       <Filter>Engine\Core</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Console\DevConsole.hpp">
+    <ClInclude Include="EngineService\DevConsole.hpp">
       <Filter>Engine\Console</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Application\Engine.hpp">
@@ -509,43 +515,43 @@
     <ClInclude Include="Engine\Application\EngineCommon.hpp">
       <Filter>Engine\Application</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Core\ErrorWarningAssert.hpp">
+    <ClInclude Include="Core\ErrorWarningAssert.hpp">
       <Filter>Engine\Core</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Event\EventSystem.hpp">
       <Filter>Engine\Event</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Core\FileUtils.hpp">
+    <ClInclude Include="Core\FileUtils.hpp">
       <Filter>Engine\Core</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Render\HeatMaps.hpp">
       <Filter>Engine\Render</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Core\Image.hpp">
+    <ClInclude Include="Core\Image.hpp">
       <Filter>Engine\Core</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Core\NamedStrings.hpp">
+    <ClInclude Include="Core\NamedStrings.hpp">
       <Filter>Engine\Core</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Render\Rgba8.hpp">
+    <ClInclude Include="Core\Render\Rgba8.hpp">
       <Filter>Engine\Render</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Core\StringUtils.hpp">
+    <ClInclude Include="Core\StringUtils.hpp">
       <Filter>Engine\Core</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Core\Time.hpp">
+    <ClInclude Include="Core\Time.hpp">
       <Filter>Engine\Core</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Core\Timer.hpp">
+    <ClInclude Include="Core\Timer.hpp">
       <Filter>Engine\Core</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Render\Vertex.hpp">
+    <ClInclude Include="Core\Render\Vertex.hpp">
       <Filter>Engine\Render</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Render\VertexUtils.hpp">
+    <ClInclude Include="Core\Render\VertexUtils.hpp">
       <Filter>Engine\Render</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Core\XmlUtils.hpp">
+    <ClInclude Include="Core\XmlUtils.hpp">
       <Filter>Engine\Core</Filter>
     </ClInclude>
     <ClInclude Include="Editor\EditorController.hpp">
@@ -590,79 +596,79 @@
     <ClInclude Include="Engine\ImGui\ImGuiSystem.hpp">
       <Filter>Engine\ImGui</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Math\AABB2.hpp">
+    <ClInclude Include="Core\Math\AABB2.hpp">
       <Filter>Engine\Math</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Math\AABB3.hpp">
+    <ClInclude Include="Core\Math\AABB3.hpp">
       <Filter>Engine\Math</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Math\Capsule2.hpp">
+    <ClInclude Include="Core\Math\Capsule2.hpp">
       <Filter>Engine\Math</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Math\Capsule3.hpp">
+    <ClInclude Include="Core\Math\Capsule3.hpp">
       <Filter>Engine\Math</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Math\Cylinder3.hpp">
+    <ClInclude Include="Core\Math\Cylinder3.hpp">
       <Filter>Engine\Math</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Math\CylinderZ3.hpp">
+    <ClInclude Include="Core\Math\CylinderZ3.hpp">
       <Filter>Engine\Math</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Math\Disc2.hpp">
+    <ClInclude Include="Core\Math\Disc2.hpp">
       <Filter>Engine\Math</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Math\EulerAngles.hpp">
+    <ClInclude Include="Core\Math\EulerAngles.hpp">
       <Filter>Engine\Math</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Math\FloatRange.hpp">
+    <ClInclude Include="Core\Math\FloatRange.hpp">
       <Filter>Engine\Math</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Math\IntRange.hpp">
+    <ClInclude Include="Core\Math\IntRange.hpp">
       <Filter>Engine\Math</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Math\IntVec2.hpp">
+    <ClInclude Include="Core\Math\IntVec2.hpp">
       <Filter>Engine\Math</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Math\IntVec3.hpp">
+    <ClInclude Include="Core\Math\IntVec3.hpp">
       <Filter>Engine\Math</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Math\LineSegment2.hpp">
+    <ClInclude Include="Core\Math\LineSegment2.hpp">
       <Filter>Engine\Math</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Math\MathCommon.hpp">
+    <ClInclude Include="Core\Math\MathCommon.hpp">
       <Filter>Engine\Math</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Math\MathUtils.hpp">
+    <ClInclude Include="Core\Math\MathUtils.hpp">
       <Filter>Engine\Math</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Math\Matrix4x4.hpp">
+    <ClInclude Include="Core\Math\Matrix4x4.hpp">
       <Filter>Engine\Math</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Math\OBB2.hpp">
+    <ClInclude Include="Core\Math\OBB2.hpp">
       <Filter>Engine\Math</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Math\RandomNumberGenerator.hpp">
+    <ClInclude Include="Core\Math\RandomNumberGenerator.hpp">
       <Filter>Engine\Math</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Math\RaycastUtils.hpp">
+    <ClInclude Include="Core\Math\RaycastUtils.hpp">
       <Filter>Engine\Math</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Math\Sphere3.hpp">
+    <ClInclude Include="Core\Math\Sphere3.hpp">
       <Filter>Engine\Math</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Math\Triangle2.hpp">
+    <ClInclude Include="Core\Math\Triangle2.hpp">
       <Filter>Engine\Math</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Math\Triangle3.hpp">
+    <ClInclude Include="Core\Math\Triangle3.hpp">
       <Filter>Engine\Math</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Math\Vec2.hpp">
+    <ClInclude Include="Core\Math\Vec2.hpp">
       <Filter>Engine\Math</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Math\Vec3.hpp">
+    <ClInclude Include="Core\Math\Vec3.hpp">
       <Filter>Engine\Math</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Math\Vec4.hpp">
+    <ClInclude Include="Core\Math\Vec4.hpp">
       <Filter>Engine\Math</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Audio\AudioSystem.hpp">
@@ -788,8 +794,8 @@
     <ClInclude Include="Scene\Import\OBJLoader.hpp">
       <Filter>Scene\Import</Filter>
     </ClInclude>
-    <ClInclude Include="Scene\Core\ClassDatabase.hpp">
-      <Filter>Scene\Core</Filter>
+    <ClInclude Include="Core\Object\ClassDatabase.hpp">
+      <Filter>Engine\Core\Object</Filter>
     </ClInclude>
     <ClInclude Include="Scene\Core\Node.hpp">
       <Filter>Scene\Core</Filter>
@@ -798,9 +804,6 @@
       <Filter>Scene\Core</Filter>
     </ClInclude>
     <ClInclude Include="Scene\Core\NodeHandle.hpp">
-      <Filter>Scene\Core</Filter>
-    </ClInclude>
-    <ClInclude Include="Scene\Core\Object.hpp">
       <Filter>Scene\Core</Filter>
     </ClInclude>
     <ClInclude Include="Scene\Core\PackedScene.hpp">
@@ -905,11 +908,11 @@
     <ClInclude Include="Engine\Application\App.hpp">
       <Filter>Engine\Application</Filter>
     </ClInclude>
-    <ClInclude Include="Scene\Core\Variant.hpp">
-      <Filter>Scene\Core</Filter>
+    <ClInclude Include="Core\Object\Variant.hpp">
+      <Filter>Engine\Core\Object</Filter>
     </ClInclude>
-    <ClInclude Include="Scene\Core\MethodBind.hpp">
-      <Filter>Scene\Core</Filter>
+    <ClInclude Include="Core\Object\MethodBind.hpp">
+      <Filter>Engine\Core\Object</Filter>
     </ClInclude>
     <ClInclude Include="Editor\Gizmos\GizmosShapes.hpp">
       <Filter>Editor\Gizmos</Filter>
@@ -953,5 +956,12 @@
     <ClInclude Include="Engine\Script\ScriptInstance.hpp">
       <Filter>Engine\Script</Filter>
     </ClInclude>
+    <ClInclude Include="Core\Object\Object.hpp">
+      <Filter>Engine\Core\Object</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\RegisterSceneTypes.hpp">
+      <Filter>Scene</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
+

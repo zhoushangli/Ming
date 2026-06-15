@@ -2,7 +2,7 @@
 
 #include "MingEngine/Engine/Application/EngineBuildPreferences.hpp"
 
-#include "MingEngine/Engine/Math/Vec3.hpp"
+#include "MingEngine/Core/Math/Vec3.hpp"
 
 #include "ThirdParty/fmod/fmod.hpp"
 
@@ -83,3 +83,4 @@ protected:
 #endif // !defined( ENGINE_DISABLE_AUDIO )
 	AudioConfig m_config;
 };
+

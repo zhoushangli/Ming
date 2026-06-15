@@ -2,7 +2,7 @@
 
 #include "MingEngine/Engine/Audio/AudioSystem.hpp"
 #include "MingEngine/Engine/Input/InputSystem.hpp"
-#include "MingEngine/Engine/Math/RandomNumberGenerator.hpp"
+#include "MingEngine/Core/Math/RandomNumberGenerator.hpp"
 #include "MingEngine/Engine/Render/Renderer.hpp"
 #include "MingEngine/Engine/Window/Window.hpp"
 
@@ -119,20 +119,21 @@ void Engine::BeginFrame()
 
 void Engine::EndFrame()
 {
-	if (m_eventSystem != nullptr)
-		m_eventSystem->EndFrame();
-	if (m_window != nullptr)
-		m_window->EndFrame();
-	if (m_fileSystem != nullptr)
-		m_fileSystem->EndFrame();
-	if (m_scriptSystem != nullptr)
-		m_scriptSystem->EndFrame();
 	if (m_imgui != nullptr)
 		m_imgui->EndFrame();
 	if (m_renderer != nullptr)
 		m_renderer->EndFrame();
-	if (m_input != nullptr)
-		m_input->EndFrame();
 	if (m_audio != nullptr)
 		m_audio->EndFrame();
+	if (m_input != nullptr)
+		m_input->EndFrame();
+	if (m_scriptSystem != nullptr)
+		m_scriptSystem->EndFrame();
+	if (m_fileSystem != nullptr)
+		m_fileSystem->EndFrame();
+	if (m_window != nullptr)
+		m_window->EndFrame();
+	if (m_eventSystem != nullptr)
+		m_eventSystem->EndFrame();
 }
+

@@ -3,7 +3,7 @@
 #include "MingEngine/Editor/EditorNode.hpp"
 #include "MingEngine/Editor/UI/EditorUIContext.hpp"
 #include "MingEngine/Editor/UI/InspectorProperty.hpp"
-#include "MingEngine/Scene/Core/ClassDatabase.hpp"
+#include "MingEngine/Core/Object/ClassDatabase.hpp"
 #include "MingEngine/Scene/Core/Node.hpp"
 #include "MingEngine/Scene/Core/SceneTree.hpp"
 
@@ -196,3 +196,4 @@ void InspectorPanel::OnRender(EditorUIContext& context)
 
 	ImGui::End();
 }
+

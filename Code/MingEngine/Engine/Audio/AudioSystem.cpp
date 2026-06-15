@@ -2,8 +2,8 @@
 
 #include "MingEngine/Engine/Application/EngineBuildPreferences.hpp"
 
-#include "MingEngine/Engine/Core/ErrorWarningAssert.hpp"
-#include "MingEngine/Engine/Core/StringUtils.hpp"
+#include "MingEngine/Core/ErrorWarningAssert.hpp"
+#include "MingEngine/Core/StringUtils.hpp"
 
 namespace
 {
@@ -309,3 +309,4 @@ bool AudioSystem::IsPlaying(SoundPlaybackID soundPlaybackID)
 }
 
 #endif // !defined( ENGINE_DISABLE_AUDIO )
+

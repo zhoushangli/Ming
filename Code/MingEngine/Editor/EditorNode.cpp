@@ -9,7 +9,7 @@
 #include "MingEngine/Scene/Core/SceneTree.hpp"
 
 #include "MingEngine/Engine/Application/Engine.hpp"
-#include "MingEngine/Engine/Core/StringUtils.hpp"
+#include "MingEngine/Core/StringUtils.hpp"
 #include "MingEngine/Engine/Input/InputSystem.hpp"
 #include "MingEngine/Engine/Render/DebugRenderer.hpp"
 

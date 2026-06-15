@@ -1,6 +1,6 @@
 #include "MingEngine/Engine/Input/AnalogJoystick.hpp"
 
-#include "MingEngine/Engine/Math/MathUtils.hpp"
+#include "MingEngine/Core/Math/MathUtils.hpp"
 
 Vec2 AnalogJoystick::GetPosition() const { return m_correctedPosition; }
 
@@ -45,3 +45,4 @@ void AnalogJoystick::UpdatePosition(float rawNormalizedX, float rawNormalizedY)
 	Vec2 direction      = (magnitude > 0.0f) ? m_rawPosition.GetNormalized() : Vec2::Zero;
 	m_correctedPosition = direction * correctedMagnitude;
 }
+

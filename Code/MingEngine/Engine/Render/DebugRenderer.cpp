@@ -2,11 +2,13 @@
 
 #include "DebugRenderer.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
-#include "MingEngine/Engine/Core/ErrorWarningAssert.hpp"
-#include "MingEngine/Engine/Core/Time.hpp"
-#include "MingEngine/Engine/Render/Vertex.hpp"
-#include "MingEngine/Engine/Render/VertexUtils.hpp"
-#include "MingEngine/Engine/Math/MathUtils.hpp"
+#include "MingEngine/Core/Clock.hpp"
+#include "MingEngine/Core/ErrorWarningAssert.hpp"
+#include "MingEngine/EngineService/EngineService.hpp"
+#include "MingEngine/Core/Time.hpp"
+#include "MingEngine/Core/Render/Vertex.hpp"
+#include "MingEngine/Core/Render/VertexUtils.hpp"
+#include "MingEngine/Core/Math/MathUtils.hpp"
 #include "MingEngine/Engine/Render/BitmapFont.hpp"
 #include "MingEngine/Engine/Render/CameraContext.hpp"
 #include "MingEngine/Engine/Render/RenderContext.hpp"
@@ -513,6 +515,11 @@ void DebugRenderSystemStartup(const DebugRenderConfig& config)
 
 	g_engine->m_eventSystem->RegisterEvent("Dev_DebugRenderClear", Command_DebugRenderClear);
 	g_engine->m_eventSystem->RegisterEvent("Dev_DebugRenderToggle", Command_DebugRenderToggle);
+	if (g_engineService != nullptr && g_engineService->m_console != nullptr)
+	{
+		g_engineService->m_console->AddCommand("DebugRenderClear", Command_DebugRenderClear);
+		g_engineService->m_console->AddCommand("DebugRenderToggle", Command_DebugRenderToggle);
+	}
 }
 
 void DebugRenderSystemShutdown()
@@ -1016,3 +1023,7 @@ bool Command_DebugRenderToggle([[maybe_unused]] EventArgs& args)
 	s_isVisible = !s_isVisible;
 	return true;
 }
+
+
+
+

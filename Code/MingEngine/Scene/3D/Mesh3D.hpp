@@ -2,10 +2,10 @@
 
 #include "MingEngine/Scene/3D/VisualizeInstance3D.hpp"
 
-#include "MingEngine/Engine/Math/AABB3.hpp"
-#include "MingEngine/Engine/Math/EulerAngles.hpp"
-#include "MingEngine/Engine/Math/Matrix4x4.hpp"
-#include "MingEngine/Engine/Math/Vec3.hpp"
+#include "MingEngine/Core/Math/AABB3.hpp"
+#include "MingEngine/Core/Math/EulerAngles.hpp"
+#include "MingEngine/Core/Math/Matrix4x4.hpp"
+#include "MingEngine/Core/Math/Vec3.hpp"
 
 class MeshResource;
 
@@ -27,3 +27,4 @@ protected:
 	MeshResource* m_meshResource       = nullptr;
 	bool          m_useMaterialTextures = true;
 };
+

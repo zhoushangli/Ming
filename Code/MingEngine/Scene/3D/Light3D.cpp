@@ -38,7 +38,6 @@ LightInfo const& Light3D::GetLightInfo() const { return m_lightInfo; }
 
 void Light3D::OnEnterTree()
 {
-	Node::OnEnterTree();
 	// Lights are collected per Viewport instead of living in global Renderer state.
 	if (m_data.m_viewport != nullptr)
 	{
@@ -53,7 +52,6 @@ void Light3D::OnExitTree()
 	{
 		m_data.m_viewport->UnregisterLight(this);
 	}
-	Node::OnExitTree();
 }
 
 PointLight3D::PointLight3D() : Light3D() { m_lightInfo.m_type = LightType::POINT; }

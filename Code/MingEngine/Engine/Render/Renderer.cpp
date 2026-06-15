@@ -1,5 +1,6 @@
 #include "MingEngine/Engine/Render/Renderer.hpp"
 
+#include "MingEngine/Core/Clock.hpp"
 #include "MingEngine/Engine/Render/CameraContext.hpp"
 #include "MingEngine/Engine/Render/DebugRenderer.hpp"
 #include "MingEngine/Engine/Render/PostProcessChain.hpp"
@@ -382,3 +383,5 @@ void Renderer::InitImGuiD3D11Backend()
 void Renderer::BindBackBuffer() { m_renderBackend->BindBackBuffer(); }
 
 void Renderer::ResizeBackBuffer(IntVec2 newDimensions) { m_renderBackend->ResizeBackBuffer(newDimensions); }
+
+

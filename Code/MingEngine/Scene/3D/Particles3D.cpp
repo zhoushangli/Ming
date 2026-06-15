@@ -2,10 +2,10 @@
 #include "MingEngine/Scene/3D/Camera3D.hpp"
 #include "MingEngine/Scene/Core/SceneTree.hpp"
 
-#include "MingEngine/Engine/Core/ErrorWarningAssert.hpp"
-#include "MingEngine/Engine/Core/XmlUtils.hpp"
-#include "MingEngine/Engine/Math/MathUtils.hpp"
-#include "MingEngine/Engine/Math/RandomNumberGenerator.hpp"
+#include "MingEngine/Core/ErrorWarningAssert.hpp"
+#include "MingEngine/Core/XmlUtils.hpp"
+#include "MingEngine/Core/Math/MathUtils.hpp"
+#include "MingEngine/Core/Math/RandomNumberGenerator.hpp"
 #include "MingEngine/Engine/Render/Renderer.hpp"
 #include "MingEngine/Engine/Render/VertexBuffer.hpp"
 
@@ -466,3 +466,4 @@ Vec3 Particles3D::SimulationToWorld(Vec3 const& simPos) const
 	Matrix4x4 simToWorld = GetSimulationToWorld();
 	return simToWorld.TransformPosition3D(simPos);
 }
+

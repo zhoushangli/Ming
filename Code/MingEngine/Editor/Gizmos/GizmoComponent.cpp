@@ -6,13 +6,13 @@
 #include "MingEngine/Scene/Core/SceneTree.hpp"
 
 #include "MingEngine/Engine/Application/Engine.hpp"
-#include "MingEngine/Engine/Core/StringUtils.hpp"
-#include "MingEngine/Engine/Math/AABB3.hpp"
-#include "MingEngine/Engine/Math/MathUtils.hpp"
+#include "MingEngine/Core/StringUtils.hpp"
+#include "MingEngine/Core/Math/AABB3.hpp"
+#include "MingEngine/Core/Math/MathUtils.hpp"
 #include "MingEngine/Engine/Render/DebugRenderer.hpp"
 #include "MingEngine/Engine/Render/Renderer.hpp"
 #include "MingEngine/Engine/Render/VertexBuffer.hpp"
-#include "MingEngine/Engine/Render/VertexUtils.hpp"
+#include "MingEngine/Core/Render/VertexUtils.hpp"
 
 #include <cmath>
 
@@ -511,3 +511,4 @@ void GizmoRotationArc::OnEndDrag(GizmoContext const& context)
 }
 
 bool GizmoRotationArc::IsRotationGizmo() const { return true; }
+

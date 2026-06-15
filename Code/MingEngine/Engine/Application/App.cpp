@@ -1,22 +1,22 @@
 #include "MingEngine/Engine/Application/App.hpp"
 
 #include "MingEngine/Engine/Application/Engine.hpp"
-#include "MingEngine/Engine/Console/DevConsole.hpp"
-#include "MingEngine/Engine/Core/Clock.hpp"
-#include "MingEngine/Engine/Core/StringUtils.hpp"
+#include "MingEngine/Core/Clock.hpp"
+#include "MingEngine/Core/Object/ClassDatabase.hpp"
+#include "MingEngine/Core/StringUtils.hpp"
 #include "MingEngine/Engine/Input/InputSystem.hpp"
-#include "MingEngine/Engine/Math/MathUtils.hpp"
+#include "MingEngine/Core/Math/MathUtils.hpp"
 #include "MingEngine/Engine/Render/DebugRenderer.hpp"
-#include "MingEngine/Engine/Render/Rgba8.hpp"
+#include "MingEngine/Core/Render/Rgba8.hpp"
 #include "MingEngine/Engine/Window/Window.hpp"
 #include "MingEngine/EngineService/EngineService.hpp"
 #include "MingEngine/EngineService/RenderService.hpp"
 #include "MingEngine/Scene/3D/Camera3D.hpp"
 #include "MingEngine/Scene/3D/Light3D.hpp"
-#include "MingEngine/Scene/Core/ClassDatabase.hpp"
 #include "MingEngine/Scene/Core/Node.hpp"
 #include "MingEngine/Scene/Core/PackedScene.hpp"
 #include "MingEngine/Scene/Core/SceneTree.hpp"
+#include "MingEngine/Scene/RegisterSceneTypes.hpp"
 
 #if defined(MING_EDITOR)
 
@@ -35,10 +35,17 @@ App::App(IProjectModule& project, MingRunConfig const& config) : m_project(proje
 	EngineConfig engineConfig;
 	engineConfig.m_windowConfig.m_clientAspect = m_runConfig.m_windowAspect;
 	engineConfig.m_windowConfig.m_appName      = m_project.GetProjectName();
-	// engineConfig.m_devConsoleConfig.m_fontName = "pixel_operator";
+	DevConsoleConfig consoleConfig;
+
+#if defined(MING_EDITOR)
+	consoleConfig.m_isEnable = false;
+#else
+	consoleConfig.m_isEnable = true;
+	consoleConfig.m_fontName = "pixel_operator";
+#endif
 
 	g_engine        = new Engine(engineConfig);
-	g_engineService = new EngineService();
+	g_engineService = new EngineService(consoleConfig);
 
 	g_engine->Startup();
 	g_engineService->Startup();
@@ -58,6 +65,7 @@ App::~App()
 void App::Startup()
 {
 	ClassDatabase::Startup();
+	RegisterSceneTypes();
 
 #if defined(MING_EDITOR)
 	ClassDatabase::RegisterClass<EditorNode>(false);
@@ -76,9 +84,16 @@ void App::Startup()
 	StartupScene();
 	RegisterEvent("Quit", App::OnQuit);
 
-	// auto testInstance = g_engine->m_scriptSystem->CreateInstance("res://Script/Test.as");
-	// testInstance->CallReady();
-	// testInstance->CallProcess(0.016f);
+	Node3D* player = new Node3D();
+
+	auto script = g_engine->m_scriptSystem->CreateInstance("res://Script/Test.as", *player);
+
+	if (script != nullptr)
+	{
+		player->SetScript(std::move(script));
+	}
+
+	delete player;
 }
 
 void App::Shutdown()
@@ -110,7 +125,6 @@ void App::Update(float deltaSeconds)
 {
 	GLFWwindow* window   = g_engine->m_window->GetGLFWWindow();
 	bool const  hasFocus = window != nullptr && glfwGetWindowAttrib(window, GLFW_FOCUSED);
-	// bool const isConsoleOpen = g_engine->m_devConsole != nullptr && g_engine->m_devConsole->IsOpen();
 
 	if (!hasFocus)
 	{
@@ -128,7 +142,12 @@ void App::Update(float deltaSeconds)
 
 	if (g_engine->m_input->WasKeyJustPressed(KeyCodeEsc))
 	{
-		FireEvent("Quit");
+		bool const isConsoleOpen = g_engineService != nullptr && g_engineService->m_console != nullptr
+								   && g_engineService->m_console->IsOpen();
+		if (!isConsoleOpen)
+		{
+			FireEvent("Quit");
+		}
 	}
 
 	float const sceneDeltaSeconds = m_clock != nullptr ? static_cast<float>(m_clock->GetDeltaSeconds()) : deltaSeconds;
@@ -140,15 +159,19 @@ void App::Update(float deltaSeconds)
 
 void App::Render() const
 {
-	if (g_engineService != nullptr && g_engineService->m_renderService != nullptr)
+	if (g_engineService != nullptr)
 	{
-		g_engineService->m_renderService->Render();
+		g_engineService->Render();
 	}
 }
 
 void App::BeginFrame()
 {
 	g_engine->BeginFrame();
+	if (g_engineService != nullptr)
+	{
+		g_engineService->BeginFrame();
+	}
 	DebugRenderBeginFrame();
 }
 
@@ -159,6 +182,10 @@ void App::EndFrame()
 		m_sceneTree->FlushPendingNode();
 	}
 
+	if (g_engineService != nullptr)
+	{
+		g_engineService->EndFrame();
+	}
 	g_engine->EndFrame();
 	DebugRenderEndFrame();
 
@@ -254,3 +281,4 @@ int MingEngine::Run(IProjectModule& project, MingRunConfig const& config)
 	g_app = nullptr;
 	return 0;
 }
+

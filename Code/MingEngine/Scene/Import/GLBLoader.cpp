@@ -1,9 +1,9 @@
 #include "MingEngine/Scene/Import/GLBLoader.hpp"
 
 #include "MingEngine/Engine/Application/Engine.hpp"
-#include "MingEngine/Engine/Core/ErrorWarningAssert.hpp"
-#include "MingEngine/Engine/Core/StringUtils.hpp"
-#include "MingEngine/Engine/Math/IntVec2.hpp"
+#include "MingEngine/Core/ErrorWarningAssert.hpp"
+#include "MingEngine/Core/StringUtils.hpp"
+#include "MingEngine/Core/Math/IntVec2.hpp"
 #include "MingEngine/Engine/Render/Renderer.hpp"
 
 #include "ThirdParty/stb/stb_image.h"
@@ -488,3 +488,4 @@ bool GLBLoader::LoadFromFile(char const* filePath, MeshData& outMesh, GLBLoadOpt
 	LoadBaseColorTexture(model.get(), primitive, filePath, outMesh);
 	return !outMesh.IsEmpty();
 }
+

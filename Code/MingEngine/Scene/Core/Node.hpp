@@ -1,9 +1,9 @@
 #pragma once
 
-#include "MingEngine/Scene/Core/ClassDatabase.hpp"
+#include "MingEngine/Core/Object/ClassDatabase.hpp"
+#include "MingEngine/Core/Object/Object.hpp"
 #include "MingEngine/Scene/Core/NodeHandle.hpp"
 #include "MingEngine/Scene/Core/NodePath.hpp"
-#include "MingEngine/Scene/Core/Object.hpp"
 
 #include "MingEngine/Engine/Application/Engine.hpp"
 
@@ -22,6 +22,15 @@ class Node : public Object
 	MCLASS(Node, Object);
 
 	friend class SceneTree;
+
+public:
+	enum class NotificationType : int
+	{
+		EnterTree = 0,
+		ExitTree  = 1,
+		Ready     = 2,
+		Process   = 3,
+	};
 
 public:
 	Node() = default;
@@ -44,6 +53,8 @@ public:
 	void SetReady(bool isReady);
 	void SetProcess(bool isProcess);
 
+	// Currently GetNode only supports child
+	// it do not support ../ or .. 
 	Node* FindChildByName(std::string const& name) const;
 	Node* GetNode(NodePath const& path) const;
 
@@ -60,6 +71,8 @@ public:
 	static void BindMethods();
 
 protected:
+	void OnNotification(int notification);
+
 	std::string EnsureUniqueName(std::string const& requestedName) const;
 
 	// Lifecycle callbacks:
@@ -83,9 +96,13 @@ protected:
 	// 2) If the data already has a SceneTree, it will first call PropagateExitTree to exit the old tree.
 	// 3) Call PropagateEnterTree and register this node
 	void MoveToSceneTree(SceneTree* sceneTree);
+
+	// Propagate and Notificaton
+	// 1) Propagate is spread to this node and all its children of something
+	// 2) Notification is sent to this node only, and will call the inherit chain in certain order
+	// Process do not have propagate, because the scene tree will call process in order
 	void PropagateEnterTree();
 	void PropagateExitTree();
-
 	void PropagateReady();
 
 protected:
@@ -111,3 +128,4 @@ protected:
 
 	NodeData m_data;
 };
+

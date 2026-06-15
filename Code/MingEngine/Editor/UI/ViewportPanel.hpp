@@ -2,7 +2,7 @@
 
 #include "MingEngine/Editor/UI/EditorPanel.hpp"
 
-#include "MingEngine/Engine/Math/IntVec2.hpp"
+#include "MingEngine/Core/Math/IntVec2.hpp"
 
 struct EditorUIContext;
 
@@ -18,3 +18,4 @@ private:
 	IntVec2 m_dimensions = IntVec2::Zero;
 	bool    m_snap       = false;
 };
+

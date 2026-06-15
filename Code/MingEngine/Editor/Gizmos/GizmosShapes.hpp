@@ -2,7 +2,7 @@
 
 #include "MingEngine/Scene/3D/VisualizeInstance3D.hpp"
 
-#include "MingEngine/Engine/Render/Vertex.hpp"
+#include "MingEngine/Core/Render/Vertex.hpp"
 
 #include <vector>
 
@@ -36,3 +36,4 @@ class EditorWorldAxis3D : public EditorGizmoVisual3D
 public:
 	EditorWorldAxis3D();
 };
+

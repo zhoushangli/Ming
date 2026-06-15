@@ -2,7 +2,7 @@
 
 #include "MingEngine/Scene/Core/Node.hpp"
 #include "MingEngine/Scene/Core/NodePath.hpp"
-#include "MingEngine/Scene/Core/Variant.hpp"
+#include "MingEngine/Core/Object/Variant.hpp"
 
 #include <string>
 #include <vector>
@@ -57,3 +57,4 @@ protected:
 protected:
 	PackedSceneData m_data;
 };
+

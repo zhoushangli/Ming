@@ -1,8 +1,8 @@
 #include "MingEngine/Scene/Physics/CylinderZCollider3D.hpp"
 
-#include "MingEngine/Engine/Render/Rgba8.hpp"
-#include "MingEngine/Engine/Math/Matrix4x4.hpp"
-#include "MingEngine/Engine/Math/RaycastUtils.hpp"
+#include "MingEngine/Core/Render/Rgba8.hpp"
+#include "MingEngine/Core/Math/Matrix4x4.hpp"
+#include "MingEngine/Core/Math/RaycastUtils.hpp"
 #include "MingEngine/Engine/Render/DebugRenderer.hpp"
 
 GameRaycastResult CylinderZCollider3D::Raycast(RaycastInfo const& info) const
@@ -33,7 +33,7 @@ GameRaycastResult CylinderZCollider3D::Raycast(RaycastInfo const& info) const
 	return raycastResult;
 }
 
-void CylinderZCollider3D::OnProcess(float deltaSeconds) { Node3D::OnProcess(deltaSeconds); }
+void CylinderZCollider3D::OnProcess([[maybe_unused]] float deltaSeconds) { }
 
 void CylinderZCollider3D::RenderDebug() const
 {
@@ -52,3 +52,4 @@ void CylinderZCollider3D::RenderDebug() const
 		Rgba8::Cyan
 	);
 }
+

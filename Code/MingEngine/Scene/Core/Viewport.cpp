@@ -8,7 +8,7 @@
 #include "MingEngine/Scene/Core/SceneTree.hpp"
 
 #include "MingEngine/Engine/Application/Engine.hpp"
-#include "MingEngine/Engine/Core/ErrorWarningAssert.hpp"
+#include "MingEngine/Core/ErrorWarningAssert.hpp"
 #include "MingEngine/Engine/Render/Renderer.hpp"
 #include "MingEngine/Engine/Window/Window.hpp"
 
@@ -248,3 +248,4 @@ void Viewport::PrepareRenderData()
 ViewportInfo& Viewport::GetViewportInfo() { return m_viewportInfo; }
 
 ViewportInfo const& Viewport::GetViewportInfo() const { return m_viewportInfo; }
+

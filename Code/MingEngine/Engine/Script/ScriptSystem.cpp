@@ -1,7 +1,7 @@
 #include "MingEngine/Engine/Script/ScriptSystem.hpp"
 
 #include "MingEngine/Engine/Application/Engine.hpp"
-#include "MingEngine/Engine/Core/ErrorWarningAssert.hpp"
+#include "MingEngine/Core/ErrorWarningAssert.hpp"
 #include "MingEngine/Engine/File/FileSystem.hpp"
 
 #include "ThirdParty/angelscript/include/angelscript.h"
@@ -25,6 +25,9 @@ void ScriptMessageCallback(asSMessageInfo const* message, void*)
 
 	DebuggerPrintf("%s (%d, %d): %s: %s\n", message->section, message->row, message->col, type, message->message);
 }
+
+void ScriptPrint(std::string const& message) { DebuggerPrintf("%s\n", message.c_str()); }
+
 } // namespace
 
 ScriptSystem::ScriptSystem([[maybe_unused]] ScriptSystemConfig const& config) {}
@@ -32,12 +35,16 @@ ScriptSystem::ScriptSystem([[maybe_unused]] ScriptSystemConfig const& config) {}
 void ScriptSystem::Startup()
 {
 	m_scriptEngine = asCreateScriptEngine();
-
 	GUARANTEE_OR_DIE(m_scriptEngine != nullptr, "Failed to create AngelScript engine.");
 
 	int result = m_scriptEngine->SetMessageCallback(asFUNCTION(ScriptMessageCallback), nullptr, asCALL_CDECL);
-
 	GUARANTEE_OR_DIE(result >= 0, "Failed to register AngelScript message callback.");
+
+	result = m_scriptEngine->RegisterObjectType("Object", 0, asOBJ_REF | asOBJ_NOCOUNT);
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register Object.");
+
+	result = m_scriptEngine->RegisterObjectType("Node", 0, asOBJ_REF | asOBJ_NOCOUNT);
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register Node.");
 }
 
 void ScriptSystem::Shutdown()
@@ -153,3 +160,4 @@ ScriptModule* ScriptSystem::GetOrCreateModule(VirtualPath const& virtualPath)
 
 	return &m_loadedScripts[virtualPath];
 }
+

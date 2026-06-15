@@ -1,6 +1,6 @@
 #pragma once
 
-#include "MingEngine/Engine/Math/IntVec2.hpp"
+#include "MingEngine/Core/Math/IntVec2.hpp"
 #include "MingEngine/Engine/Render/CameraContext.hpp"
 
 #include <string>

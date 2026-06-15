@@ -1,10 +1,10 @@
 #include "MingEngine/Engine/Render/CameraContext.hpp"
 
 #include "CameraContext.hpp"
-#include "MingEngine/Engine/Math/MathUtils.hpp"
-#include "MingEngine/Engine/Math/Matrix4x4.hpp"
-#include "MingEngine/Engine/Math/Vec2.hpp"
-#include "MingEngine/Engine/Math/Vec3.hpp"
+#include "MingEngine/Core/Math/MathUtils.hpp"
+#include "MingEngine/Core/Math/Matrix4x4.hpp"
+#include "MingEngine/Core/Math/Vec2.hpp"
+#include "MingEngine/Core/Math/Vec3.hpp"
 
 void CameraContext::SetOrthogonal(Vec2 const& bottomLeft, Vec2 const& topRight, float near /*= 0.0f*/, float far /*= 1.0f*/)
 {
@@ -171,3 +171,4 @@ float CameraContext::GetFarZ() const
 	else
 		return m_orthographicFar;
 }
+

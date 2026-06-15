@@ -1,7 +1,7 @@
 #pragma once
 
-#include "MingEngine/Engine/Render/Vertex.hpp"
-#include "MingEngine/Engine/Math/AABB3.hpp"
+#include "MingEngine/Core/Render/Vertex.hpp"
+#include "MingEngine/Core/Math/AABB3.hpp"
 
 #include <string>
 #include <vector>
@@ -47,3 +47,4 @@ private:
 private:
 	static std::vector<MeshResource*> s_loadedMeshes;
 };
+

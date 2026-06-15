@@ -4,7 +4,7 @@
 #include <Windows.h> // must #include Windows.h before #including Xinput.h
 #include <Xinput.h> // include the Xinput API header file (interface)
 
-#include "MingEngine/Engine/Math/MathUtils.hpp"
+#include "MingEngine/Core/Math/MathUtils.hpp"
 #pragma comment( lib, "xinput" ) // Link in the xinput.lib static library
 
 XboxController::XboxController()
@@ -155,3 +155,4 @@ void XboxController::SetVibration(unsigned short leftMotor, unsigned short right
     vib.wRightMotorSpeed = rightMotor;
     XInputSetState(m_id, &vib);
 }
+

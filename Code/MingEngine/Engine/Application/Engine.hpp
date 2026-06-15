@@ -1,7 +1,6 @@
 #pragma once
 
 #include "MingEngine/Engine/Audio/AudioSystem.hpp"
-#include "MingEngine/Engine/Console/DevConsole.hpp"
 #include "MingEngine/Engine/Event/EventSystem.hpp"
 #include "MingEngine/Engine/File/FileSystem.hpp"
 #include "MingEngine/Engine/ImGui/ImGuiSystem.hpp"
@@ -50,9 +49,7 @@ public:
 	InputSystem*  m_input        = nullptr;
 	AudioSystem*  m_audio        = nullptr;
 	ImGuiSystem*  m_imgui        = nullptr;
-
-	// Need totol rewrite
-	DevConsole* m_devConsole = nullptr;
 };
 
 extern Engine* g_engine;
+

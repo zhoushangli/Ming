@@ -3,7 +3,7 @@
 #include "MingEngine/Scene/Core/Node.hpp"
 #include "MingEngine/Scene/Core/NodeHandle.hpp"
 
-#include "MingEngine/Engine/Math/Vec2.hpp"
+#include "MingEngine/Core/Math/Vec2.hpp"
 
 class Camera3D;
 class EditorUI;
@@ -54,3 +54,4 @@ public:
 private:
 	static EditorNode* s_instance;
 };
+

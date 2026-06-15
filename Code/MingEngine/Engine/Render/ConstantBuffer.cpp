@@ -1,6 +1,6 @@
 #include "MingEngine/Engine/Render/ConstantBuffer.hpp"
 
-#include "MingEngine/Engine/Core/ErrorWarningAssert.hpp"
+#include "MingEngine/Core/ErrorWarningAssert.hpp"
 
 #include <d3d11.h>
 
@@ -38,3 +38,4 @@ void ConstantBuffer::Create()
 
     GUARANTEE_OR_DIE(SUCCEEDED(hr), "ConstantBuffer::Create failed to create D3D11 constant buffer");
 }
+

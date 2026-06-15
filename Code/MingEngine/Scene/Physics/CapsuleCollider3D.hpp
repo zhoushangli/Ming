@@ -2,8 +2,8 @@
 
 #include "MingEngine/Scene/Physics/Collider3D.hpp"
 
-#include "MingEngine/Engine/Math/Capsule3.hpp"
-#include "MingEngine/Engine/Math/Vec3.hpp"
+#include "MingEngine/Core/Math/Capsule3.hpp"
+#include "MingEngine/Core/Math/Vec3.hpp"
 
 class CapsuleCollider3D : public Collider3D
 {
@@ -25,3 +25,4 @@ public:
 	Vec3  m_localEnd   = Vec3::Zero;
 	float m_radius     = 0.5f;
 };
+

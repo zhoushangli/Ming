@@ -4,11 +4,11 @@
 #include "MingEngine/Scene/Core/NodeHandle.hpp"
 #include "MingEngine/Scene/Physics/NodeRaycastUtils.hpp"
 
-#include "MingEngine/Engine/Math/EulerAngles.hpp"
-#include "MingEngine/Engine/Math/Matrix4x4.hpp"
-#include "MingEngine/Engine/Math/Vec2.hpp"
-#include "MingEngine/Engine/Math/Vec3.hpp"
-#include "MingEngine/Engine/Render/Rgba8.hpp"
+#include "MingEngine/Core/Math/EulerAngles.hpp"
+#include "MingEngine/Core/Math/Matrix4x4.hpp"
+#include "MingEngine/Core/Math/Vec2.hpp"
+#include "MingEngine/Core/Math/Vec3.hpp"
+#include "MingEngine/Core/Render/Rgba8.hpp"
 
 class Camera3D;
 class GizmoComponent;
@@ -124,3 +124,4 @@ private:
 	Vec3 m_currentHitWorld         = Vec3::Zero;
 	float m_currentDegrees         = 0.f;
 };
+

@@ -1,10 +1,10 @@
 #include "MingEngine/Engine/Render/BitmapFont.hpp"
 
-#include "MingEngine/Engine/Render/Vertex.hpp"
-#include "MingEngine/Engine/Render/VertexUtils.hpp"
-#include "MingEngine/Engine/Math/AABB2.hpp"
-#include "MingEngine/Engine/Math/Vec2.hpp"
-#include "MingEngine/Engine/Math/MathUtils.hpp"
+#include "MingEngine/Core/Render/Vertex.hpp"
+#include "MingEngine/Core/Render/VertexUtils.hpp"
+#include "MingEngine/Core/Math/AABB2.hpp"
+#include "MingEngine/Core/Math/Vec2.hpp"
+#include "MingEngine/Core/Math/MathUtils.hpp"
 #include "MingEngine/Engine/Render/Texture.hpp"
 
 #include <string>
@@ -196,3 +196,4 @@ float BitmapFont::GetGlyphAspect(int) const
 {
     return m_fontDefaultAspect;
 }
+

@@ -5,7 +5,7 @@
 #include "MingEngine/Scene/Core/NodeHandle.hpp"
 #include "MingEngine/Scene/Physics/Collider3D.hpp"
 
-#include "MingEngine/Engine/Math/RaycastUtils.hpp"
+#include "MingEngine/Core/Math/RaycastUtils.hpp"
 
 #include <string>
 #include <vector>
@@ -44,6 +44,8 @@ public:
 
 	virtual GameRaycastResult Raycast(RaycastInfo const& info) const;
 
+	float GetDeltaSeconds() const;
+
 protected:
 	struct PendingReparent
 	{
@@ -73,6 +75,8 @@ protected:
 	NodeHandle m_sceneHandle  = NodeHandle::Invalid;
 	Node*      m_pendingScene = nullptr;
 
+	float m_deltaSeconds          = 0.f;
 	float m_physicsUpdateTimer    = 0.f;
 	float m_physicsUpdateInterval = 1.f / 60.f;
 };
+

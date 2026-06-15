@@ -1,7 +1,7 @@
 #pragma once
 
 #include "MingEngine/Editor/UI/InspectorProperty.hpp"
-#include "MingEngine/Engine/Math/Vec3.hpp"
+#include "MingEngine/Core/Math/Vec3.hpp"
 #include "ThirdParty/imgui/imgui.h"
 
 #include <cmath>

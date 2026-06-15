@@ -5,7 +5,8 @@
 
 #include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Engine/Input/InputSystem.hpp"
-#include "MingEngine/Engine/Math/MathUtils.hpp"
+#include "MingEngine/EngineService/EngineService.hpp"
+#include "MingEngine/Core/Math/MathUtils.hpp"
 
 #include <cmath>
 
@@ -69,7 +70,8 @@ void EditorController::OnProcess(float deltaSeconds)
 void EditorController::UpdateControlState()
 {
 	InputSystem* input                    = g_engine->m_input;
-	bool const isConsoleOpen              = (g_engine->m_devConsole != nullptr) && g_engine->m_devConsole->IsOpen();
+	bool const isConsoleOpen              = (g_engineService != nullptr) && (g_engineService->m_console != nullptr)
+							   && g_engineService->m_console->IsOpen();
 	EditorControlState const desiredState = !isConsoleOpen && input->IsKeyDown(KeyCodeRightMouse)
 												? EditorControlState::FlyThrough
 												: EditorControlState::Pointer;
@@ -205,3 +207,4 @@ void EditorController::UpdateCameraChild()
 }
 
 Camera3D* EditorController::GetCamera() const { return m_camera; }
+

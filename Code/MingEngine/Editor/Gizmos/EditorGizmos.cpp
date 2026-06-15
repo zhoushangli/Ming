@@ -6,7 +6,7 @@
 #include "MingEngine/Scene/3D/Camera3D.hpp"
 
 #include "MingEngine/Engine/Application/Engine.hpp"
-#include "MingEngine/Engine/Math/MathUtils.hpp"
+#include "MingEngine/Core/Math/MathUtils.hpp"
 #include "MingEngine/Engine/Render/CameraContext.hpp"
 
 namespace
@@ -100,3 +100,4 @@ NodeHandle EditorGizmos::Raycast(Camera3D const& camera, Vec2 screenPos) const
 
 	return NodeHandle::Invalid;
 }
+

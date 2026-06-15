@@ -2,8 +2,8 @@
 
 #include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Engine/Event/EventSystem.hpp"
-#include "MingEngine/Engine/Math/AABB3.hpp"
-#include "MingEngine/Engine/Math/CylinderZ3.hpp"
+#include "MingEngine/Core/Math/AABB3.hpp"
+#include "MingEngine/Core/Math/CylinderZ3.hpp"
 
 enum class DebugRenderMode
 {
@@ -207,3 +207,4 @@ void DebugAddWorldGrid(float duration = -1.f, int halfExtent = 50);
 // Console commands
 bool Command_DebugRenderClear(EventArgs& args);
 bool Command_DebugRenderToggle(EventArgs& args);
+

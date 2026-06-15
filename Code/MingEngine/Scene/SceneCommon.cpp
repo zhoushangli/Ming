@@ -1,10 +1,10 @@
 #include "MingEngine/Scene/SceneCommon.hpp"
 
 #include "MingEngine/Engine/Application/Engine.hpp"
-#include "MingEngine/Engine/Render/Rgba8.hpp"
-#include "MingEngine/Engine/Render/Vertex.hpp"
-#include "MingEngine/Engine/Math/Matrix4x4.hpp"
-#include "MingEngine/Engine/Math/Vec2.hpp"
+#include "MingEngine/Core/Render/Rgba8.hpp"
+#include "MingEngine/Core/Render/Vertex.hpp"
+#include "MingEngine/Core/Math/Matrix4x4.hpp"
+#include "MingEngine/Core/Math/Vec2.hpp"
 #include "MingEngine/Engine/Render/Renderer.hpp"
 #include "MingEngine/Engine/Render/VertexBuffer.hpp"
 
@@ -119,3 +119,4 @@ void DebugDrawCircle(Vec2 const& center, float radius, Rgba8 const& color, float
         DebugDrawLine(start, end, color, width);
     }
 }
+

@@ -1,7 +1,7 @@
 #include "MingEngine/Scene/3D/Transform3D.hpp"
 
-#include "MingEngine/Engine/Core/ErrorWarningAssert.hpp"
-#include "MingEngine/Engine/Math/MathUtils.hpp"
+#include "MingEngine/Core/ErrorWarningAssert.hpp"
+#include "MingEngine/Core/Math/MathUtils.hpp"
 
 namespace
 {
@@ -103,3 +103,4 @@ void Transform3D::MarkDirty()
 	m_isMatrixDirty        = true;
 	m_isInverseMatrixDirty = true;
 }
+

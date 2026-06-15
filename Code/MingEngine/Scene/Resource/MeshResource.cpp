@@ -5,7 +5,7 @@
 #include "MingEngine/Scene/Import/OBJLoader.hpp"
 
 #include "MingEngine/Engine/Application/Engine.hpp"
-#include "MingEngine/Engine/Render/VertexUtils.hpp"
+#include "MingEngine/Core/Render/VertexUtils.hpp"
 #include "MingEngine/Engine/Render/IndexBuffer.hpp"
 #include "MingEngine/Engine/Render/Renderer.hpp"
 #include "MingEngine/Engine/Render/VertexBuffer.hpp"
@@ -106,3 +106,4 @@ void MeshResource::ClearLoadedMeshes()
 }
 
 bool MeshResource::IsEmpty() const { return m_meshData.IsEmpty(); }
+
