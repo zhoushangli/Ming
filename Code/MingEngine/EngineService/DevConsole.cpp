@@ -1,10 +1,10 @@
 #include "MingEngine/EngineService/DevConsole.hpp"
 
-#include "MingEngine/Engine/Application/Engine.hpp"
-#include "MingEngine/EngineService/EngineService.hpp"
 #include "MingEngine/Core/ErrorWarningAssert.hpp"
 #include "MingEngine/Core/StringUtils.hpp"
+#include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Engine/Input/InputSystem.hpp"
+#include "MingEngine/EngineService/EngineService.hpp"
 
 #include "ThirdParty/imgui/imgui.h"
 
@@ -22,13 +22,9 @@ ImVec4 ToImGuiColor(Rgba8 const& color)
 {
 	return ImVec4(color.r / 255.f, color.g / 255.f, color.b / 255.f, color.a / 255.f);
 }
-}
+} // namespace
 
-DevConsole::DevConsole(DevConsoleConfig const& config)
-	: m_config(config)
-{
-	ResetInputBuffer();
-}
+DevConsole::DevConsole(DevConsoleConfig const& config) : m_config(config) { ResetInputBuffer(); }
 
 DevConsole::~DevConsole() = default;
 
@@ -42,15 +38,15 @@ void DevConsole::Startup()
 	m_lines.clear();
 	m_commands.clear();
 	m_commandHistory.clear();
-	m_historyIndex = -1;
-	m_isOpen = m_config.m_startOpen;
+	m_historyIndex        = -1;
+	m_isOpen              = m_config.m_startOpen;
 	m_focusInputNextFrame = m_isOpen;
-	m_scrollToBottom = m_isOpen;
+	m_scrollToBottom      = m_isOpen;
 	ResetInputBuffer();
 
-	AddCommand("Quit", Command_Quit);
-	AddCommand("Clear", Command_Clear);
-	AddCommand("Help", Command_Help);
+	AddCommand("Quit", Quit);
+	AddCommand("Clear", Clear);
+	AddCommand("Help", Help);
 	AddLine(kInfoMajor, "DevConsole started");
 }
 
@@ -59,10 +55,10 @@ void DevConsole::Shutdown()
 	m_lines.clear();
 	m_commands.clear();
 	m_commandHistory.clear();
-	m_historyIndex = -1;
-	m_isOpen = false;
+	m_historyIndex        = -1;
+	m_isOpen              = false;
 	m_focusInputNextFrame = false;
-	m_scrollToBottom = false;
+	m_scrollToBottom      = false;
 	ResetInputBuffer();
 }
 
@@ -94,7 +90,7 @@ void DevConsole::AddCommand(std::string const& name, DevConsoleCommandFunc func)
 void DevConsole::Execute(std::string const& consoleContext, bool echoCommand)
 {
 	Strings const rawTokens = SplitStringOnDelimiter(consoleContext, ' ');
-	Strings tokens;
+	Strings       tokens;
 	tokens.reserve(rawTokens.size());
 	for (std::string const& token : rawTokens)
 	{
@@ -162,9 +158,15 @@ void DevConsole::Render()
 		return;
 	}
 
-	ImGuiViewport const* viewport = ImGui::GetMainViewport();
-	ImVec2 const windowPos(viewport->WorkPos.x, viewport->WorkPos.y);
-	ImVec2 const windowSize(viewport->WorkSize.x, viewport->WorkSize.y * 0.42f);
+	ImGuiViewport const* viewport     = ImGui::GetMainViewport();
+	float const          margin       = 16.f;
+	float const          maxWidth     = viewport->WorkSize.x * 0.4f;
+	float const          maxHeight    = viewport->WorkSize.y * 0.6f;
+	float const          windowWidth  = std::max(560.f, maxWidth);
+	float const          windowHeight = std::max(320.f, maxHeight);
+	ImVec2 const         windowPos(
+			 viewport->WorkPos.x + margin, viewport->WorkPos.y + viewport->WorkSize.y - windowHeight - margin);
+	ImVec2 const windowSize(windowWidth, windowHeight);
 
 	ImGui::SetNextWindowPos(windowPos, ImGuiCond_Always);
 	ImGui::SetNextWindowSize(windowSize, ImGuiCond_Always);
@@ -224,7 +226,8 @@ void DevConsole::Render()
 		m_focusInputNextFrame = false;
 	}
 
-	bool const submitted = ImGui::InputText("##DevConsoleInput",
+	bool const submitted = ImGui::InputText(
+		"##DevConsoleInput",
 		m_inputBuffer.data(),
 		m_inputBuffer.size(),
 		inputFlags,
@@ -258,10 +261,10 @@ void DevConsole::ToggleOpen()
 		return;
 	}
 
-	m_isOpen = !m_isOpen;
+	m_isOpen              = !m_isOpen;
 	m_focusInputNextFrame = m_isOpen;
-	m_scrollToBottom = m_isOpen;
-	m_historyIndex = static_cast<int>(m_commandHistory.size());
+	m_scrollToBottom      = m_isOpen;
+	m_historyIndex        = static_cast<int>(m_commandHistory.size());
 
 	if (!m_isOpen)
 	{
@@ -271,24 +274,26 @@ void DevConsole::ToggleOpen()
 
 bool DevConsole::IsOpen() const { return m_isOpen; }
 
-bool DevConsole::Command_Quit([[maybe_unused]] EventArgs& args)
+bool DevConsole::Quit([[maybe_unused]] EventArgs& args)
 {
 	FireEvent("Quit");
 	return true;
 }
 
-bool DevConsole::Command_Clear([[maybe_unused]] EventArgs& args)
+bool DevConsole::Clear([[maybe_unused]] EventArgs& args)
 {
-	GUARANTEE_OR_DIE(g_engineService != nullptr && g_engineService->m_console != nullptr,
+	GUARANTEE_OR_DIE(
+		g_engineService != nullptr && g_engineService->m_console != nullptr,
 		"DevConsole::Command_Clear called but console is null");
 	g_engineService->m_console->m_lines.clear();
 	g_engineService->m_console->m_scrollToBottom = true;
 	return true;
 }
 
-bool DevConsole::Command_Help([[maybe_unused]] EventArgs& args)
+bool DevConsole::Help([[maybe_unused]] EventArgs& args)
 {
-	GUARANTEE_OR_DIE(g_engineService != nullptr && g_engineService->m_console != nullptr,
+	GUARANTEE_OR_DIE(
+		g_engineService != nullptr && g_engineService->m_console != nullptr,
 		"DevConsole::Command_Help called but console is null");
 
 	std::string helpText = "Registered commands:";
@@ -343,10 +348,7 @@ void DevConsole::ExecuteInputBuffer()
 	m_focusInputNextFrame = true;
 }
 
-void DevConsole::ResetInputBuffer()
-{
-	m_inputBuffer.fill('\0');
-}
+void DevConsole::ResetInputBuffer() { m_inputBuffer.fill('\0'); }
 
 void DevConsole::RecallHistory(int direction)
 {
@@ -387,5 +389,3 @@ bool DevConsole::IsRuntimeEnabled() const
 	return true;
 #endif
 }
-
-

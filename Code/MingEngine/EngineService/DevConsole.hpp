@@ -1,7 +1,7 @@
 #pragma once
 
-#include "MingEngine/Engine/Event/EventSystem.hpp"
 #include "MingEngine/Core/Render/Rgba8.hpp"
+#include "MingEngine/Engine/Event/EventSystem.hpp"
 
 #include <array>
 #include <map>
@@ -29,7 +29,7 @@ struct DevConsoleConfig
 	bool  m_startOpen         = false;
 };
 
-using DevConsoleCommandFunc = bool(*)(EventArgs& args);
+using DevConsoleCommandFunc = bool (*)(EventArgs& args);
 
 class DevConsole
 {
@@ -56,9 +56,9 @@ public:
 	static const Rgba8 kInfoMinor;
 	static const Rgba8 kInputText;
 
-	static bool Command_Quit(EventArgs& args);
-	static bool Command_Clear(EventArgs& args);
-	static bool Command_Help(EventArgs& args);
+	static bool Quit(EventArgs& args);
+	static bool Clear(EventArgs& args);
+	static bool Help(EventArgs& args);
 
 private:
 	struct CommandEntry
@@ -75,14 +75,13 @@ private:
 	bool       IsRuntimeEnabled() const;
 
 private:
-	DevConsoleConfig             m_config;
-	bool                         m_isOpen              = false;
-	bool                         m_focusInputNextFrame = false;
-	bool                         m_scrollToBottom      = false;
-	std::vector<DevConsoleLine>  m_lines;
+	DevConsoleConfig                    m_config;
+	bool                                m_isOpen              = false;
+	bool                                m_focusInputNextFrame = false;
+	bool                                m_scrollToBottom      = false;
+	std::vector<DevConsoleLine>         m_lines;
 	std::map<std::string, CommandEntry> m_commands;
-	std::vector<std::string>     m_commandHistory;
-	int                          m_historyIndex = -1;
-	std::array<char, 512>        m_inputBuffer{};
+	std::vector<std::string>            m_commandHistory;
+	int                                 m_historyIndex = -1;
+	std::array<char, 512>               m_inputBuffer{};
 };
-

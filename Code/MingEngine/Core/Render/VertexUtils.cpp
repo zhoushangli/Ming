@@ -1,11 +1,10 @@
 #include "MingEngine/Core/Render/VertexUtils.hpp"
 
-#include "MingEngine/Core/Render/Vertex.hpp"
 #include "MingEngine/Core/Math/MathUtils.hpp"
+#include "MingEngine/Core/Render/Vertex.hpp"
 
 void TransformVertexArrayXY3D(
-	int numVerts, Vertex* verts, float scaleXY, float rotationDegreesAboutZ, Vec2 const& translationXY
-)
+	int numVerts, Vertex* verts, float scaleXY, float rotationDegreesAboutZ, Vec2 const& translationXY)
 {
 	Vec2 iBasis = Vec2::MakeFromPolarDegrees(rotationDegreesAboutZ, scaleXY);
 	Vec2 jBasis = iBasis.GetRotatedBy90Degrees();
@@ -143,8 +142,7 @@ void AddVertsForSector2D(
 	float                sectorForwardDegrees,
 	float                sectorApertureDegrees,
 	float                sectorRadius,
-	Rgba8                color
-)
+	Rgba8                color)
 {
 	// Clamp aperture to [0, 360]
 	float aperture = GetClamped(sectorApertureDegrees, 0.f, 360.f);
@@ -220,8 +218,7 @@ void AddVertsForLineSegment2D(std::vector<Vertex>& verts, Vec2 start, Vec2 end, 
 }
 
 void AddVertsForInfiniteLine2D(
-	std::vector<Vertex>& verts, Vec2 pointOnLine, Vec2 anotherPointOnLine, float thickness, Rgba8 color
-)
+	std::vector<Vertex>& verts, Vec2 pointOnLine, Vec2 anotherPointOnLine, float thickness, Rgba8 color)
 {
 	Vec2 direction = anotherPointOnLine - pointOnLine;
 	AddVertsForLineSegment2D(
@@ -229,13 +226,11 @@ void AddVertsForInfiniteLine2D(
 		pointOnLine - direction.GetNormalized() * 10000.f,
 		pointOnLine + direction.GetNormalized() * 10000.f,
 		Vec2(thickness, thickness),
-		color
-	);
+		color);
 }
 
 void AddVertsForArrow2D(
-	std::vector<Vertex>& verts, Vec2 tailPos, Vec2 tipPos, float arrowSize, float lineThickness, Rgba8 color
-)
+	std::vector<Vertex>& verts, Vec2 tailPos, Vec2 tipPos, float arrowSize, float lineThickness, Rgba8 color)
 {
 	Vec2  dir    = (tipPos - tailPos).GetNormalized();
 	float length = (tipPos - tailPos).GetLength();
@@ -352,8 +347,7 @@ void AddVertsForAABB3D(
 		Vec3(maxs.x, maxs.y, maxs.z),
 		Vec3(mins.x, maxs.y, maxs.z),
 		color,
-		UVs
-	);
+		UVs);
 
 	// -Z (bottom)
 	AddVertsForQuad3D(
@@ -363,8 +357,7 @@ void AddVertsForAABB3D(
 		Vec3(maxs.x, mins.y, mins.z),
 		Vec3(mins.x, mins.y, mins.z),
 		color,
-		UVs
-	);
+		UVs);
 
 	// +X
 	AddVertsForQuad3D(
@@ -374,8 +367,7 @@ void AddVertsForAABB3D(
 		Vec3(maxs.x, maxs.y, maxs.z),
 		Vec3(maxs.x, mins.y, maxs.z),
 		color,
-		UVs
-	);
+		UVs);
 
 	// -X
 	AddVertsForQuad3D(
@@ -385,8 +377,7 @@ void AddVertsForAABB3D(
 		Vec3(mins.x, mins.y, maxs.z),
 		Vec3(mins.x, maxs.y, maxs.z),
 		color,
-		UVs
-	);
+		UVs);
 
 	// +Y
 	AddVertsForQuad3D(
@@ -396,8 +387,7 @@ void AddVertsForAABB3D(
 		Vec3(mins.x, maxs.y, maxs.z),
 		Vec3(maxs.x, maxs.y, maxs.z),
 		color,
-		UVs
-	);
+		UVs);
 
 	// -Y
 	AddVertsForQuad3D(
@@ -407,8 +397,7 @@ void AddVertsForAABB3D(
 		Vec3(maxs.x, mins.y, maxs.z),
 		Vec3(mins.x, mins.y, maxs.z),
 		color,
-		UVs
-	);
+		UVs);
 }
 
 void AddVertsForAABB3D(
@@ -416,8 +405,7 @@ void AddVertsForAABB3D(
 	std::vector<unsigned int>& indexes,
 	const AABB3&               bounds,
 	const Rgba8&               color,
-	const AABB2&               UVs
-)
+	const AABB2&               UVs)
 {
 	Vec3 const& mins = bounds.m_mins;
 	Vec3 const& maxs = bounds.m_maxs;
@@ -431,8 +419,7 @@ void AddVertsForAABB3D(
 		Vec3(maxs.x, maxs.y, maxs.z),
 		Vec3(mins.x, maxs.y, maxs.z),
 		color,
-		UVs
-	);
+		UVs);
 
 	// -Z (bottom)
 	AddVertsForQuad3D(
@@ -443,8 +430,7 @@ void AddVertsForAABB3D(
 		Vec3(maxs.x, mins.y, mins.z),
 		Vec3(mins.x, mins.y, mins.z),
 		color,
-		UVs
-	);
+		UVs);
 
 	// +X
 	AddVertsForQuad3D(
@@ -455,8 +441,7 @@ void AddVertsForAABB3D(
 		Vec3(maxs.x, maxs.y, maxs.z),
 		Vec3(maxs.x, mins.y, maxs.z),
 		color,
-		UVs
-	);
+		UVs);
 
 	// -X
 	AddVertsForQuad3D(
@@ -467,8 +452,7 @@ void AddVertsForAABB3D(
 		Vec3(mins.x, mins.y, maxs.z),
 		Vec3(mins.x, maxs.y, maxs.z),
 		color,
-		UVs
-	);
+		UVs);
 
 	// +Y
 	AddVertsForQuad3D(
@@ -479,8 +463,7 @@ void AddVertsForAABB3D(
 		Vec3(mins.x, maxs.y, maxs.z),
 		Vec3(maxs.x, maxs.y, maxs.z),
 		color,
-		UVs
-	);
+		UVs);
 
 	// -Y
 	AddVertsForQuad3D(
@@ -491,8 +474,7 @@ void AddVertsForAABB3D(
 		Vec3(maxs.x, mins.y, maxs.z),
 		Vec3(mins.x, mins.y, maxs.z),
 		color,
-		UVs
-	);
+		UVs);
 }
 
 void AddVertsForSphere3D(
@@ -562,6 +544,74 @@ void AddVertsForSphere3D(
 	}
 }
 
+void AddVertsForSphere3D(
+	std::vector<Vertex>&       verts,
+	std::vector<unsigned int>& indexes,
+	const Vec3&                center,
+	float                      radius,
+	const Rgba8&               color /*= Rgba8::kWhite*/,
+	const AABB2&               UVs /*= AABB2::Unit*/,
+	int                        numSlices /*= 16*/,
+	int                        numStacks /*= 8*/
+)
+{
+	if (radius <= 0.f)
+	{
+		return;
+	}
+
+	numSlices = Max(3, numSlices);
+	numStacks = Max(2, numStacks);
+
+	float uRange = UVs.m_maxs.x - UVs.m_mins.x;
+	float vRange = UVs.m_maxs.y - UVs.m_mins.y;
+
+	unsigned int const baseIndex = static_cast<unsigned int>(verts.size());
+
+	// Unique vertices: (numStacks+1) rows × numSlices columns
+	for (int stackIndex = 0; stackIndex <= numStacks; ++stackIndex)
+	{
+		float vFrac = static_cast<float>(stackIndex) / static_cast<float>(numStacks);
+		float pitch = -kHalfPi + vFrac * kPi;
+		float v     = UVs.m_mins.y + vFrac * vRange;
+
+		for (int sliceIndex = 0; sliceIndex < numSlices; ++sliceIndex)
+		{
+			float uFrac = static_cast<float>(sliceIndex) / static_cast<float>(numSlices);
+			float yaw   = uFrac * kTwoPi;
+			float u     = UVs.m_mins.x + uFrac * uRange;
+
+			Vec3 pos       = center + Vec3::MakeFromPolarRadians(pitch, yaw, radius);
+			Vec3 normal    = (pos - center).GetNormalized();
+			Vec3 tangent   = Vec3(-sinf(yaw), cosf(yaw), 0.f).GetNormalized();
+			Vec3 bitangent = CrossProduct3D(normal, tangent).GetNormalized();
+
+			verts.emplace_back(pos, color, Vec2(u, v), tangent, bitangent, normal);
+		}
+	}
+
+	// Indices: for each quad cell, 2 triangles using vertex sharing
+	for (int stackIndex = 0; stackIndex < numStacks; ++stackIndex)
+	{
+		for (int sliceIndex = 0; sliceIndex < numSlices; ++sliceIndex)
+		{
+			unsigned int const nextSlice = (sliceIndex + 1) % numSlices;
+
+			unsigned int const v00 = baseIndex + stackIndex * numSlices + sliceIndex;
+			unsigned int const v10 = baseIndex + stackIndex * numSlices + nextSlice;
+			unsigned int const v11 = baseIndex + (stackIndex + 1) * numSlices + nextSlice;
+			unsigned int const v01 = baseIndex + (stackIndex + 1) * numSlices + sliceIndex;
+
+			indexes.push_back(v00);
+			indexes.push_back(v10);
+			indexes.push_back(v11);
+			indexes.push_back(v00);
+			indexes.push_back(v11);
+			indexes.push_back(v01);
+		}
+	}
+}
+
 void AddVertsForCylinder3D(
 	std::vector<Vertex>& verts,
 	const Vec3&          start,
@@ -624,10 +674,10 @@ void AddVertsForCylinder3D(
 		Vec3 t0 = end + rim0;
 		Vec3 t1 = end + rim1;
 
-		Vec3 const radial0    = rim0.GetNormalized();
-		Vec3 const radial1    = rim1.GetNormalized();
-		Vec3 const tangent0   = (-iBasis * sin0 + jBasis * cos0).GetNormalized();
-		Vec3 const tangent1   = (-iBasis * sin1 + jBasis * cos1).GetNormalized();
+		Vec3 const radial0       = rim0.GetNormalized();
+		Vec3 const radial1       = rim1.GetNormalized();
+		Vec3 const tangent0      = (-iBasis * sin0 + jBasis * cos0).GetNormalized();
+		Vec3 const tangent1      = (-iBasis * sin1 + jBasis * cos1).GetNormalized();
 		Vec3 const sideBitangent = kBasis;
 
 		float u0Frac = static_cast<float>(sliceIndex) / static_cast<float>(numSlices);
@@ -671,6 +721,155 @@ void AddVertsForCylinder3D(
 		verts.emplace_back(cT, color, Vec2(cuC, cvC), iBasis, jBasis, kBasis);
 		verts.emplace_back(t0, color, Vec2(cu0, cv0), iBasis, jBasis, kBasis);
 		verts.emplace_back(t1, color, Vec2(cu1, cv1), iBasis, jBasis, kBasis);
+	}
+}
+
+void AddVertsForCylinder3D(
+	std::vector<Vertex>&       verts,
+	std::vector<unsigned int>& indexes,
+	const Vec3&                start,
+	const Vec3&                end,
+	float                      radius,
+	const Rgba8&               color /*= Rgba8::kWhite*/,
+	const AABB2&               UVs /*= AABB2::Unit*/,
+	int                        numSlices /*= 16*/
+)
+{
+	if (radius <= 0.f)
+	{
+		return;
+	}
+
+	Vec3  axis   = end - start;
+	float height = axis.GetLength();
+	if (height <= 0.f)
+	{
+		return;
+	}
+
+	numSlices = Max(3, numSlices);
+
+	Vec3  kBasis = axis / height;
+	Vec3  helper = (Abs(kBasis.z) < 0.999f) ? Vec3(0.f, 0.f, 1.f) : Vec3(0.f, 1.f, 0.f);
+	Vec3  iBasis = CrossProduct3D(helper, kBasis);
+	float iLen   = iBasis.GetLength();
+	if (iLen <= 0.f)
+	{
+		return;
+	}
+	iBasis /= iLen;
+	Vec3 jBasis = CrossProduct3D(kBasis, iBasis);
+
+	float uRange   = UVs.m_maxs.x - UVs.m_mins.x;
+	float vRange   = UVs.m_maxs.y - UVs.m_mins.y;
+	float deltaYaw = kTwoPi / static_cast<float>(numSlices);
+
+	// Side rim vertices: bottom + top, radial normals (used by side quads only)
+	unsigned int const botRimSideBase = static_cast<unsigned int>(verts.size());
+	for (int sliceIndex = 0; sliceIndex < numSlices; ++sliceIndex)
+	{
+		float yaw     = deltaYaw * static_cast<float>(sliceIndex);
+		float c       = cosf(yaw);
+		float s       = sinf(yaw);
+		Vec3  rim     = (iBasis * c + jBasis * s) * radius;
+		Vec3  radial  = rim.GetNormalized();
+		Vec3  tangent = (-iBasis * s + jBasis * c).GetNormalized();
+
+		float uFrac = static_cast<float>(sliceIndex) / static_cast<float>(numSlices);
+		float u     = UVs.m_mins.x + uFrac * uRange;
+
+		verts.emplace_back(start + rim, color, Vec2(u, UVs.m_mins.y), tangent, kBasis, radial);
+	}
+
+	unsigned int const topRimSideBase = static_cast<unsigned int>(verts.size());
+	for (int sliceIndex = 0; sliceIndex < numSlices; ++sliceIndex)
+	{
+		float yaw     = deltaYaw * static_cast<float>(sliceIndex);
+		float c       = cosf(yaw);
+		float s       = sinf(yaw);
+		Vec3  rim     = (iBasis * c + jBasis * s) * radius;
+		Vec3  radial  = rim.GetNormalized();
+		Vec3  tangent = (-iBasis * s + jBasis * c).GetNormalized();
+
+		float uFrac = static_cast<float>(sliceIndex) / static_cast<float>(numSlices);
+		float u     = UVs.m_mins.x + uFrac * uRange;
+
+		verts.emplace_back(end + rim, color, Vec2(u, UVs.m_mins.y + vRange), tangent, kBasis, radial);
+	}
+
+	// Cap rim vertices: bottom + top, axis-aligned normals (used by caps only)
+	float const cuC = UVs.m_mins.x + 0.5f * uRange;
+	float const cvC = UVs.m_mins.y + 0.5f * vRange;
+
+	unsigned int const botRimCapBase   = static_cast<unsigned int>(verts.size());
+	Vec3 const         bottomNormal    = -kBasis;
+	Vec3 const         bottomTangent   = iBasis;
+	Vec3 const         bottomBitangent = -jBasis;
+	for (int sliceIndex = 0; sliceIndex < numSlices; ++sliceIndex)
+	{
+		float yaw = deltaYaw * static_cast<float>(sliceIndex);
+		float c   = cosf(yaw);
+		float s   = sinf(yaw);
+		Vec3  rim = (iBasis * c + jBasis * s) * radius;
+
+		float cu = UVs.m_mins.x + (0.5f + 0.5f * c) * uRange;
+		float cv = UVs.m_mins.y + (0.5f + 0.5f * s) * vRange;
+		verts.emplace_back(start + rim, color, Vec2(cu, cv), bottomTangent, bottomBitangent, bottomNormal);
+	}
+
+	unsigned int const topRimCapBase = static_cast<unsigned int>(verts.size());
+	for (int sliceIndex = 0; sliceIndex < numSlices; ++sliceIndex)
+	{
+		float yaw = deltaYaw * static_cast<float>(sliceIndex);
+		float c   = cosf(yaw);
+		float s   = sinf(yaw);
+		Vec3  rim = (iBasis * c + jBasis * s) * radius;
+
+		float cu = UVs.m_mins.x + (0.5f + 0.5f * c) * uRange;
+		float cv = UVs.m_mins.y + (0.5f + 0.5f * s) * vRange;
+		verts.emplace_back(end + rim, color, Vec2(cu, cv), iBasis, jBasis, kBasis);
+	}
+
+	// Center vertices
+	unsigned int const botCenterIdx = static_cast<unsigned int>(verts.size());
+	verts.emplace_back(start, color, Vec2(cuC, cvC), bottomTangent, bottomBitangent, bottomNormal);
+
+	unsigned int const topCenterIdx = static_cast<unsigned int>(verts.size());
+	verts.emplace_back(end, color, Vec2(cuC, cvC), iBasis, jBasis, kBasis);
+
+	// Side indices: reference side rim vertices only
+	for (int sliceIndex = 0; sliceIndex < numSlices; ++sliceIndex)
+	{
+		unsigned int const next = (sliceIndex + 1) % numSlices;
+		unsigned int const b0   = botRimSideBase + sliceIndex;
+		unsigned int const b1   = botRimSideBase + next;
+		unsigned int const t0   = topRimSideBase + sliceIndex;
+		unsigned int const t1   = topRimSideBase + next;
+
+		indexes.push_back(b0);
+		indexes.push_back(b1);
+		indexes.push_back(t1);
+		indexes.push_back(b0);
+		indexes.push_back(t1);
+		indexes.push_back(t0);
+	}
+
+	// Bottom cap: reference cap rim vertices only
+	for (int sliceIndex = 0; sliceIndex < numSlices; ++sliceIndex)
+	{
+		unsigned int const next = (sliceIndex + 1) % numSlices;
+		indexes.push_back(botCenterIdx);
+		indexes.push_back(botRimCapBase + next);
+		indexes.push_back(botRimCapBase + sliceIndex);
+	}
+
+	// Top cap: reference cap rim vertices only
+	for (int sliceIndex = 0; sliceIndex < numSlices; ++sliceIndex)
+	{
+		unsigned int const next = (sliceIndex + 1) % numSlices;
+		indexes.push_back(topCenterIdx);
+		indexes.push_back(topRimCapBase + sliceIndex);
+		indexes.push_back(topRimCapBase + next);
 	}
 }
 
@@ -736,7 +935,7 @@ void AddVertsForCapsule3D(
 
 	auto AddCapsuleVertex = [&](Vec3 const& position, Vec3 const& normal, float yaw, float u, float v)
 	{
-		Vec3 const tangent = (-iBasis * sinf(yaw) + jBasis * cosf(yaw)).GetNormalized();
+		Vec3 const tangent   = (-iBasis * sinf(yaw) + jBasis * cosf(yaw)).GetNormalized();
 		Vec3 const bitangent = CrossProduct3D(normal, tangent).GetNormalized();
 		verts.emplace_back(position, color, Vec2(u, v), tangent, bitangent, normal);
 	};
@@ -751,10 +950,10 @@ void AddVertsForCapsule3D(
 		Vec3 const rim0 = GetRadialDir(yaw0) * radius;
 		Vec3 const rim1 = GetRadialDir(yaw1) * radius;
 
-		Vec3 const b0 = start + rim0;
-		Vec3 const b1 = start + rim1;
-		Vec3 const t0 = end + rim0;
-		Vec3 const t1 = end + rim1;
+		Vec3 const b0      = start + rim0;
+		Vec3 const b1      = start + rim1;
+		Vec3 const t0      = end + rim0;
+		Vec3 const t1      = end + rim1;
 		Vec3 const normal0 = rim0.GetNormalized();
 		Vec3 const normal1 = rim1.GetNormalized();
 
@@ -866,8 +1065,7 @@ void AddVertsForCapsule3D(
 		AABB2::Unit,
 		color,
 		numSlices,
-		numStacks
-	);
+		numStacks);
 }
 
 void AddVertsForCone3D(
@@ -926,18 +1124,18 @@ void AddVertsForCone3D(
 		Vec3 rim0 = (iBasis * cos0 + jBasis * sin0) * radius;
 		Vec3 rim1 = (iBasis * cos1 + jBasis * sin1) * radius;
 
-		Vec3 b0  = start + rim0;
-		Vec3 b1  = start + rim1;
-		Vec3 tip = end;
-		Vec3 tangent0 = (-iBasis * sin0 + jBasis * cos0).GetNormalized();
-		Vec3 tangent1 = (-iBasis * sin1 + jBasis * cos1).GetNormalized();
-		Vec3 bitangent0 = (kBasis * height - rim0).GetNormalized();
-		Vec3 bitangent1 = (kBasis * height - rim1).GetNormalized();
-		Vec3 normal0 = CrossProduct3D(tangent0, bitangent0).GetNormalized();
-		Vec3 normal1 = CrossProduct3D(tangent1, bitangent1).GetNormalized();
-		Vec3 tipTangent = (tangent0 + tangent1).GetNormalized();
+		Vec3 b0           = start + rim0;
+		Vec3 b1           = start + rim1;
+		Vec3 tip          = end;
+		Vec3 tangent0     = (-iBasis * sin0 + jBasis * cos0).GetNormalized();
+		Vec3 tangent1     = (-iBasis * sin1 + jBasis * cos1).GetNormalized();
+		Vec3 bitangent0   = (kBasis * height - rim0).GetNormalized();
+		Vec3 bitangent1   = (kBasis * height - rim1).GetNormalized();
+		Vec3 normal0      = CrossProduct3D(tangent0, bitangent0).GetNormalized();
+		Vec3 normal1      = CrossProduct3D(tangent1, bitangent1).GetNormalized();
+		Vec3 tipTangent   = (tangent0 + tangent1).GetNormalized();
 		Vec3 tipBitangent = (bitangent0 + bitangent1).GetNormalized();
-		Vec3 tipNormal = CrossProduct3D(tipTangent, tipBitangent).GetNormalized();
+		Vec3 tipNormal    = CrossProduct3D(tipTangent, tipBitangent).GetNormalized();
 
 		float u0Frac = static_cast<float>(sliceIndex) / static_cast<float>(numSlices);
 		float u1Frac = static_cast<float>(sliceIndex + 1) / static_cast<float>(numSlices);
@@ -969,6 +1167,120 @@ void AddVertsForCone3D(
 		verts.emplace_back(cB, color, Vec2(cuC, cvC), baseTangent, baseBitangent, baseNormal);
 		verts.emplace_back(b1, color, Vec2(cu1, cv1), baseTangent, baseBitangent, baseNormal);
 		verts.emplace_back(b0, color, Vec2(cu0, cv0), baseTangent, baseBitangent, baseNormal);
+	}
+}
+
+void AddVertsForCone3D(
+	std::vector<Vertex>&       verts,
+	std::vector<unsigned int>& indexes,
+	const Vec3&                start,
+	const Vec3&                end,
+	float                      radius,
+	const Rgba8&               color /*= Rgba8::kWhite*/,
+	const AABB2&               UVs /*= AABB2::Unit*/,
+	int                        numSlices /*= 32*/
+)
+{
+	if (radius <= 0.f)
+	{
+		return;
+	}
+
+	Vec3  axis   = end - start;
+	float height = axis.GetLength();
+	if (height <= 0.f)
+	{
+		return;
+	}
+
+	numSlices = Max(3, numSlices);
+
+	Vec3  kBasis = axis / height;
+	Vec3  helper = (Abs(kBasis.z) < 0.999f) ? Vec3(0.f, 0.f, 1.f) : Vec3(0.f, 1.f, 0.f);
+	Vec3  iBasis = CrossProduct3D(helper, kBasis);
+	float iLen   = iBasis.GetLength();
+	if (iLen <= 0.f)
+	{
+		return;
+	}
+	iBasis /= iLen;
+	Vec3 jBasis = CrossProduct3D(kBasis, iBasis);
+
+	float uRange   = UVs.m_maxs.x - UVs.m_mins.x;
+	float vRange   = UVs.m_maxs.y - UVs.m_mins.y;
+	float deltaYaw = kTwoPi / static_cast<float>(numSlices);
+
+	// Side rim vertices: cone surface normals (used by side triangles only)
+	unsigned int const botRimSideBase = static_cast<unsigned int>(verts.size());
+	for (int sliceIndex = 0; sliceIndex < numSlices; ++sliceIndex)
+	{
+		float yaw       = deltaYaw * static_cast<float>(sliceIndex);
+		float c         = cosf(yaw);
+		float s         = sinf(yaw);
+		Vec3  rim       = (iBasis * c + jBasis * s) * radius;
+		Vec3  pos       = start + rim;
+		Vec3  tangent   = (-iBasis * s + jBasis * c).GetNormalized();
+		Vec3  bitangent = (kBasis * height - rim).GetNormalized();
+		Vec3  normal    = CrossProduct3D(tangent, bitangent).GetNormalized();
+
+		float uFrac = static_cast<float>(sliceIndex) / static_cast<float>(numSlices);
+		float u     = UVs.m_mins.x + uFrac * uRange;
+
+		verts.emplace_back(pos, color, Vec2(u, UVs.m_mins.y), tangent, bitangent, normal);
+	}
+
+	// Tip vertex
+	unsigned int const tipIdx       = static_cast<unsigned int>(verts.size());
+	Vec3 const         tipTangent   = iBasis;
+	Vec3 const         tipBitangent = jBasis;
+	Vec3 const         tipNormal    = kBasis;
+	verts.emplace_back(
+		end,
+		color,
+		Vec2(UVs.m_mins.x + 0.5f * uRange, UVs.m_mins.y + vRange),
+		tipTangent,
+		tipBitangent,
+		tipNormal);
+
+	// Cap rim vertices: axis-aligned normals (used by bottom cap only)
+	unsigned int const botRimCapBase = static_cast<unsigned int>(verts.size());
+	Vec3 const         baseNormal    = -kBasis;
+	Vec3 const         baseTangent   = iBasis;
+	Vec3 const         baseBitangent = -jBasis;
+	for (int sliceIndex = 0; sliceIndex < numSlices; ++sliceIndex)
+	{
+		float yaw = deltaYaw * static_cast<float>(sliceIndex);
+		float c   = cosf(yaw);
+		float s   = sinf(yaw);
+		Vec3  rim = (iBasis * c + jBasis * s) * radius;
+
+		float cu = UVs.m_mins.x + (0.5f + 0.5f * c) * uRange;
+		float cv = UVs.m_mins.y + (0.5f + 0.5f * s) * vRange;
+		verts.emplace_back(start + rim, color, Vec2(cu, cv), baseTangent, baseBitangent, baseNormal);
+	}
+
+	// Bottom center
+	unsigned int const botCenterIdx = static_cast<unsigned int>(verts.size());
+	float const        cuC          = UVs.m_mins.x + 0.5f * uRange;
+	float const        cvC          = UVs.m_mins.y + 0.5f * vRange;
+	verts.emplace_back(start, color, Vec2(cuC, cvC), baseTangent, baseBitangent, baseNormal);
+
+	// Side triangles: reference side rim vertices only
+	for (int sliceIndex = 0; sliceIndex < numSlices; ++sliceIndex)
+	{
+		unsigned int const next = (sliceIndex + 1) % numSlices;
+		indexes.push_back(botRimSideBase + sliceIndex);
+		indexes.push_back(botRimSideBase + next);
+		indexes.push_back(tipIdx);
+	}
+
+	// Bottom cap: reference cap rim vertices only
+	for (int sliceIndex = 0; sliceIndex < numSlices; ++sliceIndex)
+	{
+		unsigned int const next = (sliceIndex + 1) % numSlices;
+		indexes.push_back(botCenterIdx);
+		indexes.push_back(botRimCapBase + next);
+		indexes.push_back(botRimCapBase + sliceIndex);
 	}
 }
 
@@ -1023,8 +1335,7 @@ void AddVertsForTriangle2D(std::vector<Vertex>& verts, Triangle2 const& triangle
 		triangle.m_pointsCounterClockwise[0],
 		triangle.m_pointsCounterClockwise[1],
 		triangle.m_pointsCounterClockwise[2],
-		color
-	);
+		color);
 }
 
 void AddVertsForLineSegment2D(std::vector<Vertex>& verts, LineSegment2 const& lineSegment, float thickness, Rgba8 color)
@@ -1033,9 +1344,7 @@ void AddVertsForLineSegment2D(std::vector<Vertex>& verts, LineSegment2 const& li
 }
 
 void AddVertsForInfiniteLine2D(
-	std::vector<Vertex>& verts, LineSegment2 const& infiniteLine, float thickness, Rgba8 color
-)
+	std::vector<Vertex>& verts, LineSegment2 const& infiniteLine, float thickness, Rgba8 color)
 {
 	AddVertsForInfiniteLine2D(verts, infiniteLine.m_start, infiniteLine.m_end, thickness, color);
 }
-
