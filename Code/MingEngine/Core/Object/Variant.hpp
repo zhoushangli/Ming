@@ -58,8 +58,29 @@ public:
 		return std::get<T>(m_value);
 	}
 
+	template <typename T>
+	static Type GetType()
+	{
+		using CleanType = std::remove_cv_t<std::remove_reference_t<T>>;
+
+		if (std::is_same_v<CleanType, bool>)
+			return Type::Bool;
+		if (std::is_same_v<CleanType, int>)
+			return Type::Int;
+		if (std::is_same_v<CleanType, float>)
+			return Type::Float;
+		if (std::is_same_v<CleanType, std::string>)
+			return Type::String;
+		if (std::is_same_v<CleanType, Vec3>)
+			return Type::Vec3;
+		if (std::is_same_v<CleanType, EulerAngles>)
+			return Type::EulerAngles;
+		if (std::is_same_v<CleanType, Matrix4x4>)
+			return Type::Matrix4x4;
+	}
+
 private:
-	Type m_type = Type::Empty;
+	Type    m_type = Type::Empty;
 	Storage m_value;
 };
 
@@ -131,4 +152,3 @@ struct VariantCaster<std::string const&>
 {
 	static std::string const& Cast(Variant const& value) { return value.As<std::string>(); }
 };
-

@@ -61,26 +61,27 @@ std::unique_ptr<ScriptInstance> ScriptInstance::Create(ScriptModule& module, Obj
 	instance->m_module = &module;
 	instance->m_object = static_cast<asIScriptObject*>(object);
 
+	asUINT propertyCount = instance->m_object->GetPropertyCount();
+	for (asUINT propertyIndex = 0; propertyIndex < propertyCount; ++propertyIndex)
+	{
+		char const* propertyName = instance->m_object->GetPropertyName(propertyIndex);
+		if (propertyName != nullptr && strcmp(propertyName, "owner") == 0)
+		{
+			void* ownerPropertyAddress = instance->m_object->GetAddressOfProperty(propertyIndex);
+
+			Node* ownerNode = dynamic_cast<Node*>(&owner);
+			if (ownerNode != nullptr)
+			{
+				*static_cast<Node**>(ownerPropertyAddress) = ownerNode;
+			}
+			break;
+		}
+	}
+
 	instance->m_enterTreeFunction = scriptType->GetMethodByDecl("void _EnterTree()");
 	instance->m_exitTreeFunction  = scriptType->GetMethodByDecl("void _ExitTree()");
 	instance->m_readyFunction     = scriptType->GetMethodByDecl("void _Ready()");
 	instance->m_processFunction   = scriptType->GetMethodByDecl("void _Process(float)");
-
-	// Inject in properties
-	// int nodeHandleTypeId = engine->GetTypeIdByDecl("Object@");
-	// for (asUINT i = 0; i < scriptType->GetPropertyCount(); ++i)
-	// {
-	// 	char const* name   = nullptr;
-	// 	int         typeId = 0;
-	// 	scriptType->GetProperty(i, &name, &typeId);
-
-	// 	if (std::string_view(name) == "owner" && typeId == nodeHandleTypeId)
-	// 	{
-	// 		void* address                 = instance->m_object->GetAddressOfProperty(i);
-	// 		*static_cast<Object**>(address) = dynamic_cast<Object*>(&owner);
-	// 		break;
-	// 	}
-	// }
 
 	return instance;
 }
@@ -195,4 +196,3 @@ bool ScriptInstance::Execute(asIScriptFunction* function, float deltaSeconds)
 
 	return result == asEXECUTION_FINISHED;
 }
-

@@ -1,10 +1,10 @@
 #pragma once
 
-#include "MingEngine/Core/Object/Object.hpp"
 #include "MingEngine/Core/Math/EulerAngles.hpp"
 #include "MingEngine/Core/Math/Matrix4x4.hpp"
 #include "MingEngine/Core/Math/Vec3.hpp"
 #include "MingEngine/Core/Object/MethodBind.hpp"
+#include "MingEngine/Core/Object/Object.hpp"
 
 #include <functional>
 #include <memory>
@@ -24,6 +24,9 @@ struct MethodInfo
 {
 	std::string                 m_name;
 	std::unique_ptr<MethodBind> m_bind;
+	Variant::Type               m_returnType = Variant::Type::Empty;
+	std::vector<Variant::Type>  m_argumentTypes;
+	bool                        m_isConst = false;
 };
 
 struct PropertyInfo
@@ -79,8 +82,10 @@ struct ClassInfo
 	std::function<Object*()> m_creator;
 	bool                     m_canCreateInEditor = true;
 
-	std::vector<PropertyInfo> m_properties;
-	std::vector<MethodInfo>   m_methods;
+	// We use unique_ptr to keep the memory stable for PropertyInfo and MethodInfo when vector resize
+	// because our script system needs the method bind pointer to be stable to call them
+	std::vector<std::unique_ptr<PropertyInfo>> m_properties;
+	std::vector<std::unique_ptr<MethodInfo>>   m_methods;
 };
 
 class ClassDatabase
@@ -134,40 +139,53 @@ public:
 	template <typename ClassType, typename... Args>
 	static void BindMethod(std::string const& methodName, void (ClassType::*method)(Args...))
 	{
-		MethodInfo methodInfo;
-		methodInfo.m_name = methodName;
-		methodInfo.m_bind = std::make_unique<VoidMethodBind<ClassType, Args...>>(method);
+		std::unique_ptr<MethodInfo> methodInfo = std::make_unique<MethodInfo>();
+		methodInfo->m_name                     = methodName;
+		methodInfo->m_bind                     = std::make_unique<VoidMethodBind<ClassType, Args...>>(method);
+		methodInfo->m_returnType               = Variant::Type::Empty;
+		methodInfo->m_argumentTypes.reserve(sizeof...(Args));
+		(methodInfo->m_argumentTypes.push_back(Variant::GetType<Args>()), ...);
 		m_classInfoMap[ClassType::GetStaticClassName()].m_methods.push_back(std::move(methodInfo));
 	}
 
 	template <typename ClassType, typename... Args>
 	static void BindMethod(std::string const& methodName, void (ClassType::*method)(Args...) const)
 	{
-		MethodInfo methodInfo;
-		methodInfo.m_name = methodName;
-		methodInfo.m_bind = std::make_unique<ConstVoidMethodBind<ClassType, Args...>>(method);
+		std::unique_ptr<MethodInfo> methodInfo = std::make_unique<MethodInfo>();
+		methodInfo->m_name                     = methodName;
+		methodInfo->m_bind                     = std::make_unique<ConstVoidMethodBind<ClassType, Args...>>(method);
+		methodInfo->m_returnType               = Variant::Type::Empty;
+		methodInfo->m_argumentTypes.reserve(sizeof...(Args));
+		(methodInfo->m_argumentTypes.push_back(Variant::GetType<Args>()), ...);
+		methodInfo->m_isConst = true;
 		m_classInfoMap[ClassType::GetStaticClassName()].m_methods.push_back(std::move(methodInfo));
 	}
 
 	template <typename ClassType, typename ReturnType, typename... Args>
 	static void BindMethod(std::string const& methodName, ReturnType (ClassType::*method)(Args...))
 	{
-		MethodInfo methodInfo;
-		methodInfo.m_name = methodName;
-		methodInfo.m_bind = std::make_unique<ReturnMethodBind<ClassType, ReturnType, Args...>>(method);
+		std::unique_ptr<MethodInfo> methodInfo = std::make_unique<MethodInfo>();
+		methodInfo->m_name                     = methodName;
+		methodInfo->m_bind       = std::make_unique<ReturnMethodBind<ClassType, ReturnType, Args...>>(method);
+		methodInfo->m_returnType = Variant::GetType<ReturnType>();
+		methodInfo->m_argumentTypes.reserve(sizeof...(Args));
+		(methodInfo->m_argumentTypes.push_back(Variant::GetType<Args>()), ...);
 		m_classInfoMap[ClassType::GetStaticClassName()].m_methods.push_back(std::move(methodInfo));
 	}
 
 	template <typename ClassType, typename ReturnType, typename... Args>
 	static void BindMethod(std::string const& methodName, ReturnType (ClassType::*method)(Args...) const)
 	{
-		MethodInfo methodInfo;
-		methodInfo.m_name = methodName;
-		methodInfo.m_bind = std::make_unique<ConstReturnMethodBind<ClassType, ReturnType, Args...>>(method);
+		std::unique_ptr<MethodInfo> methodInfo = std::make_unique<MethodInfo>();
+		methodInfo->m_name                     = methodName;
+		methodInfo->m_bind       = std::make_unique<ConstReturnMethodBind<ClassType, ReturnType, Args...>>(method);
+		methodInfo->m_returnType = Variant::GetType<ReturnType>();
+		methodInfo->m_argumentTypes.reserve(sizeof...(Args));
+		(methodInfo->m_argumentTypes.push_back(Variant::GetType<Args>()), ...);
+		methodInfo->m_isConst = true;
 		m_classInfoMap[ClassType::GetStaticClassName()].m_methods.push_back(std::move(methodInfo));
 	}
 
 private:
 	static std::unordered_map<std::string, ClassInfo> m_classInfoMap;
 };
-

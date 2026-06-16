@@ -5,10 +5,7 @@
 
 std::unordered_map<std::string, ClassInfo> ClassDatabase::m_classInfoMap;
 
-void ClassDatabase::Startup()
-{
-	m_classInfoMap.clear();
-}
+void ClassDatabase::Startup() { m_classInfoMap.clear(); }
 
 void ClassDatabase::Shutdown() { m_classInfoMap.clear(); }
 
@@ -79,7 +76,17 @@ std::vector<PropertyInfo> ClassDatabase::GetProperties(std::string const& classN
 		return {};
 	}
 
-	return iter->second.m_properties;
+	std::vector<PropertyInfo> properties;
+	properties.reserve(iter->second.m_properties.size());
+	for (std::unique_ptr<PropertyInfo> const& property : iter->second.m_properties)
+	{
+		if (property != nullptr)
+		{
+			properties.push_back(*property);
+		}
+	}
+
+	return properties;
 }
 
 std::vector<PropertyInfo const*> ClassDatabase::GetAllProperties(std::string const& className)
@@ -91,9 +98,12 @@ std::vector<PropertyInfo const*> ClassDatabase::GetAllProperties(std::string con
 	}
 
 	std::vector<PropertyInfo const*> properties = GetAllProperties(iter->second.m_parentClassName);
-	for (PropertyInfo const& property : iter->second.m_properties)
+	for (std::unique_ptr<PropertyInfo> const& property : iter->second.m_properties)
 	{
-		properties.push_back(&property);
+		if (property != nullptr)
+		{
+			properties.push_back(property.get());
+		}
 	}
 
 	return properties;
@@ -122,11 +132,11 @@ MethodBind const* ClassDatabase::GetMethodBind(std::string const& className, std
 		return nullptr;
 	}
 
-	for (auto const& method : classInfo->m_methods)
+	for (std::unique_ptr<MethodInfo> const& method : classInfo->m_methods)
 	{
-		if (method.m_name == methodName)
+		if (method != nullptr && method->m_name == methodName)
 		{
-			return method.m_bind.get();
+			return method->m_bind.get();
 		}
 	}
 
@@ -135,7 +145,7 @@ MethodBind const* ClassDatabase::GetMethodBind(std::string const& className, std
 
 void ClassDatabase::AddProperty(
 	std::string const& className,
-	PropertyInfo propertyInfo,
+	PropertyInfo       propertyInfo,
 	std::string const& setterName,
 	std::string const& getterName)
 {
@@ -151,6 +161,5 @@ void ClassDatabase::AddProperty(
 		propertyInfo.m_getter != nullptr,
 		Stringf("ClassDatabase: getter '%s' is not bound on class '%s'.", getterName.c_str(), className.c_str()));
 
-	m_classInfoMap[className].m_properties.push_back(std::move(propertyInfo));
+	m_classInfoMap[className].m_properties.push_back(std::make_unique<PropertyInfo>(std::move(propertyInfo)));
 }
-

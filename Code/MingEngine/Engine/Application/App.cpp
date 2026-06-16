@@ -1,13 +1,13 @@
 #include "MingEngine/Engine/Application/App.hpp"
 
-#include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Core/Clock.hpp"
-#include "MingEngine/Core/Object/ClassDatabase.hpp"
-#include "MingEngine/Core/StringUtils.hpp"
-#include "MingEngine/Engine/Input/InputSystem.hpp"
 #include "MingEngine/Core/Math/MathUtils.hpp"
-#include "MingEngine/Engine/Render/DebugRenderer.hpp"
+#include "MingEngine/Core/Object/ClassDatabase.hpp"
 #include "MingEngine/Core/Render/Rgba8.hpp"
+#include "MingEngine/Core/StringUtils.hpp"
+#include "MingEngine/Engine/Application/Engine.hpp"
+#include "MingEngine/Engine/Input/InputSystem.hpp"
+#include "MingEngine/Engine/Render/DebugRenderer.hpp"
 #include "MingEngine/Engine/Window/Window.hpp"
 #include "MingEngine/EngineService/EngineService.hpp"
 #include "MingEngine/EngineService/RenderService.hpp"
@@ -46,9 +46,6 @@ App::App(IProjectModule& project, MingRunConfig const& config) : m_project(proje
 
 	g_engine        = new Engine(engineConfig);
 	g_engineService = new EngineService(consoleConfig);
-
-	g_engine->Startup();
-	g_engineService->Startup();
 }
 
 App::~App()
@@ -66,6 +63,7 @@ void App::Startup()
 {
 	ClassDatabase::Startup();
 	RegisterSceneTypes();
+	m_project.RegisterTypes();
 
 #if defined(MING_EDITOR)
 	ClassDatabase::RegisterClass<EditorNode>(false);
@@ -73,7 +71,8 @@ void App::Startup()
 	ClassDatabase::RegisterClass<EditorController>(false);
 #endif
 
-	m_project.RegisterTypes();
+	g_engine->Startup();
+	g_engineService->Startup();
 	m_project.Startup();
 
 	DebugRenderConfig debugRenderConfig;
@@ -83,17 +82,6 @@ void App::Startup()
 
 	StartupScene();
 	RegisterEvent("Quit", App::OnQuit);
-
-	Node3D* player = new Node3D();
-
-	auto script = g_engine->m_scriptSystem->CreateInstance("res://Script/Test.as", *player);
-
-	if (script != nullptr)
-	{
-		player->SetScript(std::move(script));
-	}
-
-	delete player;
 }
 
 void App::Shutdown()
@@ -142,8 +130,8 @@ void App::Update(float deltaSeconds)
 
 	if (g_engine->m_input->WasKeyJustPressed(KeyCodeEsc))
 	{
-		bool const isConsoleOpen = g_engineService != nullptr && g_engineService->m_console != nullptr
-								   && g_engineService->m_console->IsOpen();
+		bool const isConsoleOpen =
+			g_engineService != nullptr && g_engineService->m_console != nullptr && g_engineService->m_console->IsOpen();
 		if (!isConsoleOpen)
 		{
 			FireEvent("Quit");
@@ -281,4 +269,3 @@ int MingEngine::Run(IProjectModule& project, MingRunConfig const& config)
 	g_app = nullptr;
 	return 0;
 }
-
