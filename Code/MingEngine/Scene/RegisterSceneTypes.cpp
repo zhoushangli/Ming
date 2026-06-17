@@ -13,6 +13,7 @@
 
 void RegisterSceneTypes()
 {
+	ClassDatabase::RegisterRootClass<Object>();
 	ClassDatabase::RegisterClass<Node>();
 	ClassDatabase::RegisterClass<Node3D>();
 	ClassDatabase::RegisterClass<Camera3D>();

@@ -319,6 +319,8 @@
   <ItemGroup>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\ThirdParty\angelscript\add_on\scriptstdstring\scriptstdstring.cpp" />
+    <ClCompile Include="..\ThirdParty\angelscript\add_on\scriptstdstring\scriptstdstring_utils.cpp" />
     <ClCompile Include="Engine\Application\App.cpp" />
     <ClCompile Include="Core\Clock.cpp" />
     <ClCompile Include="EngineService\DevConsole.cpp" />
@@ -387,6 +389,8 @@
     <ClCompile Include="Engine\Input\InputSystem.cpp" />
     <ClCompile Include="Engine\Input\KeyButtonState.cpp" />
     <ClCompile Include="Engine\Input\XboxController.cpp" />
+    <ClCompile Include="Engine\Script\RegisterBuildinType.cpp" />
+    <ClCompile Include="Engine\Script\RegisterDynamicCast.cpp" />
     <ClCompile Include="Engine\Script\ScriptInstance.cpp" />
     <ClCompile Include="Engine\Script\ScriptModule.cpp" />
     <ClCompile Include="Engine\Script\ScriptResourceIdentity.cpp" />
@@ -448,6 +452,8 @@
     <ClCompile Include="..\ThirdParty\tinyxml2\tinyxml2.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\ThirdParty\angelscript\add_on\scriptstdstring\scriptstdstring.h" />
+    <ClInclude Include="..\ThirdParty\angelscript\include\angelscript.h" />
     <ClInclude Include="Engine\Application\App.hpp" />
     <ClInclude Include="Core\Clock.hpp" />
     <ClInclude Include="EngineService\DevConsole.hpp" />
@@ -524,6 +530,8 @@
     <ClInclude Include="Engine\Input\InputSystem.hpp" />
     <ClInclude Include="Engine\Input\KeyButtonState.hpp" />
     <ClInclude Include="Engine\Input\XboxController.hpp" />
+    <ClInclude Include="Engine\Script\RegisterBuildinType.hpp" />
+    <ClInclude Include="Engine\Script\RegisterDynamicCast.hpp" />
     <ClInclude Include="Engine\Script\ScriptInstance.hpp" />
     <ClInclude Include="Engine\Script\ScriptModule.hpp" />
     <ClInclude Include="Engine\Script\ScriptResourceIdentity.hpp" />
@@ -606,4 +614,3 @@
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
 </Project>
-

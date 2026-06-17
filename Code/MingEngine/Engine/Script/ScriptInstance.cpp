@@ -65,15 +65,10 @@ std::unique_ptr<ScriptInstance> ScriptInstance::Create(ScriptModule& module, Obj
 	for (asUINT propertyIndex = 0; propertyIndex < propertyCount; ++propertyIndex)
 	{
 		char const* propertyName = instance->m_object->GetPropertyName(propertyIndex);
-		if (propertyName != nullptr && strcmp(propertyName, "owner") == 0)
+		if (propertyName != nullptr && strcmp(propertyName, "_native") == 0)
 		{
 			void* ownerPropertyAddress = instance->m_object->GetAddressOfProperty(propertyIndex);
-
-			Node* ownerNode = dynamic_cast<Node*>(&owner);
-			if (ownerNode != nullptr)
-			{
-				*static_cast<Node**>(ownerPropertyAddress) = ownerNode;
-			}
+			*static_cast<Object**>(ownerPropertyAddress) = &owner;
 			break;
 		}
 	}

@@ -115,6 +115,15 @@
     <Filter Include="Engine\Script">
       <UniqueIdentifier>{1f8df884-bc4f-4a63-ba1c-1db40755e4bf}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ThirdParty\angelscript">
+      <UniqueIdentifier>{bb021c98-3391-42c3-9fc8-39c5f21fb053}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ThirdParty\angelscript\include">
+      <UniqueIdentifier>{5de93abd-2c1d-4b0b-a1df-e4d02d5cd212}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ThirdParty\angelscript\add_on">
+      <UniqueIdentifier>{4ac293e3-9f54-4110-b98e-418b4f6659e7}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Core\Clock.cpp">
@@ -497,6 +506,18 @@
     </ClCompile>
     <ClCompile Include="Scene\RegisterSceneTypes.cpp">
       <Filter>Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ThirdParty\angelscript\add_on\scriptstdstring\scriptstdstring.cpp">
+      <Filter>ThirdParty\angelscript\add_on</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ThirdParty\angelscript\add_on\scriptstdstring\scriptstdstring_utils.cpp">
+      <Filter>ThirdParty\angelscript\add_on</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Script\RegisterBuildinType.cpp">
+      <Filter>Engine\Script</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Script\RegisterDynamicCast.cpp">
+      <Filter>Engine\Script</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -962,6 +983,17 @@
     <ClInclude Include="Scene\RegisterSceneTypes.hpp">
       <Filter>Scene</Filter>
     </ClInclude>
+    <ClInclude Include="..\ThirdParty\angelscript\include\angelscript.h">
+      <Filter>ThirdParty\angelscript\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ThirdParty\angelscript\add_on\scriptstdstring\scriptstdstring.h">
+      <Filter>ThirdParty\angelscript\add_on</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Script\RegisterBuildinType.hpp">
+      <Filter>Engine\Script</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Script\RegisterDynamicCast.hpp">
+      <Filter>Engine\Script</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
-

@@ -113,6 +113,22 @@ public:
 		std::string const& setterName,
 		std::string const& getterName);
 
+	// Only for Object class
+	template <typename T>
+	static void RegisterRootClass(bool canCreateInEditor = true)
+	{
+		std::string className = T::GetStaticClassName();
+		ClassInfo   classInfo;
+		classInfo.m_className = className;
+		if constexpr (!std::is_abstract_v<T>)
+		{
+			classInfo.m_creator = &Creator<T>;
+		}
+		classInfo.m_canCreateInEditor = canCreateInEditor;
+		m_classInfoMap[className]     = std::move(classInfo);
+		T::InitializeClass();
+	}
+
 	template <typename T>
 	static void RegisterClass(bool canCreateInEditor = true)
 	{
