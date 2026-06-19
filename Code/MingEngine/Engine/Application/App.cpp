@@ -62,6 +62,7 @@ App::~App()
 void App::Startup()
 {
 	ClassDatabase::Startup();
+
 	RegisterSceneTypes();
 	m_project.RegisterTypes();
 

@@ -9,12 +9,6 @@
 #include "MingEngine/Engine/Script/ScriptSystem.hpp"
 #include "MingEngine/Engine/Window/Window.hpp"
 
-class RandomNumberGenerator;
-class Window;
-class Renderer;
-class InputSystem;
-class AudioSystem;
-
 struct EngineConfig
 {
 	EventSystemConfig  m_eventSystemConfig;

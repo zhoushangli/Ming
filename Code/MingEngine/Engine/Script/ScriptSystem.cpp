@@ -1,11 +1,9 @@
 #include "MingEngine/Engine/Script/ScriptSystem.hpp"
 
 #include "MingEngine/Core/ErrorWarningAssert.hpp"
-#include "MingEngine/Core/Object/ClassDatabase.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Engine/File/FileSystem.hpp"
-#include "MingEngine/Engine/Script/RegisterBuildinType.hpp"
-#include "MingEngine/Engine/Script/RegisterDynamicCast.hpp"
+#include "MingEngine/Engine/Script/ScriptBindings.hpp"
 
 #include "ThirdParty/angelscript/add_on/scriptstdstring/scriptstdstring.h"
 #include "ThirdParty/angelscript/include/angelscript.h"
@@ -30,152 +28,6 @@ void ScriptMessageCallback(asSMessageInfo const* message, void*)
 	DebuggerPrintf("%s (%d, %d): %s: %s\n", message->section, message->row, message->col, type, message->message);
 }
 
-// When angel script calls a method, it will call this bridge function
-// e.g. ScriptNode.SetPosition() --> ScriptMethodBridge() --> actual C++ method
-void ScriptMethodBridge(asIScriptGeneric* gen)
-{
-	MethodInfo const* binding  = static_cast<MethodInfo const*>(gen->GetAuxiliary());
-	Object*           object   = static_cast<Object*>(gen->GetObject());
-	int               argCount = gen->GetArgCount();
-	if (argCount != static_cast<int>(binding->m_argumentTypes.size()))
-	{
-		return;
-	}
-
-	std::vector<Variant> arguments;
-	for (int i = 0; i < argCount; ++i)
-	{
-		switch (binding->m_argumentTypes[i])
-		{
-		case Variant::Type::Bool:
-			arguments.emplace_back(static_cast<bool>(gen->GetArgByte(i) != 0));
-			break;
-		case Variant::Type::Int:
-			arguments.emplace_back(static_cast<int>(gen->GetArgDWord(i)));
-			break;
-		case Variant::Type::Float:
-			arguments.emplace_back(gen->GetArgFloat(i));
-			break;
-		case Variant::Type::String:
-			arguments.emplace_back(*static_cast<std::string*>(gen->GetArgAddress(i)));
-			break;
-		case Variant::Type::Vec3:
-			arguments.emplace_back(*static_cast<Vec3*>(gen->GetArgAddress(i)));
-			break;
-		case Variant::Type::EulerAngles:
-			arguments.emplace_back(*static_cast<EulerAngles*>(gen->GetArgAddress(i)));
-			break;
-		case Variant::Type::Matrix4x4:
-			arguments.emplace_back(*static_cast<Matrix4x4*>(gen->GetArgAddress(i)));
-			break;
-		default:
-			DebuggerPrintf("Unsupported argument type for method '%s'.\n", binding->m_name.c_str());
-			return;
-		}
-	}
-
-	Variant result = binding->m_bind->Invoke(*object, arguments);
-	switch (binding->m_returnType)
-	{
-	case Variant::Type::Empty:
-		return;
-	case Variant::Type::Bool:
-		gen->SetReturnByte(result.As<bool>() ? 1 : 0);
-		return;
-	case Variant::Type::Int:
-		gen->SetReturnDWord(static_cast<asDWORD>(result.As<int>()));
-		return;
-	case Variant::Type::Float:
-		gen->SetReturnFloat(result.As<float>());
-		return;
-	case Variant::Type::String:
-		gen->SetReturnObject((void*)&result.As<std::string>());
-		return;
-	case Variant::Type::Vec3:
-		gen->SetReturnObject((void*)&result.As<Vec3>());
-		return;
-	case Variant::Type::EulerAngles:
-		gen->SetReturnObject((void*)&result.As<EulerAngles>());
-		return;
-	case Variant::Type::Matrix4x4:
-		gen->SetReturnObject((void*)&result.As<Matrix4x4>());
-		return;
-	default:
-		return;
-	}
-}
-
-// Transform c++ type to angel script type
-// e.g. int -> "int", float -> "float", std::string -> "string"
-std::string GetScriptTypeName(Variant::Type type)
-{
-	// TODO: Add Vec3, EulerAngles, Matrix4x4 support
-	switch (type)
-	{
-	case Variant::Type::Empty:
-		return "void";
-	case Variant::Type::Bool:
-		return "bool";
-	case Variant::Type::Int:
-		return "int";
-	case Variant::Type::Float:
-		return "float";
-	case Variant::Type::String:
-		return "string";
-	case Variant::Type::Vec3:
-		return "Vec3";
-	case Variant::Type::EulerAngles:
-		return "EulerAngles";
-	case Variant::Type::Matrix4x4:
-		return "Matrix4x4";
-	default:
-		return "unknown";
-	}
-}
-
-// For simple types (bool, int, float, string) 		--> SetProcess(bool)
-// For complex types (Vec3, EulerAngles, Matrix4x4) --> SetTransform(const Transform &in)
-std::string BuildMethodDeclaration(MethodInfo const& methodInfo)
-{
-	std::string declaration;
-
-	declaration += GetScriptTypeName(methodInfo.m_returnType);
-	declaration += " " + methodInfo.m_name + "(";
-
-	for (size_t i = 0; i < methodInfo.m_argumentTypes.size(); ++i)
-	{
-		if (methodInfo.m_argumentTypes[i] == Variant::Type::String
-			|| methodInfo.m_argumentTypes[i] == Variant::Type::Vec3
-			|| methodInfo.m_argumentTypes[i] == Variant::Type::EulerAngles
-			|| methodInfo.m_argumentTypes[i] == Variant::Type::Matrix4x4)
-		{
-			declaration += "const " + GetScriptTypeName(methodInfo.m_argumentTypes[i]) + " &in";
-		}
-		else
-		{
-			declaration += GetScriptTypeName(methodInfo.m_argumentTypes[i]);
-		}
-
-		if (i < methodInfo.m_argumentTypes.size() - 1)
-		{
-			declaration += ", ";
-		}
-	}
-
-	declaration += ")";
-
-	if (methodInfo.m_isConst)
-	{
-		declaration += " const";
-	}
-
-	return declaration;
-}
-
-// To avoid name conflict between script class and native class
-// we prefix all script class with "Native"
-std::string GetClassNameInScript(std::string const& className) { return "Native" + className; }
-
 } // namespace
 
 ScriptSystem::ScriptSystem([[maybe_unused]] ScriptSystemConfig const& config) {}
@@ -194,38 +46,9 @@ void ScriptSystem::Startup()
 	RegisterEulerAngles(m_scriptEngine);
 	RegisterMatrix4x4(m_scriptEngine);
 
-	// Register class database to script
-	for (ClassInfo const* classInfo : ClassDatabase::GetRegisteredClasses())
-	{
-		std::string classNameInScript = GetClassNameInScript(classInfo->m_className);
-		result = m_scriptEngine->RegisterObjectType(classNameInScript.c_str(), 0, asOBJ_REF | asOBJ_NOCOUNT);
-		GUARANTEE_OR_DIE(result >= 0, Stringf("Failed to register script class: %s", classNameInScript.c_str()));
-
-		for (std::unique_ptr<MethodInfo> const& methodInfo : classInfo->m_methods)
-		{
-			if (methodInfo == nullptr)
-			{
-				continue;
-			}
-
-			// Register method with AngelScript engine
-			std::string methodDeclaration = BuildMethodDeclaration(*methodInfo);
-			result                        = m_scriptEngine->RegisterObjectMethod(
-				GetClassNameInScript(classInfo->m_className).c_str(),
-				methodDeclaration.c_str(),
-				asFUNCTION(ScriptMethodBridge),
-				asCALL_GENERIC,
-				methodInfo.get());
-			GUARANTEE_OR_DIE(
-				result >= 0,
-				Stringf(
-					"Failed to register method '%s' for script class '%s'.",
-					methodInfo->m_name.c_str(),
-					GetClassNameInScript(classInfo->m_className).c_str()));
-		}
-	}
-
-	RegisterDynamicCast(m_scriptEngine);
+	RegisterNativeObjectType(m_scriptEngine);
+	RegisterBridgeFunctions(m_scriptEngine);
+	GenerateBuiltinScript();
 }
 
 void ScriptSystem::Shutdown()
@@ -310,7 +133,7 @@ ScriptModule* ScriptSystem::GetOrCreateModule(VirtualPath const& virtualPath)
 	// Add wrapper script to the module
 	std::string wrapperText;
 	VirtualPath wrapperPath;
-	if (!wrapperPath.Parse("res://Scripts/MingScript.as"))
+	if (!wrapperPath.Parse("res://Scripts/MingEngine.generated.as"))
 	{
 		DebuggerPrintf("Invalid wrapper script path: %s\n", wrapperPath.ToString().c_str());
 		return nullptr;

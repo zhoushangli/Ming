@@ -507,8 +507,7 @@ float SmoothStop6(float t)
 
 float SmoothStep3(float t)
 {
-	float const t2 = t * t;
-	return t2 * (3.f - 2.f * t);
+	return -2 * t * t * t + 3 * t * t;
 }
 
 float SmoothStep5(float t)

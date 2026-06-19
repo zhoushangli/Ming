@@ -389,8 +389,7 @@
     <ClCompile Include="Engine\Input\InputSystem.cpp" />
     <ClCompile Include="Engine\Input\KeyButtonState.cpp" />
     <ClCompile Include="Engine\Input\XboxController.cpp" />
-    <ClCompile Include="Engine\Script\RegisterBuildinType.cpp" />
-    <ClCompile Include="Engine\Script\RegisterDynamicCast.cpp" />
+    <ClCompile Include="Engine\Script\ScriptBindings.cpp" />
     <ClCompile Include="Engine\Script\ScriptInstance.cpp" />
     <ClCompile Include="Engine\Script\ScriptModule.cpp" />
     <ClCompile Include="Engine\Script\ScriptResourceIdentity.cpp" />
@@ -530,8 +529,7 @@
     <ClInclude Include="Engine\Input\InputSystem.hpp" />
     <ClInclude Include="Engine\Input\KeyButtonState.hpp" />
     <ClInclude Include="Engine\Input\XboxController.hpp" />
-    <ClInclude Include="Engine\Script\RegisterBuildinType.hpp" />
-    <ClInclude Include="Engine\Script\RegisterDynamicCast.hpp" />
+    <ClInclude Include="Engine\Script\ScriptBindings.hpp" />
     <ClInclude Include="Engine\Script\ScriptInstance.hpp" />
     <ClInclude Include="Engine\Script\ScriptModule.hpp" />
     <ClInclude Include="Engine\Script\ScriptResourceIdentity.hpp" />

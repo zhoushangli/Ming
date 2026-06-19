@@ -513,10 +513,7 @@
     <ClCompile Include="..\ThirdParty\angelscript\add_on\scriptstdstring\scriptstdstring_utils.cpp">
       <Filter>ThirdParty\angelscript\add_on</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Script\RegisterBuildinType.cpp">
-      <Filter>Engine\Script</Filter>
-    </ClCompile>
-    <ClCompile Include="Engine\Script\RegisterDynamicCast.cpp">
+    <ClCompile Include="Engine\Script\ScriptBindings.cpp">
       <Filter>Engine\Script</Filter>
     </ClCompile>
   </ItemGroup>
@@ -989,10 +986,7 @@
     <ClInclude Include="..\ThirdParty\angelscript\add_on\scriptstdstring\scriptstdstring.h">
       <Filter>ThirdParty\angelscript\add_on</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Script\RegisterBuildinType.hpp">
-      <Filter>Engine\Script</Filter>
-    </ClInclude>
-    <ClInclude Include="Engine\Script\RegisterDynamicCast.hpp">
+    <ClInclude Include="Engine\Script\ScriptBindings.hpp">
       <Filter>Engine\Script</Filter>
     </ClInclude>
   </ItemGroup>
