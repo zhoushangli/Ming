@@ -516,6 +516,9 @@
     <ClCompile Include="Engine\Script\ScriptBindings.cpp">
       <Filter>Engine\Script</Filter>
     </ClCompile>
+    <ClCompile Include="Engine\Script\ScriptGenerator.cpp">
+      <Filter>Engine\Script</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Core\Clock.hpp">
@@ -987,6 +990,9 @@
       <Filter>ThirdParty\angelscript\add_on</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Script\ScriptBindings.hpp">
+      <Filter>Engine\Script</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Script\ScriptGenerator.hpp">
       <Filter>Engine\Script</Filter>
     </ClInclude>
   </ItemGroup>

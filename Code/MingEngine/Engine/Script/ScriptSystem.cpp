@@ -4,6 +4,7 @@
 #include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Engine/File/FileSystem.hpp"
 #include "MingEngine/Engine/Script/ScriptBindings.hpp"
+#include "MingEngine/Engine/Script/ScriptGenerator.hpp"
 
 #include "ThirdParty/angelscript/add_on/scriptstdstring/scriptstdstring.h"
 #include "ThirdParty/angelscript/include/angelscript.h"
@@ -48,7 +49,7 @@ void ScriptSystem::Startup()
 
 	RegisterNativeObjectType(m_scriptEngine);
 	RegisterBridgeFunctions(m_scriptEngine);
-	GenerateBuiltinScript();
+	GenerateBuiltinScript(m_scriptEngine);
 }
 
 void ScriptSystem::Shutdown()
@@ -133,7 +134,7 @@ ScriptModule* ScriptSystem::GetOrCreateModule(VirtualPath const& virtualPath)
 	// Add wrapper script to the module
 	std::string wrapperText;
 	VirtualPath wrapperPath;
-	if (!wrapperPath.Parse("res://Scripts/MingEngine.generated.as"))
+	if (!wrapperPath.Parse(kGeneratedScriptResourcePath))
 	{
 		DebuggerPrintf("Invalid wrapper script path: %s\n", wrapperPath.ToString().c_str());
 		return nullptr;

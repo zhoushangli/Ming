@@ -17,4 +17,3 @@ void RegisterNativeObjectType(asIScriptEngine* engine);
 // we only register one bridge function, like
 // void __Call_Void_Vec3(NativeObject@ nativePtr, const string &in className, const string &in methodName, const Vec3 &in arg0)
 void RegisterBridgeFunctions(asIScriptEngine* engine);
-void GenerateBuiltinScript();
