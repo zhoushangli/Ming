@@ -2,6 +2,7 @@
 
 #include "MingEngine/Core/Object/ClassDatabase.hpp"
 #include "MingEngine/Core/Object/Object.hpp"
+#include "MingEngine/Engine/File/VirtualPath.hpp"
 #include "MingEngine/Scene/Core/NodeHandle.hpp"
 #include "MingEngine/Scene/Core/NodePath.hpp"
 
@@ -47,14 +48,16 @@ public:
 	bool                      GetSerializable() const;
 	bool                      GetReady() const;
 	bool                      GetProcess() const;
+	VirtualPath const&        GetScriptPath() const;
 
 	void SetName(std::string const& name);
 	void SetSerializable(bool isSerializable);
 	void SetReady(bool isReady);
 	void SetProcess(bool isProcess);
+	void SetScriptPath(VirtualPath const& scriptPath);
 
 	// Currently GetNode only supports child
-	// it do not support ../ or .. 
+	// it do not support ../ or ..
 	Node* FindChildByName(std::string const& name) const;
 	Node* GetNode(NodePath const& path) const;
 
@@ -114,6 +117,7 @@ protected:
 		Viewport*          m_viewport  = nullptr;
 		std::vector<Node*> m_children;
 		NodeHandle         m_handle;
+		VirtualPath        m_scriptPath;
 		bool               m_isPendingDestroy = false;
 		bool               m_isSerializable   = true;
 
@@ -128,4 +132,3 @@ protected:
 
 	NodeData m_data;
 };
-

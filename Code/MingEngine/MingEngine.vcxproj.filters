@@ -124,6 +124,9 @@
     <Filter Include="ThirdParty\angelscript\add_on">
       <UniqueIdentifier>{4ac293e3-9f54-4110-b98e-418b4f6659e7}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ThirdParty\nanosvg">
+      <UniqueIdentifier>{2b809901-4de0-43c4-a57d-a424bb7b5b09}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Core\Clock.cpp">
@@ -186,10 +189,16 @@
     <ClCompile Include="Editor\UI\CreateNodePanel.cpp">
       <Filter>Editor\UI</Filter>
     </ClCompile>
+    <ClCompile Include="Editor\UI\EditorIcons.cpp">
+      <Filter>Editor\UI</Filter>
+    </ClCompile>
     <ClCompile Include="Editor\UI\EditorPanel.cpp">
       <Filter>Editor\UI</Filter>
     </ClCompile>
     <ClCompile Include="Editor\UI\EditorUI.cpp">
+      <Filter>Editor\UI</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\UI\EditorUIWidgets.cpp">
       <Filter>Editor\UI</Filter>
     </ClCompile>
     <ClCompile Include="Editor\UI\FileSystemPanel.cpp">
@@ -584,6 +593,9 @@
     <ClInclude Include="Editor\UI\CreateNodePanel.hpp">
       <Filter>Editor\UI</Filter>
     </ClInclude>
+    <ClInclude Include="Editor\UI\EditorIcons.hpp">
+      <Filter>Editor\UI</Filter>
+    </ClInclude>
     <ClInclude Include="Editor\UI\EditorPanel.hpp">
       <Filter>Editor\UI</Filter>
     </ClInclude>
@@ -591,6 +603,12 @@
       <Filter>Editor\UI</Filter>
     </ClInclude>
     <ClInclude Include="Editor\UI\EditorUIContext.hpp">
+      <Filter>Editor\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\UI\EditorUIStyle.hpp">
+      <Filter>Editor\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\UI\EditorUIWidgets.hpp">
       <Filter>Editor\UI</Filter>
     </ClInclude>
     <ClInclude Include="Editor\UI\FileSystemPanel.hpp">
@@ -994,6 +1012,12 @@
     </ClInclude>
     <ClInclude Include="Engine\Script\ScriptGenerator.hpp">
       <Filter>Engine\Script</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ThirdParty\nanosvg\nanosvg.h">
+      <Filter>ThirdParty\nanosvg</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ThirdParty\nanosvg\nanosvgrast.h">
+      <Filter>ThirdParty\nanosvg</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

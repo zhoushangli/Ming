@@ -90,6 +90,11 @@ static void CharCallback(GLFWwindow* window, unsigned int codepoint)
 	FireEvent("CharInput", args);
 }
 
+static void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset)
+{
+	ImGui_ImplGlfw_ScrollCallback(window, xoffset, yoffset);
+}
+
 static void FramebufferSizeCallback(GLFWwindow* window, int width, int height)
 {
 	(void)window;
@@ -149,6 +154,7 @@ void Window::CreateGLFWWindow()
 	glfwSetKeyCallback(m_glfwWindow, KeyCallback);
 	glfwSetMouseButtonCallback(m_glfwWindow, MouseButtonCallback);
 	glfwSetCharCallback(m_glfwWindow, CharCallback);
+	glfwSetScrollCallback(m_glfwWindow, ScrollCallback);
 	glfwSetFramebufferSizeCallback(m_glfwWindow, FramebufferSizeCallback);
 
 

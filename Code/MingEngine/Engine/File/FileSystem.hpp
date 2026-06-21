@@ -25,6 +25,8 @@ public:
 
 	bool ReadText(VirtualPath const& virtualPath, std::string& outText) const;
 
+	std::filesystem::path const& GetResourceRoot() const;
+
 private:
 	bool ResolvePath(VirtualPath const& virtualPath, std::filesystem::path& outPhysicalPath) const;
 

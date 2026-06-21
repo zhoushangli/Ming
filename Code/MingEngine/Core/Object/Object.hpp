@@ -64,7 +64,7 @@ public:
 
 	// Class information and reflection
 	// Will be overridden by the MCLASS macro in derived classes.
-	static void            BindMethods() {}
+	static void            BindMethods();
 	static BindMethodsFunc GetBindMethodsFunc();
 
 	static std::string  GetStaticClassName();

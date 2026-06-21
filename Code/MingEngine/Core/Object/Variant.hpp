@@ -3,6 +3,7 @@
 #include "MingEngine/Core/Math/EulerAngles.hpp"
 #include "MingEngine/Core/Math/Matrix4x4.hpp"
 #include "MingEngine/Core/Math/Vec3.hpp"
+#include "MingEngine/Engine/File/VirtualPath.hpp"
 
 #include <string>
 #include <variant>
@@ -10,7 +11,7 @@
 class Variant
 {
 public:
-	using Storage = std::variant<std::monostate, bool, int, float, std::string, Vec3, EulerAngles, Matrix4x4>;
+	using Storage = std::variant<std::monostate, bool, int, float, std::string, Vec3, EulerAngles, Matrix4x4, VirtualPath>;
 
 	enum class Type
 	{

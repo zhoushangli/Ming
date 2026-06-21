@@ -1,8 +1,9 @@
 #include "MingEngine/Editor/UI/EditorUI.hpp"
 
+#include "MingEngine/Editor/UI/EditorIcons.hpp"
 #include "MingEngine/Editor/UI/EditorUIContext.hpp"
+#include "MingEngine/Editor/UI/EditorUIStyle.hpp"
 
-#include "EditorUI.hpp"
 #include "ThirdParty/imgui/imgui.h"
 
 namespace
@@ -22,6 +23,39 @@ void RenderPanelMenuItem(EditorPanel& panel)
 	{
 		panel.Open();
 	}
+}
+
+bool RenderMainMenuIconButton(char const* id, char const* iconName, char const* tooltip)
+{
+	ImVec2 const iconSize = EditorUIStyle::MainMenuIconSize();
+	ImVec2 const buttonSize = EditorUIStyle::MainMenuIconButtonSize();
+
+	ImTextureID const textureId = EditorIcons::GetIconId(iconName);
+	ImGui::PushStyleColor(ImGuiCol_Button, EditorUIStyle::ControlBackgroundColor());
+	ImGui::PushStyleColor(ImGuiCol_ButtonHovered, EditorUIStyle::ControlBackgroundHoveredColor());
+	ImGui::PushStyleColor(ImGuiCol_ButtonActive, EditorUIStyle::ControlBackgroundActiveColor());
+	bool const clicked = ImGui::Button(id, buttonSize);
+	ImGui::PopStyleColor(3);
+
+	if (textureId != ImTextureID{})
+	{
+		ImVec2 const itemMin = ImGui::GetItemRectMin();
+		ImVec2 const itemMax = ImGui::GetItemRectMax();
+		ImVec2 const itemCenter((itemMin.x + itemMax.x) * 0.5f, (itemMin.y + itemMax.y) * 0.5f);
+		ImVec2 const iconMin(itemCenter.x - iconSize.x * 0.5f, itemCenter.y - iconSize.y * 0.5f);
+		EditorIcons::AddImage(
+			ImGui::GetWindowDrawList(),
+			textureId,
+			iconMin,
+			ImVec2(iconMin.x + iconSize.x, iconMin.y + iconSize.y));
+	}
+
+	if (ImGui::IsItemHovered())
+	{
+		ImGui::SetTooltip("%s", tooltip);
+	}
+
+	return clicked;
 }
 } // namespace
 
@@ -51,8 +85,10 @@ void EditorUI::Warning(std::string const& title, std::string const& message)
 
 void EditorUI::RenderMainMenuBar()
 {
+	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, EditorUIStyle::MainMenuFramePadding());
 	if (!ImGui::BeginMainMenuBar())
 	{
+		ImGui::PopStyleVar();
 		return;
 	}
 
@@ -100,7 +136,29 @@ void EditorUI::RenderMainMenuBar()
 		ImGui::EndMenu();
 	}
 
+	ImGuiStyle const& style = ImGui::GetStyle();
+	ImVec2 const      buttonSize = EditorUIStyle::MainMenuIconButtonSize();
+	float const       toolbarWidth = buttonSize.x * 2.f + style.ItemSpacing.x;
+	float const       toolbarX = ImGui::GetWindowWidth() - toolbarWidth - style.FramePadding.x;
+	if (toolbarX > ImGui::GetCursorPosX())
+	{
+		ImGui::SetCursorPosX(toolbarX);
+	}
+
+	if (RenderMainMenuIconButton("##EditorPlay", "Play", "Start"))
+	{
+		// Handle play button click
+	}
+
+	ImGui::SameLine();
+
+	if (RenderMainMenuIconButton("##EditorStop", "Stop", "Stop"))
+	{
+		// Handle stop button click
+	}
+
 	ImGui::EndMainMenuBar();
+	ImGui::PopStyleVar();
 }
 
 void EditorUI::RenderDockSpace()

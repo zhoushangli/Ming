@@ -51,6 +51,11 @@ bool FileSystem::ReadText(VirtualPath const& virtualPath, std::string& outText) 
 	return true;
 }
 
+std::filesystem::path const& FileSystem::GetResourceRoot() const
+{
+	return m_resourceRoot;
+}
+
 bool FileSystem::ResolvePath(VirtualPath const& virtualPath, std::filesystem::path& outPhysicalPath) const
 {
 	outPhysicalPath.clear();

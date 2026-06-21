@@ -2,8 +2,10 @@
 
 #include "MingEngine/Editor/EditorNode.hpp"
 #include "MingEngine/Editor/UI/CreateNodePanel.hpp"
+#include "MingEngine/Editor/UI/EditorIcons.hpp"
 #include "MingEngine/Editor/UI/EditorUI.hpp"
 #include "MingEngine/Editor/UI/EditorUIContext.hpp"
+#include "MingEngine/Editor/UI/EditorUIStyle.hpp"
 #include "MingEngine/Scene/Core/Node.hpp"
 #include "MingEngine/Scene/Core/SceneTree.hpp"
 
@@ -144,26 +146,44 @@ void ScenePanel::RenderNode(Node* node, std::string const& filterText, EditorUIC
 
 	std::string const displayName = node->GetName().empty() ? node->GetClassName() : node->GetName();
 	bool const        isRenaming  = m_renamingNode == handle;
-	bool const        isOpen      = ImGui::TreeNodeEx(isRenaming ? "##RenamingNode" : displayName.c_str(), flags);
-	bool const        treeClicked = ImGui::IsItemClicked(ImGuiMouseButton_Left);
-	bool const        treeDoubleClicked =
+	bool const        isOpen      = ImGui::TreeNodeEx("##SceneNodeTree", flags);
+	ImVec2 const      treeItemMin = ImGui::GetItemRectMin();
+	ImVec2 const      treeItemMax = ImGui::GetItemRectMax();
+	bool              treeClicked = ImGui::IsItemClicked(ImGuiMouseButton_Left);
+	bool              treeDoubleClicked =
 		ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left);
 
-	// If the item is clicked, select the node
-	if (treeClicked && context.m_selection != nullptr)
+	// Drag/drop must stay attached to the tree item, which has a stable ImGui ID.
+	if (!isRenaming && ImGui::BeginDragDropSource())
 	{
-		context.m_selection->SetSelected(handle);
+		ImGui::SetDragDropPayload("SCENE_NODE", &handle, sizeof(handle));
+
+		ImGui::Text("%s", displayName.c_str());
+		ImGui::EndDragDropSource();
 	}
 
-	if (treeDoubleClicked && !isRenaming)
+	if (!isRenaming && ImGui::BeginDragDropTarget())
 	{
-		BeginRename(node);
-		if (context.m_selection != nullptr)
+		if (ImGuiPayload const* payload = ImGui::AcceptDragDropPayload("SCENE_NODE"))
 		{
-			context.m_selection->SetSelected(handle);
+			NodeHandle const draggedHandle = *static_cast<NodeHandle const*>(payload->Data);
+
+			m_pendingReparent.m_child  = draggedHandle;
+			m_pendingReparent.m_parent = handle;
 		}
+
+		ImGui::EndDragDropTarget();
 	}
 
+	ImGui::SameLine();
+	ImVec2 const iconSize = EditorUIStyle::SceneTreeIconSize();
+	float const iconY = treeItemMin.y + (treeItemMax.y - treeItemMin.y - iconSize.y) * 0.5f;
+	ImGui::SetCursorScreenPos(ImVec2(ImGui::GetCursorScreenPos().x, iconY));
+	EditorIcons::RenderClassIcon(node->GetClassName(), iconSize);
+	treeClicked |= ImGui::IsItemClicked(ImGuiMouseButton_Left);
+	treeDoubleClicked |= ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left);
+
+	// If the item is clicked, select the node
 	if (isRenaming)
 	{
 		ImGui::SameLine();
@@ -190,27 +210,28 @@ void ScenePanel::RenderNode(Node* node, std::string const& filterText, EditorUIC
 			FinishRename(node, true);
 		}
 	}
-
-	// If the item is dragged, start a drag and drop operation
-	if (!isRenaming && ImGui::BeginDragDropSource())
+	else
 	{
-		ImGui::SetDragDropPayload("SCENE_NODE", &handle, sizeof(handle));
-
-		ImGui::Text("%s", displayName.c_str());
-		ImGui::EndDragDropSource();
+		ImGui::SameLine();
+		float const textY = treeItemMin.y + (treeItemMax.y - treeItemMin.y - ImGui::GetTextLineHeight()) * 0.5f;
+		ImGui::SetCursorScreenPos(ImVec2(ImGui::GetCursorScreenPos().x, textY));
+		ImGui::TextUnformatted(displayName.c_str());
+		treeClicked |= ImGui::IsItemClicked(ImGuiMouseButton_Left);
+		treeDoubleClicked |= ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left);
 	}
 
-	if (!isRenaming && ImGui::BeginDragDropTarget())
+	if (treeClicked && context.m_selection != nullptr)
 	{
-		if (ImGuiPayload const* payload = ImGui::AcceptDragDropPayload("SCENE_NODE"))
+		context.m_selection->SetSelected(handle);
+	}
+
+	if (treeDoubleClicked && !isRenaming)
+	{
+		BeginRename(node);
+		if (context.m_selection != nullptr)
 		{
-			NodeHandle const draggedHandle = *static_cast<NodeHandle const*>(payload->Data);
-
-			m_pendingReparent.m_child  = draggedHandle;
-			m_pendingReparent.m_parent = handle;
+			context.m_selection->SetSelected(handle);
 		}
-
-		ImGui::EndDragDropTarget();
 	}
 
 	if (ImGui::BeginPopupContextItem("SceneNodeContext"))

@@ -283,7 +283,7 @@ Node* PackedScene::Instantiate() const
 	std::vector<Node*> nodes;
 	nodes.reserve(m_data.m_packedNodes.size());
 
-	// Phase 1: create every node and rebuild the detached scene hierarchy.
+	// 1) Create every node and rebuild the detached scene hierarchy.
 	// Packed nodes are parent-first, so every parent path resolves before its children are attached.
 	for (size_t nodeIndex = 0; nodeIndex < m_data.m_packedNodes.size(); ++nodeIndex)
 	{
@@ -363,7 +363,7 @@ Node* PackedScene::Instantiate() const
 		nodes.push_back(node);
 	}
 
-	// Phase 2: apply properties after the complete hierarchy exists. Setters may safely
+	// 2) Apply properties after the complete hierarchy exists. Setters may safely
 	// inspect parents or children, while SceneTree lifecycle callbacks have not started yet.
 	for (size_t nodeIndex = 0; nodeIndex < m_data.m_packedNodes.size(); ++nodeIndex)
 	{

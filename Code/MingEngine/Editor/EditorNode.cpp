@@ -203,8 +203,10 @@ void EditorNode::OnProcess([[maybe_unused]] float deltaSeconds)
 	if (m_editorUI != nullptr)
 	{
 		EditorUIContext context;
-		context.m_sceneTree = GetSceneTree();
-		context.m_selection = &m_selection;
+		context.m_sceneTree  = GetSceneTree();
+		context.m_selection  = &m_selection;
+		context.m_editorUI   = m_editorUI;
+		context.m_fileSystem = g_engine->m_fileSystem;
 		m_editorUI->Render(context);
 	}
 }
