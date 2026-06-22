@@ -48,13 +48,13 @@ public:
 	bool                      GetSerializable() const;
 	bool                      GetReady() const;
 	bool                      GetProcess() const;
-	VirtualPath const&        GetScriptPath() const;
+	std::string const&        GetScriptPath() const;
 
 	void SetName(std::string const& name);
 	void SetSerializable(bool isSerializable);
 	void SetReady(bool isReady);
 	void SetProcess(bool isProcess);
-	void SetScriptPath(VirtualPath const& scriptPath);
+	void SetScriptPath(std::string const& scriptPath);
 
 	// Currently GetNode only supports child
 	// it do not support ../ or ..

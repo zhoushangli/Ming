@@ -38,6 +38,8 @@ bool VirtualPath::Parse(std::string const& path)
 	return true;
 }
 
+std::string const& VirtualPath::GetVirtualPath() const { return "res://" + m_relativePath; }
+
 std::string const& VirtualPath::GetRelativePath() const { return m_relativePath; }
 
 bool VirtualPath::operator==(VirtualPath const& other) const { return m_relativePath == other.m_relativePath; }

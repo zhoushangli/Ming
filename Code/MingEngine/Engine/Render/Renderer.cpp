@@ -77,12 +77,12 @@ void Renderer::RenderViewport(ViewportInfo& viewport)
 
 void Renderer::ExecuteRenderRequest(RenderRequest const& request)
 {
-	ModelConstants modelData = ModelConstants();
-	modelData.ModelToWorld   = request.m_modelToWorld;
-	modelData.ModelColor[0]  = request.m_tint.r / 255.f;
-	modelData.ModelColor[1]  = request.m_tint.g / 255.f;
-	modelData.ModelColor[2]  = request.m_tint.b / 255.f;
-	modelData.ModelColor[3]  = request.m_tint.a / 255.f;
+	ModelConstants modelData  = ModelConstants();
+	modelData.m_modelToWorld  = request.m_modelToWorld;
+	modelData.m_modelColor[0] = request.m_tint.r / 255.f;
+	modelData.m_modelColor[1] = request.m_tint.g / 255.f;
+	modelData.m_modelColor[2] = request.m_tint.b / 255.f;
+	modelData.m_modelColor[3] = request.m_tint.a / 255.f;
 	m_renderBackend->UpdateAndBindConstantBuffer(BuiltinConstantBufferType::Model, modelData);
 
 	m_renderBackend->BindShader(request.m_shader);
@@ -173,8 +173,8 @@ void Renderer::CopyTextureToBackBuffer(Texture* colorTexture)
 void Renderer::PrepareConstants(ViewportInfo const& viewport)
 {
 	// Prepare light constants
-	LightConstants lightConstants = LightConstants();
-	int pointLightCount           = 0;
+	LightConstants lightConstants  = LightConstants();
+	int            pointLightCount = 0;
 	for (LightInfo const& light : viewport.m_lights)
 	{
 		switch (light.m_type)
@@ -214,7 +214,7 @@ void Renderer::PrepareConstants(ViewportInfo const& viewport)
 	// TODO: Actually the renderer should not be responsible for tracking time
 	// this should be passed in from the game or engine layer
 	FrameConstants frameConstants;
-	Clock& systemClock            = Clock::GetSystemClock();
+	Clock&         systemClock    = Clock::GetSystemClock();
 	frameConstants.m_time         = (float)systemClock.GetTotalSeconds();
 	frameConstants.m_deltaSeconds = (float)systemClock.GetDeltaSeconds();
 	m_renderBackend->UpdateAndBindConstantBuffer(BuiltinConstantBufferType::Frame, frameConstants);
@@ -305,7 +305,7 @@ void Renderer::RenderUI(ViewportInfo const& viewport)
 	}
 }
 
-Shader* Renderer::CreateOrGetShader(char const* shaderName) { return m_renderBackend->CreateOrGetShader(shaderName); }
+Shader*  Renderer::CreateOrGetShader(char const* shaderName) { return m_renderBackend->CreateOrGetShader(shaderName); }
 Texture* Renderer::CreateOrGetTexture(char const* fileDataPath)
 {
 	return m_renderBackend->CreateOrGetTexture(fileDataPath);
@@ -346,7 +346,7 @@ IndexBuffer* Renderer::CreateIndexBuffer(std::vector<unsigned int> const& indexe
 	return m_renderBackend->CreateIndexBuffer(indexes);
 }
 
-void Renderer::UpdateVertexBuffer(VertexBuffer* vertexBuffer, std::vector<Vertex> const& verts) 
+void Renderer::UpdateVertexBuffer(VertexBuffer* vertexBuffer, std::vector<Vertex> const& verts)
 {
 	if (vertexBuffer == nullptr)
 	{
@@ -370,6 +370,12 @@ void Renderer::CopyCPUToGPU(const void* data, unsigned int size, IndexBuffer* in
 {
 	m_renderBackend->CopyCPUToGPU(data, size, indexBuffer);
 }
+
+void Renderer::BindConstantBuffer(ConstantBuffer* constantBuffer, int slot)
+{
+	m_renderBackend->BindConstantBuffer(constantBuffer, slot);
+}
+
 Texture* Renderer::GetTextureFromFileName(char const* fileName)
 {
 	return m_renderBackend->GetTextureFromFileName(fileName);
@@ -383,5 +389,3 @@ void Renderer::InitImGuiD3D11Backend()
 void Renderer::BindBackBuffer() { m_renderBackend->BindBackBuffer(); }
 
 void Renderer::ResizeBackBuffer(IntVec2 newDimensions) { m_renderBackend->ResizeBackBuffer(newDimensions); }
-
-

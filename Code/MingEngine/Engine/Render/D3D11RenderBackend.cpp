@@ -1,16 +1,16 @@
 #include "MingEngine/Engine/Render/D3D11RenderBackend.hpp"
 
-#include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Core/ErrorWarningAssert.hpp"
 #include "MingEngine/Core/FileUtils.hpp"
+#include "MingEngine/Core/Render/Vertex.hpp"
+#include "MingEngine/Core/Render/VertexUtils.hpp"
 #include "MingEngine/Core/StringUtils.hpp"
+#include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Engine/Render/CameraContext.hpp"
 #include "MingEngine/Engine/Render/ConstantBuffer.hpp"
 #include "MingEngine/Engine/Render/IndexBuffer.hpp"
 #include "MingEngine/Engine/Render/Texture.hpp"
-#include "MingEngine/Core/Render/Vertex.hpp"
 #include "MingEngine/Engine/Render/VertexBuffer.hpp"
-#include "MingEngine/Core/Render/VertexUtils.hpp"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "ThirdParty/stb/stb_image.h"
@@ -461,12 +461,12 @@ void D3D11RenderBackend::CreateRenderingContext() {}
 
 void D3D11RenderBackend::BindCamera(CameraContext const& camera)
 {
-	CameraConstants cameraData         = CameraConstants();
-	cameraData.WorldToCameraTransform  = camera.GetWorldToCameraTransform();
-	cameraData.CameraToRenderTransform = camera.GetCameraToRenderTransform();
-	cameraData.RenderToClipTransform   = camera.GetRenderToClipTransform();
-	cameraData.CameraToWorldTransform  = camera.GetCameraToWorldTransform();
-	cameraData.ClipToCameraTransform   = camera.GetClipToCameraTransform();
+	CameraConstants cameraData           = CameraConstants();
+	cameraData.m_worldToCameraTransform  = camera.GetWorldToCameraTransform();
+	cameraData.m_cameraToRenderTransform = camera.GetCameraToRenderTransform();
+	cameraData.m_renderToClipTransform   = camera.GetRenderToClipTransform();
+	cameraData.m_cameraToWorldTransform  = camera.GetCameraToWorldTransform();
+	cameraData.m_clipToCameraTransform   = camera.GetClipToCameraTransform();
 
 	UpdateAndBindConstantBuffer(BuiltinConstantBufferType::Camera, cameraData);
 }
@@ -1280,4 +1280,3 @@ Texture* D3D11RenderBackend::CreateTextureInternal(
 }
 
 #pragma endregion
-

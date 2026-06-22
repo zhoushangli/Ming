@@ -3,9 +3,9 @@
 #include "MingEngine/Engine/Application/EngineBuildPreferences.hpp"
 
 #include "MingEngine/Core/Image.hpp"
-#include "MingEngine/Engine/Event/EventSystem.hpp"
 #include "MingEngine/Core/Math/IntVec2.hpp"
 #include "MingEngine/Core/Math/Matrix4x4.hpp"
+#include "MingEngine/Engine/Event/EventSystem.hpp"
 #include "MingEngine/Engine/Render/BitmapFont.hpp"
 #include "MingEngine/Engine/Render/PostProcessChain.hpp"
 #include "MingEngine/Engine/Render/Shader.hpp"
@@ -126,18 +126,18 @@ static const int kLightConstantsSlot = 1;
 
 struct CameraConstants
 {
-	Matrix4x4 WorldToCameraTransform;
-	Matrix4x4 CameraToRenderTransform;
-	Matrix4x4 RenderToClipTransform;
-	Matrix4x4 CameraToWorldTransform;
-	Matrix4x4 ClipToCameraTransform;
+	Matrix4x4 m_worldToCameraTransform;
+	Matrix4x4 m_cameraToRenderTransform;
+	Matrix4x4 m_renderToClipTransform;
+	Matrix4x4 m_cameraToWorldTransform;
+	Matrix4x4 m_clipToCameraTransform;
 };
 static const int kCameraConstantsSlot = 2;
 
 struct ModelConstants
 {
-	Matrix4x4 ModelToWorld;
-	float     ModelColor[4];
+	Matrix4x4 m_modelToWorld;
+	float     m_modelColor[4];
 };
 static const int kModelConstantsSlot = 3;
 
@@ -153,7 +153,7 @@ struct FrameConstants
 {
 	float m_time;
 	float m_deltaSeconds;
-	float Padding[2];
+	float m_padding[2];
 };
 static const int kFrameConstantsSlot = 5;
 
@@ -353,4 +353,3 @@ private:
 	void* m_dxgiDebugModule = nullptr;
 #endif
 };
-

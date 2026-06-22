@@ -37,13 +37,13 @@ std::string const&        Node::GetName() const { return m_data.m_name; }
 bool                      Node::GetSerializable() const { return m_data.m_isSerializable; }
 bool                      Node::GetReady() const { return m_data.m_enableReady; }
 bool                      Node::GetProcess() const { return m_data.m_enableProcess; }
-VirtualPath const&        Node::GetScriptPath() const { return m_data.m_scriptPath; }
+std::string const&        Node::GetScriptPath() const { return m_data.m_scriptPath.GetVirtualPath(); }
 
 void Node::SetName(std::string const& name) { m_data.m_name = EnsureUniqueName(name); }
 void Node::SetSerializable(bool isSerializable) { m_data.m_isSerializable = isSerializable; }
 void Node::SetReady(bool isReady) { m_data.m_enableReady = isReady; }
 void Node::SetProcess(bool isProcess) { m_data.m_enableProcess = isProcess; }
-void Node::SetScriptPath(VirtualPath const& scriptPath) { m_data.m_scriptPath = scriptPath; }
+void Node::SetScriptPath(std::string const& scriptPath) { m_data.m_scriptPath.Parse(scriptPath); }
 
 Node* Node::FindChildByName(std::string const& name) const
 {
@@ -197,7 +197,7 @@ void Node::BindMethods()
 	ClassDatabase::BindMethod("GetScriptPath", &Node::GetScriptPath);
 
 	ADD_PROPERTY(PropertyInfo(Variant::Type::String, "name", PropertyInfo::UsageFlags::None), "SetName", "GetName");
-	ADD_PROPERTY(PropertyInfo(Variant::Type::VirtualPath, "script_path", PropertyInfo::UsageFlags::Default), "SetScriptPath", "GetScriptPath");
+	// ADD_PROPERTY(PropertyInfo(Variant::Type::String, "script_path", PropertyInfo::UsageFlags::Default), "SetScriptPath", "GetScriptPath");
 }
 
 void Node::AttachChildImmediately(Node* child)

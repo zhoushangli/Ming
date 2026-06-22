@@ -21,9 +21,9 @@ public:
 	// 1) Create lazily before the first render.
 	// 2) Resize only this Viewport's targets.
 	// 3) Destroy before the owning Viewport or Renderer shuts down.
+	void RenderViewport(ViewportInfo& viewport);
 	void ResizeViewport(ViewportInfo& viewport, IntVec2 dimensions);
 	void DestroyViewportResources(ViewportInfo& viewport);
-	void RenderViewport(ViewportInfo& viewport);
 	void CopyTextureToBackBuffer(Texture* colorTexture);
 
 	Shader* CreateOrGetShader(char const* shaderName);
@@ -46,6 +46,7 @@ public:
 	void CopyCPUToGPU(const void* data, unsigned int size, VertexBuffer* vertexBuffer);
 	void CopyCPUToGPU(const void* data, unsigned int size, ConstantBuffer* constantBuffer);
 	void CopyCPUToGPU(const void* data, unsigned int size, IndexBuffer* indexBuffer);
+	void BindConstantBuffer(ConstantBuffer* constantBuffer, int slot);
 
 	Texture* GetTextureFromFileName(char const* fileName);
 

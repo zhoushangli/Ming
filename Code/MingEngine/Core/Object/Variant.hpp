@@ -11,7 +11,7 @@
 class Variant
 {
 public:
-	using Storage = std::variant<std::monostate, bool, int, float, std::string, Vec3, EulerAngles, Matrix4x4, VirtualPath>;
+	using Storage = std::variant<std::monostate, bool, int, float, std::string, Vec3, EulerAngles, Matrix4x4>;
 
 	enum class Type
 	{
@@ -22,7 +22,7 @@ public:
 		String,
 		Vec3,
 		EulerAngles,
-		Matrix4x4
+		Matrix4x4,
 	};
 
 public:
