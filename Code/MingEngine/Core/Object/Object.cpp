@@ -36,10 +36,6 @@ void Object::Notification(int notification, bool reverse)
 	}
 }
 
-void Object::SetScript(std::unique_ptr<ScriptInstance> scriptInstance) { m_scriptInstance = std::move(scriptInstance); }
-
-ScriptInstance* Object::GetScript() { return m_scriptInstance.get(); }
-
 void Object::NotificationForward(int notification)
 {
 	NotificationForwardV(notification);

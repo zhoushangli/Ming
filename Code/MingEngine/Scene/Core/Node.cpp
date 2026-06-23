@@ -1,10 +1,11 @@
 #include "MingEngine/Scene/Core/Node.hpp"
 
+#include "MingEngine/Core/ErrorWarningAssert.hpp"
 #include "MingEngine/Core/Object/ClassDatabase.hpp"
+#include "MingEngine/Core/Object/Resource.hpp"
+#include "MingEngine/Engine/Script/ScriptInstance.hpp"
 #include "MingEngine/Scene/Core/SceneTree.hpp"
 #include "MingEngine/Scene/Core/Viewport.hpp"
-
-#include "MingEngine/Core/ErrorWarningAssert.hpp"
 
 #include <cctype>
 #include <exception>
@@ -37,13 +38,18 @@ std::string const&        Node::GetName() const { return m_data.m_name; }
 bool                      Node::GetSerializable() const { return m_data.m_isSerializable; }
 bool                      Node::GetReady() const { return m_data.m_enableReady; }
 bool                      Node::GetProcess() const { return m_data.m_enableProcess; }
-std::string const&        Node::GetScriptPath() const { return m_data.m_scriptPath.GetVirtualPath(); }
+
+Variant Node::GetScript() const {}
 
 void Node::SetName(std::string const& name) { m_data.m_name = EnsureUniqueName(name); }
 void Node::SetSerializable(bool isSerializable) { m_data.m_isSerializable = isSerializable; }
 void Node::SetReady(bool isReady) { m_data.m_enableReady = isReady; }
 void Node::SetProcess(bool isProcess) { m_data.m_enableProcess = isProcess; }
-void Node::SetScriptPath(std::string const& scriptPath) { m_data.m_scriptPath.Parse(scriptPath); }
+
+void Node::SetScript(Variant script) 
+{
+	Ref<Script> scriptRef = script;
+}
 
 Node* Node::FindChildByName(std::string const& name) const
 {
@@ -267,27 +273,27 @@ void Node::OnNotification(int notification)
 	case NotificationType::EnterTree:
 	{
 		OnEnterTree();
-		if (m_scriptInstance != nullptr)
+		if (m_data.m_scriptInstance != nullptr)
 		{
-			m_scriptInstance->CallEnterTree();
+			m_data.m_scriptInstance->CallEnterTree();
 		}
 		break;
 	}
 	case NotificationType::ExitTree:
 	{
 		OnExitTree();
-		if (m_scriptInstance != nullptr)
+		if (m_data.m_scriptInstance != nullptr)
 		{
-			m_scriptInstance->CallExitTree();
+			m_data.m_scriptInstance->CallExitTree();
 		}
 		break;
 	}
 	case NotificationType::Ready:
 	{
 		OnReady();
-		if (m_scriptInstance != nullptr)
+		if (m_data.m_scriptInstance != nullptr)
 		{
-			m_scriptInstance->CallReady();
+			m_data.m_scriptInstance->CallReady();
 		}
 		break;
 	}
@@ -302,9 +308,9 @@ void Node::OnNotification(int notification)
 
 		OnProcess(deltaSeconds);
 
-		if (m_scriptInstance != nullptr)
+		if (m_data.m_scriptInstance != nullptr)
 		{
-			m_scriptInstance->CallProcess(deltaSeconds);
+			m_data.m_scriptInstance->CallProcess(deltaSeconds);
 		}
 		break;
 	}

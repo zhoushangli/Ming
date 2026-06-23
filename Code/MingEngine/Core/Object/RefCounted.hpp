@@ -4,6 +4,8 @@
 
 class RefCounted : public Object
 {
+	MCLASS(RefCounted, Object)
+
 public:
 	RefCounted()          = default;
 	virtual ~RefCounted() = default;
@@ -13,6 +15,9 @@ public:
 	bool Unref();
 
 	int GetRefCount() const;
+
+protected:
+	static void BindMethods();
 
 private:
 	int m_refCount = 0;
@@ -27,6 +32,10 @@ public:
 	Ref() = default;
 	explicit Ref(T* ptr) { RefPointer(ptr); }
 	Ref(Ref<T> const& other) { RefPointer(other.reference); }
+	Ref(Variant const& variant)
+	{
+		
+	}
 	Ref(Ref<T>&& other) noexcept
 	{
 		RefPointer(other.reference);

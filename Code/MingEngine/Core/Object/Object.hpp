@@ -3,8 +3,8 @@
 #include <memory>
 #include <string>
 
-#define ADD_PROPERTY(propertyName, setterName, getterName)                                                             \
-	ClassDatabase::AddProperty(GetStaticClassName(), propertyName, setterName, getterName)
+#define ADD_PROPERTY(propertyInfo, setterName, getterName)                                                             \
+	ClassDatabase::AddProperty(GetStaticClassName(), propertyInfo, setterName, getterName)
 
 #define MCLASS(className, inheritName)                                                                                 \
 public:                                                                                                                \

@@ -13,6 +13,7 @@
 
 class SceneTree;
 class Viewport;
+class ScriptInstance;
 
 // Base object for the runtime scene hierarchy.
 // 1) Nodes own their children and delete them in the destructor.
@@ -117,7 +118,7 @@ protected:
 		Viewport*          m_viewport  = nullptr;
 		std::vector<Node*> m_children;
 		NodeHandle         m_handle;
-		Variant            m_script;
+		ScriptInstance*    m_scriptInstance   = nullptr;
 		bool               m_isPendingDestroy = false;
 		bool               m_isSerializable   = true;
 

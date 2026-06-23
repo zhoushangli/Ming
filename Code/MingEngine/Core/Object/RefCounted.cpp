@@ -1,4 +1,4 @@
-#include "MingEngine/Core/Object/Ref.hpp"
+#include "MingEngine/Core/Object/RefCounted.hpp"
 
 bool RefCounted::InitRef()
 {
@@ -39,7 +39,6 @@ bool RefCounted::Unref()
 	return false;
 }
 
-int RefCounted::GetRefCount() const
-{
-	return m_refCount;
-}
+int RefCounted::GetRefCount() const { return m_refCount; }
+
+void RefCounted::BindMethods() {}
