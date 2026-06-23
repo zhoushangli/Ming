@@ -48,13 +48,13 @@ public:
 	bool                      GetSerializable() const;
 	bool                      GetReady() const;
 	bool                      GetProcess() const;
-	std::string const&        GetScriptPath() const;
+	Variant                   GetScript() const;
 
 	void SetName(std::string const& name);
 	void SetSerializable(bool isSerializable);
 	void SetReady(bool isReady);
 	void SetProcess(bool isProcess);
-	void SetScriptPath(std::string const& scriptPath);
+	void SetScript(Variant script);
 
 	// Currently GetNode only supports child
 	// it do not support ../ or ..
@@ -117,7 +117,7 @@ protected:
 		Viewport*          m_viewport  = nullptr;
 		std::vector<Node*> m_children;
 		NodeHandle         m_handle;
-		VirtualPath        m_scriptPath;
+		Variant            m_script;
 		bool               m_isPendingDestroy = false;
 		bool               m_isSerializable   = true;
 

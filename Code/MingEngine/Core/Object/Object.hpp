@@ -73,9 +73,6 @@ public:
 
 	void Notification(int notification, bool reverse = false);
 
-	void            SetScript(std::unique_ptr<ScriptInstance> scriptInstance);
-	ScriptInstance* GetScript();
-
 protected:
 	void OnNotification([[maybe_unused]] int notification) {}
 	void NotificationForward(int notification);
@@ -85,7 +82,4 @@ protected:
 	virtual void NotificationBackwardV([[maybe_unused]] int notification) {}
 
 	void (Object::* GetOnNotificationFunc() const)(int) { return &Object::OnNotification; }
-
-protected:
-	std::unique_ptr<ScriptInstance> m_scriptInstance;
 };

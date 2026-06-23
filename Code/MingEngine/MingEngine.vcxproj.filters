@@ -531,6 +531,9 @@
     <ClCompile Include="Engine\Script\ScriptGenerator.cpp">
       <Filter>Engine\Script</Filter>
     </ClCompile>
+    <ClCompile Include="Core\Object\Ref.cpp">
+      <Filter>Core\Object</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Core\Clock.hpp">
@@ -1021,6 +1024,9 @@
     </ClInclude>
     <ClInclude Include="..\ThirdParty\nanosvg\nanosvgrast.h">
       <Filter>ThirdParty\nanosvg</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Object\Ref.hpp">
+      <Filter>Core\Object</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

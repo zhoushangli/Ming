@@ -35,6 +35,15 @@ struct PropertyInfo
 	friend class PackedScene;
 
 public:
+	// Hint indicates how we show the property in the editor
+	// for example, ResourceType hint will show a resource picker in the editor
+	enum class Hint
+	{
+		None,
+		ResourceType,
+	};
+
+	// UsageFlags indicates how we use the property in the engine
 	enum class UsageFlags : unsigned int
 	{
 		None      = 0,
@@ -51,8 +60,8 @@ public:
 
 public:
 	PropertyInfo() = default;
-	PropertyInfo(Variant::Type type, std::string name, UsageFlags usageFlags)
-		: m_type(type), m_name(name), m_usageFlags(usageFlags)
+	PropertyInfo(Variant::Type type, std::string name, Hint hint, std::string hintString, UsageFlags usageFlags)
+		: m_type(type), m_name(name), m_hint(hint), m_hintData(hintString), m_usageFlags(usageFlags)
 	{
 	}
 
@@ -66,6 +75,8 @@ public:
 
 	Variant::Type m_type = Variant::Type::Empty;
 	std::string   m_name;
+	Hint          m_hint = Hint::None;
+	std::string   m_hintData;
 	UsageFlags    m_usageFlags = UsageFlags::None;
 
 private:

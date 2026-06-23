@@ -193,11 +193,22 @@ void Node::BindMethods()
 	ClassDatabase::BindMethod("GetReady", &Node::GetReady);
 	ClassDatabase::BindMethod("SetProcess", &Node::SetProcess);
 	ClassDatabase::BindMethod("GetProcess", &Node::GetProcess);
-	ClassDatabase::BindMethod("SetScriptPath", &Node::SetScriptPath);
-	ClassDatabase::BindMethod("GetScriptPath", &Node::GetScriptPath);
+	ClassDatabase::BindMethod("SetScript", &Node::SetScript);
+	ClassDatabase::BindMethod("GetScript", &Node::GetScript);
 
-	ADD_PROPERTY(PropertyInfo(Variant::Type::String, "name", PropertyInfo::UsageFlags::None), "SetName", "GetName");
-	// ADD_PROPERTY(PropertyInfo(Variant::Type::String, "script_path", PropertyInfo::UsageFlags::Default), "SetScriptPath", "GetScriptPath");
+	ADD_PROPERTY(
+		PropertyInfo(Variant::Type::String, "name", PropertyInfo::Hint::None, "", PropertyInfo::UsageFlags::None),
+		"SetName",
+		"GetName");
+	ADD_PROPERTY(
+		PropertyInfo(
+			Variant::Type::String,
+			"script",
+			PropertyInfo::Hint::ResourceType,
+			Script::GetStaticClassName(),
+			PropertyInfo::UsageFlags::Default),
+		"SetScript",
+		"GetScript");
 }
 
 void Node::AttachChildImmediately(Node* child)
@@ -456,4 +467,3 @@ void Node::OnExitTree() {}
 void Node::OnReady() {}
 
 void Node::OnProcess([[maybe_unused]] float deltaSeconds) {}
-

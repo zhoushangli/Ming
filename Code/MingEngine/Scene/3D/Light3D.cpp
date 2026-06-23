@@ -17,10 +17,10 @@ void Light3D::BindMethods()
 	ClassDatabase::BindMethod("GetRange", &Light3D::GetRange);
 
 	PropertyInfo::UsageFlags const usage = PropertyInfo::UsageFlags::Default;
-	ADD_PROPERTY(PropertyInfo(Variant::Type::Vec3, "direction", usage), "SetDirection", "GetDirection");
-	ADD_PROPERTY(PropertyInfo(Variant::Type::Float, "intensity", usage), "SetIntensity", "GetIntensity");
-	ADD_PROPERTY(PropertyInfo(Variant::Type::Vec3, "position", usage), "SetPosition", "GetPosition");
-	ADD_PROPERTY(PropertyInfo(Variant::Type::Float, "range", usage), "SetRange", "GetRange");
+	ADD_PROPERTY(PropertyInfo(Variant::Type::Vec3, "direction", PropertyInfo::Hint::None, "", usage), "SetDirection", "GetDirection");
+	ADD_PROPERTY(PropertyInfo(Variant::Type::Float, "intensity", PropertyInfo::Hint::None, "", usage), "SetIntensity", "GetIntensity");
+	ADD_PROPERTY(PropertyInfo(Variant::Type::Vec3, "position", PropertyInfo::Hint::None, "", usage), "SetPosition", "GetPosition");
+	ADD_PROPERTY(PropertyInfo(Variant::Type::Float, "range", PropertyInfo::Hint::None, "", usage), "SetRange", "GetRange");
 }
 
 void Light3D::SetColor(Rgba8 const& color) { m_lightInfo.m_color = color; }

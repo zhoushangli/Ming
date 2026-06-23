@@ -28,22 +28,22 @@ void Node3D::BindMethods()
 	ClassDatabase::BindMethod("GetLocalScale", &Node3D::GetLocalScale);
 
 	ADD_PROPERTY(
-		PropertyInfo(Variant::Type::Matrix4x4, "transform", PropertyInfo::UsageFlags::Storage),
+		PropertyInfo(Variant::Type::Matrix4x4, "transform", PropertyInfo::Hint::None, "", PropertyInfo::UsageFlags::Storage),
 		"SetLocalTransform",
 		"GetLocalTransform");
 
 	ADD_PROPERTY(
-		PropertyInfo(Variant::Type::Vec3, "position", PropertyInfo::UsageFlags::Inspector),
+		PropertyInfo(Variant::Type::Vec3, "position", PropertyInfo::Hint::None, "", PropertyInfo::UsageFlags::Inspector),
 		"SetLocalPosition",
 		"GetLocalPosition");
 
 	ADD_PROPERTY(
-		PropertyInfo(Variant::Type::EulerAngles, "rotation", PropertyInfo::UsageFlags::Inspector),
+		PropertyInfo(Variant::Type::EulerAngles, "rotation", PropertyInfo::Hint::None, "", PropertyInfo::UsageFlags::Inspector),
 		"SetLocalOrientation",
 		"GetLocalOrientation");
 
 	ADD_PROPERTY(
-		PropertyInfo(Variant::Type::Vec3, "scale", PropertyInfo::UsageFlags::Inspector),
+		PropertyInfo(Variant::Type::Vec3, "scale", PropertyInfo::Hint::None, "", PropertyInfo::UsageFlags::Inspector),
 		"SetLocalScale",
 		"GetLocalScale");
 }
