@@ -3,7 +3,7 @@
 #include "MingEngine/Core/Math/EulerAngles.hpp"
 #include "MingEngine/Core/Math/Matrix4x4.hpp"
 #include "MingEngine/Core/Math/Vec3.hpp"
-#include "MingEngine/Engine/File/VirtualPath.hpp"
+#include "MingEngine/Core/Object/Object.hpp"
 
 #include <string>
 #include <variant>
@@ -11,7 +11,7 @@
 class Variant
 {
 public:
-	using Storage = std::variant<std::monostate, bool, int, float, std::string, Vec3, EulerAngles, Matrix4x4>;
+	using Storage = std::variant<std::monostate, bool, int, float, std::string, Vec3, EulerAngles, Matrix4x4, Object*>;
 
 	enum class Type
 	{
@@ -23,6 +23,8 @@ public:
 		Vec3,
 		EulerAngles,
 		Matrix4x4,
+		ObjectPtr,
+		Any, // This is a special type used for method binding, it means the method can accept any type of argument
 	};
 
 public:
@@ -36,6 +38,7 @@ public:
 	Variant(Vec3 const& value);
 	Variant(EulerAngles const& value);
 	Variant(Matrix4x4 const& value);
+	Variant(Object* const& value);
 	bool IsEmpty() const;
 	Type GetType() const;
 	bool operator==(Variant const& other) const;
@@ -78,6 +81,10 @@ public:
 			return Type::EulerAngles;
 		if (std::is_same_v<CleanType, Matrix4x4>)
 			return Type::Matrix4x4;
+		if (std::is_same_v<CleanType, Object*>)
+			return Type::ObjectPtr;
+		if (std::is_same_v<CleanType, Variant>)
+			return Type::Any;
 	}
 
 private:
@@ -152,4 +159,16 @@ template <>
 struct VariantCaster<std::string const&>
 {
 	static std::string const& Cast(Variant const& value) { return value.As<std::string>(); }
+};
+
+template <>
+struct VariantCaster<Variant>
+{
+	static Variant Cast(Variant const& value) { return value; }
+};
+
+template <>
+struct VariantCaster<Variant const&>
+{
+	static Variant const& Cast(Variant const& value) { return value; }
 };

@@ -49,13 +49,18 @@ public:
 	bool                      GetSerializable() const;
 	bool                      GetReady() const;
 	bool                      GetProcess() const;
-	Variant                   GetScript() const;
 
 	void SetName(std::string const& name);
 	void SetSerializable(bool isSerializable);
 	void SetReady(bool isReady);
 	void SetProcess(bool isProcess);
-	void SetScript(Variant script);
+
+	// For Get/Set script, actually we are maintain a script instead of script instance
+	// We just assign script instance by the way
+	// When serializing, we use the script instead of script instance
+	// The tricky part is, we actually store script inside script instance
+	Variant GetScript() const;
+	void    SetScript(Variant const& script);
 
 	// Currently GetNode only supports child
 	// it do not support ../ or ..

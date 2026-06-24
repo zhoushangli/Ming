@@ -1,6 +1,8 @@
 #include "MingEngine/Engine/Script/ScriptSystem.hpp"
 
 #include "MingEngine/Core/ErrorWarningAssert.hpp"
+#include "MingEngine/Core/Object/RefCounted.hpp"
+#include "MingEngine/Core/Object/Resource.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Engine/File/FileSystem.hpp"
 #include "MingEngine/Engine/Script/ScriptBindings.hpp"
@@ -46,6 +48,7 @@ void ScriptSystem::Startup()
 	RegisterVec3(m_scriptEngine);
 	RegisterEulerAngles(m_scriptEngine);
 	RegisterMatrix4x4(m_scriptEngine);
+	RegisterVariant(m_scriptEngine);
 
 	RegisterNativeObjectType(m_scriptEngine);
 	RegisterBridgeFunctions(m_scriptEngine);
@@ -67,20 +70,21 @@ void ScriptSystem::BeginFrame() {}
 
 void ScriptSystem::EndFrame() {}
 
-std::unique_ptr<ScriptInstance> ScriptSystem::CreateInstance(std::string const& path, Object& owner)
+ScriptInstance* ScriptSystem::CreateInstance(Ref<Script> const& script, Object& owner)
 {
-	ScriptModule* scriptModule = GetOrCreateModule(path);
+	ScriptModule* scriptModule = GetOrCreateModule(script->GetPath());
 	if (scriptModule == nullptr)
 	{
-		DebuggerPrintf("Failed to load script module for path: %s\n", path.c_str());
-		return std::unique_ptr<ScriptInstance>();
+		DebuggerPrintf("Failed to load script module for path: %s\n", script->GetPath().c_str());
+		return nullptr;
 	}
 
-	std::unique_ptr<ScriptInstance> instance = ScriptInstance::Create(*scriptModule, owner);
+	ScriptInstance* instance = ScriptInstance::Create(*scriptModule, owner);
 	if (instance == nullptr)
 	{
 		return nullptr;
 	}
+	instance->m_script = script;
 
 	return instance;
 }

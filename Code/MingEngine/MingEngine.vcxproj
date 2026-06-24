@@ -321,7 +321,9 @@
   <ItemGroup>
     <ClCompile Include="..\ThirdParty\angelscript\add_on\scriptstdstring\scriptstdstring.cpp" />
     <ClCompile Include="..\ThirdParty\angelscript\add_on\scriptstdstring\scriptstdstring_utils.cpp" />
-    <ClCompile Include="Core\Object\Ref.cpp" />
+    <ClCompile Include="Core\Object\RefCounted.cpp" />
+    <ClCompile Include="Core\Object\Resource.cpp" />
+    <ClCompile Include="Core\Object\ResourceLoader.cpp" />
     <ClCompile Include="Engine\Application\App.cpp" />
     <ClCompile Include="Core\Clock.cpp" />
     <ClCompile Include="EngineService\DevConsole.cpp" />
@@ -459,7 +461,9 @@
     <ClInclude Include="..\ThirdParty\angelscript\include\angelscript.h" />
     <ClInclude Include="..\ThirdParty\nanosvg\nanosvg.h" />
     <ClInclude Include="..\ThirdParty\nanosvg\nanosvgrast.h" />
-    <ClInclude Include="Core\Object\Ref.hpp" />
+    <ClInclude Include="Core\Object\RefCounted.hpp" />
+    <ClInclude Include="Core\Object\Resource.hpp" />
+    <ClInclude Include="Core\Object\ResourceLoader.hpp" />
     <ClInclude Include="Engine\Application\App.hpp" />
     <ClInclude Include="Core\Clock.hpp" />
     <ClInclude Include="EngineService\DevConsole.hpp" />

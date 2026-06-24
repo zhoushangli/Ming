@@ -29,9 +29,9 @@ void ScriptInstance::Notification(int notification, bool reverse)
 	// }
 }
 
-std::unique_ptr<ScriptInstance> ScriptInstance::Create(ScriptModule& module, Object& owner)
+ScriptInstance* ScriptInstance::Create(ScriptModule& module, Object& owner)
 {
-	std::unique_ptr<ScriptInstance> instance(new ScriptInstance());
+	ScriptInstance* instance = new ScriptInstance();
 
 	instance->m_owner = &owner;
 
@@ -104,8 +104,6 @@ bool ScriptInstance::CallProcess(float deltaSeconds) { return Execute(m_processF
 bool ScriptInstance::CallEnterTree() { return Execute(m_enterTreeFunction); }
 
 bool ScriptInstance::CallExitTree() { return Execute(m_exitTreeFunction); }
-
-Object* ScriptInstance::GetOwner() const { return m_owner; }
 
 bool ScriptInstance::Execute(asIScriptFunction* function)
 {

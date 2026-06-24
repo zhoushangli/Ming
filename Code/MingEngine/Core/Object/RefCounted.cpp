@@ -11,7 +11,7 @@ bool RefCounted::InitRef()
 	return true;
 }
 
-bool RefCounted::Ref()
+bool RefCounted::AddRef()
 {
 	if (m_refCount <= 0)
 	{
@@ -22,7 +22,7 @@ bool RefCounted::Ref()
 	return true;
 }
 
-bool RefCounted::Unref()
+bool RefCounted::RemoveRef()
 {
 	if (m_refCount <= 0)
 	{
@@ -30,13 +30,7 @@ bool RefCounted::Unref()
 	}
 
 	m_refCount--;
-	if (m_refCount == 0)
-	{
-		delete this;
-		return true;
-	}
-
-	return false;
+	return (m_refCount == 0);
 }
 
 int RefCounted::GetRefCount() const { return m_refCount; }

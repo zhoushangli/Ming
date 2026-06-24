@@ -531,7 +531,13 @@
     <ClCompile Include="Engine\Script\ScriptGenerator.cpp">
       <Filter>Engine\Script</Filter>
     </ClCompile>
-    <ClCompile Include="Core\Object\Ref.cpp">
+    <ClCompile Include="Core\Object\RefCounted.cpp">
+      <Filter>Core\Object</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Object\Resource.cpp">
+      <Filter>Core\Object</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Object\ResourceLoader.cpp">
       <Filter>Core\Object</Filter>
     </ClCompile>
   </ItemGroup>
@@ -1025,7 +1031,13 @@
     <ClInclude Include="..\ThirdParty\nanosvg\nanosvgrast.h">
       <Filter>ThirdParty\nanosvg</Filter>
     </ClInclude>
-    <ClInclude Include="Core\Object\Ref.hpp">
+    <ClInclude Include="Core\Object\RefCounted.hpp">
+      <Filter>Core\Object</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Object\Resource.hpp">
+      <Filter>Core\Object</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Object\ResourceLoader.hpp">
       <Filter>Core\Object</Filter>
     </ClInclude>
   </ItemGroup>

@@ -1,20 +1,14 @@
 #include "MingEngine/Core/Object/Variant.hpp"
 
 Variant::Variant(bool value) : m_value(value), m_type(Type::Bool) {}
-
 Variant::Variant(int value) : m_value(value), m_type(Type::Int) {}
-
 Variant::Variant(float value) : m_value(value), m_type(Type::Float) {}
-
 Variant::Variant(char const* value) : m_value(std::string(value)), m_type(Type::String) {}
-
 Variant::Variant(std::string const& value) : m_value(value), m_type(Type::String) {}
-
 Variant::Variant(Vec3 const& value) : m_value(value), m_type(Type::Vec3) {}
-
 Variant::Variant(EulerAngles const& value) : m_value(value), m_type(Type::EulerAngles) {}
-
 Variant::Variant(Matrix4x4 const& value) : m_value(value), m_type(Type::Matrix4x4) {}
+Variant::Variant(Object* const& value) : m_value(value), m_type(Type::ObjectPtr) {}
 
 bool Variant::IsEmpty() const { return std::holds_alternative<std::monostate>(m_value); }
 
@@ -67,4 +61,3 @@ bool Variant::operator==(Variant const& other) const
 }
 
 bool Variant::operator!=(Variant const& other) const { return !(*this == other); }
-

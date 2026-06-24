@@ -60,8 +60,8 @@ public:
 
 public:
 	PropertyInfo() = default;
-	PropertyInfo(Variant::Type type, std::string name, Hint hint, std::string hintString, UsageFlags usageFlags)
-		: m_type(type), m_name(name), m_hint(hint), m_hintData(hintString), m_usageFlags(usageFlags)
+	PropertyInfo(Variant::Type type, std::string name, Hint hint, std::string hintData, UsageFlags usageFlags)
+		: m_type(type), m_name(name), m_hint(hint), m_hintData(hintData), m_usageFlags(usageFlags)
 	{
 	}
 

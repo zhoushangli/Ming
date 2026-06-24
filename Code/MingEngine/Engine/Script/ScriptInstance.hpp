@@ -2,6 +2,8 @@
 
 #include "MingEngine/Core/Object/Object.hpp"
 #include "MingEngine/Engine/Script/ScriptModule.hpp"
+#include "MingEngine/Core/Object/Resource.hpp"
+#include "MingEngine/Core/Object/RefCounted.hpp"
 
 #include <memory>
 
@@ -23,7 +25,8 @@ public:
 	bool CallEnterTree();
 	bool CallExitTree();
 
-	Object* GetOwner() const;
+	Object* GetOwner() const { return m_owner; }
+	Ref<Script> GetScript() const { return m_script; }
 
 private:
 	ScriptInstance() = default;
@@ -31,7 +34,7 @@ private:
 	ScriptInstance(ScriptInstance const&)            = delete;
 	ScriptInstance& operator=(ScriptInstance const&) = delete;
 
-	static std::unique_ptr<ScriptInstance> Create(ScriptModule& module, Object& owner);
+	static ScriptInstance* Create(ScriptModule& module, Object& owner);
 
 	void Destroy();
 
@@ -48,5 +51,6 @@ private:
 	asIScriptFunction* m_exitTreeFunction  = nullptr;
 	asIScriptFunction* m_readyFunction     = nullptr;
 	asIScriptFunction* m_processFunction   = nullptr;
-};
 
+	Ref<Script> m_script;
+};

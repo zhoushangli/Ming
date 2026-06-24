@@ -39,16 +39,34 @@ bool                      Node::GetSerializable() const { return m_data.m_isSeri
 bool                      Node::GetReady() const { return m_data.m_enableReady; }
 bool                      Node::GetProcess() const { return m_data.m_enableProcess; }
 
-Variant Node::GetScript() const {}
+Variant Node::GetScript() const
+{
+	if (m_data.m_scriptInstance == nullptr)
+	{
+		return Variant();
+	}
+	else
+	{
+		return Variant(m_data.m_scriptInstance->GetScript());
+	}
+}
 
 void Node::SetName(std::string const& name) { m_data.m_name = EnsureUniqueName(name); }
 void Node::SetSerializable(bool isSerializable) { m_data.m_isSerializable = isSerializable; }
 void Node::SetReady(bool isReady) { m_data.m_enableReady = isReady; }
 void Node::SetProcess(bool isProcess) { m_data.m_enableProcess = isProcess; }
 
-void Node::SetScript(Variant script) 
+void Node::SetScript(Variant const& script)
 {
 	Ref<Script> scriptRef = script;
+
+	if (!scriptRef.IsValid())
+	{
+		m_data.m_scriptInstance = nullptr;
+		return;
+	}
+
+	m_data.m_scriptInstance = g_engine->m_scriptSystem->CreateInstance(scriptRef, *this);
 }
 
 Node* Node::FindChildByName(std::string const& name) const
@@ -208,7 +226,7 @@ void Node::BindMethods()
 		"GetName");
 	ADD_PROPERTY(
 		PropertyInfo(
-			Variant::Type::String,
+			Variant::Type::ObjectPtr,
 			"script",
 			PropertyInfo::Hint::ResourceType,
 			Script::GetStaticClassName(),

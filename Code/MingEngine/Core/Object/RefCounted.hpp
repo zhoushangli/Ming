@@ -1,6 +1,7 @@
 #pragma once
 
 #include "MingEngine/Core/Object/Object.hpp"
+#include "MingEngine/Core/Object/Variant.hpp"
 
 class RefCounted : public Object
 {
@@ -11,8 +12,8 @@ public:
 	virtual ~RefCounted() = default;
 
 	bool InitRef();
-	bool Ref();
-	bool Unref();
+	bool AddRef();
+	bool RemoveRef();
 
 	int GetRefCount() const;
 
@@ -30,17 +31,25 @@ class Ref
 
 public:
 	Ref() = default;
+
 	explicit Ref(T* ptr) { RefPointer(ptr); }
+
 	Ref(Ref<T> const& other) { RefPointer(other.reference); }
-	Ref(Variant const& variant)
-	{
-		
-	}
+
 	Ref(Ref<T>&& other) noexcept
 	{
 		RefPointer(other.reference);
 		other.RefPointer(nullptr);
 	}
+
+	Ref(Variant const& variant) { this->operator=(variant); }
+
+	template <typename T_Other>
+	Ref(Ref<T_Other> const& other)
+	{
+		this->operator=(other);
+	}
+
 	~Ref() { RefPointer(nullptr); }
 
 	Ref& operator=(Ref<T> const& other)
@@ -62,9 +71,33 @@ public:
 		return *this;
 	}
 
+	Ref& operator=(Variant const& variant)
+	{
+		if (variant.Is<Object*>())
+		{
+			RefPointer(dynamic_cast<T*>(variant.As<Object*>()));
+		}
+		else
+		{
+			RefPointer(nullptr);
+		}
+		return *this;
+	}
+
+	template <typename T_Other>
+	void operator=(Ref<T_Other> const& other)
+	{
+		static_assert(
+			std::is_base_of_v<T, T_Other>,
+			"Ref<T> can only be assigned from Ref<T_Other> if T_Other is derived from T.");
+		RefPointer(dynamic_cast<T*>(other.Get()));
+	}
+
 	T* Get() const { return reference; }
 	T* operator->() { return reference; }
 	T& operator*() { return *reference; }
+	T* operator->() const { return reference; }
+	T& operator*() const { return *reference; }
 
 	bool IsValid() const { return reference != nullptr; }
 	bool IsNull() const { return reference == nullptr; }
@@ -73,6 +106,8 @@ public:
 	bool operator!=(const Ref<T>& other) const { return reference != other.reference; }
 	bool operator==(const T* ptr) const { return reference == ptr; }
 	bool operator!=(const T* ptr) const { return reference != ptr; }
+
+	operator Variant() const { return Variant(reference); }
 
 private:
 	void RefPointer(T* ptr)
@@ -85,7 +120,7 @@ private:
 		// 1) Unref the current reference if it exists
 		if (reference != nullptr)
 		{
-			if (reference->Unref())
+			if (reference->RemoveRef())
 			{
 				delete reference;
 				reference = nullptr;
@@ -103,7 +138,7 @@ private:
 			}
 			else
 			{
-				reference->Ref();
+				reference->AddRef();
 			}
 		}
 	}

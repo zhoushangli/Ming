@@ -5,6 +5,7 @@
 #include "MingEngine/Core/Math/Matrix4x4.hpp"
 #include "MingEngine/Core/Math/Vec3.hpp"
 #include "MingEngine/Core/Object/ClassDatabase.hpp"
+#include "MingEngine/Core/Object/Variant.hpp"
 #include "MingEngine/Core/StringUtils.hpp"
 
 #include "ThirdParty/angelscript/include/angelscript.h"
@@ -57,6 +58,20 @@ void CopyConstructMatrix4x4(Matrix4x4 const& other, void* memory) { new (memory)
 void DestructMatrix4x4(void* memory) { static_cast<Matrix4x4*>(memory)->~Matrix4x4(); }
 
 Matrix4x4& AssignMatrix4x4(Matrix4x4 const& other, Matrix4x4* self)
+{
+	*self = other;
+	return *self;
+}
+
+// ------------------------------------------------------------------------------
+
+void ConstructVariant(void* memory) { new (memory) Variant(); }
+
+void CopyConstructVariant(Variant const& other, void* memory) { new (memory) Variant(other); }
+
+void DestructVariant(void* memory) { static_cast<Variant*>(memory)->~Variant(); }
+
+Variant& AssignVariant(Variant const& other, Variant* self)
 {
 	*self = other;
 	return *self;
@@ -214,6 +229,45 @@ void RegisterMatrix4x4(asIScriptEngine* engine)
 	GUARANTEE_OR_DIE(result >= 0, "Failed to register assignment operator for built-in type: Matrix4x4");
 }
 
+void RegisterVariant(asIScriptEngine* engine)
+{
+	int result = 0;
+
+	result = engine->RegisterObjectType("Variant", sizeof(Variant), asOBJ_VALUE | asOBJ_APP_CLASS_CDAK);
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register built-in type: Variant");
+
+	result = engine->RegisterObjectBehaviour(
+		"Variant",
+		asBEHAVE_CONSTRUCT,
+		"void f()",
+		asFUNCTION(ConstructVariant),
+		asCALL_CDECL_OBJLAST);
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register default constructor for built-in type: Variant");
+
+	result = engine->RegisterObjectBehaviour(
+		"Variant",
+		asBEHAVE_CONSTRUCT,
+		"void f(const Variant &in)",
+		asFUNCTION(CopyConstructVariant),
+		asCALL_CDECL_OBJLAST);
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register copy constructor for built-in type: Variant");
+
+	result = engine->RegisterObjectBehaviour(
+		"Variant",
+		asBEHAVE_DESTRUCT,
+		"void f()",
+		asFUNCTION(DestructVariant),
+		asCALL_CDECL_OBJLAST);
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register destructor for built-in type: Variant");
+
+	result = engine->RegisterObjectMethod(
+		"Variant",
+		"Variant &opAssign(const Variant &in)",
+		asFUNCTION(AssignVariant),
+		asCALL_CDECL_OBJLAST);
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register assignment operator for built-in type: Variant");
+}
+
 // ------------------------------------------------------------------------------------------------
 
 namespace
@@ -229,6 +283,7 @@ struct BridgeSignature
 
 std::unordered_map<int, BridgeSignature> s_bridgeSignatures;
 
+// Used for method parameter type
 std::string GetScriptTypeName(Variant::Type type)
 {
 	switch (type)
@@ -249,11 +304,16 @@ std::string GetScriptTypeName(Variant::Type type)
 		return "EulerAngles";
 	case Variant::Type::Matrix4x4:
 		return "Matrix4x4";
+	case Variant::Type::ObjectPtr:
+		return "NativeObject@";
+	case Variant::Type::Any:
+		return "Variant";
 	default:
 		return "unknown";
 	}
 }
 
+// Used for method naming
 std::string GetBridgeTypeName(Variant::Type type)
 {
 	switch (type)
@@ -274,6 +334,10 @@ std::string GetBridgeTypeName(Variant::Type type)
 		return "EulerAngles";
 	case Variant::Type::Matrix4x4:
 		return "Matrix4x4";
+	case Variant::Type::ObjectPtr:
+		return "ObjectPtr";
+	case Variant::Type::Any:
+		return "Variant";
 	default:
 		return "Unknown";
 	}
@@ -282,7 +346,7 @@ std::string GetBridgeTypeName(Variant::Type type)
 bool IsScriptRefType(Variant::Type type)
 {
 	return type == Variant::Type::String || type == Variant::Type::Vec3 || type == Variant::Type::EulerAngles
-		   || type == Variant::Type::Matrix4x4;
+		   || type == Variant::Type::Matrix4x4 || type == Variant::Type::Any;
 }
 
 std::string BuildScriptArgumentDeclaration(Variant::Type type)
@@ -375,6 +439,13 @@ void BridgeCallGeneric(asIScriptGeneric* gen)
 		case Variant::Type::Matrix4x4:
 			args.emplace_back(*static_cast<Matrix4x4*>(gen->GetArgAddress(index)));
 			break;
+		// When Variant == Object, actually we are storing a pointer to the Object
+		case Variant::Type::ObjectPtr:
+			args.emplace_back(static_cast<Object*>(gen->GetArgObject(index)));
+			break;
+		case Variant::Type::Any:
+			args.emplace_back(*static_cast<Variant*>(gen->GetArgAddress(index)));
+			break;
 		}
 	}
 
@@ -383,23 +454,34 @@ void BridgeCallGeneric(asIScriptGeneric* gen)
 	switch (signature.returnType)
 	{
 	case Variant::Type::Empty:
+	{
 		return;
+	}
 
 	case Variant::Type::Bool:
+	{
 		gen->SetReturnByte(result.As<bool>() ? 1 : 0);
 		return;
+	}
 
 	case Variant::Type::Int:
+	{
 		gen->SetReturnDWord(static_cast<asDWORD>(result.As<int>()));
 		return;
+	}
 
 	case Variant::Type::Float:
+	{
 		gen->SetReturnFloat(result.As<float>());
 		return;
+	}
 
 	case Variant::Type::String:
-		gen->SetReturnObject(const_cast<std::string*>(&result.As<std::string>()));
+	{
+		std::string const& resultString = result.As<std::string>();
+		gen->SetReturnObject(const_cast<std::string*>(&resultString));
 		return;
+	}
 
 	case Variant::Type::Vec3:
 	{
@@ -419,6 +501,22 @@ void BridgeCallGeneric(asIScriptGeneric* gen)
 	{
 		Matrix4x4 const& matrixResult = result.As<Matrix4x4>();
 		gen->SetReturnObject(const_cast<Matrix4x4*>(&matrixResult));
+		return;
+	}
+
+	// Variant::Type::ObjectPtr is a special case where we are returning a pointer to the Object
+	case Variant::Type::ObjectPtr:
+	{
+		Object* objectResult = result.As<Object*>();
+		gen->SetReturnObject(objectResult);
+		return;
+	}
+
+	// Variant::Type::Any is a special case where we are returning a Variant itself
+	case Variant::Type::Any:
+	{
+		Variant const& variantResult = result;
+		gen->SetReturnObject(const_cast<Variant*>(&variantResult));
 		return;
 	}
 
@@ -473,4 +571,3 @@ void RegisterBridgeFunctions(asIScriptEngine* engine)
 		}
 	}
 }
-

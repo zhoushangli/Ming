@@ -26,7 +26,7 @@ public:
 	void BeginFrame();
 	void EndFrame();
 
-	std::unique_ptr<ScriptInstance> CreateInstance(std::string const& path, Object& owner);
+	ScriptInstance* CreateInstance(Ref<Script> const& script, Object& owner);
 
 private:
 	ScriptModule* GetOrCreateModule(std::string const& path);
