@@ -4,8 +4,10 @@
 
 void Resource::BindMethods()
 {
-	ClassDatabase::BindMethod("GetPath", &Resource::GetPath);
-	ClassDatabase::BindMethod("SetPath", &Resource::SetPath);
+	ClassDatabase::BindMethod("GetPath", &Resource::GetVirtualPath);
+	ClassDatabase::BindMethod("SetPath", &Resource::SetVirtualPath);
+	ClassDatabase::BindMethod("GetName", &Resource::GetName);
+	ClassDatabase::BindMethod("SetName", &Resource::SetName);
 
 	ADD_PROPERTY(
 		PropertyInfo(Variant::Type::String, "path", PropertyInfo::Hint::None, "", PropertyInfo::UsageFlags::Default),

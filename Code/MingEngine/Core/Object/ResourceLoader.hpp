@@ -12,7 +12,7 @@ class ResourceFormatLoader : public RefCounted
 
 public:
 	virtual std::vector<std::string> GetSupportedExtensions() const = 0;
-	virtual Ref<Resource>            Load(const std::string& path)  = 0;
+	virtual Ref<Resource>            Load(const std::string& virtualPath)  = 0;
 
 	bool CanLoad(const std::string& path) const;
 
@@ -39,7 +39,7 @@ public:
 	virtual ~ResourceLoader();
 
 	static void          AddLoader(Ref<ResourceFormatLoader> loader);
-	static Ref<Resource> Load(const std::string& path);
+	static Ref<Resource> Load(const std::string& virtualPath);
 
 private:
 	static constexpr int MaxLoaders = 64;

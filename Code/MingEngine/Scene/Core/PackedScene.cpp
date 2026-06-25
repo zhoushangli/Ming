@@ -19,23 +19,37 @@ Json SerializeVariant(Variant const& value)
 	switch (value.GetType())
 	{
 	case Variant::Type::Bool:
+	{
 		return value.As<bool>();
+	}
+
 	case Variant::Type::Int:
+	{
 		return value.As<int>();
+	}
+
 	case Variant::Type::Float:
+	{
 		return value.As<float>();
+	}
+
 	case Variant::Type::String:
+	{
 		return value.As<std::string>();
+	}
+
 	case Variant::Type::Vec3:
 	{
 		Vec3 const& vector = value.As<Vec3>();
 		return Json::array({ vector.x, vector.y, vector.z });
 	}
+
 	case Variant::Type::EulerAngles:
 	{
 		EulerAngles const& angles = value.As<EulerAngles>();
 		return Json::array({ angles.m_yawDegrees, angles.m_pitchDegrees, angles.m_rollDegrees });
 	}
+
 	case Variant::Type::Matrix4x4:
 	{
 		Json         result = Json::array();
@@ -46,6 +60,7 @@ Json SerializeVariant(Variant const& value)
 		}
 		return result;
 	}
+
 	case Variant::Type::Empty:
 		return nullptr;
 	}
@@ -565,4 +580,3 @@ bool PackedScene::ParseNodeRecursively(
 
 	return true;
 }
-

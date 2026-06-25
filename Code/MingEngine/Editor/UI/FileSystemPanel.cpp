@@ -1,5 +1,6 @@
 #include "MingEngine/Editor/UI/FileSystemPanel.hpp"
 
+#include "MingEngine/Core/Object/ResourceLoader.hpp"
 #include "MingEngine/Editor/UI/EditorUIContext.hpp"
 #include "MingEngine/Editor/UI/EditorUIStyle.hpp"
 #include "MingEngine/Editor/UI/EditorUIWidgets.hpp"
@@ -9,6 +10,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cstring>
 #include <string>
 
 namespace
@@ -22,22 +24,9 @@ std::string ToLower(std::string text)
 		[](unsigned char character) { return static_cast<char>(std::tolower(character)); });
 	return text;
 }
-
-std::string GetDisplayName(std::filesystem::path const& path)
-{
-	std::string displayName = path.filename().string();
-	if (displayName.empty())
-	{
-		displayName = path.string();
-	}
-	return displayName;
-}
 } // namespace
 
-FileSystemPanel::FileSystemPanel()
-	: EditorPanel("FileSystem")
-{
-}
+FileSystemPanel::FileSystemPanel() : EditorPanel("FileSystem") {}
 
 void FileSystemPanel::OnRender(EditorUIContext& context)
 {
@@ -52,13 +41,13 @@ void FileSystemPanel::OnRender(EditorUIContext& context)
 		return;
 	}
 
-	std::filesystem::path const& resourceRoot = context.m_fileSystem->GetResourceRoot();
-	if (!m_hasScanned)
+	if (!context.m_fileSystem->HasResourceTree())
 	{
-		BuildFileTree(resourceRoot);
+		context.m_fileSystem->ScanResourceTree();
 	}
 
-	if (!m_hasScanned)
+	FileEntry const* rootEntry = context.m_fileSystem->GetResourceRootEntry();
+	if (rootEntry == nullptr)
 	{
 		ImGui::TextUnformatted("res://");
 		ImGui::TextDisabled("Resource root not found.");
@@ -68,124 +57,28 @@ void FileSystemPanel::OnRender(EditorUIContext& context)
 
 	ImGui::BeginChild("##FileSystemTreeScrollRegion", ImVec2(0.f, 0.f), false);
 
-	ImGuiTreeNodeFlags rootFlags =
-		ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick
-		| ImGuiTreeNodeFlags_SpanAvailWidth;
-	bool const rootOpen = ImGui::TreeNodeEx("##FileSystemRoot", rootFlags);
-	ImVec2 const rootMin = ImGui::GetItemRectMin();
-	ImVec2 const rootMax = ImGui::GetItemRectMax();
-	EditorUIWidgets::RenderTreeRowContent("Folder", "Folder", "res://", rootMin, rootMax, EditorUIStyle::FileTreeIconSize());
-
-	if (rootOpen)
-	{
-		std::string const lowerFilterText = ToLower(m_filter);
-		for (FileEntry const& entry : m_rootEntry.m_children)
-		{
-			if (!DoesEntryMatchFilter(entry, lowerFilterText))
-			{
-				continue;
-			}
-
-			RenderEntry(entry, lowerFilterText);
-		}
-
-		ImGui::TreePop();
-	}
+	std::string const lowerFilterText = ToLower(m_filter);
+	RenderEntry(*rootEntry, lowerFilterText);
 
 	ImGui::EndChild();
 	ImGui::End();
 }
 
-void FileSystemPanel::BuildFileTree(std::filesystem::path const& resourceRoot)
-{
-	m_rootEntry = {};
-	m_hasScanned = false;
-
-	std::error_code errorCode;
-	if (!std::filesystem::exists(resourceRoot, errorCode) || !std::filesystem::is_directory(resourceRoot, errorCode))
-	{
-		return;
-	}
-
-	m_rootEntry.m_path        = resourceRoot;
-	m_rootEntry.m_name        = "res://";
-	m_rootEntry.m_lowerName   = ToLower(m_rootEntry.m_name);
-	m_rootEntry.m_iconName    = "Folder";
-	m_rootEntry.m_isDirectory = true;
-
-	for (std::filesystem::directory_entry const& entry : std::filesystem::directory_iterator(resourceRoot, errorCode))
-	{
-		std::error_code entryError;
-		bool const      isDirectory = entry.is_directory(entryError);
-		bool const      isFile      = entry.is_regular_file(entryError);
-		if (entryError || (!isDirectory && !isFile))
-		{
-			continue;
-		}
-
-		m_rootEntry.m_children.push_back(BuildEntry(entry.path(), isDirectory));
-	}
-
-	std::sort(m_rootEntry.m_children.begin(), m_rootEntry.m_children.end(), [](FileEntry const& a, FileEntry const& b) {
-		if (a.m_isDirectory != b.m_isDirectory)
-		{
-			return a.m_isDirectory && !b.m_isDirectory;
-		}
-
-		return a.m_lowerName < b.m_lowerName;
-	});
-
-	m_hasScanned = true;
-}
-
-FileSystemPanel::FileEntry FileSystemPanel::BuildEntry(std::filesystem::path const& path, bool isDirectory) const
-{
-	FileEntry result;
-	result.m_path        = path;
-	result.m_name        = GetDisplayName(path);
-	result.m_lowerName   = ToLower(result.m_name);
-	result.m_iconName    = GetIconNameForPath(path, isDirectory);
-	result.m_isDirectory = isDirectory;
-
-	if (isDirectory)
-	{
-		std::error_code errorCode;
-		for (std::filesystem::directory_entry const& child : std::filesystem::directory_iterator(path, errorCode))
-		{
-			std::error_code entryError;
-			bool const      childIsDirectory = child.is_directory(entryError);
-			bool const      childIsFile      = child.is_regular_file(entryError);
-			if (entryError || (!childIsDirectory && !childIsFile))
-			{
-				continue;
-			}
-
-			result.m_children.push_back(BuildEntry(child.path(), childIsDirectory));
-		}
-
-		std::sort(result.m_children.begin(), result.m_children.end(), [](FileEntry const& a, FileEntry const& b) {
-			if (a.m_isDirectory != b.m_isDirectory)
-			{
-				return a.m_isDirectory && !b.m_isDirectory;
-			}
-
-			return a.m_lowerName < b.m_lowerName;
-		});
-	}
-
-	return result;
-}
-
 void FileSystemPanel::RenderEntry(FileEntry const& entry, std::string const& lowerFilterText)
 {
-	bool const hasVisibleChildren =
-		std::any_of(entry.m_children.begin(), entry.m_children.end(), [this, &lowerFilterText](FileEntry const& child) {
-			return DoesEntryMatchFilter(child, lowerFilterText);
-		});
+	bool const hasVisibleChildren = std::any_of(
+		entry.GetChildren().begin(),
+		entry.GetChildren().end(),
+		[this, &lowerFilterText](std::unique_ptr<FileEntry> const& child)
+		{ return DoesEntryMatchFilter(*child, lowerFilterText); });
 
 	ImGuiTreeNodeFlags flags =
 		ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick | ImGuiTreeNodeFlags_SpanAvailWidth;
-	if (!entry.m_isDirectory || !hasVisibleChildren)
+	if (entry.GetParent() == nullptr)
+	{
+		flags |= ImGuiTreeNodeFlags_DefaultOpen;
+	}
+	if (!entry.IsDirectory() || !hasVisibleChildren)
 	{
 		flags |= ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
 	}
@@ -194,28 +87,46 @@ void FileSystemPanel::RenderEntry(FileEntry const& entry, std::string const& low
 		flags |= ImGuiTreeNodeFlags_DefaultOpen;
 	}
 
-	ImGui::PushID(entry.m_path.string().c_str());
-	bool const isOpen = ImGui::TreeNodeEx(entry.m_isDirectory ? "##Directory" : "##File", flags);
+	ImGui::PushID(entry.GetVirtualPath().c_str());
+	bool const   isOpen = ImGui::TreeNodeEx(entry.IsDirectory() ? "##Directory" : "##File", flags);
 	ImVec2 const rowMin = ImGui::GetItemRectMin();
 	ImVec2 const rowMax = ImGui::GetItemRectMax();
+
+	if (!entry.IsDirectory())
+	{
+		if (ImGui::BeginDragDropSource())
+		{
+			FilePayload payload;
+
+			payload.m_resource = ResourceLoader::Load(entry.GetVirtualPath());
+			if (payload.m_resource.IsValid())
+			{
+				ImGui::SetDragDropPayload("FILESYSTEM_RESOURCE", &payload, sizeof(payload));
+				ImGui::TextUnformatted(entry.GetName().c_str());
+			}
+
+			ImGui::EndDragDropSource();
+		}
+	}
+
 	EditorUIWidgets::RenderTreeRowContent(
-		entry.m_iconName,
-		entry.m_isDirectory ? "Folder" : "File",
-		entry.m_name,
+		GetIconNameForPath(entry.GetPhysicalPath(), entry.IsDirectory()),
+		entry.IsDirectory() ? "Folder" : "File",
+		entry.GetName(),
 		rowMin,
 		rowMax,
 		EditorUIStyle::FileTreeIconSize());
 
-	if (isOpen && entry.m_isDirectory && hasVisibleChildren)
+	if (isOpen && entry.IsDirectory() && hasVisibleChildren)
 	{
-		for (FileEntry const& child : entry.m_children)
+		for (std::unique_ptr<FileEntry> const& child : entry.GetChildren())
 		{
-			if (!DoesEntryMatchFilter(child, lowerFilterText))
+			if (!DoesEntryMatchFilter(*child, lowerFilterText))
 			{
 				continue;
 			}
 
-			RenderEntry(child, lowerFilterText);
+			RenderEntry(*child, lowerFilterText);
 		}
 
 		ImGui::TreePop();
@@ -231,14 +142,14 @@ bool FileSystemPanel::DoesEntryMatchFilter(FileEntry const& entry, std::string c
 		return true;
 	}
 
-	if (entry.m_lowerName.find(lowerFilterText) != std::string::npos)
+	if (entry.GetLowerName().find(lowerFilterText) != std::string::npos)
 	{
 		return true;
 	}
 
-	for (FileEntry const& child : entry.m_children)
+	for (std::unique_ptr<FileEntry> const& child : entry.GetChildren())
 	{
-		if (DoesEntryMatchFilter(child, lowerFilterText))
+		if (DoesEntryMatchFilter(*child, lowerFilterText))
 		{
 			return true;
 		}

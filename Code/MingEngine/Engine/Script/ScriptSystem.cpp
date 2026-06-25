@@ -72,10 +72,10 @@ void ScriptSystem::EndFrame() {}
 
 ScriptInstance* ScriptSystem::CreateInstance(Ref<Script> const& script, Object& owner)
 {
-	ScriptModule* scriptModule = GetOrCreateModule(script->GetPath());
+	ScriptModule* scriptModule = GetOrCreateModule(script->GetVirtualPath());
 	if (scriptModule == nullptr)
 	{
-		DebuggerPrintf("Failed to load script module for path: %s\n", script->GetPath().c_str());
+		DebuggerPrintf("Failed to load script module for path: %s\n", script->GetVirtualPath().c_str());
 		return nullptr;
 	}
 

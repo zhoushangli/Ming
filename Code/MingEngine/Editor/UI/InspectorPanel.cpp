@@ -284,7 +284,11 @@ void InspectorPanel::OnRender(EditorUIContext& context)
 		for (InspectorProperty* prop : m_properties)
 		{
 			prop->Render();
-			prop->Apply(node);
+
+			if (prop->WasEdited())
+			{
+				prop->Apply(node);
+			}
 		}
 	}
 

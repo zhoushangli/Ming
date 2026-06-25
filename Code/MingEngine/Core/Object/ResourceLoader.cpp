@@ -44,10 +44,14 @@ bool ResourceFormatLoader::CanLoad(const std::string& path) const
 
 std::vector<std::string> ScriptLoader::GetSupportedExtensions() const { return std::vector<std::string>({ ".as" }); }
 
-Ref<Resource> ScriptLoader::Load(const std::string& path)
+Ref<Resource> ScriptLoader::Load(const std::string& virtualPath)
 {
 	Ref<Script> script = Ref<Script>(new Script());
-	script->SetPath(path);
+	script->SetVirtualPath(virtualPath);
+
+	size_t      slash = virtualPath.find_last_of("/\\");
+	std::string name  = slash == std::string::npos ? virtualPath : virtualPath.substr(slash + 1);
+	script->SetName(name);
 
 	return script;
 }

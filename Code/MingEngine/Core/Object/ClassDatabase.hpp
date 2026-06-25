@@ -73,6 +73,7 @@ public:
 	MethodBind const* GetSetter() const { return m_setter; }
 	MethodBind const* GetGetter() const { return m_getter; }
 
+public:
 	Variant::Type m_type = Variant::Type::Empty;
 	std::string   m_name;
 	Hint          m_hint = Hint::None;
