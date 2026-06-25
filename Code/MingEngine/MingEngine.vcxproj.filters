@@ -986,6 +986,9 @@
     <ClInclude Include="Editor\UI\InspectorPropertyInt.hpp">
       <Filter>Editor\UI</Filter>
     </ClInclude>
+    <ClInclude Include="Editor\UI\InspectorPropertyResource.hpp">
+      <Filter>Editor\UI</Filter>
+    </ClInclude>
     <ClInclude Include="Editor\UI\InspectorPropertyString.hpp">
       <Filter>Editor\UI</Filter>
     </ClInclude>

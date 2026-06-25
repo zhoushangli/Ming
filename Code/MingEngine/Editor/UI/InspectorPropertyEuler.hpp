@@ -9,9 +9,9 @@ class InspectorPropertyEuler final : public InspectorProperty
 public:
 	using InspectorProperty::InspectorProperty;
 
-	void Render() override
+	void RenderValue(Variant const& value) override
 	{
-		EulerAngles v = m_value.As<EulerAngles>();
+		EulerAngles v = value.As<EulerAngles>();
 
 		ImGui::TextUnformatted(GetDisplayName().c_str());
 
@@ -87,8 +87,7 @@ public:
 
 		if (edited)
 		{
-			m_value  = Variant(v);
-			m_edited = true;
+			EmitValueChanged(Variant(v));
 		}
 	}
 

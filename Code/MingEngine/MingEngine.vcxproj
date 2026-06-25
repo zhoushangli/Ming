@@ -505,6 +505,7 @@
     <ClInclude Include="Editor\UI\InspectorPropertyEuler.hpp" />
     <ClInclude Include="Editor\UI\InspectorPropertyFloat.hpp" />
     <ClInclude Include="Editor\UI\InspectorPropertyInt.hpp" />
+    <ClInclude Include="Editor\UI\InspectorPropertyResource.hpp" />
     <ClInclude Include="Editor\UI\InspectorPropertyString.hpp" />
     <ClInclude Include="Editor\UI\InspectorPropertyVec3.hpp" />
     <ClInclude Include="Editor\UI\OutputPanel.hpp" />

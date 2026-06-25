@@ -1,11 +1,11 @@
 #include "MingEngine/Editor/UI/InspectorPanel.hpp"
 
+#include "MingEngine/Core/Object/ClassDatabase.hpp"
 #include "MingEngine/Editor/EditorNode.hpp"
 #include "MingEngine/Editor/UI/EditorIcons.hpp"
 #include "MingEngine/Editor/UI/EditorUIContext.hpp"
 #include "MingEngine/Editor/UI/EditorUIStyle.hpp"
 #include "MingEngine/Editor/UI/InspectorProperty.hpp"
-#include "MingEngine/Core/Object/ClassDatabase.hpp"
 #include "MingEngine/Scene/Core/Node.hpp"
 #include "MingEngine/Scene/Core/SceneTree.hpp"
 
@@ -30,23 +30,27 @@ void DrawInspectorClassHeader(std::string const& className)
 {
 	constexpr float iconTextSpacing = 6.f;
 
-	ImVec2 const iconSize = EditorUIStyle::InspectorHeaderIconSize();
-	float const  headerHeight = EditorUIStyle::InspectorHeaderHeight();
+	ImVec2 const iconSize       = EditorUIStyle::InspectorHeaderIconSize();
+	float const  headerHeight   = EditorUIStyle::InspectorHeaderHeight();
 	float const  availableWidth = ImGui::GetContentRegionAvail().x;
-	ImVec2 const headerMin = ImGui::GetCursorScreenPos();
+	ImVec2 const headerMin      = ImGui::GetCursorScreenPos();
 	ImVec2 const headerMax(headerMin.x + availableWidth, headerMin.y + headerHeight);
 
 	ImGui::InvisibleButton("##InspectorClassHeader", ImVec2(availableWidth, headerHeight));
 
 	ImDrawList* drawList = ImGui::GetWindowDrawList();
-	drawList->AddRectFilled(headerMin, headerMax, ImGui::ColorConvertFloat4ToU32(EditorUIStyle::ControlBackgroundColor()), 3.f);
+	drawList->AddRectFilled(
+		headerMin,
+		headerMax,
+		ImGui::ColorConvertFloat4ToU32(EditorUIStyle::ControlBackgroundColor()),
+		3.f);
 
-	ImTextureID const textureId = EditorIcons::GetClassIconId(className);
-	ImVec2 const     textSize = ImGui::CalcTextSize(className.c_str());
-	float const      contentWidth = iconSize.x + iconTextSpacing + textSize.x;
-	float const      contentX = headerMin.x + (availableWidth - contentWidth) * 0.5f;
-	float const      iconY = headerMin.y + (headerHeight - iconSize.y) * 0.5f;
-	float const      textY = headerMin.y + (headerHeight - textSize.y) * 0.5f;
+	ImTextureID const textureId    = EditorIcons::GetClassIconId(className);
+	ImVec2 const      textSize     = ImGui::CalcTextSize(className.c_str());
+	float const       contentWidth = iconSize.x + iconTextSpacing + textSize.x;
+	float const       contentX     = headerMin.x + (availableWidth - contentWidth) * 0.5f;
+	float const       iconY        = headerMin.y + (headerHeight - iconSize.y) * 0.5f;
+	float const       textY        = headerMin.y + (headerHeight - textSize.y) * 0.5f;
 
 	if (textureId != ImTextureID{})
 	{
@@ -57,7 +61,7 @@ void DrawInspectorClassHeader(std::string const& className)
 			ImVec2(contentX + iconSize.x, iconY + iconSize.y));
 	}
 
-	ImU32 const textColor = ImGui::GetColorU32(ImGuiCol_Text);
+	ImU32 const  textColor = ImGui::GetColorU32(ImGuiCol_Text);
 	ImVec2 const textPos(contentX + iconSize.x + iconTextSpacing, textY);
 	drawList->AddText(textPos, textColor, className.c_str());
 	drawList->AddText(ImVec2(textPos.x + 1.f, textPos.y), textColor, className.c_str());
@@ -121,7 +125,7 @@ void InspectorPanel::RebuildProperties(EditorUIContext& context)
 		return;
 	}
 
-	std::string const& className = m_inheritanceChain[m_activeTabIndex];
+	std::string const&        className  = m_inheritanceChain[m_activeTabIndex];
 	std::vector<PropertyInfo> properties = ClassDatabase::GetProperties(className);
 
 	for (PropertyInfo& prop : properties)
@@ -131,17 +135,18 @@ void InspectorPanel::RebuildProperties(EditorUIContext& context)
 			continue;
 		}
 
-		// Get current value via getter
-		Variant value;
-		MethodBind const* getter = prop.GetGetter();
-		if (getter != nullptr)
+		std::string                             labelId   = "##" + className + "::" + prop.m_name;
+		MethodBind const*                       setter    = prop.GetSetter();
+		InspectorProperty::ValueChangedCallback onChanged = [node, setter](Variant const& value)
 		{
-			value = getter->Invoke(*node, {});
-		}
+			if (node != nullptr && setter != nullptr)
+			{
+				setter->Invoke(*node, { value });
+			}
+		};
 
-		std::string labelId = "##" + className + "::" + prop.m_name;
-
-		InspectorProperty* ip = InspectorProperty::Create(std::move(prop), std::move(value), std::move(labelId));
+		InspectorProperty* ip =
+			InspectorProperty::Create(std::move(prop), node, std::move(labelId), std::move(onChanged));
 		if (ip != nullptr)
 		{
 			m_properties.push_back(ip);
@@ -153,7 +158,7 @@ void InspectorPanel::RebuildProperties(EditorUIContext& context)
 
 void InspectorPanel::RenderTabBar()
 {
-	ImVec2 const iconSize = EditorUIStyle::InspectorTabIconSize();
+	ImVec2 const iconSize   = EditorUIStyle::InspectorTabIconSize();
 	ImVec2 const buttonSize = EditorUIStyle::InspectorTabButtonSize();
 
 	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(4.f, 4.f));
@@ -163,7 +168,7 @@ void InspectorPanel::RenderTabBar()
 
 	for (size_t i = 0; i < m_inheritanceChain.size(); ++i)
 	{
-		std::string const& className = m_inheritanceChain[i];
+		std::string const& className  = m_inheritanceChain[i];
 		bool const         isSelected = i == m_activeTabIndex;
 
 		if (i > 0)
@@ -177,8 +182,8 @@ void InspectorPanel::RenderTabBar()
 		}
 
 		ImTextureID const textureId = EditorIcons::GetClassIconId(className);
-		std::string const buttonId = "##ClassIconTab_" + className;
-		bool const clicked = ImGui::Button(buttonId.c_str(), buttonSize);
+		std::string const buttonId  = "##ClassIconTab_" + className;
+		bool const        clicked   = ImGui::Button(buttonId.c_str(), buttonSize);
 		DrawCenteredIcon(textureId, ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), iconSize);
 
 		if (isSelected)
@@ -275,8 +280,7 @@ void InspectorPanel::OnRender(EditorUIContext& context)
 	{
 		if (m_activeTabIndex < m_inheritanceChain.size())
 		{
-			ImGui::TextUnformatted(
-				("No editable properties for " + m_inheritanceChain[m_activeTabIndex]).c_str());
+			ImGui::TextUnformatted(("No editable properties for " + m_inheritanceChain[m_activeTabIndex]).c_str());
 		}
 	}
 	else
@@ -284,14 +288,8 @@ void InspectorPanel::OnRender(EditorUIContext& context)
 		for (InspectorProperty* prop : m_properties)
 		{
 			prop->Render();
-
-			if (prop->WasEdited())
-			{
-				prop->Apply(node);
-			}
 		}
 	}
 
 	ImGui::End();
 }
-

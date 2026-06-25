@@ -11,9 +11,9 @@ class InspectorPropertyVec3 final : public InspectorProperty
 public:
 	using InspectorProperty::InspectorProperty;
 
-	void Render() override
+	void RenderValue(Variant const& value) override
 	{
-		Vec3 v = m_value.As<Vec3>();
+		Vec3 v = value.As<Vec3>();
 
 		ImGui::TextUnformatted(GetDisplayName().c_str());
 
@@ -99,8 +99,7 @@ public:
 
 		if (edited)
 		{
-			m_value  = Variant(v);
-			m_edited = true;
+			EmitValueChanged(Variant(v));
 		}
 	}
 

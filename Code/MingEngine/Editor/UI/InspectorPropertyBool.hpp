@@ -8,16 +8,15 @@ class InspectorPropertyBool final : public InspectorProperty
 public:
 	using InspectorProperty::InspectorProperty;
 
-	void Render() override
+	void RenderValue(Variant const& value) override
 	{
-		bool b = m_value.As<bool>();
+		bool b = value.As<bool>();
 		ImGui::Columns(2, nullptr, false);
 		ImGui::TextUnformatted(GetDisplayName().c_str());
 		ImGui::NextColumn();
 		if (ImGui::Checkbox(m_labelId.c_str(), &b))
 		{
-			m_value  = Variant(b);
-			m_edited = true;
+			EmitValueChanged(Variant(b));
 		}
 		ImGui::Columns(1);
 	}

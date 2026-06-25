@@ -3,6 +3,7 @@
 #include "MingEngine/Core/Object/ClassDatabase.hpp"
 #include "MingEngine/Core/Object/Variant.hpp"
 
+#include <functional>
 #include <string>
 
 class Node;
@@ -10,25 +11,32 @@ class Node;
 class InspectorProperty
 {
 public:
-	InspectorProperty(PropertyInfo info, Variant value, std::string labelId);
+	using ValueChangedCallback = std::function<void(Variant const&)>;
+
 	virtual ~InspectorProperty() = default;
 
-	// Each subclass only needs to override this
-	virtual void Render() = 0;
+	void Render();
 
-	// ——— Provided by base class ———
-	bool WasEdited() const;
-	void Apply(Node* node);
 	Variant::Type GetType() const;
 	char const* GetLabelId() const;
 	std::string GetDisplayName() const;
 
-	static InspectorProperty* Create(PropertyInfo info, Variant value, std::string labelId);
+	static InspectorProperty* Create(
+		PropertyInfo info,
+		Node* node,
+		std::string labelId,
+		ValueChangedCallback onValueChanged);
+
+protected:
+	InspectorProperty(PropertyInfo info, Node* node, std::string labelId, ValueChangedCallback onValueChanged);
+
+	virtual void RenderValue(Variant const& value) = 0;
+	void EmitValueChanged(Variant const& value) const;
+	Variant GetCurrentValue() const;
 
 protected:
 	PropertyInfo m_info;
-	Variant m_value;
+	Node* m_node = nullptr;
 	std::string m_labelId;
-	bool m_edited = false;
+	ValueChangedCallback m_onValueChanged;
 };
-

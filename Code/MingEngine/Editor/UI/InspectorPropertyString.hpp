@@ -9,16 +9,16 @@ class InspectorPropertyString final : public InspectorProperty
 public:
 	using InspectorProperty::InspectorProperty;
 
-	void Render() override
+	void RenderValue(Variant const& value) override
 	{
-		std::string& str = m_value.As<std::string>();
+		std::string str = value.As<std::string>();
 		ImGui::Columns(2, nullptr, false);
 		ImGui::TextUnformatted(GetDisplayName().c_str());
 		ImGui::NextColumn();
 		ImGui::InputText(m_labelId.c_str(), &str);
 		if (ImGui::IsItemDeactivatedAfterEdit())
 		{
-			m_edited = true;
+			EmitValueChanged(Variant(str));
 		}
 		ImGui::Columns(1);
 	}
