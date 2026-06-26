@@ -38,6 +38,10 @@ std::string GetScriptTypeName(Variant::Type type)
 		return "EulerAngles";
 	case Variant::Type::Matrix4x4:
 		return "Matrix4x4";
+	case Variant::Type::ObjectPtr:
+		return "NativeObject@";
+	case Variant::Type::Any:
+		return "Variant";
 	default:
 		return "unknown";
 	}
@@ -87,6 +91,10 @@ std::string GetBridgeTypeName(Variant::Type type)
 		return "EulerAngles";
 	case Variant::Type::Matrix4x4:
 		return "Matrix4x4";
+	case Variant::Type::ObjectPtr:
+		return "NativeObject";
+	case Variant::Type::Any:
+		return "Variant";
 	default:
 		return "Unknown";
 	}

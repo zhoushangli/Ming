@@ -150,7 +150,7 @@ ScriptModule* ScriptSystem::GetOrCreateModule(VirtualPath const& virtualPath)
 		return nullptr;
 	}
 
-	int result = scriptModule->AddScriptSection("MingEngine.as", wrapperText.c_str(), wrapperText.size());
+	int result = scriptModule->AddScriptSection("MingEngine.generated.as", wrapperText.c_str(), wrapperText.size());
 
 	if (result < 0)
 	{

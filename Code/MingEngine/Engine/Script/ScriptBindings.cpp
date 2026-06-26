@@ -335,7 +335,7 @@ std::string GetBridgeTypeName(Variant::Type type)
 	case Variant::Type::Matrix4x4:
 		return "Matrix4x4";
 	case Variant::Type::ObjectPtr:
-		return "ObjectPtr";
+		return "NativeObject";
 	case Variant::Type::Any:
 		return "Variant";
 	default:
