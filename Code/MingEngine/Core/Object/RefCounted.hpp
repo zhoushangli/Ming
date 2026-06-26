@@ -87,9 +87,6 @@ public:
 	template <typename T_Other>
 	void operator=(Ref<T_Other> const& other)
 	{
-		static_assert(
-			std::is_base_of_v<T, T_Other>,
-			"Ref<T> can only be assigned from Ref<T_Other> if T_Other is derived from T.");
 		RefPointer(dynamic_cast<T*>(other.Get()));
 	}
 

@@ -43,7 +43,7 @@ public:
 private:
 	void OnProcess(float deltaSeconds) override;
 
-	void SaveSceneToFile(Node const* sceneRoot, std::string const& filename);
+	void SaveSceneToFile(Node const* sceneRoot, std::string const& virtualPath);
 
 public:
 	EditorSelection m_selection;

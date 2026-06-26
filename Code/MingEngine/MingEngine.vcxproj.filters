@@ -540,6 +540,18 @@
     <ClCompile Include="Core\Object\ResourceLoader.cpp">
       <Filter>Core\Object</Filter>
     </ClCompile>
+    <ClCompile Include="Core\Object\ResourceSaver.cpp">
+      <Filter>Core\Object</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Object\Script.cpp">
+      <Filter>Core\Object</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Object\ScriptLoader.cpp">
+      <Filter>Core\Object</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene\Core\PackedSceneLoader.cpp">
+      <Filter>Scene\Core</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Core\Clock.hpp">
@@ -1042,6 +1054,18 @@
     </ClInclude>
     <ClInclude Include="Core\Object\ResourceLoader.hpp">
       <Filter>Core\Object</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Object\ResourceSaver.hpp">
+      <Filter>Core\Object</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Object\Script.hpp">
+      <Filter>Core\Object</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Object\ScriptLoader.hpp">
+      <Filter>Core\Object</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\Core\PackedSceneLoader.hpp">
+      <Filter>Scene\Core</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

@@ -38,7 +38,7 @@ bool VirtualPath::Parse(std::string const& path)
 	return true;
 }
 
-std::string const& VirtualPath::GetVirtualPath() const { return "res://" + m_relativePath; }
+std::string VirtualPath::GetVirtualPath() const { return ToString(); }
 
 std::string const& VirtualPath::GetRelativePath() const { return m_relativePath; }
 

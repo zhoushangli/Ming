@@ -4,11 +4,16 @@
 #include "MingEngine/Core/Object/RefCounted.hpp"
 #include "MingEngine/Core/Object/Resource.hpp"
 #include "MingEngine/Core/Object/ResourceLoader.hpp"
+#include "MingEngine/Core/Object/ResourceSaver.hpp"
+#include "MingEngine/Core/Object/Script.hpp"
+#include "MingEngine/Core/Object/ScriptLoader.hpp"
 
 #include "MingEngine/Scene/3D/Camera3D.hpp"
 #include "MingEngine/Scene/3D/Light3D.hpp"
 #include "MingEngine/Scene/3D/Node3D.hpp"
 #include "MingEngine/Scene/Core/Node.hpp"
+#include "MingEngine/Scene/Core/PackedScene.hpp"
+#include "MingEngine/Scene/Core/PackedSceneLoader.hpp"
 #include "MingEngine/Scene/Physics/AABBCollider3D.hpp"
 #include "MingEngine/Scene/Physics/CapsuleCollider3D.hpp"
 #include "MingEngine/Scene/Physics/CylinderZCollider3D.hpp"
@@ -16,8 +21,10 @@
 
 namespace
 {
-	ScriptLoader* scriptLoader = new ScriptLoader();
-}
+ScriptLoader*      scriptLoader      = new ScriptLoader();
+PackedSceneLoader* packedSceneLoader = new PackedSceneLoader();
+PackedSceneSaver*  packedSceneSaver  = new PackedSceneSaver();
+} // namespace
 
 void RegisterSceneTypes()
 {
@@ -28,9 +35,14 @@ void RegisterSceneTypes()
 	ClassDatabase::RegisterClass<Resource>(false);
 	ClassDatabase::RegisterClass<Script>();
 	ClassDatabase::RegisterClass<ResourceFormatLoader>(false);
+	ClassDatabase::RegisterClass<ResourceFormatSaver>(false);
 
 	ClassDatabase::RegisterClass<ScriptLoader>();
+	ClassDatabase::RegisterClass<PackedSceneLoader>();
+	ClassDatabase::RegisterClass<PackedSceneSaver>();
 	ResourceLoader::AddLoader(Ref<ScriptLoader>(scriptLoader));
+	ResourceLoader::AddLoader(Ref<PackedSceneLoader>(packedSceneLoader));
+	ResourceSaver::AddSaver(Ref<PackedSceneSaver>(packedSceneSaver));
 
 	// Scene types
 	ClassDatabase::RegisterClass<Node>();
@@ -44,4 +56,5 @@ void RegisterSceneTypes()
 	ClassDatabase::RegisterClass<CapsuleCollider3D>();
 	ClassDatabase::RegisterClass<CylinderZCollider3D>();
 	ClassDatabase::RegisterClass<TriangleMeshCollider3D>();
+	ClassDatabase::RegisterClass<PackedScene>();
 }

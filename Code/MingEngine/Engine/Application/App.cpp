@@ -3,6 +3,7 @@
 #include "MingEngine/Core/Clock.hpp"
 #include "MingEngine/Core/Math/MathUtils.hpp"
 #include "MingEngine/Core/Object/ClassDatabase.hpp"
+#include "MingEngine/Core/Object/ResourceLoader.hpp"
 #include "MingEngine/Core/Render/Rgba8.hpp"
 #include "MingEngine/Core/StringUtils.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
@@ -233,10 +234,8 @@ void App::StartupScene()
 
 #endif
 
-	PackedScene packedScene;
-	packedScene.LoadFromFile("EditorSavedScene.json");
-
-	Node* newSceneRoot = packedScene.Instantiate();
+	Ref<PackedScene> packedScene = ResourceLoader::Load("res://EditorSavedScene.mscn");
+	Node*            newSceneRoot = packedScene.IsValid() ? packedScene->Instantiate() : nullptr;
 
 	if (newSceneRoot != nullptr)
 	{

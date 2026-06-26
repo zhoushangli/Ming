@@ -3,6 +3,8 @@
 #include "MingEngine/Editor/Gizmos/EditorGizmos.hpp"
 #include "MingEngine/Editor/UI/EditorUI.hpp"
 #include "MingEngine/Editor/UI/EditorUIContext.hpp"
+#include "MingEngine/Core/Object/ResourceLoader.hpp"
+#include "MingEngine/Core/Object/ResourceSaver.hpp"
 #include "MingEngine/Scene/3D/Camera3D.hpp"
 #include "MingEngine/Scene/3D/Node3D.hpp"
 #include "MingEngine/Scene/Core/PackedScene.hpp"
@@ -97,22 +99,16 @@ EditorSelection& EditorNode::GetSelection() { return m_selection; }
 
 EditorSelection const& EditorNode::GetSelection() const { return m_selection; }
 
-void EditorNode::SaveSceneToFile(Node const* sceneRoot, std::string const& filename)
+void EditorNode::SaveSceneToFile(Node const* sceneRoot, std::string const& virtualPath)
 {
-	PackedScene packedScene;
+	Ref<PackedScene> packedScene = Ref<PackedScene>(new PackedScene());
 
-	if (!packedScene.Pack(sceneRoot))
+	if (!packedScene->Pack(sceneRoot))
 	{
 		return;
 	}
 
-	std::string outputFilename = filename;
-	if (outputFilename.find('.') == std::string::npos)
-	{
-		outputFilename += ".json";
-	}
-
-	packedScene.SaveToFile(outputFilename);
+	ResourceSaver::Save(virtualPath, packedScene);
 }
 
 void EditorNode::SetActiveCamera(Camera3D* camera) { m_activeCamera = camera; }
@@ -182,17 +178,15 @@ void EditorNode::OnProcess([[maybe_unused]] float deltaSeconds)
 	if (g_engine->m_input->WasKeyJustPressed('1'))
 	{
 		SceneTree* sceneTree = GetSceneTree();
-		SaveSceneToFile(sceneTree->GetScene(), "EditorSavedScene");
+		SaveSceneToFile(sceneTree->GetScene(), "res://EditorSavedScene.mscn");
 	}
 
 	if (g_engine->m_input->WasKeyJustPressed('2'))
 	{
 		SceneTree* sceneTree = GetSceneTree();
 
-		PackedScene packedScene;
-		packedScene.LoadFromFile("EditorSavedScene.json");
-
-		Node* newSceneRoot = packedScene.Instantiate();
+		Ref<PackedScene> packedScene = ResourceLoader::Load("res://EditorSavedScene.mscn");
+		Node*            newSceneRoot = packedScene.IsValid() ? packedScene->Instantiate() : nullptr;
 
 		if (newSceneRoot != nullptr)
 		{

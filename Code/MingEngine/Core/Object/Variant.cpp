@@ -55,6 +55,10 @@ bool Variant::operator==(Variant const& other) const
 		}
 		return true;
 	}
+	case Type::ObjectPtr:
+	{
+		return As<Object*>() == other.As<Object*>();
+	}
 	}
 
 	return false;

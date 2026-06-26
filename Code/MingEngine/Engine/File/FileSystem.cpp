@@ -106,6 +106,34 @@ bool FileSystem::ReadText(VirtualPath const& virtualPath, std::string& outText) 
 	outText = stream.str();
 	return true;
 }
+bool FileSystem::WriteText(VirtualPath const& virtualPath, std::string const& text) const
+{
+	std::filesystem::path physicalPath;
+	if (!ResolvePath(virtualPath, physicalPath))
+	{
+		return false;
+	}
+
+	std::error_code errorCode;
+	std::filesystem::path const parentPath = physicalPath.parent_path();
+	if (!parentPath.empty())
+	{
+		std::filesystem::create_directories(parentPath, errorCode);
+		if (errorCode)
+		{
+			return false;
+		}
+	}
+
+	std::ofstream file(physicalPath);
+	if (!file.is_open())
+	{
+		return false;
+	}
+
+	file << text;
+	return file.good();
+}
 
 std::filesystem::path const& FileSystem::GetResourceRoot() const { return m_resourceRoot; }
 

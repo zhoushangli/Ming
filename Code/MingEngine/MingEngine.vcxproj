@@ -324,6 +324,9 @@
     <ClCompile Include="Core\Object\RefCounted.cpp" />
     <ClCompile Include="Core\Object\Resource.cpp" />
     <ClCompile Include="Core\Object\ResourceLoader.cpp" />
+    <ClCompile Include="Core\Object\ResourceSaver.cpp" />
+    <ClCompile Include="Core\Object\Script.cpp" />
+    <ClCompile Include="Core\Object\ScriptLoader.cpp" />
     <ClCompile Include="Engine\Application\App.cpp" />
     <ClCompile Include="Core\Clock.cpp" />
     <ClCompile Include="EngineService\DevConsole.cpp" />
@@ -440,6 +443,7 @@
     <ClCompile Include="Scene\Core\Node.cpp" />
     <ClCompile Include="Scene\Core\NodeHandle.cpp" />
     <ClCompile Include="Scene\Core\PackedScene.cpp" />
+    <ClCompile Include="Scene\Core\PackedSceneLoader.cpp" />
     <ClCompile Include="Scene\Core\SceneTree.cpp" />
     <ClCompile Include="Scene\Core\Viewport.cpp" />
     <ClCompile Include="Scene\RegisterSceneTypes.cpp" />
@@ -464,6 +468,9 @@
     <ClInclude Include="Core\Object\RefCounted.hpp" />
     <ClInclude Include="Core\Object\Resource.hpp" />
     <ClInclude Include="Core\Object\ResourceLoader.hpp" />
+    <ClInclude Include="Core\Object\ResourceSaver.hpp" />
+    <ClInclude Include="Core\Object\Script.hpp" />
+    <ClInclude Include="Core\Object\ScriptLoader.hpp" />
     <ClInclude Include="Engine\Application\App.hpp" />
     <ClInclude Include="Core\Clock.hpp" />
     <ClInclude Include="EngineService\DevConsole.hpp" />
@@ -591,6 +598,7 @@
     <ClInclude Include="Scene\Core\NodePath.hpp" />
     <ClInclude Include="Scene\Core\NodeHandle.hpp" />
     <ClInclude Include="Scene\Core\PackedScene.hpp" />
+    <ClInclude Include="Scene\Core\PackedSceneLoader.hpp" />
     <ClInclude Include="Scene\Core\SceneTree.hpp" />
     <ClInclude Include="Scene\Core\Viewport.hpp" />
     <ClInclude Include="Scene\RegisterSceneTypes.hpp" />

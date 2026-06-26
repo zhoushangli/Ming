@@ -2,7 +2,7 @@
 
 #include "MingEngine/Core/Object/Object.hpp"
 #include "MingEngine/Engine/Script/ScriptModule.hpp"
-#include "MingEngine/Core/Object/Resource.hpp"
+#include "MingEngine/Core/Object/Script.hpp"
 #include "MingEngine/Core/Object/RefCounted.hpp"
 
 #include <memory>

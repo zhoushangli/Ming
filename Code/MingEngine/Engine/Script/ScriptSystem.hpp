@@ -1,6 +1,7 @@
 #pragma once
 
 #include "MingEngine/Core/Object/Object.hpp"
+#include "MingEngine/Core/Object/Script.hpp"
 
 #include "MingEngine/Engine/File/VirtualPath.hpp"
 #include "MingEngine/Engine/Script/ScriptInstance.hpp"

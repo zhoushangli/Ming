@@ -64,6 +64,7 @@ public:
 	bool Exists(VirtualPath const& virtualPath) const;
 
 	bool ReadText(VirtualPath const& virtualPath, std::string& outText) const;
+	bool WriteText(VirtualPath const& virtualPath, std::string const& text) const;
 
 	std::filesystem::path const& GetResourceRoot() const;
 	void                         ScanResourceTree();

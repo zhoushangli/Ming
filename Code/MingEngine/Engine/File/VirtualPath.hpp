@@ -13,7 +13,7 @@ public:
 	// 5) C:/Game/Test.as
 	bool Parse(std::string const& path);
 
-	std::string const& GetVirtualPath() const;
+	std::string GetVirtualPath() const;
 	std::string const& GetRelativePath() const;
 
 	bool        operator==(VirtualPath const& other) const;

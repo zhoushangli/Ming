@@ -3,6 +3,7 @@
 #include "MingEngine/Core/ErrorWarningAssert.hpp"
 #include "MingEngine/Core/Object/ClassDatabase.hpp"
 #include "MingEngine/Core/Object/Resource.hpp"
+#include "MingEngine/Core/Object/Script.hpp"
 #include "MingEngine/Engine/Script/ScriptInstance.hpp"
 #include "MingEngine/Scene/Core/SceneTree.hpp"
 #include "MingEngine/Scene/Core/Viewport.hpp"
