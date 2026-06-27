@@ -1,10 +1,12 @@
 #include "MingEngine/Core/Math/IntVec2.hpp"
 
-#include "MingEngine/Core/StringUtils.hpp"
 #include "MingEngine/Core/Math/MathUtils.hpp"
 #include "MingEngine/Core/Math/Vec2.hpp"
+#include "MingEngine/Core/StringUtils.hpp"
 
 #include <math.h>
+
+using namespace Math;
 
 const IntVec2 IntVec2::Zero = IntVec2(0, 0);
 
@@ -114,4 +116,3 @@ void IntVec2::SetFromText(char const* text)
 	x = atoi(parts[0].c_str());
 	y = atoi(parts[1].c_str());
 }
-

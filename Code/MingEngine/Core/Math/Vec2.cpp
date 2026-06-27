@@ -1,10 +1,12 @@
 #include "MingEngine/Core/Math/Vec2.hpp"
 
-#include "MingEngine/Core/StringUtils.hpp"
 #include "MingEngine/Core/Math/MathUtils.hpp"
 #include "MingEngine/Core/Math/Vec3.hpp"
+#include "MingEngine/Core/StringUtils.hpp"
 
 #include <math.h>
+
+using namespace Math;
 
 const Vec2 Vec2::Zero = Vec2(0.f, 0.f);
 const Vec2 Vec2::One  = Vec2(1.f, 1.f);
@@ -274,4 +276,3 @@ void Vec2::SetFromText(char const* text)
 	x = (float)atof(parts[0].c_str());
 	y = (float)atof(parts[1].c_str());
 }
-

@@ -3,12 +3,14 @@
 #include "MingEngine/Editor/EditorNode.hpp"
 #include "MingEngine/Scene/3D/Camera3D.hpp"
 
+#include "MingEngine/Core/Math/MathUtils.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Engine/Input/InputSystem.hpp"
 #include "MingEngine/EngineService/EngineService.hpp"
-#include "MingEngine/Core/Math/MathUtils.hpp"
 
 #include <cmath>
+
+using namespace Math;
 
 constexpr float kMouseLookSensitivity = 0.125f;
 constexpr float kMoveSpeedUnitsPerSec = 4.f;
@@ -69,9 +71,9 @@ void EditorController::OnProcess(float deltaSeconds)
 
 void EditorController::UpdateControlState()
 {
-	InputSystem* input                    = g_engine->m_input;
-	bool const isConsoleOpen              = (g_engineService != nullptr) && (g_engineService->m_console != nullptr)
-							   && g_engineService->m_console->IsOpen();
+	InputSystem* input = g_engine->m_input;
+	bool const   isConsoleOpen =
+		(g_engineService != nullptr) && (g_engineService->m_console != nullptr) && g_engineService->m_console->IsOpen();
 	EditorControlState const desiredState = !isConsoleOpen && input->IsKeyDown(KeyCodeRightMouse)
 												? EditorControlState::FlyThrough
 												: EditorControlState::Pointer;
@@ -103,8 +105,8 @@ void EditorController::EnterControlState(EditorControlState nextState)
 
 void EditorController::UpdateFlyThrough(float deltaSeconds)
 {
-	InputSystem* input = g_engine->m_input;
-	Vec2 mouseDelta    = input->GetCursorClientDelta();
+	InputSystem* input      = g_engine->m_input;
+	Vec2         mouseDelta = input->GetCursorClientDelta();
 
 	EulerAngles orientation = GetLocalOrientation();
 	orientation.m_yawDegrees -= mouseDelta.x * kMouseLookSensitivity;
@@ -159,7 +161,7 @@ void EditorController::UpdateFlyThrough(float deltaSeconds)
 	}
 
 	bool const isSprinting = input->IsKeyDown(KeyCodeShift);
-	float moveSpeed        = kMoveSpeedUnitsPerSec;
+	float      moveSpeed   = kMoveSpeedUnitsPerSec;
 	if (isSprinting)
 	{
 		moveSpeed *= kSprintMultiplier;
@@ -171,10 +173,10 @@ void EditorController::UpdateFlyThrough(float deltaSeconds)
 
 void EditorController::UpdatePointer([[maybe_unused]] float deltaSeconds)
 {
-	InputSystem* input    = g_engine->m_input;
-	Vec2 const cursorPos  = input->GetCursorClientPosition();
-	Vec2 const delta      = cursorPos - m_lastCursorClientPos;
-	m_lastCursorClientPos = cursorPos;
+	InputSystem* input     = g_engine->m_input;
+	Vec2 const   cursorPos = input->GetCursorClientPosition();
+	Vec2 const   delta     = cursorPos - m_lastCursorClientPos;
+	m_lastCursorClientPos  = cursorPos;
 
 	EditorNode* editorNode = EditorNode::Get();
 	if (editorNode != nullptr)
@@ -207,4 +209,3 @@ void EditorController::UpdateCameraChild()
 }
 
 Camera3D* EditorController::GetCamera() const { return m_camera; }
-

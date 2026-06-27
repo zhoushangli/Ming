@@ -3,7 +3,8 @@
 #include "MingEngine/Core/ErrorWarningAssert.hpp"
 #include "MingEngine/Core/StringUtils.hpp"
 
-std::unordered_map<std::string, ClassInfo> ClassDatabase::m_classInfoMap;
+std::unordered_map<std::string, ClassInfo>           ClassDatabase::m_classInfoMap;
+std::unordered_map<std::string, GlobalNamespaceInfo> ClassDatabase::m_globalMap;
 
 void ClassDatabase::Startup() { m_classInfoMap.clear(); }
 

@@ -100,6 +100,18 @@ struct ClassInfo
 	std::vector<std::unique_ptr<MethodInfo>>   m_methods;
 };
 
+struct GlobalMethodInfo
+{
+	std::string m_name;
+	std::unique_ptr<MethodBind> m_bind;
+};
+
+struct GlobalNamespaceInfo
+{
+	std::string                   m_namespaceName;
+	std::vector<std::unique_ptr<GlobalMethodInfo>> m_methods;
+};
+
 class ClassDatabase
 {
 public:
@@ -164,40 +176,41 @@ public:
 		return object;
 	}
 
-	template <typename ClassType, typename... Args>
-	static void BindMethod(std::string const& methodName, void (ClassType::*method)(Args...))
+	template <typename ClassType, typename ReturnType, typename... Args>
+	static MethodBind* CreateMethodBind(ReturnType (ClassType::*method)(Args...))
 	{
 		std::unique_ptr<MethodInfo> methodInfo = std::make_unique<MethodInfo>();
-		methodInfo->m_name                     = methodName;
-		methodInfo->m_bind                     = std::make_unique<VoidMethodBind<ClassType, Args...>>(method);
-		methodInfo->m_returnType               = Variant::Type::Empty;
-		methodInfo->m_argumentTypes.reserve(sizeof...(Args));
-		(methodInfo->m_argumentTypes.push_back(Variant::GetType<Args>()), ...);
-		m_classInfoMap[ClassType::GetStaticClassName()].m_methods.push_back(std::move(methodInfo));
+		MethodBind*                 methodBind = new ReturnMethodBind<ClassType, ReturnType, Args...>(method);
+		return methodBind;
 	}
 
-	template <typename ClassType, typename... Args>
-	static void BindMethod(std::string const& methodName, void (ClassType::*method)(Args...) const)
+	template <typename ClassType, typename ReturnType, typename... Args>
+	static MethodBind* CreateMethodBind(ReturnType (ClassType::*method)(Args...) const)
 	{
 		std::unique_ptr<MethodInfo> methodInfo = std::make_unique<MethodInfo>();
-		methodInfo->m_name                     = methodName;
-		methodInfo->m_bind                     = std::make_unique<ConstVoidMethodBind<ClassType, Args...>>(method);
-		methodInfo->m_returnType               = Variant::Type::Empty;
-		methodInfo->m_argumentTypes.reserve(sizeof...(Args));
-		(methodInfo->m_argumentTypes.push_back(Variant::GetType<Args>()), ...);
-		methodInfo->m_isConst = true;
-		m_classInfoMap[ClassType::GetStaticClassName()].m_methods.push_back(std::move(methodInfo));
+		MethodBind*                 methodBind = new ConstReturnMethodBind<ClassType, ReturnType, Args...>(method);
+		return methodBind;
+	}
+
+	template <typename ReturnType, typename... Args>
+	static MethodBind* CreateMethodBind(ReturnType (*method)(Args...))
+	{
+		std::unique_ptr<MethodInfo> methodInfo = std::make_unique<MethodInfo>();
+		MethodBind*                 methodBind = new GlobalMethodBind<ReturnType, Args...>(method);
+		return methodBind;
 	}
 
 	template <typename ClassType, typename ReturnType, typename... Args>
 	static void BindMethod(std::string const& methodName, ReturnType (ClassType::*method)(Args...))
 	{
 		std::unique_ptr<MethodInfo> methodInfo = std::make_unique<MethodInfo>();
-		methodInfo->m_name                     = methodName;
-		methodInfo->m_bind       = std::make_unique<ReturnMethodBind<ClassType, ReturnType, Args...>>(method);
+
+		methodInfo->m_name       = methodName;
+		methodInfo->m_bind       = std::unique_ptr<MethodBind>(CreateMethodBind(method));
 		methodInfo->m_returnType = Variant::GetType<ReturnType>();
 		methodInfo->m_argumentTypes.reserve(sizeof...(Args));
 		(methodInfo->m_argumentTypes.push_back(Variant::GetType<Args>()), ...);
+
 		m_classInfoMap[ClassType::GetStaticClassName()].m_methods.push_back(std::move(methodInfo));
 	}
 
@@ -205,15 +218,30 @@ public:
 	static void BindMethod(std::string const& methodName, ReturnType (ClassType::*method)(Args...) const)
 	{
 		std::unique_ptr<MethodInfo> methodInfo = std::make_unique<MethodInfo>();
-		methodInfo->m_name                     = methodName;
-		methodInfo->m_bind       = std::make_unique<ConstReturnMethodBind<ClassType, ReturnType, Args...>>(method);
+
+		methodInfo->m_name       = methodName;
+		methodInfo->m_bind       = std::unique_ptr<MethodBind>(CreateMethodBind(method));
 		methodInfo->m_returnType = Variant::GetType<ReturnType>();
 		methodInfo->m_argumentTypes.reserve(sizeof...(Args));
 		(methodInfo->m_argumentTypes.push_back(Variant::GetType<Args>()), ...);
 		methodInfo->m_isConst = true;
+
 		m_classInfoMap[ClassType::GetStaticClassName()].m_methods.push_back(std::move(methodInfo));
 	}
 
+	template <typename ReturnType, typename... Args>
+	static void
+	BindGlobalMethod(std::string const& namespaceName, std::string const& methodName, ReturnType (*method)(Args...))
+	{
+		std::unique_ptr<GlobalMethodInfo> methodInfo = std::make_unique<GlobalMethodInfo>();
+
+		methodInfo->m_name = methodName;
+		methodInfo->m_bind = CreateMethodBind(method);
+
+		m_globalMap[namespaceName].m_methods.push_back(std::move(methodInfo));
+	}
+
 private:
-	static std::unordered_map<std::string, ClassInfo> m_classInfoMap;
+	static std::unordered_map<std::string, ClassInfo>           m_classInfoMap;
+	static std::unordered_map<std::string, GlobalNamespaceInfo> m_globalMap;
 };

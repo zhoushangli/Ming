@@ -67,6 +67,8 @@ public:
 	{
 		using CleanType = std::remove_cv_t<std::remove_reference_t<T>>;
 
+		if (std::is_same_v<CleanType, void>)
+			return Type::Empty;
 		if (std::is_same_v<CleanType, bool>)
 			return Type::Bool;
 		if (std::is_same_v<CleanType, int>)

@@ -3,6 +3,8 @@
 #include "MingEngine/Core/Math/MathUtils.hpp"
 #include "MingEngine/Core/Render/Vertex.hpp"
 
+using namespace Math;
+
 void TransformVertexArrayXY3D(
 	int numVerts, Vertex* verts, float scaleXY, float rotationDegreesAboutZ, Vec2 const& translationXY)
 {

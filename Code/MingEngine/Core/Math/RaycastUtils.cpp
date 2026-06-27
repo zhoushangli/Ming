@@ -6,6 +6,8 @@
 #include <math.h>
 #include <utility>
 
+using namespace Math;
+
 RaycastResult2D
 RaycastVsDisc2D(Vec2 rayStart, Vec2 rayForwardNormal, float rayLength, Vec2 discCenter, float discRadius)
 {
@@ -238,8 +240,7 @@ RaycastResult3D RaycastVsAABB3D(Vec3 rayStart, Vec3 rayForwardNormal, float rayL
 			box.m_mins.x,
 			box.m_maxs.x,
 			Vec3(-1.f, 0.f, 0.f),
-			Vec3(1.f, 0.f, 0.f)
-		))
+			Vec3(1.f, 0.f, 0.f)))
 	{
 		return result;
 	}
@@ -250,8 +251,7 @@ RaycastResult3D RaycastVsAABB3D(Vec3 rayStart, Vec3 rayForwardNormal, float rayL
 			box.m_mins.y,
 			box.m_maxs.y,
 			Vec3(0.f, -1.f, 0.f),
-			Vec3(0.f, 1.f, 0.f)
-		))
+			Vec3(0.f, 1.f, 0.f)))
 	{
 		return result;
 	}
@@ -262,8 +262,7 @@ RaycastResult3D RaycastVsAABB3D(Vec3 rayStart, Vec3 rayForwardNormal, float rayL
 			box.m_mins.z,
 			box.m_maxs.z,
 			Vec3(0.f, 0.f, -1.f),
-			Vec3(0.f, 0.f, 1.f)
-		))
+			Vec3(0.f, 0.f, 1.f)))
 	{
 		return result;
 	}
@@ -335,8 +334,7 @@ RaycastResult3D RaycastVsSphere3D(Vec3 rayStart, Vec3 rayForwardNormal, float ra
 }
 
 RaycastResult3D RaycastVsCapsule3D(
-	Vec3 rayStart, Vec3 rayForwardNormal, float rayLength, Vec3 capsuleStart, Vec3 capsuleEnd, float capsuleRadius
-)
+	Vec3 rayStart, Vec3 rayForwardNormal, float rayLength, Vec3 capsuleStart, Vec3 capsuleEnd, float capsuleRadius)
 {
 	if (capsuleStart == capsuleEnd)
 	{
@@ -376,8 +374,7 @@ RaycastResult3D RaycastVsCylinderZ3D(
 	float             rayLength,
 	Vec2 const&       centerXY,
 	FloatRange const& minMaxZ,
-	float             radiusXY
-)
+	float             radiusXY)
 {
 	RaycastResult3D result(rayStart, rayForwardNormal, rayLength);
 
@@ -487,8 +484,7 @@ RaycastResult3D RaycastVsCylinder3D(
 	float       rayLength,
 	Vec3 const& cylinderStart,
 	Vec3 const& cylinderEnd,
-	float       radiusXY
-)
+	float       radiusXY)
 {
 	Vec3 localZ = (cylinderEnd - cylinderStart).GetNormalized();
 	Vec3 helper = (Abs(localZ.z) < 0.999f) ? Vec3::Up : Vec3::Right;
@@ -509,8 +505,7 @@ RaycastResult3D RaycastVsCylinder3D(
 		rayLength,
 		localCylinderStart,
 		FloatRange(0.f, localCylinderEnd.z),
-		radiusXY
-	);
+		radiusXY);
 
 	RaycastResult3D worldResult = localResult;
 	worldResult.m_impactPos     = localToWorld.TransformPosition3D(localResult.m_impactPos);
@@ -519,8 +514,7 @@ RaycastResult3D RaycastVsCylinder3D(
 }
 
 RaycastResult3D RaycastVsTriangle3D(
-	Vec3 rayStart, Vec3 rayForwardNormal, float rayLength, Vec3 const& v0, Vec3 const& v1, Vec3 const& v2
-)
+	Vec3 rayStart, Vec3 rayForwardNormal, float rayLength, Vec3 const& v0, Vec3 const& v1, Vec3 const& v2)
 {
 	RaycastResult3D result(rayStart, rayForwardNormal, rayLength);
 
@@ -569,7 +563,5 @@ RaycastResult3D RaycastVsTriangle3D(Vec3 rayStart, Vec3 rayForwardNormal, float 
 		rayLength,
 		triangle.m_pointsCounterClockwise[0],
 		triangle.m_pointsCounterClockwise[1],
-		triangle.m_pointsCounterClockwise[2]
-	);
+		triangle.m_pointsCounterClockwise[2]);
 }
-

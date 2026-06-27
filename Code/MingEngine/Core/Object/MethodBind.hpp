@@ -15,40 +15,6 @@ public:
 	virtual Variant Invoke(Object& object, std::vector<Variant> const& arguments) const = 0;
 };
 
-template <typename ClassType, typename... Args>
-class VoidMethodBind final : public MethodBind
-{
-public:
-	using Method = void (ClassType::*)(Args...);
-
-public:
-	explicit VoidMethodBind(Method method) : m_method(method) {}
-
-	Variant Invoke(Object& object, std::vector<Variant> const& arguments) const override
-	{
-		if (arguments.size() != sizeof...(Args))
-		{
-			throw std::invalid_argument("Incorrect method argument count");
-		}
-
-		ClassType& instance = static_cast<ClassType&>(object);
-
-		InvokeMethod(instance, arguments, std::index_sequence_for<Args...>{});
-
-		return {};
-	}
-
-private:
-	template <std::size_t... Indices>
-	void InvokeMethod(ClassType& instance, std::vector<Variant> const& arguments, std::index_sequence<Indices...>) const
-	{
-		(instance.*m_method)(VariantCaster<Args>::Cast(arguments[Indices])...);
-	}
-
-private:
-	Method m_method;
-};
-
 template <typename ClassType, typename ReturnType, typename... Args>
 class ReturnMethodBind final : public MethodBind
 {
@@ -75,44 +41,19 @@ private:
 	Variant
 	InvokeMethod(ClassType& instance, std::vector<Variant> const& arguments, std::index_sequence<Indices...>) const
 	{
-		ReturnType result = (instance.*m_method)(VariantCaster<Args>::Cast(arguments[Indices])...);
-
-		return Variant(result);
-	}
-
-private:
-	Method m_method;
-};
-
-template <typename ClassType, typename... Args>
-class ConstVoidMethodBind final : public MethodBind
-{
-public:
-	using Method = void (ClassType::*)(Args...) const;
-
-public:
-	explicit ConstVoidMethodBind(Method method) : m_method(method) {}
-
-	Variant Invoke(Object& object, std::vector<Variant> const& arguments) const override
-	{
-		if (arguments.size() != sizeof...(Args))
+		// Judge weather the return type is void
+		// If the return type is void, we need to return a empty Variant
+		// We need to do this in compile time, so we use if constexpr
+		if constexpr (std::is_void_v<ReturnType>)
 		{
-			throw std::invalid_argument("Incorrect method argument count");
+			(instance.*m_method)(VariantCaster<Args>::Cast(arguments[Indices])...);
+			return Variant();
 		}
-
-		ClassType const& instance = static_cast<ClassType const&>(object);
-
-		InvokeMethod(instance, arguments, std::index_sequence_for<Args...>{});
-
-		return {};
-	}
-
-private:
-	template <std::size_t... Indices>
-	void InvokeMethod(
-		ClassType const& instance, std::vector<Variant> const& arguments, std::index_sequence<Indices...>) const
-	{
-		(instance.*m_method)(VariantCaster<Args>::Cast(arguments[Indices])...);
+		else
+		{
+			ReturnType result = (instance.*m_method)(VariantCaster<Args>::Cast(arguments[Indices])...);
+			return Variant(result);
+		}
 	}
 
 private:
@@ -145,12 +86,57 @@ private:
 	Variant InvokeMethod(
 		ClassType const& instance, std::vector<Variant> const& arguments, std::index_sequence<Indices...>) const
 	{
-		ReturnType result = (instance.*m_method)(VariantCaster<Args>::Cast(arguments[Indices])...);
-
-		return Variant(result);
+		if constexpr (std::is_void_v<ReturnType>)
+		{
+			(instance.*m_method)(VariantCaster<Args>::Cast(arguments[Indices])...);
+			return Variant();
+		}
+		else
+		{
+			ReturnType result = (instance.*m_method)(VariantCaster<Args>::Cast(arguments[Indices])...);
+			return Variant(result);
+		}
 	}
 
 private:
 	Method m_method;
 };
 
+template <typename ReturnType, typename... Args>
+class GlobalMethodBind final : public MethodBind
+{
+public:
+	using Method = ReturnType (*)(Args...);
+
+public:
+	explicit GlobalMethodBind(Method method) : m_method(method) {}
+
+	Variant Invoke(std::vector<Variant> const& arguments) const override
+	{
+		if (arguments.size() != sizeof...(Args))
+		{
+			throw std::invalid_argument("Incorrect method argument count");
+		}
+
+		return InvokeMethod(arguments, std::index_sequence_for<Args...>{});
+	}
+
+private:
+	template <std::size_t... Indices>
+	Variant InvokeMethod(std::vector<Variant> const& arguments, std::index_sequence<Indices...>) const
+	{
+		if constexpr (std::is_void_v<ReturnType>)
+		{
+			(*m_method)(VariantCaster<Args>::Cast(arguments[Indices])...);
+			return Variant();
+		}
+		else
+		{
+			ReturnType result = (*m_method)(VariantCaster<Args>::Cast(arguments[Indices])...);
+			return Variant(result);
+		}
+	}
+
+private:
+	Method m_method;
+};

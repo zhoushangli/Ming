@@ -5,10 +5,12 @@
 #include "MingEngine/Scene/3D/Node3D.hpp"
 #include "MingEngine/Scene/Core/Viewport.hpp"
 
-#include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Core/Math/MathUtils.hpp"
+#include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Engine/Render/Renderer.hpp"
 #include "MingEngine/Engine/Render/VertexBuffer.hpp"
+
+using namespace Math;
 
 #include <algorithm>
 
@@ -45,8 +47,8 @@ void AddVertsForAxisPoint(
 	{
 		float const angle0 = (360.f / kCircleSegments) * (float)i;
 		float const angle1 = (360.f / kCircleSegments) * (float)(i + 1);
-		Vec2 const p0      = center + Vec2::MakeFromPolarDegrees(angle0, radius);
-		Vec2 const p1      = center + Vec2::MakeFromPolarDegrees(angle1, radius);
+		Vec2 const  p0     = center + Vec2::MakeFromPolarDegrees(angle0, radius);
+		Vec2 const  p1     = center + Vec2::MakeFromPolarDegrees(angle1, radius);
 
 		verts.emplace_back(Vec3(center.x, center.y, 0.f), color);
 		verts.emplace_back(Vec3(p0.x, p0.y, 0.f), color);
@@ -60,10 +62,10 @@ void AddVertsForAxisPoint(
 	{
 		float const angle0 = (360.f / kCircleSegments) * (float)i;
 		float const angle1 = (360.f / kCircleSegments) * (float)(i + 1);
-		Vec2 const inner0  = center + Vec2::MakeFromPolarDegrees(angle0, innerR);
-		Vec2 const inner1  = center + Vec2::MakeFromPolarDegrees(angle1, innerR);
-		Vec2 const outer0  = center + Vec2::MakeFromPolarDegrees(angle0, outerR);
-		Vec2 const outer1  = center + Vec2::MakeFromPolarDegrees(angle1, outerR);
+		Vec2 const  inner0 = center + Vec2::MakeFromPolarDegrees(angle0, innerR);
+		Vec2 const  inner1 = center + Vec2::MakeFromPolarDegrees(angle1, innerR);
+		Vec2 const  outer0 = center + Vec2::MakeFromPolarDegrees(angle0, outerR);
+		Vec2 const  outer1 = center + Vec2::MakeFromPolarDegrees(angle1, outerR);
 
 		verts.emplace_back(Vec3(outer0.x, outer0.y, 0.f), color);
 		verts.emplace_back(Vec3(outer1.x, outer1.y, 0.f), color);
@@ -90,7 +92,7 @@ void ViewportAxisIndicator::OnEnterTree()
 {
 	EditorGizmoVisual3D::OnEnterTree();
 
-	Camera3D* editorCamera     = EditorController::Get()->GetCamera();
+	Camera3D*   editorCamera   = EditorController::Get()->GetCamera();
 	EulerAngles cameraRotation = editorCamera->GetWorldOrientation();
 	m_lastCameraRotation       = cameraRotation;
 	RebuildVertexBuffer();
@@ -98,17 +100,17 @@ void ViewportAxisIndicator::OnEnterTree()
 
 void ViewportAxisIndicator::OnProcess([[maybe_unused]] float deltaSeconds)
 {
-	Camera3D* editorCamera     = EditorController::Get()->GetCamera();
+	Camera3D*   editorCamera   = EditorController::Get()->GetCamera();
 	EulerAngles cameraRotation = editorCamera->GetWorldOrientation();
 
 	// We just hardcode the position
 	IntVec2 dimensions = m_data.m_viewport->GetOutputResolution();
-	Vec2 center        = (Vec2)dimensions - Vec2(100.f, 100.f);
+	Vec2    center     = (Vec2)dimensions - Vec2(100.f, 100.f);
 
 	if (cameraRotation != m_lastCameraRotation || center != m_center)
 	{
 		m_lastCameraRotation = cameraRotation;
-		m_center = center;
+		m_center             = center;
 		RebuildVertexBuffer();
 	}
 }
@@ -183,4 +185,3 @@ void ViewportAxisIndicator::RebuildVertexBuffer()
 
 	g_engine->m_renderer->UpdateVertexBuffer(m_vertexBuffer, m_verts);
 }
-

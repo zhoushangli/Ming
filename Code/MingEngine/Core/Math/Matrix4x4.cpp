@@ -5,6 +5,8 @@
 #include "MingEngine/Core/Math/Vec3.hpp"
 #include "MingEngine/Core/Math/Vec4.hpp"
 
+using namespace Math;
+
 Matrix4x4 const Matrix4x4::Zero = Matrix4x4(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 
 Matrix4x4 const Matrix4x4::Identity = Matrix4x4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
@@ -139,8 +141,7 @@ Matrix4x4::Matrix4x4(
 	float iw,
 	float jw,
 	float kw,
-	float tw
-)
+	float tw)
 {
 	m_values[Ix] = ix;
 	m_values[Iy] = iy;
@@ -647,4 +648,3 @@ Matrix4x4 Matrix4x4::GetOrthonormalInverse()
 
 	return inv;
 }
-

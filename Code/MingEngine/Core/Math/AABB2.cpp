@@ -2,6 +2,8 @@
 
 #include "MingEngine/Core/Math/MathUtils.hpp"
 
+using namespace Math;
+
 const AABB2 AABB2::Zero          = AABB2(0.f, 0.f, 0.f, 0.f);
 const AABB2 AABB2::Unit          = AABB2(0.f, 0.f, 1.f, 1.f);
 const AABB2 AABB2::kCenteredUnit = AABB2(-0.5f, -0.5f, 0.5f, 0.5f);
@@ -37,8 +39,7 @@ Vec2 const AABB2::GetUVForPoint(const Vec2& point) const
 {
 	return Vec2(
 		GetFractionWithinRange(point.x, m_mins.x, m_maxs.x),
-		GetFractionWithinRange(point.y, m_mins.y, m_maxs.y)
-	);
+		GetFractionWithinRange(point.y, m_mins.y, m_maxs.y));
 }
 
 void AABB2::Translate(const Vec2& translation)
@@ -114,4 +115,3 @@ AABB2& AABB2::operator=(const AABB2& other)
 	}
 	return *this;
 }
-

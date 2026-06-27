@@ -3,16 +3,18 @@
 #include "MingEngine/Scene/Core/SceneTree.hpp"
 
 #include "MingEngine/Core/ErrorWarningAssert.hpp"
-#include "MingEngine/Core/XmlUtils.hpp"
 #include "MingEngine/Core/Math/MathUtils.hpp"
 #include "MingEngine/Core/Math/RandomNumberGenerator.hpp"
+#include "MingEngine/Core/XmlUtils.hpp"
 #include "MingEngine/Engine/Render/Renderer.hpp"
 #include "MingEngine/Engine/Render/VertexBuffer.hpp"
 
+using namespace Math;
+
 namespace
 {
-Particles3D::EmitMode ParseXmlAttribute(
-	XmlElement const& element, char const* attributeName, Particles3D::EmitMode defaultValue)
+Particles3D::EmitMode
+ParseXmlAttribute(XmlElement const& element, char const* attributeName, Particles3D::EmitMode defaultValue)
 {
 	std::string value = ::ParseXmlAttribute(element, attributeName, "");
 	if (value.empty())
@@ -30,14 +32,15 @@ Particles3D::EmitMode ParseXmlAttribute(
 		return Particles3D::EmitMode::Burst;
 	}
 
-	ERROR_RECOVERABLE(Stringf("Unknown particle emitType '%s' for attribute '%s'; using default emit mode instead.",
+	ERROR_RECOVERABLE(Stringf(
+		"Unknown particle emitType '%s' for attribute '%s'; using default emit mode instead.",
 		value.c_str(),
 		attributeName));
 	return defaultValue;
 }
 
-Particles3D::SimulationSpace ParseXmlAttribute(
-	XmlElement const& element, char const* attributeName, Particles3D::SimulationSpace defaultValue)
+Particles3D::SimulationSpace
+ParseXmlAttribute(XmlElement const& element, char const* attributeName, Particles3D::SimulationSpace defaultValue)
 {
 	std::string value = ::ParseXmlAttribute(element, attributeName, "");
 	if (value.empty())
@@ -55,15 +58,15 @@ Particles3D::SimulationSpace ParseXmlAttribute(
 		return Particles3D::SimulationSpace::World;
 	}
 
-	ERROR_RECOVERABLE(
-		Stringf("Unknown particle simulationSpace '%s' for attribute '%s'; using default simulation space instead.",
-			value.c_str(),
-			attributeName));
+	ERROR_RECOVERABLE(Stringf(
+		"Unknown particle simulationSpace '%s' for attribute '%s'; using default simulation space instead.",
+		value.c_str(),
+		attributeName));
 	return defaultValue;
 }
 
-Particles3D::EmitShape ParseXmlAttribute(
-	XmlElement const& element, char const* attributeName, Particles3D::EmitShape defaultValue)
+Particles3D::EmitShape
+ParseXmlAttribute(XmlElement const& element, char const* attributeName, Particles3D::EmitShape defaultValue)
 {
 	std::string value = ::ParseXmlAttribute(element, attributeName, "");
 	if (value.empty())
@@ -81,7 +84,8 @@ Particles3D::EmitShape ParseXmlAttribute(
 		return Particles3D::EmitShape::Disc;
 	}
 
-	ERROR_RECOVERABLE(Stringf("Unknown particle emitShape '%s' for attribute '%s'; using default emit shape instead.",
+	ERROR_RECOVERABLE(Stringf(
+		"Unknown particle emitShape '%s' for attribute '%s'; using default emit shape instead.",
 		value.c_str(),
 		attributeName));
 	return defaultValue;
@@ -110,17 +114,18 @@ BillboardType ParseXmlAttribute(XmlElement const& element, char const* attribute
 		return BillboardType::FULL_FACING;
 	}
 
-	ERROR_RECOVERABLE(
-		Stringf("Unknown particle billboardType '%s' for attribute '%s'; using default billboard type instead.",
-			value.c_str(),
-			attributeName));
+	ERROR_RECOVERABLE(Stringf(
+		"Unknown particle billboardType '%s' for attribute '%s'; using default billboard type instead.",
+		value.c_str(),
+		attributeName));
 	return defaultValue;
 }
 
-EulerAngles ParseEulerAnglesAttribute(
-	XmlElement const& element, char const* attributeName, EulerAngles const& defaultValue)
+EulerAngles
+ParseEulerAnglesAttribute(XmlElement const& element, char const* attributeName, EulerAngles const& defaultValue)
 {
-	Vec3 const angles = ::ParseXmlAttribute(element,
+	Vec3 const angles = ::ParseXmlAttribute(
+		element,
 		attributeName,
 		Vec3(defaultValue.m_yawDegrees, defaultValue.m_pitchDegrees, defaultValue.m_rollDegrees));
 	return EulerAngles(angles.x, angles.y, angles.z);
@@ -129,7 +134,8 @@ EulerAngles ParseEulerAnglesAttribute(
 EulerAngles GetRandomOrientationInRange(EulerAngles const& minOrientation, EulerAngles const& maxOrientation)
 {
 	RandomNumberGenerator& rng = RandomNumberGenerator::Get();
-	return EulerAngles(rng.RollRandomFloatInRange(minOrientation.m_yawDegrees, maxOrientation.m_yawDegrees),
+	return EulerAngles(
+		rng.RollRandomFloatInRange(minOrientation.m_yawDegrees, maxOrientation.m_yawDegrees),
 		rng.RollRandomFloatInRange(minOrientation.m_pitchDegrees, maxOrientation.m_pitchDegrees),
 		rng.RollRandomFloatInRange(minOrientation.m_rollDegrees, maxOrientation.m_rollDegrees));
 }
@@ -197,7 +203,8 @@ void Particles3D::LoadFromXML(std::string const& xmlFilePath)
 {
 	XmlDocument doc;
 	XmlError    loadResult = doc.LoadFile(xmlFilePath.c_str());
-	ASSERT_OR_DIE(loadResult == tinyxml2::XML_SUCCESS,
+	ASSERT_OR_DIE(
+		loadResult == tinyxml2::XML_SUCCESS,
 		Stringf("Failed to load particle xml file: %s\n", xmlFilePath.c_str()));
 
 	XmlElement* root = doc.RootElement();
@@ -318,16 +325,16 @@ RenderRequest Particles3D::SubmitRenderRequest() const
 	}
 	g_engine->m_renderer->CopyCPUToGPU(m_particleVerts.data(), size, m_particleVertexBuffer);
 
-	request.m_pass           = RenderRequestPass::Opaque;
-	request.m_modelToWorld   = Matrix4x4::Identity;
-	request.m_tint           = Rgba8::White;
-	request.m_vertexBuffer   = m_particleVertexBuffer;
+	request.m_pass                                  = RenderRequestPass::Opaque;
+	request.m_modelToWorld                          = Matrix4x4::Identity;
+	request.m_tint                                  = Rgba8::White;
+	request.m_vertexBuffer                          = m_particleVertexBuffer;
 	request.m_textures[SurfaceTextureSlot::Diffuse] = m_particleTexture;
-	request.m_shader         = nullptr;
-	request.m_blendMode      = BlendMode::ADDITIVE;
-	request.m_depthMode      = DepthMode::READ_WRITE_LESS_EQUAL;
-	request.m_rasterizerMode = RasterizerMode::SOLID_CULL_NONE;
-	request.m_samplerMode    = SamplerMode::POINT_CLAMP;
+	request.m_shader                                = nullptr;
+	request.m_blendMode                             = BlendMode::ADDITIVE;
+	request.m_depthMode                             = DepthMode::READ_WRITE_LESS_EQUAL;
+	request.m_rasterizerMode                        = RasterizerMode::SOLID_CULL_NONE;
+	request.m_samplerMode                           = SamplerMode::POINT_CLAMP;
 	return request;
 }
 
@@ -466,4 +473,3 @@ Vec3 Particles3D::SimulationToWorld(Vec3 const& simPos) const
 	Matrix4x4 simToWorld = GetSimulationToWorld();
 	return simToWorld.TransformPosition3D(simPos);
 }
-

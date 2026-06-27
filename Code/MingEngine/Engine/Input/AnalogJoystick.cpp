@@ -2,6 +2,8 @@
 
 #include "MingEngine/Core/Math/MathUtils.hpp"
 
+using namespace Math;
+
 Vec2 AnalogJoystick::GetPosition() const { return m_correctedPosition; }
 
 float AnalogJoystick::GetMagnitude() const { return m_correctedPosition.GetLength(); }
@@ -21,8 +23,7 @@ void AnalogJoystick::Reset()
 }
 
 void AnalogJoystick::SetDeadZoneThresholds(
-	float normalizedInnerDeadzoneThreshold, float normalizedOuterDeadzoneThreshold
-)
+	float normalizedInnerDeadzoneThreshold, float normalizedOuterDeadzoneThreshold)
 {
 	m_innerDeadZoneFraction = normalizedInnerDeadzoneThreshold;
 	m_outerDeadZoneFraction = normalizedOuterDeadzoneThreshold;
@@ -45,4 +46,3 @@ void AnalogJoystick::UpdatePosition(float rawNormalizedX, float rawNormalizedY)
 	Vec2 direction      = (magnitude > 0.0f) ? m_rawPosition.GetNormalized() : Vec2::Zero;
 	m_correctedPosition = direction * correctedMagnitude;
 }
-

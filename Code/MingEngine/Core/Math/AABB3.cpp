@@ -2,6 +2,8 @@
 
 #include "MingEngine/Core/Math/MathUtils.hpp"
 
+using namespace Math;
+
 const AABB3 AABB3::Zero          = AABB3(0.f, 0.f, 0.f, 0.f, 0.f, 0.f);
 const AABB3 AABB3::Unit          = AABB3(0.f, 0.f, 0.f, 1.f, 1.f, 1.f);
 const AABB3 AABB3::kCenteredUnit = AABB3(-0.5f, -0.5f, -0.5f, 0.5f, 0.5f, 0.5f);
@@ -17,8 +19,7 @@ bool AABB3::IsPointInside(const Vec3& point) const
 {
 	return (
 		point.x >= m_mins.x && point.x <= m_maxs.x && point.y >= m_mins.y && point.y <= m_maxs.y && point.z >= m_mins.z
-		&& point.z <= m_maxs.z
-	);
+		&& point.z <= m_maxs.z);
 }
 
 Vec3 const AABB3::GetCenter() const { return (m_mins + m_maxs) * 0.5f; }
@@ -30,8 +31,7 @@ Vec3 const AABB3::GetNearestPoint(const Vec3& point) const
 	return Vec3(
 		GetClamped(point.x, m_mins.x, m_maxs.x),
 		GetClamped(point.y, m_mins.y, m_maxs.y),
-		GetClamped(point.z, m_mins.z, m_maxs.z)
-	);
+		GetClamped(point.z, m_mins.z, m_maxs.z));
 }
 
 Vec3 const AABB3::GetPointAtUV(const Vec3& uvw) const
@@ -39,8 +39,7 @@ Vec3 const AABB3::GetPointAtUV(const Vec3& uvw) const
 	return Vec3(
 		Interpolate(m_mins.x, m_maxs.x, uvw.x),
 		Interpolate(m_mins.y, m_maxs.y, uvw.y),
-		Interpolate(m_mins.z, m_maxs.z, uvw.z)
-	);
+		Interpolate(m_mins.z, m_maxs.z, uvw.z));
 }
 
 Vec3 const AABB3::GetUVForPoint(const Vec3& point) const
@@ -48,8 +47,7 @@ Vec3 const AABB3::GetUVForPoint(const Vec3& point) const
 	return Vec3(
 		GetFractionWithinRange(point.x, m_mins.x, m_maxs.x),
 		GetFractionWithinRange(point.y, m_mins.y, m_maxs.y),
-		GetFractionWithinRange(point.z, m_mins.z, m_maxs.z)
-	);
+		GetFractionWithinRange(point.z, m_mins.z, m_maxs.z));
 }
 
 void AABB3::Translate(const Vec3& translation)
@@ -119,4 +117,3 @@ AABB3& AABB3::operator=(const AABB3& other)
 	m_maxs = other.m_maxs;
 	return *this;
 }
-

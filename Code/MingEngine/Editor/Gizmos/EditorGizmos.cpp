@@ -5,9 +5,11 @@
 #include "MingEngine/Editor/Gizmos/ViewportAxisIndicator.hpp"
 #include "MingEngine/Scene/3D/Camera3D.hpp"
 
-#include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Core/Math/MathUtils.hpp"
+#include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Engine/Render/CameraContext.hpp"
+
+using namespace Math;
 
 namespace
 {
@@ -44,27 +46,27 @@ EditorGizmos::~EditorGizmos() {}
 
 void EditorGizmos::OnMouseMove(Camera3D const& camera, Vec2 screenPos)
 {
-	GizmoContext const ctx = BuildGizmoContext(GetSceneTree(), camera, screenPos);
-	float const aspect     = ctx.m_clientDimensions.x / Max(ctx.m_clientDimensions.y, 1.f);
-	CameraContext camCtx   = camera.GetCamera(aspect);
+	GizmoContext const ctx    = BuildGizmoContext(GetSceneTree(), camera, screenPos);
+	float const        aspect = ctx.m_clientDimensions.x / Max(ctx.m_clientDimensions.y, 1.f);
+	CameraContext      camCtx = camera.GetCamera(aspect);
 	RaycastInfo ray = BuildRaycastFromMouse(camCtx, screenPos, ctx.m_clientDimensions, kEditorGizmoRaycastLength);
 	m_transformGizmo->UpdateHover(ctx, ray);
 }
 
 bool EditorGizmos::OnBeginDrag(Camera3D const& camera, Vec2 screenPos)
 {
-	GizmoContext const ctx = BuildGizmoContext(GetSceneTree(), camera, screenPos);
-	float const aspect     = ctx.m_clientDimensions.x / Max(ctx.m_clientDimensions.y, 1.f);
-	CameraContext camCtx   = camera.GetCamera(aspect);
+	GizmoContext const ctx    = BuildGizmoContext(GetSceneTree(), camera, screenPos);
+	float const        aspect = ctx.m_clientDimensions.x / Max(ctx.m_clientDimensions.y, 1.f);
+	CameraContext      camCtx = camera.GetCamera(aspect);
 	RaycastInfo ray = BuildRaycastFromMouse(camCtx, screenPos, ctx.m_clientDimensions, kEditorGizmoRaycastLength);
 	return m_transformGizmo->BeginDrag(ctx, ray);
 }
 
 void EditorGizmos::OnDrag(Camera3D const& camera, Vec2 screenPos)
 {
-	GizmoContext const ctx = BuildGizmoContext(GetSceneTree(), camera, screenPos);
-	float const aspect     = ctx.m_clientDimensions.x / Max(ctx.m_clientDimensions.y, 1.f);
-	CameraContext camCtx   = camera.GetCamera(aspect);
+	GizmoContext const ctx    = BuildGizmoContext(GetSceneTree(), camera, screenPos);
+	float const        aspect = ctx.m_clientDimensions.x / Max(ctx.m_clientDimensions.y, 1.f);
+	CameraContext      camCtx = camera.GetCamera(aspect);
 	RaycastInfo ray = BuildRaycastFromMouse(camCtx, screenPos, ctx.m_clientDimensions, kEditorGizmoRaycastLength);
 	m_transformGizmo->OnDrag(ctx, ray);
 }
@@ -76,8 +78,8 @@ void EditorGizmos::OnEndDrag()
 		Camera3D* camera = EditorController::Get() ? EditorController::Get()->GetCamera() : nullptr;
 		if (camera != nullptr)
 		{
-			Vec2 const cursorPos   = g_engine->m_input->GetCursorClientPosition();
-			GizmoContext const ctx = BuildGizmoContext(GetSceneTree(), *camera, cursorPos);
+			Vec2 const         cursorPos = g_engine->m_input->GetCursorClientPosition();
+			GizmoContext const ctx       = BuildGizmoContext(GetSceneTree(), *camera, cursorPos);
 			m_transformGizmo->EndDrag(ctx);
 		}
 	}
@@ -87,9 +89,9 @@ bool EditorGizmos::IsDragging() const { return m_transformGizmo != nullptr && m_
 
 NodeHandle EditorGizmos::Raycast(Camera3D const& camera, Vec2 screenPos) const
 {
-	GizmoContext const ctx = BuildGizmoContext(GetSceneTree(), camera, screenPos);
-	float const aspect     = ctx.m_clientDimensions.x / Max(ctx.m_clientDimensions.y, 1.f);
-	CameraContext camCtx   = camera.GetCamera(aspect);
+	GizmoContext const ctx    = BuildGizmoContext(GetSceneTree(), camera, screenPos);
+	float const        aspect = ctx.m_clientDimensions.x / Max(ctx.m_clientDimensions.y, 1.f);
+	CameraContext      camCtx = camera.GetCamera(aspect);
 	RaycastInfo ray = BuildRaycastFromMouse(camCtx, screenPos, ctx.m_clientDimensions, kEditorGizmoRaycastLength);
 
 	GizmoRaycastResult const result = m_transformGizmo->Raycast(ctx, ray);
@@ -100,4 +102,3 @@ NodeHandle EditorGizmos::Raycast(Camera3D const& camera, Vec2 screenPos) const
 
 	return NodeHandle::Invalid;
 }
-

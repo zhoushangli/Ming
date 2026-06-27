@@ -1,6 +1,8 @@
 #include "MingEngine/Core/Math/EulerAngles.hpp"
 #include "MingEngine/Core/Math/MathUtils.hpp"
 
+using namespace Math;
+
 const EulerAngles EulerAngles::Zero = EulerAngles(0.f, 0.f, 0.f);
 
 EulerAngles::EulerAngles(float yawDegrees, float pitchDegrees, float rollDegrees)
@@ -149,14 +151,10 @@ EulerAngles EulerAngles::operator*(float uniformScale) const
 	return EulerAngles(m_yawDegrees * uniformScale, m_pitchDegrees * uniformScale, m_rollDegrees * uniformScale);
 }
 
-bool EulerAngles::operator==(EulerAngles const& compare) const 
+bool EulerAngles::operator==(EulerAngles const& compare) const
 {
 	return m_yawDegrees == compare.m_yawDegrees && m_pitchDegrees == compare.m_pitchDegrees
 		   && m_rollDegrees == compare.m_rollDegrees;
 }
 
-bool EulerAngles::operator!=(EulerAngles const& compare) const
-{
-	return !(*this == compare);
-}
-
+bool EulerAngles::operator!=(EulerAngles const& compare) const { return !(*this == compare); }

@@ -5,6 +5,8 @@
 
 #include <math.h>
 
+using namespace Math;
+
 const Vec3 Vec3::Zero     = Vec3(0.f, 0.f, 0.f);
 const Vec3 Vec3::One      = Vec3(1.f, 1.f, 1.f);
 const Vec3 Vec3::Forward  = Vec3(1.f, 0.f, 0.f);
@@ -171,4 +173,3 @@ Vec3 Vec3::MakeFromPolarDegrees(float pitchDegrees, float yawDegrees, float leng
 	float yawRadians   = yawDegrees * kDegreesToRadiansMultiplier;
 	return MakeFromPolarRadians(pitchRadians, yawRadians, length);
 }
-

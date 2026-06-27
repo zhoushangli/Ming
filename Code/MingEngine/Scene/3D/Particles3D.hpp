@@ -2,8 +2,8 @@
 
 #include "MingEngine/Scene/3D/VisualizeInstance3D.hpp"
 
-#include "MingEngine/Core/Render/Rgba8.hpp"
 #include "MingEngine/Core/Math/MathUtils.hpp"
+#include "MingEngine/Core/Render/Rgba8.hpp"
 
 #include <string>
 
@@ -51,8 +51,8 @@ public:
 	Particles3D(std::string const& xmlFilePath);
 	~Particles3D() override;
 
-	void OnReady() override;
-	void OnProcess(float deltaSeconds) override;
+	void          OnReady() override;
+	void          OnProcess(float deltaSeconds) override;
 	RenderRequest SubmitRenderRequest() const override;
 
 	void SpawnNewParticle(Vec3 const& position);
@@ -77,25 +77,25 @@ public:
 	std::vector<Particle3D> m_particles;
 
 	// This will be generated each frame based on particles' position, size, color, and camera orientation
-	Texture*              m_particleTexture      = nullptr;
+	Texture*              m_particleTexture = nullptr;
 	std::vector<Vertex>   m_particleVerts;
 	mutable VertexBuffer* m_particleVertexBuffer = nullptr;
 
 	// Emitter properties
-	std::string     m_name;
-	EmitMode        m_emitMode        = EmitMode::Continuous;
-	EmitShape       m_emitShape       = EmitShape::Point;
-	SimulationSpace m_simulationSpace = SimulationSpace::Local;
-	BillboardType   m_billboardType   = BillboardType::FULL_FACING;
-	std::string     m_imagePath;
-	float           m_lifetime       = 1.f;
-	float           m_emitRadius     = 0.f;
-	float           m_startSize      = 1.f;
-	float           m_endSize        = 1.f;
-	Rgba8           m_startColor     = Rgba8::White;
-	Rgba8           m_endColor       = Rgba8::White;
-	EulerAngles     m_orientationMin = EulerAngles::Zero;
-	EulerAngles     m_orientationMax = EulerAngles::Zero;
+	std::string         m_name;
+	EmitMode            m_emitMode        = EmitMode::Continuous;
+	EmitShape           m_emitShape       = EmitShape::Point;
+	SimulationSpace     m_simulationSpace = SimulationSpace::Local;
+	Math::BillboardType m_billboardType   = Math::BillboardType::FULL_FACING;
+	std::string         m_imagePath;
+	float               m_lifetime       = 1.f;
+	float               m_emitRadius     = 0.f;
+	float               m_startSize      = 1.f;
+	float               m_endSize        = 1.f;
+	Rgba8               m_startColor     = Rgba8::White;
+	Rgba8               m_endColor       = Rgba8::White;
+	EulerAngles         m_orientationMin = EulerAngles::Zero;
+	EulerAngles         m_orientationMax = EulerAngles::Zero;
 
 	Vec3       m_velocityDirection    = Vec3::Zero;
 	FloatRange m_velocityRange        = FloatRange::Zero;
@@ -108,4 +108,3 @@ public:
 	// Burst mode properties
 	int m_burstCount = 20;
 };
-

@@ -1,12 +1,14 @@
 #include "MingEngine/Scene/Import/OBJLoader.hpp"
 
-#include "MingEngine/Engine/Application/Engine.hpp"
+#include "MingEngine/Core/ErrorWarningAssert.hpp"
 #include "MingEngine/Core/Math/MathUtils.hpp"
 #include "MingEngine/Core/Math/Vec2.hpp"
 #include "MingEngine/Core/Math/Vec3.hpp"
-#include "MingEngine/Core/ErrorWarningAssert.hpp"
+#include "MingEngine/Engine/Application/Engine.hpp"
 
 #include <cstdlib>
+
+using namespace Math;
 #include <cstring>
 #include <fstream>
 #include <map>
@@ -166,8 +168,7 @@ int ResolveOBJIndex(int rawIndex, int count)
 }
 
 bool TryParseFaceVertex(
-	std::string const& token, int positionCount, int texCoordCount, int normalCount, OBJVertexKey& outKey
-)
+	std::string const& token, int positionCount, int texCoordCount, int normalCount, OBJVertexKey& outKey)
 {
 	outKey = OBJVertexKey();
 
@@ -230,8 +231,7 @@ unsigned int GetOrCreateVertex(
 	std::vector<Vec3> const&              normals,
 	OBJLoadOptions const&                 options,
 	std::vector<Vertex>&                  outVertices,
-	std::map<OBJVertexKey, unsigned int>& vertexLookup
-)
+	std::map<OBJVertexKey, unsigned int>& vertexLookup)
 {
 	auto const found = vertexLookup.find(key);
 	if (found != vertexLookup.end())
@@ -257,8 +257,7 @@ unsigned int GetOrCreateVertex(
 
 	unsigned int const vertexIndex = static_cast<unsigned int>(outVertices.size());
 	outVertices.emplace_back(
-		Vertex(positions[key.m_positionIndex], options.m_defaultColor, uv, Vec3::Zero, Vec3::Zero, normal)
-	);
+		Vertex(positions[key.m_positionIndex], options.m_defaultColor, uv, Vec3::Zero, Vec3::Zero, normal));
 	vertexLookup[key] = vertexIndex;
 	return vertexIndex;
 }
@@ -331,8 +330,7 @@ void TryLoadOBJTextures(
 	std::string const& objPath,
 	std::string const& materialLibraryPath,
 	std::string const& materialName,
-	Texture*&          outDiffuseTexture
-)
+	Texture*&          outDiffuseTexture)
 {
 	outDiffuseTexture = nullptr;
 
@@ -352,8 +350,7 @@ void TryLoadOBJTextures(
 } // namespace
 
 bool OBJLoader::LoadFromFile(
-	char const* filePath, MeshData& outMesh, OBJHeader& outHeader, OBJLoadOptions const& options
-)
+	char const* filePath, MeshData& outMesh, OBJHeader& outHeader, OBJLoadOptions const& options)
 {
 	outMesh.Clear();
 	outHeader = OBJHeader();
@@ -479,8 +476,7 @@ bool OBJLoader::LoadFromFile(
 						static_cast<int>(positions.size()),
 						static_cast<int>(texCoords.size()),
 						static_cast<int>(normals.size()),
-						key
-					))
+						key))
 				{
 					outMesh.Clear();
 					outHeader.m_errorMessage = "Malformed OBJ face vertex";
@@ -493,8 +489,7 @@ bool OBJLoader::LoadFromFile(
 				}
 
 				faceIndices.push_back(
-					GetOrCreateVertex(key, positions, texCoords, normals, options, outMesh.m_vertices, vertexLookup)
-				);
+					GetOrCreateVertex(key, positions, texCoords, normals, options, outMesh.m_vertices, vertexLookup));
 			}
 
 			for (int faceIndex = 1; faceIndex < faceVertexCount - 1; ++faceIndex)
@@ -603,4 +598,3 @@ void OBJLoader::GenerateNormalsIfNeeded(MeshData& mesh)
 		}
 	}
 }
-
