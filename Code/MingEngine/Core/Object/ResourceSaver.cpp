@@ -1,6 +1,6 @@
 #include "MingEngine/Core/Object/ResourceSaver.hpp"
 
-#include "MingEngine/Engine/File/VirtualPath.hpp"
+#include "MingEngine/Engine/File/FileSystem.hpp"
 
 int                      ResourceSaver::s_saverCount = 0;
 Ref<ResourceFormatSaver> ResourceSaver::s_saver[MaxSavers];
@@ -15,13 +15,12 @@ void ResourceSaver::AddSaver(Ref<ResourceFormatSaver> saver)
 
 bool ResourceSaver::Save(std::string const& virtualPath, Variant const& value)
 {
-	VirtualPath parsedPath;
-	if (!parsedPath.Parse(virtualPath))
+	if (!FileSystem::IsVirtualPath(virtualPath))
 	{
 		return false;
 	}
 
-	std::string const normalizedPath = parsedPath.ToString();
+	std::string const normalizedPath = virtualPath;
 	for (int i = 0; i < s_saverCount; ++i)
 	{
 		if (s_saver[i]->CanSave(normalizedPath, value))

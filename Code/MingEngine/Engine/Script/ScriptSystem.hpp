@@ -3,11 +3,11 @@
 #include "MingEngine/Core/Object/Object.hpp"
 #include "MingEngine/Core/Object/Script.hpp"
 
-#include "MingEngine/Engine/File/VirtualPath.hpp"
 #include "MingEngine/Engine/Script/ScriptInstance.hpp"
 #include "MingEngine/Engine/Script/ScriptModule.hpp"
 #include "MingEngine/Engine/Script/ScriptResourceIdentity.hpp"
 
+#include <string>
 #include <unordered_map>
 
 class asIScriptEngine;
@@ -30,11 +30,10 @@ public:
 	ScriptInstance* CreateInstance(Ref<Script> const& script, Object& owner);
 
 private:
-	ScriptModule* GetOrCreateModule(std::string const& path);
-	ScriptModule* GetOrCreateModule(VirtualPath const& virtualPath);
+	ScriptModule* GetOrCreateModule(std::string const& virtualPath);
 
 private:
-	std::unordered_map<VirtualPath, ScriptModule, VirtualPathHash> m_loadedScripts;
+	std::unordered_map<std::string, ScriptModule> m_loadedScripts;
 
 	asIScriptEngine* m_scriptEngine = nullptr;
 };

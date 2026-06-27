@@ -498,9 +498,6 @@
     <ClCompile Include="Engine\File\FileSystem.cpp">
       <Filter>Engine\File</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\File\VirtualPath.cpp">
-      <Filter>Engine\File</Filter>
-    </ClCompile>
     <ClCompile Include="Engine\Script\ScriptResourceIdentity.cpp">
       <Filter>Engine\Script</Filter>
     </ClCompile>
@@ -529,6 +526,9 @@
       <Filter>Engine\Script</Filter>
     </ClCompile>
     <ClCompile Include="Engine\Script\ScriptGenerator.cpp">
+      <Filter>Engine\Script</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Script\ScriptTypeUtils.cpp">
       <Filter>Engine\Script</Filter>
     </ClCompile>
     <ClCompile Include="Core\Object\RefCounted.cpp">
@@ -1007,13 +1007,13 @@
     <ClInclude Include="Engine\File\FileSystem.hpp">
       <Filter>Engine\File</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\File\VirtualPath.hpp">
-      <Filter>Engine\File</Filter>
-    </ClInclude>
     <ClInclude Include="Engine\Script\ScriptResourceIdentity.hpp">
       <Filter>Engine\Script</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Script\ScriptSystem.hpp">
+      <Filter>Engine\Script</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Script\ScriptTypeUtils.hpp">
       <Filter>Engine\Script</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Script\ScriptModule.hpp">

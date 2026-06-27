@@ -2,7 +2,6 @@
 
 #include "MingEngine/Core/Object/ClassDatabase.hpp"
 #include "MingEngine/Core/Object/Object.hpp"
-#include "MingEngine/Engine/File/VirtualPath.hpp"
 #include "MingEngine/Scene/Core/NodeHandle.hpp"
 #include "MingEngine/Scene/Core/NodePath.hpp"
 

@@ -5,7 +5,6 @@
 #include "MingEngine/Core/Object/ResourceLoader.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Engine/File/FileSystem.hpp"
-#include "MingEngine/Engine/File/VirtualPath.hpp"
 #include "MingEngine/Scene/Core/PackedScene.hpp"
 
 #include "ThirdParty/nlohmann/json.hpp"
@@ -305,14 +304,14 @@ std::vector<std::string> PackedSceneLoader::GetSupportedExtensions() const
 
 Ref<Resource> PackedSceneLoader::Load(const std::string& virtualPath)
 {
-	VirtualPath parsedPath;
-	if (!parsedPath.Parse(virtualPath) || g_engine == nullptr || g_engine->m_fileSystem == nullptr)
+	std::string relativePath;
+	if (!FileSystem::TryGetRelativePath(virtualPath, relativePath) || g_engine == nullptr || g_engine->m_fileSystem == nullptr)
 	{
 		return Ref<Resource>();
 	}
 
 	std::string text;
-	if (!g_engine->m_fileSystem->ReadText(parsedPath, text))
+	if (!g_engine->m_fileSystem->ReadText(virtualPath, text))
 	{
 		return Ref<Resource>();
 	}
@@ -329,11 +328,10 @@ Ref<Resource> PackedSceneLoader::Load(const std::string& virtualPath)
 
 		Ref<PackedScene> packedScene = Ref<PackedScene>(new PackedScene());
 		packedScene->m_data          = std::move(loadedData);
-		packedScene->SetVirtualPath(parsedPath.ToString());
+		packedScene->SetVirtualPath(virtualPath);
 
-		size_t      slash = parsedPath.GetRelativePath().find_last_of('/');
-		std::string name  = slash == std::string::npos ? parsedPath.GetRelativePath()
-									  : parsedPath.GetRelativePath().substr(slash + 1);
+		size_t      slash = relativePath.find_last_of('/');
+		std::string name  = slash == std::string::npos ? relativePath : relativePath.substr(slash + 1);
 		packedScene->SetName(name);
 		return packedScene;
 	}
@@ -353,8 +351,7 @@ bool PackedSceneSaver::CanSave(std::string const& virtualPath, Variant const& va
 bool PackedSceneSaver::Save(std::string const& virtualPath, Variant const& value)
 {
 	Ref<PackedScene> packedScene(value);
-	VirtualPath      parsedPath;
-	if (!packedScene.IsValid() || !parsedPath.Parse(virtualPath) || g_engine == nullptr || g_engine->m_fileSystem == nullptr)
+	if (!packedScene.IsValid() || !FileSystem::IsVirtualPath(virtualPath) || g_engine == nullptr || g_engine->m_fileSystem == nullptr)
 	{
 		return false;
 	}
@@ -392,11 +389,11 @@ bool PackedSceneSaver::Save(std::string const& virtualPath, Variant const& value
 	try
 	{
 		std::string const text = root.dump(4);
-		if (!g_engine->m_fileSystem->WriteText(parsedPath, text))
+		if (!g_engine->m_fileSystem->WriteText(virtualPath, text))
 		{
 			return false;
 		}
-		packedScene->SetVirtualPath(parsedPath.ToString());
+		packedScene->SetVirtualPath(virtualPath);
 		return true;
 	}
 	catch (std::exception const& error)

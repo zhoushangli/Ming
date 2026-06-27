@@ -1,7 +1,5 @@
 #include "MingEngine/Engine/File/FileSystem.hpp"
 
-#include "MingEngine/Engine/File/VirtualPath.hpp"
-
 #include <algorithm>
 #include <cctype>
 #include <fstream>
@@ -10,6 +8,8 @@
 
 namespace
 {
+constexpr char const* kResourcePathPrefix = "res://";
+
 std::string ToLower(std::string text)
 {
 	std::transform(
@@ -32,7 +32,7 @@ std::string GetDisplayName(std::filesystem::path const& path)
 
 std::string JoinVirtualPath(std::string const& parentVirtualPath, std::string const& name)
 {
-	if (parentVirtualPath == "res://")
+	if (parentVirtualPath == kResourcePathPrefix)
 	{
 		return parentVirtualPath + name;
 	}
@@ -68,7 +68,52 @@ void FileSystem::Shutdown() {}
 void FileSystem::BeginFrame() {}
 void FileSystem::EndFrame() {}
 
-bool FileSystem::Exists(VirtualPath const& virtualPath) const
+bool FileSystem::IsVirtualPath(std::string const& path)
+{
+	std::string relativePath;
+	return TryGetRelativePath(path, relativePath);
+}
+
+bool FileSystem::TryGetRelativePath(std::string const& virtualPath, std::string& outRelativePath)
+{
+	outRelativePath.clear();
+
+	if (virtualPath.empty())
+	{
+		return false;
+	}
+
+	std::string const prefix = kResourcePathPrefix;
+
+	if (virtualPath.compare(0, prefix.size(), prefix) != 0)
+	{
+		return false;
+	}
+
+	outRelativePath = virtualPath.substr(prefix.size());
+
+	if (outRelativePath.empty())
+	{
+		return false;
+	}
+
+	if (outRelativePath.find('\\') != std::string::npos)
+	{
+		return false;
+	}
+
+	if (outRelativePath == ".." || outRelativePath.compare(0, 3, "../") == 0
+		|| outRelativePath.find("/../") != std::string::npos
+		|| (outRelativePath.size() >= 3 && outRelativePath.compare(outRelativePath.size() - 3, 3, "/..") == 0))
+	{
+		outRelativePath.clear();
+		return false;
+	}
+
+	return true;
+}
+
+bool FileSystem::Exists(std::string const& virtualPath) const
 {
 	std::filesystem::path physicalPath;
 	if (!ResolvePath(virtualPath, physicalPath))
@@ -79,7 +124,7 @@ bool FileSystem::Exists(VirtualPath const& virtualPath) const
 	return std::filesystem::exists(physicalPath) && std::filesystem::is_regular_file(physicalPath);
 }
 
-bool FileSystem::ReadText(VirtualPath const& virtualPath, std::string& outText) const
+bool FileSystem::ReadText(std::string const& virtualPath, std::string& outText) const
 {
 	outText.clear();
 
@@ -106,7 +151,7 @@ bool FileSystem::ReadText(VirtualPath const& virtualPath, std::string& outText) 
 	outText = stream.str();
 	return true;
 }
-bool FileSystem::WriteText(VirtualPath const& virtualPath, std::string const& text) const
+bool FileSystem::WriteText(std::string const& virtualPath, std::string const& text) const
 {
 	std::filesystem::path physicalPath;
 	if (!ResolvePath(virtualPath, physicalPath))
@@ -149,7 +194,8 @@ void FileSystem::ScanResourceTree()
 	}
 
 	m_rootEntry =
-		std::unique_ptr<FileEntry>(new FileEntry(m_resourceRoot, "res://", "res://", "res://", true, nullptr));
+		std::unique_ptr<FileEntry>(
+			new FileEntry(m_resourceRoot, kResourcePathPrefix, kResourcePathPrefix, kResourcePathPrefix, true, nullptr));
 
 	for (std::filesystem::directory_entry const& entry : std::filesystem::directory_iterator(m_resourceRoot, errorCode))
 	{
@@ -163,7 +209,7 @@ void FileSystem::ScanResourceTree()
 
 		std::string const name = GetDisplayName(entry.path());
 		m_rootEntry->m_children.push_back(
-			BuildEntry(entry.path(), JoinVirtualPath("res://", name), m_rootEntry.get(), isDirectory));
+			BuildEntry(entry.path(), JoinVirtualPath(kResourcePathPrefix, name), m_rootEntry.get(), isDirectory));
 	}
 
 	SortChildren(*m_rootEntry);
@@ -179,17 +225,23 @@ std::string FileSystem::ToVirtualPath(std::filesystem::path const& physicalPath)
 	std::filesystem::path relativePath = std::filesystem::relative(physicalPath, m_resourceRoot, errorCode);
 	if (errorCode || relativePath.empty() || relativePath == ".")
 	{
-		return "res://";
+		return kResourcePathPrefix;
 	}
 
-	return "res://" + relativePath.generic_string();
+	return std::string(kResourcePathPrefix) + relativePath.generic_string();
 }
 
-bool FileSystem::ResolvePath(VirtualPath const& virtualPath, std::filesystem::path& outPhysicalPath) const
+bool FileSystem::ResolvePath(std::string const& virtualPath, std::filesystem::path& outPhysicalPath) const
 {
 	outPhysicalPath.clear();
 
-	outPhysicalPath = m_resourceRoot / virtualPath.GetRelativePath();
+	std::string relativePath;
+	if (!TryGetRelativePath(virtualPath, relativePath))
+	{
+		return false;
+	}
+
+	outPhysicalPath = m_resourceRoot / relativePath;
 
 	return true;
 }

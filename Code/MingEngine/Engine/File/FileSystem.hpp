@@ -1,7 +1,5 @@
 #pragma once
 
-#include "MingEngine/Engine/File/VirtualPath.hpp"
-
 #include <filesystem>
 #include <memory>
 #include <string>
@@ -61,10 +59,13 @@ public:
 	void BeginFrame();
 	void EndFrame();
 
-	bool Exists(VirtualPath const& virtualPath) const;
+	static bool IsVirtualPath(std::string const& path);
+	static bool TryGetRelativePath(std::string const& virtualPath, std::string& outRelativePath);
 
-	bool ReadText(VirtualPath const& virtualPath, std::string& outText) const;
-	bool WriteText(VirtualPath const& virtualPath, std::string const& text) const;
+	bool Exists(std::string const& virtualPath) const;
+
+	bool ReadText(std::string const& virtualPath, std::string& outText) const;
+	bool WriteText(std::string const& virtualPath, std::string const& text) const;
 
 	std::filesystem::path const& GetResourceRoot() const;
 	void                         ScanResourceTree();
@@ -73,7 +74,7 @@ public:
 	std::string                  ToVirtualPath(std::filesystem::path const& physicalPath) const;
 
 private:
-	bool ResolvePath(VirtualPath const& virtualPath, std::filesystem::path& outPhysicalPath) const;
+	bool ResolvePath(std::string const& virtualPath, std::filesystem::path& outPhysicalPath) const;
 	std::unique_ptr<FileEntry> BuildEntry(
 		std::filesystem::path const& physicalPath,
 		std::string const&           virtualPath,

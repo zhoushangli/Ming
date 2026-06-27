@@ -184,10 +184,10 @@ void EditorNode::OnProcess([[maybe_unused]] float deltaSeconds)
 	if (g_engine->m_input->WasKeyJustPressed('2'))
 	{
 		SceneTree* sceneTree = GetSceneTree();
-
-		Ref<PackedScene> packedScene = ResourceLoader::Load("res://EditorSavedScene.mscn");
+		Ref<Resource> loadedScene = ResourceLoader::Load("res://EditorSavedScene.mscn");
+		Variant       sceneValue   = loadedScene;
+		Ref<PackedScene> packedScene(sceneValue);
 		Node*            newSceneRoot = packedScene.IsValid() ? packedScene->Instantiate() : nullptr;
-
 		if (newSceneRoot != nullptr)
 		{
 			sceneTree->ChangeScene(newSceneRoot);

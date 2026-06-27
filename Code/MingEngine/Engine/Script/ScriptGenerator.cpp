@@ -3,6 +3,7 @@
 #include "MingEngine/Core/ErrorWarningAssert.hpp"
 #include "MingEngine/Core/Object/ClassDatabase.hpp"
 #include "MingEngine/Core/StringUtils.hpp"
+#include "MingEngine/Engine/Script/ScriptTypeUtils.hpp"
 
 #include "ThirdParty/angelscript/include/angelscript.h"
 
@@ -15,104 +16,6 @@
 
 namespace
 {
-constexpr char const* NATIVE_OBJECT_TYPE_NAME     = "NativeObject";
-constexpr char const* NATIVE_OBJECT_PROPERTY_NAME = "nativePtr";
-
-std::string GetScriptTypeName(Variant::Type type)
-{
-	switch (type)
-	{
-	case Variant::Type::Empty:
-		return "void";
-	case Variant::Type::Bool:
-		return "bool";
-	case Variant::Type::Int:
-		return "int";
-	case Variant::Type::Float:
-		return "float";
-	case Variant::Type::String:
-		return "string";
-	case Variant::Type::Vec3:
-		return "Vec3";
-	case Variant::Type::EulerAngles:
-		return "EulerAngles";
-	case Variant::Type::Matrix4x4:
-		return "Matrix4x4";
-	case Variant::Type::ObjectPtr:
-		return "NativeObject@";
-	case Variant::Type::Any:
-		return "Variant";
-	default:
-		return "unknown";
-	}
-}
-
-bool IsScriptRefType(Variant::Type type)
-{
-	return type == Variant::Type::String || type == Variant::Type::Vec3 || type == Variant::Type::EulerAngles
-		   || type == Variant::Type::Matrix4x4;
-}
-
-std::string BuildScriptArgumentDeclaration(Variant::Type type)
-{
-	std::string declaration;
-	if (IsScriptRefType(type))
-	{
-		declaration += "const ";
-	}
-
-	declaration += GetScriptTypeName(type);
-
-	if (IsScriptRefType(type))
-	{
-		declaration += " &in";
-	}
-
-	return declaration;
-}
-
-std::string GetBridgeTypeName(Variant::Type type)
-{
-	switch (type)
-	{
-	case Variant::Type::Empty:
-		return "Void";
-	case Variant::Type::Bool:
-		return "Bool";
-	case Variant::Type::Int:
-		return "Int";
-	case Variant::Type::Float:
-		return "Float";
-	case Variant::Type::String:
-		return "String";
-	case Variant::Type::Vec3:
-		return "Vec3";
-	case Variant::Type::EulerAngles:
-		return "EulerAngles";
-	case Variant::Type::Matrix4x4:
-		return "Matrix4x4";
-	case Variant::Type::ObjectPtr:
-		return "NativeObject";
-	case Variant::Type::Any:
-		return "Variant";
-	default:
-		return "Unknown";
-	}
-}
-
-std::string BuildBridgeFunctionName(MethodInfo const& methodInfo)
-{
-	std::string functionName = "__Call_";
-	functionName += GetBridgeTypeName(methodInfo.m_returnType);
-
-	for (Variant::Type argumentType : methodInfo.m_argumentTypes)
-	{
-		functionName += "_";
-		functionName += GetBridgeTypeName(argumentType);
-	}
-
-	return functionName;
-}
 void GenerateMethodArguments(MethodInfo const& methodInfo, std::string& outScript)
 {
 	for (size_t argumentIndex = 0; argumentIndex < methodInfo.m_argumentTypes.size(); ++argumentIndex)
@@ -149,7 +52,7 @@ void GenerateMethod(ClassInfo const& classInfo, MethodInfo const& methodInfo, st
 	}
 	outScript += BuildBridgeFunctionName(methodInfo);
 	outScript += "(";
-	outScript += NATIVE_OBJECT_PROPERTY_NAME;
+	outScript += kNativeObjectPropertyName;
 	outScript += ", \"";
 	outScript += classInfo.m_className;
 	outScript += "\", \"";
@@ -169,9 +72,9 @@ void GenerateRootObjectClass(ClassInfo const* classInfo, std::string& outScript)
 {
 	outScript += "class Object\n{\n";
 	outScript += "\tprotected ";
-	outScript += NATIVE_OBJECT_TYPE_NAME;
+	outScript += kNativeObjectTypeName;
 	outScript += "@ ";
-	outScript += NATIVE_OBJECT_PROPERTY_NAME;
+	outScript += kNativeObjectPropertyName;
 	outScript += ";\n\n";
 
 	if (classInfo != nullptr)
@@ -299,9 +202,9 @@ void GeneratePredefinedRootObjectClass(ClassInfo const* classInfo, std::string& 
 {
 	outScript += "class Object\n{\n";
 	outScript += "\tprotected ";
-	outScript += NATIVE_OBJECT_TYPE_NAME;
+	outScript += kNativeObjectTypeName;
 	outScript += "@ ";
-	outScript += NATIVE_OBJECT_PROPERTY_NAME;
+	outScript += kNativeObjectPropertyName;
 	outScript += ";\n\n";
 
 	if (classInfo != nullptr)

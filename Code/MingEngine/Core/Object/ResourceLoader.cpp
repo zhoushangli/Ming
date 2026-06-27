@@ -1,6 +1,6 @@
 #include "MingEngine/Core/Object/ResourceLoader.hpp"
 
-#include "MingEngine/Engine/File/VirtualPath.hpp"
+#include "MingEngine/Engine/File/FileSystem.hpp"
 
 int                                            ResourceLoader::s_loaderCount = 0;
 Ref<ResourceFormatLoader>                      ResourceLoader::s_loader[MaxLoaders];
@@ -16,13 +16,12 @@ void ResourceLoader::AddLoader(Ref<ResourceFormatLoader> loader)
 
 Ref<Resource> ResourceLoader::Load(const std::string& virtualPath)
 {
-	VirtualPath parsedPath;
-	if (!parsedPath.Parse(virtualPath))
+	if (!FileSystem::IsVirtualPath(virtualPath))
 	{
 		return Ref<Resource>();
 	}
 
-	std::string const normalizedPath = parsedPath.ToString();
+	std::string const normalizedPath = virtualPath;
 	if (s_loadedResources.find(normalizedPath) != s_loadedResources.end())
 	{
 		return s_loadedResources[normalizedPath];

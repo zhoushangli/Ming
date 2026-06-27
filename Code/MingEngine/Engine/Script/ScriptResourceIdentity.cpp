@@ -1,12 +1,19 @@
 #include "MingEngine/Engine/Script/ScriptResourceIdentity.hpp"
 
 #include "MingEngine/Core/ErrorWarningAssert.hpp"
+#include "MingEngine/Engine/File/FileSystem.hpp"
 
 #include <cctype>
 
-bool ScriptResourceIdentity::Create(VirtualPath const& path, ScriptResourceIdentity& outIdentity)
+bool ScriptResourceIdentity::Create(std::string const& virtualPath, ScriptResourceIdentity& outIdentity)
 {
-	std::string const& relativePath      = path.GetRelativePath();
+	std::string relativePath;
+	if (!FileSystem::TryGetRelativePath(virtualPath, relativePath))
+	{
+		DebuggerPrintf("Error: Script file path '%s' is not a valid virtual path.\n", virtualPath.c_str());
+		return false;
+	}
+
 	std::string        expectedExtension = ".as";
 
 	if (relativePath.size() <= expectedExtension.size())
@@ -60,12 +67,12 @@ bool ScriptResourceIdentity::Create(VirtualPath const& path, ScriptResourceIdent
 		}
 	}
 
-	outIdentity.m_path      = path;
-	outIdentity.m_className = className;
+	outIdentity.m_virtualPath = virtualPath;
+	outIdentity.m_className   = className;
 
 	return true;
 }
 
-VirtualPath const& ScriptResourceIdentity::GetPath() const { return m_path; }
+std::string const& ScriptResourceIdentity::GetVirtualPath() const { return m_virtualPath; }
 
 std::string const& ScriptResourceIdentity::GetClassName() const { return m_className; }

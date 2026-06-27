@@ -234,7 +234,9 @@ void App::StartupScene()
 
 #endif
 
-	Ref<PackedScene> packedScene = ResourceLoader::Load("res://EditorSavedScene.mscn");
+	Ref<Resource> loadedScene = ResourceLoader::Load("res://EditorSavedScene.mscn");
+	Variant       sceneValue   = loadedScene;
+	Ref<PackedScene> packedScene(sceneValue);
 	Node*            newSceneRoot = packedScene.IsValid() ? packedScene->Instantiate() : nullptr;
 
 	if (newSceneRoot != nullptr)

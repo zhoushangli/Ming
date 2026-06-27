@@ -1,7 +1,5 @@
 #pragma once
 
-#include "MingEngine/Engine/File/VirtualPath.hpp"
-
 #include <string>
 
 struct ScriptResourceIdentity
@@ -9,12 +7,12 @@ struct ScriptResourceIdentity
 public:
 	ScriptResourceIdentity() = default;
 
-	static bool Create(VirtualPath const& path, ScriptResourceIdentity& outIdentity);
+	static bool Create(std::string const& virtualPath, ScriptResourceIdentity& outIdentity);
 
-	VirtualPath const&  GetPath() const;
+	std::string const& GetVirtualPath() const;
 	std::string const& GetClassName() const;
 
 private:
-	VirtualPath m_path;
+	std::string m_virtualPath;
 	std::string m_className;
 };

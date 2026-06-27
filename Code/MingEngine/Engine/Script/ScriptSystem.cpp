@@ -91,18 +91,12 @@ ScriptInstance* ScriptSystem::CreateInstance(Ref<Script> const& script, Object& 
 
 ScriptModule* ScriptSystem::GetOrCreateModule(std::string const& path)
 {
-	VirtualPath virtualPath;
-	if (!virtualPath.Parse(std::string(path)))
+	if (!FileSystem::IsVirtualPath(path))
 	{
 		return nullptr;
 	}
 
-	return GetOrCreateModule(virtualPath);
-}
-
-ScriptModule* ScriptSystem::GetOrCreateModule(VirtualPath const& virtualPath)
-{
-	auto it = m_loadedScripts.find(virtualPath);
+	auto it = m_loadedScripts.find(path);
 	if (it != m_loadedScripts.end())
 	{
 		return &it->second;
@@ -110,43 +104,36 @@ ScriptModule* ScriptSystem::GetOrCreateModule(VirtualPath const& virtualPath)
 
 	ScriptResourceIdentity identity;
 
-	if (!ScriptResourceIdentity::Create(virtualPath, identity))
+	if (!ScriptResourceIdentity::Create(path, identity))
 	{
-		DebuggerPrintf("Invalid script path: %s\n", virtualPath.ToString().c_str());
+		DebuggerPrintf("Invalid script path: %s\n", path.c_str());
 		return nullptr;
 	}
 
 	std::string scriptText;
-	if (!g_engine->m_fileSystem->ReadText(virtualPath, scriptText))
+	if (!g_engine->m_fileSystem->ReadText(path, scriptText))
 	{
-		DebuggerPrintf("Failed to read script file: %s\n", virtualPath.ToString().c_str());
+		DebuggerPrintf("Failed to read script file: %s\n", path.c_str());
 		return nullptr;
 	}
 
 	// asIScriptModule is an empty handle managed by the AngelScript engine
 	// When we call m_scriptEngine->ShutDownAndRelease(); all asIScriptModule instances will be invalidated, so we don't
 	// need to worry about cleaning them up individually
-	std::string      moduleName   = virtualPath.ToString();
+	std::string      moduleName   = path;
 	asIScriptModule* scriptModule = m_scriptEngine->GetModule(moduleName.c_str(), asGM_ALWAYS_CREATE);
 
 	if (scriptModule == nullptr)
 	{
-		DebuggerPrintf("Failed to create script module for: %s\n", virtualPath.ToString().c_str());
+		DebuggerPrintf("Failed to create script module for: %s\n", path.c_str());
 		return nullptr;
 	}
 
 	// Add wrapper script to the module
 	std::string wrapperText;
-	VirtualPath wrapperPath;
-	if (!wrapperPath.Parse(kGeneratedScriptResourcePath))
+	if (!g_engine->m_fileSystem->ReadText(kGeneratedScriptResourcePath, wrapperText))
 	{
-		DebuggerPrintf("Invalid wrapper script path: %s\n", wrapperPath.ToString().c_str());
-		return nullptr;
-	}
-
-	if (!g_engine->m_fileSystem->ReadText(wrapperPath, wrapperText))
-	{
-		DebuggerPrintf("Failed to read script file: %s\n", virtualPath.ToString().c_str());
+		DebuggerPrintf("Failed to read script file: %s\n", kGeneratedScriptResourcePath);
 		return nullptr;
 	}
 
@@ -160,11 +147,11 @@ ScriptModule* ScriptSystem::GetOrCreateModule(VirtualPath const& virtualPath)
 	}
 
 	// Add the actual script to the module
-	result = scriptModule->AddScriptSection(virtualPath.ToString().c_str(), scriptText.c_str(), scriptText.size());
+	result = scriptModule->AddScriptSection(path.c_str(), scriptText.c_str(), scriptText.size());
 
 	if (result < 0)
 	{
-		DebuggerPrintf("Failed to add script section for: %s\n", virtualPath.ToString().c_str());
+		DebuggerPrintf("Failed to add script section for: %s\n", path.c_str());
 		m_scriptEngine->DiscardModule(moduleName.c_str());
 		return nullptr;
 	}
@@ -172,7 +159,7 @@ ScriptModule* ScriptSystem::GetOrCreateModule(VirtualPath const& virtualPath)
 	result = scriptModule->Build();
 	if (result < 0)
 	{
-		DebuggerPrintf("Failed to build script module for: %s\n", virtualPath.ToString().c_str());
+		DebuggerPrintf("Failed to build script module for: %s\n", path.c_str());
 		m_scriptEngine->DiscardModule(moduleName.c_str());
 		return nullptr;
 	}
@@ -183,7 +170,7 @@ ScriptModule* ScriptSystem::GetOrCreateModule(VirtualPath const& virtualPath)
 	{
 		DebuggerPrintf(
 			"Script '%s' does not define class '%s'.\n",
-			virtualPath.ToString().c_str(),
+			path.c_str(),
 			identity.GetClassName().c_str());
 
 		m_scriptEngine->DiscardModule(moduleName.c_str());
@@ -192,7 +179,7 @@ ScriptModule* ScriptSystem::GetOrCreateModule(VirtualPath const& virtualPath)
 
 	ScriptModule module(std::move(identity), scriptModule, scriptType);
 
-	m_loadedScripts[virtualPath] = std::move(module);
+	m_loadedScripts[path] = std::move(module);
 
-	return &m_loadedScripts[virtualPath];
+	return &m_loadedScripts[path];
 }

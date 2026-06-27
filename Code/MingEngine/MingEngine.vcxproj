@@ -340,7 +340,6 @@
     <ClCompile Include="Engine\Event\EventSystem.cpp" />
     <ClCompile Include="Core\FileUtils.cpp" />
     <ClCompile Include="Engine\File\FileSystem.cpp" />
-    <ClCompile Include="Engine\File\VirtualPath.cpp" />
     <ClCompile Include="Engine\Render\HeatMaps.cpp" />
     <ClCompile Include="Core\Image.cpp" />
     <ClCompile Include="Core\NamedStrings.cpp" />
@@ -403,6 +402,7 @@
     <ClCompile Include="Engine\Script\ScriptModule.cpp" />
     <ClCompile Include="Engine\Script\ScriptResourceIdentity.cpp" />
     <ClCompile Include="Engine\Script\ScriptSystem.cpp" />
+    <ClCompile Include="Engine\Script\ScriptTypeUtils.cpp" />
     <ClCompile Include="Engine\Window\Window.cpp" />
     <ClCompile Include="Engine\Render\BitmapFont.cpp" />
     <ClCompile Include="Engine\Render\CameraContext.cpp" />
@@ -485,7 +485,6 @@
     <ClInclude Include="Engine\Event\EventSystem.hpp" />
     <ClInclude Include="Core\FileUtils.hpp" />
     <ClInclude Include="Engine\File\FileSystem.hpp" />
-    <ClInclude Include="Engine\File\VirtualPath.hpp" />
     <ClInclude Include="Engine\Render\HeatMaps.hpp" />
     <ClInclude Include="Core\Image.hpp" />
     <ClInclude Include="Core\NamedStrings.hpp" />
@@ -557,6 +556,7 @@
     <ClInclude Include="Engine\Script\ScriptModule.hpp" />
     <ClInclude Include="Engine\Script\ScriptResourceIdentity.hpp" />
     <ClInclude Include="Engine\Script\ScriptSystem.hpp" />
+    <ClInclude Include="Engine\Script\ScriptTypeUtils.hpp" />
     <ClInclude Include="Engine\Window\Window.hpp" />
     <ClInclude Include="Engine\Render\BitmapFont.hpp" />
     <ClInclude Include="Engine\Render\CameraContext.hpp" />
