@@ -12,14 +12,14 @@ namespace
 // Object bridge name example:
 // __Call_Void_Vec3
 constexpr char const* kObjectBridgeNameTemplate =
-R"AS(
+	R"AS(
 __Call_${signature}
 )AS";
 
 // GlobalObject bridge name example:
 // __Call_GlobalObject_Bool_Int
 constexpr char const* kGlobalObjectBridgeNameTemplate =
-R"AS(
+	R"AS(
 __Call_GlobalObject_${signature}
 )AS";
 
@@ -27,28 +27,29 @@ __Call_GlobalObject_${signature}
 // Example:
 // __Call_Global_Log
 constexpr char const* kGlobalBridgeNameTemplate =
-R"AS(
+	R"AS(
 __Call_Global_${methodName}
 )AS";
 
 // Object bridge declaration example:
-// void __Call_Void_Vec3(NativeObject@ nativePtr, const string &in className, const string &in methodName, const Vec3 &in arg0)
+// void __Call_Void_Vec3(NativeObject@ nativePtr, const string &in className, const string &in methodName, const Vec3
+// &in arg0)
 constexpr char const* kObjectBridgeDeclarationTemplate =
-R"AS(
+	R"AS(
 ${returnType} ${functionName}(NativeObject@ nativePtr, const string &in className, const string &in methodName${arguments})
 )AS";
 
 // GlobalObject bridge declaration example:
 // bool __Call_GlobalObject_Bool_Int(const string &in className, const string &in methodName, int arg0)
 constexpr char const* kGlobalObjectBridgeDeclarationTemplate =
-R"AS(
+	R"AS(
 ${returnType} ${functionName}(const string &in className, const string &in methodName${arguments})
 )AS";
 
 // Global bridge declaration example:
 // void __Call_Global_Log(const string &in namespaceName, const string &in methodName, const string &in arg0)
 constexpr char const* kGlobalBridgeDeclarationTemplate =
-R"AS(
+	R"AS(
 ${returnType} ${functionName}(const string &in namespaceName, const string &in methodName${arguments})
 )AS";
 
@@ -162,8 +163,18 @@ std::string GetScriptTypeName(Variant::Type type)
 		return "float";
 	case Variant::Type::String:
 		return "string";
+	case Variant::Type::Vec2:
+		return "Vec2";
 	case Variant::Type::Vec3:
 		return "Vec3";
+	case Variant::Type::Vec4:
+		return "Vec4";
+	case Variant::Type::AABB2:
+		return "AABB2";
+	case Variant::Type::OBB2:
+		return "OBB2";
+	case Variant::Type::Capsule3:
+		return "Capsule3";
 	case Variant::Type::EulerAngles:
 		return "EulerAngles";
 	case Variant::Type::Matrix4x4:
@@ -191,8 +202,18 @@ std::string GetBridgeTypeName(Variant::Type type)
 		return "Float";
 	case Variant::Type::String:
 		return "String";
+	case Variant::Type::Vec2:
+		return "Vec2";
 	case Variant::Type::Vec3:
 		return "Vec3";
+	case Variant::Type::Vec4:
+		return "Vec4";
+	case Variant::Type::AABB2:
+		return "AABB2";
+	case Variant::Type::OBB2:
+		return "OBB2";
+	case Variant::Type::Capsule3:
+		return "Capsule3";
 	case Variant::Type::EulerAngles:
 		return "EulerAngles";
 	case Variant::Type::Matrix4x4:
@@ -208,8 +229,10 @@ std::string GetBridgeTypeName(Variant::Type type)
 
 bool IsScriptRefType(Variant::Type type)
 {
-	return type == Variant::Type::String || type == Variant::Type::Vec3 || type == Variant::Type::EulerAngles
-		   || type == Variant::Type::Matrix4x4 || type == Variant::Type::Any;
+	return type == Variant::Type::String || type == Variant::Type::Vec2 || type == Variant::Type::Vec3
+		   || type == Variant::Type::Vec4 || type == Variant::Type::AABB2 || type == Variant::Type::OBB2
+		   || type == Variant::Type::Capsule3 || type == Variant::Type::EulerAngles || type == Variant::Type::Matrix4x4
+		   || type == Variant::Type::Any;
 }
 
 std::string BuildScriptArgumentDeclaration(Variant::Type type)

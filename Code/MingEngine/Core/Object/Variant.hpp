@@ -1,8 +1,13 @@
 #pragma once
 
+#include "MingEngine/Core/Math/AABB2.hpp"
+#include "MingEngine/Core/Math/Capsule3.hpp"
 #include "MingEngine/Core/Math/EulerAngles.hpp"
 #include "MingEngine/Core/Math/Matrix4x4.hpp"
+#include "MingEngine/Core/Math/OBB2.hpp"
+#include "MingEngine/Core/Math/Vec2.hpp"
 #include "MingEngine/Core/Math/Vec3.hpp"
+#include "MingEngine/Core/Math/Vec4.hpp"
 #include "MingEngine/Core/Object/Object.hpp"
 
 #include <string>
@@ -11,7 +16,21 @@
 class Variant
 {
 public:
-	using Storage = std::variant<std::monostate, bool, int, float, std::string, Vec3, EulerAngles, Matrix4x4, Object*>;
+	using Storage = std::variant<
+		std::monostate,
+		bool,
+		int,
+		float,
+		std::string,
+		Vec2,
+		Vec3,
+		Vec4,
+		AABB2,
+		OBB2,
+		Capsule3,
+		EulerAngles,
+		Matrix4x4,
+		Object*>;
 
 	enum class Type
 	{
@@ -20,7 +39,12 @@ public:
 		Int,
 		Float,
 		String,
+		Vec2,
 		Vec3,
+		Vec4,
+		AABB2,
+		OBB2,
+		Capsule3,
 		EulerAngles,
 		Matrix4x4,
 		ObjectPtr,
@@ -35,7 +59,12 @@ public:
 	Variant(float value);
 	Variant(char const* value);
 	Variant(std::string const& value);
+	Variant(Vec2 const& value);
 	Variant(Vec3 const& value);
+	Variant(Vec4 const& value);
+	Variant(AABB2 const& value);
+	Variant(OBB2 const& value);
+	Variant(Capsule3 const& value);
 	Variant(EulerAngles const& value);
 	Variant(Matrix4x4 const& value);
 	Variant(Object* const& value);
@@ -77,8 +106,18 @@ public:
 			return Type::Float;
 		if (std::is_same_v<CleanType, std::string>)
 			return Type::String;
+		if (std::is_same_v<CleanType, Vec2>)
+			return Type::Vec2;
 		if (std::is_same_v<CleanType, Vec3>)
 			return Type::Vec3;
+		if (std::is_same_v<CleanType, Vec4>)
+			return Type::Vec4;
+		if (std::is_same_v<CleanType, AABB2>)
+			return Type::AABB2;
+		if (std::is_same_v<CleanType, OBB2>)
+			return Type::OBB2;
+		if (std::is_same_v<CleanType, Capsule3>)
+			return Type::Capsule3;
 		if (std::is_same_v<CleanType, EulerAngles>)
 			return Type::EulerAngles;
 		if (std::is_same_v<CleanType, Matrix4x4>)
@@ -116,15 +155,111 @@ struct VariantCaster<float>
 };
 
 template <>
+struct VariantCaster<Vec2>
+{
+	static Vec2 Cast(Variant const& value) { return value.As<Vec2>(); }
+};
+
+template <>
+struct VariantCaster<Vec2&>
+{
+	static Vec2& Cast(Variant const& value) { return const_cast<Vec2&>(value.As<Vec2>()); }
+};
+
+template <>
+struct VariantCaster<Vec2 const&>
+{
+	static Vec2 const& Cast(Variant const& value) { return value.As<Vec2>(); }
+};
+
+template <>
 struct VariantCaster<Vec3>
 {
 	static Vec3 Cast(Variant const& value) { return value.As<Vec3>(); }
 };
 
 template <>
+struct VariantCaster<Vec3&>
+{
+	static Vec3& Cast(Variant const& value) { return const_cast<Vec3&>(value.As<Vec3>()); }
+};
+
+template <>
 struct VariantCaster<Vec3 const&>
 {
 	static Vec3 const& Cast(Variant const& value) { return value.As<Vec3>(); }
+};
+
+template <>
+struct VariantCaster<Vec4>
+{
+	static Vec4 Cast(Variant const& value) { return value.As<Vec4>(); }
+};
+
+template <>
+struct VariantCaster<Vec4&>
+{
+	static Vec4& Cast(Variant const& value) { return const_cast<Vec4&>(value.As<Vec4>()); }
+};
+
+template <>
+struct VariantCaster<Vec4 const&>
+{
+	static Vec4 const& Cast(Variant const& value) { return value.As<Vec4>(); }
+};
+
+template <>
+struct VariantCaster<AABB2>
+{
+	static AABB2 Cast(Variant const& value) { return value.As<AABB2>(); }
+};
+
+template <>
+struct VariantCaster<AABB2&>
+{
+	static AABB2& Cast(Variant const& value) { return const_cast<AABB2&>(value.As<AABB2>()); }
+};
+
+template <>
+struct VariantCaster<AABB2 const&>
+{
+	static AABB2 const& Cast(Variant const& value) { return value.As<AABB2>(); }
+};
+
+template <>
+struct VariantCaster<OBB2>
+{
+	static OBB2 Cast(Variant const& value) { return value.As<OBB2>(); }
+};
+
+template <>
+struct VariantCaster<OBB2&>
+{
+	static OBB2& Cast(Variant const& value) { return const_cast<OBB2&>(value.As<OBB2>()); }
+};
+
+template <>
+struct VariantCaster<OBB2 const&>
+{
+	static OBB2 const& Cast(Variant const& value) { return value.As<OBB2>(); }
+};
+
+template <>
+struct VariantCaster<Capsule3>
+{
+	static Capsule3 Cast(Variant const& value) { return value.As<Capsule3>(); }
+};
+
+template <>
+struct VariantCaster<Capsule3&>
+{
+	static Capsule3& Cast(Variant const& value) { return const_cast<Capsule3&>(value.As<Capsule3>()); }
+};
+
+template <>
+struct VariantCaster<Capsule3 const&>
+{
+	static Capsule3 const& Cast(Variant const& value) { return value.As<Capsule3>(); }
 };
 
 template <>

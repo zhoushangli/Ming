@@ -5,7 +5,12 @@ Variant::Variant(int value) : m_value(value), m_type(Type::Int) {}
 Variant::Variant(float value) : m_value(value), m_type(Type::Float) {}
 Variant::Variant(char const* value) : m_value(std::string(value)), m_type(Type::String) {}
 Variant::Variant(std::string const& value) : m_value(value), m_type(Type::String) {}
+Variant::Variant(Vec2 const& value) : m_value(value), m_type(Type::Vec2) {}
 Variant::Variant(Vec3 const& value) : m_value(value), m_type(Type::Vec3) {}
+Variant::Variant(Vec4 const& value) : m_value(value), m_type(Type::Vec4) {}
+Variant::Variant(AABB2 const& value) : m_value(value), m_type(Type::AABB2) {}
+Variant::Variant(OBB2 const& value) : m_value(value), m_type(Type::OBB2) {}
+Variant::Variant(Capsule3 const& value) : m_value(value), m_type(Type::Capsule3) {}
 Variant::Variant(EulerAngles const& value) : m_value(value), m_type(Type::EulerAngles) {}
 Variant::Variant(Matrix4x4 const& value) : m_value(value), m_type(Type::Matrix4x4) {}
 Variant::Variant(Object* const& value) : m_value(value), m_type(Type::ObjectPtr) {}
@@ -33,8 +38,27 @@ bool Variant::operator==(Variant const& other) const
 		return As<float>() == other.As<float>();
 	case Type::String:
 		return As<std::string>() == other.As<std::string>();
+	case Type::Vec2:
+		return As<Vec2>() == other.As<Vec2>();
 	case Type::Vec3:
 		return As<Vec3>() == other.As<Vec3>();
+	case Type::Vec4:
+		return As<Vec4>() == other.As<Vec4>();
+	case Type::AABB2:
+		return As<AABB2>() == other.As<AABB2>();
+	case Type::OBB2:
+	{
+		OBB2 const& left  = As<OBB2>();
+		OBB2 const& right = other.As<OBB2>();
+		return left.m_center == right.m_center && left.m_iBasisNormal == right.m_iBasisNormal
+			   && left.m_halfDimensions == right.m_halfDimensions;
+	}
+	case Type::Capsule3:
+	{
+		Capsule3 const& left  = As<Capsule3>();
+		Capsule3 const& right = other.As<Capsule3>();
+		return left.m_start == right.m_start && left.m_end == right.m_end && left.m_radius == right.m_radius;
+	}
 	case Type::EulerAngles:
 	{
 		EulerAngles const& left  = As<EulerAngles>();

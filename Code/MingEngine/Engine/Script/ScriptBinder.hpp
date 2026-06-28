@@ -2,11 +2,6 @@
 
 class asIScriptEngine;
 
-void RegisterVec3(asIScriptEngine* engine);
-void RegisterEulerAngles(asIScriptEngine* engine);
-void RegisterMatrix4x4(asIScriptEngine* engine);
-void RegisterVariant(asIScriptEngine* engine);
-
 // The only script-visible class is Object, we call it NativeObject in the script
 // and we we want to call certain function, we use something like this:
 // __Call_Void(NativeObject@ nativePtr, const string &in className, const string &in methodName, ...)

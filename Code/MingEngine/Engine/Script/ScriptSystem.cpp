@@ -5,6 +5,7 @@
 #include "MingEngine/Core/Object/Resource.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Engine/File/FileSystem.hpp"
+#include "MingEngine/Engine/Script/RegisterBuildinType.hpp"
 #include "MingEngine/Engine/Script/ScriptBinder.hpp"
 #include "MingEngine/Engine/Script/ScriptGenerator.hpp"
 
@@ -47,7 +48,12 @@ void ScriptSystem::Startup()
 
 	// Angel Script Add on
 	RegisterStdString(m_scriptEngine);
+	RegisterVec2(m_scriptEngine);
 	RegisterVec3(m_scriptEngine);
+	RegisterVec4(m_scriptEngine);
+	RegisterAABB2(m_scriptEngine);
+	RegisterOBB2(m_scriptEngine);
+	RegisterCapsule3(m_scriptEngine);
 	RegisterEulerAngles(m_scriptEngine);
 	RegisterMatrix4x4(m_scriptEngine);
 	RegisterVariant(m_scriptEngine);

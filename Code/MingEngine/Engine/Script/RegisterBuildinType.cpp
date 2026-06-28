@@ -1,9 +1,14 @@
-#include "MingEngine/Engine/Script/ScriptBinder.hpp"
+#include "MingEngine/Engine/Script/RegisterBuildinType.hpp"
 
 #include "MingEngine/Core/ErrorWarningAssert.hpp"
+#include "MingEngine/Core/Math/AABB2.hpp"
+#include "MingEngine/Core/Math/Capsule3.hpp"
 #include "MingEngine/Core/Math/EulerAngles.hpp"
 #include "MingEngine/Core/Math/Matrix4x4.hpp"
+#include "MingEngine/Core/Math/OBB2.hpp"
+#include "MingEngine/Core/Math/Vec2.hpp"
 #include "MingEngine/Core/Math/Vec3.hpp"
+#include "MingEngine/Core/Math/Vec4.hpp"
 #include "MingEngine/Core/Object/ClassDatabase.hpp"
 #include "MingEngine/Core/Object/Variant.hpp"
 #include "MingEngine/Core/StringUtils.hpp"
@@ -21,6 +26,46 @@
 
 namespace
 {
+void ConstructVec2(void* memory) { new (memory) Vec2(); }
+
+void ConstructVec2WithXY(float x, float y, void* memory) { new (memory) Vec2(x, y); }
+
+void CopyConstructVec2(Vec2 const& other, void* memory) { new (memory) Vec2(other); }
+
+void DestructVec2(void* memory) { static_cast<Vec2*>(memory)->~Vec2(); }
+
+Vec2& AssignVec2(Vec2 const& other, Vec2* self)
+{
+	*self = other;
+	return *self;
+}
+
+Vec2& AddAssignVec2(Vec2 const& other, Vec2* self)
+{
+	*self += other;
+	return *self;
+}
+
+Vec2& SubtractAssignVec2(Vec2 const& other, Vec2* self)
+{
+	*self -= other;
+	return *self;
+}
+
+Vec2& MultiplyAssignVec2(float scale, Vec2* self)
+{
+	*self *= scale;
+	return *self;
+}
+
+Vec2& DivideAssignVec2(float divisor, Vec2* self)
+{
+	*self /= divisor;
+	return *self;
+}
+
+// ------------------------------------------------------------------------------
+
 void ConstructVec3(void* memory) { new (memory) Vec3(); }
 
 void ConstructVec3WithXYZ(float x, float y, float z, void* memory) { new (memory) Vec3(x, y, z); }
@@ -30,6 +75,113 @@ void CopyConstructVec3(Vec3 const& other, void* memory) { new (memory) Vec3(othe
 void DestructVec3(void* memory) { static_cast<Vec3*>(memory)->~Vec3(); }
 
 Vec3& AssignVec3(Vec3 const& other, Vec3* self)
+{
+	*self = other;
+	return *self;
+}
+
+Vec3& AddAssignVec3(Vec3 const& other, Vec3* self)
+{
+	*self += other;
+	return *self;
+}
+
+Vec3& SubtractAssignVec3(Vec3 const& other, Vec3* self)
+{
+	*self -= other;
+	return *self;
+}
+
+Vec3& MultiplyAssignVec3(float scale, Vec3* self)
+{
+	*self *= scale;
+	return *self;
+}
+
+Vec3& DivideAssignVec3(float divisor, Vec3* self)
+{
+	*self /= divisor;
+	return *self;
+}
+
+// ------------------------------------------------------------------------------
+
+void ConstructVec4(void* memory) { new (memory) Vec4(); }
+
+void ConstructVec4WithXYZW(float x, float y, float z, float w, void* memory) { new (memory) Vec4(x, y, z, w); }
+
+void CopyConstructVec4(Vec4 const& other, void* memory) { new (memory) Vec4(other); }
+
+void DestructVec4(void* memory) { static_cast<Vec4*>(memory)->~Vec4(); }
+
+Vec4& AssignVec4(Vec4 const& other, Vec4* self)
+{
+	*self = other;
+	return *self;
+}
+
+// ------------------------------------------------------------------------------
+
+void ConstructAABB2(void* memory) { new (memory) AABB2(); }
+
+void ConstructAABB2WithMinsMaxs(Vec2 const& mins, Vec2 const& maxs, void* memory)
+{
+	new (memory) AABB2(mins, maxs);
+}
+
+void ConstructAABB2WithFloats(float minX, float minY, float maxX, float maxY, void* memory)
+{
+	new (memory) AABB2(minX, minY, maxX, maxY);
+}
+
+void CopyConstructAABB2(AABB2 const& other, void* memory) { new (memory) AABB2(other); }
+
+void DestructAABB2(void* memory) { static_cast<AABB2*>(memory)->~AABB2(); }
+
+AABB2& AssignAABB2(AABB2 const& other, AABB2* self)
+{
+	*self = other;
+	return *self;
+}
+
+// ------------------------------------------------------------------------------
+
+void ConstructOBB2(void* memory) { new (memory) OBB2(); }
+
+void ConstructOBB2WithBasis(Vec2 const& center, Vec2 const& iBasisNormal, Vec2 const& halfDimensions, void* memory)
+{
+	new (memory) OBB2(center, iBasisNormal, halfDimensions);
+}
+
+void ConstructOBB2WithOrientation(Vec2 const& center, Vec2 const& halfDimensions, float orientationDegree, void* memory)
+{
+	new (memory) OBB2(center, halfDimensions, orientationDegree);
+}
+
+void CopyConstructOBB2(OBB2 const& other, void* memory) { new (memory) OBB2(other); }
+
+void DestructOBB2(void* memory) { static_cast<OBB2*>(memory)->~OBB2(); }
+
+OBB2& AssignOBB2(OBB2 const& other, OBB2* self)
+{
+	*self = other;
+	return *self;
+}
+
+// ------------------------------------------------------------------------------
+
+void ConstructCapsule3(void* memory) { new (memory) Capsule3(); }
+
+void ConstructCapsule3WithStartEndRadius(Vec3 const& start, Vec3 const& end, float radius, void* memory)
+{
+	new (memory) Capsule3(start, end, radius);
+}
+
+void CopyConstructCapsule3(Capsule3 const& other, void* memory) { new (memory) Capsule3(other); }
+
+void DestructCapsule3(void* memory) { static_cast<Capsule3*>(memory)->~Capsule3(); }
+
+Capsule3& AssignCapsule3(Capsule3 const& other, Capsule3* self)
 {
 	*self = other;
 	return *self;
@@ -48,6 +200,18 @@ void DestructEulerAngles(void* memory) { static_cast<EulerAngles*>(memory)->~Eul
 EulerAngles& AssignEulerAngles(EulerAngles const& other, EulerAngles* self)
 {
 	*self = other;
+	return *self;
+}
+
+EulerAngles& AddAssignEulerAngles(EulerAngles const& other, EulerAngles* self)
+{
+	*self += other;
+	return *self;
+}
+
+EulerAngles& MultiplyAssignEulerAngles(float scale, EulerAngles* self)
+{
+	*self *= scale;
 	return *self;
 }
 
@@ -80,6 +244,105 @@ Variant& AssignVariant(Variant const& other, Variant* self)
 }
 
 } // namespace
+
+void RegisterVec2(asIScriptEngine* engine)
+{
+	int result = 0;
+
+	result = engine->RegisterObjectType("Vec2", sizeof(Vec2), asOBJ_VALUE | asOBJ_APP_CLASS_CDAK);
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register built-in type: Vec2");
+
+	result =
+		engine->RegisterObjectBehaviour("Vec2", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(ConstructVec2), asCALL_CDECL_OBJLAST);
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register constructor for built-in type: Vec2");
+
+	result = engine->RegisterObjectBehaviour(
+		"Vec2",
+		asBEHAVE_CONSTRUCT,
+		"void f(float, float)",
+		asFUNCTION(ConstructVec2WithXY),
+		asCALL_CDECL_OBJLAST);
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register constructor for built-in type: Vec2");
+
+	result = engine->RegisterObjectBehaviour(
+		"Vec2",
+		asBEHAVE_CONSTRUCT,
+		"void f(const Vec2 &in)",
+		asFUNCTION(CopyConstructVec2),
+		asCALL_CDECL_OBJLAST);
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register constructor for built-in type: Vec2");
+
+	result =
+		engine->RegisterObjectBehaviour("Vec2", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(DestructVec2), asCALL_CDECL_OBJLAST);
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register destructor for built-in type: Vec2");
+
+	result = engine->RegisterObjectMethod("Vec2", "Vec2 &opAssign(const Vec2 &in)", asFUNCTION(AssignVec2), asCALL_CDECL_OBJLAST);
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register assignment operator for built-in type: Vec2");
+
+	result = engine->RegisterObjectMethod(
+		"Vec2",
+		"bool opEquals(const Vec2 &in) const",
+		asMETHODPR(Vec2, operator==, (Vec2 const&) const, bool),
+		asCALL_THISCALL);
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register equality operator for built-in type: Vec2");
+	result = engine->RegisterObjectMethod(
+		"Vec2",
+		"Vec2 opAdd(const Vec2 &in) const",
+		asMETHODPR(Vec2, operator+, (Vec2 const&) const, Vec2 const),
+		asCALL_THISCALL);
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register add operator for built-in type: Vec2");
+	result = engine->RegisterObjectMethod(
+		"Vec2",
+		"Vec2 opSub(const Vec2 &in) const",
+		asMETHODPR(Vec2, operator-, (Vec2 const&) const, Vec2 const),
+		asCALL_THISCALL);
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register subtract operator for built-in type: Vec2");
+	result = engine->RegisterObjectMethod(
+		"Vec2",
+		"Vec2 opNeg() const",
+		asMETHODPR(Vec2, operator-, () const, Vec2 const),
+		asCALL_THISCALL);
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register negation operator for built-in type: Vec2");
+	result = engine->RegisterObjectMethod(
+		"Vec2",
+		"Vec2 opMul(float) const",
+		asMETHODPR(Vec2, operator*, (float) const, Vec2 const),
+		asCALL_THISCALL);
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register scale operator for built-in type: Vec2");
+	result = engine->RegisterObjectMethod(
+		"Vec2",
+		"Vec2 opMul(const Vec2 &in) const",
+		asMETHODPR(Vec2, operator*, (Vec2 const&) const, Vec2 const),
+		asCALL_THISCALL);
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register multiply operator for built-in type: Vec2");
+	result = engine->RegisterObjectMethod(
+		"Vec2",
+		"Vec2 opDiv(float) const",
+		asMETHODPR(Vec2, operator/, (float) const, Vec2 const),
+		asCALL_THISCALL);
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register divide operator for built-in type: Vec2");
+	result = engine->RegisterObjectMethod("Vec2", "Vec2 &opAddAssign(const Vec2 &in)", asFUNCTION(AddAssignVec2), asCALL_CDECL_OBJLAST);
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register add-assign operator for built-in type: Vec2");
+	result = engine->RegisterObjectMethod("Vec2", "Vec2 &opSubAssign(const Vec2 &in)", asFUNCTION(SubtractAssignVec2), asCALL_CDECL_OBJLAST);
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register subtract-assign operator for built-in type: Vec2");
+	result = engine->RegisterObjectMethod("Vec2", "Vec2 &opMulAssign(float)", asFUNCTION(MultiplyAssignVec2), asCALL_CDECL_OBJLAST);
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register multiply-assign operator for built-in type: Vec2");
+	result = engine->RegisterObjectMethod("Vec2", "Vec2 &opDivAssign(float)", asFUNCTION(DivideAssignVec2), asCALL_CDECL_OBJLAST);
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register divide-assign operator for built-in type: Vec2");
+	result = engine->RegisterObjectMethod("Vec2", "float GetLength() const", asMETHOD(Vec2, GetLength), asCALL_THISCALL);
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register GetLength for built-in type: Vec2");
+	result = engine->RegisterObjectMethod("Vec2", "float GetLengthSquared() const", asMETHOD(Vec2, GetLengthSquared), asCALL_THISCALL);
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register GetLengthSquared for built-in type: Vec2");
+	result = engine->RegisterObjectMethod("Vec2", "Vec2 GetClamped(float) const", asMETHOD(Vec2, GetClamped), asCALL_THISCALL);
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register GetClamped for built-in type: Vec2");
+	result = engine->RegisterObjectMethod("Vec2", "Vec2 GetNormalized() const", asMETHOD(Vec2, GetNormalized), asCALL_THISCALL);
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register GetNormalized for built-in type: Vec2");
+
+	result = engine->RegisterObjectProperty("Vec2", "float x", asOFFSET(Vec2, x));
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register property 'x' for built-in type: Vec2");
+	result = engine->RegisterObjectProperty("Vec2", "float y", asOFFSET(Vec2, y));
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register property 'y' for built-in type: Vec2");
+}
 
 void RegisterVec3(asIScriptEngine* engine)
 {
@@ -134,6 +397,263 @@ void RegisterVec3(asIScriptEngine* engine)
 	GUARANTEE_OR_DIE(result >= 0, "Failed to register property 'y' for built-in type: Vec3");
 	result = engine->RegisterObjectProperty("Vec3", "float z", asOFFSET(Vec3, z));
 	GUARANTEE_OR_DIE(result >= 0, "Failed to register property 'z' for built-in type: Vec3");
+
+	result = engine->RegisterObjectMethod(
+		"Vec3",
+		"bool opEquals(const Vec3 &in) const",
+		asMETHODPR(Vec3, operator==, (Vec3 const&) const, bool),
+		asCALL_THISCALL);
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register equality operator for built-in type: Vec3");
+	result = engine->RegisterObjectMethod(
+		"Vec3",
+		"Vec3 opAdd(const Vec3 &in) const",
+		asMETHODPR(Vec3, operator+, (Vec3 const&) const, Vec3 const),
+		asCALL_THISCALL);
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register add operator for built-in type: Vec3");
+	result = engine->RegisterObjectMethod(
+		"Vec3",
+		"Vec3 opSub(const Vec3 &in) const",
+		asMETHODPR(Vec3, operator-, (Vec3 const&) const, Vec3 const),
+		asCALL_THISCALL);
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register subtract operator for built-in type: Vec3");
+	result = engine->RegisterObjectMethod(
+		"Vec3",
+		"Vec3 opNeg() const",
+		asMETHODPR(Vec3, operator-, () const, Vec3 const),
+		asCALL_THISCALL);
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register negation operator for built-in type: Vec3");
+	result = engine->RegisterObjectMethod(
+		"Vec3",
+		"Vec3 opMul(float) const",
+		asMETHODPR(Vec3, operator*, (float) const, Vec3 const),
+		asCALL_THISCALL);
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register scale operator for built-in type: Vec3");
+	result = engine->RegisterObjectMethod(
+		"Vec3",
+		"Vec3 opMul(const Vec3 &in) const",
+		asMETHODPR(Vec3, operator*, (Vec3 const&) const, Vec3 const),
+		asCALL_THISCALL);
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register multiply operator for built-in type: Vec3");
+	result = engine->RegisterObjectMethod(
+		"Vec3",
+		"Vec3 opDiv(float) const",
+		asMETHODPR(Vec3, operator/, (float) const, Vec3 const),
+		asCALL_THISCALL);
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register divide operator for built-in type: Vec3");
+	result = engine->RegisterObjectMethod("Vec3", "Vec3 &opAddAssign(const Vec3 &in)", asFUNCTION(AddAssignVec3), asCALL_CDECL_OBJLAST);
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register add-assign operator for built-in type: Vec3");
+	result = engine->RegisterObjectMethod("Vec3", "Vec3 &opSubAssign(const Vec3 &in)", asFUNCTION(SubtractAssignVec3), asCALL_CDECL_OBJLAST);
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register subtract-assign operator for built-in type: Vec3");
+	result = engine->RegisterObjectMethod("Vec3", "Vec3 &opMulAssign(float)", asFUNCTION(MultiplyAssignVec3), asCALL_CDECL_OBJLAST);
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register multiply-assign operator for built-in type: Vec3");
+	result = engine->RegisterObjectMethod("Vec3", "Vec3 &opDivAssign(float)", asFUNCTION(DivideAssignVec3), asCALL_CDECL_OBJLAST);
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register divide-assign operator for built-in type: Vec3");
+	result = engine->RegisterObjectMethod("Vec3", "float GetLength() const", asMETHOD(Vec3, GetLength), asCALL_THISCALL);
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register GetLength for built-in type: Vec3");
+	result = engine->RegisterObjectMethod("Vec3", "float GetLengthSquared() const", asMETHOD(Vec3, GetLengthSquared), asCALL_THISCALL);
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register GetLengthSquared for built-in type: Vec3");
+	result = engine->RegisterObjectMethod("Vec3", "Vec3 GetNormalized() const", asMETHOD(Vec3, GetNormalized), asCALL_THISCALL);
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register GetNormalized for built-in type: Vec3");
+}
+
+void RegisterVec4(asIScriptEngine* engine)
+{
+	int result = 0;
+
+	result = engine->RegisterObjectType("Vec4", sizeof(Vec4), asOBJ_VALUE | asOBJ_APP_CLASS_CDAK);
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register built-in type: Vec4");
+
+	result =
+		engine->RegisterObjectBehaviour("Vec4", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(ConstructVec4), asCALL_CDECL_OBJLAST);
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register constructor for built-in type: Vec4");
+
+	result = engine->RegisterObjectBehaviour(
+		"Vec4",
+		asBEHAVE_CONSTRUCT,
+		"void f(float, float, float, float)",
+		asFUNCTION(ConstructVec4WithXYZW),
+		asCALL_CDECL_OBJLAST);
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register constructor for built-in type: Vec4");
+
+	result = engine->RegisterObjectBehaviour(
+		"Vec4",
+		asBEHAVE_CONSTRUCT,
+		"void f(const Vec4 &in)",
+		asFUNCTION(CopyConstructVec4),
+		asCALL_CDECL_OBJLAST);
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register constructor for built-in type: Vec4");
+
+	result =
+		engine->RegisterObjectBehaviour("Vec4", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(DestructVec4), asCALL_CDECL_OBJLAST);
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register destructor for built-in type: Vec4");
+
+	result = engine->RegisterObjectMethod("Vec4", "Vec4 &opAssign(const Vec4 &in)", asFUNCTION(AssignVec4), asCALL_CDECL_OBJLAST);
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register assignment operator for built-in type: Vec4");
+
+	result = engine->RegisterObjectProperty("Vec4", "float x", asOFFSET(Vec4, x));
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register property 'x' for built-in type: Vec4");
+	result = engine->RegisterObjectProperty("Vec4", "float y", asOFFSET(Vec4, y));
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register property 'y' for built-in type: Vec4");
+	result = engine->RegisterObjectProperty("Vec4", "float z", asOFFSET(Vec4, z));
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register property 'z' for built-in type: Vec4");
+	result = engine->RegisterObjectProperty("Vec4", "float w", asOFFSET(Vec4, w));
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register property 'w' for built-in type: Vec4");
+}
+
+void RegisterAABB2(asIScriptEngine* engine)
+{
+	int result = 0;
+
+	result = engine->RegisterObjectType("AABB2", sizeof(AABB2), asOBJ_VALUE | asOBJ_APP_CLASS_CDAK);
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register built-in type: AABB2");
+
+	result =
+		engine->RegisterObjectBehaviour("AABB2", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(ConstructAABB2), asCALL_CDECL_OBJLAST);
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register constructor for built-in type: AABB2");
+
+	result = engine->RegisterObjectBehaviour(
+		"AABB2",
+		asBEHAVE_CONSTRUCT,
+		"void f(const Vec2 &in, const Vec2 &in)",
+		asFUNCTION(ConstructAABB2WithMinsMaxs),
+		asCALL_CDECL_OBJLAST);
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register constructor for built-in type: AABB2");
+
+	result = engine->RegisterObjectBehaviour(
+		"AABB2",
+		asBEHAVE_CONSTRUCT,
+		"void f(float, float, float, float)",
+		asFUNCTION(ConstructAABB2WithFloats),
+		asCALL_CDECL_OBJLAST);
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register constructor for built-in type: AABB2");
+
+	result = engine->RegisterObjectBehaviour(
+		"AABB2",
+		asBEHAVE_CONSTRUCT,
+		"void f(const AABB2 &in)",
+		asFUNCTION(CopyConstructAABB2),
+		asCALL_CDECL_OBJLAST);
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register constructor for built-in type: AABB2");
+
+	result = engine->RegisterObjectBehaviour(
+		"AABB2",
+		asBEHAVE_DESTRUCT,
+		"void f()",
+		asFUNCTION(DestructAABB2),
+		asCALL_CDECL_OBJLAST);
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register destructor for built-in type: AABB2");
+
+	result = engine->RegisterObjectMethod("AABB2", "AABB2 &opAssign(const AABB2 &in)", asFUNCTION(AssignAABB2), asCALL_CDECL_OBJLAST);
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register assignment operator for built-in type: AABB2");
+
+	result = engine->RegisterObjectProperty("AABB2", "Vec2 mins", asOFFSET(AABB2, m_mins));
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register property 'mins' for built-in type: AABB2");
+	result = engine->RegisterObjectProperty("AABB2", "Vec2 maxs", asOFFSET(AABB2, m_maxs));
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register property 'maxs' for built-in type: AABB2");
+}
+
+void RegisterOBB2(asIScriptEngine* engine)
+{
+	int result = 0;
+
+	result = engine->RegisterObjectType("OBB2", sizeof(OBB2), asOBJ_VALUE | asOBJ_APP_CLASS_CDAK);
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register built-in type: OBB2");
+
+	result =
+		engine->RegisterObjectBehaviour("OBB2", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(ConstructOBB2), asCALL_CDECL_OBJLAST);
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register constructor for built-in type: OBB2");
+
+	result = engine->RegisterObjectBehaviour(
+		"OBB2",
+		asBEHAVE_CONSTRUCT,
+		"void f(const Vec2 &in, const Vec2 &in, const Vec2 &in)",
+		asFUNCTION(ConstructOBB2WithBasis),
+		asCALL_CDECL_OBJLAST);
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register constructor for built-in type: OBB2");
+
+	result = engine->RegisterObjectBehaviour(
+		"OBB2",
+		asBEHAVE_CONSTRUCT,
+		"void f(const Vec2 &in, const Vec2 &in, float)",
+		asFUNCTION(ConstructOBB2WithOrientation),
+		asCALL_CDECL_OBJLAST);
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register constructor for built-in type: OBB2");
+
+	result = engine->RegisterObjectBehaviour(
+		"OBB2",
+		asBEHAVE_CONSTRUCT,
+		"void f(const OBB2 &in)",
+		asFUNCTION(CopyConstructOBB2),
+		asCALL_CDECL_OBJLAST);
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register constructor for built-in type: OBB2");
+
+	result =
+		engine->RegisterObjectBehaviour("OBB2", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(DestructOBB2), asCALL_CDECL_OBJLAST);
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register destructor for built-in type: OBB2");
+
+	result = engine->RegisterObjectMethod("OBB2", "OBB2 &opAssign(const OBB2 &in)", asFUNCTION(AssignOBB2), asCALL_CDECL_OBJLAST);
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register assignment operator for built-in type: OBB2");
+
+	result = engine->RegisterObjectProperty("OBB2", "Vec2 center", asOFFSET(OBB2, m_center));
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register property 'center' for built-in type: OBB2");
+	result = engine->RegisterObjectProperty("OBB2", "Vec2 iBasisNormal", asOFFSET(OBB2, m_iBasisNormal));
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register property 'iBasisNormal' for built-in type: OBB2");
+	result = engine->RegisterObjectProperty("OBB2", "Vec2 halfDimensions", asOFFSET(OBB2, m_halfDimensions));
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register property 'halfDimensions' for built-in type: OBB2");
+}
+
+void RegisterCapsule3(asIScriptEngine* engine)
+{
+	int result = 0;
+
+	result = engine->RegisterObjectType("Capsule3", sizeof(Capsule3), asOBJ_VALUE | asOBJ_APP_CLASS_CDAK);
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register built-in type: Capsule3");
+
+	result = engine->RegisterObjectBehaviour(
+		"Capsule3",
+		asBEHAVE_CONSTRUCT,
+		"void f()",
+		asFUNCTION(ConstructCapsule3),
+		asCALL_CDECL_OBJLAST);
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register constructor for built-in type: Capsule3");
+
+	result = engine->RegisterObjectBehaviour(
+		"Capsule3",
+		asBEHAVE_CONSTRUCT,
+		"void f(const Vec3 &in, const Vec3 &in, float)",
+		asFUNCTION(ConstructCapsule3WithStartEndRadius),
+		asCALL_CDECL_OBJLAST);
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register constructor for built-in type: Capsule3");
+
+	result = engine->RegisterObjectBehaviour(
+		"Capsule3",
+		asBEHAVE_CONSTRUCT,
+		"void f(const Capsule3 &in)",
+		asFUNCTION(CopyConstructCapsule3),
+		asCALL_CDECL_OBJLAST);
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register constructor for built-in type: Capsule3");
+
+	result = engine->RegisterObjectBehaviour(
+		"Capsule3",
+		asBEHAVE_DESTRUCT,
+		"void f()",
+		asFUNCTION(DestructCapsule3),
+		asCALL_CDECL_OBJLAST);
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register destructor for built-in type: Capsule3");
+
+	result = engine->RegisterObjectMethod(
+		"Capsule3",
+		"Capsule3 &opAssign(const Capsule3 &in)",
+		asFUNCTION(AssignCapsule3),
+		asCALL_CDECL_OBJLAST);
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register assignment operator for built-in type: Capsule3");
+
+	result = engine->RegisterObjectProperty("Capsule3", "Vec3 start", asOFFSET(Capsule3, m_start));
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register property 'start' for built-in type: Capsule3");
+	result = engine->RegisterObjectProperty("Capsule3", "Vec3 end", asOFFSET(Capsule3, m_end));
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register property 'end' for built-in type: Capsule3");
+	result = engine->RegisterObjectProperty("Capsule3", "float radius", asOFFSET(Capsule3, m_radius));
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register property 'radius' for built-in type: Capsule3");
 }
 
 void RegisterEulerAngles(asIScriptEngine* engine)
@@ -189,6 +709,49 @@ void RegisterEulerAngles(asIScriptEngine* engine)
 	GUARANTEE_OR_DIE(result >= 0, "Failed to register property 'pitchDegrees' for built-in type: EulerAngles");
 	result = engine->RegisterObjectProperty("EulerAngles", "float rollDegrees", asOFFSET(EulerAngles, m_rollDegrees));
 	GUARANTEE_OR_DIE(result >= 0, "Failed to register property 'rollDegrees' for built-in type: EulerAngles");
+
+	result = engine->RegisterObjectMethod(
+		"EulerAngles",
+		"bool opEquals(const EulerAngles &in) const",
+		asMETHODPR(EulerAngles, operator==, (EulerAngles const&) const, bool),
+		asCALL_THISCALL);
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register equality operator for built-in type: EulerAngles");
+	result = engine->RegisterObjectMethod(
+		"EulerAngles",
+		"EulerAngles opAdd(const EulerAngles &in) const",
+		asMETHODPR(EulerAngles, operator+, (EulerAngles const&) const, EulerAngles),
+		asCALL_THISCALL);
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register add operator for built-in type: EulerAngles");
+	result = engine->RegisterObjectMethod(
+		"EulerAngles",
+		"EulerAngles opSub(const EulerAngles &in) const",
+		asMETHODPR(EulerAngles, operator-, (EulerAngles const&) const, EulerAngles),
+		asCALL_THISCALL);
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register subtract operator for built-in type: EulerAngles");
+	result = engine->RegisterObjectMethod(
+		"EulerAngles",
+		"EulerAngles opMul(float) const",
+		asMETHODPR(EulerAngles, operator*, (float) const, EulerAngles),
+		asCALL_THISCALL);
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register scale operator for built-in type: EulerAngles");
+	result = engine->RegisterObjectMethod(
+		"EulerAngles",
+		"EulerAngles &opAddAssign(const EulerAngles &in)",
+		asFUNCTION(AddAssignEulerAngles),
+		asCALL_CDECL_OBJLAST);
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register add-assign operator for built-in type: EulerAngles");
+	result = engine->RegisterObjectMethod(
+		"EulerAngles",
+		"EulerAngles &opMulAssign(float)",
+		asFUNCTION(MultiplyAssignEulerAngles),
+		asCALL_CDECL_OBJLAST);
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register multiply-assign operator for built-in type: EulerAngles");
+	result = engine->RegisterObjectMethod(
+		"EulerAngles",
+		"Vec3 GetForwardDir_IFwd_JLeft_KUp() const",
+		asMETHOD(EulerAngles, GetForwardDir_IFwd_JLeft_KUp),
+		asCALL_THISCALL);
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register GetForwardDir_IFwd_JLeft_KUp for built-in type: EulerAngles");
 }
 
 void RegisterMatrix4x4(asIScriptEngine* engine)
@@ -268,336 +831,4 @@ void RegisterVariant(asIScriptEngine* engine)
 		asFUNCTION(AssignVariant),
 		asCALL_CDECL_OBJLAST);
 	GUARANTEE_OR_DIE(result >= 0, "Failed to register assignment operator for built-in type: Variant");
-}
-
-// ------------------------------------------------------------------------------------------------
-
-namespace
-{
-struct BridgeSignature
-{
-	Variant::Type              returnType = Variant::Type::Empty;
-	std::vector<Variant::Type> argumentTypes;
-};
-
-std::unordered_map<int, BridgeSignature> s_bridgeSignatures;
-
-// Looks up the Variant signature saved when the bridge function was registered.
-// AngelScript generic calls only expose raw slots, so this signature tells us how to decode them.
-BridgeSignature const& GetBridgeSignature(asIScriptGeneric* gen)
-{
-	asIScriptFunction* function   = gen->GetFunction();
-	int                functionId = function->GetId();
-
-	auto iter = s_bridgeSignatures.find(functionId);
-	GUARANTEE_OR_DIE(iter != s_bridgeSignatures.end(), "Missing bridge signature");
-	return iter->second;
-}
-
-// Converts AngelScript generic arguments into Variants.
-// firstUserArgIndex skips fixed bridge arguments such as nativePtr/className/methodName.
-std::vector<Variant> ReadBridgeArguments(asIScriptGeneric* gen, BridgeSignature const& signature, int firstUserArgIndex)
-{
-	std::vector<Variant> args;
-	for (size_t i = 0; i < signature.argumentTypes.size(); ++i)
-	{
-		int index = firstUserArgIndex + (int)i;
-		switch (signature.argumentTypes[i])
-		{
-		case Variant::Type::Bool:
-			args.emplace_back(gen->GetArgByte(index) != 0);
-			break;
-		case Variant::Type::Int:
-			args.emplace_back(static_cast<int>(gen->GetArgDWord(index)));
-			break;
-		case Variant::Type::Float:
-			args.emplace_back(gen->GetArgFloat(index));
-			break;
-		case Variant::Type::String:
-			args.emplace_back(*static_cast<std::string*>(gen->GetArgAddress(index)));
-			break;
-		case Variant::Type::Vec3:
-			args.emplace_back(*static_cast<Vec3*>(gen->GetArgAddress(index)));
-			break;
-		case Variant::Type::EulerAngles:
-			args.emplace_back(*static_cast<EulerAngles*>(gen->GetArgAddress(index)));
-			break;
-		case Variant::Type::Matrix4x4:
-			args.emplace_back(*static_cast<Matrix4x4*>(gen->GetArgAddress(index)));
-			break;
-		// When Variant == Object, actually we are storing a pointer to the Object
-		case Variant::Type::ObjectPtr:
-			args.emplace_back(static_cast<Object*>(gen->GetArgObject(index)));
-			break;
-		case Variant::Type::Any:
-			args.emplace_back(*static_cast<Variant*>(gen->GetArgAddress(index)));
-			break;
-		}
-	}
-	return args;
-}
-
-// Writes a Variant return value back into the AngelScript generic call frame.
-// Example:
-// Variant::Type::Vec3 -> gen->SetReturnObject(Vec3*)
-void WriteBridgeReturn(asIScriptGeneric* gen, Variant::Type returnType, Variant const& result)
-{
-	switch (returnType)
-	{
-	case Variant::Type::Empty:
-	{
-		return;
-	}
-
-	case Variant::Type::Bool:
-	{
-		gen->SetReturnByte(result.As<bool>() ? 1 : 0);
-		return;
-	}
-
-	case Variant::Type::Int:
-	{
-		gen->SetReturnDWord(static_cast<asDWORD>(result.As<int>()));
-		return;
-	}
-
-	case Variant::Type::Float:
-	{
-		gen->SetReturnFloat(result.As<float>());
-		return;
-	}
-
-	case Variant::Type::String:
-	{
-		std::string const& resultString = result.As<std::string>();
-		gen->SetReturnObject(const_cast<std::string*>(&resultString));
-		return;
-	}
-
-	case Variant::Type::Vec3:
-	{
-		Vec3 const& vecResult = result.As<Vec3>();
-		gen->SetReturnObject(const_cast<Vec3*>(&vecResult));
-		return;
-	}
-
-	case Variant::Type::EulerAngles:
-	{
-		EulerAngles const& eulerResult = result.As<EulerAngles>();
-		gen->SetReturnObject(const_cast<EulerAngles*>(&eulerResult));
-		return;
-	}
-
-	case Variant::Type::Matrix4x4:
-	{
-		Matrix4x4 const& matrixResult = result.As<Matrix4x4>();
-		gen->SetReturnObject(const_cast<Matrix4x4*>(&matrixResult));
-		return;
-	}
-
-	// Variant::Type::ObjectPtr is a special case where we are returning a pointer to the Object
-	case Variant::Type::ObjectPtr:
-	{
-		Object* objectResult = result.As<Object*>();
-		gen->SetReturnObject(objectResult);
-		return;
-	}
-
-	// Variant::Type::Any is a special case where we are returning a Variant itself
-	case Variant::Type::Any:
-	{
-		Variant const& variantResult = result;
-		gen->SetReturnObject(const_cast<Variant*>(&variantResult));
-		return;
-	}
-
-	default:
-		GUARANTEE_OR_DIE(false, "Unsupported generic bridge return type");
-		return;
-	}
-}
-
-// Shared invoke path for Object, GlobalObject, and Global bridge calls.
-// The entry points only differ in how they resolve object/methodBind and firstUserArgIndex.
-// Global calls pass nullptr because native free functions do not have a receiver object.
-void InvokeBridgeMethod(
-	asIScriptGeneric*      gen,
-	BridgeSignature const& signature,
-	Object*                object,
-	MethodBind const&      methodBind,
-	int                    firstUserArgIndex)
-{
-	std::vector<Variant> args   = ReadBridgeArguments(gen, signature, firstUserArgIndex);
-	Variant              result = methodBind.Invoke(object, args);
-	WriteBridgeReturn(gen, signature.returnType, result);
-}
-
-// Object bridge layout:
-// arg0 = NativeObject@
-// arg1 = className
-// arg2 = methodName
-// arg3... = user arguments
-// Example call:
-// __Call_Void_Vec3(nativePtr, "Node3D", "SetPosition", arg0)
-void BridgeObjectGeneric(asIScriptGeneric* gen)
-{
-	BridgeSignature const& signature  = GetBridgeSignature(gen);
-	Object*                object     = static_cast<Object*>(gen->GetArgObject(0));
-	std::string const&     className  = *static_cast<std::string const*>(gen->GetArgAddress(1));
-	std::string const&     methodName = *static_cast<std::string const*>(gen->GetArgAddress(2));
-	MethodBind const*      methodBind = ClassDatabase::GetMethodBind(className, methodName);
-	GUARANTEE_OR_DIE(object != nullptr, Stringf("Bridge object for class '%s' is null", className.c_str()));
-	GUARANTEE_OR_DIE(
-		methodBind != nullptr,
-		Stringf("Method bind for '%s::%s' not found", className.c_str(), methodName.c_str()));
-	InvokeBridgeMethod(gen, signature, object, *methodBind, 3);
-}
-
-// GlobalObject bridge layout:
-// arg0 = className
-// arg1 = methodName
-// arg2... = user arguments
-// Example call:
-// __Call_GlobalObject_Bool_Int("InputSystem", "IsKeyPressed", arg0)
-void BridgeGlobalObjectGeneric(asIScriptGeneric* gen)
-{
-	BridgeSignature const& signature  = GetBridgeSignature(gen);
-	std::string const&     className  = *static_cast<std::string const*>(gen->GetArgAddress(0));
-	std::string const&     methodName = *static_cast<std::string const*>(gen->GetArgAddress(1));
-	MethodBind const*      methodBind = ClassDatabase::GetMethodBind(className, methodName);
-	Object*                object     = ClassDatabase::GetGlobalObject(className);
-	GUARANTEE_OR_DIE(
-		methodBind != nullptr,
-		Stringf("Global object method bind for '%s::%s' not found", className.c_str(), methodName.c_str()));
-	if (object == nullptr)
-	{
-		GUARANTEE_OR_DIE(false, Stringf("Global object for class '%s' not found", className.c_str()));
-	}
-
-	InvokeBridgeMethod(gen, signature, object, *methodBind, 2);
-}
-
-// Global bridge layout:
-// arg0 = namespaceName
-// arg1 = methodName
-// arg2... = user arguments
-// Example call:
-// __Call_Global_Log("Debug", "Log", arg0)
-void BridgeGlobalGeneric(asIScriptGeneric* gen)
-{
-	BridgeSignature const& signature     = GetBridgeSignature(gen);
-	std::string const&     namespaceName = *static_cast<std::string const*>(gen->GetArgAddress(0));
-	std::string const&     methodName    = *static_cast<std::string const*>(gen->GetArgAddress(1));
-	MethodBind const*      methodBind    = ClassDatabase::GetGlobalMethodBind(namespaceName, methodName);
-	GUARANTEE_OR_DIE(
-		methodBind != nullptr,
-		Stringf("Global method bind for '%s::%s' not found", namespaceName.c_str(), methodName.c_str()));
-	InvokeBridgeMethod(gen, signature, nullptr, *methodBind, 2);
-}
-
-} // namespace
-
-void RegisterNativeObjectType(asIScriptEngine* engine)
-{
-	int result = engine->RegisterObjectType(kNativeObjectTypeName, 0, asOBJ_REF | asOBJ_NOCOUNT);
-	GUARANTEE_OR_DIE(result >= 0, Stringf("Failed to register script class: %s", kNativeObjectTypeName));
-}
-
-void RegisterBridgeFunctions(asIScriptEngine* engine)
-{
-	std::vector<GlobalNamespaceInfo const*> globalNamespaces = ClassDatabase::GetRegisteredGlobalNamespaces();
-	for (GlobalNamespaceInfo const* globalNamespace : globalNamespaces)
-	{
-		if (globalNamespace == nullptr)
-		{
-			continue;
-		}
-
-		for (std::unique_ptr<MethodInfo> const& methodInfo : globalNamespace->m_methods)
-		{
-			if (methodInfo == nullptr)
-			{
-				continue;
-			}
-
-			std::string scriptDeclaration = BuildBridgeFunctionDeclaration(*methodInfo, ScriptCallableKind::Global);
-			int         functionId        = engine->RegisterGlobalFunction(
-				scriptDeclaration.c_str(),
-				asFUNCTION(BridgeGlobalGeneric),
-				asCALL_GENERIC);
-			GUARANTEE_OR_DIE(
-				functionId >= 0,
-				Stringf("Failed to register bridge function: %s", scriptDeclaration.c_str()));
-
-			s_bridgeSignatures[functionId] = { methodInfo->m_returnType, methodInfo->m_argumentTypes };
-		}
-	}
-
-	std::vector<ClassInfo const*>   classes = ClassDatabase::GetRegisteredClasses();
-	std::unordered_set<std::string> registeredFunctions;
-	for (ClassInfo const* classInfo : classes)
-	{
-		if (classInfo == nullptr)
-		{
-			continue;
-		}
-
-		// If the class is a subclass of SystemBase
-		// we will register its methods as global functions
-		if (classInfo->m_parentClassName == SystemBase::GetStaticClassName())
-		{
-			for (std::unique_ptr<MethodInfo> const& methodInfo : classInfo->m_methods)
-			{
-				if (methodInfo == nullptr)
-				{
-					continue;
-				}
-
-				std::string scriptDeclaration =
-					BuildBridgeFunctionDeclaration(*methodInfo, ScriptCallableKind::GlobalObject);
-				if (registeredFunctions.find(scriptDeclaration) != registeredFunctions.end())
-				{
-					continue;
-				}
-
-				int functionId = engine->RegisterGlobalFunction(
-					scriptDeclaration.c_str(),
-					asFUNCTION(BridgeGlobalObjectGeneric),
-					asCALL_GENERIC);
-				GUARANTEE_OR_DIE(
-					functionId >= 0,
-					Stringf("Failed to register bridge function: %s", scriptDeclaration.c_str()));
-
-				registeredFunctions.insert(scriptDeclaration);
-				s_bridgeSignatures[functionId] = { methodInfo->m_returnType, methodInfo->m_argumentTypes };
-			}
-		}
-		else
-		{
-			for (std::unique_ptr<MethodInfo> const& methodInfo : classInfo->m_methods)
-			{
-				if (methodInfo == nullptr)
-				{
-					continue;
-				}
-
-				std::string scriptDeclaration = BuildBridgeFunctionDeclaration(*methodInfo, ScriptCallableKind::Object);
-				if (registeredFunctions.find(scriptDeclaration) != registeredFunctions.end())
-				{
-					continue;
-				}
-
-				int functionId = engine->RegisterGlobalFunction(
-					scriptDeclaration.c_str(),
-					asFUNCTION(BridgeObjectGeneric),
-					asCALL_GENERIC);
-				GUARANTEE_OR_DIE(
-					functionId >= 0,
-					Stringf("Failed to register bridge function: %s", scriptDeclaration.c_str()));
-
-				registeredFunctions.insert(scriptDeclaration);
-				s_bridgeSignatures[functionId] = { methodInfo->m_returnType, methodInfo->m_argumentTypes };
-			}
-		}
-	}
 }

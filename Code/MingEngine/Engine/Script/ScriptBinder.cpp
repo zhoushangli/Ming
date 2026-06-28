@@ -1,9 +1,14 @@
 #include "MingEngine/Engine/Script/ScriptBinder.hpp"
 
 #include "MingEngine/Core/ErrorWarningAssert.hpp"
+#include "MingEngine/Core/Math/AABB2.hpp"
+#include "MingEngine/Core/Math/Capsule3.hpp"
 #include "MingEngine/Core/Math/EulerAngles.hpp"
 #include "MingEngine/Core/Math/Matrix4x4.hpp"
+#include "MingEngine/Core/Math/OBB2.hpp"
+#include "MingEngine/Core/Math/Vec2.hpp"
 #include "MingEngine/Core/Math/Vec3.hpp"
+#include "MingEngine/Core/Math/Vec4.hpp"
 #include "MingEngine/Core/Object/ClassDatabase.hpp"
 #include "MingEngine/Core/Object/Variant.hpp"
 #include "MingEngine/Core/StringUtils.hpp"
@@ -18,259 +23,6 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
-
-namespace
-{
-void ConstructVec3(void* memory) { new (memory) Vec3(); }
-
-void ConstructVec3WithXYZ(float x, float y, float z, void* memory) { new (memory) Vec3(x, y, z); }
-
-void CopyConstructVec3(Vec3 const& other, void* memory) { new (memory) Vec3(other); }
-
-void DestructVec3(void* memory) { static_cast<Vec3*>(memory)->~Vec3(); }
-
-Vec3& AssignVec3(Vec3 const& other, Vec3* self)
-{
-	*self = other;
-	return *self;
-}
-
-// ------------------------------------------------------------------------------
-
-void ConstructEulerAngles(void* memory) { new (memory) EulerAngles(); }
-
-void ConstructEulerAnglesWithXYZ(float x, float y, float z, void* memory) { new (memory) EulerAngles(x, y, z); }
-
-void CopyConstructEulerAngles(EulerAngles const& other, void* memory) { new (memory) EulerAngles(other); }
-
-void DestructEulerAngles(void* memory) { static_cast<EulerAngles*>(memory)->~EulerAngles(); }
-
-EulerAngles& AssignEulerAngles(EulerAngles const& other, EulerAngles* self)
-{
-	*self = other;
-	return *self;
-}
-
-// ------------------------------------------------------------------------------
-
-void ConstructMatrix4x4(void* memory) { new (memory) Matrix4x4(); }
-
-void CopyConstructMatrix4x4(Matrix4x4 const& other, void* memory) { new (memory) Matrix4x4(other); }
-
-void DestructMatrix4x4(void* memory) { static_cast<Matrix4x4*>(memory)->~Matrix4x4(); }
-
-Matrix4x4& AssignMatrix4x4(Matrix4x4 const& other, Matrix4x4* self)
-{
-	*self = other;
-	return *self;
-}
-
-// ------------------------------------------------------------------------------
-
-void ConstructVariant(void* memory) { new (memory) Variant(); }
-
-void CopyConstructVariant(Variant const& other, void* memory) { new (memory) Variant(other); }
-
-void DestructVariant(void* memory) { static_cast<Variant*>(memory)->~Variant(); }
-
-Variant& AssignVariant(Variant const& other, Variant* self)
-{
-	*self = other;
-	return *self;
-}
-
-} // namespace
-
-void RegisterVec3(asIScriptEngine* engine)
-{
-	int result = 0;
-
-	// Register Vec3
-	result = engine->RegisterObjectType("Vec3", sizeof(Vec3), asOBJ_VALUE | asOBJ_APP_CLASS_CDAK);
-	GUARANTEE_OR_DIE(result >= 0, "Failed to register built-in type: Vec3");
-
-	result = engine->RegisterObjectBehaviour(
-		"Vec3",
-		asBEHAVE_CONSTRUCT,
-		"void f()",
-		asFUNCTION(ConstructVec3),
-		asCALL_CDECL_OBJLAST);
-	GUARANTEE_OR_DIE(result >= 0, "Failed to register constructor for built-in type: Vec3");
-
-	result = engine->RegisterObjectBehaviour(
-		"Vec3",
-		asBEHAVE_CONSTRUCT,
-		"void f(float, float, float)",
-		asFUNCTION(ConstructVec3WithXYZ),
-		asCALL_CDECL_OBJLAST);
-	GUARANTEE_OR_DIE(result >= 0, "Failed to register constructor for built-in type: Vec3");
-
-	result = engine->RegisterObjectBehaviour(
-		"Vec3",
-		asBEHAVE_CONSTRUCT,
-		"void f(const Vec3 &in)",
-		asFUNCTION(CopyConstructVec3),
-		asCALL_CDECL_OBJLAST);
-	GUARANTEE_OR_DIE(result >= 0, "Failed to register constructor for built-in type: Vec3");
-
-	result = engine->RegisterObjectBehaviour(
-		"Vec3",
-		asBEHAVE_DESTRUCT,
-		"void f()",
-		asFUNCTION(DestructVec3),
-		asCALL_CDECL_OBJLAST);
-	GUARANTEE_OR_DIE(result >= 0, "Failed to register destructor for built-in type: Vec3");
-
-	result = engine->RegisterObjectMethod(
-		"Vec3",
-		"Vec3 &opAssign(const Vec3 &in)",
-		asFUNCTION(AssignVec3),
-		asCALL_CDECL_OBJLAST);
-	GUARANTEE_OR_DIE(result >= 0, "Failed to register assignment operator for built-in type: Vec3");
-
-	result = engine->RegisterObjectProperty("Vec3", "float x", asOFFSET(Vec3, x));
-	GUARANTEE_OR_DIE(result >= 0, "Failed to register property 'x' for built-in type: Vec3");
-	result = engine->RegisterObjectProperty("Vec3", "float y", asOFFSET(Vec3, y));
-	GUARANTEE_OR_DIE(result >= 0, "Failed to register property 'y' for built-in type: Vec3");
-	result = engine->RegisterObjectProperty("Vec3", "float z", asOFFSET(Vec3, z));
-	GUARANTEE_OR_DIE(result >= 0, "Failed to register property 'z' for built-in type: Vec3");
-}
-
-void RegisterEulerAngles(asIScriptEngine* engine)
-{
-	int result = 0;
-
-	// Register EulerAngles
-	result = engine->RegisterObjectType("EulerAngles", sizeof(EulerAngles), asOBJ_VALUE | asOBJ_APP_CLASS_CDAK);
-	GUARANTEE_OR_DIE(result >= 0, "Failed to register built-in type: EulerAngles");
-
-	result = engine->RegisterObjectBehaviour(
-		"EulerAngles",
-		asBEHAVE_CONSTRUCT,
-		"void f()",
-		asFUNCTION(ConstructEulerAngles),
-		asCALL_CDECL_OBJLAST);
-	GUARANTEE_OR_DIE(result >= 0, "Failed to register constructor for built-in type: EulerAngles");
-
-	result = engine->RegisterObjectBehaviour(
-		"EulerAngles",
-		asBEHAVE_CONSTRUCT,
-		"void f(float, float, float)",
-		asFUNCTION(ConstructEulerAnglesWithXYZ),
-		asCALL_CDECL_OBJLAST);
-	GUARANTEE_OR_DIE(result >= 0, "Failed to register constructor for built-in type: EulerAngles");
-
-	result = engine->RegisterObjectBehaviour(
-		"EulerAngles",
-		asBEHAVE_CONSTRUCT,
-		"void f(const EulerAngles &in)",
-		asFUNCTION(CopyConstructEulerAngles),
-		asCALL_CDECL_OBJLAST);
-	GUARANTEE_OR_DIE(result >= 0, "Failed to register constructor for built-in type: EulerAngles");
-
-	result = engine->RegisterObjectBehaviour(
-		"EulerAngles",
-		asBEHAVE_DESTRUCT,
-		"void f()",
-		asFUNCTION(DestructEulerAngles),
-		asCALL_CDECL_OBJLAST);
-	GUARANTEE_OR_DIE(result >= 0, "Failed to register destructor for built-in type: EulerAngles");
-
-	result = engine->RegisterObjectMethod(
-		"EulerAngles",
-		"EulerAngles &opAssign(const EulerAngles &in)",
-		asFUNCTION(AssignEulerAngles),
-		asCALL_CDECL_OBJLAST);
-	GUARANTEE_OR_DIE(result >= 0, "Failed to register assignment operator for built-in type: EulerAngles");
-
-	result = engine->RegisterObjectProperty("EulerAngles", "float yawDegrees", asOFFSET(EulerAngles, m_yawDegrees));
-	GUARANTEE_OR_DIE(result >= 0, "Failed to register property 'yawDegrees' for built-in type: EulerAngles");
-	result = engine->RegisterObjectProperty("EulerAngles", "float pitchDegrees", asOFFSET(EulerAngles, m_pitchDegrees));
-	GUARANTEE_OR_DIE(result >= 0, "Failed to register property 'pitchDegrees' for built-in type: EulerAngles");
-	result = engine->RegisterObjectProperty("EulerAngles", "float rollDegrees", asOFFSET(EulerAngles, m_rollDegrees));
-	GUARANTEE_OR_DIE(result >= 0, "Failed to register property 'rollDegrees' for built-in type: EulerAngles");
-}
-
-void RegisterMatrix4x4(asIScriptEngine* engine)
-{
-	int result = 0;
-
-	// Register Matrix4x4
-	result = engine->RegisterObjectType("Matrix4x4", sizeof(Matrix4x4), asOBJ_VALUE | asOBJ_APP_CLASS_CDAK);
-	GUARANTEE_OR_DIE(result >= 0, "Failed to register built-in type: Matrix4x4");
-
-	result = engine->RegisterObjectBehaviour(
-		"Matrix4x4",
-		asBEHAVE_CONSTRUCT,
-		"void f()",
-		asFUNCTION(ConstructMatrix4x4),
-		asCALL_CDECL_OBJLAST);
-	GUARANTEE_OR_DIE(result >= 0, "Failed to register constructor for built-in type: Matrix4x4");
-
-	result = engine->RegisterObjectBehaviour(
-		"Matrix4x4",
-		asBEHAVE_CONSTRUCT,
-		"void f(const Matrix4x4 &in)",
-		asFUNCTION(CopyConstructMatrix4x4),
-		asCALL_CDECL_OBJLAST);
-	GUARANTEE_OR_DIE(result >= 0, "Failed to register constructor for built-in type: Matrix4x4");
-
-	result = engine->RegisterObjectBehaviour(
-		"Matrix4x4",
-		asBEHAVE_DESTRUCT,
-		"void f()",
-		asFUNCTION(DestructMatrix4x4),
-		asCALL_CDECL_OBJLAST);
-	GUARANTEE_OR_DIE(result >= 0, "Failed to register destructor for built-in type: Matrix4x4");
-
-	result = engine->RegisterObjectMethod(
-		"Matrix4x4",
-		"Matrix4x4 &opAssign(const Matrix4x4 &in)",
-		asFUNCTION(AssignMatrix4x4),
-		asCALL_CDECL_OBJLAST);
-	GUARANTEE_OR_DIE(result >= 0, "Failed to register assignment operator for built-in type: Matrix4x4");
-}
-
-void RegisterVariant(asIScriptEngine* engine)
-{
-	int result = 0;
-
-	result = engine->RegisterObjectType("Variant", sizeof(Variant), asOBJ_VALUE | asOBJ_APP_CLASS_CDAK);
-	GUARANTEE_OR_DIE(result >= 0, "Failed to register built-in type: Variant");
-
-	result = engine->RegisterObjectBehaviour(
-		"Variant",
-		asBEHAVE_CONSTRUCT,
-		"void f()",
-		asFUNCTION(ConstructVariant),
-		asCALL_CDECL_OBJLAST);
-	GUARANTEE_OR_DIE(result >= 0, "Failed to register default constructor for built-in type: Variant");
-
-	result = engine->RegisterObjectBehaviour(
-		"Variant",
-		asBEHAVE_CONSTRUCT,
-		"void f(const Variant &in)",
-		asFUNCTION(CopyConstructVariant),
-		asCALL_CDECL_OBJLAST);
-	GUARANTEE_OR_DIE(result >= 0, "Failed to register copy constructor for built-in type: Variant");
-
-	result = engine->RegisterObjectBehaviour(
-		"Variant",
-		asBEHAVE_DESTRUCT,
-		"void f()",
-		asFUNCTION(DestructVariant),
-		asCALL_CDECL_OBJLAST);
-	GUARANTEE_OR_DIE(result >= 0, "Failed to register destructor for built-in type: Variant");
-
-	result = engine->RegisterObjectMethod(
-		"Variant",
-		"Variant &opAssign(const Variant &in)",
-		asFUNCTION(AssignVariant),
-		asCALL_CDECL_OBJLAST);
-	GUARANTEE_OR_DIE(result >= 0, "Failed to register assignment operator for built-in type: Variant");
-}
-
-// ------------------------------------------------------------------------------------------------
 
 namespace
 {
@@ -316,8 +68,23 @@ std::vector<Variant> ReadBridgeArguments(asIScriptGeneric* gen, BridgeSignature 
 		case Variant::Type::String:
 			args.emplace_back(*static_cast<std::string*>(gen->GetArgAddress(index)));
 			break;
+		case Variant::Type::Vec2:
+			args.emplace_back(*static_cast<Vec2*>(gen->GetArgAddress(index)));
+			break;
 		case Variant::Type::Vec3:
 			args.emplace_back(*static_cast<Vec3*>(gen->GetArgAddress(index)));
+			break;
+		case Variant::Type::Vec4:
+			args.emplace_back(*static_cast<Vec4*>(gen->GetArgAddress(index)));
+			break;
+		case Variant::Type::AABB2:
+			args.emplace_back(*static_cast<AABB2*>(gen->GetArgAddress(index)));
+			break;
+		case Variant::Type::OBB2:
+			args.emplace_back(*static_cast<OBB2*>(gen->GetArgAddress(index)));
+			break;
+		case Variant::Type::Capsule3:
+			args.emplace_back(*static_cast<Capsule3*>(gen->GetArgAddress(index)));
 			break;
 		case Variant::Type::EulerAngles:
 			args.emplace_back(*static_cast<EulerAngles*>(gen->GetArgAddress(index)));
@@ -325,7 +92,6 @@ std::vector<Variant> ReadBridgeArguments(asIScriptGeneric* gen, BridgeSignature 
 		case Variant::Type::Matrix4x4:
 			args.emplace_back(*static_cast<Matrix4x4*>(gen->GetArgAddress(index)));
 			break;
-		// When Variant == Object, actually we are storing a pointer to the Object
 		case Variant::Type::ObjectPtr:
 			args.emplace_back(static_cast<Object*>(gen->GetArgObject(index)));
 			break;
@@ -374,10 +140,45 @@ void WriteBridgeReturn(asIScriptGeneric* gen, Variant::Type returnType, Variant 
 		return;
 	}
 
+	case Variant::Type::Vec2:
+	{
+		Vec2 const& vecResult = result.As<Vec2>();
+		gen->SetReturnObject(const_cast<Vec2*>(&vecResult));
+		return;
+	}
+
 	case Variant::Type::Vec3:
 	{
 		Vec3 const& vecResult = result.As<Vec3>();
 		gen->SetReturnObject(const_cast<Vec3*>(&vecResult));
+		return;
+	}
+
+	case Variant::Type::Vec4:
+	{
+		Vec4 const& vecResult = result.As<Vec4>();
+		gen->SetReturnObject(const_cast<Vec4*>(&vecResult));
+		return;
+	}
+
+	case Variant::Type::AABB2:
+	{
+		AABB2 const& boxResult = result.As<AABB2>();
+		gen->SetReturnObject(const_cast<AABB2*>(&boxResult));
+		return;
+	}
+
+	case Variant::Type::OBB2:
+	{
+		OBB2 const& boxResult = result.As<OBB2>();
+		gen->SetReturnObject(const_cast<OBB2*>(&boxResult));
+		return;
+	}
+
+	case Variant::Type::Capsule3:
+	{
+		Capsule3 const& capsuleResult = result.As<Capsule3>();
+		gen->SetReturnObject(const_cast<Capsule3*>(&capsuleResult));
 		return;
 	}
 
@@ -495,6 +296,18 @@ void BridgeGlobalGeneric(asIScriptGeneric* gen)
 	InvokeBridgeMethod(gen, signature, nullptr, *methodBind, 2);
 }
 
+Object* CreateNativeObject(std::string const& className)
+{
+	Object* object = ClassDatabase::CreateInstance(className);
+	if (object == nullptr)
+	{
+		DebuggerPrintf("Script: failed to create native object '%s'.\n", className.c_str());
+		return nullptr;
+	}
+
+	return object;
+}
+
 } // namespace
 
 void RegisterNativeObjectType(asIScriptEngine* engine)
@@ -532,6 +345,15 @@ void RegisterBridgeFunctions(asIScriptEngine* engine)
 			s_bridgeSignatures[functionId] = { methodInfo->m_returnType, methodInfo->m_argumentTypes };
 		}
 	}
+
+	// Register Construct functions
+	int constructFunctionId = engine->RegisterGlobalFunction(
+		"NativeObject@ __CreateNativeObject(const string &in className)",
+		asFUNCTION(CreateNativeObject),
+		asCALL_CDECL);
+	GUARANTEE_OR_DIE(
+		constructFunctionId >= 0,
+		Stringf("Failed to register bridge function: __CreateNativeObject(const string &in className)"));
 
 	std::vector<ClassInfo const*>   classes = ClassDatabase::GetRegisteredClasses();
 	std::unordered_set<std::string> registeredFunctions;
@@ -574,6 +396,7 @@ void RegisterBridgeFunctions(asIScriptEngine* engine)
 		}
 		else
 		{
+			// Register Object methods
 			for (std::unique_ptr<MethodInfo> const& methodInfo : classInfo->m_methods)
 			{
 				if (methodInfo == nullptr)

@@ -555,8 +555,11 @@
     <ClCompile Include="Scene\Core\PackedSceneLoader.cpp">
       <Filter>Scene\Core</Filter>
     </ClCompile>
-    <ClCompile Include="Scene\RegisterGlobalUtils.cpp">
+    <ClCompile Include="Scene\RegisterGlobalMethods.cpp">
       <Filter>Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Script\RegisterBuildinType.cpp">
+      <Filter>Engine\Script</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1076,8 +1079,11 @@
     <ClInclude Include="Scene\Core\PackedSceneLoader.hpp">
       <Filter>Scene\Core</Filter>
     </ClInclude>
-    <ClInclude Include="Scene\RegisterGlobalUtils.hpp">
+    <ClInclude Include="Scene\RegisterGlobalMethods.hpp">
       <Filter>Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Script\RegisterBuildinType.hpp">
+      <Filter>Engine\Script</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

@@ -397,6 +397,7 @@
     <ClCompile Include="Engine\Input\InputSystem.cpp" />
     <ClCompile Include="Engine\Input\KeyButtonState.cpp" />
     <ClCompile Include="Engine\Input\XboxController.cpp" />
+    <ClCompile Include="Engine\Script\RegisterBuildinType.cpp" />
     <ClCompile Include="Engine\Script\ScriptBinder.cpp" />
     <ClCompile Include="Engine\Script\ScriptGenerator.cpp" />
     <ClCompile Include="Engine\Script\ScriptInstance.cpp" />
@@ -447,7 +448,7 @@
     <ClCompile Include="Scene\Core\PackedSceneLoader.cpp" />
     <ClCompile Include="Scene\Core\SceneTree.cpp" />
     <ClCompile Include="Scene\Core\Viewport.cpp" />
-    <ClCompile Include="Scene\RegisterGlobalUtils.cpp" />
+    <ClCompile Include="Scene\RegisterGlobalMethods.cpp" />
     <ClCompile Include="Scene\RegisterSceneTypes.cpp" />
     <ClCompile Include="EngineService\RenderService.cpp" />
     <ClCompile Include="Scene\Resource\MeshResource.cpp" />
@@ -553,6 +554,7 @@
     <ClInclude Include="Engine\Input\InputSystem.hpp" />
     <ClInclude Include="Engine\Input\KeyButtonState.hpp" />
     <ClInclude Include="Engine\Input\XboxController.hpp" />
+    <ClInclude Include="Engine\Script\RegisterBuildinType.hpp" />
     <ClInclude Include="Engine\Script\ScriptBinder.hpp" />
     <ClInclude Include="Engine\Script\ScriptGenerator.hpp" />
     <ClInclude Include="Engine\Script\ScriptInstance.hpp" />
@@ -604,7 +606,7 @@
     <ClInclude Include="Scene\Core\PackedSceneLoader.hpp" />
     <ClInclude Include="Scene\Core\SceneTree.hpp" />
     <ClInclude Include="Scene\Core\Viewport.hpp" />
-    <ClInclude Include="Scene\RegisterGlobalUtils.hpp" />
+    <ClInclude Include="Scene\RegisterGlobalMethods.hpp" />
     <ClInclude Include="Scene\RegisterSceneTypes.hpp" />
     <ClInclude Include="EngineService\RenderService.hpp" />
     <ClInclude Include="Scene\Resource\MeshResource.hpp" />

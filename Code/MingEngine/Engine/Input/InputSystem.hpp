@@ -86,6 +86,7 @@ public:
 	// locked to the window. In FPS mode, the cursor should be hidden, reset to the
 	// center of the window each frame, and record the delta each frame.
 	void SetCursorMode(CursorMode cursorMode);
+	void SetCursorModeByInt(int cursorMode);
 
 	// Returns the current frame cursor delta in pixels, relative to the client
 	// region. This is how much the cursor moved last frame before it was reset

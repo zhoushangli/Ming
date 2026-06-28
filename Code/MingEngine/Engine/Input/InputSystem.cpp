@@ -49,6 +49,9 @@ void InputSystem::BindMethods()
 {
 	ClassDatabase::BindMethod("IsKeyDown", &InputSystem::IsKeyDown);
 	ClassDatabase::BindMethod("WasKeyJustPressed", &InputSystem::WasKeyJustPressed);
+	ClassDatabase::BindMethod("WasKeyJustReleased", &InputSystem::WasKeyJustReleased);
+	ClassDatabase::BindMethod("SetCursorMode", &InputSystem::SetCursorModeByInt);
+	ClassDatabase::BindMethod("GetCursorClientDelta", &InputSystem::GetCursorClientDelta);
 }
 
 InputSystem::~InputSystem()
@@ -199,6 +202,16 @@ void InputSystem::ClearAllInputStates()
 }
 
 void InputSystem::SetCursorMode(CursorMode cursorMode) { m_cursorMode = cursorMode; }
+
+void InputSystem::SetCursorModeByInt(int cursorMode)
+{
+	if (cursorMode < 0 || cursorMode >= static_cast<int>(CursorMode::COUNT))
+	{
+		return;
+	}
+
+	SetCursorMode(static_cast<CursorMode>(cursorMode));
+}
 
 Vec2 InputSystem::GetCursorClientDelta() const { return Vec2(m_cursorClientDelta); }
 
