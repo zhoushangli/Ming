@@ -332,6 +332,7 @@
     <ClCompile Include="EngineService\DevConsole.cpp" />
     <ClCompile Include="Engine\Application\Engine.cpp" />
     <ClCompile Include="Engine\Application\EngineCommon.cpp" />
+    <ClCompile Include="Engine\Application\SystemBase.cpp" />
     <ClCompile Include="Core\ErrorWarningAssert.cpp" />
     <ClCompile Include="Core\Object\Object.cpp" />
     <ClCompile Include="Core\Object\Variant.cpp" />
@@ -403,7 +404,7 @@
     <ClCompile Include="Engine\Script\ScriptResourceIdentity.cpp" />
     <ClCompile Include="Engine\Script\ScriptSystem.cpp" />
     <ClCompile Include="Engine\Script\ScriptTypeUtils.cpp" />
-    <ClCompile Include="Engine\Window\Window.cpp" />
+    <ClCompile Include="Engine\Window\WindowSystem.cpp" />
     <ClCompile Include="Engine\Render\BitmapFont.cpp" />
     <ClCompile Include="Engine\Render\CameraContext.cpp" />
     <ClCompile Include="Engine\Render\ConstantBuffer.cpp" />
@@ -477,6 +478,7 @@
     <ClInclude Include="Engine\Application\Engine.hpp" />
     <ClInclude Include="Engine\Application\EngineBuildPreferences.hpp" />
     <ClInclude Include="Engine\Application\EngineCommon.hpp" />
+    <ClInclude Include="Engine\Application\SystemBase.hpp" />
     <ClInclude Include="Core\ErrorWarningAssert.hpp" />
     <ClInclude Include="Core\Object\Object.hpp" />
     <ClInclude Include="Core\Object\Variant.hpp" />
@@ -557,7 +559,7 @@
     <ClInclude Include="Engine\Script\ScriptResourceIdentity.hpp" />
     <ClInclude Include="Engine\Script\ScriptSystem.hpp" />
     <ClInclude Include="Engine\Script\ScriptTypeUtils.hpp" />
-    <ClInclude Include="Engine\Window\Window.hpp" />
+    <ClInclude Include="Engine\Window\WindowSystem.hpp" />
     <ClInclude Include="Engine\Render\BitmapFont.hpp" />
     <ClInclude Include="Engine\Render\CameraContext.hpp" />
     <ClInclude Include="Engine\Render\ConstantBuffer.hpp" />

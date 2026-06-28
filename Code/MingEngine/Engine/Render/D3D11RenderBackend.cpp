@@ -277,8 +277,8 @@ void           D3D11RenderBackend::Startup()
 
 	// 	// Create depth stencil texture and view
 	// 	D3D11_TEXTURE2D_DESC depthTextureDesc = {};
-	// 	depthTextureDesc.Width                = g_engine->m_window->GetClientDimensions().x;
-	// 	depthTextureDesc.Height               = g_engine->m_window->GetClientDimensions().y;
+	// 	depthTextureDesc.Width                = g_engine->m_windowSystem->GetClientDimensions().x;
+	// 	depthTextureDesc.Height               = g_engine->m_windowSystem->GetClientDimensions().y;
 	// 	depthTextureDesc.MipLevels            = 1;
 	// 	depthTextureDesc.ArraySize            = 1;
 	// 	depthTextureDesc.Usage                = D3D11_USAGE_DEFAULT;

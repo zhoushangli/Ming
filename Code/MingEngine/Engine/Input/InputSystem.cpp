@@ -2,6 +2,7 @@
 
 #include "MingEngine/Core/ErrorWarningAssert.hpp"
 #include "MingEngine/Core/Math/MathUtils.hpp"
+#include "MingEngine/Core/Object/ClassDatabase.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
 
 using namespace Math;
@@ -43,6 +44,12 @@ int const KeyCodeHome      = GLFW_KEY_HOME;
 int const KeyCodeEnd       = GLFW_KEY_END;
 
 InputSystem::InputSystem(InputConfig config) : m_config(config) {}
+
+void InputSystem::BindMethods()
+{
+	ClassDatabase::BindMethod("IsKeyDown", &InputSystem::IsKeyDown);
+	ClassDatabase::BindMethod("WasKeyJustPressed", &InputSystem::WasKeyJustPressed);
+}
 
 InputSystem::~InputSystem()
 {

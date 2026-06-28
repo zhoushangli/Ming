@@ -1,5 +1,7 @@
 #pragma once
 
+#include "MingEngine/Engine/Application/SystemBase.hpp"
+
 #include <filesystem>
 #include <memory>
 #include <string>
@@ -49,15 +51,17 @@ private:
 	std::vector<std::unique_ptr<FileEntry>> m_children;
 };
 
-class FileSystem
+class FileSystem : public SystemBase
 {
+	MCLASS(FileSystem, SystemBase)
+
 public:
 	FileSystem(FileSystemConfig const& config);
 
-	void Startup();
-	void Shutdown();
-	void BeginFrame();
-	void EndFrame();
+	void Startup() override;
+	void Shutdown() override;
+	void BeginFrame() override;
+	void EndFrame() override;
 
 	static bool IsVirtualPath(std::string const& path);
 	static bool TryGetRelativePath(std::string const& virtualPath, std::string& outRelativePath);
@@ -72,6 +76,8 @@ public:
 	bool                         HasResourceTree() const;
 	FileEntry const*             GetResourceRootEntry() const;
 	std::string                  ToVirtualPath(std::filesystem::path const& physicalPath) const;
+
+	static void BindMethods();
 
 private:
 	bool ResolvePath(std::string const& virtualPath, std::filesystem::path& outPhysicalPath) const;

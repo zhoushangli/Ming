@@ -35,6 +35,8 @@ void ScriptMessageCallback(asSMessageInfo const* message, void*)
 
 ScriptSystem::ScriptSystem([[maybe_unused]] ScriptSystemConfig const& config) {}
 
+void ScriptSystem::BindMethods() {}
+
 void ScriptSystem::Startup()
 {
 	m_scriptEngine = asCreateScriptEngine();

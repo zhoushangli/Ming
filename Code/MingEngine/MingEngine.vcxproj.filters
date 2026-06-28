@@ -144,6 +144,9 @@
     <ClCompile Include="Engine\Application\EngineCommon.cpp">
       <Filter>Engine\Application</Filter>
     </ClCompile>
+    <ClCompile Include="Engine\Application\SystemBase.cpp">
+      <Filter>Engine\Application</Filter>
+    </ClCompile>
     <ClCompile Include="Core\ErrorWarningAssert.cpp">
       <Filter>Core</Filter>
     </ClCompile>
@@ -321,7 +324,7 @@
     <ClCompile Include="Engine\Input\XboxController.cpp">
       <Filter>Engine\Input</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Window\Window.cpp">
+    <ClCompile Include="Engine\Window\WindowSystem.cpp">
       <Filter>Engine\Window</Filter>
     </ClCompile>
     <ClCompile Include="Engine\Render\BitmapFont.cpp">
@@ -569,6 +572,9 @@
     <ClInclude Include="Engine\Application\EngineCommon.hpp">
       <Filter>Engine\Application</Filter>
     </ClInclude>
+    <ClInclude Include="Engine\Application\SystemBase.hpp">
+      <Filter>Engine\Application</Filter>
+    </ClInclude>
     <ClInclude Include="Core\ErrorWarningAssert.hpp">
       <Filter>Core</Filter>
     </ClInclude>
@@ -749,7 +755,7 @@
     <ClInclude Include="Engine\Input\XboxController.hpp">
       <Filter>Engine\Input</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Window\Window.hpp">
+    <ClInclude Include="Engine\Window\WindowSystem.hpp">
       <Filter>Engine\Window</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Render\BitmapFont.hpp">

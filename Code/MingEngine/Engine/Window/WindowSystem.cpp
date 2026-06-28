@@ -110,6 +110,8 @@ WindowSystem::WindowSystem(WindowConfig config) : m_config(config) {}
 
 WindowSystem::~WindowSystem() {}
 
+void WindowSystem::BindMethods() {}
+
 void WindowSystem::Startup()
 {
 	if (!glfwInit())

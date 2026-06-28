@@ -1,5 +1,7 @@
 #pragma once
 
+#include "MingEngine/Engine/Application/SystemBase.hpp"
+
 #include "MingEngine/Core/NamedStrings.hpp"
 
 #include <functional>
@@ -15,16 +17,18 @@ struct EventSystemConfig
 	bool m_isEnable = true;
 };
 
-class EventSystem
+class EventSystem : public SystemBase
 {
+	MCLASS(EventSystem, SystemBase)
+
 public:
 	EventSystem(EventSystemConfig const& config);
 	~EventSystem();
 
-	void Startup();
-	void Shutdown();
-	void BeginFrame();
-	void EndFrame();
+	void Startup() override;
+	void Shutdown() override;
+	void BeginFrame() override;
+	void EndFrame() override;
 
 	void RegisterEvent(std::string const& eventName, EventCallbackFunctionPtr ptr);
 	void UnregisterEvent(std::string const& eventName, EventCallbackFunctionPtr ptr);
@@ -33,6 +37,8 @@ public:
 
 	bool    IsEventRegistered(std::string const& eventName) const;
 	Strings GetRegisteredEventNames() const;
+
+	static void BindMethods();
 
 protected:
 	EventSystemConfig                                            m_config;

@@ -113,6 +113,8 @@ ImGuiSystem::ImGuiSystem(ImGuiConfig config) : m_config(config) {}
 
 ImGuiSystem::~ImGuiSystem() {}
 
+void ImGuiSystem::BindMethods() {}
+
 void ImGuiSystem::Startup()
 {
 	IMGUI_CHECKVERSION();

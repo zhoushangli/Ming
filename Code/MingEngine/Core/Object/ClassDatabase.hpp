@@ -139,14 +139,17 @@ public:
 
 	// Only for Object class
 	template <typename T>
-	static void RegisterRootClass(bool canCreateInEditor = true)
+	static void RegisterRootClass(bool canCreateInEditor = true, bool canCreateInstance = true)
 	{
 		std::string className = T::GetStaticClassName();
 		ClassInfo   classInfo;
 		classInfo.m_className = className;
-		if constexpr (!std::is_abstract_v<T>)
+		if constexpr (!std::is_abstract_v<T> && std::is_default_constructible_v<T>)
 		{
-			classInfo.m_creator = &Creator<T>;
+			if (canCreateInstance)
+			{
+				classInfo.m_creator = &Creator<T>;
+			}
 		}
 		classInfo.m_canCreateInEditor = canCreateInEditor;
 		m_classInfoMap[className]     = std::move(classInfo);
@@ -154,15 +157,18 @@ public:
 	}
 
 	template <typename T>
-	static void RegisterClass(bool canCreateInEditor = true)
+	static void RegisterClass(bool canCreateInEditor = true, bool canCreateInstance = true)
 	{
 		std::string className = T::GetStaticClassName();
 		ClassInfo   classInfo;
 		classInfo.m_className       = className;
 		classInfo.m_parentClassName = T::Super::GetStaticClassName();
-		if constexpr (!std::is_abstract_v<T>)
+		if constexpr (!std::is_abstract_v<T> && std::is_default_constructible_v<T>)
 		{
-			classInfo.m_creator = &Creator<T>;
+			if (canCreateInstance)
+			{
+				classInfo.m_creator = &Creator<T>;
+			}
 		}
 		classInfo.m_canCreateInEditor = canCreateInEditor;
 		m_classInfoMap[className]     = std::move(classInfo);

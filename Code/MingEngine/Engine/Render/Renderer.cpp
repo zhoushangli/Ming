@@ -13,6 +13,8 @@ Renderer::Renderer(RendererConfig config) : m_config(config) {}
 
 Renderer::~Renderer() {}
 
+void Renderer::BindMethods() {}
+
 void Renderer::Startup()
 {
 	if (m_renderBackend != nullptr)

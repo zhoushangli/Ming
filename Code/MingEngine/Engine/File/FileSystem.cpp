@@ -63,6 +63,8 @@ std::vector<std::unique_ptr<FileEntry>> const& FileEntry::GetChildren() const { 
 
 FileSystem::FileSystem(FileSystemConfig const& config) : m_resourceRoot(config.m_resourceRoot) {}
 
+void FileSystem::BindMethods() {}
+
 void FileSystem::Startup() {}
 void FileSystem::Shutdown() {}
 void FileSystem::BeginFrame() {}

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "MingEngine/Engine/Application/SystemBase.hpp"
+
 #include "MingEngine/Core/Math/Vec2.hpp"
 
 struct GLFWwindow;
@@ -16,21 +18,26 @@ struct WindowConfig
 	bool        m_isBorderlessFullscreen = true;
 };
 
-class WindowSystem
+class WindowSystem : public SystemBase
 {
+	MCLASS(WindowSystem, SystemBase)
+
 public:
 	WindowSystem(WindowConfig config);
 	~WindowSystem();
 
-	void Startup();
-	void Shutdown();
+	void Startup() override;
+	void Shutdown() override;
 
-	void BeginFrame();
-	void EndFrame();
+	void BeginFrame() override;
+	void EndFrame() override;
 
 	GLFWwindow* GetGLFWWindow() const;
 	void*       GetHwnd() const;
 	IntVec2     GetClientDimensions() const;
+
+protected:
+	static void BindMethods();
 
 private:
 	void CreateGLFWWindow();

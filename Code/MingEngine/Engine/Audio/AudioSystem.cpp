@@ -24,6 +24,8 @@ std::string GetSoundCacheKey(std::string const& soundFilePath, FMOD_MODE mode)
 
 } // namespace
 
+void AudioSystem::BindMethods() {}
+
 //-----------------------------------------------------------------------------------------------
 // To disable audio entirely (and remove requirement for fmod.dll / fmod64.dll) for any game,
 //	#define ENGINE_DISABLE_AUDIO in your game's Code/MingEngine/Engine/Application/EngineBuildPreferences.hpp file.

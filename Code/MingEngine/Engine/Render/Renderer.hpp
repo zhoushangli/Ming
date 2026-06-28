@@ -1,20 +1,23 @@
 #pragma once
 
+#include "MingEngine/Engine/Application/SystemBase.hpp"
 #include "MingEngine/Engine/Render/D3D11RenderBackend.hpp"
 
 class ViewportInfo;
 struct RenderRequest;
 
-class Renderer
+class Renderer : public SystemBase
 {
+	MCLASS(Renderer, SystemBase)
+
 public:
 	Renderer(RendererConfig config);
 	~Renderer();
 
-	void Startup();
-	void Shutdown();
-	void BeginFrame();
-	void EndFrame();
+	void Startup() override;
+	void Shutdown() override;
+	void BeginFrame() override;
+	void EndFrame() override;
 	void CreateRenderingContext();
 
 	// Per-Viewport resource lifetime:
@@ -57,6 +60,8 @@ public:
 
 	void SetViewport(IntVec2 dimensions, IntVec2 topLeft = IntVec2::Zero);
 	void ClearSceneTargets(ViewportInfo const& viewport);
+
+	static void BindMethods();
 
 private:
 	void ExecuteRenderRequest(RenderRequest const& request);

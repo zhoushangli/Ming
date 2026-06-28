@@ -1,5 +1,7 @@
 #pragma once
 
+#include "MingEngine/Engine/Application/SystemBase.hpp"
+
 #include "MingEngine/Engine/Event/EventSystem.hpp"
 #include "MingEngine/Engine/Input/KeyButtonState.hpp"
 #include "MingEngine/Engine/Input/XboxController.hpp"
@@ -57,16 +59,18 @@ struct InputConfig
 	bool m_isEnable = true;
 };
 
-class InputSystem
+class InputSystem : public SystemBase
 {
+	MCLASS(InputSystem, SystemBase)
+
 public:
 	InputSystem(InputConfig config);
 	~InputSystem();
 
-	void Startup();
-	void Shutdown();
-	void BeginFrame();
-	void EndFrame();
+	void Startup() override;
+	void Shutdown() override;
+	void BeginFrame() override;
+	void EndFrame() override;
 
 	bool WasKeyJustPressed(int keyCode);
 	bool WasKeyJustReleased(int keyCode);
@@ -102,6 +106,9 @@ public:
 	static bool Event_KeyUp(EventArgs& args);
 
 protected:
+	static void BindMethods();
+
+protected:
 	InputConfig m_config;
 
 	CursorMode m_cursorMode = CursorMode::POINTER;
@@ -112,5 +119,6 @@ protected:
 
 	KeyButtonState m_keyStates[NumKeyCodes];
 	XboxController m_controllers[NumXboxControllers] = {
-		XboxController(0), XboxController(1), XboxController(2), XboxController(3)};
+		XboxController(0), XboxController(1), XboxController(2), XboxController(3)
+	};
 };

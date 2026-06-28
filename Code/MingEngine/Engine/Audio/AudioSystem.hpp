@@ -1,5 +1,6 @@
 #pragma once
 
+#include "MingEngine/Engine/Application/SystemBase.hpp"
 #include "MingEngine/Engine/Application/EngineBuildPreferences.hpp"
 
 #include "MingEngine/Core/Math/Vec3.hpp"
@@ -25,17 +26,20 @@ struct AudioConfig
 #endif
 };
 
-class AudioSystem
+class AudioSystem : public SystemBase
 {
+	MCLASS(AudioSystem, SystemBase)
+
 public:
 	AudioSystem(AudioConfig const& config);
 	virtual ~AudioSystem();
 
 public:
-	void         Startup();
-	void         Shutdown();
-	virtual void BeginFrame();
-	virtual void EndFrame();
+	void         Startup() override;
+	void         Shutdown() override;
+	void         BeginFrame() override;
+	void         EndFrame() override;
+	static void  BindMethods();
 
 #if !defined(ENGINE_DISABLE_AUDIO)
 	virtual SoundID         CreateOrGetSound(std::string const& soundFilePath, FMOD_MODE mode = FMOD_2D);

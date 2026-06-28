@@ -8,6 +8,9 @@
 #include "MingEngine/Core/Object/Script.hpp"
 #include "MingEngine/Core/Object/ScriptLoader.hpp"
 
+#include "MingEngine/Engine/Application/SystemBase.hpp"
+#include "MingEngine/Engine/Input/InputSystem.hpp"
+
 #include "MingEngine/Scene/3D/Camera3D.hpp"
 #include "MingEngine/Scene/3D/Light3D.hpp"
 #include "MingEngine/Scene/3D/Node3D.hpp"
@@ -29,6 +32,10 @@ PackedSceneSaver*  packedSceneSaver  = new PackedSceneSaver();
 void RegisterSceneTypes()
 {
 	ClassDatabase::RegisterRootClass<Object>();
+
+	// Engine system types
+	ClassDatabase::RegisterClass<SystemBase>(false, false);
+	ClassDatabase::RegisterClass<InputSystem>(false, false);
 
 	// Core types
 	ClassDatabase::RegisterClass<RefCounted>(false);
