@@ -397,7 +397,7 @@
     <ClCompile Include="Engine\Input\InputSystem.cpp" />
     <ClCompile Include="Engine\Input\KeyButtonState.cpp" />
     <ClCompile Include="Engine\Input\XboxController.cpp" />
-    <ClCompile Include="Engine\Script\ScriptBindings.cpp" />
+    <ClCompile Include="Engine\Script\ScriptBinder.cpp" />
     <ClCompile Include="Engine\Script\ScriptGenerator.cpp" />
     <ClCompile Include="Engine\Script\ScriptInstance.cpp" />
     <ClCompile Include="Engine\Script\ScriptModule.cpp" />
@@ -553,7 +553,7 @@
     <ClInclude Include="Engine\Input\InputSystem.hpp" />
     <ClInclude Include="Engine\Input\KeyButtonState.hpp" />
     <ClInclude Include="Engine\Input\XboxController.hpp" />
-    <ClInclude Include="Engine\Script\ScriptBindings.hpp" />
+    <ClInclude Include="Engine\Script\ScriptBinder.hpp" />
     <ClInclude Include="Engine\Script\ScriptGenerator.hpp" />
     <ClInclude Include="Engine\Script\ScriptInstance.hpp" />
     <ClInclude Include="Engine\Script\ScriptModule.hpp" />

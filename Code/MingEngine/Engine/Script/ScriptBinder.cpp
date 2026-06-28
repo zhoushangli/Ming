@@ -1,4 +1,4 @@
-#include "MingEngine/Engine/Script/ScriptBindings.hpp"
+#include "MingEngine/Engine/Script/ScriptBinder.hpp"
 
 #include "MingEngine/Core/ErrorWarningAssert.hpp"
 #include "MingEngine/Core/Math/EulerAngles.hpp"
@@ -282,26 +282,27 @@ struct BridgeSignature
 
 std::unordered_map<int, BridgeSignature> s_bridgeSignatures;
 
-void BridgeCallGeneric(asIScriptGeneric* gen)
+// Looks up the Variant signature saved when the bridge function was registered.
+// AngelScript generic calls only expose raw slots, so this signature tells us how to decode them.
+BridgeSignature const& GetBridgeSignature(asIScriptGeneric* gen)
 {
 	asIScriptFunction* function   = gen->GetFunction();
 	int                functionId = function->GetId();
 
 	auto iter = s_bridgeSignatures.find(functionId);
 	GUARANTEE_OR_DIE(iter != s_bridgeSignatures.end(), "Missing bridge signature");
-	BridgeSignature const& signature = iter->second;
+	return iter->second;
+}
 
-	int const          fixedArgCount = 3; // object, className, methodName
-	Object*            object        = static_cast<Object*>(gen->GetArgObject(0));
-	std::string const& className     = *static_cast<std::string const*>(gen->GetArgAddress(1));
-	std::string const& methodName    = *static_cast<std::string const*>(gen->GetArgAddress(2));
-	MethodBind const*  methodBind    = ClassDatabase::GetMethodBind(className, methodName);
-
-	// Parse arguments according to the signature map
+// Converts AngelScript generic arguments into Variants.
+// firstUserArgIndex skips fixed bridge arguments such as nativePtr/className/methodName.
+std::vector<Variant> ReadBridgeArguments(
+	asIScriptGeneric* gen, BridgeSignature const& signature, int firstUserArgIndex)
+{
 	std::vector<Variant> args;
 	for (size_t i = 0; i < signature.argumentTypes.size(); ++i)
 	{
-		int index = fixedArgCount + (int)i;
+		int index = firstUserArgIndex + (int)i;
 		switch (signature.argumentTypes[i])
 		{
 		case Variant::Type::Bool:
@@ -334,10 +335,15 @@ void BridgeCallGeneric(asIScriptGeneric* gen)
 			break;
 		}
 	}
+	return args;
+}
 
-	// Return value
-	Variant result = methodBind->Invoke(*object, args);
-	switch (signature.returnType)
+// Writes a Variant return value back into the AngelScript generic call frame.
+// Example:
+// Variant::Type::Vec3 -> gen->SetReturnObject(Vec3*)
+void WriteBridgeReturn(asIScriptGeneric* gen, Variant::Type returnType, Variant const& result)
+{
+	switch (returnType)
 	{
 	case Variant::Type::Empty:
 	{
@@ -412,269 +418,72 @@ void BridgeCallGeneric(asIScriptGeneric* gen)
 	}
 }
 
+// Shared invoke path for Object, GlobalObject, and Global bridge calls.
+// The entry points only differ in how they resolve object/methodBind and firstUserArgIndex.
+void InvokeBridgeMethod(
+	asIScriptGeneric* gen,
+	BridgeSignature const& signature,
+	Object& object,
+	MethodBind const& methodBind,
+	int firstUserArgIndex)
+{
+	std::vector<Variant> args   = ReadBridgeArguments(gen, signature, firstUserArgIndex);
+	Variant              result = methodBind.Invoke(object, args);
+	WriteBridgeReturn(gen, signature.returnType, result);
+}
+
+// Object bridge layout:
+// arg0 = NativeObject@
+// arg1 = className
+// arg2 = methodName
+// arg3... = user arguments
+// Example call:
+// __Call_Void_Vec3(nativePtr, "Node3D", "SetPosition", arg0)
+void BridgeCallGeneric(asIScriptGeneric* gen)
+{
+	BridgeSignature const& signature  = GetBridgeSignature(gen);
+	Object*                object     = static_cast<Object*>(gen->GetArgObject(0));
+	std::string const&     className  = *static_cast<std::string const*>(gen->GetArgAddress(1));
+	std::string const&     methodName = *static_cast<std::string const*>(gen->GetArgAddress(2));
+	MethodBind const*      methodBind = ClassDatabase::GetMethodBind(className, methodName);
+	InvokeBridgeMethod(gen, signature, *object, *methodBind, 3);
+}
+
+// GlobalObject bridge layout:
+// arg0 = className
+// arg1 = methodName
+// arg2... = user arguments
+// Example call:
+// __Call_GlobalObject_Bool_Int("InputSystem", "IsKeyPressed", arg0)
 void BridgeCallGlobalObjectGeneric(asIScriptGeneric* gen)
 {
-	asIScriptFunction* function   = gen->GetFunction();
-	int                functionId = function->GetId();
-
-	auto iter = s_bridgeSignatures.find(functionId);
-	GUARANTEE_OR_DIE(iter != s_bridgeSignatures.end(), "Missing bridge signature");
-	BridgeSignature const& signature = iter->second;
-
-	int const          fixedArgCount = 2; // className, methodName
-	std::string const& className     = *static_cast<std::string const*>(gen->GetArgAddress(0));
-	std::string const& methodName    = *static_cast<std::string const*>(gen->GetArgAddress(1));
-	MethodBind const*  methodBind    = ClassDatabase::GetMethodBind(className, methodName);
-	Object*            object        = ClassDatabase::GetGlobalObject(className);
-
+	BridgeSignature const& signature  = GetBridgeSignature(gen);
+	std::string const&     className  = *static_cast<std::string const*>(gen->GetArgAddress(0));
+	std::string const&     methodName = *static_cast<std::string const*>(gen->GetArgAddress(1));
+	MethodBind const*      methodBind = ClassDatabase::GetMethodBind(className, methodName);
+	Object*                object     = ClassDatabase::GetGlobalObject(className);
 	if (object == nullptr)
 	{
 		GUARANTEE_OR_DIE(false, Stringf("Global object for class '%s' not found", className.c_str()));
 	}
 
-	// Parse arguments according to the signature map
-	std::vector<Variant> args;
-	for (size_t i = 0; i < signature.argumentTypes.size(); ++i)
-	{
-		int index = fixedArgCount + (int)i;
-		switch (signature.argumentTypes[i])
-		{
-		case Variant::Type::Bool:
-			args.emplace_back(gen->GetArgByte(index) != 0);
-			break;
-		case Variant::Type::Int:
-			args.emplace_back(static_cast<int>(gen->GetArgDWord(index)));
-			break;
-		case Variant::Type::Float:
-			args.emplace_back(gen->GetArgFloat(index));
-			break;
-		case Variant::Type::String:
-			args.emplace_back(*static_cast<std::string*>(gen->GetArgAddress(index)));
-			break;
-		case Variant::Type::Vec3:
-			args.emplace_back(*static_cast<Vec3*>(gen->GetArgAddress(index)));
-			break;
-		case Variant::Type::EulerAngles:
-			args.emplace_back(*static_cast<EulerAngles*>(gen->GetArgAddress(index)));
-			break;
-		case Variant::Type::Matrix4x4:
-			args.emplace_back(*static_cast<Matrix4x4*>(gen->GetArgAddress(index)));
-			break;
-		// When Variant == Object, actually we are storing a pointer to the Object
-		case Variant::Type::ObjectPtr:
-			args.emplace_back(static_cast<Object*>(gen->GetArgObject(index)));
-			break;
-		case Variant::Type::Any:
-			args.emplace_back(*static_cast<Variant*>(gen->GetArgAddress(index)));
-			break;
-		}
-	}
-
-	// Return value
-	Variant result = methodBind->Invoke(*object, args);
-	switch (signature.returnType)
-	{
-	case Variant::Type::Empty:
-	{
-		return;
-	}
-
-	case Variant::Type::Bool:
-	{
-		gen->SetReturnByte(result.As<bool>() ? 1 : 0);
-		return;
-	}
-
-	case Variant::Type::Int:
-	{
-		gen->SetReturnDWord(static_cast<asDWORD>(result.As<int>()));
-		return;
-	}
-
-	case Variant::Type::Float:
-	{
-		gen->SetReturnFloat(result.As<float>());
-		return;
-	}
-
-	case Variant::Type::String:
-	{
-		std::string const& resultString = result.As<std::string>();
-		gen->SetReturnObject(const_cast<std::string*>(&resultString));
-		return;
-	}
-
-	case Variant::Type::Vec3:
-	{
-		Vec3 const& vecResult = result.As<Vec3>();
-		gen->SetReturnObject(const_cast<Vec3*>(&vecResult));
-		return;
-	}
-
-	case Variant::Type::EulerAngles:
-	{
-		EulerAngles const& eulerResult = result.As<EulerAngles>();
-		gen->SetReturnObject(const_cast<EulerAngles*>(&eulerResult));
-		return;
-	}
-
-	case Variant::Type::Matrix4x4:
-	{
-		Matrix4x4 const& matrixResult = result.As<Matrix4x4>();
-		gen->SetReturnObject(const_cast<Matrix4x4*>(&matrixResult));
-		return;
-	}
-
-	// Variant::Type::ObjectPtr is a special case where we are returning a pointer to the Object
-	case Variant::Type::ObjectPtr:
-	{
-		Object* objectResult = result.As<Object*>();
-		gen->SetReturnObject(objectResult);
-		return;
-	}
-
-	// Variant::Type::Any is a special case where we are returning a Variant itself
-	case Variant::Type::Any:
-	{
-		Variant const& variantResult = result;
-		gen->SetReturnObject(const_cast<Variant*>(&variantResult));
-		return;
-	}
-
-	default:
-		GUARANTEE_OR_DIE(false, "Unsupported generic bridge return type");
-		return;
-	}
+	InvokeBridgeMethod(gen, signature, *object, *methodBind, 2);
 }
 
+// Global bridge layout:
+// arg0 = namespaceName
+// arg1 = methodName
+// arg2... = user arguments
+// Example call:
+// __Call_Global_Log("Debug", "Log", arg0)
 void BridgeCallGlobalGeneric(asIScriptGeneric* gen)
 {
-	asIScriptFunction* function   = gen->GetFunction();
-	int                functionId = function->GetId();
-
-	auto iter = s_bridgeSignatures.find(functionId);
-	GUARANTEE_OR_DIE(iter != s_bridgeSignatures.end(), "Missing bridge signature");
-	BridgeSignature const& signature = iter->second;
-
-	int const          fixedArgCount = 2; // namespaceName, methodName
-	std::string const& namespaceName = *static_cast<std::string const*>(gen->GetArgAddress(0));
-	std::string const& methodName    = *static_cast<std::string const*>(gen->GetArgAddress(1));
-	MethodBind const*  methodBind    = ClassDatabase::GetGlobalMethodBind(namespaceName, methodName);
-
-	// Parse arguments according to the signature map
-	std::vector<Variant> args;
-	for (size_t i = 0; i < signature.argumentTypes.size(); ++i)
-	{
-		int index = fixedArgCount + (int)i;
-		switch (signature.argumentTypes[i])
-		{
-		case Variant::Type::Bool:
-			args.emplace_back(gen->GetArgByte(index) != 0);
-			break;
-		case Variant::Type::Int:
-			args.emplace_back(static_cast<int>(gen->GetArgDWord(index)));
-			break;
-		case Variant::Type::Float:
-			args.emplace_back(gen->GetArgFloat(index));
-			break;
-		case Variant::Type::String:
-			args.emplace_back(*static_cast<std::string*>(gen->GetArgAddress(index)));
-			break;
-		case Variant::Type::Vec3:
-			args.emplace_back(*static_cast<Vec3*>(gen->GetArgAddress(index)));
-			break;
-		case Variant::Type::EulerAngles:
-			args.emplace_back(*static_cast<EulerAngles*>(gen->GetArgAddress(index)));
-			break;
-		case Variant::Type::Matrix4x4:
-			args.emplace_back(*static_cast<Matrix4x4*>(gen->GetArgAddress(index)));
-			break;
-		// When Variant == Object, actually we are storing a pointer to the Object
-		case Variant::Type::ObjectPtr:
-			args.emplace_back(static_cast<Object*>(gen->GetArgObject(index)));
-			break;
-		case Variant::Type::Any:
-			args.emplace_back(*static_cast<Variant*>(gen->GetArgAddress(index)));
-			break;
-		}
-	}
-
-	// Return value
-	Object tmp = Object(); // Create a temporary object to invoke the method on
-	Variant result = methodBind->Invoke(tmp, args);
-	switch (signature.returnType)
-	{
-	case Variant::Type::Empty:
-	{
-		return;
-	}
-
-	case Variant::Type::Bool:
-	{
-		gen->SetReturnByte(result.As<bool>() ? 1 : 0);
-		return;
-	}
-
-	case Variant::Type::Int:
-	{
-		gen->SetReturnDWord(static_cast<asDWORD>(result.As<int>()));
-		return;
-	}
-
-	case Variant::Type::Float:
-	{
-		gen->SetReturnFloat(result.As<float>());
-		return;
-	}
-
-	case Variant::Type::String:
-	{
-		std::string const& resultString = result.As<std::string>();
-		gen->SetReturnObject(const_cast<std::string*>(&resultString));
-		return;
-	}
-
-	case Variant::Type::Vec3:
-	{
-		Vec3 const& vecResult = result.As<Vec3>();
-		gen->SetReturnObject(const_cast<Vec3*>(&vecResult));
-		return;
-	}
-
-	case Variant::Type::EulerAngles:
-	{
-		EulerAngles const& eulerResult = result.As<EulerAngles>();
-		gen->SetReturnObject(const_cast<EulerAngles*>(&eulerResult));
-		return;
-	}
-
-	case Variant::Type::Matrix4x4:
-	{
-		Matrix4x4 const& matrixResult = result.As<Matrix4x4>();
-		gen->SetReturnObject(const_cast<Matrix4x4*>(&matrixResult));
-		return;
-	}
-
-	// Variant::Type::ObjectPtr is a special case where we are returning a pointer to the Object
-	case Variant::Type::ObjectPtr:
-	{
-		Object* objectResult = result.As<Object*>();
-		gen->SetReturnObject(objectResult);
-		return;
-	}
-
-	// Variant::Type::Any is a special case where we are returning a Variant itself
-	case Variant::Type::Any:
-	{
-		Variant const& variantResult = result;
-		gen->SetReturnObject(const_cast<Variant*>(&variantResult));
-		return;
-	}
-
-	default:
-		GUARANTEE_OR_DIE(false, "Unsupported generic bridge return type");
-		return;
-	}
+	BridgeSignature const& signature     = GetBridgeSignature(gen);
+	std::string const&     namespaceName = *static_cast<std::string const*>(gen->GetArgAddress(0));
+	std::string const&     methodName    = *static_cast<std::string const*>(gen->GetArgAddress(1));
+	MethodBind const*      methodBind    = ClassDatabase::GetGlobalMethodBind(namespaceName, methodName);
+	Object                 tmp           = Object(); // Create a temporary object to invoke the method on
+	InvokeBridgeMethod(gen, signature, tmp, *methodBind, 2);
 }
 
 } // namespace
@@ -702,7 +511,8 @@ void RegisterBridgeFunctions(asIScriptEngine* engine)
 				continue;
 			}
 
-			std::string scriptDeclaration = BuildGlobalBridgeFunctionDeclaration(*methodInfo);
+			std::string scriptDeclaration =
+				BuildBridgeFunctionDeclaration(*methodInfo, ScriptCallableKind::Global);
 			int         functionId        = engine->RegisterGlobalFunction(
 				scriptDeclaration.c_str(),
 				asFUNCTION(BridgeCallGlobalGeneric),
@@ -735,7 +545,8 @@ void RegisterBridgeFunctions(asIScriptEngine* engine)
 					continue;
 				}
 
-				std::string scriptDeclaration = BuildBridgeFunctionDeclaration(*methodInfo, true);
+				std::string scriptDeclaration =
+					BuildBridgeFunctionDeclaration(*methodInfo, ScriptCallableKind::GlobalObject);
 				if (registeredFunctions.find(scriptDeclaration) != registeredFunctions.end())
 				{
 					continue;
@@ -762,7 +573,8 @@ void RegisterBridgeFunctions(asIScriptEngine* engine)
 					continue;
 				}
 
-				std::string scriptDeclaration = BuildBridgeFunctionDeclaration(*methodInfo, false);
+				std::string scriptDeclaration =
+					BuildBridgeFunctionDeclaration(*methodInfo, ScriptCallableKind::Object);
 				if (registeredFunctions.find(scriptDeclaration) != registeredFunctions.end())
 				{
 					continue;

@@ -5,7 +5,7 @@
 #include "MingEngine/Core/Object/Resource.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Engine/File/FileSystem.hpp"
-#include "MingEngine/Engine/Script/ScriptBindings.hpp"
+#include "MingEngine/Engine/Script/ScriptBinder.hpp"
 #include "MingEngine/Engine/Script/ScriptGenerator.hpp"
 
 #include "ThirdParty/angelscript/add_on/scriptstdstring/scriptstdstring.h"
@@ -54,7 +54,7 @@ void ScriptSystem::Startup()
 
 	RegisterNativeObjectType(m_scriptEngine);
 	RegisterBridgeFunctions(m_scriptEngine);
-	
+
 	GenerateBuiltinScript(m_scriptEngine);
 }
 
@@ -171,10 +171,7 @@ ScriptModule* ScriptSystem::GetOrCreateModule(std::string const& path)
 
 	if (scriptType == nullptr)
 	{
-		DebuggerPrintf(
-			"Script '%s' does not define class '%s'.\n",
-			path.c_str(),
-			identity.GetClassName().c_str());
+		DebuggerPrintf("Script '%s' does not define class '%s'.\n", path.c_str(), identity.GetClassName().c_str());
 
 		m_scriptEngine->DiscardModule(moduleName.c_str());
 		return nullptr;
