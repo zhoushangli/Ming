@@ -1,7 +1,7 @@
 #include "MingEngine/Engine/Render/PostProcessChain.hpp"
 
-#include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Core/ErrorWarningAssert.hpp"
+#include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Engine/Render/D3D11RenderBackend.hpp"
 #include "PostProcessChain.hpp"
 
@@ -34,13 +34,13 @@ bool PostProcessPass::HasCustomInputs() const
 
 void PostProcessChain::AddPass(PostProcessPass const& pass) { m_passes.push_back(pass); }
 
-PostProcessChain::PostProcessChain() { IntVec2 const fullResolution = g_engine->m_window->GetClientDimensions(); }
+PostProcessChain::PostProcessChain() { IntVec2 const fullResolution = g_engine->m_windowSystem->GetClientDimensions(); }
 
 PostProcessChain::~PostProcessChain() {}
 
 Texture* PostProcessChain::Render(D3D11RenderBackend& renderer, PostProcessContext const& context)
 {
-	IntVec2 const fullResolution = g_engine->m_window->GetClientDimensions();
+	IntVec2 const fullResolution = g_engine->m_windowSystem->GetClientDimensions();
 
 	renderer.BindCamera(*context.m_camera);
 	renderer.SetBlendMode(BlendMode::OPAQUE);
@@ -132,4 +132,3 @@ Texture* PostProcessChain::Render(D3D11RenderBackend& renderer, PostProcessConte
 	}
 	return mainChainColorTexture;
 }
-

@@ -44,7 +44,7 @@ void EditorController::OnProcess(float deltaSeconds)
 {
 	// PCG editor commands will move to a scene-local world/editor manager.
 
-	bool const shouldReset = g_engine->m_input->WasKeyJustPressed('H');
+	bool const shouldReset = g_engine->m_inputSystem->WasKeyJustPressed('H');
 	if (shouldReset)
 	{
 		SetLocalPosition(Vec3(0.f, 0.f, 0.f));
@@ -71,7 +71,7 @@ void EditorController::OnProcess(float deltaSeconds)
 
 void EditorController::UpdateControlState()
 {
-	InputSystem* input = g_engine->m_input;
+	InputSystem* input = g_engine->m_inputSystem;
 	bool const   isConsoleOpen =
 		(g_engineService != nullptr) && (g_engineService->m_console != nullptr) && g_engineService->m_console->IsOpen();
 	EditorControlState const desiredState = !isConsoleOpen && input->IsKeyDown(KeyCodeRightMouse)
@@ -92,20 +92,20 @@ void EditorController::EnterControlState(EditorControlState nextState)
 
 	if (m_controlState == EditorControlState::FlyThrough)
 	{
-		g_engine->m_input->SetCursorMode(CursorMode::FPS);
-		g_engine->m_input->ClearCursorDelta();
+		g_engine->m_inputSystem->SetCursorMode(CursorMode::FPS);
+		g_engine->m_inputSystem->ClearCursorDelta();
 	}
 	else
 	{
-		g_engine->m_input->SetCursorMode(CursorMode::POINTER);
-		g_engine->m_input->ClearCursorDelta();
-		m_lastCursorClientPos = g_engine->m_input->GetCursorClientPosition();
+		g_engine->m_inputSystem->SetCursorMode(CursorMode::POINTER);
+		g_engine->m_inputSystem->ClearCursorDelta();
+		m_lastCursorClientPos = g_engine->m_inputSystem->GetCursorClientPosition();
 	}
 }
 
 void EditorController::UpdateFlyThrough(float deltaSeconds)
 {
-	InputSystem* input      = g_engine->m_input;
+	InputSystem* input      = g_engine->m_inputSystem;
 	Vec2         mouseDelta = input->GetCursorClientDelta();
 
 	EulerAngles orientation = GetLocalOrientation();
@@ -173,7 +173,7 @@ void EditorController::UpdateFlyThrough(float deltaSeconds)
 
 void EditorController::UpdatePointer([[maybe_unused]] float deltaSeconds)
 {
-	InputSystem* input     = g_engine->m_input;
+	InputSystem* input     = g_engine->m_inputSystem;
 	Vec2 const   cursorPos = input->GetCursorClientPosition();
 	Vec2 const   delta     = cursorPos - m_lastCursorClientPos;
 	m_lastCursorClientPos  = cursorPos;

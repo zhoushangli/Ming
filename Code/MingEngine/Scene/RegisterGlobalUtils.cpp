@@ -12,6 +12,7 @@
 void RegisterGlobalMethods()
 {
 	// --- Basic Math ---
+	// TODO: Abs is an overridable function, need more design here
 	BIND_GLOBAL_METHOD(Math, Sign);
 
 	// --- Angles & Trigonometry ---

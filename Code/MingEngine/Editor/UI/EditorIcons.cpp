@@ -9,8 +9,8 @@
 
 namespace
 {
-constexpr char const* kIconDirectory = "Data/Icon/";
-constexpr char const* kIconExtension = ".png";
+constexpr char const* kIconDirectory     = "Data/Icon/";
+constexpr char const* kIconExtension     = ".png";
 constexpr char const* kFallbackClassIcon = "Node";
 
 std::string BuildIconPath(std::string const& iconName)
@@ -20,7 +20,7 @@ std::string BuildIconPath(std::string const& iconName)
 
 bool DoesIconFileExist(std::string const& iconName)
 {
-	std::error_code errorCode;
+	std::error_code             errorCode;
 	std::filesystem::path const path = BuildIconPath(iconName);
 	return std::filesystem::exists(path, errorCode) && std::filesystem::is_regular_file(path, errorCode);
 }
@@ -35,15 +35,9 @@ ImTextureID ToImTextureId(Texture* texture)
 	return (ImTextureID)(intptr_t)texture->GetShaderResourceView();
 }
 
-ImVec2 GetEditorIconUv0()
-{
-	return ImVec2(0.f, 1.f);
-}
+ImVec2 GetEditorIconUv0() { return ImVec2(0.f, 1.f); }
 
-ImVec2 GetEditorIconUv1()
-{
-	return ImVec2(1.f, 0.f);
-}
+ImVec2 GetEditorIconUv1() { return ImVec2(1.f, 0.f); }
 } // namespace
 
 Texture* EditorIcons::GetIconTexture(std::string const& iconName)
@@ -65,7 +59,7 @@ Texture* EditorIcons::GetIconTexture(std::string const& iconName)
 	if (DoesIconFileExist(iconName) && g_engine != nullptr && g_engine->m_renderer != nullptr)
 	{
 		std::string const iconPath = BuildIconPath(iconName);
-		texture = g_engine->m_renderer->CreateOrGetTexture(iconPath.c_str());
+		texture                    = g_engine->m_renderer->CreateOrGetTexture(iconPath.c_str());
 	}
 
 	s_iconTextures[iconName] = texture;
@@ -94,15 +88,12 @@ Texture* EditorIcons::GetClassIconTexture(std::string const& className)
 		return texture;
 	}
 
-	Texture* fallbackTexture = GetIconTexture(kFallbackClassIcon);
+	Texture* fallbackTexture       = GetIconTexture(kFallbackClassIcon);
 	s_classIconTextures[className] = fallbackTexture;
 	return fallbackTexture;
 }
 
-ImTextureID EditorIcons::GetIconId(std::string const& iconName)
-{
-	return ToImTextureId(GetIconTexture(iconName));
-}
+ImTextureID EditorIcons::GetIconId(std::string const& iconName) { return ToImTextureId(GetIconTexture(iconName)); }
 
 ImTextureID EditorIcons::GetClassIconId(std::string const& className)
 {

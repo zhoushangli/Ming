@@ -16,11 +16,11 @@ struct WindowConfig
 	bool        m_isBorderlessFullscreen = true;
 };
 
-class Window
+class WindowSystem
 {
 public:
-	Window(WindowConfig config);
-	~Window();
+	WindowSystem(WindowConfig config);
+	~WindowSystem();
 
 	void Startup();
 	void Shutdown();
@@ -43,4 +43,3 @@ public:
 private:
 	WindowConfig m_config;
 };
-

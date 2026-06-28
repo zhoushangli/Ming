@@ -84,11 +84,11 @@ void InputSystem::BeginFrame()
 		m_controllers[i].Update();
 	}
 
-	if (g_engine != nullptr && g_engine->m_window != nullptr)
+	if (g_engine != nullptr && g_engine->m_windowSystem != nullptr)
 	{
 		m_prevCursorClientPosition = m_cursorClientPosition;
 
-		GLFWwindow* window  = g_engine->m_window->GetGLFWWindow();
+		GLFWwindow* window  = g_engine->m_windowSystem->GetGLFWWindow();
 		double      cursorX = 0.0;
 		double      cursorY = 0.0;
 		glfwGetCursorPos(window, &cursorX, &cursorY);
@@ -199,12 +199,12 @@ Vec2 InputSystem::GetCursorClientPosition() const { return Vec2(m_cursorClientPo
 
 Vec2 InputSystem::GetCursorNormalizedPosition() const
 {
-	if (g_engine == nullptr || g_engine->m_window == nullptr)
+	if (g_engine == nullptr || g_engine->m_windowSystem == nullptr)
 	{
 		return Vec2::Zero;
 	}
 
-	IntVec2 clientDimensions = g_engine->m_window->GetClientDimensions();
+	IntVec2 clientDimensions = g_engine->m_windowSystem->GetClientDimensions();
 	if (clientDimensions.x <= 0 || clientDimensions.y <= 0)
 	{
 		return Vec2::Zero;
@@ -227,13 +227,13 @@ void InputSystem::ClearCursorDelta() { m_cursorClientDelta = IntVec2::Zero; }
 bool InputSystem::Event_KeyDown(EventArgs& args)
 {
 	int asKey = std::stoi(args.GetValue("asKey", "0"));
-	g_engine->m_input->HandleKeyPressed(asKey);
+	g_engine->m_inputSystem->HandleKeyPressed(asKey);
 	return true;
 }
 
 bool InputSystem::Event_KeyUp(EventArgs& args)
 {
 	int asKey = std::stoi(args.GetValue("asKey", "0"));
-	g_engine->m_input->HandleKeyReleased(asKey);
+	g_engine->m_inputSystem->HandleKeyReleased(asKey);
 	return true;
 }

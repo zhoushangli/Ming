@@ -7,10 +7,10 @@
 #include "MingEngine/Scene/3D/VisualizeInstance3D.hpp"
 #include "MingEngine/Scene/Core/SceneTree.hpp"
 
-#include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Core/ErrorWarningAssert.hpp"
+#include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Engine/Render/Renderer.hpp"
-#include "MingEngine/Engine/Window/Window.hpp"
+#include "MingEngine/Engine/Window/WindowSystem.hpp"
 
 #include "Viewport.hpp"
 #include <algorithm>
@@ -18,7 +18,7 @@
 Viewport::Viewport()
 {
 	IntVec2 defaultResolution =
-		g_engine->m_window != nullptr ? g_engine->m_window->GetClientDimensions() : IntVec2(1280, 720);
+		g_engine->m_windowSystem != nullptr ? g_engine->m_windowSystem->GetClientDimensions() : IntVec2(1280, 720);
 	SetOutputResolution(defaultResolution);
 }
 
@@ -153,7 +153,7 @@ void Viewport::UnregisterWorldCamera(Camera3D* camera)
 Camera3D* Viewport::GetWorldCamera() const
 {
 	SceneTree* sceneTree = GetSceneTree();
-	Camera3D* camera     = dynamic_cast<Camera3D*>(sceneTree->ResolveNode(m_worldCameraHandle));
+	Camera3D*  camera    = dynamic_cast<Camera3D*>(sceneTree->ResolveNode(m_worldCameraHandle));
 	return camera;
 }
 
@@ -185,15 +185,15 @@ void Viewport::PrepareRenderData()
 		return;
 	}
 
-	if (m_viewportInfo.m_outputResolution == IntVec2::Zero && g_engine->m_window != nullptr)
+	if (m_viewportInfo.m_outputResolution == IntVec2::Zero && g_engine->m_windowSystem != nullptr)
 	{
 		// The root Viewport defaults to the window size until an editor panel or
 		// another owner explicitly requests a different output resolution.
-		SetOutputResolution(g_engine->m_window->GetClientDimensions());
+		SetOutputResolution(g_engine->m_windowSystem->GetClientDimensions());
 	}
 
 	// 1) CameraContext pointers are transient because NodeHandles may change after reparenting.
-	float aspect                 = m_viewportInfo.m_outputResolution.x / (float)m_viewportInfo.m_outputResolution.y;
+	float     aspect             = m_viewportInfo.m_outputResolution.x / (float)m_viewportInfo.m_outputResolution.y;
 	Camera3D* worldCamera        = GetWorldCamera();
 	m_viewportInfo.m_worldCamera = nullptr;
 	if (worldCamera != nullptr)
@@ -248,4 +248,3 @@ void Viewport::PrepareRenderData()
 ViewportInfo& Viewport::GetViewportInfo() { return m_viewportInfo; }
 
 ViewportInfo const& Viewport::GetViewportInfo() const { return m_viewportInfo; }
-

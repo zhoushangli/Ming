@@ -86,13 +86,13 @@ void           D3D11RenderBackend::Startup()
 #pragma region Startup: Create device and swap chain
 
 	DXGI_SWAP_CHAIN_DESC swapChainDesc = {};
-	swapChainDesc.BufferDesc.Width     = g_engine->m_window->GetClientDimensions().x;
-	swapChainDesc.BufferDesc.Height    = g_engine->m_window->GetClientDimensions().y;
+	swapChainDesc.BufferDesc.Width     = g_engine->m_windowSystem->GetClientDimensions().x;
+	swapChainDesc.BufferDesc.Height    = g_engine->m_windowSystem->GetClientDimensions().y;
 	swapChainDesc.BufferDesc.Format    = DXGI_FORMAT_R8G8B8A8_UNORM;
 	swapChainDesc.SampleDesc.Count     = 1;
 	swapChainDesc.BufferUsage          = DXGI_USAGE_RENDER_TARGET_OUTPUT;
 	swapChainDesc.BufferCount          = 2;
-	swapChainDesc.OutputWindow         = (HWND)g_engine->m_window->GetHwnd();
+	swapChainDesc.OutputWindow         = (HWND)g_engine->m_windowSystem->GetHwnd();
 	swapChainDesc.Windowed             = true;
 	swapChainDesc.SwapEffect           = DXGI_SWAP_EFFECT_FLIP_DISCARD;
 

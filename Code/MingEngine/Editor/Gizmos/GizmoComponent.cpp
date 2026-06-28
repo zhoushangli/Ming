@@ -154,7 +154,7 @@ GizmoContext BuildGizmoContext(SceneTree* sceneTree, Camera3D const& camera, Vec
 	context.m_camera    = &camera;
 	context.m_clientPos = clientPos;
 	context.m_clientDimensions =
-		g_engine && g_engine->m_window ? (Vec2)g_engine->m_window->GetClientDimensions() : Vec2::One;
+		g_engine && g_engine->m_windowSystem ? (Vec2)g_engine->m_windowSystem->GetClientDimensions() : Vec2::One;
 
 	EditorNode* editorNode = EditorNode::Get();
 	if (editorNode != nullptr)

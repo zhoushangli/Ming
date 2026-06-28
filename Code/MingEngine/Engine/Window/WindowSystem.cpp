@@ -1,7 +1,7 @@
-#include "MingEngine/Engine/Window/Window.hpp"
+#include "MingEngine/Engine/Window/WindowSystem.hpp"
 
-#include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Core/ErrorWarningAssert.hpp"
+#include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Engine/Input/InputSystem.hpp"
 
 #define WIN32_LEAN_AND_MEAN
@@ -66,11 +66,11 @@ static void MouseButtonCallback(GLFWwindow* window, int button, int action, int 
 
 	if (action == GLFW_PRESS)
 	{
-		g_engine->m_input->HandleKeyPressed(keyCode);
+		g_engine->m_inputSystem->HandleKeyPressed(keyCode);
 	}
 	else if (action == GLFW_RELEASE)
 	{
-		g_engine->m_input->HandleKeyReleased(keyCode);
+		g_engine->m_inputSystem->HandleKeyReleased(keyCode);
 	}
 }
 
@@ -106,11 +106,11 @@ static void FramebufferSizeCallback(GLFWwindow* window, int width, int height)
 }
 } // namespace
 
-Window::Window(WindowConfig config) : m_config(config) {}
+WindowSystem::WindowSystem(WindowConfig config) : m_config(config) {}
 
-Window::~Window() {}
+WindowSystem::~WindowSystem() {}
 
-void Window::Startup()
+void WindowSystem::Startup()
 {
 	if (!glfwInit())
 	{
@@ -120,7 +120,7 @@ void Window::Startup()
 	CreateGLFWWindow();
 }
 
-void Window::Shutdown()
+void WindowSystem::Shutdown()
 {
 	if (m_glfwWindow != nullptr)
 	{
@@ -131,11 +131,11 @@ void Window::Shutdown()
 	glfwTerminate();
 }
 
-void Window::BeginFrame() { RunMessagePump(); }
+void WindowSystem::BeginFrame() { RunMessagePump(); }
 
-void Window::EndFrame() {}
+void WindowSystem::EndFrame() {}
 
-void Window::CreateGLFWWindow()
+void WindowSystem::CreateGLFWWindow()
 {
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 	glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
@@ -157,7 +157,6 @@ void Window::CreateGLFWWindow()
 	glfwSetScrollCallback(m_glfwWindow, ScrollCallback);
 	glfwSetFramebufferSizeCallback(m_glfwWindow, FramebufferSizeCallback);
 
-
 	glfwMaximizeWindow(m_glfwWindow);
 	glfwShowWindow(m_glfwWindow);
 
@@ -165,7 +164,7 @@ void Window::CreateGLFWWindow()
 	m_windowHandle = static_cast<void*>(hWnd);
 }
 
-void Window::RunMessagePump()
+void WindowSystem::RunMessagePump()
 {
 	glfwPollEvents();
 
@@ -175,11 +174,11 @@ void Window::RunMessagePump()
 	}
 }
 
-void* Window::GetHwnd() const { return m_windowHandle; }
+void* WindowSystem::GetHwnd() const { return m_windowHandle; }
 
-GLFWwindow* Window::GetGLFWWindow() const { return m_glfwWindow; }
+GLFWwindow* WindowSystem::GetGLFWWindow() const { return m_glfwWindow; }
 
-IntVec2 Window::GetClientDimensions() const
+IntVec2 WindowSystem::GetClientDimensions() const
 {
 	if (m_glfwWindow == nullptr)
 	{
@@ -191,4 +190,3 @@ IntVec2 Window::GetClientDimensions() const
 	glfwGetFramebufferSize(m_glfwWindow, &width, &height);
 	return IntVec2(width, height);
 }
-

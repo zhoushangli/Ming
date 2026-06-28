@@ -1,11 +1,11 @@
 #include "MingEngine/Scene/Resource/MeshResource.hpp"
 
-#include "MingEngine/Scene/SceneCommon.hpp"
 #include "MingEngine/Scene/Import/GLBLoader.hpp"
 #include "MingEngine/Scene/Import/OBJLoader.hpp"
+#include "MingEngine/Scene/SceneCommon.hpp"
 
-#include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Core/Render/VertexUtils.hpp"
+#include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Engine/Render/IndexBuffer.hpp"
 #include "MingEngine/Engine/Render/Renderer.hpp"
 #include "MingEngine/Engine/Render/VertexBuffer.hpp"
@@ -30,8 +30,7 @@ std::string GetLowercaseExtension(std::string const& filePath)
 		extension.begin(),
 		extension.end(),
 		extension.begin(),
-		[](unsigned char c) { return static_cast<char>(std::tolower(c)); }
-	);
+		[](unsigned char c) { return static_cast<char>(std::tolower(c)); });
 	return extension;
 }
 } // namespace
@@ -106,4 +105,3 @@ void MeshResource::ClearLoadedMeshes()
 }
 
 bool MeshResource::IsEmpty() const { return m_meshData.IsEmpty(); }
-

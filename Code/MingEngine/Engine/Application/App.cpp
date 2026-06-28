@@ -9,7 +9,7 @@
 #include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Engine/Input/InputSystem.hpp"
 #include "MingEngine/Engine/Render/DebugRenderer.hpp"
-#include "MingEngine/Engine/Window/Window.hpp"
+#include "MingEngine/Engine/Window/WindowSystem.hpp"
 #include "MingEngine/EngineService/EngineService.hpp"
 #include "MingEngine/EngineService/RenderService.hpp"
 #include "MingEngine/Scene/3D/Camera3D.hpp"
@@ -113,24 +113,24 @@ void App::RunMainLoop()
 
 void App::Update(float deltaSeconds)
 {
-	GLFWwindow* window   = g_engine->m_window->GetGLFWWindow();
+	GLFWwindow* window   = g_engine->m_windowSystem->GetGLFWWindow();
 	bool const  hasFocus = window != nullptr && glfwGetWindowAttrib(window, GLFW_FOCUSED);
 
 	if (!hasFocus)
 	{
-		g_engine->m_input->SetCursorMode(CursorMode::POINTER);
+		g_engine->m_inputSystem->SetCursorMode(CursorMode::POINTER);
 		if (!hasFocus)
 		{
-			g_engine->m_input->ClearCursorDelta();
+			g_engine->m_inputSystem->ClearCursorDelta();
 		}
 	}
 
-	if (g_engine->m_input->WasKeyJustPressed(KeyCodeF8))
+	if (g_engine->m_inputSystem->WasKeyJustPressed(KeyCodeF8))
 	{
 		Restart();
 	}
 
-	if (g_engine->m_input->WasKeyJustPressed(KeyCodeEsc))
+	if (g_engine->m_inputSystem->WasKeyJustPressed(KeyCodeEsc))
 	{
 		bool const isConsoleOpen =
 			g_engineService != nullptr && g_engineService->m_console != nullptr && g_engineService->m_console->IsOpen();
@@ -234,8 +234,8 @@ void App::StartupScene()
 
 #endif
 
-	Ref<Resource> loadedScene = ResourceLoader::Load("res://EditorSavedScene.mscn");
-	Variant       sceneValue   = loadedScene;
+	Ref<Resource>    loadedScene = ResourceLoader::Load("res://EditorSavedScene.mscn");
+	Variant          sceneValue  = loadedScene;
 	Ref<PackedScene> packedScene(sceneValue);
 	Node*            newSceneRoot = packedScene.IsValid() ? packedScene->Instantiate() : nullptr;
 

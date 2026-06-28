@@ -1,17 +1,17 @@
 #include "MingEngine/Editor/EditorNode.hpp"
 
+#include "MingEngine/Core/Object/ResourceLoader.hpp"
+#include "MingEngine/Core/Object/ResourceSaver.hpp"
 #include "MingEngine/Editor/Gizmos/EditorGizmos.hpp"
 #include "MingEngine/Editor/UI/EditorUI.hpp"
 #include "MingEngine/Editor/UI/EditorUIContext.hpp"
-#include "MingEngine/Core/Object/ResourceLoader.hpp"
-#include "MingEngine/Core/Object/ResourceSaver.hpp"
 #include "MingEngine/Scene/3D/Camera3D.hpp"
 #include "MingEngine/Scene/3D/Node3D.hpp"
 #include "MingEngine/Scene/Core/PackedScene.hpp"
 #include "MingEngine/Scene/Core/SceneTree.hpp"
 
-#include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Core/StringUtils.hpp"
+#include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Engine/Input/InputSystem.hpp"
 #include "MingEngine/Engine/Render/DebugRenderer.hpp"
 
@@ -175,17 +175,17 @@ void EditorNode::OnMouseUp(int keyCode, [[maybe_unused]] Vec2 screenPos)
 
 void EditorNode::OnProcess([[maybe_unused]] float deltaSeconds)
 {
-	if (g_engine->m_input->WasKeyJustPressed('1'))
+	if (g_engine->m_inputSystem->WasKeyJustPressed('1'))
 	{
 		SceneTree* sceneTree = GetSceneTree();
 		SaveSceneToFile(sceneTree->GetScene(), "res://EditorSavedScene.mscn");
 	}
 
-	if (g_engine->m_input->WasKeyJustPressed('2'))
+	if (g_engine->m_inputSystem->WasKeyJustPressed('2'))
 	{
-		SceneTree* sceneTree = GetSceneTree();
-		Ref<Resource> loadedScene = ResourceLoader::Load("res://EditorSavedScene.mscn");
-		Variant       sceneValue   = loadedScene;
+		SceneTree*       sceneTree   = GetSceneTree();
+		Ref<Resource>    loadedScene = ResourceLoader::Load("res://EditorSavedScene.mscn");
+		Variant          sceneValue  = loadedScene;
 		Ref<PackedScene> packedScene(sceneValue);
 		Node*            newSceneRoot = packedScene.IsValid() ? packedScene->Instantiate() : nullptr;
 		if (newSceneRoot != nullptr)

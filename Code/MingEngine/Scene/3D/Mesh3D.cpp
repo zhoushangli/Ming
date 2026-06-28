@@ -12,7 +12,7 @@ Mesh3D::Mesh3D(std::string const& modelFilePath, float scale) : VisualizeInstanc
 
 Mesh3D::~Mesh3D() {}
 
-void Mesh3D::OnProcess([[maybe_unused]] float deltaSeconds) { }
+void Mesh3D::OnProcess([[maybe_unused]] float deltaSeconds) {}
 
 AABB3 Mesh3D::GetLocalBounds() const { return m_meshResource != nullptr ? m_meshResource->m_localBounds : AABB3(); }
 
@@ -28,11 +28,11 @@ RenderRequest Mesh3D::SubmitRenderRequest() const
 		return request;
 	}
 
-	request.m_pass           = RenderRequestPass::Opaque;
-	request.m_modelToWorld   = GetWorldTransform();
-	request.m_tint           = Rgba8::White;
-	request.m_vertexBuffer   = m_meshResource->m_vertexBuffer;
-	request.m_indexBuffer    = m_meshResource->m_indexBuffer;
+	request.m_pass         = RenderRequestPass::Opaque;
+	request.m_modelToWorld = GetWorldTransform();
+	request.m_tint         = Rgba8::White;
+	request.m_vertexBuffer = m_meshResource->m_vertexBuffer;
+	request.m_indexBuffer  = m_meshResource->m_indexBuffer;
 	request.m_textures[SurfaceTextureSlot::Diffuse] =
 		m_useMaterialTextures ? m_meshResource->m_meshData.m_texture : nullptr;
 	request.m_shader         = g_engine->m_renderer->CreateOrGetShader("Data/Shaders/DefaultLit");

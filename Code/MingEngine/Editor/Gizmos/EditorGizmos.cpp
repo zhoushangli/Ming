@@ -78,7 +78,7 @@ void EditorGizmos::OnEndDrag()
 		Camera3D* camera = EditorController::Get() ? EditorController::Get()->GetCamera() : nullptr;
 		if (camera != nullptr)
 		{
-			Vec2 const         cursorPos = g_engine->m_input->GetCursorClientPosition();
+			Vec2 const         cursorPos = g_engine->m_inputSystem->GetCursorClientPosition();
 			GizmoContext const ctx       = BuildGizmoContext(GetSceneTree(), *camera, cursorPos);
 			m_transformGizmo->EndDrag(ctx);
 		}

@@ -7,7 +7,7 @@
 #include "MingEngine/Engine/Input/InputSystem.hpp"
 #include "MingEngine/Engine/Render/Renderer.hpp"
 #include "MingEngine/Engine/Script/ScriptSystem.hpp"
-#include "MingEngine/Engine/Window/Window.hpp"
+#include "MingEngine/Engine/Window/WindowSystem.hpp"
 
 struct EngineConfig
 {
@@ -36,14 +36,13 @@ public:
 	EngineConfig m_config;
 
 	EventSystem*  m_eventSystem  = nullptr;
-	Window*       m_window       = nullptr;
+	WindowSystem* m_windowSystem = nullptr;
 	FileSystem*   m_fileSystem   = nullptr;
 	ScriptSystem* m_scriptSystem = nullptr;
 	Renderer*     m_renderer     = nullptr;
-	InputSystem*  m_input        = nullptr;
-	AudioSystem*  m_audio        = nullptr;
-	ImGuiSystem*  m_imgui        = nullptr;
+	InputSystem*  m_inputSystem  = nullptr;
+	AudioSystem*  m_audioSystem  = nullptr;
+	ImGuiSystem*  m_imguiSystem  = nullptr;
 };
 
 extern Engine* g_engine;
-

@@ -64,12 +64,12 @@ void DevConsole::Shutdown()
 
 void DevConsole::BeginFrame()
 {
-	if (!IsRuntimeEnabled() || g_engine == nullptr || g_engine->m_input == nullptr)
+	if (!IsRuntimeEnabled() || g_engine == nullptr || g_engine->m_inputSystem == nullptr)
 	{
 		return;
 	}
 
-	if (g_engine->m_input->WasKeyJustPressed(KeyCodeTilde))
+	if (g_engine->m_inputSystem->WasKeyJustPressed(KeyCodeTilde))
 	{
 		ToggleOpen();
 	}
@@ -165,7 +165,8 @@ void DevConsole::Render()
 	float const          windowWidth  = std::max(560.f, maxWidth);
 	float const          windowHeight = std::max(320.f, maxHeight);
 	ImVec2 const         windowPos(
-			 viewport->WorkPos.x + margin, viewport->WorkPos.y + viewport->WorkSize.y - windowHeight - margin);
+		viewport->WorkPos.x + margin,
+		viewport->WorkPos.y + viewport->WorkSize.y - windowHeight - margin);
 	ImVec2 const windowSize(windowWidth, windowHeight);
 
 	ImGui::SetNextWindowPos(windowPos, ImGuiCond_Always);

@@ -1,9 +1,9 @@
 #include "MingEngine/Scene/Import/GLBLoader.hpp"
 
-#include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Core/ErrorWarningAssert.hpp"
-#include "MingEngine/Core/StringUtils.hpp"
 #include "MingEngine/Core/Math/IntVec2.hpp"
+#include "MingEngine/Core/StringUtils.hpp"
+#include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Engine/Render/Renderer.hpp"
 
 #include "ThirdParty/stb/stb_image.h"
@@ -97,12 +97,11 @@ bool IsValidIndex(int index, uint32_t count) { return index >= 0 && static_cast<
 
 bool TryGetAccessorElementPtr(
 	tg3_model const* model,
-	int accessorIndex,
-	uint64_t elementIndex,
-	uint32_t expectedType,
-	int expectedComponentType,
-	uint8_t const*& outElementPtr
-)
+	int              accessorIndex,
+	uint64_t         elementIndex,
+	uint32_t         expectedType,
+	int              expectedComponentType,
+	uint8_t const*&  outElementPtr)
 {
 	outElementPtr = nullptr;
 
@@ -170,8 +169,7 @@ bool TryReadVec3Float(tg3_model const* model, int accessorIndex, uint64_t elemen
 			elementIndex,
 			TG3_TYPE_VEC3,
 			TG3_COMPONENT_TYPE_FLOAT,
-			elementPtr
-		))
+			elementPtr))
 	{
 		return false;
 	}
@@ -190,8 +188,7 @@ bool TryReadVec2Float(tg3_model const* model, int accessorIndex, uint64_t elemen
 			elementIndex,
 			TG3_TYPE_VEC2,
 			TG3_COMPONENT_TYPE_FLOAT,
-			elementPtr
-		))
+			elementPtr))
 	{
 		return false;
 	}
@@ -225,8 +222,7 @@ bool TryReadIndex(tg3_model const* model, int accessorIndex, uint64_t elementInd
 				elementIndex,
 				TG3_TYPE_SCALAR,
 				TG3_COMPONENT_TYPE_UNSIGNED_BYTE,
-				elementPtr
-			))
+				elementPtr))
 		{
 			return false;
 		}
@@ -243,8 +239,7 @@ bool TryReadIndex(tg3_model const* model, int accessorIndex, uint64_t elementInd
 				elementIndex,
 				TG3_TYPE_SCALAR,
 				TG3_COMPONENT_TYPE_UNSIGNED_SHORT,
-				elementPtr
-			))
+				elementPtr))
 		{
 			return false;
 		}
@@ -261,8 +256,7 @@ bool TryReadIndex(tg3_model const* model, int accessorIndex, uint64_t elementInd
 				elementIndex,
 				TG3_TYPE_SCALAR,
 				TG3_COMPONENT_TYPE_UNSIGNED_INT,
-				elementPtr
-			))
+				elementPtr))
 		{
 			return false;
 		}
@@ -308,16 +302,16 @@ Texture* CreateTextureFromEmbeddedImage(tg3_model const* model, tg3_image const&
 		return nullptr;
 	}
 
-	uint8_t const* encodedData = nullptr;
-	uint64_t encodedByteCount  = 0;
+	uint8_t const* encodedData      = nullptr;
+	uint64_t       encodedByteCount = 0;
 	if (!TryGetBufferViewBytes(model, image.buffer_view, encodedData, encodedByteCount) || encodedByteCount > INT_MAX)
 	{
 		return nullptr;
 	}
 
-	int width                         = 0;
-	int height                        = 0;
-	int componentCount                = 0;
+	int            width              = 0;
+	int            height             = 0;
+	int            componentCount     = 0;
 	unsigned char* decodedImagePixels = nullptr;
 
 	stbi_set_flip_vertically_on_load(true);
@@ -337,11 +331,10 @@ Texture* CreateTextureFromEmbeddedImage(tg3_model const* model, tg3_image const&
 }
 
 Texture* CreateTextureFromTextureInfo(
-	tg3_model const* model,
+	tg3_model const*        model,
 	tg3_texture_info const& textureInfo,
-	std::string const& glbDirectory,
-	std::string const& textureName
-)
+	std::string const&      glbDirectory,
+	std::string const&      textureName)
 {
 	if (g_engine == nullptr || g_engine->m_renderer == nullptr || model == nullptr
 		|| !IsValidIndex(textureInfo.index, model->textures_count))
@@ -355,7 +348,7 @@ Texture* CreateTextureFromTextureInfo(
 		return nullptr;
 	}
 
-	tg3_image const& image     = model->images[gltfTexture.source];
+	tg3_image const&  image    = model->images[gltfTexture.source];
 	std::string const imageUri = ToString(image.uri);
 	if (!imageUri.empty())
 	{
@@ -366,15 +359,14 @@ Texture* CreateTextureFromTextureInfo(
 }
 
 bool LoadBaseColorTexture(
-	tg3_model const* model, tg3_primitive const& primitive, char const* filePath, MeshData& outMesh
-)
+	tg3_model const* model, tg3_primitive const& primitive, char const* filePath, MeshData& outMesh)
 {
 	if (model == nullptr || !IsValidIndex(primitive.material, model->materials_count))
 	{
 		return true;
 	}
 
-	tg3_material const& material             = model->materials[primitive.material];
+	tg3_material const&     material         = model->materials[primitive.material];
 	tg3_texture_info const& baseColorTexture = material.pbr_metallic_roughness.base_color_texture;
 	if (baseColorTexture.index < 0)
 	{
@@ -397,9 +389,9 @@ bool GLBLoader::LoadFromFile(char const* filePath, MeshData& outMesh, GLBLoadOpt
 		return false;
 	}
 
-	tinygltf3::Model model;
+	tinygltf3::Model      model;
 	tinygltf3::ErrorStack errors;
-	tg3_error_code const parseResult = tinygltf3::parse_file(model, errors, filePath);
+	tg3_error_code const  parseResult = tinygltf3::parse_file(model, errors, filePath);
 	if (parseResult != TG3_OK)
 	{
 		return false;
@@ -488,4 +480,3 @@ bool GLBLoader::LoadFromFile(char const* filePath, MeshData& outMesh, GLBLoadOpt
 	LoadBaseColorTexture(model.get(), primitive, filePath, outMesh);
 	return !outMesh.IsEmpty();
 }
-

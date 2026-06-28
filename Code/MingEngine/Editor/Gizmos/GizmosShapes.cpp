@@ -1,11 +1,11 @@
 #include "MingEngine/Editor/Gizmos/GizmosShapes.hpp"
 
 #include "GizmosShapes.hpp"
-#include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Core/Math/AABB3.hpp"
+#include "MingEngine/Core/Render/VertexUtils.hpp"
+#include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Engine/Render/Renderer.hpp"
 #include "MingEngine/Engine/Render/VertexBuffer.hpp"
-#include "MingEngine/Core/Render/VertexUtils.hpp"
 
 namespace
 {
@@ -34,7 +34,7 @@ RenderRequest EditorGizmoVisual3D::SubmitRenderRequest() const
 
 EditorWorldGrid3D::EditorWorldGrid3D()
 {
-	constexpr int kHalfExtent      = 1000;
+	constexpr int   kHalfExtent    = 1000;
 	constexpr float kLineThickness = 0.005f;
 	constexpr float kHalfThickness = kLineThickness * 0.5f;
 
@@ -94,4 +94,3 @@ EditorWorldAxis3D::EditorWorldAxis3D()
 		m_vertexBuffer = g_engine->m_renderer->CreateVertexBuffer(m_verts);
 	}
 }
-
