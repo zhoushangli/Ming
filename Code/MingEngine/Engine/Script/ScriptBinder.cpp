@@ -296,8 +296,7 @@ BridgeSignature const& GetBridgeSignature(asIScriptGeneric* gen)
 
 // Converts AngelScript generic arguments into Variants.
 // firstUserArgIndex skips fixed bridge arguments such as nativePtr/className/methodName.
-std::vector<Variant> ReadBridgeArguments(
-	asIScriptGeneric* gen, BridgeSignature const& signature, int firstUserArgIndex)
+std::vector<Variant> ReadBridgeArguments(asIScriptGeneric* gen, BridgeSignature const& signature, int firstUserArgIndex)
 {
 	std::vector<Variant> args;
 	for (size_t i = 0; i < signature.argumentTypes.size(); ++i)
@@ -420,12 +419,13 @@ void WriteBridgeReturn(asIScriptGeneric* gen, Variant::Type returnType, Variant 
 
 // Shared invoke path for Object, GlobalObject, and Global bridge calls.
 // The entry points only differ in how they resolve object/methodBind and firstUserArgIndex.
+// Global calls pass nullptr because native free functions do not have a receiver object.
 void InvokeBridgeMethod(
-	asIScriptGeneric* gen,
+	asIScriptGeneric*      gen,
 	BridgeSignature const& signature,
-	Object& object,
-	MethodBind const& methodBind,
-	int firstUserArgIndex)
+	Object*                object,
+	MethodBind const&      methodBind,
+	int                    firstUserArgIndex)
 {
 	std::vector<Variant> args   = ReadBridgeArguments(gen, signature, firstUserArgIndex);
 	Variant              result = methodBind.Invoke(object, args);
@@ -439,14 +439,18 @@ void InvokeBridgeMethod(
 // arg3... = user arguments
 // Example call:
 // __Call_Void_Vec3(nativePtr, "Node3D", "SetPosition", arg0)
-void BridgeCallGeneric(asIScriptGeneric* gen)
+void BridgeObjectGeneric(asIScriptGeneric* gen)
 {
 	BridgeSignature const& signature  = GetBridgeSignature(gen);
 	Object*                object     = static_cast<Object*>(gen->GetArgObject(0));
 	std::string const&     className  = *static_cast<std::string const*>(gen->GetArgAddress(1));
 	std::string const&     methodName = *static_cast<std::string const*>(gen->GetArgAddress(2));
 	MethodBind const*      methodBind = ClassDatabase::GetMethodBind(className, methodName);
-	InvokeBridgeMethod(gen, signature, *object, *methodBind, 3);
+	GUARANTEE_OR_DIE(object != nullptr, Stringf("Bridge object for class '%s' is null", className.c_str()));
+	GUARANTEE_OR_DIE(
+		methodBind != nullptr,
+		Stringf("Method bind for '%s::%s' not found", className.c_str(), methodName.c_str()));
+	InvokeBridgeMethod(gen, signature, object, *methodBind, 3);
 }
 
 // GlobalObject bridge layout:
@@ -455,19 +459,22 @@ void BridgeCallGeneric(asIScriptGeneric* gen)
 // arg2... = user arguments
 // Example call:
 // __Call_GlobalObject_Bool_Int("InputSystem", "IsKeyPressed", arg0)
-void BridgeCallGlobalObjectGeneric(asIScriptGeneric* gen)
+void BridgeGlobalObjectGeneric(asIScriptGeneric* gen)
 {
 	BridgeSignature const& signature  = GetBridgeSignature(gen);
 	std::string const&     className  = *static_cast<std::string const*>(gen->GetArgAddress(0));
 	std::string const&     methodName = *static_cast<std::string const*>(gen->GetArgAddress(1));
 	MethodBind const*      methodBind = ClassDatabase::GetMethodBind(className, methodName);
 	Object*                object     = ClassDatabase::GetGlobalObject(className);
+	GUARANTEE_OR_DIE(
+		methodBind != nullptr,
+		Stringf("Global object method bind for '%s::%s' not found", className.c_str(), methodName.c_str()));
 	if (object == nullptr)
 	{
 		GUARANTEE_OR_DIE(false, Stringf("Global object for class '%s' not found", className.c_str()));
 	}
 
-	InvokeBridgeMethod(gen, signature, *object, *methodBind, 2);
+	InvokeBridgeMethod(gen, signature, object, *methodBind, 2);
 }
 
 // Global bridge layout:
@@ -476,14 +483,16 @@ void BridgeCallGlobalObjectGeneric(asIScriptGeneric* gen)
 // arg2... = user arguments
 // Example call:
 // __Call_Global_Log("Debug", "Log", arg0)
-void BridgeCallGlobalGeneric(asIScriptGeneric* gen)
+void BridgeGlobalGeneric(asIScriptGeneric* gen)
 {
 	BridgeSignature const& signature     = GetBridgeSignature(gen);
 	std::string const&     namespaceName = *static_cast<std::string const*>(gen->GetArgAddress(0));
 	std::string const&     methodName    = *static_cast<std::string const*>(gen->GetArgAddress(1));
 	MethodBind const*      methodBind    = ClassDatabase::GetGlobalMethodBind(namespaceName, methodName);
-	Object                 tmp           = Object(); // Create a temporary object to invoke the method on
-	InvokeBridgeMethod(gen, signature, tmp, *methodBind, 2);
+	GUARANTEE_OR_DIE(
+		methodBind != nullptr,
+		Stringf("Global method bind for '%s::%s' not found", namespaceName.c_str(), methodName.c_str()));
+	InvokeBridgeMethod(gen, signature, nullptr, *methodBind, 2);
 }
 
 } // namespace
@@ -511,11 +520,10 @@ void RegisterBridgeFunctions(asIScriptEngine* engine)
 				continue;
 			}
 
-			std::string scriptDeclaration =
-				BuildBridgeFunctionDeclaration(*methodInfo, ScriptCallableKind::Global);
+			std::string scriptDeclaration = BuildBridgeFunctionDeclaration(*methodInfo, ScriptCallableKind::Global);
 			int         functionId        = engine->RegisterGlobalFunction(
 				scriptDeclaration.c_str(),
-				asFUNCTION(BridgeCallGlobalGeneric),
+				asFUNCTION(BridgeGlobalGeneric),
 				asCALL_GENERIC);
 			GUARANTEE_OR_DIE(
 				functionId >= 0,
@@ -554,7 +562,7 @@ void RegisterBridgeFunctions(asIScriptEngine* engine)
 
 				int functionId = engine->RegisterGlobalFunction(
 					scriptDeclaration.c_str(),
-					asFUNCTION(BridgeCallGlobalObjectGeneric),
+					asFUNCTION(BridgeGlobalObjectGeneric),
 					asCALL_GENERIC);
 				GUARANTEE_OR_DIE(
 					functionId >= 0,
@@ -573,8 +581,7 @@ void RegisterBridgeFunctions(asIScriptEngine* engine)
 					continue;
 				}
 
-				std::string scriptDeclaration =
-					BuildBridgeFunctionDeclaration(*methodInfo, ScriptCallableKind::Object);
+				std::string scriptDeclaration = BuildBridgeFunctionDeclaration(*methodInfo, ScriptCallableKind::Object);
 				if (registeredFunctions.find(scriptDeclaration) != registeredFunctions.end())
 				{
 					continue;
@@ -582,7 +589,7 @@ void RegisterBridgeFunctions(asIScriptEngine* engine)
 
 				int functionId = engine->RegisterGlobalFunction(
 					scriptDeclaration.c_str(),
-					asFUNCTION(BridgeCallGeneric),
+					asFUNCTION(BridgeObjectGeneric),
 					asCALL_GENERIC);
 				GUARANTEE_OR_DIE(
 					functionId >= 0,

@@ -141,7 +141,7 @@ void InspectorPanel::RebuildProperties(EditorUIContext& context)
 		{
 			if (node != nullptr && setter != nullptr)
 			{
-				setter->Invoke(*node, { value });
+				setter->Invoke(node, { value });
 			}
 		};
 

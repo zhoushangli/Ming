@@ -17,8 +17,8 @@
 #include "MingEngine/Scene/Core/Node.hpp"
 #include "MingEngine/Scene/Core/PackedScene.hpp"
 #include "MingEngine/Scene/Core/SceneTree.hpp"
+#include "MingEngine/Scene/RegisterGlobalMethods.hpp"
 #include "MingEngine/Scene/RegisterSceneTypes.hpp"
-#include "MingEngine/Scene/RegisterGlobalUtils.hpp"
 
 #if defined(MING_EDITOR)
 

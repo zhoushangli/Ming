@@ -12,7 +12,7 @@ class MethodBind
 public:
 	virtual ~MethodBind() = default;
 
-	virtual Variant Invoke(Object& object, std::vector<Variant> const& arguments) const = 0;
+	virtual Variant Invoke(Object* object, std::vector<Variant> const& arguments) const = 0;
 };
 
 template <typename ClassType, typename ReturnType, typename... Args>
@@ -24,14 +24,19 @@ public:
 public:
 	explicit ReturnMethodBind(Method method) : m_method(method) {}
 
-	Variant Invoke(Object& object, std::vector<Variant> const& arguments) const override
+	Variant Invoke(Object* object, std::vector<Variant> const& arguments) const override
 	{
 		if (arguments.size() != sizeof...(Args))
 		{
 			throw std::invalid_argument("Incorrect method argument count");
 		}
 
-		ClassType& instance = static_cast<ClassType&>(object);
+		if (object == nullptr)
+		{
+			throw std::invalid_argument("Object method requires a valid object");
+		}
+
+		ClassType& instance = static_cast<ClassType&>(*object);
 
 		return InvokeMethod(instance, arguments, std::index_sequence_for<Args...>{});
 	}
@@ -69,14 +74,19 @@ public:
 public:
 	explicit ConstReturnMethodBind(Method method) : m_method(method) {}
 
-	Variant Invoke(Object& object, std::vector<Variant> const& arguments) const override
+	Variant Invoke(Object* object, std::vector<Variant> const& arguments) const override
 	{
 		if (arguments.size() != sizeof...(Args))
 		{
 			throw std::invalid_argument("Incorrect method argument count");
 		}
 
-		ClassType const& instance = static_cast<ClassType const&>(object);
+		if (object == nullptr)
+		{
+			throw std::invalid_argument("Object method requires a valid object");
+		}
+
+		ClassType const& instance = static_cast<ClassType const&>(*object);
 
 		return InvokeMethod(instance, arguments, std::index_sequence_for<Args...>{});
 	}
@@ -111,7 +121,7 @@ public:
 public:
 	explicit GlobalMethodBind(Method method) : m_method(method) {}
 
-	Variant Invoke([[maybe_unused]] Object& object, std::vector<Variant> const& arguments) const override
+	Variant Invoke([[maybe_unused]] Object* object, std::vector<Variant> const& arguments) const override
 	{
 		if (arguments.size() != sizeof...(Args))
 		{

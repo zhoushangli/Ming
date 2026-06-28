@@ -150,7 +150,7 @@ Node* PackedScene::Instantiate() const
 
 			try
 			{
-				property->GetSetter()->Invoke(*node, { packedProperty.m_value });
+				property->GetSetter()->Invoke(node, { packedProperty.m_value });
 			}
 			catch (std::exception const& error)
 			{
@@ -204,10 +204,10 @@ bool PackedScene::ParseNodeRecursively(
 
 		try
 		{
-			Variant value = property->GetGetter()->Invoke(const_cast<Node&>(*node), {});
+			Variant value = property->GetGetter()->Invoke(const_cast<Node*>(node), {});
 			if (defaultNode != nullptr)
 			{
-				Variant defaultValue = property->GetGetter()->Invoke(*defaultNode, {});
+				Variant defaultValue = property->GetGetter()->Invoke(defaultNode, {});
 				if (value == defaultValue)
 				{
 					continue;

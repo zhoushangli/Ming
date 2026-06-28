@@ -63,7 +63,7 @@ Variant InspectorProperty::GetCurrentValue() const
 	MethodBind const* getter = m_info.GetGetter();
 	if (m_node != nullptr && getter != nullptr)
 	{
-		return getter->Invoke(*m_node, {});
+		return getter->Invoke(m_node, {});
 	}
 
 	return Variant();
