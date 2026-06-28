@@ -139,7 +139,7 @@ std::string BuildGlobalBridgeFunctionDeclaration(MethodInfo const& methodInfo)
 {
 	std::string declaration = GetScriptTypeName(methodInfo.m_returnType) + " "
 							  + BuildGlobalBridgeFunctionName(methodInfo)
-							  + "const string &in namespaceName, const string &in methodName";
+							  + "(const string &in namespaceName, const string &in methodName";
 
 	for (size_t argumentIndex = 0; argumentIndex < methodInfo.m_argumentTypes.size(); ++argumentIndex)
 	{

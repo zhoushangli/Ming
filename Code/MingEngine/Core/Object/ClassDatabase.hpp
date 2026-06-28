@@ -253,11 +253,18 @@ public:
 		std::unique_ptr<MethodInfo> methodInfo = std::make_unique<MethodInfo>();
 
 		methodInfo->m_name       = methodName;
-		methodInfo->m_bind       = CreateMethodBind(method);
+		methodInfo->m_bind       = std::unique_ptr<MethodBind>(CreateMethodBind(method));
 		methodInfo->m_returnType = Variant::GetType<ReturnType>();
 		methodInfo->m_argumentTypes.reserve(sizeof...(Args));
 		(methodInfo->m_argumentTypes.push_back(Variant::GetType<Args>()), ...);
 
+		if (m_globalMap.find(namespaceName) == m_globalMap.end())
+		{
+			GlobalNamespaceInfo globalNamespaceInfo;
+			globalNamespaceInfo.m_namespaceName = namespaceName;
+			m_globalMap[namespaceName]          = std::move(globalNamespaceInfo);
+		}
+		
 		m_globalMap[namespaceName].m_methods.push_back(std::move(methodInfo));
 	}
 

@@ -420,15 +420,6 @@ void GeneratePredefinedGlobalNamespace(GlobalNamespaceInfo const& globalNamespac
 	outScript += "namespace ";
 	outScript += globalNamespace.m_namespaceName;
 	outScript += "\n{\n";
-
-	for (std::unique_ptr<MethodInfo> const& methodInfo : globalNamespace.m_methods)
-	{
-		return;
-	}
-
-	outScript += "namespace ";
-	outScript += globalNamespace.m_namespaceName;
-	outScript += "\n{\n";
 	for (std::unique_ptr<MethodInfo> const& methodInfo : globalNamespace.m_methods)
 	{
 		if (methodInfo != nullptr)
