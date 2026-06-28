@@ -3,6 +3,7 @@
 #include "MingEngine/Core/ErrorWarningAssert.hpp"
 #include "MingEngine/Core/Object/ClassDatabase.hpp"
 #include "MingEngine/Core/StringUtils.hpp"
+#include "MingEngine/Engine/Application/SystemBase.hpp"
 #include "MingEngine/Engine/Script/ScriptTypeUtils.hpp"
 
 #include "ThirdParty/angelscript/include/angelscript.h"
@@ -50,11 +51,82 @@ void GenerateMethod(ClassInfo const& classInfo, MethodInfo const& methodInfo, st
 	{
 		outScript += "return ";
 	}
-	outScript += BuildBridgeFunctionName(methodInfo);
+	outScript += BuildBridgeFunctionName(methodInfo, false);
 	outScript += "(";
 	outScript += kNativeObjectPropertyName;
 	outScript += ", \"";
 	outScript += classInfo.m_className;
+	outScript += "\", \"";
+	outScript += methodInfo.m_name;
+	outScript += "\"";
+
+	for (size_t argumentIndex = 0; argumentIndex < methodInfo.m_argumentTypes.size(); ++argumentIndex)
+	{
+		outScript += ", arg";
+		outScript += std::to_string(argumentIndex);
+	}
+
+	outScript += ");\n\t}\n\n";
+}
+
+void GenerateGlobalObjectMethod(ClassInfo const& classInfo, MethodInfo const& methodInfo, std::string& outScript)
+{
+	outScript += "\t";
+	outScript += GetScriptTypeName(methodInfo.m_returnType);
+	outScript += " ";
+	outScript += methodInfo.m_name;
+	outScript += "(";
+	GenerateMethodArguments(methodInfo, outScript);
+	outScript += ")";
+	if (methodInfo.m_isConst)
+	{
+		outScript += " const";
+	}
+	outScript += "\n\t{\n\t\t";
+	if (methodInfo.m_returnType != Variant::Type::Empty)
+	{
+		outScript += "return ";
+	}
+	outScript += BuildBridgeFunctionName(methodInfo, true);
+	outScript += "(";
+	outScript += "\"";
+	outScript += classInfo.m_className;
+	outScript += "\", \"";
+	outScript += methodInfo.m_name;
+	outScript += "\"";
+
+	for (size_t argumentIndex = 0; argumentIndex < methodInfo.m_argumentTypes.size(); ++argumentIndex)
+	{
+		outScript += ", arg";
+		outScript += std::to_string(argumentIndex);
+	}
+
+	outScript += ");\n\t}\n\n";
+}
+
+void GenerateGlobalMethod(
+	GlobalNamespaceInfo const& globalNamespaceInfo, MethodInfo const& methodInfo, std::string& outScript)
+{
+	outScript += "\t";
+	outScript += GetScriptTypeName(methodInfo.m_returnType);
+	outScript += " ";
+	outScript += methodInfo.m_name;
+	outScript += "(";
+	GenerateMethodArguments(methodInfo, outScript);
+	outScript += ")";
+	if (methodInfo.m_isConst)
+	{
+		outScript += " const";
+	}
+	outScript += "\n\t{\n\t\t";
+	if (methodInfo.m_returnType != Variant::Type::Empty)
+	{
+		outScript += "return ";
+	}
+	outScript += BuildGlobalBridgeFunctionName(methodInfo);
+	outScript += "(";
+	outScript += "\"";
+	outScript += globalNamespaceInfo.m_namespaceName;
 	outScript += "\", \"";
 	outScript += methodInfo.m_name;
 	outScript += "\"";
@@ -98,24 +170,46 @@ void GenerateClass(ClassInfo const& classInfo, std::string& outScript)
 		return;
 	}
 
-	outScript += "class ";
-	outScript += classInfo.m_className;
-
-	if (!classInfo.m_parentClassName.empty())
+	// If the class is derived from SystemBase like InputSystem
+	// We need to generate InputSystem::IsKeyPressed() as a Global method instead of a member method
+	// So script can just call InputSystem::IsKeyPressed() without creating an instance of InputSystem
+	// e.g. namespace InputSystem { bool IsKeyPressed(int keyCode); }
+	if (classInfo.m_parentClassName == SystemBase::GetStaticClassName())
 	{
-		outScript += " : ";
-		outScript += classInfo.m_parentClassName;
-	}
+		outScript += "namespace ";
+		outScript += classInfo.m_className;
 
-	outScript += "\n{\n";
-	for (std::unique_ptr<MethodInfo> const& methodInfo : classInfo.m_methods)
-	{
-		if (methodInfo != nullptr)
+		outScript += "\n{\n";
+		for (std::unique_ptr<MethodInfo> const& methodInfo : classInfo.m_methods)
 		{
-			GenerateMethod(classInfo, *methodInfo, outScript);
+			if (methodInfo != nullptr)
+			{
+				GenerateGlobalObjectMethod(classInfo, *methodInfo, outScript);
+			}
 		}
+		outScript += "}\n\n";
 	}
-	outScript += "}\n\n";
+	else
+	{
+		outScript += "class ";
+		outScript += classInfo.m_className;
+
+		if (!classInfo.m_parentClassName.empty())
+		{
+			outScript += " : ";
+			outScript += classInfo.m_parentClassName;
+		}
+
+		outScript += "\n{\n";
+		for (std::unique_ptr<MethodInfo> const& methodInfo : classInfo.m_methods)
+		{
+			if (methodInfo != nullptr)
+			{
+				GenerateMethod(classInfo, *methodInfo, outScript);
+			}
+		}
+		outScript += "}\n\n";
+	}
 }
 
 void GeneratePredefinedBuiltinTypes(asIScriptEngine* engine, std::string& outScript)
@@ -198,6 +292,22 @@ void GeneratePredefinedMethod(MethodInfo const& methodInfo, std::string& outScri
 	outScript += ";\n";
 }
 
+void GeneratePredefinedGlobalMethod(MethodInfo const& methodInfo, std::string& outScript)
+{
+	outScript += "\t";
+	outScript += GetScriptTypeName(methodInfo.m_returnType);
+	outScript += " ";
+	outScript += methodInfo.m_name;
+	outScript += "(";
+	GenerateMethodArguments(methodInfo, outScript);
+	outScript += ")";
+	if (methodInfo.m_isConst)
+	{
+		outScript += " const";
+	}
+	outScript += ";\n";
+}
+
 void GeneratePredefinedRootObjectClass(ClassInfo const* classInfo, std::string& outScript)
 {
 	outScript += "class Object\n{\n";
@@ -228,24 +338,42 @@ void GeneratePredefinedClass(ClassInfo const& classInfo, std::string& outScript)
 		return;
 	}
 
-	outScript += "class ";
-	outScript += classInfo.m_className;
-
-	if (!classInfo.m_parentClassName.empty())
+	if (classInfo.m_parentClassName == SystemBase::GetStaticClassName())
 	{
-		outScript += " : ";
-		outScript += classInfo.m_parentClassName;
-	}
-
-	outScript += "\n{\n";
-	for (std::unique_ptr<MethodInfo> const& methodInfo : classInfo.m_methods)
-	{
-		if (methodInfo != nullptr)
+		outScript += "namespace ";
+		outScript += classInfo.m_className;
+		outScript += "\n{\n";
+		for (std::unique_ptr<MethodInfo> const& methodInfo : classInfo.m_methods)
 		{
-			GeneratePredefinedMethod(*methodInfo, outScript);
+			if (methodInfo != nullptr)
+			{
+				GeneratePredefinedGlobalMethod(*methodInfo, outScript);
+			}
 		}
+		outScript += "}\n\n";
+		return;
 	}
-	outScript += "}\n\n";
+	else
+	{
+		outScript += "class ";
+		outScript += classInfo.m_className;
+
+		if (!classInfo.m_parentClassName.empty())
+		{
+			outScript += " : ";
+			outScript += classInfo.m_parentClassName;
+		}
+
+		outScript += "\n{\n";
+		for (std::unique_ptr<MethodInfo> const& methodInfo : classInfo.m_methods)
+		{
+			if (methodInfo != nullptr)
+			{
+				GeneratePredefinedMethod(*methodInfo, outScript);
+			}
+		}
+		outScript += "}\n\n";
+	}
 }
 
 int GetClassDepth(ClassInfo const& classInfo)
@@ -268,6 +396,50 @@ int GetClassDepth(ClassInfo const& classInfo)
 	return depth;
 }
 
+void GenerateGlobalNamespace(GlobalNamespaceInfo const& globalNamespace, std::string& outScript)
+{
+	outScript += "namespace ";
+	outScript += globalNamespace.m_namespaceName;
+	outScript += "\n{\n";
+
+	for (std::unique_ptr<MethodInfo> const& methodInfo : globalNamespace.m_methods)
+	{
+		if (methodInfo == nullptr)
+		{
+			continue;
+		}
+
+		GenerateGlobalMethod(globalNamespace, *methodInfo, outScript);
+	}
+
+	outScript += "}\n\n";
+}
+
+void GeneratePredefinedGlobalNamespace(GlobalNamespaceInfo const& globalNamespace, std::string& outScript)
+{
+	outScript += "namespace ";
+	outScript += globalNamespace.m_namespaceName;
+	outScript += "\n{\n";
+
+	for (std::unique_ptr<MethodInfo> const& methodInfo : globalNamespace.m_methods)
+	{
+		return;
+	}
+
+	outScript += "namespace ";
+	outScript += globalNamespace.m_namespaceName;
+	outScript += "\n{\n";
+	for (std::unique_ptr<MethodInfo> const& methodInfo : globalNamespace.m_methods)
+	{
+		if (methodInfo != nullptr)
+		{
+			GeneratePredefinedGlobalMethod(*methodInfo, outScript);
+		}
+	}
+	outScript += "}\n\n";
+	return;
+}
+
 } // namespace
 
 void GenerateBuiltinScript(asIScriptEngine* engine)
@@ -282,7 +454,8 @@ void GenerateBuiltinScript(asIScriptEngine* engine)
 	GeneratePredefinedBuiltinTypes(engine, predefinedText);
 	GeneratePredefinedRootObjectClass(objectClassInfo, predefinedText);
 
-	std::vector<ClassInfo const*> classes = ClassDatabase::GetRegisteredClasses();
+	std::vector<GlobalNamespaceInfo const*> globalNamespaces = ClassDatabase::GetRegisteredGlobalNamespaces();
+	std::vector<ClassInfo const*>           classes          = ClassDatabase::GetRegisteredClasses();
 	std::sort(
 		classes.begin(),
 		classes.end(),
@@ -308,13 +481,26 @@ void GenerateBuiltinScript(asIScriptEngine* engine)
 			return left->m_className < right->m_className;
 		});
 
+	for (GlobalNamespaceInfo const* globalNamespace : globalNamespaces)
+	{
+		if (globalNamespace == nullptr)
+		{
+			continue;
+		}
+
+		GenerateGlobalNamespace(*globalNamespace, scriptText);
+		GeneratePredefinedGlobalNamespace(*globalNamespace, predefinedText);
+	}
+
 	for (ClassInfo const* classInfo : classes)
 	{
-		if (classInfo != nullptr && classInfo->m_className != "Object")
+		if (classInfo == nullptr || classInfo->m_className == "Object")
 		{
-			GenerateClass(*classInfo, scriptText);
-			GeneratePredefinedClass(*classInfo, predefinedText);
+			continue;
 		}
+
+		GenerateClass(*classInfo, scriptText);
+		GeneratePredefinedClass(*classInfo, predefinedText);
 	}
 
 	std::filesystem::create_directories(kScriptLibDirectory);

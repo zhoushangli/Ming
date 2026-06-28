@@ -82,9 +82,13 @@ std::string BuildScriptArgumentDeclaration(Variant::Type type)
 	return declaration;
 }
 
-std::string BuildBridgeFunctionName(MethodInfo const& methodInfo)
+std::string BuildBridgeFunctionName(MethodInfo const& methodInfo, bool isGlobal)
 {
 	std::string functionName = "__Call_";
+	if (isGlobal)
+	{
+		functionName += "GlobalObject_";
+	}
 	functionName += GetBridgeTypeName(methodInfo.m_returnType);
 
 	for (Variant::Type argumentType : methodInfo.m_argumentTypes)
@@ -96,10 +100,47 @@ std::string BuildBridgeFunctionName(MethodInfo const& methodInfo)
 	return functionName;
 }
 
-std::string BuildBridgeFunctionDeclaration(MethodInfo const& methodInfo)
+std::string BuildGlobalBridgeFunctionName(MethodInfo const& methodInfo)
 {
-	std::string declaration = GetScriptTypeName(methodInfo.m_returnType) + " " + BuildBridgeFunctionName(methodInfo)
-							  + "(NativeObject@ nativePtr, const string &in className, const string &in methodName";
+	std::string functionName = "__Call_";
+	functionName += "Global_";
+	functionName += methodInfo.m_name;
+
+	return functionName;
+}
+
+std::string BuildBridgeFunctionDeclaration(MethodInfo const& methodInfo, bool isGlobalObject)
+{
+	std::string declaration;
+	if (isGlobalObject)
+	{
+		declaration = GetScriptTypeName(methodInfo.m_returnType) + " " + BuildBridgeFunctionName(methodInfo, true)
+					  + "(const string &in className, const string &in methodName";
+	}
+	else
+	{
+		declaration = GetScriptTypeName(methodInfo.m_returnType) + " " + BuildBridgeFunctionName(methodInfo, false)
+					  + "(NativeObject@ nativePtr, const string &in className, const string &in methodName";
+	}
+
+	for (size_t argumentIndex = 0; argumentIndex < methodInfo.m_argumentTypes.size(); ++argumentIndex)
+	{
+		declaration += ", ";
+		declaration += BuildScriptArgumentDeclaration(methodInfo.m_argumentTypes[argumentIndex]);
+		declaration += " arg";
+		declaration += std::to_string(argumentIndex);
+	}
+	declaration += ")";
+
+	return declaration;
+}
+
+std::string BuildGlobalBridgeFunctionDeclaration(MethodInfo const& methodInfo)
+{
+	std::string declaration = GetScriptTypeName(methodInfo.m_returnType) + " "
+							  + BuildGlobalBridgeFunctionName(methodInfo)
+							  + "const string &in namespaceName, const string &in methodName";
+
 	for (size_t argumentIndex = 0; argumentIndex < methodInfo.m_argumentTypes.size(); ++argumentIndex)
 	{
 		declaration += ", ";

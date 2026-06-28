@@ -100,16 +100,10 @@ struct ClassInfo
 	std::vector<std::unique_ptr<MethodInfo>>   m_methods;
 };
 
-struct GlobalMethodInfo
-{
-	std::string m_name;
-	std::unique_ptr<MethodBind> m_bind;
-};
-
 struct GlobalNamespaceInfo
 {
-	std::string                   m_namespaceName;
-	std::vector<std::unique_ptr<GlobalMethodInfo>> m_methods;
+	std::string                              m_namespaceName;
+	std::vector<std::unique_ptr<MethodInfo>> m_methods;
 };
 
 class ClassDatabase
@@ -176,6 +170,23 @@ public:
 	}
 
 	template <typename T>
+	static void RegisterGlobalObject(T* object)
+	{
+		static_assert(std::is_base_of_v<Object, T>, "T must be derived from Object");
+		m_globalObjects[object->GetClassName()] = object;
+	}
+
+	static Object* GetGlobalObject(std::string const& className)
+	{
+		auto iter = m_globalObjects.find(className);
+		if (iter != m_globalObjects.end())
+		{
+			return iter->second;
+		}
+		return nullptr;
+	}
+
+	template <typename T>
 	static Object* Creator()
 	{
 		Object* object = new T();
@@ -239,15 +250,23 @@ public:
 	static void
 	BindGlobalMethod(std::string const& namespaceName, std::string const& methodName, ReturnType (*method)(Args...))
 	{
-		std::unique_ptr<GlobalMethodInfo> methodInfo = std::make_unique<GlobalMethodInfo>();
+		std::unique_ptr<MethodInfo> methodInfo = std::make_unique<MethodInfo>();
 
-		methodInfo->m_name = methodName;
-		methodInfo->m_bind = CreateMethodBind(method);
+		methodInfo->m_name       = methodName;
+		methodInfo->m_bind       = CreateMethodBind(method);
+		methodInfo->m_returnType = Variant::GetType<ReturnType>();
+		methodInfo->m_argumentTypes.reserve(sizeof...(Args));
+		(methodInfo->m_argumentTypes.push_back(Variant::GetType<Args>()), ...);
 
 		m_globalMap[namespaceName].m_methods.push_back(std::move(methodInfo));
 	}
 
+	static std::vector<GlobalNamespaceInfo const*> GetRegisteredGlobalNamespaces();
+
+	static MethodBind const* GetGlobalMethodBind(std::string const& namespaceName, std::string const& methodName);
+
 private:
 	static std::unordered_map<std::string, ClassInfo>           m_classInfoMap;
 	static std::unordered_map<std::string, GlobalNamespaceInfo> m_globalMap;
+	static std::unordered_map<std::string, Object*>             m_globalObjects;
 };

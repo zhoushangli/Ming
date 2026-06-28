@@ -54,6 +54,7 @@ void ScriptSystem::Startup()
 
 	RegisterNativeObjectType(m_scriptEngine);
 	RegisterBridgeFunctions(m_scriptEngine);
+	
 	GenerateBuiltinScript(m_scriptEngine);
 }
 

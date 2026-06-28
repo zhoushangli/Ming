@@ -111,7 +111,7 @@ public:
 public:
 	explicit GlobalMethodBind(Method method) : m_method(method) {}
 
-	Variant Invoke(std::vector<Variant> const& arguments) const override
+	Variant Invoke([[maybe_unused]] Object& object, std::vector<Variant> const& arguments) const override
 	{
 		if (arguments.size() != sizeof...(Args))
 		{

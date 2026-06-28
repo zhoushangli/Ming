@@ -447,6 +447,7 @@
     <ClCompile Include="Scene\Core\PackedSceneLoader.cpp" />
     <ClCompile Include="Scene\Core\SceneTree.cpp" />
     <ClCompile Include="Scene\Core\Viewport.cpp" />
+    <ClCompile Include="Scene\RegisterGlobalUtils.cpp" />
     <ClCompile Include="Scene\RegisterSceneTypes.cpp" />
     <ClCompile Include="EngineService\RenderService.cpp" />
     <ClCompile Include="Scene\Resource\MeshResource.cpp" />
@@ -603,6 +604,7 @@
     <ClInclude Include="Scene\Core\PackedSceneLoader.hpp" />
     <ClInclude Include="Scene\Core\SceneTree.hpp" />
     <ClInclude Include="Scene\Core\Viewport.hpp" />
+    <ClInclude Include="Scene\RegisterGlobalUtils.hpp" />
     <ClInclude Include="Scene\RegisterSceneTypes.hpp" />
     <ClInclude Include="EngineService\RenderService.hpp" />
     <ClInclude Include="Scene\Resource\MeshResource.hpp" />

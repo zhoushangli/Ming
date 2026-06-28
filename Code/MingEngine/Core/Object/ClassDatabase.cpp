@@ -5,6 +5,7 @@
 
 std::unordered_map<std::string, ClassInfo>           ClassDatabase::m_classInfoMap;
 std::unordered_map<std::string, GlobalNamespaceInfo> ClassDatabase::m_globalMap;
+std::unordered_map<std::string, Object*>             ClassDatabase::m_globalObjects;
 
 void ClassDatabase::Startup() { m_classInfoMap.clear(); }
 
@@ -163,4 +164,35 @@ void ClassDatabase::AddProperty(
 		Stringf("ClassDatabase: getter '%s' is not bound on class '%s'.", getterName.c_str(), className.c_str()));
 
 	m_classInfoMap[className].m_properties.push_back(std::make_unique<PropertyInfo>(std::move(propertyInfo)));
+}
+
+std::vector<GlobalNamespaceInfo const*> ClassDatabase::GetRegisteredGlobalNamespaces()
+{
+	std::vector<GlobalNamespaceInfo const*> globalNamespaces;
+	globalNamespaces.reserve(m_globalMap.size());
+	for (auto const& namespaceEntry : m_globalMap)
+	{
+		globalNamespaces.push_back(&namespaceEntry.second);
+	}
+	return globalNamespaces;
+}
+
+MethodBind const* ClassDatabase::GetGlobalMethodBind(std::string const& namespaceName, std::string const& methodName)
+{
+	auto namespaceIter = m_globalMap.find(namespaceName);
+	if (namespaceIter == m_globalMap.end())
+	{
+		return nullptr;
+	}
+
+	auto& methods = namespaceIter->second.m_methods;
+	for (const auto& method : methods)
+	{
+		if (method && method->m_name == methodName)
+		{
+			return method->m_bind.get();
+		}
+	}
+
+	return nullptr;
 }

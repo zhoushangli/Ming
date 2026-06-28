@@ -555,6 +555,9 @@
     <ClCompile Include="Scene\Core\PackedSceneLoader.cpp">
       <Filter>Scene\Core</Filter>
     </ClCompile>
+    <ClCompile Include="Scene\RegisterGlobalUtils.cpp">
+      <Filter>Scene</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Core\Clock.hpp">
@@ -1072,6 +1075,9 @@
     </ClInclude>
     <ClInclude Include="Scene\Core\PackedSceneLoader.hpp">
       <Filter>Scene\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\RegisterGlobalUtils.hpp">
+      <Filter>Scene</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

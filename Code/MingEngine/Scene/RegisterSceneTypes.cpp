@@ -37,6 +37,8 @@ void RegisterSceneTypes()
 	ClassDatabase::RegisterClass<SystemBase>(false, false);
 	ClassDatabase::RegisterClass<InputSystem>(false, false);
 
+	ClassDatabase::RegisterGlobalObject(g_engine->m_inputSystem);
+
 	// Core types
 	ClassDatabase::RegisterClass<RefCounted>(false);
 	ClassDatabase::RegisterClass<Resource>(false);

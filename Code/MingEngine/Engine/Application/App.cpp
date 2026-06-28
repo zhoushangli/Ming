@@ -18,6 +18,7 @@
 #include "MingEngine/Scene/Core/PackedScene.hpp"
 #include "MingEngine/Scene/Core/SceneTree.hpp"
 #include "MingEngine/Scene/RegisterSceneTypes.hpp"
+#include "MingEngine/Scene/RegisterGlobalUtils.hpp"
 
 #if defined(MING_EDITOR)
 
@@ -64,6 +65,7 @@ void App::Startup()
 {
 	ClassDatabase::Startup();
 
+	RegisterGlobalMethods();
 	RegisterSceneTypes();
 	m_project.RegisterTypes();
 
