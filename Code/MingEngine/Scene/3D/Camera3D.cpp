@@ -21,9 +21,18 @@ void Camera3D::BindMethods()
 	ClassDatabase::BindMethod("GetSize", &Camera3D::GetSize);
 
 	PropertyInfo::UsageFlags const usage = PropertyInfo::UsageFlags::Default;
-	ADD_PROPERTY(PropertyInfo(Variant::Type::Float, "near_clip", PropertyInfo::Hint::None, "", usage), "SetNearClip", "GetNearClip");
-	ADD_PROPERTY(PropertyInfo(Variant::Type::Float, "far_clip", PropertyInfo::Hint::None, "", usage), "SetFarClip", "GetFarClip");
-	ADD_PROPERTY(PropertyInfo(Variant::Type::Float, "fov_degrees", PropertyInfo::Hint::None, "", usage), "SetFovDegrees", "GetFovDegrees");
+	ADD_PROPERTY(
+		PropertyInfo(Variant::Type::Float, "near_clip", PropertyInfo::Hint::None, "", usage),
+		"SetNearClip",
+		"GetNearClip");
+	ADD_PROPERTY(
+		PropertyInfo(Variant::Type::Float, "far_clip", PropertyInfo::Hint::None, "", usage),
+		"SetFarClip",
+		"GetFarClip");
+	ADD_PROPERTY(
+		PropertyInfo(Variant::Type::Float, "fov_degrees", PropertyInfo::Hint::None, "", usage),
+		"SetFovDegrees",
+		"GetFovDegrees");
 	ADD_PROPERTY(PropertyInfo(Variant::Type::Float, "size", PropertyInfo::Hint::None, "", usage), "SetSize", "GetSize");
 }
 
@@ -31,7 +40,7 @@ void Camera3D::OnEnterTree() { m_data.m_viewport->RegisterWorldCamera(this); }
 
 void Camera3D::OnExitTree() { m_data.m_viewport->UnregisterWorldCamera(this); }
 
-CameraContext Camera3D::GetCamera(float aspect) const
+CameraContext Camera3D::GetCameraContext(float aspect) const
 {
 	CameraContext camera;
 	camera.SetTransform(GetWorldTransform());

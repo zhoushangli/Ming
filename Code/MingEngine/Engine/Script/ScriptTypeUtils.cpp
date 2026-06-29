@@ -92,10 +92,10 @@ std::string BuildBridgeSignature(MethodInfo const& methodInfo)
 {
 	std::string signature = GetBridgeTypeName(methodInfo.m_returnType);
 
-	for (Variant::Type argumentType : methodInfo.m_argumentTypes)
+	for (ArgumentInfo const& argumentInfo : methodInfo.m_argumentInfos)
 	{
 		signature += "_";
-		signature += GetBridgeTypeName(argumentType);
+		signature += GetBridgeTypeName(argumentInfo.m_type);
 	}
 
 	return signature;
@@ -107,10 +107,10 @@ std::string BuildBridgeSignature(MethodInfo const& methodInfo)
 std::string BuildBridgeDeclarationArguments(MethodInfo const& methodInfo)
 {
 	std::string arguments;
-	for (size_t argumentIndex = 0; argumentIndex < methodInfo.m_argumentTypes.size(); ++argumentIndex)
+	for (size_t argumentIndex = 0; argumentIndex < methodInfo.m_argumentInfos.size(); ++argumentIndex)
 	{
 		arguments += ", ";
-		arguments += BuildScriptArgumentDeclaration(methodInfo.m_argumentTypes[argumentIndex]);
+		arguments += BuildScriptArgumentDeclaration(methodInfo.m_argumentInfos[argumentIndex].m_type);
 		arguments += " arg";
 		arguments += std::to_string(argumentIndex);
 	}

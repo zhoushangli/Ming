@@ -20,12 +20,19 @@ class PackedScene;
 // MethodInfo and ClassInfo must be moved, not copied
 // We indeed need to use std::unique_ptr here
 // Because we want method info deconstruct when the class info is destroyed
+struct ArgumentInfo
+{
+	Variant::Type m_type = Variant::Type::Empty;
+	std::string   m_objectClassName; // "Node", "Resource", etc. Only used when m_type is Variant::Type::ObjectPtr
+	bool          m_isRequired = false;
+};
+
 struct MethodInfo
 {
 	std::string                 m_name;
 	std::unique_ptr<MethodBind> m_bind;
 	Variant::Type               m_returnType = Variant::Type::Empty;
-	std::vector<Variant::Type>  m_argumentTypes;
+	std::vector<ArgumentInfo>   m_argumentInfos;
 	bool                        m_isConst = false;
 };
 
@@ -193,6 +200,22 @@ public:
 		return object;
 	}
 
+	template <typename T>
+	static ArgumentInfo GetArgumentInfo()
+	{
+		using CleanType = std::remove_cv_t<std::remove_reference_t<T>>;
+		using PointeeType = std::remove_pointer_t<CleanType>;
+
+		ArgumentInfo argumentInfo;
+		argumentInfo.m_type = Variant::GetType<CleanType>();
+		if constexpr (std::is_pointer_v<CleanType> && std::is_base_of_v<Object, PointeeType>)
+		{
+			argumentInfo.m_type            = Variant::Type::ObjectPtr;
+			argumentInfo.m_objectClassName = PointeeType::GetStaticClassName();
+		}
+		return argumentInfo;
+	}
+
 	template <typename ClassType, typename ReturnType, typename... Args>
 	static MethodBind* CreateMethodBind(ReturnType (ClassType::*method)(Args...))
 	{
@@ -225,8 +248,8 @@ public:
 		methodInfo->m_name       = methodName;
 		methodInfo->m_bind       = std::unique_ptr<MethodBind>(CreateMethodBind(method));
 		methodInfo->m_returnType = Variant::GetType<ReturnType>();
-		methodInfo->m_argumentTypes.reserve(sizeof...(Args));
-		(methodInfo->m_argumentTypes.push_back(Variant::GetType<Args>()), ...);
+		methodInfo->m_argumentInfos.reserve(sizeof...(Args));
+		(methodInfo->m_argumentInfos.push_back(GetArgumentInfo<Args>()), ...);
 
 		m_classInfoMap[ClassType::GetStaticClassName()].m_methods.push_back(std::move(methodInfo));
 	}
@@ -239,8 +262,8 @@ public:
 		methodInfo->m_name       = methodName;
 		methodInfo->m_bind       = std::unique_ptr<MethodBind>(CreateMethodBind(method));
 		methodInfo->m_returnType = Variant::GetType<ReturnType>();
-		methodInfo->m_argumentTypes.reserve(sizeof...(Args));
-		(methodInfo->m_argumentTypes.push_back(Variant::GetType<Args>()), ...);
+		methodInfo->m_argumentInfos.reserve(sizeof...(Args));
+		(methodInfo->m_argumentInfos.push_back(GetArgumentInfo<Args>()), ...);
 		methodInfo->m_isConst = true;
 
 		m_classInfoMap[ClassType::GetStaticClassName()].m_methods.push_back(std::move(methodInfo));
@@ -255,8 +278,8 @@ public:
 		methodInfo->m_name       = methodName;
 		methodInfo->m_bind       = std::unique_ptr<MethodBind>(CreateMethodBind(method));
 		methodInfo->m_returnType = Variant::GetType<ReturnType>();
-		methodInfo->m_argumentTypes.reserve(sizeof...(Args));
-		(methodInfo->m_argumentTypes.push_back(Variant::GetType<Args>()), ...);
+		methodInfo->m_argumentInfos.reserve(sizeof...(Args));
+		(methodInfo->m_argumentInfos.push_back(GetArgumentInfo<Args>()), ...);
 
 		if (m_globalMap.find(namespaceName) == m_globalMap.end())
 		{
@@ -264,7 +287,7 @@ public:
 			globalNamespaceInfo.m_namespaceName = namespaceName;
 			m_globalMap[namespaceName]          = std::move(globalNamespaceInfo);
 		}
-		
+
 		m_globalMap[namespaceName].m_methods.push_back(std::move(methodInfo));
 	}
 

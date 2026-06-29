@@ -14,16 +14,16 @@ public:
 
 	// The aspect will be determined by the viewport so it is not a parameter of Camera3D
 	// Instead, it will be passed in when GetCamera is called.
-	CameraContext GetCamera(float aspect) const;
+	CameraContext GetCameraContext(float aspect) const;
 
 	void SetOrthogonal(float size, float nearClip = 0.f, float farClip = 1.f);
 	void SetPerspective(float fovDegrees, float nearClip = 0.1f, float farClip = 100.f);
 
 	CameraContext::Mode GetMode() const;
-	float GetNearClip() const;
-	float GetFarClip() const;
-	float GetFovDegrees() const;
-	float GetSize() const;
+	float               GetNearClip() const;
+	float               GetFarClip() const;
+	float               GetFovDegrees() const;
+	float               GetSize() const;
 
 	void SetMode(CameraContext::Mode mode);
 	void SetNearClip(float nearClip);
@@ -39,8 +39,8 @@ protected:
 
 private:
 	CameraContext::Mode m_mode;
-	float m_nearClip;
-	float m_farClip;
+	float               m_nearClip;
+	float               m_farClip;
 
 	// Perspective parameters:
 	float m_fovDegrees;

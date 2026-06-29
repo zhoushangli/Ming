@@ -198,7 +198,7 @@ void Viewport::PrepareRenderData()
 	m_viewportInfo.m_worldCamera = nullptr;
 	if (worldCamera != nullptr)
 	{
-		m_tmpWorldCamera             = worldCamera->GetCamera(aspect);
+		m_tmpWorldCamera             = worldCamera->GetCameraContext(aspect);
 		m_viewportInfo.m_worldCamera = &m_tmpWorldCamera;
 	}
 

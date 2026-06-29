@@ -220,6 +220,8 @@ void Node::BindMethods()
 	ClassDatabase::BindMethod("GetProcess", &Node::GetProcess);
 	ClassDatabase::BindMethod("SetScript", &Node::SetScript);
 	ClassDatabase::BindMethod("GetScript", &Node::GetScript);
+	ClassDatabase::BindMethod("AddNode", &Node::AddNode);
+	ClassDatabase::BindMethod("DeleteNode", &Node::DeleteNode);
 
 	ADD_PROPERTY(
 		PropertyInfo(Variant::Type::String, "name", PropertyInfo::Hint::None, "", PropertyInfo::UsageFlags::None),

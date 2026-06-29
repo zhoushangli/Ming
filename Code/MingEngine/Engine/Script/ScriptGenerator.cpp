@@ -102,6 +102,9 @@ class Object
 {
 	protected ${nativeObjectType}@ ${nativeObjectProperty};
 
+	NativeObject@ GetNativeObject() { return ${nativeObjectProperty}; }
+	NativeObject@ GetNativePointer() { return ${nativeObjectProperty}; }
+
 ${construct}
 
 ${methods}
@@ -264,18 +267,39 @@ std::string BuildConstructScript(ClassInfo const& classInfo, ScriptBuildMode mod
 	}
 }
 
+std::string BuildScriptArgumentDeclaration(ArgumentInfo const& argumentInfo)
+{
+	if (argumentInfo.m_type == Variant::Type::ObjectPtr)
+	{
+		std::string objectClassName = argumentInfo.m_objectClassName.empty() ? "Object" : argumentInfo.m_objectClassName;
+		return objectClassName + "@";
+	}
+
+	return BuildScriptArgumentDeclaration(argumentInfo.m_type);
+}
+
+std::string BuildCallArgumentExpression(ArgumentInfo const& argumentInfo, size_t argumentIndex)
+{
+	std::string argument = "arg" + std::to_string(argumentIndex);
+	if (argumentInfo.m_type == Variant::Type::ObjectPtr)
+	{
+		argument += ".GetNativePointer()";
+	}
+	return argument;
+}
+
 std::string BuildMethodArguments(MethodInfo const& methodInfo)
 {
 	std::string arguments;
-	for (size_t argumentIndex = 0; argumentIndex < methodInfo.m_argumentTypes.size(); ++argumentIndex)
+	for (size_t argumentIndex = 0; argumentIndex < methodInfo.m_argumentInfos.size(); ++argumentIndex)
 	{
 		if (argumentIndex > 0)
 		{
 			arguments += ", ";
 		}
 
-		Variant::Type argumentType = methodInfo.m_argumentTypes[argumentIndex];
-		arguments += BuildScriptArgumentDeclaration(argumentType);
+		ArgumentInfo const& argumentInfo = methodInfo.m_argumentInfos[argumentIndex];
+		arguments += BuildScriptArgumentDeclaration(argumentInfo);
 		arguments += " arg";
 		arguments += std::to_string(argumentIndex);
 	}
@@ -285,10 +309,11 @@ std::string BuildMethodArguments(MethodInfo const& methodInfo)
 std::string BuildCallArguments(MethodInfo const& methodInfo)
 {
 	std::string arguments;
-	for (size_t argumentIndex = 0; argumentIndex < methodInfo.m_argumentTypes.size(); ++argumentIndex)
+	for (size_t argumentIndex = 0; argumentIndex < methodInfo.m_argumentInfos.size(); ++argumentIndex)
 	{
-		arguments += ", arg";
-		arguments += std::to_string(argumentIndex);
+		ArgumentInfo const& argumentInfo = methodInfo.m_argumentInfos[argumentIndex];
+		arguments += ", ";
+		arguments += BuildCallArgumentExpression(argumentInfo, argumentIndex);
 	}
 	return arguments;
 }
@@ -310,10 +335,8 @@ std::string BuildInheritanceSuffix(ClassInfo const& classInfo)
 	return " : " + classInfo.m_parentClassName;
 }
 
-std::string BuildPredefinedClassScript(
-	std::string const& className,
-	std::string const& inheritance,
-	std::string const& members)
+std::string
+BuildPredefinedClassScript(std::string const& className, std::string const& inheritance, std::string const& members)
 {
 	return ExpandTemplate(
 		kPredefinedClassTemplate,
@@ -700,9 +723,7 @@ void GenerateBuiltinScript(asIScriptEngine* engine)
 		}
 
 		AppendScriptBlock(scriptText, BuildGlobalScript(*globalNamespace, ScriptBuildMode::RuntimeWrapper));
-		AppendScriptBlock(
-			predefinedText,
-			BuildGlobalScript(*globalNamespace, ScriptBuildMode::PredefinedDeclaration));
+		AppendScriptBlock(predefinedText, BuildGlobalScript(*globalNamespace, ScriptBuildMode::PredefinedDeclaration));
 	}
 
 	ClassInfo const* objectClassInfo = ClassDatabase::GetClassInfo("Object");

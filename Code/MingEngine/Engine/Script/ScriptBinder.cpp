@@ -28,8 +28,8 @@ namespace
 {
 struct BridgeSignature
 {
-	Variant::Type              returnType = Variant::Type::Empty;
-	std::vector<Variant::Type> argumentTypes;
+	Variant::Type             m_returnType = Variant::Type::Empty;
+	std::vector<ArgumentInfo> m_argumentInfos;
 };
 
 std::unordered_map<int, BridgeSignature> s_bridgeSignatures;
@@ -51,10 +51,10 @@ BridgeSignature const& GetBridgeSignature(asIScriptGeneric* gen)
 std::vector<Variant> ReadBridgeArguments(asIScriptGeneric* gen, BridgeSignature const& signature, int firstUserArgIndex)
 {
 	std::vector<Variant> args;
-	for (size_t i = 0; i < signature.argumentTypes.size(); ++i)
+	for (size_t i = 0; i < signature.m_argumentInfos.size(); ++i)
 	{
 		int index = firstUserArgIndex + (int)i;
-		switch (signature.argumentTypes[i])
+		switch (signature.m_argumentInfos[i].m_type)
 		{
 		case Variant::Type::Bool:
 			args.emplace_back(gen->GetArgByte(index) != 0);
@@ -92,11 +92,11 @@ std::vector<Variant> ReadBridgeArguments(asIScriptGeneric* gen, BridgeSignature 
 		case Variant::Type::Matrix4x4:
 			args.emplace_back(*static_cast<Matrix4x4*>(gen->GetArgAddress(index)));
 			break;
-		case Variant::Type::ObjectPtr:
-			args.emplace_back(static_cast<Object*>(gen->GetArgObject(index)));
-			break;
 		case Variant::Type::Any:
 			args.emplace_back(*static_cast<Variant*>(gen->GetArgAddress(index)));
+			break;
+		case Variant::Type::ObjectPtr:
+			args.emplace_back(static_cast<Object*>(gen->GetArgObject(index)));
 			break;
 		}
 	}
@@ -196,19 +196,19 @@ void WriteBridgeReturn(asIScriptGeneric* gen, Variant::Type returnType, Variant 
 		return;
 	}
 
-	// Variant::Type::ObjectPtr is a special case where we are returning a pointer to the Object
-	case Variant::Type::ObjectPtr:
-	{
-		Object* objectResult = result.As<Object*>();
-		gen->SetReturnObject(objectResult);
-		return;
-	}
-
 	// Variant::Type::Any is a special case where we are returning a Variant itself
 	case Variant::Type::Any:
 	{
 		Variant const& variantResult = result;
 		gen->SetReturnObject(const_cast<Variant*>(&variantResult));
+		return;
+	}
+
+	// Variant::Type::ObjectPtr is a special case where we are returning a pointer to the Object
+	case Variant::Type::ObjectPtr:
+	{
+		Object* objectResult = result.As<Object*>();
+		gen->SetReturnObject(objectResult);
 		return;
 	}
 
@@ -230,7 +230,7 @@ void InvokeBridgeMethod(
 {
 	std::vector<Variant> args   = ReadBridgeArguments(gen, signature, firstUserArgIndex);
 	Variant              result = methodBind.Invoke(object, args);
-	WriteBridgeReturn(gen, signature.returnType, result);
+	WriteBridgeReturn(gen, signature.m_returnType, result);
 }
 
 // Object bridge layout:
@@ -342,7 +342,7 @@ void RegisterBridgeFunctions(asIScriptEngine* engine)
 				functionId >= 0,
 				Stringf("Failed to register bridge function: %s", scriptDeclaration.c_str()));
 
-			s_bridgeSignatures[functionId] = { methodInfo->m_returnType, methodInfo->m_argumentTypes };
+			s_bridgeSignatures[functionId] = { methodInfo->m_returnType, methodInfo->m_argumentInfos };
 		}
 	}
 
@@ -391,7 +391,7 @@ void RegisterBridgeFunctions(asIScriptEngine* engine)
 					Stringf("Failed to register bridge function: %s", scriptDeclaration.c_str()));
 
 				registeredFunctions.insert(scriptDeclaration);
-				s_bridgeSignatures[functionId] = { methodInfo->m_returnType, methodInfo->m_argumentTypes };
+				s_bridgeSignatures[functionId] = { methodInfo->m_returnType, methodInfo->m_argumentInfos };
 			}
 		}
 		else
@@ -419,7 +419,7 @@ void RegisterBridgeFunctions(asIScriptEngine* engine)
 					Stringf("Failed to register bridge function: %s", scriptDeclaration.c_str()));
 
 				registeredFunctions.insert(scriptDeclaration);
-				s_bridgeSignatures[functionId] = { methodInfo->m_returnType, methodInfo->m_argumentTypes };
+				s_bridgeSignatures[functionId] = { methodInfo->m_returnType, methodInfo->m_argumentInfos };
 			}
 		}
 	}

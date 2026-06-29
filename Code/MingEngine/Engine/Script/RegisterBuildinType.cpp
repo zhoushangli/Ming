@@ -215,6 +215,11 @@ EulerAngles& MultiplyAssignEulerAngles(float scale, EulerAngles* self)
 	return *self;
 }
 
+EulerAngles MakeEulerAnglesFromForward(Vec3 const& forward, EulerAngles const*)
+{
+	return EulerAngles::MakeFromForward(forward);
+}
+
 // ------------------------------------------------------------------------------
 
 void ConstructMatrix4x4(void* memory) { new (memory) Matrix4x4(); }
@@ -752,6 +757,12 @@ void RegisterEulerAngles(asIScriptEngine* engine)
 		asMETHOD(EulerAngles, GetForwardDir_IFwd_JLeft_KUp),
 		asCALL_THISCALL);
 	GUARANTEE_OR_DIE(result >= 0, "Failed to register GetForwardDir_IFwd_JLeft_KUp for built-in type: EulerAngles");
+	result = engine->RegisterObjectMethod(
+		"EulerAngles",
+		"EulerAngles MakeFromForward(const Vec3 &in) const",
+		asFUNCTION(MakeEulerAnglesFromForward),
+		asCALL_CDECL_OBJLAST);
+	GUARANTEE_OR_DIE(result >= 0, "Failed to register MakeFromForward for built-in type: EulerAngles");
 }
 
 void RegisterMatrix4x4(asIScriptEngine* engine)

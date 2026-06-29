@@ -122,10 +122,10 @@ public:
 			return Type::EulerAngles;
 		if (std::is_same_v<CleanType, Matrix4x4>)
 			return Type::Matrix4x4;
-		if (std::is_same_v<CleanType, Object*>)
-			return Type::ObjectPtr;
 		if (std::is_same_v<CleanType, Variant>)
 			return Type::Any;
+		if constexpr (std::is_base_of_v<Object, std::remove_pointer_t<CleanType>>)
+			return Type::ObjectPtr;
 	}
 
 private:
@@ -134,178 +134,40 @@ private:
 };
 
 template <typename T>
-struct VariantCaster;
-
-template <>
-struct VariantCaster<bool>
+struct VariantCaster
 {
-	static bool Cast(Variant const& value) { return value.As<bool>(); }
-};
+	static T Cast(Variant const& value)
+	{
+		using CleanType   = std::remove_cv_t<std::remove_reference_t<T>>;
+		using PointeeType = std::remove_pointer_t<CleanType>;
+		using RefType     = std::remove_reference_t<T>;
 
-template <>
-struct VariantCaster<int>
-{
-	static int Cast(Variant const& value) { return value.As<int>(); }
-};
-
-template <>
-struct VariantCaster<float>
-{
-	static float Cast(Variant const& value) { return value.As<float>(); }
-};
-
-template <>
-struct VariantCaster<Vec2>
-{
-	static Vec2 Cast(Variant const& value) { return value.As<Vec2>(); }
-};
-
-template <>
-struct VariantCaster<Vec2&>
-{
-	static Vec2& Cast(Variant const& value) { return const_cast<Vec2&>(value.As<Vec2>()); }
-};
-
-template <>
-struct VariantCaster<Vec2 const&>
-{
-	static Vec2 const& Cast(Variant const& value) { return value.As<Vec2>(); }
-};
-
-template <>
-struct VariantCaster<Vec3>
-{
-	static Vec3 Cast(Variant const& value) { return value.As<Vec3>(); }
-};
-
-template <>
-struct VariantCaster<Vec3&>
-{
-	static Vec3& Cast(Variant const& value) { return const_cast<Vec3&>(value.As<Vec3>()); }
-};
-
-template <>
-struct VariantCaster<Vec3 const&>
-{
-	static Vec3 const& Cast(Variant const& value) { return value.As<Vec3>(); }
-};
-
-template <>
-struct VariantCaster<Vec4>
-{
-	static Vec4 Cast(Variant const& value) { return value.As<Vec4>(); }
-};
-
-template <>
-struct VariantCaster<Vec4&>
-{
-	static Vec4& Cast(Variant const& value) { return const_cast<Vec4&>(value.As<Vec4>()); }
-};
-
-template <>
-struct VariantCaster<Vec4 const&>
-{
-	static Vec4 const& Cast(Variant const& value) { return value.As<Vec4>(); }
-};
-
-template <>
-struct VariantCaster<AABB2>
-{
-	static AABB2 Cast(Variant const& value) { return value.As<AABB2>(); }
-};
-
-template <>
-struct VariantCaster<AABB2&>
-{
-	static AABB2& Cast(Variant const& value) { return const_cast<AABB2&>(value.As<AABB2>()); }
-};
-
-template <>
-struct VariantCaster<AABB2 const&>
-{
-	static AABB2 const& Cast(Variant const& value) { return value.As<AABB2>(); }
-};
-
-template <>
-struct VariantCaster<OBB2>
-{
-	static OBB2 Cast(Variant const& value) { return value.As<OBB2>(); }
-};
-
-template <>
-struct VariantCaster<OBB2&>
-{
-	static OBB2& Cast(Variant const& value) { return const_cast<OBB2&>(value.As<OBB2>()); }
-};
-
-template <>
-struct VariantCaster<OBB2 const&>
-{
-	static OBB2 const& Cast(Variant const& value) { return value.As<OBB2>(); }
-};
-
-template <>
-struct VariantCaster<Capsule3>
-{
-	static Capsule3 Cast(Variant const& value) { return value.As<Capsule3>(); }
-};
-
-template <>
-struct VariantCaster<Capsule3&>
-{
-	static Capsule3& Cast(Variant const& value) { return const_cast<Capsule3&>(value.As<Capsule3>()); }
-};
-
-template <>
-struct VariantCaster<Capsule3 const&>
-{
-	static Capsule3 const& Cast(Variant const& value) { return value.As<Capsule3>(); }
-};
-
-template <>
-struct VariantCaster<EulerAngles>
-{
-	static EulerAngles Cast(Variant const& value) { return value.As<EulerAngles>(); }
-};
-
-template <>
-struct VariantCaster<EulerAngles const&>
-{
-	static EulerAngles const& Cast(Variant const& value) { return value.As<EulerAngles>(); }
-};
-
-template <>
-struct VariantCaster<Matrix4x4>
-{
-	static Matrix4x4 Cast(Variant const& value) { return value.As<Matrix4x4>(); }
-};
-
-template <>
-struct VariantCaster<Matrix4x4 const&>
-{
-	static Matrix4x4 const& Cast(Variant const& value) { return value.As<Matrix4x4>(); }
-};
-
-template <>
-struct VariantCaster<std::string>
-{
-	static std::string Cast(Variant const& value) { return value.As<std::string>(); }
-};
-
-template <>
-struct VariantCaster<std::string const&>
-{
-	static std::string const& Cast(Variant const& value) { return value.As<std::string>(); }
-};
-
-template <>
-struct VariantCaster<Variant>
-{
-	static Variant Cast(Variant const& value) { return value; }
-};
-
-template <>
-struct VariantCaster<Variant const&>
-{
-	static Variant const& Cast(Variant const& value) { return value; }
+		// Raw Variant.
+		// Example: void Foo(Variant const& value)
+		if constexpr (std::is_same_v<CleanType, Variant>)
+		{
+			return value;
+		}
+		// Object pointer.
+		// Example: void AddNode(Node* child)
+		else if constexpr (std::is_pointer_v<CleanType> && std::is_base_of_v<Object, PointeeType>)
+		{
+			return dynamic_cast<CleanType>(value.As<Object*>());
+		}
+		else
+		{
+			// Mutable reference.
+			// Example: bool PushOut(Vec2& position)
+			if constexpr (std::is_lvalue_reference_v<T> && !std::is_const_v<RefType>)
+			{
+				return const_cast<CleanType&>(value.As<CleanType>());
+			}
+			else
+			{
+				// Value or const reference.
+				// Example: void SetPosition(Vec3 const& position)
+				return value.As<CleanType>();
+			}
+		}
+	}
 };

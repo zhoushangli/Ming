@@ -48,7 +48,7 @@ void EditorGizmos::OnMouseMove(Camera3D const& camera, Vec2 screenPos)
 {
 	GizmoContext const ctx    = BuildGizmoContext(GetSceneTree(), camera, screenPos);
 	float const        aspect = ctx.m_clientDimensions.x / Max(ctx.m_clientDimensions.y, 1.f);
-	CameraContext      camCtx = camera.GetCamera(aspect);
+	CameraContext      camCtx = camera.GetCameraContext(aspect);
 	RaycastInfo ray = BuildRaycastFromMouse(camCtx, screenPos, ctx.m_clientDimensions, kEditorGizmoRaycastLength);
 	m_transformGizmo->UpdateHover(ctx, ray);
 }
@@ -57,7 +57,7 @@ bool EditorGizmos::OnBeginDrag(Camera3D const& camera, Vec2 screenPos)
 {
 	GizmoContext const ctx    = BuildGizmoContext(GetSceneTree(), camera, screenPos);
 	float const        aspect = ctx.m_clientDimensions.x / Max(ctx.m_clientDimensions.y, 1.f);
-	CameraContext      camCtx = camera.GetCamera(aspect);
+	CameraContext      camCtx = camera.GetCameraContext(aspect);
 	RaycastInfo ray = BuildRaycastFromMouse(camCtx, screenPos, ctx.m_clientDimensions, kEditorGizmoRaycastLength);
 	return m_transformGizmo->BeginDrag(ctx, ray);
 }
@@ -66,7 +66,7 @@ void EditorGizmos::OnDrag(Camera3D const& camera, Vec2 screenPos)
 {
 	GizmoContext const ctx    = BuildGizmoContext(GetSceneTree(), camera, screenPos);
 	float const        aspect = ctx.m_clientDimensions.x / Max(ctx.m_clientDimensions.y, 1.f);
-	CameraContext      camCtx = camera.GetCamera(aspect);
+	CameraContext      camCtx = camera.GetCameraContext(aspect);
 	RaycastInfo ray = BuildRaycastFromMouse(camCtx, screenPos, ctx.m_clientDimensions, kEditorGizmoRaycastLength);
 	m_transformGizmo->OnDrag(ctx, ray);
 }
@@ -91,7 +91,7 @@ NodeHandle EditorGizmos::Raycast(Camera3D const& camera, Vec2 screenPos) const
 {
 	GizmoContext const ctx    = BuildGizmoContext(GetSceneTree(), camera, screenPos);
 	float const        aspect = ctx.m_clientDimensions.x / Max(ctx.m_clientDimensions.y, 1.f);
-	CameraContext      camCtx = camera.GetCamera(aspect);
+	CameraContext      camCtx = camera.GetCameraContext(aspect);
 	RaycastInfo ray = BuildRaycastFromMouse(camCtx, screenPos, ctx.m_clientDimensions, kEditorGizmoRaycastLength);
 
 	GizmoRaycastResult const result = m_transformGizmo->Raycast(ctx, ray);
