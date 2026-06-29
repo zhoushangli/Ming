@@ -67,7 +67,7 @@ void Node::SetScript(Variant const& script)
 		return;
 	}
 
-	m_data.m_scriptInstance = g_engine->m_scriptSystem->CreateInstance(scriptRef, *this);
+	m_data.m_scriptInstance = std::move(g_engine->m_scriptSystem->CreateInstance(scriptRef, *this));
 }
 
 Node* Node::FindChildByName(std::string const& name) const

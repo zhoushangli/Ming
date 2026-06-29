@@ -58,22 +58,36 @@ constexpr char const* kRootConstructTemplate =
 )AS";
 
 // Example:
-// Node() : Object(false)
+// Node()
 // {
+// 	   super(true);
 // 	   @nativePtr = __CreateNativeObject("Node");
 // }
-
-// Node(bool skipConstruct) : Object(skipConstruct)
+//
+// Node(bool skipConstruct)
 // {
+// 	   super(true);
+// 	   if (!skipConstruct)
+// 	   {
+// 	       @nativePtr = __CreateNativeObject("Node");
+// 	   }
 // }
 constexpr char const* kConstructTemplate =
 	R"AS(
-	${className}() : ${parentClassName}(false)
+	${className}()
 	{
+		super(true);
 		@${nativeObjectProperty} = __CreateNativeObject("${className}");
 	}
 	
-	${className}(bool skipConstruct) : ${parentClassName}(skipConstruct) {}
+	${className}(bool skipConstruct)
+	{
+		super(true);
+		if (!skipConstruct)
+		{
+			@${nativeObjectProperty} = __CreateNativeObject("${className}");
+		}
+	}
 )AS";
 
 // Example:
@@ -146,7 +160,7 @@ constexpr char const* kObjectMethodTemplate =
 // bool IsKeyPressed(int arg0) { return __Call_GlobalObject_Bool_Int("InputSystem", "IsKeyPressed", arg0); }
 constexpr char const* kGlobalObjectMethodTemplate =
 	R"AS(
-	${returnType} ${methodName}(${arguments})${constSuffix}
+	${returnType} ${methodName}(${arguments})
 	{
 		${returnPrefix}${bridgeName}("${className}", "${methodName}"${callArguments});
 	}
@@ -157,7 +171,7 @@ constexpr char const* kGlobalObjectMethodTemplate =
 // void Log(const string &in arg0) { __Call_Global_Log("Debug", "Log", arg0); }
 constexpr char const* kGlobalMethodTemplate =
 	R"AS(
-	${returnType} ${methodName}(${arguments})${constSuffix}
+	${returnType} ${methodName}(${arguments})
 	{
 		${returnPrefix}${bridgeName}("${namespaceName}", "${methodName}"${callArguments});
 	}
@@ -325,9 +339,14 @@ std::unordered_map<std::string, std::string> BuildMethodTemplateValues(MethodInf
 // Builds a method signature without a body.
 // Example:
 // void SetPosition(const Vec3 &in arg0);
-std::string BuildPredefinedMethodScript(MethodInfo const& methodInfo)
+std::string BuildPredefinedMethodScript(MethodInfo const& methodInfo, bool includeConstSuffix = true)
 {
-	return ExpandTemplate(kPredefinedMethodTemplate, BuildMethodTemplateValues(methodInfo));
+	std::unordered_map<std::string, std::string> values = BuildMethodTemplateValues(methodInfo);
+	if (!includeConstSuffix)
+	{
+		values["constSuffix"] = "";
+	}
+	return ExpandTemplate(kPredefinedMethodTemplate, values);
 }
 
 // Builds either an Object runtime wrapper or its predefined declaration.
@@ -359,7 +378,7 @@ BuildGlobalObjectMethodScript(ClassInfo const& classInfo, MethodInfo const& meth
 {
 	if (mode == ScriptBuildMode::PredefinedDeclaration)
 	{
-		return BuildPredefinedMethodScript(methodInfo);
+		return BuildPredefinedMethodScript(methodInfo, false);
 	}
 
 	std::unordered_map<std::string, std::string> values = BuildMethodTemplateValues(methodInfo);
@@ -378,7 +397,7 @@ BuildGlobalMethodScript(GlobalNamespaceInfo const& globalNamespace, MethodInfo c
 {
 	if (mode == ScriptBuildMode::PredefinedDeclaration)
 	{
-		return BuildPredefinedMethodScript(methodInfo);
+		return BuildPredefinedMethodScript(methodInfo, false);
 	}
 
 	std::unordered_map<std::string, std::string> values = BuildMethodTemplateValues(methodInfo);

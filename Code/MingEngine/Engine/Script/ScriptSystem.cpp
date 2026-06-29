@@ -12,6 +12,8 @@
 #include "ThirdParty/angelscript/add_on/scriptstdstring/scriptstdstring.h"
 #include "ThirdParty/angelscript/include/angelscript.h"
 
+#include <memory>
+
 #if defined(_DEBUG)
 #pragma comment(lib, "ThirdParty/angelscript/lib/angelscript64d.lib")
 #else
@@ -79,7 +81,7 @@ void ScriptSystem::BeginFrame() {}
 
 void ScriptSystem::EndFrame() {}
 
-ScriptInstance* ScriptSystem::CreateInstance(Ref<Script> const& script, Object& owner)
+std::unique_ptr<ScriptInstance> ScriptSystem::CreateInstance(Ref<Script> const& script, Object& owner)
 {
 	ScriptModule* scriptModule = GetOrCreateModule(script->GetVirtualPath());
 	if (scriptModule == nullptr)
@@ -95,7 +97,7 @@ ScriptInstance* ScriptSystem::CreateInstance(Ref<Script> const& script, Object& 
 	}
 	instance->m_script = script;
 
-	return instance;
+	return std::unique_ptr<ScriptInstance>(instance);
 }
 
 ScriptModule* ScriptSystem::GetOrCreateModule(std::string const& path)

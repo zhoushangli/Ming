@@ -31,7 +31,7 @@ public:
 	void BeginFrame() override;
 	void EndFrame() override;
 
-	ScriptInstance* CreateInstance(Ref<Script> const& script, Object& owner);
+	std::unique_ptr<ScriptInstance> CreateInstance(Ref<Script> const& script, Object& owner);
 
 	static void BindMethods();
 

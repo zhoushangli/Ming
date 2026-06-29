@@ -116,15 +116,15 @@ protected:
 protected:
 	struct NodeData
 	{
-		std::string        m_name;
-		Node*              m_parent    = nullptr;
-		SceneTree*         m_sceneTree = nullptr;
-		Viewport*          m_viewport  = nullptr;
-		std::vector<Node*> m_children;
-		NodeHandle         m_handle;
-		ScriptInstance*    m_scriptInstance   = nullptr;
-		bool               m_isPendingDestroy = false;
-		bool               m_isSerializable   = true;
+		std::string                     m_name;
+		Node*                           m_parent    = nullptr;
+		SceneTree*                      m_sceneTree = nullptr;
+		Viewport*                       m_viewport  = nullptr;
+		std::vector<Node*>              m_children;
+		NodeHandle                      m_handle;
+		std::unique_ptr<ScriptInstance> m_scriptInstance   = nullptr;
+		bool                            m_isPendingDestroy = false;
+		bool                            m_isSerializable   = true;
 
 #if defined(MING_EDITOR)
 		bool m_enableReady   = false;
