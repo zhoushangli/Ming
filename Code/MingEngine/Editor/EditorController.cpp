@@ -74,7 +74,7 @@ void EditorController::UpdateControlState()
 	InputSystem* input = g_engine->m_inputSystem;
 	bool const   isConsoleOpen =
 		(g_engineService != nullptr) && (g_engineService->m_console != nullptr) && g_engineService->m_console->IsOpen();
-	EditorControlState const desiredState = !isConsoleOpen && input->IsKeyDown(KeyCodeRightMouse)
+	EditorControlState const desiredState = !isConsoleOpen && input->IsKeyDown(Input::RightMouse)
 												? EditorControlState::FlyThrough
 												: EditorControlState::Pointer;
 
@@ -160,7 +160,7 @@ void EditorController::UpdateFlyThrough(float deltaSeconds)
 		movementDir *= invLen;
 	}
 
-	bool const isSprinting = input->IsKeyDown(KeyCodeShift);
+	bool const isSprinting = input->IsKeyDown(Input::Shift);
 	float      moveSpeed   = kMoveSpeedUnitsPerSec;
 	if (isSprinting)
 	{
@@ -183,14 +183,14 @@ void EditorController::UpdatePointer([[maybe_unused]] float deltaSeconds)
 	{
 		editorNode->OnMouseMove(cursorPos, delta);
 
-		if (input->WasKeyJustPressed(KeyCodeLeftMouse))
+		if (input->WasKeyJustPressed(Input::LeftMouse))
 		{
-			editorNode->OnMouseDown(KeyCodeLeftMouse, cursorPos);
+			editorNode->OnMouseDown(ToKeyCode(Input::LeftMouse), cursorPos);
 		}
 
-		if (input->WasKeyJustReleased(KeyCodeLeftMouse))
+		if (input->WasKeyJustReleased(Input::LeftMouse))
 		{
-			editorNode->OnMouseUp(KeyCodeLeftMouse, cursorPos);
+			editorNode->OnMouseUp(ToKeyCode(Input::LeftMouse), cursorPos);
 		}
 	}
 

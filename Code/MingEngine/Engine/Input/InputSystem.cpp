@@ -14,44 +14,49 @@ using namespace Math;
 
 static_assert(LastGlfwKeyCode == GLFW_KEY_LAST);
 
-int const KeyCodeF1         = GLFW_KEY_F1;
-int const KeyCodeF2         = GLFW_KEY_F2;
-int const KeyCodeF3         = GLFW_KEY_F3;
-int const KeyCodeF4         = GLFW_KEY_F4;
-int const KeyCodeF5         = GLFW_KEY_F5;
-int const KeyCodeF6         = GLFW_KEY_F6;
-int const KeyCodeF7         = GLFW_KEY_F7;
-int const KeyCodeF8         = GLFW_KEY_F8;
-int const KeyCodeF9         = GLFW_KEY_F9;
-int const KeyCodeF10        = GLFW_KEY_F10;
-int const KeyCodeF11        = GLFW_KEY_F11;
-int const KeyCodeF12        = GLFW_KEY_F12;
-int const KeyCodeTilde      = GLFW_KEY_GRAVE_ACCENT;
-int const KeyCodeEsc        = GLFW_KEY_ESCAPE;
-int const KeyCodeUpArrow    = GLFW_KEY_UP;
-int const KeyCodeDownArrow  = GLFW_KEY_DOWN;
-int const KeyCodeLeftArrow  = GLFW_KEY_LEFT;
-int const KeyCodeRightArrow = GLFW_KEY_RIGHT;
-int const KeyCodeLeftMouse  = GLFW_KEY_LAST + 1;
-int const KeyCodeRightMouse = GLFW_KEY_LAST + 2;
-
-int const KeyCodeShift     = GLFW_KEY_LEFT_SHIFT;
-int const KeyCodeEnter     = GLFW_KEY_ENTER;
-int const KeyCodeBackspace = GLFW_KEY_BACKSPACE;
-int const KeyCodeInsert    = GLFW_KEY_INSERT;
-int const KeyCodeDelete    = GLFW_KEY_DELETE;
-int const KeyCodeHome      = GLFW_KEY_HOME;
-int const KeyCodeEnd       = GLFW_KEY_END;
-
 InputSystem::InputSystem(InputConfig config) : m_config(config) {}
 
 void InputSystem::BindMethods()
 {
-	ClassDatabase::BindMethod("IsKeyDown", &InputSystem::IsKeyDown);
-	ClassDatabase::BindMethod("WasKeyJustPressed", &InputSystem::WasKeyJustPressed);
-	ClassDatabase::BindMethod("WasKeyJustReleased", &InputSystem::WasKeyJustReleased);
+	ClassDatabase::BindMethod("IsKeyDown", static_cast<bool (InputSystem::*)(int)>(&InputSystem::IsKeyDown));
+	ClassDatabase::BindMethod(
+		"WasKeyJustPressed", static_cast<bool (InputSystem::*)(int)>(&InputSystem::WasKeyJustPressed));
+	ClassDatabase::BindMethod(
+		"WasKeyJustReleased", static_cast<bool (InputSystem::*)(int)>(&InputSystem::WasKeyJustReleased));
 	ClassDatabase::BindMethod("SetCursorMode", &InputSystem::SetCursorModeByInt);
 	ClassDatabase::BindMethod("GetCursorClientDelta", &InputSystem::GetCursorClientDelta);
+
+	BIND_ENUM(Input, F1);
+	BIND_ENUM(Input, F2);
+	BIND_ENUM(Input, F3);
+	BIND_ENUM(Input, F4);
+	BIND_ENUM(Input, F5);
+	BIND_ENUM(Input, F6);
+	BIND_ENUM(Input, F7);
+	BIND_ENUM(Input, F8);
+	BIND_ENUM(Input, F9);
+	BIND_ENUM(Input, F10);
+	BIND_ENUM(Input, F11);
+	BIND_ENUM(Input, F12);
+	BIND_ENUM(Input, Tilde);
+	BIND_ENUM(Input, Esc);
+	BIND_ENUM(Input, UpArrow);
+	BIND_ENUM(Input, DownArrow);
+	BIND_ENUM(Input, LeftArrow);
+	BIND_ENUM(Input, RightArrow);
+	BIND_ENUM(Input, LeftMouse);
+	BIND_ENUM(Input, RightMouse);
+	BIND_ENUM(Input, Shift);
+	BIND_ENUM(Input, Enter);
+	BIND_ENUM(Input, Backspace);
+	BIND_ENUM(Input, Insert);
+	BIND_ENUM(Input, Delete);
+	BIND_ENUM(Input, Home);
+	BIND_ENUM(Input, End);
+
+	BIND_ENUM(CursorMode, POINTER);
+	BIND_ENUM(CursorMode, FPS);
+	BIND_ENUM(CursorMode, COUNT);
 }
 
 InputSystem::~InputSystem()

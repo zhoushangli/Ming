@@ -4,8 +4,8 @@
 #include "MingEngine/Core/StringUtils.hpp"
 
 std::unordered_map<std::string, ClassInfo>           ClassDatabase::m_classInfoMap;
-std::unordered_map<std::string, GlobalNamespaceInfo> ClassDatabase::m_globalMap;
-std::unordered_map<std::string, Object*>             ClassDatabase::m_globalObjects;
+std::unordered_map<std::string, GlobalNamespaceInfo> ClassDatabase::m_namespaceInfoMap;
+std::unordered_map<std::string, Object*>             ClassDatabase::m_globalObjectMap;
 
 void ClassDatabase::Startup() { m_classInfoMap.clear(); }
 
@@ -169,8 +169,8 @@ void ClassDatabase::AddProperty(
 std::vector<GlobalNamespaceInfo const*> ClassDatabase::GetRegisteredGlobalNamespaces()
 {
 	std::vector<GlobalNamespaceInfo const*> globalNamespaces;
-	globalNamespaces.reserve(m_globalMap.size());
-	for (auto const& namespaceEntry : m_globalMap)
+	globalNamespaces.reserve(m_namespaceInfoMap.size());
+	for (auto const& namespaceEntry : m_namespaceInfoMap)
 	{
 		globalNamespaces.push_back(&namespaceEntry.second);
 	}
@@ -179,8 +179,8 @@ std::vector<GlobalNamespaceInfo const*> ClassDatabase::GetRegisteredGlobalNamesp
 
 MethodBind const* ClassDatabase::GetGlobalMethodBind(std::string const& namespaceName, std::string const& methodName)
 {
-	auto namespaceIter = m_globalMap.find(namespaceName);
-	if (namespaceIter == m_globalMap.end())
+	auto namespaceIter = m_namespaceInfoMap.find(namespaceName);
+	if (namespaceIter == m_namespaceInfoMap.end())
 	{
 		return nullptr;
 	}

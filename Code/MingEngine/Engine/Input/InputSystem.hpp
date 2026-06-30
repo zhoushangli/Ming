@@ -6,38 +6,49 @@
 #include "MingEngine/Engine/Input/KeyButtonState.hpp"
 #include "MingEngine/Engine/Input/XboxController.hpp"
 
-extern int const KeyCodeF1;
-extern int const KeyCodeF2;
-extern int const KeyCodeF3;
-extern int const KeyCodeF4;
-extern int const KeyCodeF5;
-extern int const KeyCodeF6;
-extern int const KeyCodeF7;
-extern int const KeyCodeF8;
-extern int const KeyCodeF9;
-extern int const KeyCodeF10;
-extern int const KeyCodeF11;
-extern int const KeyCodeF12;
-extern int const KeyCodeTilde;
-extern int const KeyCodeEsc;
-extern int const KeyCodeUpArrow;
-extern int const KeyCodeDownArrow;
-extern int const KeyCodeLeftArrow;
-extern int const KeyCodeRightArrow;
-extern int const KeyCodeLeftMouse;
-extern int const KeyCodeRightMouse;
+#include "ThirdParty/GLFW/glfw3.h"
+#ifdef GLFW_APIENTRY_DEFINED
+#undef APIENTRY
+#undef GLFW_APIENTRY_DEFINED
+#endif
 
-extern int const KeyCodeShift;
-extern int const KeyCodeEnter;
-extern int const KeyCodeBackspace;
-extern int const KeyCodeInsert;
-extern int const KeyCodeDelete;
-extern int const KeyCodeHome;
-extern int const KeyCodeEnd;
+enum class Input
+{
+	F1         = GLFW_KEY_F1,
+	F2         = GLFW_KEY_F2,
+	F3         = GLFW_KEY_F3,
+	F4         = GLFW_KEY_F4,
+	F5         = GLFW_KEY_F5,
+	F6         = GLFW_KEY_F6,
+	F7         = GLFW_KEY_F7,
+	F8         = GLFW_KEY_F8,
+	F9         = GLFW_KEY_F9,
+	F10        = GLFW_KEY_F10,
+	F11        = GLFW_KEY_F11,
+	F12        = GLFW_KEY_F12,
+	Tilde      = GLFW_KEY_GRAVE_ACCENT,
+	Esc        = GLFW_KEY_ESCAPE,
+	UpArrow    = GLFW_KEY_UP,
+	DownArrow  = GLFW_KEY_DOWN,
+	LeftArrow  = GLFW_KEY_LEFT,
+	RightArrow = GLFW_KEY_RIGHT,
+	LeftMouse  = GLFW_KEY_LAST + 1,
+	RightMouse = GLFW_KEY_LAST + 2,
 
-constexpr int LastGlfwKeyCode    = 348;
+	Shift     = GLFW_KEY_LEFT_SHIFT,
+	Enter     = GLFW_KEY_ENTER,
+	Backspace = GLFW_KEY_BACKSPACE,
+	Insert    = GLFW_KEY_INSERT,
+	Delete    = GLFW_KEY_DELETE,
+	Home      = GLFW_KEY_HOME,
+	End       = GLFW_KEY_END,
+};
+
+constexpr int LastGlfwKeyCode    = GLFW_KEY_LAST;
 constexpr int NumKeyCodes        = LastGlfwKeyCode + 3;
 constexpr int NumXboxControllers = 4;
+
+constexpr int ToKeyCode(Input input) { return static_cast<int>(input); }
 
 enum class CursorMode
 {
@@ -75,9 +86,14 @@ public:
 	bool WasKeyJustPressed(int keyCode);
 	bool WasKeyJustReleased(int keyCode);
 	bool IsKeyDown(int keyCode);
+	bool WasKeyJustPressed(Input input) { return WasKeyJustPressed(ToKeyCode(input)); }
+	bool WasKeyJustReleased(Input input) { return WasKeyJustReleased(ToKeyCode(input)); }
+	bool IsKeyDown(Input input) { return IsKeyDown(ToKeyCode(input)); }
 
 	void                  HandleKeyPressed(int keyCode);
 	void                  HandleKeyReleased(int keyCode);
+	void                  HandleKeyPressed(Input input) { HandleKeyPressed(ToKeyCode(input)); }
+	void                  HandleKeyReleased(Input input) { HandleKeyReleased(ToKeyCode(input)); }
 	XboxController const& GetController(int controllerID);
 
 	void ClearAllInputStates();

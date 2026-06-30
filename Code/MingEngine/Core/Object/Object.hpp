@@ -6,6 +6,12 @@
 #define ADD_PROPERTY(propertyInfo, setterName, getterName)                                                             \
 	ClassDatabase::AddProperty(GetStaticClassName(), propertyInfo, setterName, getterName)
 
+#define BIND_ENUM(className, enumName)                                                                                 \
+	ClassDatabase::BindConstant(#className, #enumName, static_cast<int>(className::enumName))
+
+#define BIND_CONSTANT(namespaceName, constantName)                                                                     \
+	ClassDatabase::BindConstant(#namespaceName, #constantName, namespaceName::constantName)
+
 #define MCLASS(className, inheritName)                                                                                 \
 public:                                                                                                                \
 	using Self  = className;                                                                                           \

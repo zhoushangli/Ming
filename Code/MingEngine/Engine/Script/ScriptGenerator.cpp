@@ -12,6 +12,7 @@
 #include <filesystem>
 #include <fstream>
 #include <memory>
+#include <sstream>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -143,8 +144,16 @@ constexpr char const* kNamespaceTemplate =
 	R"AS(
 namespace ${namespaceName}
 {
-${methods}
+${members}
 }
+)AS";
+
+// Constant declaration.
+// Example:
+// const int Esc = 256;
+constexpr char const* kConstantTemplate =
+	R"AS(
+	const ${type} ${name} = ${value};
 )AS";
 
 // Object method wrapper.
@@ -323,6 +332,75 @@ std::string BuildConstSuffix(MethodInfo const& methodInfo) { return methodInfo.m
 std::string BuildReturnPrefix(MethodInfo const& methodInfo)
 {
 	return methodInfo.m_returnType != Variant::Type::Empty ? "return " : "";
+}
+
+std::string EscapeScriptString(std::string const& value)
+{
+	std::string escaped;
+	escaped.reserve(value.size());
+	for (char c : value)
+	{
+		switch (c)
+		{
+		case '\\':
+			escaped += "\\\\";
+			break;
+		case '"':
+			escaped += "\\\"";
+			break;
+		case '\n':
+			escaped += "\\n";
+			break;
+		case '\r':
+			escaped += "\\r";
+			break;
+		case '\t':
+			escaped += "\\t";
+			break;
+		default:
+			escaped += c;
+			break;
+		}
+	}
+	return escaped;
+}
+
+std::string BuildConstantValueExpression(ConstantInfo const& constantInfo)
+{
+	switch (constantInfo.m_type)
+	{
+	case Variant::Type::Bool:
+		return constantInfo.m_value.As<bool>() ? "true" : "false";
+	case Variant::Type::Int:
+		return std::to_string(constantInfo.m_value.As<int>());
+	case Variant::Type::Float:
+	{
+		std::ostringstream stream;
+		stream << constantInfo.m_value.As<float>() << "f";
+		return stream.str();
+	}
+	case Variant::Type::String:
+		return "\"" + EscapeScriptString(constantInfo.m_value.As<std::string>()) + "\"";
+	default:
+		return "";
+	}
+}
+
+std::string BuildConstantScript(ConstantInfo const& constantInfo)
+{
+	std::string valueExpression = BuildConstantValueExpression(constantInfo);
+	if (valueExpression.empty())
+	{
+		return "";
+	}
+
+	return ExpandTemplate(
+		kConstantTemplate,
+		{
+			{ "type", GetScriptTypeName(constantInfo.m_type) },
+			{ "name", constantInfo.m_name },
+			{ "value", valueExpression },
+		});
 }
 
 std::string BuildInheritanceSuffix(ClassInfo const& classInfo)
@@ -505,7 +583,7 @@ std::string BuildGlobalObjectScript(ClassInfo const& classInfo, ScriptBuildMode 
 		kNamespaceTemplate,
 		{
 			{ "namespaceName", classInfo.m_className },
-			{ "methods", methods },
+			{ "members", methods },
 		});
 }
 
@@ -561,6 +639,12 @@ std::string BuildObjectScript(ClassInfo const& classInfo, ScriptBuildMode mode)
 // namespace Debug { void Log(const string &in arg0) { __Call_Global_Log("Debug", "Log", arg0); } }
 std::string BuildGlobalScript(GlobalNamespaceInfo const& globalNamespace, ScriptBuildMode mode)
 {
+	std::string constants;
+	for (ConstantInfo const& constantInfo : globalNamespace.m_constants)
+	{
+		AppendScriptBlock(constants, BuildConstantScript(constantInfo), "\n");
+	}
+
 	std::string methods;
 	for (std::unique_ptr<MethodInfo> const& methodInfo : globalNamespace.m_methods)
 	{
@@ -573,11 +657,15 @@ std::string BuildGlobalScript(GlobalNamespaceInfo const& globalNamespace, Script
 		}
 	}
 
+	std::string members;
+	AppendScriptBlock(members, constants, "\n");
+	AppendScriptBlock(members, methods, mode == ScriptBuildMode::PredefinedDeclaration ? "\n" : "\n\n");
+
 	return ExpandTemplate(
 		kNamespaceTemplate,
 		{
 			{ "namespaceName", globalNamespace.m_namespaceName },
-			{ "methods", methods },
+			{ "members", members },
 		});
 }
 

@@ -69,7 +69,7 @@ void DevConsole::BeginFrame()
 		return;
 	}
 
-	if (g_engine->m_inputSystem->WasKeyJustPressed(KeyCodeTilde))
+	if (g_engine->m_inputSystem->WasKeyJustPressed(Input::Tilde))
 	{
 		ToggleOpen();
 	}
