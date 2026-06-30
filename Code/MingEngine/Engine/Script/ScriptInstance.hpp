@@ -1,13 +1,13 @@
 #pragma once
 
 #include "MingEngine/Core/Object/Object.hpp"
-#include "MingEngine/Engine/Script/ScriptModule.hpp"
 #include "MingEngine/Core/Object/Script.hpp"
 #include "MingEngine/Core/Object/RefCounted.hpp"
 
 #include <memory>
 
 class asIScriptObject;
+class asIScriptModule;
 class asIScriptFunction;
 class asIScriptContext;
 
@@ -34,8 +34,6 @@ private:
 	ScriptInstance(ScriptInstance const&)            = delete;
 	ScriptInstance& operator=(ScriptInstance const&) = delete;
 
-	static ScriptInstance* Create(ScriptModule& module, Object& owner);
-
 	void Destroy();
 
 	bool Execute(asIScriptFunction* function);
@@ -44,7 +42,7 @@ private:
 private:
 	Object* m_owner = nullptr;
 
-	ScriptModule*    m_module = nullptr;
+	asIScriptModule* m_module = nullptr;
 	asIScriptObject* m_object = nullptr;
 
 	asIScriptFunction* m_enterTreeFunction = nullptr;

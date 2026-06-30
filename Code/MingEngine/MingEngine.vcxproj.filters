@@ -501,13 +501,7 @@
     <ClCompile Include="Engine\File\FileSystem.cpp">
       <Filter>Engine\File</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Script\ScriptResourceIdentity.cpp">
-      <Filter>Engine\Script</Filter>
-    </ClCompile>
     <ClCompile Include="Engine\Script\ScriptSystem.cpp">
-      <Filter>Engine\Script</Filter>
-    </ClCompile>
-    <ClCompile Include="Engine\Script\ScriptModule.cpp">
       <Filter>Engine\Script</Filter>
     </ClCompile>
     <ClCompile Include="Engine\Script\ScriptInstance.cpp">
@@ -1031,16 +1025,10 @@
     <ClInclude Include="Engine\File\FileSystem.hpp">
       <Filter>Engine\File</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Script\ScriptResourceIdentity.hpp">
-      <Filter>Engine\Script</Filter>
-    </ClInclude>
     <ClInclude Include="Engine\Script\ScriptSystem.hpp">
       <Filter>Engine\Script</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Script\ScriptTypeUtils.hpp">
-      <Filter>Engine\Script</Filter>
-    </ClInclude>
-    <ClInclude Include="Engine\Script\ScriptModule.hpp">
       <Filter>Engine\Script</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Script\ScriptInstance.hpp">

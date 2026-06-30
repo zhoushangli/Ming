@@ -65,7 +65,7 @@ FileSystem::FileSystem(FileSystemConfig const& config) : m_resourceRoot(config.m
 
 void FileSystem::BindMethods() {}
 
-void FileSystem::Startup() {}
+void FileSystem::Startup() { ScanResourceTree(); }
 void FileSystem::Shutdown() {}
 void FileSystem::BeginFrame() {}
 void FileSystem::EndFrame() {}

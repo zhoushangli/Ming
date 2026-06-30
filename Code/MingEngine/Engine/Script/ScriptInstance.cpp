@@ -12,73 +12,6 @@ void ScriptInstance::Notification(int notification, bool reverse)
 {
 	notification;
 	reverse;
-	// switch (notification)
-	// {
-	// case (int)Node::NotificationType::EnterTree:
-	// 	CallEnterTree();
-	// 	break;
-	// case (int)Node::NotificationType::ExitTree:
-	// 	CallExitTree();
-	// 	break;
-	// case (int)Node::NotificationType::Ready:
-	// 	CallReady();
-	// 	break;
-	// case (int)Node::NotificationType::Process:
-	// 	CallProcess(0.0f);
-	// 	break;
-	// }
-}
-
-ScriptInstance* ScriptInstance::Create(ScriptModule& module, Object& owner)
-{
-	ScriptInstance* instance = new ScriptInstance();
-
-	instance->m_owner = &owner;
-
-	asIScriptModule* scriptModule = module.GetScriptModule();
-	asITypeInfo*     scriptType   = module.GetScriptType();
-
-	if (scriptModule == nullptr || scriptType == nullptr)
-	{
-		DebuggerPrintf("Error: Invalid script module or script type.\n");
-		return nullptr;
-	}
-
-	asIScriptEngine* engine = scriptModule->GetEngine();
-	if (engine == nullptr)
-	{
-		DebuggerPrintf("Error: Script module does not have a valid script engine.\n");
-		return nullptr;
-	}
-
-	void* object = engine->CreateScriptObject(scriptType);
-	if (object == nullptr)
-	{
-		DebuggerPrintf("Error: Failed to create script object.\n");
-		return nullptr;
-	}
-
-	instance->m_module = &module;
-	instance->m_object = static_cast<asIScriptObject*>(object);
-
-	asUINT propertyCount = instance->m_object->GetPropertyCount();
-	for (asUINT propertyIndex = 0; propertyIndex < propertyCount; ++propertyIndex)
-	{
-		char const* propertyName = instance->m_object->GetPropertyName(propertyIndex);
-		if (propertyName != nullptr && strcmp(propertyName, "nativePtr") == 0)
-		{
-			void* ownerPropertyAddress = instance->m_object->GetAddressOfProperty(propertyIndex);
-			*static_cast<Object**>(ownerPropertyAddress) = &owner;
-			break;
-		}
-	}
-
-	instance->m_enterTreeFunction = scriptType->GetMethodByDecl("void _EnterTree()");
-	instance->m_exitTreeFunction  = scriptType->GetMethodByDecl("void _ExitTree()");
-	instance->m_readyFunction     = scriptType->GetMethodByDecl("void _Ready()");
-	instance->m_processFunction   = scriptType->GetMethodByDecl("void _Process(float)");
-
-	return instance;
 }
 
 void ScriptInstance::Destroy()
@@ -93,7 +26,6 @@ void ScriptInstance::Destroy()
 	m_exitTreeFunction  = nullptr;
 	m_readyFunction     = nullptr;
 	m_processFunction   = nullptr;
-	m_module            = nullptr;
 	m_owner             = nullptr;
 }
 
@@ -119,7 +51,7 @@ bool ScriptInstance::Execute(asIScriptFunction* function)
 		return false;
 	}
 
-	asIScriptEngine*  engine  = m_module->GetScriptModule()->GetEngine();
+	asIScriptEngine*  engine  = m_module->GetEngine();
 	asIScriptContext* context = engine->CreateContext();
 
 	if (context == nullptr)
@@ -161,7 +93,7 @@ bool ScriptInstance::Execute(asIScriptFunction* function, float deltaSeconds)
 		return false;
 	}
 
-	asIScriptEngine* engine = m_module->GetScriptModule()->GetEngine();
+	asIScriptEngine* engine = m_module->GetEngine();
 
 	asIScriptContext* context = engine->CreateContext();
 	if (context == nullptr)

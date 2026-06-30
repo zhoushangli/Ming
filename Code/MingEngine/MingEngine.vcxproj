@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Game_Debug|Win32">
@@ -405,8 +405,6 @@
     <ClCompile Include="Engine\Script\ScriptBinder.cpp" />
     <ClCompile Include="Engine\Script\ScriptGenerator.cpp" />
     <ClCompile Include="Engine\Script\ScriptInstance.cpp" />
-    <ClCompile Include="Engine\Script\ScriptModule.cpp" />
-    <ClCompile Include="Engine\Script\ScriptResourceIdentity.cpp" />
     <ClCompile Include="Engine\Script\ScriptSystem.cpp" />
     <ClCompile Include="Engine\Script\ScriptTypeUtils.cpp" />
     <ClCompile Include="Engine\Window\WindowSystem.cpp" />
@@ -566,8 +564,6 @@
     <ClInclude Include="Engine\Script\ScriptBinder.hpp" />
     <ClInclude Include="Engine\Script\ScriptGenerator.hpp" />
     <ClInclude Include="Engine\Script\ScriptInstance.hpp" />
-    <ClInclude Include="Engine\Script\ScriptModule.hpp" />
-    <ClInclude Include="Engine\Script\ScriptResourceIdentity.hpp" />
     <ClInclude Include="Engine\Script\ScriptSystem.hpp" />
     <ClInclude Include="Engine\Script\ScriptTypeUtils.hpp" />
     <ClInclude Include="Engine\Window\WindowSystem.hpp" />

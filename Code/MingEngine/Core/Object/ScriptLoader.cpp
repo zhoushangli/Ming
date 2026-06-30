@@ -18,6 +18,13 @@ Ref<Resource> ScriptLoader::Load(const std::string& virtualPath)
 
 	size_t      slash = relativePath.find_last_of('/');
 	std::string name  = slash == std::string::npos ? relativePath : relativePath.substr(slash + 1);
+
+	size_t dot = name.find_last_of('.');
+	if (dot != std::string::npos)
+	{
+		name = name.substr(0, dot);
+	}
+
 	script->SetName(name);
 
 	return script;
