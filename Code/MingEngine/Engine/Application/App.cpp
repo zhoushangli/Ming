@@ -127,12 +127,12 @@ void App::Update(float deltaSeconds)
 		}
 	}
 
-	if (g_engine->m_inputSystem->WasKeyJustPressed(Input::F8))
+	if (g_engine->m_inputSystem->WasKeyJustPressed(KeyCode::F8))
 	{
 		Restart();
 	}
 
-	if (g_engine->m_inputSystem->WasKeyJustPressed(Input::Esc))
+	if (g_engine->m_inputSystem->WasKeyJustPressed(KeyCode::Esc))
 	{
 		bool const isConsoleOpen =
 			g_engineService != nullptr && g_engineService->m_console != nullptr && g_engineService->m_console->IsOpen();

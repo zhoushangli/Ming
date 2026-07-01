@@ -20,39 +20,41 @@ void InputSystem::BindMethods()
 {
 	ClassDatabase::BindMethod("IsKeyDown", static_cast<bool (InputSystem::*)(int)>(&InputSystem::IsKeyDown));
 	ClassDatabase::BindMethod(
-		"WasKeyJustPressed", static_cast<bool (InputSystem::*)(int)>(&InputSystem::WasKeyJustPressed));
+		"WasKeyJustPressed",
+		static_cast<bool (InputSystem::*)(int)>(&InputSystem::WasKeyJustPressed));
 	ClassDatabase::BindMethod(
-		"WasKeyJustReleased", static_cast<bool (InputSystem::*)(int)>(&InputSystem::WasKeyJustReleased));
+		"WasKeyJustReleased",
+		static_cast<bool (InputSystem::*)(int)>(&InputSystem::WasKeyJustReleased));
 	ClassDatabase::BindMethod("SetCursorMode", &InputSystem::SetCursorModeByInt);
 	ClassDatabase::BindMethod("GetCursorClientDelta", &InputSystem::GetCursorClientDelta);
 
-	BIND_ENUM(Input, F1);
-	BIND_ENUM(Input, F2);
-	BIND_ENUM(Input, F3);
-	BIND_ENUM(Input, F4);
-	BIND_ENUM(Input, F5);
-	BIND_ENUM(Input, F6);
-	BIND_ENUM(Input, F7);
-	BIND_ENUM(Input, F8);
-	BIND_ENUM(Input, F9);
-	BIND_ENUM(Input, F10);
-	BIND_ENUM(Input, F11);
-	BIND_ENUM(Input, F12);
-	BIND_ENUM(Input, Tilde);
-	BIND_ENUM(Input, Esc);
-	BIND_ENUM(Input, UpArrow);
-	BIND_ENUM(Input, DownArrow);
-	BIND_ENUM(Input, LeftArrow);
-	BIND_ENUM(Input, RightArrow);
-	BIND_ENUM(Input, LeftMouse);
-	BIND_ENUM(Input, RightMouse);
-	BIND_ENUM(Input, Shift);
-	BIND_ENUM(Input, Enter);
-	BIND_ENUM(Input, Backspace);
-	BIND_ENUM(Input, Insert);
-	BIND_ENUM(Input, Delete);
-	BIND_ENUM(Input, Home);
-	BIND_ENUM(Input, End);
+	BIND_ENUM(KeyCode, F1);
+	BIND_ENUM(KeyCode, F2);
+	BIND_ENUM(KeyCode, F3);
+	BIND_ENUM(KeyCode, F4);
+	BIND_ENUM(KeyCode, F5);
+	BIND_ENUM(KeyCode, F6);
+	BIND_ENUM(KeyCode, F7);
+	BIND_ENUM(KeyCode, F8);
+	BIND_ENUM(KeyCode, F9);
+	BIND_ENUM(KeyCode, F10);
+	BIND_ENUM(KeyCode, F11);
+	BIND_ENUM(KeyCode, F12);
+	BIND_ENUM(KeyCode, Tilde);
+	BIND_ENUM(KeyCode, Esc);
+	BIND_ENUM(KeyCode, UpArrow);
+	BIND_ENUM(KeyCode, DownArrow);
+	BIND_ENUM(KeyCode, LeftArrow);
+	BIND_ENUM(KeyCode, RightArrow);
+	BIND_ENUM(KeyCode, LeftMouse);
+	BIND_ENUM(KeyCode, RightMouse);
+	BIND_ENUM(KeyCode, Shift);
+	BIND_ENUM(KeyCode, Enter);
+	BIND_ENUM(KeyCode, Backspace);
+	BIND_ENUM(KeyCode, Insert);
+	BIND_ENUM(KeyCode, Delete);
+	BIND_ENUM(KeyCode, Home);
+	BIND_ENUM(KeyCode, End);
 
 	BIND_ENUM(CursorMode, POINTER);
 	BIND_ENUM(CursorMode, FPS);

@@ -132,7 +132,7 @@ void EditorNode::OnMouseMove(Vec2 screenPos, [[maybe_unused]] Vec2 delta)
 
 void EditorNode::OnMouseDown(int keyCode, Vec2 screenPos)
 {
-	if (keyCode != ToKeyCode(Input::LeftMouse))
+	if (keyCode != ToKeyCode(KeyCode::LeftMouse))
 	{
 		return;
 	}
@@ -162,7 +162,7 @@ void EditorNode::OnMouseDown(int keyCode, Vec2 screenPos)
 
 void EditorNode::OnMouseUp(int keyCode, [[maybe_unused]] Vec2 screenPos)
 {
-	if (keyCode != ToKeyCode(Input::LeftMouse))
+	if (keyCode != ToKeyCode(KeyCode::LeftMouse))
 	{
 		return;
 	}

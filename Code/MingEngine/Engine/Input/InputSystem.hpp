@@ -12,7 +12,7 @@
 #undef GLFW_APIENTRY_DEFINED
 #endif
 
-enum class Input
+enum class KeyCode
 {
 	F1         = GLFW_KEY_F1,
 	F2         = GLFW_KEY_F2,
@@ -48,7 +48,7 @@ constexpr int LastGlfwKeyCode    = GLFW_KEY_LAST;
 constexpr int NumKeyCodes        = LastGlfwKeyCode + 3;
 constexpr int NumXboxControllers = 4;
 
-constexpr int ToKeyCode(Input input) { return static_cast<int>(input); }
+constexpr int ToKeyCode(KeyCode input) { return static_cast<int>(input); }
 
 enum class CursorMode
 {
@@ -86,14 +86,14 @@ public:
 	bool WasKeyJustPressed(int keyCode);
 	bool WasKeyJustReleased(int keyCode);
 	bool IsKeyDown(int keyCode);
-	bool WasKeyJustPressed(Input input) { return WasKeyJustPressed(ToKeyCode(input)); }
-	bool WasKeyJustReleased(Input input) { return WasKeyJustReleased(ToKeyCode(input)); }
-	bool IsKeyDown(Input input) { return IsKeyDown(ToKeyCode(input)); }
+	bool WasKeyJustPressed(KeyCode input) { return WasKeyJustPressed(ToKeyCode(input)); }
+	bool WasKeyJustReleased(KeyCode input) { return WasKeyJustReleased(ToKeyCode(input)); }
+	bool IsKeyDown(KeyCode input) { return IsKeyDown(ToKeyCode(input)); }
 
 	void                  HandleKeyPressed(int keyCode);
 	void                  HandleKeyReleased(int keyCode);
-	void                  HandleKeyPressed(Input input) { HandleKeyPressed(ToKeyCode(input)); }
-	void                  HandleKeyReleased(Input input) { HandleKeyReleased(ToKeyCode(input)); }
+	void                  HandleKeyPressed(KeyCode input) { HandleKeyPressed(ToKeyCode(input)); }
+	void                  HandleKeyReleased(KeyCode input) { HandleKeyReleased(ToKeyCode(input)); }
 	XboxController const& GetController(int controllerID);
 
 	void ClearAllInputStates();

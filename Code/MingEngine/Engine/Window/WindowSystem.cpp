@@ -52,11 +52,11 @@ static void MouseButtonCallback(GLFWwindow* window, int button, int action, int 
 	int keyCode = -1;
 	if (button == GLFW_MOUSE_BUTTON_LEFT)
 	{
-		keyCode = ToKeyCode(Input::LeftMouse);
+		keyCode = ToKeyCode(KeyCode::LeftMouse);
 	}
 	else if (button == GLFW_MOUSE_BUTTON_RIGHT)
 	{
-		keyCode = ToKeyCode(Input::RightMouse);
+		keyCode = ToKeyCode(KeyCode::RightMouse);
 	}
 
 	if (keyCode < 0)
