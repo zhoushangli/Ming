@@ -327,6 +327,7 @@
     <ClCompile Include="..\ThirdParty\angelscript\add_on\scriptstdstring\scriptstdstring_utils.cpp" />
     <ClCompile Include="Core\Object\RefCounted.cpp" />
     <ClCompile Include="Core\Object\Resource.cpp" />
+    <ClCompile Include="Core\Object\ResourceImporter.cpp" />
     <ClCompile Include="Core\Object\ResourceLoader.cpp" />
     <ClCompile Include="Core\Object\ResourceSaver.cpp" />
     <ClCompile Include="Core\Object\Script.cpp" />
@@ -476,6 +477,7 @@
     <ClInclude Include="..\ThirdParty\nanosvg\nanosvgrast.h" />
     <ClInclude Include="Core\Object\RefCounted.hpp" />
     <ClInclude Include="Core\Object\Resource.hpp" />
+    <ClInclude Include="Core\Object\ResourceImporter.hpp" />
     <ClInclude Include="Core\Object\ResourceLoader.hpp" />
     <ClInclude Include="Core\Object\ResourceSaver.hpp" />
     <ClInclude Include="Core\Object\Script.hpp" />

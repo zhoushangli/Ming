@@ -5,6 +5,7 @@
 #include <filesystem>
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 struct FileSystemConfig
@@ -31,6 +32,10 @@ public:
 	bool                                           IsDirectory() const;
 	FileEntry const*                               GetParent() const;
 	std::vector<std::unique_ptr<FileEntry>> const& GetChildren() const;
+	bool                                           HasModifiedTime() const;
+	bool                                           HasImportTime() const;
+	std::filesystem::file_time_type                GetModifiedTime() const;
+	std::filesystem::file_time_type                GetImportTime() const;
 
 private:
 	FileEntry(
@@ -48,9 +53,15 @@ private:
 	std::string                             m_lowerName;
 	bool                                    m_isDirectory = false;
 	FileEntry*                              m_parent      = nullptr;
+	bool                                    m_hasModifiedTime = false;
+	bool                                    m_hasImportTime   = false;
+	std::filesystem::file_time_type         m_modifiedTime;
+	std::filesystem::file_time_type         m_importTime;
 	std::vector<std::unique_ptr<FileEntry>> m_children;
 };
 
+// For importable resources, we will import them into the .ming folder as engine inner type
+// and leave a .import file in the original location to point to the imported resource
 class FileSystem : public SystemBase
 {
 	MCLASS(FileSystem, SystemBase)
@@ -80,12 +91,16 @@ public:
 	static void BindMethods();
 
 private:
+	void ScanResourceImports(std::unordered_map<std::string, std::filesystem::file_time_type>& outImportedTimes);
+	FileEntry const* FindEntry(std::string const& virtualPath) const;
 	bool ResolvePath(std::string const& virtualPath, std::filesystem::path& outPhysicalPath) const;
 	std::unique_ptr<FileEntry> BuildEntry(
 		std::filesystem::path const& physicalPath,
 		std::string const&           virtualPath,
 		FileEntry*                   parent,
-		bool                         isDirectory) const;
+		bool                         isDirectory,
+		FileEntry const*             previousEntry,
+		std::unordered_map<std::string, std::filesystem::file_time_type> const& importedTimes) const;
 	void SortChildren(FileEntry& entry) const;
 
 private:

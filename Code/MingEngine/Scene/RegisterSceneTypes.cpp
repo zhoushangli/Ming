@@ -3,6 +3,7 @@
 #include "MingEngine/Core/Object/ClassDatabase.hpp"
 #include "MingEngine/Core/Object/RefCounted.hpp"
 #include "MingEngine/Core/Object/Resource.hpp"
+#include "MingEngine/Core/Object/ResourceImporter.hpp"
 #include "MingEngine/Core/Object/ResourceLoader.hpp"
 #include "MingEngine/Core/Object/ResourceSaver.hpp"
 #include "MingEngine/Core/Object/Script.hpp"
@@ -43,6 +44,7 @@ void RegisterSceneTypes()
 	ClassDatabase::RegisterClass<RefCounted>(false);
 	ClassDatabase::RegisterClass<Resource>(false);
 	ClassDatabase::RegisterClass<Script>();
+	ClassDatabase::RegisterClass<ResourceFormatImporter>(false);
 	ClassDatabase::RegisterClass<ResourceFormatLoader>(false);
 	ClassDatabase::RegisterClass<ResourceFormatSaver>(false);
 

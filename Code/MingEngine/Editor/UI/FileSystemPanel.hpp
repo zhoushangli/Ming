@@ -30,4 +30,5 @@ private:
 
 private:
 	char m_filter[64] = {};
+	bool m_wasFocused = false;
 };

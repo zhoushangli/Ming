@@ -831,14 +831,14 @@ void GenerateBuiltinScript(asIScriptEngine* engine)
 	std::filesystem::create_directories(kScriptLibDirectory);
 
 	std::ofstream scriptFile(std::filesystem::path(kScriptLibDirectory) / kGeneratedScriptFilename);
-	GUARANTEE_OR_DIE(scriptFile.is_open(), "Failed to open Data/ScriptLib/MingEngine.generated.as for writing.");
+	GUARANTEE_OR_DIE(scriptFile.is_open(), "Failed to open Data/.ming/ScriptLib/MingEngine.generated.as for writing.");
 
 	scriptFile << scriptText;
-	GUARANTEE_OR_DIE(!scriptFile.bad(), "Failed to write Data/ScriptLib/MingEngine.generated.as.");
+	GUARANTEE_OR_DIE(!scriptFile.bad(), "Failed to write Data/.ming/ScriptLib/MingEngine.generated.as.");
 
 	std::ofstream predefinedFile(std::filesystem::path(kScriptLibDirectory) / kPredefinedScriptFilename);
-	GUARANTEE_OR_DIE(predefinedFile.is_open(), "Failed to open Data/ScriptLib/as.predefined for writing.");
+	GUARANTEE_OR_DIE(predefinedFile.is_open(), "Failed to open Data/.ming/ScriptLib/as.predefined for writing.");
 
 	predefinedFile << predefinedText;
-	GUARANTEE_OR_DIE(!predefinedFile.bad(), "Failed to write Data/ScriptLib/as.predefined.");
+	GUARANTEE_OR_DIE(!predefinedFile.bad(), "Failed to write Data/.ming/ScriptLib/as.predefined.");
 }

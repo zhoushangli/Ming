@@ -1,5 +1,6 @@
 #include "MingEngine/Core/Object/ResourceLoader.hpp"
 
+#include "MingEngine/Core/Object/ResourceImporter.hpp"
 #include "MingEngine/Engine/File/FileSystem.hpp"
 
 int                                            ResourceLoader::s_loaderCount = 0;
@@ -25,6 +26,21 @@ Ref<Resource> ResourceLoader::Load(const std::string& virtualPath)
 	if (s_loadedResources.find(normalizedPath) != s_loadedResources.end())
 	{
 		return s_loadedResources[normalizedPath];
+	}
+
+	if (!ResourceImporter::IsInternalResourcePath(normalizedPath)
+		&& !ResourceImporter::IsImportMetadataPath(normalizedPath))
+	{
+		std::string importPath;
+		if (ResourceImporter::TryReadImportFile(normalizedPath, importPath) && importPath != normalizedPath)
+		{
+			Ref<Resource> resource = Load(importPath);
+			if (resource.IsValid())
+			{
+				s_loadedResources[normalizedPath] = resource;
+			}
+			return resource;
+		}
 	}
 
 	for (int i = 0; i < s_loaderCount; ++i)

@@ -534,6 +534,9 @@
     <ClCompile Include="Core\Object\Resource.cpp">
       <Filter>Core\Object</Filter>
     </ClCompile>
+    <ClCompile Include="Core\Object\ResourceImporter.cpp">
+      <Filter>Core\Object</Filter>
+    </ClCompile>
     <ClCompile Include="Core\Object\ResourceLoader.cpp">
       <Filter>Core\Object</Filter>
     </ClCompile>
@@ -1062,6 +1065,9 @@
       <Filter>Core\Object</Filter>
     </ClInclude>
     <ClInclude Include="Core\Object\Resource.hpp">
+      <Filter>Core\Object</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Object\ResourceImporter.hpp">
       <Filter>Core\Object</Filter>
     </ClInclude>
     <ClInclude Include="Core\Object\ResourceLoader.hpp">

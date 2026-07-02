@@ -31,17 +31,20 @@ FileSystemPanel::FileSystemPanel() : EditorPanel("FileSystem") {}
 void FileSystemPanel::OnRender(EditorUIContext& context)
 {
 	ImGui::Begin(GetTitle(), GetOpenState());
+	bool const isFocused = ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows);
+
 	ImGui::InputTextWithHint("##FilterFiles", "Filter Files", m_filter, sizeof(m_filter));
 	ImGui::Separator();
 
 	if (context.m_fileSystem == nullptr)
 	{
 		ImGui::TextDisabled("FileSystem is not available.");
+		m_wasFocused = isFocused;
 		ImGui::End();
 		return;
 	}
 
-	if (!context.m_fileSystem->HasResourceTree())
+	if (!context.m_fileSystem->HasResourceTree() || (isFocused && !m_wasFocused))
 	{
 		context.m_fileSystem->ScanResourceTree();
 	}
@@ -51,6 +54,7 @@ void FileSystemPanel::OnRender(EditorUIContext& context)
 	{
 		ImGui::TextUnformatted("res://");
 		ImGui::TextDisabled("Resource root not found.");
+		m_wasFocused = isFocused;
 		ImGui::End();
 		return;
 	}
@@ -61,6 +65,7 @@ void FileSystemPanel::OnRender(EditorUIContext& context)
 	RenderEntry(*rootEntry, lowerFilterText);
 
 	ImGui::EndChild();
+	m_wasFocused = isFocused;
 	ImGui::End();
 }
 
