@@ -63,7 +63,7 @@ RenderRequest EditorWorldGrid3D::SubmitRenderRequest() const
 	request.m_pass           = RenderRequestPass::Opaque;
 	request.m_modelToWorld   = GetWorldTransform();
 	request.m_vertexBuffer   = m_vertexBuffer;
-	request.m_shader         = g_engine->m_renderer->CreateOrGetShader("Data/Shaders/GizmosGrid");
+	request.m_shader         = g_engine->m_renderer->CreateOrGetShader("res://Shaders/GizmosGrid.hlsl");
 	request.m_blendMode      = BlendMode::ALPHA;
 	request.m_depthMode      = DepthMode::READ_ONLY_LESS_EQUAL;
 	request.m_rasterizerMode = RasterizerMode::SOLID_CULL_NONE;

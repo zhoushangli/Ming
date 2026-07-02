@@ -1,10 +1,13 @@
 #pragma once
 
 #include "MingEngine/Core/Object/ResourceImporter.hpp"
+#include "MingEngine/Scene/Resource/MeshResource.hpp"
 
-class GLTFImporter : public ResourceFormatImporter
+#include <string>
+
+class OBJImporter : public ResourceFormatImporter
 {
-	MCLASS(GLTFImporter, ResourceFormatImporter)
+	MCLASS(OBJImporter, ResourceFormatImporter)
 
 public:
 	std::vector<std::string> GetSupportedExtensions() const override;
@@ -12,4 +15,5 @@ public:
 
 protected:
 	static void BindMethods() {};
+	
 };

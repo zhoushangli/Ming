@@ -1,7 +1,6 @@
 #include "MingEngine/Engine/Render/D3D11RenderBackend.hpp"
 
 #include "MingEngine/Core/ErrorWarningAssert.hpp"
-#include "MingEngine/Core/FileUtils.hpp"
 #include "MingEngine/Core/Render/Vertex.hpp"
 #include "MingEngine/Core/Render/VertexUtils.hpp"
 #include "MingEngine/Core/StringUtils.hpp"
@@ -322,7 +321,7 @@ void           D3D11RenderBackend::Startup()
 
 #pragma region Startup: Create default shader
 
-	m_defaultShader = CreateOrGetShader("Data/Shaders/DefaultUnlit");
+	m_defaultShader = CreateOrGetShader("res://Shaders/DefaultUnlit.hlsl");
 	BindShader(m_defaultShader);
 
 #pragma endregion
@@ -622,27 +621,29 @@ void D3D11RenderBackend::BindShader(Shader* shader)
 
 #pragma region Public: GPU resource creation and cache access
 
-Shader* D3D11RenderBackend::CreateOrGetShader(char const* shaderName)
+Shader* D3D11RenderBackend::CreateOrGetShader(std::string const& shaderVirtualPath)
 {
-	GUARANTEE_OR_DIE(shaderName && shaderName[0], "CreateShader(shaderName): shaderName is null/empty");
+	GUARANTEE_OR_DIE(!shaderVirtualPath.empty(), "CreateOrGetShader: shaderVirtualPath is empty");
+	GUARANTEE_OR_DIE(
+		FileSystem::IsVirtualPath(shaderVirtualPath),
+		Stringf("CreateOrGetShader: \"%s\" is not a virtual path", shaderVirtualPath.c_str()));
+	GUARANTEE_OR_DIE(g_engine != nullptr && g_engine->m_fileSystem != nullptr, "CreateOrGetShader: FileSystem is required");
 
-	std::string shaderKey = shaderName;
 	for (Shader* shader : m_cachedShaders)
 	{
-		if (shader->GetName() == shaderKey)
+		if (shader->GetName() == shaderVirtualPath)
 		{
 			return shader;
 		}
 	}
 
-	std::string shaderFilename = std::string(shaderName) + ".hlsl";
-
 	std::string shaderSource;
-	int         bytesRead = FileReadToString(shaderSource, shaderFilename);
+	if (!g_engine->m_fileSystem->ReadText(shaderVirtualPath, shaderSource))
+	{
+		GUARANTEE_OR_DIE(false, Stringf("Failed to read shader file \"%s\"", shaderVirtualPath.c_str()));
+	}
 
-	GUARANTEE_OR_DIE(bytesRead > 0, Stringf("Failed to read shader file \"%s\"", shaderFilename.c_str()));
-
-	return CreateShader(shaderName, shaderSource.c_str());
+	return CreateShader(shaderVirtualPath, shaderSource);
 }
 
 Texture* D3D11RenderBackend::CreateOrGetTexture(char const* imageFilePath)
@@ -922,14 +923,20 @@ Texture* D3D11RenderBackend::GetTextureFromFileName(char const* imageFilePath)
 
 #pragma region Private: Shader creation internals
 
-Shader* D3D11RenderBackend::CreateShader(char const* shaderName, char const* shaderSource)
+Shader* D3D11RenderBackend::CreateShader(std::string const& shaderVirtualPath, std::string const& shaderSource)
 {
 	GUARANTEE_OR_DIE(m_d3dDevice, "CreateShader: m_d3dDevice is null");
-	GUARANTEE_OR_DIE(shaderName && shaderName[0], "CreateShader: shaderName is null/empty");
-	GUARANTEE_OR_DIE(shaderSource, "CreateShader: shaderSource is null");
+	GUARANTEE_OR_DIE(!shaderVirtualPath.empty(), "CreateShader: shaderVirtualPath is empty");
+
+	std::filesystem::path shaderPhysicalPath;
+	GUARANTEE_OR_DIE(
+		g_engine->m_fileSystem->TryGetPhysicalPath(shaderVirtualPath, shaderPhysicalPath),
+		Stringf("CreateShader: failed to resolve physical path for \"%s\"", shaderVirtualPath.c_str()));
+
+	std::string const shaderPhysicalPathString = shaderPhysicalPath.string();
 
 	ShaderConfig config;
-	config.m_name = shaderName;
+	config.m_name = shaderVirtualPath;
 
 	Shader* shader = new Shader(config);
 
@@ -937,21 +944,29 @@ Shader* D3D11RenderBackend::CreateShader(char const* shaderName, char const* sha
 	std::vector<unsigned char> vsByteCode;
 	std::vector<unsigned char> psByteCode;
 
-	bool vsOK =
-		CompileShaderToByteCode(vsByteCode, shaderName, shaderSource, config.m_vertexEntryPoint.c_str(), "vs_5_0");
-	GUARANTEE_OR_DIE(vsOK, Stringf("Could not compile vertex shader for '%s'", shaderName));
+	bool vsOK = CompileShaderToByteCode(
+		vsByteCode,
+		shaderPhysicalPathString.c_str(),
+		shaderSource.c_str(),
+		config.m_vertexEntryPoint.c_str(),
+		"vs_5_0");
+	GUARANTEE_OR_DIE(vsOK, Stringf("Could not compile vertex shader for '%s'", shaderVirtualPath.c_str()));
 
-	bool psOK =
-		CompileShaderToByteCode(psByteCode, shaderName, shaderSource, config.m_pixelEntryPoint.c_str(), "ps_5_0");
-	GUARANTEE_OR_DIE(psOK, Stringf("Could not compile pixel shader for '%s'", shaderName));
+	bool psOK = CompileShaderToByteCode(
+		psByteCode,
+		shaderPhysicalPathString.c_str(),
+		shaderSource.c_str(),
+		config.m_pixelEntryPoint.c_str(),
+		"ps_5_0");
+	GUARANTEE_OR_DIE(psOK, Stringf("Could not compile pixel shader for '%s'", shaderVirtualPath.c_str()));
 
 	// Create VS / PS
 	HRESULT hr =
 		m_d3dDevice->CreateVertexShader(vsByteCode.data(), vsByteCode.size(), nullptr, &shader->m_vertexShader);
-	GUARANTEE_OR_DIE(SUCCEEDED(hr), Stringf("Could not create vertex shader for '%s'", shaderName));
+	GUARANTEE_OR_DIE(SUCCEEDED(hr), Stringf("Could not create vertex shader for '%s'", shaderVirtualPath.c_str()));
 
 	hr = m_d3dDevice->CreatePixelShader(psByteCode.data(), psByteCode.size(), nullptr, &shader->m_pixelShader);
-	GUARANTEE_OR_DIE(SUCCEEDED(hr), Stringf("Could not create pixel shader for '%s'", shaderName));
+	GUARANTEE_OR_DIE(SUCCEEDED(hr), Stringf("Could not create pixel shader for '%s'", shaderVirtualPath.c_str()));
 
 	static D3D11_INPUT_ELEMENT_DESC const kPcutbnDesc[] = {
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
@@ -977,7 +992,7 @@ Shader* D3D11RenderBackend::CreateShader(char const* shaderName, char const* sha
 		vsByteCode.data(),
 		(UINT)vsByteCode.size(),
 		&shader->m_inputLayout);
-	GUARANTEE_OR_DIE(SUCCEEDED(hr), Stringf("Could not create input layout for '%s'", shaderName));
+	GUARANTEE_OR_DIE(SUCCEEDED(hr), Stringf("Could not create input layout for '%s'", shaderVirtualPath.c_str()));
 
 	m_cachedShaders.push_back(shader);
 
@@ -986,12 +1001,12 @@ Shader* D3D11RenderBackend::CreateShader(char const* shaderName, char const* sha
 
 bool D3D11RenderBackend::CompileShaderToByteCode(
 	std::vector<unsigned char>& outByteCode,
-	char const*                 name,
+	char const*                 shaderPhysicalPath,
 	char const*                 source,
 	char const*                 entryPoint,
 	char const*                 target)
 {
-	if (source == nullptr || entryPoint == nullptr || target == nullptr)
+	if (shaderPhysicalPath == nullptr || source == nullptr || entryPoint == nullptr || target == nullptr)
 	{
 		return false;
 	}
@@ -1009,7 +1024,7 @@ bool D3D11RenderBackend::CompileShaderToByteCode(
 	HRESULT hr = D3DCompile(
 		source,
 		strlen(source),
-		name,
+		shaderPhysicalPath,
 		nullptr,
 		D3D_COMPILE_STANDARD_FILE_INCLUDE,
 		entryPoint,

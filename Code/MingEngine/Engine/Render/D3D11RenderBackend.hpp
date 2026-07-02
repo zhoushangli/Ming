@@ -11,6 +11,7 @@
 #include "MingEngine/Engine/Render/Shader.hpp"
 
 #include <map>
+#include <string>
 #include <vector>
 
 class CameraContext;
@@ -222,7 +223,7 @@ public:
 	ConstantBuffer* GetBuiltinConstantBuffer(BuiltinConstantBufferType id);
 
 	// GPU resource creation and cache access
-	Shader* CreateOrGetShader(char const* shaderName);
+	Shader* CreateOrGetShader(std::string const& shaderVirtualPath);
 
 	Texture* CreateOrGetTexture(char const* fileDataPath);
 	Texture* CreateTextureFromImage(const Image& image);
@@ -284,10 +285,10 @@ private:
 	Texture* CreateTextureFromFile(char const* fileDataPath);
 
 	// Shader creation internals
-	Shader* CreateShader(char const* shaderName, char const* shaderSource);
+	Shader* CreateShader(std::string const& shaderVirtualPath, std::string const& shaderSource);
 	bool    CompileShaderToByteCode(
 		std::vector<unsigned char>& outByteCode,
-		char const*                 name,
+		char const*                 shaderPhysicalPath,
 		char const*                 source,
 		char const*                 entryPoint,
 		char const*                 target);

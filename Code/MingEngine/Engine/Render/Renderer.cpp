@@ -24,7 +24,7 @@ void Renderer::Startup()
 
 	m_renderBackend = new D3D11RenderBackend(m_config);
 	m_renderBackend->Startup();
-	m_postProcessCopyShader = m_renderBackend->CreateOrGetShader("Data/Shaders/PostProcessCopy");
+	m_postProcessCopyShader = m_renderBackend->CreateOrGetShader("res://Shaders/PostProcessCopy.hlsl");
 }
 
 void Renderer::Shutdown()
@@ -307,7 +307,7 @@ void Renderer::RenderUI(ViewportInfo const& viewport)
 	}
 }
 
-Shader*  Renderer::CreateOrGetShader(char const* shaderName) { return m_renderBackend->CreateOrGetShader(shaderName); }
+Shader*  Renderer::CreateOrGetShader(std::string const& shaderVirtualPath) { return m_renderBackend->CreateOrGetShader(shaderVirtualPath); }
 Texture* Renderer::CreateOrGetTexture(char const* fileDataPath)
 {
 	return m_renderBackend->CreateOrGetTexture(fileDataPath);

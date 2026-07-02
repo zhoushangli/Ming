@@ -121,7 +121,7 @@ RenderRequest ViewportAxisIndicator::SubmitRenderRequest() const
 	request.m_pass           = RenderRequestPass::UI;
 	request.m_modelToWorld   = Matrix4x4::Identity;
 	request.m_vertexBuffer   = m_vertexBuffer;
-	request.m_shader         = g_engine->m_renderer->CreateOrGetShader("Data/Shaders/DefaultUI");
+	request.m_shader         = g_engine->m_renderer->CreateOrGetShader("res://Shaders/DefaultUI.hlsl");
 	request.m_blendMode      = BlendMode::ALPHA;
 	request.m_depthMode      = DepthMode::DISABLED;
 	request.m_rasterizerMode = RasterizerMode::SOLID_CULL_NONE;

@@ -36,21 +36,7 @@ bool EndsWith(std::string const& text, std::string const& suffix)
 	return text.size() >= suffix.size() && text.compare(text.size() - suffix.size(), suffix.size(), suffix) == 0;
 }
 
-std::string NormalizeImportedExtension(std::string extension)
-{
-	if (extension.empty())
-	{
-		return kDefaultImportedExtension;
-	}
-
-	while (!extension.empty() && extension.front() == '.')
-	{
-		extension.erase(extension.begin());
-	}
-
-	return extension.empty() ? kDefaultImportedExtension : extension;
-}
-
+// For example, "res://foo/bar/baz.txt" -> "baz"
 std::string GetImportStem(std::string const& sourceVirtualPath)
 {
 	std::string relativePath;
@@ -108,17 +94,16 @@ bool ResourceImporter::Import(std::string const& sourceVirtualPath)
 		return false;
 	}
 
-	std::string const importPath = GetImportOutputPath(sourceVirtualPath, *importer);
+	std::string const importPath = GetImportOutputPath(sourceVirtualPath);
 	if (!importer->Import(sourceVirtualPath, importPath))
 	{
 		return false;
 	}
 
 	nlohmann::ordered_json metadata;
-	metadata["source_file"]      = sourceVirtualPath;
-	metadata["import_file"]      = importPath;
-	metadata["importer"]         = importer->GetImporterName();
-	metadata["importer_version"] = importer->GetImporterVersion();
+	metadata["source_file"] = sourceVirtualPath;
+	metadata["import_file"] = importPath;
+	metadata["importer"]    = importer->GetClassName();
 
 	if (!g_engine->m_fileSystem->WriteText(GetImportMetadataPath(sourceVirtualPath), metadata.dump(1, '\t')))
 	{
@@ -189,16 +174,14 @@ std::string ResourceImporter::GetImportMetadataPath(std::string const& sourceVir
 	return sourceVirtualPath + kImportMetadataExtension;
 }
 
-std::string ResourceImporter::GetImportOutputPath(
-	std::string const& sourceVirtualPath,
-	ResourceFormatImporter const& importer)
+std::string ResourceImporter::GetImportOutputPath(std::string const& sourceVirtualPath)
 {
 	return std::string(kInternalImportDirectory)
 		+ GetImportStem(sourceVirtualPath)
 		+ "_"
 		+ GetHashSuffix(sourceVirtualPath)
 		+ "."
-		+ NormalizeImportedExtension(importer.GetImportedExtension());
+		+ kDefaultImportedExtension;
 }
 
 Ref<ResourceFormatImporter> ResourceImporter::FindImporter(std::string const& sourceVirtualPath)

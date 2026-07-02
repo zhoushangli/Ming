@@ -35,7 +35,7 @@ RenderRequest Mesh3D::SubmitRenderRequest() const
 	request.m_indexBuffer  = m_meshResource->m_indexBuffer;
 	request.m_textures[SurfaceTextureSlot::Diffuse] =
 		m_useMaterialTextures ? m_meshResource->m_meshData.m_texture : nullptr;
-	request.m_shader         = g_engine->m_renderer->CreateOrGetShader("Data/Shaders/DefaultLit");
+	request.m_shader         = g_engine->m_renderer->CreateOrGetShader("res://Shaders/DefaultLit.hlsl");
 	request.m_blendMode      = BlendMode::OPAQUE;
 	request.m_depthMode      = DepthMode::READ_WRITE_LESS_EQUAL;
 	request.m_rasterizerMode = RasterizerMode::SOLID_CULL_BACK;

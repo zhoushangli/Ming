@@ -5,10 +5,10 @@
 #include "MingEngine/Engine/Render/D3D11RenderBackend.hpp"
 #include "PostProcessChain.hpp"
 
-PostProcessPass::PostProcessPass(std::string const& passName, std::string const& postProcessShaderName)
+PostProcessPass::PostProcessPass(std::string const& passName, std::string const& postProcessShaderVirtualPath)
 	: m_name(passName), m_wideName(passName.begin(), passName.end())
 {
-	m_postProcessShader = g_engine->m_renderer->CreateOrGetShader(postProcessShaderName.c_str());
+	m_postProcessShader = g_engine->m_renderer->CreateOrGetShader(postProcessShaderVirtualPath);
 }
 
 PostProcessPass::~PostProcessPass() {}

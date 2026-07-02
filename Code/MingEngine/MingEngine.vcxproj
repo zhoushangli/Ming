@@ -344,8 +344,8 @@
     <ClCompile Include="Core\Object\MethodBind.cpp" />
     <ClCompile Include="Core\Object\ClassDatabase.cpp" />
     <ClCompile Include="Engine\Event\EventSystem.cpp" />
-    <ClCompile Include="Core\FileUtils.cpp" />
     <ClCompile Include="Engine\File\FileSystem.cpp" />
+    <ClCompile Include="Engine\File\FileUtils.cpp" />
     <ClCompile Include="Engine\Render\HeatMaps.cpp" />
     <ClCompile Include="Core\Image.cpp" />
     <ClCompile Include="Core\NamedStrings.cpp" />
@@ -431,6 +431,8 @@
     <ClCompile Include="Scene\3D\Node3D.cpp" />
     <ClCompile Include="Scene\3D\Particles3D.cpp" />
     <ClCompile Include="Scene\Core\NodePath.cpp" />
+    <ClCompile Include="Scene\Import\GLTFImporter.cpp" />
+    <ClCompile Include="Scene\Import\OBJImporter.cpp" />
     <ClCompile Include="Scene\Physics\AABBCollider3D.cpp" />
     <ClCompile Include="Scene\Physics\CapsuleCollider3D.cpp" />
     <ClCompile Include="Scene\Physics\Collider3D.cpp" />
@@ -495,8 +497,8 @@
     <ClInclude Include="Core\Object\MethodBind.hpp" />
     <ClInclude Include="Core\Object\ClassDatabase.hpp" />
     <ClInclude Include="Engine\Event\EventSystem.hpp" />
-    <ClInclude Include="Core\FileUtils.hpp" />
     <ClInclude Include="Engine\File\FileSystem.hpp" />
+    <ClInclude Include="Engine\File\FileUtils.hpp" />
     <ClInclude Include="Engine\Render\HeatMaps.hpp" />
     <ClInclude Include="Core\Image.hpp" />
     <ClInclude Include="Core\NamedStrings.hpp" />
@@ -591,6 +593,8 @@
     <ClInclude Include="Scene\3D\Mesh3D.hpp" />
     <ClInclude Include="Scene\3D\Node3D.hpp" />
     <ClInclude Include="Scene\3D\Particles3D.hpp" />
+    <ClInclude Include="Scene\Import\GLTFImporter.hpp" />
+    <ClInclude Include="Scene\Import\OBJImporter.hpp" />
     <ClInclude Include="Scene\Physics\AABBCollider3D.hpp" />
     <ClInclude Include="Scene\Physics\CapsuleCollider3D.hpp" />
     <ClInclude Include="Scene\Physics\Collider3D.hpp" />

@@ -51,8 +51,8 @@ private:
 	std::string                             m_virtualPath;
 	std::string                             m_name;
 	std::string                             m_lowerName;
-	bool                                    m_isDirectory = false;
-	FileEntry*                              m_parent      = nullptr;
+	bool                                    m_isDirectory     = false;
+	FileEntry*                              m_parent          = nullptr;
 	bool                                    m_hasModifiedTime = false;
 	bool                                    m_hasImportTime   = false;
 	std::filesystem::file_time_type         m_modifiedTime;
@@ -74,32 +74,33 @@ public:
 	void BeginFrame() override;
 	void EndFrame() override;
 
-	static bool IsVirtualPath(std::string const& path);
-	static bool TryGetRelativePath(std::string const& virtualPath, std::string& outRelativePath);
-
-	bool Exists(std::string const& virtualPath) const;
-
 	bool ReadText(std::string const& virtualPath, std::string& outText) const;
 	bool WriteText(std::string const& virtualPath, std::string const& text) const;
+	bool ReadBinary(std::string const& virtualPath, std::vector<uint8_t>& outData) const;
+	bool WriteBinary(std::string const& virtualPath, std::vector<uint8_t> const& data) const;
 
 	std::filesystem::path const& GetResourceRoot() const;
 	void                         ScanResourceTree();
 	bool                         HasResourceTree() const;
 	FileEntry const*             GetResourceRootEntry() const;
-	std::string                  ToVirtualPath(std::filesystem::path const& physicalPath) const;
+
+	bool        Exists(std::string const& virtualPath) const;
+	static bool IsVirtualPath(std::string const& path);
+	static bool TryGetRelativePath(std::string const& virtualPath, std::string& outRelativePath);
+	std::string ToVirtualPath(std::filesystem::path const& physicalPath) const;
+	bool        TryGetPhysicalPath(std::string const& virtualPath, std::filesystem::path& outPhysicalPath) const;
 
 	static void BindMethods();
 
 private:
 	void ScanResourceImports(std::unordered_map<std::string, std::filesystem::file_time_type>& outImportedTimes);
-	FileEntry const* FindEntry(std::string const& virtualPath) const;
-	bool ResolvePath(std::string const& virtualPath, std::filesystem::path& outPhysicalPath) const;
+	FileEntry const*           FindEntry(std::string const& virtualPath) const;
 	std::unique_ptr<FileEntry> BuildEntry(
-		std::filesystem::path const& physicalPath,
-		std::string const&           virtualPath,
-		FileEntry*                   parent,
-		bool                         isDirectory,
-		FileEntry const*             previousEntry,
+		std::filesystem::path const&                                            physicalPath,
+		std::string const&                                                      virtualPath,
+		FileEntry*                                                              parent,
+		bool                                                                    isDirectory,
+		FileEntry const*                                                        previousEntry,
 		std::unordered_map<std::string, std::filesystem::file_time_type> const& importedTimes) const;
 	void SortChildren(FileEntry& entry) const;
 

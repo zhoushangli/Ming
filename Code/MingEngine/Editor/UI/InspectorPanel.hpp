@@ -14,15 +14,19 @@ public:
 	~InspectorPanel() override;
 
 private:
+	struct PropertyGroup
+	{
+		std::string                     m_className;
+		std::vector<InspectorProperty*> m_properties;
+	};
+
 	void OnRender(EditorUIContext& context) override;
 
 	void BuildInheritanceChain(std::string const& className);
 	void RebuildProperties(EditorUIContext& context);
-	void RenderTabBar();
 
 private:
 	NodeHandle m_cachedHandle;
 	std::vector<std::string> m_inheritanceChain;
-	size_t m_activeTabIndex = 0;
-	std::vector<InspectorProperty*> m_properties;
+	std::vector<PropertyGroup> m_propertyGroups;
 };

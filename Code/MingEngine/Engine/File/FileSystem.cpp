@@ -10,9 +10,9 @@
 
 namespace
 {
-constexpr char const* kResourcePathPrefix = "res://";
+constexpr char const* kResourcePathPrefix            = "res://";
 constexpr char const* kInternalResourceDirectoryName = ".ming";
-constexpr char const* kImportMetadataExtension = ".import";
+constexpr char const* kImportMetadataExtension       = ".import";
 
 std::string ToLower(std::string text)
 {
@@ -175,7 +175,7 @@ bool FileSystem::TryGetRelativePath(std::string const& virtualPath, std::string&
 bool FileSystem::Exists(std::string const& virtualPath) const
 {
 	std::filesystem::path physicalPath;
-	if (!ResolvePath(virtualPath, physicalPath))
+	if (!TryGetPhysicalPath(virtualPath, physicalPath))
 	{
 		return false;
 	}
@@ -188,7 +188,7 @@ bool FileSystem::ReadText(std::string const& virtualPath, std::string& outText) 
 	outText.clear();
 
 	std::filesystem::path physicalPath;
-	if (!ResolvePath(virtualPath, physicalPath))
+	if (!TryGetPhysicalPath(virtualPath, physicalPath))
 	{
 		return false;
 	}
@@ -213,12 +213,12 @@ bool FileSystem::ReadText(std::string const& virtualPath, std::string& outText) 
 bool FileSystem::WriteText(std::string const& virtualPath, std::string const& text) const
 {
 	std::filesystem::path physicalPath;
-	if (!ResolvePath(virtualPath, physicalPath))
+	if (!TryGetPhysicalPath(virtualPath, physicalPath))
 	{
 		return false;
 	}
 
-	std::error_code errorCode;
+	std::error_code             errorCode;
 	std::filesystem::path const parentPath = physicalPath.parent_path();
 	if (!parentPath.empty())
 	{
@@ -236,6 +236,72 @@ bool FileSystem::WriteText(std::string const& virtualPath, std::string const& te
 	}
 
 	file << text;
+	return file.good();
+}
+
+bool FileSystem::ReadBinary(std::string const& virtualPath, std::vector<uint8_t>& outData) const
+{
+	outData.clear();
+
+	std::filesystem::path physicalPath;
+	if (!TryGetPhysicalPath(virtualPath, physicalPath))
+	{
+		return false;
+	}
+
+	std::ifstream file(physicalPath, std::ios::binary | std::ios::ate);
+	if (!file.is_open())
+	{
+		return false;
+	}
+
+	std::streamsize const size = file.tellg();
+	if (size <= 0)
+	{
+		return false;
+	}
+
+	outData.resize(static_cast<size_t>(size));
+
+	file.seekg(0, std::ios::beg);
+	if (!outData.empty())
+	{
+		file.read(reinterpret_cast<char*>(outData.data()), size);
+	}
+
+	return file.good();
+}
+
+bool FileSystem::WriteBinary(std::string const& virtualPath, std::vector<uint8_t> const& data) const
+{
+	std::filesystem::path physicalPath;
+	if (!TryGetPhysicalPath(virtualPath, physicalPath))
+	{
+		return false;
+	}
+
+	std::error_code             errorCode;
+	std::filesystem::path const parentPath = physicalPath.parent_path();
+	if (!parentPath.empty())
+	{
+		std::filesystem::create_directories(parentPath, errorCode);
+		if (errorCode)
+		{
+			return false;
+		}
+	}
+
+	std::ofstream file(physicalPath, std::ios::binary);
+	if (!file.is_open())
+	{
+		return false;
+	}
+
+	if (!data.empty())
+	{
+		file.write(reinterpret_cast<char const*>(data.data()), data.size());
+	}
+
 	return file.good();
 }
 
@@ -259,9 +325,8 @@ void FileSystem::ScanResourceTree()
 	std::unique_ptr<FileEntry> previousRootEntry = std::move(m_rootEntry);
 
 	// 3) Rebuild the visible resource tree, hiding generated import metadata/cache entries.
-	m_rootEntry =
-		std::unique_ptr<FileEntry>(
-			new FileEntry(m_resourceRoot, kResourcePathPrefix, kResourcePathPrefix, kResourcePathPrefix, true, nullptr));
+	m_rootEntry = std::unique_ptr<FileEntry>(
+		new FileEntry(m_resourceRoot, kResourcePathPrefix, kResourcePathPrefix, kResourcePathPrefix, true, nullptr));
 	m_rootEntry->m_hasModifiedTime = TryGetLastWriteTime(m_resourceRoot, m_rootEntry->m_modifiedTime);
 
 	for (std::filesystem::directory_entry const& entry : std::filesystem::directory_iterator(m_resourceRoot, errorCode))
@@ -278,16 +343,15 @@ void FileSystem::ScanResourceTree()
 			continue;
 		}
 
-		std::string const name = GetDisplayName(entry.path());
-		std::string const childVirtualPath = JoinVirtualPath(kResourcePathPrefix, name);
-		std::unique_ptr<FileEntry> childEntry =
-			BuildEntry(
-				entry.path(),
-				childVirtualPath,
-				m_rootEntry.get(),
-				isDirectory,
-				FindEntryInTree(previousRootEntry.get(), childVirtualPath),
-				importedTimes);
+		std::string const          name             = GetDisplayName(entry.path());
+		std::string const          childVirtualPath = JoinVirtualPath(kResourcePathPrefix, name);
+		std::unique_ptr<FileEntry> childEntry       = BuildEntry(
+			entry.path(),
+			childVirtualPath,
+			m_rootEntry.get(),
+			isDirectory,
+			FindEntryInTree(previousRootEntry.get(), childVirtualPath),
+			importedTimes);
 		if (childEntry)
 		{
 			m_rootEntry->m_children.push_back(std::move(childEntry));
@@ -313,7 +377,7 @@ std::string FileSystem::ToVirtualPath(std::filesystem::path const& physicalPath)
 	return std::string(kResourcePathPrefix) + relativePath.generic_string();
 }
 
-bool FileSystem::ResolvePath(std::string const& virtualPath, std::filesystem::path& outPhysicalPath) const
+bool FileSystem::TryGetPhysicalPath(std::string const& virtualPath, std::filesystem::path& outPhysicalPath) const
 {
 	outPhysicalPath.clear();
 
@@ -336,7 +400,8 @@ FileEntry const* FileSystem::FindEntry(std::string const& virtualPath) const
 void FileSystem::ScanResourceImports(std::unordered_map<std::string, std::filesystem::file_time_type>& outImportedTimes)
 {
 	std::error_code errorCode;
-	for (std::filesystem::recursive_directory_iterator it(m_resourceRoot, errorCode), end; it != end; it.increment(errorCode))
+	for (std::filesystem::recursive_directory_iterator it(m_resourceRoot, errorCode), end; it != end;
+		 it.increment(errorCode))
 	{
 		if (errorCode)
 		{
@@ -382,10 +447,10 @@ void FileSystem::ScanResourceImports(std::unordered_map<std::string, std::filesy
 
 		// 2) Compare metadata, imported cache existence, and the previous FileEntry import time.
 		std::string importPath;
-		bool const  hasMetadata    = ResourceImporter::TryReadImportFile(virtualPath, importPath);
-		bool const  hasImportFile  = hasMetadata && Exists(importPath);
-		bool const  hasImportTime  = previousEntry != nullptr && previousEntry->HasImportTime();
-		bool const  isImportDirty  = !hasImportTime || previousEntry->GetImportTime() != modifiedTime;
+		bool const  hasMetadata   = ResourceImporter::TryReadImportFile(virtualPath, importPath);
+		bool const  hasImportFile = hasMetadata && Exists(importPath);
+		bool const  hasImportTime = previousEntry != nullptr && previousEntry->HasImportTime();
+		bool const  isImportDirty = !hasImportTime || previousEntry->GetImportTime() != modifiedTime;
 
 		// 3) Import dirty resources and report the import time for the next rebuilt FileEntry.
 		if (!hasMetadata || !hasImportFile || isImportDirty)
@@ -403,11 +468,11 @@ void FileSystem::ScanResourceImports(std::unordered_map<std::string, std::filesy
 }
 
 std::unique_ptr<FileEntry> FileSystem::BuildEntry(
-	std::filesystem::path const& physicalPath,
-	std::string const&           virtualPath,
-	FileEntry*                   parent,
-	bool                         isDirectory,
-	FileEntry const*             previousEntry,
+	std::filesystem::path const&                                            physicalPath,
+	std::string const&                                                      virtualPath,
+	FileEntry*                                                              parent,
+	bool                                                                    isDirectory,
+	FileEntry const*                                                        previousEntry,
 	std::unordered_map<std::string, std::filesystem::file_time_type> const& importedTimes) const
 {
 	if (ShouldSkipResourceTreeEntry(physicalPath, isDirectory))
@@ -454,16 +519,15 @@ std::unique_ptr<FileEntry> FileSystem::BuildEntry(
 				continue;
 			}
 
-			std::string const childName = GetDisplayName(child.path());
-			std::string const childVirtualPath = JoinVirtualPath(virtualPath, childName);
-			std::unique_ptr<FileEntry> childEntry =
-				BuildEntry(
-					child.path(),
-					childVirtualPath,
-					result.get(),
-					childIsDirectory,
-					FindEntryInTree(previousEntry, childVirtualPath),
-					importedTimes);
+			std::string const          childName        = GetDisplayName(child.path());
+			std::string const          childVirtualPath = JoinVirtualPath(virtualPath, childName);
+			std::unique_ptr<FileEntry> childEntry       = BuildEntry(
+				child.path(),
+				childVirtualPath,
+				result.get(),
+				childIsDirectory,
+				FindEntryInTree(previousEntry, childVirtualPath),
+				importedTimes);
 			if (childEntry)
 			{
 				result->m_children.push_back(std::move(childEntry));

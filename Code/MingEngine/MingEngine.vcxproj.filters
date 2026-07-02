@@ -153,9 +153,6 @@
     <ClCompile Include="Engine\Event\EventSystem.cpp">
       <Filter>Engine\Event</Filter>
     </ClCompile>
-    <ClCompile Include="Core\FileUtils.cpp">
-      <Filter>Core</Filter>
-    </ClCompile>
     <ClCompile Include="Engine\Render\HeatMaps.cpp">
       <Filter>Engine\Render</Filter>
     </ClCompile>
@@ -570,6 +567,15 @@
     <ClCompile Include="..\ThirdParty\angelscript\add_on\scriptdictionary\scriptdictionary.cpp">
       <Filter>ThirdParty\angelscript\add_on</Filter>
     </ClCompile>
+    <ClCompile Include="Scene\Import\GLTFImporter.cpp">
+      <Filter>Scene\Import</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene\Import\OBJImporter.cpp">
+      <Filter>Scene\Import</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\File\FileUtils.cpp">
+      <Filter>Engine\File</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Core\Clock.hpp">
@@ -595,9 +601,6 @@
     </ClInclude>
     <ClInclude Include="Engine\Event\EventSystem.hpp">
       <Filter>Engine\Event</Filter>
-    </ClInclude>
-    <ClInclude Include="Core\FileUtils.hpp">
-      <Filter>Core</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Render\HeatMaps.hpp">
       <Filter>Engine\Render</Filter>
@@ -1102,6 +1105,15 @@
     </ClInclude>
     <ClInclude Include="..\ThirdParty\angelscript\add_on\scriptdictionary\scriptdictionary.h">
       <Filter>ThirdParty\angelscript\add_on</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\Import\GLTFImporter.hpp">
+      <Filter>Scene\Import</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\Import\OBJImporter.hpp">
+      <Filter>Scene\Import</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\File\FileUtils.hpp">
+      <Filter>Engine\File</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

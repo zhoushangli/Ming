@@ -3,6 +3,8 @@
 #include "MingEngine/Engine/Application/SystemBase.hpp"
 #include "MingEngine/Engine/Render/D3D11RenderBackend.hpp"
 
+#include <string>
+
 class ViewportInfo;
 struct RenderRequest;
 
@@ -29,7 +31,7 @@ public:
 	void DestroyViewportResources(ViewportInfo& viewport);
 	void CopyTextureToBackBuffer(Texture* colorTexture);
 
-	Shader* CreateOrGetShader(char const* shaderName);
+	Shader* CreateOrGetShader(std::string const& shaderVirtualPath);
 
 	Texture*    CreateOrGetTexture(char const* fileDataPath);
 	Texture*    CreateTextureFromImage(const Image& image);
