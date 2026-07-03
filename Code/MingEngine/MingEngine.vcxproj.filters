@@ -450,6 +450,9 @@
     <ClCompile Include="Scene\Resource\MeshResource.cpp">
       <Filter>Scene\Resource</Filter>
     </ClCompile>
+    <ClCompile Include="Scene\Resource\MeshResourceFormat.cpp">
+      <Filter>Scene\Resource</Filter>
+    </ClCompile>
     <ClCompile Include="Scene\SceneCommon.cpp">
       <Filter>Scene</Filter>
     </ClCompile>
@@ -546,7 +549,7 @@
     <ClCompile Include="Core\Object\ScriptLoader.cpp">
       <Filter>Core\Object</Filter>
     </ClCompile>
-    <ClCompile Include="Scene\Core\PackedSceneLoader.cpp">
+    <ClCompile Include="Scene\Core\PackedSceneFormat.cpp">
       <Filter>Scene\Core</Filter>
     </ClCompile>
     <ClCompile Include="Scene\RegisterGlobalMethods.cpp">
@@ -908,6 +911,9 @@
     <ClInclude Include="Scene\Resource\MeshResource.hpp">
       <Filter>Scene\Resource</Filter>
     </ClInclude>
+    <ClInclude Include="Scene\Resource\MeshResourceFormat.hpp">
+      <Filter>Scene\Resource</Filter>
+    </ClInclude>
     <ClInclude Include="Scene\SceneCommon.hpp">
       <Filter>Scene</Filter>
     </ClInclude>
@@ -1085,7 +1091,7 @@
     <ClInclude Include="Core\Object\ScriptLoader.hpp">
       <Filter>Core\Object</Filter>
     </ClInclude>
-    <ClInclude Include="Scene\Core\PackedSceneLoader.hpp">
+    <ClInclude Include="Scene\Core\PackedSceneFormat.hpp">
       <Filter>Scene\Core</Filter>
     </ClInclude>
     <ClInclude Include="Scene\RegisterGlobalMethods.hpp">

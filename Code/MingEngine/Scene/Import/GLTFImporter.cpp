@@ -6,12 +6,14 @@
 
 std::vector<std::string> GLTFImporter::GetSupportedExtensions() const { return { ".gltf", ".glb" }; }
 
-bool GLTFImporter::Import(std::string const& sourceVirtualPath, std::string const& importVirtualPath)
+std::string GLTFImporter::GetImportedExtension() const { return "mesh"; }
+
+Ref<Resource> GLTFImporter::Import(std::string const& sourceVirtualPath)
 {
 	std::filesystem::path filePath;
 	if (!g_engine->m_fileSystem->TryGetPhysicalPath(sourceVirtualPath, filePath))
 	{
-		return false;
+		return Ref<Resource>();
 	}
 	std::string const filePathString = filePath.string();
 
@@ -21,23 +23,25 @@ bool GLTFImporter::Import(std::string const& sourceVirtualPath, std::string cons
 
 	if (parseResult != TG3_OK)
 	{
-		return false;
+		return Ref<Resource>();
 	}
 
 	if (model->meshes_count <= 0)
 	{
-		return false;
+		return Ref<Resource>();
 	}
 
 	tg3_mesh const& mesh = model->meshes[0];
 	if (mesh.primitives_count <= 0)
 	{
-		return false;
+		return Ref<Resource>();
 	}
 
 	tg3_primitive const& primitive = mesh.primitives[0];
 	if (primitive.mode != TG3_MODE_TRIANGLES)
 	{
-		return false;
+		return Ref<Resource>();
 	}
+
+	return Ref<Resource>();
 }

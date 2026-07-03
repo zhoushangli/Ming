@@ -52,6 +52,11 @@ public:
 
 	static Vec3 MakeFromPolarRadians(float pitchRadians, float yawRadians, float length = 1.0f);
 	static Vec3 MakeFromPolarDegrees(float pitchDegrees, float yawDegrees, float length = 1.0f);
+	static float DotProduct(Vec3 const& a, Vec3 const& b);
+	static Vec3  CrossProduct(Vec3 const& a, Vec3 const& b);
+	static Vec3  GetProjectedVector(Vec3 const& vector, Vec3 const& basis);
+	static Vec3  Interpolate(Vec3 const& start, Vec3 const& end, float fraction);
+	static Vec3  InterpolateClamped(Vec3 const& start, Vec3 const& end, float fraction);
 
 	static const Vec3 Zero;
 	static const Vec3 One;

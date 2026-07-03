@@ -21,7 +21,7 @@ struct ImportTextureData
 	std::vector<uint8_t> m_data;
 };
 
-struct ImportMeshData
+struct ImportMeshData : public Resource
 {
 	std::string m_name;
 

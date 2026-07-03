@@ -143,3 +143,13 @@ private:
 private:
 	T* reference = nullptr;
 };
+
+template <typename T>
+static Ref<T> CreateRef()
+{
+	static_assert(std::is_default_constructible_v<T>, "T must be default constructible");
+
+	T* ptr = new T();
+	ptr->InitRef();
+	return Ref<T>(ptr);
+}

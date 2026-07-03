@@ -2,11 +2,12 @@
 
 #include "MingEngine/Core/Math/IntVec2.hpp"
 
-#include <vector>
 #include <string>
+#include <vector>
 
 struct Rgba8;
 
+// TODO: Should intergrate into Resource system
 class Image
 {
 public:
@@ -15,6 +16,11 @@ public:
     Image(IntVec2 size, Rgba8 color);
     Image(char const* imageFilePath);
     Image(std::string const& imageFilePath);
+
+    void Clear();
+    bool IsValid() const;
+    bool Initialize(IntVec2 size, Rgba8 color);
+    bool LoadFromFile(std::string const& imageFilePath);
 
     Rgba8 GetColorAt(int x, int y) const;
 

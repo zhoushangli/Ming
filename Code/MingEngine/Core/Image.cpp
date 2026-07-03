@@ -12,27 +12,64 @@ Image::~Image() {}
 
 Image::Image(IntVec2 size, Rgba8 color)
 {
-	GUARANTEE_OR_DIE(size.x > 0 && size.y > 0, "Image: invalid dimensions");
+	GUARANTEE_OR_DIE(Initialize(size, color), "Image: invalid dimensions");
+}
+
+Image::Image(char const* imageFilePath)
+{
+	GUARANTEE_OR_DIE(imageFilePath != nullptr && imageFilePath[0] != '\0', "Image: imageFilePath is null/empty");
+	GUARANTEE_OR_DIE(LoadFromFile(imageFilePath), Stringf("Failed to load image from file: %s", imageFilePath));
+}
+
+Image::Image(std::string const& imageFilePath) : Image(imageFilePath.c_str()) {}
+
+void Image::Clear()
+{
+	m_imageFilePath.clear();
+	m_texelColors.clear();
+	m_dimensions = IntVec2::Zero;
+}
+
+bool Image::IsValid() const { return m_dimensions.x > 0 && m_dimensions.y > 0 && !m_texelColors.empty(); }
+
+bool Image::Initialize(IntVec2 size, Rgba8 color)
+{
+	Clear();
+	if (size.x <= 0 || size.y <= 0)
+	{
+		return false;
+	}
+
 	m_dimensions = size;
 
 	int const totalTexels = m_dimensions.x * m_dimensions.y;
 	m_texelColors.assign(static_cast<size_t>(totalTexels), color);
+	return true;
 }
 
-Image::Image(char const* imageFilePath) : m_imageFilePath(imageFilePath)
+bool Image::LoadFromFile(std::string const& imageFilePath)
 {
-	GUARANTEE_OR_DIE(imageFilePath != nullptr && imageFilePath[0] != '\0', "Image: imageFilePath is null/empty");
+	Clear();
+	if (imageFilePath.empty())
+	{
+		return false;
+	}
 
 	int numComponents = 0;
 
 	stbi_set_flip_vertically_on_load(true);
-	unsigned char* imageData = stbi_load(imageFilePath, &m_dimensions.x, &m_dimensions.y, &numComponents, 4);
+	unsigned char* imageData = stbi_load(imageFilePath.c_str(), &m_dimensions.x, &m_dimensions.y, &numComponents, 4);
 	stbi_set_flip_vertically_on_load(false);
 
-	GUARANTEE_OR_DIE(imageData != nullptr, Stringf("Failed to load image from file: %s", imageFilePath));
+	if (imageData == nullptr)
+	{
+		Clear();
+		return false;
+	}
 
 	int totalTexels = m_dimensions.x * m_dimensions.y;
 	m_texelColors.reserve(totalTexels);
+	m_imageFilePath = imageFilePath;
 
 	for (int texelIndex = 0; texelIndex < totalTexels; ++texelIndex)
 	{
@@ -45,9 +82,8 @@ Image::Image(char const* imageFilePath) : m_imageFilePath(imageFilePath)
 	}
 
 	stbi_image_free(imageData);
+	return true;
 }
-
-Image::Image(std::string const& imageFilePath) : Image(imageFilePath.c_str()) {}
 
 Rgba8 Image::GetColorAt(int x, int y) const
 {

@@ -1,5 +1,6 @@
 #include "MingEngine/Core/Object/ResourceImporter.hpp"
 
+#include "MingEngine/Core/Object/ResourceSaver.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Engine/File/FileSystem.hpp"
 
@@ -63,6 +64,26 @@ std::string GetHashSuffix(std::string const& sourceVirtualPath)
 	return stream.str();
 }
 
+std::string NormalizeExtension(std::string extension)
+{
+	if (extension.empty())
+	{
+		extension = kDefaultImportedExtension;
+	}
+
+	if (!extension.empty() && extension.front() == '.')
+	{
+		extension.erase(extension.begin());
+	}
+
+	if (extension.empty())
+	{
+		extension = kDefaultImportedExtension;
+	}
+
+	return extension;
+}
+
 } // namespace
 
 int ResourceImporter::s_importerCount = 0;
@@ -94,8 +115,14 @@ bool ResourceImporter::Import(std::string const& sourceVirtualPath)
 		return false;
 	}
 
-	std::string const importPath = GetImportOutputPath(sourceVirtualPath);
-	if (!importer->Import(sourceVirtualPath, importPath))
+	Ref<Resource> importedResource = importer->Import(sourceVirtualPath);
+	if (!importedResource.IsValid())
+	{
+		return false;
+	}
+
+	std::string const importPath = GetImportOutputPath(sourceVirtualPath, importer->GetImportedExtension());
+	if (!ResourceSaver::Save(importPath, importedResource))
 	{
 		return false;
 	}
@@ -174,14 +201,16 @@ std::string ResourceImporter::GetImportMetadataPath(std::string const& sourceVir
 	return sourceVirtualPath + kImportMetadataExtension;
 }
 
-std::string ResourceImporter::GetImportOutputPath(std::string const& sourceVirtualPath)
+std::string ResourceImporter::GetImportOutputPath(
+	std::string const& sourceVirtualPath,
+	std::string const& importedExtension)
 {
 	return std::string(kInternalImportDirectory)
 		+ GetImportStem(sourceVirtualPath)
 		+ "_"
 		+ GetHashSuffix(sourceVirtualPath)
 		+ "."
-		+ kDefaultImportedExtension;
+		+ NormalizeExtension(importedExtension);
 }
 
 Ref<ResourceFormatImporter> ResourceImporter::FindImporter(std::string const& sourceVirtualPath)
@@ -224,3 +253,5 @@ bool ResourceFormatImporter::CanImport(std::string const& virtualPath) const
 
 	return false;
 }
+
+std::string ResourceFormatImporter::GetImportedExtension() const { return kDefaultImportedExtension; }

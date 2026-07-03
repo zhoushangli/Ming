@@ -1,6 +1,7 @@
 #pragma once
 
 #include "MingEngine/Core/Object/RefCounted.hpp"
+#include "MingEngine/Core/Object/Resource.hpp"
 
 #include <string>
 #include <vector>
@@ -11,7 +12,8 @@ class ResourceFormatImporter : public RefCounted
 
 public:
 	virtual std::vector<std::string> GetSupportedExtensions() const = 0;
-	virtual bool Import(std::string const& sourceVirtualPath, std::string const& importVirtualPath) = 0;
+	virtual std::string              GetImportedExtension() const;
+	virtual Ref<Resource>            Import(std::string const& sourceVirtualPath) = 0;
 
 	bool CanImport(std::string const& virtualPath) const;
 
@@ -31,7 +33,7 @@ public:
 	static bool TryReadImportFile(std::string const& sourceVirtualPath, std::string& outImportVirtualPath);
 
 	static std::string GetImportMetadataPath(std::string const& sourceVirtualPath);
-	static std::string GetImportOutputPath(std::string const& sourceVirtualPath);
+	static std::string GetImportOutputPath(std::string const& sourceVirtualPath, std::string const& importedExtension);
 
 private:
 	static constexpr int MaxImporters = 64;

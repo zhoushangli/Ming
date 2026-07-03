@@ -101,7 +101,7 @@ EditorSelection const& EditorNode::GetSelection() const { return m_selection; }
 
 void EditorNode::SaveSceneToFile(Node const* sceneRoot, std::string const& virtualPath)
 {
-	Ref<PackedScene> packedScene = Ref<PackedScene>(new PackedScene());
+	Ref<PackedScene> packedScene = CreateRef<PackedScene>();
 
 	if (!packedScene->Pack(sceneRoot))
 	{

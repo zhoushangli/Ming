@@ -405,10 +405,7 @@ float Interpolate(float start, float end, float fraction) { return start * (1.0f
 
 Vec3 Interpolate(Vec3 const& start, Vec3 const& end, float fraction)
 {
-	return Vec3(
-		Interpolate(start.x, end.x, fraction),
-		Interpolate(start.y, end.y, fraction),
-		Interpolate(start.z, end.z, fraction));
+	return Vec3::Interpolate(start, end, fraction);
 }
 
 Rgba8 Interpolate(Rgba8 const& start, Rgba8 const& end, float fraction)
@@ -423,14 +420,7 @@ Rgba8 Interpolate(Rgba8 const& start, Rgba8 const& end, float fraction)
 
 EulerAngles Interpolate(EulerAngles const& start, EulerAngles const& end, float fraction)
 {
-	float yawDisp   = GetShortestAngularDispDegrees(start.m_yawDegrees, end.m_yawDegrees);
-	float pitchDisp = GetShortestAngularDispDegrees(start.m_pitchDegrees, end.m_pitchDegrees);
-	float rollDisp  = GetShortestAngularDispDegrees(start.m_rollDegrees, end.m_rollDegrees);
-
-	return EulerAngles(
-		start.m_yawDegrees + yawDisp * fraction,
-		start.m_pitchDegrees + pitchDisp * fraction,
-		start.m_rollDegrees + rollDisp * fraction);
+	return EulerAngles::Interpolate(start, end, fraction);
 }
 
 float SmoothStart2(float t) { return t * t; }
@@ -655,8 +645,7 @@ float InterpolateClamped(float start, float end, float fraction)
 
 Vec3 InterpolateClamped(Vec3 const& start, Vec3 const& end, float fraction)
 {
-	float f = GetClampedZeroToOne(fraction);
-	return Interpolate(start, end, f);
+	return Vec3::InterpolateClamped(start, end, fraction);
 }
 
 Rgba8 InterpolateClamped(Rgba8 const& start, Rgba8 const& end, float fraction)
@@ -667,8 +656,7 @@ Rgba8 InterpolateClamped(Rgba8 const& start, Rgba8 const& end, float fraction)
 
 EulerAngles InterpolateClamped(EulerAngles const& start, EulerAngles const& end, float fraction)
 {
-	float f = GetClampedZeroToOne(fraction);
-	return Interpolate(start, end, f);
+	return EulerAngles::InterpolateClamped(start, end, fraction);
 }
 
 float GetFractionWithinRange(float value, float start, float end) { return (value - start) / (end - start); }
@@ -791,17 +779,17 @@ float GetTurnedTowardDegrees(float currentDegrees, float goalDegrees, float maxD
 	}
 }
 
-float DotProduct2D(Vec2 const& a, Vec2 const& b) { return a.x * b.x + a.y * b.y; }
+float DotProduct2D(Vec2 const& a, Vec2 const& b) { return Vec2::DotProduct(a, b); }
 
-float DotProduct3D(Vec3 const& a, Vec3 const& b) { return a.x * b.x + a.y * b.y + a.z * b.z; }
+float DotProduct3D(Vec3 const& a, Vec3 const& b) { return Vec3::DotProduct(a, b); }
 
-float DotProduct4D(Vec4 const& a, Vec4 const& b) { return a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w; }
+float DotProduct4D(Vec4 const& a, Vec4 const& b) { return Vec4::DotProduct(a, b); }
 
-float CrossProduct2D(Vec2 const& a, Vec2 const& b) { return a.x * b.y - a.y * b.x; }
+float CrossProduct2D(Vec2 const& a, Vec2 const& b) { return Vec2::CrossProduct(a, b); }
 
 Vec3 CrossProduct3D(Vec3 const& a, Vec3 const& b)
 {
-	return Vec3(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);
+	return Vec3::CrossProduct(a, b);
 }
 
 Matrix4x4 GetBillboardTransform(
@@ -1105,31 +1093,22 @@ bool PushDiscOutOfFixedOBB2D(Disc2& discToPush, OBB2 const& box)
 
 float GetProjectedLength2D(Vec2 const& vector, Vec2 const& basis)
 {
-	Vec2 n = basis.GetNormalized();
-	return DotProduct2D(vector, n);
+	return Vec2::GetProjectedLength(vector, basis);
 }
 
 Vec2 GetProjectedVector2D(Vec2 const& vector, Vec2 const& basis)
 {
-	Vec2 n = basis.GetNormalized();
-	return n * DotProduct2D(vector, n);
+	return Vec2::GetProjectedVector(vector, basis);
 }
 
 Vec3 GetProjectedVector3D(Vec3 const& vector, Vec3 const& basis)
 {
-	Vec3 n = basis.GetNormalized();
-	return n * DotProduct3D(vector, n);
+	return Vec3::GetProjectedVector(vector, basis);
 }
 
 float GetAngleDegreesBetweenVectors2D(Vec2 const& a, Vec2 const& b)
 {
-	float aLen = a.GetLength();
-	float bLen = b.GetLength();
-	if (aLen == 0.f || bLen == 0.f)
-		return 0.f;
-	float dot = DotProduct2D(a, b) / (aLen * bLen);
-	dot       = GetClamped(dot, -1.f, 1.f);
-	return ConvertRadiansToDegrees(acosf(dot));
+	return Vec2::GetAngleDegreesBetween(a, b);
 }
 
 int GetTaxicabDistance2D(IntVec2 const& a, IntVec2 const& b) { return abs(a.x - b.x) + abs(a.y - b.y); }

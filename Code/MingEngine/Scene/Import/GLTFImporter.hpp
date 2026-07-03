@@ -8,7 +8,8 @@ class GLTFImporter : public ResourceFormatImporter
 
 public:
 	std::vector<std::string> GetSupportedExtensions() const override;
-	bool Import(std::string const& sourceVirtualPath, std::string const& importVirtualPath) override;
+	std::string              GetImportedExtension() const override;
+	Ref<Resource>            Import(std::string const& sourceVirtualPath) override;
 
 protected:
 	static void BindMethods() {};
