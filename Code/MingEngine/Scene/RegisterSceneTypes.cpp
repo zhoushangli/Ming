@@ -17,7 +17,8 @@
 #include "MingEngine/Scene/3D/Node3D.hpp"
 #include "MingEngine/Scene/Core/Node.hpp"
 #include "MingEngine/Scene/Core/PackedScene.hpp"
-#include "MingEngine/Scene/Core/PackedSceneLoader.hpp"
+#include "MingEngine/Scene/Core/PackedSceneFormat.hpp"
+#include "MingEngine/Scene/Import/OBJImporter.hpp"
 #include "MingEngine/Scene/Physics/AABBCollider3D.hpp"
 #include "MingEngine/Scene/Physics/CapsuleCollider3D.hpp"
 #include "MingEngine/Scene/Physics/CylinderZCollider3D.hpp"
@@ -26,11 +27,12 @@
 
 namespace
 {
-ScriptLoader*        scriptLoader        = new ScriptLoader();
-PackedSceneLoader*   packedSceneLoader   = new PackedSceneLoader();
-PackedSceneSaver*    packedSceneSaver    = new PackedSceneSaver();
-MeshResourceLoader*  meshResourceLoader  = new MeshResourceLoader();
-MeshResourceSaver*   meshResourceSaver   = new MeshResourceSaver();
+ScriptLoader*       scriptLoader       = new ScriptLoader();
+PackedSceneLoader*  packedSceneLoader  = new PackedSceneLoader();
+PackedSceneSaver*   packedSceneSaver   = new PackedSceneSaver();
+MeshResourceLoader* meshResourceLoader = new MeshResourceLoader();
+MeshResourceSaver*  meshResourceSaver  = new MeshResourceSaver();
+OBJImporter*        objImporter        = new OBJImporter();
 } // namespace
 
 void RegisterBaseTypes()
@@ -52,6 +54,7 @@ void RegisterBaseTypes()
 	ClassDatabase::RegisterClass<ResourceFormatSaver>(false);
 
 	ClassDatabase::RegisterClass<ScriptLoader>();
+
 	ResourceLoader::AddLoader(Ref<ScriptLoader>(scriptLoader));
 }
 
@@ -65,9 +68,12 @@ void RegisterSceneResourceFormats()
 	ClassDatabase::RegisterClass<MeshResourceSaver>();
 
 	ResourceLoader::AddLoader(Ref<PackedSceneLoader>(packedSceneLoader));
-	ResourceSaver::AddSaver(Ref<PackedSceneSaver>(packedSceneSaver));
 	ResourceLoader::AddLoader(Ref<MeshResourceLoader>(meshResourceLoader));
+
+	ResourceSaver::AddSaver(Ref<PackedSceneSaver>(packedSceneSaver));
 	ResourceSaver::AddSaver(Ref<MeshResourceSaver>(meshResourceSaver));
+
+	ResourceImporter::AddImporter(Ref<OBJImporter>(objImporter));
 }
 } // namespace
 

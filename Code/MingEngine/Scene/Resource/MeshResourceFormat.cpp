@@ -9,22 +9,16 @@
 #include <cstdint>
 #include <cstring>
 #include <exception>
+#include <sstream>
 
 namespace
 {
 using Json = nlohmann::ordered_json;
 
-constexpr char     kMeshMagic[4]     = { 'M', 'M', 'S', 'H' };
-constexpr uint32_t kMeshFileVersion  = 1;
+constexpr char const* kMeshMagic     = "MESH";
+constexpr uint32_t    kMeshFileVersion  = 1;
+constexpr size_t      kMinHeaderSize = 4096;
 constexpr char const* kMeshExtension = ".mesh";
-
-struct MeshFileHeader
-{
-	char     m_magic[4]  = { 'M', 'M', 'S', 'H' };
-	uint32_t m_version   = kMeshFileVersion;
-	uint32_t m_jsonSize  = 0;
-	uint32_t m_reserved  = 0;
-};
 
 struct BinaryBlock
 {
@@ -36,6 +30,47 @@ bool HasExtension(std::string const& virtualPath, std::string const& extension)
 {
 	return virtualPath.size() >= extension.size()
 		&& virtualPath.compare(virtualPath.size() - extension.size(), extension.size(), extension) == 0;
+}
+
+std::string MakePrelude(size_t headerSize)
+{
+	std::ostringstream stream;
+	stream << kMeshMagic << " version=" << kMeshFileVersion << " header_size=" << headerSize << "\n";
+	return stream.str();
+}
+
+bool TryParsePrelude(std::string const& prelude, uint32_t& outVersion, size_t& outHeaderSize)
+{
+	outVersion    = 0;
+	outHeaderSize = 0;
+
+	std::istringstream stream(prelude);
+	std::string        magic;
+	std::string        versionToken;
+	std::string        headerSizeToken;
+	if (!(stream >> magic >> versionToken >> headerSizeToken) || magic != kMeshMagic)
+	{
+		return false;
+	}
+
+	constexpr char const* versionPrefix    = "version=";
+	constexpr char const* headerSizePrefix = "header_size=";
+	if (versionToken.compare(0, std::strlen(versionPrefix), versionPrefix) != 0
+		|| headerSizeToken.compare(0, std::strlen(headerSizePrefix), headerSizePrefix) != 0)
+	{
+		return false;
+	}
+
+	try
+	{
+		outVersion    = static_cast<uint32_t>(std::stoul(versionToken.substr(std::strlen(versionPrefix))));
+		outHeaderSize = static_cast<size_t>(std::stoull(headerSizeToken.substr(std::strlen(headerSizePrefix))));
+		return true;
+	}
+	catch (std::exception const&)
+	{
+		return false;
+	}
 }
 
 bool IsValidMeshData(ImportMeshData const& meshData)
@@ -133,27 +168,30 @@ Ref<Resource> MeshResourceLoader::Load(std::string const& virtualPath)
 	}
 
 	std::vector<uint8_t> fileData;
-	if (!g_engine->m_fileSystem->ReadBinary(virtualPath, fileData) || fileData.size() < sizeof(MeshFileHeader))
+	if (!g_engine->m_fileSystem->ReadBinary(virtualPath, fileData))
 	{
 		return Ref<Resource>();
 	}
 
-	MeshFileHeader header;
-	memcpy(&header, fileData.data(), sizeof(header));
-	if (memcmp(header.m_magic, kMeshMagic, sizeof(kMeshMagic)) != 0 || header.m_version != kMeshFileVersion)
+	auto const newlineIt = std::find(fileData.begin(), fileData.end(), static_cast<uint8_t>('\n'));
+	if (newlineIt == fileData.end())
 	{
 		return Ref<Resource>();
 	}
 
-	size_t const jsonOffset = sizeof(MeshFileHeader);
-	size_t const jsonSize   = header.m_jsonSize;
-	if (jsonSize == 0 || jsonOffset > fileData.size() || jsonSize > fileData.size() - jsonOffset)
+	size_t const      preludeSize = static_cast<size_t>(newlineIt - fileData.begin()) + 1;
+	std::string const prelude(reinterpret_cast<char const*>(fileData.data()), preludeSize);
+
+	uint32_t version    = 0;
+	size_t   headerSize = 0;
+	if (!TryParsePrelude(prelude, version, headerSize) || version != kMeshFileVersion
+		|| headerSize <= preludeSize || headerSize > fileData.size())
 	{
 		return Ref<Resource>();
 	}
 
-	size_t const           payloadOffset = jsonOffset + jsonSize;
-	std::string const      jsonText(reinterpret_cast<char const*>(fileData.data() + jsonOffset), jsonSize);
+	size_t const           payloadOffset = headerSize;
+	std::string const      jsonText(reinterpret_cast<char const*>(fileData.data() + preludeSize), headerSize - preludeSize);
 	std::vector<uint8_t>   payload(fileData.begin() + payloadOffset, fileData.end());
 	size_t const           payloadSize = payload.size();
 
@@ -291,21 +329,21 @@ bool MeshResourceSaver::Save(std::string const& virtualPath, Variant const& valu
 	}
 
 	std::string const jsonText = root.dump(1, '\t');
-	if (jsonText.size() > UINT32_MAX)
+	size_t headerSize = kMinHeaderSize;
+	while (MakePrelude(headerSize).size() + jsonText.size() > headerSize)
 	{
-		return false;
+		headerSize *= 2;
 	}
 
-	MeshFileHeader header;
-	header.m_jsonSize = static_cast<uint32_t>(jsonText.size());
+	std::string const prelude = MakePrelude(headerSize);
 
 	std::vector<uint8_t> fileData;
-	fileData.resize(sizeof(header) + jsonText.size() + payload.size());
-	memcpy(fileData.data(), &header, sizeof(header));
-	memcpy(fileData.data() + sizeof(header), jsonText.data(), jsonText.size());
+	fileData.resize(headerSize + payload.size(), static_cast<uint8_t>(' '));
+	memcpy(fileData.data(), prelude.data(), prelude.size());
+	memcpy(fileData.data() + prelude.size(), jsonText.data(), jsonText.size());
 	if (!payload.empty())
 	{
-		memcpy(fileData.data() + sizeof(header) + jsonText.size(), payload.data(), payload.size());
+		memcpy(fileData.data() + headerSize, payload.data(), payload.size());
 	}
 
 	if (!g_engine->m_fileSystem->WriteBinary(virtualPath, fileData))

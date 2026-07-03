@@ -1,4 +1,4 @@
-#include "MingEngine/Scene/Core/PackedSceneLoader.hpp"
+#include "MingEngine/Scene/Core/PackedSceneFormat.hpp"
 
 #include "MingEngine/Core/ErrorWarningAssert.hpp"
 #include "MingEngine/Core/Object/ClassDatabase.hpp"
@@ -19,7 +19,7 @@ using Json = nlohmann::ordered_json;
 bool HasExtension(std::string const& virtualPath, std::string const& extension)
 {
 	return virtualPath.size() >= extension.size()
-		&& virtualPath.compare(virtualPath.size() - extension.size(), extension.size(), extension) == 0;
+		   && virtualPath.compare(virtualPath.size() - extension.size(), extension.size(), extension) == 0;
 }
 
 bool TrySerializeVariant(Variant const& value, Json& outJson)
@@ -41,13 +41,13 @@ bool TrySerializeVariant(Variant const& value, Json& outJson)
 	case Variant::Type::Vec3:
 	{
 		Vec3 const& vector = value.As<Vec3>();
-		outJson           = Json::array({ vector.x, vector.y, vector.z });
+		outJson            = Json::array({ vector.x, vector.y, vector.z });
 		return true;
 	}
 	case Variant::Type::EulerAngles:
 	{
 		EulerAngles const& angles = value.As<EulerAngles>();
-		outJson                  = Json::array({ angles.m_yawDegrees, angles.m_pitchDegrees, angles.m_rollDegrees });
+		outJson                   = Json::array({ angles.m_yawDegrees, angles.m_pitchDegrees, angles.m_rollDegrees });
 		return true;
 	}
 	case Variant::Type::Matrix4x4:
@@ -166,7 +166,7 @@ bool TryDeserializeVariant(Json const& json, Variant::Type expectedType, Variant
 			if (json.is_null())
 			{
 				Object* object = nullptr;
-				outValue      = Variant(object);
+				outValue       = Variant(object);
 				return true;
 			}
 			if (json.is_string())
@@ -305,7 +305,8 @@ std::vector<std::string> PackedSceneLoader::GetSupportedExtensions() const
 Ref<Resource> PackedSceneLoader::Load(const std::string& virtualPath)
 {
 	std::string relativePath;
-	if (!FileSystem::TryGetRelativePath(virtualPath, relativePath) || g_engine == nullptr || g_engine->m_fileSystem == nullptr)
+	if (!FileSystem::TryGetRelativePath(virtualPath, relativePath) || g_engine == nullptr
+		|| g_engine->m_fileSystem == nullptr)
 	{
 		return Ref<Resource>();
 	}
@@ -351,7 +352,8 @@ bool PackedSceneSaver::CanSave(std::string const& virtualPath, Variant const& va
 bool PackedSceneSaver::Save(std::string const& virtualPath, Variant const& value)
 {
 	Ref<PackedScene> packedScene(value);
-	if (!packedScene.IsValid() || !FileSystem::IsVirtualPath(virtualPath) || g_engine == nullptr || g_engine->m_fileSystem == nullptr)
+	if (!packedScene.IsValid() || !FileSystem::IsVirtualPath(virtualPath) || g_engine == nullptr
+		|| g_engine->m_fileSystem == nullptr)
 	{
 		return false;
 	}
