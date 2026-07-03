@@ -236,9 +236,11 @@ public:
 
 	VertexBuffer*   CreateVertexBuffer(const unsigned int size, unsigned int stride);
 	VertexBuffer*   CreateVertexBuffer(std::vector<Vertex> const& verts);
+	VertexBuffer*   CreateVertexBuffer(void const* data, const unsigned int size, unsigned int stride);
 	ConstantBuffer* CreateConstantBuffer(const unsigned int size);
 	IndexBuffer*    CreateIndexBuffer(const unsigned int size);
 	IndexBuffer*    CreateIndexBuffer(std::vector<unsigned int> const& indexes);
+	IndexBuffer*    CreateIndexBuffer(void const* data, const unsigned int size, unsigned int stride);
 
 	// CPU -> GPU uploads
 	void CopyCPUToGPU(const void* data, unsigned int size, VertexBuffer* vertexBuffer);

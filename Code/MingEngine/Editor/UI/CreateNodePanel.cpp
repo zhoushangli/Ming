@@ -3,6 +3,8 @@
 #include "MingEngine/Editor/EditorNode.hpp"
 #include "MingEngine/Editor/UI/EditorUI.hpp"
 #include "MingEngine/Editor/UI/EditorUIContext.hpp"
+#include "MingEngine/Editor/UI/EditorUIStyle.hpp"
+#include "MingEngine/Editor/UI/EditorUIWidgets.hpp"
 #include "MingEngine/Scene/Core/Node.hpp"
 #include "MingEngine/Scene/Core/SceneTree.hpp"
 
@@ -29,6 +31,11 @@ std::string ToLower(std::string const& text)
 bool ContainsCaseInsensitive(std::string const& text, std::string const& filterText)
 {
 	return filterText.empty() || ToLower(text).find(ToLower(filterText)) != std::string::npos;
+}
+
+bool CanCreateClassInPanel(ClassInfo const* classInfo)
+{
+	return classInfo != nullptr && classInfo->m_canCreateInEditor && classInfo->m_creator;
 }
 } // namespace
 
@@ -71,12 +78,7 @@ void CreateNodePanel::OnRender(EditorUIContext& context)
 	ImGui::InputTextWithHint("##CreateNodeSearch", "Search node types", m_filter, sizeof(m_filter));
 	ImGui::Separator();
 
-	std::vector<ClassInfo const*> classes = ClassDatabase::GetRegisteredClasses();
-	std::sort(
-		classes.begin(),
-		classes.end(),
-		[](ClassInfo const* a, ClassInfo const* b)
-		{ return a != nullptr && b != nullptr && a->m_className < b->m_className; });
+	std::vector<ClassInfo const*> classes = ClassDatabase::GetRegisteredClasses(true);
 
 	std::map<std::string, std::vector<ClassInfo const*>> childrenByClass;
 	ClassInfo const*                                     nodeClass = nullptr;
@@ -91,41 +93,26 @@ void CreateNodePanel::OnRender(EditorUIContext& context)
 			nodeClass = classInfo;
 			continue;
 		}
-		if (!classInfo->m_canCreateInEditor || !classInfo->m_creator
-			|| !ClassDatabase::IsSubclassOf(classInfo->m_className, Node::GetStaticClassName()))
+		if (!ClassDatabase::IsSubclassOf(classInfo->m_className, Node::GetStaticClassName()))
 		{
 			continue;
 		}
 
-		std::string parentClassName = classInfo->m_parentClassName;
-		while (parentClassName != Node::GetStaticClassName())
-		{
-			ClassInfo const* parentInfo = ClassDatabase::GetClassInfo(parentClassName);
-			if (parentInfo == nullptr)
-			{
-				parentClassName = Node::GetStaticClassName();
-				break;
-			}
-			if (parentInfo->m_canCreateInEditor && parentInfo->m_creator)
-			{
-				break;
-			}
-			parentClassName = parentInfo->m_parentClassName;
-		}
-		childrenByClass[parentClassName].push_back(classInfo);
+		childrenByClass[classInfo->m_parentClassName].push_back(classInfo);
 	}
 
 	ImVec2 const footerSize(0.f, ImGui::GetFrameHeightWithSpacing() + ImGui::GetStyle().ItemSpacing.y);
 	if (ImGui::BeginChild("CreateNodeTypeTree", ImVec2(0.f, -footerSize.y), true))
 	{
-		if (nodeClass != nullptr && nodeClass->m_canCreateInEditor)
+		if (nodeClass != nullptr)
 		{
 			RenderClassNode(nodeClass, childrenByClass, m_filter, context);
 		}
 	}
 	ImGui::EndChild();
 
-	bool const canCreate = !m_selectedClass.empty();
+	ClassInfo const* selectedInfo = ClassDatabase::GetClassInfo(m_selectedClass);
+	bool const       canCreate    = CanCreateClassInPanel(selectedInfo);
 	ImGui::BeginDisabled(!canCreate);
 	bool const createPressed = ImGui::Button("Create", ImVec2(120.f, 0.f));
 	ImGui::EndDisabled();
@@ -177,21 +164,51 @@ bool CreateNodePanel::RenderClassNode(
 		flags |= ImGuiTreeNodeFlags_Selected;
 	}
 
+	bool const canCreate = CanCreateClassInPanel(classInfo);
 	ImGui::PushID(classInfo->m_className.c_str());
-	bool const isOpen = ImGui::TreeNodeEx(classInfo->m_className.c_str(), flags);
-	if (ImGui::IsItemClicked(ImGuiMouseButton_Left))
+	bool const   isOpen = ImGui::TreeNodeEx("##CreateNodeClass", flags);
+	ImVec2 const rowMin = ImGui::GetItemRectMin();
+	ImVec2 const rowMax = ImGui::GetItemRectMax();
+	bool const   rowHovered = ImGui::IsMouseHoveringRect(rowMin, rowMax);
+	bool const   classClicked = rowHovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left);
+	bool const   classDoubleClicked = rowHovered && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left);
+
+	if (!canCreate)
 	{
-		m_selectedClass = classInfo->m_className;
-		if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left) && CreateSelectedNode(context))
+		ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled));
+	}
+	EditorUIWidgets::RenderTreeRowContent(
+		classInfo->m_className,
+		Node::GetStaticClassName(),
+		classInfo->m_className,
+		rowMin,
+		rowMax,
+		EditorUIStyle::SceneTreeIconSize());
+	if (!canCreate)
+	{
+		ImGui::PopStyleColor();
+	}
+
+	if (classClicked)
+	{
+		if (canCreate)
 		{
-			ImGui::CloseCurrentPopup();
-			Close();
-			if (isOpen && hasVisibleChildren)
+			m_selectedClass = classInfo->m_className;
+			if (classDoubleClicked && CreateSelectedNode(context))
 			{
-				ImGui::TreePop();
+				ImGui::CloseCurrentPopup();
+				Close();
+				if (isOpen && hasVisibleChildren)
+				{
+					ImGui::TreePop();
+				}
+				ImGui::PopID();
+				return true;
 			}
-			ImGui::PopID();
-			return true;
+		}
+		else
+		{
+			m_selectedClass.clear();
 		}
 	}
 
@@ -245,6 +262,12 @@ bool CreateNodePanel::DoesClassBranchMatch(
 bool CreateNodePanel::CreateSelectedNode(EditorUIContext& context)
 {
 	if (m_selectedClass.empty())
+	{
+		return false;
+	}
+
+	ClassInfo const* selectedInfo = ClassDatabase::GetClassInfo(m_selectedClass);
+	if (!CanCreateClassInPanel(selectedInfo))
 	{
 		return false;
 	}
@@ -317,4 +340,3 @@ void CreateNodePanel::Reset()
 	m_parentHandle = NodeHandle::Invalid;
 	m_openPopup    = false;
 }
-

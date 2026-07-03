@@ -417,15 +417,6 @@
     <ClCompile Include="EngineService\EngineService.cpp">
       <Filter>EngineService</Filter>
     </ClCompile>
-    <ClCompile Include="Scene\Import\GLBLoader.cpp">
-      <Filter>Scene\Import</Filter>
-    </ClCompile>
-    <ClCompile Include="Scene\Import\JsonLoader.cpp">
-      <Filter>Scene\Import</Filter>
-    </ClCompile>
-    <ClCompile Include="Scene\Import\OBJLoader.cpp">
-      <Filter>Scene\Import</Filter>
-    </ClCompile>
     <ClCompile Include="Core\Object\ClassDatabase.cpp">
       <Filter>Core\Object</Filter>
     </ClCompile>
@@ -874,15 +865,6 @@
     </ClInclude>
     <ClInclude Include="EngineService\EngineService.hpp">
       <Filter>EngineService</Filter>
-    </ClInclude>
-    <ClInclude Include="Scene\Import\GLBLoader.hpp">
-      <Filter>Scene\Import</Filter>
-    </ClInclude>
-    <ClInclude Include="Scene\Import\JsonLoader.hpp">
-      <Filter>Scene\Import</Filter>
-    </ClInclude>
-    <ClInclude Include="Scene\Import\OBJLoader.hpp">
-      <Filter>Scene\Import</Filter>
     </ClInclude>
     <ClInclude Include="Core\Object\ClassDatabase.hpp">
       <Filter>Core\Object</Filter>

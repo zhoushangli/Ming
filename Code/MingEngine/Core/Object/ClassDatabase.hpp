@@ -5,6 +5,7 @@
 #include "MingEngine/Core/Math/Vec3.hpp"
 #include "MingEngine/Core/Object/MethodBind.hpp"
 #include "MingEngine/Core/Object/Object.hpp"
+#include "MingEngine/Engine/Application/SystemBase.hpp"
 
 #include <functional>
 #include <memory>
@@ -132,7 +133,7 @@ public:
 
 	static Object*                       CreateInstance(std::string const& className);
 	static ClassInfo const*              GetClassInfo(std::string const& className);
-	static std::vector<ClassInfo const*> GetRegisteredClasses();
+	static std::vector<ClassInfo const*> GetRegisteredClasses(bool sortByInheritanceDepth = false);
 	static bool                          IsSubclassOf(std::string const& className, std::string const& baseClassName);
 
 	static std::vector<PropertyInfo>        GetProperties(std::string const& className);
@@ -170,17 +171,25 @@ public:
 	{
 		std::string className = T::GetStaticClassName();
 		ClassInfo   classInfo;
-		classInfo.m_className       = className;
-		classInfo.m_parentClassName = T::Super::GetStaticClassName();
-		if constexpr (!std::is_abstract_v<T> && std::is_default_constructible_v<T>)
+		classInfo.m_className         = className;
+		classInfo.m_parentClassName   = T::Super::GetStaticClassName();
+		classInfo.m_canCreateInEditor = canCreateInEditor;
+		
+		// TODO: We shouldn't include SystemBase here
+		// Should have a better way to handle this (Like have other register function)
+		if constexpr (std::is_base_of_v<SystemBase, T>)
+		{
+			classInfo.m_canCreateInEditor = false;
+		}
+		else if constexpr (!std::is_abstract_v<T>)
 		{
 			if (canCreateInstance)
 			{
 				classInfo.m_creator = &Creator<T>;
 			}
 		}
-		classInfo.m_canCreateInEditor = canCreateInEditor;
-		m_classInfoMap[className]     = std::move(classInfo);
+
+		m_classInfoMap[className] = std::move(classInfo);
 		T::InitializeClass();
 	}
 

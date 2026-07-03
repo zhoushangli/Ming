@@ -729,7 +729,7 @@ std::string OBJImporter::GetImportedExtension() const { return "mesh"; }
 
 Ref<Resource> OBJImporter::Import(std::string const& sourceVirtualPath)
 {
-	Ref<ImportMeshData> meshData = CreateRef<ImportMeshData>();
+	Ref<MeshResource> meshData = CreateRef<MeshResource>();
 
 	OBJData objData;
 	if (!ParseOBJFile(sourceVirtualPath, objData))
@@ -737,8 +737,8 @@ Ref<Resource> OBJImporter::Import(std::string const& sourceVirtualPath)
 		return Ref<Resource>();
 	}
 
-	// 1) Copy OBJData into ImportMeshData
-	meshData->m_name         = objData.m_name;
+	// 1) Copy OBJData into MeshResource
+	meshData->SetName(objData.m_name);
 	meshData->m_vertexFormat = "PCUTBN";
 	meshData->m_vertexStride = sizeof(Vertex);
 	meshData->m_vertexCount  = static_cast<uint32_t>(objData.m_vertices.size());
@@ -751,7 +751,7 @@ Ref<Resource> OBJImporter::Import(std::string const& sourceVirtualPath)
 	meshData->m_indices.resize(meshData->m_indexCount * sizeof(uint32_t));
 	memcpy(meshData->m_indices.data(), objData.m_indices.data(), meshData->m_indices.size());
 
-	// 2) Copy MTLData into ImportMeshData
+	// 2) Copy MTLData into MeshResource
 	MTLData mtlData;
 	// If you have a .mtl file, parse it
 	// If you don't have one, that's fine, just continue.
@@ -760,9 +760,9 @@ Ref<Resource> OBJImporter::Import(std::string const& sourceVirtualPath)
 		if (ParseMTLFile(objData.m_mtlVirtualPath, mtlData))
 		{
 			auto CreateTextureDataFromImage = [](std::unique_ptr<Image>& image,
-												 std::string const&      name) -> ImportTextureData
+												 std::string const&      name) -> MeshTextureData
 			{
-				ImportTextureData textureData;
+				MeshTextureData textureData;
 				textureData.m_name     = name;
 				textureData.m_format   = "RGBA8";
 				textureData.m_width    = image->GetDimensions().x;

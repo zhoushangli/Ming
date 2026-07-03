@@ -14,7 +14,9 @@
 
 #include "MingEngine/Scene/3D/Camera3D.hpp"
 #include "MingEngine/Scene/3D/Light3D.hpp"
+#include "MingEngine/Scene/3D/Mesh3D.hpp"
 #include "MingEngine/Scene/3D/Node3D.hpp"
+#include "MingEngine/Scene/3D/VisualizeInstance3D.hpp"
 #include "MingEngine/Scene/Core/Node.hpp"
 #include "MingEngine/Scene/Core/PackedScene.hpp"
 #include "MingEngine/Scene/Core/PackedSceneFormat.hpp"
@@ -95,4 +97,7 @@ void RegisterSceneTypes()
 	ClassDatabase::RegisterClass<CylinderZCollider3D>();
 	ClassDatabase::RegisterClass<TriangleMeshCollider3D>();
 	ClassDatabase::RegisterClass<PackedScene>();
+	ClassDatabase::RegisterClass<MeshResource>();
+	ClassDatabase::RegisterClass<VisualizeInstance3D>(false);
+	ClassDatabase::RegisterClass<Mesh3D>();
 }

@@ -2,10 +2,10 @@
 
 #include "MingEngine/Editor/EditorNode.hpp"
 #include "MingEngine/Editor/UI/CreateNodePanel.hpp"
-#include "MingEngine/Editor/UI/EditorIcons.hpp"
 #include "MingEngine/Editor/UI/EditorUI.hpp"
 #include "MingEngine/Editor/UI/EditorUIContext.hpp"
 #include "MingEngine/Editor/UI/EditorUIStyle.hpp"
+#include "MingEngine/Editor/UI/EditorUIWidgets.hpp"
 #include "MingEngine/Scene/Core/Node.hpp"
 #include "MingEngine/Scene/Core/SceneTree.hpp"
 
@@ -149,9 +149,24 @@ void ScenePanel::RenderNode(Node* node, std::string const& filterText, EditorUIC
 	bool const        isOpen      = ImGui::TreeNodeEx("##SceneNodeTree", flags);
 	ImVec2 const      treeItemMin = ImGui::GetItemRectMin();
 	ImVec2 const      treeItemMax = ImGui::GetItemRectMax();
-	bool              treeClicked = ImGui::IsItemClicked(ImGuiMouseButton_Left);
-	bool              treeDoubleClicked =
-		ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left);
+	bool const        rowHovered  = ImGui::IsMouseHoveringRect(treeItemMin, treeItemMax);
+	bool              treeClicked = rowHovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left);
+	bool              treeDoubleClicked = rowHovered && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left);
+
+	if (ImGui::BeginPopupContextItem("SceneNodeContext"))
+	{
+		if (context.m_selection != nullptr)
+		{
+			context.m_selection->SetSelected(handle);
+		}
+		if (ImGui::MenuItem("Add Child Node..."))
+		{
+			CreateNodePanelData data;
+			data.m_parentHandle = handle;
+			context.m_editorUI->OpenPanel<CreateNodePanel>(data);
+		}
+		ImGui::EndPopup();
+	}
 
 	// Drag/drop must stay attached to the tree item, which has a stable ImGui ID.
 	if (!isRenaming && ImGui::BeginDragDropSource())
@@ -175,17 +190,16 @@ void ScenePanel::RenderNode(Node* node, std::string const& filterText, EditorUIC
 		ImGui::EndDragDropTarget();
 	}
 
-	ImGui::SameLine();
 	ImVec2 const iconSize = EditorUIStyle::SceneTreeIconSize();
-	float const iconY = treeItemMin.y + (treeItemMax.y - treeItemMin.y - iconSize.y) * 0.5f;
-	ImGui::SetCursorScreenPos(ImVec2(ImGui::GetCursorScreenPos().x, iconY));
-	EditorIcons::RenderClassIcon(node->GetClassName(), iconSize);
-	treeClicked |= ImGui::IsItemClicked(ImGuiMouseButton_Left);
-	treeDoubleClicked |= ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left);
 
 	// If the item is clicked, select the node
 	if (isRenaming)
 	{
+		ImGui::SameLine();
+		float const iconY = treeItemMin.y + (treeItemMax.y - treeItemMin.y - iconSize.y) * 0.5f;
+		ImGui::SetCursorScreenPos(ImVec2(ImGui::GetCursorScreenPos().x, iconY));
+		EditorUIWidgets::RenderIcon(node->GetClassName(), Node::GetStaticClassName(), iconSize);
+
 		ImGui::SameLine();
 		ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
 		if (m_focusRenameInput)
@@ -212,12 +226,13 @@ void ScenePanel::RenderNode(Node* node, std::string const& filterText, EditorUIC
 	}
 	else
 	{
-		ImGui::SameLine();
-		float const textY = treeItemMin.y + (treeItemMax.y - treeItemMin.y - ImGui::GetTextLineHeight()) * 0.5f;
-		ImGui::SetCursorScreenPos(ImVec2(ImGui::GetCursorScreenPos().x, textY));
-		ImGui::TextUnformatted(displayName.c_str());
-		treeClicked |= ImGui::IsItemClicked(ImGuiMouseButton_Left);
-		treeDoubleClicked |= ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left);
+		EditorUIWidgets::RenderTreeRowContent(
+			node->GetClassName(),
+			Node::GetStaticClassName(),
+			displayName,
+			treeItemMin,
+			treeItemMax,
+			iconSize);
 	}
 
 	if (treeClicked && context.m_selection != nullptr)
@@ -232,21 +247,6 @@ void ScenePanel::RenderNode(Node* node, std::string const& filterText, EditorUIC
 		{
 			context.m_selection->SetSelected(handle);
 		}
-	}
-
-	if (ImGui::BeginPopupContextItem("SceneNodeContext"))
-	{
-		if (context.m_selection != nullptr)
-		{
-			context.m_selection->SetSelected(handle);
-		}
-		if (ImGui::MenuItem("Add Child Node..."))
-		{
-			CreateNodePanelData data;
-			data.m_parentHandle = handle;
-			context.m_editorUI->OpenPanel<CreateNodePanel>(data);
-		}
-		ImGui::EndPopup();
 	}
 
 	if (isOpen && hasVisibleChildren)

@@ -203,14 +203,25 @@ void InspectorPanel::OnRender(EditorUIContext& context)
 	}
 	else
 	{
+		bool isFirstGroup = true;
 		for (PropertyGroup& group : m_propertyGroups)
 		{
+			if (!isFirstGroup)
+			{
+				ImGui::Dummy(ImVec2(0.f, 8.f));
+				ImGui::Separator();
+				ImGui::Dummy(ImVec2(0.f, 8.f));
+			}
+
 			DrawInspectorClassHeader(group.m_className);
+			ImGui::Dummy(ImVec2(0.f, 4.f));
 
 			for (InspectorProperty* prop : group.m_properties)
 			{
 				prop->Render();
 			}
+
+			isFirstGroup = false;
 		}
 	}
 

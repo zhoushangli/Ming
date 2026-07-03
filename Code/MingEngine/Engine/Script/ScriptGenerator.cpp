@@ -733,26 +733,6 @@ void GeneratePredefinedBuiltinTypes(asIScriptEngine* engine, std::string& outScr
 	}
 }
 
-int GetClassDepth(ClassInfo const& classInfo)
-{
-	int         depth           = 0;
-	std::string parentClassName = classInfo.m_parentClassName;
-
-	while (!parentClassName.empty())
-	{
-		ClassInfo const* parentClassInfo = ClassDatabase::GetClassInfo(parentClassName);
-		if (parentClassInfo == nullptr)
-		{
-			break;
-		}
-
-		++depth;
-		parentClassName = parentClassInfo->m_parentClassName;
-	}
-
-	return depth;
-}
-
 } // namespace
 
 void GenerateBuiltinScript(asIScriptEngine* engine)
@@ -764,8 +744,8 @@ void GenerateBuiltinScript(asIScriptEngine* engine)
 	GeneratePredefinedBuiltinTypes(engine, predefinedText);
 
 	std::vector<GlobalNamespaceInfo const*> globalNamespaces = ClassDatabase::GetRegisteredGlobalNamespaces();
-	std::vector<ClassInfo const*>           classes          = ClassDatabase::GetRegisteredClasses();
-	std::sort(
+	std::vector<ClassInfo const*>           classes          = ClassDatabase::GetRegisteredClasses(true);
+	std::stable_sort(
 		classes.begin(),
 		classes.end(),
 		[](ClassInfo const* left, ClassInfo const* right)
@@ -780,27 +760,9 @@ void GenerateBuiltinScript(asIScriptEngine* engine)
 				return true;
 			}
 
-			// Sort SystemBase-derived classes first, then by class depth, then by class name.
-			if (left->m_parentClassName == SystemBase::GetStaticClassName()
-				&& right->m_parentClassName != SystemBase::GetStaticClassName())
-			{
-				return true;
-			}
-			else if (
-				left->m_parentClassName != SystemBase::GetStaticClassName()
-				&& right->m_parentClassName == SystemBase::GetStaticClassName())
-			{
-				return false;
-			}
-
-			int leftDepth  = GetClassDepth(*left);
-			int rightDepth = GetClassDepth(*right);
-			if (leftDepth != rightDepth)
-			{
-				return leftDepth < rightDepth;
-			}
-
-			return left->m_className < right->m_className;
+			bool const leftIsGlobalObject  = left->m_parentClassName == SystemBase::GetStaticClassName();
+			bool const rightIsGlobalObject = right->m_parentClassName == SystemBase::GetStaticClassName();
+			return leftIsGlobalObject && !rightIsGlobalObject;
 		});
 
 	for (GlobalNamespaceInfo const* globalNamespace : globalNamespaces)

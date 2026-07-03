@@ -6,6 +6,8 @@
 
 class VisualizeInstance3D : public Node3D
 {
+	MCLASS(VisualizeInstance3D, Node3D);
+
 public:
 	VisualizeInstance3D()           = default;
 	~VisualizeInstance3D() override = default;
@@ -17,6 +19,9 @@ public:
 	bool GetVisible() const;
 
 	virtual RenderRequest SubmitRenderRequest() const = 0;
+
+protected:
+	static void BindMethods() {};
 
 public:
 	bool m_isVisible = true;

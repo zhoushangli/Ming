@@ -1,6 +1,7 @@
 #include "MingEngine/Engine/File/FileSystem.hpp"
 
 #include "MingEngine/Core/Object/ResourceImporter.hpp"
+#include "MingEngine/Core/Object/ResourceLoader.hpp"
 
 #include <algorithm>
 #include <cctype>
@@ -57,6 +58,11 @@ bool IsInternalResourceDirectory(std::filesystem::path const& path)
 bool ShouldSkipResourceTreeEntry(std::filesystem::path const& path, bool isDirectory)
 {
 	return (isDirectory && IsInternalResourceDirectory(path)) || (!isDirectory && IsImportMetadataFile(path));
+}
+
+bool IsVisibleResourceFile(std::string const& virtualPath)
+{
+	return ResourceLoader::CanLoad(virtualPath) || ResourceImporter::CanImport(virtualPath);
 }
 
 bool TryGetLastWriteTime(std::filesystem::path const& path, std::filesystem::file_time_type& outLastWriteTime)
@@ -352,7 +358,7 @@ void FileSystem::ScanResourceTree()
 			isDirectory,
 			FindEntryInTree(previousRootEntry.get(), childVirtualPath),
 			importedTimes);
-		if (childEntry)
+		if (childEntry && (childEntry->IsDirectory() || IsVisibleResourceFile(childEntry->GetVirtualPath())))
 		{
 			m_rootEntry->m_children.push_back(std::move(childEntry));
 		}
@@ -443,26 +449,33 @@ void FileSystem::ScanResourceImports(std::unordered_map<std::string, std::filesy
 			continue;
 		}
 
-		FileEntry const* previousEntry = FindEntry(virtualPath);
-
-		// 2) Compare metadata, imported cache existence, and the previous FileEntry import time.
+		// 2) Trust an existing import chain only when the cache is at least as new as the source.
 		std::string importPath;
-		bool const  hasMetadata   = ResourceImporter::TryReadImportFile(virtualPath, importPath);
+		bool const  hasMetadata = ResourceImporter::TryReadImportFile(virtualPath, importPath);
 		bool const  hasImportFile = hasMetadata && Exists(importPath);
-		bool const  hasImportTime = previousEntry != nullptr && previousEntry->HasImportTime();
-		bool const  isImportDirty = !hasImportTime || previousEntry->GetImportTime() != modifiedTime;
+		bool        hasFreshImportFile = false;
+		if (hasImportFile)
+		{
+			std::filesystem::path importPhysicalPath;
+			std::filesystem::file_time_type importModifiedTime;
+			hasFreshImportFile = TryGetPhysicalPath(importPath, importPhysicalPath)
+				&& TryGetLastWriteTime(importPhysicalPath, importModifiedTime)
+				&& importModifiedTime >= modifiedTime;
+		}
 
-		// 3) Import dirty resources and report the import time for the next rebuilt FileEntry.
-		if (!hasMetadata || !hasImportFile || isImportDirty)
+		if (hasMetadata && hasImportFile && hasFreshImportFile)
+		{
+			outImportedTimes[virtualPath] = modifiedTime;
+			continue;
+		}
+
+		// 3) Import missing or stale resources and report the import time for the next rebuilt FileEntry.
+		if (!hasMetadata || !hasImportFile || !hasFreshImportFile)
 		{
 			if (ResourceImporter::Import(virtualPath))
 			{
 				outImportedTimes[virtualPath] = modifiedTime;
 			}
-		}
-		else
-		{
-			outImportedTimes[virtualPath] = previousEntry->GetImportTime();
 		}
 	}
 }
@@ -476,6 +489,11 @@ std::unique_ptr<FileEntry> FileSystem::BuildEntry(
 	std::unordered_map<std::string, std::filesystem::file_time_type> const& importedTimes) const
 {
 	if (ShouldSkipResourceTreeEntry(physicalPath, isDirectory))
+	{
+		return nullptr;
+	}
+
+	if (!isDirectory && !IsVisibleResourceFile(virtualPath))
 	{
 		return nullptr;
 	}
@@ -535,6 +553,11 @@ std::unique_ptr<FileEntry> FileSystem::BuildEntry(
 		}
 
 		SortChildren(*result);
+
+		if (parent != nullptr && result->m_children.empty())
+		{
+			return nullptr;
+		}
 	}
 
 	return result;

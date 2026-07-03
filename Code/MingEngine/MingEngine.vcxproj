@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Game_Debug|Win32">
@@ -444,9 +444,6 @@
     <ClCompile Include="Scene\3D\VisualizeInstance3D.cpp" />
     <ClCompile Include="Scene\3D\WorldEnvironment.cpp" />
     <ClCompile Include="EngineService\EngineService.cpp" />
-    <ClCompile Include="Scene\Import\GLBLoader.cpp" />
-    <ClCompile Include="Scene\Import\JsonLoader.cpp" />
-    <ClCompile Include="Scene\Import\OBJLoader.cpp" />
     <ClCompile Include="Scene\Core\Node.cpp" />
     <ClCompile Include="Scene\Core\NodeHandle.cpp" />
     <ClCompile Include="Scene\Core\PackedScene.cpp" />
@@ -607,9 +604,6 @@
     <ClInclude Include="Scene\3D\VisualizeInstance3D.hpp" />
     <ClInclude Include="Scene\3D\WorldEnvironment.hpp" />
     <ClInclude Include="EngineService\EngineService.hpp" />
-    <ClInclude Include="Scene\Import\GLBLoader.hpp" />
-    <ClInclude Include="Scene\Import\JsonLoader.hpp" />
-    <ClInclude Include="Scene\Import\OBJLoader.hpp" />
     <ClInclude Include="Scene\Core\Node.hpp" />
     <ClInclude Include="Scene\Core\NodePath.hpp" />
     <ClInclude Include="Scene\Core\NodeHandle.hpp" />

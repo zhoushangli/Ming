@@ -177,28 +177,24 @@ bool ScriptSystem::BuildGameScriptModule()
 		DebuggerPrintf("Failed to start game script module");
 		return false;
 	}
+	
+	// 1) Add MingEngine.generated.as to the module
+	std::string wrapperText;
+	if (!g_engine->m_fileSystem->ReadText(kGeneratedScriptResourcePath, wrapperText))
+	{
+		DebuggerPrintf("Failed to read script file: %s\n", kGeneratedScriptResourcePath);
+		m_scriptEngine->DiscardModule("Game");
+		return false;
+	}
 
-	// TODO: Currently, the generated script is in our data folder
-	// so it will be included in the file system scan, we do not need to add it here
-	// We move it somewhere else later
-
-	// // 1) Add MingEngine.generated.as to the module
-	// std::string wrapperText;
-	// if (!g_engine->m_fileSystem->ReadText(kGeneratedScriptResourcePath, wrapperText))
-	// {
-	// 	DebuggerPrintf("Failed to read script file: %s\n", kGeneratedScriptResourcePath);
-	// 	m_scriptEngine->DiscardModule("Game");
-	// 	return false;
-	// }
-
-	// result =
-	// 	builder.AddSectionFromMemory("MingEngine.generated.as", wrapperText.c_str(), (unsigned int)wrapperText.size());
-	// if (result < 0)
-	// {
-	// 	DebuggerPrintf("Failed to add MingEngine wrapper script.\n");
-	// 	m_scriptEngine->DiscardModule("Game");
-	// 	return false;
-	// }
+	result =
+		builder.AddSectionFromMemory("MingEngine.generated.as", wrapperText.c_str(), (unsigned int)wrapperText.size());
+	if (result < 0)
+	{
+		DebuggerPrintf("Failed to add MingEngine wrapper script.\n");
+		m_scriptEngine->DiscardModule("Game");
+		return false;
+	}
 
 	// 2) Loop through file system and add all scripts to the module
 	FileEntry const* rootEntry = g_engine->m_fileSystem->GetResourceRootEntry();

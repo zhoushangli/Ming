@@ -786,6 +786,13 @@ VertexBuffer* D3D11RenderBackend::CreateVertexBuffer(std::vector<Vertex> const& 
 	return vertexBuffer;
 }
 
+VertexBuffer* D3D11RenderBackend::CreateVertexBuffer(void const* data, const unsigned int size, unsigned int stride)
+{
+	VertexBuffer* const vertexBuffer = CreateVertexBuffer(size, stride);
+	CopyCPUToGPU(data, size, vertexBuffer);
+	return vertexBuffer;
+}
+
 ConstantBuffer* D3D11RenderBackend::CreateConstantBuffer(const unsigned int size)
 {
 	return new ConstantBuffer(m_d3dDevice, size);
@@ -806,6 +813,13 @@ IndexBuffer* D3D11RenderBackend::CreateIndexBuffer(std::vector<unsigned int> con
 	unsigned int const indexesSize = static_cast<unsigned int>(indexes.size()) * sizeof(unsigned int);
 	IndexBuffer* const indexBuffer = CreateIndexBuffer(indexesSize);
 	CopyCPUToGPU(indexes.data(), indexesSize, indexBuffer);
+	return indexBuffer;
+}
+
+IndexBuffer* D3D11RenderBackend::CreateIndexBuffer(void const* data, const unsigned int size, unsigned int stride)
+{
+	IndexBuffer* const indexBuffer = CreateIndexBuffer(size);
+	CopyCPUToGPU(data, size, indexBuffer);
 	return indexBuffer;
 }
 

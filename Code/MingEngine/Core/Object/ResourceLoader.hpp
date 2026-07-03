@@ -28,6 +28,7 @@ public:
 	virtual ~ResourceLoader();
 
 	static void          AddLoader(Ref<ResourceFormatLoader> loader);
+	static bool          CanLoad(std::string const& virtualPath);
 	static Ref<Resource> Load(const std::string& virtualPath);
 
 private:

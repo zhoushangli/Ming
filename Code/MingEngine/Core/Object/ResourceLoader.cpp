@@ -15,6 +15,24 @@ void ResourceLoader::AddLoader(Ref<ResourceFormatLoader> loader)
 	}
 }
 
+bool ResourceLoader::CanLoad(std::string const& virtualPath)
+{
+	if (!FileSystem::IsVirtualPath(virtualPath))
+	{
+		return false;
+	}
+
+	for (int i = 0; i < s_loaderCount; ++i)
+	{
+		if (s_loader[i]->CanLoad(virtualPath))
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
 Ref<Resource> ResourceLoader::Load(const std::string& virtualPath)
 {
 	if (!FileSystem::IsVirtualPath(virtualPath))

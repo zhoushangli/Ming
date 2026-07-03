@@ -73,7 +73,7 @@ bool TryParsePrelude(std::string const& prelude, uint32_t& outVersion, size_t& o
 	}
 }
 
-bool IsValidMeshData(ImportMeshData const& meshData)
+bool IsValidMeshData(MeshResource const& meshData)
 {
 	if (meshData.m_vertexFormat.empty() || meshData.m_vertexStride == 0 || meshData.m_vertexCount == 0)
 	{
@@ -203,8 +203,9 @@ Ref<Resource> MeshResourceLoader::Load(std::string const& virtualPath)
 			return Ref<Resource>();
 		}
 
-		Ref<ImportMeshData> meshData = CreateRef<ImportMeshData>();
-		if (!TryReadString(root, "name", meshData->m_name)
+		std::string       meshName;
+		Ref<MeshResource> meshData = CreateRef<MeshResource>();
+		if (!TryReadString(root, "name", meshName)
 			|| !TryReadString(root, "vertex_format", meshData->m_vertexFormat)
 			|| !TryReadUInt32(root, "vertex_stride", meshData->m_vertexStride)
 			|| !TryReadUInt32(root, "vertex_count", meshData->m_vertexCount)
@@ -241,7 +242,7 @@ Ref<Resource> MeshResourceLoader::Load(std::string const& virtualPath)
 
 			for (Json const& textureJson : root["textures"])
 			{
-				ImportTextureData textureData;
+				MeshTextureData textureData;
 				if (!TryReadString(textureJson, "name", textureData.m_name)
 					|| !TryReadString(textureJson, "format", textureData.m_format)
 					|| !TryReadUInt32(textureJson, "width", textureData.m_width)
@@ -268,7 +269,7 @@ Ref<Resource> MeshResourceLoader::Load(std::string const& virtualPath)
 		}
 
 		meshData->SetVirtualPath(virtualPath);
-		meshData->SetName(meshData->m_name);
+		meshData->SetName(meshName);
 		return meshData;
 	}
 	catch (std::exception const&)
@@ -279,7 +280,7 @@ Ref<Resource> MeshResourceLoader::Load(std::string const& virtualPath)
 
 bool MeshResourceSaver::CanSave(std::string const& virtualPath, Variant const& value) const
 {
-	Ref<ImportMeshData> meshData(value);
+	Ref<MeshResource> meshData(value);
 	return meshData.IsValid() && HasExtension(virtualPath, kMeshExtension);
 }
 
@@ -290,7 +291,7 @@ bool MeshResourceSaver::Save(std::string const& virtualPath, Variant const& valu
 		return false;
 	}
 
-	Ref<ImportMeshData> meshData(value);
+	Ref<MeshResource> meshData(value);
 	if (!meshData.IsValid() || !IsValidMeshData(*meshData))
 	{
 		return false;
@@ -303,7 +304,7 @@ bool MeshResourceSaver::Save(std::string const& virtualPath, Variant const& valu
 	Json root;
 	root["type"]          = "Mesh";
 	root["version"]       = kMeshFileVersion;
-	root["name"]          = meshData->m_name;
+	root["name"]          = meshData->GetName();
 	root["vertex_format"] = meshData->m_vertexFormat;
 	root["vertex_stride"] = meshData->m_vertexStride;
 	root["vertex_count"]  = meshData->m_vertexCount;
@@ -314,7 +315,7 @@ bool MeshResourceSaver::Save(std::string const& virtualPath, Variant const& valu
 	root["indices"]       = MakeBlockJson(indicesBlock);
 	root["textures"]      = Json::array();
 
-	for (ImportTextureData const& textureData : meshData->m_textures)
+	for (MeshTextureData const& textureData : meshData->m_textures)
 	{
 		BinaryBlock const textureBlock = AppendPayload(payload, textureData.m_data);
 
@@ -352,6 +353,5 @@ bool MeshResourceSaver::Save(std::string const& virtualPath, Variant const& valu
 	}
 
 	meshData->SetVirtualPath(virtualPath);
-	meshData->SetName(meshData->m_name);
 	return true;
 }
