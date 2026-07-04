@@ -22,6 +22,7 @@ public:
 	void Render(EditorUIContext& context);
 
 	void Warning(std::string const& title, std::string const& message);
+	void SetResourceDropAllowed(bool allowed);
 
 	template <typename TPanel>
 	TPanel& GetPanel();
@@ -42,6 +43,8 @@ private:
 	void RenderMainMenuBar();
 	void RenderDockSpace();
 	void RenderWarningPopup();
+	void BeginResourceDragDropFrame();
+	void ApplyResourceDragDropCursor();
 
 private:
 	ScenePanel m_scenePanel;
@@ -53,6 +56,7 @@ private:
 
 	bool m_showWarningPopup = false;
 	WarningData m_warningData;
+	bool m_resourceDropAllowed = false;
 };
 
 template <>

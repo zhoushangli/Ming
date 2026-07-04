@@ -56,7 +56,7 @@ InspectorProperty::InspectorProperty(
 {
 }
 
-void InspectorProperty::Render() { RenderValue(GetCurrentValue()); }
+void InspectorProperty::Render(EditorUIContext& context) { RenderValue(context, GetCurrentValue()); }
 
 Variant InspectorProperty::GetCurrentValue() const
 {

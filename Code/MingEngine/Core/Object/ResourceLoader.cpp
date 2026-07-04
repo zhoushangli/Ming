@@ -55,6 +55,8 @@ Ref<Resource> ResourceLoader::Load(const std::string& virtualPath)
 			Ref<Resource> resource = Load(importPath);
 			if (resource.IsValid())
 			{
+				// Keep the user-selected source path so editor UI can show Pawn.obj instead of the imported cache file.
+				resource->SetSourceFilePath(normalizedPath);
 				s_loadedResources[normalizedPath] = resource;
 			}
 			return resource;

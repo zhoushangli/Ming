@@ -52,6 +52,16 @@ public:
 
 	~Ref() { RefPointer(nullptr); }
 
+	Ref& operator=(T* ptr)
+	{
+		if (reference != ptr)
+		{
+			RefPointer(ptr);
+		}
+
+		return *this;
+	}
+
 	Ref& operator=(Ref<T> const& other)
 	{
 		if (this != &other)

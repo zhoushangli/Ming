@@ -218,7 +218,7 @@ void InspectorPanel::OnRender(EditorUIContext& context)
 
 			for (InspectorProperty* prop : group.m_properties)
 			{
-				prop->Render();
+				prop->Render(context);
 			}
 
 			isFirstGroup = false;

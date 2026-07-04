@@ -9,8 +9,9 @@ class InspectorPropertyEuler final : public InspectorProperty
 public:
 	using InspectorProperty::InspectorProperty;
 
-	void RenderValue(Variant const& value) override
+	void RenderValue(EditorUIContext& context, Variant const& value) override
 	{
+		(void)context;
 		EulerAngles v = value.As<EulerAngles>();
 
 		ImGui::TextUnformatted(GetDisplayName().c_str());

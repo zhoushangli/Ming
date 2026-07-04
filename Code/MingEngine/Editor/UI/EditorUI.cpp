@@ -66,6 +66,8 @@ void EditorUI::Render(EditorUIContext& context)
 	RenderMainMenuBar();
 	RenderDockSpace();
 
+	BeginResourceDragDropFrame();
+
 	m_scenePanel.Render(context);
 	m_fileSystemPanel.Render(context);
 	m_viewportPanel.Render(context);
@@ -73,6 +75,7 @@ void EditorUI::Render(EditorUIContext& context)
 	m_outputPanel.Render(context);
 	m_createNodePanel.Render(context);
 
+	ApplyResourceDragDropCursor();
 	RenderWarningPopup();
 }
 
@@ -81,6 +84,27 @@ void EditorUI::Warning(std::string const& title, std::string const& message)
 	m_warningData.m_title   = title;
 	m_warningData.m_message = message;
 	m_showWarningPopup      = true;
+}
+
+void EditorUI::SetResourceDropAllowed(bool allowed)
+{
+	m_resourceDropAllowed = m_resourceDropAllowed || allowed;
+}
+
+void EditorUI::BeginResourceDragDropFrame()
+{
+	m_resourceDropAllowed = false;
+}
+
+void EditorUI::ApplyResourceDragDropCursor()
+{
+	ImGuiPayload const* payload = ImGui::GetDragDropPayload();
+	if (payload == nullptr || !payload->IsDataType("FILESYSTEM_RESOURCE"))
+	{
+		return;
+	}
+
+	ImGui::SetMouseCursor(m_resourceDropAllowed ? ImGuiMouseCursor_Arrow : ImGuiMouseCursor_NotAllowed);
 }
 
 void EditorUI::RenderMainMenuBar()

@@ -16,6 +16,16 @@ namespace
 {
 using Json = nlohmann::ordered_json;
 
+std::string GetSerializableResourcePath(Resource const& resource)
+{
+	if (!resource.GetSourceFilePath().empty())
+	{
+		return resource.GetSourceFilePath();
+	}
+
+	return resource.GetVirtualPath();
+}
+
 bool HasExtension(std::string const& virtualPath, std::string const& extension)
 {
 	return virtualPath.size() >= extension.size()
@@ -70,9 +80,19 @@ bool TrySerializeVariant(Variant const& value, Json& outJson)
 		}
 
 		Resource const* resource = dynamic_cast<Resource const*>(object);
-		if (resource != nullptr && !resource->GetVirtualPath().empty())
+		if (resource != nullptr)
 		{
-			outJson = resource->GetVirtualPath();
+			std::string const resourcePath = GetSerializableResourcePath(*resource);
+			if (resourcePath.empty())
+			{
+				DebuggerPrintf(
+					"PackedScene: resource '%s' has no source or virtual path; saving an empty resource path.\n",
+					resource->GetName().c_str());
+				outJson = "";
+				return true;
+			}
+
+			outJson = resourcePath;
 			return true;
 		}
 		return false;

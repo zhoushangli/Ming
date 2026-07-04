@@ -34,6 +34,7 @@ void Mesh3D::SetMesh(Variant meshResource)
 	Ref<MeshResource> mesh = meshResource;
 	if (!mesh.IsValid())
 	{
+		m_meshResource = nullptr;
 		return;
 	}
 

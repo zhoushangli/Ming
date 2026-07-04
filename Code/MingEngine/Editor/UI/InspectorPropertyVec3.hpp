@@ -11,8 +11,9 @@ class InspectorPropertyVec3 final : public InspectorProperty
 public:
 	using InspectorProperty::InspectorProperty;
 
-	void RenderValue(Variant const& value) override
+	void RenderValue(EditorUIContext& context, Variant const& value) override
 	{
+		(void)context;
 		Vec3 v = value.As<Vec3>();
 
 		ImGui::TextUnformatted(GetDisplayName().c_str());
