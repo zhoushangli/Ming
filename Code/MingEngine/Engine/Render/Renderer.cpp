@@ -338,9 +338,9 @@ VertexBuffer* Renderer::CreateVertexBuffer(std::vector<Vertex> const& verts)
 {
 	return m_renderBackend->CreateVertexBuffer(verts);
 }
-VertexBuffer* Renderer::CreateVertexBuffer(void const* data, const unsigned int size, unsigned int stride)
+VertexBuffer* Renderer::CreateVertexBuffer(void const* data, const unsigned int byteSize, unsigned int stride)
 {
-	return m_renderBackend->CreateVertexBuffer(data, size, stride);
+	return m_renderBackend->CreateVertexBuffer(data, byteSize, stride);
 }
 ConstantBuffer* Renderer::CreateConstantBuffer(const unsigned int size)
 {
@@ -351,9 +351,9 @@ IndexBuffer* Renderer::CreateIndexBuffer(std::vector<unsigned int> const& indexe
 {
 	return m_renderBackend->CreateIndexBuffer(indexes);
 }
-IndexBuffer* Renderer::CreateIndexBuffer(void const* data, const unsigned int size, const unsigned int stride)
+IndexBuffer* Renderer::CreateIndexBuffer(void const* data, const unsigned int byteSize, const unsigned int stride)
 {
-	return m_renderBackend->CreateIndexBuffer(data, size, stride);
+	return m_renderBackend->CreateIndexBuffer(data, byteSize, stride);
 }
 
 void Renderer::UpdateVertexBuffer(VertexBuffer* vertexBuffer, std::vector<Vertex> const& verts)

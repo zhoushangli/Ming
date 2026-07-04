@@ -62,9 +62,9 @@ InspectorPanel::~InspectorPanel()
 {
 	for (PropertyGroup& group : m_propertyGroups)
 	{
-		for (InspectorProperty* p : group.m_properties)
+		for (PropertyEntry& entry : group.m_properties)
 		{
-			delete p;
+			delete entry.m_property;
 		}
 	}
 	m_propertyGroups.clear();
@@ -98,9 +98,9 @@ void InspectorPanel::RebuildProperties(EditorUIContext& context)
 {
 	for (PropertyGroup& group : m_propertyGroups)
 	{
-		for (InspectorProperty* p : group.m_properties)
+		for (PropertyEntry& entry : group.m_properties)
 		{
-			delete p;
+			delete entry.m_property;
 		}
 	}
 	m_propertyGroups.clear();
@@ -126,6 +126,7 @@ void InspectorPanel::RebuildProperties(EditorUIContext& context)
 
 			std::string                             labelId   = "##" + className + "::" + prop.m_name;
 			MethodBind const*                       setter    = prop.GetSetter();
+			MethodBind const*                       getter    = prop.GetGetter();
 			InspectorProperty::ValueChangedCallback onChanged = [node, setter](Variant const& value)
 			{
 				if (node != nullptr && setter != nullptr)
@@ -135,10 +136,10 @@ void InspectorPanel::RebuildProperties(EditorUIContext& context)
 			};
 
 			InspectorProperty* ip =
-				InspectorProperty::Create(std::move(prop), node, std::move(labelId), std::move(onChanged));
+				InspectorProperty::Create(std::move(prop), std::move(labelId), std::move(onChanged));
 			if (ip != nullptr)
 			{
-				group.m_properties.push_back(ip);
+				group.m_properties.push_back(PropertyEntry{ip, getter});
 			}
 		}
 
@@ -216,9 +217,20 @@ void InspectorPanel::OnRender(EditorUIContext& context)
 			DrawInspectorClassHeader(group.m_className);
 			ImGui::Dummy(ImVec2(0.f, 4.f));
 
-			for (InspectorProperty* prop : group.m_properties)
+			for (PropertyEntry const& entry : group.m_properties)
 			{
-				prop->Render(context);
+				if (entry.m_property == nullptr)
+				{
+					continue;
+				}
+
+				Variant value;
+				if (entry.m_getter != nullptr)
+				{
+					value = entry.m_getter->Invoke(node, {});
+				}
+
+				entry.m_property->Render(context, value);
 			}
 
 			isFirstGroup = false;

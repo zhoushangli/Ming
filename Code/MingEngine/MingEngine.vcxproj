@@ -364,6 +364,7 @@
     <ClCompile Include="Editor\UI\EditorUI.cpp" />
     <ClCompile Include="Editor\UI\EditorUIWidgets.cpp" />
     <ClCompile Include="Editor\UI\FileSystemPanel.cpp" />
+    <ClCompile Include="Editor\UI\ImportPanel.cpp" />
     <ClCompile Include="Editor\UI\InspectorPanel.cpp" />
     <ClCompile Include="Editor\UI\InspectorProperty.cpp" />
     <ClCompile Include="Editor\UI\OutputPanel.cpp" />
@@ -517,6 +518,7 @@
     <ClInclude Include="Editor\UI\EditorUIStyle.hpp" />
     <ClInclude Include="Editor\UI\EditorUIWidgets.hpp" />
     <ClInclude Include="Editor\UI\FileSystemPanel.hpp" />
+    <ClInclude Include="Editor\UI\ImportPanel.hpp" />
     <ClInclude Include="Editor\UI\InspectorPanel.hpp" />
     <ClInclude Include="Editor\UI\InspectorProperty.hpp" />
     <ClInclude Include="Editor\UI\InspectorPropertyBool.hpp" />

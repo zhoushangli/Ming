@@ -42,11 +42,11 @@ public:
 
 	VertexBuffer*   CreateVertexBuffer(const unsigned int size, unsigned int stride);
 	VertexBuffer*   CreateVertexBuffer(std::vector<Vertex> const& verts);
-	VertexBuffer*   CreateVertexBuffer(void const* data, const unsigned int size, unsigned int stride);
+	VertexBuffer*   CreateVertexBuffer(void const* data, const unsigned int byteSize, unsigned int stride);
 	ConstantBuffer* CreateConstantBuffer(const unsigned int size);
 	IndexBuffer*    CreateIndexBuffer(const unsigned int size);
 	IndexBuffer*    CreateIndexBuffer(std::vector<unsigned int> const& indexes);
-	IndexBuffer*    CreateIndexBuffer(void const* data, const unsigned int size, const unsigned int stride);
+	IndexBuffer*    CreateIndexBuffer(void const* data, const unsigned int byteSize, const unsigned int stride);
 
 	void UpdateVertexBuffer(VertexBuffer* vertexBuffer, std::vector<Vertex> const& verts);
 

@@ -6,6 +6,7 @@
 #include "MingEngine/Editor/UI/EditorUIContext.hpp"
 #include "MingEngine/Editor/UI/EditorIcons.hpp"
 #include "MingEngine/Editor/UI/EditorUIStyle.hpp"
+#include "MingEngine/Editor/UI/EditorUIWidgets.hpp"
 #include "MingEngine/Editor/UI/InspectorProperty.hpp"
 #include "MingEngine/Editor/UI/FileSystemPanel.hpp"
 
@@ -22,13 +23,12 @@ public:
 
 	void RenderValue(EditorUIContext& context, Variant const& value) override
 	{
-		ImGui::Columns(2, nullptr, false);
-		ImGui::TextUnformatted(GetDisplayName().c_str());
-		ImGui::NextColumn();
+		EditorUIWidgets::BeginPropertyRow(GetDisplayName());
+		EditorUIWidgets::NextPropertyColumn();
 
 		RenderResourcePicker(context, value);
 
-		ImGui::Columns(1);
+		EditorUIWidgets::EndPropertyRow();
 	}
 
 private:

@@ -1,7 +1,7 @@
 #pragma once
 
+#include "MingEngine/Editor/UI/EditorUIWidgets.hpp"
 #include "MingEngine/Editor/UI/InspectorProperty.hpp"
-#include "ThirdParty/imgui/imgui.h"
 
 class InspectorPropertyBool final : public InspectorProperty
 {
@@ -11,14 +11,15 @@ public:
 	void RenderValue(EditorUIContext& context, Variant const& value) override
 	{
 		(void)context;
+		if (!value.Is<bool>())
+		{
+			return;
+		}
+
 		bool b = value.As<bool>();
-		ImGui::Columns(2, nullptr, false);
-		ImGui::TextUnformatted(GetDisplayName().c_str());
-		ImGui::NextColumn();
-		if (ImGui::Checkbox(m_labelId.c_str(), &b))
+		if (EditorUIWidgets::PropertyBool(GetDisplayName(), m_labelId.c_str(), b))
 		{
 			EmitValueChanged(Variant(b));
 		}
-		ImGui::Columns(1);
 	}
 };

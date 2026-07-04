@@ -8,6 +8,8 @@
 
 namespace
 {
+char const* const kImGuiIniFilePath = "Data/.ming/imgui.ini";
+
 ImVec4 RGBA(float r, float g, float b, float a) { return ImVec4(r / 255.f, g / 255.f, b / 255.f, a); }
 
 void ApplyGodotImGuiTheme()
@@ -123,6 +125,7 @@ void ImGuiSystem::Startup()
 	ImGuiIO& io = ImGui::GetIO();
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+	io.IniFilename = kImGuiIniFilePath;
 
 	ApplyGodotImGuiTheme();
 

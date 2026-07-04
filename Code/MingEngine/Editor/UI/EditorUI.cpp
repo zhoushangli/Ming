@@ -69,6 +69,7 @@ void EditorUI::Render(EditorUIContext& context)
 	BeginResourceDragDropFrame();
 
 	m_scenePanel.Render(context);
+	m_importPanel.Render(context);
 	m_fileSystemPanel.Render(context);
 	m_viewportPanel.Render(context);
 	m_inspectorPanel.Render(context);
@@ -148,6 +149,7 @@ void EditorUI::RenderMainMenuBar()
 	if (ImGui::BeginMenu("Window"))
 	{
 		RenderPanelMenuItem(m_scenePanel);
+		RenderPanelMenuItem(m_importPanel);
 		RenderPanelMenuItem(m_fileSystemPanel);
 		RenderPanelMenuItem(m_viewportPanel);
 		RenderPanelMenuItem(m_inspectorPanel);

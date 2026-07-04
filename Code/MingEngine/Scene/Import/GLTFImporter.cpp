@@ -6,10 +6,16 @@
 
 std::vector<std::string> GLTFImporter::GetSupportedExtensions() const { return { ".gltf", ".glb" }; }
 
+std::string GLTFImporter::GetVisibleName() const { return "glTF as Mesh"; }
+
 std::string GLTFImporter::GetImportedExtension() const { return "mesh"; }
 
-Ref<Resource> GLTFImporter::Import(std::string const& sourceVirtualPath)
+Ref<Resource> GLTFImporter::Import(
+	std::unordered_map<std::string, Variant> const& importOptions,
+	std::string const&                              sourceVirtualPath)
 {
+	(void)importOptions;
+
 	std::filesystem::path filePath;
 	if (!g_engine->m_fileSystem->TryGetPhysicalPath(sourceVirtualPath, filePath))
 	{

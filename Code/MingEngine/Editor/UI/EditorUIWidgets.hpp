@@ -2,6 +2,9 @@
 
 #include "ThirdParty/imgui/imgui.h"
 
+#include "MingEngine/Core/Math/EulerAngles.hpp"
+#include "MingEngine/Core/Math/Vec3.hpp"
+
 #include <string>
 
 namespace EditorUIWidgets
@@ -15,4 +18,15 @@ void RenderTreeRowContent(
 	ImVec2 rowMin,
 	ImVec2 rowMax,
 	ImVec2 iconSize);
+
+void BeginPropertyRow(std::string const& label);
+void NextPropertyColumn();
+void EndPropertyRow();
+
+bool PropertyBool(std::string const& label, char const* id, bool& value);
+bool PropertyInt(std::string const& label, char const* id, int& value);
+bool PropertyFloat(std::string const& label, char const* id, float& value);
+bool PropertyString(std::string const& label, char const* id, std::string& value);
+bool PropertyVec3(std::string const& label, char const* id, Vec3& value);
+bool PropertyEuler(std::string const& label, char const* id, EulerAngles& value);
 } // namespace EditorUIWidgets

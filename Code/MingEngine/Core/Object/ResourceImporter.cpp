@@ -99,23 +99,30 @@ void ResourceImporter::AddImporter(Ref<ResourceFormatImporter> importer)
 
 bool ResourceImporter::CanImport(std::string const& sourceVirtualPath)
 {
-	return FindImporter(sourceVirtualPath).IsValid();
+	return !FindMatchedImporters(sourceVirtualPath).empty();
 }
 
-bool ResourceImporter::Import(std::string const& sourceVirtualPath)
+std::vector<Ref<ResourceFormatImporter>> ResourceImporter::GetMatchedImporters(std::string const& sourceVirtualPath)
+{
+	return FindMatchedImporters(sourceVirtualPath);
+}
+
+bool ResourceImporter::Import(
+	std::string const&                              sourceVirtualPath,
+	Ref<ResourceFormatImporter>                     importer,
+	std::unordered_map<std::string, Variant> const& importOptions)
 {
 	if (g_engine == nullptr || g_engine->m_fileSystem == nullptr)
 	{
 		return false;
 	}
 
-	Ref<ResourceFormatImporter> importer = FindImporter(sourceVirtualPath);
-	if (!importer.IsValid())
+	if (!importer.IsValid() || !importer->CanImport(sourceVirtualPath))
 	{
 		return false;
 	}
 
-	Ref<Resource> importedResource = importer->Import(sourceVirtualPath);
+	Ref<Resource> importedResource = importer->Import(importOptions, sourceVirtualPath);
 	if (!importedResource.IsValid())
 	{
 		return false;
@@ -138,6 +145,17 @@ bool ResourceImporter::Import(std::string const& sourceVirtualPath)
 	}
 
 	return true;
+}
+
+bool ResourceImporter::Import(std::string const& sourceVirtualPath)
+{
+	std::vector<Ref<ResourceFormatImporter>> importers = FindMatchedImporters(sourceVirtualPath);
+	if (importers.empty())
+	{
+		return false;
+	}
+
+	return Import(sourceVirtualPath, importers.front(), {});
 }
 
 bool ResourceImporter::IsImportMetadataPath(std::string const& virtualPath)
@@ -213,24 +231,26 @@ std::string ResourceImporter::GetImportOutputPath(
 		+ NormalizeExtension(importedExtension);
 }
 
-Ref<ResourceFormatImporter> ResourceImporter::FindImporter(std::string const& sourceVirtualPath)
+std::vector<Ref<ResourceFormatImporter>> ResourceImporter::FindMatchedImporters(std::string const& sourceVirtualPath)
 {
+	std::vector<Ref<ResourceFormatImporter>> matchedImporters;
+
 	if (!FileSystem::IsVirtualPath(sourceVirtualPath)
 		|| IsInternalResourcePath(sourceVirtualPath)
 		|| IsImportMetadataPath(sourceVirtualPath))
 	{
-		return Ref<ResourceFormatImporter>();
+		return matchedImporters;
 	}
 
 	for (int i = 0; i < s_importerCount; ++i)
 	{
 		if (s_importer[i]->CanImport(sourceVirtualPath))
 		{
-			return s_importer[i];
+			matchedImporters.push_back(s_importer[i]);
 		}
 	}
 
-	return Ref<ResourceFormatImporter>();
+	return matchedImporters;
 }
 
 bool ResourceFormatImporter::CanImport(std::string const& virtualPath) const
@@ -255,3 +275,5 @@ bool ResourceFormatImporter::CanImport(std::string const& virtualPath) const
 }
 
 std::string ResourceFormatImporter::GetImportedExtension() const { return kDefaultImportedExtension; }
+
+std::vector<ImportOptions> const ResourceFormatImporter::GetImportOptions() const { return {}; }

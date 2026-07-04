@@ -20,6 +20,8 @@ class FileSystemPanel final : public EditorPanel
 public:
 	FileSystemPanel();
 
+	std::string const& GetSelectedVirtualPath() const;
+
 private:
 	void OnRender(EditorUIContext& context) override;
 
@@ -29,6 +31,7 @@ private:
 	char const* GetIconNameForPath(std::filesystem::path const& path, bool isDirectory) const;
 
 private:
-	char m_filter[64] = {};
-	bool m_wasFocused = false;
+	char        m_filter[64] = {};
+	bool        m_wasFocused = false;
+	std::string m_selectedVirtualPath;
 };

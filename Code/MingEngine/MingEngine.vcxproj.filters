@@ -207,6 +207,9 @@
     <ClCompile Include="Editor\UI\FileSystemPanel.cpp">
       <Filter>Editor\UI</Filter>
     </ClCompile>
+    <ClCompile Include="Editor\UI\ImportPanel.cpp">
+      <Filter>Editor\UI</Filter>
+    </ClCompile>
     <ClCompile Include="Editor\UI\InspectorPanel.cpp">
       <Filter>Editor\UI</Filter>
     </ClCompile>
@@ -654,6 +657,9 @@
       <Filter>Editor\UI</Filter>
     </ClInclude>
     <ClInclude Include="Editor\UI\FileSystemPanel.hpp">
+      <Filter>Editor\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\UI\ImportPanel.hpp">
       <Filter>Editor\UI</Filter>
     </ClInclude>
     <ClInclude Include="Editor\UI\InspectorPanel.hpp">

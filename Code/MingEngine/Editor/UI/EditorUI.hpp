@@ -2,6 +2,7 @@
 
 #include "MingEngine/Editor/UI/CreateNodePanel.hpp"
 #include "MingEngine/Editor/UI/FileSystemPanel.hpp"
+#include "MingEngine/Editor/UI/ImportPanel.hpp"
 #include "MingEngine/Editor/UI/InspectorPanel.hpp"
 #include "MingEngine/Editor/UI/OutputPanel.hpp"
 #include "MingEngine/Editor/UI/ScenePanel.hpp"
@@ -50,6 +51,7 @@ private:
 	ScenePanel m_scenePanel;
 	CreateNodePanel m_createNodePanel;
 	FileSystemPanel m_fileSystemPanel;
+	ImportPanel m_importPanel;
 	ViewportPanel m_viewportPanel;
 	InspectorPanel m_inspectorPanel;
 	OutputPanel m_outputPanel;
@@ -75,6 +77,12 @@ template <>
 inline FileSystemPanel& EditorUI::GetPanel<FileSystemPanel>()
 {
 	return m_fileSystemPanel;
+}
+
+template <>
+inline ImportPanel& EditorUI::GetPanel<ImportPanel>()
+{
+	return m_importPanel;
 }
 
 template <>

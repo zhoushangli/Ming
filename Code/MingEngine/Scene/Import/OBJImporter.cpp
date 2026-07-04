@@ -1,5 +1,6 @@
 #include "MingEngine/Scene/Import/OBJImporter.hpp"
 
+#include "MingEngine/Core/Object/ClassDatabase.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
 
 #include <cstdlib>
@@ -8,6 +9,47 @@
 
 namespace
 {
+// clang-format off
+Matrix4x4 OBJImportMatrix = Matrix4x4(
+	1.f, 0.f, 0.f, 0.f,
+	0.f, 0.f, -1.f, 0.f,
+	0.f, 1.f, 0.f, 0.f,
+	0.f, 0.f, 0.f, 1.f
+);
+// clang-format on
+
+std::vector<ImportOptions> const kOBJImportOptions = {
+	{ PropertyInfo(
+		  Variant::Type::Bool, "Generate Tangents", PropertyInfo::Hint::None, "", PropertyInfo::UsageFlags::Default),
+	  Variant(true) },
+	{ PropertyInfo(Variant::Type::Vec3, "Scale Mesh", PropertyInfo::Hint::None, "", PropertyInfo::UsageFlags::Default),
+	  Variant(Vec3::One) },
+};
+
+Variant GetImportOptionValue(
+	std::unordered_map<std::string, Variant> const& importOptions,
+	char const*                                     name,
+	Variant::Type                                  expectedType)
+{
+	for (ImportOptions const& option : kOBJImportOptions)
+	{
+		if (option.m_propertyInfo.m_name != name)
+		{
+			continue;
+		}
+
+		auto const iter = importOptions.find(option.m_propertyInfo.m_name);
+		if (iter != importOptions.end() && iter->second.GetType() == expectedType)
+		{
+			return iter->second;
+		}
+
+		return option.m_defaultValue;
+	}
+
+	return Variant();
+}
+
 struct FaceData
 {
 	int m_positionIndex = -1;
@@ -389,8 +431,8 @@ bool ParseOBJFile(std::string const& sourceVirtualPath, OBJData& outData)
 			for (size_t faceIndex = 1; faceIndex + 1 < faceVertices.size(); ++faceIndex)
 			{
 				FaceData const triangle[3] = {
-					faceVertices[faceIndex],
 					faceVertices[0],
+					faceVertices[faceIndex],
 					faceVertices[faceIndex + 1],
 				};
 
@@ -725,17 +767,31 @@ bool ParseMTLFile(std::string const& sourceVirtualPath, MTLData& outMaterials)
 
 std::vector<std::string> OBJImporter::GetSupportedExtensions() const { return { ".obj" }; }
 
+std::string OBJImporter::GetVisibleName() const { return "OBJ as Mesh"; }
+
 std::string OBJImporter::GetImportedExtension() const { return "mesh"; }
 
-Ref<Resource> OBJImporter::Import(std::string const& sourceVirtualPath)
+std::vector<ImportOptions> const OBJImporter::GetImportOptions() const { return kOBJImportOptions; }
+
+Ref<Resource> OBJImporter::Import(
+	std::unordered_map<std::string, Variant> const& importOptions,
+	std::string const&                              sourceVirtualPath)
 {
 	Ref<MeshResource> meshData = CreateRef<MeshResource>();
+
+	(void)GetImportOptionValue(importOptions, "Generate Tangents", Variant::Type::Bool).As<bool>();
+	Vec3 const scaleMesh =
+		GetImportOptionValue(importOptions, "Scale Mesh", Variant::Type::Vec3).As<Vec3>();
 
 	OBJData objData;
 	if (!ParseOBJFile(sourceVirtualPath, objData))
 	{
 		return Ref<Resource>();
 	}
+
+	Matrix4x4 importTransform = OBJImportMatrix;
+	importTransform.AppendScaleNonUniform3D(scaleMesh);
+	TransformVertexArray3D(objData.m_vertices, importTransform);
 
 	// 1) Copy OBJData into MeshResource
 	meshData->SetName(objData.m_name);

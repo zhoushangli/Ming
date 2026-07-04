@@ -38,9 +38,15 @@ void Mesh3D::SetMesh(Variant meshResource)
 		return;
 	}
 
-	m_meshResource = mesh;
-	m_meshResource->m_vertexBuffer = g_engine->m_renderer->CreateVertexBuffer(mesh->m_vertices.data(), mesh->m_vertexCount, mesh->m_vertexStride);
-	m_meshResource->m_indexBuffer  = g_engine->m_renderer->CreateIndexBuffer(mesh->m_indices.data(), mesh->m_indexCount, mesh->m_indexStride);
+	m_meshResource                 = mesh;
+	m_meshResource->m_vertexBuffer = g_engine->m_renderer->CreateVertexBuffer(
+		mesh->m_vertices.data(),
+		mesh->m_vertexCount * mesh->m_vertexStride,
+		mesh->m_vertexStride);
+	m_meshResource->m_indexBuffer = g_engine->m_renderer->CreateIndexBuffer(
+		mesh->m_indices.data(),
+		mesh->m_indexCount * mesh->m_indexStride,
+		mesh->m_indexStride);
 }
 
 Variant Mesh3D::GetMesh() const { return m_meshResource; }

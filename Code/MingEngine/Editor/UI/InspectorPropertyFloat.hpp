@@ -1,7 +1,7 @@
 #pragma once
 
+#include "MingEngine/Editor/UI/EditorUIWidgets.hpp"
 #include "MingEngine/Editor/UI/InspectorProperty.hpp"
-#include "ThirdParty/imgui/imgui.h"
 
 class InspectorPropertyFloat final : public InspectorProperty
 {
@@ -11,14 +11,15 @@ public:
 	void RenderValue(EditorUIContext& context, Variant const& value) override
 	{
 		(void)context;
+		if (!value.Is<float>())
+		{
+			return;
+		}
+
 		float f = value.As<float>();
-		ImGui::Columns(2, nullptr, false);
-		ImGui::TextUnformatted(GetDisplayName().c_str());
-		ImGui::NextColumn();
-		if (ImGui::DragFloat(m_labelId.c_str(), &f, 0.1f, 0.0f, 0.0f, "%.2f"))
+		if (EditorUIWidgets::PropertyFloat(GetDisplayName(), m_labelId.c_str(), f))
 		{
 			EmitValueChanged(Variant(f));
 		}
-		ImGui::Columns(1);
 	}
 };

@@ -14,10 +14,16 @@ public:
 	~InspectorPanel() override;
 
 private:
+	struct PropertyEntry
+	{
+		InspectorProperty* m_property = nullptr;
+		MethodBind const*  m_getter   = nullptr;
+	};
+
 	struct PropertyGroup
 	{
-		std::string                     m_className;
-		std::vector<InspectorProperty*> m_properties;
+		std::string                m_className;
+		std::vector<PropertyEntry> m_properties;
 	};
 
 	void OnRender(EditorUIContext& context) override;

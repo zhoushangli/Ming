@@ -28,6 +28,11 @@ std::string ToLower(std::string text)
 
 FileSystemPanel::FileSystemPanel() : EditorPanel("FileSystem") {}
 
+std::string const& FileSystemPanel::GetSelectedVirtualPath() const
+{
+	return m_selectedVirtualPath;
+}
+
 void FileSystemPanel::OnRender(EditorUIContext& context)
 {
 	ImGui::Begin(GetTitle(), GetOpenState());
@@ -91,11 +96,19 @@ void FileSystemPanel::RenderEntry(FileEntry const& entry, std::string const& low
 	{
 		flags |= ImGuiTreeNodeFlags_DefaultOpen;
 	}
+	if (m_selectedVirtualPath == entry.GetVirtualPath())
+	{
+		flags |= ImGuiTreeNodeFlags_Selected;
+	}
 
 	ImGui::PushID(entry.GetVirtualPath().c_str());
 	bool const   isOpen = ImGui::TreeNodeEx(entry.IsDirectory() ? "##Directory" : "##File", flags);
 	ImVec2 const rowMin = ImGui::GetItemRectMin();
 	ImVec2 const rowMax = ImGui::GetItemRectMax();
+	if (ImGui::IsItemClicked(ImGuiMouseButton_Left))
+	{
+		m_selectedVirtualPath = entry.GetVirtualPath();
+	}
 
 	if (!entry.IsDirectory())
 	{
