@@ -1,8 +1,9 @@
 #include "MingEngine/Scene/Import/OBJImporter.hpp"
 
 #include "MingEngine/Core/Object/ClassDatabase.hpp"
-#include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Core/Render/Vertex.hpp"
+#include "MingEngine/Engine/Application/Engine.hpp"
+#include "MingEngine/Core/Object/ResourceLoader.hpp"
 
 #include <cstdlib>
 #include <filesystem>
@@ -772,8 +773,8 @@ std::string OBJImporter::GetImportedExtension() const { return "mesh"; }
 
 std::vector<ImportOptions> const OBJImporter::GetImportOptions() const { return kOBJImportOptions; }
 
-Ref<Resource>
-OBJImporter::Import(std::unordered_map<std::string, Variant> const& importOptions, std::string const& sourceVirtualPath)
+Ref<Resource> OBJImporter::Import(
+	std::unordered_map<std::string, Variant> const& importOptions, std::string const& sourceVirtualPath)
 {
 	Ref<MeshResource> meshData = CreateRef<MeshResource>();
 
@@ -810,7 +811,7 @@ OBJImporter::Import(std::unordered_map<std::string, Variant> const& importOption
 	{
 		if (ParseMTLFile(objData.m_mtlVirtualPath, mtlData))
 		{
-			auto EnsureAndAddPath = [&meshData](std::string const& texVirtualPath) -> bool
+			auto GetTextureResource = [&meshData](std::string const& texVirtualPath) -> bool
 			{
 				if (texVirtualPath.empty())
 				{
@@ -822,19 +823,15 @@ OBJImporter::Import(std::unordered_map<std::string, Variant> const& importOption
 					return false;
 				}
 
-				std::string texPath;
-				if (!ResourceImporter::TryGetImportFile(texVirtualPath, texPath))
-				{
-					return false;
-				}
+				Ref<Resource> texResource = ResourceLoader::Load(texVirtualPath);
+				meshData->m_textureResources.push_back(texResource);
 
-				meshData->m_texturePaths.push_back(texPath);
 				return true;
 			};
 
-			EnsureAndAddPath(mtlData.m_diffuseTexturePath);
-			EnsureAndAddPath(mtlData.m_specularTexturePath);
-			EnsureAndAddPath(mtlData.m_normalTexturePath);
+			GetTextureResource(mtlData.m_diffuseTexturePath);
+			GetTextureResource(mtlData.m_specularTexturePath);
+			GetTextureResource(mtlData.m_normalTexturePath);
 		}
 	}
 

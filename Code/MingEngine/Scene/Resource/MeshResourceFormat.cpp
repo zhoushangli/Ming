@@ -247,14 +247,13 @@ Ref<Resource> MeshResourceLoader::Load(std::string const& virtualPath)
 
 				std::string          texPath = textureJson.get<std::string>();
 				Ref<Resource>        loaded  = ResourceLoader::Load(texPath);
-				Ref<TextureResource> texRef(loaded);
-				if (!texRef.IsValid())
+				Ref<TextureResource> texResource(loaded);
+				if (!texResource.IsValid())
 				{
 					return Ref<Resource>();
 				}
 
-				meshData->m_texturePaths.push_back(texPath);
-				meshData->m_textureResources.push_back(texRef);
+				meshData->m_textureResources.push_back(texResource);
 			}
 		}
 

@@ -39,7 +39,6 @@ bool MeshResource::CopyFrom(Resource const& other)
 	m_indexCount  = otherMesh->m_indexCount;
 	m_indices     = otherMesh->m_indices;
 
-	m_texturePaths     = otherMesh->m_texturePaths;
 	m_textureResources = otherMesh->m_textureResources;
 
 	// 3) Recreate GPU buffers from copied CPU data

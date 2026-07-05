@@ -41,7 +41,6 @@ public:
 	std::vector<uint8_t> m_indices;
 
 	// Texture references: paths for serialization, Refs for runtime, GPU handles for rendering
-	std::vector<std::string>          m_texturePaths;
 	std::vector<Ref<TextureResource>> m_textureResources;
 
 	// GPU side data handles
