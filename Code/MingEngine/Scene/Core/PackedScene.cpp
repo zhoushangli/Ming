@@ -240,3 +240,15 @@ bool PackedScene::ParseNodeRecursively(
 
 	return true;
 }
+
+bool PackedScene::CopyFrom(Resource const& other)
+{
+	PackedScene const* otherScene = dynamic_cast<PackedScene const*>(&other);
+	if (otherScene == nullptr)
+	{
+		return false;
+	}
+
+	m_data = otherScene->m_data;
+	return true;
+}

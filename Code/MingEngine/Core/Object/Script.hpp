@@ -10,6 +10,8 @@ public:
 	Script()          = default;
 	virtual ~Script() = default;
 
+	bool CopyFrom([[maybe_unused]] Resource const& other) override { return false; }
+
 protected:
 	static void BindMethods() {};
 };

@@ -3,6 +3,7 @@
 #include "MingEngine/Editor/UI/EditorUI.hpp"
 #include "MingEngine/Editor/UI/EditorUIContext.hpp"
 #include "MingEngine/Editor/UI/FileSystemPanel.hpp"
+#include "MingEngine/Core/Object/ResourceLoader.hpp"
 
 #include "ThirdParty/imgui/imgui.h"
 
@@ -59,10 +60,8 @@ int ImportPanel::FindImporterIndexByClassName(std::string const& importerClassNa
 
 void ImportPanel::RefreshImportConfigCache(std::string const& selectedPath)
 {
-	m_hasImportConfig = ResourceImporter::TryReadImportConfig(
-		selectedPath,
-		m_configImporterClassName,
-		m_configImportOptions);
+	m_hasImportConfig =
+		ResourceImporter::TryReadImportConfig(selectedPath, m_configImporterClassName, m_configImportOptions);
 	if (!m_hasImportConfig)
 	{
 		m_configImporterClassName.clear();
@@ -70,7 +69,7 @@ void ImportPanel::RefreshImportConfigCache(std::string const& selectedPath)
 	}
 }
 
-void ImportPanel::ApplyCachedImportOptionsForSelectedImporter()
+void ImportPanel::ApplyCachedImportOptions()
 {
 	m_importOptions.clear();
 
@@ -137,7 +136,43 @@ void ImportPanel::RefreshSelection(std::string const& selectedPath)
 	}
 
 	RebuildImportOptionProperties();
-	ApplyCachedImportOptionsForSelectedImporter();
+	ApplyCachedImportOptions();
+}
+
+// 1) Compare current import options with saved config
+// 2) Return true if any option differs from the last imported state
+bool ImportPanel::IsImportOptionModified() const
+{
+	Ref<ResourceFormatImporter> importer = GetSelectedImporter();
+
+	// No saved config: modified if user has changed any option from default
+	if (!m_hasImportConfig)
+	{
+		return !m_importOptions.empty();
+	}
+
+	// Saved config exists but importer was switched
+	if (!importer.IsValid() || importer->GetClassName() != m_configImporterClassName)
+	{
+		return true;
+	}
+
+	// Same importer: compare option values
+	if (m_importOptions.size() != m_configImportOptions.size())
+	{
+		return true;
+	}
+
+	for (auto const& [key, value] : m_configImportOptions)
+	{
+		auto const iter = m_importOptions.find(key);
+		if (iter == m_importOptions.end() || iter->second != value)
+		{
+			return true;
+		}
+	}
+
+	return false;
 }
 
 void ImportPanel::OnRender(EditorUIContext& context)
@@ -195,7 +230,7 @@ void ImportPanel::OnRender(EditorUIContext& context)
 				{
 					m_selectedImporterIndex = i;
 					RebuildImportOptionProperties();
-					ApplyCachedImportOptionsForSelectedImporter();
+					ApplyCachedImportOptions();
 				}
 			}
 
@@ -222,7 +257,11 @@ void ImportPanel::OnRender(EditorUIContext& context)
 		}
 	}
 
-	float const buttonWidth     = 120.f;
+	bool const        modified    = IsImportOptionModified();
+	std::string const buttonLabel = modified ? "Reimport (*)" : "Reimport";
+
+	float const textWidth       = ImGui::CalcTextSize(buttonLabel.c_str()).x;
+	float const buttonWidth     = textWidth + ImGui::GetStyle().FramePadding.x * 2.f;
 	float const availableHeight = ImGui::GetContentRegionAvail().y;
 	if (availableHeight > ImGui::GetFrameHeightWithSpacing())
 	{
@@ -237,7 +276,7 @@ void ImportPanel::OnRender(EditorUIContext& context)
 		ImGui::SetCursorPosX(buttonX);
 	}
 
-	if (ImGui::Button("Reimport", ImVec2(buttonWidth, 0.f)))
+	if (ImGui::Button(buttonLabel.c_str(), ImVec2(buttonWidth, 0.f)))
 	{
 		if (!ResourceImporter::Import(selectedPath, GetSelectedImporter(), m_importOptions))
 		{
@@ -245,8 +284,12 @@ void ImportPanel::OnRender(EditorUIContext& context)
 		}
 		else
 		{
+			// Read .import config again to refresh the cache
 			RefreshImportConfigCache(selectedPath);
-			ApplyCachedImportOptionsForSelectedImporter();
+			// Refresh panel ui
+			ApplyCachedImportOptions();
+			// Update the resource
+			ResourceLoader::Reload(selectedPath);
 		}
 	}
 

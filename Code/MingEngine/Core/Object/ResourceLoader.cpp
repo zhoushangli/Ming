@@ -33,7 +33,10 @@ bool ResourceLoader::CanLoad(std::string const& virtualPath)
 	return false;
 }
 
-Ref<Resource> ResourceLoader::Load(const std::string& virtualPath)
+// Raw loading path shared by Load() and LoadUncached().
+// 1) Resolve import chain
+// 2) Iterate registered loaders and call loader->Load(path)
+Ref<Resource> ResourceLoader::LoadInternal(std::string const& virtualPath)
 {
 	if (!FileSystem::IsVirtualPath(virtualPath))
 	{
@@ -41,10 +44,6 @@ Ref<Resource> ResourceLoader::Load(const std::string& virtualPath)
 	}
 
 	std::string const normalizedPath = virtualPath;
-	if (s_loadedResources.find(normalizedPath) != s_loadedResources.end())
-	{
-		return s_loadedResources[normalizedPath];
-	}
 
 	if (!ResourceImporter::IsInternalResourcePath(normalizedPath)
 		&& !ResourceImporter::IsImportConfigPath(normalizedPath))
@@ -52,12 +51,11 @@ Ref<Resource> ResourceLoader::Load(const std::string& virtualPath)
 		std::string importPath;
 		if (ResourceImporter::TryGetImportFile(normalizedPath, importPath) && importPath != normalizedPath)
 		{
-			Ref<Resource> resource = Load(importPath);
+			Ref<Resource> resource = LoadInternal(importPath);
 			if (resource.IsValid())
 			{
 				// Keep the user-selected source path so editor UI can show Pawn.obj instead of the imported cache file.
 				resource->SetSourceFilePath(normalizedPath);
-				s_loadedResources[normalizedPath] = resource;
 			}
 			return resource;
 		}
@@ -68,15 +66,58 @@ Ref<Resource> ResourceLoader::Load(const std::string& virtualPath)
 		if (s_loader[i]->CanLoad(normalizedPath))
 		{
 			Ref<Resource> resource = s_loader[i]->Load(normalizedPath);
-			if (resource.IsValid())
-			{
-				s_loadedResources[normalizedPath] = resource;
-			}
 			return resource;
 		}
 	}
 
 	return Ref<Resource>();
+}
+
+Ref<Resource> ResourceLoader::Load(const std::string& virtualPath)
+{
+	std::string const normalizedPath = virtualPath;
+
+	// 1) Return cached resource if already loaded
+	auto const iter = s_loadedResources.find(normalizedPath);
+	if (iter != s_loadedResources.end())
+	{
+		return iter->second;
+	}
+
+	// 2) Load from disk and cache
+	Ref<Resource> resource = LoadInternal(normalizedPath);
+	if (resource.IsValid())
+	{
+		s_loadedResources[normalizedPath] = resource;
+	}
+	return resource;
+}
+
+Ref<Resource> ResourceLoader::LoadUncached(std::string const& virtualPath) { return LoadInternal(virtualPath); }
+
+Ref<Resource> ResourceLoader::Reload(const std::string& virtualPath)
+{
+	// 1) Look up existing cached resource
+	auto const    iter           = s_loadedResources.find(virtualPath);
+	Ref<Resource> cachedResource = (iter != s_loadedResources.end()) ? iter->second : Ref<Resource>();
+
+	// 2) Load fresh data from disk, bypassing cache
+	Ref<Resource> freshResource = LoadUncached(virtualPath);
+	if (!freshResource.IsValid())
+	{
+		return cachedResource;
+	}
+
+	// 3) Copy fresh data into cached object so existing Ref<> holders see the update
+	if (cachedResource.IsValid())
+	{
+		cachedResource->CopyFrom(*freshResource);
+		return cachedResource;
+	}
+
+	// 4) First-time load: insert into cache
+	s_loadedResources[virtualPath] = freshResource;
+	return freshResource;
 }
 
 bool ResourceFormatLoader::CanLoad(const std::string& virtualPath) const

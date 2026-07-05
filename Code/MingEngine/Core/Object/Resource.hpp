@@ -21,6 +21,12 @@ public:
 	const std::string& GetName() const { return m_name; }
 	void               SetName(const std::string& name) { m_name = name; }
 
+	// Copy content data (vertices, textures, etc.) from another resource of the same type.
+	// Does NOT copy identity fields (path, name, source file path).
+	// Each subclass must override this to copy its own data fields manually.
+	// Returns false if other is not the same type.
+	virtual bool CopyFrom(Resource const& other) = 0;
+
 protected:
 	static void BindMethods();
 

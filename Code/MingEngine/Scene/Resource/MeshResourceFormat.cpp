@@ -15,10 +15,10 @@ namespace
 {
 using Json = nlohmann::ordered_json;
 
-constexpr char const* kMeshMagic     = "MESH";
-constexpr uint32_t    kMeshFileVersion  = 1;
-constexpr size_t      kMinHeaderSize = 4096;
-constexpr char const* kMeshExtension = ".mesh";
+constexpr char const* kMeshMagic       = "MESH";
+constexpr uint32_t    kMeshFileVersion = 1;
+constexpr size_t      kMinHeaderSize   = 4096;
+constexpr char const* kMeshExtension   = ".mesh";
 
 struct BinaryBlock
 {
@@ -29,7 +29,7 @@ struct BinaryBlock
 bool HasExtension(std::string const& virtualPath, std::string const& extension)
 {
 	return virtualPath.size() >= extension.size()
-		&& virtualPath.compare(virtualPath.size() - extension.size(), extension.size(), extension) == 0;
+		   && virtualPath.compare(virtualPath.size() - extension.size(), extension.size(), extension) == 0;
 }
 
 std::string MakePrelude(size_t headerSize)
@@ -111,8 +111,8 @@ bool TryReadBlock(Json const& json, size_t payloadSize, BinaryBlock& outBlock)
 {
 	outBlock = BinaryBlock();
 
-	if (!json.is_object() || !json.contains("offset") || !json.contains("size")
-		|| !json["offset"].is_number_unsigned() || !json["size"].is_number_unsigned())
+	if (!json.is_object() || !json.contains("offset") || !json.contains("size") || !json["offset"].is_number_unsigned()
+		|| !json["size"].is_number_unsigned())
 	{
 		return false;
 	}
@@ -144,10 +144,7 @@ bool TryReadUInt32(Json const& json, char const* name, uint32_t& outValue)
 	return true;
 }
 
-void CopyPayloadBlock(
-	std::vector<uint8_t> const& payload,
-	BinaryBlock const&         block,
-	std::vector<uint8_t>&       outData)
+void CopyPayloadBlock(std::vector<uint8_t> const& payload, BinaryBlock const& block, std::vector<uint8_t>& outData)
 {
 	outData.resize(block.m_size);
 	if (block.m_size > 0)
@@ -184,16 +181,16 @@ Ref<Resource> MeshResourceLoader::Load(std::string const& virtualPath)
 
 	uint32_t version    = 0;
 	size_t   headerSize = 0;
-	if (!TryParsePrelude(prelude, version, headerSize) || version != kMeshFileVersion
-		|| headerSize <= preludeSize || headerSize > fileData.size())
+	if (!TryParsePrelude(prelude, version, headerSize) || version != kMeshFileVersion || headerSize <= preludeSize
+		|| headerSize > fileData.size())
 	{
 		return Ref<Resource>();
 	}
 
-	size_t const           payloadOffset = headerSize;
-	std::string const      jsonText(reinterpret_cast<char const*>(fileData.data() + preludeSize), headerSize - preludeSize);
-	std::vector<uint8_t>   payload(fileData.begin() + payloadOffset, fileData.end());
-	size_t const           payloadSize = payload.size();
+	size_t const      payloadOffset = headerSize;
+	std::string const jsonText(reinterpret_cast<char const*>(fileData.data() + preludeSize), headerSize - preludeSize);
+	std::vector<uint8_t> payload(fileData.begin() + payloadOffset, fileData.end());
+	size_t const         payloadSize = payload.size();
 
 	try
 	{
@@ -205,8 +202,7 @@ Ref<Resource> MeshResourceLoader::Load(std::string const& virtualPath)
 
 		std::string       meshName;
 		Ref<MeshResource> meshData = CreateRef<MeshResource>();
-		if (!TryReadString(root, "name", meshName)
-			|| !TryReadString(root, "vertex_format", meshData->m_vertexFormat)
+		if (!TryReadString(root, "name", meshName) || !TryReadString(root, "vertex_format", meshData->m_vertexFormat)
 			|| !TryReadUInt32(root, "vertex_stride", meshData->m_vertexStride)
 			|| !TryReadUInt32(root, "vertex_count", meshData->m_vertexCount)
 			|| !TryReadString(root, "index_format", meshData->m_indexFormat)
@@ -270,6 +266,16 @@ Ref<Resource> MeshResourceLoader::Load(std::string const& virtualPath)
 
 		meshData->SetVirtualPath(virtualPath);
 		meshData->SetName(meshName);
+
+		meshData->m_vertexBuffer = g_engine->m_renderer->CreateVertexBuffer(
+			meshData->m_vertices.data(),
+			meshData->m_vertexCount * meshData->m_vertexStride,
+			meshData->m_vertexStride);
+		meshData->m_indexBuffer = g_engine->m_renderer->CreateIndexBuffer(
+			meshData->m_indices.data(),
+			meshData->m_indexCount * meshData->m_indexStride,
+			meshData->m_indexStride);
+
 		return meshData;
 	}
 	catch (std::exception const&)
@@ -298,8 +304,8 @@ bool MeshResourceSaver::Save(std::string const& virtualPath, Variant const& valu
 	}
 
 	std::vector<uint8_t> payload;
-	BinaryBlock const   verticesBlock = AppendPayload(payload, meshData->m_vertices);
-	BinaryBlock const   indicesBlock  = AppendPayload(payload, meshData->m_indices);
+	BinaryBlock const    verticesBlock = AppendPayload(payload, meshData->m_vertices);
+	BinaryBlock const    indicesBlock  = AppendPayload(payload, meshData->m_indices);
 
 	Json root;
 	root["type"]          = "Mesh";
@@ -329,8 +335,8 @@ bool MeshResourceSaver::Save(std::string const& virtualPath, Variant const& valu
 		root["textures"].push_back(textureJson);
 	}
 
-	std::string const jsonText = root.dump(1, '\t');
-	size_t headerSize = kMinHeaderSize;
+	std::string const jsonText   = root.dump(1, '\t');
+	size_t            headerSize = kMinHeaderSize;
 	while (MakePrelude(headerSize).size() + jsonText.size() > headerSize)
 	{
 		headerSize *= 2;
