@@ -1,23 +1,15 @@
 #pragma once
 
 #include "MingEngine/Core/Object/Resource.hpp"
+#include "MingEngine/Scene/Resource/TextureResource.hpp"
 
 #include <cstdint>
 #include <string>
 #include <vector>
 
+class GPUTexture;
 class IndexBuffer;
 class VertexBuffer;
-
-struct MeshTextureData
-{
-	std::string          m_name;
-	std::string          m_format;
-	uint32_t             m_width    = 0;
-	uint32_t             m_height   = 0;
-	uint32_t             m_channels = 0;
-	std::vector<uint8_t> m_data;
-};
 
 class MeshResource : public Resource
 {
@@ -32,6 +24,11 @@ public:
 	bool IsEmpty() const;
 	bool CopyFrom(Resource const& other) override;
 
+	void InitGPUResources();
+
+protected:
+	static void BindMethods() {}
+
 public:
 	std::string          m_vertexFormat;
 	uint32_t             m_vertexStride = 0;
@@ -43,8 +40,11 @@ public:
 	uint32_t             m_indexCount  = 0;
 	std::vector<uint8_t> m_indices;
 
-	std::vector<MeshTextureData> m_textures;
+	// Texture references: paths for serialization, Refs for runtime, GPU handles for rendering
+	std::vector<std::string>          m_texturePaths;
+	std::vector<Ref<TextureResource>> m_textureResources;
 
+	// GPU side data handles
 	VertexBuffer* m_vertexBuffer = nullptr;
 	IndexBuffer*  m_indexBuffer  = nullptr;
 };

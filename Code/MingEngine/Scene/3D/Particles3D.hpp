@@ -1,9 +1,11 @@
 #pragma once
 
+#include "MingEngine/Core/Object/RefCounted.hpp"
 #include "MingEngine/Scene/3D/VisualizeInstance3D.hpp"
 
 #include "MingEngine/Core/Math/MathUtils.hpp"
 #include "MingEngine/Core/Render/Rgba8.hpp"
+#include "MingEngine/Scene/Resource/TextureResource.hpp"
 
 #include <string>
 
@@ -77,7 +79,7 @@ public:
 	std::vector<Particle3D> m_particles;
 
 	// This will be generated each frame based on particles' position, size, color, and camera orientation
-	Texture*              m_particleTexture = nullptr;
+	Ref<TextureResource>  m_particleTextureRef;
 	std::vector<Vertex>   m_particleVerts;
 	mutable VertexBuffer* m_particleVertexBuffer = nullptr;
 

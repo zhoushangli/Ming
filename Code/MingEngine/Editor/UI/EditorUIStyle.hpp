@@ -6,11 +6,11 @@ namespace EditorUIStyle
 {
 inline ImVec4 FromRgb(int r, int g, int b, float a = 1.f) { return ImVec4(r / 255.f, g / 255.f, b / 255.f, a); }
 
-inline ImVec4 ControlBackgroundColor() { return FromRgb(0x32, 0x3C, 0x4A); }
+inline ImVec4 ControlBackgroundColor() { return FromRgb(0x50, 0x59, 0x68); }
 
-inline ImVec4 ControlBackgroundHoveredColor() { return FromRgb(0x3F, 0x4A, 0x5C); }
+inline ImVec4 ControlBackgroundHoveredColor() { return FromRgb(0x50, 0x59, 0x68); }
 
-inline ImVec4 ControlBackgroundActiveColor() { return FromRgb(0x49, 0x58, 0x6E); }
+inline ImVec4 ControlBackgroundActiveColor() { return FromRgb(0x56, 0x9E, 0xFF); }
 
 inline float InspectorTabWidth() { return 42.f; }
 

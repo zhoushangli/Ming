@@ -7,7 +7,6 @@
 
 struct Rgba8;
 
-// TODO: Should intergrate into Resource system
 class Image
 {
 public:

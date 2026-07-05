@@ -6,7 +6,7 @@
 
 #include "MingEngine/Core/Math/MathUtils.hpp"
 #include "MingEngine/Engine/Event/EventSystem.hpp"
-#include "MingEngine/Engine/Render/Texture.hpp"
+#include "MingEngine/Engine/Render/GPUTexture.hpp"
 
 #include "ThirdParty/imgui/imgui.h"
 
@@ -46,7 +46,7 @@ void ViewportPanel::OnRender(EditorUIContext& context)
 		context.m_sceneTree != nullptr ? dynamic_cast<Viewport*>(context.m_sceneTree->GetRoot()) : nullptr;
 	if (viewport != nullptr)
 	{
-		Texture* viewportTexture = viewport->GetViewportInfo().m_viewportOutputTexture;
+		GPUTexture* viewportTexture = viewport->GetViewportInfo().m_viewportOutputTexture;
 		if (viewportTexture != nullptr)
 		{
 			ImTextureID  textureId  = (ImTextureID)(intptr_t)viewportTexture->GetShaderResourceView();

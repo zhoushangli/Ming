@@ -51,12 +51,13 @@ RenderRequest Mesh3D::SubmitRenderRequest() const
 		return request;
 	}
 
-	request.m_pass                                  = RenderRequestPass::Opaque;
-	request.m_modelToWorld                          = GetWorldTransform();
-	request.m_tint                                  = Rgba8::White;
-	request.m_vertexBuffer                          = m_meshResource->m_vertexBuffer;
-	request.m_indexBuffer                           = m_meshResource->m_indexBuffer;
-	request.m_textures[SurfaceTextureSlot::Diffuse] = nullptr;
+	request.m_pass         = RenderRequestPass::Opaque;
+	request.m_modelToWorld = GetWorldTransform();
+	request.m_tint         = Rgba8::White;
+	request.m_vertexBuffer = m_meshResource->m_vertexBuffer;
+	request.m_indexBuffer  = m_meshResource->m_indexBuffer;
+	request.m_textures[SurfaceTextureSlot::Diffuse] =
+		m_meshResource->m_textureResources.size() > 0 ? m_meshResource->m_textureResources[0]->GetGPUTexture() : nullptr;
 	request.m_shader         = g_engine->m_renderer->CreateOrGetShader("res://Shaders/DefaultLit.hlsl");
 	request.m_blendMode      = BlendMode::OPAQUE;
 	request.m_depthMode      = DepthMode::READ_WRITE_LESS_EQUAL;

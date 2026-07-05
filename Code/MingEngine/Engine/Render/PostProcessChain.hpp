@@ -3,11 +3,12 @@
 #include "MingEngine/Core/Math/IntVec2.hpp"
 #include "MingEngine/Engine/Render/CameraContext.hpp"
 
+#include <map>
 #include <string>
 #include <vector>
 
 class D3D11RenderBackend;
-class Texture;
+class GPUTexture;
 class Shader;
 
 struct OutputTextureRef
@@ -54,12 +55,12 @@ public:
 struct PostProcessContext
 {
 	CameraContext const* m_camera;
-	Texture*      m_sceneColor;
-	Texture*      m_sceneDepth;
-	Texture*      m_sceneNormal;
-	Texture*      m_ping;
-	Texture*      m_pong;
-	IntVec2       m_outputResolution;
+	GPUTexture*          m_sceneColor;
+	GPUTexture*          m_sceneDepth;
+	GPUTexture*          m_sceneNormal;
+	GPUTexture*          m_ping;
+	GPUTexture*          m_pong;
+	IntVec2              m_outputResolution;
 };
 
 class PostProcessChain
@@ -68,9 +69,13 @@ public:
 	PostProcessChain();
 	~PostProcessChain();
 
-	void     AddPass(PostProcessPass const& pass);
-	Texture* Render(D3D11RenderBackend& renderer, PostProcessContext const& context);
+	void        AddPass(PostProcessPass const& pass);
+	GPUTexture* Render(D3D11RenderBackend& renderer, PostProcessContext const& context);
+
+	void        RegisterCustomTexture(std::string const& name, GPUTexture* texture);
+	GPUTexture* GetCustomTexture(std::string const& name) const;
 
 private:
-	std::vector<PostProcessPass> m_passes;
+	std::vector<PostProcessPass>       m_passes;
+	std::map<std::string, GPUTexture*> m_customTextures;
 };

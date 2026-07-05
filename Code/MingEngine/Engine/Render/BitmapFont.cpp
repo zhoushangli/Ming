@@ -5,7 +5,7 @@
 #include "MingEngine/Core/Math/Vec2.hpp"
 #include "MingEngine/Core/Render/Vertex.hpp"
 #include "MingEngine/Core/Render/VertexUtils.hpp"
-#include "MingEngine/Engine/Render/Texture.hpp"
+#include "MingEngine/Engine/Render/GPUTexture.hpp"
 
 #include <string>
 #include <vector>
@@ -15,7 +15,7 @@ using namespace Math;
 int const kFontSpriteSheetCols = 16;
 int const kFontSpriteSheetRows = 16;
 
-BitmapFont::BitmapFont(char const* fontFilePathNameWithNoExtension, Texture& fontTexture)
+BitmapFont::BitmapFont(char const* fontFilePathNameWithNoExtension, GPUTexture& fontTexture)
 	: m_fontFilePathNameWithNoExtension(fontFilePathNameWithNoExtension),
 	  m_fontGlyphsSpriteSheet(&fontTexture, IntVec2(kFontSpriteSheetCols, kFontSpriteSheetRows))
 {
@@ -25,7 +25,7 @@ BitmapFont::BitmapFont(char const* fontFilePathNameWithNoExtension, Texture& fon
 	m_fontDefaultAspect = texAspect / gridAspect;
 }
 
-Texture* BitmapFont::GetTexture() { return m_fontGlyphsSpriteSheet.GetTexture(); }
+GPUTexture* BitmapFont::GetTexture() { return m_fontGlyphsSpriteSheet.GetTexture(); }
 
 void BitmapFont::AddVertsForText2D(
 	std::vector<Vertex>& verts,

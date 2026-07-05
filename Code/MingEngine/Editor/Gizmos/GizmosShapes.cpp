@@ -53,7 +53,8 @@ EditorWorldGrid3D::EditorWorldGrid3D()
 
 	if (!m_verts.empty() && g_engine != nullptr && g_engine->m_renderer != nullptr)
 	{
-		m_vertexBuffer = g_engine->m_renderer->CreateVertexBuffer(m_verts);
+		m_vertexBuffer =
+			g_engine->m_renderer->CreateVertexBuffer(m_verts.data(), m_verts.size() * sizeof(Vertex), sizeof(Vertex));
 	}
 }
 
@@ -91,6 +92,7 @@ EditorWorldAxis3D::EditorWorldAxis3D()
 
 	if (!m_verts.empty() && g_engine != nullptr && g_engine->m_renderer != nullptr)
 	{
-		m_vertexBuffer = g_engine->m_renderer->CreateVertexBuffer(m_verts);
+		m_vertexBuffer =
+			g_engine->m_renderer->CreateVertexBuffer(m_verts.data(), m_verts.size() * sizeof(Vertex), sizeof(Vertex));
 	}
 }

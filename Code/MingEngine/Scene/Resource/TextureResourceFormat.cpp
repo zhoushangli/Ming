@@ -1,13 +1,12 @@
-#include "MingEngine/Scene/Resource/MeshResourceFormat.hpp"
+#include "MingEngine/Scene/Resource/TextureResourceFormat.hpp"
 
-#include "MingEngine/Core/Object/ResourceLoader.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Engine/File/FileSystem.hpp"
-#include "MingEngine/Scene/Resource/MeshResource.hpp"
 #include "MingEngine/Scene/Resource/TextureResource.hpp"
 
 #include "ThirdParty/nlohmann/json.hpp"
 
+#include <algorithm>
 #include <cstdint>
 #include <cstring>
 #include <exception>
@@ -17,10 +16,10 @@ namespace
 {
 using Json = nlohmann::ordered_json;
 
-constexpr char const* kMeshMagic       = "MESH";
-constexpr uint32_t    kMeshFileVersion = 1;
-constexpr size_t      kMinHeaderSize   = 4096;
-constexpr char const* kMeshExtension   = ".mesh";
+constexpr char const* kTexMagic       = "TEX";
+constexpr uint32_t    kTexFileVersion = 1;
+constexpr size_t      kMinHeaderSize  = 4096;
+constexpr char const* kTexExtension   = ".tex";
 
 struct BinaryBlock
 {
@@ -37,7 +36,7 @@ bool HasExtension(std::string const& virtualPath, std::string const& extension)
 std::string MakePrelude(size_t headerSize)
 {
 	std::ostringstream stream;
-	stream << kMeshMagic << " version=" << kMeshFileVersion << " header_size=" << headerSize << "\n";
+	stream << kTexMagic << " version=" << kTexFileVersion << " header_size=" << headerSize << "\n";
 	return stream.str();
 }
 
@@ -50,7 +49,7 @@ bool TryParsePrelude(std::string const& prelude, uint32_t& outVersion, size_t& o
 	std::string        magic;
 	std::string        versionToken;
 	std::string        headerSizeToken;
-	if (!(stream >> magic >> versionToken >> headerSizeToken) || magic != kMeshMagic)
+	if (!(stream >> magic >> versionToken >> headerSizeToken) || magic != kTexMagic)
 	{
 		return false;
 	}
@@ -73,23 +72,6 @@ bool TryParsePrelude(std::string const& prelude, uint32_t& outVersion, size_t& o
 	{
 		return false;
 	}
-}
-
-bool IsValidMeshData(MeshResource const& meshData)
-{
-	if (meshData.m_vertexFormat.empty() || meshData.m_vertexStride == 0 || meshData.m_vertexCount == 0)
-	{
-		return false;
-	}
-
-	if (meshData.m_indexFormat.empty() || meshData.m_indexStride == 0 || meshData.m_indexCount == 0)
-	{
-		return false;
-	}
-
-	size_t const vertexByteCount = static_cast<size_t>(meshData.m_vertexStride) * meshData.m_vertexCount;
-	size_t const indexByteCount  = static_cast<size_t>(meshData.m_indexStride) * meshData.m_indexCount;
-	return meshData.m_vertices.size() == vertexByteCount && meshData.m_indices.size() == indexByteCount;
 }
 
 Json MakeBlockJson(BinaryBlock const& block)
@@ -155,11 +137,18 @@ void CopyPayloadBlock(std::vector<uint8_t> const& payload, BinaryBlock const& bl
 	}
 }
 
+bool IsValidTextureData(TextureResource const& texData)
+{
+	return texData.m_dimensions.x > 0 && texData.m_dimensions.y > 0 && texData.m_channels > 0
+		   && texData.m_pixels.size()
+				  == static_cast<size_t>(texData.m_dimensions.x) * texData.m_dimensions.y * texData.m_channels;
+}
+
 } // namespace
 
-std::vector<std::string> MeshResourceLoader::GetSupportedExtensions() const { return { kMeshExtension }; }
+std::vector<std::string> TextureResourceLoader::GetSupportedExtensions() const { return { kTexExtension }; }
 
-Ref<Resource> MeshResourceLoader::Load(std::string const& virtualPath)
+Ref<Resource> TextureResourceLoader::Load(std::string const& virtualPath)
 {
 	if (g_engine == nullptr || g_engine->m_fileSystem == nullptr)
 	{
@@ -183,7 +172,7 @@ Ref<Resource> MeshResourceLoader::Load(std::string const& virtualPath)
 
 	uint32_t version    = 0;
 	size_t   headerSize = 0;
-	if (!TryParsePrelude(prelude, version, headerSize) || version != kMeshFileVersion || headerSize <= preludeSize
+	if (!TryParsePrelude(prelude, version, headerSize) || version != kTexFileVersion || headerSize <= preludeSize
 		|| headerSize > fileData.size())
 	{
 		return Ref<Resource>();
@@ -197,78 +186,40 @@ Ref<Resource> MeshResourceLoader::Load(std::string const& virtualPath)
 	try
 	{
 		Json root = Json::parse(jsonText);
-		if (!root.is_object() || !root.contains("type") || root["type"].get<std::string>() != "Mesh")
+		if (!root.is_object() || !root.contains("type") || root["type"].get<std::string>() != "Texture")
 		{
 			return Ref<Resource>();
 		}
 
-		std::string       meshName;
-		Ref<MeshResource> meshData = CreateRef<MeshResource>();
-		if (!TryReadString(root, "name", meshName) || !TryReadString(root, "vertex_format", meshData->m_vertexFormat)
-			|| !TryReadUInt32(root, "vertex_stride", meshData->m_vertexStride)
-			|| !TryReadUInt32(root, "vertex_count", meshData->m_vertexCount)
-			|| !TryReadString(root, "index_format", meshData->m_indexFormat)
-			|| !TryReadUInt32(root, "index_stride", meshData->m_indexStride)
-			|| !TryReadUInt32(root, "index_count", meshData->m_indexCount))
+		std::string          texName;
+		Ref<TextureResource> texData = CreateRef<TextureResource>();
+		if (!TryReadString(root, "name", texName) || !TryReadString(root, "format", texData->m_format)
+			|| !TryReadUInt32(root, "width", (uint32_t&)texData->m_dimensions.x)
+			|| !TryReadUInt32(root, "height", (uint32_t&)texData->m_dimensions.y)
+			|| !TryReadUInt32(root, "channels", (uint32_t&)texData->m_channels))
 		{
 			return Ref<Resource>();
 		}
 
-		BinaryBlock verticesBlock;
-		BinaryBlock indicesBlock;
-		if (!TryReadBlock(root["vertices"], payloadSize, verticesBlock)
-			|| !TryReadBlock(root["indices"], payloadSize, indicesBlock))
+		BinaryBlock dataBlock;
+		if (!TryReadBlock(root["data"], payloadSize, dataBlock))
 		{
 			return Ref<Resource>();
 		}
 
-		if (verticesBlock.m_size != static_cast<size_t>(meshData->m_vertexStride) * meshData->m_vertexCount
-			|| indicesBlock.m_size != static_cast<size_t>(meshData->m_indexStride) * meshData->m_indexCount)
+		CopyPayloadBlock(payload, dataBlock, texData->m_pixels);
+
+		if (!IsValidTextureData(*texData))
 		{
 			return Ref<Resource>();
 		}
 
-		CopyPayloadBlock(payload, verticesBlock, meshData->m_vertices);
-		CopyPayloadBlock(payload, indicesBlock, meshData->m_indices);
+		texData->SetVirtualPath(virtualPath);
+		texData->SetName(texName);
 
-		if (root.contains("textures"))
-		{
-			if (!root["textures"].is_array())
-			{
-				return Ref<Resource>();
-			}
+		texData->InitGPUResources();
 
-			for (Json const& textureJson : root["textures"])
-			{
-				if (!textureJson.is_string())
-				{
-					return Ref<Resource>();
-				}
-
-				std::string          texPath = textureJson.get<std::string>();
-				Ref<Resource>        loaded  = ResourceLoader::Load(texPath);
-				Ref<TextureResource> texRef(loaded);
-				if (!texRef.IsValid())
-				{
-					return Ref<Resource>();
-				}
-
-				meshData->m_texturePaths.push_back(texPath);
-				meshData->m_textureResources.push_back(texRef);
-			}
-		}
-
-		if (!IsValidMeshData(*meshData))
-		{
-			return Ref<Resource>();
-		}
-
-		meshData->SetVirtualPath(virtualPath);
-		meshData->SetName(meshName);
-
-		meshData->InitGPUResources();
-
-		return meshData;
+		return texData;
 	}
 	catch (std::exception const&)
 	{
@@ -276,50 +227,37 @@ Ref<Resource> MeshResourceLoader::Load(std::string const& virtualPath)
 	}
 }
 
-bool MeshResourceSaver::CanSave(std::string const& virtualPath, Variant const& value) const
+bool TextureResourceSaver::CanSave(std::string const& virtualPath, Variant const& value) const
 {
-	Ref<MeshResource> meshData(value);
-	return meshData.IsValid() && HasExtension(virtualPath, kMeshExtension);
+	Ref<TextureResource> texData(value);
+	return texData.IsValid() && HasExtension(virtualPath, kTexExtension);
 }
 
-bool MeshResourceSaver::Save(std::string const& virtualPath, Variant const& value)
+bool TextureResourceSaver::Save(std::string const& virtualPath, Variant const& value)
 {
 	if (g_engine == nullptr || g_engine->m_fileSystem == nullptr || !FileSystem::IsVirtualPath(virtualPath))
 	{
 		return false;
 	}
 
-	Ref<MeshResource> meshData(value);
-	if (!meshData.IsValid() || !IsValidMeshData(*meshData))
+	Ref<TextureResource> texData(value);
+	if (!texData.IsValid() || !IsValidTextureData(*texData))
 	{
 		return false;
 	}
 
 	std::vector<uint8_t> payload;
-	BinaryBlock const    verticesBlock = AppendPayload(payload, meshData->m_vertices);
-	BinaryBlock const    indicesBlock  = AppendPayload(payload, meshData->m_indices);
+	BinaryBlock const    dataBlock = AppendPayload(payload, texData->m_pixels);
 
 	Json root;
-	root["type"]          = "Mesh";
-	root["version"]       = kMeshFileVersion;
-	root["name"]          = meshData->GetName();
-	root["vertex_format"] = meshData->m_vertexFormat;
-	root["vertex_stride"] = meshData->m_vertexStride;
-	root["vertex_count"]  = meshData->m_vertexCount;
-	root["vertices"]      = MakeBlockJson(verticesBlock);
-	root["index_format"]  = meshData->m_indexFormat;
-	root["index_stride"]  = meshData->m_indexStride;
-	root["index_count"]   = meshData->m_indexCount;
-	root["indices"]       = MakeBlockJson(indicesBlock);
-	root["textures"]      = Json::array();
-
-	for (Ref<TextureResource> const& texRef : meshData->m_textureResources)
-	{
-		if (texRef.IsValid())
-		{
-			root["textures"].push_back(texRef->GetVirtualPath());
-		}
-	}
+	root["type"]     = "Texture";
+	root["version"]  = kTexFileVersion;
+	root["name"]     = texData->GetName();
+	root["format"]   = texData->m_format;
+	root["width"]    = texData->m_dimensions.x;
+	root["height"]   = texData->m_dimensions.y;
+	root["channels"] = texData->m_channels;
+	root["data"]     = MakeBlockJson(dataBlock);
 
 	std::string const jsonText   = root.dump(1, '\t');
 	size_t            headerSize = kMinHeaderSize;
@@ -344,6 +282,6 @@ bool MeshResourceSaver::Save(std::string const& virtualPath, Variant const& valu
 		return false;
 	}
 
-	meshData->SetVirtualPath(virtualPath);
+	texData->SetVirtualPath(virtualPath);
 	return true;
 }

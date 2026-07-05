@@ -1,13 +1,16 @@
 #include "MingEngine/Scene/3D/Particles3D.hpp"
-#include "MingEngine/Scene/3D/Camera3D.hpp"
-#include "MingEngine/Scene/Core/SceneTree.hpp"
 
 #include "MingEngine/Core/ErrorWarningAssert.hpp"
 #include "MingEngine/Core/Math/MathUtils.hpp"
 #include "MingEngine/Core/Math/RandomNumberGenerator.hpp"
+#include "MingEngine/Core/Object/ResourceLoader.hpp"
 #include "MingEngine/Core/XmlUtils.hpp"
 #include "MingEngine/Engine/Render/Renderer.hpp"
 #include "MingEngine/Engine/Render/VertexBuffer.hpp"
+#include "MingEngine/Scene/3D/Camera3D.hpp"
+#include "MingEngine/Scene/Core/SceneTree.hpp"
+#include "MingEngine/Scene/Resource/TextureResource.hpp"
+#include "MingEngine/Core/Render/Vertex.hpp"
 
 using namespace Math;
 
@@ -188,7 +191,8 @@ Particles3D::Particles3D(std::string const& xmlFilePath)
 
 	if (!m_imagePath.empty())
 	{
-		m_particleTexture = g_engine->m_renderer->CreateOrGetTexture(m_imagePath.c_str());
+		Ref<Resource> loaded = ResourceLoader::Load(m_imagePath);
+		m_particleTextureRef = Ref<TextureResource>(loaded);
 	}
 	m_spawnInterval = 1.f / m_spawnRate;
 }
@@ -325,16 +329,17 @@ RenderRequest Particles3D::SubmitRenderRequest() const
 	}
 	g_engine->m_renderer->CopyCPUToGPU(m_particleVerts.data(), size, m_particleVertexBuffer);
 
-	request.m_pass                                  = RenderRequestPass::Opaque;
-	request.m_modelToWorld                          = Matrix4x4::Identity;
-	request.m_tint                                  = Rgba8::White;
-	request.m_vertexBuffer                          = m_particleVertexBuffer;
-	request.m_textures[SurfaceTextureSlot::Diffuse] = m_particleTexture;
-	request.m_shader                                = nullptr;
-	request.m_blendMode                             = BlendMode::ADDITIVE;
-	request.m_depthMode                             = DepthMode::READ_WRITE_LESS_EQUAL;
-	request.m_rasterizerMode                        = RasterizerMode::SOLID_CULL_NONE;
-	request.m_samplerMode                           = SamplerMode::POINT_CLAMP;
+	request.m_pass         = RenderRequestPass::Opaque;
+	request.m_modelToWorld = Matrix4x4::Identity;
+	request.m_tint         = Rgba8::White;
+	request.m_vertexBuffer = m_particleVertexBuffer;
+	request.m_textures[SurfaceTextureSlot::Diffuse] =
+		m_particleTextureRef.IsValid() ? m_particleTextureRef->GetGPUTexture() : nullptr;
+	request.m_shader         = nullptr;
+	request.m_blendMode      = BlendMode::ADDITIVE;
+	request.m_depthMode      = DepthMode::READ_WRITE_LESS_EQUAL;
+	request.m_rasterizerMode = RasterizerMode::SOLID_CULL_NONE;
+	request.m_samplerMode    = SamplerMode::POINT_CLAMP;
 	return request;
 }
 

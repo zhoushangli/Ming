@@ -151,7 +151,8 @@ void CreateVertexBufferForObject(DebugObject& object)
 	}
 
 	delete object.vertexBuffer;
-	object.vertexBuffer = renderer->CreateVertexBuffer(object.verts);
+	object.vertexBuffer =
+		renderer->CreateVertexBuffer(object.verts.data(), object.verts.size() * sizeof(Vertex), sizeof(Vertex));
 }
 
 DebugObject MakeWorldSphereObject(
@@ -341,7 +342,7 @@ RasterizerMode GetDebugRasterizerMode(DebugObject const& obj)
 	}
 }
 
-void SubmitDebugRequest(Renderer* renderer, DebugObject const& obj, RenderRequestPass pass, Texture* texture)
+void SubmitDebugRequest(Renderer* renderer, DebugObject const& obj, RenderRequestPass pass, GPUTexture* texture)
 {
 	// Temporary migration behavior:
 	// 1) DebugRenderer still updates object lifetime and GPU geometry.
@@ -362,7 +363,7 @@ void SubmitWorldObject(
 	Rgba8 const*         overrideEndColor   = nullptr)
 {
 	std::vector<Vertex> verts;
-	Texture*            texture            = nullptr;
+	GPUTexture*            texture            = nullptr;
 	Rgba8 const         originalStartColor = obj.startColor;
 	Rgba8 const         originalEndColor   = obj.endColor;
 
@@ -988,24 +989,24 @@ void DebugRenderWorld(const CameraContext& camera)
 		return;
 	}
 
-	Renderer* renderer = s_debugRenderConfig.m_renderer;
-	if (renderer == nullptr)
-	{
-		return;
-	}
+	// Renderer* renderer = s_debugRenderConfig.m_renderer;
+	// if (renderer == nullptr)
+	// {
+	// 	return;
+	// }
 
-	BitmapFont* font = renderer->CreateOrGetBitmapFont(
-		Stringf("%s%s", s_debugRenderConfig.m_fontPath.c_str(), s_debugRenderConfig.m_fontName.c_str()).c_str());
+	// BitmapFont* font = renderer->CreateOrGetBitmapFont(
+	// 	Stringf("%s%s", s_debugRenderConfig.m_fontPath.c_str(), s_debugRenderConfig.m_fontName.c_str()).c_str());
 
-	for (DebugObject& obj : s_debugObjects)
-	{
-		if (obj.type == DebugObjectType::SCREEN_TEXT || obj.type == DebugObjectType::MESSAGE)
-		{
-			continue;
-		}
+	// for (DebugObject& obj : s_debugObjects)
+	// {
+	// 	if (obj.type == DebugObjectType::SCREEN_TEXT || obj.type == DebugObjectType::MESSAGE)
+	// 	{
+	// 		continue;
+	// 	}
 
-		SubmitWorldObject(renderer, font, camera, obj);
-	}
+	// 	SubmitWorldObject(renderer, font, camera, obj);
+	// }
 }
 
 void DebugRenderScreen(const CameraContext& camera)
@@ -1015,30 +1016,30 @@ void DebugRenderScreen(const CameraContext& camera)
 		return;
 	}
 
-	Renderer* renderer = s_debugRenderConfig.m_renderer;
-	if (renderer == nullptr)
-	{
-		return;
-	}
+	// Renderer* renderer = s_debugRenderConfig.m_renderer;
+	// if (renderer == nullptr)
+	// {
+	// 	return;
+	// }
 
-	BitmapFont* font = renderer->CreateOrGetBitmapFont(
-		Stringf("%s%s", s_debugRenderConfig.m_fontPath.c_str(), s_debugRenderConfig.m_fontName.c_str()).c_str());
+	// BitmapFont* font = renderer->CreateOrGetBitmapFont(
+	// 	Stringf("%s%s", s_debugRenderConfig.m_fontPath.c_str(), s_debugRenderConfig.m_fontName.c_str()).c_str());
 
-	for (DebugObject& obj : s_debugObjects)
-	{
-		if (obj.type != DebugObjectType::SCREEN_TEXT)
-		{
-			continue;
-		}
+	// for (DebugObject& obj : s_debugObjects)
+	// {
+	// 	if (obj.type != DebugObjectType::SCREEN_TEXT)
+	// 	{
+	// 		continue;
+	// 	}
 
-		SubmitScreenObject(renderer, font, camera, obj);
-	}
+	// 	SubmitScreenObject(renderer, font, camera, obj);
+	// }
 
-	for (int messageIndex = 0; messageIndex < (int)s_debugMessages.size(); ++messageIndex)
-	{
-		DebugObject& obj = s_debugMessages[messageIndex];
-		SubmitScreenObject(renderer, font, camera, obj, (int)s_debugMessages.size() - messageIndex - 1);
-	}
+	// for (int messageIndex = 0; messageIndex < (int)s_debugMessages.size(); ++messageIndex)
+	// {
+	// 	DebugObject& obj = s_debugMessages[messageIndex];
+	// 	SubmitScreenObject(renderer, font, camera, obj, (int)s_debugMessages.size() - messageIndex - 1);
+	// }
 }
 
 void DebugRenderEndFrame()

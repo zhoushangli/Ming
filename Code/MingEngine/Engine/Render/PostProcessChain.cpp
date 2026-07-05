@@ -38,7 +38,7 @@ PostProcessChain::PostProcessChain() { IntVec2 const fullResolution = g_engine->
 
 PostProcessChain::~PostProcessChain() {}
 
-Texture* PostProcessChain::Render(D3D11RenderBackend& renderer, PostProcessContext const& context)
+GPUTexture* PostProcessChain::Render(D3D11RenderBackend& renderer, PostProcessContext const& context)
 {
 	IntVec2 const fullResolution = g_engine->m_windowSystem->GetClientDimensions();
 
@@ -47,12 +47,12 @@ Texture* PostProcessChain::Render(D3D11RenderBackend& renderer, PostProcessConte
 	renderer.SetRasterizerMode(RasterizerMode::SOLID_CULL_NONE);
 	renderer.SetDepthMode(DepthMode::READ_ONLY_ALWAYS);
 
-	Texture* sceneColor  = context.m_sceneColor;
-	Texture* sceneDepth  = context.m_sceneDepth;
-	Texture* sceneNormal = context.m_sceneNormal;
+	GPUTexture* sceneColor  = context.m_sceneColor;
+	GPUTexture* sceneDepth  = context.m_sceneDepth;
+	GPUTexture* sceneNormal = context.m_sceneNormal;
 
-	Texture* ping = context.m_ping;
-	Texture* pong = context.m_pong;
+	GPUTexture* ping = context.m_ping;
+	GPUTexture* pong = context.m_pong;
 
 	std::vector<PostProcessPass const*> enabledPasses;
 	enabledPasses.reserve(m_passes.size());
@@ -69,11 +69,11 @@ Texture* PostProcessChain::Render(D3D11RenderBackend& renderer, PostProcessConte
 	// We keep track of it so when case like
 	// PingPong ---> CustomOutput --(used as input in later pass)--> PingPong
 	// We can bind the correct texture as input for the later pass
-	Texture* mainChainColorTexture = sceneColor;
+	GPUTexture* mainChainColorTexture = sceneColor;
 
 	for (PostProcessPass const* pass : enabledPasses)
 	{
-		Texture* outputTexture = nullptr;
+		GPUTexture* outputTexture = nullptr;
 
 		if (pass->HasCustomInputs())
 		{
@@ -102,7 +102,7 @@ Texture* PostProcessChain::Render(D3D11RenderBackend& renderer, PostProcessConte
 						customInput.m_slot,
 						PostProcessTextureSlot::MaxSamplerSlots - 1));
 
-				Texture* customTexture = renderer.GetTextureFromFileName(customInput.m_name.c_str());
+				GPUTexture* customTexture = GetCustomTexture(customInput.m_name.c_str());
 				if (customTexture != nullptr)
 				{
 					renderer.BindTexture(customTexture, customInput.m_slot);
@@ -114,7 +114,7 @@ Texture* PostProcessChain::Render(D3D11RenderBackend& renderer, PostProcessConte
 		bool usesMainChainColor = false;
 		if (pass->HasCustomOutput())
 		{
-			outputTexture = renderer.GetTextureFromFileName(pass->m_customOutput.m_name.c_str());
+			outputTexture = GetCustomTexture(pass->m_customOutput.m_name.c_str());
 		}
 		else
 		{
@@ -131,4 +131,20 @@ Texture* PostProcessChain::Render(D3D11RenderBackend& renderer, PostProcessConte
 			mainChainColorTexture = outputTexture;
 	}
 	return mainChainColorTexture;
+}
+
+void PostProcessChain::RegisterCustomTexture(std::string const& name, GPUTexture* texture)
+{
+	m_customTextures[name] = texture;
+}
+
+GPUTexture* PostProcessChain::GetCustomTexture(std::string const& name) const
+{
+	auto found = m_customTextures.find(name);
+	if (found != m_customTextures.end())
+	{
+		return found->second;
+	}
+
+	return nullptr;
 }

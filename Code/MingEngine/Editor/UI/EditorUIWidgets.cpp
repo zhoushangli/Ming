@@ -65,15 +65,15 @@ bool PropertyTripleFloat(
 	drawList->AddRectFilled(
 		barPos,
 		ImVec2(barPos.x + barWidth, barPos.y + barHeight),
-		IM_COL32(27, 33, 42, 255),
+		IM_COL32(0x21, 0x25, 0x2B, 0xFF),
 		style.FrameRounding);
 
 	ImGui::PushID(id);
 	ImGui::Dummy(ImVec2(barWidth, barHeight));
 
 	ImGui::PushStyleColor(ImGuiCol_FrameBg, IM_COL32(0, 0, 0, 0));
-	ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, IM_COL32(45, 52, 64, 180));
-	ImGui::PushStyleColor(ImGuiCol_FrameBgActive, IM_COL32(55, 62, 76, 220));
+	ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, IM_COL32(0x50, 0x59, 0x68, 0xCC));
+	ImGui::PushStyleColor(ImGuiCol_FrameBgActive, IM_COL32(0x50, 0x59, 0x68, 0xE0));
 	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0.f, style.FramePadding.y));
 
 	bool edited = false;
@@ -145,7 +145,59 @@ bool PropertyBool(std::string const& label, char const* id, bool& value)
 {
 	BeginPropertyRow(label);
 	NextPropertyColumn();
-	bool const edited = ImGui::Checkbox(id, &value);
+
+	ImGuiStyle const& style       = ImGui::GetStyle();
+	ImVec2 const      framePos    = ImGui::GetCursorScreenPos();
+	float const       frameWidth  = ImGui::GetContentRegionAvail().x;
+	float const       frameHeight = ImGui::GetFrameHeight();
+
+	std::string const buttonId = std::string(id) + "_bool_field";
+	ImGui::InvisibleButton(buttonId.c_str(), ImVec2(frameWidth, frameHeight));
+	bool const hovered = ImGui::IsItemHovered();
+	bool const active  = ImGui::IsItemActive();
+	bool const edited  = ImGui::IsItemClicked(ImGuiMouseButton_Left);
+	if (edited)
+	{
+		value = !value;
+	}
+
+	ImVec4 const bgColor =
+		active ? ImGui::GetStyleColorVec4(ImGuiCol_FrameBgActive)
+			   : (hovered ? ImGui::GetStyleColorVec4(ImGuiCol_FrameBgHovered)
+						  : ImGui::GetStyleColorVec4(ImGuiCol_FrameBg));
+
+	ImDrawList* drawList = ImGui::GetWindowDrawList();
+	ImVec2 const frameMax(framePos.x + frameWidth, framePos.y + frameHeight);
+	drawList->AddRectFilled(framePos, frameMax, ImGui::GetColorU32(bgColor), style.FrameRounding);
+
+	float const boxSize = ImGui::GetFontSize() * 0.72f;
+	ImVec2 const boxMin(
+		framePos.x + style.FramePadding.x,
+		framePos.y + (frameHeight - boxSize) * 0.5f);
+	ImVec2 const boxMax(boxMin.x + boxSize, boxMin.y + boxSize);
+
+	ImU32 const boxColor =
+		value ? ImGui::GetColorU32(ImGuiCol_CheckMark) : ImGui::GetColorU32(ImGuiCol_FrameBgActive);
+	drawList->AddRectFilled(boxMin, boxMax, boxColor, style.FrameRounding * 0.45f);
+
+	if (value)
+	{
+		float const thickness = 2.f;
+		ImU32 const markColor = ImGui::GetColorU32(ImGuiCol_Text);
+		ImVec2 const a(boxMin.x + boxSize * 0.22f, boxMin.y + boxSize * 0.52f);
+		ImVec2 const b(boxMin.x + boxSize * 0.42f, boxMin.y + boxSize * 0.72f);
+		ImVec2 const c(boxMin.x + boxSize * 0.78f, boxMin.y + boxSize * 0.28f);
+		drawList->AddLine(a, b, markColor, thickness);
+		drawList->AddLine(b, c, markColor, thickness);
+	}
+
+	char const* valueText = value ? "On" : "Off";
+	ImVec2 const textSize = ImGui::CalcTextSize(valueText);
+	ImVec2 const textPos(
+		boxMax.x + style.ItemInnerSpacing.x,
+		framePos.y + (frameHeight - textSize.y) * 0.5f);
+	drawList->AddText(textPos, ImGui::GetColorU32(ImGuiCol_Text), valueText);
+
 	EndPropertyRow();
 	return edited;
 }

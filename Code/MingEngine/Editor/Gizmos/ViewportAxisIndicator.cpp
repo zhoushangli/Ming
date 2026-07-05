@@ -83,7 +83,9 @@ ViewportAxisIndicator::ViewportAxisIndicator()
 	SetReady(true);
 	SetProcess(true);
 
-	m_vertexBuffer = g_engine->m_renderer->CreateVertexBuffer(std::vector<Vertex>{ Vertex(Vec3::Zero, Rgba8::White) });
+	std::vector<Vertex> verts{ Vertex(Vec3::Zero, Rgba8::White) };
+	m_vertexBuffer =
+		g_engine->m_renderer->CreateVertexBuffer(verts.data(), verts.size() * sizeof(Vertex), sizeof(Vertex));
 }
 
 ViewportAxisIndicator::~ViewportAxisIndicator() {}
@@ -183,5 +185,5 @@ void ViewportAxisIndicator::RebuildVertexBuffer()
 			axisColor);
 	}
 
-	g_engine->m_renderer->UpdateVertexBuffer(m_vertexBuffer, m_verts);
+	g_engine->m_renderer->UpdateVertexBuffer(m_vertexBuffer, m_verts.data(), m_verts.size() * sizeof(Vertex));
 }

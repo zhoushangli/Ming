@@ -1,15 +1,17 @@
 #include "MingEngine/Engine/Render/D3D11RenderBackend.hpp"
 
 #include "MingEngine/Core/ErrorWarningAssert.hpp"
+#include "MingEngine/Core/Object/ResourceLoader.hpp"
 #include "MingEngine/Core/Render/Vertex.hpp"
 #include "MingEngine/Core/Render/VertexUtils.hpp"
 #include "MingEngine/Core/StringUtils.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Engine/Render/CameraContext.hpp"
 #include "MingEngine/Engine/Render/ConstantBuffer.hpp"
+#include "MingEngine/Engine/Render/GPUTexture.hpp"
 #include "MingEngine/Engine/Render/IndexBuffer.hpp"
-#include "MingEngine/Engine/Render/Texture.hpp"
 #include "MingEngine/Engine/Render/VertexBuffer.hpp"
+#include "MingEngine/Scene/Resource/TextureResource.hpp"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "ThirdParty/stb/stb_image.h"
@@ -328,8 +330,8 @@ void           D3D11RenderBackend::Startup()
 
 #pragma region Startup: Create default texture
 
-	m_defaultWhiteTexture = CreateTextureFromData("DefaultWhite", IntVec2(2, 2), 4, (uint8_t*)kDefaultWhiteTexture);
-	m_defaultBlackTexture = CreateTextureFromData("DefaultBlack", IntVec2(2, 2), 4, (uint8_t*)kDefaultBlackTexture);
+	m_defaultWhiteTexture = CreateGPUTexture("DefaultWhite", IntVec2(2, 2), 4, (uint8_t*)kDefaultWhiteTexture);
+	m_defaultBlackTexture = CreateGPUTexture("DefaultBlack", IntVec2(2, 2), 4, (uint8_t*)kDefaultBlackTexture);
 	BindTexture(m_defaultWhiteTexture);
 
 #pragma endregion
@@ -405,18 +407,6 @@ void D3D11RenderBackend::Shutdown()
 		delete shader;
 	}
 	m_cachedShaders.clear();
-
-	for (auto& pair : m_texturesByName)
-	{
-		delete pair.second;
-	}
-	m_texturesByName.clear();
-
-	for (auto& pair : m_fontsByName)
-	{
-		delete pair.second;
-	}
-	m_fontsByName.clear();
 
 	m_d3dAnnotation->Release();
 	m_d3dRenderTargetView->Release();
@@ -573,9 +563,9 @@ void D3D11RenderBackend::DrawIndexedVertexBuffer(VertexBuffer* vertexBuffer, Ind
 
 #pragma region Public: High-level bind helpers used by gameplay/render features
 
-void D3D11RenderBackend::BindTexture(Texture* textureOrNull) { BindTexture(textureOrNull, 0); }
+void D3D11RenderBackend::BindTexture(GPUTexture* textureOrNull) { BindTexture(textureOrNull, 0); }
 
-void D3D11RenderBackend::BindTexture(Texture* textureOrNull, unsigned int slot)
+void D3D11RenderBackend::BindTexture(GPUTexture* textureOrNull, unsigned int slot)
 {
 	GUARANTEE_OR_DIE(m_d3dDeviceContext, "BindTexture: m_d3dDeviceContext is null");
 
@@ -627,7 +617,9 @@ Shader* D3D11RenderBackend::CreateOrGetShader(std::string const& shaderVirtualPa
 	GUARANTEE_OR_DIE(
 		FileSystem::IsVirtualPath(shaderVirtualPath),
 		Stringf("CreateOrGetShader: \"%s\" is not a virtual path", shaderVirtualPath.c_str()));
-	GUARANTEE_OR_DIE(g_engine != nullptr && g_engine->m_fileSystem != nullptr, "CreateOrGetShader: FileSystem is required");
+	GUARANTEE_OR_DIE(
+		g_engine != nullptr && g_engine->m_fileSystem != nullptr,
+		"CreateOrGetShader: FileSystem is required");
 
 	for (Shader* shader : m_cachedShaders)
 	{
@@ -646,36 +638,13 @@ Shader* D3D11RenderBackend::CreateOrGetShader(std::string const& shaderVirtualPa
 	return CreateShader(shaderVirtualPath, shaderSource);
 }
 
-Texture* D3D11RenderBackend::CreateOrGetTexture(char const* imageFilePath)
-{
-	// See if we already have this texture previously loaded
-	Texture* existingTexture = GetTextureFromFileName(imageFilePath); // You need to write this
-	if (existingTexture)
-	{
-		return existingTexture;
-	}
-
-	// Never seen this texture before!  Let's load it.
-	Texture* newTexture = CreateTextureFromFile(imageFilePath);
-	return newTexture;
-}
-
-Texture* D3D11RenderBackend::CreateTextureFromImage(const Image& image)
-{
-	return CreateTextureFromData(
-		image.GetImageFilePath().c_str(),
-		image.GetDimensions(),
-		4,
-		(uint8_t*)image.GetRawData());
-}
-
-Texture*
-D3D11RenderBackend::CreateTextureFromData(char const* name, IntVec2 dimensions, int bytesPerTexel, uint8_t* texelData)
+GPUTexture*
+D3D11RenderBackend::CreateGPUTexture(char const* name, IntVec2 dimensions, int bytesPerTexel, uint8_t const* texelData)
 {
 	// We only support RGBA8 format for now, so require 4 bytes per texel
 	GUARANTEE_OR_DIE(
 		bytesPerTexel == 4,
-		Stringf("CreateTextureFromData requires 4 bytes/texel (RGBA). Got %i for \"%s\"", bytesPerTexel, name));
+		Stringf("CreateGPUTextureFromData requires 4 bytes/texel (RGBA). Got %i for \"%s\"", bytesPerTexel, name));
 
 	D3D11_TEXTURE2D_DESC textureDesc = {};
 	textureDesc.Width                = (UINT)dimensions.x;
@@ -691,12 +660,12 @@ D3D11RenderBackend::CreateTextureFromData(char const* name, IntVec2 dimensions, 
 	textureData.pSysMem                = texelData;
 	textureData.SysMemPitch            = 4 * dimensions.x;
 
-	Texture* newTexture = CreateTextureInternal(name, dimensions, &textureDesc, &textureData);
+	GPUTexture* newTexture = CreateTextureInternal(name, dimensions, &textureDesc, &textureData);
 
 	return newTexture;
 }
 
-Texture* D3D11RenderBackend::CreateRenderTargetTexture(char const* name, IntVec2 dimensions)
+GPUTexture* D3D11RenderBackend::CreateRenderTargetTexture(char const* name, IntVec2 dimensions)
 {
 	D3D11_TEXTURE2D_DESC textureDesc = {};
 	textureDesc.Width                = (UINT)dimensions.x;
@@ -708,12 +677,12 @@ Texture* D3D11RenderBackend::CreateRenderTargetTexture(char const* name, IntVec2
 	textureDesc.BindFlags            = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
 	textureDesc.SampleDesc.Count     = 1;
 
-	Texture* newTexture = CreateTextureInternal(name, dimensions, &textureDesc, nullptr);
+	GPUTexture* newTexture = CreateTextureInternal(name, dimensions, &textureDesc, nullptr);
 
 	return newTexture;
 }
 
-Texture* D3D11RenderBackend::CreateDepthStencilTexture(char const* name, IntVec2 dimensions)
+GPUTexture* D3D11RenderBackend::CreateDepthStencilTexture(char const* name, IntVec2 dimensions)
 {
 	D3D11_TEXTURE2D_DESC depthTextureDesc = {};
 	depthTextureDesc.Width                = (UINT)dimensions.x;
@@ -736,54 +705,23 @@ Texture* D3D11RenderBackend::CreateDepthStencilTexture(char const* name, IntVec2
 	srvDesc.Texture2D.MostDetailedMip       = 0;
 	srvDesc.Texture2D.MipLevels             = 1;
 
-	Texture* newTexture =
+	GPUTexture* newTexture =
 		CreateTextureInternal(name, dimensions, &depthTextureDesc, nullptr, nullptr, &srvDesc, &dsvDesc);
 
 	return newTexture;
 }
 
-void D3D11RenderBackend::DestroyTexture(Texture* texture)
+void D3D11RenderBackend::DestroyTexture(GPUTexture* texture)
 {
 	if (texture)
 	{
-		std::string textureName       = texture->m_name;
-		m_texturesByName[textureName] = nullptr;
-
 		delete texture;
 	}
-}
-
-BitmapFont* D3D11RenderBackend::CreateOrGetBitmapFont(char const* fontFilePathNameWithNoExtension)
-{
-	std::string fontKey = std::string(fontFilePathNameWithNoExtension);
-	auto        found   = m_fontsByName.find(fontKey);
-	if (found != m_fontsByName.end())
-	{
-		return found->second;
-	}
-
-	Texture*    fontTexture   = CreateOrGetTexture(Stringf("%s.png", fontFilePathNameWithNoExtension).c_str());
-	BitmapFont* newBitmapFont = new BitmapFont(fontFilePathNameWithNoExtension, *fontTexture);
-	m_fontsByName[fontKey]    = newBitmapFont;
-	return newBitmapFont;
 }
 
 VertexBuffer* D3D11RenderBackend::CreateVertexBuffer(const unsigned int size, unsigned int stride)
 {
 	return new VertexBuffer(m_d3dDevice, size, stride);
-}
-
-VertexBuffer* D3D11RenderBackend::CreateVertexBuffer(std::vector<Vertex> const& verts)
-{
-	if (verts.empty())
-	{
-		return nullptr;
-	}
-
-	unsigned int const  vertsSize    = static_cast<unsigned int>(verts.size()) * sizeof(Vertex);
-	VertexBuffer* const vertexBuffer = CreateVertexBuffer(vertsSize, sizeof(Vertex));
-	CopyCPUToGPU(verts.data(), vertsSize, vertexBuffer);
-	return vertexBuffer;
 }
 
 VertexBuffer* D3D11RenderBackend::CreateVertexBuffer(void const* data, const unsigned int size, unsigned int stride)
@@ -801,19 +739,6 @@ ConstantBuffer* D3D11RenderBackend::CreateConstantBuffer(const unsigned int size
 IndexBuffer* D3D11RenderBackend::CreateIndexBuffer(const unsigned int size)
 {
 	return new IndexBuffer(m_d3dDevice, size);
-}
-
-IndexBuffer* D3D11RenderBackend::CreateIndexBuffer(std::vector<unsigned int> const& indexes)
-{
-	if (indexes.empty())
-	{
-		return nullptr;
-	}
-
-	unsigned int const indexesSize = static_cast<unsigned int>(indexes.size()) * sizeof(unsigned int);
-	IndexBuffer* const indexBuffer = CreateIndexBuffer(indexesSize);
-	CopyCPUToGPU(indexes.data(), indexesSize, indexBuffer);
-	return indexBuffer;
 }
 
 IndexBuffer* D3D11RenderBackend::CreateIndexBuffer(void const* data, const unsigned int size, unsigned int stride)
@@ -903,34 +828,6 @@ void D3D11RenderBackend::EndEvent()
 	{
 		m_d3dAnnotation->EndEvent();
 	}
-}
-
-#pragma endregion
-
-#pragma region Private: Texture cache internals
-
-Texture* D3D11RenderBackend::CreateTextureFromFile(char const* imageFilePath)
-{
-	Image image(imageFilePath);
-
-	return CreateTextureFromImage(image);
-}
-
-Texture* D3D11RenderBackend::GetTextureFromFileName(char const* imageFilePath)
-{
-	if (imageFilePath == nullptr)
-	{
-		return nullptr;
-	}
-
-	std::string filePath = std::string(imageFilePath);
-	auto        found    = m_texturesByName.find(filePath);
-	if (found != m_texturesByName.end())
-	{
-		return found->second;
-	}
-
-	return nullptr;
 }
 
 #pragma endregion
@@ -1181,7 +1078,7 @@ ID3D11Device* D3D11RenderBackend::GetD3DDevice() const { return m_d3dDevice; }
 
 ID3D11DeviceContext* D3D11RenderBackend::GetD3DDeviceContext() const { return m_d3dDeviceContext; }
 
-void D3D11RenderBackend::ClearRenderTarget(Texture* renderTarget, Rgba8 const& clearColor)
+void D3D11RenderBackend::ClearRenderTarget(GPUTexture* renderTarget, Rgba8 const& clearColor)
 {
 	if (renderTarget == nullptr || renderTarget->m_renderTargetView == nullptr)
 	{
@@ -1193,7 +1090,7 @@ void D3D11RenderBackend::ClearRenderTarget(Texture* renderTarget, Rgba8 const& c
 	m_d3dDeviceContext->ClearRenderTargetView(renderTarget->m_renderTargetView, colorAsFloats);
 }
 
-void D3D11RenderBackend::ClearDepthStencil(Texture* depthTexture)
+void D3D11RenderBackend::ClearDepthStencil(GPUTexture* depthTexture)
 {
 	if (depthTexture == nullptr || depthTexture->m_depthStencilView == nullptr)
 	{
@@ -1204,7 +1101,7 @@ void D3D11RenderBackend::ClearDepthStencil(Texture* depthTexture)
 		->ClearDepthStencilView(depthTexture->m_depthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 }
 
-void D3D11RenderBackend::BindRenderTargets(Texture* colorTarget, Texture* depthTarget, Texture* normalTarget)
+void D3D11RenderBackend::BindRenderTargets(GPUTexture* colorTarget, GPUTexture* depthTarget, GPUTexture* normalTarget)
 {
 	ID3D11RenderTargetView* renderTargetViews[2] = { nullptr, nullptr };
 
@@ -1222,14 +1119,14 @@ void D3D11RenderBackend::BindRenderTargets(Texture* colorTarget, Texture* depthT
 	m_d3dDeviceContext->OMSetRenderTargets(2, renderTargetViews, depthStencilView);
 }
 
-void D3D11RenderBackend::BindRenderTarget(Texture* colorTarget, Texture* depthTarget)
+void D3D11RenderBackend::BindRenderTarget(GPUTexture* colorTarget, GPUTexture* depthTarget)
 {
 	ID3D11RenderTargetView* renderTargetView = colorTarget != nullptr ? colorTarget->m_renderTargetView : nullptr;
 	ID3D11DepthStencilView* depthStencilView = depthTarget != nullptr ? depthTarget->m_depthStencilView : nullptr;
 	m_d3dDeviceContext->OMSetRenderTargets(1, &renderTargetView, depthStencilView);
 }
 
-void D3D11RenderBackend::BindPostProcessInputs(Texture* colorInput, Texture* depthInput, Texture* normalInput)
+void D3D11RenderBackend::BindPostProcessInputs(GPUTexture* colorInput, GPUTexture* depthInput, GPUTexture* normalInput)
 {
 	BindTexture(colorInput, 0);
 	BindSampler(SamplerMode::POINT_CLAMP, 0);
@@ -1261,7 +1158,7 @@ void D3D11RenderBackend::BindBackBuffer()
 {
 	m_d3dDeviceContext->OMSetRenderTargets(1, &m_d3dRenderTargetView, nullptr);
 }
-Texture* D3D11RenderBackend::CreateTextureInternal(
+GPUTexture* D3D11RenderBackend::CreateTextureInternal(
 	char const*                            name,
 	IntVec2                                dimensions,
 	D3D11_TEXTURE2D_DESC const*            textureDesc,
@@ -1273,14 +1170,14 @@ Texture* D3D11RenderBackend::CreateTextureInternal(
 	GUARANTEE_OR_DIE(
 		dimensions.x > 0 && dimensions.y > 0,
 		Stringf(
-			"CreateTextureFromData failed for \"%s\" - illegal texture dimensions (%i x %i)",
+			"CreateOrGetTexture failed for \"%s\" - illegal texture dimensions (%i x %i)",
 			name,
 			dimensions.x,
 			dimensions.y));
 
-	GUARANTEE_OR_DIE(textureDesc, Stringf("CreateTextureFromData failed for \"%s\" - textureDesc is null", name));
+	GUARANTEE_OR_DIE(textureDesc, Stringf("CreateOrGetTexture failed for \"%s\" - textureDesc is null", name));
 
-	Texture* newTexture      = new Texture();
+	GPUTexture* newTexture   = new GPUTexture();
 	newTexture->m_name       = name;
 	newTexture->m_dimensions = dimensions;
 
@@ -1302,8 +1199,6 @@ Texture* D3D11RenderBackend::CreateTextureInternal(
 	{
 		m_d3dDevice->CreateDepthStencilView(newTexture->m_texture, dsvDesc, &newTexture->m_depthStencilView);
 	}
-
-	m_texturesByName[newTexture->m_name] = newTexture;
 
 	return newTexture;
 }

@@ -360,7 +360,7 @@
     <ClCompile Include="Engine\Render\SpriteAnimDefinition.cpp">
       <Filter>Engine\Render</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Render\Texture.cpp">
+    <ClCompile Include="Engine\Render\GPUTexture.cpp">
       <Filter>Engine\Render</Filter>
     </ClCompile>
     <ClCompile Include="Engine\Render\VertexBuffer.cpp">
@@ -815,7 +815,7 @@
     <ClInclude Include="Engine\Render\SpriteAnimDefinition.hpp">
       <Filter>Engine\Render</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Render\Texture.hpp">
+    <ClInclude Include="Engine\Render\GPUTexture.hpp">
       <Filter>Engine\Render</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Render\VertexBuffer.hpp">

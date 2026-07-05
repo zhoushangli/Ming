@@ -1,15 +1,16 @@
 #include "MingEngine/Editor/UI/EditorIcons.hpp"
 
+#include "MingEngine/Core/Object/ResourceLoader.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
-#include "MingEngine/Engine/Render/Renderer.hpp"
-#include "MingEngine/Engine/Render/Texture.hpp"
+#include "MingEngine/Engine/Render/GPUTexture.hpp"
+#include "MingEngine/Scene/Resource/TextureResource.hpp"
 
 #include <filesystem>
 #include <unordered_map>
 
 namespace
 {
-constexpr char const* kIconDirectory     = "Data/Icon/";
+constexpr char const* kIconDirectory     = "Editor/Icon/";
 constexpr char const* kIconExtension     = ".png";
 constexpr char const* kFallbackClassIcon = "Node";
 
@@ -25,7 +26,7 @@ bool DoesIconFileExist(std::string const& iconName)
 	return std::filesystem::exists(path, errorCode) && std::filesystem::is_regular_file(path, errorCode);
 }
 
-ImTextureID ToImTextureId(Texture* texture)
+ImTextureID ToImTextureId(GPUTexture* texture)
 {
 	if (texture == nullptr)
 	{
@@ -40,9 +41,9 @@ ImVec2 GetEditorIconUv0() { return ImVec2(0.f, 1.f); }
 ImVec2 GetEditorIconUv1() { return ImVec2(1.f, 0.f); }
 } // namespace
 
-Texture* EditorIcons::GetIconTexture(std::string const& iconName)
+GPUTexture* EditorIcons::GetIconTexture(std::string const& iconName)
 {
-	static std::unordered_map<std::string, Texture*> s_iconTextures;
+	static std::unordered_map<std::string, Ref<TextureResource>> s_iconTextures;
 
 	if (iconName.empty())
 	{
@@ -50,25 +51,26 @@ Texture* EditorIcons::GetIconTexture(std::string const& iconName)
 	}
 
 	auto const found = s_iconTextures.find(iconName);
-	if (found != s_iconTextures.end())
+	if (found != s_iconTextures.end() && found->second.IsValid())
 	{
-		return found->second;
+		return found->second->GetGPUTexture();
 	}
 
-	Texture* texture = nullptr;
-	if (DoesIconFileExist(iconName) && g_engine != nullptr && g_engine->m_renderer != nullptr)
+	Ref<TextureResource> texRef;
+	if (DoesIconFileExist(iconName))
 	{
 		std::string const iconPath = BuildIconPath(iconName);
-		texture                    = g_engine->m_renderer->CreateOrGetTexture(iconPath.c_str());
+		Ref<Resource>     loaded   = ResourceLoader::Load(iconPath);
+		texRef                     = Ref<TextureResource>(loaded);
 	}
 
-	s_iconTextures[iconName] = texture;
-	return texture;
+	s_iconTextures[iconName] = texRef;
+	return texRef.IsValid() ? texRef->GetGPUTexture() : nullptr;
 }
 
-Texture* EditorIcons::GetClassIconTexture(std::string const& className)
+GPUTexture* EditorIcons::GetClassIconTexture(std::string const& className)
 {
-	static std::unordered_map<std::string, Texture*> s_classIconTextures;
+	static std::unordered_map<std::string, GPUTexture*> s_classIconTextures;
 
 	if (className.empty())
 	{
@@ -81,14 +83,14 @@ Texture* EditorIcons::GetClassIconTexture(std::string const& className)
 		return found->second;
 	}
 
-	Texture* texture = GetIconTexture(className);
+	GPUTexture* texture = GetIconTexture(className);
 	if (texture != nullptr)
 	{
 		s_classIconTextures[className] = texture;
 		return texture;
 	}
 
-	Texture* fallbackTexture       = GetIconTexture(kFallbackClassIcon);
+	GPUTexture* fallbackTexture    = GetIconTexture(kFallbackClassIcon);
 	s_classIconTextures[className] = fallbackTexture;
 	return fallbackTexture;
 }

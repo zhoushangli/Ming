@@ -2,8 +2,8 @@
 
 #include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Engine/Render/IndexBuffer.hpp"
-#include "MingEngine/Engine/Render/Renderer.hpp"
 #include "MingEngine/Engine/Render/VertexBuffer.hpp"
+#include "MingEngine/Scene/Resource/TextureResource.hpp"
 
 MeshResource::~MeshResource()
 {
@@ -28,13 +28,7 @@ bool MeshResource::CopyFrom(Resource const& other)
 		return false;
 	}
 
-	// 2) Destroy old GPU buffers
-	delete m_vertexBuffer;
-	m_vertexBuffer = nullptr;
-	delete m_indexBuffer;
-	m_indexBuffer = nullptr;
-
-	// 3) Copy CPU data fields
+	// 2) Copy CPU data fields
 	m_vertexFormat = otherMesh->m_vertexFormat;
 	m_vertexStride = otherMesh->m_vertexStride;
 	m_vertexCount  = otherMesh->m_vertexCount;
@@ -45,16 +39,24 @@ bool MeshResource::CopyFrom(Resource const& other)
 	m_indexCount  = otherMesh->m_indexCount;
 	m_indices     = otherMesh->m_indices;
 
-	m_textures = otherMesh->m_textures;
+	m_texturePaths     = otherMesh->m_texturePaths;
+	m_textureResources = otherMesh->m_textureResources;
 
-	// 4) Recreate GPU buffers from copied CPU data
-	if (g_engine != nullptr && g_engine->m_renderer != nullptr && !IsEmpty())
-	{
-		m_vertexBuffer =
-			g_engine->m_renderer->CreateVertexBuffer(m_vertices.data(), m_vertexCount * m_vertexStride, m_vertexStride);
-		m_indexBuffer =
-			g_engine->m_renderer->CreateIndexBuffer(m_indices.data(), m_indexCount * m_indexStride, m_indexStride);
-	}
+	// 3) Recreate GPU buffers from copied CPU data
+	InitGPUResources();
 
 	return true;
+}
+
+void MeshResource::InitGPUResources()
+{
+	delete m_vertexBuffer;
+	m_vertexBuffer = nullptr;
+	delete m_indexBuffer;
+	m_indexBuffer = nullptr;
+
+	m_vertexBuffer =
+		g_engine->m_renderer->CreateVertexBuffer(m_vertices.data(), m_vertexCount * m_vertexStride, m_vertexStride);
+	m_indexBuffer =
+		g_engine->m_renderer->CreateIndexBuffer(m_indices.data(), m_indexCount * m_indexStride, m_indexStride);
 }

@@ -13,7 +13,7 @@
 class CameraContext;
 class IndexBuffer;
 class Shader;
-class Texture;
+class GPUTexture;
 class VertexBuffer;
 
 enum class RenderRequestPass
@@ -39,7 +39,7 @@ struct RenderRequest
 	VertexBuffer* m_vertexBuffer = nullptr;
 	IndexBuffer*  m_indexBuffer  = nullptr;
 
-	std::array<Texture*, PostProcessTextureSlot::MaxSamplerSlots> m_textures = {};
+	std::array<GPUTexture*, PostProcessTextureSlot::MaxSamplerSlots> m_textures = {};
 
 	Shader* m_shader = nullptr;
 
@@ -80,12 +80,12 @@ public:
 	AABB2   m_outputRect       = AABB2::Unit;
 	Rgba8   m_clearColor       = Rgba8(47, 54, 65, 255);
 
-	Texture* m_viewportOutputTexture = nullptr;
-	Texture* m_sceneColorTexture     = nullptr;
-	Texture* m_sceneDepthTexture     = nullptr;
-	Texture* m_sceneNormalTexture    = nullptr;
-	Texture* m_pingTexture           = nullptr;
-	Texture* m_pongTexture           = nullptr;
+	GPUTexture* m_viewportOutputTexture = nullptr;
+	GPUTexture* m_sceneColorTexture     = nullptr;
+	GPUTexture* m_sceneDepthTexture     = nullptr;
+	GPUTexture* m_sceneNormalTexture    = nullptr;
+	GPUTexture* m_pingTexture           = nullptr;
+	GPUTexture* m_pongTexture           = nullptr;
 
 	std::array<std::vector<RenderRequest>, static_cast<size_t>(RenderRequestPass::Count)> m_renderRequests;
 

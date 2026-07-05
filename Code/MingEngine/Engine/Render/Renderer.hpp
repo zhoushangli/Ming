@@ -29,33 +29,26 @@ public:
 	void RenderViewport(ViewportInfo& viewport);
 	void ResizeViewport(ViewportInfo& viewport, IntVec2 dimensions);
 	void DestroyViewportResources(ViewportInfo& viewport);
-	void CopyTextureToBackBuffer(Texture* colorTexture);
+	void CopyTextureToBackBuffer(GPUTexture* colorTexture);
 
 	Shader* CreateOrGetShader(std::string const& shaderVirtualPath);
 
-	Texture*    CreateOrGetTexture(char const* fileDataPath);
-	Texture*    CreateTextureFromImage(const Image& image);
-	Texture*    CreateTextureFromData(char const* name, IntVec2 dimensions, int bytesPerTexel, uint8_t* texelData);
-	Texture*    CreateRenderTargetTexture(char const* name, IntVec2 dimensions);
-	Texture*    CreateDepthStencilTexture(char const* name, IntVec2 dimensions);
-	BitmapFont* CreateOrGetBitmapFont(char const* fontFilePathNameWithNoExtension);
+	GPUTexture* CreateGPUTexture(char const* name, IntVec2 dimensions, int bytesPerTexel, uint8_t const* texelData);
+	GPUTexture* CreateRenderTargetTexture(char const* name, IntVec2 dimensions);
+	GPUTexture* CreateDepthStencilTexture(char const* name, IntVec2 dimensions);
 
 	VertexBuffer*   CreateVertexBuffer(const unsigned int size, unsigned int stride);
-	VertexBuffer*   CreateVertexBuffer(std::vector<Vertex> const& verts);
 	VertexBuffer*   CreateVertexBuffer(void const* data, const unsigned int byteSize, unsigned int stride);
 	ConstantBuffer* CreateConstantBuffer(const unsigned int size);
 	IndexBuffer*    CreateIndexBuffer(const unsigned int size);
-	IndexBuffer*    CreateIndexBuffer(std::vector<unsigned int> const& indexes);
 	IndexBuffer*    CreateIndexBuffer(void const* data, const unsigned int byteSize, const unsigned int stride);
 
-	void UpdateVertexBuffer(VertexBuffer* vertexBuffer, std::vector<Vertex> const& verts);
+	void UpdateVertexBuffer(VertexBuffer* vertexBuffer, void const* data, unsigned int byteSize);
 
 	void CopyCPUToGPU(const void* data, unsigned int size, VertexBuffer* vertexBuffer);
 	void CopyCPUToGPU(const void* data, unsigned int size, ConstantBuffer* constantBuffer);
 	void CopyCPUToGPU(const void* data, unsigned int size, IndexBuffer* indexBuffer);
 	void BindConstantBuffer(ConstantBuffer* constantBuffer, int slot);
-
-	Texture* GetTextureFromFileName(char const* fileName);
 
 	// This function is specifically for initializing the ImGui D3D11 backend in ImGuiSystem
 	void InitImGuiD3D11Backend();
@@ -69,7 +62,7 @@ public:
 
 private:
 	void ExecuteRenderRequest(RenderRequest const& request);
-	
+
 	void PrepareConstants(ViewportInfo const& viewport);
 	void RenderOpaque(ViewportInfo const& viewport);
 	void RenderSkybox(ViewportInfo const& viewport);

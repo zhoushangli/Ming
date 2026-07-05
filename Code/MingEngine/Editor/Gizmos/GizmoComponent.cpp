@@ -103,7 +103,7 @@ void UploadVertices(std::vector<Vertex> const& verts, VertexBuffer* buffer)
 		return;
 	}
 
-	g_engine->m_renderer->UpdateVertexBuffer(buffer, verts);
+	g_engine->m_renderer->UpdateVertexBuffer(buffer, verts.data(), verts.size() * sizeof(Vertex));
 }
 
 void AddVertsForTorusArc3D(
@@ -178,8 +178,9 @@ GizmoComponent::GizmoComponent(GizmoAxis axis, Rgba8 const& color) : m_axis(axis
 {
 	if (g_engine != nullptr && g_engine->m_renderer != nullptr)
 	{
+		std::vector<Vertex> verts{ Vertex(Vec3::Zero, Rgba8::White) };
 		m_vertexBuffer =
-			g_engine->m_renderer->CreateVertexBuffer(std::vector<Vertex>{ Vertex(Vec3::Zero, Rgba8::White) });
+			g_engine->m_renderer->CreateVertexBuffer(verts.data(), verts.size() * sizeof(Vertex), sizeof(Vertex));
 	}
 }
 

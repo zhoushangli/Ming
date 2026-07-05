@@ -10,6 +10,32 @@
 #include <algorithm>
 #include <filesystem>
 
+namespace
+{
+char const* const kSelectImportableFileText = "Select an importable file";
+
+void DrawImportHeader(char const* text, bool disabled)
+{
+	ImGuiStyle const& style       = ImGui::GetStyle();
+	ImVec2 const      framePos    = ImGui::GetCursorScreenPos();
+	float const       frameWidth  = ImGui::GetContentRegionAvail().x;
+	float const       frameHeight = ImGui::GetFrameHeight();
+	ImVec2 const      frameMax(framePos.x + frameWidth, framePos.y + frameHeight);
+
+	ImDrawList* drawList = ImGui::GetWindowDrawList();
+	drawList->AddRectFilled(framePos, frameMax, IM_COL32(0x21, 0x25, 0x2B, 0xFF), style.FrameRounding);
+
+	ImGui::Dummy(ImVec2(frameWidth, frameHeight));
+
+	ImVec2 const textSize = ImGui::CalcTextSize(text);
+	ImVec2 const textPos(
+		framePos.x + style.FramePadding.x,
+		framePos.y + (frameHeight - textSize.y) * 0.5f);
+	ImU32 const textColor = ImGui::GetColorU32(disabled ? ImGuiCol_TextDisabled : ImGuiCol_Text);
+	drawList->AddText(textPos, textColor, text);
+}
+} // namespace
+
 ImportPanel::ImportPanel() : EditorPanel("Import") {}
 
 ImportPanel::~ImportPanel() { ClearImportOptionProperties(); }
@@ -191,18 +217,14 @@ void ImportPanel::OnRender(EditorUIContext& context)
 
 	if (selectedPath.empty())
 	{
-		ImGui::TextDisabled("No file selected");
+		DrawImportHeader(kSelectImportableFileText, true);
 		ImGui::End();
 		return;
 	}
 
-	std::string const filename = std::filesystem::path(selectedPath).filename().string();
-	ImGui::TextUnformatted(filename.c_str());
-	ImGui::Separator();
-
 	if (m_matchedImporters.empty())
 	{
-		ImGui::TextDisabled("No importer available");
+		DrawImportHeader(kSelectImportableFileText, true);
 		ImGui::End();
 		return;
 	}
@@ -210,9 +232,23 @@ void ImportPanel::OnRender(EditorUIContext& context)
 	m_selectedImporterIndex = std::clamp(m_selectedImporterIndex, 0, static_cast<int>(m_matchedImporters.size()) - 1);
 
 	Ref<ResourceFormatImporter> selectedImporter = GetSelectedImporter();
+	if (!selectedImporter.IsValid())
+	{
+		DrawImportHeader(kSelectImportableFileText, true);
+		ImGui::End();
+		return;
+	}
+
+	std::string const filename = std::filesystem::path(selectedPath).filename().string();
+	DrawImportHeader(filename.c_str(), false);
+	ImGui::Spacing();
+
 	std::string                 preview          = selectedImporter.IsValid() ? selectedImporter->GetVisibleName() : "";
 
 	ImGui::TextUnformatted("Import As:");
+	ImGui::PushStyleColor(ImGuiCol_FrameBg, IM_COL32(0x50, 0x59, 0x68, 0xFF));
+	ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, IM_COL32(0x50, 0x59, 0x68, 0xFF));
+	ImGui::PushStyleColor(ImGuiCol_FrameBgActive, IM_COL32(0x56, 0x9E, 0xFF, 0xFF));
 	if (ImGui::BeginCombo("##ImportAs", preview.c_str()))
 	{
 		for (int i = 0; i < static_cast<int>(m_matchedImporters.size()); ++i)
@@ -241,6 +277,7 @@ void ImportPanel::OnRender(EditorUIContext& context)
 		}
 		ImGui::EndCombo();
 	}
+	ImGui::PopStyleColor(3);
 
 	selectedImporter = GetSelectedImporter();
 	if (selectedImporter.IsValid())

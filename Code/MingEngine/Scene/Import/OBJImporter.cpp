@@ -2,6 +2,7 @@
 
 #include "MingEngine/Core/Object/ClassDatabase.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
+#include "MingEngine/Core/Render/Vertex.hpp"
 
 #include <cstdlib>
 #include <filesystem>
@@ -27,9 +28,7 @@ std::vector<ImportOptions> const kOBJImportOptions = {
 };
 
 Variant GetImportOptionValue(
-	std::unordered_map<std::string, Variant> const& importOptions,
-	char const*                                     name,
-	Variant::Type                                  expectedType)
+	std::unordered_map<std::string, Variant> const& importOptions, char const* name, Variant::Type expectedType)
 {
 	for (ImportOptions const& option : kOBJImportOptions)
 	{
@@ -773,15 +772,13 @@ std::string OBJImporter::GetImportedExtension() const { return "mesh"; }
 
 std::vector<ImportOptions> const OBJImporter::GetImportOptions() const { return kOBJImportOptions; }
 
-Ref<Resource> OBJImporter::Import(
-	std::unordered_map<std::string, Variant> const& importOptions,
-	std::string const&                              sourceVirtualPath)
+Ref<Resource>
+OBJImporter::Import(std::unordered_map<std::string, Variant> const& importOptions, std::string const& sourceVirtualPath)
 {
 	Ref<MeshResource> meshData = CreateRef<MeshResource>();
 
 	(void)GetImportOptionValue(importOptions, "Generate Tangents", Variant::Type::Bool).As<bool>();
-	Vec3 const scaleMesh =
-		GetImportOptionValue(importOptions, "Scale Mesh", Variant::Type::Vec3).As<Vec3>();
+	Vec3 const scaleMesh = GetImportOptionValue(importOptions, "Scale Mesh", Variant::Type::Vec3).As<Vec3>();
 
 	OBJData objData;
 	if (!ParseOBJFile(sourceVirtualPath, objData))
@@ -807,47 +804,39 @@ Ref<Resource> OBJImporter::Import(
 	meshData->m_indices.resize(meshData->m_indexCount * sizeof(uint32_t));
 	memcpy(meshData->m_indices.data(), objData.m_indices.data(), meshData->m_indices.size());
 
-	// 2) Copy MTLData into MeshResource
+	// 2) Ensure texture dependencies are imported, store .tex paths in MeshResource
 	MTLData mtlData;
-	// If you have a .mtl file, parse it
-	// If you don't have one, that's fine, just continue.
 	if (!objData.m_mtlVirtualPath.empty())
 	{
 		if (ParseMTLFile(objData.m_mtlVirtualPath, mtlData))
 		{
-			auto CreateTextureDataFromImage = [](std::unique_ptr<Image>& image,
-												 std::string const&      name) -> MeshTextureData
+			auto EnsureAndAddPath = [&meshData](std::string const& texVirtualPath) -> bool
 			{
-				MeshTextureData textureData;
-				textureData.m_name     = name;
-				textureData.m_format   = "RGBA8";
-				textureData.m_width    = image->GetDimensions().x;
-				textureData.m_height   = image->GetDimensions().y;
-				textureData.m_channels = 4;
-				textureData.m_data.resize(textureData.m_width * textureData.m_height * sizeof(Rgba8));
-				memcpy(textureData.m_data.data(), image->GetRawData(), textureData.m_data.size());
-				return textureData;
+				if (texVirtualPath.empty())
+				{
+					return false;
+				}
+
+				if (!ResourceImporter::EnsureImported(texVirtualPath))
+				{
+					return false;
+				}
+
+				std::string texPath;
+				if (!ResourceImporter::TryGetImportFile(texVirtualPath, texPath))
+				{
+					return false;
+				}
+
+				meshData->m_texturePaths.push_back(texPath);
+				return true;
 			};
 
-			if (mtlData.m_diffuseImage != nullptr)
-			{
-				auto diffuseData = CreateTextureDataFromImage(mtlData.m_diffuseImage, "Diffuse");
-				meshData->m_textures.push_back(std::move(diffuseData));
-			}
-
-			if (mtlData.m_specularImage != nullptr)
-			{
-				auto specularData = CreateTextureDataFromImage(mtlData.m_specularImage, "Specular");
-				meshData->m_textures.push_back(std::move(specularData));
-			}
-
-			if (mtlData.m_normalImage != nullptr)
-			{
-				auto normalData = CreateTextureDataFromImage(mtlData.m_normalImage, "Normal");
-				meshData->m_textures.push_back(std::move(normalData));
-			}
+			EnsureAndAddPath(mtlData.m_diffuseTexturePath);
+			EnsureAndAddPath(mtlData.m_specularTexturePath);
+			EnsureAndAddPath(mtlData.m_normalTexturePath);
 		}
 	}
 
 	return meshData;
-};
+}

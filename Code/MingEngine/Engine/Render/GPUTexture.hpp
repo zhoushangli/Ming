@@ -11,14 +11,15 @@ struct ID3D11ShaderResourceView;
 struct ID3D11RenderTargetView;
 struct ID3D11DepthStencilView;
 
-class Texture
+class GPUTexture
 {
-	friend class D3D11RenderBackend; // Only the Renderer can create new Texture objects!
+	friend class D3D11RenderBackend; // Only the Renderer can create new GPUTexture objects!
+	friend class TextureResource;    // TextureResource owns and destroys its GPUTexture
 
 private:
-	Texture();                             // can't instantiate directly; must ask Renderer to do it for you
-	Texture(Texture const& copy) = delete; // No copying allowed!  This represents GPU memory.
-	~Texture();
+	GPUTexture();                                // can't instantiate directly; must ask Renderer to do it for you
+	GPUTexture(GPUTexture const& copy) = delete; // No copying allowed!  This represents GPU memory.
+	~GPUTexture();
 
 public:
 	IntVec2            GetDimensions() const { return m_dimensions; }
@@ -45,13 +46,12 @@ class SpriteDefinition
 {
 public:
 	explicit SpriteDefinition(
-		SpriteSheet const& spriteSheet, int spriteIndex, Vec2 const& uvAtMins, Vec2 const& uvAtMaxs
-	);
+		SpriteSheet const& spriteSheet, int spriteIndex, Vec2 const& uvAtMins, Vec2 const& uvAtMaxs);
 
 	void               GetUVs(Vec2& out_uvAtMins, Vec2& out_uvAtMaxs) const;
 	AABB2              GetUVs() const;
 	SpriteSheet const& GetSpriteSheet() const;
-	Texture*           GetTexture() const;
+	GPUTexture*        GetTexture() const;
 	float              GetAspect() const;
 
 protected:
@@ -64,9 +64,9 @@ protected:
 class SpriteSheet
 {
 public:
-	explicit SpriteSheet(Texture* colorTexture, IntVec2 const& dimension);
+	explicit SpriteSheet(GPUTexture* colorTexture, IntVec2 const& dimension);
 
-	Texture*                GetTexture() const;
+	GPUTexture*             GetTexture() const;
 	int                     GetNumSprites() const;
 	SpriteDefinition const& GetSpriteDef(int spriteIndex) const;
 	void                    GetSpriteUVs(Vec2& out_uvAtMins, Vec2& out_uvAtMaxs, int spriteIndex) const;
@@ -75,7 +75,6 @@ public:
 
 protected:
 	IntVec2                       m_dimension;
-	Texture*                      m_colorTexture = nullptr;
+	GPUTexture*                   m_colorTexture = nullptr;
 	std::vector<SpriteDefinition> m_spriteDefs;
 };
-

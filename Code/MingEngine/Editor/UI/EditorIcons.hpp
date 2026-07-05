@@ -4,13 +4,13 @@
 
 #include <string>
 
-class Texture;
+class GPUTexture;
 
 class EditorIcons
 {
 public:
-	static Texture* GetIconTexture(std::string const& iconName);
-	static Texture* GetClassIconTexture(std::string const& className);
+	static GPUTexture* GetIconTexture(std::string const& iconName);
+	static GPUTexture* GetClassIconTexture(std::string const& className);
 
 	static ImTextureID GetIconId(std::string const& iconName);
 	static ImTextureID GetClassIconId(std::string const& className);

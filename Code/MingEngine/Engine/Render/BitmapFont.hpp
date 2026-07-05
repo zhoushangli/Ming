@@ -1,7 +1,7 @@
 #pragma once
 
 #include "MingEngine/Core/Render/Vertex.hpp"
-#include "MingEngine/Engine/Render/Texture.hpp"
+#include "MingEngine/Engine/Render/GPUTexture.hpp"
 
 enum class TextBoxMode
 {
@@ -14,10 +14,10 @@ class BitmapFont
 	friend class D3D11RenderBackend; // Only the Renderer can create new BitmapFont objects!
 
 private:
-	BitmapFont(char const* fontFilePathNameWithNoExtension, Texture& fontTexture);
+	BitmapFont(char const* fontFilePathNameWithNoExtension, GPUTexture& fontTexture);
 
 public:
-	Texture* GetTexture();
+	GPUTexture* GetTexture();
 
 #pragma region 2D
 

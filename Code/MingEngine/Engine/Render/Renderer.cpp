@@ -134,12 +134,12 @@ void Renderer::ResizeViewport(ViewportInfo& viewport, IntVec2 dimensions)
 void Renderer::DestroyViewportResources(ViewportInfo& viewport)
 {
 	// Keep destruction centralized so every raw pointer is cleared immediately.
-	Texture** textures[] = {
+	GPUTexture** textures[] = {
 		&viewport.m_viewportOutputTexture, &viewport.m_sceneColorTexture, &viewport.m_sceneDepthTexture,
 		&viewport.m_sceneNormalTexture,    &viewport.m_pingTexture,       &viewport.m_pongTexture,
 	};
 
-	for (Texture** texture : textures)
+	for (GPUTexture** texture : textures)
 	{
 		if (*texture != nullptr)
 		{
@@ -159,7 +159,7 @@ void Renderer::ClearSceneTargets(ViewportInfo const& viewport)
 	m_renderBackend->ClearDepthStencil(viewport.m_sceneDepthTexture);
 }
 
-void Renderer::CopyTextureToBackBuffer(Texture* colorTexture)
+void Renderer::CopyTextureToBackBuffer(GPUTexture* colorTexture)
 {
 	if (colorTexture == nullptr)
 	{
@@ -281,7 +281,7 @@ void Renderer::RenderPostProcess(ViewportInfo& viewport)
 	context.m_pong             = viewport.m_pongTexture;
 	context.m_outputResolution = viewport.m_outputResolution;
 
-	Texture* finalColor = viewport.m_postProcessChain.Render(*m_renderBackend, context);
+	GPUTexture* finalColor = viewport.m_postProcessChain.Render(*m_renderBackend, context);
 
 	m_renderBackend->BindRenderTarget(viewport.m_viewportOutputTexture);
 	m_renderBackend->BindPostProcessInputs(finalColor, viewport.m_sceneDepthTexture, viewport.m_sceneNormalTexture);
@@ -307,36 +307,27 @@ void Renderer::RenderUI(ViewportInfo const& viewport)
 	}
 }
 
-Shader*  Renderer::CreateOrGetShader(std::string const& shaderVirtualPath) { return m_renderBackend->CreateOrGetShader(shaderVirtualPath); }
-Texture* Renderer::CreateOrGetTexture(char const* fileDataPath)
+Shader* Renderer::CreateOrGetShader(std::string const& shaderVirtualPath)
 {
-	return m_renderBackend->CreateOrGetTexture(fileDataPath);
+	return m_renderBackend->CreateOrGetShader(shaderVirtualPath);
 }
-Texture* Renderer::CreateTextureFromImage(const Image& image) { return m_renderBackend->CreateTextureFromImage(image); }
-Texture* Renderer::CreateTextureFromData(char const* name, IntVec2 dimensions, int bytesPerTexel, uint8_t* texelData)
+GPUTexture*
+Renderer::CreateGPUTexture(char const* name, IntVec2 dimensions, int bytesPerTexel, uint8_t const* texelData)
 {
-	return m_renderBackend->CreateTextureFromData(name, dimensions, bytesPerTexel, texelData);
+	return m_renderBackend->CreateGPUTexture(name, dimensions, bytesPerTexel, texelData);
 }
-Texture* Renderer::CreateRenderTargetTexture(char const* name, IntVec2 dimensions)
+GPUTexture* Renderer::CreateRenderTargetTexture(char const* name, IntVec2 dimensions)
 {
 	return m_renderBackend->CreateRenderTargetTexture(name, dimensions);
 }
-Texture* Renderer::CreateDepthStencilTexture(char const* name, IntVec2 dimensions)
+GPUTexture* Renderer::CreateDepthStencilTexture(char const* name, IntVec2 dimensions)
 {
 	return m_renderBackend->CreateDepthStencilTexture(name, dimensions);
-}
-BitmapFont* Renderer::CreateOrGetBitmapFont(char const* fontFilePathNameWithNoExtension)
-{
-	return m_renderBackend->CreateOrGetBitmapFont(fontFilePathNameWithNoExtension);
 }
 
 VertexBuffer* Renderer::CreateVertexBuffer(const unsigned int size, unsigned int stride)
 {
 	return m_renderBackend->CreateVertexBuffer(size, stride);
-}
-VertexBuffer* Renderer::CreateVertexBuffer(std::vector<Vertex> const& verts)
-{
-	return m_renderBackend->CreateVertexBuffer(verts);
 }
 VertexBuffer* Renderer::CreateVertexBuffer(void const* data, const unsigned int byteSize, unsigned int stride)
 {
@@ -347,25 +338,20 @@ ConstantBuffer* Renderer::CreateConstantBuffer(const unsigned int size)
 	return m_renderBackend->CreateConstantBuffer(size);
 }
 IndexBuffer* Renderer::CreateIndexBuffer(const unsigned int size) { return m_renderBackend->CreateIndexBuffer(size); }
-IndexBuffer* Renderer::CreateIndexBuffer(std::vector<unsigned int> const& indexes)
-{
-	return m_renderBackend->CreateIndexBuffer(indexes);
-}
 IndexBuffer* Renderer::CreateIndexBuffer(void const* data, const unsigned int byteSize, const unsigned int stride)
 {
 	return m_renderBackend->CreateIndexBuffer(data, byteSize, stride);
 }
 
-void Renderer::UpdateVertexBuffer(VertexBuffer* vertexBuffer, std::vector<Vertex> const& verts)
+void Renderer::UpdateVertexBuffer(VertexBuffer* vertexBuffer, void const* data, unsigned int byteSize)
 {
 	if (vertexBuffer == nullptr)
 	{
 		return;
 	}
 
-	unsigned int vertsSize = static_cast<unsigned int>(verts.size()) * sizeof(Vertex);
-	vertexBuffer->Resize(vertsSize);
-	CopyCPUToGPU(verts.data(), vertsSize, vertexBuffer);
+	vertexBuffer->Resize(byteSize);
+	CopyCPUToGPU(data, byteSize, vertexBuffer);
 }
 
 void Renderer::CopyCPUToGPU(const void* data, unsigned int size, VertexBuffer* vertexBuffer)
@@ -384,11 +370,6 @@ void Renderer::CopyCPUToGPU(const void* data, unsigned int size, IndexBuffer* in
 void Renderer::BindConstantBuffer(ConstantBuffer* constantBuffer, int slot)
 {
 	m_renderBackend->BindConstantBuffer(constantBuffer, slot);
-}
-
-Texture* Renderer::GetTextureFromFileName(char const* fileName)
-{
-	return m_renderBackend->GetTextureFromFileName(fileName);
 }
 
 void Renderer::InitImGuiD3D11Backend()

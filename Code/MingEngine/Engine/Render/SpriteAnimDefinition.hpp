@@ -1,6 +1,6 @@
 #pragma once
 
-#include "MingEngine/Engine/Render/Texture.hpp"
+#include "MingEngine/Engine/Render/GPUTexture.hpp"
 
 enum class SpriteAnimPlaybackType
 {

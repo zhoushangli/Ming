@@ -20,21 +20,27 @@
 #include "MingEngine/Scene/Core/Node.hpp"
 #include "MingEngine/Scene/Core/PackedScene.hpp"
 #include "MingEngine/Scene/Core/PackedSceneFormat.hpp"
+#include "MingEngine/Scene/Import/ImageImporter.hpp"
 #include "MingEngine/Scene/Import/OBJImporter.hpp"
 #include "MingEngine/Scene/Physics/AABBCollider3D.hpp"
 #include "MingEngine/Scene/Physics/CapsuleCollider3D.hpp"
 #include "MingEngine/Scene/Physics/CylinderZCollider3D.hpp"
 #include "MingEngine/Scene/Physics/TriangleMeshCollider3D.hpp"
 #include "MingEngine/Scene/Resource/MeshResourceFormat.hpp"
+#include "MingEngine/Scene/Resource/TextureResource.hpp"
+#include "MingEngine/Scene/Resource/TextureResourceFormat.hpp"
 
 namespace
 {
-ScriptLoader*       scriptLoader       = new ScriptLoader();
-PackedSceneLoader*  packedSceneLoader  = new PackedSceneLoader();
-PackedSceneSaver*   packedSceneSaver   = new PackedSceneSaver();
-MeshResourceLoader* meshResourceLoader = new MeshResourceLoader();
-MeshResourceSaver*  meshResourceSaver  = new MeshResourceSaver();
-OBJImporter*        objImporter        = new OBJImporter();
+ScriptLoader*          scriptLoader          = new ScriptLoader();
+PackedSceneLoader*     packedSceneLoader     = new PackedSceneLoader();
+PackedSceneSaver*      packedSceneSaver      = new PackedSceneSaver();
+MeshResourceLoader*    meshResourceLoader    = new MeshResourceLoader();
+MeshResourceSaver*     meshResourceSaver     = new MeshResourceSaver();
+TextureResourceLoader* textureResourceLoader = new TextureResourceLoader();
+TextureResourceSaver*  textureResourceSaver  = new TextureResourceSaver();
+OBJImporter*           objImporter           = new OBJImporter();
+ImageImporter*         imageImporter         = new ImageImporter();
 } // namespace
 
 void RegisterBaseTypes()
@@ -68,14 +74,19 @@ void RegisterSceneResourceFormats()
 	ClassDatabase::RegisterClass<PackedSceneSaver>();
 	ClassDatabase::RegisterClass<MeshResourceLoader>();
 	ClassDatabase::RegisterClass<MeshResourceSaver>();
+	ClassDatabase::RegisterClass<TextureResourceLoader>();
+	ClassDatabase::RegisterClass<TextureResourceSaver>();
 
 	ResourceLoader::AddLoader(Ref<PackedSceneLoader>(packedSceneLoader));
 	ResourceLoader::AddLoader(Ref<MeshResourceLoader>(meshResourceLoader));
+	ResourceLoader::AddLoader(Ref<TextureResourceLoader>(textureResourceLoader));
 
 	ResourceSaver::AddSaver(Ref<PackedSceneSaver>(packedSceneSaver));
 	ResourceSaver::AddSaver(Ref<MeshResourceSaver>(meshResourceSaver));
+	ResourceSaver::AddSaver(Ref<TextureResourceSaver>(textureResourceSaver));
 
 	ResourceImporter::AddImporter(Ref<OBJImporter>(objImporter));
+	ResourceImporter::AddImporter(Ref<ImageImporter>(imageImporter));
 }
 } // namespace
 
@@ -98,6 +109,7 @@ void RegisterSceneTypes()
 	ClassDatabase::RegisterClass<TriangleMeshCollider3D>();
 	ClassDatabase::RegisterClass<PackedScene>();
 	ClassDatabase::RegisterClass<MeshResource>();
+	ClassDatabase::RegisterClass<TextureResource>();
 	ClassDatabase::RegisterClass<VisualizeInstance3D>(false);
 	ClassDatabase::RegisterClass<Mesh3D>();
 }

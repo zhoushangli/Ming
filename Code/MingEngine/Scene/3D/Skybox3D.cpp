@@ -1,11 +1,12 @@
 #include "MingEngine/Scene/3D/Skybox3D.hpp"
 
 #include "MingEngine/Core/Math/MathUtils.hpp"
+#include "MingEngine/Core/Object/ResourceLoader.hpp"
 #include "MingEngine/Core/Render/Vertex.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Engine/Render/IndexBuffer.hpp"
-#include "MingEngine/Engine/Render/Renderer.hpp"
 #include "MingEngine/Engine/Render/VertexBuffer.hpp"
+#include "MingEngine/Scene/Resource/TextureResource.hpp"
 
 namespace
 {
@@ -14,7 +15,8 @@ float const kHalfSize = 500.f;
 
 Skybox3D::Skybox3D(std::string const& imagePath) : VisualizeInstance3D(), m_imagePath(imagePath)
 {
-	m_texture = g_engine->m_renderer->CreateOrGetTexture(m_imagePath.c_str());
+	Ref<Resource> loaded = ResourceLoader::Load(m_imagePath);
+	m_textureRef         = Ref<TextureResource>(loaded);
 
 	std::vector<Vertex>       verts;
 	std::vector<unsigned int> indexes;
@@ -148,8 +150,12 @@ Skybox3D::Skybox3D(std::string const& imagePath) : VisualizeInstance3D(), m_imag
 
 	// clang-format on
 
-	m_vertexBuffer = g_engine->m_renderer->CreateVertexBuffer(verts);
-	m_indexBuffer  = g_engine->m_renderer->CreateIndexBuffer(indexes);
+	m_vertexBuffer =
+		g_engine->m_renderer->CreateVertexBuffer(verts.data(), verts.size() * sizeof(Vertex), sizeof(Vertex));
+	m_indexBuffer = g_engine->m_renderer->CreateIndexBuffer(
+		indexes.data(),
+		indexes.size() * sizeof(unsigned int),
+		sizeof(unsigned int));
 }
 
 Skybox3D::~Skybox3D()
@@ -173,7 +179,7 @@ RenderRequest Skybox3D::SubmitRenderRequest() const
 	request.m_tint                                  = Rgba8::White;
 	request.m_vertexBuffer                          = m_vertexBuffer;
 	request.m_indexBuffer                           = m_indexBuffer;
-	request.m_textures[SurfaceTextureSlot::Diffuse] = m_texture;
+	request.m_textures[SurfaceTextureSlot::Diffuse] = m_textureRef.IsValid() ? m_textureRef->GetGPUTexture() : nullptr;
 	request.m_shader                                = nullptr;
 	request.m_blendMode                             = BlendMode::OPAQUE;
 	request.m_depthMode                             = DepthMode::READ_ONLY_LESS_EQUAL;
