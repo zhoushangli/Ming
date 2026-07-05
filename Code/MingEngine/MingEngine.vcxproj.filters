@@ -483,6 +483,9 @@
     <ClCompile Include="Core\Object\Variant.cpp">
       <Filter>Core\Object</Filter>
     </ClCompile>
+    <ClCompile Include="Core\Object\VariantJson.cpp">
+      <Filter>Core\Object</Filter>
+    </ClCompile>
     <ClCompile Include="Core\Object\MethodBind.cpp">
       <Filter>Core\Object</Filter>
     </ClCompile>
@@ -990,6 +993,9 @@
       <Filter>Engine\Application</Filter>
     </ClInclude>
     <ClInclude Include="Core\Object\Variant.hpp">
+      <Filter>Core\Object</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Object\VariantJson.hpp">
       <Filter>Core\Object</Filter>
     </ClInclude>
     <ClInclude Include="Core\Object\MethodBind.hpp">

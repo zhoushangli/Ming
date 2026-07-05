@@ -42,20 +42,25 @@ protected:
 class ResourceImporter
 {
 public:
-	static void                                      AddImporter(Ref<ResourceFormatImporter> importer);
+	static void                                     AddImporter(Ref<ResourceFormatImporter> importer);
 	static std::vector<Ref<ResourceFormatImporter>> GetMatchedImporters(std::string const& sourceVirtualPath);
-	static bool                                      CanImport(std::string const& sourceVirtualPath);
-	static bool                                      Import(
-											 std::string const&                              sourceVirtualPath,
-											 Ref<ResourceFormatImporter>                     importer,
-											 std::unordered_map<std::string, Variant> const& importOptions);
-	static bool                                      Import(std::string const& sourceVirtualPath);
+	static bool                                     CanImport(std::string const& sourceVirtualPath);
+	static bool                                     Import(
+		std::string const&                              sourceVirtualPath,
+		Ref<ResourceFormatImporter>                     importer,
+		std::unordered_map<std::string, Variant> const& importOptions);
+	static bool Import(std::string const& sourceVirtualPath);
 
-	static bool IsImportMetadataPath(std::string const& virtualPath);
+	static bool IsImportConfigPath(std::string const& virtualPath);
 	static bool IsInternalResourcePath(std::string const& virtualPath);
-	static bool TryReadImportFile(std::string const& sourceVirtualPath, std::string& outImportVirtualPath);
+	static bool TryGetImportFile(std::string const& sourceVirtualPath, std::string& outImportVirtualPath);
+	static bool TryReadImportConfig(
+		std::string const&                        sourceVirtualPath,
+		std::string&                              outImporterClassName,
+		std::unordered_map<std::string, Variant>& outImportOptions);
+	static bool EnsureImported(std::string const& sourceVirtualPath);
 
-	static std::string GetImportMetadataPath(std::string const& sourceVirtualPath);
+	static std::string GetImportConfigPath(std::string const& sourceVirtualPath);
 	static std::string GetImportOutputPath(std::string const& sourceVirtualPath, std::string const& importedExtension);
 
 private:

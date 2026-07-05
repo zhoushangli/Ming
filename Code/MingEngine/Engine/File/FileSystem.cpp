@@ -13,7 +13,7 @@ namespace
 {
 constexpr char const* kResourcePathPrefix            = "res://";
 constexpr char const* kInternalResourceDirectoryName = ".ming";
-constexpr char const* kImportMetadataExtension       = ".import";
+constexpr char const* kImportConfigExtension         = ".import";
 
 std::string ToLower(std::string text)
 {
@@ -47,7 +47,7 @@ std::string JoinVirtualPath(std::string const& parentVirtualPath, std::string co
 
 bool IsImportMetadataFile(std::filesystem::path const& path)
 {
-	return path.extension().string() == kImportMetadataExtension;
+	return path.extension().string() == kImportConfigExtension;
 }
 
 bool IsInternalResourceDirectory(std::filesystem::path const& path)
@@ -449,33 +449,10 @@ void FileSystem::ScanResourceImports(std::unordered_map<std::string, std::filesy
 			continue;
 		}
 
-		// 2) Trust an existing import chain only when the cache is at least as new as the source.
-		std::string importPath;
-		bool const  hasMetadata = ResourceImporter::TryReadImportFile(virtualPath, importPath);
-		bool const  hasImportFile = hasMetadata && Exists(importPath);
-		bool        hasFreshImportFile = false;
-		if (hasImportFile)
-		{
-			std::filesystem::path importPhysicalPath;
-			std::filesystem::file_time_type importModifiedTime;
-			hasFreshImportFile = TryGetPhysicalPath(importPath, importPhysicalPath)
-				&& TryGetLastWriteTime(importPhysicalPath, importModifiedTime)
-				&& importModifiedTime >= modifiedTime;
-		}
-
-		if (hasMetadata && hasImportFile && hasFreshImportFile)
+		// 2) Let ResourceImporter keep the config/cache chain complete.
+		if (ResourceImporter::EnsureImported(virtualPath))
 		{
 			outImportedTimes[virtualPath] = modifiedTime;
-			continue;
-		}
-
-		// 3) Import missing or stale resources and report the import time for the next rebuilt FileEntry.
-		if (!hasMetadata || !hasImportFile || !hasFreshImportFile)
-		{
-			if (ResourceImporter::Import(virtualPath))
-			{
-				outImportedTimes[virtualPath] = modifiedTime;
-			}
 		}
 	}
 }

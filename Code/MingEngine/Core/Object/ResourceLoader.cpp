@@ -47,10 +47,10 @@ Ref<Resource> ResourceLoader::Load(const std::string& virtualPath)
 	}
 
 	if (!ResourceImporter::IsInternalResourcePath(normalizedPath)
-		&& !ResourceImporter::IsImportMetadataPath(normalizedPath))
+		&& !ResourceImporter::IsImportConfigPath(normalizedPath))
 	{
 		std::string importPath;
-		if (ResourceImporter::TryReadImportFile(normalizedPath, importPath) && importPath != normalizedPath)
+		if (ResourceImporter::TryGetImportFile(normalizedPath, importPath) && importPath != normalizedPath)
 		{
 			Ref<Resource> resource = Load(importPath);
 			if (resource.IsValid())
@@ -85,7 +85,8 @@ bool ResourceFormatLoader::CanLoad(const std::string& virtualPath) const
 
 	for (const auto& ext : supportedExtensions)
 	{
-		if (virtualPath.size() >= ext.size() && virtualPath.compare(virtualPath.size() - ext.size(), ext.size(), ext) == 0)
+		if (virtualPath.size() >= ext.size()
+			&& virtualPath.compare(virtualPath.size() - ext.size(), ext.size(), ext) == 0)
 		{
 			return true;
 		}

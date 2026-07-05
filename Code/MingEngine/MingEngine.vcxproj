@@ -341,6 +341,7 @@
     <ClCompile Include="Core\ErrorWarningAssert.cpp" />
     <ClCompile Include="Core\Object\Object.cpp" />
     <ClCompile Include="Core\Object\Variant.cpp" />
+    <ClCompile Include="Core\Object\VariantJson.cpp" />
     <ClCompile Include="Core\Object\MethodBind.cpp" />
     <ClCompile Include="Core\Object\ClassDatabase.cpp" />
     <ClCompile Include="Engine\Event\EventSystem.cpp" />
@@ -493,6 +494,7 @@
     <ClInclude Include="Core\ErrorWarningAssert.hpp" />
     <ClInclude Include="Core\Object\Object.hpp" />
     <ClInclude Include="Core\Object\Variant.hpp" />
+    <ClInclude Include="Core\Object\VariantJson.hpp" />
     <ClInclude Include="Core\Object\MethodBind.hpp" />
     <ClInclude Include="Core\Object\ClassDatabase.hpp" />
     <ClInclude Include="Engine\Event\EventSystem.hpp" />

@@ -11,10 +11,7 @@
 
 ImportPanel::ImportPanel() : EditorPanel("Import") {}
 
-ImportPanel::~ImportPanel()
-{
-	ClearImportOptionProperties();
-}
+ImportPanel::~ImportPanel() { ClearImportOptionProperties(); }
 
 void ImportPanel::ClearImportOptionProperties()
 {
@@ -46,6 +43,46 @@ Variant ImportPanel::GetOptionDisplayValue(ImportOptions const& option) const
 	return option.m_defaultValue;
 }
 
+int ImportPanel::FindImporterIndexByClassName(std::string const& importerClassName) const
+{
+	for (int i = 0; i < static_cast<int>(m_matchedImporters.size()); ++i)
+	{
+		Ref<ResourceFormatImporter> importer = m_matchedImporters[i];
+		if (importer.IsValid() && importer->GetClassName() == importerClassName)
+		{
+			return i;
+		}
+	}
+
+	return -1;
+}
+
+void ImportPanel::RefreshImportConfigCache(std::string const& selectedPath)
+{
+	m_hasImportConfig = ResourceImporter::TryReadImportConfig(
+		selectedPath,
+		m_configImporterClassName,
+		m_configImportOptions);
+	if (!m_hasImportConfig)
+	{
+		m_configImporterClassName.clear();
+		m_configImportOptions.clear();
+	}
+}
+
+void ImportPanel::ApplyCachedImportOptionsForSelectedImporter()
+{
+	m_importOptions.clear();
+
+	Ref<ResourceFormatImporter> importer = GetSelectedImporter();
+	if (!m_hasImportConfig || !importer.IsValid() || importer->GetClassName() != m_configImporterClassName)
+	{
+		return;
+	}
+
+	m_importOptions = m_configImportOptions;
+}
+
 void ImportPanel::RebuildImportOptionProperties()
 {
 	ClearImportOptionProperties();
@@ -62,10 +99,7 @@ void ImportPanel::RebuildImportOptionProperties()
 	{
 		std::string labelId = "##ImportOption::" + importer->GetVisibleName() + "::" + option.m_propertyInfo.m_name;
 		InspectorProperty::ValueChangedCallback onChanged =
-			[this, name = option.m_propertyInfo.m_name](Variant const& value)
-		{
-			m_importOptions[name] = value;
-		};
+			[this, name = option.m_propertyInfo.m_name](Variant const& value) { m_importOptions[name] = value; };
 
 		InspectorProperty* property =
 			InspectorProperty::Create(option.m_propertyInfo, std::move(labelId), std::move(onChanged));
@@ -80,10 +114,30 @@ void ImportPanel::RefreshSelection(std::string const& selectedPath)
 		return;
 	}
 
-	m_cachedSelectedPath     = selectedPath;
-	m_matchedImporters       = ResourceImporter::GetMatchedImporters(selectedPath);
-	m_selectedImporterIndex  = 0;
+	m_cachedSelectedPath    = selectedPath;
+	m_matchedImporters      = ResourceImporter::GetMatchedImporters(selectedPath);
+	m_selectedImporterIndex = 0;
+
+	if (!m_matchedImporters.empty())
+	{
+		ResourceImporter::EnsureImported(selectedPath);
+		RefreshImportConfigCache(selectedPath);
+
+		int const configImporterIndex = FindImporterIndexByClassName(m_configImporterClassName);
+		if (configImporterIndex >= 0)
+		{
+			m_selectedImporterIndex = configImporterIndex;
+		}
+	}
+	else
+	{
+		m_hasImportConfig = false;
+		m_configImporterClassName.clear();
+		m_configImportOptions.clear();
+	}
+
 	RebuildImportOptionProperties();
+	ApplyCachedImportOptionsForSelectedImporter();
 }
 
 void ImportPanel::OnRender(EditorUIContext& context)
@@ -118,13 +172,10 @@ void ImportPanel::OnRender(EditorUIContext& context)
 		return;
 	}
 
-	m_selectedImporterIndex = std::clamp(
-		m_selectedImporterIndex,
-		0,
-		static_cast<int>(m_matchedImporters.size()) - 1);
+	m_selectedImporterIndex = std::clamp(m_selectedImporterIndex, 0, static_cast<int>(m_matchedImporters.size()) - 1);
 
 	Ref<ResourceFormatImporter> selectedImporter = GetSelectedImporter();
-	std::string preview = selectedImporter.IsValid() ? selectedImporter->GetVisibleName() : "";
+	std::string                 preview          = selectedImporter.IsValid() ? selectedImporter->GetVisibleName() : "";
 
 	ImGui::TextUnformatted("Import As:");
 	if (ImGui::BeginCombo("##ImportAs", preview.c_str()))
@@ -144,6 +195,7 @@ void ImportPanel::OnRender(EditorUIContext& context)
 				{
 					m_selectedImporterIndex = i;
 					RebuildImportOptionProperties();
+					ApplyCachedImportOptionsForSelectedImporter();
 				}
 			}
 
@@ -159,7 +211,8 @@ void ImportPanel::OnRender(EditorUIContext& context)
 	if (selectedImporter.IsValid())
 	{
 		std::vector<ImportOptions> const options = selectedImporter->GetImportOptions();
-		for (int i = 0; i < static_cast<int>(options.size()) && i < static_cast<int>(m_importOptionProperties.size()); ++i)
+		for (int i = 0; i < static_cast<int>(options.size()) && i < static_cast<int>(m_importOptionProperties.size());
+			 ++i)
 		{
 			InspectorProperty* property = m_importOptionProperties[i];
 			if (property != nullptr)
@@ -169,14 +222,16 @@ void ImportPanel::OnRender(EditorUIContext& context)
 		}
 	}
 
-	float const buttonWidth = 120.f;
+	float const buttonWidth     = 120.f;
 	float const availableHeight = ImGui::GetContentRegionAvail().y;
 	if (availableHeight > ImGui::GetFrameHeightWithSpacing())
 	{
 		ImGui::Dummy(ImVec2(0.f, availableHeight - ImGui::GetFrameHeightWithSpacing()));
 	}
 
-	float const buttonX = ImGui::GetCursorPosX() + ImGui::GetContentRegionAvail().x - buttonWidth;
+	float const availableWidth = ImGui::GetContentRegionAvail().x;
+	float const buttonX        = ImGui::GetCursorPosX() + (availableWidth - buttonWidth) * 0.5f;
+
 	if (buttonX > ImGui::GetCursorPosX())
 	{
 		ImGui::SetCursorPosX(buttonX);
@@ -187,6 +242,11 @@ void ImportPanel::OnRender(EditorUIContext& context)
 		if (!ResourceImporter::Import(selectedPath, GetSelectedImporter(), m_importOptions))
 		{
 			context.m_editorUI->Warning("Import Failed", selectedPath);
+		}
+		else
+		{
+			RefreshImportConfigCache(selectedPath);
+			ApplyCachedImportOptionsForSelectedImporter();
 		}
 	}
 
