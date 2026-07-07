@@ -348,6 +348,11 @@ void D3D11RenderBackend::Shutdown()
 	m_currentCamera = nullptr;
 	m_currentShader = nullptr;
 
+	DestroyTexture(m_defaultWhiteTexture);
+	DestroyTexture(m_defaultBlackTexture);
+	m_defaultWhiteTexture = nullptr;
+	m_defaultBlackTexture = nullptr;
+
 	if (m_d3dDeviceContext)
 	{
 		m_d3dDeviceContext->ClearState();
@@ -638,8 +643,8 @@ Shader* D3D11RenderBackend::CreateOrGetShader(std::string const& shaderVirtualPa
 	return CreateShader(shaderVirtualPath, shaderSource);
 }
 
-GPUTexture*
-D3D11RenderBackend::CreateGPUTexture(char const* name, IntVec2 dimensions, int bytesPerTexel, uint8_t const* texelData)
+GPUTexture* D3D11RenderBackend::CreateGPUTexture(
+	char const* name, IntVec2 dimensions, int bytesPerTexel, uint8_t const* texelData)
 {
 	// We only support RGBA8 format for now, so require 4 bytes per texel
 	GUARANTEE_OR_DIE(
@@ -1184,6 +1189,12 @@ GPUTexture* D3D11RenderBackend::CreateTextureInternal(
 	HRESULT hr = m_d3dDevice->CreateTexture2D(textureDesc, initialData, &newTexture->m_texture);
 
 	GUARANTEE_OR_DIE(SUCCEEDED(hr), "Could not create texture.");
+
+	if (newTexture->m_name  == "")
+	{
+		int a = 0;
+	}
+	newTexture->m_texture->SetPrivateData(WKPDID_D3DDebugObjectName, (UINT)strlen(name), name);
 
 	if ((textureDesc->BindFlags & D3D11_BIND_RENDER_TARGET) != 0)
 	{

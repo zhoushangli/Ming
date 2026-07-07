@@ -4,10 +4,10 @@
 #include "MingEngine/Scene/3D/Node3D.hpp"
 #include "MingEngine/Scene/Core/Viewport.hpp"
 #include "MingEngine/Scene/Physics/Collider3D.hpp"
-
 #include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Core/Math/MathUtils.hpp"
 #include "MingEngine/Engine/Render/Renderer.hpp"
+#include "MingEngine/Scene/Core/RaycasySpace3D.hpp"
 
 #include <algorithm>
 
@@ -24,10 +24,18 @@ SceneTree::SceneTree()
 	m_root->SetName("Root");
 
 	m_root->MoveToSceneTree(this);
+
+	m_raycastSpace = new RaycastSpace3D();
 }
 
 SceneTree::~SceneTree()
 {
+	if (m_raycastSpace != nullptr)
+	{
+		delete m_raycastSpace;
+		m_raycastSpace = nullptr;
+	}
+
 	if (m_root != nullptr)
 	{
 		// 1) Propagate exit so instances, lights, and the Viewport unregister.

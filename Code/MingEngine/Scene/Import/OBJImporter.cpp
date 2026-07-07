@@ -791,8 +791,11 @@ Ref<Resource> OBJImporter::Import(
 	importTransform.AppendScaleNonUniform3D(scaleMesh);
 	TransformVertexArray3D(objData.m_vertices, importTransform);
 
+	std::filesystem::path physicalPath;
+	g_engine->m_fileSystem->TryGetPhysicalPath(sourceVirtualPath, physicalPath);
+	
 	// 1) Copy OBJData into MeshResource
-	meshData->SetName(objData.m_name);
+	meshData->SetName(physicalPath.stem().string());
 	meshData->m_vertexFormat = "PCUTBN";
 	meshData->m_vertexStride = sizeof(Vertex);
 	meshData->m_vertexCount  = static_cast<uint32_t>(objData.m_vertices.size());

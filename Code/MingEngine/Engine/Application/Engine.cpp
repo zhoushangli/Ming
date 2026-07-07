@@ -41,14 +41,14 @@ Engine::~Engine()
 	delete m_inputSystem;
 	m_inputSystem = nullptr;
 
+	delete m_fileSystem;
+	m_fileSystem = nullptr;
+
 	delete m_renderer;
 	m_renderer = nullptr;
 
 	delete m_scriptSystem;
 	m_scriptSystem = nullptr;
-
-	delete m_fileSystem;
-	m_fileSystem = nullptr;
 
 	delete m_windowSystem;
 	m_windowSystem = nullptr;
@@ -63,12 +63,12 @@ void Engine::Startup()
 		m_eventSystem->Startup();
 	if (m_windowSystem != nullptr)
 		m_windowSystem->Startup();
+	if (m_renderer != nullptr)
+		m_renderer->Startup();
 	if (m_fileSystem != nullptr)
 		m_fileSystem->Startup();
 	if (m_scriptSystem != nullptr)
 		m_scriptSystem->Startup();
-	if (m_renderer != nullptr)
-		m_renderer->Startup();
 	if (m_imguiSystem != nullptr)
 		m_imguiSystem->Startup();
 	if (m_inputSystem != nullptr)

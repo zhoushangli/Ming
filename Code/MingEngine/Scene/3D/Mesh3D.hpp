@@ -13,7 +13,7 @@ class Mesh3D : public VisualizeInstance3D
 
 public:
 	Mesh3D()           = default;
-	~Mesh3D() override = default;
+	~Mesh3D() override;
 
 	AABB3 GetLocalBounds() const;
 	bool  IsEmpty() const;

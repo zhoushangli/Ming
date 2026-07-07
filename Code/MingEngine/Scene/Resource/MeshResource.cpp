@@ -7,6 +7,11 @@
 
 MeshResource::~MeshResource()
 {
+	for (Ref<TextureResource>& texture : m_textureResources)
+	{
+		texture = nullptr;
+	}
+
 	delete m_vertexBuffer;
 	m_vertexBuffer = nullptr;
 

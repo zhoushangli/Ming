@@ -11,6 +11,7 @@
 #include <vector>
 
 class Viewport;
+class RaycastSpace3D;
 
 class SceneTree
 {
@@ -42,6 +43,7 @@ public:
 	Camera3D* GetWorldCamera() const;
 	Camera3D* GetUICamera() const;
 
+	RaycastSpace3D*           GetRaycastSpace() const { return m_raycastSpace; }
 	virtual GameRaycastResult Raycast(RaycastInfo const& info) const;
 
 	float GetDeltaSeconds() const;
@@ -71,12 +73,15 @@ protected:
 
 	// tree -> root -> scene node
 	// Scene also need pending, because the old scene needs pending to destroy safely
-	Viewport*  m_root         = nullptr;
-	NodeHandle m_sceneHandle  = NodeHandle::Invalid;
-	Node*      m_pendingScene = nullptr;
+	Viewport*       m_root         = nullptr;
+	NodeHandle      m_sceneHandle  = NodeHandle::Invalid;
+	Node*           m_pendingScene = nullptr;
+	
+	// Raycast space is a helping class to manage raycast objects
+	// and perform raycasting in the scene.
+	RaycastSpace3D* m_raycastSpace = nullptr;
 
 	float m_deltaSeconds          = 0.f;
 	float m_physicsUpdateTimer    = 0.f;
 	float m_physicsUpdateInterval = 1.f / 60.f;
 };
-

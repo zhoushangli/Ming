@@ -576,6 +576,12 @@
     <ClCompile Include="Engine\File\FileUtils.cpp">
       <Filter>Engine\File</Filter>
     </ClCompile>
+    <ClCompile Include="Scene\Resource\TextureResource.cpp" />
+    <ClCompile Include="Scene\Resource\TextureResourceFormat.cpp" />
+    <ClCompile Include="Scene\Import\ImageImporter.cpp" />
+    <ClCompile Include="Scene\Core\RaycasySpace3D.cpp">
+      <Filter>Scene\Core</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Core\Clock.hpp">
@@ -1114,6 +1120,12 @@
     </ClInclude>
     <ClInclude Include="Engine\File\FileUtils.hpp">
       <Filter>Engine\File</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\Resource\TextureResource.hpp" />
+    <ClInclude Include="Scene\Resource\TextureResourceFormat.hpp" />
+    <ClInclude Include="Scene\Import\ImageImporter.hpp" />
+    <ClInclude Include="Scene\Core\RaycasySpace3D.hpp">
+      <Filter>Scene\Core</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

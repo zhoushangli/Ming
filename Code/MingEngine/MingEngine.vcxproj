@@ -433,6 +433,7 @@
     <ClCompile Include="Scene\3D\Node3D.cpp" />
     <ClCompile Include="Scene\3D\Particles3D.cpp" />
     <ClCompile Include="Scene\Core\NodePath.cpp" />
+    <ClCompile Include="Scene\Core\RaycasySpace3D.cpp" />
     <ClCompile Include="Scene\Import\GLTFImporter.cpp" />
     <ClCompile Include="Scene\Import\OBJImporter.cpp" />
     <ClCompile Include="Scene\Physics\AABBCollider3D.cpp" />
@@ -598,6 +599,7 @@
     <ClInclude Include="Scene\3D\Mesh3D.hpp" />
     <ClInclude Include="Scene\3D\Node3D.hpp" />
     <ClInclude Include="Scene\3D\Particles3D.hpp" />
+    <ClInclude Include="Scene\Core\RaycasySpace3D.hpp" />
     <ClInclude Include="Scene\Import\GLTFImporter.hpp" />
     <ClInclude Include="Scene\Import\OBJImporter.hpp" />
     <ClInclude Include="Scene\Physics\AABBCollider3D.hpp" />

@@ -23,6 +23,11 @@ void Mesh3D::BindMethods()
 
 void Mesh3D::OnProcess([[maybe_unused]] float deltaSeconds) {}
 
+Mesh3D::~Mesh3D() 
+{
+	m_meshResource = nullptr;
+}
+
 AABB3 Mesh3D::GetLocalBounds() const { return AABB3(); }
 
 bool Mesh3D::IsEmpty() const { return m_meshResource == nullptr || m_meshResource->IsEmpty(); }

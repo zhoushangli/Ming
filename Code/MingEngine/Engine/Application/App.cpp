@@ -100,6 +100,8 @@ void App::Shutdown()
 	DebugRenderSystemShutdown();
 	m_project.Shutdown();
 	ClassDatabase::Shutdown();
+	
+	ResourceLoader::Shutdown();
 
 	g_engineService->Shutdown();
 	g_engine->Shutdown();

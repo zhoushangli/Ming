@@ -48,6 +48,7 @@ Ref<Resource> ImageImporter::Import(
 
 	// 3) Fill TextureResource CPU fields
 	Ref<TextureResource> texData = CreateRef<TextureResource>();
+	texData->SetName(physicalPath.stem().string());
 	texData->m_dimensions        = dims;
 	texData->m_channels          = 4;
 	texData->m_format            = "RGBA8";

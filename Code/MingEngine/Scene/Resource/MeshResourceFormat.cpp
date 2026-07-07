@@ -194,85 +194,78 @@ Ref<Resource> MeshResourceLoader::Load(std::string const& virtualPath)
 	std::vector<uint8_t> payload(fileData.begin() + payloadOffset, fileData.end());
 	size_t const         payloadSize = payload.size();
 
-	try
+	Json root = Json::parse(jsonText);
+	if (root.is_discarded() || !root.is_object() || !root.contains("type") || root["type"].get<std::string>() != "Mesh")
 	{
-		Json root = Json::parse(jsonText);
-		if (!root.is_object() || !root.contains("type") || root["type"].get<std::string>() != "Mesh")
+		return Ref<Resource>();
+	}
+
+	std::string       meshName;
+	Ref<MeshResource> meshData = CreateRef<MeshResource>();
+	if (!TryReadString(root, "name", meshName) || !TryReadString(root, "vertex_format", meshData->m_vertexFormat)
+		|| !TryReadUInt32(root, "vertex_stride", meshData->m_vertexStride)
+		|| !TryReadUInt32(root, "vertex_count", meshData->m_vertexCount)
+		|| !TryReadString(root, "index_format", meshData->m_indexFormat)
+		|| !TryReadUInt32(root, "index_stride", meshData->m_indexStride)
+		|| !TryReadUInt32(root, "index_count", meshData->m_indexCount))
+	{
+		return Ref<Resource>();
+	}
+
+	BinaryBlock verticesBlock;
+	BinaryBlock indicesBlock;
+	if (!TryReadBlock(root["vertices"], payloadSize, verticesBlock)
+		|| !TryReadBlock(root["indices"], payloadSize, indicesBlock))
+	{
+		return Ref<Resource>();
+	}
+
+	if (verticesBlock.m_size != static_cast<size_t>(meshData->m_vertexStride) * meshData->m_vertexCount
+		|| indicesBlock.m_size != static_cast<size_t>(meshData->m_indexStride) * meshData->m_indexCount)
+	{
+		return Ref<Resource>();
+	}
+
+	CopyPayloadBlock(payload, verticesBlock, meshData->m_vertices);
+	CopyPayloadBlock(payload, indicesBlock, meshData->m_indices);
+
+	if (root.contains("textures"))
+	{
+		if (!root["textures"].is_array())
 		{
 			return Ref<Resource>();
 		}
 
-		std::string       meshName;
-		Ref<MeshResource> meshData = CreateRef<MeshResource>();
-		if (!TryReadString(root, "name", meshName) || !TryReadString(root, "vertex_format", meshData->m_vertexFormat)
-			|| !TryReadUInt32(root, "vertex_stride", meshData->m_vertexStride)
-			|| !TryReadUInt32(root, "vertex_count", meshData->m_vertexCount)
-			|| !TryReadString(root, "index_format", meshData->m_indexFormat)
-			|| !TryReadUInt32(root, "index_stride", meshData->m_indexStride)
-			|| !TryReadUInt32(root, "index_count", meshData->m_indexCount))
+		for (Json const& textureJson : root["textures"])
 		{
-			return Ref<Resource>();
-		}
-
-		BinaryBlock verticesBlock;
-		BinaryBlock indicesBlock;
-		if (!TryReadBlock(root["vertices"], payloadSize, verticesBlock)
-			|| !TryReadBlock(root["indices"], payloadSize, indicesBlock))
-		{
-			return Ref<Resource>();
-		}
-
-		if (verticesBlock.m_size != static_cast<size_t>(meshData->m_vertexStride) * meshData->m_vertexCount
-			|| indicesBlock.m_size != static_cast<size_t>(meshData->m_indexStride) * meshData->m_indexCount)
-		{
-			return Ref<Resource>();
-		}
-
-		CopyPayloadBlock(payload, verticesBlock, meshData->m_vertices);
-		CopyPayloadBlock(payload, indicesBlock, meshData->m_indices);
-
-		if (root.contains("textures"))
-		{
-			if (!root["textures"].is_array())
+			if (!textureJson.is_string())
 			{
 				return Ref<Resource>();
 			}
 
-			for (Json const& textureJson : root["textures"])
+			std::string          texPath = textureJson.get<std::string>();
+			Ref<Resource>        loaded  = ResourceLoader::Load(texPath);
+			Ref<TextureResource> texResource(loaded);
+			if (!texResource.IsValid())
 			{
-				if (!textureJson.is_string())
-				{
-					return Ref<Resource>();
-				}
-
-				std::string          texPath = textureJson.get<std::string>();
-				Ref<Resource>        loaded  = ResourceLoader::Load(texPath);
-				Ref<TextureResource> texResource(loaded);
-				if (!texResource.IsValid())
-				{
-					return Ref<Resource>();
-				}
-
-				meshData->m_textureResources.push_back(texResource);
+				return Ref<Resource>();
 			}
+
+			meshData->m_textureResources.push_back(texResource);
 		}
-
-		if (!IsValidMeshData(*meshData))
-		{
-			return Ref<Resource>();
-		}
-
-		meshData->SetVirtualPath(virtualPath);
-		meshData->SetName(meshName);
-
-		meshData->InitGPUResources();
-
-		return meshData;
 	}
-	catch (std::exception const&)
+
+	if (!IsValidMeshData(*meshData))
 	{
 		return Ref<Resource>();
 	}
+
+	meshData->SetVirtualPath(virtualPath);
+	meshData->SetName(meshName);
+
+	meshData->InitGPUResources();
+
+	return meshData;
 }
 
 bool MeshResourceSaver::CanSave(std::string const& virtualPath, Variant const& value) const

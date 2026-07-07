@@ -27,6 +27,9 @@ public:
 	ResourceLoader();
 	virtual ~ResourceLoader();
 
+	static void Startup() {}
+	static void Shutdown() { s_loadedResources.clear(); }
+
 	static void AddLoader(Ref<ResourceFormatLoader> loader);
 	static bool CanLoad(std::string const& virtualPath);
 	// Load will return a cached resource if it has already been loaded
