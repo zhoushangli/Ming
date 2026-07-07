@@ -2,6 +2,7 @@
 
 #include "MingEngine/Core/Object/ResourceLoader.hpp"
 #include "MingEngine/Core/Object/ResourceSaver.hpp"
+#include "MingEngine/Editor/EditorCamera.hpp"
 #include "MingEngine/Editor/Gizmos/EditorGizmos.hpp"
 #include "MingEngine/Editor/UI/EditorUI.hpp"
 #include "MingEngine/Editor/UI/EditorUIContext.hpp"
@@ -9,11 +10,11 @@
 #include "MingEngine/Scene/3D/Node3D.hpp"
 #include "MingEngine/Scene/Core/PackedScene.hpp"
 #include "MingEngine/Scene/Core/SceneTree.hpp"
-
 #include "MingEngine/Core/StringUtils.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Engine/Input/InputSystem.hpp"
 #include "MingEngine/Engine/Render/DebugRenderer.hpp"
+#include "MingEngine/Scene/Core/RaycastSpace3D.hpp"
 
 namespace
 {
@@ -73,6 +74,11 @@ EditorNode::EditorNode()
 	s_instance = this;
 	m_editorUI = new EditorUI();
 
+	m_editorCamera = new EditorCamera();
+	m_editorCamera->SetName("EditorCamera");
+	m_editorCamera->SetSerializable(false);
+	AddNode(m_editorCamera);
+
 	m_editorGizmos = new EditorGizmos();
 	m_editorGizmos->SetName("EditorGizmos");
 	m_editorGizmos->SetSerializable(false);
@@ -111,22 +117,26 @@ void EditorNode::SaveSceneToFile(Node const* sceneRoot, std::string const& virtu
 	ResourceSaver::Save(virtualPath, packedScene);
 }
 
-void EditorNode::SetActiveCamera(Camera3D* camera) { m_activeCamera = camera; }
-
 void EditorNode::OnMouseMove(Vec2 screenPos, [[maybe_unused]] Vec2 delta)
 {
-	if (m_editorGizmos == nullptr || m_activeCamera == nullptr)
+	if (m_editorGizmos == nullptr || m_editorCamera == nullptr)
+	{
+		return;
+	}
+
+	Camera3D* camera = m_editorCamera->GetCamera();
+	if (camera == nullptr)
 	{
 		return;
 	}
 
 	if (m_editorGizmos->IsDragging())
 	{
-		m_editorGizmos->OnDrag(*m_activeCamera, screenPos);
+		m_editorGizmos->OnDrag(*camera, screenPos);
 	}
 	else
 	{
-		m_editorGizmos->OnMouseMove(*m_activeCamera, screenPos);
+		m_editorGizmos->OnMouseMove(*camera, screenPos);
 	}
 }
 
@@ -137,22 +147,30 @@ void EditorNode::OnMouseDown(int keyCode, Vec2 screenPos)
 		return;
 	}
 
-	if (m_editorGizmos == nullptr || m_activeCamera == nullptr)
+	if (m_editorGizmos == nullptr || m_editorCamera == nullptr)
 	{
 		return;
 	}
 
-	// 1. Let gizmos try first
-	if (m_editorGizmos->OnBeginDrag(*m_activeCamera, screenPos))
+	Camera3D* camera = m_editorCamera->GetCamera();
+	if (camera == nullptr)
+	{
+		return;
+	}
+
+	// 1) Let gizmos try first
+	if (m_editorGizmos->OnBeginDrag(*camera, screenPos))
 	{
 		return; // gizmo ate the event
 	}
 
-	// 2. Gizmo didn't eat — try scene selection
-	NodeHandle hit = m_editorGizmos->Raycast(*m_activeCamera, screenPos);
-	if (hit.IsValid())
+	// 2) Gizmo didn't eat — try scene selection
+	RaycastSpace3D* raycastSpace = GetSceneTree()->GetRaycastSpace();
+	RaycastQuery3D raycastQuery = m_editorCamera->BuildRaycastFromMouse();
+	SceneRaycastResult3D const result = raycastSpace->IntersectRay(raycastQuery);
+	if (result.m_didImpact)
 	{
-		m_selection.SetSelected(hit);
+		m_selection.SetSelected(result.m_owner);
 	}
 	else
 	{
@@ -202,5 +220,25 @@ void EditorNode::OnProcess([[maybe_unused]] float deltaSeconds)
 		context.m_editorUI   = m_editorUI;
 		context.m_fileSystem = g_engine->m_fileSystem;
 		m_editorUI->Render(context);
+	}
+
+	// 1) Dispatch mouse events when in Pointer mode
+	if (m_editorCamera != nullptr && m_editorCamera->GetControlState() == EditorCamera::EditorControlState::Pointer)
+	{
+		InputSystem* input     = g_engine->m_inputSystem;
+		Vec2 const   cursorPos = m_editorCamera->GetCursorClientPos();
+		Vec2 const   delta     = m_editorCamera->GetCursorDelta();
+
+		OnMouseMove(cursorPos, delta);
+
+		if (input->WasKeyJustPressed(KeyCode::LeftMouse))
+		{
+			OnMouseDown(ToKeyCode(KeyCode::LeftMouse), cursorPos);
+		}
+
+		if (input->WasKeyJustReleased(KeyCode::LeftMouse))
+		{
+			OnMouseUp(ToKeyCode(KeyCode::LeftMouse), cursorPos);
+		}
 	}
 }

@@ -3,10 +3,7 @@
 #include "MingEngine/Core/Math/Matrix4x4.hpp"
 #include "MingEngine/Core/Math/RaycastUtils.hpp"
 
-AABBCollider3D::AABBCollider3D(AABB3 const& localBounds)
-	: m_localBounds(localBounds)
-{
-}
+AABBCollider3D::AABBCollider3D(AABB3 const& localBounds) : m_localBounds(localBounds) {}
 
 GameRaycastResult AABBCollider3D::Raycast(RaycastInfo const& info) const
 {
@@ -32,9 +29,4 @@ GameRaycastResult AABBCollider3D::Raycast(RaycastInfo const& info) const
 	return raycastResult;
 }
 
-void AABBCollider3D::OnProcess([[maybe_unused]] float deltaSeconds) { }
-
-void AABBCollider3D::RenderDebug() const
-{
-}
-
+void AABBCollider3D::RenderDebug() const {}

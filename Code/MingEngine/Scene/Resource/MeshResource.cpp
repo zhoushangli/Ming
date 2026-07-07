@@ -1,5 +1,6 @@
 #include "MingEngine/Scene/Resource/MeshResource.hpp"
 
+#include "MingEngine/Core/Render/Vertex.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Engine/Render/IndexBuffer.hpp"
 #include "MingEngine/Engine/Render/VertexBuffer.hpp"
@@ -7,11 +8,6 @@
 
 MeshResource::~MeshResource()
 {
-	for (Ref<TextureResource>& texture : m_textureResources)
-	{
-		texture = nullptr;
-	}
-
 	delete m_vertexBuffer;
 	m_vertexBuffer = nullptr;
 
@@ -63,4 +59,31 @@ void MeshResource::InitGPUResources()
 		g_engine->m_renderer->CreateVertexBuffer(m_vertices.data(), m_vertexCount * m_vertexStride, m_vertexStride);
 	m_indexBuffer =
 		g_engine->m_renderer->CreateIndexBuffer(m_indices.data(), m_indexCount * m_indexStride, m_indexStride);
+
+	// Build triangle list for raycast
+	m_triangles.clear();
+	if (m_vertexFormat == "Vertex" && m_vertexCount > 0 && m_indexCount >= 3)
+	{
+		Vertex const*   vertexData = reinterpret_cast<Vertex const*>(m_vertices.data());
+		uint32_t const* indexData  = reinterpret_cast<uint32_t const*>(m_indices.data());
+
+		for (uint32_t i = 0; i + 2 < m_indexCount; i += 3)
+		{
+			uint32_t indexA = indexData[i + 0];
+			uint32_t indexB = indexData[i + 1];
+			uint32_t indexC = indexData[i + 2];
+
+			if (indexA >= m_vertexCount || indexB >= m_vertexCount || indexC >= m_vertexCount)
+			{
+				continue;
+			}
+
+			Vec3 pointA = vertexData[indexA].m_position;
+			Vec3 pointB = vertexData[indexB].m_position;
+			Vec3 pointC = vertexData[indexC].m_position;
+
+			Triangle3 triangle(pointA, pointB, pointC);
+			m_triangles.push_back(triangle);
+		}
+	}
 }

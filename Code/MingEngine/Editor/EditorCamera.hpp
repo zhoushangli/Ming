@@ -1,14 +1,14 @@
 #pragma once
 
-#include "MingEngine/Scene/3D/Node3D.hpp"
-
 #include "MingEngine/Core/Math/Vec2.hpp"
+#include "MingEngine/Scene/3D/Node3D.hpp"
+#include "MingEngine/Scene/Core/RaycastSpace3D.hpp"
 
 class Camera3D;
 
-class EditorController : public Node3D
+class EditorCamera : public Node3D
 {
-	MCLASS(EditorController, Node3D);
+	MCLASS(EditorCamera, Node3D);
 
 public:
 	enum class EditorControlState
@@ -18,13 +18,19 @@ public:
 	};
 
 public:
-	EditorController();
-	~EditorController() override;
+	EditorCamera();
+	~EditorCamera() override;
 
-	static EditorController* Get();
+	static EditorCamera* Get();
 
 	void OnProcess(float deltaSeconds) override;
-	Camera3D* GetCamera() const;
+
+	Camera3D*          GetCamera() const;
+	EditorControlState GetControlState() const { return m_controlState; }
+	Vec2               GetCursorClientPos() const { return m_lastCursorClientPos; }
+	Vec2               GetCursorDelta() const { return m_cursorDelta; }
+
+	RaycastQuery3D BuildRaycastFromMouse() const;
 
 private:
 	void UpdateControlState();
@@ -36,9 +42,9 @@ private:
 private:
 	Camera3D* m_camera = nullptr;
 
-	EditorControlState m_controlState = EditorControlState::Pointer;
-	Vec2 m_lastCursorClientPos        = Vec2::Zero;
+	EditorControlState m_controlState        = EditorControlState::Pointer;
+	Vec2               m_lastCursorClientPos = Vec2::Zero;
+	Vec2               m_cursorDelta         = Vec2::Zero;
 
-	static EditorController* s_instance;
+	static EditorCamera* s_instance;
 };
-

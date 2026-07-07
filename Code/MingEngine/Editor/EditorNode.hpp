@@ -6,6 +6,7 @@
 #include "MingEngine/Core/Math/Vec2.hpp"
 
 class Camera3D;
+class EditorCamera;
 class EditorUI;
 class EditorGizmos;
 
@@ -33,7 +34,7 @@ public:
 	EditorSelection&       GetSelection();
 	EditorSelection const& GetSelection() const;
 
-	void SetActiveCamera(Camera3D* camera);
+	EditorCamera* GetEditorCamera() const { return m_editorCamera; }
 
 	// --- Mouse event routing ---
 	void OnMouseMove(Vec2 screenPos, Vec2 delta);
@@ -48,10 +49,9 @@ private:
 public:
 	EditorSelection m_selection;
 	EditorGizmos*   m_editorGizmos = nullptr;
+	EditorCamera*   m_editorCamera = nullptr;
 	EditorUI*       m_editorUI     = nullptr;
-	Camera3D*       m_activeCamera = nullptr;
 
 private:
 	static EditorNode* s_instance;
 };
-

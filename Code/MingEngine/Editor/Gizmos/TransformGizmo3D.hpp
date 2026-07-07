@@ -23,10 +23,10 @@ public:
 	GizmoRaycastResult Raycast(GizmoContext const& context, RaycastInfo const& ray) const;
 
 protected:
-	void OnProcess(float deltaSeconds) override;
+	void OnNotification(int notification);
 
 private:
 	std::vector<GizmoComponent*> m_components;
-	GizmoComponent* m_hoveredComponent = nullptr;
-	GizmoComponent* m_activeComponent  = nullptr;
+	GizmoComponent*              m_hoveredComponent = nullptr;
+	GizmoComponent*              m_activeComponent  = nullptr;
 };

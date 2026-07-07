@@ -36,9 +36,18 @@ void Camera3D::BindMethods()
 	ADD_PROPERTY(PropertyInfo(Variant::Type::Float, "size", PropertyInfo::Hint::None, "", usage), "SetSize", "GetSize");
 }
 
-void Camera3D::OnEnterTree() { m_data.m_viewport->RegisterWorldCamera(this); }
-
-void Camera3D::OnExitTree() { m_data.m_viewport->UnregisterWorldCamera(this); }
+void Camera3D::OnNotification(int notification)
+{
+	switch (static_cast<NotificationType>(notification))
+	{
+	case NotificationType::EnterTree:
+		m_data.m_viewport->RegisterWorldCamera(this);
+		break;
+	case NotificationType::ExitTree:
+		m_data.m_viewport->UnregisterWorldCamera(this);
+		break;
+	}
+}
 
 CameraContext Camera3D::GetCameraContext(float aspect) const
 {

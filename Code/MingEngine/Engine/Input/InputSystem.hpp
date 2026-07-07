@@ -107,10 +107,10 @@ public:
 	// Returns the current frame cursor delta in pixels, relative to the client
 	// region. This is how much the cursor moved last frame before it was reset
 	// to the center of the screen. Only valid in FPS mode, will be zero otherwise.
-	Vec2 GetCursorClientDelta() const;
+	IntVec2 GetCursorClientDelta() const;
 
 	// Returns the cursor position, in pixels relative to the client region.
-	Vec2 GetCursorClientPosition() const;
+	IntVec2 GetCursorClientPosition() const;
 
 	// Returns the cursor position, normalized to the range [0, 1], relative
 	// to the client region, with the y-axis inverted to map from Windows

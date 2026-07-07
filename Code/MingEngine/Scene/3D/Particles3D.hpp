@@ -53,8 +53,7 @@ public:
 	Particles3D(std::string const& xmlFilePath);
 	~Particles3D() override;
 
-	void          OnReady() override;
-	void          OnProcess(float deltaSeconds) override;
+	void          OnNotification(int notification);
 	RenderRequest SubmitRenderRequest() const override;
 
 	void SpawnNewParticle(Vec3 const& position);

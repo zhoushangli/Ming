@@ -2,8 +2,8 @@
 
 #include "MingEngine/Scene/3D/Node3D.hpp"
 
-#include "MingEngine/Core/Render/Rgba8.hpp"
 #include "MingEngine/Core/Math/Vec3.hpp"
+#include "MingEngine/Core/Render/Rgba8.hpp"
 #include "MingEngine/Engine/Render/RenderContext.hpp"
 
 class Light3D : public Node3D
@@ -30,8 +30,7 @@ public:
 	static void BindMethods();
 
 protected:
-	void OnEnterTree() override;
-	void OnExitTree() override;
+	void OnNotification(int notification);
 
 protected:
 	LightInfo m_lightInfo;
@@ -54,4 +53,3 @@ public:
 	DirectionalLight3D();
 	~DirectionalLight3D() override = default;
 };
-

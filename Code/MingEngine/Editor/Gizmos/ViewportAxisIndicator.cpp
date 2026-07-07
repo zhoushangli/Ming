@@ -1,6 +1,6 @@
 #include "MingEngine/Editor/Gizmos/ViewportAxisIndicator.hpp"
 
-#include "MingEngine/Editor/EditorController.hpp"
+#include "MingEngine/Editor/EditorCamera.hpp"
 #include "MingEngine/Scene/3D/Camera3D.hpp"
 #include "MingEngine/Scene/3D/Node3D.hpp"
 #include "MingEngine/Scene/Core/Viewport.hpp"
@@ -90,30 +90,35 @@ ViewportAxisIndicator::ViewportAxisIndicator()
 
 ViewportAxisIndicator::~ViewportAxisIndicator() {}
 
-void ViewportAxisIndicator::OnEnterTree()
+void ViewportAxisIndicator::OnNotification(int notification)
 {
-	EditorGizmoVisual3D::OnEnterTree();
-
-	Camera3D*   editorCamera   = EditorController::Get()->GetCamera();
-	EulerAngles cameraRotation = editorCamera->GetWorldOrientation();
-	m_lastCameraRotation       = cameraRotation;
-	RebuildVertexBuffer();
-}
-
-void ViewportAxisIndicator::OnProcess([[maybe_unused]] float deltaSeconds)
-{
-	Camera3D*   editorCamera   = EditorController::Get()->GetCamera();
-	EulerAngles cameraRotation = editorCamera->GetWorldOrientation();
-
-	// We just hardcode the position
-	IntVec2 dimensions = m_data.m_viewport->GetOutputResolution();
-	Vec2    center     = (Vec2)dimensions - Vec2(100.f, 100.f);
-
-	if (cameraRotation != m_lastCameraRotation || center != m_center)
+	switch (static_cast<NotificationType>(notification))
 	{
-		m_lastCameraRotation = cameraRotation;
-		m_center             = center;
+	case NotificationType::EnterTree:
+	{
+		Camera3D*   editorCamera   = EditorCamera::Get()->GetCamera();
+		EulerAngles cameraRotation = editorCamera->GetWorldOrientation();
+		m_lastCameraRotation       = cameraRotation;
 		RebuildVertexBuffer();
+		break;
+	}
+	case NotificationType::Process:
+	{
+		Camera3D*   editorCamera   = EditorCamera::Get()->GetCamera();
+		EulerAngles cameraRotation = editorCamera->GetWorldOrientation();
+
+		// We just hardcode the position
+		IntVec2 dimensions = m_data.m_viewport->GetOutputResolution();
+		Vec2    center     = (Vec2)dimensions - Vec2(100.f, 100.f);
+
+		if (cameraRotation != m_lastCameraRotation || center != m_center)
+		{
+			m_lastCameraRotation = cameraRotation;
+			m_center             = center;
+			RebuildVertexBuffer();
+		}
+		break;
+	}
 	}
 }
 

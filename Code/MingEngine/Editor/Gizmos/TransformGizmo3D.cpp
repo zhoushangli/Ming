@@ -1,6 +1,6 @@
 #include "MingEngine/Editor/Gizmos/TransformGizmo3D.hpp"
 
-#include "MingEngine/Editor/EditorController.hpp"
+#include "MingEngine/Editor/EditorCamera.hpp"
 #include "MingEngine/Scene/3D/Camera3D.hpp"
 #include "MingEngine/Scene/3D/Node3D.hpp"
 #include "MingEngine/Scene/Core/SceneTree.hpp"
@@ -17,9 +17,9 @@ TransformGizmo3D::TransformGizmo3D()
 	SetReady(true);
 	SetProcess(true);
 
-	GizmoAxisArrow* arrowX   = new GizmoAxisArrow(GizmoAxis::X, kAxisXColor);
-	GizmoAxisArrow* arrowY   = new GizmoAxisArrow(GizmoAxis::Y, kAxisYColor);
-	GizmoAxisArrow* arrowZ   = new GizmoAxisArrow(GizmoAxis::Z, kAxisZColor);
+	GizmoAxisArrow*   arrowX = new GizmoAxisArrow(GizmoAxis::X, kAxisXColor);
+	GizmoAxisArrow*   arrowY = new GizmoAxisArrow(GizmoAxis::Y, kAxisYColor);
+	GizmoAxisArrow*   arrowZ = new GizmoAxisArrow(GizmoAxis::Z, kAxisZColor);
 	GizmoPlaneSquare* planeX = new GizmoPlaneSquare(GizmoAxis::X, kAxisXColor);
 	GizmoPlaneSquare* planeY = new GizmoPlaneSquare(GizmoAxis::Y, kAxisYColor);
 	GizmoPlaneSquare* planeZ = new GizmoPlaneSquare(GizmoAxis::Z, kAxisZColor);
@@ -120,31 +120,38 @@ void TransformGizmo3D::EndDrag(GizmoContext const& context)
 	}
 }
 
-void TransformGizmo3D::OnProcess([[maybe_unused]] float deltaSeconds)
+void TransformGizmo3D::OnNotification(int notification)
 {
-	EditorController* editorController = EditorController::Get();
-	Camera3D* camera                   = editorController != nullptr ? editorController->GetCamera() : nullptr;
-	if (camera == nullptr)
+	switch (static_cast<NotificationType>(notification))
 	{
+	case NotificationType::Process:
+	{
+		EditorCamera* editorCamera = EditorCamera::Get();
+		Camera3D*     camera       = editorCamera != nullptr ? editorCamera->GetCamera() : nullptr;
+		if (camera == nullptr)
+		{
+			for (GizmoComponent* component : m_components)
+			{
+				component->SetVisible(false);
+			}
+			return;
+		}
+
+		GizmoContext const context        = BuildGizmoContext(GetSceneTree(), *camera);
+		bool const         hasSelection   = context.m_selectedNode3D != nullptr;
+		bool const         rotationActive = m_activeComponent != nullptr && m_activeComponent->IsRotationGizmo();
+
 		for (GizmoComponent* component : m_components)
 		{
-			component->SetVisible(false);
+			bool const isVisible = hasSelection && (!rotationActive || component == m_activeComponent);
+			component->SetVisible(isVisible);
+			if (isVisible)
+			{
+				component->RebuildVertices(context);
+			}
 		}
-		return;
+		break;
 	}
-
-	GizmoContext const context = BuildGizmoContext(GetSceneTree(), *camera);
-	bool const hasSelection    = context.m_selectedNode3D != nullptr;
-	bool const rotationActive  = m_activeComponent != nullptr && m_activeComponent->IsRotationGizmo();
-
-	for (GizmoComponent* component : m_components)
-	{
-		bool const isVisible = hasSelection && (!rotationActive || component == m_activeComponent);
-		component->SetVisible(isVisible);
-		if (isVisible)
-		{
-			component->RebuildVertices(context);
-		}
 	}
 }
 

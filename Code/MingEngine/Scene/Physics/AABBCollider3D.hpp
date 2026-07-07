@@ -16,10 +16,8 @@ public:
 	GameRaycastResult Raycast(RaycastInfo const& info) const override;
 
 protected:
-	void OnProcess(float deltaSeconds) override;
 	void RenderDebug() const;
 
 public:
 	AABB3 m_localBounds;
 };
-

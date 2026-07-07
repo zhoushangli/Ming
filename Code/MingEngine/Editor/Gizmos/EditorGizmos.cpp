@@ -1,6 +1,6 @@
 #include "MingEngine/Editor/Gizmos/EditorGizmos.hpp"
 
-#include "MingEngine/Editor/EditorController.hpp"
+#include "MingEngine/Editor/EditorCamera.hpp"
 #include "MingEngine/Editor/Gizmos/TransformGizmo3D.hpp"
 #include "MingEngine/Editor/Gizmos/ViewportAxisIndicator.hpp"
 #include "MingEngine/Scene/3D/Camera3D.hpp"
@@ -75,10 +75,10 @@ void EditorGizmos::OnEndDrag()
 {
 	if (m_transformGizmo->IsDragging())
 	{
-		Camera3D* camera = EditorController::Get() ? EditorController::Get()->GetCamera() : nullptr;
+		Camera3D* camera = EditorCamera::Get() ? EditorCamera::Get()->GetCamera() : nullptr;
 		if (camera != nullptr)
 		{
-			Vec2 const         cursorPos = g_engine->m_inputSystem->GetCursorClientPosition();
+			Vec2 const         cursorPos = Vec2(g_engine->m_inputSystem->GetCursorClientPosition());
 			GizmoContext const ctx       = BuildGizmoContext(GetSceneTree(), *camera, cursorPos);
 			m_transformGizmo->EndDrag(ctx);
 		}

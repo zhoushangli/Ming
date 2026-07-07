@@ -357,7 +357,7 @@
     <ClCompile Include="Core\Render\Vertex.cpp" />
     <ClCompile Include="Core\Render\VertexUtils.cpp" />
     <ClCompile Include="Core\XmlUtils.cpp" />
-    <ClCompile Include="Editor\EditorController.cpp" />
+    <ClCompile Include="Editor\EditorCamera.cpp" />
     <ClCompile Include="Editor\EditorNode.cpp" />
     <ClCompile Include="Editor\UI\CreateNodePanel.cpp" />
     <ClCompile Include="Editor\UI\EditorIcons.cpp" />
@@ -433,7 +433,7 @@
     <ClCompile Include="Scene\3D\Node3D.cpp" />
     <ClCompile Include="Scene\3D\Particles3D.cpp" />
     <ClCompile Include="Scene\Core\NodePath.cpp" />
-    <ClCompile Include="Scene\Core\RaycasySpace3D.cpp" />
+    <ClCompile Include="Scene\Core\RaycastSpace3D.cpp" />
     <ClCompile Include="Scene\Import\GLTFImporter.cpp" />
     <ClCompile Include="Scene\Import\OBJImporter.cpp" />
     <ClCompile Include="Scene\Physics\AABBCollider3D.cpp" />
@@ -514,7 +514,7 @@
     <ClInclude Include="Core\Render\Vertex.hpp" />
     <ClInclude Include="Core\Render\VertexUtils.hpp" />
     <ClInclude Include="Core\XmlUtils.hpp" />
-    <ClInclude Include="Editor\EditorController.hpp" />
+    <ClInclude Include="Editor\EditorCamera.hpp" />
     <ClInclude Include="Editor\EditorNode.hpp" />
     <ClInclude Include="Editor\UI\CreateNodePanel.hpp" />
     <ClInclude Include="Editor\UI\EditorIcons.hpp" />
@@ -599,7 +599,7 @@
     <ClInclude Include="Scene\3D\Mesh3D.hpp" />
     <ClInclude Include="Scene\3D\Node3D.hpp" />
     <ClInclude Include="Scene\3D\Particles3D.hpp" />
-    <ClInclude Include="Scene\Core\RaycasySpace3D.hpp" />
+    <ClInclude Include="Scene\Core\RaycastSpace3D.hpp" />
     <ClInclude Include="Scene\Import\GLTFImporter.hpp" />
     <ClInclude Include="Scene\Import\OBJImporter.hpp" />
     <ClInclude Include="Scene\Physics\AABBCollider3D.hpp" />

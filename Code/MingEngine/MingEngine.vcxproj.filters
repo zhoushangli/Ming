@@ -183,7 +183,7 @@
     <ClCompile Include="Core\XmlUtils.cpp">
       <Filter>Core</Filter>
     </ClCompile>
-    <ClCompile Include="Editor\EditorController.cpp">
+    <ClCompile Include="Editor\EditorCamera.cpp">
       <Filter>Editor</Filter>
     </ClCompile>
     <ClCompile Include="Editor\EditorNode.cpp">
@@ -579,7 +579,7 @@
     <ClCompile Include="Scene\Resource\TextureResource.cpp" />
     <ClCompile Include="Scene\Resource\TextureResourceFormat.cpp" />
     <ClCompile Include="Scene\Import\ImageImporter.cpp" />
-    <ClCompile Include="Scene\Core\RaycasySpace3D.cpp">
+    <ClCompile Include="Scene\Core\RaycastSpace3D.cpp">
       <Filter>Scene\Core</Filter>
     </ClCompile>
   </ItemGroup>
@@ -638,7 +638,7 @@
     <ClInclude Include="Core\XmlUtils.hpp">
       <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="Editor\EditorController.hpp">
+    <ClInclude Include="Editor\EditorCamera.hpp">
       <Filter>Editor</Filter>
     </ClInclude>
     <ClInclude Include="Editor\EditorNode.hpp">
@@ -1124,7 +1124,7 @@
     <ClInclude Include="Scene\Resource\TextureResource.hpp" />
     <ClInclude Include="Scene\Resource\TextureResourceFormat.hpp" />
     <ClInclude Include="Scene\Import\ImageImporter.hpp" />
-    <ClInclude Include="Scene\Core\RaycasySpace3D.hpp">
+    <ClInclude Include="Scene\Core\RaycastSpace3D.hpp">
       <Filter>Scene\Core</Filter>
     </ClInclude>
   </ItemGroup>

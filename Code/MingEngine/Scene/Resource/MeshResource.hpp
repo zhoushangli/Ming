@@ -1,5 +1,7 @@
 #pragma once
 
+#include "MingEngine/Core/Math/AABB3.hpp"
+#include "MingEngine/Core/Math/Triangle3.hpp"
 #include "MingEngine/Core/Object/Resource.hpp"
 #include "MingEngine/Scene/Resource/TextureResource.hpp"
 
@@ -40,10 +42,14 @@ public:
 	uint32_t             m_indexCount  = 0;
 	std::vector<uint8_t> m_indices;
 
+	AABB3 m_bounds;
+
 	// Texture references: paths for serialization, Refs for runtime, GPU handles for rendering
 	std::vector<Ref<TextureResource>> m_textureResources;
 
-	// GPU side data handles
+	// --------- GPU side data handles -----------
 	VertexBuffer* m_vertexBuffer = nullptr;
 	IndexBuffer*  m_indexBuffer  = nullptr;
+
+	std::vector<Triangle3> m_triangles; // Mainly for raycast
 };

@@ -17,7 +17,6 @@ public:
 	GameRaycastResult Raycast(RaycastInfo const& info) const override;
 
 protected:
-	void OnProcess(float deltaSeconds) override;
 	void RenderDebug() const;
 
 public:
@@ -25,4 +24,3 @@ public:
 	Vec3  m_localEnd   = Vec3::Zero;
 	float m_radius     = 0.5f;
 };
-

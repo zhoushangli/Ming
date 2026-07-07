@@ -1,6 +1,5 @@
 #include "MingEngine/Editor/EditorCamera.hpp"
 
-#include "MingEngine/Editor/EditorNode.hpp"
 #include "MingEngine/Scene/3D/Camera3D.hpp"
 
 #include "MingEngine/Core/Math/MathUtils.hpp"
@@ -17,9 +16,9 @@ constexpr float kMoveSpeedUnitsPerSec = 4.f;
 constexpr float kSprintMultiplier     = 3.f;
 constexpr float kMaxPitchDeg          = 85.f;
 
-EditorController* EditorController::s_instance = nullptr;
+EditorCamera* EditorCamera::s_instance = nullptr;
 
-EditorController::EditorController()
+EditorCamera::EditorCamera()
 {
 	s_instance = this;
 
@@ -30,7 +29,7 @@ EditorController::EditorController()
 	SetProcess(true);
 }
 
-EditorController::~EditorController()
+EditorCamera::~EditorCamera()
 {
 	if (s_instance == this)
 	{
@@ -38,9 +37,9 @@ EditorController::~EditorController()
 	}
 }
 
-EditorController* EditorController::Get() { return s_instance; }
+EditorCamera* EditorCamera::Get() { return s_instance; }
 
-void EditorController::OnProcess(float deltaSeconds)
+void EditorCamera::OnProcess(float deltaSeconds)
 {
 	// PCG editor commands will move to a scene-local world/editor manager.
 
@@ -69,7 +68,34 @@ void EditorController::OnProcess(float deltaSeconds)
 	UpdateCameraChild();
 }
 
-void EditorController::UpdateControlState()
+RaycastQuery3D EditorCamera::BuildRaycastFromMouse() const
+{
+	RaycastQuery3D query;
+
+	Matrix4x4 localToWorld = GetWorldTransform();
+	Matrix4x4 worldToLocal = localToWorld.GetOrthonormalInverse();
+
+	Vec2 cursorPos   = Vec2(g_engine->m_inputSystem->GetCursorClientPosition());
+	Vec2 clientDims  = Vec2(g_engine->m_windowSystem->GetClientDimensions());
+	Vec2 cursorDelta = clientDims * 0.5f - cursorPos;
+
+	Vec3 localStart = Vec3(0.f, 0.f, 0.f);
+	Vec3 localDir =
+		Vec3(
+			clientDims.y * 0.5f / std::tanf(m_camera->GetFovDegrees() * 0.5f * Math::kDegreesToRadiansMultiplier),
+			cursorDelta.x,
+			cursorDelta.y)
+			.GetNormalized();
+
+	query.m_start = localToWorld.TransformPosition3D(localStart);
+	query.m_direction = localToWorld.TransformDirection3D(localDir).GetNormalized();
+	query.m_maxDistance = 10000.f;
+	query.m_exclude = NodeHandle::Invalid;
+
+	return query;
+}
+
+void EditorCamera::UpdateControlState()
 {
 	InputSystem* input = g_engine->m_inputSystem;
 	bool const   isConsoleOpen =
@@ -81,7 +107,7 @@ void EditorController::UpdateControlState()
 	EnterControlState(desiredState);
 }
 
-void EditorController::EnterControlState(EditorControlState nextState)
+void EditorCamera::EnterControlState(EditorControlState nextState)
 {
 	if (m_controlState == nextState)
 	{
@@ -99,14 +125,14 @@ void EditorController::EnterControlState(EditorControlState nextState)
 	{
 		g_engine->m_inputSystem->SetCursorMode(CursorMode::POINTER);
 		g_engine->m_inputSystem->ClearCursorDelta();
-		m_lastCursorClientPos = g_engine->m_inputSystem->GetCursorClientPosition();
+		m_lastCursorClientPos = Vec2(g_engine->m_inputSystem->GetCursorClientPosition());
 	}
 }
 
-void EditorController::UpdateFlyThrough(float deltaSeconds)
+void EditorCamera::UpdateFlyThrough(float deltaSeconds)
 {
 	InputSystem* input      = g_engine->m_inputSystem;
-	Vec2         mouseDelta = input->GetCursorClientDelta();
+	Vec2         mouseDelta = Vec2(input->GetCursorClientDelta());
 
 	EulerAngles orientation = GetLocalOrientation();
 	orientation.m_yawDegrees -= mouseDelta.x * kMouseLookSensitivity;
@@ -171,33 +197,17 @@ void EditorController::UpdateFlyThrough(float deltaSeconds)
 	SetLocalPosition(GetLocalPosition() + m_velocity * deltaSeconds);
 }
 
-void EditorController::UpdatePointer([[maybe_unused]] float deltaSeconds)
+void EditorCamera::UpdatePointer([[maybe_unused]] float deltaSeconds)
 {
 	InputSystem* input     = g_engine->m_inputSystem;
-	Vec2 const   cursorPos = input->GetCursorClientPosition();
-	Vec2 const   delta     = cursorPos - m_lastCursorClientPos;
+	Vec2 const   cursorPos = Vec2(input->GetCursorClientPosition());
+	m_cursorDelta          = cursorPos - m_lastCursorClientPos;
 	m_lastCursorClientPos  = cursorPos;
-
-	EditorNode* editorNode = EditorNode::Get();
-	if (editorNode != nullptr)
-	{
-		editorNode->OnMouseMove(cursorPos, delta);
-
-		if (input->WasKeyJustPressed(KeyCode::LeftMouse))
-		{
-			editorNode->OnMouseDown(ToKeyCode(KeyCode::LeftMouse), cursorPos);
-		}
-
-		if (input->WasKeyJustReleased(KeyCode::LeftMouse))
-		{
-			editorNode->OnMouseUp(ToKeyCode(KeyCode::LeftMouse), cursorPos);
-		}
-	}
 
 	m_velocity = Vec3::Zero;
 }
 
-void EditorController::UpdateCameraChild()
+void EditorCamera::UpdateCameraChild()
 {
 	if (m_camera == nullptr)
 	{
@@ -208,4 +218,4 @@ void EditorController::UpdateCameraChild()
 	m_camera->SetLocalOrientation(EulerAngles::Zero);
 }
 
-Camera3D* EditorController::GetCamera() const { return m_camera; }
+Camera3D* EditorCamera::GetCamera() const { return m_camera; }

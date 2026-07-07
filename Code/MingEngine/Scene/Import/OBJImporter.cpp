@@ -2,6 +2,7 @@
 
 #include "MingEngine/Core/Object/ClassDatabase.hpp"
 #include "MingEngine/Core/Render/Vertex.hpp"
+#include "MingEngine/Core/Render/VertexUtils.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Core/Object/ResourceLoader.hpp"
 
@@ -807,6 +808,8 @@ Ref<Resource> OBJImporter::Import(
 	meshData->m_indexCount  = static_cast<uint32_t>(objData.m_indices.size());
 	meshData->m_indices.resize(meshData->m_indexCount * sizeof(uint32_t));
 	memcpy(meshData->m_indices.data(), objData.m_indices.data(), meshData->m_indices.size());
+
+	meshData->m_bounds = GetVertexBounds3D(objData.m_vertices);
 
 	// 2) Ensure texture dependencies are imported, store .tex paths in MeshResource
 	MTLData mtlData;

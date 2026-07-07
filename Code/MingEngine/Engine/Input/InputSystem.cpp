@@ -26,7 +26,6 @@ void InputSystem::BindMethods()
 		"WasKeyJustReleased",
 		static_cast<bool (InputSystem::*)(int)>(&InputSystem::WasKeyJustReleased));
 	ClassDatabase::BindMethod("SetCursorMode", &InputSystem::SetCursorModeByInt);
-	ClassDatabase::BindMethod("GetCursorClientDelta", &InputSystem::GetCursorClientDelta);
 
 	BIND_ENUM(KeyCode, F1);
 	BIND_ENUM(KeyCode, F2);
@@ -220,9 +219,9 @@ void InputSystem::SetCursorModeByInt(int cursorMode)
 	SetCursorMode(static_cast<CursorMode>(cursorMode));
 }
 
-Vec2 InputSystem::GetCursorClientDelta() const { return Vec2(m_cursorClientDelta); }
+IntVec2 InputSystem::GetCursorClientDelta() const { return m_cursorClientDelta; }
 
-Vec2 InputSystem::GetCursorClientPosition() const { return Vec2(m_cursorClientPosition); }
+IntVec2 InputSystem::GetCursorClientPosition() const { return m_cursorClientPosition; }
 
 Vec2 InputSystem::GetCursorNormalizedPosition() const
 {
@@ -237,10 +236,10 @@ Vec2 InputSystem::GetCursorNormalizedPosition() const
 		return Vec2::Zero;
 	}
 
-	Vec2 clientPos = GetCursorClientPosition();
+	IntVec2 clientPos = GetCursorClientPosition();
 
-	float u = clientPos.x / (float)clientDimensions.x;
-	float v = clientPos.y / (float)clientDimensions.y;
+	float u = (float)clientPos.x / (float)clientDimensions.x;
+	float v = (float)clientPos.y / (float)clientDimensions.y;
 
 	u = GetClamped(u, 0.f, 1.f);
 	v = GetClamped(v, 0.f, 1.f);

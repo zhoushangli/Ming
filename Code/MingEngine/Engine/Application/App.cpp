@@ -22,7 +22,7 @@
 
 #if defined(MING_EDITOR)
 
-#include "MingEngine/Editor/EditorController.hpp"
+#include "MingEngine/Editor/EditorCamera.hpp"
 #include "MingEngine/Editor/EditorNode.hpp"
 #include "MingEngine/Editor/Gizmos/EditorGizmos.hpp"
 
@@ -72,7 +72,7 @@ void App::Startup()
 #if defined(MING_EDITOR)
 	ClassDatabase::RegisterClass<EditorNode>(false);
 	ClassDatabase::RegisterClass<EditorGizmos>(false);
-	ClassDatabase::RegisterClass<EditorController>(false);
+	ClassDatabase::RegisterClass<EditorCamera>(false);
 #endif
 
 	g_engine->Startup();
@@ -100,7 +100,7 @@ void App::Shutdown()
 	DebugRenderSystemShutdown();
 	m_project.Shutdown();
 	ClassDatabase::Shutdown();
-	
+
 	ResourceLoader::Shutdown();
 
 	g_engineService->Shutdown();
@@ -228,10 +228,6 @@ void App::StartupScene()
 
 #if defined(MING_EDITOR)
 
-	m_editorController = new EditorController();
-	m_editorController->SetName("EditorController");
-	m_sceneTree->GetRoot()->AddNode(m_editorController);
-
 	auto editorNode = new EditorNode();
 	editorNode->SetName("EditorNode");
 	m_sceneTree->GetRoot()->AddNode(editorNode);
@@ -252,8 +248,8 @@ void App::StartupScene()
 void App::ShutdownScene()
 {
 #if defined(MING_EDITOR)
-	m_editorController = nullptr;
-	m_isSlowMode       = false;
+	m_editorCamera = nullptr;
+	m_isSlowMode   = false;
 #endif
 
 	delete m_sceneTree;

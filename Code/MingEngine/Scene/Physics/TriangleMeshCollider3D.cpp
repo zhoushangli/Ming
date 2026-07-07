@@ -3,10 +3,7 @@
 #include "MingEngine/Core/Math/Matrix4x4.hpp"
 #include "MingEngine/Core/Math/RaycastUtils.hpp"
 
-void TriangleMeshCollider3D::SetMesh(std::vector<Vertex> const& vertices)
-{
-	m_vertices = vertices;
-}
+void TriangleMeshCollider3D::SetMesh(std::vector<Vertex> const& vertices) { m_vertices = vertices; }
 
 GameRaycastResult TriangleMeshCollider3D::Raycast(RaycastInfo const& info) const
 {
@@ -33,8 +30,7 @@ GameRaycastResult TriangleMeshCollider3D::Raycast(RaycastInfo const& info) const
 			info.m_maxLength,
 			m_vertices[vertexIndex].m_position,
 			m_vertices[vertexIndex + 1].m_position,
-			m_vertices[vertexIndex + 2].m_position
-		);
+			m_vertices[vertexIndex + 2].m_position);
 
 		if (!triangleResult.m_didImpact)
 		{
@@ -60,6 +56,3 @@ GameRaycastResult TriangleMeshCollider3D::Raycast(RaycastInfo const& info) const
 
 	return bestResult;
 }
-
-void TriangleMeshCollider3D::OnProcess([[maybe_unused]] float deltaSeconds) { }
-

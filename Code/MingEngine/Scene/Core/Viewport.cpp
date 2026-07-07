@@ -28,22 +28,22 @@ Viewport::~Viewport()
 	g_engine->m_renderer->DestroyViewportResources(m_viewportInfo);
 }
 
-void Viewport::OnEnterTree()
+void Viewport::OnNotification(int notification)
 {
-	// Node propagation assigns SceneTree, NodeHandle, and owning Viewport
-	// before this callback registers the root Viewport for rendering.
-	if (g_engineService != nullptr && g_engineService->m_renderService != nullptr)
+	switch (static_cast<NotificationType>(notification))
 	{
-		g_engineService->m_renderService->RegisterViewport(this);
-	}
-}
-
-void Viewport::OnExitTree()
-{
-	// Unregister before SceneTree clears handles and before the Viewport is deleted.
-	if (g_engineService != nullptr && g_engineService->m_renderService != nullptr)
-	{
-		g_engineService->m_renderService->UnregisterViewport(this);
+	case NotificationType::EnterTree:
+		if (g_engineService != nullptr && g_engineService->m_renderService != nullptr)
+		{
+			g_engineService->m_renderService->RegisterViewport(this);
+		}
+		break;
+	case NotificationType::ExitTree:
+		if (g_engineService != nullptr && g_engineService->m_renderService != nullptr)
+		{
+			g_engineService->m_renderService->UnregisterViewport(this);
+		}
+		break;
 	}
 }
 

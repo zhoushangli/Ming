@@ -4,6 +4,14 @@
 
 #include "MingEngine/Engine/Render/CameraContext.hpp"
 
+// Camera node that defers aspect ratio to the caller.
+// Aspect is a viewport property, not a camera property — it is supplied
+// via GetCameraContext(aspect) at render time.
+
+// Both m_fovDegrees and m_size are measured on the vertical (Y) axis;
+// the horizontal axis is derived from Y / aspect
+// we do this because when we have different screen
+// we want 16 : 9, 4 : 3, ... looks the same in height
 class Camera3D : public Node3D
 {
 	MCLASS(Camera3D, Node3D);
@@ -34,17 +42,16 @@ public:
 	static void BindMethods();
 
 protected:
-	void OnEnterTree() override;
-	void OnExitTree() override;
+	void OnNotification(int notification);
 
 private:
 	CameraContext::Mode m_mode;
 	float               m_nearClip;
 	float               m_farClip;
 
-	// Perspective parameters:
+	// Vertical FOV in degrees (perspective). Horizontal = fovY / aspect.
 	float m_fovDegrees;
 
-	// Orthographic parameters:
-	float m_size; // the size of y axis
+	// Vertical half-extent in world units (orthographic). Horizontal = size / aspect.
+	float m_size;
 };
