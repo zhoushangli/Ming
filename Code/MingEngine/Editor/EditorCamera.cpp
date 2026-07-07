@@ -1,4 +1,4 @@
-#include "MingEngine/Editor/EditorController.hpp"
+#include "MingEngine/Editor/EditorCamera.hpp"
 
 #include "MingEngine/Editor/EditorNode.hpp"
 #include "MingEngine/Scene/3D/Camera3D.hpp"
