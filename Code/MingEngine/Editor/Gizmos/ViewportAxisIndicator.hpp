@@ -19,6 +19,8 @@ struct Axis2D
 
 class ViewportAxisIndicator : public EditorGizmoVisual3D
 {
+	MCLASS(ViewportAxisIndicator, EditorGizmoVisual3D)
+
 public:
 	ViewportAxisIndicator();
 	~ViewportAxisIndicator() override;

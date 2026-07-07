@@ -809,8 +809,6 @@ Ref<Resource> OBJImporter::Import(
 	meshData->m_indices.resize(meshData->m_indexCount * sizeof(uint32_t));
 	memcpy(meshData->m_indices.data(), objData.m_indices.data(), meshData->m_indices.size());
 
-	meshData->m_bounds = GetVertexBounds3D(objData.m_vertices);
-
 	// 2) Ensure texture dependencies are imported, store .tex paths in MeshResource
 	MTLData mtlData;
 	if (!objData.m_mtlVirtualPath.empty())

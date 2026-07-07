@@ -42,14 +42,14 @@ public:
 	uint32_t             m_indexCount  = 0;
 	std::vector<uint8_t> m_indices;
 
-	AABB3 m_bounds;
-
+	
 	// Texture references: paths for serialization, Refs for runtime, GPU handles for rendering
 	std::vector<Ref<TextureResource>> m_textureResources;
-
+	
 	// --------- GPU side data handles -----------
 	VertexBuffer* m_vertexBuffer = nullptr;
 	IndexBuffer*  m_indexBuffer  = nullptr;
-
-	std::vector<Triangle3> m_triangles; // Mainly for raycast
+	
+	AABB3 m_bounds; // Mainly for raycast
+	std::vector<Triangle3> m_triangles;
 };

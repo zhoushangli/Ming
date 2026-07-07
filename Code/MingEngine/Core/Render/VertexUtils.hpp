@@ -67,6 +67,7 @@ void AddVertsForArrow2D(
 
 #pragma region 3D
 
+AABB3 GetVertexBounds3D(Vertex const* vertices, size_t numVerts);
 AABB3 GetVertexBounds3D(std::vector<Vertex> const& vertices);
 
 void TransformVertexArrayXY3D(

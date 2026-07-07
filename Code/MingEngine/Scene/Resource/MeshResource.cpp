@@ -62,28 +62,27 @@ void MeshResource::InitGPUResources()
 
 	// Build triangle list for raycast
 	m_triangles.clear();
-	if (m_vertexFormat == "Vertex" && m_vertexCount > 0 && m_indexCount >= 3)
+	Vertex const*   vertexData = reinterpret_cast<Vertex const*>(m_vertices.data());
+	uint32_t const* indexData  = reinterpret_cast<uint32_t const*>(m_indices.data());
+
+	m_bounds = GetVertexBounds3D(vertexData, m_vertexCount);
+
+	for (uint32_t i = 0; i + 2 < m_indexCount; i += 3)
 	{
-		Vertex const*   vertexData = reinterpret_cast<Vertex const*>(m_vertices.data());
-		uint32_t const* indexData  = reinterpret_cast<uint32_t const*>(m_indices.data());
+		uint32_t indexA = indexData[i + 0];
+		uint32_t indexB = indexData[i + 1];
+		uint32_t indexC = indexData[i + 2];
 
-		for (uint32_t i = 0; i + 2 < m_indexCount; i += 3)
+		if (indexA >= m_vertexCount || indexB >= m_vertexCount || indexC >= m_vertexCount)
 		{
-			uint32_t indexA = indexData[i + 0];
-			uint32_t indexB = indexData[i + 1];
-			uint32_t indexC = indexData[i + 2];
-
-			if (indexA >= m_vertexCount || indexB >= m_vertexCount || indexC >= m_vertexCount)
-			{
-				continue;
-			}
-
-			Vec3 pointA = vertexData[indexA].m_position;
-			Vec3 pointB = vertexData[indexB].m_position;
-			Vec3 pointC = vertexData[indexC].m_position;
-
-			Triangle3 triangle(pointA, pointB, pointC);
-			m_triangles.push_back(triangle);
+			continue;
 		}
+
+		Vec3 pointA = vertexData[indexA].m_position;
+		Vec3 pointB = vertexData[indexB].m_position;
+		Vec3 pointC = vertexData[indexC].m_position;
+
+		Triangle3 triangle(pointA, pointB, pointC);
+		m_triangles.push_back(triangle);
 	}
 }

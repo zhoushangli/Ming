@@ -10,6 +10,8 @@ class VisualizeInstance3D;
 
 class Viewport : public Node
 {
+	MCLASS(Viewport, Node);
+
 public:
 	Viewport();
 	~Viewport() override;

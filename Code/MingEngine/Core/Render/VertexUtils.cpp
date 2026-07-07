@@ -40,21 +40,25 @@ AABB2 GetVertexBounds2D(const std::vector<Vertex>& verts)
 	return bounds;
 }
 
-AABB3 GetVertexBounds3D(std::vector<Vertex> const& vertices)
+AABB3 GetVertexBounds3D(Vertex const* vertices, size_t numVerts)
 {
-	if (vertices.empty())
+	if (numVerts == 0)
 	{
 		return AABB3::Zero;
 	}
 
-	AABB3 bounds;
-	for (Vertex const& vertex : vertices)
+	AABB3 bounds(AABB3(vertices[0].m_position, vertices[0].m_position));
+	for (size_t i = 1; i < numVerts; ++i)
 	{
-		Vec3 const& p = vertex.m_position;
-		bounds.StretchToIncludePoint(p);
+		bounds.StretchToIncludePoint(vertices[i].m_position);
 	}
 
 	return bounds;
+}
+
+AABB3 GetVertexBounds3D(std::vector<Vertex> const& vertices)
+{
+	return GetVertexBounds3D(vertices.data(), vertices.size());
 }
 
 void AddVertsForAABB2D(std::vector<Vertex>& verts, AABB2 const& alignedBox, Rgba8 color)

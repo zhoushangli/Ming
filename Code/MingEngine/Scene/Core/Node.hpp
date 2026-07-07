@@ -88,7 +88,8 @@ protected:
 	// 2) OnExitTree is called before this node unregisters from its SceneTree.
 	// 3) OnReady is called after this node and its children enter a SceneTree.
 	// 4) OnProcess is called once per frame by SceneTree::UpdateScene.
-	// For c++ side, please DO NOT USE THIS
+	
+	// For c++ side, please DO NOT USE THIS, they are ONLY for script side
 	// this is because these OnXXX will overrider their parent class
 	// but c++ side is normally pipeline function, which we normally do not want to override
 	// so for c++ side, we should use OnNotification instead, which will call along the inherit chain

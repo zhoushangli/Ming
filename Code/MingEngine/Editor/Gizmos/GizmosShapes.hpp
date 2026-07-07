@@ -10,6 +10,8 @@ class VertexBuffer;
 
 class EditorGizmoVisual3D : public VisualizeInstance3D
 {
+	MCLASS(EditorGizmoVisual3D, VisualizeInstance3D)
+
 public:
 	EditorGizmoVisual3D() = default;
 	~EditorGizmoVisual3D() override;

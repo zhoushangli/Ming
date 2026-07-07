@@ -12,7 +12,6 @@
 #include "MingEngine/Engine/Render/Renderer.hpp"
 #include "MingEngine/Engine/Window/WindowSystem.hpp"
 
-#include "Viewport.hpp"
 #include <algorithm>
 
 Viewport::Viewport()
