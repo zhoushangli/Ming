@@ -54,5 +54,7 @@ void ViewportPanel::OnRender(EditorUIContext& context)
 			ImGui::Image(textureRef, availableSize);
 		}
 	}
+	context.m_isViewportImageHovered = ImGui::IsItemHovered();
+	
 	ImGui::End();
 }

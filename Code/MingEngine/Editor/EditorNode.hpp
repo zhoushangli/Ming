@@ -2,8 +2,8 @@
 
 #include "MingEngine/Scene/Core/Node.hpp"
 #include "MingEngine/Scene/Core/NodeHandle.hpp"
-
 #include "MingEngine/Core/Math/Vec2.hpp"
+#include "MingEngine/Editor/UI/EditorUIContext.hpp"
 
 class Camera3D;
 class EditorCamera;
@@ -42,6 +42,7 @@ public:
 	void OnMouseUp(int keyCode, Vec2 screenPos);
 
 private:
+	void OnReady() override;
 	void OnProcess(float deltaSeconds) override;
 
 	void SaveSceneToFile(Node const* sceneRoot, std::string const& virtualPath);
@@ -54,4 +55,6 @@ public:
 
 private:
 	static EditorNode* s_instance;
+
+	EditorUIContext m_uiContext;
 };

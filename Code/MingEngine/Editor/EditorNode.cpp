@@ -8,6 +8,7 @@
 #include "MingEngine/Editor/UI/EditorUI.hpp"
 #include "MingEngine/Editor/UI/EditorUIContext.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
+#include "MingEngine/Engine/ImGui/ImGuiSystem.hpp"
 #include "MingEngine/Engine/Input/InputSystem.hpp"
 #include "MingEngine/Engine/Render/DebugRenderer.hpp"
 #include "MingEngine/Scene/3D/Camera3D.hpp"
@@ -15,8 +16,6 @@
 #include "MingEngine/Scene/Core/PackedScene.hpp"
 #include "MingEngine/Scene/Core/RaycastSpace3D.hpp"
 #include "MingEngine/Scene/Core/SceneTree.hpp"
-#include "MingEngine/Engine/ImGui/ImGuiSystem.hpp"
-#include "MingEngine/Engine/Application/Engine.hpp"
 
 namespace
 {
@@ -144,7 +143,7 @@ void EditorNode::OnMouseMove(Vec2 screenPos, [[maybe_unused]] Vec2 delta)
 
 void EditorNode::OnMouseDown(int keyCode, Vec2 screenPos)
 {
-	if (g_engine->m_imguiSystem->WantCaptureMouse())
+	if (!(g_engine->m_imguiSystem->WantCaptureMouse() && m_uiContext.m_isViewportImageHovered))
 	{
 		return;
 	}
@@ -198,6 +197,14 @@ void EditorNode::OnMouseUp(int keyCode, [[maybe_unused]] Vec2 screenPos)
 	}
 }
 
+void EditorNode::OnReady()
+{
+	m_uiContext.m_sceneTree  = GetSceneTree();
+	m_uiContext.m_selection  = &m_selection;
+	m_uiContext.m_editorUI   = m_editorUI;
+	m_uiContext.m_fileSystem = g_engine->m_fileSystem;
+}
+
 void EditorNode::OnProcess([[maybe_unused]] float deltaSeconds)
 {
 	if (g_engine->m_inputSystem->WasKeyJustPressed('1'))
@@ -221,12 +228,9 @@ void EditorNode::OnProcess([[maybe_unused]] float deltaSeconds)
 
 	if (m_editorUI != nullptr)
 	{
-		EditorUIContext context;
-		context.m_sceneTree  = GetSceneTree();
-		context.m_selection  = &m_selection;
-		context.m_editorUI   = m_editorUI;
-		context.m_fileSystem = g_engine->m_fileSystem;
-		m_editorUI->Render(context);
+		m_uiContext.m_isViewportImageHovered = false;
+
+		m_editorUI->Render(m_uiContext);
 	}
 
 	// 1) Dispatch mouse events when in Pointer mode
