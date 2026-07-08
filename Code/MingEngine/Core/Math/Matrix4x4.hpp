@@ -57,6 +57,7 @@ public:
 	Vec3 const GetJBasis3D() const;
 	Vec3 const GetKBasis3D() const;
 	Vec3 const GetTranslation3D() const;
+	Vec3 const GetScale3D() const;
 
 	Vec4 const GetIBasis4D() const;
 	Vec4 const GetJBasis4D() const;

@@ -39,6 +39,8 @@ public:
 
 	Vec3 GetLocalScale() const;
 	void SetLocalScale(Vec3 const& scale);
+	Vec3 GetWorldScale() const;
+	void SetWorldScale(Vec3 const& scale);
 
 protected:
 	void OnNotification(int notification);

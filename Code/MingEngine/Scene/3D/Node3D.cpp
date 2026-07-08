@@ -126,14 +126,6 @@ void Node3D::SetLocalPosition(Vec3 const& localPosition)
 	PropagateTransformChanged();
 }
 
-Vec3 Node3D::GetLocalScale() const { return m_transform.GetScale(); }
-
-void Node3D::SetLocalScale(Vec3 const& scale)
-{
-	m_transform.SetScale(scale);
-	PropagateTransformChanged();
-}
-
 void Node3D::SetWorldPosition(Vec3 const& worldPosition)
 {
 	Node3D* parent3D = dynamic_cast<Node3D*>(m_data.m_parent);
@@ -145,6 +137,36 @@ void Node3D::SetWorldPosition(Vec3 const& worldPosition)
 	else
 	{
 		SetLocalPosition(worldPosition);
+	}
+}
+
+Vec3 Node3D::GetLocalScale() const { return m_transform.GetScale(); }
+
+void Node3D::SetLocalScale(Vec3 const& scale)
+{
+	m_transform.SetScale(scale);
+	PropagateTransformChanged();
+}
+
+Vec3 Node3D::GetWorldScale() const
+{
+	Matrix4x4 worldTransform = GetWorldTransform();
+	return worldTransform.GetScale3D();
+}
+
+void Node3D::SetWorldScale(Vec3 const& scale)
+{
+	Node3D* parent3D = dynamic_cast<Node3D*>(m_data.m_parent);
+	if (parent3D != nullptr)
+	{
+		Vec3 parentWorldScale = parent3D->GetWorldScale();
+		Vec3 newLocalScale =
+			Vec3(scale.x / parentWorldScale.x, scale.y / parentWorldScale.y, scale.z / parentWorldScale.z);
+		SetLocalScale(newLocalScale);
+	}
+	else
+	{
+		SetLocalScale(scale);
 	}
 }
 

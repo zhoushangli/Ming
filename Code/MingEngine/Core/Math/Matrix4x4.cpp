@@ -182,6 +182,15 @@ Vec3 const Matrix4x4::GetKBasis3D() const { return Vec3(m_values[Kx], m_values[K
 
 Vec3 const Matrix4x4::GetTranslation3D() const { return Vec3(m_values[Tx], m_values[Ty], m_values[Tz]); }
 
+Vec3 const Matrix4x4::GetScale3D() const
+{
+	Vec3 i, j, k;
+	i = GetIBasis3D();
+	j = GetJBasis3D();
+	k = GetKBasis3D();
+	return Vec3(i.GetLength(), j.GetLength(), k.GetLength());
+}
+
 Vec4 const Matrix4x4::GetIBasis4D() const { return Vec4(m_values[Ix], m_values[Iy], m_values[Iz], m_values[Iw]); }
 
 Vec4 const Matrix4x4::GetJBasis4D() const { return Vec4(m_values[Jx], m_values[Jy], m_values[Jz], m_values[Jw]); }
@@ -383,8 +392,8 @@ Matrix4x4 const Matrix4x4::MakeRotationDegreesZ(float rotationDegreesAboutZ)
 	return mat;
 }
 
-Matrix4x4 const
-Matrix4x4::MakeOrthoProjection(float left, float right, float bottom, float top, float zNear, float zFar)
+Matrix4x4 const Matrix4x4::MakeOrthoProjection(
+	float left, float right, float bottom, float top, float zNear, float zFar)
 {
 	Matrix4x4 ortho;
 	ortho.m_values[Ix] = 2.f / (right - left);

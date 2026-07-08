@@ -6,6 +6,8 @@
 
 #include "MingEngine/Core/Math/Vec2.hpp"
 
+#include <array>
+
 class Camera3D;
 class TransformGizmo3D;
 class ViewportAxisIndicator;
@@ -28,7 +30,7 @@ public:
 
 private:
 	EditorWorldGrid3D* m_worldGrid         = nullptr;
-	EditorWorldAxis3D* m_worldAxis         = nullptr;
+	std::array<EditorWorldAxis3D*, 6> m_worldAxises = {};
 	TransformGizmo3D* m_transformGizmo     = nullptr;
 	ViewportAxisIndicator* m_axisIndicator = nullptr;
 };

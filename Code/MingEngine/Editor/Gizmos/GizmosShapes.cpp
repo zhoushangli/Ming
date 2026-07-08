@@ -7,13 +7,6 @@
 #include "MingEngine/Engine/Render/Renderer.hpp"
 #include "MingEngine/Engine/Render/VertexBuffer.hpp"
 
-namespace
-{
-Rgba8 const kAxisXColor(255, 70, 105, 255);
-Rgba8 const kAxisYColor(155, 225, 20, 255);
-Rgba8 const kAxisZColor(55, 160, 255, 255);
-} // namespace
-
 EditorGizmoVisual3D::~EditorGizmoVisual3D()
 {
 	delete m_vertexBuffer;
@@ -71,28 +64,26 @@ RenderRequest EditorWorldGrid3D::SubmitRenderRequest() const
 	return request;
 }
 
-EditorWorldAxis3D::EditorWorldAxis3D()
+EditorWorldAxis3D::EditorWorldAxis3D(Vec3 const& axisStart, Vec3 const& axisEnd, Rgba8 const& color)
 {
+	// 1) Build the shader-expanded line quad
 	AddVertsForQuad3D(
 		m_verts,
 		Vec3(0.f, -0.5f, 0.f),
 		Vec3(0.f, 0.5f, 0.f),
 		Vec3(0.f, 0.5f, 1.f),
 		Vec3(0.f, -0.5f, 1.f),
-		kAxisZColor);
+		color);
 
-	SetWorldPosition(Vec3(0.f, 0.f, 0.f));
-	SetWorldScale(Vec3(0.5f, 0.5f, 0.5f));
-	
-	// AddVertsForAABB3D(
-	// 	m_verts,
-	// 	AABB3(Vec3(-kHalfThickness, -kAxisExtent, -kHalfThickness), Vec3(kHalfThickness, kAxisExtent, kHalfThickness)),
-	// 	kAxisYColor);
-	// AddVertsForAABB3D(
-	// 	m_verts,
-	// 	AABB3(Vec3(-kHalfThickness, -kHalfThickness, -kAxisExtent), Vec3(kHalfThickness, kHalfThickness, kAxisExtent)),
-	// 	kAxisZColor);
+	// 2) Store the axis start in the model matrix translation
+	SetWorldPosition(axisStart);
 
+	// 3) Encode the axis end in the model matrix scale for GizmosAxis.hlsl
+	// Encodes the axis end in the model matrix diagonal for GizmosAxis.hlsl
+	// e.g. SetWorldScale(Vec3(1000.f, 0.f, 0.f))
+	SetWorldScale(axisEnd);
+
+	// 4) Create the static vertex buffer
 	if (!m_verts.empty() && g_engine != nullptr && g_engine->m_renderer != nullptr)
 	{
 		m_vertexBuffer =

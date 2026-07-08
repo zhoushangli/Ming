@@ -77,6 +77,8 @@ EditorNode::EditorNode()
 
 	m_editorCamera = new EditorCamera();
 	m_editorCamera->SetName("EditorCamera");
+	m_editorCamera->SetLocalPosition(Vec3(5.f, 5.f, 5.f));
+	m_editorCamera->SetLocalOrientation(EulerAngles(-135.f, 45.f, 0.f));
 	m_editorCamera->SetSerializable(false);
 	AddNode(m_editorCamera);
 
