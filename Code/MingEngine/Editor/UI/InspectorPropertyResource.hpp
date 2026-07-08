@@ -2,13 +2,13 @@
 
 #include "MingEngine/Core/Object/RefCounted.hpp"
 #include "MingEngine/Core/Object/Resource.hpp"
+#include "MingEngine/Editor/UI/EditorIcons.hpp"
 #include "MingEngine/Editor/UI/EditorUI.hpp"
 #include "MingEngine/Editor/UI/EditorUIContext.hpp"
-#include "MingEngine/Editor/UI/EditorIcons.hpp"
 #include "MingEngine/Editor/UI/EditorUIStyle.hpp"
 #include "MingEngine/Editor/UI/EditorUIWidgets.hpp"
-#include "MingEngine/Editor/UI/InspectorProperty.hpp"
 #include "MingEngine/Editor/UI/FileSystemPanel.hpp"
+#include "MingEngine/Editor/UI/InspectorProperty.hpp"
 
 #include "ThirdParty/imgui/imgui.h"
 
@@ -44,10 +44,10 @@ private:
 		constexpr float sideButtonWidth = 24.f;
 		constexpr float spacing         = 2.f;
 
-		float const availableWidth = ImGui::GetContentRegionAvail().x;
-		float const pickerWidth    = std::max(1.f, availableWidth - sideButtonWidth - spacing);
-		Resource const* resource = GetResource(value);
-		bool const  hasResource    = resource != nullptr;
+		float const     availableWidth = ImGui::GetContentRegionAvail().x;
+		float const     pickerWidth    = std::max(1.f, availableWidth - sideButtonWidth - spacing);
+		Resource const* resource       = GetResource(value);
+		bool const      hasResource    = resource != nullptr;
 
 		if (hasResource)
 		{
@@ -55,11 +55,10 @@ private:
 			ImGui::SameLine(0.f, spacing);
 		}
 
-		float const occupiedWidth = hasResource ? rowHeight + spacing : 0.f;
-		float const fieldWidth    = std::max(1.f, pickerWidth - occupiedWidth);
-		bool const dropPreview = IsDraggedResourceMatching();
-		DrawRect const fieldRect =
-			RenderAssignButton(context, ImVec2(fieldWidth, rowHeight), resource, dropPreview);
+		float const    occupiedWidth = hasResource ? rowHeight + spacing : 0.f;
+		float const    fieldWidth    = std::max(1.f, pickerWidth - occupiedWidth);
+		bool const     dropPreview   = IsDraggedResourceMatching();
+		DrawRect const fieldRect = RenderAssignButton(context, ImVec2(fieldWidth, rowHeight), resource, dropPreview);
 
 		ImGui::SameLine(0.f, spacing);
 		DrawRect const expandRect = RenderExpandButton(ImVec2(sideButtonWidth, rowHeight));
@@ -75,9 +74,9 @@ private:
 	{
 		ImGui::InvisibleButton((m_labelId + "_reload").c_str(), ImVec2(rowHeight, rowHeight));
 
-		ImVec2 const min     = ImGui::GetItemRectMin();
-		ImVec2 const max     = ImGui::GetItemRectMax();
-		bool const   hovered = ImGui::IsItemHovered();
+		ImVec2 const min      = ImGui::GetItemRectMin();
+		ImVec2 const max      = ImGui::GetItemRectMax();
+		bool const   hovered  = ImGui::IsItemHovered();
 		ImDrawList*  drawList = ImGui::GetWindowDrawList();
 		ImVec4 const color =
 			hovered ? EditorUIStyle::ControlBackgroundHoveredColor() : EditorUIStyle::ControlBackgroundColor();
@@ -103,15 +102,14 @@ private:
 		}
 	}
 
-	DrawRect RenderAssignButton(
-		EditorUIContext& context, ImVec2 buttonSize, Resource const* resource, bool dropPreview)
+	DrawRect RenderAssignButton(EditorUIContext& context, ImVec2 buttonSize, Resource const* resource, bool dropPreview)
 	{
 		std::string const buttonId = m_labelId + "_resource";
 		ImGui::InvisibleButton(buttonId.c_str(), buttonSize);
 
-		ImVec2 const min         = ImGui::GetItemRectMin();
-		ImVec2 const max         = ImGui::GetItemRectMax();
-		bool const   hovered     = ImGui::IsItemHovered();
+		ImVec2 const min     = ImGui::GetItemRectMin();
+		ImVec2 const max     = ImGui::GetItemRectMax();
+		bool const   hovered = ImGui::IsItemHovered();
 
 		if (dropPreview && context.m_editorUI != nullptr && ImGui::IsMouseHoveringRect(min, max))
 		{
@@ -122,8 +120,7 @@ private:
 		{
 			ImGuiDragDropFlags const flags =
 				ImGuiDragDropFlags_AcceptBeforeDelivery | ImGuiDragDropFlags_AcceptNoDrawDefaultRect;
-			if (ImGuiPayload const* payload =
-					ImGui::AcceptDragDropPayload("FILESYSTEM_RESOURCE", flags))
+			if (ImGuiPayload const* payload = ImGui::AcceptDragDropPayload("FILESYSTEM_RESOURCE", flags))
 			{
 				if (payload->DataSize == sizeof(FilePayload) && payload->Data != nullptr)
 				{
@@ -157,14 +154,14 @@ private:
 			}
 		}
 
-		return DrawRect{min, max};
+		return DrawRect{ min, max };
 	}
 
 	void DrawAssignButton(ImVec2 min, ImVec2 max, bool hovered, Resource const* resource) const
 	{
 		ImDrawList*  drawList = ImGui::GetWindowDrawList();
-		ImVec4 const color = hovered ? EditorUIStyle::ControlBackgroundHoveredColor()
-									 : EditorUIStyle::ControlBackgroundColor();
+		ImVec4 const color =
+			hovered ? EditorUIStyle::ControlBackgroundHoveredColor() : EditorUIStyle::ControlBackgroundColor();
 		drawList->AddRectFilled(min, max, ImGui::ColorConvertFloat4ToU32(color), 3.f);
 
 		float const textHeight = ImGui::GetTextLineHeight();
@@ -177,7 +174,7 @@ private:
 		{
 			ImVec2 const      iconSize(16.f, 16.f);
 			float const       iconY     = min.y + (max.y - min.y - iconSize.y) * 0.5f;
-			ImTextureID const textureId = EditorIcons::GetClassIconId(m_info.m_hintData);
+			ImTextureID const textureId = EditorIcons::GetIconId(m_info.m_hintData, "Node");
 			EditorIcons::AddImage(
 				drawList,
 				textureId,
@@ -229,7 +226,7 @@ private:
 			ImVec2(center.x, center.y + 3.f),
 			arrowColor);
 
-		return DrawRect{min, max};
+		return DrawRect{ min, max };
 	}
 
 	void DrawDropPreviewOutline(ImVec2 min, ImVec2 max) const
@@ -284,7 +281,7 @@ private:
 
 	void SetResourceTooltip(Resource const& resource) const
 	{
-		std::string const& sourcePath = resource.GetSourceFilePath();
+		std::string const& sourcePath  = resource.GetSourceFilePath();
 		std::string const& virtualPath = resource.GetVirtualPath();
 
 		if (!sourcePath.empty() && !virtualPath.empty() && sourcePath != virtualPath)

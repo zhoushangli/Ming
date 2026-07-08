@@ -25,6 +25,7 @@
 #include "MingEngine/Editor/EditorCamera.hpp"
 #include "MingEngine/Editor/EditorNode.hpp"
 #include "MingEngine/Editor/Gizmos/EditorGizmos.hpp"
+#include "MingEngine/Editor/UI/EditorIcons.hpp"
 
 #endif
 
@@ -79,6 +80,8 @@ void App::Startup()
 	g_engineService->Startup();
 	m_project.Startup();
 
+	EditorIcons::Startup();
+
 	DebugRenderConfig debugRenderConfig;
 	debugRenderConfig.m_renderer = g_engine->m_renderer;
 	debugRenderConfig.m_fontName = "pixel_operator";
@@ -102,6 +105,8 @@ void App::Shutdown()
 	ClassDatabase::Shutdown();
 
 	ResourceLoader::Shutdown();
+
+	EditorIcons::Shutdown();
 
 	g_engineService->Shutdown();
 	g_engine->Shutdown();

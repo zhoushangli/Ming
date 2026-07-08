@@ -4,7 +4,7 @@
 #include "MingEngine/Core/Render/Rgba8.hpp"
 #include "MingEngine/Core/StringUtils.hpp"
 
-#include <ThirdParty/stb/stb_image.h>
+#include "ThirdParty/stb/stb_image.h"
 
 Image::Image() { m_dimensions = IntVec2::Zero; }
 

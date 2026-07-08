@@ -311,8 +311,8 @@ Shader* Renderer::CreateOrGetShader(std::string const& shaderVirtualPath)
 {
 	return m_renderBackend->CreateOrGetShader(shaderVirtualPath);
 }
-GPUTexture*
-Renderer::CreateGPUTexture(char const* name, IntVec2 dimensions, int bytesPerTexel, uint8_t const* texelData)
+GPUTexture* Renderer::CreateGPUTexture(
+	char const* name, IntVec2 dimensions, int bytesPerTexel, uint8_t const* texelData)
 {
 	return m_renderBackend->CreateGPUTexture(name, dimensions, bytesPerTexel, texelData);
 }
@@ -323,6 +323,14 @@ GPUTexture* Renderer::CreateRenderTargetTexture(char const* name, IntVec2 dimens
 GPUTexture* Renderer::CreateDepthStencilTexture(char const* name, IntVec2 dimensions)
 {
 	return m_renderBackend->CreateDepthStencilTexture(name, dimensions);
+}
+
+void Renderer::DestroyTexture(GPUTexture* texture)
+{
+	if (m_renderBackend != nullptr)
+	{
+		m_renderBackend->DestroyTexture(texture);
+	}
 }
 
 VertexBuffer* Renderer::CreateVertexBuffer(const unsigned int size, unsigned int stride)

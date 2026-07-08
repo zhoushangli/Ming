@@ -20,6 +20,8 @@ public:
 	void BeginFrame() override;
 	void EndFrame() override;
 
+	bool WantCaptureMouse() const;
+
 	static void BindMethods();
 
 private:

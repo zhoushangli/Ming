@@ -17,11 +17,11 @@ void DrawInspectorClassHeader(std::string const& className)
 {
 	constexpr float iconTextSpacing = 6.f;
 
-	ImVec2 const iconSize       = EditorUIStyle::InspectorHeaderIconSize();
-	float const  headerHeight   = EditorUIStyle::InspectorHeaderHeight();
-	float const  availableWidth = ImGui::GetContentRegionAvail().x;
-	ImVec2 const headerMin      = ImGui::GetCursorScreenPos();
-	ImVec2 const headerMax(headerMin.x + availableWidth, headerMin.y + headerHeight);
+	ImVec2 const      iconSize       = EditorUIStyle::InspectorHeaderIconSize();
+	float const       headerHeight   = EditorUIStyle::InspectorHeaderHeight();
+	float const       availableWidth = ImGui::GetContentRegionAvail().x;
+	ImVec2 const      headerMin      = ImGui::GetCursorScreenPos();
+	ImVec2 const      headerMax(headerMin.x + availableWidth, headerMin.y + headerHeight);
 	std::string const headerId = "##InspectorClassHeader_" + className;
 
 	ImGui::InvisibleButton(headerId.c_str(), ImVec2(availableWidth, headerHeight));
@@ -33,7 +33,7 @@ void DrawInspectorClassHeader(std::string const& className)
 		ImGui::ColorConvertFloat4ToU32(EditorUIStyle::ControlBackgroundColor()),
 		3.f);
 
-	ImTextureID const textureId    = EditorIcons::GetClassIconId(className);
+	ImTextureID const textureId    = EditorIcons::GetIconId(className, "Node");
 	ImVec2 const      textSize     = ImGui::CalcTextSize(className.c_str());
 	float const       contentWidth = iconSize.x + iconTextSpacing + textSize.x;
 	float const       contentX     = headerMin.x + (availableWidth - contentWidth) * 0.5f;
@@ -139,7 +139,7 @@ void InspectorPanel::RebuildProperties(EditorUIContext& context)
 				InspectorProperty::Create(std::move(prop), std::move(labelId), std::move(onChanged));
 			if (ip != nullptr)
 			{
-				group.m_properties.push_back(PropertyEntry{ip, getter});
+				group.m_properties.push_back(PropertyEntry{ ip, getter });
 			}
 		}
 

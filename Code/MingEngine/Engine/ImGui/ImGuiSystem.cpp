@@ -154,3 +154,5 @@ void ImGuiSystem::EndFrame()
 	g_engine->m_renderer->BindBackBuffer();
 	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
 }
+
+bool ImGuiSystem::WantCaptureMouse() const { return ImGui::GetIO().WantCaptureMouse; }

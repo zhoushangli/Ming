@@ -13,17 +13,18 @@ public:
 	TransformGizmo3D();
 	~TransformGizmo3D() override;
 
-	void UpdateHover(GizmoContext const& context, RaycastInfo const& ray);
-	bool BeginDrag(GizmoContext const& context, RaycastInfo const& ray);
-	void OnDrag(GizmoContext const& context, RaycastInfo const& ray);
+	void UpdateHover(GizmoContext const& context);
+	bool BeginDrag(GizmoContext const& context);
+	void OnDrag(GizmoContext const& context);
 	void EndDrag(GizmoContext const& context);
 
 	bool IsDragging() const;
 
-	GizmoRaycastResult Raycast(GizmoContext const& context, RaycastInfo const& ray) const;
-
 protected:
 	void OnNotification(int notification);
+
+private:
+	GizmoComponent* HitTest(GizmoContext const& context) const;
 
 private:
 	std::vector<GizmoComponent*> m_components;

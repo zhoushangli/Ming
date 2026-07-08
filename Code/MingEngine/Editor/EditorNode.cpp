@@ -2,19 +2,21 @@
 
 #include "MingEngine/Core/Object/ResourceLoader.hpp"
 #include "MingEngine/Core/Object/ResourceSaver.hpp"
+#include "MingEngine/Core/StringUtils.hpp"
 #include "MingEngine/Editor/EditorCamera.hpp"
 #include "MingEngine/Editor/Gizmos/EditorGizmos.hpp"
 #include "MingEngine/Editor/UI/EditorUI.hpp"
 #include "MingEngine/Editor/UI/EditorUIContext.hpp"
-#include "MingEngine/Scene/3D/Camera3D.hpp"
-#include "MingEngine/Scene/3D/Node3D.hpp"
-#include "MingEngine/Scene/Core/PackedScene.hpp"
-#include "MingEngine/Scene/Core/SceneTree.hpp"
-#include "MingEngine/Core/StringUtils.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Engine/Input/InputSystem.hpp"
 #include "MingEngine/Engine/Render/DebugRenderer.hpp"
+#include "MingEngine/Scene/3D/Camera3D.hpp"
+#include "MingEngine/Scene/3D/Node3D.hpp"
+#include "MingEngine/Scene/Core/PackedScene.hpp"
 #include "MingEngine/Scene/Core/RaycastSpace3D.hpp"
+#include "MingEngine/Scene/Core/SceneTree.hpp"
+#include "MingEngine/Engine/ImGui/ImGuiSystem.hpp"
+#include "MingEngine/Engine/Application/Engine.hpp"
 
 namespace
 {
@@ -142,6 +144,11 @@ void EditorNode::OnMouseMove(Vec2 screenPos, [[maybe_unused]] Vec2 delta)
 
 void EditorNode::OnMouseDown(int keyCode, Vec2 screenPos)
 {
+	if (g_engine->m_imguiSystem->WantCaptureMouse())
+	{
+		return;
+	}
+
 	if (keyCode != ToKeyCode(KeyCode::LeftMouse))
 	{
 		return;
@@ -165,9 +172,9 @@ void EditorNode::OnMouseDown(int keyCode, Vec2 screenPos)
 	}
 
 	// 2) Gizmo didn't eat — try scene selection
-	RaycastSpace3D* raycastSpace = GetSceneTree()->GetRaycastSpace();
-	RaycastQuery3D raycastQuery = m_editorCamera->BuildRaycastFromMouse();
-	SceneRaycastResult3D const result = raycastSpace->IntersectRay(raycastQuery);
+	RaycastSpace3D*            raycastSpace = GetSceneTree()->GetRaycastSpace();
+	RaycastQuery3D             raycastQuery = m_editorCamera->BuildRaycastFromMouse();
+	SceneRaycastResult3D const result       = raycastSpace->IntersectRay(raycastQuery);
 	if (result.m_didImpact)
 	{
 		m_selection.SetSelected(result.m_owner);

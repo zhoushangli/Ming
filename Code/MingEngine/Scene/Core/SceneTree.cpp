@@ -210,15 +210,6 @@ void SceneTree::ChangeScene(Node* newSceneNode)
 
 Camera3D* SceneTree::GetWorldCamera() const { return m_root->GetWorldCamera(); }
 
-GameRaycastResult SceneTree::Raycast(RaycastInfo const& info) const
-{
-	GameRaycastResult result;
-	result.m_rayStartPos  = info.m_startPos;
-	result.m_rayFwdNormal = info.m_forwardNormal;
-	result.m_rayMaxLength = info.m_maxLength;
-	return result;
-}
-
 float SceneTree::GetDeltaSeconds() const { return m_deltaSeconds; }
 
 Node* SceneTree::ResolveNode(NodeHandle handle) const

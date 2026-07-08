@@ -36,6 +36,7 @@ public:
 	GPUTexture* CreateGPUTexture(char const* name, IntVec2 dimensions, int bytesPerTexel, uint8_t const* texelData);
 	GPUTexture* CreateRenderTargetTexture(char const* name, IntVec2 dimensions);
 	GPUTexture* CreateDepthStencilTexture(char const* name, IntVec2 dimensions);
+	void        DestroyTexture(GPUTexture* texture);
 
 	VertexBuffer*   CreateVertexBuffer(const unsigned int size, unsigned int stride);
 	VertexBuffer*   CreateVertexBuffer(void const* data, const unsigned int byteSize, unsigned int stride);

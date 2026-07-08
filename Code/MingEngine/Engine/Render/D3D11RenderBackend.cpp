@@ -746,7 +746,8 @@ IndexBuffer* D3D11RenderBackend::CreateIndexBuffer(const unsigned int size)
 	return new IndexBuffer(m_d3dDevice, size);
 }
 
-IndexBuffer* D3D11RenderBackend::CreateIndexBuffer(void const* data, const unsigned int size, unsigned int stride)
+IndexBuffer* D3D11RenderBackend::CreateIndexBuffer(
+	void const* data, const unsigned int size, [[maybe_unused]] unsigned int stride)
 {
 	IndexBuffer* const indexBuffer = CreateIndexBuffer(size);
 	CopyCPUToGPU(data, size, indexBuffer);
@@ -1190,10 +1191,6 @@ GPUTexture* D3D11RenderBackend::CreateTextureInternal(
 
 	GUARANTEE_OR_DIE(SUCCEEDED(hr), "Could not create texture.");
 
-	if (newTexture->m_name  == "")
-	{
-		int a = 0;
-	}
 	newTexture->m_texture->SetPrivateData(WKPDID_D3DDebugObjectName, (UINT)strlen(name), name);
 
 	if ((textureDesc->BindFlags & D3D11_BIND_RENDER_TARGET) != 0)

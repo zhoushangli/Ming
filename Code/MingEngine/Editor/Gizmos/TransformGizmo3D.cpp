@@ -1,15 +1,46 @@
 #include "MingEngine/Editor/Gizmos/TransformGizmo3D.hpp"
 
 #include "MingEngine/Editor/EditorCamera.hpp"
+#include "MingEngine/Editor/Gizmos/GizmoRaycastObject.hpp"
 #include "MingEngine/Scene/3D/Camera3D.hpp"
 #include "MingEngine/Scene/3D/Node3D.hpp"
+#include "MingEngine/Scene/Core/RaycastSpace3D.hpp"
 #include "MingEngine/Scene/Core/SceneTree.hpp"
+#include "MingEngine/Scene/Physics/NodeRaycastUtils.hpp"
+
+#include "MingEngine/Core/Math/MathUtils.hpp"
+#include "MingEngine/Engine/Application/Engine.hpp"
+#include "MingEngine/Engine/Render/CameraContext.hpp"
+
+using namespace Math;
 
 namespace
 {
 Rgba8 const kAxisXColor(255, 70, 105, 255);
 Rgba8 const kAxisYColor(155, 225, 20, 255);
 Rgba8 const kAxisZColor(55, 160, 255, 255);
+
+float constexpr kEditorGizmoRaycastLength = 10000.f;
+
+RaycastQuery3D BuildRaycastQuery(GizmoContext const& context)
+{
+	RaycastQuery3D query;
+	query.m_maxDistance = kEditorGizmoRaycastLength;
+
+	if (context.m_camera != nullptr)
+	{
+		float const   aspect = context.m_clientDimensions.x / Max(context.m_clientDimensions.y, 1.f);
+		CameraContext camCtx = context.m_camera->GetCameraContext(aspect);
+		RaycastInfo   info =
+			BuildRaycastFromMouse(camCtx, context.m_clientPos, context.m_clientDimensions, kEditorGizmoRaycastLength);
+
+		query.m_start     = info.m_startPos;
+		query.m_direction = info.m_forwardNormal;
+		query.m_exclude   = info.m_ignoreNodeHandle;
+	}
+
+	return query;
+}
 } // namespace
 
 TransformGizmo3D::TransformGizmo3D()
@@ -60,22 +91,22 @@ TransformGizmo3D::TransformGizmo3D()
 
 TransformGizmo3D::~TransformGizmo3D() { m_components.clear(); }
 
-void TransformGizmo3D::UpdateHover(GizmoContext const& context, RaycastInfo const& ray)
+void TransformGizmo3D::UpdateHover(GizmoContext const& context)
 {
 	if (m_activeComponent != nullptr)
 	{
 		return;
 	}
 
-	GizmoRaycastResult const result = Raycast(context, ray);
-	if (m_hoveredComponent != result.m_component)
+	GizmoComponent* hitComponent = HitTest(context);
+	if (m_hoveredComponent != hitComponent)
 	{
 		if (m_hoveredComponent != nullptr)
 		{
 			m_hoveredComponent->SetHovered(false);
 		}
 
-		m_hoveredComponent = result.m_component;
+		m_hoveredComponent = hitComponent;
 		if (m_hoveredComponent != nullptr)
 		{
 			m_hoveredComponent->SetHovered(true);
@@ -83,31 +114,48 @@ void TransformGizmo3D::UpdateHover(GizmoContext const& context, RaycastInfo cons
 	}
 }
 
-bool TransformGizmo3D::BeginDrag(GizmoContext const& context, RaycastInfo const& ray)
+bool TransformGizmo3D::BeginDrag(GizmoContext const& context)
 {
-	GizmoRaycastResult const result = Raycast(context, ray);
-	if (!result.m_didImpact || result.m_component == nullptr)
+	GizmoComponent* hitComponent = HitTest(context);
+	if (hitComponent == nullptr)
 	{
 		return false;
 	}
 
-	if (m_hoveredComponent != nullptr && m_hoveredComponent != result.m_component)
+	if (m_hoveredComponent != nullptr && m_hoveredComponent != hitComponent)
 	{
 		m_hoveredComponent->SetHovered(false);
 	}
 
-	m_hoveredComponent = result.m_component;
+	m_hoveredComponent = hitComponent;
 	m_hoveredComponent->SetHovered(true);
-	m_activeComponent = result.m_component;
-	m_activeComponent->OnBeginDrag(context, result);
+	m_activeComponent = hitComponent;
+
+	// Pass the hit position from the raycast result
+	Vec3            hitPos = context.m_originWorld; // fallback
+	RaycastQuery3D  query  = BuildRaycastQuery(context);
+	RaycastSpace3D* space  = context.m_sceneTree->GetRaycastSpace();
+	if (space != nullptr)
+	{
+		SceneRaycastResult3D result = space->IntersectRay(query);
+		if (result.m_didImpact)
+		{
+			hitPos = result.m_impactPos;
+		}
+	}
+
+	m_activeComponent->OnBeginDrag(context, hitPos);
 	return true;
 }
 
-void TransformGizmo3D::OnDrag(GizmoContext const& context, RaycastInfo const& ray)
+void TransformGizmo3D::OnDrag(GizmoContext const& context)
 {
 	if (m_activeComponent != nullptr)
 	{
-		m_activeComponent->OnDrag(context, ray);
+		RaycastQuery3D query    = BuildRaycastQuery(context);
+		Vec3           rayStart = query.m_start;
+		Vec3           rayFwd   = query.m_direction;
+		m_activeComponent->OnDrag(context, rayStart, rayFwd);
 	}
 }
 
@@ -157,32 +205,27 @@ void TransformGizmo3D::OnNotification(int notification)
 
 bool TransformGizmo3D::IsDragging() const { return m_activeComponent != nullptr; }
 
-GizmoRaycastResult TransformGizmo3D::Raycast(GizmoContext const& context, RaycastInfo const& ray) const
+GizmoComponent* TransformGizmo3D::HitTest(GizmoContext const& context) const
 {
-	GizmoRaycastResult bestResult;
-	if (context.m_selectedNode3D == nullptr)
+	if (context.m_selectedNode3D == nullptr || context.m_sceneTree == nullptr)
 	{
-		return bestResult;
+		return nullptr;
 	}
 
-	for (GizmoComponent* component : m_components)
+	RaycastSpace3D* space = context.m_sceneTree->GetRaycastSpace();
+	if (space == nullptr)
 	{
-		if (!component->GetVisible())
-		{
-			continue;
-		}
-
-		GizmoRaycastResult const result = component->Raycast(context, ray);
-		if (!result.m_didImpact)
-		{
-			continue;
-		}
-
-		if (!bestResult.m_didImpact || result.m_impactDist < bestResult.m_impactDist)
-		{
-			bestResult = result;
-		}
+		return nullptr;
 	}
 
-	return bestResult;
+	RaycastQuery3D       query  = BuildRaycastQuery(context);
+	SceneRaycastResult3D result = space->IntersectRay(query);
+	if (!result.m_didImpact)
+	{
+		return nullptr;
+	}
+
+	// Resolve the hit node handle to a GizmoComponent
+	Node* node = context.m_sceneTree->ResolveNode(result.m_owner);
+	return dynamic_cast<GizmoComponent*>(node);
 }
