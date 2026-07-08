@@ -73,26 +73,42 @@ RenderRequest EditorWorldGrid3D::SubmitRenderRequest() const
 
 EditorWorldAxis3D::EditorWorldAxis3D()
 {
-	constexpr float kAxisExtent    = 1000.f;
-	constexpr float kAxisThickness = 0.01f;
-	constexpr float kHalfThickness = kAxisThickness * 0.5f;
-
-	AddVertsForAABB3D(
+	AddVertsForQuad3D(
 		m_verts,
-		AABB3(Vec3(-kAxisExtent, -kHalfThickness, -kHalfThickness), Vec3(kAxisExtent, kHalfThickness, kHalfThickness)),
-		kAxisXColor);
-	AddVertsForAABB3D(
-		m_verts,
-		AABB3(Vec3(-kHalfThickness, -kAxisExtent, -kHalfThickness), Vec3(kHalfThickness, kAxisExtent, kHalfThickness)),
-		kAxisYColor);
-	AddVertsForAABB3D(
-		m_verts,
-		AABB3(Vec3(-kHalfThickness, -kHalfThickness, -kAxisExtent), Vec3(kHalfThickness, kHalfThickness, kAxisExtent)),
+		Vec3(0.f, -0.5f, 0.f),
+		Vec3(0.f, 0.5f, 0.f),
+		Vec3(0.f, 0.5f, 1.f),
+		Vec3(0.f, -0.5f, 1.f),
 		kAxisZColor);
+
+	SetWorldPosition(Vec3(0.f, 0.f, 0.f));
+	SetWorldScale(Vec3(0.5f, 0.5f, 0.5f));
+	
+	// AddVertsForAABB3D(
+	// 	m_verts,
+	// 	AABB3(Vec3(-kHalfThickness, -kAxisExtent, -kHalfThickness), Vec3(kHalfThickness, kAxisExtent, kHalfThickness)),
+	// 	kAxisYColor);
+	// AddVertsForAABB3D(
+	// 	m_verts,
+	// 	AABB3(Vec3(-kHalfThickness, -kHalfThickness, -kAxisExtent), Vec3(kHalfThickness, kHalfThickness, kAxisExtent)),
+	// 	kAxisZColor);
 
 	if (!m_verts.empty() && g_engine != nullptr && g_engine->m_renderer != nullptr)
 	{
 		m_vertexBuffer =
 			g_engine->m_renderer->CreateVertexBuffer(m_verts.data(), m_verts.size() * sizeof(Vertex), sizeof(Vertex));
 	}
+}
+
+RenderRequest EditorWorldAxis3D::SubmitRenderRequest() const
+{
+	RenderRequest request;
+	request.m_pass           = RenderRequestPass::Opaque;
+	request.m_modelToWorld   = GetWorldTransform();
+	request.m_vertexBuffer   = m_vertexBuffer;
+	request.m_shader         = g_engine->m_renderer->CreateOrGetShader("res://Shaders/GizmosAxis.hlsl");
+	request.m_blendMode      = BlendMode::ALPHA;
+	request.m_depthMode      = DepthMode::READ_WRITE_LESS_EQUAL;
+	request.m_rasterizerMode = RasterizerMode::SOLID_CULL_NONE;
+	return request;
 }
