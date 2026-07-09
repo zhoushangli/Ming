@@ -222,7 +222,7 @@ void Renderer::PrepareConstants(ViewportInfo const& viewport)
 	m_renderBackend->UpdateAndBindConstantBuffer(BuiltinConstantBufferType::Frame, frameConstants);
 }
 
-void Renderer::RenderOpaque(ViewportInfo const& viewport)
+void Renderer::RenderOpaque(ViewportInfo& viewport)
 {
 	if (viewport.m_worldCamera == nullptr)
 	{
@@ -238,7 +238,7 @@ void Renderer::RenderOpaque(ViewportInfo const& viewport)
 	m_renderBackend->SetRasterizerMode(RasterizerMode::SOLID_CULL_BACK);
 	m_renderBackend->SetDepthMode(DepthMode::READ_WRITE_LESS_EQUAL);
 
-	DebugRenderWorld(*viewport.m_worldCamera);
+	DebugRenderWorld(*viewport.m_worldCamera, viewport);
 
 	for (RenderRequest const& request : viewport.m_renderRequests[(int)RenderRequestPass::Opaque])
 	{

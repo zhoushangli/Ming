@@ -14,10 +14,11 @@ public:
 	~TransformGizmo3D() override;
 
 	void UpdateHover(GizmoContext const& context);
-	bool BeginDrag(GizmoContext const& context);
+	bool BeginDragHovered(GizmoContext const& context);
 	void OnDrag(GizmoContext const& context);
 	void EndDrag(GizmoContext const& context);
 
+	bool IsHovered() const;
 	bool IsDragging() const;
 
 protected:
@@ -30,4 +31,5 @@ private:
 	std::vector<GizmoComponent*> m_components;
 	GizmoComponent*              m_hoveredComponent = nullptr;
 	GizmoComponent*              m_activeComponent  = nullptr;
+	Vec3                         m_hoveredHitPos    = Vec3::Zero;
 };

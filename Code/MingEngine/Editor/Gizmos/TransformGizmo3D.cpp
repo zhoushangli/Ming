@@ -54,9 +54,9 @@ TransformGizmo3D::TransformGizmo3D()
 	GizmoPlaneSquare* planeX = new GizmoPlaneSquare(GizmoAxis::X, kAxisXColor);
 	GizmoPlaneSquare* planeY = new GizmoPlaneSquare(GizmoAxis::Y, kAxisYColor);
 	GizmoPlaneSquare* planeZ = new GizmoPlaneSquare(GizmoAxis::Z, kAxisZColor);
-	// GizmoRotationArc* arcX   = new GizmoRotationArc(GizmoAxis::X, kAxisXColor);
-	// GizmoRotationArc* arcY   = new GizmoRotationArc(GizmoAxis::Y, kAxisYColor);
-	// GizmoRotationArc* arcZ   = new GizmoRotationArc(GizmoAxis::Z, kAxisZColor);
+	GizmoRotationArc* arcX   = new GizmoRotationArc(GizmoAxis::X, kAxisXColor);
+	GizmoRotationArc* arcY   = new GizmoRotationArc(GizmoAxis::Y, kAxisYColor);
+	GizmoRotationArc* arcZ   = new GizmoRotationArc(GizmoAxis::Z, kAxisZColor);
 
 	arrowX->SetSerializable(false);
 	arrowY->SetSerializable(false);
@@ -64,9 +64,9 @@ TransformGizmo3D::TransformGizmo3D()
 	planeX->SetSerializable(false);
 	planeY->SetSerializable(false);
 	planeZ->SetSerializable(false);
-	// arcX->SetSerializable(false);
-	// arcY->SetSerializable(false);
-	// arcZ->SetSerializable(false);
+	arcX->SetSerializable(false);
+	arcY->SetSerializable(false);
+	arcZ->SetSerializable(false);
 
 	AddNode(arrowX);
 	AddNode(arrowY);
@@ -74,9 +74,9 @@ TransformGizmo3D::TransformGizmo3D()
 	AddNode(planeX);
 	AddNode(planeY);
 	AddNode(planeZ);
-	// AddNode(arcX);
-	// AddNode(arcY);
-	// AddNode(arcZ);
+	AddNode(arcX);
+	AddNode(arcY);
+	AddNode(arcZ);
 
 	m_components.push_back(arrowX);
 	m_components.push_back(arrowY);
@@ -84,9 +84,9 @@ TransformGizmo3D::TransformGizmo3D()
 	m_components.push_back(planeX);
 	m_components.push_back(planeY);
 	m_components.push_back(planeZ);
-	// m_components.push_back(arcX);
-	// m_components.push_back(arcY);
-	// m_components.push_back(arcZ);
+	m_components.push_back(arcX);
+	m_components.push_back(arcY);
+	m_components.push_back(arcZ);
 }
 
 TransformGizmo3D::~TransformGizmo3D() { m_components.clear(); }
@@ -99,6 +99,18 @@ void TransformGizmo3D::UpdateHover(GizmoContext const& context)
 	}
 
 	GizmoComponent* hitComponent = HitTest(context);
+	m_hoveredHitPos              = context.m_originWorld;
+	if (hitComponent != nullptr)
+	{
+		RaycastQuery3D       query  = BuildRaycastQuery(context);
+		RaycastSpace3D*      space  = context.m_sceneTree != nullptr ? context.m_sceneTree->GetRaycastSpace() : nullptr;
+		SceneRaycastResult3D result = space != nullptr ? space->IntersectRay(query) : SceneRaycastResult3D();
+		if (result.m_didImpact)
+		{
+			m_hoveredHitPos = result.m_impactPos;
+		}
+	}
+
 	if (m_hoveredComponent != hitComponent)
 	{
 		if (m_hoveredComponent != nullptr)
@@ -114,37 +126,17 @@ void TransformGizmo3D::UpdateHover(GizmoContext const& context)
 	}
 }
 
-bool TransformGizmo3D::BeginDrag(GizmoContext const& context)
+bool TransformGizmo3D::BeginDragHovered(GizmoContext const& context)
 {
-	GizmoComponent* hitComponent = HitTest(context);
-	if (hitComponent == nullptr)
+	if (m_hoveredComponent == nullptr)
 	{
 		return false;
 	}
 
-	if (m_hoveredComponent != nullptr && m_hoveredComponent != hitComponent)
-	{
-		m_hoveredComponent->SetHovered(false);
-	}
-
-	m_hoveredComponent = hitComponent;
 	m_hoveredComponent->SetHovered(true);
-	m_activeComponent = hitComponent;
+	m_activeComponent = m_hoveredComponent;
 
-	// Pass the hit position from the raycast result
-	Vec3            hitPos = context.m_originWorld; // fallback
-	RaycastQuery3D  query  = BuildRaycastQuery(context);
-	RaycastSpace3D* space  = context.m_sceneTree->GetRaycastSpace();
-	if (space != nullptr)
-	{
-		SceneRaycastResult3D result = space->IntersectRay(query);
-		if (result.m_didImpact)
-		{
-			hitPos = result.m_impactPos;
-		}
-	}
-
-	m_activeComponent->OnBeginDrag(context, hitPos);
+	m_activeComponent->OnBeginDrag(context, m_hoveredHitPos);
 	return true;
 }
 
@@ -195,13 +187,17 @@ void TransformGizmo3D::OnNotification(int notification)
 			component->SetVisible(isVisible);
 			if (isVisible)
 			{
-				component->RebuildVertices(context);
+				component->SetWorldPosition(context.m_originWorld);
+				component->SetWorldScale(Vec3(context.m_scale, context.m_scale, context.m_scale));
+				component->UpdateRaycastObject(context);
 			}
 		}
 		break;
 	}
 	}
 }
+
+bool TransformGizmo3D::IsHovered() const { return m_hoveredComponent != nullptr; }
 
 bool TransformGizmo3D::IsDragging() const { return m_activeComponent != nullptr; }
 

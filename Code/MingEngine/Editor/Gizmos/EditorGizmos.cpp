@@ -76,10 +76,10 @@ void EditorGizmos::OnMouseMove(Camera3D const& camera, Vec2 screenPos)
 	m_transformGizmo->UpdateHover(ctx);
 }
 
-bool EditorGizmos::OnBeginDrag(Camera3D const& camera, Vec2 screenPos)
+bool EditorGizmos::BeginDragHovered(Camera3D const& camera, Vec2 screenPos)
 {
 	GizmoContext const ctx = BuildGizmoContext(GetSceneTree(), camera, screenPos);
-	return m_transformGizmo->BeginDrag(ctx);
+	return m_transformGizmo->BeginDragHovered(ctx);
 }
 
 void EditorGizmos::OnDrag(Camera3D const& camera, Vec2 screenPos)
@@ -102,33 +102,6 @@ void EditorGizmos::OnEndDrag()
 	}
 }
 
+bool EditorGizmos::IsHovered() const { return m_transformGizmo != nullptr && m_transformGizmo->IsHovered(); }
+
 bool EditorGizmos::IsDragging() const { return m_transformGizmo != nullptr && m_transformGizmo->IsDragging(); }
-
-NodeHandle EditorGizmos::Raycast(Camera3D const& camera, Vec2 screenPos) const
-{
-	GizmoContext const ctx = BuildGizmoContext(GetSceneTree(), camera, screenPos);
-
-	RaycastSpace3D* space = GetSceneTree()->GetRaycastSpace();
-	if (space == nullptr)
-	{
-		return NodeHandle::Invalid;
-	}
-
-	float const   aspect = ctx.m_clientDimensions.x / Max(ctx.m_clientDimensions.y, 1.f);
-	CameraContext camCtx = camera.GetCameraContext(aspect);
-	RaycastInfo   info   = BuildRaycastFromMouse(camCtx, screenPos, ctx.m_clientDimensions, kEditorGizmoRaycastLength);
-
-	RaycastQuery3D query;
-	query.m_start       = info.m_startPos;
-	query.m_direction   = info.m_forwardNormal;
-	query.m_maxDistance = info.m_maxLength;
-	query.m_exclude     = info.m_ignoreNodeHandle;
-
-	SceneRaycastResult3D result = space->IntersectRay(query);
-	if (result.m_didImpact)
-	{
-		return result.m_owner;
-	}
-
-	return NodeHandle::Invalid;
-}

@@ -28,11 +28,16 @@ RenderRequest EditorGizmoVisual3D::SubmitRenderRequest() const
 EditorWorldGrid3D::EditorWorldGrid3D()
 {
 	constexpr int   kHalfExtent    = 1000;
-	constexpr float kLineThickness = 0.005f;
+	constexpr float kLineThickness = 0.01f;
 	constexpr float kHalfThickness = kLineThickness * 0.5f;
 
 	for (int lineIndex = -kHalfExtent; lineIndex <= kHalfExtent; ++lineIndex)
 	{
+		if (lineIndex == 0)
+		{
+			continue; // Skip the center line, which is drawn by EditorWorldAxis3D
+		}
+
 		Vec3 aCol = Vec3(-(float)kHalfExtent, (float)lineIndex, 0.f);
 		Vec3 bCol = Vec3((float)kHalfExtent, (float)lineIndex, 0.f);
 		Vec3 aRow = Vec3((float)lineIndex, -(float)kHalfExtent, 0.f);
@@ -47,7 +52,7 @@ EditorWorldGrid3D::EditorWorldGrid3D()
 	if (!m_verts.empty() && g_engine != nullptr && g_engine->m_renderer != nullptr)
 	{
 		m_vertexBuffer =
-			g_engine->m_renderer->CreateVertexBuffer(m_verts.data(), m_verts.size() * sizeof(Vertex), sizeof(Vertex));
+			g_engine->m_renderer->CreateVertexBuffer(m_verts.data(), (unsigned int)(m_verts.size() * sizeof(Vertex)), sizeof(Vertex));
 	}
 }
 
@@ -87,7 +92,7 @@ EditorWorldAxis3D::EditorWorldAxis3D(Vec3 const& axisStart, Vec3 const& axisEnd,
 	if (!m_verts.empty() && g_engine != nullptr && g_engine->m_renderer != nullptr)
 	{
 		m_vertexBuffer =
-			g_engine->m_renderer->CreateVertexBuffer(m_verts.data(), m_verts.size() * sizeof(Vertex), sizeof(Vertex));
+			g_engine->m_renderer->CreateVertexBuffer(m_verts.data(), (unsigned int)(m_verts.size() * sizeof(Vertex)), sizeof(Vertex));
 	}
 }
 

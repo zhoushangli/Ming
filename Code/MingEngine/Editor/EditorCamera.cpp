@@ -1,5 +1,7 @@
 #include "MingEngine/Editor/EditorCamera.hpp"
 
+#include "MingEngine/Editor/EditorNode.hpp"
+#include "MingEngine/Editor/UI/EditorUI.hpp"
 #include "MingEngine/Scene/3D/Camera3D.hpp"
 
 #include "MingEngine/Core/Math/MathUtils.hpp"
@@ -75,22 +77,34 @@ RaycastQuery3D EditorCamera::BuildRaycastFromMouse() const
 	Matrix4x4 localToWorld = GetWorldTransform();
 	Matrix4x4 worldToLocal = localToWorld.GetOrthonormalInverse();
 
-	Vec2 cursorPos   = Vec2(g_engine->m_inputSystem->GetCursorClientPosition());
-	Vec2 clientDims  = Vec2(g_engine->m_windowSystem->GetClientDimensions());
-	Vec2 cursorDelta = clientDims * 0.5f - cursorPos;
+	// 1) Convert window-space mouse to viewport-space via EditorUI
+	// 2) EditorUI rect is updated every frame by ViewportPanel
+	EditorUI* ui        = EditorNode::Get()->m_editorUI;
+	Vec2      cursorPos = Vec2(g_engine->m_inputSystem->GetCursorClientPosition());
+	Vec2      viewportDims;
+	if (ui != nullptr)
+	{
+		cursorPos    = ui->ToViewportPos(cursorPos);
+		viewportDims = ui->GetViewportDimensions();
+	}
+	else
+	{
+		viewportDims = Vec2(g_engine->m_windowSystem->GetClientDimensions());
+	}
+	Vec2 cursorDelta = viewportDims * 0.5f - cursorPos;
 
 	Vec3 localStart = Vec3(0.f, 0.f, 0.f);
 	Vec3 localDir =
 		Vec3(
-			clientDims.y * 0.5f / std::tanf(m_camera->GetFovDegrees() * 0.5f * Math::kDegreesToRadiansMultiplier),
+			viewportDims.y * 0.5f / std::tanf(m_camera->GetFovDegrees() * 0.5f * Math::kDegreesToRadiansMultiplier),
 			cursorDelta.x,
 			cursorDelta.y)
 			.GetNormalized();
 
-	query.m_start = localToWorld.TransformPosition3D(localStart);
-	query.m_direction = localToWorld.TransformDirection3D(localDir).GetNormalized();
+	query.m_start       = localToWorld.TransformPosition3D(localStart);
+	query.m_direction   = localToWorld.TransformDirection3D(localDir).GetNormalized();
 	query.m_maxDistance = 10000.f;
-	query.m_exclude = NodeHandle::Invalid;
+	query.m_exclude     = NodeHandle::Invalid;
 
 	return query;
 }

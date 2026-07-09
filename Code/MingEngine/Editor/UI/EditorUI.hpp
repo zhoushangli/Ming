@@ -1,5 +1,6 @@
 #pragma once
 
+#include "MingEngine/Core/Math/Vec2.hpp"
 #include "MingEngine/Editor/UI/CreateNodePanel.hpp"
 #include "MingEngine/Editor/UI/FileSystemPanel.hpp"
 #include "MingEngine/Editor/UI/ImportPanel.hpp"
@@ -25,6 +26,12 @@ public:
 	void Warning(std::string const& title, std::string const& message);
 	void SetResourceDropAllowed(bool allowed);
 
+	// Viewport rect — set every frame by ViewportPanel, consumed by EditorCamera / GizmoContext
+	void SetViewportRect(Vec2 origin, Vec2 dims);
+	Vec2 GetViewportOrigin() const;
+	Vec2 GetViewportDimensions() const;
+	Vec2 ToViewportPos(Vec2 windowPos) const;
+
 	template <typename TPanel>
 	TPanel& GetPanel();
 
@@ -48,17 +55,20 @@ private:
 	void ApplyResourceDragDropCursor();
 
 private:
-	ScenePanel m_scenePanel;
+	ScenePanel      m_scenePanel;
 	CreateNodePanel m_createNodePanel;
 	FileSystemPanel m_fileSystemPanel;
-	ImportPanel m_importPanel;
-	ViewportPanel m_viewportPanel;
-	InspectorPanel m_inspectorPanel;
-	OutputPanel m_outputPanel;
+	ImportPanel     m_importPanel;
+	ViewportPanel   m_viewportPanel;
+	InspectorPanel  m_inspectorPanel;
+	OutputPanel     m_outputPanel;
 
-	bool m_showWarningPopup = false;
+	bool        m_showWarningPopup = false;
 	WarningData m_warningData;
-	bool m_resourceDropAllowed = false;
+	bool        m_resourceDropAllowed = false;
+
+	Vec2 m_viewportOrigin = Vec2::Zero;
+	Vec2 m_viewportDims   = Vec2::Zero;
 };
 
 template <>

@@ -8,6 +8,23 @@
 
 using namespace Math;
 
+namespace
+{
+RaycastResult3D GetClosestImpact(RaycastResult3D const& resultA, RaycastResult3D const& resultB)
+{
+	if (!resultA.m_didImpact)
+	{
+		return resultB;
+	}
+	if (!resultB.m_didImpact)
+	{
+		return resultA;
+	}
+
+	return resultA.m_impactDist < resultB.m_impactDist ? resultA : resultB;
+}
+} // namespace
+
 RaycastResult2D
 RaycastVsDisc2D(Vec2 rayStart, Vec2 rayForwardNormal, float rayLength, Vec2 discCenter, float discRadius)
 {
@@ -341,20 +358,6 @@ RaycastResult3D RaycastVsCapsule3D(
 		return RaycastVsSphere3D(rayStart, rayForwardNormal, rayLength, capsuleStart, capsuleRadius);
 	}
 
-	auto GetClosestImpact = [](RaycastResult3D const& resultA, RaycastResult3D const& resultB) -> RaycastResult3D
-	{
-		if (!resultA.m_didImpact)
-		{
-			return resultB;
-		}
-		if (!resultB.m_didImpact)
-		{
-			return resultA;
-		}
-
-		return resultA.m_impactDist < resultB.m_impactDist ? resultA : resultB;
-	};
-
 	RaycastResult3D resultA = RaycastVsSphere3D(rayStart, rayForwardNormal, rayLength, capsuleStart, capsuleRadius);
 	RaycastResult3D resultB = RaycastVsSphere3D(rayStart, rayForwardNormal, rayLength, capsuleEnd, capsuleRadius);
 	RaycastResult3D resultC =
@@ -513,6 +516,98 @@ RaycastResult3D RaycastVsCylinder3D(
 	return worldResult;
 }
 
+RaycastResult3D RaycastVsCone3D(
+	Vec3 rayStart, Vec3 rayForwardNormal, float rayLength, Vec3 const& coneStart, Vec3 const& coneEnd, float radius)
+{
+	RaycastResult3D result(rayStart, rayForwardNormal, rayLength);
+
+	float       rayT  = 0.f;
+	float       axisT = 0.f;
+	Vec3 const  segment    = coneEnd - coneStart;
+	float const segmentLen = segment.GetLength();
+	float       dist       = 0.f;
+	if (segmentLen <= 0.000001f)
+	{
+		dist = GetDistance3D(rayStart, coneStart);
+	}
+	else
+	{
+		Vec3 const  segmentAxis = segment / segmentLen;
+		Vec3 const  w0          = rayStart - coneStart;
+		float const a           = DotProduct3D(rayForwardNormal, rayForwardNormal);
+		float const b           = DotProduct3D(rayForwardNormal, segmentAxis);
+		float const c           = DotProduct3D(segmentAxis, segmentAxis);
+		float const d           = DotProduct3D(rayForwardNormal, w0);
+		float const e           = DotProduct3D(segmentAxis, w0);
+		float const denominator = a * c - b * b;
+		axisT                   = Abs(denominator) <= 0.000001f ? e / c : (a * e - b * d) / denominator;
+		axisT                   = GetClamped(axisT, 0.f, segmentLen);
+		Vec3 const segmentPos   = coneStart + segmentAxis * axisT;
+		rayT                    = DotProduct3D(segmentPos - rayStart, rayForwardNormal);
+		rayT                    = Max(0.f, rayT);
+		Vec3 const rayPos       = rayStart + rayForwardNormal * rayT;
+		dist                    = GetDistance3D(rayPos, segmentPos);
+	}
+
+	float const length     = Max((coneEnd - coneStart).GetLength(), 0.0001f);
+	float const taper      = GetClamped(axisT / length, 0.f, 1.f);
+	float const pickRadius = radius * (1.f - taper * 0.9f);
+
+	if (dist > pickRadius || rayT > rayLength)
+	{
+		return result;
+	}
+
+	result.m_didImpact  = true;
+	result.m_impactDist = rayT;
+	result.m_impactPos  = rayStart + rayForwardNormal * rayT;
+
+	Vec3 const axisDir = (coneEnd - coneStart).GetNormalized();
+	Vec3 const axisPos = coneStart + axisDir * axisT;
+	Vec3       normal  = (result.m_impactPos - axisPos).GetNormalized();
+	if (normal == Vec3::Zero)
+	{
+		normal = -rayForwardNormal;
+	}
+
+	result.m_impactNormal = normal;
+	if (DotProduct3D(result.m_impactNormal, rayForwardNormal) > 0.f)
+	{
+		result.m_impactNormal = -result.m_impactNormal;
+	}
+
+	return result;
+}
+
+RaycastResult3D RaycastVsCone3D(Vec3 rayStart, Vec3 rayForwardNormal, float rayLength, Cone3 const& cone)
+{
+	return RaycastVsCone3D(rayStart, rayForwardNormal, rayLength, cone.m_start, cone.m_end, cone.m_radius);
+}
+
+RaycastResult3D RaycastVsPlane3D(
+	Vec3 rayStart, Vec3 rayForwardNormal, float rayLength, Vec3 const& planePoint, Vec3 const& planeNormal)
+{
+	RaycastResult3D result(rayStart, rayForwardNormal, rayLength);
+
+	float const denominator = DotProduct3D(rayForwardNormal, planeNormal);
+	if (Abs(denominator) <= 0.000001f)
+	{
+		return result;
+	}
+
+	float const impactDist = DotProduct3D(planePoint - rayStart, planeNormal) / denominator;
+	if (impactDist < 0.f || impactDist > rayLength)
+	{
+		return result;
+	}
+
+	result.m_didImpact    = true;
+	result.m_impactDist   = impactDist;
+	result.m_impactPos    = rayStart + rayForwardNormal * impactDist;
+	result.m_impactNormal = planeNormal.GetNormalized();
+	return result;
+}
+
 RaycastResult3D RaycastVsTriangle3D(
 	Vec3 rayStart, Vec3 rayForwardNormal, float rayLength, Vec3 const& v0, Vec3 const& v1, Vec3 const& v2)
 {
@@ -564,4 +659,30 @@ RaycastResult3D RaycastVsTriangle3D(Vec3 rayStart, Vec3 rayForwardNormal, float 
 		triangle.m_pointsCounterClockwise[0],
 		triangle.m_pointsCounterClockwise[1],
 		triangle.m_pointsCounterClockwise[2]);
+}
+
+RaycastResult3D RaycastVsQuad3D(
+	Vec3 rayStart,
+	Vec3 rayForwardNormal,
+	float rayLength,
+	Vec3 const& p0,
+	Vec3 const& p1,
+	Vec3 const& p2,
+	Vec3 const& p3)
+{
+	RaycastResult3D firstTriangle  = RaycastVsTriangle3D(rayStart, rayForwardNormal, rayLength, p0, p1, p2);
+	RaycastResult3D secondTriangle = RaycastVsTriangle3D(rayStart, rayForwardNormal, rayLength, p0, p2, p3);
+	return GetClosestImpact(firstTriangle, secondTriangle);
+}
+
+RaycastResult3D RaycastVsQuad3D(Vec3 rayStart, Vec3 rayForwardNormal, float rayLength, Quad3 const& quad)
+{
+	return RaycastVsQuad3D(
+		rayStart,
+		rayForwardNormal,
+		rayLength,
+		quad.m_points[0],
+		quad.m_points[1],
+		quad.m_points[2],
+		quad.m_points[3]);
 }

@@ -8,6 +8,8 @@
 #include "MingEngine/Core/Math/FloatRange.hpp"
 #include "MingEngine/Core/Math/Sphere3.hpp"
 #include "MingEngine/Core/Math/Capsule3.hpp"
+#include "MingEngine/Core/Math/Cone3.hpp"
+#include "MingEngine/Core/Math/Quad3.hpp"
 #include "MingEngine/Core/Math/Triangle3.hpp"
 
 struct RaycastResult2D
@@ -109,6 +111,30 @@ RaycastResult3D RaycastVsCylinder3D(
     float radiusXY
 );
 
+RaycastResult3D RaycastVsCone3D(
+    Vec3 rayStart,
+    Vec3 rayForwardNormal,
+    float rayLength,
+    Vec3 const& coneStart,
+    Vec3 const& coneEnd,
+    float radius
+);
+
+RaycastResult3D RaycastVsCone3D(
+    Vec3 rayStart,
+    Vec3 rayForwardNormal,
+    float rayLength,
+    Cone3 const& cone
+);
+
+RaycastResult3D RaycastVsPlane3D(
+    Vec3 rayStart,
+    Vec3 rayForwardNormal,
+    float rayLength,
+    Vec3 const& planePoint,
+    Vec3 const& planeNormal
+);
+
 RaycastResult3D RaycastVsTriangle3D(
     Vec3 rayStart,
     Vec3 rayForwardNormal,
@@ -123,5 +149,22 @@ RaycastResult3D RaycastVsTriangle3D(
     Vec3 rayForwardNormal,
     float rayLength,
     Triangle3 const& triangle
+);
+
+RaycastResult3D RaycastVsQuad3D(
+    Vec3 rayStart,
+    Vec3 rayForwardNormal,
+    float rayLength,
+    Vec3 const& p0,
+    Vec3 const& p1,
+    Vec3 const& p2,
+    Vec3 const& p3
+);
+
+RaycastResult3D RaycastVsQuad3D(
+    Vec3 rayStart,
+    Vec3 rayForwardNormal,
+    float rayLength,
+    Quad3 const& quad
 );
 

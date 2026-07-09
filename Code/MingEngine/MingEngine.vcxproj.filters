@@ -710,6 +710,9 @@
     <ClInclude Include="Core\Math\Capsule3.hpp">
       <Filter>Core\Math</Filter>
     </ClInclude>
+    <ClInclude Include="Core\Math\Cone3.hpp">
+      <Filter>Core\Math</Filter>
+    </ClInclude>
     <ClInclude Include="Core\Math\Cylinder3.hpp">
       <Filter>Core\Math</Filter>
     </ClInclude>
@@ -747,6 +750,9 @@
       <Filter>Core\Math</Filter>
     </ClInclude>
     <ClInclude Include="Core\Math\OBB2.hpp">
+      <Filter>Core\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Math\Quad3.hpp">
       <Filter>Core\Math</Filter>
     </ClInclude>
     <ClInclude Include="Core\Math\RandomNumberGenerator.hpp">

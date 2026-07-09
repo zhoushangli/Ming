@@ -22,11 +22,11 @@ public:
 
 	// --- Gizmo event routing ---
 	void OnMouseMove(Camera3D const& camera, Vec2 screenPos);
-	bool OnBeginDrag(Camera3D const& camera, Vec2 screenPos);
+	bool BeginDragHovered(Camera3D const& camera, Vec2 screenPos);
 	void OnDrag(Camera3D const& camera, Vec2 screenPos);
 	void OnEndDrag();
+	bool IsHovered() const;
 	bool IsDragging() const;
-	NodeHandle Raycast(Camera3D const& camera, Vec2 screenPos) const;
 
 private:
 	EditorWorldGrid3D* m_worldGrid         = nullptr;

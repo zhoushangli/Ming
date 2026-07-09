@@ -1,6 +1,5 @@
 #include "MingEngine/Engine/Render/DebugRenderer.hpp"
 
-#include "DebugRenderer.hpp"
 #include "MingEngine/Core/Clock.hpp"
 #include "MingEngine/Core/ErrorWarningAssert.hpp"
 #include "MingEngine/Core/Math/MathUtils.hpp"
@@ -9,13 +8,13 @@
 #include "MingEngine/Core/Time.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Engine/Render/BitmapFont.hpp"
-#include "MingEngine/EngineService/EngineService.hpp"
-
-using namespace Math;
 #include "MingEngine/Engine/Render/CameraContext.hpp"
 #include "MingEngine/Engine/Render/RenderContext.hpp"
 #include "MingEngine/Engine/Render/Renderer.hpp"
 #include "MingEngine/Engine/Render/VertexBuffer.hpp"
+#include "MingEngine/EngineService/EngineService.hpp"
+
+using namespace Math;
 
 namespace
 {
@@ -342,28 +341,55 @@ RasterizerMode GetDebugRasterizerMode(DebugObject const& obj)
 	}
 }
 
-void SubmitDebugRequest(Renderer* renderer, DebugObject const& obj, RenderRequestPass pass, GPUTexture* texture)
+void SubmitDebugRequest(
+	Renderer* renderer, DebugObject const& obj, RenderRequestPass pass, GPUTexture* texture, ViewportInfo& viewport)
 {
-	// Temporary migration behavior:
-	// 1) DebugRenderer still updates object lifetime and GPU geometry.
-	// 2) Requests are intentionally not submitted to global Renderer state.
-	// 3) A later migration will register debug drawing with a target Viewport.
-	(void)renderer;
-	(void)obj;
-	(void)pass;
-	(void)texture;
+	if (renderer == nullptr || obj.vertexBuffer == nullptr)
+	{
+		return;
+	}
+
+	// 1) Construct a RenderRequest from the DebugObject's cached state.
+	// 2) Push it into the target Viewport's request list.
+	RenderRequest request;
+	request.m_pass           = pass;
+	request.m_modelToWorld   = Matrix4x4::Identity;
+	request.m_tint           = Rgba8::White;
+	request.m_vertexBuffer   = obj.vertexBuffer;
+	request.m_indexBuffer    = nullptr;
+	request.m_blendMode      = BlendMode::ALPHA;
+	request.m_depthMode      = GetDebugDepthMode(obj);
+	request.m_rasterizerMode = GetDebugRasterizerMode(obj);
+	request.m_samplerMode    = texture != nullptr ? SamplerMode::BILINEAR_CLAMP : SamplerMode::POINT_CLAMP;
+
+	if (texture != nullptr)
+	{
+		request.m_textures[0] = texture;
+	}
+
+	if (obj.type == DebugObjectType::SCREEN_TEXT || obj.type == DebugObjectType::MESSAGE)
+	{
+		request.m_shader = renderer->CreateOrGetShader("res://Shaders/DefaultUI.hlsl");
+	}
+	else
+	{
+		request.m_shader = renderer->CreateOrGetShader("res://Shaders/DefaultUnlit.hlsl");
+	}
+
+	viewport.m_renderRequests[(int)pass].push_back(request);
 }
 
 void SubmitWorldObject(
 	Renderer*            renderer,
 	BitmapFont*          font,
 	CameraContext const& camera,
+	ViewportInfo&        viewport,
 	DebugObject&         obj,
 	Rgba8 const*         overrideStartColor = nullptr,
 	Rgba8 const*         overrideEndColor   = nullptr)
 {
 	std::vector<Vertex> verts;
-	GPUTexture*            texture            = nullptr;
+	GPUTexture*         texture            = nullptr;
 	Rgba8 const         originalStartColor = obj.startColor;
 	Rgba8 const         originalEndColor   = obj.endColor;
 
@@ -404,7 +430,7 @@ void SubmitWorldObject(
 					static_cast<unsigned int>(verts.size() * sizeof(Vertex)),
 					obj.vertexBuffer);
 			}
-			SubmitDebugRequest(renderer, obj, RenderRequestPass::Opaque, nullptr);
+			SubmitDebugRequest(renderer, obj, RenderRequestPass::Opaque, nullptr, viewport);
 		}
 		break;
 
@@ -450,12 +476,17 @@ void SubmitWorldObject(
 	if (!verts.empty())
 	{
 		UploadVertsToBuffer(renderer, verts, obj.vertexBuffer);
-		SubmitDebugRequest(renderer, obj, RenderRequestPass::Opaque, texture);
+		SubmitDebugRequest(renderer, obj, RenderRequestPass::Opaque, texture, viewport);
 	}
 }
 
 void SubmitScreenObject(
-	Renderer* renderer, BitmapFont* font, CameraContext const& camera, DebugObject& obj, int lineNum = -1)
+	Renderer*            renderer,
+	BitmapFont*          font,
+	CameraContext const& camera,
+	ViewportInfo&        viewport,
+	DebugObject&         obj,
+	int                  lineNum = -1)
 {
 	if (renderer == nullptr || font == nullptr)
 	{
@@ -494,7 +525,7 @@ void SubmitScreenObject(
 		TextBoxMode::SHRINK_TO_FIT);
 
 	UploadVertsToBuffer(renderer, verts, obj.vertexBuffer);
-	SubmitDebugRequest(renderer, obj, RenderRequestPass::UI, font->GetTexture());
+	SubmitDebugRequest(renderer, obj, RenderRequestPass::UI, font->GetTexture(), viewport);
 }
 
 void UpdateDebugObjectLifetimes(std::vector<DebugObject>& objects, float deltaSeconds)
@@ -982,64 +1013,64 @@ void DebugAddWorldGrid(float duration, int halfExtent)
 // Output
 void DebugRenderBeginFrame() {}
 
-void DebugRenderWorld(const CameraContext& camera)
+void DebugRenderWorld(const CameraContext& camera, ViewportInfo& viewport)
 {
 	if (!s_isVisible)
 	{
 		return;
 	}
 
-	// Renderer* renderer = s_debugRenderConfig.m_renderer;
-	// if (renderer == nullptr)
-	// {
-	// 	return;
-	// }
+	Renderer* renderer = s_debugRenderConfig.m_renderer;
+	if (renderer == nullptr)
+	{
+		return;
+	}
 
-	// BitmapFont* font = renderer->CreateOrGetBitmapFont(
-	// 	Stringf("%s%s", s_debugRenderConfig.m_fontPath.c_str(), s_debugRenderConfig.m_fontName.c_str()).c_str());
+	// TODO: Restore BitmapFont creation when Renderer exposes a factory method
+	BitmapFont* font = nullptr;
 
-	// for (DebugObject& obj : s_debugObjects)
-	// {
-	// 	if (obj.type == DebugObjectType::SCREEN_TEXT || obj.type == DebugObjectType::MESSAGE)
-	// 	{
-	// 		continue;
-	// 	}
+	for (DebugObject& obj : s_debugObjects)
+	{
+		if (obj.type == DebugObjectType::SCREEN_TEXT || obj.type == DebugObjectType::MESSAGE)
+		{
+			continue;
+		}
 
-	// 	SubmitWorldObject(renderer, font, camera, obj);
-	// }
+		SubmitWorldObject(renderer, font, camera, viewport, obj);
+	}
 }
 
-void DebugRenderScreen(const CameraContext& camera)
+void DebugRenderScreen(const CameraContext& camera, ViewportInfo& viewport)
 {
 	if (!s_isVisible)
 	{
 		return;
 	}
 
-	// Renderer* renderer = s_debugRenderConfig.m_renderer;
-	// if (renderer == nullptr)
-	// {
-	// 	return;
-	// }
+	Renderer* renderer = s_debugRenderConfig.m_renderer;
+	if (renderer == nullptr)
+	{
+		return;
+	}
 
-	// BitmapFont* font = renderer->CreateOrGetBitmapFont(
-	// 	Stringf("%s%s", s_debugRenderConfig.m_fontPath.c_str(), s_debugRenderConfig.m_fontName.c_str()).c_str());
+	// TODO: Restore BitmapFont creation when Renderer exposes a factory method
+	BitmapFont* font = nullptr;
 
-	// for (DebugObject& obj : s_debugObjects)
-	// {
-	// 	if (obj.type != DebugObjectType::SCREEN_TEXT)
-	// 	{
-	// 		continue;
-	// 	}
+	for (DebugObject& obj : s_debugObjects)
+	{
+		if (obj.type != DebugObjectType::SCREEN_TEXT)
+		{
+			continue;
+		}
 
-	// 	SubmitScreenObject(renderer, font, camera, obj);
-	// }
+		SubmitScreenObject(renderer, font, camera, viewport, obj);
+	}
 
-	// for (int messageIndex = 0; messageIndex < (int)s_debugMessages.size(); ++messageIndex)
-	// {
-	// 	DebugObject& obj = s_debugMessages[messageIndex];
-	// 	SubmitScreenObject(renderer, font, camera, obj, (int)s_debugMessages.size() - messageIndex - 1);
-	// }
+	for (int messageIndex = 0; messageIndex < (int)s_debugMessages.size(); ++messageIndex)
+	{
+		DebugObject& obj = s_debugMessages[messageIndex];
+		SubmitScreenObject(renderer, font, camera, viewport, obj, (int)s_debugMessages.size() - messageIndex - 1);
+	}
 }
 
 void DebugRenderEndFrame()

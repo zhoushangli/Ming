@@ -65,7 +65,7 @@ private:
 	void ExecuteRenderRequest(RenderRequest const& request);
 
 	void PrepareConstants(ViewportInfo const& viewport);
-	void RenderOpaque(ViewportInfo const& viewport);
+	void RenderOpaque(ViewportInfo& viewport);
 	void RenderSkybox(ViewportInfo const& viewport);
 	void RenderPostProcess(ViewportInfo& viewport);
 	void RenderUI(ViewportInfo const& viewport);

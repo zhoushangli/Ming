@@ -166,10 +166,11 @@ void EditorNode::OnMouseDown(int keyCode, Vec2 screenPos)
 		return;
 	}
 
-	// 1) Let gizmos try first
-	if (m_editorGizmos->OnBeginDrag(*camera, screenPos))
+	// 1) Let hovered gizmos capture the click
+	if (m_editorGizmos->IsHovered())
 	{
-		return; // gizmo ate the event
+		m_editorGizmos->BeginDragHovered(*camera, screenPos);
+		return;
 	}
 
 	// 2) Gizmo didn't eat — try scene selection

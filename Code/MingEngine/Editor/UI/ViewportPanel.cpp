@@ -1,5 +1,6 @@
 #include "MingEngine/Editor/UI/ViewportPanel.hpp"
 
+#include "MingEngine/Editor/UI/EditorUI.hpp"
 #include "MingEngine/Editor/UI/EditorUIContext.hpp"
 #include "MingEngine/Scene/Core/SceneTree.hpp"
 #include "MingEngine/Scene/Core/Viewport.hpp"
@@ -52,9 +53,17 @@ void ViewportPanel::OnRender(EditorUIContext& context)
 			ImTextureID  textureId  = (ImTextureID)(intptr_t)viewportTexture->GetShaderResourceView();
 			ImTextureRef textureRef = ImTextureRef(textureId);
 			ImGui::Image(textureRef, availableSize);
+
+			// 1) Record viewport rect for mouse-to-world ray mapping
+			// 2) Updated every frame to reflect dock/resize changes
+			ImVec2 const imgMin = ImGui::GetItemRectMin();
+			if (context.m_editorUI != nullptr)
+			{
+				context.m_editorUI->SetViewportRect(Vec2(imgMin.x, imgMin.y), Vec2(availableSize.x, availableSize.y));
+			}
 		}
 	}
 	context.m_isViewportImageHovered = ImGui::IsItemHovered();
-	
+
 	ImGui::End();
 }

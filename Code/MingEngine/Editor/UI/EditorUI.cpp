@@ -27,7 +27,7 @@ void RenderPanelMenuItem(EditorPanel& panel)
 
 bool RenderMainMenuIconButton(char const* id, char const* iconName, char const* tooltip)
 {
-	ImVec2 const iconSize = EditorUIStyle::MainMenuIconSize();
+	ImVec2 const iconSize   = EditorUIStyle::MainMenuIconSize();
 	ImVec2 const buttonSize = EditorUIStyle::MainMenuIconButtonSize();
 
 	ImTextureID const textureId = EditorIcons::GetIconId(iconName);
@@ -87,15 +87,19 @@ void EditorUI::Warning(std::string const& title, std::string const& message)
 	m_showWarningPopup      = true;
 }
 
-void EditorUI::SetResourceDropAllowed(bool allowed)
+void EditorUI::SetResourceDropAllowed(bool allowed) { m_resourceDropAllowed = m_resourceDropAllowed || allowed; }
+
+void EditorUI::SetViewportRect(Vec2 origin, Vec2 dims)
 {
-	m_resourceDropAllowed = m_resourceDropAllowed || allowed;
+	m_viewportOrigin = origin;
+	m_viewportDims   = dims;
 }
 
-void EditorUI::BeginResourceDragDropFrame()
-{
-	m_resourceDropAllowed = false;
-}
+Vec2 EditorUI::GetViewportOrigin() const { return m_viewportOrigin; }
+Vec2 EditorUI::GetViewportDimensions() const { return m_viewportDims; }
+Vec2 EditorUI::ToViewportPos(Vec2 windowPos) const { return windowPos - m_viewportOrigin; }
+
+void EditorUI::BeginResourceDragDropFrame() { m_resourceDropAllowed = false; }
 
 void EditorUI::ApplyResourceDragDropCursor()
 {
@@ -162,10 +166,10 @@ void EditorUI::RenderMainMenuBar()
 		ImGui::EndMenu();
 	}
 
-	ImGuiStyle const& style = ImGui::GetStyle();
-	ImVec2 const      buttonSize = EditorUIStyle::MainMenuIconButtonSize();
+	ImGuiStyle const& style        = ImGui::GetStyle();
+	ImVec2 const      buttonSize   = EditorUIStyle::MainMenuIconButtonSize();
 	float const       toolbarWidth = buttonSize.x * 2.f + style.ItemSpacing.x;
-	float const       toolbarX = ImGui::GetWindowWidth() - toolbarWidth - style.FramePadding.x;
+	float const       toolbarX     = ImGui::GetWindowWidth() - toolbarWidth - style.FramePadding.x;
 	if (toolbarX > ImGui::GetCursorPosX())
 	{
 		ImGui::SetCursorPosX(toolbarX);
@@ -225,7 +229,7 @@ void EditorUI::RenderWarningPopup()
 	}
 
 	ImGuiViewport const* viewport = ImGui::GetMainViewport();
-	ImVec2 const popupCenter(
+	ImVec2 const         popupCenter(
 		viewport->WorkPos.x + viewport->WorkSize.x * 0.5f,
 		viewport->WorkPos.y + viewport->WorkSize.y * 0.5f);
 	ImGui::SetNextWindowPos(popupCenter, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));

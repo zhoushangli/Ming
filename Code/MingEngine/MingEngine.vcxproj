@@ -546,6 +546,7 @@
     <ClInclude Include="Core\Math\AABB3.hpp" />
     <ClInclude Include="Core\Math\Capsule2.hpp" />
     <ClInclude Include="Core\Math\Capsule3.hpp" />
+    <ClInclude Include="Core\Math\Cone3.hpp" />
     <ClInclude Include="Core\Math\Cylinder3.hpp" />
     <ClInclude Include="Core\Math\CylinderZ3.hpp" />
     <ClInclude Include="Core\Math\Disc2.hpp" />
@@ -559,6 +560,7 @@
     <ClInclude Include="Core\Math\MathUtils.hpp" />
     <ClInclude Include="Core\Math\Matrix4x4.hpp" />
     <ClInclude Include="Core\Math\OBB2.hpp" />
+    <ClInclude Include="Core\Math\Quad3.hpp" />
     <ClInclude Include="Core\Math\RandomNumberGenerator.hpp" />
     <ClInclude Include="Core\Math\RaycastUtils.hpp" />
     <ClInclude Include="Core\Math\Sphere3.hpp" />
