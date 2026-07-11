@@ -9,53 +9,53 @@ using namespace Math;
 
 GizmoRaycastObject::GizmoRaycastObject(GizmoComponent* owner) : m_component(owner) {}
 
-SceneRaycastResult3D GizmoRaycastObject::IntersectBounds(RaycastQuery3D const& query)
+RaycastResult3D GizmoRaycastObject::IntersectBounds(RaycastQuery3D const& query)
 {
-	SceneRaycastResult3D hit;
+	RaycastResult3D hit;
 	hit.m_owner = m_owner;
 
-	(RaycastResult3D&)hit = RaycastVsAABB3D(query.m_start, query.m_direction, query.m_maxDistance, m_worldAABB);
+	(MathRaycastResult3D&)hit = RaycastVsAABB3D(query.m_start, query.m_direction, query.m_maxDistance, m_worldAABB);
 
 	return hit;
 }
 
 GizmoAxisRaycastObject::GizmoAxisRaycastObject(GizmoComponent* owner) : GizmoRaycastObject(owner) {}
 
-SceneRaycastResult3D GizmoAxisRaycastObject::IntersectRay(RaycastQuery3D const& query)
+RaycastResult3D GizmoAxisRaycastObject::IntersectRay(RaycastQuery3D const& query)
 {
-	SceneRaycastResult3D hit;
+	RaycastResult3D hit;
 	hit.m_owner = m_owner;
 
-	(RaycastResult3D&)hit = RaycastVsCylinder3D(
+	(MathRaycastResult3D&)hit = RaycastVsCylinder3D(
 		query.m_start,
 		query.m_direction,
 		query.m_maxDistance,
 		m_arrowStart,
 		m_arrowEnd,
 		m_arrowRad);
-	hit.m_owner           = m_owner;
+	hit.m_owner = m_owner;
 	return hit;
 }
 
 GizmoPlaneRaycastObject::GizmoPlaneRaycastObject(GizmoComponent* owner) : GizmoRaycastObject(owner) {}
 
-SceneRaycastResult3D GizmoPlaneRaycastObject::IntersectRay(RaycastQuery3D const& query)
+RaycastResult3D GizmoPlaneRaycastObject::IntersectRay(RaycastQuery3D const& query)
 {
-	SceneRaycastResult3D hit;
-	hit.m_owner           = m_owner;
-	(RaycastResult3D&)hit = RaycastVsQuad3D(query.m_start, query.m_direction, query.m_maxDistance, m_quad);
-	hit.m_owner           = m_owner;
+	RaycastResult3D hit;
+	hit.m_owner               = m_owner;
+	(MathRaycastResult3D&)hit = RaycastVsQuad3D(query.m_start, query.m_direction, query.m_maxDistance, m_quad);
+	hit.m_owner               = m_owner;
 	return hit;
 }
 
 GizmoArcRaycastObject::GizmoArcRaycastObject(GizmoComponent* owner) : GizmoRaycastObject(owner) {}
 
-SceneRaycastResult3D GizmoArcRaycastObject::IntersectRay(RaycastQuery3D const& query)
+RaycastResult3D GizmoArcRaycastObject::IntersectRay(RaycastQuery3D const& query)
 {
-	SceneRaycastResult3D result;
+	RaycastResult3D result;
 	result.m_owner = m_owner;
 
-	RaycastResult3D const planeHit =
+	MathRaycastResult3D const planeHit =
 		RaycastVsPlane3D(query.m_start, query.m_direction, query.m_maxDistance, m_worldOrigin, m_worldNormal);
 	if (!planeHit.m_didImpact)
 	{

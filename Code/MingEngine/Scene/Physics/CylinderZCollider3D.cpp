@@ -3,7 +3,7 @@
 #include "MingEngine/Core/Math/Matrix4x4.hpp"
 #include "MingEngine/Core/Math/RaycastUtils.hpp"
 #include "MingEngine/Core/Render/Rgba8.hpp"
-#include "MingEngine/Engine/Render/DebugRenderer.hpp"
+#include "MingEngine/Engine/Render/DebugGizmos.hpp"
 
 GameRaycastResult CylinderZCollider3D::Raycast(RaycastInfo const& info) const
 {
@@ -15,7 +15,7 @@ GameRaycastResult CylinderZCollider3D::Raycast(RaycastInfo const& info) const
 		worldTransform.TransformPosition3D(Vec3(0.f, 0.f, m_localZRange.m_min)).z,
 		worldTransform.TransformPosition3D(Vec3(0.f, 0.f, m_localZRange.m_max)).z);
 
-	(RaycastResult3D&)raycastResult = RaycastVsCylinderZ3D(
+	(MathRaycastResult3D&)raycastResult = RaycastVsCylinderZ3D(
 		info.m_startPos,
 		info.m_forwardNormal,
 		info.m_maxLength,
@@ -38,7 +38,7 @@ void CylinderZCollider3D::RenderDebug() const
 		GetWorldTransform().TransformPosition3D(Vec3(0.f, 0.f, m_localZRange.m_min)).z,
 		GetWorldTransform().TransformPosition3D(Vec3(0.f, 0.f, m_localZRange.m_max)).z);
 
-	DebugAddWorldWireCylinder(
+	DebugGizmos::AddWorldWireCylinder(
 		Vec3(worldStartXY.x, worldStartXY.y, worldZRange.m_min),
 		Vec3(worldStartXY.x, worldStartXY.y, worldZRange.m_max),
 		m_radius,

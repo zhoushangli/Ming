@@ -24,7 +24,7 @@ GameRaycastResult TriangleMeshCollider3D::Raycast(RaycastInfo const& info) const
 
 	for (size_t vertexIndex = 0; vertexIndex + 2 < m_vertices.size(); vertexIndex += 3)
 	{
-		RaycastResult3D const triangleResult = RaycastVsTriangle3D(
+		MathRaycastResult3D const triangleResult = RaycastVsTriangle3D(
 			localStart,
 			localForward,
 			info.m_maxLength,
@@ -39,7 +39,7 @@ GameRaycastResult TriangleMeshCollider3D::Raycast(RaycastInfo const& info) const
 
 		if (!bestResult.m_didImpact || triangleResult.m_impactDist < bestResult.m_impactDist)
 		{
-			(RaycastResult3D&)bestResult = triangleResult;
+			(MathRaycastResult3D&)bestResult = triangleResult;
 		}
 	}
 

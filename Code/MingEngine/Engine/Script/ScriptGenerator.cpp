@@ -206,6 +206,54 @@ constexpr char const* kPredefinedMethodTemplate =
 	${returnType} ${methodName}(${arguments})${constSuffix};
 )AS";
 
+// Property getter wrapper.
+// e.g. Vec3 get_position() const { return __Call_Vec3(nativePtr, "Node3D", "GetPosition"); }
+constexpr char const* kPropertyGetterTemplate =
+	R"AS(
+	${returnType} get_${propertyName}() const
+	{
+		return ${bridgeName}(${nativeObjectProperty}, "${className}", "${nativeGetterName}");
+	}
+)AS";
+
+// Property setter wrapper.
+// e.g. void set_position(const Vec3 &in value) { __Call_Void_Vec3(nativePtr, "Node3D", "SetPosition", value); }
+constexpr char const* kPropertySetterTemplate =
+	R"AS(
+	void set_${propertyName}(${argDeclaration})
+	{
+		${bridgeName}(${nativeObjectProperty}, "${className}", "${nativeSetterName}", value);
+	}
+)AS";
+
+// Properties use different strategies in as.predefined vs MingEngine.generated.as:
+//
+// - MingEngine.generated.as (RuntimeWrapper):
+//   Generates get_X() / set_X() methods that call the native C++ getter/setter.
+//   This is the actual runtime bridge code.
+//
+// - as.predefined (PredefinedDeclaration):
+//   Generates a simple member variable declaration (e.g. "string name;").
+//   AngelScript configuration automatically maps property reads/writes to the
+//   get_name() / set_name() methods. The IDE uses this member variable for
+//   autocomplete hints.
+//
+//   The script-side type comes from the getter's return type, not from
+//   C++ PropertyInfo::m_type. This avoids type mismatches when a property's
+//   getter/setter use a different type than the C++ storage type.
+//
+//   e.g. "script" property: C++ m_type = ObjectPtr, but GetScript() returns Variant.
+//   as.predefined declares "Variant script;" (not "Object@ script;"),
+//   matching the Variant types used by get_script() / set_script().
+//
+//   e.g. "name" property: C++ m_type = String, GetName() returns string.
+//   as.predefined declares "string name;", MingEngine.generated.as generates
+//   get_name() / set_name() methods.
+constexpr char const* kPredefinedPropertyTemplate =
+	R"AS(
+	${returnType} ${propertyName};
+)AS";
+
 // Keeps raw string templates readable while avoiding an extra blank line in generated scripts.
 std::string TrimTemplateText(char const* templateText)
 {
@@ -280,7 +328,8 @@ std::string BuildScriptArgumentDeclaration(ArgumentInfo const& argumentInfo)
 {
 	if (argumentInfo.m_type == Variant::Type::ObjectPtr)
 	{
-		std::string objectClassName = argumentInfo.m_objectClassName.empty() ? "Object" : argumentInfo.m_objectClassName;
+		std::string objectClassName =
+			argumentInfo.m_objectClassName.empty() ? "Object" : argumentInfo.m_objectClassName;
 		return objectClassName + "@";
 	}
 
@@ -413,8 +462,8 @@ std::string BuildInheritanceSuffix(ClassInfo const& classInfo)
 	return " : " + classInfo.m_parentClassName;
 }
 
-std::string
-BuildPredefinedClassScript(std::string const& className, std::string const& inheritance, std::string const& members)
+std::string BuildPredefinedClassScript(
+	std::string const& className, std::string const& inheritance, std::string const& members)
 {
 	return ExpandTemplate(
 		kPredefinedClassTemplate,
@@ -469,13 +518,112 @@ std::string BuildObjectMethodScript(ClassInfo const& classInfo, MethodInfo const
 	return ExpandTemplate(kObjectMethodTemplate, values);
 }
 
+// Builds a getter + setter pair for a registered property.
+// RuntimeWrapper example:
+// Vec3 get_position() const { return __Call_Vec3(nativePtr, "Node3D", "GetPosition"); }
+// void set_position(const Vec3 &in value) { __Call_Void_Vec3(nativePtr, "Node3D", "SetPosition", value); }
+// PredefinedDeclaration example:
+// Vec3 get_position() const;
+// void set_position(const Vec3 &in value);
+std::string BuildPropertyScript(ClassInfo const& classInfo, PropertyInfo const& propertyInfo, ScriptBuildMode mode)
+{
+	// 1) Look up the actual MethodInfo for getter / setter to use their real types
+	MethodInfo const* getterMethod = nullptr;
+	MethodInfo const* setterMethod = nullptr;
+	for (std::unique_ptr<MethodInfo> const& method : classInfo.m_methods)
+	{
+		if (method == nullptr)
+		{
+			continue;
+		}
+		if (method->m_name == propertyInfo.m_getterName)
+		{
+			getterMethod = method.get();
+		}
+		if (method->m_name == propertyInfo.m_setterName)
+		{
+			setterMethod = method.get();
+		}
+	}
+
+	Variant::Type propertyType = Variant::Type::Empty;
+	if (getterMethod != nullptr)
+	{
+		propertyType = getterMethod->m_returnType;
+	}
+	else if (setterMethod != nullptr && !setterMethod->m_argumentInfos.empty())
+	{
+		propertyType = setterMethod->m_argumentInfos[0].m_type;
+	}
+
+	std::string returnType     = GetScriptTypeName(propertyType);
+	std::string argDeclaration = BuildScriptArgumentDeclaration(propertyType) + " value";
+
+	if (mode == ScriptBuildMode::PredefinedDeclaration)
+	{
+		// as.predefined declares properties as member variables (e.g. "string name;"),
+		// not as get_X / set_X methods. AngelScript configuration maps property
+		// reads/writes to the corresponding getter/setter methods automatically.
+		// See kPredefinedPropertyTemplate comments for details.
+		return ExpandTemplate(
+			kPredefinedPropertyTemplate,
+			{
+				{ "returnType", returnType },
+				{ "propertyName", propertyInfo.m_name },
+			});
+	}
+
+	// RuntimeWrapper mode
+	std::string getterBridgeName;
+	std::string setterBridgeName;
+
+	if (getterMethod != nullptr)
+	{
+		getterBridgeName = BuildBridgeFunctionName(*getterMethod, ScriptCallableKind::Object);
+	}
+	if (setterMethod != nullptr)
+	{
+		setterBridgeName = BuildBridgeFunctionName(*setterMethod, ScriptCallableKind::Object);
+	}
+
+	std::unordered_map<std::string, std::string> commonValues = {
+		{ "propertyName", propertyInfo.m_name },
+		{ "nativeObjectProperty", kNativeObjectPropertyName },
+		{ "className", classInfo.m_className },
+	};
+
+	std::string result;
+
+	// 2) Generate getter
+	if (getterMethod != nullptr)
+	{
+		auto getterValues                = commonValues;
+		getterValues["returnType"]       = returnType;
+		getterValues["bridgeName"]       = getterBridgeName;
+		getterValues["nativeGetterName"] = propertyInfo.m_getterName;
+		AppendScriptBlock(result, ExpandTemplate(kPropertyGetterTemplate, getterValues));
+	}
+
+	// 3) Generate setter
+	if (setterMethod != nullptr)
+	{
+		auto setterValues                = commonValues;
+		setterValues["bridgeName"]       = setterBridgeName;
+		setterValues["argDeclaration"]   = argDeclaration;
+		setterValues["nativeSetterName"] = propertyInfo.m_setterName;
+		AppendScriptBlock(result, ExpandTemplate(kPropertySetterTemplate, setterValues), "\n\n");
+	}
+
+	return result;
+}
+
 // Builds either a GlobalObject runtime wrapper or its predefined declaration.
 // RuntimeWrapper example:
 // bool IsKeyPressed(int arg0) { return __Call_GlobalObject_Bool_Int("InputSystem", "IsKeyPressed", arg0); }
 // PredefinedDeclaration example:
 // bool IsKeyPressed(int arg0);
-std::string
-BuildGlobalObjectMethodScript(ClassInfo const& classInfo, MethodInfo const& methodInfo, ScriptBuildMode mode)
+std::string BuildGlobalObjectMethodScript(
+	ClassInfo const& classInfo, MethodInfo const& methodInfo, ScriptBuildMode mode)
 {
 	if (mode == ScriptBuildMode::PredefinedDeclaration)
 	{
@@ -493,8 +641,8 @@ BuildGlobalObjectMethodScript(ClassInfo const& classInfo, MethodInfo const& meth
 // void Log(const string &in arg0) { __Call_Global_Log("Debug", "Log", arg0); }
 // PredefinedDeclaration example:
 // void Log(const string &in arg0);
-std::string
-BuildGlobalMethodScript(GlobalNamespaceInfo const& globalNamespace, MethodInfo const& methodInfo, ScriptBuildMode mode)
+std::string BuildGlobalMethodScript(
+	GlobalNamespaceInfo const& globalNamespace, MethodInfo const& methodInfo, ScriptBuildMode mode)
 {
 	if (mode == ScriptBuildMode::PredefinedDeclaration)
 	{
@@ -528,6 +676,17 @@ std::string BuildRootObjectScript(ClassInfo const* classInfo, ScriptBuildMode mo
 				AppendScriptBlock(
 					methods,
 					BuildObjectMethodScript(*classInfo, *methodInfo, mode),
+					mode == ScriptBuildMode::PredefinedDeclaration ? "\n" : "\n\n");
+			}
+		}
+
+		for (std::unique_ptr<PropertyInfo> const& propInfo : classInfo->m_properties)
+		{
+			if (propInfo != nullptr)
+			{
+				AppendScriptBlock(
+					methods,
+					BuildPropertyScript(*classInfo, *propInfo, mode),
 					mode == ScriptBuildMode::PredefinedDeclaration ? "\n" : "\n\n");
 			}
 		}
@@ -612,6 +771,17 @@ std::string BuildObjectScript(ClassInfo const& classInfo, ScriptBuildMode mode)
 			AppendScriptBlock(
 				methods,
 				BuildObjectMethodScript(classInfo, *methodInfo, mode),
+				mode == ScriptBuildMode::PredefinedDeclaration ? "\n" : "\n\n");
+		}
+	}
+
+	for (std::unique_ptr<PropertyInfo> const& propInfo : classInfo.m_properties)
+	{
+		if (propInfo != nullptr)
+		{
+			AppendScriptBlock(
+				methods,
+				BuildPropertyScript(classInfo, *propInfo, mode),
 				mode == ScriptBuildMode::PredefinedDeclaration ? "\n" : "\n\n");
 		}
 	}

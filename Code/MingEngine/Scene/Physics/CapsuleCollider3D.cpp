@@ -3,7 +3,7 @@
 #include "MingEngine/Core/Math/Matrix4x4.hpp"
 #include "MingEngine/Core/Math/RaycastUtils.hpp"
 #include "MingEngine/Core/Render/Rgba8.hpp"
-#include "MingEngine/Engine/Render/DebugRenderer.hpp"
+#include "MingEngine/Engine/Render/DebugGizmos.hpp"
 
 CapsuleCollider3D::CapsuleCollider3D(Capsule3 const& capsule)
 {
@@ -21,7 +21,7 @@ GameRaycastResult CapsuleCollider3D::Raycast(RaycastInfo const& info) const
 		worldTransform.TransformPosition3D(m_localStart),
 		worldTransform.TransformPosition3D(m_localEnd),
 		m_radius);
-	(RaycastResult3D&)raycastResult =
+	(MathRaycastResult3D&)raycastResult =
 		RaycastVsCapsule3D(info.m_startPos, info.m_forwardNormal, info.m_maxLength, capsule);
 
 	if (raycastResult.m_didImpact)
@@ -37,5 +37,5 @@ void CapsuleCollider3D::RenderDebug() const
 	Vec3 worldStart = GetWorldTransform().TransformPosition3D(m_localStart);
 	Vec3 worldEnd   = GetWorldTransform().TransformPosition3D(m_localEnd);
 
-	DebugAddWorldWireCapsule(worldStart, worldEnd, m_radius, 0.f, Rgba8::Orange, Rgba8::Orange);
+	DebugGizmos::AddWorldWireCapsule(worldStart, worldEnd, m_radius, 0.f, Rgba8::Orange, Rgba8::Orange);
 }

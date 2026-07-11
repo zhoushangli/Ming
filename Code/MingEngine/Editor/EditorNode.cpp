@@ -10,7 +10,7 @@
 #include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Engine/ImGui/ImGuiSystem.hpp"
 #include "MingEngine/Engine/Input/InputSystem.hpp"
-#include "MingEngine/Engine/Render/DebugRenderer.hpp"
+#include "MingEngine/Engine/Render/DebugGizmos.hpp"
 #include "MingEngine/Scene/3D/Camera3D.hpp"
 #include "MingEngine/Scene/3D/Node3D.hpp"
 #include "MingEngine/Scene/Core/PackedScene.hpp"
@@ -41,7 +41,7 @@ void EditorSelection::SetSelected(NodeHandle handle)
 
 	if (!previousHandle.IsValid() && m_selectedNodeHandle.IsValid())
 	{
-		DebugAddMessage(
+		DebugGizmos::AddMessage(
 			Stringf("Selected Node: %s", FormatNodeHandle(m_selectedNodeHandle).c_str()),
 			5.f,
 			Rgba8::White,
@@ -51,7 +51,7 @@ void EditorSelection::SetSelected(NodeHandle handle)
 
 	if (previousHandle.IsValid() && m_selectedNodeHandle.IsValid())
 	{
-		DebugAddMessage(
+		DebugGizmos::AddMessage(
 			Stringf(
 				"Selection Changed: %s -> %s",
 				FormatNodeHandle(previousHandle).c_str(),
@@ -64,7 +64,7 @@ void EditorSelection::SetSelected(NodeHandle handle)
 
 	if (previousHandle.IsValid() && !m_selectedNodeHandle.IsValid())
 	{
-		DebugAddMessage("Selection Cleared", 5.f, Rgba8::White, Rgba8::White);
+		DebugGizmos::AddMessage("Selection Cleared", 5.f, Rgba8::White, Rgba8::White);
 	}
 }
 
@@ -174,9 +174,9 @@ void EditorNode::OnMouseDown(int keyCode, Vec2 screenPos)
 	}
 
 	// 2) Gizmo didn't eat — try scene selection
-	RaycastSpace3D*            raycastSpace = GetSceneTree()->GetRaycastSpace();
-	RaycastQuery3D             raycastQuery = m_editorCamera->BuildRaycastFromMouse();
-	SceneRaycastResult3D const result       = raycastSpace->IntersectRay(raycastQuery);
+	RaycastSpace3D*       raycastSpace = GetSceneTree()->GetRaycastSpace();
+	RaycastQuery3D        raycastQuery = m_editorCamera->BuildRaycastFromMouse();
+	RaycastResult3D const result       = raycastSpace->IntersectRay(raycastQuery);
 	if (result.m_didImpact)
 	{
 		m_selection.SetSelected(result.m_owner);

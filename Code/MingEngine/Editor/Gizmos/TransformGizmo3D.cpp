@@ -102,9 +102,9 @@ void TransformGizmo3D::UpdateHover(GizmoContext const& context)
 	m_hoveredHitPos              = context.m_originWorld;
 	if (hitComponent != nullptr)
 	{
-		RaycastQuery3D       query  = BuildRaycastQuery(context);
-		RaycastSpace3D*      space  = context.m_sceneTree != nullptr ? context.m_sceneTree->GetRaycastSpace() : nullptr;
-		SceneRaycastResult3D result = space != nullptr ? space->IntersectRay(query) : SceneRaycastResult3D();
+		RaycastQuery3D  query  = BuildRaycastQuery(context);
+		RaycastSpace3D* space  = context.m_sceneTree != nullptr ? context.m_sceneTree->GetRaycastSpace() : nullptr;
+		RaycastResult3D result = space != nullptr ? space->IntersectRay(query) : RaycastResult3D();
 		if (result.m_didImpact)
 		{
 			m_hoveredHitPos = result.m_impactPos;
@@ -214,8 +214,8 @@ GizmoComponent* TransformGizmo3D::HitTest(GizmoContext const& context) const
 		return nullptr;
 	}
 
-	RaycastQuery3D       query  = BuildRaycastQuery(context);
-	SceneRaycastResult3D result = space->IntersectRay(query);
+	RaycastQuery3D  query  = BuildRaycastQuery(context);
+	RaycastResult3D result = space->IntersectRay(query);
 	if (!result.m_didImpact)
 	{
 		return nullptr;

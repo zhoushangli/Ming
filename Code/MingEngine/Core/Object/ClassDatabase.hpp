@@ -87,10 +87,10 @@ public:
 	Hint          m_hint = Hint::None;
 	std::string   m_hintData;
 	UsageFlags    m_usageFlags = UsageFlags::None;
+	std::string   m_setterName;
+	std::string   m_getterName;
 
-private:
-	std::string       m_setterName;
-	std::string       m_getterName;
+	// Set after AddProperty registers the class
 	MethodBind const* m_setter = nullptr;
 	MethodBind const* m_getter = nullptr;
 };
@@ -174,7 +174,7 @@ public:
 		classInfo.m_className         = className;
 		classInfo.m_parentClassName   = T::Super::GetStaticClassName();
 		classInfo.m_canCreateInEditor = canCreateInEditor;
-		
+
 		// TODO: We shouldn't include SystemBase here
 		// Should have a better way to handle this (Like have other register function)
 		if constexpr (std::is_base_of_v<SystemBase, T>)
@@ -287,8 +287,8 @@ public:
 	}
 
 	template <typename ReturnType, typename... Args>
-	static void
-	BindGlobalMethod(std::string const& namespaceName, std::string const& methodName, ReturnType (*method)(Args...))
+	static void BindGlobalMethod(
+		std::string const& namespaceName, std::string const& methodName, ReturnType (*method)(Args...))
 	{
 		std::unique_ptr<MethodInfo> methodInfo = std::make_unique<MethodInfo>();
 

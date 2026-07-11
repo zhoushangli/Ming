@@ -14,8 +14,8 @@ class Mesh3D;
 class MeshRaycastObject : public RaycastObject
 {
 public:
-	SceneRaycastResult3D IntersectBounds(RaycastQuery3D const& query) override;
-	SceneRaycastResult3D IntersectRay(RaycastQuery3D const& query) override;
+	RaycastResult3D IntersectBounds(RaycastQuery3D const& query) override;
+	RaycastResult3D IntersectRay(RaycastQuery3D const& query) override;
 
 public:
 	Mesh3D* m_mesh = nullptr;

@@ -10,7 +10,7 @@ using namespace Math;
 
 namespace
 {
-RaycastResult3D GetClosestImpact(RaycastResult3D const& resultA, RaycastResult3D const& resultB)
+MathRaycastResult3D GetClosestImpact(MathRaycastResult3D const& resultA, MathRaycastResult3D const& resultB)
 {
 	if (!resultA.m_didImpact)
 	{
@@ -25,10 +25,10 @@ RaycastResult3D GetClosestImpact(RaycastResult3D const& resultA, RaycastResult3D
 }
 } // namespace
 
-RaycastResult2D
-RaycastVsDisc2D(Vec2 rayStart, Vec2 rayForwardNormal, float rayLength, Vec2 discCenter, float discRadius)
+MathRaycastResult2D RaycastVsDisc2D(
+	Vec2 rayStart, Vec2 rayForwardNormal, float rayLength, Vec2 discCenter, float discRadius)
 {
-	RaycastResult2D result(rayStart, rayForwardNormal, rayLength);
+	MathRaycastResult2D result(rayStart, rayForwardNormal, rayLength);
 
 	Vec2 i             = rayForwardNormal;
 	Vec2 j             = i.GetRotatedBy90Degrees();
@@ -78,15 +78,15 @@ RaycastVsDisc2D(Vec2 rayStart, Vec2 rayForwardNormal, float rayLength, Vec2 disc
 	return result;
 }
 
-RaycastResult2D RaycastVsDisc2D(Vec2 rayStart, Vec2 rayForwardNormal, float rayLength, Disc2 disc)
+MathRaycastResult2D RaycastVsDisc2D(Vec2 rayStart, Vec2 rayForwardNormal, float rayLength, Disc2 disc)
 {
 	return RaycastVsDisc2D(rayStart, rayForwardNormal, rayLength, disc.m_center, disc.m_radius);
 }
 
-RaycastResult2D
-RaycastVsLineSegments2D(Vec2 rayStart, Vec2 rayForwardNormal, float rayLength, Vec2 lineStartPos, Vec2 lineEndPos)
+MathRaycastResult2D RaycastVsLineSegments2D(
+	Vec2 rayStart, Vec2 rayForwardNormal, float rayLength, Vec2 lineStartPos, Vec2 lineEndPos)
 {
-	RaycastResult2D result(rayStart, rayForwardNormal, rayLength);
+	MathRaycastResult2D result(rayStart, rayForwardNormal, rayLength);
 
 	Vec2 i = rayForwardNormal;
 	Vec2 j = i.GetRotatedBy90Degrees();
@@ -143,14 +143,14 @@ RaycastVsLineSegments2D(Vec2 rayStart, Vec2 rayForwardNormal, float rayLength, V
 	return result;
 }
 
-RaycastResult2D RaycastVsLineSegments2D(Vec2 rayStart, Vec2 rayForwardNormal, float rayLength, LineSegment2 line)
+MathRaycastResult2D RaycastVsLineSegments2D(Vec2 rayStart, Vec2 rayForwardNormal, float rayLength, LineSegment2 line)
 {
 	return RaycastVsLineSegments2D(rayStart, rayForwardNormal, rayLength, line.m_start, line.m_end);
 }
 
-RaycastResult2D RaycastVsAABB2D(Vec2 rayStart, Vec2 rayForwardNormal, float rayLength, Vec2 aabbMins, Vec2 aabbMaxs)
+MathRaycastResult2D RaycastVsAABB2D(Vec2 rayStart, Vec2 rayForwardNormal, float rayLength, Vec2 aabbMins, Vec2 aabbMaxs)
 {
-	RaycastResult2D result(rayStart, rayForwardNormal, rayLength);
+	MathRaycastResult2D result(rayStart, rayForwardNormal, rayLength);
 
 	float tx1 = (aabbMins.x - rayStart.x) / rayForwardNormal.x;
 	float tx2 = (aabbMaxs.x - rayStart.x) / rayForwardNormal.x;
@@ -197,14 +197,14 @@ RaycastResult2D RaycastVsAABB2D(Vec2 rayStart, Vec2 rayForwardNormal, float rayL
 	return result;
 }
 
-RaycastResult2D RaycastVsAABB2D(Vec2 rayStart, Vec2 rayForwardNormal, float rayLength, AABB2 aabb)
+MathRaycastResult2D RaycastVsAABB2D(Vec2 rayStart, Vec2 rayForwardNormal, float rayLength, AABB2 aabb)
 {
 	return RaycastVsAABB2D(rayStart, rayForwardNormal, rayLength, aabb.m_mins, aabb.m_maxs);
 }
 
-RaycastResult3D RaycastVsAABB3D(Vec3 rayStart, Vec3 rayForwardNormal, float rayLength, AABB3 box)
+MathRaycastResult3D RaycastVsAABB3D(Vec3 rayStart, Vec3 rayForwardNormal, float rayLength, AABB3 box)
 {
-	RaycastResult3D result(rayStart, rayForwardNormal, rayLength);
+	MathRaycastResult3D result(rayStart, rayForwardNormal, rayLength);
 
 	bool isInside = rayStart.x >= box.m_mins.x && rayStart.x <= box.m_maxs.x && rayStart.y >= box.m_mins.y
 					&& rayStart.y <= box.m_maxs.y && rayStart.z >= box.m_mins.z && rayStart.z <= box.m_maxs.z;
@@ -302,10 +302,10 @@ RaycastResult3D RaycastVsAABB3D(Vec3 rayStart, Vec3 rayForwardNormal, float rayL
 	return result;
 }
 
-RaycastResult3D
-RaycastVsSphere3D(Vec3 rayStart, Vec3 rayForwardNormal, float rayLength, Vec3 sphereCenter, float sphereRadius)
+MathRaycastResult3D RaycastVsSphere3D(
+	Vec3 rayStart, Vec3 rayForwardNormal, float rayLength, Vec3 sphereCenter, float sphereRadius)
 {
-	RaycastResult3D result(rayStart, rayForwardNormal, rayLength);
+	MathRaycastResult3D result(rayStart, rayForwardNormal, rayLength);
 
 	float startToCenterDistSquared = GetDistanceSquared3D(rayStart, sphereCenter);
 	if (startToCenterDistSquared < (sphereRadius * sphereRadius))
@@ -345,12 +345,12 @@ RaycastVsSphere3D(Vec3 rayStart, Vec3 rayForwardNormal, float rayLength, Vec3 sp
 	return result;
 }
 
-RaycastResult3D RaycastVsSphere3D(Vec3 rayStart, Vec3 rayForwardNormal, float rayLength, Sphere3 sphere)
+MathRaycastResult3D RaycastVsSphere3D(Vec3 rayStart, Vec3 rayForwardNormal, float rayLength, Sphere3 sphere)
 {
 	return RaycastVsSphere3D(rayStart, rayForwardNormal, rayLength, sphere.m_center, sphere.m_radius);
 }
 
-RaycastResult3D RaycastVsCapsule3D(
+MathRaycastResult3D RaycastVsCapsule3D(
 	Vec3 rayStart, Vec3 rayForwardNormal, float rayLength, Vec3 capsuleStart, Vec3 capsuleEnd, float capsuleRadius)
 {
 	if (capsuleStart == capsuleEnd)
@@ -358,20 +358,20 @@ RaycastResult3D RaycastVsCapsule3D(
 		return RaycastVsSphere3D(rayStart, rayForwardNormal, rayLength, capsuleStart, capsuleRadius);
 	}
 
-	RaycastResult3D resultA = RaycastVsSphere3D(rayStart, rayForwardNormal, rayLength, capsuleStart, capsuleRadius);
-	RaycastResult3D resultB = RaycastVsSphere3D(rayStart, rayForwardNormal, rayLength, capsuleEnd, capsuleRadius);
-	RaycastResult3D resultC =
+	MathRaycastResult3D resultA = RaycastVsSphere3D(rayStart, rayForwardNormal, rayLength, capsuleStart, capsuleRadius);
+	MathRaycastResult3D resultB = RaycastVsSphere3D(rayStart, rayForwardNormal, rayLength, capsuleEnd, capsuleRadius);
+	MathRaycastResult3D resultC =
 		RaycastVsCylinder3D(rayStart, rayForwardNormal, rayLength, capsuleStart, capsuleEnd, capsuleRadius);
 
 	return GetClosestImpact(GetClosestImpact(resultA, resultB), resultC);
 }
 
-RaycastResult3D RaycastVsCapsule3D(Vec3 rayStart, Vec3 rayForwardNormal, float rayLength, Capsule3 capsule)
+MathRaycastResult3D RaycastVsCapsule3D(Vec3 rayStart, Vec3 rayForwardNormal, float rayLength, Capsule3 capsule)
 {
 	return RaycastVsCapsule3D(rayStart, rayForwardNormal, rayLength, capsule.m_start, capsule.m_end, capsule.m_radius);
 }
 
-RaycastResult3D RaycastVsCylinderZ3D(
+MathRaycastResult3D RaycastVsCylinderZ3D(
 	Vec3              rayStart,
 	Vec3              rayForwardNormal,
 	float             rayLength,
@@ -379,7 +379,7 @@ RaycastResult3D RaycastVsCylinderZ3D(
 	FloatRange const& minMaxZ,
 	float             radiusXY)
 {
-	RaycastResult3D result(rayStart, rayForwardNormal, rayLength);
+	MathRaycastResult3D result(rayStart, rayForwardNormal, rayLength);
 
 	//--------------------------------------
 	// XY interval
@@ -481,7 +481,7 @@ RaycastResult3D RaycastVsCylinderZ3D(
 	return result;
 }
 
-RaycastResult3D RaycastVsCylinder3D(
+MathRaycastResult3D RaycastVsCylinder3D(
 	Vec3        rayStart,
 	Vec3        rayForwardNormal,
 	float       rayLength,
@@ -502,7 +502,7 @@ RaycastResult3D RaycastVsCylinder3D(
 	Vec3 localCylinderStart = Vec3::Zero;
 	Vec3 localCylinderEnd   = Vec3(0.f, 0.f, (cylinderEnd - cylinderStart).GetLength());
 
-	RaycastResult3D localResult = RaycastVsCylinderZ3D(
+	MathRaycastResult3D localResult = RaycastVsCylinderZ3D(
 		localRayStart,
 		localRayForward,
 		rayLength,
@@ -510,19 +510,19 @@ RaycastResult3D RaycastVsCylinder3D(
 		FloatRange(0.f, localCylinderEnd.z),
 		radiusXY);
 
-	RaycastResult3D worldResult = localResult;
-	worldResult.m_impactPos     = localToWorld.TransformPosition3D(localResult.m_impactPos);
-	worldResult.m_impactNormal  = localToWorld.TransformDirection3D(localResult.m_impactNormal);
+	MathRaycastResult3D worldResult = localResult;
+	worldResult.m_impactPos         = localToWorld.TransformPosition3D(localResult.m_impactPos);
+	worldResult.m_impactNormal      = localToWorld.TransformDirection3D(localResult.m_impactNormal);
 	return worldResult;
 }
 
-RaycastResult3D RaycastVsCone3D(
+MathRaycastResult3D RaycastVsCone3D(
 	Vec3 rayStart, Vec3 rayForwardNormal, float rayLength, Vec3 const& coneStart, Vec3 const& coneEnd, float radius)
 {
-	RaycastResult3D result(rayStart, rayForwardNormal, rayLength);
+	MathRaycastResult3D result(rayStart, rayForwardNormal, rayLength);
 
-	float       rayT  = 0.f;
-	float       axisT = 0.f;
+	float       rayT       = 0.f;
+	float       axisT      = 0.f;
 	Vec3 const  segment    = coneEnd - coneStart;
 	float const segmentLen = segment.GetLength();
 	float       dist       = 0.f;
@@ -579,15 +579,15 @@ RaycastResult3D RaycastVsCone3D(
 	return result;
 }
 
-RaycastResult3D RaycastVsCone3D(Vec3 rayStart, Vec3 rayForwardNormal, float rayLength, Cone3 const& cone)
+MathRaycastResult3D RaycastVsCone3D(Vec3 rayStart, Vec3 rayForwardNormal, float rayLength, Cone3 const& cone)
 {
 	return RaycastVsCone3D(rayStart, rayForwardNormal, rayLength, cone.m_start, cone.m_end, cone.m_radius);
 }
 
-RaycastResult3D RaycastVsPlane3D(
+MathRaycastResult3D RaycastVsPlane3D(
 	Vec3 rayStart, Vec3 rayForwardNormal, float rayLength, Vec3 const& planePoint, Vec3 const& planeNormal)
 {
-	RaycastResult3D result(rayStart, rayForwardNormal, rayLength);
+	MathRaycastResult3D result(rayStart, rayForwardNormal, rayLength);
 
 	float const denominator = DotProduct3D(rayForwardNormal, planeNormal);
 	if (Abs(denominator) <= 0.000001f)
@@ -608,10 +608,10 @@ RaycastResult3D RaycastVsPlane3D(
 	return result;
 }
 
-RaycastResult3D RaycastVsTriangle3D(
+MathRaycastResult3D RaycastVsTriangle3D(
 	Vec3 rayStart, Vec3 rayForwardNormal, float rayLength, Vec3 const& v0, Vec3 const& v1, Vec3 const& v2)
 {
-	RaycastResult3D result(rayStart, rayForwardNormal, rayLength);
+	MathRaycastResult3D result(rayStart, rayForwardNormal, rayLength);
 
 	Vec3  edge1    = v1 - v0;
 	Vec3  edge2    = v2 - v0;
@@ -650,7 +650,8 @@ RaycastResult3D RaycastVsTriangle3D(
 	return result;
 }
 
-RaycastResult3D RaycastVsTriangle3D(Vec3 rayStart, Vec3 rayForwardNormal, float rayLength, Triangle3 const& triangle)
+MathRaycastResult3D RaycastVsTriangle3D(
+	Vec3 rayStart, Vec3 rayForwardNormal, float rayLength, Triangle3 const& triangle)
 {
 	return RaycastVsTriangle3D(
 		rayStart,
@@ -661,21 +662,21 @@ RaycastResult3D RaycastVsTriangle3D(Vec3 rayStart, Vec3 rayForwardNormal, float 
 		triangle.m_pointsCounterClockwise[2]);
 }
 
-RaycastResult3D RaycastVsQuad3D(
-	Vec3 rayStart,
-	Vec3 rayForwardNormal,
-	float rayLength,
+MathRaycastResult3D RaycastVsQuad3D(
+	Vec3        rayStart,
+	Vec3        rayForwardNormal,
+	float       rayLength,
 	Vec3 const& p0,
 	Vec3 const& p1,
 	Vec3 const& p2,
 	Vec3 const& p3)
 {
-	RaycastResult3D firstTriangle  = RaycastVsTriangle3D(rayStart, rayForwardNormal, rayLength, p0, p1, p2);
-	RaycastResult3D secondTriangle = RaycastVsTriangle3D(rayStart, rayForwardNormal, rayLength, p0, p2, p3);
+	MathRaycastResult3D firstTriangle  = RaycastVsTriangle3D(rayStart, rayForwardNormal, rayLength, p0, p1, p2);
+	MathRaycastResult3D secondTriangle = RaycastVsTriangle3D(rayStart, rayForwardNormal, rayLength, p0, p2, p3);
 	return GetClosestImpact(firstTriangle, secondTriangle);
 }
 
-RaycastResult3D RaycastVsQuad3D(Vec3 rayStart, Vec3 rayForwardNormal, float rayLength, Quad3 const& quad)
+MathRaycastResult3D RaycastVsQuad3D(Vec3 rayStart, Vec3 rayForwardNormal, float rayLength, Quad3 const& quad)
 {
 	return RaycastVsQuad3D(
 		rayStart,

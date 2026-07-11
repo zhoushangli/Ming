@@ -13,7 +13,7 @@ GameRaycastResult AABBCollider3D::Raycast(RaycastInfo const& info) const
 	Vec3 const        localStart   = worldToLocal.TransformPosition3D(info.m_startPos);
 	Vec3 const        localForward = worldToLocal.TransformDirection3D(info.m_forwardNormal);
 
-	(RaycastResult3D&)raycastResult = RaycastVsAABB3D(localStart, localForward, info.m_maxLength, m_localBounds);
+	(MathRaycastResult3D&)raycastResult = RaycastVsAABB3D(localStart, localForward, info.m_maxLength, m_localBounds);
 
 	if (raycastResult.m_didImpact)
 	{

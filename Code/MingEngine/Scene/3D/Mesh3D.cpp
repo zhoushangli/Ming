@@ -6,9 +6,9 @@
 #include "MingEngine/Scene/Core/SceneTree.hpp"
 #include "MingEngine/Scene/Resource/MeshResource.hpp"
 
-SceneRaycastResult3D MeshRaycastObject::IntersectBounds(RaycastQuery3D const& query)
+RaycastResult3D MeshRaycastObject::IntersectBounds(RaycastQuery3D const& query)
 {
-	SceneRaycastResult3D hit;
+	RaycastResult3D hit;
 
 	Matrix4x4 localToWorld = m_mesh->GetWorldTransform();
 	Matrix4x4 worldToLocal = localToWorld.GetOrthonormalInverse();
@@ -19,8 +19,8 @@ SceneRaycastResult3D MeshRaycastObject::IntersectBounds(RaycastQuery3D const& qu
 
 	Ref<MeshResource> meshResource = m_mesh->GetMeshResource();
 
-	hit.m_owner           = m_owner;
-	(RaycastResult3D&)hit = RaycastVsAABB3D(localStart, localDirection, localMaxLength, meshResource->m_bounds);
+	hit.m_owner               = m_owner;
+	(MathRaycastResult3D&)hit = RaycastVsAABB3D(localStart, localDirection, localMaxLength, meshResource->m_bounds);
 
 	// Remember to transform the hit position and normal back into world space
 	if (hit.m_didImpact)
@@ -32,9 +32,9 @@ SceneRaycastResult3D MeshRaycastObject::IntersectBounds(RaycastQuery3D const& qu
 	return hit;
 }
 
-SceneRaycastResult3D MeshRaycastObject::IntersectRay(RaycastQuery3D const& query)
+RaycastResult3D MeshRaycastObject::IntersectRay(RaycastQuery3D const& query)
 {
-	SceneRaycastResult3D hit;
+	RaycastResult3D hit;
 
 	Matrix4x4 localToWorld = m_mesh->GetWorldTransform();
 	Matrix4x4 worldToLocal = localToWorld.GetOrthonormalInverse();
@@ -48,10 +48,10 @@ SceneRaycastResult3D MeshRaycastObject::IntersectRay(RaycastQuery3D const& query
 	hit.m_owner = m_owner;
 	for (const Triangle3& triangle : meshResource->m_triangles)
 	{
-		RaycastResult3D triangleHit = RaycastVsTriangle3D(localStart, localDirection, localMaxLength, triangle);
+		MathRaycastResult3D triangleHit = RaycastVsTriangle3D(localStart, localDirection, localMaxLength, triangle);
 		if (triangleHit.m_didImpact && (!hit.m_didImpact || triangleHit.m_impactDist < hit.m_impactDist))
 		{
-			(RaycastResult3D&)hit = triangleHit;
+			(MathRaycastResult3D&)hit = triangleHit;
 		}
 	}
 

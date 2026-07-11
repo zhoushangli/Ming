@@ -15,7 +15,7 @@
 #include "MingEngine/Core/Render/VertexUtils.hpp"
 #include "MingEngine/Core/StringUtils.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
-#include "MingEngine/Engine/Render/DebugRenderer.hpp"
+#include "MingEngine/Engine/Render/DebugGizmos.hpp"
 #include "MingEngine/Engine/Render/Renderer.hpp"
 #include "MingEngine/Engine/Render/VertexBuffer.hpp"
 
@@ -297,7 +297,7 @@ void GizmoAxisArrow::UpdateRaycastObject(GizmoContext const& context)
 	raycastObject->m_worldAABB =
 		GetSegmentAABB(raycastObject->m_arrowStart, raycastObject->m_arrowEnd, raycastObject->m_arrowRad);
 
-	// DebugAddWorldWireCylinder(
+	// DebugGizmos::AddWorldWireCylinder(
 	// 	raycastObject->m_arrowStart,
 	// 	raycastObject->m_arrowEnd,
 	// 	raycastObject->m_arrowRad,
@@ -427,7 +427,7 @@ void GizmoPlaneSquare::UpdateRaycastObject(GizmoContext const& context)
 		raycastObject->m_worldAABB.StretchToIncludePoint(raycastObject->m_quad.m_points[pointIndex]);
 	}
 
-	// DebugAddWorldWireAABB(
+	// DebugGizmos::AddWorldWireAABB(
 	// 	raycastObject->m_worldAABB,
 	// 	0.f,
 	// 	kDebugRaycastColor,
@@ -454,7 +454,7 @@ void GizmoPlaneSquare::OnDrag(GizmoContext const& context, Vec3 const& rayStart,
 		return;
 	}
 
-	RaycastResult3D const hit = RaycastVsPlane3D(rayStart, rayFwdNormal, 10000.f, m_startHitWorld, GetAxisWorld());
+	MathRaycastResult3D const hit = RaycastVsPlane3D(rayStart, rayFwdNormal, 10000.f, m_startHitWorld, GetAxisWorld());
 	if (!hit.m_didImpact)
 	{
 		return;
@@ -521,7 +521,7 @@ void GizmoRotationArc::UpdateRaycastObject(GizmoContext const& context)
 		raycastObject->m_worldOrigin - Vec3(outer, outer, outer),
 		raycastObject->m_worldOrigin + Vec3(outer, outer, outer));
 
-	// DebugAddWorldWireAABB(
+	// DebugGizmos::AddWorldWireAABB(
 	// 	raycastObject->m_worldAABB,
 	// 	0.f,
 	// 	kDebugRaycastColor,
@@ -550,7 +550,7 @@ void GizmoRotationArc::OnDrag(GizmoContext const& context, Vec3 const& rayStart,
 		return;
 	}
 
-	RaycastResult3D const hit = RaycastVsPlane3D(rayStart, rayFwdNormal, 10000.f, m_dragOrigin, GetAxisWorld());
+	MathRaycastResult3D const hit = RaycastVsPlane3D(rayStart, rayFwdNormal, 10000.f, m_dragOrigin, GetAxisWorld());
 	if (!hit.m_didImpact)
 	{
 		return;

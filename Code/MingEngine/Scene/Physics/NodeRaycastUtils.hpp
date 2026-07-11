@@ -8,7 +8,7 @@
 
 class CameraContext;
 
-struct GameRaycastResult : public RaycastResult3D
+struct GameRaycastResult : public MathRaycastResult3D
 {
 	NodeHandle m_hitNodeHandle  = NodeHandle::Invalid;
 	NodeHandle m_hitOwnerHandle = NodeHandle::Invalid;
@@ -23,6 +23,5 @@ struct RaycastInfo
 	NodeHandle m_ignoreNodeHandle = NodeHandle::Invalid;
 };
 
-RaycastInfo
-BuildRaycastFromMouse(CameraContext const& camera, Vec2 const& clientPos, Vec2 const& clientDimensions, float maxLength);
-
+RaycastInfo BuildRaycastFromMouse(
+	CameraContext const& camera, Vec2 const& clientPos, Vec2 const& clientDimensions, float maxLength);

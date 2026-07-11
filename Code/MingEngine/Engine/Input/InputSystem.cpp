@@ -27,33 +27,132 @@ void InputSystem::BindMethods()
 		static_cast<bool (InputSystem::*)(int)>(&InputSystem::WasKeyJustReleased));
 	ClassDatabase::BindMethod("SetCursorMode", &InputSystem::SetCursorModeByInt);
 
-	BIND_ENUM(KeyCode, F1);
-	BIND_ENUM(KeyCode, F2);
-	BIND_ENUM(KeyCode, F3);
-	BIND_ENUM(KeyCode, F4);
-	BIND_ENUM(KeyCode, F5);
-	BIND_ENUM(KeyCode, F6);
-	BIND_ENUM(KeyCode, F7);
-	BIND_ENUM(KeyCode, F8);
-	BIND_ENUM(KeyCode, F9);
-	BIND_ENUM(KeyCode, F10);
-	BIND_ENUM(KeyCode, F11);
-	BIND_ENUM(KeyCode, F12);
-	BIND_ENUM(KeyCode, Tilde);
-	BIND_ENUM(KeyCode, Esc);
-	BIND_ENUM(KeyCode, UpArrow);
-	BIND_ENUM(KeyCode, DownArrow);
-	BIND_ENUM(KeyCode, LeftArrow);
-	BIND_ENUM(KeyCode, RightArrow);
-	BIND_ENUM(KeyCode, LeftMouse);
-	BIND_ENUM(KeyCode, RightMouse);
-	BIND_ENUM(KeyCode, Shift);
-	BIND_ENUM(KeyCode, Enter);
-	BIND_ENUM(KeyCode, Backspace);
-	BIND_ENUM(KeyCode, Insert);
-	BIND_ENUM(KeyCode, Delete);
-	BIND_ENUM(KeyCode, Home);
-	BIND_ENUM(KeyCode, End);
+	// 1) Function keys
+	BIND_CONSTANT(KeyCode, F1);
+	BIND_CONSTANT(KeyCode, F2);
+	BIND_CONSTANT(KeyCode, F3);
+	BIND_CONSTANT(KeyCode, F4);
+	BIND_CONSTANT(KeyCode, F5);
+	BIND_CONSTANT(KeyCode, F6);
+	BIND_CONSTANT(KeyCode, F7);
+	BIND_CONSTANT(KeyCode, F8);
+	BIND_CONSTANT(KeyCode, F9);
+	BIND_CONSTANT(KeyCode, F10);
+	BIND_CONSTANT(KeyCode, F11);
+	BIND_CONSTANT(KeyCode, F12);
+
+	// 2) Number row
+	BIND_CONSTANT(KeyCode, Zero);
+	BIND_CONSTANT(KeyCode, One);
+	BIND_CONSTANT(KeyCode, Two);
+	BIND_CONSTANT(KeyCode, Three);
+	BIND_CONSTANT(KeyCode, Four);
+	BIND_CONSTANT(KeyCode, Five);
+	BIND_CONSTANT(KeyCode, Six);
+	BIND_CONSTANT(KeyCode, Seven);
+	BIND_CONSTANT(KeyCode, Eight);
+	BIND_CONSTANT(KeyCode, Nine);
+
+	// 3) Letter keys
+	BIND_CONSTANT(KeyCode, A);
+	BIND_CONSTANT(KeyCode, B);
+	BIND_CONSTANT(KeyCode, C);
+	BIND_CONSTANT(KeyCode, D);
+	BIND_CONSTANT(KeyCode, E);
+	BIND_CONSTANT(KeyCode, F);
+	BIND_CONSTANT(KeyCode, G);
+	BIND_CONSTANT(KeyCode, H);
+	BIND_CONSTANT(KeyCode, I);
+	BIND_CONSTANT(KeyCode, J);
+	BIND_CONSTANT(KeyCode, K);
+	BIND_CONSTANT(KeyCode, L);
+	BIND_CONSTANT(KeyCode, M);
+	BIND_CONSTANT(KeyCode, N);
+	BIND_CONSTANT(KeyCode, O);
+	BIND_CONSTANT(KeyCode, P);
+	BIND_CONSTANT(KeyCode, Q);
+	BIND_CONSTANT(KeyCode, R);
+	BIND_CONSTANT(KeyCode, S);
+	BIND_CONSTANT(KeyCode, T);
+	BIND_CONSTANT(KeyCode, U);
+	BIND_CONSTANT(KeyCode, V);
+	BIND_CONSTANT(KeyCode, W);
+	BIND_CONSTANT(KeyCode, X);
+	BIND_CONSTANT(KeyCode, Y);
+	BIND_CONSTANT(KeyCode, Z);
+
+	// 4) Special character keys
+	BIND_CONSTANT(KeyCode, Space);
+	BIND_CONSTANT(KeyCode, Apostrophe);
+	BIND_CONSTANT(KeyCode, Comma);
+	BIND_CONSTANT(KeyCode, Minus);
+	BIND_CONSTANT(KeyCode, Period);
+	BIND_CONSTANT(KeyCode, Slash);
+	BIND_CONSTANT(KeyCode, Semicolon);
+	BIND_CONSTANT(KeyCode, Equal);
+	BIND_CONSTANT(KeyCode, LeftBracket);
+	BIND_CONSTANT(KeyCode, Backslash);
+	BIND_CONSTANT(KeyCode, RightBracket);
+	BIND_CONSTANT(KeyCode, Tilde);
+
+	// 5) Navigation keys
+	BIND_CONSTANT(KeyCode, Esc);
+	BIND_CONSTANT(KeyCode, Enter);
+	BIND_CONSTANT(KeyCode, Tab);
+	BIND_CONSTANT(KeyCode, Backspace);
+	BIND_CONSTANT(KeyCode, Insert);
+	BIND_CONSTANT(KeyCode, Delete);
+	BIND_CONSTANT(KeyCode, Home);
+	BIND_CONSTANT(KeyCode, End);
+	BIND_CONSTANT(KeyCode, PageUp);
+	BIND_CONSTANT(KeyCode, PageDown);
+
+	// 6) Arrow keys
+	BIND_CONSTANT(KeyCode, UpArrow);
+	BIND_CONSTANT(KeyCode, DownArrow);
+	BIND_CONSTANT(KeyCode, LeftArrow);
+	BIND_CONSTANT(KeyCode, RightArrow);
+
+	// 7) Lock keys
+	BIND_CONSTANT(KeyCode, CapsLock);
+	BIND_CONSTANT(KeyCode, ScrollLock);
+	BIND_CONSTANT(KeyCode, NumLock);
+	BIND_CONSTANT(KeyCode, PrintScreen);
+	BIND_CONSTANT(KeyCode, Pause);
+
+	// 8) Modifier keys
+	BIND_CONSTANT(KeyCode, Shift);
+	BIND_CONSTANT(KeyCode, LeftControl);
+	BIND_CONSTANT(KeyCode, LeftAlt);
+	BIND_CONSTANT(KeyCode, LeftSuper);
+	BIND_CONSTANT(KeyCode, RightShift);
+	BIND_CONSTANT(KeyCode, RightControl);
+	BIND_CONSTANT(KeyCode, RightAlt);
+	BIND_CONSTANT(KeyCode, RightSuper);
+	BIND_CONSTANT(KeyCode, Menu);
+
+	// 9) Numpad keys
+	BIND_CONSTANT(KeyCode, KP0);
+	BIND_CONSTANT(KeyCode, KP1);
+	BIND_CONSTANT(KeyCode, KP2);
+	BIND_CONSTANT(KeyCode, KP3);
+	BIND_CONSTANT(KeyCode, KP4);
+	BIND_CONSTANT(KeyCode, KP5);
+	BIND_CONSTANT(KeyCode, KP6);
+	BIND_CONSTANT(KeyCode, KP7);
+	BIND_CONSTANT(KeyCode, KP8);
+	BIND_CONSTANT(KeyCode, KP9);
+	BIND_CONSTANT(KeyCode, KPDecimal);
+	BIND_CONSTANT(KeyCode, KPDivide);
+	BIND_CONSTANT(KeyCode, KPMultiply);
+	BIND_CONSTANT(KeyCode, KPSubtract);
+	BIND_CONSTANT(KeyCode, KPAdd);
+	BIND_CONSTANT(KeyCode, KPEnter);
+	BIND_CONSTANT(KeyCode, KPEqual);
+
+	// 10) Mouse buttons
+	BIND_CONSTANT(KeyCode, LeftMouse);
+	BIND_CONSTANT(KeyCode, RightMouse);
 
 	BIND_ENUM(CursorMode, POINTER);
 	BIND_ENUM(CursorMode, FPS);

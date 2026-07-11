@@ -1,16 +1,9 @@
-#include "MingEngine/Scene/RegisterSceneTypes.hpp"
+#include "MingEngine/Scene/RegisterAllTypes.hpp"
 
 #include "MingEngine/Core/Object/ClassDatabase.hpp"
-#include "MingEngine/Core/Object/RefCounted.hpp"
-#include "MingEngine/Core/Object/Resource.hpp"
 #include "MingEngine/Core/Object/ResourceImporter.hpp"
 #include "MingEngine/Core/Object/ResourceLoader.hpp"
 #include "MingEngine/Core/Object/ResourceSaver.hpp"
-#include "MingEngine/Core/Object/Script.hpp"
-#include "MingEngine/Core/Object/ScriptLoader.hpp"
-
-#include "MingEngine/Engine/Application/SystemBase.hpp"
-#include "MingEngine/Engine/Input/InputSystem.hpp"
 
 #include "MingEngine/Scene/3D/Camera3D.hpp"
 #include "MingEngine/Scene/3D/Light3D.hpp"
@@ -20,6 +13,7 @@
 #include "MingEngine/Scene/Core/Node.hpp"
 #include "MingEngine/Scene/Core/PackedScene.hpp"
 #include "MingEngine/Scene/Core/PackedSceneFormat.hpp"
+#include "MingEngine/Scene/Core/RaycastSpace3D.hpp"
 #include "MingEngine/Scene/Import/ImageImporter.hpp"
 #include "MingEngine/Scene/Import/OBJImporter.hpp"
 #include "MingEngine/Scene/Physics/AABBCollider3D.hpp"
@@ -30,9 +24,14 @@
 #include "MingEngine/Scene/Resource/TextureResource.hpp"
 #include "MingEngine/Scene/Resource/TextureResourceFormat.hpp"
 
+#if defined(MING_EDITOR)
+#include "MingEngine/Editor/EditorCamera.hpp"
+#include "MingEngine/Editor/EditorNode.hpp"
+#include "MingEngine/Editor/Gizmos/EditorGizmos.hpp"
+#endif
+
 namespace
 {
-ScriptLoader*          scriptLoader          = new ScriptLoader();
 PackedSceneLoader*     packedSceneLoader     = new PackedSceneLoader();
 PackedSceneSaver*      packedSceneSaver      = new PackedSceneSaver();
 MeshResourceLoader*    meshResourceLoader    = new MeshResourceLoader();
@@ -43,33 +42,11 @@ OBJImporter*           objImporter           = new OBJImporter();
 ImageImporter*         imageImporter         = new ImageImporter();
 } // namespace
 
-void RegisterBaseTypes()
+#pragma region Scene
+
+void RegisterSceneTypes()
 {
-	ClassDatabase::RegisterRootClass<Object>();
-
-	// Engine system types
-	ClassDatabase::RegisterClass<SystemBase>(false, false);
-	ClassDatabase::RegisterClass<InputSystem>(false, false);
-
-	ClassDatabase::RegisterGlobalObject(g_engine->m_inputSystem);
-
-	// Core types
-	ClassDatabase::RegisterClass<RefCounted>(false);
-	ClassDatabase::RegisterClass<Resource>(false);
-	ClassDatabase::RegisterClass<Script>();
-	ClassDatabase::RegisterClass<ResourceFormatImporter>(false);
-	ClassDatabase::RegisterClass<ResourceFormatLoader>(false);
-	ClassDatabase::RegisterClass<ResourceFormatSaver>(false);
-
-	ClassDatabase::RegisterClass<ScriptLoader>();
-
-	ResourceLoader::AddLoader(Ref<ScriptLoader>(scriptLoader));
-}
-
-namespace
-{
-void RegisterSceneResourceFormats()
-{
+	// Resource format types
 	ClassDatabase::RegisterClass<PackedSceneLoader>();
 	ClassDatabase::RegisterClass<PackedSceneSaver>();
 	ClassDatabase::RegisterClass<MeshResourceLoader>();
@@ -77,6 +54,7 @@ void RegisterSceneResourceFormats()
 	ClassDatabase::RegisterClass<TextureResourceLoader>();
 	ClassDatabase::RegisterClass<TextureResourceSaver>();
 
+	// Resource format registration
 	ResourceLoader::AddLoader(Ref<PackedSceneLoader>(packedSceneLoader));
 	ResourceLoader::AddLoader(Ref<MeshResourceLoader>(meshResourceLoader));
 	ResourceLoader::AddLoader(Ref<TextureResourceLoader>(textureResourceLoader));
@@ -87,16 +65,17 @@ void RegisterSceneResourceFormats()
 
 	ResourceImporter::AddImporter(Ref<OBJImporter>(objImporter));
 	ResourceImporter::AddImporter(Ref<ImageImporter>(imageImporter));
-}
-} // namespace
 
-void RegisterSceneTypes()
-{
-	RegisterBaseTypes();
-	RegisterSceneResourceFormats();
+	// Resource types
+	ClassDatabase::RegisterClass<MeshResource>();
+	ClassDatabase::RegisterClass<TextureResource>();
+	ClassDatabase::RegisterClass<PackedScene>();
 
 	// Scene types
 	ClassDatabase::RegisterClass<Node>();
+	ClassDatabase::RegisterClass<RaycastQuery3D>(false);
+	ClassDatabase::RegisterClass<RaycastResult3D>(false, false);
+	ClassDatabase::RegisterClass<RaycastSpace3D>(false, false);
 	ClassDatabase::RegisterClass<Node3D>();
 	ClassDatabase::RegisterClass<Camera3D>();
 	ClassDatabase::RegisterClass<Light3D>(false);
@@ -107,9 +86,14 @@ void RegisterSceneTypes()
 	ClassDatabase::RegisterClass<CapsuleCollider3D>();
 	ClassDatabase::RegisterClass<CylinderZCollider3D>();
 	ClassDatabase::RegisterClass<TriangleMeshCollider3D>();
-	ClassDatabase::RegisterClass<PackedScene>();
-	ClassDatabase::RegisterClass<MeshResource>();
-	ClassDatabase::RegisterClass<TextureResource>();
 	ClassDatabase::RegisterClass<VisualizeInstance3D>(false);
 	ClassDatabase::RegisterClass<Mesh3D>();
+
+#if defined(MING_EDITOR)
+	ClassDatabase::RegisterClass<EditorNode>(false);
+	ClassDatabase::RegisterClass<EditorGizmos>(false);
+	ClassDatabase::RegisterClass<EditorCamera>(false);
+#endif
 }
+
+#pragma endregion

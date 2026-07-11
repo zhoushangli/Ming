@@ -2,7 +2,7 @@
 
 #include "MingEngine/Core/Clock.hpp"
 #include "MingEngine/Engine/Render/CameraContext.hpp"
-#include "MingEngine/Engine/Render/DebugRenderer.hpp"
+#include "MingEngine/Engine/Render/DebugGizmos.hpp"
 #include "MingEngine/Engine/Render/PostProcessChain.hpp"
 #include "MingEngine/Engine/Render/RenderContext.hpp"
 #include "MingEngine/Engine/Render/VertexBuffer.hpp"
@@ -25,10 +25,16 @@ void Renderer::Startup()
 	m_renderBackend = new D3D11RenderBackend(m_config);
 	m_renderBackend->Startup();
 	m_postProcessCopyShader = m_renderBackend->CreateOrGetShader("res://Shaders/PostProcessCopy.hlsl");
+
+	DebugRenderConfig debugConfig;
+	debugConfig.m_renderer = this;
+	DebugGizmos::Startup(debugConfig);
 }
 
 void Renderer::Shutdown()
 {
+	DebugGizmos::Shutdown();
+
 	if (m_renderBackend != nullptr)
 	{
 		m_renderBackend->Shutdown();
@@ -41,6 +47,8 @@ void Renderer::Shutdown()
 
 void Renderer::BeginFrame()
 {
+	DebugGizmos::BeginFrame();
+
 	if (m_renderBackend != nullptr)
 	{
 		m_renderBackend->BeginFrame();
@@ -53,6 +61,8 @@ void Renderer::EndFrame()
 	{
 		m_renderBackend->EndFrame();
 	}
+
+	DebugGizmos::EndFrame();
 }
 
 void Renderer::CreateRenderingContext() { m_renderBackend->CreateRenderingContext(); }
@@ -69,6 +79,7 @@ void Renderer::RenderViewport(ViewportInfo& viewport)
 
 	m_renderBackend->BindCamera(*viewport.m_worldCamera);
 	PrepareConstants(viewport);
+	DebugGizmos::PrepareRenderRequests();
 
 	RenderOpaque(viewport);
 	RenderSkybox(viewport);
@@ -238,9 +249,16 @@ void Renderer::RenderOpaque(ViewportInfo& viewport)
 	m_renderBackend->SetRasterizerMode(RasterizerMode::SOLID_CULL_BACK);
 	m_renderBackend->SetDepthMode(DepthMode::READ_WRITE_LESS_EQUAL);
 
-	DebugRenderWorld(*viewport.m_worldCamera, viewport);
-
+	// 1) Scene opaque objects write depth first
 	for (RenderRequest const& request : viewport.m_renderRequests[(int)RenderRequestPass::Opaque])
+	{
+		ExecuteRenderRequest(request);
+	}
+
+	// 2) Gizmos world objects
+	//    X-Ray objects use DepthMode::DISABLED / future GREATER to draw behind geometry.
+	//    Normal objects use DepthMode::READ_WRITE_LESS_EQUAL to draw in front.
+	for (RenderRequest const& request : DebugGizmos::GetRenderRequests(RenderRequestPass::Opaque))
 	{
 		ExecuteRenderRequest(request);
 	}
@@ -296,6 +314,12 @@ void Renderer::RenderUI(ViewportInfo const& viewport)
 	m_renderBackend->BindCamera(uiCameraData);
 
 	m_renderBackend->BindRenderTarget(viewport.m_viewportOutputTexture);
+
+	// 3) Gizmos screen text / messages
+	for (RenderRequest const& request : DebugGizmos::GetRenderRequests(RenderRequestPass::UI))
+	{
+		ExecuteRenderRequest(request);
+	}
 	m_renderBackend->SetBlendMode(BlendMode::ALPHA);
 	m_renderBackend->SetRasterizerMode(RasterizerMode::SOLID_CULL_NONE);
 	m_renderBackend->SetDepthMode(DepthMode::READ_ONLY_ALWAYS);

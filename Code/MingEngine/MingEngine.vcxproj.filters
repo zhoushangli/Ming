@@ -342,7 +342,10 @@
     <ClCompile Include="Engine\Render\D3D11RenderBackend.cpp">
       <Filter>Engine\Render</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Render\DebugRenderer.cpp">
+    <ClCompile Include="Engine\Render\DebugGizmos.cpp">
+      <Filter>Engine\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Render\DebugObject.cpp">
       <Filter>Engine\Render</Filter>
     </ClCompile>
     <ClCompile Include="Engine\Render\IndexBuffer.cpp">
@@ -450,9 +453,6 @@
     <ClCompile Include="Scene\Resource\MeshResourceFormat.cpp">
       <Filter>Scene\Resource</Filter>
     </ClCompile>
-    <ClCompile Include="Scene\SceneCommon.cpp">
-      <Filter>Scene</Filter>
-    </ClCompile>
     <ClCompile Include="..\ThirdParty\imgui\backends\imgui_impl_dx11.cpp">
       <Filter>ThirdParty\imgui\backends</Filter>
     </ClCompile>
@@ -510,6 +510,9 @@
     <ClCompile Include="Core\Object\Object.cpp">
       <Filter>Core\Object</Filter>
     </ClCompile>
+    <ClCompile Include="Scene\RegisterAllTypes.cpp">
+      <Filter>Scene</Filter>
+    </ClCompile>
     <ClCompile Include="Scene\RegisterSceneTypes.cpp">
       <Filter>Scene</Filter>
     </ClCompile>
@@ -552,8 +555,11 @@
     <ClCompile Include="Scene\Core\PackedSceneFormat.cpp">
       <Filter>Scene\Core</Filter>
     </ClCompile>
-    <ClCompile Include="Scene\RegisterGlobalMethods.cpp">
-      <Filter>Scene</Filter>
+    <ClCompile Include="Core\Object\RegisterCoreTypes.cpp">
+      <Filter>Core\Object</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Application\RegisterEngineTypes.cpp">
+      <Filter>Engine\Application</Filter>
     </ClCompile>
     <ClCompile Include="Engine\Script\RegisterBuildinType.cpp">
       <Filter>Engine\Script</Filter>
@@ -809,7 +815,10 @@
     <ClInclude Include="Engine\Render\D3D11RenderBackend.hpp">
       <Filter>Engine\Render</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Render\DebugRenderer.hpp">
+    <ClInclude Include="Engine\Render\DebugGizmos.hpp">
+      <Filter>Engine\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Render\DebugObject.hpp">
       <Filter>Engine\Render</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Render\IndexBuffer.hpp">
@@ -825,9 +834,6 @@
       <Filter>Engine\Render</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Render\Shader.hpp">
-      <Filter>Engine\Render</Filter>
-    </ClInclude>
-    <ClInclude Include="Engine\Render\SimpleTriangleFont.hpp">
       <Filter>Engine\Render</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Render\SpriteAnimDefinition.hpp">
@@ -922,9 +928,6 @@
     </ClInclude>
     <ClInclude Include="Scene\Resource\MeshResourceFormat.hpp">
       <Filter>Scene\Resource</Filter>
-    </ClInclude>
-    <ClInclude Include="Scene\SceneCommon.hpp">
-      <Filter>Scene</Filter>
     </ClInclude>
     <ClInclude Include="..\ThirdParty\FastNoiseLite\FastNoiseLite.h">
       <Filter>ThirdParty\FastNoiseLite</Filter>
@@ -1061,7 +1064,7 @@
     <ClInclude Include="Core\Object\Object.hpp">
       <Filter>Core\Object</Filter>
     </ClInclude>
-    <ClInclude Include="Scene\RegisterSceneTypes.hpp">
+    <ClInclude Include="Scene\RegisterAllTypes.hpp">
       <Filter>Scene</Filter>
     </ClInclude>
     <ClInclude Include="..\ThirdParty\angelscript\include\angelscript.h">
@@ -1105,9 +1108,6 @@
     </ClInclude>
     <ClInclude Include="Scene\Core\PackedSceneFormat.hpp">
       <Filter>Scene\Core</Filter>
-    </ClInclude>
-    <ClInclude Include="Scene\RegisterGlobalMethods.hpp">
-      <Filter>Scene</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Script\RegisterBuildinType.hpp">
       <Filter>Engine\Script</Filter>

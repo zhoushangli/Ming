@@ -15,7 +15,7 @@ public:
 	GizmoRaycastObject(GizmoComponent* owner);
 	virtual ~GizmoRaycastObject() = default;
 
-	SceneRaycastResult3D IntersectBounds(RaycastQuery3D const& query) override;
+	RaycastResult3D IntersectBounds(RaycastQuery3D const& query) override;
 
 	GizmoComponent* GetOwner() const { return m_component; }
 
@@ -29,7 +29,7 @@ class GizmoAxisRaycastObject : public GizmoRaycastObject
 public:
 	GizmoAxisRaycastObject(GizmoComponent* owner);
 
-	SceneRaycastResult3D IntersectRay(RaycastQuery3D const& query) override;
+	RaycastResult3D IntersectRay(RaycastQuery3D const& query) override;
 
 private:
 	friend class GizmoAxisArrow;
@@ -44,7 +44,7 @@ class GizmoPlaneRaycastObject : public GizmoRaycastObject
 public:
 	GizmoPlaneRaycastObject(GizmoComponent* owner);
 
-	SceneRaycastResult3D IntersectRay(RaycastQuery3D const& query) override;
+	RaycastResult3D IntersectRay(RaycastQuery3D const& query) override;
 
 private:
 	friend class GizmoPlaneSquare;
@@ -57,7 +57,7 @@ class GizmoArcRaycastObject : public GizmoRaycastObject
 public:
 	GizmoArcRaycastObject(GizmoComponent* owner);
 
-	SceneRaycastResult3D IntersectRay(RaycastQuery3D const& query) override;
+	RaycastResult3D IntersectRay(RaycastQuery3D const& query) override;
 
 private:
 	friend class GizmoRotationArc;

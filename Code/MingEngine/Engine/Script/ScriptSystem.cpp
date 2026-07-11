@@ -73,8 +73,8 @@ void SearchAndRegisterScript(FileEntry const* entry, CScriptBuilder& builder)
 // because we will scan the file system and add all scripts to the module
 static int IgnoreScriptInclude(char const* include, char const* from, CScriptBuilder* builder, void* userParam)
 {
-	include; // Unused parameter
-	from;    // Unused parameter
+	include;   // Unused parameter
+	from;      // Unused parameter
 	builder;   // Unused parameter
 	userParam; // Unused parameter
 	return 0;
@@ -93,6 +93,9 @@ void ScriptSystem::Startup()
 
 	int result = m_scriptEngine->SetMessageCallback(asFUNCTION(ScriptMessageCallback), nullptr, asCALL_CDECL);
 	GUARANTEE_OR_DIE(result >= 0, "Failed to register AngelScript message callback.");
+
+	result = m_scriptEngine->SetEngineProperty(asEP_PROPERTY_ACCESSOR_MODE, 2);
+	GUARANTEE_OR_DIE(result >= 0, "Failed to set AngelScript engine property.");
 
 	// Angel Script Add on
 	RegisterStdString(m_scriptEngine);
@@ -116,7 +119,7 @@ void ScriptSystem::Startup()
 
 	if (!BuildGameScriptModule())
 	{
-		DebuggerPrintf("Failed to build game script module.\n");
+		ERROR_AND_DIE("Failed to build game script module.");
 	}
 }
 
@@ -177,7 +180,7 @@ bool ScriptSystem::BuildGameScriptModule()
 		DebuggerPrintf("Failed to start game script module");
 		return false;
 	}
-	
+
 	// 1) Add MingEngine.generated.as to the module
 	std::string wrapperText;
 	if (!g_engine->m_fileSystem->ReadText(kGeneratedScriptResourcePath, wrapperText))

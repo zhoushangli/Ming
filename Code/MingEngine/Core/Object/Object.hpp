@@ -10,7 +10,7 @@
 	ClassDatabase::BindConstant(#className, #enumName, static_cast<int>(className::enumName))
 
 #define BIND_CONSTANT(namespaceName, constantName)                                                                     \
-	ClassDatabase::BindConstant(#namespaceName, #constantName, namespaceName::constantName)
+	ClassDatabase::BindConstant(#namespaceName, #constantName, static_cast<int>(namespaceName::constantName))
 
 #define MCLASS(className, inheritName)                                                                                 \
 public:                                                                                                                \

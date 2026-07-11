@@ -8,7 +8,6 @@
 #include "MingEngine/Core/StringUtils.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Engine/Input/InputSystem.hpp"
-#include "MingEngine/Engine/Render/DebugRenderer.hpp"
 #include "MingEngine/Engine/Window/WindowSystem.hpp"
 #include "MingEngine/EngineService/EngineService.hpp"
 #include "MingEngine/EngineService/RenderService.hpp"
@@ -17,8 +16,7 @@
 #include "MingEngine/Scene/Core/Node.hpp"
 #include "MingEngine/Scene/Core/PackedScene.hpp"
 #include "MingEngine/Scene/Core/SceneTree.hpp"
-#include "MingEngine/Scene/RegisterGlobalMethods.hpp"
-#include "MingEngine/Scene/RegisterSceneTypes.hpp"
+#include "MingEngine/Scene/RegisterAllTypes.hpp"
 
 #if defined(MING_EDITOR)
 
@@ -66,26 +64,16 @@ void App::Startup()
 {
 	ClassDatabase::Startup();
 
-	RegisterGlobalMethods();
-	RegisterSceneTypes();
+	RegisterAllTypes();
 	m_project.RegisterTypes();
-
-#if defined(MING_EDITOR)
-	ClassDatabase::RegisterClass<EditorNode>(false);
-	ClassDatabase::RegisterClass<EditorGizmos>(false);
-	ClassDatabase::RegisterClass<EditorCamera>(false);
-#endif
 
 	g_engine->Startup();
 	g_engineService->Startup();
 	m_project.Startup();
 
+#if defined(MING_EDITOR)
 	EditorIcons::Startup();
-
-	DebugRenderConfig debugRenderConfig;
-	debugRenderConfig.m_renderer = g_engine->m_renderer;
-	debugRenderConfig.m_fontName = "pixel_operator";
-	DebugRenderSystemStartup(debugRenderConfig);
+#endif
 
 	StartupScene();
 	RegisterEvent("Quit", App::OnQuit);
@@ -100,13 +88,14 @@ void App::Shutdown()
 		UnregisterEvent("Quit", App::OnQuit);
 	}
 
-	DebugRenderSystemShutdown();
 	m_project.Shutdown();
 	ClassDatabase::Shutdown();
 
 	ResourceLoader::Shutdown();
 
+#if defined(MING_EDITOR)
 	EditorIcons::Shutdown();
+#endif
 
 	g_engineService->Shutdown();
 	g_engine->Shutdown();
@@ -171,7 +160,6 @@ void App::BeginFrame()
 	{
 		g_engineService->BeginFrame();
 	}
-	DebugRenderBeginFrame();
 }
 
 void App::EndFrame()
@@ -186,7 +174,6 @@ void App::EndFrame()
 		g_engineService->EndFrame();
 	}
 	g_engine->EndFrame();
-	DebugRenderEndFrame();
 
 	if (m_shouldRestart)
 	{
