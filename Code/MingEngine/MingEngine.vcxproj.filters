@@ -360,9 +360,6 @@
     <ClCompile Include="Engine\Render\Shader.cpp">
       <Filter>Engine\Render</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Render\SimpleTriangleFont.cpp">
-      <Filter>Engine\Render</Filter>
-    </ClCompile>
     <ClCompile Include="Engine\Render\SpriteAnimDefinition.cpp">
       <Filter>Engine\Render</Filter>
     </ClCompile>

@@ -1,4 +1,4 @@
-#include "MingEngine/Scene/RegisterAllTypes.hpp"
+#include "MingEngine/Core/Object/RegisterCoreTypes.hpp"
 
 #include "MingEngine/Core/Object/ClassDatabase.hpp"
 #include "MingEngine/Core/Object/RefCounted.hpp"

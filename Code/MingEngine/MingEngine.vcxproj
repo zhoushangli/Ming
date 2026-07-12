@@ -422,7 +422,6 @@
     <ClCompile Include="Engine\Render\PostProcessChain.cpp" />
     <ClCompile Include="Engine\Render\Renderer.cpp" />
     <ClCompile Include="Engine\Render\Shader.cpp" />
-    <ClCompile Include="Engine\Render\SimpleTriangleFont.cpp" />
     <ClCompile Include="Engine\Render\SpriteAnimDefinition.cpp" />
     <ClCompile Include="Engine\Render\GPUTexture.cpp" />
     <ClCompile Include="Engine\Render\VertexBuffer.cpp" />

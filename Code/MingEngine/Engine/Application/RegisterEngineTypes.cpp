@@ -1,4 +1,4 @@
-#include "MingEngine/Scene/RegisterAllTypes.hpp"
+#include "MingEngine/Engine/Application/RegisterEngineTypes.hpp"
 
 #include "MingEngine/Core/Object/ClassDatabase.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"

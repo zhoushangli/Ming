@@ -1,10 +1,5 @@
 #pragma once
 
-// Single public entry point for engine type registration.
-// Calls RegisterCoreTypes, RegisterEngineTypes, and RegisterSceneTypes in order.
+// Register all engine types in dependency order.
+// e.g. RegisterAllTypes()
 void RegisterAllTypes();
-
-// Internal helpers — called by RegisterAllTypes only.
-void RegisterCoreTypes();
-void RegisterEngineTypes();
-void RegisterSceneTypes();

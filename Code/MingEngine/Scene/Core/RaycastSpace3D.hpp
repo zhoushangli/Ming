@@ -11,7 +11,7 @@
 
 class Node;
 
-struct RaycastQuery3D : public RefCounted
+class RaycastQuery3D : public RefCounted
 {
 	MCLASS(RaycastQuery3D, RefCounted);
 
@@ -26,8 +26,10 @@ public:
 	void SetMaxDistance(float maxDistance);
 	void SetExclude(Node* exclude);
 
+protected:
 	static void BindMethods();
 
+public:
 	Vec3       m_start;
 	Vec3       m_direction;
 	float      m_maxDistance = 10000.f;
@@ -37,7 +39,7 @@ private:
 	Node* m_excludeNode = nullptr;
 };
 
-struct RaycastResult3D : public RefCounted
+class RaycastResult3D : public RefCounted
 {
 	MCLASS(RaycastResult3D, RefCounted);
 
@@ -67,8 +69,18 @@ public:
 	float GetRayMaxLength() const;
 	int   GetOwner() const;
 
+	void SetDidImpact(bool didImpact);
+	void SetImpactDistance(float impactDistance);
+	void SetImpactPosition(Vec3 const& impactPosition);
+	void SetImpactNormal(Vec3 const& impactNormal);
+	void SetRayStartPosition(Vec3 const& rayStartPosition);
+	void SetRayForwardNormal(Vec3 const& rayForwardNormal);
+	void SetRayMaxLength(float rayMaxLength);
+
+protected:
 	static void BindMethods();
 
+public:
 	// Basic raycast result information (required)
 	bool  m_didImpact  = false;
 	float m_impactDist = 0.f;
@@ -106,7 +118,7 @@ public:
 	void AddObject(RaycastObject* object);
 	void RemoveObject(RaycastObject* object);
 
-	RaycastResult3D IntersectRay(RaycastQuery3D const& query) const;
+	RaycastResult3D  IntersectRay(RaycastQuery3D const& query) const;
 	RaycastResult3D* IntersectRayScript(RaycastQuery3D* query) const;
 
 	static void BindMethods();
