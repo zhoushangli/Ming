@@ -75,7 +75,7 @@ void ApplyGodotImGuiTheme()
 	colors[ImGuiCol_Header]                    = RGBA(80.f, 89.f, 104.f, 1.f);
 	colors[ImGuiCol_HeaderHovered]             = RGBA(80.f, 89.f, 104.f, 1.f);
 	colors[ImGuiCol_HeaderActive]              = RGBA(86.f, 158.f, 255.f, 1.f);
-	colors[ImGuiCol_Separator]                 = RGBA(24.f, 27.f, 32.f, 1.f);
+	colors[ImGuiCol_Separator]                 = RGBA(38.f, 41.f, 45.f, 1.f);
 	colors[ImGuiCol_SeparatorHovered]          = RGBA(86.f, 158.f, 255.f, 1.f);
 	colors[ImGuiCol_SeparatorActive]           = RGBA(86.f, 158.f, 255.f, 1.f);
 	colors[ImGuiCol_ResizeGrip]                = RGBA(86.f, 158.f, 255.f, 0.25f);

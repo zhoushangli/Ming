@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdint>
+
 #include "ThirdParty/GLFW/glfw3.h"
 
 enum class KeyCode
@@ -133,33 +135,35 @@ enum class KeyCode
 };
 inline constexpr int KeyCodeCount = GLFW_KEY_LAST + 3;
 
-enum KeyModifier
+// This align with the GLFW key modifier flags, so we can convert directly.
+enum class KeyModifier : uint8_t
 {
-	None         = 0,
-	LeftShift    = 1 << 0,
-	RightShift   = 1 << 1,
-	LeftControl  = 1 << 2,
-	RightControl = 1 << 3,
-	LeftAlt      = 1 << 4,
-	RightAlt     = 1 << 5,
-	LeftSuper    = 1 << 6,
-	RightSuper   = 1 << 7
+	None    = 0,
+	Shift   = 1 << 0,
+	Control = 1 << 1,
+	Alt     = 1 << 2,
+	Super   = 1 << 3
 };
+constexpr KeyModifier  operator|(KeyModifier lhs, KeyModifier rhs) { return (KeyModifier)((int)lhs | (int)rhs); }
+constexpr KeyModifier& operator|=(KeyModifier& lhs, KeyModifier rhs)
+{
+	lhs = lhs | rhs;
+	return lhs;
+}
 
 constexpr int ToKeyCode(KeyCode input) { return static_cast<int>(input); }
 
 struct KeyButtonState
 {
 public:
-	bool m_isDown;
-	bool m_wasPressed;
-	bool m_wasReleased;
-	int  m_repeatCount;
+	bool     m_isDown      = false;
+	bool     m_justPressed = false;
+	bool     m_justReleased = false;
+	uint16_t m_repeatCount = 0;
 };
 
-struct KeyBoardState
+struct KeyboardState
 {
 	KeyButtonState m_keyStates[KeyCodeCount];
-	KeyModifier    m_keyModifiers;
-	uint16_t       m_repeatCounts[KeyCodeCount];
+	KeyModifier    m_keyModifiers = KeyModifier::None;
 };

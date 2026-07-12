@@ -78,6 +78,18 @@ public:
 	bool WriteText(std::string const& virtualPath, std::string const& text) const;
 	bool ReadBinary(std::string const& virtualPath, std::vector<uint8_t>& outData) const;
 	bool WriteBinary(std::string const& virtualPath, std::vector<uint8_t> const& data) const;
+	bool CreateFolder(
+		std::string const& parentVirtualPath,
+		std::string const& name,
+		std::string&       outVirtualPath,
+		std::string&       outError) const;
+	bool Rename(
+		std::string const& virtualPath,
+		std::string const& newName,
+		std::string&       outVirtualPath,
+		std::string&       outError) const;
+	bool Duplicate(std::string const& virtualPath, std::string& outVirtualPath, std::string& outError) const;
+	bool Remove(std::string const& virtualPath, std::string& outError) const;
 
 	std::filesystem::path const& GetResourceRoot() const;
 	void                         ScanResourceTree();
@@ -93,6 +105,11 @@ public:
 	static void BindMethods();
 
 private:
+	bool TryGetWritablePhysicalPath(
+		std::string const& virtualPath,
+		std::filesystem::path& outPhysicalPath,
+		std::string& outError,
+		bool allowResourceRoot = false) const;
 	void ScanResourceImports(std::unordered_map<std::string, std::filesystem::file_time_type>& outImportedTimes);
 	FileEntry const*           FindEntry(std::string const& virtualPath) const;
 	std::unique_ptr<FileEntry> BuildEntry(

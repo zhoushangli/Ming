@@ -200,7 +200,7 @@ void EditorCamera::UpdateFlyThrough(float deltaSeconds)
 		movementDir *= invLen;
 	}
 
-	bool const isSprinting = input->IsKeyDown(KeyCode::Shift);
+	bool const isSprinting = input->IsKeyDown(KeyCode::LeftShift);
 	float      moveSpeed   = kMoveSpeedUnitsPerSec;
 	if (isSprinting)
 	{

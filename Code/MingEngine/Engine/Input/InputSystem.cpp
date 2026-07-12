@@ -12,8 +12,6 @@ using namespace Math;
 #include "ThirdParty/GLFW/glfw3.h"
 #include "ThirdParty/GLFW/glfw3native.h"
 
-static_assert(LastGlfwKeyCode == GLFW_KEY_LAST);
-
 InputSystem::InputSystem(InputConfig config) : m_config(config) {}
 
 void InputSystem::BindMethods()
@@ -121,7 +119,7 @@ void InputSystem::BindMethods()
 	BIND_CONSTANT(KeyCode, Pause);
 
 	// 8) Modifier keys
-	BIND_CONSTANT(KeyCode, Shift);
+	BIND_CONSTANT(KeyCode, LeftShift);
 	BIND_CONSTANT(KeyCode, LeftControl);
 	BIND_CONSTANT(KeyCode, LeftAlt);
 	BIND_CONSTANT(KeyCode, LeftSuper);
@@ -159,42 +157,15 @@ void InputSystem::BindMethods()
 	BIND_ENUM(CursorMode, COUNT);
 }
 
-InputSystem::~InputSystem()
-{
-	for (int key = 0; key < NumKeyCodes; ++key)
-	{
-		m_keyStates[key].m_state     = false;
-		m_keyStates[key].m_prevState = false;
-	}
-}
+InputSystem::~InputSystem() {}
 
-void InputSystem::Startup()
-{
-	for (int key = 0; key < NumKeyCodes; ++key)
-	{
-		m_keyStates[key].m_state     = false;
-		m_keyStates[key].m_prevState = false;
-	}
+void InputSystem::Startup() { m_keyboardState = {}; }
 
-	g_engine->m_eventSystem->RegisterEvent("KeyUp", InputSystem::Event_KeyUp);
-	g_engine->m_eventSystem->RegisterEvent("KeyDown", InputSystem::Event_KeyDown);
-}
-
-void InputSystem::Shutdown()
-{
-	g_engine->m_eventSystem->UnregisterEvent("KeyDown", Event_KeyDown);
-	g_engine->m_eventSystem->UnregisterEvent("KeyUp", Event_KeyUp);
-
-	for (int key = 0; key < NumKeyCodes; ++key)
-	{
-		m_keyStates[key].m_state     = false;
-		m_keyStates[key].m_prevState = false;
-	}
-}
+void InputSystem::Shutdown() { m_keyboardState = {}; }
 
 void InputSystem::BeginFrame()
 {
-	for (int i = 0; i < NumXboxControllers; ++i)
+	for (int i = 0; i < ControllerCount; ++i)
 	{
 		m_controllers[i].Update();
 	}
@@ -226,65 +197,86 @@ void InputSystem::BeginFrame()
 
 void InputSystem::EndFrame()
 {
-	for (int key = 0; key < NumKeyCodes; ++key)
+	for (int key = 0; key < KeyCodeCount; ++key)
 	{
-		m_keyStates[key].m_prevState = m_keyStates[key].m_state;
+		KeyButtonState& state = m_keyboardState.m_keyStates[key];
+		state.m_justPressed   = false;
+		state.m_justReleased  = false;
+		state.m_repeatCount   = 0;
 	}
 }
 
 bool InputSystem::WasKeyJustPressed(int keyCode)
 {
-	if (keyCode < 0 || keyCode >= NumKeyCodes)
+	if (keyCode < 0 || keyCode >= KeyCodeCount)
 	{
 		return false;
 	}
 
-	return m_keyStates[keyCode].m_state && !m_keyStates[keyCode].m_prevState;
+	return m_keyboardState.m_keyStates[keyCode].m_justPressed;
 }
 
 bool InputSystem::WasKeyJustReleased(int keyCode)
 {
-	if (keyCode < 0 || keyCode >= NumKeyCodes)
+	if (keyCode < 0 || keyCode >= KeyCodeCount)
 	{
 		return false;
 	}
 
-	return !m_keyStates[keyCode].m_state && m_keyStates[keyCode].m_prevState;
+	return m_keyboardState.m_keyStates[keyCode].m_justReleased;
 }
 
 bool InputSystem::IsKeyDown(int keyCode)
 {
-	if (keyCode < 0 || keyCode >= NumKeyCodes)
+	if (keyCode < 0 || keyCode >= KeyCodeCount)
 	{
 		return false;
 	}
 
-	return m_keyStates[keyCode].m_state;
+	return m_keyboardState.m_keyStates[keyCode].m_isDown;
 }
 
-void InputSystem::HandleKeyPressed(int keyCode)
+void InputSystem::HandleKeyCallback(int keyCode, int action, int mods)
 {
-	if (keyCode < 0 || keyCode >= NumKeyCodes)
+	if (keyCode < 0 || keyCode >= KeyCodeCount)
 	{
 		return;
 	}
 
-	m_keyStates[keyCode].m_state = true;
-}
+	KeyButtonState& state = m_keyboardState.m_keyStates[keyCode];
 
-void InputSystem::HandleKeyReleased(int keyCode)
-{
-	if (keyCode < 0 || keyCode >= NumKeyCodes)
+	switch (action)
 	{
-		return;
+	case GLFW_REPEAT: // This will trigger when you hold down a key
+		state.m_isDown = true;
+		state.m_repeatCount++;
+		break;
+	case GLFW_PRESS: // This will trigger when you just press a key
+		state.m_isDown      = true;
+		state.m_justPressed = true;
+		break;
+	case GLFW_RELEASE: // This will trigger when you just release a key
+		state.m_isDown       = false;
+		state.m_justReleased = true;
+		break;
 	}
 
-	m_keyStates[keyCode].m_state = false;
+	KeyModifier result = KeyModifier::None;
+	if (mods & GLFW_MOD_SHIFT)
+		result |= KeyModifier::Shift;
+	if (mods & GLFW_MOD_CONTROL)
+		result |= KeyModifier::Control;
+	if (mods & GLFW_MOD_ALT)
+		result |= KeyModifier::Alt;
+	if (mods & GLFW_MOD_SUPER)
+		result |= KeyModifier::Super;
+
+	m_keyboardState.m_keyModifiers = result;
 }
 
 XboxController const& InputSystem::GetController(int controllerID)
 {
-	if (controllerID < 0 || controllerID >= NumXboxControllers)
+	if (controllerID < 0 || controllerID >= ControllerCount)
 	{
 		return m_controllers[0];
 	}
@@ -294,13 +286,9 @@ XboxController const& InputSystem::GetController(int controllerID)
 
 void InputSystem::ClearAllInputStates()
 {
-	for (int key = 0; key < NumKeyCodes; ++key)
-	{
-		m_keyStates[key].m_state     = false;
-		m_keyStates[key].m_prevState = false;
-	}
+	m_keyboardState = {};
 
-	for (int i = 0; i < NumXboxControllers; ++i)
+	for (int i = 0; i < ControllerCount; ++i)
 	{
 		m_controllers[i].Reset();
 	}
@@ -348,17 +336,3 @@ Vec2 InputSystem::GetCursorNormalizedPosition() const
 }
 
 void InputSystem::ClearCursorDelta() { m_cursorClientDelta = IntVec2::Zero; }
-
-bool InputSystem::Event_KeyDown(EventArgs& args)
-{
-	int asKey = std::stoi(args.GetValue("asKey", "0"));
-	g_engine->m_inputSystem->HandleKeyPressed(asKey);
-	return true;
-}
-
-bool InputSystem::Event_KeyUp(EventArgs& args)
-{
-	int asKey = std::stoi(args.GetValue("asKey", "0"));
-	g_engine->m_inputSystem->HandleKeyReleased(asKey);
-	return true;
-}

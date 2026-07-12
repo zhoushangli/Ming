@@ -108,18 +108,6 @@ EditorSelection& EditorNode::GetSelection() { return m_selection; }
 
 EditorSelection const& EditorNode::GetSelection() const { return m_selection; }
 
-void EditorNode::SaveSceneToFile(Node const* sceneRoot, std::string const& virtualPath)
-{
-	Ref<PackedScene> packedScene = CreateRef<PackedScene>();
-
-	if (!packedScene->Pack(sceneRoot))
-	{
-		return;
-	}
-
-	ResourceSaver::Save(virtualPath, packedScene);
-}
-
 void EditorNode::OnMouseMove(Vec2 screenPos, [[maybe_unused]] Vec2 delta)
 {
 	if (m_editorGizmos == nullptr || m_editorCamera == nullptr)
@@ -210,25 +198,6 @@ void EditorNode::OnReady()
 
 void EditorNode::OnProcess([[maybe_unused]] float deltaSeconds)
 {
-	if (g_engine->m_inputSystem->WasKeyJustPressed('1'))
-	{
-		SceneTree* sceneTree = GetSceneTree();
-		SaveSceneToFile(sceneTree->GetScene(), "res://EditorSavedScene.mscn");
-	}
-
-	if (g_engine->m_inputSystem->WasKeyJustPressed('2'))
-	{
-		SceneTree*       sceneTree   = GetSceneTree();
-		Ref<Resource>    loadedScene = ResourceLoader::Load("res://EditorSavedScene.mscn");
-		Variant          sceneValue  = loadedScene;
-		Ref<PackedScene> packedScene(sceneValue);
-		Node*            newSceneRoot = packedScene.IsValid() ? packedScene->Instantiate() : nullptr;
-		if (newSceneRoot != nullptr)
-		{
-			sceneTree->ChangeScene(newSceneRoot);
-		}
-	}
-
 	if (m_editorUI != nullptr)
 	{
 		m_uiContext.m_isViewportImageHovered = false;
@@ -255,4 +224,46 @@ void EditorNode::OnProcess([[maybe_unused]] float deltaSeconds)
 			OnMouseUp(ToKeyCode(KeyCode::LeftMouse), cursorPos);
 		}
 	}
+}
+
+bool EditorNode::LoadScene(std::string const& virtualPath)
+{
+	Ref<Resource> loadedScene = ResourceLoader::Load(virtualPath);
+	if (!loadedScene.IsValid())
+	{
+		return false;
+	}
+
+	Ref<PackedScene> packedScene(loadedScene);
+	if (!packedScene.IsValid())
+	{
+		return false;
+	}
+
+	Node* newSceneRoot = packedScene->Instantiate();
+	if (!newSceneRoot)
+	{
+		return false;
+	}
+
+	GetSceneTree()->ChangeScene(newSceneRoot);
+	m_editorData.m_currentScenePath = virtualPath;
+
+	return true;
+}
+
+bool EditorNode::SaveScene(std::string const& virtualPath)
+{
+	SceneTree*       sceneTree   = GetSceneTree();
+	Node*            sceneRoot   = sceneTree->GetScene();
+	Ref<PackedScene> packedScene = CreateRef<PackedScene>();
+
+	if (!packedScene->Pack(sceneRoot))
+	{
+		return false;
+	}
+
+	bool result = ResourceSaver::Save(virtualPath, packedScene);
+
+	return result;
 }

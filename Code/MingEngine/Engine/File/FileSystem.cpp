@@ -7,6 +7,7 @@
 #include <cctype>
 #include <fstream>
 #include <sstream>
+#include <system_error>
 #include <utility>
 
 namespace
@@ -70,6 +71,36 @@ bool TryGetLastWriteTime(std::filesystem::path const& path, std::filesystem::fil
 	std::error_code errorCode;
 	outLastWriteTime = std::filesystem::last_write_time(path, errorCode);
 	return !errorCode;
+}
+
+bool IsValidEntryName(std::string const& name)
+{
+	if (name.empty() || name == "." || name == ".." || name.front() == ' ' || name.back() == ' ' || name.back() == '.')
+	{
+		return false;
+	}
+
+	if (name.find_first_of("<>:\"/\\|?*") != std::string::npos)
+	{
+		return false;
+	}
+
+	std::string const upperStem = ToLower(std::filesystem::path(name).stem().string());
+	if (upperStem == "con" || upperStem == "prn" || upperStem == "aux" || upperStem == "nul")
+	{
+		return false;
+	}
+	if (upperStem.size() == 4 && (upperStem.compare(0, 3, "com") == 0 || upperStem.compare(0, 3, "lpt") == 0)
+		&& upperStem[3] >= '1' && upperStem[3] <= '9')
+	{
+		return false;
+	}
+	return true;
+}
+
+std::string JoinError(std::string const& operation, std::error_code const& errorCode)
+{
+	return operation + ": " + errorCode.message();
 }
 } // namespace
 
@@ -186,7 +217,144 @@ bool FileSystem::Exists(std::string const& virtualPath) const
 		return false;
 	}
 
-	return std::filesystem::exists(physicalPath) && std::filesystem::is_regular_file(physicalPath);
+	std::error_code errorCode;
+	return std::filesystem::exists(physicalPath, errorCode) && !errorCode;
+}
+
+bool FileSystem::CreateFolder(
+	std::string const& parentVirtualPath,
+	std::string const& name,
+	std::string&       outVirtualPath,
+	std::string&       outError) const
+{
+	outVirtualPath.clear();
+	outError.clear();
+	if (!IsValidEntryName(name))
+	{
+		outError = "Folder name is invalid.";
+		return false;
+	}
+
+	std::filesystem::path parentPath;
+	if (!TryGetWritablePhysicalPath(parentVirtualPath, parentPath, outError, true))
+	{
+		return false;
+	}
+
+	std::filesystem::path const targetPath = parentPath / name;
+	std::error_code             errorCode;
+	if (std::filesystem::exists(targetPath, errorCode))
+	{
+		outError = "An entry with this name already exists.";
+		return false;
+	}
+	if (errorCode || !std::filesystem::create_directory(targetPath, errorCode))
+	{
+		outError = JoinError("Failed to create folder", errorCode);
+		return false;
+	}
+
+	outVirtualPath = ToVirtualPath(targetPath);
+	return true;
+}
+
+bool FileSystem::Rename(
+	std::string const& virtualPath,
+	std::string const& newName,
+	std::string&       outVirtualPath,
+	std::string&       outError) const
+{
+	outVirtualPath.clear();
+	outError.clear();
+	if (!IsValidEntryName(newName))
+	{
+		outError = "Name is invalid.";
+		return false;
+	}
+
+	std::filesystem::path sourcePath;
+	if (!TryGetWritablePhysicalPath(virtualPath, sourcePath, outError))
+	{
+		return false;
+	}
+
+	std::filesystem::path const targetPath = sourcePath.parent_path() / newName;
+	std::error_code             errorCode;
+	if (std::filesystem::exists(targetPath, errorCode))
+	{
+		outError = "An entry with this name already exists.";
+		return false;
+	}
+	std::filesystem::rename(sourcePath, targetPath, errorCode);
+	if (errorCode)
+	{
+		outError = JoinError("Failed to rename entry", errorCode);
+		return false;
+	}
+
+	outVirtualPath = ToVirtualPath(targetPath);
+	return true;
+}
+
+bool FileSystem::Duplicate(std::string const& virtualPath, std::string& outVirtualPath, std::string& outError) const
+{
+	outVirtualPath.clear();
+	outError.clear();
+	std::filesystem::path sourcePath;
+	if (!TryGetWritablePhysicalPath(virtualPath, sourcePath, outError))
+	{
+		return false;
+	}
+
+	std::filesystem::path const parentPath = sourcePath.parent_path();
+	std::error_code errorCode;
+	bool const isDirectory = std::filesystem::is_directory(sourcePath, errorCode);
+	if (errorCode)
+	{
+		outError = JoinError("Failed to inspect entry", errorCode);
+		return false;
+	}
+	std::string const stem = isDirectory ? sourcePath.filename().string() : sourcePath.stem().string();
+	std::string const extension = isDirectory ? "" : sourcePath.extension().string();
+	std::filesystem::path targetPath = parentPath / (stem + " Copy" + extension);
+	for (uint32_t index = 2; std::filesystem::exists(targetPath, errorCode) && !errorCode; ++index)
+	{
+		targetPath = parentPath / (stem + " Copy " + std::to_string(index) + extension);
+	}
+	if (errorCode)
+	{
+		outError = JoinError("Failed to find a duplicate name", errorCode);
+		return false;
+	}
+
+	std::filesystem::copy(sourcePath, targetPath, std::filesystem::copy_options::recursive, errorCode);
+	if (errorCode)
+	{
+		outError = JoinError("Failed to duplicate entry", errorCode);
+		return false;
+	}
+
+	outVirtualPath = ToVirtualPath(targetPath);
+	return true;
+}
+
+bool FileSystem::Remove(std::string const& virtualPath, std::string& outError) const
+{
+	outError.clear();
+	std::filesystem::path physicalPath;
+	if (!TryGetWritablePhysicalPath(virtualPath, physicalPath, outError))
+	{
+		return false;
+	}
+
+	std::error_code errorCode;
+	uintmax_t const removedCount = std::filesystem::remove_all(physicalPath, errorCode);
+	if (errorCode || removedCount == 0)
+	{
+		outError = errorCode ? JoinError("Failed to delete entry", errorCode) : "Entry does not exist.";
+		return false;
+	}
+	return true;
 }
 
 bool FileSystem::ReadText(std::string const& virtualPath, std::string& outText) const
@@ -398,6 +566,64 @@ bool FileSystem::TryGetPhysicalPath(std::string const& virtualPath, std::filesys
 	return true;
 }
 
+bool FileSystem::TryGetWritablePhysicalPath(
+	std::string const&       virtualPath,
+	std::filesystem::path&   outPhysicalPath,
+	std::string&             outError,
+	bool                     allowResourceRoot) const
+{
+	outPhysicalPath.clear();
+	outError.clear();
+
+	if (virtualPath == kResourcePathPrefix)
+	{
+		if (!allowResourceRoot)
+		{
+			outError = "The resource root cannot be modified.";
+			return false;
+		}
+		outPhysicalPath = m_resourceRoot;
+	}
+	else if (!TryGetPhysicalPath(virtualPath, outPhysicalPath))
+	{
+		outError = "Virtual path is invalid.";
+		return false;
+	}
+
+	std::error_code errorCode;
+	std::filesystem::path const canonicalRoot = std::filesystem::weakly_canonical(m_resourceRoot, errorCode);
+	if (errorCode)
+	{
+		outError = JoinError("Failed to resolve resource root", errorCode);
+		return false;
+	}
+	std::filesystem::path const canonicalPath = std::filesystem::weakly_canonical(outPhysicalPath, errorCode);
+	if (errorCode)
+	{
+		outError = JoinError("Failed to resolve path", errorCode);
+		return false;
+	}
+
+	auto rootPart = canonicalRoot.begin();
+	auto pathPart = canonicalPath.begin();
+	for (; rootPart != canonicalRoot.end() && pathPart != canonicalPath.end(); ++rootPart, ++pathPart)
+	{
+		if (*rootPart != *pathPart)
+		{
+			outError = "Path is outside the resource root.";
+			return false;
+		}
+	}
+	if (rootPart != canonicalRoot.end())
+	{
+		outError = "Path is outside the resource root.";
+		return false;
+	}
+
+	outPhysicalPath = canonicalPath;
+	return true;
+}
+
 FileEntry const* FileSystem::FindEntry(std::string const& virtualPath) const
 {
 	return FindEntryInTree(m_rootEntry.get(), virtualPath);
@@ -531,10 +757,6 @@ std::unique_ptr<FileEntry> FileSystem::BuildEntry(
 
 		SortChildren(*result);
 
-		if (parent != nullptr && result->m_children.empty())
-		{
-			return nullptr;
-		}
 	}
 
 	return result;

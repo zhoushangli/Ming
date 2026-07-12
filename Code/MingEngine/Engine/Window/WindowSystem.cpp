@@ -27,17 +27,7 @@ static void KeyCallback(GLFWwindow* window, int key, int scancode, int action, i
 		return;
 	}
 
-	EventArgs args;
-	args.SetValue("asKey", std::to_string(key));
-
-	if (action == GLFW_PRESS)
-	{
-		FireEvent("KeyDown", args);
-	}
-	else if (action == GLFW_RELEASE)
-	{
-		FireEvent("KeyUp", args);
-	}
+	g_engine->m_inputSystem->HandleKeyCallback(key, action, mods);
 }
 
 static void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
@@ -64,14 +54,7 @@ static void MouseButtonCallback(GLFWwindow* window, int button, int action, int 
 		return;
 	}
 
-	if (action == GLFW_PRESS)
-	{
-		g_engine->m_inputSystem->HandleKeyPressed(keyCode);
-	}
-	else if (action == GLFW_RELEASE)
-	{
-		g_engine->m_inputSystem->HandleKeyReleased(keyCode);
-	}
+	g_engine->m_inputSystem->HandleKeyCallback(keyCode, action, mods);
 }
 
 static void CharCallback(GLFWwindow* window, unsigned int codepoint)

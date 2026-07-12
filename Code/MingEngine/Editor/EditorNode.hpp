@@ -1,9 +1,10 @@
 #pragma once
 
+#include "MingEngine/Core/Math/Vec2.hpp"
+#include "MingEngine/Editor/EditorData.hpp"
+#include "MingEngine/Editor/UI/EditorUIContext.hpp"
 #include "MingEngine/Scene/Core/Node.hpp"
 #include "MingEngine/Scene/Core/NodeHandle.hpp"
-#include "MingEngine/Core/Math/Vec2.hpp"
-#include "MingEngine/Editor/UI/EditorUIContext.hpp"
 
 class Camera3D;
 class EditorCamera;
@@ -36,6 +37,9 @@ public:
 
 	EditorCamera* GetEditorCamera() const { return m_editorCamera; }
 
+	bool LoadScene(std::string const& virtualPath);
+	bool SaveScene(std::string const& virtualPath);
+
 	// --- Mouse event routing ---
 	void OnMouseMove(Vec2 screenPos, Vec2 delta);
 	void OnMouseDown(int keyCode, Vec2 screenPos);
@@ -44,8 +48,6 @@ public:
 private:
 	void OnReady() override;
 	void OnProcess(float deltaSeconds) override;
-
-	void SaveSceneToFile(Node const* sceneRoot, std::string const& virtualPath);
 
 public:
 	EditorSelection m_selection;
@@ -56,5 +58,6 @@ public:
 private:
 	static EditorNode* s_instance;
 
+	EditorData      m_editorData;
 	EditorUIContext m_uiContext;
 };

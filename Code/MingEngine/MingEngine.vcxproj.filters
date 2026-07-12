@@ -321,7 +321,7 @@
     <ClCompile Include="Engine\Input\InputSystem.cpp">
       <Filter>Engine\Input</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Input\KeyButtonState.cpp">
+    <ClCompile Include="Engine\Input\KeyboardState.cpp">
       <Filter>Engine\Input</Filter>
     </ClCompile>
     <ClCompile Include="Engine\Input\XboxController.cpp">
@@ -582,11 +582,20 @@
     <ClCompile Include="Engine\File\FileUtils.cpp">
       <Filter>Engine\File</Filter>
     </ClCompile>
-    <ClCompile Include="Scene\Resource\TextureResource.cpp" />
-    <ClCompile Include="Scene\Resource\TextureResourceFormat.cpp" />
-    <ClCompile Include="Scene\Import\ImageImporter.cpp" />
     <ClCompile Include="Scene\Core\RaycastSpace3D.cpp">
       <Filter>Scene\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\EditorData.cpp">
+      <Filter>Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene\Import\ImageImporter.cpp">
+      <Filter>Scene\Import</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene\Resource\TextureResource.cpp">
+      <Filter>Scene\Resource</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene\Resource\TextureResourceFormat.cpp">
+      <Filter>Scene\Resource</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -791,7 +800,7 @@
     <ClInclude Include="Engine\Input\InputSystem.hpp">
       <Filter>Engine\Input</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Input\KeyButtonState.hpp">
+    <ClInclude Include="Engine\Input\KeyboardState.hpp">
       <Filter>Engine\Input</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Input\XboxController.hpp">
@@ -1130,11 +1139,20 @@
     <ClInclude Include="Engine\File\FileUtils.hpp">
       <Filter>Engine\File</Filter>
     </ClInclude>
-    <ClInclude Include="Scene\Resource\TextureResource.hpp" />
-    <ClInclude Include="Scene\Resource\TextureResourceFormat.hpp" />
-    <ClInclude Include="Scene\Import\ImageImporter.hpp" />
     <ClInclude Include="Scene\Core\RaycastSpace3D.hpp">
       <Filter>Scene\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\EditorData.hpp">
+      <Filter>Editor</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\Import\ImageImporter.hpp">
+      <Filter>Scene\Import</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\Resource\TextureResource.hpp">
+      <Filter>Scene\Resource</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\Resource\TextureResourceFormat.hpp">
+      <Filter>Scene\Resource</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
