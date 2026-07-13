@@ -1,6 +1,7 @@
 #include "MingEngine/Engine/Render/Renderer.hpp"
 
 #include "MingEngine/Core/Clock.hpp"
+#include "MingEngine/Core/Object/ResourceLoader.hpp"
 #include "MingEngine/Engine/Render/CameraContext.hpp"
 #include "MingEngine/Engine/Render/DebugGizmos.hpp"
 #include "MingEngine/Engine/Render/PostProcessChain.hpp"
@@ -24,7 +25,8 @@ void Renderer::Startup()
 
 	m_renderBackend = new D3D11RenderBackend(m_config);
 	m_renderBackend->Startup();
-	m_postProcessCopyShader = m_renderBackend->CreateOrGetShader("res://Shaders/PostProcessCopy.hlsl");
+	m_defaultShaderResource = ResourceLoader::Load("res://Shaders/DefaultUnlit.hlsl");
+	m_postProcessCopyShaderResource = ResourceLoader::Load("res://Shaders/PostProcessCopy.hlsl");
 
 	DebugRenderConfig debugConfig;
 	debugConfig.m_renderer = this;
@@ -34,6 +36,8 @@ void Renderer::Startup()
 void Renderer::Shutdown()
 {
 	DebugGizmos::Shutdown();
+	m_defaultShaderResource         = nullptr;
+	m_postProcessCopyShaderResource = nullptr;
 
 	if (m_renderBackend != nullptr)
 	{
@@ -41,8 +45,6 @@ void Renderer::Shutdown()
 		delete m_renderBackend;
 		m_renderBackend = nullptr;
 	}
-
-	m_postProcessCopyShader = nullptr;
 }
 
 void Renderer::BeginFrame()
@@ -98,7 +100,12 @@ void Renderer::ExecuteRenderRequest(RenderRequest const& request)
 	modelData.m_modelColor[3] = request.m_tint.a / 255.f;
 	m_renderBackend->UpdateAndBindConstantBuffer(BuiltinConstantBufferType::Model, modelData);
 
-	m_renderBackend->BindShader(request.m_shader);
+	Shader* shader = request.m_shader;
+	if (shader == nullptr && m_defaultShaderResource.IsValid())
+	{
+		shader = m_defaultShaderResource->GetShader();
+	}
+	m_renderBackend->BindShader(shader);
 	for (unsigned int textureSlot = 0; textureSlot < request.m_textures.size(); ++textureSlot)
 	{
 		m_renderBackend->BindTexture(request.m_textures[textureSlot], textureSlot);
@@ -179,7 +186,9 @@ void Renderer::CopyTextureToBackBuffer(GPUTexture* colorTexture)
 
 	m_renderBackend->BindBackBuffer();
 	m_renderBackend->BindPostProcessInputs(colorTexture, nullptr, nullptr);
-	m_renderBackend->DrawFullscreenTriangle(m_postProcessCopyShader, L"FinalCopyToBackBuffer");
+	Shader* copyShader =
+		m_postProcessCopyShaderResource.IsValid() ? m_postProcessCopyShaderResource->GetShader() : nullptr;
+	m_renderBackend->DrawFullscreenTriangle(copyShader, L"FinalCopyToBackBuffer");
 	m_renderBackend->UnbindAllShaderResourceViews();
 }
 
@@ -303,7 +312,9 @@ void Renderer::RenderPostProcess(ViewportInfo& viewport)
 
 	m_renderBackend->BindRenderTarget(viewport.m_viewportOutputTexture);
 	m_renderBackend->BindPostProcessInputs(finalColor, viewport.m_sceneDepthTexture, viewport.m_sceneNormalTexture);
-	m_renderBackend->DrawFullscreenTriangle(m_postProcessCopyShader, L"CopyPostProcessToOutput");
+	Shader* copyShader =
+		m_postProcessCopyShaderResource.IsValid() ? m_postProcessCopyShaderResource->GetShader() : nullptr;
+	m_renderBackend->DrawFullscreenTriangle(copyShader, L"CopyPostProcessToOutput");
 	m_renderBackend->UnbindAllShaderResourceViews();
 }
 
@@ -331,9 +342,9 @@ void Renderer::RenderUI(ViewportInfo const& viewport)
 	}
 }
 
-Shader* Renderer::CreateOrGetShader(std::string const& shaderVirtualPath)
+Shader* Renderer::CreateShader(std::string const& shaderVirtualPath, std::string const& shaderSource)
 {
-	return m_renderBackend->CreateOrGetShader(shaderVirtualPath);
+	return m_renderBackend->CreateShader(shaderVirtualPath, shaderSource);
 }
 GPUTexture* Renderer::CreateGPUTexture(
 	char const* name, IntVec2 dimensions, int bytesPerTexel, uint8_t const* texelData)

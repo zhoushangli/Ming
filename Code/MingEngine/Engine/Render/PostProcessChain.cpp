@@ -1,14 +1,14 @@
 #include "MingEngine/Engine/Render/PostProcessChain.hpp"
 
 #include "MingEngine/Core/ErrorWarningAssert.hpp"
+#include "MingEngine/Core/Object/ResourceLoader.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Engine/Render/D3D11RenderBackend.hpp"
-#include "PostProcessChain.hpp"
 
 PostProcessPass::PostProcessPass(std::string const& passName, std::string const& postProcessShaderVirtualPath)
 	: m_name(passName), m_wideName(passName.begin(), passName.end())
 {
-	m_postProcessShader = g_engine->m_renderer->CreateOrGetShader(postProcessShaderVirtualPath);
+	m_postProcessShaderResource = ResourceLoader::Load(postProcessShaderVirtualPath);
 }
 
 PostProcessPass::~PostProcessPass() {}
@@ -59,7 +59,8 @@ GPUTexture* PostProcessChain::Render(D3D11RenderBackend& renderer, PostProcessCo
 
 	for (PostProcessPass const& pass : m_passes)
 	{
-		if (pass.m_isEnabled && pass.m_postProcessShader != nullptr)
+		if (pass.m_isEnabled && pass.m_postProcessShaderResource.IsValid()
+			&& !pass.m_postProcessShaderResource->IsEmpty())
 		{
 			enabledPasses.push_back(&pass);
 		}
@@ -124,7 +125,7 @@ GPUTexture* PostProcessChain::Render(D3D11RenderBackend& renderer, PostProcessCo
 
 		renderer.BindRenderTarget(outputTexture);
 		renderer.BindPostProcessInputs(mainChainColorTexture, sceneDepth, sceneNormal);
-		renderer.DrawFullscreenTriangle(pass->m_postProcessShader, pass->m_wideName.c_str());
+		renderer.DrawFullscreenTriangle(pass->m_postProcessShaderResource->GetShader(), pass->m_wideName.c_str());
 		renderer.UnbindAllShaderResourceViews();
 
 		if (usesMainChainColor)

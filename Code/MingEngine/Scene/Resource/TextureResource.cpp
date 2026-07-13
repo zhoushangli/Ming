@@ -4,6 +4,8 @@
 #include "MingEngine/Engine/Render/Renderer.hpp"
 #include "MingEngine/Engine/Render/GPUTexture.hpp"
 
+#include <utility>
+
 TextureResource::~TextureResource()
 {
 	delete m_gpuTexture;
@@ -12,23 +14,26 @@ TextureResource::~TextureResource()
 
 bool TextureResource::IsEmpty() const { return m_pixels.empty() || m_dimensions.x == 0 || m_dimensions.y == 0; }
 
-bool TextureResource::CopyFrom(Resource const& other)
+bool TextureResource::MoveFrom(Resource&& other)
 {
 	// 1) Validate type
-	TextureResource const* otherTex = dynamic_cast<TextureResource const*>(&other);
+	TextureResource* otherTex = dynamic_cast<TextureResource*>(&other);
 	if (otherTex == nullptr)
 	{
 		return false;
 	}
 
-	// 2) Copy CPU data fields
-	m_format     = otherTex->m_format;
+	// 2) Move CPU data fields
+	MoveBaseFrom(std::move(other));
+	m_format     = std::move(otherTex->m_format);
 	m_channels   = otherTex->m_channels;
 	m_dimensions = otherTex->m_dimensions;
-	m_pixels     = otherTex->m_pixels;
+	m_pixels     = std::move(otherTex->m_pixels);
 
-	// 3) Recreate GPU texture from copied CPU data
-	InitGPUResources();
+	// 3) Take ownership of the loaded GPU texture
+	delete m_gpuTexture;
+	m_gpuTexture = nullptr;
+	std::swap(m_gpuTexture, otherTex->m_gpuTexture);
 
 	return true;
 }

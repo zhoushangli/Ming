@@ -1,55 +1,27 @@
 #pragma once
 
-#include "MingEngine/Core/Math/AABB3.hpp"
-#include "MingEngine/Core/Math/Triangle3.hpp"
 #include "MingEngine/Core/Object/Resource.hpp"
-#include "MingEngine/Scene/Resource/TextureResource.hpp"
+#include "MingEngine/Engine/Render/Shader.hpp"
 
-#include <cstdint>
-#include <string>
-#include <vector>
-
-class GPUTexture;
-class IndexBuffer;
-class VertexBuffer;
-
-class MeshResource : public Resource
+class ShaderResource : public Resource
 {
-	MCLASS(MeshResource, Resource)
+	MCLASS(ShaderResource, Resource);
 
 public:
-	MeshResource()                                    = default;
-	MeshResource(MeshResource const& copy)            = delete;
-	MeshResource& operator=(MeshResource const& copy) = delete;
-	~MeshResource();
+	ShaderResource()                                      = default;
+	ShaderResource(ShaderResource const& copy)            = delete;
+	ShaderResource& operator=(ShaderResource const& copy) = delete;
+	~ShaderResource() override;
 
-	bool IsEmpty() const;
-	bool CopyFrom(Resource const& other) override;
+	bool IsEmpty() const { return m_shader == nullptr; }
+	bool MoveFrom(Resource&& other) override;
 
-	void InitGPUResources();
+	Shader* GetShader() const { return m_shader; }
+	void    SetShader(Shader* shader) { m_shader = shader; }
 
 protected:
 	static void BindMethods() {}
 
-public:
-	std::string          m_vertexFormat;
-	uint32_t             m_vertexStride = 0;
-	uint32_t             m_vertexCount  = 0;
-	std::vector<uint8_t> m_vertices;
-
-	std::string          m_indexFormat = "uint32";
-	uint32_t             m_indexStride = 4;
-	uint32_t             m_indexCount  = 0;
-	std::vector<uint8_t> m_indices;
-
-	
-	// Texture references: paths for serialization, Refs for runtime, GPU handles for rendering
-	std::vector<Ref<TextureResource>> m_textureResources;
-	
-	// --------- GPU side data handles -----------
-	VertexBuffer* m_vertexBuffer = nullptr;
-	IndexBuffer*  m_indexBuffer  = nullptr;
-	
-	AABB3 m_bounds; // Mainly for raycast
-	std::vector<Triangle3> m_triangles;
+private:
+	Shader* m_shader = nullptr;
 };

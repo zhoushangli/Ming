@@ -3,6 +3,8 @@
 #include "MingEngine/Core/Object/ResourceImporter.hpp"
 #include "MingEngine/Engine/File/FileSystem.hpp"
 
+#include <utility>
+
 int                                            ResourceLoader::s_loaderCount = 0;
 Ref<ResourceFormatLoader>                      ResourceLoader::s_loader[MaxLoaders];
 std::unordered_map<std::string, Ref<Resource>> ResourceLoader::s_loadedResources;
@@ -45,6 +47,8 @@ Ref<Resource> ResourceLoader::LoadInternal(std::string const& virtualPath)
 
 	std::string const normalizedPath = virtualPath;
 
+	// If the resource is not an internal cache file
+	// check if it has an import config and redirect to the imported file.
 	if (!ResourceImporter::IsInternalResourcePath(normalizedPath)
 		&& !ResourceImporter::IsImportConfigPath(normalizedPath))
 	{
@@ -61,6 +65,8 @@ Ref<Resource> ResourceLoader::LoadInternal(std::string const& virtualPath)
 		}
 	}
 
+	// If the resource is an internal cache file or has no import config
+	// load it directly from disk.
 	for (int i = 0; i < s_loaderCount; ++i)
 	{
 		if (s_loader[i]->CanLoad(normalizedPath))
@@ -108,10 +114,13 @@ Ref<Resource> ResourceLoader::Reload(const std::string& virtualPath)
 		return cachedResource;
 	}
 
-	// 3) Copy fresh data into cached object so existing Ref<> holders see the update
+	// 3) Move fresh data into cached object so existing Ref<> holders see the update
 	if (cachedResource.IsValid())
 	{
-		cachedResource->CopyFrom(*freshResource);
+		if (!cachedResource->MoveFrom(std::move(*freshResource)))
+		{
+			return cachedResource;
+		}
 		return cachedResource;
 	}
 

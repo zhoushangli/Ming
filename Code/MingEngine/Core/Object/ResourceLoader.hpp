@@ -35,8 +35,8 @@ public:
 	// Load will return a cached resource if it has already been loaded
 	static Ref<Resource> Load(const std::string& virtualPath);
 	// Load a resource from disk bypassing s_loadedResources.
-	// Used by Reload() to obtain fresh data that will be copied into the existing
-	// cached object via CopyFrom(), so that all Ref<> holders see the update.
+	// Used by Reload() to obtain fresh data that will be moved into the existing
+	// cached object via MoveFrom(), so that all Ref<> holders see the update.
 	static Ref<Resource> LoadUncached(std::string const& virtualPath);
 	// Reload will force a resource to be reloaded, replacing the cached resource if it exists
 	static Ref<Resource> Reload(const std::string& virtualPath);

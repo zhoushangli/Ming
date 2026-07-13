@@ -2,6 +2,7 @@
 
 #include "MingEngine/Core/Render/Vertex.hpp"
 #include "MingEngine/Engine/Render/DebugGizmos.hpp"
+#include "MingEngine/Scene/Resource/ShaderResource.hpp"
 
 class BitmapFont;
 class GPUTexture;
@@ -72,6 +73,6 @@ private:
 	void UploadVertices(Renderer& renderer, std::vector<Vertex> const& vertices);
 	bool UsesUniformColor() const;
 
-	GPUTexture*   m_texture      = nullptr;
-	Shader*       m_shader       = nullptr;
+	GPUTexture*         m_texture = nullptr;
+	Ref<ShaderResource> m_shaderResource;
 };

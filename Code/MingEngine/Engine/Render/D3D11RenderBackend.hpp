@@ -220,8 +220,8 @@ public:
 	void            BindConstantBuffer(ConstantBuffer* constantBuffer, int slot);
 	ConstantBuffer* GetBuiltinConstantBuffer(BuiltinConstantBufferType id);
 
-	// GPU resource creation and cache access
-	Shader* CreateOrGetShader(std::string const& shaderVirtualPath);
+	// GPU resource creation
+	Shader* CreateShader(std::string const& shaderVirtualPath, std::string const& shaderSource);
 
 	GPUTexture* CreateGPUTexture(char const* name, IntVec2 dimensions, int bytesPerTexel, uint8_t const* texelData);
 	GPUTexture* CreateRenderTargetTexture(char const* name, IntVec2 dimensions);
@@ -278,7 +278,6 @@ private:
 	GPUTexture* CreateTextureFromFile(char const* fileDataPath);
 
 	// Shader creation internals
-	Shader* CreateShader(std::string const& shaderVirtualPath, std::string const& shaderSource);
 	bool    CompileShaderToByteCode(
 		std::vector<unsigned char>& outByteCode,
 		char const*                 shaderPhysicalPath,
@@ -302,7 +301,6 @@ private:
 private:
 	RendererConfig m_config;
 
-	Shader*     m_defaultShader       = nullptr;
 	GPUTexture* m_defaultWhiteTexture = nullptr;
 	GPUTexture* m_defaultBlackTexture = nullptr;
 
@@ -335,7 +333,6 @@ private:
 	DepthMode                m_desiredDepthMode                            = DepthMode::READ_WRITE_LESS_EQUAL;
 	ID3D11DepthStencilState* m_depthStencilStates[(int)(DepthMode::COUNT)] = {};
 
-	std::vector<Shader*> m_cachedShaders;
 	std::vector<uint8_t> m_vertexShaderByteCode;
 	std::vector<uint8_t> m_pixelShaderByteCode;
 

@@ -6,9 +6,11 @@
 #include "MingEngine/Scene/Core/Viewport.hpp"
 
 #include "MingEngine/Core/Math/MathUtils.hpp"
+#include "MingEngine/Core/Object/ResourceLoader.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Engine/Render/Renderer.hpp"
 #include "MingEngine/Engine/Render/VertexBuffer.hpp"
+#include "MingEngine/Scene/Resource/ShaderResource.hpp"
 
 using namespace Math;
 
@@ -128,7 +130,8 @@ RenderRequest ViewportAxisIndicator::SubmitRenderRequest() const
 	request.m_pass           = RenderRequestPass::UI;
 	request.m_modelToWorld   = Matrix4x4::Identity;
 	request.m_vertexBuffer   = m_vertexBuffer;
-	request.m_shader         = g_engine->m_renderer->CreateOrGetShader("res://Shaders/DefaultUI.hlsl");
+	Ref<ShaderResource> shaderResource(ResourceLoader::Load("res://Shaders/DefaultUI.hlsl"));
+	request.m_shader = shaderResource.IsValid() ? shaderResource->GetShader() : nullptr;
 	request.m_blendMode      = BlendMode::ALPHA;
 	request.m_depthMode      = DepthMode::DISABLED;
 	request.m_rasterizerMode = RasterizerMode::SOLID_CULL_NONE;

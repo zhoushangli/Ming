@@ -321,13 +321,6 @@ void           D3D11RenderBackend::Startup()
 
 #pragma endregion
 
-#pragma region Startup: Create default shader
-
-	m_defaultShader = CreateOrGetShader("res://Shaders/DefaultUnlit.hlsl");
-	BindShader(m_defaultShader);
-
-#pragma endregion
-
 #pragma region Startup: Create default texture
 
 	m_defaultWhiteTexture = CreateGPUTexture("DefaultWhite", IntVec2(2, 2), 4, (uint8_t*)kDefaultWhiteTexture);
@@ -406,12 +399,6 @@ void D3D11RenderBackend::Shutdown()
 			samplerState = nullptr;
 		}
 	}
-
-	for (auto& shader : m_cachedShaders)
-	{
-		delete shader;
-	}
-	m_cachedShaders.clear();
 
 	m_d3dAnnotation->Release();
 	m_d3dRenderTargetView->Release();
@@ -602,10 +589,7 @@ void D3D11RenderBackend::BindShader(Shader* shader)
 {
 	GUARANTEE_OR_DIE(m_d3dDeviceContext, "BindShader: m_d3dDeviceContext is null");
 
-	if (shader == nullptr)
-	{
-		shader = m_defaultShader;
-	}
+	GUARANTEE_OR_DIE(shader != nullptr, "BindShader: shader is null");
 
 	m_d3dDeviceContext->IASetInputLayout(shader->m_inputLayout);
 	m_d3dDeviceContext->VSSetShader(shader->m_vertexShader, nullptr, 0);
@@ -614,34 +598,7 @@ void D3D11RenderBackend::BindShader(Shader* shader)
 
 #pragma endregion
 
-#pragma region Public: GPU resource creation and cache access
-
-Shader* D3D11RenderBackend::CreateOrGetShader(std::string const& shaderVirtualPath)
-{
-	GUARANTEE_OR_DIE(!shaderVirtualPath.empty(), "CreateOrGetShader: shaderVirtualPath is empty");
-	GUARANTEE_OR_DIE(
-		FileSystem::IsVirtualPath(shaderVirtualPath),
-		Stringf("CreateOrGetShader: \"%s\" is not a virtual path", shaderVirtualPath.c_str()));
-	GUARANTEE_OR_DIE(
-		g_engine != nullptr && g_engine->m_fileSystem != nullptr,
-		"CreateOrGetShader: FileSystem is required");
-
-	for (Shader* shader : m_cachedShaders)
-	{
-		if (shader->GetName() == shaderVirtualPath)
-		{
-			return shader;
-		}
-	}
-
-	std::string shaderSource;
-	if (!g_engine->m_fileSystem->ReadText(shaderVirtualPath, shaderSource))
-	{
-		GUARANTEE_OR_DIE(false, Stringf("Failed to read shader file \"%s\"", shaderVirtualPath.c_str()));
-	}
-
-	return CreateShader(shaderVirtualPath, shaderSource);
-}
+#pragma region Public: GPU resource creation
 
 GPUTexture* D3D11RenderBackend::CreateGPUTexture(
 	char const* name, IntVec2 dimensions, int bytesPerTexel, uint8_t const* texelData)
@@ -838,7 +795,7 @@ void D3D11RenderBackend::EndEvent()
 
 #pragma endregion
 
-#pragma region Private: Shader creation internals
+#pragma region Public: Shader creation
 
 Shader* D3D11RenderBackend::CreateShader(std::string const& shaderVirtualPath, std::string const& shaderSource)
 {
@@ -906,8 +863,6 @@ Shader* D3D11RenderBackend::CreateShader(std::string const& shaderVirtualPath, s
 		(UINT)vsByteCode.size(),
 		&shader->m_inputLayout);
 	GUARANTEE_OR_DIE(SUCCEEDED(hr), Stringf("Could not create input layout for '%s'", shaderVirtualPath.c_str()));
-
-	m_cachedShaders.push_back(shader);
 
 	return shader;
 }

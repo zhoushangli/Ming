@@ -6,6 +6,7 @@
 #include "MingEngine/Core/StringUtils.hpp"
 
 #include <exception>
+#include <utility>
 PackedProperty::PackedProperty(std::string const& name, Variant const& value) : m_name(name), m_value(value) {}
 
 bool PackedProperty::CanApplyTo(PropertyInfo const& propertyInfo) const
@@ -241,14 +242,15 @@ bool PackedScene::ParseNodeRecursively(
 	return true;
 }
 
-bool PackedScene::CopyFrom(Resource const& other)
+bool PackedScene::MoveFrom(Resource&& other)
 {
-	PackedScene const* otherScene = dynamic_cast<PackedScene const*>(&other);
+	PackedScene* otherScene = dynamic_cast<PackedScene*>(&other);
 	if (otherScene == nullptr)
 	{
 		return false;
 	}
 
-	m_data = otherScene->m_data;
+	MoveBaseFrom(std::move(other));
+	m_data = std::move(otherScene->m_data);
 	return true;
 }

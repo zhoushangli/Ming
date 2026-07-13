@@ -3,6 +3,8 @@
 #include "MingEngine/Core/Object/ResourceLoader.hpp"
 #include "MingEngine/Core/Object/ResourceSaver.hpp"
 
+#include <utility>
+
 Ref<ProjectSettings> ProjectSettings::s_instance = Ref<ProjectSettings>(nullptr);
 
 Ref<ProjectSettings> ProjectSettings::Get()
@@ -20,15 +22,16 @@ Ref<ProjectSettings> ProjectSettings::Get()
 	return s_instance;
 }
 
-bool ProjectSettings::CopyFrom(Resource const& other)
+bool ProjectSettings::MoveFrom(Resource&& other)
 {
-	ProjectSettings const* otherSettings = dynamic_cast<ProjectSettings const*>(&other);
+	ProjectSettings* otherSettings = dynamic_cast<ProjectSettings*>(&other);
 	if (otherSettings == nullptr)
 	{
 		return false;
 	}
 
-	m_startScenePath = otherSettings->m_startScenePath;
+	MoveBaseFrom(std::move(other));
+	m_startScenePath = std::move(otherSettings->m_startScenePath);
 
 	return true;
 }

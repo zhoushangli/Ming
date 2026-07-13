@@ -6,6 +6,8 @@
 #include "MingEngine/Engine/Render/VertexBuffer.hpp"
 #include "MingEngine/Scene/Resource/TextureResource.hpp"
 
+#include <utility>
+
 MeshResource::~MeshResource()
 {
 	delete m_vertexBuffer;
@@ -20,30 +22,36 @@ bool MeshResource::IsEmpty() const
 	return m_vertices.empty() || m_indices.empty() || m_vertexCount == 0 || m_indexCount == 0;
 }
 
-bool MeshResource::CopyFrom(Resource const& other)
+bool MeshResource::MoveFrom(Resource&& other)
 {
 	// 1) Validate type
-	MeshResource const* otherMesh = dynamic_cast<MeshResource const*>(&other);
+	MeshResource* otherMesh = dynamic_cast<MeshResource*>(&other);
 	if (otherMesh == nullptr)
 	{
 		return false;
 	}
 
-	// 2) Copy CPU data fields
-	m_vertexFormat = otherMesh->m_vertexFormat;
+	// 2) Move CPU data fields
+	MoveBaseFrom(std::move(other));
+	m_vertexFormat = std::move(otherMesh->m_vertexFormat);
 	m_vertexStride = otherMesh->m_vertexStride;
 	m_vertexCount  = otherMesh->m_vertexCount;
-	m_vertices     = otherMesh->m_vertices;
+	m_vertices     = std::move(otherMesh->m_vertices);
 
-	m_indexFormat = otherMesh->m_indexFormat;
+	m_indexFormat = std::move(otherMesh->m_indexFormat);
 	m_indexStride = otherMesh->m_indexStride;
 	m_indexCount  = otherMesh->m_indexCount;
-	m_indices     = otherMesh->m_indices;
+	m_indices     = std::move(otherMesh->m_indices);
 
-	m_textureResources = otherMesh->m_textureResources;
+	m_textureResources = std::move(otherMesh->m_textureResources);
+	m_bounds           = otherMesh->m_bounds;
+	m_triangles        = std::move(otherMesh->m_triangles);
 
-	// 3) Recreate GPU buffers from copied CPU data
-	InitGPUResources();
+	// 3) Take ownership of the loaded GPU buffers
+	delete m_vertexBuffer;
+	m_vertexBuffer = std::exchange(otherMesh->m_vertexBuffer, nullptr);
+	delete m_indexBuffer;
+	m_indexBuffer = std::exchange(otherMesh->m_indexBuffer, nullptr);
 
 	return true;
 }

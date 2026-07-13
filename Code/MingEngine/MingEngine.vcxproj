@@ -479,6 +479,8 @@
     <ClCompile Include="..\ThirdParty\imgui\imgui_widgets.cpp" />
     <ClCompile Include="..\ThirdParty\imgui\misc\cpp\imgui_stdlib.cpp" />
     <ClCompile Include="..\ThirdParty\tinyxml2\tinyxml2.cpp" />
+    <ClCompile Include="Scene\Resource\ShaderResource.cpp" />
+    <ClCompile Include="Scene\Resource\ShaderResourceFormat.cpp" />
     <ClCompile Include="Scene\Resource\TextureResource.cpp" />
     <ClCompile Include="Scene\Resource\TextureResourceFormat.cpp" />
     <ClCompile Include="Scene\Import\ImageImporter.cpp" />
@@ -674,6 +676,8 @@
     <ClInclude Include="..\ThirdParty\tinygltf\tiny_gltf_v3.h" />
     <ClInclude Include="..\ThirdParty\tinygltf\tinygltf_json.h" />
     <ClInclude Include="..\ThirdParty\tinyxml2\tinyxml2.h" />
+    <ClInclude Include="Scene\Resource\ShaderResource.hpp" />
+    <ClInclude Include="Scene\Resource\ShaderResourceFormat.hpp" />
     <ClInclude Include="Scene\Resource\TextureResource.hpp" />
     <ClInclude Include="Scene\Resource\TextureResourceFormat.hpp" />
     <ClInclude Include="Scene\Import\ImageImporter.hpp" />

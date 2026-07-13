@@ -624,6 +624,12 @@
     <ClCompile Include="Engine\Application\ProjectSettingsFormat.cpp">
       <Filter>Engine\Application</Filter>
     </ClCompile>
+    <ClCompile Include="Scene\Resource\ShaderResource.cpp">
+      <Filter>Scene\Resource</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene\Resource\ShaderResourceFormat.cpp">
+      <Filter>Scene\Resource</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Core\Clock.hpp">
@@ -1204,6 +1210,12 @@
     </ClInclude>
     <ClInclude Include="Engine\Application\ProjectSettingsFormat.hpp">
       <Filter>Engine\Application</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\Resource\ShaderResource.hpp">
+      <Filter>Scene\Resource</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\Resource\ShaderResourceFormat.hpp">
+      <Filter>Scene\Resource</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

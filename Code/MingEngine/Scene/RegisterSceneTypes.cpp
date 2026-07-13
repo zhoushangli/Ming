@@ -21,6 +21,8 @@
 #include "MingEngine/Scene/Physics/CylinderZCollider3D.hpp"
 #include "MingEngine/Scene/Physics/TriangleMeshCollider3D.hpp"
 #include "MingEngine/Scene/Resource/MeshResourceFormat.hpp"
+#include "MingEngine/Scene/Resource/ShaderResource.hpp"
+#include "MingEngine/Scene/Resource/ShaderResourceFormat.hpp"
 #include "MingEngine/Scene/Resource/TextureResource.hpp"
 #include "MingEngine/Scene/Resource/TextureResourceFormat.hpp"
 
@@ -33,31 +35,46 @@
 namespace
 {
 PackedSceneLoader*     packedSceneLoader     = new PackedSceneLoader();
-PackedSceneSaver*      packedSceneSaver      = new PackedSceneSaver();
 MeshResourceLoader*    meshResourceLoader    = new MeshResourceLoader();
-MeshResourceSaver*     meshResourceSaver     = new MeshResourceSaver();
 TextureResourceLoader* textureResourceLoader = new TextureResourceLoader();
-TextureResourceSaver*  textureResourceSaver  = new TextureResourceSaver();
-OBJImporter*           objImporter           = new OBJImporter();
-ImageImporter*         imageImporter         = new ImageImporter();
+ShaderResourceLoader*  shaderResourceLoader  = new ShaderResourceLoader();
+
+PackedSceneSaver*     packedSceneSaver     = new PackedSceneSaver();
+MeshResourceSaver*    meshResourceSaver    = new MeshResourceSaver();
+TextureResourceSaver* textureResourceSaver = new TextureResourceSaver();
+
+OBJImporter*   objImporter   = new OBJImporter();
+ImageImporter* imageImporter = new ImageImporter();
 } // namespace
 
 #pragma region Scene
 
 void RegisterSceneTypes()
 {
+	// Resource types
+	ClassDatabase::RegisterClass<MeshResource>();
+	ClassDatabase::RegisterClass<TextureResource>();
+	ClassDatabase::RegisterClass<PackedScene>();
+	ClassDatabase::RegisterClass<ShaderResource>();
+
 	// Resource format types
 	ClassDatabase::RegisterClass<PackedSceneLoader>();
-	ClassDatabase::RegisterClass<PackedSceneSaver>();
 	ClassDatabase::RegisterClass<MeshResourceLoader>();
-	ClassDatabase::RegisterClass<MeshResourceSaver>();
 	ClassDatabase::RegisterClass<TextureResourceLoader>();
+	ClassDatabase::RegisterClass<ShaderResourceLoader>();
+
+	ClassDatabase::RegisterClass<PackedSceneSaver>();
+	ClassDatabase::RegisterClass<MeshResourceSaver>();
 	ClassDatabase::RegisterClass<TextureResourceSaver>();
+
+	ClassDatabase::RegisterClass<OBJImporter>();
+	ClassDatabase::RegisterClass<ImageImporter>();
 
 	// Resource format registration
 	ResourceLoader::AddLoader(Ref<PackedSceneLoader>(packedSceneLoader));
 	ResourceLoader::AddLoader(Ref<MeshResourceLoader>(meshResourceLoader));
 	ResourceLoader::AddLoader(Ref<TextureResourceLoader>(textureResourceLoader));
+	ResourceLoader::AddLoader(Ref<ShaderResourceLoader>(shaderResourceLoader));
 
 	ResourceSaver::AddSaver(Ref<PackedSceneSaver>(packedSceneSaver));
 	ResourceSaver::AddSaver(Ref<MeshResourceSaver>(meshResourceSaver));
@@ -65,11 +82,6 @@ void RegisterSceneTypes()
 
 	ResourceImporter::AddImporter(Ref<OBJImporter>(objImporter));
 	ResourceImporter::AddImporter(Ref<ImageImporter>(imageImporter));
-
-	// Resource types
-	ClassDatabase::RegisterClass<MeshResource>();
-	ClassDatabase::RegisterClass<TextureResource>();
-	ClassDatabase::RegisterClass<PackedScene>();
 
 	// Scene types
 	ClassDatabase::RegisterClass<Node>();

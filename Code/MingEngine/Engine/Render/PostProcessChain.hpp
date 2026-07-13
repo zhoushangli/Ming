@@ -2,6 +2,7 @@
 
 #include "MingEngine/Core/Math/IntVec2.hpp"
 #include "MingEngine/Engine/Render/CameraContext.hpp"
+#include "MingEngine/Scene/Resource/ShaderResource.hpp"
 
 #include <map>
 #include <string>
@@ -9,7 +10,6 @@
 
 class D3D11RenderBackend;
 class GPUTexture;
-class Shader;
 
 struct OutputTextureRef
 {
@@ -44,9 +44,9 @@ public:
 public:
 	bool m_isEnabled = true;
 
-	std::string  m_name = "Undefined";
-	std::wstring m_wideName; // For use in debug annotations
-	Shader*      m_postProcessShader = nullptr;
+	std::string         m_name = "Undefined";
+	std::wstring        m_wideName; // For use in debug annotations
+	Ref<ShaderResource> m_postProcessShaderResource;
 
 	OutputTextureRef             m_customOutput = OutputTextureRef("Undefined");
 	std::vector<InputTextureRef> m_customInputs;

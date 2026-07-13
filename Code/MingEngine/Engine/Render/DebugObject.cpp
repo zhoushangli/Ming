@@ -1,6 +1,7 @@
 #include "MingEngine/Engine/Render/DebugObject.hpp"
 
 #include "MingEngine/Core/Math/MathUtils.hpp"
+#include "MingEngine/Core/Object/ResourceLoader.hpp"
 #include "MingEngine/Core/Render/VertexUtils.hpp"
 #include "MingEngine/Engine/Render/BitmapFont.hpp"
 #include "MingEngine/Engine/Render/Renderer.hpp"
@@ -42,11 +43,10 @@ DebugObject& DebugObject::operator=(DebugObject&& other) noexcept
 	verts             = std::move(other.verts);
 	vertexBuffer      = other.vertexBuffer;
 	m_texture         = other.m_texture;
-	m_shader          = other.m_shader;
+	m_shaderResource  = std::move(other.m_shaderResource);
 
 	other.vertexBuffer   = nullptr;
 	other.m_texture      = nullptr;
-	other.m_shader       = nullptr;
 	return *this;
 }
 
@@ -144,7 +144,8 @@ bool DebugObject::IsScreenObject() const
 void DebugObject::UpdateRenderData(Renderer& renderer, BitmapFont* font, int messageLine)
 {
 	m_texture = nullptr;
-	m_shader  = renderer.CreateOrGetShader(IsScreenObject() ? "res://Shaders/DefaultUI.hlsl" : "res://Shaders/DefaultUnlit.hlsl");
+	m_shaderResource =
+		ResourceLoader::Load(IsScreenObject() ? "res://Shaders/DefaultUI.hlsl" : "res://Shaders/DefaultUnlit.hlsl");
 
 	if (UsesUniformColor())
 	{
@@ -200,7 +201,7 @@ RenderRequest DebugObject::SubmitRenderRequest() const
 	request.m_tint           = Rgba8::White;
 	request.m_vertexBuffer   = vertexBuffer;
 	request.m_indexBuffer    = nullptr;
-	request.m_shader         = m_shader;
+	request.m_shader         = m_shaderResource.IsValid() ? m_shaderResource->GetShader() : nullptr;
 	request.m_blendMode      = BlendMode::ALPHA;
 	request.m_depthMode      = IsScreenObject() ? DepthMode::READ_ONLY_ALWAYS
 		: (mode == DebugRenderMode::USE_DEPTH ? DepthMode::READ_WRITE_LESS_EQUAL : DepthMode::DISABLED);

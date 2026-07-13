@@ -2,6 +2,7 @@
 
 #include "MingEngine/Engine/Application/SystemBase.hpp"
 #include "MingEngine/Engine/Render/D3D11RenderBackend.hpp"
+#include "MingEngine/Scene/Resource/ShaderResource.hpp"
 
 #include <string>
 
@@ -31,7 +32,7 @@ public:
 	void DestroyViewportResources(ViewportInfo& viewport);
 	void CopyTextureToBackBuffer(GPUTexture* colorTexture);
 
-	Shader* CreateOrGetShader(std::string const& shaderVirtualPath);
+	Shader* CreateShader(std::string const& shaderVirtualPath, std::string const& shaderSource);
 
 	GPUTexture* CreateGPUTexture(char const* name, IntVec2 dimensions, int bytesPerTexel, uint8_t const* texelData);
 	GPUTexture* CreateRenderTargetTexture(char const* name, IntVec2 dimensions);
@@ -72,6 +73,8 @@ private:
 
 private:
 	RendererConfig      m_config;
-	D3D11RenderBackend* m_renderBackend         = nullptr;
-	Shader*             m_postProcessCopyShader = nullptr;
+	D3D11RenderBackend* m_renderBackend = nullptr;
+
+	Ref<ShaderResource> m_defaultShaderResource;
+	Ref<ShaderResource> m_postProcessCopyShaderResource;
 };

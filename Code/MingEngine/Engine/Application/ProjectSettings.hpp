@@ -12,7 +12,7 @@ public:
 	static Ref<ProjectSettings> Get();
 	static constexpr char const* GetSettingsPath() { return "res://project.ming"; }
 
-	bool CopyFrom(Resource const& other) override;
+	bool MoveFrom(Resource&& other) override;
 
 private:
 	static void BindMethods() {}

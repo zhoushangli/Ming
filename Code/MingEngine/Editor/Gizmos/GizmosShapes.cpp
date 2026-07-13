@@ -2,10 +2,12 @@
 
 #include "GizmosShapes.hpp"
 #include "MingEngine/Core/Math/AABB3.hpp"
+#include "MingEngine/Core/Object/ResourceLoader.hpp"
 #include "MingEngine/Core/Render/VertexUtils.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Engine/Render/Renderer.hpp"
 #include "MingEngine/Engine/Render/VertexBuffer.hpp"
+#include "MingEngine/Scene/Resource/ShaderResource.hpp"
 
 EditorGizmoVisual3D::~EditorGizmoVisual3D()
 {
@@ -62,7 +64,8 @@ RenderRequest EditorWorldGrid3D::SubmitRenderRequest() const
 	request.m_pass           = RenderRequestPass::Opaque;
 	request.m_modelToWorld   = GetWorldTransform();
 	request.m_vertexBuffer   = m_vertexBuffer;
-	request.m_shader         = g_engine->m_renderer->CreateOrGetShader("res://Shaders/GizmosGrid.hlsl");
+	Ref<ShaderResource> shaderResource(ResourceLoader::Load("res://Shaders/GizmosGrid.hlsl"));
+	request.m_shader = shaderResource.IsValid() ? shaderResource->GetShader() : nullptr;
 	request.m_blendMode      = BlendMode::ALPHA;
 	request.m_depthMode      = DepthMode::READ_ONLY_LESS_EQUAL;
 	request.m_rasterizerMode = RasterizerMode::SOLID_CULL_NONE;
@@ -102,7 +105,8 @@ RenderRequest EditorWorldAxis3D::SubmitRenderRequest() const
 	request.m_pass           = RenderRequestPass::Opaque;
 	request.m_modelToWorld   = GetWorldTransform();
 	request.m_vertexBuffer   = m_vertexBuffer;
-	request.m_shader         = g_engine->m_renderer->CreateOrGetShader("res://Shaders/GizmosAxis.hlsl");
+	Ref<ShaderResource> shaderResource(ResourceLoader::Load("res://Shaders/GizmosAxis.hlsl"));
+	request.m_shader = shaderResource.IsValid() ? shaderResource->GetShader() : nullptr;
 	request.m_blendMode      = BlendMode::ALPHA;
 	request.m_depthMode      = DepthMode::READ_WRITE_LESS_EQUAL;
 	request.m_rasterizerMode = RasterizerMode::SOLID_CULL_NONE;

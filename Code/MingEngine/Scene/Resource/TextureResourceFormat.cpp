@@ -192,11 +192,11 @@ Ref<Resource> TextureResourceLoader::Load(std::string const& virtualPath)
 		}
 
 		std::string          texName;
-		Ref<TextureResource> texData = CreateRef<TextureResource>();
-		if (!TryReadString(root, "name", texName) || !TryReadString(root, "format", texData->m_format)
-			|| !TryReadUInt32(root, "width", (uint32_t&)texData->m_dimensions.x)
-			|| !TryReadUInt32(root, "height", (uint32_t&)texData->m_dimensions.y)
-			|| !TryReadUInt32(root, "channels", (uint32_t&)texData->m_channels))
+		Ref<TextureResource> textureResource = CreateRef<TextureResource>();
+		if (!TryReadString(root, "name", texName) || !TryReadString(root, "format", textureResource->m_format)
+			|| !TryReadUInt32(root, "width", (uint32_t&)textureResource->m_dimensions.x)
+			|| !TryReadUInt32(root, "height", (uint32_t&)textureResource->m_dimensions.y)
+			|| !TryReadUInt32(root, "channels", (uint32_t&)textureResource->m_channels))
 		{
 			return Ref<Resource>();
 		}
@@ -207,19 +207,19 @@ Ref<Resource> TextureResourceLoader::Load(std::string const& virtualPath)
 			return Ref<Resource>();
 		}
 
-		CopyPayloadBlock(payload, dataBlock, texData->m_pixels);
+		CopyPayloadBlock(payload, dataBlock, textureResource->m_pixels);
 
-		if (!IsValidTextureData(*texData))
+		if (!IsValidTextureData(*textureResource))
 		{
 			return Ref<Resource>();
 		}
 
-		texData->SetVirtualPath(virtualPath);
-		texData->SetName(texName);
+		textureResource->SetVirtualPath(virtualPath);
+		textureResource->SetName(texName);
 
-		texData->InitGPUResources();
+		textureResource->InitGPUResources();
 
-		return texData;
+		return textureResource;
 	}
 	catch (std::exception const&)
 	{
