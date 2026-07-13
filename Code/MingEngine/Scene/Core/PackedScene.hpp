@@ -12,9 +12,9 @@ class PackedSceneLoader;
 class PackedSceneSaver;
 
 // When we serialize a scene, we go through the following steps:
-// runtime scene <-> PackedScene <-> .mscn file
+// runtime scene <-> PackedScene <-> .tscn file
 // Pack() / Instantiate() convert between runtime scene and PackedScene.
-// PackedSceneLoader / PackedSceneSaver convert between PackedScene and .mscn files.
+// PackedSceneLoader / PackedSceneSaver convert between PackedScene and .tscn files.
 
 struct PackedProperty
 {

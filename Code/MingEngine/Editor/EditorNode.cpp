@@ -7,7 +7,9 @@
 #include "MingEngine/Editor/Gizmos/EditorGizmos.hpp"
 #include "MingEngine/Editor/UI/EditorUI.hpp"
 #include "MingEngine/Editor/UI/EditorUIContext.hpp"
+#include "MingEngine/Editor/UI/Popup/EditorPopupUtils.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
+#include "MingEngine/Engine/File/FileSystem.hpp"
 #include "MingEngine/Engine/ImGui/ImGuiSystem.hpp"
 #include "MingEngine/Engine/Input/InputSystem.hpp"
 #include "MingEngine/Engine/Render/DebugGizmos.hpp"
@@ -16,6 +18,10 @@
 #include "MingEngine/Scene/Core/PackedScene.hpp"
 #include "MingEngine/Scene/Core/RaycastSpace3D.hpp"
 #include "MingEngine/Scene/Core/SceneTree.hpp"
+
+#include "ThirdParty/imgui/imgui.h"
+
+#include <filesystem>
 
 namespace
 {
@@ -203,12 +209,22 @@ void EditorNode::OnProcess([[maybe_unused]] float deltaSeconds)
 		m_uiContext.m_isViewportImageHovered = false;
 
 		m_editorUI->Render(m_uiContext);
+		RenderUnsavedScenePopup();
+	}
+
+	InputSystem* input = g_engine->m_inputSystem;
+	bool const controlDown = input->IsKeyDown(KeyCode::LeftControl) || input->IsKeyDown(KeyCode::RightControl);
+	if (controlDown && input->WasKeyJustPressed(KeyCode::S) && HasScene())
+	{
+		if (!SaveScene() && m_editorUI != nullptr)
+		{
+			m_editorUI->Warning("Save Scene Failed", m_editorData.m_currentScenePath);
+		}
 	}
 
 	// 1) Dispatch mouse events when in Pointer mode
 	if (m_editorCamera != nullptr && m_editorCamera->GetControlState() == EditorCamera::EditorControlState::Pointer)
 	{
-		InputSystem* input     = g_engine->m_inputSystem;
 		Vec2 const   cursorPos = m_editorCamera->GetCursorClientPos();
 		Vec2 const   delta     = m_editorCamera->GetCursorDelta();
 
@@ -224,6 +240,41 @@ void EditorNode::OnProcess([[maybe_unused]] float deltaSeconds)
 			OnMouseUp(ToKeyCode(KeyCode::LeftMouse), cursorPos);
 		}
 	}
+}
+
+void EditorNode::RequestLoadScene(std::string const& virtualPath)
+{
+	if (!m_editorData.m_isSceneDirty)
+	{
+		if (!LoadScene(virtualPath) && m_editorUI != nullptr)
+		{
+			m_editorUI->Warning("Open Scene Failed", virtualPath);
+		}
+		return;
+	}
+
+	// Store the requested load so the confirmation popup can resume it.
+	// e.g. ExecutePendingSceneAction() loads m_pendingScenePath after confirmation.
+	m_pendingSceneAction = PendingSceneAction::Load;
+	m_pendingScenePath = virtualPath;
+	m_pendingSceneRootName.clear();
+	m_openUnsavedScenePopup = true;
+}
+
+void EditorNode::RequestCreateScene(std::string const& virtualPath, std::string const& rootName)
+{
+	if (!m_editorData.m_isSceneDirty)
+	{
+		CreateScene(virtualPath, rootName);
+		return;
+	}
+
+	// Store the requested creation so no file is written before confirmation.
+	// e.g. ExecutePendingSceneAction() creates m_pendingScenePath after confirmation.
+	m_pendingSceneAction = PendingSceneAction::Create;
+	m_pendingScenePath = virtualPath;
+	m_pendingSceneRootName = rootName;
+	m_openUnsavedScenePopup = true;
 }
 
 bool EditorNode::LoadScene(std::string const& virtualPath)
@@ -248,14 +299,20 @@ bool EditorNode::LoadScene(std::string const& virtualPath)
 
 	GetSceneTree()->ChangeScene(newSceneRoot);
 	m_editorData.m_currentScenePath = virtualPath;
+	m_editorData.m_isSceneDirty = false;
+	m_selection.Clear();
 
 	return true;
 }
 
-bool EditorNode::SaveScene(std::string const& virtualPath)
+bool EditorNode::SaveScene()
 {
 	SceneTree*       sceneTree   = GetSceneTree();
 	Node*            sceneRoot   = sceneTree->GetScene();
+	if (sceneRoot == nullptr || m_editorData.m_currentScenePath.empty())
+	{
+		return false;
+	}
 	Ref<PackedScene> packedScene = CreateRef<PackedScene>();
 
 	if (!packedScene->Pack(sceneRoot))
@@ -263,7 +320,128 @@ bool EditorNode::SaveScene(std::string const& virtualPath)
 		return false;
 	}
 
-	bool result = ResourceSaver::Save(virtualPath, packedScene);
+	bool const result = ResourceSaver::Save(m_editorData.m_currentScenePath, packedScene);
+	if (result)
+	{
+		m_editorData.m_isSceneDirty = false;
+	}
 
 	return result;
+}
+
+void EditorNode::MarkSceneDirty()
+{
+	if (HasScene())
+	{
+		m_editorData.m_isSceneDirty = true;
+	}
+}
+
+bool EditorNode::IsSceneDirty() const { return m_editorData.m_isSceneDirty; }
+
+bool EditorNode::HasScene() const { return GetSceneTree() != nullptr && GetSceneTree()->GetScene() != nullptr; }
+
+std::string EditorNode::GetCurrentSceneName() const
+{
+	return m_editorData.m_currentScenePath.empty()
+		? std::string()
+		: std::filesystem::path(m_editorData.m_currentScenePath).stem().string();
+}
+
+bool EditorNode::CreateScene(std::string const& virtualPath, std::string const& rootName)
+{
+	Node3D* sceneRoot = new Node3D();
+	sceneRoot->SetName(rootName);
+	Ref<PackedScene> packedScene = CreateRef<PackedScene>();
+	if (!packedScene->Pack(sceneRoot) || !ResourceSaver::Save(virtualPath, packedScene))
+	{
+		delete sceneRoot;
+		if (m_editorUI != nullptr)
+		{
+			m_editorUI->Warning("Create Scene Failed", virtualPath);
+		}
+		return false;
+	}
+
+	GetSceneTree()->ChangeScene(sceneRoot);
+	m_editorData.m_currentScenePath = virtualPath;
+	m_editorData.m_isSceneDirty = false;
+	m_selection.Clear();
+	if (g_engine->m_fileSystem != nullptr)
+	{
+		g_engine->m_fileSystem->ScanResourceTree();
+	}
+	return true;
+}
+
+void EditorNode::RenderUnsavedScenePopup()
+{
+	constexpr char const* popupId = "Please Confirm...";
+	if (m_openUnsavedScenePopup)
+	{
+		ImGui::OpenPopup(popupId);
+		m_openUnsavedScenePopup = false;
+	}
+	if (!EditorPopupUtils::BeginModal(popupId, ImVec2(560.f, 0.f), ImGuiWindowFlags_AlwaysAutoResize))
+	{
+		return;
+	}
+
+	ImGui::TextUnformatted(m_editorData.m_currentScenePath.empty()
+		? "This scene was never saved."
+		: "This scene has unsaved changes.");
+	ImGui::Dummy(ImVec2(0.f, 12.f));
+	ImGui::TextUnformatted("Save before closing?");
+	ImGui::Dummy(ImVec2(0.f, 12.f));
+
+	bool const saveAndClose = ImGui::Button("Save & Close", ImVec2(130.f, 0.f));
+	ImGui::SameLine(0.f, 40.f);
+	bool const cancel = ImGui::Button("Cancel", ImVec2(130.f, 0.f));
+	ImGui::SameLine(0.f, 40.f);
+	bool const dontSave = ImGui::Button("Don't Save", ImVec2(130.f, 0.f));
+
+	if (saveAndClose)
+	{
+		if (SaveScene())
+		{
+			ImGui::CloseCurrentPopup();
+			ExecutePendingSceneAction();
+		}
+		else if (m_editorUI != nullptr)
+		{
+			m_editorUI->Warning("Save Scene Failed", m_editorData.m_currentScenePath);
+		}
+	}
+	else if (cancel)
+	{
+		m_pendingSceneAction = PendingSceneAction::None;
+		m_pendingScenePath.clear();
+		m_pendingSceneRootName.clear();
+		ImGui::CloseCurrentPopup();
+	}
+	else if (dontSave)
+	{
+		ImGui::CloseCurrentPopup();
+		ExecutePendingSceneAction();
+	}
+
+	EditorPopupUtils::EndModal();
+}
+
+void EditorNode::ExecutePendingSceneAction()
+{
+	// Execute and clear the deferred scene operation selected before the popup.
+	// e.g. a pending load resumes after Save & Close or Don't Save.
+	PendingSceneAction const action = m_pendingSceneAction;
+	std::string const path = std::move(m_pendingScenePath);
+	std::string const rootName = std::move(m_pendingSceneRootName);
+	m_pendingSceneAction = PendingSceneAction::None;
+
+	bool const result = action == PendingSceneAction::Load
+		? LoadScene(path)
+		: action == PendingSceneAction::Create && CreateScene(path, rootName);
+	if (!result && action != PendingSceneAction::None && m_editorUI != nullptr)
+	{
+		m_editorUI->Warning(action == PendingSceneAction::Load ? "Open Scene Failed" : "Create Scene Failed", path);
+	}
 }

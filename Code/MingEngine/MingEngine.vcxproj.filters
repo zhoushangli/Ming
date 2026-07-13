@@ -10,6 +10,9 @@
     <Filter Include="Editor\UI">
       <UniqueIdentifier>{D2A02EA8-4D3D-45C2-BCDA-D44BE0D3C4B1}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Editor\UI\Popup">
+      <UniqueIdentifier>{B409241B-C7E7-49B7-A60E-0D932347E7AB}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Engine">
       <UniqueIdentifier>{A296CB04-0DAA-496A-8399-293A2B880853}</UniqueIdentifier>
     </Filter>
@@ -189,8 +192,26 @@
     <ClCompile Include="Editor\EditorNode.cpp">
       <Filter>Editor</Filter>
     </ClCompile>
-    <ClCompile Include="Editor\UI\CreateNodePanel.cpp">
-      <Filter>Editor\UI</Filter>
+    <ClCompile Include="Editor\UI\Popup\CreateNodePopup.cpp">
+      <Filter>Editor\UI\Popup</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\UI\Popup\CreateFolderPopup.cpp">
+      <Filter>Editor\UI\Popup</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\UI\Popup\CreateScenePopup.cpp">
+      <Filter>Editor\UI\Popup</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\UI\Popup\DeleteEntryPopup.cpp">
+      <Filter>Editor\UI\Popup</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\UI\Popup\EditorPopupUtils.cpp">
+      <Filter>Editor\UI\Popup</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\UI\Popup\ProjectSettingsPopup.cpp">
+      <Filter>Editor\UI\Popup</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\UI\Popup\WarningPopup.cpp">
+      <Filter>Editor\UI\Popup</Filter>
     </ClCompile>
     <ClCompile Include="Editor\UI\EditorIcons.cpp">
       <Filter>Editor\UI</Filter>
@@ -597,6 +618,12 @@
     <ClCompile Include="Scene\Resource\TextureResourceFormat.cpp">
       <Filter>Scene\Resource</Filter>
     </ClCompile>
+    <ClCompile Include="Engine\Application\ProjectSettings.cpp">
+      <Filter>Engine\Application</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Application\ProjectSettingsFormat.cpp">
+      <Filter>Engine\Application</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Core\Clock.hpp">
@@ -659,8 +686,26 @@
     <ClInclude Include="Editor\EditorNode.hpp">
       <Filter>Editor</Filter>
     </ClInclude>
-    <ClInclude Include="Editor\UI\CreateNodePanel.hpp">
-      <Filter>Editor\UI</Filter>
+    <ClInclude Include="Editor\UI\Popup\CreateNodePopup.hpp">
+      <Filter>Editor\UI\Popup</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\UI\Popup\CreateFolderPopup.hpp">
+      <Filter>Editor\UI\Popup</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\UI\Popup\CreateScenePopup.hpp">
+      <Filter>Editor\UI\Popup</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\UI\Popup\DeleteEntryPopup.hpp">
+      <Filter>Editor\UI\Popup</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\UI\Popup\EditorPopupUtils.hpp">
+      <Filter>Editor\UI\Popup</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\UI\Popup\ProjectSettingsPopup.hpp">
+      <Filter>Editor\UI\Popup</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\UI\Popup\WarningPopup.hpp">
+      <Filter>Editor\UI\Popup</Filter>
     </ClInclude>
     <ClInclude Include="Editor\UI\EditorIcons.hpp">
       <Filter>Editor\UI</Filter>
@@ -1153,6 +1198,12 @@
     </ClInclude>
     <ClInclude Include="Scene\Resource\TextureResourceFormat.hpp">
       <Filter>Scene\Resource</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Application\ProjectSettings.hpp">
+      <Filter>Engine\Application</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Application\ProjectSettingsFormat.hpp">
+      <Filter>Engine\Application</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

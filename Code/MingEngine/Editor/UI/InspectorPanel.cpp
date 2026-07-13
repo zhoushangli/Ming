@@ -127,11 +127,20 @@ void InspectorPanel::RebuildProperties(EditorUIContext& context)
 			std::string                             labelId   = "##" + className + "::" + prop.m_name;
 			MethodBind const*                       setter    = prop.GetSetter();
 			MethodBind const*                       getter    = prop.GetGetter();
-			InspectorProperty::ValueChangedCallback onChanged = [node, setter](Variant const& value)
+			InspectorProperty::ValueChangedCallback onChanged = [node, setter, getter](Variant const& value)
 			{
-				if (node != nullptr && setter != nullptr)
+				if (node != nullptr && setter != nullptr && getter != nullptr)
 				{
+					Variant const oldValue = getter->Invoke(node, {});
+					if (oldValue == value)
+					{
+						return;
+					}
 					setter->Invoke(node, { value });
+					if (EditorNode::Get() != nullptr)
+					{
+						EditorNode::Get()->MarkSceneDirty();
+					}
 				}
 			};
 

@@ -1,6 +1,5 @@
 #pragma once
 
-#include "MingEngine/Editor/UI/EditorPanel.hpp"
 #include "MingEngine/Core/Object/ClassDatabase.hpp"
 #include "MingEngine/Scene/Core/NodeHandle.hpp"
 
@@ -11,22 +10,13 @@
 struct EditorUIContext;
 class Node;
 
-struct CreateNodePanelData final : public UIData
-{
-	NodeHandle m_parentHandle = NodeHandle::Invalid;
-};
-
-class CreateNodePanel final : public EditorPanel
+class CreateNodePopup
 {
 public:
-	using Data = CreateNodePanelData;
-
-	CreateNodePanel();
+	void Open(NodeHandle parentHandle);
+	void Render(EditorUIContext& context);
 
 private:
-	void OnOpen(UIData const& data) override;
-	void OnClose() override;
-	void OnRender(EditorUIContext& context) override;
 	bool RenderClassNode(
 		ClassInfo const* classInfo,
 		std::map<std::string, std::vector<ClassInfo const*>> const& childrenByClass,
@@ -41,10 +31,8 @@ private:
 	void Reset();
 
 private:
-	char m_filter[128] = {};
+	char        m_filter[128] = {};
 	std::string m_selectedClass;
-	NodeHandle m_parentHandle = NodeHandle::Invalid;
-	bool m_openPopup          = false;
-	bool m_openWarningPopup   = false;
+	NodeHandle  m_parentHandle = NodeHandle::Invalid;
+	bool        m_openRequested = false;
 };
-

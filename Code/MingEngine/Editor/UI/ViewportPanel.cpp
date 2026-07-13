@@ -1,5 +1,6 @@
 #include "MingEngine/Editor/UI/ViewportPanel.hpp"
 
+#include "MingEngine/Editor/EditorNode.hpp"
 #include "MingEngine/Editor/UI/EditorUI.hpp"
 #include "MingEngine/Editor/UI/EditorUIContext.hpp"
 #include "MingEngine/Scene/Core/SceneTree.hpp"
@@ -17,7 +18,15 @@ ViewportPanel::ViewportPanel() : EditorPanel("Viewport") {}
 
 void ViewportPanel::OnRender(EditorUIContext& context)
 {
-	ImGui::Begin(GetTitle(), GetOpenState());
+	EditorNode const* editorNode = EditorNode::Get();
+	std::string sceneName = editorNode != nullptr ? editorNode->GetCurrentSceneName() : std::string();
+	std::string title = sceneName.empty() ? "[empty]" : sceneName;
+	if (editorNode != nullptr && editorNode->IsSceneDirty())
+	{
+		title += "(*)";
+	}
+	title += "###Viewport";
+	ImGui::Begin(title.c_str(), GetOpenState());
 	ImGui::Button("Select");
 	ImGui::SameLine();
 	ImGui::Button("Move");

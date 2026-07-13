@@ -338,6 +338,8 @@
     <ClCompile Include="EngineService\DevConsole.cpp" />
     <ClCompile Include="Engine\Application\Engine.cpp" />
     <ClCompile Include="Engine\Application\EngineCommon.cpp" />
+    <ClCompile Include="Engine\Application\ProjectSettings.cpp" />
+    <ClCompile Include="Engine\Application\ProjectSettingsFormat.cpp" />
     <ClCompile Include="Engine\Application\SystemBase.cpp" />
     <ClCompile Include="Core\ErrorWarningAssert.cpp" />
     <ClCompile Include="Core\Object\Object.cpp" />
@@ -360,7 +362,13 @@
     <ClCompile Include="Core\XmlUtils.cpp" />
     <ClCompile Include="Editor\EditorCamera.cpp" />
     <ClCompile Include="Editor\EditorNode.cpp" />
-    <ClCompile Include="Editor\UI\CreateNodePanel.cpp" />
+    <ClCompile Include="Editor\UI\Popup\CreateNodePopup.cpp" />
+    <ClCompile Include="Editor\UI\Popup\CreateFolderPopup.cpp" />
+    <ClCompile Include="Editor\UI\Popup\CreateScenePopup.cpp" />
+    <ClCompile Include="Editor\UI\Popup\DeleteEntryPopup.cpp" />
+    <ClCompile Include="Editor\UI\Popup\EditorPopupUtils.cpp" />
+    <ClCompile Include="Editor\UI\Popup\ProjectSettingsPopup.cpp" />
+    <ClCompile Include="Editor\UI\Popup\WarningPopup.cpp" />
     <ClCompile Include="Editor\UI\EditorIcons.cpp" />
     <ClCompile Include="Editor\UI\EditorPanel.cpp" />
     <ClCompile Include="Editor\UI\EditorUI.cpp" />
@@ -498,6 +506,8 @@
     <ClInclude Include="Engine\Application\Engine.hpp" />
     <ClInclude Include="Engine\Application\EngineBuildPreferences.hpp" />
     <ClInclude Include="Engine\Application\EngineCommon.hpp" />
+    <ClInclude Include="Engine\Application\ProjectSettings.hpp" />
+    <ClInclude Include="Engine\Application\ProjectSettingsFormat.hpp" />
     <ClInclude Include="Engine\Application\SystemBase.hpp" />
     <ClInclude Include="Core\ErrorWarningAssert.hpp" />
     <ClInclude Include="Core\Object\Object.hpp" />
@@ -520,7 +530,13 @@
     <ClInclude Include="Core\XmlUtils.hpp" />
     <ClInclude Include="Editor\EditorCamera.hpp" />
     <ClInclude Include="Editor\EditorNode.hpp" />
-    <ClInclude Include="Editor\UI\CreateNodePanel.hpp" />
+    <ClInclude Include="Editor\UI\Popup\CreateNodePopup.hpp" />
+    <ClInclude Include="Editor\UI\Popup\CreateFolderPopup.hpp" />
+    <ClInclude Include="Editor\UI\Popup\CreateScenePopup.hpp" />
+    <ClInclude Include="Editor\UI\Popup\DeleteEntryPopup.hpp" />
+    <ClInclude Include="Editor\UI\Popup\EditorPopupUtils.hpp" />
+    <ClInclude Include="Editor\UI\Popup\ProjectSettingsPopup.hpp" />
+    <ClInclude Include="Editor\UI\Popup\WarningPopup.hpp" />
     <ClInclude Include="Editor\UI\EditorIcons.hpp" />
     <ClInclude Include="Editor\UI\EditorPanel.hpp" />
     <ClInclude Include="Editor\UI\EditorUI.hpp" />

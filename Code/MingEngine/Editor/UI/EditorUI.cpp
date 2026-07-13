@@ -74,17 +74,14 @@ void EditorUI::Render(EditorUIContext& context)
 	m_viewportPanel.Render(context);
 	m_inspectorPanel.Render(context);
 	m_outputPanel.Render(context);
-	m_createNodePanel.Render(context);
-
 	ApplyResourceDragDropCursor();
-	RenderWarningPopup();
+	m_projectSettingsPopup.Render(context);
+	m_warningPopup.Render(context);
 }
 
 void EditorUI::Warning(std::string const& title, std::string const& message)
 {
-	m_warningData.m_title   = title;
-	m_warningData.m_message = message;
-	m_showWarningPopup      = true;
+	m_warningPopup.Open(title, message);
 }
 
 void EditorUI::SetResourceDropAllowed(bool allowed) { m_resourceDropAllowed = m_resourceDropAllowed || allowed; }
@@ -132,7 +129,10 @@ void EditorUI::RenderMainMenuBar()
 	}
 	if (ImGui::BeginMenu("Project"))
 	{
-		ImGui::MenuItem("Project Settings...");
+		if (ImGui::MenuItem("Project Settings..."))
+		{
+			m_projectSettingsPopup.Open();
+		}
 		ImGui::MenuItem("Reload Project");
 		ImGui::EndMenu();
 	}
@@ -216,66 +216,3 @@ void EditorUI::RenderDockSpace()
 	ImGui::End();
 }
 
-void EditorUI::RenderWarningPopup()
-{
-	constexpr char const* popupId     = "WarningPopup";
-	constexpr float       popupWidth  = 420.f;
-	constexpr float       buttonWidth = 120.f;
-
-	if (m_showWarningPopup)
-	{
-		ImGui::OpenPopup(popupId);
-		m_showWarningPopup = false;
-	}
-
-	ImGuiViewport const* viewport = ImGui::GetMainViewport();
-	ImVec2 const         popupCenter(
-		viewport->WorkPos.x + viewport->WorkSize.x * 0.5f,
-		viewport->WorkPos.y + viewport->WorkSize.y * 0.5f);
-	ImGui::SetNextWindowPos(popupCenter, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
-	ImGui::SetNextWindowSize(ImVec2(popupWidth, 0.f), ImGuiCond_Appearing);
-
-	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(20.f, 18.f));
-	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(10.f, 12.f));
-
-	ImGuiWindowFlags windowFlags = ImGuiWindowFlags_AlwaysAutoResize;
-	windowFlags |= ImGuiWindowFlags_NoTitleBar;
-	windowFlags |= ImGuiWindowFlags_NoResize;
-	windowFlags |= ImGuiWindowFlags_NoMove;
-	windowFlags |= ImGuiWindowFlags_NoSavedSettings;
-
-	if (ImGui::BeginPopupModal(popupId, nullptr, windowFlags))
-	{
-		ImGuiStyle const& style = ImGui::GetStyle();
-
-		ImGui::PushFont(nullptr, style.FontSizeBase * 1.15f);
-		ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.f, 0.72f, 0.24f, 1.f));
-		ImGui::TextWrapped("WARNING: %s", m_warningData.m_title.c_str());
-		ImGui::PopStyleColor();
-		ImGui::PopFont();
-
-		ImGui::Separator();
-
-		ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.82f, 0.85f, 0.9f, 1.f));
-		ImGui::TextWrapped("%s", m_warningData.m_message.c_str());
-		ImGui::PopStyleColor();
-
-		ImGui::Spacing();
-
-		float const buttonX = ImGui::GetCursorPosX() + ImGui::GetContentRegionAvail().x - buttonWidth;
-		ImGui::SetCursorPosX(buttonX);
-
-		bool const shouldClose = ImGui::Button("OK", ImVec2(buttonWidth, 0.f))
-								 || ImGui::IsKeyPressed(ImGuiKey_Enter, false)
-								 || ImGui::IsKeyPressed(ImGuiKey_Escape, false);
-		if (shouldClose)
-		{
-			ImGui::CloseCurrentPopup();
-			m_warningData = {};
-		}
-
-		ImGui::EndPopup();
-	}
-
-	ImGui::PopStyleVar(2);
-}

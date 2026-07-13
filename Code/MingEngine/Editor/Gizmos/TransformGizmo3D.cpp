@@ -1,6 +1,7 @@
 #include "MingEngine/Editor/Gizmos/TransformGizmo3D.hpp"
 
 #include "MingEngine/Editor/EditorCamera.hpp"
+#include "MingEngine/Editor/EditorNode.hpp"
 #include "MingEngine/Editor/Gizmos/GizmoRaycastObject.hpp"
 #include "MingEngine/Scene/3D/Camera3D.hpp"
 #include "MingEngine/Scene/3D/Node3D.hpp"
@@ -135,6 +136,13 @@ bool TransformGizmo3D::BeginDragHovered(GizmoContext const& context)
 
 	m_hoveredComponent->SetHovered(true);
 	m_activeComponent = m_hoveredComponent;
+	if (context.m_selectedNode3D != nullptr)
+	{
+		m_draggedNodeHandle = context.m_selectedNode3D->GetHandle();
+		m_dragStartPosition = context.m_selectedNode3D->GetLocalPosition();
+		m_dragStartOrientation = context.m_selectedNode3D->GetLocalOrientation();
+		m_dragStartScale = context.m_selectedNode3D->GetLocalScale();
+	}
 
 	m_activeComponent->OnBeginDrag(context, m_hoveredHitPos);
 	return true;
@@ -156,6 +164,18 @@ void TransformGizmo3D::EndDrag(GizmoContext const& context)
 	if (m_activeComponent != nullptr)
 	{
 		m_activeComponent->OnEndDrag(context);
+		Node3D* draggedNode = context.m_sceneTree != nullptr
+			? dynamic_cast<Node3D*>(context.m_sceneTree->ResolveNode(m_draggedNodeHandle))
+			: nullptr;
+		bool const changed = draggedNode != nullptr
+			&& (draggedNode->GetLocalPosition() != m_dragStartPosition
+				|| draggedNode->GetLocalOrientation() != m_dragStartOrientation
+				|| draggedNode->GetLocalScale() != m_dragStartScale);
+		if (changed && EditorNode::Get() != nullptr)
+		{
+			EditorNode::Get()->MarkSceneDirty();
+		}
+		m_draggedNodeHandle = NodeHandle::Invalid;
 		m_activeComponent = nullptr;
 	}
 }

@@ -123,7 +123,7 @@ bool TryParseScene(Json const& root, PackedSceneData& outData)
 
 std::vector<std::string> PackedSceneLoader::GetSupportedExtensions() const
 {
-	return std::vector<std::string>({ ".mscn" });
+	return std::vector<std::string>({ ".tscn" });
 }
 
 Ref<Resource> PackedSceneLoader::Load(const std::string& virtualPath)
@@ -170,7 +170,7 @@ Ref<Resource> PackedSceneLoader::Load(const std::string& virtualPath)
 bool PackedSceneSaver::CanSave(std::string const& virtualPath, Variant const& value) const
 {
 	Ref<PackedScene> packedScene(value);
-	return packedScene.IsValid() && HasExtension(virtualPath, ".mscn");
+	return packedScene.IsValid() && HasExtension(virtualPath, ".tscn");
 }
 
 bool PackedSceneSaver::Save(std::string const& virtualPath, Variant const& value)

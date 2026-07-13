@@ -1,7 +1,6 @@
 #include "MingEngine/Editor/UI/ScenePanel.hpp"
 
 #include "MingEngine/Editor/EditorNode.hpp"
-#include "MingEngine/Editor/UI/CreateNodePanel.hpp"
 #include "MingEngine/Editor/UI/EditorUI.hpp"
 #include "MingEngine/Editor/UI/EditorUIContext.hpp"
 #include "MingEngine/Editor/UI/EditorUIStyle.hpp"
@@ -63,9 +62,7 @@ void ScenePanel::OnRender(EditorUIContext& context)
 	{
 		if (ImGui::MenuItem("Add Child Node..."))
 		{
-			CreateNodePanelData data;
-			data.m_parentHandle = NodeHandle::Invalid;
-			context.m_editorUI->OpenPanel<CreateNodePanel>(data);
+			m_createNodePopup.Open(NodeHandle::Invalid);
 		}
 		ImGui::EndPopup();
 	}
@@ -107,6 +104,7 @@ void ScenePanel::OnRender(EditorUIContext& context)
 	}
 
 	ImGui::End();
+	m_createNodePopup.Render(context);
 }
 
 void ScenePanel::RenderNode(Node* node, std::string const& filterText, EditorUIContext& context)
@@ -161,9 +159,7 @@ void ScenePanel::RenderNode(Node* node, std::string const& filterText, EditorUIC
 		}
 		if (ImGui::MenuItem("Add Child Node..."))
 		{
-			CreateNodePanelData data;
-			data.m_parentHandle = handle;
-			context.m_editorUI->OpenPanel<CreateNodePanel>(data);
+			m_createNodePopup.Open(handle);
 		}
 		ImGui::EndPopup();
 	}

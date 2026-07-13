@@ -4,6 +4,9 @@
 #include "MingEngine/Core/Object/Object.hpp"
 #include "MingEngine/Core/Object/Resource.hpp"
 #include "MingEngine/Core/Object/RefCounted.hpp"
+#include "MingEngine/Editor/UI/Popup/CreateFolderPopup.hpp"
+#include "MingEngine/Editor/UI/Popup/CreateScenePopup.hpp"
+#include "MingEngine/Editor/UI/Popup/DeleteEntryPopup.hpp"
 
 #include <filesystem>
 #include <string>
@@ -29,18 +32,18 @@ private:
 	void RenderEntry(FileEntry const& entry, std::string const& lowerFilterText, EditorUIContext& context);
 	void RenderItemContextMenu(FileEntry const& entry, EditorUIContext& context);
 	void RenderBackgroundContextMenu(EditorUIContext& context);
-	void RenderCreateFolderPopup(EditorUIContext& context);
-	void RenderRenamePopup(EditorUIContext& context);
-	void RenderDeletePopup(EditorUIContext& context);
-	void RenderErrorPopup();
-
+	void OpenFile(FileEntry const& entry, EditorUIContext& context);
 	void BeginCreateFolder(std::string const& parentVirtualPath);
+	void BeginCreateScene(std::string const& parentVirtualPath);
 	void BeginRename(FileEntry const& entry);
+	void FinishRename(FileSystem const& fileSystem, bool apply);
+	void ClearRename();
 	void BeginDelete(FileEntry const& entry);
 	void DuplicateEntry(FileEntry const& entry, FileSystem& fileSystem);
 	void OpenInTerminal(std::filesystem::path const& path);
 	void OpenInFileManager(std::filesystem::path const& path, bool selectFile);
 	void ShowError(std::string error);
+	bool ValidateEntryName(char const* name, std::string& outError) const;
 	bool ValidateName(
 		FileSystem const& fileSystem,
 		std::string const& parentVirtualPath,
@@ -53,17 +56,16 @@ private:
 
 private:
 	char        m_filter[64] = {};
-	char        m_nameBuffer[256] = {};
+	char        m_renameBuffer[256] = {};
 	bool        m_wasFocused = false;
-	bool        m_focusNameInput = false;
-	bool        m_openCreateFolderPopup = false;
-	bool        m_openRenamePopup = false;
-	bool        m_openDeletePopup = false;
-	bool        m_openErrorPopup = false;
-	bool        m_operationTargetIsDirectory = false;
+	bool        m_focusRenameInput = false;
 	bool        m_refreshResourceTree = false;
 	std::string m_selectedVirtualPath;
-	std::string m_operationBaseVirtualPath;
-	std::string m_operationTargetVirtualPath;
-	std::string m_operationError;
+	std::string m_renamingVirtualPath;
+	std::string m_pendingRenameVirtualPath;
+	std::string m_pendingRenameName;
+	std::string m_directoryToOpen;
+	CreateFolderPopup m_createFolderPopup;
+	CreateScenePopup  m_createScenePopup;
+	DeleteEntryPopup  m_deleteEntryPopup;
 };

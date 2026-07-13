@@ -32,4 +32,8 @@ private:
 	GizmoComponent*              m_hoveredComponent = nullptr;
 	GizmoComponent*              m_activeComponent  = nullptr;
 	Vec3                         m_hoveredHitPos    = Vec3::Zero;
+	NodeHandle                   m_draggedNodeHandle = NodeHandle::Invalid;
+	Vec3                         m_dragStartPosition = Vec3::Zero;
+	EulerAngles                  m_dragStartOrientation;
+	Vec3                         m_dragStartScale = Vec3::One;
 };

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "MingEngine/Editor/UI/EditorPanel.hpp"
+#include "MingEngine/Editor/UI/Popup/CreateNodePopup.hpp"
 #include "MingEngine/Scene/Core/NodeHandle.hpp"
 
 #include <string>
@@ -27,6 +28,7 @@ private:
 	NodeHandle m_renamingNode = NodeHandle::Invalid;
 	std::string m_originalName;
 	bool m_focusRenameInput = false;
+	CreateNodePopup m_createNodePopup;
 
 	struct PendingReparent
 	{

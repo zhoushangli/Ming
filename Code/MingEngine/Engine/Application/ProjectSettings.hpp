@@ -1,18 +1,25 @@
 #pragma once
 
-#include "MingEngine/Core/Object/Object.hpp"
+#include "MingEngine/Core/Object/Resource.hpp"
 
-class SystemBase : public Object
+#include <string>
+
+class ProjectSettings : public Resource
 {
-	MCLASS(SystemBase, Object)
+	MCLASS(ProjectSettings, Resource)
 
 public:
-	virtual ~SystemBase() = default;
+	static Ref<ProjectSettings> Get();
+	static constexpr char const* GetSettingsPath() { return "res://project.ming"; }
 
-	virtual void Startup() {}
-	virtual void Shutdown() {}
-	virtual void BeginFrame() {}
-	virtual void EndFrame() {}
+	bool CopyFrom(Resource const& other) override;
 
-	static void BindMethods();
+private:
+	static void BindMethods() {}
+
+public:
+	std::string m_startScenePath;
+
+private:
+	static Ref<ProjectSettings> s_instance;
 };

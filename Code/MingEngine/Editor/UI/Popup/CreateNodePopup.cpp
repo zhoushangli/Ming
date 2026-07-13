@@ -1,14 +1,13 @@
-#include "MingEngine/Editor/UI/CreateNodePanel.hpp"
+#include "MingEngine/Editor/UI/Popup/CreateNodePopup.hpp"
 
 #include "MingEngine/Editor/EditorNode.hpp"
 #include "MingEngine/Editor/UI/EditorUI.hpp"
 #include "MingEngine/Editor/UI/EditorUIContext.hpp"
 #include "MingEngine/Editor/UI/EditorUIStyle.hpp"
 #include "MingEngine/Editor/UI/EditorUIWidgets.hpp"
+#include "MingEngine/Editor/UI/Popup/EditorPopupUtils.hpp"
 #include "MingEngine/Scene/Core/Node.hpp"
 #include "MingEngine/Scene/Core/SceneTree.hpp"
-
-#include "MingEngine/Core/ErrorWarningAssert.hpp"
 
 #include "ThirdParty/imgui/imgui.h"
 
@@ -33,41 +32,29 @@ bool ContainsCaseInsensitive(std::string const& text, std::string const& filterT
 	return filterText.empty() || ToLower(text).find(ToLower(filterText)) != std::string::npos;
 }
 
-bool CanCreateClassInPanel(ClassInfo const* classInfo)
+bool CanCreateClass(ClassInfo const* classInfo)
 {
 	return classInfo != nullptr && classInfo->m_canCreateInEditor && classInfo->m_creator;
 }
 } // namespace
 
-CreateNodePanel::CreateNodePanel() : EditorPanel("Create New Node", false) {}
-
-void CreateNodePanel::OnOpen(UIData const& data)
+void CreateNodePopup::Open(NodeHandle parentHandle)
 {
-	CreateNodePanelData const* createData = dynamic_cast<CreateNodePanelData const*>(&data);
-	ASSERT_RECOVERABLE(createData != nullptr, "CreateNodePanel opened with invalid UIData.");
-	if (createData == nullptr)
-	{
-		Close();
-		return;
-	}
-
 	Reset();
-	m_parentHandle = createData->m_parentHandle;
-	m_openPopup    = true;
+	m_parentHandle  = parentHandle;
+	m_openRequested = true;
 }
 
-void CreateNodePanel::OnClose() { Reset(); }
-
-void CreateNodePanel::OnRender(EditorUIContext& context)
+void CreateNodePopup::Render(EditorUIContext& context)
 {
-	if (m_openPopup)
+	constexpr char const* popupId = "Create New Node";
+	if (m_openRequested)
 	{
-		ImGui::OpenPopup(GetTitle());
-		m_openPopup = false;
+		ImGui::OpenPopup(popupId);
+		m_openRequested = false;
 	}
 
-	ImGui::SetNextWindowSize(ImVec2(620.f, 540.f), ImGuiCond_FirstUseEver);
-	if (!ImGui::BeginPopupModal(GetTitle(), GetOpenState(), ImGuiWindowFlags_NoCollapse))
+	if (!EditorPopupUtils::BeginModal(popupId, ImVec2(620.f, 540.f)))
 	{
 		return;
 	}
@@ -102,6 +89,7 @@ void CreateNodePanel::OnRender(EditorUIContext& context)
 	}
 
 	ImVec2 const footerSize(0.f, ImGui::GetFrameHeightWithSpacing() + ImGui::GetStyle().ItemSpacing.y);
+	ImGui::PushStyleColor(ImGuiCol_ChildBg, ImGui::GetStyleColorVec4(ImGuiCol_FrameBg));
 	if (ImGui::BeginChild("CreateNodeTypeTree", ImVec2(0.f, -footerSize.y), true))
 	{
 		if (nodeClass != nullptr)
@@ -110,28 +98,31 @@ void CreateNodePanel::OnRender(EditorUIContext& context)
 		}
 	}
 	ImGui::EndChild();
+	ImGui::PopStyleColor();
 
 	ClassInfo const* selectedInfo = ClassDatabase::GetClassInfo(m_selectedClass);
-	bool const       canCreate    = CanCreateClassInPanel(selectedInfo);
+	bool const       canCreate    = CanCreateClass(selectedInfo);
+	EditorPopupUtils::BeginButtonRow(2);
 	ImGui::BeginDisabled(!canCreate);
-	bool const createPressed = ImGui::Button("Create", ImVec2(120.f, 0.f));
+	bool const createPressed = EditorPopupUtils::ConfirmButton();
 	ImGui::EndDisabled();
-	ImGui::SameLine();
-	if (ImGui::Button("Cancel", ImVec2(120.f, 0.f)))
+	ImGui::SameLine(0.f, 64.f);
+	bool const cancelPressed = EditorPopupUtils::CancelButton();
+	if (cancelPressed)
 	{
 		ImGui::CloseCurrentPopup();
-		Close();
+		Reset();
 	}
 	else if (createPressed && CreateSelectedNode(context))
 	{
 		ImGui::CloseCurrentPopup();
-		Close();
+		Reset();
 	}
 
-	ImGui::EndPopup();
+	EditorPopupUtils::EndModal();
 }
 
-bool CreateNodePanel::RenderClassNode(
+bool CreateNodePopup::RenderClassNode(
 	ClassInfo const*                                            classInfo,
 	std::map<std::string, std::vector<ClassInfo const*>> const& childrenByClass,
 	std::string const&                                          filterText,
@@ -164,7 +155,7 @@ bool CreateNodePanel::RenderClassNode(
 		flags |= ImGuiTreeNodeFlags_Selected;
 	}
 
-	bool const canCreate = CanCreateClassInPanel(classInfo);
+	bool const canCreate = CanCreateClass(classInfo);
 	ImGui::PushID(classInfo->m_className.c_str());
 	bool const   isOpen = ImGui::TreeNodeEx("##CreateNodeClass", flags);
 	ImVec2 const rowMin = ImGui::GetItemRectMin();
@@ -197,7 +188,7 @@ bool CreateNodePanel::RenderClassNode(
 			if (classDoubleClicked && CreateSelectedNode(context))
 			{
 				ImGui::CloseCurrentPopup();
-				Close();
+				Reset();
 				if (isOpen && hasVisibleChildren)
 				{
 					ImGui::TreePop();
@@ -230,7 +221,7 @@ bool CreateNodePanel::RenderClassNode(
 	return false;
 }
 
-bool CreateNodePanel::DoesClassBranchMatch(
+bool CreateNodePopup::DoesClassBranchMatch(
 	ClassInfo const*                                            classInfo,
 	std::map<std::string, std::vector<ClassInfo const*>> const& childrenByClass,
 	std::string const&                                          filterText) const
@@ -259,7 +250,7 @@ bool CreateNodePanel::DoesClassBranchMatch(
 	return false;
 }
 
-bool CreateNodePanel::CreateSelectedNode(EditorUIContext& context)
+bool CreateNodePopup::CreateSelectedNode(EditorUIContext& context)
 {
 	if (m_selectedClass.empty())
 	{
@@ -267,7 +258,7 @@ bool CreateNodePanel::CreateSelectedNode(EditorUIContext& context)
 	}
 
 	ClassInfo const* selectedInfo = ClassDatabase::GetClassInfo(m_selectedClass);
-	if (!CanCreateClassInPanel(selectedInfo))
+	if (!CanCreateClass(selectedInfo))
 	{
 		return false;
 	}
@@ -286,6 +277,15 @@ bool CreateNodePanel::CreateSelectedNode(EditorUIContext& context)
 	}
 
 	Node* sceneRoot = context.m_sceneTree->GetScene();
+	if (sceneRoot == nullptr)
+	{
+		delete node;
+		if (EditorNode::Get() != nullptr && EditorNode::Get()->m_editorUI != nullptr)
+		{
+			EditorNode::Get()->m_editorUI->Warning("Cannot Create Node", "Create a scene before adding nodes.");
+		}
+		return false;
+	}
 	Node* parent    = ResolveCreateParent(context);
 	if (sceneRoot != nullptr && parent == nullptr)
 	{
@@ -293,14 +293,10 @@ bool CreateNodePanel::CreateSelectedNode(EditorUIContext& context)
 	}
 	node->SetName(m_selectedClass);
 
-	if (sceneRoot == nullptr)
+	parent->AddNode(node);
+	if (EditorNode::Get() != nullptr)
 	{
-		// SceneTree's internal Viewport is not the user scene root.
-		context.m_sceneTree->ChangeScene(node);
-	}
-	else
-	{
-		parent->AddNode(node);
+		EditorNode::Get()->MarkSceneDirty();
 	}
 
 	if (context.m_selection != nullptr)
@@ -310,7 +306,7 @@ bool CreateNodePanel::CreateSelectedNode(EditorUIContext& context)
 	return true;
 }
 
-Node* CreateNodePanel::ResolveCreateParent(EditorUIContext const& context) const
+Node* CreateNodePopup::ResolveCreateParent(EditorUIContext const& context) const
 {
 	if (context.m_sceneTree == nullptr || !m_parentHandle.IsValid())
 	{
@@ -333,10 +329,10 @@ Node* CreateNodePanel::ResolveCreateParent(EditorUIContext const& context) const
 	return parent;
 }
 
-void CreateNodePanel::Reset()
+void CreateNodePopup::Reset()
 {
 	m_selectedClass.clear();
 	m_filter[0]    = '\0';
 	m_parentHandle = NodeHandle::Invalid;
-	m_openPopup    = false;
+	m_openRequested = false;
 }

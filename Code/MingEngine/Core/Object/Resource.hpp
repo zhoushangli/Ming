@@ -21,6 +21,8 @@ public:
 	const std::string& GetName() const { return m_name; }
 	void               SetName(const std::string& name) { m_name = name; }
 
+	// Mainly used for reimporting and reloading resources
+	// e.g. Change import scale of mesh from 1.0 to 2.0, then reimport the mesh resource.
 	// Copy content data (vertices, textures, etc.) from another resource of the same type.
 	// Does NOT copy identity fields (path, name, source file path).
 	// Each subclass must override this to copy its own data fields manually.

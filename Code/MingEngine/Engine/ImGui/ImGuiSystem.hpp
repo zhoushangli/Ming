@@ -21,6 +21,7 @@ public:
 	void EndFrame() override;
 
 	bool WantCaptureMouse() const;
+	bool WantCaptureKeyboard() const;
 
 	static void BindMethods();
 

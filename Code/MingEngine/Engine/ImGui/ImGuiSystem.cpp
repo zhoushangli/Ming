@@ -156,3 +156,9 @@ void ImGuiSystem::EndFrame()
 }
 
 bool ImGuiSystem::WantCaptureMouse() const { return ImGui::GetIO().WantCaptureMouse; }
+
+bool ImGuiSystem::WantCaptureKeyboard() const
+{
+	return ImGui::GetIO().WantCaptureKeyboard
+		|| ImGui::IsPopupOpen(nullptr, ImGuiPopupFlags_AnyPopupId);
+}
