@@ -37,24 +37,22 @@ public:
 
 	EditorCamera* GetEditorCamera() const { return m_editorCamera; }
 
-	// Request a scene load and defer it when the current scene has unsaved changes.
-	// e.g. RequestLoadScene("res://Scenes/Main.tscn")
 	void RequestLoadScene(std::string const& virtualPath);
-	// Request scene creation and defer it when the current scene has unsaved changes.
-	// e.g. RequestCreateScene("res://Scenes/Main.tscn", "Main")
 	void RequestCreateScene(std::string const& virtualPath, std::string const& rootName);
 	bool LoadScene(std::string const& virtualPath);
-	// Save the current scene path and clear its dirty state on success.
-	// e.g. SaveScene()
 	bool SaveScene();
-	// Mark the current scene as having unsaved editor changes.
-	// e.g. MarkSceneDirty()
-	void MarkSceneDirty();
-	bool IsSceneDirty() const;
-	bool HasScene() const;
+
+	void        MarkSceneDirty();
+	bool        IsSceneDirty() const;
+	bool        HasScene() const;
 	std::string GetCurrentSceneName() const;
 
-	// --- Mouse event routing ---
+	// Launch the sibling Game executable as a child process.
+	void PlayScene();
+	// Stop the running game by sending WM_CLOSE to its window.
+	void StopScene();
+	bool IsPlaying() const;
+
 	void OnMouseMove(Vec2 screenPos, Vec2 delta);
 	void OnMouseDown(int keyCode, Vec2 screenPos);
 	void OnMouseUp(int keyCode, Vec2 screenPos);
@@ -65,6 +63,9 @@ private:
 	bool CreateScene(std::string const& virtualPath, std::string const& rootName);
 	void RenderUnsavedScenePopup();
 	void ExecutePendingSceneAction();
+	// Check if the PIE process is still alive, and if not, clean up the state.
+	// We do this to avoid the game process exit itself the leave a void handle in the editor
+	void CheckPIEProcessAlive();
 
 public:
 	EditorSelection m_selection;
@@ -89,4 +90,8 @@ private:
 	std::string        m_pendingScenePath;
 	std::string        m_pendingSceneRootName;
 	bool               m_openUnsavedScenePopup = false;
+
+	// PIE state
+	void*         m_pieProcessHandle = nullptr; // HANDLE
+	unsigned long m_pieProcessId     = 0;       // DWORD
 };

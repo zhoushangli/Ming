@@ -27,6 +27,6 @@ bool PropertyBool(std::string const& label, char const* id, bool& value);
 bool PropertyInt(std::string const& label, char const* id, int& value);
 bool PropertyFloat(std::string const& label, char const* id, float& value);
 bool PropertyString(std::string const& label, char const* id, std::string& value);
-bool PropertyVec3(std::string const& label, char const* id, Vec3& value);
+bool PropertyVec3(std::string const& label, char const* id, Vec3& value, Vec3 const& defaultValue = Vec3::Zero);
 bool PropertyEuler(std::string const& label, char const* id, EulerAngles& value);
 } // namespace EditorUIWidgets

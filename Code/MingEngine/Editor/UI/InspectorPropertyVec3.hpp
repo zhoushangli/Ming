@@ -19,7 +19,8 @@ public:
 		}
 
 		Vec3 v = value.As<Vec3>();
-		bool const edited = EditorUIWidgets::PropertyVec3(GetDisplayName(), m_labelId.c_str(), v);
+		Vec3 const defaultValue = m_info.m_name == "scale" ? Vec3::One : Vec3::Zero;
+		bool const edited = EditorUIWidgets::PropertyVec3(GetDisplayName(), m_labelId.c_str(), v, defaultValue);
 
 		if (m_info.m_name == "scale")
 		{

@@ -3,6 +3,7 @@
 #include "MingEngine/Editor/UI/EditorIcons.hpp"
 #include "MingEngine/Editor/UI/EditorUIContext.hpp"
 #include "MingEngine/Editor/UI/EditorUIStyle.hpp"
+#include "MingEngine/Editor/EditorNode.hpp"
 
 #include "ThirdParty/imgui/imgui.h"
 
@@ -177,14 +178,14 @@ void EditorUI::RenderMainMenuBar()
 
 	if (RenderMainMenuIconButton("##EditorPlay", "Play", "Start"))
 	{
-		// Handle play button click
+		EditorNode::Get()->PlayScene();
 	}
 
 	ImGui::SameLine();
 
 	if (RenderMainMenuIconButton("##EditorStop", "Stop", "Stop"))
 	{
-		// Handle stop button click
+		EditorNode::Get()->StopScene();
 	}
 
 	ImGui::EndMainMenuBar();

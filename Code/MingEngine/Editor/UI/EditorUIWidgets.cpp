@@ -5,10 +5,53 @@
 
 #include "ThirdParty/imgui/misc/cpp/imgui_stdlib.h"
 
+#include <cmath>
+
 namespace EditorUIWidgets
 {
 namespace
 {
+bool IsTripleFloatDefault(
+	float x,
+	float y,
+	float z,
+	float defaultX,
+	float defaultY,
+	float defaultZ)
+{
+	constexpr float epsilon = 1e-5f;
+	return std::abs(x - defaultX) <= epsilon
+		&& std::abs(y - defaultY) <= epsilon
+		&& std::abs(z - defaultZ) <= epsilon;
+}
+
+bool DrawPropertyResetButton(char const* id, float y)
+{
+	float const       buttonSize = ImGui::GetTextLineHeight();
+	ImVec2 const      buttonPos(
+		ImGui::GetWindowPos().x + ImGui::GetWindowContentRegionMax().x - buttonSize,
+		y);
+
+	ImGui::SetCursorScreenPos(buttonPos);
+	std::string const buttonId = std::string(id) + "_reset";
+	bool const clicked = ImGui::InvisibleButton(buttonId.c_str(), ImVec2(buttonSize, buttonSize));
+
+	ImTextureID const textureId = EditorIcons::GetIconId("ReloadSmall", "Reload");
+	float const       iconInset = 2.f;
+	EditorIcons::AddImage(
+		ImGui::GetWindowDrawList(),
+		textureId,
+		ImVec2(buttonPos.x + iconInset, buttonPos.y + iconInset),
+		ImVec2(buttonPos.x + buttonSize - iconInset, buttonPos.y + buttonSize - iconInset));
+
+	if (ImGui::IsItemHovered())
+	{
+		ImGui::SetTooltip("Reset");
+	}
+
+	return clicked;
+}
+
 bool DrawVectorComponent(
 	char const*    label,
 	float&         value,
@@ -45,9 +88,27 @@ bool PropertyTripleFloat(
 	char const*        id,
 	float&             x,
 	float&             y,
-	float&             z)
+	float&             z,
+	float              defaultX,
+	float              defaultY,
+	float              defaultZ)
 {
+	bool reset = false;
+	ImVec2 const labelPos = ImGui::GetCursorScreenPos();
 	ImGui::TextUnformatted(label.c_str());
+	if (!IsTripleFloatDefault(x, y, z, defaultX, defaultY, defaultZ))
+	{
+		ImGui::PushID(id);
+		reset = DrawPropertyResetButton("property", labelPos.y);
+		ImGui::PopID();
+		if (reset)
+		{
+			x = defaultX;
+			y = defaultY;
+			z = defaultZ;
+		}
+	}
+	ImGui::SetCursorScreenPos(ImVec2(labelPos.x, labelPos.y + ImGui::GetTextLineHeight() + ImGui::GetStyle().ItemSpacing.y));
 
 	ImGuiStyle const& style = ImGui::GetStyle();
 
@@ -76,7 +137,7 @@ bool PropertyTripleFloat(
 	ImGui::PushStyleColor(ImGuiCol_FrameBgActive, IM_COL32(0x50, 0x59, 0x68, 0xE0));
 	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0.f, style.FramePadding.y));
 
-	bool edited = false;
+	bool edited = reset;
 	edited |= DrawVectorComponent("x", x, ImVec4(0.9f, 0.25f, 0.25f, 1.f), barPos, 0, groupWidth, groupGap, innerPad, labelValueGap);
 	edited |= DrawVectorComponent("y", y, ImVec4(0.35f, 0.8f, 0.35f, 1.f), barPos, 1, groupWidth, groupGap, innerPad, labelValueGap);
 	edited |= DrawVectorComponent("z", z, ImVec4(0.35f, 0.5f, 0.9f, 1.f), barPos, 2, groupWidth, groupGap, innerPad, labelValueGap);
@@ -230,13 +291,13 @@ bool PropertyString(std::string const& label, char const* id, std::string& value
 	return edited;
 }
 
-bool PropertyVec3(std::string const& label, char const* id, Vec3& value)
+bool PropertyVec3(std::string const& label, char const* id, Vec3& value, Vec3 const& defaultValue)
 {
-	return PropertyTripleFloat(label, id, value.x, value.y, value.z);
+	return PropertyTripleFloat(label, id, value.x, value.y, value.z, defaultValue.x, defaultValue.y, defaultValue.z);
 }
 
 bool PropertyEuler(std::string const& label, char const* id, EulerAngles& value)
 {
-	return PropertyTripleFloat(label, id, value.m_rollDegrees, value.m_pitchDegrees, value.m_yawDegrees);
+	return PropertyTripleFloat(label, id, value.m_rollDegrees, value.m_pitchDegrees, value.m_yawDegrees, 0.f, 0.f, 0.f);
 }
 } // namespace EditorUIWidgets

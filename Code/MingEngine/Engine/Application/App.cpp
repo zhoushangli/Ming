@@ -7,8 +7,9 @@
 #include "MingEngine/Core/Render/Rgba8.hpp"
 #include "MingEngine/Core/StringUtils.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
-#include "MingEngine/Engine/Input/InputSystem.hpp"
+#include "MingEngine/Engine/Application/ProjectSettings.hpp"
 #include "MingEngine/Engine/ImGui/ImGuiSystem.hpp"
+#include "MingEngine/Engine/Input/InputSystem.hpp"
 #include "MingEngine/Engine/Window/WindowSystem.hpp"
 #include "MingEngine/EngineService/EngineService.hpp"
 #include "MingEngine/EngineService/RenderService.hpp"
@@ -18,7 +19,6 @@
 #include "MingEngine/Scene/Core/PackedScene.hpp"
 #include "MingEngine/Scene/Core/SceneTree.hpp"
 #include "MingEngine/Scene/RegisterAllTypes.hpp"
-#include "MingEngine/Engine/Application/ProjectSettings.hpp"
 
 #if defined(MING_EDITOR)
 
@@ -125,19 +125,17 @@ void App::Update(float deltaSeconds)
 		}
 	}
 
-// 	if (g_engine->m_inputSystem->WasKeyJustPressed(KeyCode::Esc))
-// 	{
-// 		bool const isConsoleOpen =
-// 			g_engineService != nullptr && g_engineService->m_console != nullptr && g_engineService->m_console->IsOpen();
-// 		bool editorUIWantsKeyboard = false;
-// #if defined(MING_EDITOR)
-// 		editorUIWantsKeyboard = g_engine->m_imguiSystem != nullptr && g_engine->m_imguiSystem->WantCaptureKeyboard();
-// #endif
-// 		if (!isConsoleOpen && !editorUIWantsKeyboard)
-// 		{
-// 			FireEvent("Quit");
-// 		}
-// 	}
+#ifndef MING_EDITOR
+	if (g_engine->m_inputSystem->WasKeyJustPressed(KeyCode::Esc))
+	{
+		bool const isConsoleOpen =
+			g_engineService != nullptr && g_engineService->m_console != nullptr && g_engineService->m_console->IsOpen();
+		if (!isConsoleOpen)
+		{
+			FireEvent("Quit");
+		}
+	}
+#endif
 
 	float const sceneDeltaSeconds = m_clock != nullptr ? static_cast<float>(m_clock->GetDeltaSeconds()) : deltaSeconds;
 	if (m_sceneTree != nullptr)
@@ -230,12 +228,11 @@ void App::StartupScene()
 		editorNode->LoadScene(startScenePath);
 	}
 
-
 #else
 
 	std::string const& startScenePath = ProjectSettings::Get()->m_startScenePath;
-	Ref<Resource>    loadedScene = startScenePath.empty() ? Ref<Resource>(nullptr) : ResourceLoader::Load(startScenePath);
-	Variant          sceneValue  = loadedScene;
+	Ref<Resource> loadedScene = startScenePath.empty() ? Ref<Resource>(nullptr) : ResourceLoader::Load(startScenePath);
+	Variant       sceneValue  = loadedScene;
 	Ref<PackedScene> packedScene(sceneValue);
 	Node*            newSceneRoot = packedScene.IsValid() ? packedScene->Instantiate() : nullptr;
 

@@ -23,12 +23,39 @@
 
 #include <filesystem>
 
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#endif
+
 namespace
 {
 std::string FormatNodeHandle(NodeHandle handle)
 {
 	return Stringf("uid=%u index=%u", handle.GetUID(), handle.GetIndex());
 }
+
+#ifdef _WIN32
+struct FindMainWindowData
+{
+	DWORD pid;
+	HWND  hwnd;
+};
+
+static BOOL CALLBACK FindMainWindowProc(HWND hwnd, LPARAM lParam)
+{
+	auto* data = reinterpret_cast<FindMainWindowData*>(lParam);
+	DWORD pid  = 0;
+	GetWindowThreadProcessId(hwnd, &pid);
+	if (pid == data->pid && IsWindowVisible(hwnd) && GetWindow(hwnd, GW_OWNER) == NULL)
+	{
+		data->hwnd = hwnd;
+		return FALSE;
+	}
+	return TRUE;
+}
+#endif
+
 } // namespace
 
 EditorNode* EditorNode::s_instance = nullptr;
@@ -99,6 +126,9 @@ EditorNode::EditorNode()
 
 EditorNode::~EditorNode()
 {
+	// 1) Ensure the game process is stopped before editor shutdown.
+	StopScene();
+
 	delete m_editorUI;
 	m_editorUI = nullptr;
 
@@ -212,8 +242,8 @@ void EditorNode::OnProcess([[maybe_unused]] float deltaSeconds)
 		RenderUnsavedScenePopup();
 	}
 
-	InputSystem* input = g_engine->m_inputSystem;
-	bool const controlDown = input->IsKeyDown(KeyCode::LeftControl) || input->IsKeyDown(KeyCode::RightControl);
+	InputSystem* input       = g_engine->m_inputSystem;
+	bool const   controlDown = input->IsKeyDown(KeyCode::LeftControl) || input->IsKeyDown(KeyCode::RightControl);
 	if (controlDown && input->WasKeyJustPressed(KeyCode::S) && HasScene())
 	{
 		if (!SaveScene() && m_editorUI != nullptr)
@@ -222,11 +252,14 @@ void EditorNode::OnProcess([[maybe_unused]] float deltaSeconds)
 		}
 	}
 
-	// 1) Dispatch mouse events when in Pointer mode
+	// 1) Check if the game process exited on its own
+	CheckPIEProcessAlive();
+
+	// 2) Dispatch mouse events when in Pointer mode
 	if (m_editorCamera != nullptr && m_editorCamera->GetControlState() == EditorCamera::EditorControlState::Pointer)
 	{
-		Vec2 const   cursorPos = m_editorCamera->GetCursorClientPos();
-		Vec2 const   delta     = m_editorCamera->GetCursorDelta();
+		Vec2 const cursorPos = m_editorCamera->GetCursorClientPos();
+		Vec2 const delta     = m_editorCamera->GetCursorDelta();
 
 		OnMouseMove(cursorPos, delta);
 
@@ -256,7 +289,7 @@ void EditorNode::RequestLoadScene(std::string const& virtualPath)
 	// Store the requested load so the confirmation popup can resume it.
 	// e.g. ExecutePendingSceneAction() loads m_pendingScenePath after confirmation.
 	m_pendingSceneAction = PendingSceneAction::Load;
-	m_pendingScenePath = virtualPath;
+	m_pendingScenePath   = virtualPath;
 	m_pendingSceneRootName.clear();
 	m_openUnsavedScenePopup = true;
 }
@@ -271,9 +304,9 @@ void EditorNode::RequestCreateScene(std::string const& virtualPath, std::string 
 
 	// Store the requested creation so no file is written before confirmation.
 	// e.g. ExecutePendingSceneAction() creates m_pendingScenePath after confirmation.
-	m_pendingSceneAction = PendingSceneAction::Create;
-	m_pendingScenePath = virtualPath;
-	m_pendingSceneRootName = rootName;
+	m_pendingSceneAction    = PendingSceneAction::Create;
+	m_pendingScenePath      = virtualPath;
+	m_pendingSceneRootName  = rootName;
 	m_openUnsavedScenePopup = true;
 }
 
@@ -299,7 +332,7 @@ bool EditorNode::LoadScene(std::string const& virtualPath)
 
 	GetSceneTree()->ChangeScene(newSceneRoot);
 	m_editorData.m_currentScenePath = virtualPath;
-	m_editorData.m_isSceneDirty = false;
+	m_editorData.m_isSceneDirty     = false;
 	m_selection.Clear();
 
 	return true;
@@ -307,8 +340,8 @@ bool EditorNode::LoadScene(std::string const& virtualPath)
 
 bool EditorNode::SaveScene()
 {
-	SceneTree*       sceneTree   = GetSceneTree();
-	Node*            sceneRoot   = sceneTree->GetScene();
+	SceneTree* sceneTree = GetSceneTree();
+	Node*      sceneRoot = sceneTree->GetScene();
 	if (sceneRoot == nullptr || m_editorData.m_currentScenePath.empty())
 	{
 		return false;
@@ -344,8 +377,8 @@ bool EditorNode::HasScene() const { return GetSceneTree() != nullptr && GetScene
 std::string EditorNode::GetCurrentSceneName() const
 {
 	return m_editorData.m_currentScenePath.empty()
-		? std::string()
-		: std::filesystem::path(m_editorData.m_currentScenePath).stem().string();
+			   ? std::string()
+			   : std::filesystem::path(m_editorData.m_currentScenePath).stem().string();
 }
 
 bool EditorNode::CreateScene(std::string const& virtualPath, std::string const& rootName)
@@ -365,7 +398,7 @@ bool EditorNode::CreateScene(std::string const& virtualPath, std::string const& 
 
 	GetSceneTree()->ChangeScene(sceneRoot);
 	m_editorData.m_currentScenePath = virtualPath;
-	m_editorData.m_isSceneDirty = false;
+	m_editorData.m_isSceneDirty     = false;
 	m_selection.Clear();
 	if (g_engine->m_fileSystem != nullptr)
 	{
@@ -387,9 +420,8 @@ void EditorNode::RenderUnsavedScenePopup()
 		return;
 	}
 
-	ImGui::TextUnformatted(m_editorData.m_currentScenePath.empty()
-		? "This scene was never saved."
-		: "This scene has unsaved changes.");
+	ImGui::TextUnformatted(
+		m_editorData.m_currentScenePath.empty() ? "This scene was never saved." : "This scene has unsaved changes.");
 	ImGui::Dummy(ImVec2(0.f, 12.f));
 	ImGui::TextUnformatted("Save before closing?");
 	ImGui::Dummy(ImVec2(0.f, 12.f));
@@ -432,16 +464,128 @@ void EditorNode::ExecutePendingSceneAction()
 {
 	// Execute and clear the deferred scene operation selected before the popup.
 	// e.g. a pending load resumes after Save & Close or Don't Save.
-	PendingSceneAction const action = m_pendingSceneAction;
-	std::string const path = std::move(m_pendingScenePath);
-	std::string const rootName = std::move(m_pendingSceneRootName);
-	m_pendingSceneAction = PendingSceneAction::None;
+	PendingSceneAction const action   = m_pendingSceneAction;
+	std::string const        path     = std::move(m_pendingScenePath);
+	std::string const        rootName = std::move(m_pendingSceneRootName);
+	m_pendingSceneAction              = PendingSceneAction::None;
 
 	bool const result = action == PendingSceneAction::Load
-		? LoadScene(path)
-		: action == PendingSceneAction::Create && CreateScene(path, rootName);
+							? LoadScene(path)
+							: action == PendingSceneAction::Create && CreateScene(path, rootName);
 	if (!result && action != PendingSceneAction::None && m_editorUI != nullptr)
 	{
 		m_editorUI->Warning(action == PendingSceneAction::Load ? "Open Scene Failed" : "Create Scene Failed", path);
 	}
+}
+
+bool EditorNode::IsPlaying() const { return m_pieProcessHandle != nullptr; }
+
+void EditorNode::PlayScene()
+{
+	// 1) Already playing
+	if (IsPlaying())
+	{
+		return;
+	}
+
+	// 2) Save the current scene so the game loads the latest content
+	SaveScene();
+
+#ifdef _WIN32
+	// 3) Get the current editor executable path
+	wchar_t exePath[MAX_PATH];
+	DWORD   pathLen = GetModuleFileNameW(NULL, exePath, MAX_PATH);
+	if (pathLen == 0 || pathLen >= MAX_PATH)
+	{
+		if (m_editorUI != nullptr)
+		{
+			m_editorUI->Warning("PIE Failed", "Cannot get executable path.");
+		}
+		return;
+	}
+
+	std::wstring gamePath(exePath);
+
+	// 4) Replace "Editor" with "Game" in the full path
+	// e.g. Chess3D_Editor_Debug_x64.exe -> Chess3D_Game_Debug_x64.exe
+	size_t pos = 0;
+	while ((pos = gamePath.find(L"Editor", pos)) != std::wstring::npos)
+	{
+		gamePath.replace(pos, 6, L"Game");
+		pos += 4;
+	}
+
+	// 5) Launch the game process (no extra args — it runs the start scene)
+	STARTUPINFOW        si = { sizeof(si) };
+	PROCESS_INFORMATION pi = {};
+
+	if (CreateProcessW(gamePath.c_str(), NULL, NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi))
+	{
+		m_pieProcessHandle = pi.hProcess;
+		m_pieProcessId     = pi.dwProcessId;
+		CloseHandle(pi.hThread);
+	}
+	else
+	{
+		if (m_editorUI != nullptr)
+		{
+			m_editorUI->Warning("PIE Failed", "Cannot launch game executable. Make sure the Game build exists.");
+		}
+	}
+#else
+	if (m_editorUI != nullptr)
+	{
+		m_editorUI->Warning("PIE Failed", "PIE is only supported on Windows.");
+	}
+#endif
+}
+
+void EditorNode::StopScene()
+{
+	// 1) Guard: not playing
+	if (!IsPlaying())
+	{
+		return;
+	}
+
+#ifdef _WIN32
+	HANDLE processHandle = static_cast<HANDLE>(m_pieProcessHandle);
+
+	// 2) Find the game window HWND by process ID
+	FindMainWindowData data = { m_pieProcessId, NULL };
+	EnumWindows(FindMainWindowProc, reinterpret_cast<LPARAM>(&data));
+
+	// 3) Post WM_CLOSE for a clean shutdown (GLFW processes it via glfwPollEvents)
+	if (data.hwnd != NULL)
+	{
+		PostMessage(data.hwnd, WM_CLOSE, 0, 0);
+	}
+
+	// 4) Clean up the process handle
+	CloseHandle(processHandle);
+#endif
+
+	m_pieProcessHandle = nullptr;
+	m_pieProcessId     = 0;
+}
+
+void EditorNode::CheckPIEProcessAlive()
+{
+	// 1) Guard: not playing
+	if (!IsPlaying())
+	{
+		return;
+	}
+
+#ifdef _WIN32
+	HANDLE processHandle = static_cast<HANDLE>(m_pieProcessHandle);
+
+	// 2) Poll without blocking — if the process exited, clean up
+	if (WaitForSingleObject(processHandle, 0) == WAIT_OBJECT_0)
+	{
+		CloseHandle(processHandle);
+		m_pieProcessHandle = nullptr;
+		m_pieProcessId     = 0;
+	}
+#endif
 }
