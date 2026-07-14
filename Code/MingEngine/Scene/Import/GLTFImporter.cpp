@@ -1,5 +1,6 @@
 #include "MingEngine/Scene/Import/GLTFImporter.hpp"
 
+#include "MingEngine/Core/Object/ResourceLoader.hpp"
 #include "MingEngine/Core/Render/Vertex.hpp"
 #include "MingEngine/Core/Render/VertexUtils.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
@@ -74,9 +75,9 @@ bool TryGetAccessorView(tg3_model const& model, int32_t accessorIndex, AccessorV
 		return false;
 	}
 
-	int32_t const componentSize = tg3_component_size(accessor.component_type);
+	int32_t const componentSize  = tg3_component_size(accessor.component_type);
 	int32_t const componentCount = tg3_num_components(accessor.type);
-	int32_t const stride = tg3_accessor_byte_stride(&accessor, &bufferView);
+	int32_t const stride         = tg3_accessor_byte_stride(&accessor, &bufferView);
 	if (componentSize <= 0 || componentCount <= 0 || stride <= 0)
 	{
 		return false;
@@ -225,7 +226,7 @@ Ref<Resource> GLTFImporter::Import(
 		return Ref<Resource>();
 	}
 
-	uint64_t const vertexCount = positionView.m_accessor->count;
+	uint64_t const      vertexCount = positionView.m_accessor->count;
 	std::vector<Vertex> vertices;
 	vertices.resize(static_cast<size_t>(vertexCount));
 	for (uint64_t i = 0; i < vertexCount; ++i)
@@ -267,8 +268,8 @@ Ref<Resource> GLTFImporter::Import(
 	if (uvAccessorIndex >= 0)
 	{
 		if (!TryGetAccessorView(gltfModel, uvAccessorIndex, uvView)
-			|| uvView.m_accessor->component_type != TG3_COMPONENT_TYPE_FLOAT
-			|| uvView.m_accessor->type != TG3_TYPE_VEC2 || uvView.m_accessor->count != vertexCount)
+			|| uvView.m_accessor->component_type != TG3_COMPONENT_TYPE_FLOAT || uvView.m_accessor->type != TG3_TYPE_VEC2
+			|| uvView.m_accessor->count != vertexCount)
 		{
 			return Ref<Resource>();
 		}
@@ -316,10 +317,10 @@ Ref<Resource> GLTFImporter::Import(
 			return Ref<Resource>();
 		}
 
-		tg3_accessor const& indexAccessor = *indexView.m_accessor;
-		bool const validIndexType = indexAccessor.component_type == TG3_COMPONENT_TYPE_UNSIGNED_BYTE
-									|| indexAccessor.component_type == TG3_COMPONENT_TYPE_UNSIGNED_SHORT
-									|| indexAccessor.component_type == TG3_COMPONENT_TYPE_UNSIGNED_INT;
+		tg3_accessor const& indexAccessor  = *indexView.m_accessor;
+		bool const          validIndexType = indexAccessor.component_type == TG3_COMPONENT_TYPE_UNSIGNED_BYTE
+											 || indexAccessor.component_type == TG3_COMPONENT_TYPE_UNSIGNED_SHORT
+											 || indexAccessor.component_type == TG3_COMPONENT_TYPE_UNSIGNED_INT;
 		if (indexAccessor.type != TG3_TYPE_SCALAR || !validIndexType || indexAccessor.normalized
 			|| indexAccessor.count > std::numeric_limits<uint32_t>::max() || indexAccessor.count % 3 != 0)
 		{
@@ -354,7 +355,7 @@ Ref<Resource> GLTFImporter::Import(
 	}
 
 	// 6) Apply the engine coordinate conversion and the optional import scale.
-	Vec3 scaleMesh = Vec3::One;
+	Vec3       scaleMesh   = Vec3::One;
 	auto const scaleOption = importOptions.find("Scale Mesh");
 	if (scaleOption != importOptions.end() && scaleOption->second.GetType() == Variant::Type::Vec3)
 	{
@@ -382,6 +383,34 @@ Ref<Resource> GLTFImporter::Import(
 	meshData->m_indices.resize(meshData->m_indexCount * meshData->m_indexStride);
 
 	memcpy(meshData->m_indices.data(), indices.data(), meshData->m_indices.size());
+
+	// 8) Resolve the first base color texture from the first material.
+	// Walk: primitive.material → material.baseColorTexture → texture.source → image.uri
+	if (primitive.material >= 0 && static_cast<uint32_t>(primitive.material) < gltfModel.materials_count)
+	{
+		tg3_material const& material = gltfModel.materials[primitive.material];
+		int32_t const       texIndex = material.pbr_metallic_roughness.base_color_texture.index;
+		if (texIndex >= 0 && static_cast<uint32_t>(texIndex) < gltfModel.textures_count)
+		{
+			tg3_texture const& texture = gltfModel.textures[texIndex];
+			if (texture.source >= 0 && static_cast<uint32_t>(texture.source) < gltfModel.images_count)
+			{
+				tg3_image const& image = gltfModel.images[texture.source];
+				if (image.uri.data != nullptr)
+				{
+					std::string const     uri(image.uri.data, image.uri.len);
+					std::filesystem::path texPhysicalPath = physicalPath.parent_path() / uri;
+					std::string const     texVirtualPath  = g_engine->m_fileSystem->ToVirtualPath(texPhysicalPath);
+
+					if (ResourceImporter::EnsureImported(texVirtualPath))
+					{
+						Ref<Resource> texResource = ResourceLoader::Load(texVirtualPath);
+						meshData->m_textureResources.push_back(texResource);
+					}
+				}
+			}
+		}
+	}
 
 	return meshData;
 }

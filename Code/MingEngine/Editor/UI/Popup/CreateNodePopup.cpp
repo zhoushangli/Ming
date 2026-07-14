@@ -157,11 +157,11 @@ bool CreateNodePopup::RenderClassNode(
 
 	bool const canCreate = CanCreateClass(classInfo);
 	ImGui::PushID(classInfo->m_className.c_str());
-	bool const   isOpen = ImGui::TreeNodeEx("##CreateNodeClass", flags);
-	ImVec2 const rowMin = ImGui::GetItemRectMin();
-	ImVec2 const rowMax = ImGui::GetItemRectMax();
-	bool const   rowHovered = ImGui::IsMouseHoveringRect(rowMin, rowMax);
-	bool const   classClicked = rowHovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left);
+	bool const   isOpen             = ImGui::TreeNodeEx("##CreateNodeClass", flags);
+	ImVec2 const rowMin             = ImGui::GetItemRectMin();
+	ImVec2 const rowMax             = ImGui::GetItemRectMax();
+	bool const   rowHovered         = ImGui::IsMouseHoveringRect(rowMin, rowMax);
+	bool const   classClicked       = rowHovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left);
 	bool const   classDoubleClicked = rowHovered && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left);
 
 	if (!canCreate)
@@ -270,6 +270,7 @@ bool CreateNodePopup::CreateSelectedNode(EditorUIContext& context)
 		delete object;
 		return false;
 	}
+
 	if (context.m_sceneTree == nullptr)
 	{
 		delete node;
@@ -277,27 +278,25 @@ bool CreateNodePopup::CreateSelectedNode(EditorUIContext& context)
 	}
 
 	Node* sceneRoot = context.m_sceneTree->GetScene();
+	// If the scene is empty, we will make the new node the root of the scene.
 	if (sceneRoot == nullptr)
 	{
-		delete node;
-		if (EditorNode::Get() != nullptr && EditorNode::Get()->m_editorUI != nullptr)
+		context.m_sceneTree->ChangeScene(node);
+	}
+	else
+	{
+		Node* parent = ResolveCreateParent(context);
+		// If the parent is invalid, we will add the new node to the scene root.
+		if (sceneRoot != nullptr && parent == nullptr)
 		{
-			EditorNode::Get()->m_editorUI->Warning("Cannot Create Node", "Create a scene before adding nodes.");
+			parent = sceneRoot;
 		}
-		return false;
-	}
-	Node* parent    = ResolveCreateParent(context);
-	if (sceneRoot != nullptr && parent == nullptr)
-	{
-		parent = sceneRoot;
-	}
-	node->SetName(m_selectedClass);
+		node->SetName(m_selectedClass);
 
-	parent->AddNode(node);
-	if (EditorNode::Get() != nullptr)
-	{
-		EditorNode::Get()->MarkSceneDirty();
+		parent->AddNode(node);
 	}
+
+	EditorNode::Get()->MarkSceneDirty();
 
 	if (context.m_selection != nullptr)
 	{
@@ -332,7 +331,7 @@ Node* CreateNodePopup::ResolveCreateParent(EditorUIContext const& context) const
 void CreateNodePopup::Reset()
 {
 	m_selectedClass.clear();
-	m_filter[0]    = '\0';
-	m_parentHandle = NodeHandle::Invalid;
+	m_filter[0]     = '\0';
+	m_parentHandle  = NodeHandle::Invalid;
 	m_openRequested = false;
 }

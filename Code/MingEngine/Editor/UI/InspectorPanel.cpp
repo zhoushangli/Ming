@@ -159,10 +159,6 @@ void InspectorPanel::RebuildProperties(EditorUIContext& context)
 	}
 }
 
-// ——— Tab bar ———
-
-// ——— Main render ———
-
 void InspectorPanel::OnRender(EditorUIContext& context)
 {
 	ImGui::Begin(GetTitle(), GetOpenState());
