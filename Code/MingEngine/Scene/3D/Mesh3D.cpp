@@ -21,6 +21,11 @@ RaycastResult3D MeshRaycastObject::IntersectBounds(RaycastQuery3D const& query)
 
 	Ref<MeshResource> meshResource = m_mesh->GetMeshResource();
 
+	if (!meshResource.IsValid())
+	{
+		return hit;
+	}
+
 	hit.m_owner               = m_owner;
 	(MathRaycastResult3D&)hit = RaycastVsAABB3D(localStart, localDirection, localMaxLength, meshResource->m_bounds);
 
@@ -46,6 +51,11 @@ RaycastResult3D MeshRaycastObject::IntersectRay(RaycastQuery3D const& query)
 	float localMaxLength = query.m_maxDistance;
 
 	Ref<MeshResource> meshResource = m_mesh->GetMeshResource();
+
+	if (!meshResource.IsValid())
+	{
+		return hit;
+	}
 
 	hit.m_owner = m_owner;
 	for (const Triangle3& triangle : meshResource->m_triangles)

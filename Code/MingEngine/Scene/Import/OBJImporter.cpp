@@ -1,10 +1,10 @@
 #include "MingEngine/Scene/Import/OBJImporter.hpp"
 
 #include "MingEngine/Core/Object/ClassDatabase.hpp"
+#include "MingEngine/Core/Object/ResourceLoader.hpp"
 #include "MingEngine/Core/Render/Vertex.hpp"
 #include "MingEngine/Core/Render/VertexUtils.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
-#include "MingEngine/Core/Object/ResourceLoader.hpp"
 
 #include <cstdlib>
 #include <filesystem>
@@ -19,15 +19,14 @@ Matrix4x4 OBJImportMatrix = Matrix4x4(
 	0.f, 1.f, 0.f, 0.f,
 	0.f, 0.f, 0.f, 1.f
 );
-// clang-format on
+
 
 std::vector<ImportOptions> const kOBJImportOptions = {
-	{ PropertyInfo(
-		  Variant::Type::Bool, "Generate Tangents", PropertyInfo::Hint::None, "", PropertyInfo::UsageFlags::Default),
-	  Variant(true) },
-	{ PropertyInfo(Variant::Type::Vec3, "Scale Mesh", PropertyInfo::Hint::None, "", PropertyInfo::UsageFlags::Default),
-	  Variant(Vec3::One) },
+	{ PropertyInfo(Variant::Type::Bool, "Generate Tangents", PropertyInfo::Hint::None, "", PropertyInfo::UsageFlags::Default), Variant(true) },
+	{ PropertyInfo(Variant::Type::Vec3, "Scale Mesh", 		 PropertyInfo::Hint::None, "", PropertyInfo::UsageFlags::Default), Variant(Vec3::One) },
 };
+
+// clang-format on
 
 Variant GetImportOptionValue(
 	std::unordered_map<std::string, Variant> const& importOptions, char const* name, Variant::Type expectedType)
@@ -463,7 +462,7 @@ bool ParseOBJFile(std::string const& sourceVirtualPath, OBJData& outData)
 
 						if (faceVertex.m_texCoordIndex >= 0)
 						{
-							vertex.m_uvTexCoords = outData.m_texCoords[faceVertex.m_texCoordIndex];
+							vertex.m_uv = outData.m_texCoords[faceVertex.m_texCoordIndex];
 						}
 
 						if (faceVertex.m_normalIndex >= 0)
@@ -794,7 +793,7 @@ Ref<Resource> OBJImporter::Import(
 
 	std::filesystem::path physicalPath;
 	g_engine->m_fileSystem->TryGetPhysicalPath(sourceVirtualPath, physicalPath);
-	
+
 	// 1) Copy OBJData into MeshResource
 	meshData->SetName(physicalPath.stem().string());
 	meshData->m_vertexFormat = "PCUTBN";

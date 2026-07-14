@@ -14,6 +14,7 @@
 #include "MingEngine/Scene/Core/PackedScene.hpp"
 #include "MingEngine/Scene/Core/PackedSceneFormat.hpp"
 #include "MingEngine/Scene/Core/RaycastSpace3D.hpp"
+#include "MingEngine/Scene/Import/GLTFImporter.hpp"
 #include "MingEngine/Scene/Import/ImageImporter.hpp"
 #include "MingEngine/Scene/Import/OBJImporter.hpp"
 #include "MingEngine/Scene/Physics/AABBCollider3D.hpp"
@@ -44,6 +45,7 @@ MeshResourceSaver*    meshResourceSaver    = new MeshResourceSaver();
 TextureResourceSaver* textureResourceSaver = new TextureResourceSaver();
 
 OBJImporter*   objImporter   = new OBJImporter();
+GLTFImporter*  gltfImporter  = new GLTFImporter();
 ImageImporter* imageImporter = new ImageImporter();
 } // namespace
 
@@ -68,6 +70,7 @@ void RegisterSceneTypes()
 	ClassDatabase::RegisterClass<TextureResourceSaver>();
 
 	ClassDatabase::RegisterClass<OBJImporter>();
+	ClassDatabase::RegisterClass<GLTFImporter>();
 	ClassDatabase::RegisterClass<ImageImporter>();
 
 	// Resource format registration
@@ -81,6 +84,7 @@ void RegisterSceneTypes()
 	ResourceSaver::AddSaver(Ref<TextureResourceSaver>(textureResourceSaver));
 
 	ResourceImporter::AddImporter(Ref<OBJImporter>(objImporter));
+	ResourceImporter::AddImporter(Ref<GLTFImporter>(gltfImporter));
 	ResourceImporter::AddImporter(Ref<ImageImporter>(imageImporter));
 
 	// Scene types
