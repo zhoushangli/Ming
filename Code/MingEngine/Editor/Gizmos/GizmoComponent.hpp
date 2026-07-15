@@ -12,6 +12,7 @@
 class Camera3D;
 class GizmoComponent;
 class GizmoRaycastObject;
+class IndexBuffer;
 class Node3D;
 class SceneTree;
 
@@ -126,6 +127,7 @@ class GizmoRotationArc : public GizmoComponent
 
 public:
 	GizmoRotationArc(GizmoAxis axis, Rgba8 const& color);
+	~GizmoRotationArc() override;
 
 	void UpdateRaycastObject(GizmoContext const& context) override;
 	void OnBeginDrag(GizmoContext const& context, Vec3 const& hitPos) override;
@@ -134,11 +136,14 @@ public:
 	bool IsRotationGizmo() const override;
 
 protected:
+	RenderRequest SubmitRenderRequest() const override;
 	void OnNotification(int notification);
 
 private:
-	EulerAngles m_startOrientation = EulerAngles::Zero;
-	Vec3        m_dragOrigin       = Vec3::Zero;
-	Vec3        m_startVectorWorld = Vec3::Zero;
-	float       m_currentDegrees   = 0.f;
+	std::vector<unsigned int> m_indices;
+	IndexBuffer*              m_indexBuffer      = nullptr;
+	EulerAngles               m_startOrientation = EulerAngles::Zero;
+	Vec3                      m_dragOrigin        = Vec3::Zero;
+	Vec3                      m_startVectorWorld  = Vec3::Zero;
+	float                     m_currentDegrees    = 0.f;
 };

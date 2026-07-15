@@ -3,6 +3,7 @@
 #include "MingEngine/Core/Math/AABB3.hpp"
 #include "MingEngine/Core/Math/MathUtils.hpp"
 #include "MingEngine/Core/Math/RaycastUtils.hpp"
+#include "MingEngine/Core/Object/ResourceLoader.hpp"
 #include "MingEngine/Core/Render/VertexUtils.hpp"
 #include "MingEngine/Core/StringUtils.hpp"
 #include "MingEngine/Editor/EditorCamera.hpp"
@@ -11,6 +12,7 @@
 #include "MingEngine/Editor/UI/EditorUI.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Engine/Render/DebugGizmos.hpp"
+#include "MingEngine/Engine/Render/IndexBuffer.hpp"
 #include "MingEngine/Engine/Render/Renderer.hpp"
 #include "MingEngine/Engine/Render/VertexBuffer.hpp"
 #include "MingEngine/Scene/3D/Camera3D.hpp"
@@ -18,6 +20,7 @@
 #include "MingEngine/Scene/Core/Node.hpp"
 #include "MingEngine/Scene/Core/RaycastSpace3D.hpp"
 #include "MingEngine/Scene/Core/SceneTree.hpp"
+#include "MingEngine/Scene/Resource/ShaderResource.hpp"
 
 #include <cmath>
 
@@ -33,7 +36,8 @@ float constexpr kGizmoPlaneSize         = 0.22f;
 float constexpr kGizmoPlanePickSize     = 0.30f;
 float constexpr kGizmoRotationRadius    = 0.88f;
 float constexpr kGizmoRotationPickWidth = 0.10f;
-int constexpr kGizmoArcSegments         = 32;
+int constexpr kGizmoArcSegments         = 64;
+int constexpr kGizmoArcSectionSegments  = 3;
 
 Rgba8 const kHoverColor(255, 235, 90, 255);
 Rgba8 const kActiveColor(255, 170, 30, 255);
@@ -41,25 +45,62 @@ Rgba8 const kGuideColor(220, 220, 220, 255);
 
 Rgba8 const kDebugRaycastColor = Rgba8::Cyan;
 
-void AddVertsForTorusArc3D(
-	std::vector<Vertex>& verts,
-	Vec3 const&          origin,
-	Vec3 const&          u,
-	Vec3 const&          v,
-	float                radius,
-	float                startDegrees,
-	float                endDegrees,
-	float                tubeRadius,
-	Rgba8 const&         color)
+void AddVertsForRotationRing3D(
+	std::vector<Vertex>&       verts,
+	std::vector<unsigned int>& indices,
+	Vec3 const&                origin,
+	Vec3 const&                axis,
+	Vec3 const&                u,
+	Vec3 const&                v,
+	float                      radius,
+	Rgba8 const&               color)
 {
-	Vec3 previous = origin + u * (CosDegrees(startDegrees) * radius) + v * (SinDegrees(startDegrees) * radius);
-	for (int segmentIndex = 1; segmentIndex <= kGizmoArcSegments; ++segmentIndex)
+	unsigned int const vertexBase = static_cast<unsigned int>(verts.size());
+	verts.reserve(verts.size() + kGizmoArcSegments * kGizmoArcSectionSegments);
+	indices.reserve(indices.size() + kGizmoArcSegments * kGizmoArcSectionSegments * 6);
+
+	for (int arcSegment = 0; arcSegment < kGizmoArcSegments; ++arcSegment)
 	{
-		float const t       = (float)segmentIndex / (float)kGizmoArcSegments;
-		float const degrees = Interpolate(startDegrees, endDegrees, t);
-		Vec3 const  current = origin + u * (CosDegrees(degrees) * radius) + v * (SinDegrees(degrees) * radius);
-		AddVertsForCylinder3D(verts, previous, current, tubeRadius, color);
-		previous = current;
+		float const arcFraction = static_cast<float>(arcSegment) / static_cast<float>(kGizmoArcSegments);
+		float const arcDegrees  = arcFraction * 360.f;
+		float const arcCos      = CosDegrees(arcDegrees);
+		float const arcSin      = SinDegrees(arcDegrees);
+		Vec3 const  radial      = u * arcCos + v * arcSin;
+		Vec3 const  tangent     = -u * arcSin + v * arcCos;
+		Vec3 const  position    = origin + radial * radius;
+
+		for (int sectionSegment = 0; sectionSegment < kGizmoArcSectionSegments; ++sectionSegment)
+		{
+			float const sectionFraction =
+				static_cast<float>(sectionSegment) / static_cast<float>(kGizmoArcSectionSegments);
+			float const sectionDegrees = sectionFraction * 360.f;
+			Vec3 const normal =
+				(axis * CosDegrees(sectionDegrees) + radial * SinDegrees(sectionDegrees)).GetNormalized();
+			Vec3 const bitangent = CrossProduct3D(normal, tangent).GetNormalized();
+
+			verts.emplace_back(position, color, Vec2(arcFraction, sectionFraction), tangent, bitangent, normal);
+		}
+	}
+
+	for (int arcSegment = 0; arcSegment < kGizmoArcSegments; ++arcSegment)
+	{
+		unsigned int const currentRing = vertexBase + arcSegment * kGizmoArcSectionSegments;
+		unsigned int const nextRing =
+			vertexBase + ((arcSegment + 1) % kGizmoArcSegments) * kGizmoArcSectionSegments;
+
+		for (int sectionSegment = 0; sectionSegment < kGizmoArcSectionSegments; ++sectionSegment)
+		{
+			unsigned int const currentSection = sectionSegment;
+			unsigned int const nextSection    = (sectionSegment + 1) % kGizmoArcSectionSegments;
+
+			indices.push_back(currentRing + nextSection);
+			indices.push_back(currentRing + currentSection);
+			indices.push_back(nextRing + currentSection);
+
+			indices.push_back(nextRing + currentSection);
+			indices.push_back(nextRing + nextSection);
+			indices.push_back(currentRing + nextSection);
+		}
 	}
 }
 
@@ -487,19 +528,48 @@ void GizmoPlaneSquare::OnDrag(GizmoContext const& context, Vec3 const& rayStart,
 
 GizmoRotationArc::GizmoRotationArc(GizmoAxis axis, Rgba8 const& color) : GizmoComponent(axis, color)
 {
-	Vec3 const  u          = GetPlaneU();
-	Vec3 const  v          = GetPlaneV();
-	float const radius     = kGizmoRotationRadius;
-	float const lineRadius = kGizmoArrowRadius * 0.45f;
-	AddVertsForTorusArc3D(m_verts, Vec3::Zero, u, v, radius, -125.f, 125.f, lineRadius, Rgba8::White);
+	Vec3 const u = GetPlaneU();
+	Vec3 const v = GetPlaneV();
+	AddVertsForRotationRing3D(
+		m_verts, m_indices, Vec3::Zero, GetAxisWorld(), u, v, kGizmoRotationRadius, Rgba8::White);
 
-	m_virtualCenter = (u + v).GetNormalized() * 0.5f * radius;
+	m_virtualCenter = (u + v).GetNormalized() * 0.5f * kGizmoRotationRadius;
+}
+
+GizmoRotationArc::~GizmoRotationArc()
+{
+	delete m_indexBuffer;
+	m_indexBuffer = nullptr;
+}
+
+RenderRequest GizmoRotationArc::SubmitRenderRequest() const
+{
+	if (m_vertexBuffer == nullptr || m_indexBuffer == nullptr)
+	{
+		return RenderRequest();
+	}
+
+	RenderRequest request = GizmoComponent::SubmitRenderRequest();
+	request.m_indexBuffer = m_indexBuffer;
+	Ref<ShaderResource> shaderResource(ResourceLoader::Load("res://Shaders/TransformGizmosArc.hlsl"));
+	request.m_shader = shaderResource.IsValid() ? shaderResource->GetShader() : nullptr;
+	return request;
 }
 
 void GizmoRotationArc::OnNotification(int notification)
 {
 	switch (static_cast<NotificationType>(notification))
 	{
+	case NotificationType::Ready:
+	{
+		if (!m_indices.empty() && m_indexBuffer == nullptr && g_engine != nullptr && g_engine->m_renderer != nullptr)
+		{
+			unsigned int const indexBufferSize = static_cast<unsigned int>(m_indices.size() * sizeof(unsigned int));
+			m_indexBuffer =
+				g_engine->m_renderer->CreateIndexBuffer(m_indices.data(), indexBufferSize, sizeof(unsigned int));
+		}
+		break;
+	}
 	case NotificationType::EnterTree:
 	{
 		RaycastSpace3D* raycastSpace = GetSceneTree()->GetRaycastSpace();

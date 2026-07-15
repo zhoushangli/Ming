@@ -69,22 +69,22 @@ TransformGizmo3D::TransformGizmo3D()
 	arcY->SetSerializable(false);
 	arcZ->SetSerializable(false);
 
-	// AddNode(arrowX);
-	// AddNode(arrowY);
-	// AddNode(arrowZ);
-	// AddNode(planeX);
-	// AddNode(planeY);
-	// AddNode(planeZ);
+	AddNode(arrowX);
+	AddNode(arrowY);
+	AddNode(arrowZ);
+	AddNode(planeX);
+	AddNode(planeY);
+	AddNode(planeZ);
 	AddNode(arcX);
 	AddNode(arcY);
 	AddNode(arcZ);
 
-	// m_components.push_back(arrowX);
-	// m_components.push_back(arrowY);
-	// m_components.push_back(arrowZ);
-	// m_components.push_back(planeX);
-	// m_components.push_back(planeY);
-	// m_components.push_back(planeZ);
+	m_components.push_back(arrowX);
+	m_components.push_back(arrowY);
+	m_components.push_back(arrowZ);
+	m_components.push_back(planeX);
+	m_components.push_back(planeY);
+	m_components.push_back(planeZ);
 	m_components.push_back(arcX);
 	m_components.push_back(arcY);
 	m_components.push_back(arcZ);
@@ -228,13 +228,13 @@ void TransformGizmo3D::OnNotification(int notification)
 		for (size_t rank = 0; rank < m_components.size(); ++rank)
 		{
 			m_components[rank]->SetRenderPriority(kGizmoPriorityBase + static_cast<int>(rank));
-			DebugGizmos::AddWorldSphere(
-				m_components[rank]->GetWorldVirtualCenter(),
-				0.1f,
-				0.f,
-				Rgba8(255, 255, 0, 255),
-				Rgba8(255, 255, 0, 255),
-				DebugRenderMode::X_RAY);
+			// DebugGizmos::AddWorldSphere(
+			// 	m_components[rank]->GetWorldVirtualCenter(),
+			// 	0.1f,
+			// 	0.f,
+			// 	Rgba8(255, 255, 0, 255),
+			// 	Rgba8(255, 255, 0, 255),
+			// 	DebugRenderMode::X_RAY);
 		}
 
 		break;
