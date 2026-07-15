@@ -26,14 +26,14 @@ using namespace Math;
 
 namespace
 {
-float constexpr kGizmoAxisLength        = 1.25f;
+float constexpr kGizmoAxisLength        = 1.1f;
 float constexpr kGizmoArrowRadius       = 0.035f;
-float constexpr kGizmoAxisPickRadius    = 0.11f;
-float constexpr kGizmoPlaneOffset       = 0.36f;
-float constexpr kGizmoPlaneSize         = 0.22f;
-float constexpr kGizmoPlanePickSize     = 0.30f;
-float constexpr kGizmoRotationRadius    = 0.88f;
-float constexpr kGizmoRotationPickWidth = 0.10f;
+float constexpr kGizmoAxisPickRadius    = 0.1f;
+float constexpr kGizmoPlaneOffset       = 0.3f;
+float constexpr kGizmoPlaneSize         = 0.2f;
+float constexpr kGizmoPlanePickSize     = 0.3f;
+float constexpr kGizmoRotationRadius    = 0.8f;
+float constexpr kGizmoRotationPickWidth = 0.1f;
 int constexpr kGizmoArcSegments         = 128;
 int constexpr kGizmoArcSectionSegments  = 3;
 
@@ -443,8 +443,8 @@ void GizmoPlaneSquare::OnDrag(
 		return;
 	}
 
-	Vec3 const planeNormal = GetAxisWorld();
-	MathRaycastResult3D const startHit = RaycastVsPlane3D(
+	Vec3 const                planeNormal = GetAxisWorld();
+	MathRaycastResult3D const startHit    = RaycastVsPlane3D(
 		startRaycastInfo.m_startPos,
 		startRaycastInfo.m_forwardNormal,
 		startRaycastInfo.m_maxLength,

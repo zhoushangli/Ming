@@ -1,5 +1,6 @@
 #include "MingEngine/Core/Object/RegisterCoreTypes.hpp"
 
+#include "MingEngine/Core/Image.hpp"
 #include "MingEngine/Core/Object/ClassDatabase.hpp"
 #include "MingEngine/Core/Object/RefCounted.hpp"
 #include "MingEngine/Core/Object/Resource.hpp"
@@ -28,6 +29,7 @@ void RegisterCoreTypes()
 
 	// Core types
 	ClassDatabase::RegisterClass<RefCounted>(false);
+	ClassDatabase::RegisterClass<Image>(false, true);
 	ClassDatabase::RegisterClass<Resource>(false);
 	ClassDatabase::RegisterClass<Script>();
 	ClassDatabase::RegisterClass<ResourceFormatImporter>(false);

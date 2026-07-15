@@ -5,10 +5,10 @@
 #include "MingEngine/Core/Render/Vertex.hpp"
 #include "MingEngine/Core/Render/VertexUtils.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
+#include "MingEngine/Scene/Resource/TextureResource.hpp"
 
 #include <cstdlib>
 #include <filesystem>
-#include <memory>
 
 namespace
 {
@@ -75,13 +75,10 @@ struct OBJData
 
 struct MTLData
 {
-	std::string            m_name;
-	std::string            m_diffuseTexturePath;
-	std::string            m_specularTexturePath;
-	std::string            m_normalTexturePath;
-	std::unique_ptr<Image> m_diffuseImage;
-	std::unique_ptr<Image> m_specularImage;
-	std::unique_ptr<Image> m_normalImage;
+	std::string m_name;
+	std::string m_diffuseTexturePath;
+	std::string m_specularTexturePath;
+	std::string m_normalTexturePath;
 };
 
 bool ParseOBJFile(std::string const& sourceVirtualPath, OBJData& outData)
@@ -568,9 +565,6 @@ bool ParseMTLFile(std::string const& sourceVirtualPath, MTLData& outMaterials)
 		outMaterials.m_diffuseTexturePath.clear();
 		outMaterials.m_specularTexturePath.clear();
 		outMaterials.m_normalTexturePath.clear();
-		outMaterials.m_diffuseImage.reset();
-		outMaterials.m_specularImage.reset();
-		outMaterials.m_normalImage.reset();
 	};
 
 	auto TrimWhitespace = [](std::string const& text) -> std::string
@@ -647,30 +641,6 @@ bool ParseMTLFile(std::string const& sourceVirtualPath, MTLData& outMaterials)
 		}
 
 		return GetParentVirtualPath(materialVirtualPath) + normalizedTexturePath;
-	};
-
-	auto LoadImageFromVirtualPath = [](std::string const& imageVirtualPath, std::unique_ptr<Image>& outImage) -> bool
-	{
-		outImage.reset();
-		if (imageVirtualPath.empty())
-		{
-			return true;
-		}
-
-		std::filesystem::path imagePhysicalPath;
-		if (!g_engine->m_fileSystem->TryGetPhysicalPath(imageVirtualPath, imagePhysicalPath))
-		{
-			return false;
-		}
-
-		std::unique_ptr<Image> image = std::make_unique<Image>();
-		if (!image->LoadFromFile(imagePhysicalPath.string()))
-		{
-			return false;
-		}
-
-		outImage = std::move(image);
-		return true;
 	};
 
 	ClearOutput();
@@ -752,16 +722,8 @@ bool ParseMTLFile(std::string const& sourceVirtualPath, MTLData& outMaterials)
 		}
 	}
 
-	if (!LoadImageFromVirtualPath(outMaterials.m_diffuseTexturePath, outMaterials.m_diffuseImage)
-		|| !LoadImageFromVirtualPath(outMaterials.m_specularTexturePath, outMaterials.m_specularImage)
-		|| !LoadImageFromVirtualPath(outMaterials.m_normalTexturePath, outMaterials.m_normalImage))
-	{
-		ClearOutput();
-		return false;
-	}
-
-	return !outMaterials.m_name.empty() || outMaterials.m_diffuseImage != nullptr
-		   || outMaterials.m_specularImage != nullptr || outMaterials.m_normalImage != nullptr;
+	return !outMaterials.m_name.empty() || !outMaterials.m_diffuseTexturePath.empty()
+		   || !outMaterials.m_specularTexturePath.empty() || !outMaterials.m_normalTexturePath.empty();
 }
 } // namespace
 
@@ -808,33 +770,43 @@ Ref<Resource> OBJImporter::Import(
 	meshData->m_indices.resize(meshData->m_indexCount * sizeof(uint32_t));
 	memcpy(meshData->m_indices.data(), objData.m_indices.data(), meshData->m_indices.size());
 
-	// 2) Ensure texture dependencies are imported, store .tex paths in MeshResource
+	// 2) Ensure texture dependencies are imported and load TextureResources
 	MTLData mtlData;
 	if (!objData.m_mtlVirtualPath.empty())
 	{
-		if (ParseMTLFile(objData.m_mtlVirtualPath, mtlData))
+		if (!ParseMTLFile(objData.m_mtlVirtualPath, mtlData))
 		{
-			auto GetTextureResource = [&meshData](std::string const& texVirtualPath) -> bool
+			return Ref<Resource>();
+		}
+
+		auto AddTextureResource = [&meshData](std::string const& texVirtualPath) -> bool
+		{
+			if (texVirtualPath.empty())
 			{
-				if (texVirtualPath.empty())
-				{
-					return false;
-				}
-
-				if (!ResourceImporter::EnsureImported(texVirtualPath))
-				{
-					return false;
-				}
-
-				Ref<Resource> texResource = ResourceLoader::Load(texVirtualPath);
-				meshData->m_textureResources.push_back(texResource);
-
 				return true;
-			};
+			}
 
-			GetTextureResource(mtlData.m_diffuseTexturePath);
-			GetTextureResource(mtlData.m_specularTexturePath);
-			GetTextureResource(mtlData.m_normalTexturePath);
+			if (!ResourceImporter::EnsureImported(texVirtualPath))
+			{
+				return false;
+			}
+
+			Ref<Resource>        loadedResource = ResourceLoader::Load(texVirtualPath);
+			Ref<TextureResource> textureResource(loadedResource);
+			if (!textureResource.IsValid())
+			{
+				return false;
+			}
+
+			meshData->m_textureResources.push_back(textureResource);
+			return true;
+		};
+
+		if (!AddTextureResource(mtlData.m_diffuseTexturePath)
+			|| !AddTextureResource(mtlData.m_specularTexturePath)
+			|| !AddTextureResource(mtlData.m_normalTexturePath))
+		{
+			return Ref<Resource>();
 		}
 	}
 

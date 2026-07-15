@@ -1,5 +1,6 @@
 #include "MingEngine/Scene/Resource/TextureResourceFormat.hpp"
 
+#include "MingEngine/Core/Image.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Engine/File/FileSystem.hpp"
 #include "MingEngine/Scene/Resource/TextureResource.hpp"
@@ -7,19 +8,23 @@
 #include "ThirdParty/nlohmann/json.hpp"
 
 #include <algorithm>
+#include <climits>
 #include <cstdint>
 #include <cstring>
 #include <exception>
 #include <sstream>
+#include <utility>
 
 namespace
 {
 using Json = nlohmann::ordered_json;
 
 constexpr char const* kTexMagic       = "TEX";
-constexpr uint32_t    kTexFileVersion = 1;
+constexpr uint32_t    kTexFileVersion = 2;
 constexpr size_t      kMinHeaderSize  = 4096;
 constexpr char const* kTexExtension   = ".tex";
+constexpr char const* kTexStorage     = "SOURCE_IMAGE";
+constexpr char const* kTexFormat      = "RGBA8";
 
 struct BinaryBlock
 {
@@ -139,9 +144,8 @@ void CopyPayloadBlock(std::vector<uint8_t> const& payload, BinaryBlock const& bl
 
 bool IsValidTextureData(TextureResource const& texData)
 {
-	return texData.m_dimensions.x > 0 && texData.m_dimensions.y > 0 && texData.m_channels > 0
-		   && texData.m_pixels.size()
-				  == static_cast<size_t>(texData.m_dimensions.x) * texData.m_dimensions.y * texData.m_channels;
+	Ref<Image> const image = texData.GetImage();
+	return image.IsValid() && image->IsValid() && image->HasEncodedData();
 }
 
 } // namespace
@@ -192,11 +196,18 @@ Ref<Resource> TextureResourceLoader::Load(std::string const& virtualPath)
 		}
 
 		std::string          texName;
+		std::string          storage;
+		std::string          format;
+		uint32_t             width    = 0;
+		uint32_t             height   = 0;
+		uint32_t             channels = 0;
 		Ref<TextureResource> textureResource = CreateRef<TextureResource>();
-		if (!TryReadString(root, "name", texName) || !TryReadString(root, "format", textureResource->m_format)
-			|| !TryReadUInt32(root, "width", (uint32_t&)textureResource->m_dimensions.x)
-			|| !TryReadUInt32(root, "height", (uint32_t&)textureResource->m_dimensions.y)
-			|| !TryReadUInt32(root, "channels", (uint32_t&)textureResource->m_channels))
+		if (!root.contains("version") || !root["version"].is_number_unsigned()
+			|| root["version"].get<uint32_t>() != kTexFileVersion || !TryReadString(root, "name", texName)
+			|| !TryReadString(root, "storage", storage) || storage != kTexStorage
+			|| !TryReadString(root, "format", format) || format != kTexFormat || !TryReadUInt32(root, "width", width)
+			|| !TryReadUInt32(root, "height", height) || !TryReadUInt32(root, "channels", channels) || channels != 4
+			|| width == 0 || height == 0 || width > INT_MAX || height > INT_MAX)
 		{
 			return Ref<Resource>();
 		}
@@ -207,17 +218,25 @@ Ref<Resource> TextureResourceLoader::Load(std::string const& virtualPath)
 			return Ref<Resource>();
 		}
 
-		CopyPayloadBlock(payload, dataBlock, textureResource->m_pixels);
-
-		if (!IsValidTextureData(*textureResource))
+		// 1) Rebuild the CPU image from the encoded source payload
+		std::vector<uint8_t> encodedData;
+		CopyPayloadBlock(payload, dataBlock, encodedData);
+		Ref<Image> image = CreateRef<Image>();
+		if (!image->LoadFromMemory(std::move(encodedData)) || image->GetDimensions().x != static_cast<int>(width)
+			|| image->GetDimensions().y != static_cast<int>(height) || image->GetChannels() != static_cast<int>(channels))
 		{
 			return Ref<Resource>();
 		}
 
+		textureResource->m_image = std::move(image);
 		textureResource->SetVirtualPath(virtualPath);
 		textureResource->SetName(texName);
 
-		textureResource->InitGPUResources();
+		// 2) Upload the decoded pixels while retaining both Image representations
+		if (!textureResource->InitGPUResources())
+		{
+			return Ref<Resource>();
+		}
 
 		return textureResource;
 	}
@@ -246,17 +265,19 @@ bool TextureResourceSaver::Save(std::string const& virtualPath, Variant const& v
 		return false;
 	}
 
+	Ref<Image> const     image = texData->GetImage();
 	std::vector<uint8_t> payload;
-	BinaryBlock const    dataBlock = AppendPayload(payload, texData->m_pixels);
+	BinaryBlock const    dataBlock = AppendPayload(payload, image->GetEncodedData());
 
 	Json root;
 	root["type"]     = "Texture";
 	root["version"]  = kTexFileVersion;
 	root["name"]     = texData->GetName();
-	root["format"]   = texData->m_format;
-	root["width"]    = texData->m_dimensions.x;
-	root["height"]   = texData->m_dimensions.y;
-	root["channels"] = texData->m_channels;
+	root["storage"]  = kTexStorage;
+	root["format"]   = kTexFormat;
+	root["width"]    = image->GetDimensions().x;
+	root["height"]   = image->GetDimensions().y;
+	root["channels"] = image->GetChannels();
 	root["data"]     = MakeBlockJson(dataBlock);
 
 	std::string const jsonText   = root.dump(1, '\t');

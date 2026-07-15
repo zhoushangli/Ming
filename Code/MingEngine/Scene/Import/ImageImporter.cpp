@@ -5,9 +5,7 @@
 #include "MingEngine/Engine/File/FileSystem.hpp"
 #include "MingEngine/Scene/Resource/TextureResource.hpp"
 
-#include "ThirdParty/stb/stb_image.h"
-
-#include <cstring>
+#include <utility>
 
 std::vector<std::string> ImageImporter::GetSupportedExtensions() const
 {
@@ -30,31 +28,30 @@ Ref<Resource> ImageImporter::Import(
 		return Ref<Resource>();
 	}
 
-	// 1) Load image from file via Image helper (stb_image)
+	// 1) Resolve the source name and read its encoded bytes once
 	std::filesystem::path physicalPath;
 	if (!g_engine->m_fileSystem->TryGetPhysicalPath(sourceVirtualPath, physicalPath))
 	{
 		return Ref<Resource>();
 	}
 
-	Image image(physicalPath.string());
-	if (!image.IsValid())
+	std::vector<uint8_t> encodedData;
+	if (!g_engine->m_fileSystem->ReadBinary(sourceVirtualPath, encodedData))
 	{
 		return Ref<Resource>();
 	}
 
-	// 2) Convert Image's Rgba8 data to raw uint8_t binary
-	IntVec2 const dims = image.GetDimensions();
+	// 2) Retain and decode the encoded source data in Image
+	Ref<Image> image = CreateRef<Image>();
+	if (!image->LoadFromMemory(std::move(encodedData)))
+	{
+		return Ref<Resource>();
+	}
 
-	// 3) Fill TextureResource CPU fields
+	// 3) Store the complete CPU image in TextureResource
 	Ref<TextureResource> texData = CreateRef<TextureResource>();
 	texData->SetName(physicalPath.stem().string());
-	texData->m_dimensions        = dims;
-	texData->m_channels          = 4;
-	texData->m_format            = "RGBA8";
-	texData->m_pixels.assign(
-		static_cast<uint8_t const*>(image.GetRawData()),
-		static_cast<uint8_t const*>(image.GetRawData()) + dims.x * dims.y * 4);
+	texData->m_image = std::move(image);
 
 	return texData;
 }

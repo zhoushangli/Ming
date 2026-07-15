@@ -1,8 +1,8 @@
 #include "MingEngine/Scene/Resource/TextureResource.hpp"
 
 #include "MingEngine/Engine/Application/Engine.hpp"
-#include "MingEngine/Engine/Render/Renderer.hpp"
 #include "MingEngine/Engine/Render/GPUTexture.hpp"
+#include "MingEngine/Engine/Render/Renderer.hpp"
 
 #include <utility>
 
@@ -12,7 +12,7 @@ TextureResource::~TextureResource()
 	m_gpuTexture = nullptr;
 }
 
-bool TextureResource::IsEmpty() const { return m_pixels.empty() || m_dimensions.x == 0 || m_dimensions.y == 0; }
+bool TextureResource::IsEmpty() const { return !m_image.IsValid() || !m_image->IsValid(); }
 
 bool TextureResource::MoveFrom(Resource&& other)
 {
@@ -23,12 +23,9 @@ bool TextureResource::MoveFrom(Resource&& other)
 		return false;
 	}
 
-	// 2) Move CPU data fields
+	// 2) Move CPU image data
 	MoveBaseFrom(std::move(other));
-	m_format     = std::move(otherTex->m_format);
-	m_channels   = otherTex->m_channels;
-	m_dimensions = otherTex->m_dimensions;
-	m_pixels     = std::move(otherTex->m_pixels);
+	m_image = std::move(otherTex->m_image);
 
 	// 3) Take ownership of the loaded GPU texture
 	delete m_gpuTexture;
@@ -38,16 +35,26 @@ bool TextureResource::MoveFrom(Resource&& other)
 	return true;
 }
 
-void TextureResource::InitGPUResources()
+bool TextureResource::InitGPUResources()
 {
 	// 1) Destroy old GPU texture
 	delete m_gpuTexture;
 	m_gpuTexture = nullptr;
 
 	// 2) Create new GPU texture from CPU pixel data
-	if (g_engine != nullptr && g_engine->m_renderer != nullptr && !IsEmpty())
+	if (g_engine == nullptr || g_engine->m_renderer == nullptr || IsEmpty())
 	{
-		m_gpuTexture =
-			g_engine->m_renderer->CreateGPUTexture(GetName().c_str(), m_dimensions, m_channels, m_pixels.data());
+		return false;
 	}
+
+	m_gpuTexture = g_engine->m_renderer->CreateGPUTexture(
+		GetName().c_str(), m_image->GetDimensions(), m_image->GetChannels(), m_image->GetRawData());
+	return m_gpuTexture != nullptr;
 }
+
+IntVec2 TextureResource::GetDimensions() const
+{
+	return m_image.IsValid() ? m_image->GetDimensions() : IntVec2::Zero;
+}
+
+int TextureResource::GetChannels() const { return m_image.IsValid() ? m_image->GetChannels() : 0; }

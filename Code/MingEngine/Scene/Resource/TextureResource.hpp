@@ -1,11 +1,7 @@
 #pragma once
 
-#include "MingEngine/Core/Math/IntVec2.hpp"
+#include "MingEngine/Core/Image.hpp"
 #include "MingEngine/Core/Object/Resource.hpp"
-
-#include <cstdint>
-#include <string>
-#include <vector>
 
 class GPUTexture;
 
@@ -22,20 +18,18 @@ public:
 	bool IsEmpty() const;
 	bool MoveFrom(Resource&& other) override;
 
-	void InitGPUResources();
+	bool InitGPUResources();
 
 	GPUTexture* GetGPUTexture() const { return m_gpuTexture; }
-	IntVec2     GetDimensions() const { return m_dimensions; }
-	int         GetChannels() const { return m_channels; }
+	Ref<Image>  GetImage() const { return m_image; }
+	IntVec2     GetDimensions() const;
+	int         GetChannels() const;
 
 protected:
 	static void BindMethods() {}
 
 public:
-	std::string          m_format   = "RGBA8";
-	int                  m_channels = 4;
-	IntVec2              m_dimensions;
-	std::vector<uint8_t> m_pixels;
+	Ref<Image> m_image;
 
 private:
 	GPUTexture* m_gpuTexture = nullptr;
