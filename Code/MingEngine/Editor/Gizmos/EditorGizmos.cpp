@@ -4,7 +4,6 @@
 #include "MingEngine/Editor/Gizmos/TransformGizmo3D.hpp"
 #include "MingEngine/Editor/Gizmos/ViewportAxisIndicator.hpp"
 #include "MingEngine/Scene/3D/Camera3D.hpp"
-#include "MingEngine/Scene/Core/RaycastSpace3D.hpp"
 #include "MingEngine/Scene/Core/SceneTree.hpp"
 
 #include "MingEngine/Core/Math/MathUtils.hpp"

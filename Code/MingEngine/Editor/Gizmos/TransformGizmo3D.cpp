@@ -1,19 +1,10 @@
 #include "MingEngine/Editor/Gizmos/TransformGizmo3D.hpp"
 
-#include "MingEngine/Core/Math/MathUtils.hpp"
 #include "MingEngine/Editor/EditorCamera.hpp"
 #include "MingEngine/Editor/EditorNode.hpp"
-#include "MingEngine/Editor/Gizmos/GizmoRaycastObject.hpp"
-#include "MingEngine/Engine/Application/Engine.hpp"
-#include "MingEngine/Engine/Render/CameraContext.hpp"
-#include "MingEngine/Engine/Render/DebugGizmos.hpp"
 #include "MingEngine/Scene/3D/Camera3D.hpp"
 #include "MingEngine/Scene/3D/Node3D.hpp"
-#include "MingEngine/Scene/Core/RaycastSpace3D.hpp"
 #include "MingEngine/Scene/Core/SceneTree.hpp"
-#include "MingEngine/Scene/Physics/NodeRaycastUtils.hpp"
-
-using namespace Math;
 
 namespace
 {
@@ -21,27 +12,6 @@ Rgba8 const kAxisXColor(255, 70, 105, 255);
 Rgba8 const kAxisYColor(155, 225, 20, 255);
 Rgba8 const kAxisZColor(55, 160, 255, 255);
 
-float constexpr kEditorGizmoRaycastLength = 10000.f;
-
-RaycastQuery3D BuildRaycastQuery(GizmoContext const& context)
-{
-	RaycastQuery3D query;
-	query.m_maxDistance = kEditorGizmoRaycastLength;
-
-	if (context.m_camera != nullptr)
-	{
-		float const   aspect = context.m_clientDimensions.x / Max(context.m_clientDimensions.y, 1.f);
-		CameraContext camCtx = context.m_camera->GetCameraContext(aspect);
-		RaycastInfo   info =
-			BuildRaycastFromMouse(camCtx, context.m_clientPos, context.m_clientDimensions, kEditorGizmoRaycastLength);
-
-		query.m_start     = info.m_startPos;
-		query.m_direction = info.m_forwardNormal;
-		query.m_exclude   = info.m_ignoreNodeHandle;
-	}
-
-	return query;
-}
 } // namespace
 
 TransformGizmo3D::TransformGizmo3D()
@@ -99,18 +69,8 @@ void TransformGizmo3D::UpdateHover(GizmoContext const& context)
 		return;
 	}
 
-	GizmoComponent* hitComponent = HitTest(context);
 	m_hoveredHitPos              = context.m_originWorld;
-	if (hitComponent != nullptr)
-	{
-		RaycastQuery3D  query  = BuildRaycastQuery(context);
-		RaycastSpace3D* space  = context.m_sceneTree != nullptr ? context.m_sceneTree->GetRaycastSpace() : nullptr;
-		RaycastResult3D result = space != nullptr ? space->IntersectRay(query) : RaycastResult3D();
-		if (result.m_didImpact)
-		{
-			m_hoveredHitPos = result.m_impactPos;
-		}
-	}
+	GizmoComponent* hitComponent = HitTest(context, m_hoveredHitPos);
 
 	if (m_hoveredComponent != hitComponent)
 	{
@@ -133,7 +93,13 @@ bool TransformGizmo3D::BeginDragHovered(GizmoContext const& context)
 	{
 		return false;
 	}
+	EditorCamera* editorCamera = EditorCamera::Get();
+	if (editorCamera == nullptr)
+	{
+		return false;
+	}
 
+	m_dragStartRaycastInfo = editorCamera->BuildRaycastFromMouse();
 	m_hoveredComponent->SetHovered(true);
 	m_activeComponent = m_hoveredComponent;
 	if (context.m_selectedNode3D != nullptr)
@@ -152,10 +118,14 @@ void TransformGizmo3D::OnDrag(GizmoContext const& context)
 {
 	if (m_activeComponent != nullptr)
 	{
-		RaycastQuery3D query    = BuildRaycastQuery(context);
-		Vec3           rayStart = query.m_start;
-		Vec3           rayFwd   = query.m_direction;
-		m_activeComponent->OnDrag(context, rayStart, rayFwd);
+		EditorCamera* editorCamera = EditorCamera::Get();
+		if (editorCamera == nullptr)
+		{
+			return;
+		}
+
+		RaycastInfo const currentRaycastInfo = editorCamera->BuildRaycastFromMouse();
+		m_activeComponent->OnDrag(context, m_dragStartRaycastInfo, currentRaycastInfo);
 	}
 }
 
@@ -209,7 +179,6 @@ void TransformGizmo3D::OnNotification(int notification)
 			{
 				component->SetWorldPosition(context.m_originWorld);
 				component->SetWorldScale(Vec3(context.m_scale, context.m_scale, context.m_scale));
-				component->UpdateRaycastObject(context);
 			}
 		}
 
@@ -228,13 +197,6 @@ void TransformGizmo3D::OnNotification(int notification)
 		for (size_t rank = 0; rank < m_components.size(); ++rank)
 		{
 			m_components[rank]->SetRenderPriority(kGizmoPriorityBase + static_cast<int>(rank));
-			// DebugGizmos::AddWorldSphere(
-			// 	m_components[rank]->GetWorldVirtualCenter(),
-			// 	0.1f,
-			// 	0.f,
-			// 	Rgba8(255, 255, 0, 255),
-			// 	Rgba8(255, 255, 0, 255),
-			// 	DebugRenderMode::X_RAY);
 		}
 
 		break;
@@ -246,27 +208,32 @@ bool TransformGizmo3D::IsHovered() const { return m_hoveredComponent != nullptr;
 
 bool TransformGizmo3D::IsDragging() const { return m_activeComponent != nullptr; }
 
-GizmoComponent* TransformGizmo3D::HitTest(GizmoContext const& context) const
+GizmoComponent* TransformGizmo3D::HitTest(GizmoContext const& context, Vec3& outHitPos) const
 {
-	if (context.m_selectedNode3D == nullptr || context.m_sceneTree == nullptr)
+	EditorCamera* editorCamera = EditorCamera::Get();
+	if (context.m_selectedNode3D == nullptr || editorCamera == nullptr)
 	{
 		return nullptr;
 	}
 
-	RaycastSpace3D* space = context.m_sceneTree->GetRaycastSpace();
-	if (space == nullptr)
+	RaycastInfo const raycastInfo = editorCamera->BuildRaycastFromMouse();
+	GizmoComponent*  closestComponent = nullptr;
+	float            closestDistance  = raycastInfo.m_maxLength;
+	for (GizmoComponent* component : m_components)
 	{
-		return nullptr;
+		if (component == nullptr || !component->GetVisible())
+		{
+			continue;
+		}
+
+		MathRaycastResult3D const hit = component->Raycast(context, raycastInfo);
+		if (hit.m_didImpact && hit.m_impactDist < closestDistance)
+		{
+			closestComponent = component;
+			closestDistance  = hit.m_impactDist;
+			outHitPos        = hit.m_impactPos;
+		}
 	}
 
-	RaycastQuery3D  query  = BuildRaycastQuery(context);
-	RaycastResult3D result = space->IntersectRay(query);
-	if (!result.m_didImpact)
-	{
-		return nullptr;
-	}
-
-	// Resolve the hit node handle to a GizmoComponent
-	Node* node = context.m_sceneTree->ResolveNode(result.m_owner);
-	return dynamic_cast<GizmoComponent*>(node);
+	return closestComponent;
 }

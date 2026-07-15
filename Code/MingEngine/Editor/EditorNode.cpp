@@ -198,9 +198,14 @@ void EditorNode::OnMouseDown(int keyCode, Vec2 screenPos)
 	}
 
 	// 2) Gizmo didn't eat — try scene selection
-	RaycastSpace3D*       raycastSpace = GetSceneTree()->GetRaycastSpace();
-	RaycastQuery3D        raycastQuery = m_editorCamera->BuildRaycastFromMouse();
-	RaycastResult3D const result       = raycastSpace->IntersectRay(raycastQuery);
+	RaycastSpace3D*   raycastSpace = GetSceneTree()->GetRaycastSpace();
+	RaycastInfo const raycastInfo  = m_editorCamera->BuildRaycastFromMouse();
+	RaycastQuery3D    raycastQuery;
+	raycastQuery.m_start       = raycastInfo.m_startPos;
+	raycastQuery.m_direction   = raycastInfo.m_forwardNormal;
+	raycastQuery.m_maxDistance = raycastInfo.m_maxLength;
+	raycastQuery.m_exclude     = raycastInfo.m_ignoreNodeHandle;
+	RaycastResult3D const result = raycastSpace->IntersectRay(raycastQuery);
 	if (result.m_didImpact)
 	{
 		m_selection.SetSelected(result.m_owner);

@@ -1,7 +1,17 @@
 #include "MingEngine/Scene/3D/Camera3D.hpp"
 
 #include "MingEngine/Scene/Core/Viewport.hpp"
-#include "MingEngine/Scene/SceneCommon.hpp"
+
+namespace
+{
+// clang-format off
+Matrix4x4 const CameraToRenderTransform_Perspective = Matrix4x4(
+	0.f, -1.f, 0.f, 0.f, 
+	0.f, 0.f, 1.f, 0.f, 
+	1.f, 0.f, 0.f, 0.f, 
+	0.f, 0.f, 0.f, 1.f);
+// clang-format on
+} // namespace
 
 Camera3D::Camera3D(float fovDegrees, float nearClip, float farClip)
 	: m_mode(CameraContext::Perspective), m_nearClip(nearClip), m_farClip(farClip), m_fovDegrees(fovDegrees),

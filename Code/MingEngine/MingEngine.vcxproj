@@ -381,7 +381,6 @@
     <ClCompile Include="Editor\UI\ScenePanel.cpp" />
     <ClCompile Include="Editor\UI\ViewportPanel.cpp" />
     <ClCompile Include="Editor\Gizmos\GizmoComponent.cpp" />
-    <ClCompile Include="Editor\Gizmos\GizmoRaycastObject.cpp" />
     <ClCompile Include="Editor\Gizmos\TransformGizmo3D.cpp" />
     <ClCompile Include="Engine\ImGui\ImGuiSystem.cpp" />
     <ClCompile Include="Core\Math\AABB2.cpp" />
@@ -560,7 +559,6 @@
     <ClInclude Include="Editor\UI\ScenePanel.hpp" />
     <ClInclude Include="Editor\UI\ViewportPanel.hpp" />
     <ClInclude Include="Editor\Gizmos\GizmoComponent.hpp" />
-    <ClInclude Include="Editor\Gizmos\GizmoRaycastObject.hpp" />
     <ClInclude Include="Editor\Gizmos\TransformGizmo3D.hpp" />
     <ClInclude Include="Engine\ImGui\ImGuiSystem.hpp" />
     <ClInclude Include="Core\Math\AABB2.hpp" />

@@ -5,16 +5,17 @@
 
 #include "MingEngine/Core/Math/EulerAngles.hpp"
 #include "MingEngine/Core/Math/Matrix4x4.hpp"
+#include "MingEngine/Core/Math/RaycastUtils.hpp"
 #include "MingEngine/Core/Math/Vec2.hpp"
 #include "MingEngine/Core/Math/Vec3.hpp"
 #include "MingEngine/Core/Render/Rgba8.hpp"
 
 class Camera3D;
 class GizmoComponent;
-class GizmoRaycastObject;
 class IndexBuffer;
 class Node3D;
 class SceneTree;
+struct RaycastInfo;
 
 enum class GizmoAxis
 {
@@ -45,9 +46,10 @@ public:
 	GizmoComponent(GizmoAxis axis, Rgba8 const& color);
 	virtual ~GizmoComponent() = default;
 
-	virtual void UpdateRaycastObject(GizmoContext const& context);
+	virtual MathRaycastResult3D Raycast(GizmoContext const& context, RaycastInfo const& raycastInfo) const;
 	virtual void OnBeginDrag(GizmoContext const& context, Vec3 const& hitPos);
-	virtual void OnDrag(GizmoContext const& context, Vec3 const& rayStart, Vec3 const& rayFwdNormal);
+	virtual void OnDrag(
+		GizmoContext const& context, RaycastInfo const& startRaycastInfo, RaycastInfo const& currentRaycastInfo);
 	virtual void OnEndDrag(GizmoContext const& context);
 
 	Vec3 GetWorldVirtualCenter() const;
@@ -59,8 +61,6 @@ public:
 	bool         IsDragging() const;
 	virtual bool IsRotationGizmo() const;
 
-	GizmoRaycastObject* GetRaycastObject() const { return m_raycastObject; }
-
 protected:
 	RenderRequest SubmitRenderRequest() const override;
 	void          OnNotification(int notification);
@@ -70,11 +70,10 @@ protected:
 	Rgba8         GetDrawColor() const;
 
 protected:
-	GizmoAxis           m_axis          = GizmoAxis::X;
-	Rgba8               m_baseColor     = Rgba8::White;
-	bool                m_isHovered     = false;
-	bool                m_isDragging    = false;
-	GizmoRaycastObject* m_raycastObject = nullptr;
+	GizmoAxis m_axis       = GizmoAxis::X;
+	Rgba8     m_baseColor  = Rgba8::White;
+	bool      m_isHovered  = false;
+	bool      m_isDragging = false;
 
 	// Used for arranging the gizmos in front of each other when they overlap.
 	// This is a local position
@@ -89,17 +88,14 @@ class GizmoAxisArrow : public GizmoComponent
 public:
 	GizmoAxisArrow(GizmoAxis axis, Rgba8 const& color);
 
-	void UpdateRaycastObject(GizmoContext const& context) override;
+	MathRaycastResult3D Raycast(GizmoContext const& context, RaycastInfo const& raycastInfo) const override;
 	void OnBeginDrag(GizmoContext const& context, Vec3 const& hitPos) override;
-	void OnDrag(GizmoContext const& context, Vec3 const& rayStart, Vec3 const& rayFwdNormal) override;
-
-protected:
-	void OnNotification(int notification);
+	void OnDrag(
+		GizmoContext const& context, RaycastInfo const& startRaycastInfo, RaycastInfo const& currentRaycastInfo) override;
 
 private:
-	Vec3  m_startPosition = Vec3::Zero;
-	Vec3  m_dragOrigin    = Vec3::Zero;
-	float m_startAxisT    = 0.f;
+	Vec3 m_startPosition = Vec3::Zero;
+	Vec3 m_dragOrigin    = Vec3::Zero;
 };
 
 class GizmoPlaneSquare : public GizmoComponent
@@ -109,16 +105,14 @@ class GizmoPlaneSquare : public GizmoComponent
 public:
 	GizmoPlaneSquare(GizmoAxis axis, Rgba8 const& color);
 
-	void UpdateRaycastObject(GizmoContext const& context) override;
+	MathRaycastResult3D Raycast(GizmoContext const& context, RaycastInfo const& raycastInfo) const override;
 	void OnBeginDrag(GizmoContext const& context, Vec3 const& hitPos) override;
-	void OnDrag(GizmoContext const& context, Vec3 const& rayStart, Vec3 const& rayFwdNormal) override;
-
-protected:
-	void OnNotification(int notification);
+	void OnDrag(
+		GizmoContext const& context, RaycastInfo const& startRaycastInfo, RaycastInfo const& currentRaycastInfo) override;
 
 private:
 	Vec3 m_startPosition = Vec3::Zero;
-	Vec3 m_startHitWorld = Vec3::Zero;
+	Vec3 m_dragOrigin    = Vec3::Zero;
 };
 
 class GizmoRotationArc : public GizmoComponent
@@ -129,9 +123,10 @@ public:
 	GizmoRotationArc(GizmoAxis axis, Rgba8 const& color);
 	~GizmoRotationArc() override;
 
-	void UpdateRaycastObject(GizmoContext const& context) override;
+	MathRaycastResult3D Raycast(GizmoContext const& context, RaycastInfo const& raycastInfo) const override;
 	void OnBeginDrag(GizmoContext const& context, Vec3 const& hitPos) override;
-	void OnDrag(GizmoContext const& context, Vec3 const& rayStart, Vec3 const& rayFwdNormal) override;
+	void OnDrag(
+		GizmoContext const& context, RaycastInfo const& startRaycastInfo, RaycastInfo const& currentRaycastInfo) override;
 	void OnEndDrag(GizmoContext const& context) override;
 	bool IsRotationGizmo() const override;
 

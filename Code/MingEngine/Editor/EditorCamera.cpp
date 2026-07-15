@@ -7,9 +7,8 @@
 #include "MingEngine/Core/Math/MathUtils.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Engine/Input/InputSystem.hpp"
+#include "MingEngine/Engine/Render/CameraContext.hpp"
 #include "MingEngine/EngineService/EngineService.hpp"
-
-#include <cmath>
 
 using namespace Math;
 
@@ -70,13 +69,8 @@ void EditorCamera::OnProcess(float deltaSeconds)
 	UpdateCameraChild();
 }
 
-RaycastQuery3D EditorCamera::BuildRaycastFromMouse() const
+RaycastInfo EditorCamera::BuildRaycastFromMouse() const
 {
-	RaycastQuery3D query;
-
-	Matrix4x4 localToWorld = GetWorldTransform();
-	Matrix4x4 worldToLocal = localToWorld.GetOrthonormalInverse();
-
 	// 1) Convert window-space mouse to viewport-space via EditorUI
 	// 2) EditorUI rect is updated every frame by ViewportPanel
 	EditorUI* ui        = EditorNode::Get()->m_editorUI;
@@ -91,22 +85,9 @@ RaycastQuery3D EditorCamera::BuildRaycastFromMouse() const
 	{
 		viewportDims = Vec2(g_engine->m_windowSystem->GetClientDimensions());
 	}
-	Vec2 cursorDelta = viewportDims * 0.5f - cursorPos;
-
-	Vec3 localStart = Vec3(0.f, 0.f, 0.f);
-	Vec3 localDir =
-		Vec3(
-			viewportDims.y * 0.5f / std::tanf(m_camera->GetFovDegrees() * 0.5f * Math::kDegreesToRadiansMultiplier),
-			cursorDelta.x,
-			cursorDelta.y)
-			.GetNormalized();
-
-	query.m_start       = localToWorld.TransformPosition3D(localStart);
-	query.m_direction   = localToWorld.TransformDirection3D(localDir).GetNormalized();
-	query.m_maxDistance = 10000.f;
-	query.m_exclude     = NodeHandle::Invalid;
-
-	return query;
+	float const   aspect = viewportDims.x / Max(viewportDims.y, 1.f);
+	CameraContext camera = m_camera->GetCameraContext(aspect);
+	return ::BuildRaycastFromMouse(camera, cursorPos, viewportDims, 10000.f);
 }
 
 void EditorCamera::UpdateControlState()

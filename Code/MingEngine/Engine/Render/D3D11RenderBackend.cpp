@@ -1142,7 +1142,11 @@ GPUTexture* D3D11RenderBackend::CreateTextureInternal(
 
 	GUARANTEE_OR_DIE(SUCCEEDED(hr), "Could not create texture.");
 
+#if defined(ENGINE_DEBUG_RENDER)
+
 	newTexture->m_texture->SetPrivateData(WKPDID_D3DDebugObjectName, (UINT)strlen(name), name);
+
+#endif
 
 	if ((textureDesc->BindFlags & D3D11_BIND_RENDER_TARGET) != 0)
 	{

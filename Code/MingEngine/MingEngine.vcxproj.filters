@@ -249,9 +249,6 @@
     <ClCompile Include="Editor\Gizmos\GizmoComponent.cpp">
       <Filter>Editor\Gizmos</Filter>
     </ClCompile>
-    <ClCompile Include="Editor\Gizmos\GizmoRaycastObject.cpp">
-      <Filter>Editor\Gizmos</Filter>
-    </ClCompile>
     <ClCompile Include="Editor\Gizmos\TransformGizmo3D.cpp">
       <Filter>Editor\Gizmos</Filter>
     </ClCompile>
@@ -750,9 +747,6 @@
       <Filter>Editor\UI</Filter>
     </ClInclude>
     <ClInclude Include="Editor\Gizmos\GizmoComponent.hpp">
-      <Filter>Editor\Gizmos</Filter>
-    </ClInclude>
-    <ClInclude Include="Editor\Gizmos\GizmoRaycastObject.hpp">
       <Filter>Editor\Gizmos</Filter>
     </ClInclude>
     <ClInclude Include="Editor\Gizmos\TransformGizmo3D.hpp">

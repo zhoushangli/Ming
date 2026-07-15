@@ -2,6 +2,7 @@
 
 #include "MingEngine/Editor/Gizmos/GizmoComponent.hpp"
 #include "MingEngine/Editor/Gizmos/GizmosShapes.hpp"
+#include "MingEngine/Scene/Physics/NodeRaycastUtils.hpp"
 
 #include <vector>
 
@@ -25,13 +26,14 @@ protected:
 	void OnNotification(int notification);
 
 private:
-	GizmoComponent* HitTest(GizmoContext const& context) const;
+	GizmoComponent* HitTest(GizmoContext const& context, Vec3& outHitPos) const;
 
 private:
 	std::vector<GizmoComponent*> m_components;
-	GizmoComponent*              m_hoveredComponent = nullptr;
-	GizmoComponent*              m_activeComponent  = nullptr;
-	Vec3                         m_hoveredHitPos    = Vec3::Zero;
+	GizmoComponent*              m_hoveredComponent     = nullptr;
+	GizmoComponent*              m_activeComponent      = nullptr;
+	Vec3                         m_hoveredHitPos         = Vec3::Zero;
+	RaycastInfo                  m_dragStartRaycastInfo;
 	NodeHandle                   m_draggedNodeHandle = NodeHandle::Invalid;
 	Vec3                         m_dragStartPosition = Vec3::Zero;
 	EulerAngles                  m_dragStartOrientation;
