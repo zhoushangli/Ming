@@ -49,7 +49,11 @@ public:
 	virtual void OnDrag(GizmoContext const& context, Vec3 const& rayStart, Vec3 const& rayFwdNormal);
 	virtual void OnEndDrag(GizmoContext const& context);
 
-	void         SetHovered(bool isHovered);
+	Vec3 GetWorldVirtualCenter() const;
+
+	void SetHovered(bool isHovered);
+	void SetRenderPriority(int renderPriority) { m_renderPriority = renderPriority; }
+
 	bool         IsHovered() const;
 	bool         IsDragging() const;
 	virtual bool IsRotationGizmo() const;
@@ -70,6 +74,11 @@ protected:
 	bool                m_isHovered     = false;
 	bool                m_isDragging    = false;
 	GizmoRaycastObject* m_raycastObject = nullptr;
+
+	// Used for arranging the gizmos in front of each other when they overlap.
+	// This is a local position
+	Vec3 m_virtualCenter  = Vec3::Zero;
+	int  m_renderPriority = 0;
 };
 
 class GizmoAxisArrow : public GizmoComponent

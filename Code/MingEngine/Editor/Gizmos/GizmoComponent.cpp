@@ -1,27 +1,27 @@
 #include "MingEngine/Editor/Gizmos/GizmoComponent.hpp"
 
+#include "MingEngine/Core/Math/AABB3.hpp"
+#include "MingEngine/Core/Math/MathUtils.hpp"
+#include "MingEngine/Core/Math/RaycastUtils.hpp"
+#include "MingEngine/Core/Render/VertexUtils.hpp"
+#include "MingEngine/Core/StringUtils.hpp"
+#include "MingEngine/Editor/EditorCamera.hpp"
 #include "MingEngine/Editor/EditorNode.hpp"
 #include "MingEngine/Editor/Gizmos/GizmoRaycastObject.hpp"
 #include "MingEngine/Editor/UI/EditorUI.hpp"
+#include "MingEngine/Engine/Application/Engine.hpp"
+#include "MingEngine/Engine/Render/DebugGizmos.hpp"
+#include "MingEngine/Engine/Render/Renderer.hpp"
+#include "MingEngine/Engine/Render/VertexBuffer.hpp"
 #include "MingEngine/Scene/3D/Camera3D.hpp"
 #include "MingEngine/Scene/3D/Node3D.hpp"
 #include "MingEngine/Scene/Core/Node.hpp"
 #include "MingEngine/Scene/Core/RaycastSpace3D.hpp"
 #include "MingEngine/Scene/Core/SceneTree.hpp"
 
-#include "MingEngine/Core/Math/AABB3.hpp"
-#include "MingEngine/Core/Math/MathUtils.hpp"
-#include "MingEngine/Core/Math/RaycastUtils.hpp"
-#include "MingEngine/Core/Render/VertexUtils.hpp"
-#include "MingEngine/Core/StringUtils.hpp"
-#include "MingEngine/Engine/Application/Engine.hpp"
-#include "MingEngine/Engine/Render/DebugGizmos.hpp"
-#include "MingEngine/Engine/Render/Renderer.hpp"
-#include "MingEngine/Engine/Render/VertexBuffer.hpp"
+#include <cmath>
 
 using namespace Math;
-
-#include <cmath>
 
 namespace
 {
@@ -111,12 +111,14 @@ GizmoContext BuildGizmoContext(SceneTree* sceneTree, Camera3D const& camera, Vec
 	}
 
 	if (editorNode != nullptr)
+	{
 		if (editorNode != nullptr)
 		{
 			context.m_selectedNode = editorNode->GetSelection().GetSelected();
 			context.m_selectedNode3D =
 				dynamic_cast<Node3D*>(sceneTree != nullptr ? sceneTree->ResolveNode(context.m_selectedNode) : nullptr);
 		}
+	}
 
 	if (context.m_selectedNode3D != nullptr)
 	{
@@ -131,12 +133,20 @@ GizmoContext BuildGizmoContext(SceneTree* sceneTree, Camera3D const& camera, Vec
 GizmoComponent::GizmoComponent(GizmoAxis axis, Rgba8 const& color) : m_axis(axis), m_baseColor(color)
 {
 	SetReady(true);
+	SetProcess(true);
 }
 
 RenderRequest GizmoComponent::SubmitRenderRequest() const
 {
-	RenderRequest request = EditorGizmoVisual3D::SubmitRenderRequest();
-	request.m_tint        = GetDrawColor();
+	RenderRequest request;
+	request.m_pass           = RenderRequestPass::Opaque;
+	request.m_renderPriority = m_renderPriority; // Gizmos render after most other objects
+	request.m_modelToWorld   = GetWorldTransform();
+	request.m_vertexBuffer   = m_vertexBuffer;
+	request.m_blendMode      = BlendMode::ALPHA;
+	request.m_depthMode      = DepthMode::DISABLED;
+	request.m_rasterizerMode = RasterizerMode::SOLID_CULL_NONE;
+	request.m_tint           = GetDrawColor();
 	return request;
 }
 
@@ -171,6 +181,14 @@ void GizmoComponent::OnDrag(
 }
 
 void GizmoComponent::OnEndDrag([[maybe_unused]] GizmoContext const& context) { m_isDragging = false; }
+
+Vec3 GizmoComponent::GetWorldVirtualCenter() const
+{
+	Vec3 const worldScale = GetWorldScale();
+	Vec3 const scaledVirtualCenter =
+		Vec3(m_virtualCenter.x * worldScale.x, m_virtualCenter.y * worldScale.y, m_virtualCenter.z * worldScale.z);
+	return scaledVirtualCenter + GetWorldPosition();
+}
 
 void GizmoComponent::SetHovered(bool isHovered) { m_isHovered = isHovered; }
 
@@ -246,6 +264,8 @@ GizmoAxisArrow::GizmoAxisArrow(GizmoAxis axis, Rgba8 const& color) : GizmoCompon
 	Vec3 const start   = Vec3::Zero;
 	Vec3 const end     = axisDir * kGizmoAxisLength;
 	AddVertsForArrow3D(m_verts, start, end, kGizmoArrowRadius, Rgba8::White);
+
+	m_virtualCenter = axisDir * (kGizmoAxisLength * 0.5f);
 }
 
 void GizmoAxisArrow::OnNotification(int notification)
@@ -371,6 +391,8 @@ GizmoPlaneSquare::GizmoPlaneSquare(GizmoAxis axis, Rgba8 const& color) : GizmoCo
 	m_verts.push_back(v01);
 
 	TransformVertexArray3D(m_verts, localToWorld);
+
+	m_virtualCenter = center;
 }
 
 void GizmoPlaneSquare::OnNotification(int notification)
@@ -470,6 +492,8 @@ GizmoRotationArc::GizmoRotationArc(GizmoAxis axis, Rgba8 const& color) : GizmoCo
 	float const radius     = kGizmoRotationRadius;
 	float const lineRadius = kGizmoArrowRadius * 0.45f;
 	AddVertsForTorusArc3D(m_verts, Vec3::Zero, u, v, radius, -125.f, 125.f, lineRadius, Rgba8::White);
+
+	m_virtualCenter = (u + v).GetNormalized() * 0.5f * radius;
 }
 
 void GizmoRotationArc::OnNotification(int notification)
@@ -495,6 +519,25 @@ void GizmoRotationArc::OnNotification(int notification)
 			raycastSpace->RemoveObject(m_raycastObject);
 			delete m_raycastObject;
 			m_raycastObject = nullptr;
+		}
+		break;
+	}
+	case NotificationType::Process:
+	{
+		Vec3 const cameraPos = EditorCamera::Get()->GetWorldPosition();
+		Vec3 const gizmoPos  = GetWorldPosition();
+		Vec3 const toCamera  = cameraPos - gizmoPos;
+		switch (m_axis)
+		{
+		case GizmoAxis::X:
+			m_virtualCenter = Vec3(0.f, toCamera.y, toCamera.z).GetNormalized() * kGizmoRotationRadius;
+			break;
+		case GizmoAxis::Y:
+			m_virtualCenter = Vec3(toCamera.x, 0.f, toCamera.z).GetNormalized() * kGizmoRotationRadius;
+			break;
+		case GizmoAxis::Z:
+			m_virtualCenter = Vec3(toCamera.x, toCamera.y, 0.f).GetNormalized() * kGizmoRotationRadius;
+			break;
 		}
 		break;
 	}

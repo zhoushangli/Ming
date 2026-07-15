@@ -3,9 +3,9 @@
 #include "MingEngine/Core/Math/AABB2.hpp"
 #include "MingEngine/Core/Math/IntVec2.hpp"
 #include "MingEngine/Core/Math/Matrix4x4.hpp"
+#include "MingEngine/Core/Render/Rgba8.hpp"
 #include "MingEngine/Engine/Render/D3D11RenderBackend.hpp"
 #include "MingEngine/Engine/Render/PostProcessChain.hpp"
-#include "MingEngine/Core/Render/Rgba8.hpp"
 
 #include <array>
 #include <vector>
@@ -18,8 +18,8 @@ class VertexBuffer;
 
 enum class RenderRequestPass
 {
-	Opaque,
 	Skybox,
+	Opaque,
 	Transparent,
 	UI,
 	Count
@@ -31,7 +31,8 @@ struct RenderRequest
 	// A missing vertex buffer represents an intentionally empty request.
 	bool IsValid() const { return m_vertexBuffer != nullptr; }
 
-	RenderRequestPass m_pass = RenderRequestPass::Opaque;
+	RenderRequestPass m_pass           = RenderRequestPass::Opaque;
+	int               m_renderPriority = 0; // Lower numbers render first.
 
 	Matrix4x4 m_modelToWorld = Matrix4x4::Identity;
 	Rgba8     m_tint         = Rgba8::White;
@@ -92,4 +93,3 @@ public:
 	std::vector<LightInfo> m_lights;
 	PostProcessChain       m_postProcessChain;
 };
-

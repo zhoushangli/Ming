@@ -10,6 +10,8 @@
 
 #include "ThirdParty/imgui/backends/imgui_impl_dx11.h"
 
+#include <algorithm>
+
 Renderer::Renderer(RendererConfig config) : m_config(config) {}
 
 Renderer::~Renderer() {}
@@ -25,7 +27,7 @@ void Renderer::Startup()
 
 	m_renderBackend = new D3D11RenderBackend(m_config);
 	m_renderBackend->Startup();
-	m_defaultShaderResource = ResourceLoader::Load("res://Shaders/DefaultUnlit.hlsl");
+	m_defaultShaderResource         = ResourceLoader::Load("res://Shaders/DefaultUnlit.hlsl");
 	m_postProcessCopyShaderResource = ResourceLoader::Load("res://Shaders/PostProcessCopy.hlsl");
 
 	DebugRenderConfig debugConfig;
@@ -83,8 +85,20 @@ void Renderer::RenderViewport(ViewportInfo& viewport)
 	PrepareConstants(viewport);
 	DebugGizmos::PrepareRenderRequests();
 
-	RenderOpaque(viewport);
+	auto sortPass = [](std::vector<RenderRequest>& requests)
+	{
+		std::stable_sort(
+			requests.begin(),
+			requests.end(),
+			[](RenderRequest const& a, RenderRequest const& b) { return a.m_renderPriority < b.m_renderPriority; });
+	};
+	sortPass(viewport.m_renderRequests[static_cast<size_t>(RenderRequestPass::Skybox)]);
+	sortPass(viewport.m_renderRequests[static_cast<size_t>(RenderRequestPass::Opaque)]);
+	sortPass(viewport.m_renderRequests[static_cast<size_t>(RenderRequestPass::Transparent)]);
+	sortPass(viewport.m_renderRequests[static_cast<size_t>(RenderRequestPass::UI)]);
+
 	RenderSkybox(viewport);
+	RenderOpaque(viewport);
 	RenderPostProcess(viewport);
 
 	RenderUI(viewport);
