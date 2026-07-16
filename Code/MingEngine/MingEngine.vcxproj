@@ -449,7 +449,6 @@
     <ClCompile Include="Scene\Physics\CapsuleCollider3D.cpp" />
     <ClCompile Include="Scene\Physics\Collider3D.cpp" />
     <ClCompile Include="Scene\Physics\CylinderZCollider3D.cpp" />
-    <ClCompile Include="Scene\Physics\NodeRaycastUtils.cpp" />
     <ClCompile Include="Scene\Physics\TriangleMeshCollider3D.cpp" />
     <ClCompile Include="Scene\3D\Skybox3D.cpp" />
     <ClCompile Include="Scene\3D\Transform3D.cpp" />
@@ -629,7 +628,6 @@
     <ClInclude Include="Scene\Physics\CapsuleCollider3D.hpp" />
     <ClInclude Include="Scene\Physics\Collider3D.hpp" />
     <ClInclude Include="Scene\Physics\CylinderZCollider3D.hpp" />
-    <ClInclude Include="Scene\Physics\NodeRaycastUtils.hpp" />
     <ClInclude Include="Scene\Physics\TriangleMeshCollider3D.hpp" />
     <ClInclude Include="Scene\3D\Skybox3D.hpp" />
     <ClInclude Include="Scene\3D\Transform3D.hpp" />

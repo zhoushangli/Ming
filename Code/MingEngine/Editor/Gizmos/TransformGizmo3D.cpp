@@ -11,6 +11,7 @@ namespace
 Rgba8 const kAxisXColor(255, 70, 105, 255);
 Rgba8 const kAxisYColor(155, 225, 20, 255);
 Rgba8 const kAxisZColor(55, 160, 255, 255);
+constexpr float kRaycastMaxLength = 10000.f;
 
 } // namespace
 
@@ -93,13 +94,13 @@ bool TransformGizmo3D::BeginDragHovered(GizmoContext const& context)
 	{
 		return false;
 	}
-	EditorCamera* editorCamera = EditorCamera::Get();
-	if (editorCamera == nullptr)
+	if (context.m_camera == nullptr)
 	{
 		return false;
 	}
 
-	m_dragStartRaycastInfo = editorCamera->BuildRaycastFromMouse();
+	m_dragStartRaycastInfo =
+		context.m_camera->BuildRaycastFromMouse(context.m_clientPos, context.m_clientDimensions, kRaycastMaxLength);
 	m_hoveredComponent->SetHovered(true);
 	m_activeComponent = m_hoveredComponent;
 	if (context.m_selectedNode3D != nullptr)
@@ -118,13 +119,13 @@ void TransformGizmo3D::OnDrag(GizmoContext const& context)
 {
 	if (m_activeComponent != nullptr)
 	{
-		EditorCamera* editorCamera = EditorCamera::Get();
-		if (editorCamera == nullptr)
+		if (context.m_camera == nullptr)
 		{
 			return;
 		}
 
-		RaycastInfo const currentRaycastInfo = editorCamera->BuildRaycastFromMouse();
+		MathRaycastQuery3D const currentRaycastInfo =
+			context.m_camera->BuildRaycastFromMouse(context.m_clientPos, context.m_clientDimensions, kRaycastMaxLength);
 		m_activeComponent->OnDrag(context, m_dragStartRaycastInfo, currentRaycastInfo);
 	}
 }
@@ -210,15 +211,15 @@ bool TransformGizmo3D::IsDragging() const { return m_activeComponent != nullptr;
 
 GizmoComponent* TransformGizmo3D::HitTest(GizmoContext const& context, Vec3& outHitPos) const
 {
-	EditorCamera* editorCamera = EditorCamera::Get();
-	if (context.m_selectedNode3D == nullptr || editorCamera == nullptr)
+	if (context.m_selectedNode3D == nullptr || context.m_camera == nullptr)
 	{
 		return nullptr;
 	}
 
-	RaycastInfo const raycastInfo = editorCamera->BuildRaycastFromMouse();
-	GizmoComponent*  closestComponent = nullptr;
-	float            closestDistance  = raycastInfo.m_maxLength;
+	MathRaycastQuery3D const raycastInfo =
+		context.m_camera->BuildRaycastFromMouse(context.m_clientPos, context.m_clientDimensions, kRaycastMaxLength);
+	GizmoComponent*          closestComponent = nullptr;
+	float                    closestDistance  = raycastInfo.m_maxLength;
 	for (GizmoComponent* component : m_components)
 	{
 		if (component == nullptr || !component->GetVisible())

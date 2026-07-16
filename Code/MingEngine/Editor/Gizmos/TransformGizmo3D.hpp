@@ -2,7 +2,7 @@
 
 #include "MingEngine/Editor/Gizmos/GizmoComponent.hpp"
 #include "MingEngine/Editor/Gizmos/GizmosShapes.hpp"
-#include "MingEngine/Scene/Physics/NodeRaycastUtils.hpp"
+#include "MingEngine/Core/Math/RaycastUtils.hpp"
 
 #include <vector>
 
@@ -30,10 +30,10 @@ private:
 
 private:
 	std::vector<GizmoComponent*> m_components;
-	GizmoComponent*              m_hoveredComponent     = nullptr;
-	GizmoComponent*              m_activeComponent      = nullptr;
-	Vec3                         m_hoveredHitPos         = Vec3::Zero;
-	RaycastInfo                  m_dragStartRaycastInfo;
+	GizmoComponent*              m_hoveredComponent = nullptr;
+	GizmoComponent*              m_activeComponent  = nullptr;
+	Vec3                         m_hoveredHitPos    = Vec3::Zero;
+	MathRaycastQuery3D           m_dragStartRaycastInfo;
 	NodeHandle                   m_draggedNodeHandle = NodeHandle::Invalid;
 	Vec3                         m_dragStartPosition = Vec3::Zero;
 	EulerAngles                  m_dragStartOrientation;

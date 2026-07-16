@@ -1,13 +1,10 @@
 #include "MingEngine/Editor/EditorCamera.hpp"
 
-#include "MingEngine/Editor/EditorNode.hpp"
-#include "MingEngine/Editor/UI/EditorUI.hpp"
 #include "MingEngine/Scene/3D/Camera3D.hpp"
 
 #include "MingEngine/Core/Math/MathUtils.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Engine/Input/InputSystem.hpp"
-#include "MingEngine/Engine/Render/CameraContext.hpp"
 #include "MingEngine/EngineService/EngineService.hpp"
 
 using namespace Math;
@@ -67,27 +64,6 @@ void EditorCamera::OnProcess(float deltaSeconds)
 	}
 
 	UpdateCameraChild();
-}
-
-RaycastInfo EditorCamera::BuildRaycastFromMouse() const
-{
-	// 1) Convert window-space mouse to viewport-space via EditorUI
-	// 2) EditorUI rect is updated every frame by ViewportPanel
-	EditorUI* ui        = EditorNode::Get()->m_editorUI;
-	Vec2      cursorPos = Vec2(g_engine->m_inputSystem->GetCursorClientPosition());
-	Vec2      viewportDims;
-	if (ui != nullptr)
-	{
-		cursorPos    = ui->ToViewportPos(cursorPos);
-		viewportDims = ui->GetViewportDimensions();
-	}
-	else
-	{
-		viewportDims = Vec2(g_engine->m_windowSystem->GetClientDimensions());
-	}
-	float const   aspect = viewportDims.x / Max(viewportDims.y, 1.f);
-	CameraContext camera = m_camera->GetCameraContext(aspect);
-	return ::BuildRaycastFromMouse(camera, cursorPos, viewportDims, 10000.f);
 }
 
 void EditorCamera::UpdateControlState()

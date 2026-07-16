@@ -648,12 +648,23 @@ void Matrix4x4::Orthonormalize_XFwd_YLeft_ZUp2()
 
 Matrix4x4 Matrix4x4::GetOrthonormalInverse()
 {
-	Matrix4x4 inv = *this;
-	inv.SetTranslation3D(Vec3(0.f, 0.f, 0.f));
-	inv.Transpose();
+	Vec3 const scale = GetScale3D();
+	Vec3 const inverseScale = Vec3(1.f / scale.x, 1.f / scale.y, 1.f / scale.z);
+
+	Vec3 const iBasis = GetIBasis3D() * inverseScale.x;
+	Vec3 const jBasis = GetJBasis3D() * inverseScale.y;
+	Vec3 const kBasis = GetKBasis3D() * inverseScale.z;
+
+	Matrix4x4 inverseRotation;
+	inverseRotation.SetIJK3D(iBasis, jBasis, kBasis);
+	inverseRotation.Transpose();
 
 	Vec3 invTranslate(-m_values[Tx], -m_values[Ty], -m_values[Tz]);
-	inv.AppendTranslation3D(invTranslate);
 
-	return inv;
+	Matrix4x4 inverseMatrix = Matrix4x4::Identity;
+	inverseMatrix.Append(Matrix4x4::MakeNonUniformScale3D(inverseScale));
+	inverseMatrix.Append(inverseRotation);
+	inverseMatrix.Append(Matrix4x4::MakeTranslation3D(invTranslate));
+
+	return inverseMatrix;
 }

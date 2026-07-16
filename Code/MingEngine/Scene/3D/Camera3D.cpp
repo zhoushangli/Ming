@@ -1,5 +1,7 @@
 #include "MingEngine/Scene/3D/Camera3D.hpp"
 
+#include "MingEngine/Core/ErrorWarningAssert.hpp"
+#include "MingEngine/Core/Math/MathUtils.hpp"
 #include "MingEngine/Scene/Core/Viewport.hpp"
 
 namespace
@@ -75,6 +77,38 @@ CameraContext Camera3D::GetCameraContext(float aspect) const
 		camera.SetPerspective(aspect, m_fovDegrees, m_nearClip, m_farClip);
 	}
 	return camera;
+}
+
+MathRaycastQuery3D Camera3D::BuildRaycastFromMouse(
+	Vec2 const& mousePos, Vec2 const& viewportDimensions, float maxLength) const
+{
+	GUARANTEE_OR_DIE(m_mode == CameraContext::Perspective, "Camera3D mouse raycast only supports perspective cameras");
+
+	MathRaycastQuery3D raycastInfo;
+	raycastInfo.m_startPos      = GetWorldPosition();
+	raycastInfo.m_forwardNormal = GetWorldForward();
+	raycastInfo.m_maxLength     = maxLength;
+
+	if (viewportDimensions.x <= 0.f || viewportDimensions.y <= 0.f)
+	{
+		return raycastInfo;
+	}
+
+	float const screenX       = 2.f * (mousePos.x / viewportDimensions.x) - 1.f;
+	float const screenY       = 1.f - 2.f * (mousePos.y / viewportDimensions.y);
+	float const aspect        = viewportDimensions.x / viewportDimensions.y;
+	float const halfFovDegrees = m_fovDegrees * 0.5f;
+	float const halfHeight     = Math::SinDegrees(halfFovDegrees) / Math::CosDegrees(halfFovDegrees);
+	float const halfWidth      = halfHeight * aspect;
+
+	Vec3 forward;
+	Vec3 left;
+	Vec3 up;
+	GetWorldOrientation().GetAsVectors_IFwd_JLeft_KUp(forward, left, up);
+
+	raycastInfo.m_forwardNormal =
+		(forward - left * screenX * halfWidth + up * screenY * halfHeight).GetNormalized();
+	return raycastInfo;
 }
 
 void Camera3D::SetOrthogonal(float size, float nearClip, float farClip)

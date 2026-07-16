@@ -14,8 +14,6 @@ public:
 	~CapsuleCollider3D() override = default;
 	CapsuleCollider3D(Capsule3 const& capsule);
 
-	GameRaycastResult Raycast(RaycastInfo const& info) const override;
-
 protected:
 	void RenderDebug() const;
 

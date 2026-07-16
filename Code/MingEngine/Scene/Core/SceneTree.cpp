@@ -7,7 +7,6 @@
 #include "MingEngine/Scene/3D/Node3D.hpp"
 #include "MingEngine/Scene/Core/RaycastSpace3D.hpp"
 #include "MingEngine/Scene/Core/Viewport.hpp"
-#include "MingEngine/Scene/Physics/Collider3D.hpp"
 
 #include <algorithm>
 

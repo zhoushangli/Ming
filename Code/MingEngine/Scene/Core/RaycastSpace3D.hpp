@@ -16,6 +16,9 @@ class RaycastQuery3D : public RefCounted
 	MCLASS(RaycastQuery3D, RefCounted);
 
 public:
+	RaycastQuery3D() = default;
+	RaycastQuery3D(MathRaycastQuery3D const& other) { this->operator=(other); }
+
 	Vec3  GetStart() const;
 	Vec3  GetDirection() const;
 	float GetMaxDistance() const;
@@ -25,6 +28,15 @@ public:
 	void SetDirection(Vec3 const& direction);
 	void SetMaxDistance(float maxDistance);
 	void SetExclude(Node* exclude);
+
+	RaycastQuery3D& operator=(MathRaycastQuery3D const& other)
+	{
+		m_start       = other.m_startPos;
+		m_direction   = other.m_forwardNormal;
+		m_maxDistance = other.m_maxLength;
+
+		return *this;
+	}
 
 protected:
 	static void BindMethods();

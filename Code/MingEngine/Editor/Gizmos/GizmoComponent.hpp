@@ -15,7 +15,7 @@ class GizmoComponent;
 class IndexBuffer;
 class Node3D;
 class SceneTree;
-struct RaycastInfo;
+struct MathRaycastQuery3D;
 
 enum class GizmoAxis
 {
@@ -46,10 +46,12 @@ public:
 	GizmoComponent(GizmoAxis axis, Rgba8 const& color);
 	virtual ~GizmoComponent() = default;
 
-	virtual MathRaycastResult3D Raycast(GizmoContext const& context, RaycastInfo const& raycastInfo) const;
-	virtual void OnBeginDrag(GizmoContext const& context, Vec3 const& hitPos);
-	virtual void OnDrag(
-		GizmoContext const& context, RaycastInfo const& startRaycastInfo, RaycastInfo const& currentRaycastInfo);
+	virtual MathRaycastResult3D Raycast(GizmoContext const& context, MathRaycastQuery3D const& raycastInfo) const;
+	virtual void                OnBeginDrag(GizmoContext const& context, Vec3 const& hitPos);
+	virtual void                OnDrag(
+		GizmoContext const&       context,
+		MathRaycastQuery3D const& startRaycastInfo,
+		MathRaycastQuery3D const& currentRaycastInfo);
 	virtual void OnEndDrag(GizmoContext const& context);
 
 	Vec3 GetWorldVirtualCenter() const;
@@ -88,10 +90,12 @@ class GizmoAxisArrow : public GizmoComponent
 public:
 	GizmoAxisArrow(GizmoAxis axis, Rgba8 const& color);
 
-	MathRaycastResult3D Raycast(GizmoContext const& context, RaycastInfo const& raycastInfo) const override;
-	void OnBeginDrag(GizmoContext const& context, Vec3 const& hitPos) override;
-	void OnDrag(
-		GizmoContext const& context, RaycastInfo const& startRaycastInfo, RaycastInfo const& currentRaycastInfo) override;
+	MathRaycastResult3D Raycast(GizmoContext const& context, MathRaycastQuery3D const& raycastInfo) const override;
+	void                OnBeginDrag(GizmoContext const& context, Vec3 const& hitPos) override;
+	void                OnDrag(
+		GizmoContext const&       context,
+		MathRaycastQuery3D const& startRaycastInfo,
+		MathRaycastQuery3D const& currentRaycastInfo) override;
 
 private:
 	Vec3 m_startPosition = Vec3::Zero;
@@ -105,10 +109,12 @@ class GizmoPlaneSquare : public GizmoComponent
 public:
 	GizmoPlaneSquare(GizmoAxis axis, Rgba8 const& color);
 
-	MathRaycastResult3D Raycast(GizmoContext const& context, RaycastInfo const& raycastInfo) const override;
-	void OnBeginDrag(GizmoContext const& context, Vec3 const& hitPos) override;
-	void OnDrag(
-		GizmoContext const& context, RaycastInfo const& startRaycastInfo, RaycastInfo const& currentRaycastInfo) override;
+	MathRaycastResult3D Raycast(GizmoContext const& context, MathRaycastQuery3D const& raycastInfo) const override;
+	void                OnBeginDrag(GizmoContext const& context, Vec3 const& hitPos) override;
+	void                OnDrag(
+		GizmoContext const&       context,
+		MathRaycastQuery3D const& startRaycastInfo,
+		MathRaycastQuery3D const& currentRaycastInfo) override;
 
 private:
 	Vec3 m_startPosition = Vec3::Zero;
@@ -123,22 +129,24 @@ public:
 	GizmoRotationArc(GizmoAxis axis, Rgba8 const& color);
 	~GizmoRotationArc() override;
 
-	MathRaycastResult3D Raycast(GizmoContext const& context, RaycastInfo const& raycastInfo) const override;
-	void OnBeginDrag(GizmoContext const& context, Vec3 const& hitPos) override;
-	void OnDrag(
-		GizmoContext const& context, RaycastInfo const& startRaycastInfo, RaycastInfo const& currentRaycastInfo) override;
+	MathRaycastResult3D Raycast(GizmoContext const& context, MathRaycastQuery3D const& raycastInfo) const override;
+	void                OnBeginDrag(GizmoContext const& context, Vec3 const& hitPos) override;
+	void                OnDrag(
+		GizmoContext const&       context,
+		MathRaycastQuery3D const& startRaycastInfo,
+		MathRaycastQuery3D const& currentRaycastInfo) override;
 	void OnEndDrag(GizmoContext const& context) override;
 	bool IsRotationGizmo() const override;
 
 protected:
 	RenderRequest SubmitRenderRequest() const override;
-	void OnNotification(int notification);
+	void          OnNotification(int notification);
 
 private:
 	std::vector<unsigned int> m_indices;
 	IndexBuffer*              m_indexBuffer      = nullptr;
 	EulerAngles               m_startOrientation = EulerAngles::Zero;
-	Vec3                      m_dragOrigin        = Vec3::Zero;
-	Vec3                      m_startVectorWorld  = Vec3::Zero;
-	float                     m_currentDegrees    = 0.f;
+	Vec3                      m_dragOrigin       = Vec3::Zero;
+	Vec3                      m_startVectorWorld = Vec3::Zero;
+	float                     m_currentDegrees   = 0.f;
 };

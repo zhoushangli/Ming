@@ -3,9 +3,6 @@
 #include "MingEngine/Scene/3D/Camera3D.hpp"
 #include "MingEngine/Scene/Core/Node.hpp"
 #include "MingEngine/Scene/Core/NodeHandle.hpp"
-#include "MingEngine/Scene/Physics/Collider3D.hpp"
-
-#include "MingEngine/Core/Math/RaycastUtils.hpp"
 
 #include <string>
 #include <vector>

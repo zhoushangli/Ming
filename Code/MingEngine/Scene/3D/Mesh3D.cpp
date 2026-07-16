@@ -3,6 +3,7 @@
 #include "MingEngine/Core/Math/RaycastUtils.hpp"
 #include "MingEngine/Core/Object/ResourceLoader.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
+#include "MingEngine/Engine/Render/DebugGizmos.hpp"
 #include "MingEngine/Engine/Render/Renderer.hpp"
 #include "MingEngine/Scene/Core/SceneTree.hpp"
 #include "MingEngine/Scene/Resource/MeshResource.hpp"
@@ -13,7 +14,7 @@ RaycastResult3D MeshRaycastObject::IntersectBounds(RaycastQuery3D const& query)
 	RaycastResult3D hit;
 
 	Matrix4x4 localToWorld = m_mesh->GetWorldTransform();
-	Matrix4x4 worldToLocal = localToWorld.GetOrthonormalInverse();
+	Matrix4x4 worldToLocal = m_mesh->GetWorldInverseTransform();
 
 	Vec3  localStart     = worldToLocal.TransformPosition3D(query.m_start);
 	Vec3  localDirection = worldToLocal.TransformDirection3D(query.m_direction);
@@ -26,8 +27,8 @@ RaycastResult3D MeshRaycastObject::IntersectBounds(RaycastQuery3D const& query)
 		return hit;
 	}
 
-	hit.m_owner               = m_owner;
-	(MathRaycastResult3D&)hit = RaycastVsAABB3D(localStart, localDirection, localMaxLength, meshResource->m_bounds);
+	hit.m_owner = m_owner;
+	hit         = RaycastVsAABB3D(localStart, localDirection, localMaxLength, meshResource->m_bounds);
 
 	// Remember to transform the hit position and normal back into world space
 	if (hit.m_didImpact)
@@ -44,7 +45,7 @@ RaycastResult3D MeshRaycastObject::IntersectRay(RaycastQuery3D const& query)
 	RaycastResult3D hit;
 
 	Matrix4x4 localToWorld = m_mesh->GetWorldTransform();
-	Matrix4x4 worldToLocal = localToWorld.GetOrthonormalInverse();
+	Matrix4x4 worldToLocal = m_mesh->GetWorldInverseTransform();
 
 	Vec3  localStart     = worldToLocal.TransformPosition3D(query.m_start);
 	Vec3  localDirection = worldToLocal.TransformDirection3D(query.m_direction);
@@ -63,13 +64,15 @@ RaycastResult3D MeshRaycastObject::IntersectRay(RaycastQuery3D const& query)
 		MathRaycastResult3D triangleHit = RaycastVsTriangle3D(localStart, localDirection, localMaxLength, triangle);
 		if (triangleHit.m_didImpact && (!hit.m_didImpact || triangleHit.m_impactDist < hit.m_impactDist))
 		{
-			(MathRaycastResult3D&)hit = triangleHit;
+			hit = triangleHit;
 		}
 	}
 
 	// Remember to transform the hit position and normal back into world space
 	if (hit.m_didImpact)
 	{
+		hit.m_rayStartPos  = localToWorld.TransformPosition3D(hit.m_rayStartPos);
+		hit.m_rayFwdNormal = localToWorld.TransformDirection3D(hit.m_rayFwdNormal).GetNormalized();
 		hit.m_impactPos    = localToWorld.TransformPosition3D(hit.m_impactPos);
 		hit.m_impactNormal = localToWorld.TransformDirection3D(hit.m_impactNormal).GetNormalized();
 	}
@@ -141,6 +144,10 @@ void Mesh3D::SetMeshResource(Variant meshResource)
 
 Variant Mesh3D::GetMeshResource() const { return m_meshResource; }
 
+void Mesh3D::SetTint(Rgba8 tint) { m_tint = tint; }
+
+Rgba8 Mesh3D::GetTint() const { return m_tint; }
+
 RenderRequest Mesh3D::SubmitRenderRequest() const
 {
 	RenderRequest request;
@@ -151,14 +158,14 @@ RenderRequest Mesh3D::SubmitRenderRequest() const
 
 	request.m_pass                                  = RenderRequestPass::Opaque;
 	request.m_modelToWorld                          = GetWorldTransform();
-	request.m_tint                                  = Rgba8::White;
+	request.m_tint                                  = m_tint;
 	request.m_vertexBuffer                          = m_meshResource->m_vertexBuffer;
 	request.m_indexBuffer                           = m_meshResource->m_indexBuffer;
 	request.m_textures[SurfaceTextureSlot::Diffuse] = m_meshResource->m_textureResources.size() > 0
 														  ? m_meshResource->m_textureResources[0]->GetGPUTexture()
 														  : nullptr;
 	Ref<ShaderResource> shaderResource(ResourceLoader::Load("res://Shaders/DefaultLit.hlsl"));
-	request.m_shader = shaderResource.IsValid() ? shaderResource->GetShader() : nullptr;
+	request.m_shader         = shaderResource.IsValid() ? shaderResource->GetShader() : nullptr;
 	request.m_blendMode      = BlendMode::OPAQUE;
 	request.m_depthMode      = DepthMode::READ_WRITE_LESS_EQUAL;
 	request.m_rasterizerMode = RasterizerMode::SOLID_CULL_BACK;

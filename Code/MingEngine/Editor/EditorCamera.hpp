@@ -2,7 +2,6 @@
 
 #include "MingEngine/Core/Math/Vec2.hpp"
 #include "MingEngine/Scene/3D/Node3D.hpp"
-#include "MingEngine/Scene/Physics/NodeRaycastUtils.hpp"
 
 class Camera3D;
 
@@ -29,8 +28,6 @@ public:
 	EditorControlState GetControlState() const { return m_controlState; }
 	Vec2               GetCursorClientPos() const { return m_lastCursorClientPos; }
 	Vec2               GetCursorDelta() const { return m_cursorDelta; }
-
-	RaycastInfo BuildRaycastFromMouse() const;
 
 private:
 	void UpdateControlState();

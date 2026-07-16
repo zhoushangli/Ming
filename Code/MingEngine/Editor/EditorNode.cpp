@@ -13,6 +13,7 @@
 #include "MingEngine/Engine/ImGui/ImGuiSystem.hpp"
 #include "MingEngine/Engine/Input/InputSystem.hpp"
 #include "MingEngine/Engine/Render/DebugGizmos.hpp"
+#include "MingEngine/Engine/Window/WindowSystem.hpp"
 #include "MingEngine/Scene/3D/Camera3D.hpp"
 #include "MingEngine/Scene/3D/Node3D.hpp"
 #include "MingEngine/Scene/Core/PackedScene.hpp"
@@ -198,14 +199,18 @@ void EditorNode::OnMouseDown(int keyCode, Vec2 screenPos)
 	}
 
 	// 2) Gizmo didn't eat — try scene selection
-	RaycastSpace3D*   raycastSpace = GetSceneTree()->GetRaycastSpace();
-	RaycastInfo const raycastInfo  = m_editorCamera->BuildRaycastFromMouse();
-	RaycastQuery3D    raycastQuery;
-	raycastQuery.m_start       = raycastInfo.m_startPos;
-	raycastQuery.m_direction   = raycastInfo.m_forwardNormal;
-	raycastQuery.m_maxDistance = raycastInfo.m_maxLength;
-	raycastQuery.m_exclude     = raycastInfo.m_ignoreNodeHandle;
+	Vec2 mousePos           = screenPos;
+	Vec2 viewportDimensions = Vec2(g_engine->m_windowSystem->GetClientDimensions());
+	if (m_editorUI != nullptr)
+	{
+		mousePos           = m_editorUI->ToViewportPos(screenPos);
+		viewportDimensions = m_editorUI->GetViewportDimensions();
+	}
+
+	RaycastSpace3D* raycastSpace = GetSceneTree()->GetRaycastSpace();
+	RaycastQuery3D  raycastQuery = camera->BuildRaycastFromMouse(mousePos, viewportDimensions, 10000.f);
 	RaycastResult3D const result = raycastSpace->IntersectRay(raycastQuery);
+
 	if (result.m_didImpact)
 	{
 		m_selection.SetSelected(result.m_owner);

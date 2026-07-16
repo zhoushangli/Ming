@@ -1,7 +1,6 @@
 #pragma once
 
 #include "MingEngine/Scene/3D/Node3D.hpp"
-#include "MingEngine/Scene/Physics/NodeRaycastUtils.hpp"
 
 #include <functional>
 #include <map>
@@ -24,8 +23,6 @@ class Collider3D : public Node3D
 public:
 	Collider3D()           = default;
 	~Collider3D() override = default;
-
-	virtual GameRaycastResult Raycast(RaycastInfo const& info) const = 0;
 
 	size_t AddCollideCallback(CollideCallbackFunction const& callback);
 	bool   RemoveCollideCallback(size_t callbackId);

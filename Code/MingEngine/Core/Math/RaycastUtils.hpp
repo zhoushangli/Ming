@@ -11,6 +11,14 @@
 #include "MingEngine/Core/Math/Sphere3.hpp"
 #include "MingEngine/Core/Math/Triangle3.hpp"
 #include "MingEngine/Core/Math/Vec2.hpp"
+#include "MingEngine/Core/Math/Vec3.hpp"
+
+struct MathRaycastQuery3D
+{
+	Vec3  m_startPos;
+	Vec3  m_forwardNormal;
+	float m_maxLength = 1.f;
+};
 
 struct MathRaycastResult2D
 {

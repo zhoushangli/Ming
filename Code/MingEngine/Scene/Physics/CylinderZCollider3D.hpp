@@ -13,8 +13,6 @@ public:
 	CylinderZCollider3D()           = default;
 	~CylinderZCollider3D() override = default;
 
-	GameRaycastResult Raycast(RaycastInfo const& info) const override;
-
 protected:
 	void RenderDebug() const;
 

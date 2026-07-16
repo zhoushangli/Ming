@@ -5,6 +5,7 @@
 #include "MingEngine/Core/Math/Matrix4x4.hpp"
 #include "MingEngine/Core/Math/Triangle3.hpp"
 #include "MingEngine/Core/Math/Vec3.hpp"
+#include "MingEngine/Core/Render/Rgba8.hpp"
 #include "MingEngine/Scene/3D/VisualizeInstance3D.hpp"
 #include "MingEngine/Scene/Core/RaycastSpace3D.hpp"
 #include "MingEngine/Scene/Resource/MeshResource.hpp"
@@ -33,6 +34,8 @@ public:
 
 	void    SetMeshResource(Variant meshResource);
 	Variant GetMeshResource() const;
+	void    SetTint(Rgba8 tint);
+	Rgba8   GetTint() const;
 
 protected:
 	static void BindMethods();
@@ -43,6 +46,7 @@ protected:
 protected:
 	Ref<MeshResource> m_meshResource;
 	bool              m_useMaterialTextures = true;
+	Rgba8             m_tint                = Rgba8::White;
 
 	MeshRaycastObject* m_raycastObject;
 };

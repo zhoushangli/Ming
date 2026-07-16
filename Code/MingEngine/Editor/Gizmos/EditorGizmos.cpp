@@ -9,7 +9,6 @@
 #include "MingEngine/Core/Math/MathUtils.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Engine/Render/CameraContext.hpp"
-#include "MingEngine/Scene/Physics/NodeRaycastUtils.hpp"
 
 using namespace Math;
 

@@ -17,7 +17,7 @@
 #include "MingEngine/Scene/3D/Node3D.hpp"
 #include "MingEngine/Scene/Core/Node.hpp"
 #include "MingEngine/Scene/Core/SceneTree.hpp"
-#include "MingEngine/Scene/Physics/NodeRaycastUtils.hpp"
+#include "MingEngine/Core/Math/RaycastUtils.hpp"
 #include "MingEngine/Scene/Resource/ShaderResource.hpp"
 
 #include <cmath>
@@ -197,7 +197,7 @@ void GizmoComponent::OnNotification(int notification)
 }
 
 MathRaycastResult3D GizmoComponent::Raycast(
-	[[maybe_unused]] GizmoContext const& context, RaycastInfo const& raycastInfo) const
+	[[maybe_unused]] GizmoContext const& context, MathRaycastQuery3D const& raycastInfo) const
 {
 	return MathRaycastResult3D(raycastInfo.m_startPos, raycastInfo.m_forwardNormal, raycastInfo.m_maxLength);
 }
@@ -208,9 +208,9 @@ void GizmoComponent::OnBeginDrag([[maybe_unused]] GizmoContext const& context, [
 }
 
 void GizmoComponent::OnDrag(
-	[[maybe_unused]] GizmoContext const& context,
-	[[maybe_unused]] RaycastInfo const&  startRaycastInfo,
-	[[maybe_unused]] RaycastInfo const&  currentRaycastInfo)
+	[[maybe_unused]] GizmoContext const&       context,
+	[[maybe_unused]] MathRaycastQuery3D const& startRaycastInfo,
+	[[maybe_unused]] MathRaycastQuery3D const& currentRaycastInfo)
 {
 }
 
@@ -302,7 +302,7 @@ GizmoAxisArrow::GizmoAxisArrow(GizmoAxis axis, Rgba8 const& color) : GizmoCompon
 	m_virtualCenter = axisDir * (kGizmoAxisLength * 0.5f);
 }
 
-MathRaycastResult3D GizmoAxisArrow::Raycast(GizmoContext const& context, RaycastInfo const& raycastInfo) const
+MathRaycastResult3D GizmoAxisArrow::Raycast(GizmoContext const& context, MathRaycastQuery3D const& raycastInfo) const
 {
 	Vec3 const  axisWorld     = GetAxisWorld();
 	float const arrowTipSize  = kGizmoArrowRadius * 4.f;
@@ -331,7 +331,9 @@ void GizmoAxisArrow::OnBeginDrag(GizmoContext const& context, Vec3 const& hitPos
 }
 
 void GizmoAxisArrow::OnDrag(
-	GizmoContext const& context, RaycastInfo const& startRaycastInfo, RaycastInfo const& currentRaycastInfo)
+	GizmoContext const&       context,
+	MathRaycastQuery3D const& startRaycastInfo,
+	MathRaycastQuery3D const& currentRaycastInfo)
 {
 	if (context.m_selectedNode3D == nullptr || context.m_camera == nullptr)
 	{
@@ -405,7 +407,7 @@ GizmoPlaneSquare::GizmoPlaneSquare(GizmoAxis axis, Rgba8 const& color) : GizmoCo
 	m_virtualCenter = center;
 }
 
-MathRaycastResult3D GizmoPlaneSquare::Raycast(GizmoContext const& context, RaycastInfo const& raycastInfo) const
+MathRaycastResult3D GizmoPlaneSquare::Raycast(GizmoContext const& context, MathRaycastQuery3D const& raycastInfo) const
 {
 	Vec3 const  planeU      = GetPlaneU();
 	Vec3 const  planeV      = GetPlaneV();
@@ -436,7 +438,9 @@ void GizmoPlaneSquare::OnBeginDrag(GizmoContext const& context, Vec3 const& hitP
 }
 
 void GizmoPlaneSquare::OnDrag(
-	GizmoContext const& context, RaycastInfo const& startRaycastInfo, RaycastInfo const& currentRaycastInfo)
+	GizmoContext const&       context,
+	MathRaycastQuery3D const& startRaycastInfo,
+	MathRaycastQuery3D const& currentRaycastInfo)
 {
 	if (context.m_selectedNode3D == nullptr)
 	{
@@ -462,14 +466,6 @@ void GizmoPlaneSquare::OnDrag(
 	}
 
 	Vec3 const translation = currentHit.m_impactPos - startHit.m_impactPos;
-
-	DebugGizmos::AddWorldSphere(
-		currentHit.m_impactPos,
-		0.1f,
-		0.f,
-		Rgba8(255, 255, 0, 255),
-		Rgba8(255, 255, 0, 255),
-		DebugRenderMode::X_RAY);
 
 	context.m_selectedNode3D->SetWorldPosition(m_startPosition + translation);
 }
@@ -539,7 +535,7 @@ void GizmoRotationArc::OnNotification(int notification)
 	}
 }
 
-MathRaycastResult3D GizmoRotationArc::Raycast(GizmoContext const& context, RaycastInfo const& raycastInfo) const
+MathRaycastResult3D GizmoRotationArc::Raycast(GizmoContext const& context, MathRaycastQuery3D const& raycastInfo) const
 {
 	Vec3 const          worldNormal = GetAxisWorld().GetNormalized();
 	MathRaycastResult3D result      = RaycastVsPlane3D(
@@ -583,9 +579,9 @@ void GizmoRotationArc::OnBeginDrag(GizmoContext const& context, Vec3 const& hitP
 }
 
 void GizmoRotationArc::OnDrag(
-	GizmoContext const&                 context,
-	[[maybe_unused]] RaycastInfo const& startRaycastInfo,
-	RaycastInfo const&                  currentRaycastInfo)
+	GizmoContext const&                        context,
+	[[maybe_unused]] MathRaycastQuery3D const& startRaycastInfo,
+	MathRaycastQuery3D const&                  currentRaycastInfo)
 {
 	if (context.m_selectedNode3D == nullptr)
 	{

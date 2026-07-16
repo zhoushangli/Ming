@@ -22,6 +22,7 @@ public:
 
 	Matrix4x4 GetLocalTransform() const;
 	Matrix4x4 GetWorldTransform() const;
+	Matrix4x4 GetWorldInverseTransform() const;
 	void      SetLocalTransform(Matrix4x4 const& localTransform);
 	void      SetWorldTransform(Matrix4x4 const& worldTransform);
 
@@ -47,7 +48,6 @@ protected:
 
 	virtual void OnTransformChanged();
 	void         PropagateTransformChanged();
-	Matrix4x4    GetWorldInverseTransform() const;
 
 protected:
 	Transform3D m_transform;

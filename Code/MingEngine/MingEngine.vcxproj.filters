@@ -420,9 +420,6 @@
     <ClCompile Include="Scene\Physics\CylinderZCollider3D.cpp">
       <Filter>Scene\Physics</Filter>
     </ClCompile>
-    <ClCompile Include="Scene\Physics\NodeRaycastUtils.cpp">
-      <Filter>Scene\Physics</Filter>
-    </ClCompile>
     <ClCompile Include="Scene\Physics\TriangleMeshCollider3D.cpp">
       <Filter>Scene\Physics</Filter>
     </ClCompile>
@@ -927,9 +924,6 @@
       <Filter>Scene\Physics</Filter>
     </ClInclude>
     <ClInclude Include="Scene\Physics\CylinderZCollider3D.hpp">
-      <Filter>Scene\Physics</Filter>
-    </ClInclude>
-    <ClInclude Include="Scene\Physics\NodeRaycastUtils.hpp">
       <Filter>Scene\Physics</Filter>
     </ClInclude>
     <ClInclude Include="Scene\Physics\TriangleMeshCollider3D.hpp">
