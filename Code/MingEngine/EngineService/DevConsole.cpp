@@ -105,26 +105,9 @@ void DevConsole::Execute(std::string const& consoleContext, bool echoCommand)
 		return;
 	}
 
-	auto iter = m_commands.find(tokens[0]);
-	if (iter == m_commands.end())
-	{
-		AddLine(kError, Stringf("Unknown command: %s", tokens[0].c_str()));
-		return;
-	}
-
 	if (echoCommand)
 	{
 		AddLine(kInputText, consoleContext);
-	}
-
-	EventArgs args;
-	for (size_t i = 1; i < tokens.size(); ++i)
-	{
-		Strings const keyValue = SplitStringOnDelimiter(tokens[i], '=');
-		if (keyValue.size() == 2 && !keyValue[0].empty())
-		{
-			args.SetValue(keyValue[0], keyValue[1]);
-		}
 	}
 
 	if (m_commandHistory.empty() || m_commandHistory.back() != consoleContext)
@@ -135,8 +118,51 @@ void DevConsole::Execute(std::string const& consoleContext, bool echoCommand)
 			m_commandHistory.erase(m_commandHistory.begin());
 		}
 	}
-
 	m_historyIndex = static_cast<int>(m_commandHistory.size());
+
+	auto iter = m_commands.find(tokens[0]);
+	if (iter == m_commands.end())
+	{
+		AddLine(kError, Stringf("Unknown command: %s", tokens[0].c_str()));
+		return;
+	}
+
+	EventArgs args;
+	for (size_t i = 1; i < tokens.size(); ++i)
+	{
+		std::string const& token      = tokens[i];
+		size_t const       firstEqual = token.find('=');
+		if (firstEqual == std::string::npos)
+		{
+			AddLine(kError, Stringf("Malformed argument '%s'; expected key=value", token.c_str()));
+			return;
+		}
+		if (firstEqual == 0)
+		{
+			AddLine(kError, Stringf("Argument key cannot be empty: '%s'", token.c_str()));
+			return;
+		}
+		if (firstEqual == token.size() - 1)
+		{
+			AddLine(kError, Stringf("Argument value cannot be empty: '%s'", token.c_str()));
+			return;
+		}
+		if (token.find('=', firstEqual + 1) != std::string::npos)
+		{
+			AddLine(kError, Stringf("Argument contains multiple '=' characters: '%s'", token.c_str()));
+			return;
+		}
+
+		std::string const key   = token.substr(0, firstEqual);
+		std::string const value = token.substr(firstEqual + 1);
+		if (args.HasValue(key))
+		{
+			AddLine(kError, Stringf("Duplicate argument: '%s'", key.c_str()));
+			return;
+		}
+		args.SetValue(key, value);
+	}
+
 	iter->second.m_func(args);
 	m_scrollToBottom = true;
 }

@@ -19,6 +19,23 @@ void NamedStrings::SetValue(std::string const& keyName, std::string const& newVa
     m_keyValuePairs[keyName] = newValue;
 }
 
+bool NamedStrings::HasValue(std::string const& keyName) const
+{
+	return m_keyValuePairs.find(keyName) != m_keyValuePairs.end();
+}
+
+std::vector<std::string> NamedStrings::GetKeys() const
+{
+	std::vector<std::string> keys;
+	keys.reserve(m_keyValuePairs.size());
+	for (auto const& [key, value] : m_keyValuePairs)
+	{
+		(void)value;
+		keys.push_back(key);
+	}
+	return keys;
+}
+
 std::string NamedStrings::GetValue(std::string const& keyName, std::string const& defaultValue) const
 {
     auto iter = m_keyValuePairs.find(keyName);

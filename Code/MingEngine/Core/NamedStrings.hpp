@@ -4,12 +4,15 @@
 
 #include <string>
 #include <map>
+#include <vector>
 
 class NamedStrings
 {
 public:
     void			PopulateFromXmlElementAttributes(XmlElement const& element);
     void			SetValue(std::string const& keyName, std::string const& newValue);
+	bool            HasValue(std::string const& keyName) const;
+	std::vector<std::string> GetKeys() const;
     std::string		GetValue(std::string const& keyName, std::string const& defaultValue) const;
     bool			GetValue(std::string const& keyName, bool defaultValue) const;
     int			    GetValue(std::string const& keyName, int defaultValue) const;
