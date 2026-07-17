@@ -8,7 +8,7 @@
 
 namespace
 {
-char const* const kImGuiIniFilePath = "Data/.ming/imgui.ini";
+char const* const kImGuiIniFilePath = "Data/imgui.ini";
 
 ImVec4 RGBA(float r, float g, float b, float a) { return ImVec4(r / 255.f, g / 255.f, b / 255.f, a); }
 
@@ -159,6 +159,5 @@ bool ImGuiSystem::WantCaptureMouse() const { return ImGui::GetIO().WantCaptureMo
 
 bool ImGuiSystem::WantCaptureKeyboard() const
 {
-	return ImGui::GetIO().WantCaptureKeyboard
-		|| ImGui::IsPopupOpen(nullptr, ImGuiPopupFlags_AnyPopupId);
+	return ImGui::GetIO().WantCaptureKeyboard || ImGui::IsPopupOpen(nullptr, ImGuiPopupFlags_AnyPopupId);
 }
