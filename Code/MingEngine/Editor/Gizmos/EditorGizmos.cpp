@@ -17,12 +17,12 @@ namespace
 float constexpr kEditorGizmoRaycastLength = 10000.f;
 float constexpr kWorldAxisExtent          = 100.f;
 
-Rgba8 const kAxisXColor(255, 70, 105, 255);
-Rgba8 const kAxisYColor(155, 225, 20, 255);
-Rgba8 const kAxisZColor(55, 160, 255, 255);
+Color const kAxisXColor(255, 70, 105, 255);
+Color const kAxisYColor(155, 225, 20, 255);
+Color const kAxisZColor(55, 160, 255, 255);
 
 EditorWorldAxis3D* CreateWorldAxis(
-	Node* parent, char const* name, Vec3 const& axisStart, Vec3 const& axisEnd, Rgba8 const& color)
+	Node* parent, char const* name, Vec3 const& axisStart, Vec3 const& axisEnd, Color const& color)
 {
 	EditorWorldAxis3D* axis = new EditorWorldAxis3D(axisStart, axisEnd, color);
 	axis->SetName(name);

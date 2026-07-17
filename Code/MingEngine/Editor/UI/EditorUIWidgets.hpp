@@ -4,6 +4,7 @@
 
 #include "MingEngine/Core/Math/EulerAngles.hpp"
 #include "MingEngine/Core/Math/Vec3.hpp"
+#include "MingEngine/Core/Render/Rgba8.hpp"
 
 #include <string>
 
@@ -24,6 +25,7 @@ void NextPropertyColumn();
 void EndPropertyRow();
 
 bool PropertyBool(std::string const& label, char const* id, bool& value);
+bool PropertyColor(std::string const& label, char const* id, Color& value);
 bool PropertyInt(std::string const& label, char const* id, int& value);
 bool PropertyFloat(std::string const& label, char const* id, float& value);
 bool PropertyString(std::string const& label, char const* id, std::string& value);

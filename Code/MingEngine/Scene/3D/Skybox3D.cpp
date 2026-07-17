@@ -36,10 +36,10 @@ Skybox3D::Skybox3D(std::string const& imagePath) : VisualizeInstance3D(), m_imag
 	{
 		unsigned int const startIndex = static_cast<unsigned int>(verts.size());
 
-		verts.emplace_back(bl, Rgba8::White, uvBL);
-		verts.emplace_back(br, Rgba8::White, uvBR);
-		verts.emplace_back(tr, Rgba8::White, uvTR);
-		verts.emplace_back(tl, Rgba8::White, uvTL);
+		verts.emplace_back(bl, Color::White, uvBL);
+		verts.emplace_back(br, Color::White, uvBR);
+		verts.emplace_back(tr, Color::White, uvTR);
+		verts.emplace_back(tl, Color::White, uvTL);
 
 		// Front-facing from inside the cube.
 		indexes.push_back(startIndex + 0);
@@ -150,11 +150,13 @@ Skybox3D::Skybox3D(std::string const& imagePath) : VisualizeInstance3D(), m_imag
 
 	// clang-format on
 
-	m_vertexBuffer =
-		g_engine->m_renderer->CreateVertexBuffer(verts.data(), verts.size() * sizeof(Vertex), sizeof(Vertex));
+	m_vertexBuffer = g_engine->m_renderer->CreateVertexBuffer(
+		verts.data(),
+		(unsigned int)(verts.size() * sizeof(Vertex)),
+		sizeof(Vertex));
 	m_indexBuffer = g_engine->m_renderer->CreateIndexBuffer(
 		indexes.data(),
-		indexes.size() * sizeof(unsigned int),
+		(unsigned int)(indexes.size() * sizeof(unsigned int)),
 		sizeof(unsigned int));
 }
 
@@ -176,7 +178,7 @@ RenderRequest Skybox3D::SubmitRenderRequest() const
 
 	request.m_pass                                  = RenderRequestPass::Skybox;
 	request.m_modelToWorld                          = GetWorldTransform();
-	request.m_tint                                  = Rgba8::White;
+	request.m_tint                                  = Color::White;
 	request.m_vertexBuffer                          = m_vertexBuffer;
 	request.m_indexBuffer                           = m_indexBuffer;
 	request.m_textures[SurfaceTextureSlot::Diffuse] = m_textureRef.IsValid() ? m_textureRef->GetGPUTexture() : nullptr;

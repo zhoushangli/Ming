@@ -12,37 +12,49 @@ class Light3D : public Node3D
 
 public:
 	Light3D();
+	Light3D(LightType type);
 	~Light3D() override;
 
-	void SetColor(Rgba8 const& color);
-	void SetDirection(Vec3 const& direction);
+	void SetColor(Color const& color);
 	void SetIntensity(float intensity);
-	void SetPosition(Vec3 const& position);
-	void SetRange(float range);
 
-	Rgba8            GetColor() const;
-	Vec3             GetDirection() const;
-	float            GetIntensity() const;
-	Vec3             GetPosition() const;
-	float            GetRange() const;
-	LightInfo const& GetLightInfo() const;
+	Color GetColor() const;
+	float GetIntensity() const;
 
 	static void BindMethods();
 
 protected:
-	void OnNotification(int notification);
+	void         OnNotification(int notification);
+	virtual void SyncRenderData();
+	void         FreeRenderLight();
 
 protected:
-	LightInfo m_lightInfo;
+	int       m_rid       = -1;
+	LightType m_lightType = LightType::Omni;
+	Color     m_color     = Color::White;
+	float     m_intensity = 1.f;
 };
 
-class PointLight3D : public Light3D
+class OmniLight3D : public Light3D
 {
-	MCLASS(PointLight3D, Light3D);
+	MCLASS(OmniLight3D, Light3D);
 
 public:
-	PointLight3D();
-	~PointLight3D() override = default;
+	OmniLight3D();
+	~OmniLight3D() override = default;
+
+	void  SetRange(float range);
+	void  SetAttenuation(float attenuation);
+	float GetRange() const { return m_range; }
+	float GetAttenuation() const { return m_attenuation; }
+
+protected:
+	static void BindMethods();
+	void        SyncRenderData() override;
+
+private:
+	float m_range       = 1.f;
+	float m_attenuation = 1.f;
 };
 
 class DirectionalLight3D : public Light3D
@@ -52,4 +64,33 @@ class DirectionalLight3D : public Light3D
 public:
 	DirectionalLight3D();
 	~DirectionalLight3D() override = default;
+};
+
+class SpotLight3D : public Light3D
+{
+	MCLASS(SpotLight3D, Light3D);
+
+public:
+	SpotLight3D();
+	~SpotLight3D() override = default;
+
+	void SetRange(float range);
+	void SetAttenuation(float attenuation);
+	void SetSpotAngle(float angle);
+	void SetSpotAttenuation(float attenuation);
+
+	float GetRange() const { return m_range; }
+	float GetAttenuation() const { return m_attenuation; }
+	float GetSpotAngle() const { return m_spotAngle; }
+	float GetSpotAttenuation() const { return m_spotAttenuation; }
+
+protected:
+	static void BindMethods();
+	void        SyncRenderData() override;
+
+private:
+	float m_range           = 1.f;
+	float m_attenuation     = 1.f;
+	float m_spotAngle       = 45.f;
+	float m_spotAttenuation = 1.f;
 };

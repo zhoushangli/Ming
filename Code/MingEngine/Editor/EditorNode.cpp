@@ -78,8 +78,8 @@ void EditorSelection::SetSelected(NodeHandle handle)
 		DebugGizmos::AddMessage(
 			Stringf("Selected Node: %s", FormatNodeHandle(m_selectedNodeHandle).c_str()),
 			5.f,
-			Rgba8::White,
-			Rgba8::White);
+			Color::White,
+			Color::White);
 		return;
 	}
 
@@ -91,14 +91,14 @@ void EditorSelection::SetSelected(NodeHandle handle)
 				FormatNodeHandle(previousHandle).c_str(),
 				FormatNodeHandle(m_selectedNodeHandle).c_str()),
 			5.f,
-			Rgba8::White,
-			Rgba8::White);
+			Color::White,
+			Color::White);
 		return;
 	}
 
 	if (previousHandle.IsValid() && !m_selectedNodeHandle.IsValid())
 	{
-		DebugGizmos::AddMessage("Selection Cleared", 5.f, Rgba8::White, Rgba8::White);
+		DebugGizmos::AddMessage("Selection Cleared", 5.f, Color::White, Color::White);
 	}
 }
 
@@ -207,9 +207,9 @@ void EditorNode::OnMouseDown(int keyCode, Vec2 screenPos)
 		viewportDimensions = m_editorUI->GetViewportDimensions();
 	}
 
-	RaycastSpace3D* raycastSpace = GetSceneTree()->GetRaycastSpace();
-	RaycastQuery3D  raycastQuery = camera->BuildRaycastFromMouse(mousePos, viewportDimensions, 10000.f);
-	RaycastResult3D const result = raycastSpace->IntersectRay(raycastQuery);
+	RaycastSpace3D*       raycastSpace = GetSceneTree()->GetRaycastSpace();
+	RaycastQuery3D        raycastQuery = camera->BuildRaycastFromMouse(mousePos, viewportDimensions, 10000.f);
+	RaycastResult3D const result       = raycastSpace->IntersectRay(raycastQuery);
 
 	if (result.m_didImpact)
 	{

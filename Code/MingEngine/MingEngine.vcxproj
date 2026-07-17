@@ -547,6 +547,7 @@
     <ClInclude Include="Editor\UI\InspectorPanel.hpp" />
     <ClInclude Include="Editor\UI\InspectorProperty.hpp" />
     <ClInclude Include="Editor\UI\InspectorPropertyBool.hpp" />
+    <ClInclude Include="Editor\UI\InspectorPropertyColor.hpp" />
     <ClInclude Include="Editor\UI\InspectorPropertyEuler.hpp" />
     <ClInclude Include="Editor\UI\InspectorPropertyFloat.hpp" />
     <ClInclude Include="Editor\UI\InspectorPropertyInt.hpp" />

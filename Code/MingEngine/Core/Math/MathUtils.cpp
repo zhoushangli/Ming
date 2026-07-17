@@ -403,19 +403,16 @@ void TransformPositionXY3D(Vec3& pos, Vec2 const& iBasisXY, Vec2 const& jBasisXY
 
 float Interpolate(float start, float end, float fraction) { return start * (1.0f - fraction) + end * fraction; }
 
-Vec3 Interpolate(Vec3 const& start, Vec3 const& end, float fraction)
-{
-	return Vec3::Interpolate(start, end, fraction);
-}
+Vec3 Interpolate(Vec3 const& start, Vec3 const& end, float fraction) { return Vec3::Interpolate(start, end, fraction); }
 
-Rgba8 Interpolate(Rgba8 const& start, Rgba8 const& end, float fraction)
+Color Interpolate(Color const& start, Color const& end, float fraction)
 {
 	float r = Interpolate(::NormalizeByte(start.r), ::NormalizeByte(end.r), fraction);
 	float g = Interpolate(::NormalizeByte(start.g), ::NormalizeByte(end.g), fraction);
 	float b = Interpolate(::NormalizeByte(start.b), ::NormalizeByte(end.b), fraction);
 	float a = Interpolate(::NormalizeByte(start.a), ::NormalizeByte(end.a), fraction);
 
-	return Rgba8(::DenormalizeByte(r), ::DenormalizeByte(g), ::DenormalizeByte(b), ::DenormalizeByte(a));
+	return Color(::DenormalizeByte(r), ::DenormalizeByte(g), ::DenormalizeByte(b), ::DenormalizeByte(a));
 }
 
 EulerAngles Interpolate(EulerAngles const& start, EulerAngles const& end, float fraction)
@@ -648,7 +645,7 @@ Vec3 InterpolateClamped(Vec3 const& start, Vec3 const& end, float fraction)
 	return Vec3::InterpolateClamped(start, end, fraction);
 }
 
-Rgba8 InterpolateClamped(Rgba8 const& start, Rgba8 const& end, float fraction)
+Color InterpolateClamped(Color const& start, Color const& end, float fraction)
 {
 	float f = GetClampedZeroToOne(fraction);
 	return Interpolate(start, end, f);
@@ -787,10 +784,7 @@ float DotProduct4D(Vec4 const& a, Vec4 const& b) { return Vec4::DotProduct(a, b)
 
 float CrossProduct2D(Vec2 const& a, Vec2 const& b) { return Vec2::CrossProduct(a, b); }
 
-Vec3 CrossProduct3D(Vec3 const& a, Vec3 const& b)
-{
-	return Vec3::CrossProduct(a, b);
-}
+Vec3 CrossProduct3D(Vec3 const& a, Vec3 const& b) { return Vec3::CrossProduct(a, b); }
 
 Matrix4x4 GetBillboardTransform(
 	BillboardType    billboardType,
@@ -1091,25 +1085,13 @@ bool PushDiscOutOfFixedOBB2D(Disc2& discToPush, OBB2 const& box)
 	return PushDiscOutOfFixedOBB2D(discToPush.m_center, discToPush.m_radius, box);
 }
 
-float GetProjectedLength2D(Vec2 const& vector, Vec2 const& basis)
-{
-	return Vec2::GetProjectedLength(vector, basis);
-}
+float GetProjectedLength2D(Vec2 const& vector, Vec2 const& basis) { return Vec2::GetProjectedLength(vector, basis); }
 
-Vec2 GetProjectedVector2D(Vec2 const& vector, Vec2 const& basis)
-{
-	return Vec2::GetProjectedVector(vector, basis);
-}
+Vec2 GetProjectedVector2D(Vec2 const& vector, Vec2 const& basis) { return Vec2::GetProjectedVector(vector, basis); }
 
-Vec3 GetProjectedVector3D(Vec3 const& vector, Vec3 const& basis)
-{
-	return Vec3::GetProjectedVector(vector, basis);
-}
+Vec3 GetProjectedVector3D(Vec3 const& vector, Vec3 const& basis) { return Vec3::GetProjectedVector(vector, basis); }
 
-float GetAngleDegreesBetweenVectors2D(Vec2 const& a, Vec2 const& b)
-{
-	return Vec2::GetAngleDegreesBetween(a, b);
-}
+float GetAngleDegreesBetweenVectors2D(Vec2 const& a, Vec2 const& b) { return Vec2::GetAngleDegreesBetween(a, b); }
 
 int GetTaxicabDistance2D(IntVec2 const& a, IntVec2 const& b) { return abs(a.x - b.x) + abs(a.y - b.y); }
 

@@ -11,30 +11,20 @@ namespace EditorUIWidgets
 {
 namespace
 {
-bool IsTripleFloatDefault(
-	float x,
-	float y,
-	float z,
-	float defaultX,
-	float defaultY,
-	float defaultZ)
+bool IsTripleFloatDefault(float x, float y, float z, float defaultX, float defaultY, float defaultZ)
 {
 	constexpr float epsilon = 1e-5f;
-	return std::abs(x - defaultX) <= epsilon
-		&& std::abs(y - defaultY) <= epsilon
-		&& std::abs(z - defaultZ) <= epsilon;
+	return std::abs(x - defaultX) <= epsilon && std::abs(y - defaultY) <= epsilon && std::abs(z - defaultZ) <= epsilon;
 }
 
 bool DrawPropertyResetButton(char const* id, float y)
 {
-	float const       buttonSize = ImGui::GetTextLineHeight();
-	ImVec2 const      buttonPos(
-		ImGui::GetWindowPos().x + ImGui::GetWindowContentRegionMax().x - buttonSize,
-		y);
+	float const  buttonSize = ImGui::GetTextLineHeight();
+	ImVec2 const buttonPos(ImGui::GetWindowPos().x + ImGui::GetWindowContentRegionMax().x - buttonSize, y);
 
 	ImGui::SetCursorScreenPos(buttonPos);
 	std::string const buttonId = std::string(id) + "_reset";
-	bool const clicked = ImGui::InvisibleButton(buttonId.c_str(), ImVec2(buttonSize, buttonSize));
+	bool const        clicked  = ImGui::InvisibleButton(buttonId.c_str(), ImVec2(buttonSize, buttonSize));
 
 	ImTextureID const textureId = EditorIcons::GetIconId("ReloadSmall", "Reload");
 	float const       iconInset = 2.f;
@@ -53,18 +43,18 @@ bool DrawPropertyResetButton(char const* id, float y)
 }
 
 bool DrawVectorComponent(
-	char const*    label,
-	float&         value,
-	ImVec4 const&  labelColor,
-	ImVec2 const&  barPos,
-	int            index,
-	float          groupWidth,
-	float          groupGap,
-	float          innerPad,
-	float          labelValueGap)
+	char const*   label,
+	float&        value,
+	ImVec4 const& labelColor,
+	ImVec2 const& barPos,
+	int           index,
+	float         groupWidth,
+	float         groupGap,
+	float         innerPad,
+	float         labelValueGap)
 {
-	float const groupX = barPos.x + index * (groupWidth + groupGap);
-	float const groupY = barPos.y;
+	float const groupX     = barPos.x + index * (groupWidth + groupGap);
+	float const groupY     = barPos.y;
 	float const labelWidth = ImGui::CalcTextSize(label).x;
 
 	ImGui::SetCursorScreenPos(ImVec2(groupX + innerPad, groupY));
@@ -93,7 +83,7 @@ bool PropertyTripleFloat(
 	float              defaultY,
 	float              defaultZ)
 {
-	bool reset = false;
+	bool         reset    = false;
 	ImVec2 const labelPos = ImGui::GetCursorScreenPos();
 	ImGui::TextUnformatted(label.c_str());
 	if (!IsTripleFloatDefault(x, y, z, defaultX, defaultY, defaultZ))
@@ -108,12 +98,13 @@ bool PropertyTripleFloat(
 			z = defaultZ;
 		}
 	}
-	ImGui::SetCursorScreenPos(ImVec2(labelPos.x, labelPos.y + ImGui::GetTextLineHeight() + ImGui::GetStyle().ItemSpacing.y));
+	ImGui::SetCursorScreenPos(
+		ImVec2(labelPos.x, labelPos.y + ImGui::GetTextLineHeight() + ImGui::GetStyle().ItemSpacing.y));
 
 	ImGuiStyle const& style = ImGui::GetStyle();
 
-	ImVec2 const barPos   = ImGui::GetCursorScreenPos();
-	float const  barWidth = ImGui::GetContentRegionAvail().x;
+	ImVec2 const barPos    = ImGui::GetCursorScreenPos();
+	float const  barWidth  = ImGui::GetContentRegionAvail().x;
 	float const  barHeight = ImGui::GetFrameHeight();
 
 	float constexpr groupGap      = 6.f;
@@ -138,9 +129,36 @@ bool PropertyTripleFloat(
 	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0.f, style.FramePadding.y));
 
 	bool edited = reset;
-	edited |= DrawVectorComponent("x", x, ImVec4(0.9f, 0.25f, 0.25f, 1.f), barPos, 0, groupWidth, groupGap, innerPad, labelValueGap);
-	edited |= DrawVectorComponent("y", y, ImVec4(0.35f, 0.8f, 0.35f, 1.f), barPos, 1, groupWidth, groupGap, innerPad, labelValueGap);
-	edited |= DrawVectorComponent("z", z, ImVec4(0.35f, 0.5f, 0.9f, 1.f), barPos, 2, groupWidth, groupGap, innerPad, labelValueGap);
+	edited |= DrawVectorComponent(
+		"x",
+		x,
+		ImVec4(0.9f, 0.25f, 0.25f, 1.f),
+		barPos,
+		0,
+		groupWidth,
+		groupGap,
+		innerPad,
+		labelValueGap);
+	edited |= DrawVectorComponent(
+		"y",
+		y,
+		ImVec4(0.35f, 0.8f, 0.35f, 1.f),
+		barPos,
+		1,
+		groupWidth,
+		groupGap,
+		innerPad,
+		labelValueGap);
+	edited |= DrawVectorComponent(
+		"z",
+		z,
+		ImVec4(0.35f, 0.5f, 0.9f, 1.f),
+		barPos,
+		2,
+		groupWidth,
+		groupGap,
+		innerPad,
+		labelValueGap);
 
 	ImGui::PopStyleVar();
 	ImGui::PopStyleColor(3);
@@ -169,9 +187,9 @@ void RenderTreeRowContent(
 	std::string const& iconName,
 	std::string const& fallbackIconName,
 	std::string const& label,
-	ImVec2 rowMin,
-	ImVec2 rowMax,
-	ImVec2 iconSize)
+	ImVec2             rowMin,
+	ImVec2             rowMax,
+	ImVec2             iconSize)
 {
 	ImGui::SameLine();
 
@@ -192,15 +210,9 @@ void BeginPropertyRow(std::string const& label)
 	ImGui::TextUnformatted(label.c_str());
 }
 
-void NextPropertyColumn()
-{
-	ImGui::NextColumn();
-}
+void NextPropertyColumn() { ImGui::NextColumn(); }
 
-void EndPropertyRow()
-{
-	ImGui::Columns(1);
-}
+void EndPropertyRow() { ImGui::Columns(1); }
 
 bool PropertyBool(std::string const& label, char const* id, bool& value)
 {
@@ -222,29 +234,25 @@ bool PropertyBool(std::string const& label, char const* id, bool& value)
 		value = !value;
 	}
 
-	ImVec4 const bgColor =
-		active ? ImGui::GetStyleColorVec4(ImGuiCol_FrameBgActive)
-			   : (hovered ? ImGui::GetStyleColorVec4(ImGuiCol_FrameBgHovered)
-						  : ImGui::GetStyleColorVec4(ImGuiCol_FrameBg));
+	ImVec4 const bgColor = active ? ImGui::GetStyleColorVec4(ImGuiCol_FrameBgActive)
+								  : (hovered ? ImGui::GetStyleColorVec4(ImGuiCol_FrameBgHovered)
+											 : ImGui::GetStyleColorVec4(ImGuiCol_FrameBg));
 
-	ImDrawList* drawList = ImGui::GetWindowDrawList();
+	ImDrawList*  drawList = ImGui::GetWindowDrawList();
 	ImVec2 const frameMax(framePos.x + frameWidth, framePos.y + frameHeight);
 	drawList->AddRectFilled(framePos, frameMax, ImGui::GetColorU32(bgColor), style.FrameRounding);
 
-	float const boxSize = ImGui::GetFontSize() * 0.72f;
-	ImVec2 const boxMin(
-		framePos.x + style.FramePadding.x,
-		framePos.y + (frameHeight - boxSize) * 0.5f);
+	float const  boxSize = ImGui::GetFontSize() * 0.72f;
+	ImVec2 const boxMin(framePos.x + style.FramePadding.x, framePos.y + (frameHeight - boxSize) * 0.5f);
 	ImVec2 const boxMax(boxMin.x + boxSize, boxMin.y + boxSize);
 
-	ImU32 const boxColor =
-		value ? ImGui::GetColorU32(ImGuiCol_CheckMark) : ImGui::GetColorU32(ImGuiCol_FrameBgActive);
+	ImU32 const boxColor = value ? ImGui::GetColorU32(ImGuiCol_CheckMark) : ImGui::GetColorU32(ImGuiCol_FrameBgActive);
 	drawList->AddRectFilled(boxMin, boxMax, boxColor, style.FrameRounding * 0.45f);
 
 	if (value)
 	{
-		float const thickness = 2.f;
-		ImU32 const markColor = ImGui::GetColorU32(ImGuiCol_Text);
+		float const  thickness = 2.f;
+		ImU32 const  markColor = ImGui::GetColorU32(ImGuiCol_Text);
 		ImVec2 const a(boxMin.x + boxSize * 0.22f, boxMin.y + boxSize * 0.52f);
 		ImVec2 const b(boxMin.x + boxSize * 0.42f, boxMin.y + boxSize * 0.72f);
 		ImVec2 const c(boxMin.x + boxSize * 0.78f, boxMin.y + boxSize * 0.28f);
@@ -252,14 +260,56 @@ bool PropertyBool(std::string const& label, char const* id, bool& value)
 		drawList->AddLine(b, c, markColor, thickness);
 	}
 
-	char const* valueText = value ? "On" : "Off";
-	ImVec2 const textSize = ImGui::CalcTextSize(valueText);
-	ImVec2 const textPos(
-		boxMax.x + style.ItemInnerSpacing.x,
-		framePos.y + (frameHeight - textSize.y) * 0.5f);
+	char const*  valueText = value ? "On" : "Off";
+	ImVec2 const textSize  = ImGui::CalcTextSize(valueText);
+	ImVec2 const textPos(boxMax.x + style.ItemInnerSpacing.x, framePos.y + (frameHeight - textSize.y) * 0.5f);
 	drawList->AddText(textPos, ImGui::GetColorU32(ImGuiCol_Text), valueText);
 
 	EndPropertyRow();
+	return edited;
+}
+
+bool PropertyColor(std::string const& label, char const* id, Color& value)
+{
+	float colorAsFloats[4];
+	value.GetAsFloats(colorAsFloats);
+
+	BeginPropertyRow(label);
+	NextPropertyColumn();
+
+	bool edited = false;
+	ImGui::PushID(id);
+
+	ImVec4 const previewColor(
+		colorAsFloats[0],
+		colorAsFloats[1],
+		colorAsFloats[2],
+		colorAsFloats[3]);
+	ImVec2 const buttonSize(ImGui::CalcItemWidth(), ImGui::GetFrameHeight());
+
+	if (ImGui::ColorButton("##colorButton", previewColor, ImGuiColorEditFlags_None, buttonSize))
+	{
+		ImGui::OpenPopup("colorPicker");
+	}
+
+	if (ImGui::BeginPopup("colorPicker"))
+	{
+		edited = ImGui::ColorPicker4("##picker", colorAsFloats, ImGuiColorEditFlags_AlphaBar);
+		ImGui::EndPopup();
+	}
+
+	ImGui::PopID();
+	EndPropertyRow();
+
+	if (edited)
+	{
+		value = Color(
+			DenormalizeByte(colorAsFloats[0]),
+			DenormalizeByte(colorAsFloats[1]),
+			DenormalizeByte(colorAsFloats[2]),
+			DenormalizeByte(colorAsFloats[3]));
+	}
+
 	return edited;
 }
 

@@ -9,6 +9,7 @@
 #include "MingEngine/Core/Math/Vec3.hpp"
 #include "MingEngine/Core/Math/Vec4.hpp"
 #include "MingEngine/Core/Object/Object.hpp"
+#include "MingEngine/Core/Render/Rgba8.hpp"
 
 #include <string>
 #include <variant>
@@ -25,6 +26,7 @@ public:
 		Vec2,
 		Vec3,
 		Vec4,
+		Color,
 		AABB2,
 		OBB2,
 		Capsule3,
@@ -42,6 +44,7 @@ public:
 		Vec2,
 		Vec3,
 		Vec4,
+		Color,
 		AABB2,
 		OBB2,
 		Capsule3,
@@ -62,6 +65,7 @@ public:
 	Variant(Vec2 const& value);
 	Variant(Vec3 const& value);
 	Variant(Vec4 const& value);
+	Variant(Color const& value);
 	Variant(AABB2 const& value);
 	Variant(OBB2 const& value);
 	Variant(Capsule3 const& value);
@@ -112,6 +116,8 @@ public:
 			return Type::Vec3;
 		if (std::is_same_v<CleanType, Vec4>)
 			return Type::Vec4;
+		if (std::is_same_v<CleanType, Color>)
+			return Type::Color;
 		if (std::is_same_v<CleanType, AABB2>)
 			return Type::AABB2;
 		if (std::is_same_v<CleanType, OBB2>)

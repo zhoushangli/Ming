@@ -156,12 +156,12 @@ void TransformPositionXY3D(Vec3& pos, Vec2 const& iBasisXY, Vec2 const& jBasisXY
 
 float       Interpolate(float start, float end, float fraction);
 Vec3        Interpolate(Vec3 const& start, Vec3 const& end, float fraction);
-Rgba8       Interpolate(Rgba8 const& start, Rgba8 const& end, float fraction);
+Color       Interpolate(Color const& start, Color const& end, float fraction);
 EulerAngles Interpolate(EulerAngles const& start, EulerAngles const& end, float fraction);
 
 float       InterpolateClamped(float start, float end, float fraction);
 Vec3        InterpolateClamped(Vec3 const& start, Vec3 const& end, float fraction);
-Rgba8       InterpolateClamped(Rgba8 const& start, Rgba8 const& end, float fraction);
+Color       InterpolateClamped(Color const& start, Color const& end, float fraction);
 EulerAngles InterpolateClamped(EulerAngles const& start, EulerAngles const& end, float fraction);
 
 float SmoothStart2(float t);

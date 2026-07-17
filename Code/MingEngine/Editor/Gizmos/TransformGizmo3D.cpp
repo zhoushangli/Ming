@@ -8,9 +8,9 @@
 
 namespace
 {
-Rgba8 const kAxisXColor(255, 70, 105, 255);
-Rgba8 const kAxisYColor(155, 225, 20, 255);
-Rgba8 const kAxisZColor(55, 160, 255, 255);
+Color const     kAxisXColor(255, 70, 105, 255);
+Color const     kAxisYColor(155, 225, 20, 255);
+Color const     kAxisZColor(55, 160, 255, 255);
 constexpr float kRaycastMaxLength = 10000.f;
 
 } // namespace
@@ -218,8 +218,8 @@ GizmoComponent* TransformGizmo3D::HitTest(GizmoContext const& context, Vec3& out
 
 	MathRaycastQuery3D const raycastInfo =
 		context.m_camera->BuildRaycastFromMouse(context.m_clientPos, context.m_clientDimensions, kRaycastMaxLength);
-	GizmoComponent*          closestComponent = nullptr;
-	float                    closestDistance  = raycastInfo.m_maxLength;
+	GizmoComponent* closestComponent = nullptr;
+	float           closestDistance  = raycastInfo.m_maxLength;
 	for (GizmoComponent* component : m_components)
 	{
 		if (component == nullptr || !component->GetVisible())

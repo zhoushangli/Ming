@@ -33,12 +33,12 @@ protected:
 	RenderRequest SubmitRenderRequest() const override;
 };
 
-// TODO: Current Shader looks strange when get close to the axsis, it will scale up when you 
+// TODO: Current Shader looks strange when get close to the axsis, it will scale up when you
 // look up/down, and scale down when you look horizontally
 class EditorWorldAxis3D : public EditorGizmoVisual3D
 {
 public:
-	EditorWorldAxis3D(Vec3 const& axisStart, Vec3 const& axisEnd, Rgba8 const& color);
+	EditorWorldAxis3D(Vec3 const& axisStart, Vec3 const& axisEnd, Color const& color);
 
 protected:
 	RenderRequest SubmitRenderRequest() const override;

@@ -3,7 +3,6 @@
 #include "MingEngine/EngineService/EngineService.hpp"
 #include "MingEngine/EngineService/RenderService.hpp"
 #include "MingEngine/Scene/3D/Camera3D.hpp"
-#include "MingEngine/Scene/3D/Light3D.hpp"
 #include "MingEngine/Scene/3D/VisualizeInstance3D.hpp"
 #include "MingEngine/Scene/Core/SceneTree.hpp"
 
@@ -74,34 +73,6 @@ void Viewport::UnregisterVisualizeInstance(VisualizeInstance3D* visualizeInstanc
 		{
 			m_instances.erase(foundInstance);
 		}
-	}
-}
-
-void Viewport::RegisterLight(Light3D* light)
-{
-	if (light == nullptr || !light->GetHandle().IsValid())
-	{
-		return;
-	}
-
-	NodeHandle handle = light->GetHandle();
-	if (std::find(m_lights.begin(), m_lights.end(), handle) == m_lights.end())
-	{
-		m_lights.push_back(handle);
-	}
-}
-
-void Viewport::UnregisterLight(Light3D* light)
-{
-	if (light == nullptr)
-	{
-		return;
-	}
-
-	auto const foundLight = std::find(m_lights.begin(), m_lights.end(), light->GetHandle());
-	if (foundLight != m_lights.end())
-	{
-		m_lights.erase(foundLight);
 	}
 }
 
@@ -201,12 +172,11 @@ void Viewport::PrepareRenderData()
 		m_viewportInfo.m_worldCamera = &m_tmpWorldCamera;
 	}
 
-	// 2) Requests and lights describe only the current frame.
+	// 2) Requests describe only the current frame.
 	for (auto& requests : m_viewportInfo.m_renderRequests)
 	{
 		requests.clear();
 	}
-	m_viewportInfo.m_lights.clear();
 
 	// 3) Resolve handles and prune stale registrations while collecting data.
 	for (auto instanceIter = m_instances.begin(); instanceIter != m_instances.end();)
@@ -228,19 +198,6 @@ void Viewport::PrepareRenderData()
 		}
 
 		++instanceIter;
-	}
-
-	for (auto lightIter = m_lights.begin(); lightIter != m_lights.end();)
-	{
-		auto* light = dynamic_cast<Light3D*>(sceneTree->ResolveNode(*lightIter));
-		if (light == nullptr)
-		{
-			lightIter = m_lights.erase(lightIter);
-			continue;
-		}
-
-		m_viewportInfo.m_lights.push_back(light->GetLightInfo());
-		++lightIter;
 	}
 }
 

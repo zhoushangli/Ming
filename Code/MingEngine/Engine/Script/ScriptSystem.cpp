@@ -88,39 +88,39 @@ void ScriptSystem::BindMethods() {}
 
 void ScriptSystem::Startup()
 {
-	m_scriptEngine = asCreateScriptEngine();
-	GUARANTEE_OR_DIE(m_scriptEngine != nullptr, "Failed to create AngelScript engine.");
+	// m_scriptEngine = asCreateScriptEngine();
+	// GUARANTEE_OR_DIE(m_scriptEngine != nullptr, "Failed to create AngelScript engine.");
 
-	int result = m_scriptEngine->SetMessageCallback(asFUNCTION(ScriptMessageCallback), nullptr, asCALL_CDECL);
-	GUARANTEE_OR_DIE(result >= 0, "Failed to register AngelScript message callback.");
+	// int result = m_scriptEngine->SetMessageCallback(asFUNCTION(ScriptMessageCallback), nullptr, asCALL_CDECL);
+	// GUARANTEE_OR_DIE(result >= 0, "Failed to register AngelScript message callback.");
 
-	result = m_scriptEngine->SetEngineProperty(asEP_PROPERTY_ACCESSOR_MODE, 2);
-	GUARANTEE_OR_DIE(result >= 0, "Failed to set AngelScript engine property.");
+	// result = m_scriptEngine->SetEngineProperty(asEP_PROPERTY_ACCESSOR_MODE, 2);
+	// GUARANTEE_OR_DIE(result >= 0, "Failed to set AngelScript engine property.");
 
-	// Angel Script Add on
-	RegisterStdString(m_scriptEngine);
-	RegisterVec2(m_scriptEngine);
-	RegisterVec3(m_scriptEngine);
-	RegisterVec4(m_scriptEngine);
-	RegisterAABB2(m_scriptEngine);
-	RegisterOBB2(m_scriptEngine);
-	RegisterCapsule3(m_scriptEngine);
-	RegisterEulerAngles(m_scriptEngine);
-	RegisterMatrix4x4(m_scriptEngine);
-	RegisterVariant(m_scriptEngine);
+	// // Angel Script Add on
+	// RegisterStdString(m_scriptEngine);
+	// RegisterVec2(m_scriptEngine);
+	// RegisterVec3(m_scriptEngine);
+	// RegisterVec4(m_scriptEngine);
+	// RegisterAABB2(m_scriptEngine);
+	// RegisterOBB2(m_scriptEngine);
+	// RegisterCapsule3(m_scriptEngine);
+	// RegisterEulerAngles(m_scriptEngine);
+	// RegisterMatrix4x4(m_scriptEngine);
+	// RegisterVariant(m_scriptEngine);
 
-	RegisterScriptArray(m_scriptEngine, true);
-	RegisterScriptDictionary(m_scriptEngine);
+	// RegisterScriptArray(m_scriptEngine, true);
+	// RegisterScriptDictionary(m_scriptEngine);
 
-	RegisterNativeObjectType(m_scriptEngine);
-	RegisterBridgeFunctions(m_scriptEngine);
+	// RegisterNativeObjectType(m_scriptEngine);
+	// RegisterBridgeFunctions(m_scriptEngine);
 
-	GenerateBuiltinScript(m_scriptEngine);
+	// GenerateBuiltinScript(m_scriptEngine);
 
-	if (!BuildGameScriptModule())
-	{
-		ERROR_AND_DIE("Failed to build game script module.");
-	}
+	// if (!BuildGameScriptModule())
+	// {
+	// 	ERROR_AND_DIE("Failed to build game script module.");
+	// }
 }
 
 void ScriptSystem::Shutdown()

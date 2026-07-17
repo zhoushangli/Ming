@@ -344,7 +344,7 @@ RenderRequest Particles3D::SubmitRenderRequest() const
 
 	request.m_pass         = RenderRequestPass::Opaque;
 	request.m_modelToWorld = Matrix4x4::Identity;
-	request.m_tint         = Rgba8::White;
+	request.m_tint         = Color::White;
 	request.m_vertexBuffer = m_particleVertexBuffer;
 	request.m_textures[SurfaceTextureSlot::Diffuse] =
 		m_particleTextureRef.IsValid() ? m_particleTextureRef->GetGPUTexture() : nullptr;
@@ -419,7 +419,7 @@ void Particles3D::RebuildParticleVerts()
 		float lifeProgress = 1.f - particle.m_lifetimeRemaining / particle.m_totalLifetime;
 
 		float size  = Interpolate(m_startSize, m_endSize, lifeProgress);
-		Rgba8 color = Interpolate(m_startColor, m_endColor, lifeProgress);
+		Color color = Interpolate(m_startColor, m_endColor, lifeProgress);
 
 		Vec3 bottomLeft  = Vec3(0.f, -size, -size);
 		Vec3 bottomRight = Vec3(0.f, size, -size);

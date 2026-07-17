@@ -42,9 +42,9 @@ namespace
 Vertex const* GetFullscreenTriangleTopLeftUV()
 {
 	static Vertex const fullscreenTriangle[3] = {
-		Vertex(Vec3(-1.f, -1.f, 0.f), Rgba8::White, Vec2(0.f, 1.f)),
-		Vertex(Vec3(3.f, -1.f, 0.f), Rgba8::White, Vec2(2.f, 1.f)),
-		Vertex(Vec3(-1.f, 3.f, 0.f), Rgba8::White, Vec2(0.f, -1.f)),
+		Vertex(Vec3(-1.f, -1.f, 0.f), Color::White, Vec2(0.f, 1.f)),
+		Vertex(Vec3(3.f, -1.f, 0.f), Color::White, Vec2(2.f, 1.f)),
+		Vertex(Vec3(-1.f, 3.f, 0.f), Color::White, Vec2(0.f, -1.f)),
 	};
 
 	return fullscreenTriangle;
@@ -452,7 +452,7 @@ void D3D11RenderBackend::BindCamera(CameraContext const& camera)
 	UpdateAndBindConstantBuffer(BuiltinConstantBufferType::Camera, cameraData);
 }
 
-void D3D11RenderBackend::ClearScreen(Rgba8 const& clearColor)
+void D3D11RenderBackend::ClearScreen(Color const& clearColor)
 {
 	float colorAsFloats[4];
 	clearColor.GetAsFloats(colorAsFloats);
@@ -1035,7 +1035,7 @@ ID3D11Device* D3D11RenderBackend::GetD3DDevice() const { return m_d3dDevice; }
 
 ID3D11DeviceContext* D3D11RenderBackend::GetD3DDeviceContext() const { return m_d3dDeviceContext; }
 
-void D3D11RenderBackend::ClearRenderTarget(GPUTexture* renderTarget, Rgba8 const& clearColor)
+void D3D11RenderBackend::ClearRenderTarget(GPUTexture* renderTarget, Color const& clearColor)
 {
 	if (renderTarget == nullptr || renderTarget->m_renderTargetView == nullptr)
 	{

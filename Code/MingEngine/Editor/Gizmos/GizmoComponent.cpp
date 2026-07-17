@@ -17,7 +17,6 @@
 #include "MingEngine/Scene/3D/Node3D.hpp"
 #include "MingEngine/Scene/Core/Node.hpp"
 #include "MingEngine/Scene/Core/SceneTree.hpp"
-#include "MingEngine/Core/Math/RaycastUtils.hpp"
 #include "MingEngine/Scene/Resource/ShaderResource.hpp"
 
 #include <cmath>
@@ -37,9 +36,9 @@ float constexpr kGizmoRotationPickWidth = 0.1f;
 int constexpr kGizmoArcSegments         = 128;
 int constexpr kGizmoArcSectionSegments  = 3;
 
-Rgba8 const kHoverColor(255, 235, 90, 255);
-Rgba8 const kActiveColor(255, 170, 30, 255);
-Rgba8 const kGuideColor(220, 220, 220, 255);
+Color const kHoverColor(255, 235, 90, 255);
+Color const kActiveColor(255, 170, 30, 255);
+Color const kGuideColor(220, 220, 220, 255);
 
 void AddVertsForRotationRing3D(
 	std::vector<Vertex>&       verts,
@@ -49,7 +48,7 @@ void AddVertsForRotationRing3D(
 	Vec3 const&                u,
 	Vec3 const&                v,
 	float                      radius,
-	Rgba8 const&               color)
+	Color const&               color)
 {
 	unsigned int const vertexBase = static_cast<unsigned int>(verts.size());
 	verts.reserve(verts.size() + kGizmoArcSegments * kGizmoArcSectionSegments);
@@ -160,7 +159,7 @@ GizmoContext BuildGizmoContext(SceneTree* sceneTree, Camera3D const& camera, Vec
 	return context;
 }
 
-GizmoComponent::GizmoComponent(GizmoAxis axis, Rgba8 const& color) : m_axis(axis), m_baseColor(color)
+GizmoComponent::GizmoComponent(GizmoAxis axis, Color const& color) : m_axis(axis), m_baseColor(color)
 {
 	SetReady(true);
 	SetProcess(true);
@@ -277,7 +276,7 @@ Vec3 GizmoComponent::GetPlaneV() const
 	return Vec3::Up;
 }
 
-Rgba8 GizmoComponent::GetDrawColor() const
+Color GizmoComponent::GetDrawColor() const
 {
 	if (m_isDragging)
 	{
@@ -292,12 +291,12 @@ Rgba8 GizmoComponent::GetDrawColor() const
 	return m_baseColor;
 }
 
-GizmoAxisArrow::GizmoAxisArrow(GizmoAxis axis, Rgba8 const& color) : GizmoComponent(axis, color)
+GizmoAxisArrow::GizmoAxisArrow(GizmoAxis axis, Color const& color) : GizmoComponent(axis, color)
 {
 	Vec3 const axisDir = GetAxisWorld();
 	Vec3 const start   = Vec3::Zero;
 	Vec3 const end     = axisDir * kGizmoAxisLength;
-	AddVertsForArrow3D(m_verts, start, end, kGizmoArrowRadius, Rgba8::White);
+	AddVertsForArrow3D(m_verts, start, end, kGizmoArrowRadius, Color::White);
 
 	m_virtualCenter = axisDir * (kGizmoAxisLength * 0.5f);
 }
@@ -372,7 +371,7 @@ void GizmoAxisArrow::OnDrag(
 	context.m_selectedNode3D->SetWorldPosition(m_startPosition + translation);
 }
 
-GizmoPlaneSquare::GizmoPlaneSquare(GizmoAxis axis, Rgba8 const& color) : GizmoComponent(axis, color)
+GizmoPlaneSquare::GizmoPlaneSquare(GizmoAxis axis, Color const& color) : GizmoComponent(axis, color)
 {
 	Vec3 const  u      = GetPlaneU();
 	Vec3 const  v      = GetPlaneV();
@@ -389,10 +388,10 @@ GizmoPlaneSquare::GizmoPlaneSquare(GizmoAxis axis, Rgba8 const& color) : GizmoCo
 	Vec3 const p11 = maxCorner;
 	Vec3 const p01 = Vec3(minCorner.x, maxCorner.y, 0.f);
 
-	Vertex v00(p00, Rgba8::White, Vec2(0.f, 0.f));
-	Vertex v10(p10, Rgba8::White, Vec2(1.f, 0.f));
-	Vertex v11(p11, Rgba8::White, Vec2(1.f, 1.f));
-	Vertex v01(p01, Rgba8::White, Vec2(0.f, 1.f));
+	Vertex v00(p00, Color::White, Vec2(0.f, 0.f));
+	Vertex v10(p10, Color::White, Vec2(1.f, 0.f));
+	Vertex v11(p11, Color::White, Vec2(1.f, 1.f));
+	Vertex v01(p01, Color::White, Vec2(0.f, 1.f));
 
 	m_verts.push_back(v00);
 	m_verts.push_back(v10);
@@ -470,11 +469,11 @@ void GizmoPlaneSquare::OnDrag(
 	context.m_selectedNode3D->SetWorldPosition(m_startPosition + translation);
 }
 
-GizmoRotationArc::GizmoRotationArc(GizmoAxis axis, Rgba8 const& color) : GizmoComponent(axis, color)
+GizmoRotationArc::GizmoRotationArc(GizmoAxis axis, Color const& color) : GizmoComponent(axis, color)
 {
 	Vec3 const u = GetPlaneU();
 	Vec3 const v = GetPlaneV();
-	AddVertsForRotationRing3D(m_verts, m_indices, Vec3::Zero, GetAxisWorld(), u, v, kGizmoRotationRadius, Rgba8::White);
+	AddVertsForRotationRing3D(m_verts, m_indices, Vec3::Zero, GetAxisWorld(), u, v, kGizmoRotationRadius, Color::White);
 
 	m_virtualCenter = (u + v).GetNormalized() * 0.5f * kGizmoRotationRadius;
 }

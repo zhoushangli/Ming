@@ -93,8 +93,8 @@ public:
 	float               m_emitRadius     = 0.f;
 	float               m_startSize      = 1.f;
 	float               m_endSize        = 1.f;
-	Rgba8               m_startColor     = Rgba8::White;
-	Rgba8               m_endColor       = Rgba8::White;
+	Color               m_startColor     = Color::White;
+	Color               m_endColor       = Color::White;
 	EulerAngles         m_orientationMin = EulerAngles::Zero;
 	EulerAngles         m_orientationMax = EulerAngles::Zero;
 

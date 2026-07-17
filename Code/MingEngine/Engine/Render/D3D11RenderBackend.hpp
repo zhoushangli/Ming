@@ -20,7 +20,7 @@ class IndexBuffer;
 class ConstantBuffer;
 
 struct Vec2;
-struct Rgba8;
+struct Color;
 struct Vertex;
 
 struct ID3D11Device;
@@ -103,23 +103,43 @@ struct GPUDirectionalLight
 {
 	Vec3  m_direction;
 	float m_intensity;
+	Vec3  m_color;
+	float m_padding;
 };
 
-struct GPUPointLight
+struct GPUOmniLight
 {
 	Vec3  m_position;
 	float m_range;
 	Vec3  m_color;
 	float m_intensity;
+	float m_attenuation;
+	float m_padding[3];
 };
-static const int kMaxPointLights = 64;
+static const int kMaxPointLights = 16;
+
+struct GPUSpotLight
+{
+	Vec3  m_position;
+	float m_range;
+	Vec3  m_direction;
+	float m_intensity;
+	Vec3  m_color;
+	float m_attenuation;
+	float m_spotAngle;
+	float m_spotAttenuation;
+	float m_padding[2];
+};
+static const int kMaxSpotLights = 16;
 
 struct LightConstants
 {
 	GPUDirectionalLight m_directionalLight;
 	int                 m_pointLightCount;
-	float               m_padding[3]; // Pad to 16 bytes for array alignment
-	GPUPointLight       m_pointLights[kMaxPointLights];
+	int                 m_spotLightCount;
+	float               m_padding[2]; // Pad to 16 bytes for array alignment
+	GPUOmniLight       m_pointLights[kMaxPointLights];
+	GPUSpotLight        m_spotLights[kMaxSpotLights];
 };
 static const int kLightConstantsSlot = 1;
 
@@ -198,7 +218,7 @@ public:
 	// because we need to bind both world camera and UI camera in one render
 	void BindCamera(CameraContext const& camera);
 
-	void ClearScreen(Rgba8 const& clearColor);
+	void ClearScreen(Color const& clearColor);
 	void SetBlendMode(BlendMode blendMode);
 	void SetRasterizerMode(RasterizerMode rasterizerMode);
 	void SetDepthMode(DepthMode depthMode);
@@ -247,7 +267,7 @@ public:
 	ID3D11DeviceContext* GetD3DDeviceContext() const;
 	void                 SetViewport(IntVec2 dimensions, IntVec2 topLeft = IntVec2::Zero);
 	void                 ResizeBackBuffer(IntVec2 newDimensions);
-	void                 ClearRenderTarget(GPUTexture* renderTarget, Rgba8 const& clearColor);
+	void                 ClearRenderTarget(GPUTexture* renderTarget, Color const& clearColor);
 	void                 ClearDepthStencil(GPUTexture* depthTexture);
 	void                 BindRenderTargets(GPUTexture* colorTarget, GPUTexture* depthTarget, GPUTexture* normalTarget);
 	void                 BindRenderTarget(GPUTexture* colorTarget, GPUTexture* depthTarget = nullptr);
@@ -278,7 +298,7 @@ private:
 	GPUTexture* CreateTextureFromFile(char const* fileDataPath);
 
 	// Shader creation internals
-	bool    CompileShaderToByteCode(
+	bool CompileShaderToByteCode(
 		std::vector<unsigned char>& outByteCode,
 		char const*                 shaderPhysicalPath,
 		char const*                 source,

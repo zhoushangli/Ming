@@ -15,6 +15,6 @@ void CylinderZCollider3D::RenderDebug() const
 		Vec3(worldStartXY.x, worldStartXY.y, worldZRange.m_max),
 		m_radius,
 		0.f,
-		Rgba8::Cyan,
-		Rgba8::Cyan);
+		Color::Cyan,
+		Color::Cyan);
 }

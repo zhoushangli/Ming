@@ -32,7 +32,7 @@ void BitmapFont::AddVertsForText2D(
 	Vec2                 textMins,
 	float                cellHeight,
 	std::string const&   text,
-	Rgba8                tint,
+	Color                tint,
 	float                cellAspectScale)
 {
 	float cellWidth  = cellHeight * m_fontDefaultAspect * cellAspectScale;
@@ -69,7 +69,7 @@ void BitmapFont::AddVertsForTextInBox2D(
 	std::string const&   text,
 	AABB2 const&         box,
 	float                cellHeight,
-	Rgba8                tint,
+	Color                tint,
 	float                cellAspectScale,
 	Vec2                 alignment,
 	TextBoxMode          mode,
@@ -113,7 +113,7 @@ void BitmapFont::AddVertsForText3DAtOriginXForward(
 	std::vector<Vertex>& verts,
 	float                cellHeight,
 	std::string const&   text,
-	Rgba8 const&         tint /*= Rgba8::kWhite*/,
+	Color const&         tint /*= Rgba8::kWhite*/,
 	float                cellAspect /*= 1.0f*/,
 	Vec2 const&          alignment /*= Vec2(0.5f, 0.5f)*/,
 	int                  maxGlyphsToDraw /*= 999*/)

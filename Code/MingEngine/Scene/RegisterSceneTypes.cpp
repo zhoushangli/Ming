@@ -96,7 +96,8 @@ void RegisterSceneTypes()
 	ClassDatabase::RegisterClass<Camera3D>();
 	ClassDatabase::RegisterClass<Light3D>(false);
 	ClassDatabase::RegisterClass<DirectionalLight3D>();
-	ClassDatabase::RegisterClass<PointLight3D>();
+	ClassDatabase::RegisterClass<OmniLight3D>();
+	ClassDatabase::RegisterClass<SpotLight3D>();
 	ClassDatabase::RegisterClass<Collider3D>(false);
 	ClassDatabase::RegisterClass<AABBCollider3D>();
 	ClassDatabase::RegisterClass<CapsuleCollider3D>();

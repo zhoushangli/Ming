@@ -18,9 +18,9 @@ using namespace Math;
 
 namespace
 {
-Rgba8 const kAxisXColor(255, 70, 105, 255);
-Rgba8 const kAxisYColor(155, 225, 20, 255);
-Rgba8 const kAxisZColor(55, 160, 255, 255);
+Color const kAxisXColor(255, 70, 105, 255);
+Color const kAxisYColor(155, 225, 20, 255);
+Color const kAxisZColor(55, 160, 255, 255);
 
 float constexpr kCircleRadius = 10.f;
 float constexpr kLineWidth    = 3.f;
@@ -28,7 +28,7 @@ float constexpr kLineLength   = 50.f;
 int constexpr kCircleSegments = 16;
 
 void AddVertsForAxisLine(
-	std::vector<Vertex>& verts, Vec2 const& start, Vec2 const& end, float thickness, Rgba8 const& color)
+	std::vector<Vertex>& verts, Vec2 const& start, Vec2 const& end, float thickness, Color const& color)
 {
 	Vec2 const dir  = (end - start).GetNormalized();
 	Vec2 const perp = Vec2(-dir.y, dir.x) * (thickness * 0.5f);
@@ -43,7 +43,7 @@ void AddVertsForAxisLine(
 }
 
 void AddVertsForAxisPoint(
-	std::vector<Vertex>& verts, Vec2 const& center, float radius, float thickness, Rgba8 const& color)
+	std::vector<Vertex>& verts, Vec2 const& center, float radius, float thickness, Color const& color)
 {
 	for (int i = 0; i < kCircleSegments; ++i)
 	{
@@ -85,9 +85,11 @@ ViewportAxisIndicator::ViewportAxisIndicator()
 	SetReady(true);
 	SetProcess(true);
 
-	std::vector<Vertex> verts{ Vertex(Vec3::Zero, Rgba8::White) };
-	m_vertexBuffer =
-		g_engine->m_renderer->CreateVertexBuffer(verts.data(), verts.size() * sizeof(Vertex), sizeof(Vertex));
+	std::vector<Vertex> verts{ Vertex(Vec3::Zero, Color::White) };
+	m_vertexBuffer = g_engine->m_renderer->CreateVertexBuffer(
+		verts.data(),
+		(unsigned int)(verts.size() * sizeof(Vertex)),
+		sizeof(Vertex));
 }
 
 ViewportAxisIndicator::~ViewportAxisIndicator() {}
@@ -127,11 +129,11 @@ void ViewportAxisIndicator::OnNotification(int notification)
 RenderRequest ViewportAxisIndicator::SubmitRenderRequest() const
 {
 	RenderRequest request;
-	request.m_pass           = RenderRequestPass::UI;
-	request.m_modelToWorld   = Matrix4x4::Identity;
-	request.m_vertexBuffer   = m_vertexBuffer;
+	request.m_pass         = RenderRequestPass::UI;
+	request.m_modelToWorld = Matrix4x4::Identity;
+	request.m_vertexBuffer = m_vertexBuffer;
 	Ref<ShaderResource> shaderResource(ResourceLoader::Load("res://Shaders/DefaultUI.hlsl"));
-	request.m_shader = shaderResource.IsValid() ? shaderResource->GetShader() : nullptr;
+	request.m_shader         = shaderResource.IsValid() ? shaderResource->GetShader() : nullptr;
 	request.m_blendMode      = BlendMode::ALPHA;
 	request.m_depthMode      = DepthMode::DISABLED;
 	request.m_rasterizerMode = RasterizerMode::SOLID_CULL_NONE;
@@ -170,7 +172,7 @@ void ViewportAxisIndicator::RebuildVertexBuffer()
 
 	for (Axis2D const& axis : m_axises)
 	{
-		Rgba8 axisColor = Rgba8::White;
+		Color axisColor = Color::White;
 		if (axis.m_axis == 0 || axis.m_axis == 3)
 			axisColor = kAxisXColor;
 		else if (axis.m_axis == 1 || axis.m_axis == 4)
@@ -193,5 +195,8 @@ void ViewportAxisIndicator::RebuildVertexBuffer()
 			axisColor);
 	}
 
-	g_engine->m_renderer->UpdateVertexBuffer(m_vertexBuffer, m_verts.data(), m_verts.size() * sizeof(Vertex));
+	g_engine->m_renderer->UpdateVertexBuffer(
+		m_vertexBuffer,
+		m_verts.data(),
+		(unsigned int)(m_verts.size() * sizeof(Vertex)));
 }

@@ -8,7 +8,7 @@
 #include <string>
 #include <vector>
 
-struct Rgba8;
+struct Color;
 
 class Image : public RefCounted
 {
@@ -29,12 +29,12 @@ public:
 	bool IsValid() const;
 	bool HasEncodedData() const;
 
-	Rgba8 GetColorAt(int x, int y) const;
+	Color GetColorAt(int x, int y) const;
 
-	IntVec2                    GetDimensions() const { return m_dimensions; }
-	int                        GetChannels() const { return m_channels; }
-	uint8_t const*             GetRawData() const { return m_pixels.empty() ? nullptr : m_pixels.data(); }
-	size_t                     GetDataSize() const { return m_pixels.size(); }
+	IntVec2                     GetDimensions() const { return m_dimensions; }
+	int                         GetChannels() const { return m_channels; }
+	uint8_t const*              GetRawData() const { return m_pixels.empty() ? nullptr : m_pixels.data(); }
+	size_t                      GetDataSize() const { return m_pixels.size(); }
 	std::vector<uint8_t> const& GetEncodedData() const { return m_encodedData; }
 
 protected:

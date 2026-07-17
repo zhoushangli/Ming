@@ -35,7 +35,7 @@ struct RenderRequest
 	int               m_renderPriority = 0; // Lower numbers render first.
 
 	Matrix4x4 m_modelToWorld = Matrix4x4::Identity;
-	Rgba8     m_tint         = Rgba8::White;
+	Color     m_tint         = Color::White;
 
 	VertexBuffer* m_vertexBuffer = nullptr;
 	IndexBuffer*  m_indexBuffer  = nullptr;
@@ -52,19 +52,22 @@ struct RenderRequest
 
 enum class LightType
 {
-	POINT,
-	DIRECTIONAL,
+	Omni,
+	Directional,
+	Spot,
 };
 
 struct LightInfo
 {
-	LightType m_type = LightType::POINT;
+	LightType m_type = LightType::Omni;
 
-	Rgba8 m_color     = Rgba8::White;
-	Vec3  m_direction = Vec3::Forward;
-	float m_intensity = 0.f;
-	Vec3  m_position  = Vec3::Zero;
-	float m_range     = 0.f;
+	Matrix4x4 m_transform       = Matrix4x4::Identity;
+	Color     m_color           = Color::White;
+	float     m_intensity       = 1.f;
+	float     m_range           = 1.f;
+	float     m_attenuation     = 1.f;
+	float     m_spotAngle       = 45.f;
+	float     m_spotAttenuation = 1.f;
 };
 
 class ViewportInfo
@@ -79,7 +82,7 @@ public:
 	// output rect indicates the portion of the render target to render to
 	IntVec2 m_outputResolution = IntVec2::Zero;
 	AABB2   m_outputRect       = AABB2::Unit;
-	Rgba8   m_clearColor       = Rgba8(47, 54, 65, 255);
+	Color   m_clearColor       = Color(47, 54, 65, 255);
 
 	GPUTexture* m_viewportOutputTexture = nullptr;
 	GPUTexture* m_sceneColorTexture     = nullptr;

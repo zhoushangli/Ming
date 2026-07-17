@@ -8,6 +8,7 @@ Variant::Variant(std::string const& value) : m_value(value), m_type(Type::String
 Variant::Variant(Vec2 const& value) : m_value(value), m_type(Type::Vec2) {}
 Variant::Variant(Vec3 const& value) : m_value(value), m_type(Type::Vec3) {}
 Variant::Variant(Vec4 const& value) : m_value(value), m_type(Type::Vec4) {}
+Variant::Variant(Color const& value) : m_value(value), m_type(Type::Color) {}
 Variant::Variant(AABB2 const& value) : m_value(value), m_type(Type::AABB2) {}
 Variant::Variant(OBB2 const& value) : m_value(value), m_type(Type::OBB2) {}
 Variant::Variant(Capsule3 const& value) : m_value(value), m_type(Type::Capsule3) {}
@@ -44,6 +45,8 @@ bool Variant::operator==(Variant const& other) const
 		return As<Vec3>() == other.As<Vec3>();
 	case Type::Vec4:
 		return As<Vec4>() == other.As<Vec4>();
+	case Type::Color:
+		return As<Color>() == other.As<Color>();
 	case Type::AABB2:
 		return As<AABB2>() == other.As<AABB2>();
 	case Type::OBB2:

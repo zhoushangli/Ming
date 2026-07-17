@@ -26,21 +26,19 @@ public:
 		Vec2                 textMins,
 		float                cellHeight,
 		std::string const&   text,
-		Rgba8                tint            = Rgba8::White,
-		float                cellAspectScale = 1.f
-	);
+		Color                tint            = Color::White,
+		float                cellAspectScale = 1.f);
 
 	void AddVertsForTextInBox2D(
 		std::vector<Vertex>& verts,
 		std::string const&   text,
 		AABB2 const&         box,
 		float                cellHeight,
-		Rgba8                tint            = Rgba8::White,
+		Color                tint            = Color::White,
 		float                cellAspectScale = 1.f,
 		Vec2                 alignment       = Vec2(.5f, .5f),
 		TextBoxMode          mode            = TextBoxMode::SHRINK_TO_FIT,
-		int                  maxGlyphsToDraw = 99999999
-	);
+		int                  maxGlyphsToDraw = 99999999);
 
 #pragma endregion
 
@@ -50,11 +48,10 @@ public:
 		std::vector<Vertex>& verts,
 		float                cellHeight,
 		std::string const&   text,
-		Rgba8 const&         tint            = Rgba8::White,
+		Color const&         tint            = Color::White,
 		float                cellAspect      = 1.0f,
 		Vec2 const&          alignment       = Vec2(0.5f, 0.5f),
-		int                  maxGlyphsToDraw = 999
-	);
+		int                  maxGlyphsToDraw = 999);
 
 #pragma endregion
 
@@ -70,4 +67,3 @@ protected:
 	SpriteSheet m_fontGlyphsSpriteSheet;
 	float m_fontDefaultAspect = 1.0f; // For basic (tier 1) fonts, set this to the aspect of the sprite sheet texture
 };
-

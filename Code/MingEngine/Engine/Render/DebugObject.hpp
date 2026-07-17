@@ -42,7 +42,7 @@ public:
 	DebugObject   Clone(Renderer& renderer) const;
 	void          UpdateRenderData(Renderer& renderer, BitmapFont* font, int messageLine = -1);
 	RenderRequest SubmitRenderRequest() const;
-	Rgba8         GetCurrentColor() const;
+	Color         GetCurrentColor() const;
 	bool          IsScreenObject() const;
 
 	DebugObjectType type = DebugObjectType::WORLD_SPHERE;
@@ -51,8 +51,8 @@ public:
 	float totalDuration     = 0.f;
 	float remainingDuration = 0.f;
 
-	Rgba8 startColor = Rgba8::White;
-	Rgba8 endColor   = Rgba8::White;
+	Color startColor = Color::White;
+	Color endColor   = Color::White;
 
 	Vec3  start  = Vec3::Zero;
 	Vec3  end    = Vec3::Zero;

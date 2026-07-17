@@ -58,8 +58,8 @@ void AddDebugObject(DebugObject&& object)
 DebugObject MakeDebugObject(
 	DebugObjectType type,
 	float           duration,
-	Rgba8 const&    startColor,
-	Rgba8 const&    endColor,
+	Color const&    startColor,
+	Color const&    endColor,
 	DebugRenderMode mode = DebugRenderMode::USE_DEPTH)
 {
 	DebugObject object;
@@ -88,8 +88,8 @@ DebugObject MakeWorldSphereObject(
 	Vec3 const&     center,
 	float           radius,
 	float           duration,
-	Rgba8 const&    startColor,
-	Rgba8 const&    endColor,
+	Color const&    startColor,
+	Color const&    endColor,
 	DebugRenderMode mode)
 {
 	DebugObject object = MakeDebugObject(type, duration, startColor, endColor, mode);
@@ -106,8 +106,8 @@ DebugObject MakeWorldCylinderObject(
 	Vec3 const&     end,
 	float           radius,
 	float           duration,
-	Rgba8 const&    startColor,
-	Rgba8 const&    endColor,
+	Color const&    startColor,
+	Color const&    endColor,
 	DebugRenderMode mode)
 {
 	DebugObject object = MakeDebugObject(type, duration, startColor, endColor, mode);
@@ -125,8 +125,8 @@ DebugObject MakeWorldCapsuleObject(
 	Vec3 const&     end,
 	float           radius,
 	float           duration,
-	Rgba8 const&    startColor,
-	Rgba8 const&    endColor,
+	Color const&    startColor,
+	Color const&    endColor,
 	DebugRenderMode mode)
 {
 	DebugObject object = MakeDebugObject(type, duration, startColor, endColor, mode);
@@ -144,8 +144,8 @@ DebugObject MakeWorldArrowObject(
 	Vec3 const&     end,
 	float           radius,
 	float           duration,
-	Rgba8 const&    startColor,
-	Rgba8 const&    endColor,
+	Color const&    startColor,
+	Color const&    endColor,
 	DebugRenderMode mode)
 {
 	DebugObject object = MakeDebugObject(type, duration, startColor, endColor, mode);
@@ -162,8 +162,8 @@ DebugObject MakeWorldAABBObject(
 	AABB3 const&     bounds,
 	Matrix4x4 const& transform,
 	float            duration,
-	Rgba8 const&     startColor,
-	Rgba8 const&     endColor,
+	Color const&     startColor,
+	Color const&     endColor,
 	DebugRenderMode  mode)
 {
 	DebugObject object = MakeDebugObject(type, duration, startColor, endColor, mode);
@@ -224,9 +224,7 @@ void DebugGizmos::Shutdown()
 }
 
 // — Per-frame —
-void DebugGizmos::BeginFrame()
-{
-}
+void DebugGizmos::BeginFrame() {}
 
 void DebugGizmos::EndFrame()
 {
@@ -302,8 +300,8 @@ void DebugGizmos::AddWorldSphere(
 	Vec3 const&     center,
 	float           radius,
 	float           duration,
-	Rgba8 const&    startColor,
-	Rgba8 const&    endColor,
+	Color const&    startColor,
+	Color const&    endColor,
 	DebugRenderMode mode)
 {
 	AddDebugObject(
@@ -314,8 +312,8 @@ void DebugGizmos::AddWorldWireSphere(
 	Vec3 const&     center,
 	float           radius,
 	float           duration,
-	Rgba8 const&    startColor,
-	Rgba8 const&    endColor,
+	Color const&    startColor,
+	Color const&    endColor,
 	DebugRenderMode mode)
 {
 	AddDebugObject(MakeWorldSphereObject(
@@ -333,8 +331,8 @@ void DebugGizmos::AddWorldCylinder(
 	Vec3 const&     end,
 	float           radius,
 	float           duration,
-	Rgba8 const&    startColor,
-	Rgba8 const&    endColor,
+	Color const&    startColor,
+	Color const&    endColor,
 	DebugRenderMode mode)
 {
 	AddDebugObject(MakeWorldCylinderObject(
@@ -353,8 +351,8 @@ void DebugGizmos::AddWorldWireCylinder(
 	Vec3 const&     end,
 	float           radius,
 	float           duration,
-	Rgba8 const&    startColor,
-	Rgba8 const&    endColor,
+	Color const&    startColor,
+	Color const&    endColor,
 	DebugRenderMode mode)
 {
 	AddDebugObject(MakeWorldCylinderObject(
@@ -369,7 +367,7 @@ void DebugGizmos::AddWorldWireCylinder(
 }
 
 void DebugGizmos::AddWorldWireCylinder(
-	CylinderZ3 const& cylinder, Rgba8 const& color, float duration, DebugRenderMode mode)
+	CylinderZ3 const& cylinder, Color const& color, float duration, DebugRenderMode mode)
 {
 	AddDebugObject(MakeWorldCylinderObject(
 		DebugObjectType::WORLD_WIRE_CYLINDER,
@@ -383,7 +381,7 @@ void DebugGizmos::AddWorldWireCylinder(
 }
 
 void DebugGizmos::AddWorldAABB(
-	AABB3 const& bounds, float duration, Rgba8 const& startColor, Rgba8 const& endColor, DebugRenderMode mode)
+	AABB3 const& bounds, float duration, Color const& startColor, Color const& endColor, DebugRenderMode mode)
 {
 	AddDebugObject(MakeWorldAABBObject(
 		DebugObjectType::WORLD_AABB,
@@ -399,8 +397,8 @@ void DebugGizmos::AddWorldAABB(
 	AABB3 const&     bounds,
 	Matrix4x4 const& transform,
 	float            duration,
-	Rgba8 const&     startColor,
-	Rgba8 const&     endColor,
+	Color const&     startColor,
+	Color const&     endColor,
 	DebugRenderMode  mode)
 {
 	AddDebugObject(
@@ -408,7 +406,7 @@ void DebugGizmos::AddWorldAABB(
 }
 
 void DebugGizmos::AddWorldWireAABB(
-	AABB3 const& bounds, float duration, Rgba8 const& startColor, Rgba8 const& endColor, DebugRenderMode mode)
+	AABB3 const& bounds, float duration, Color const& startColor, Color const& endColor, DebugRenderMode mode)
 {
 	AddDebugObject(MakeWorldAABBObject(
 		DebugObjectType::WORLD_WIRE_AABB,
@@ -424,8 +422,8 @@ void DebugGizmos::AddWorldWireAABB(
 	AABB3 const&     bounds,
 	Matrix4x4 const& transform,
 	float            duration,
-	Rgba8 const&     startColor,
-	Rgba8 const&     endColor,
+	Color const&     startColor,
+	Color const&     endColor,
 	DebugRenderMode  mode)
 {
 	AddDebugObject(
@@ -437,8 +435,8 @@ void DebugGizmos::AddWorldCapsule(
 	Vec3 const&     end,
 	float           radius,
 	float           duration,
-	Rgba8 const&    startColor,
-	Rgba8 const&    endColor,
+	Color const&    startColor,
+	Color const&    endColor,
 	DebugRenderMode mode)
 {
 	AddDebugObject(MakeWorldCapsuleObject(
@@ -457,8 +455,8 @@ void DebugGizmos::AddWorldWireCapsule(
 	Vec3 const&     end,
 	float           radius,
 	float           duration,
-	Rgba8 const&    startColor,
-	Rgba8 const&    endColor,
+	Color const&    startColor,
+	Color const&    endColor,
 	DebugRenderMode mode)
 {
 	AddDebugObject(MakeWorldCapsuleObject(
@@ -477,8 +475,8 @@ void DebugGizmos::AddWorldArrow(
 	Vec3 const&     end,
 	float           radius,
 	float           duration,
-	Rgba8 const&    startColor,
-	Rgba8 const&    endColor,
+	Color const&    startColor,
+	Color const&    endColor,
 	DebugRenderMode mode)
 {
 	AddDebugObject(
@@ -490,8 +488,8 @@ void DebugGizmos::AddWorldWireArrow(
 	Vec3 const&     end,
 	float           radius,
 	float           duration,
-	Rgba8 const&    startColor,
-	Rgba8 const&    endColor,
+	Color const&    startColor,
+	Color const&    endColor,
 	DebugRenderMode mode)
 {
 	AddDebugObject(MakeWorldArrowObject(
@@ -514,18 +512,18 @@ void DebugGizmos::AddBasis(
 	float            alphaScale,
 	DebugRenderMode  mode)
 {
-	Rgba8 const kAxisXColor(255, 70, 105, 255);
-	Rgba8 const kAxisYColor(155, 225, 20, 255);
-	Rgba8 const kAxisZColor(55, 160, 255, 255);
+	Color const kAxisXColor(255, 70, 105, 255);
+	Color const kAxisYColor(155, 225, 20, 255);
+	Color const kAxisZColor(55, 160, 255, 255);
 
 	Vec3 origin = transform.GetTranslation3D();
 	Vec3 xEnd   = transform.TransformPosition3D(Vec3(length, 0.f, 0.f));
 	Vec3 yEnd   = transform.TransformPosition3D(Vec3(0.f, length, 0.f));
 	Vec3 zEnd   = transform.TransformPosition3D(Vec3(0.f, 0.f, length));
 
-	Rgba8 xColor = Interpolate(Rgba8::Black, kAxisXColor, colorScale);
-	Rgba8 yColor = Interpolate(Rgba8::Black, kAxisYColor, colorScale);
-	Rgba8 zColor = Interpolate(Rgba8::Black, kAxisZColor, colorScale);
+	Color xColor = Interpolate(Color::Black, kAxisXColor, colorScale);
+	Color yColor = Interpolate(Color::Black, kAxisYColor, colorScale);
+	Color zColor = Interpolate(Color::Black, kAxisZColor, colorScale);
 
 	xColor.a = (unsigned char)GetClamped((float)xColor.a * alphaScale, 0.f, 255.f);
 	yColor.a = (unsigned char)GetClamped((float)yColor.a * alphaScale, 0.f, 255.f);
@@ -547,8 +545,8 @@ void DebugGizmos::AddWorldText(
 	float              textHeight,
 	Vec2 const&        alignment,
 	float              duration,
-	Rgba8 const&       startColor,
-	Rgba8 const&       endColor,
+	Color const&       startColor,
+	Color const&       endColor,
 	DebugRenderMode    mode)
 {
 	DebugObject object = MakeDebugObject(DebugObjectType::WORLD_TEXT, duration, startColor, endColor, mode);
@@ -566,8 +564,8 @@ void DebugGizmos::AddScreenText(
 	float              cellHeight,
 	Vec2 const&        alignment,
 	float              duration,
-	Rgba8 const&       startColor,
-	Rgba8 const&       endColor)
+	Color const&       startColor,
+	Color const&       endColor)
 {
 	DebugObject object =
 		MakeDebugObject(DebugObjectType::SCREEN_TEXT, duration, startColor, endColor, DebugRenderMode::ALWAYS);
@@ -578,7 +576,7 @@ void DebugGizmos::AddScreenText(
 	AddDebugObject(std::move(object));
 }
 
-void DebugGizmos::AddMessage(std::string const& text, float duration, Rgba8 const& startColor, Rgba8 const& endColor)
+void DebugGizmos::AddMessage(std::string const& text, float duration, Color const& startColor, Color const& endColor)
 {
 	DebugObject object =
 		MakeDebugObject(DebugObjectType::MESSAGE, duration, startColor, endColor, DebugRenderMode::ALWAYS);
@@ -590,8 +588,8 @@ void DebugGizmos::AddMessage(std::string const& text, float duration, Rgba8 cons
 
 void DebugGizmos::AddWorldGrid(float duration, int halfExtent)
 {
-	Rgba8 const kAxisXColor(255, 70, 105, 255);
-	Rgba8 const kAxisYColor(155, 225, 20, 255);
+	Color const kAxisXColor(255, 70, 105, 255);
+	Color const kAxisYColor(155, 225, 20, 255);
 
 	// Configurable parameters for grid generation.
 	const float kLineHeight = 0.01f;
@@ -614,7 +612,7 @@ void DebugGizmos::AddWorldGrid(float duration, int halfExtent)
 	int const clampedHalfExtent = halfExtent < 0 ? 0 : halfExtent;
 
 	DebugObject object =
-		MakeDebugObject(DebugObjectType::WORLD_GRID, duration, Rgba8::White, Rgba8::White, DebugRenderMode::USE_DEPTH);
+		MakeDebugObject(DebugObjectType::WORLD_GRID, duration, Color::White, Color::White, DebugRenderMode::USE_DEPTH);
 	object.verts.clear();
 	object.verts.reserve((clampedHalfExtent * 2 + 1) * 2 * 36);
 
@@ -624,7 +622,7 @@ void DebugGizmos::AddWorldGrid(float duration, int halfExtent)
 		return (unsigned char)GetClamped(a, 0.f, 255.f);
 	};
 
-	auto AddSegmentAABB = [&object, &ComputeAlphaForDistance](AABB3 const& aabb, Rgba8 baseColor)
+	auto AddSegmentAABB = [&object, &ComputeAlphaForDistance](AABB3 const& aabb, Color baseColor)
 	{
 		// Use segment center distance to compute alpha
 		Vec3  center = aabb.GetCenter();
@@ -649,13 +647,13 @@ void DebugGizmos::AddWorldGrid(float duration, int halfExtent)
 		float const lineOffset    = static_cast<float>(lineIndex);
 		float const halfThickness = lineThickness * 0.5f;
 
-		Rgba8 xParallelColor = kAxisXColor * brightness;
-		Rgba8 yParallelColor = kAxisYColor * brightness;
+		Color xParallelColor = kAxisXColor * brightness;
+		Color yParallelColor = kAxisYColor * brightness;
 
 		if (!isAxis)
 		{
-			xParallelColor = Rgba8::Gray;
-			yParallelColor = Rgba8::Gray;
+			xParallelColor = Color::Gray;
+			yParallelColor = Color::Gray;
 		}
 
 		// Split each long strip into small segments along its length.

@@ -10,15 +10,15 @@
 
 #include <cstring>
 
-Rgba8 const DevConsole::kError     = Rgba8(255, 96, 96, 255);
-Rgba8 const DevConsole::kWarning   = Rgba8(255, 220, 96, 255);
-Rgba8 const DevConsole::kInfoMajor = Rgba8(96, 220, 255, 255);
-Rgba8 const DevConsole::kInfoMinor = Rgba8(180, 190, 210, 255);
-Rgba8 const DevConsole::kInputText = Rgba8(255, 255, 255, 255);
+Color const DevConsole::kError     = Color(255, 96, 96, 255);
+Color const DevConsole::kWarning   = Color(255, 220, 96, 255);
+Color const DevConsole::kInfoMajor = Color(96, 220, 255, 255);
+Color const DevConsole::kInfoMinor = Color(180, 190, 210, 255);
+Color const DevConsole::kInputText = Color(255, 255, 255, 255);
 
 namespace
 {
-ImVec4 ToImGuiColor(Rgba8 const& color)
+ImVec4 ToImGuiColor(Color const& color)
 {
 	return ImVec4(color.r / 255.f, color.g / 255.f, color.b / 255.f, color.a / 255.f);
 }
@@ -167,7 +167,7 @@ void DevConsole::Execute(std::string const& consoleContext, bool echoCommand)
 	m_scrollToBottom = true;
 }
 
-void DevConsole::AddLine(Rgba8 const& color, std::string const& text)
+void DevConsole::AddLine(Color const& color, std::string const& text)
 {
 	Strings const splitLines = SplitStringOnDelimiter(text, '\n');
 	for (std::string const& splitLine : splitLines)

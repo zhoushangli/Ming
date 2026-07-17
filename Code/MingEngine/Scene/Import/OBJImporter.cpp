@@ -282,7 +282,7 @@ bool ParseOBJFile(std::string const& sourceVirtualPath, OBJData& outData)
 		}
 	}
 
-	std::vector<Rgba8>    colors;
+	std::vector<Color>    colors;
 	std::vector<FaceData> uniqueFaceVertices;
 	bool                  allFaceVerticesHaveNormals = true;
 
@@ -339,7 +339,7 @@ bool ParseOBJFile(std::string const& sourceVirtualPath, OBJData& outData)
 			{
 				while (colors.size() + 1 < outData.m_positions.size())
 				{
-					colors.push_back(Rgba8::White);
+					colors.push_back(Color::White);
 				}
 
 				colors.emplace_back(
@@ -350,7 +350,7 @@ bool ParseOBJFile(std::string const& sourceVirtualPath, OBJData& outData)
 			}
 			else if (!colors.empty())
 			{
-				colors.push_back(Rgba8::White);
+				colors.push_back(Color::White);
 			}
 
 			continue;
@@ -451,7 +451,7 @@ bool ParseOBJFile(std::string const& sourceVirtualPath, OBJData& outData)
 
 					if (!foundVertex)
 					{
-						Vertex vertex(outData.m_positions[faceVertex.m_positionIndex], Rgba8::White);
+						Vertex vertex(outData.m_positions[faceVertex.m_positionIndex], Color::White);
 						if (faceVertex.m_positionIndex < static_cast<int>(colors.size()))
 						{
 							vertex.m_color = colors[faceVertex.m_positionIndex];
@@ -802,8 +802,7 @@ Ref<Resource> OBJImporter::Import(
 			return true;
 		};
 
-		if (!AddTextureResource(mtlData.m_diffuseTexturePath)
-			|| !AddTextureResource(mtlData.m_specularTexturePath)
+		if (!AddTextureResource(mtlData.m_diffuseTexturePath) || !AddTextureResource(mtlData.m_specularTexturePath)
 			|| !AddTextureResource(mtlData.m_normalTexturePath))
 		{
 			return Ref<Resource>();

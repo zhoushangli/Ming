@@ -1076,6 +1076,9 @@
     <ClInclude Include="Editor\UI\InspectorPropertyBool.hpp">
       <Filter>Editor\UI</Filter>
     </ClInclude>
+    <ClInclude Include="Editor\UI\InspectorPropertyColor.hpp">
+      <Filter>Editor\UI</Filter>
+    </ClInclude>
     <ClInclude Include="Editor\UI\InspectorPropertyEuler.hpp">
       <Filter>Editor\UI</Filter>
     </ClInclude>

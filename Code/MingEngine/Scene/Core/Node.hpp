@@ -31,6 +31,7 @@ public:
 		ExitTree  = 1,
 		Ready     = 2,
 		Process   = 3,
+		TransformChanged = 40,
 	};
 
 public:

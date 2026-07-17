@@ -144,9 +144,9 @@ void Mesh3D::SetMeshResource(Variant meshResource)
 
 Variant Mesh3D::GetMeshResource() const { return m_meshResource; }
 
-void Mesh3D::SetTint(Rgba8 tint) { m_tint = tint; }
+void Mesh3D::SetTint(Color tint) { m_tint = tint; }
 
-Rgba8 Mesh3D::GetTint() const { return m_tint; }
+Color Mesh3D::GetTint() const { return m_tint; }
 
 RenderRequest Mesh3D::SubmitRenderRequest() const
 {

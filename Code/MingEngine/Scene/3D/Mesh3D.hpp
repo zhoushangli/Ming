@@ -34,8 +34,8 @@ public:
 
 	void    SetMeshResource(Variant meshResource);
 	Variant GetMeshResource() const;
-	void    SetTint(Rgba8 tint);
-	Rgba8   GetTint() const;
+	void    SetTint(Color tint);
+	Color   GetTint() const;
 
 protected:
 	static void BindMethods();
@@ -46,7 +46,7 @@ protected:
 protected:
 	Ref<MeshResource> m_meshResource;
 	bool              m_useMaterialTextures = true;
-	Rgba8             m_tint                = Rgba8::White;
+	Color             m_tint                = Color::White;
 
 	MeshRaycastObject* m_raycastObject;
 };

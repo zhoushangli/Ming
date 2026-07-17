@@ -12,7 +12,7 @@
 
 namespace
 {
-Vec3 GetNormalizedColor(Rgba8 const& color) { return Vec3(color.r / 255.f, color.g / 255.f, color.b / 255.f); }
+Vec3 GetNormalizedColor(Color const& color) { return Vec3(color.r / 255.f, color.g / 255.f, color.b / 255.f); }
 } // namespace
 
 SceneTree::SceneTree()

@@ -43,7 +43,7 @@ class GizmoComponent : public EditorGizmoVisual3D
 	MCLASS(GizmoComponent, EditorGizmoVisual3D)
 
 public:
-	GizmoComponent(GizmoAxis axis, Rgba8 const& color);
+	GizmoComponent(GizmoAxis axis, Color const& color);
 	virtual ~GizmoComponent() = default;
 
 	virtual MathRaycastResult3D Raycast(GizmoContext const& context, MathRaycastQuery3D const& raycastInfo) const;
@@ -69,11 +69,11 @@ protected:
 	Vec3          GetAxisWorld() const;
 	Vec3          GetPlaneU() const;
 	Vec3          GetPlaneV() const;
-	Rgba8         GetDrawColor() const;
+	Color         GetDrawColor() const;
 
 protected:
 	GizmoAxis m_axis       = GizmoAxis::X;
-	Rgba8     m_baseColor  = Rgba8::White;
+	Color     m_baseColor  = Color::White;
 	bool      m_isHovered  = false;
 	bool      m_isDragging = false;
 
@@ -88,7 +88,7 @@ class GizmoAxisArrow : public GizmoComponent
 	MCLASS(GizmoAxisArrow, GizmoComponent)
 
 public:
-	GizmoAxisArrow(GizmoAxis axis, Rgba8 const& color);
+	GizmoAxisArrow(GizmoAxis axis, Color const& color);
 
 	MathRaycastResult3D Raycast(GizmoContext const& context, MathRaycastQuery3D const& raycastInfo) const override;
 	void                OnBeginDrag(GizmoContext const& context, Vec3 const& hitPos) override;
@@ -107,7 +107,7 @@ class GizmoPlaneSquare : public GizmoComponent
 	MCLASS(GizmoPlaneSquare, GizmoComponent)
 
 public:
-	GizmoPlaneSquare(GizmoAxis axis, Rgba8 const& color);
+	GizmoPlaneSquare(GizmoAxis axis, Color const& color);
 
 	MathRaycastResult3D Raycast(GizmoContext const& context, MathRaycastQuery3D const& raycastInfo) const override;
 	void                OnBeginDrag(GizmoContext const& context, Vec3 const& hitPos) override;
@@ -126,7 +126,7 @@ class GizmoRotationArc : public GizmoComponent
 	MCLASS(GizmoRotationArc, GizmoComponent)
 
 public:
-	GizmoRotationArc(GizmoAxis axis, Rgba8 const& color);
+	GizmoRotationArc(GizmoAxis axis, Color const& color);
 	~GizmoRotationArc() override;
 
 	MathRaycastResult3D Raycast(GizmoContext const& context, MathRaycastQuery3D const& raycastInfo) const override;

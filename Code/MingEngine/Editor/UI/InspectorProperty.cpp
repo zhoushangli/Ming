@@ -1,6 +1,7 @@
 #include "MingEngine/Editor/UI/InspectorProperty.hpp"
 
 #include "MingEngine/Editor/UI/InspectorPropertyBool.hpp"
+#include "MingEngine/Editor/UI/InspectorPropertyColor.hpp"
 #include "MingEngine/Editor/UI/InspectorPropertyEuler.hpp"
 #include "MingEngine/Editor/UI/InspectorPropertyFloat.hpp"
 #include "MingEngine/Editor/UI/InspectorPropertyInt.hpp"
@@ -13,6 +14,7 @@
 
 // Forward declarations for subclasses — included in factory below
 class InspectorPropertyBool;
+class InspectorPropertyColor;
 class InspectorPropertyInt;
 class InspectorPropertyFloat;
 class InspectorPropertyResource;
@@ -49,8 +51,7 @@ static std::string SnakeToTitle(std::string const& snake)
 
 // ——— Base class ———
 
-InspectorProperty::InspectorProperty(
-	PropertyInfo info, std::string labelId, ValueChangedCallback onValueChanged)
+InspectorProperty::InspectorProperty(PropertyInfo info, std::string labelId, ValueChangedCallback onValueChanged)
 	: m_info(std::move(info)), m_labelId(std::move(labelId)), m_onValueChanged(std::move(onValueChanged))
 {
 }
@@ -73,8 +74,8 @@ std::string InspectorProperty::GetDisplayName() const { return SnakeToTitle(m_in
 
 // ——— Factory ———
 
-InspectorProperty*
-InspectorProperty::Create(PropertyInfo info, std::string labelId, ValueChangedCallback onValueChanged)
+InspectorProperty* InspectorProperty::Create(
+	PropertyInfo info, std::string labelId, ValueChangedCallback onValueChanged)
 {
 	if (info.m_type == Variant::Type::ObjectPtr && info.m_hint == PropertyInfo::Hint::ResourceType)
 	{
@@ -91,6 +92,8 @@ InspectorProperty::Create(PropertyInfo info, std::string labelId, ValueChangedCa
 		return new InspectorPropertyFloat(std::move(info), std::move(labelId), std::move(onValueChanged));
 	case Variant::Type::String:
 		return new InspectorPropertyString(std::move(info), std::move(labelId), std::move(onValueChanged));
+	case Variant::Type::Color:
+		return new InspectorPropertyColor(std::move(info), std::move(labelId), std::move(onValueChanged));
 	case Variant::Type::Vec3:
 		return new InspectorPropertyVec3(std::move(info), std::move(labelId), std::move(onValueChanged));
 	case Variant::Type::EulerAngles:

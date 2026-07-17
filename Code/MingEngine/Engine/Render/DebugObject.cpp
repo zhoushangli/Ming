@@ -45,8 +45,8 @@ DebugObject& DebugObject::operator=(DebugObject&& other) noexcept
 	m_texture         = other.m_texture;
 	m_shaderResource  = std::move(other.m_shaderResource);
 
-	other.vertexBuffer   = nullptr;
-	other.m_texture      = nullptr;
+	other.vertexBuffer = nullptr;
+	other.m_texture    = nullptr;
 	return *this;
 }
 
@@ -125,7 +125,7 @@ bool DebugObject::UsesUniformColor() const
 	}
 }
 
-Rgba8 DebugObject::GetCurrentColor() const
+Color DebugObject::GetCurrentColor() const
 {
 	if (totalDuration <= 0.f)
 	{
@@ -185,7 +185,13 @@ void DebugObject::UpdateRenderData(Renderer& renderer, BitmapFont* font, int mes
 			box                    = AABB2(Vec2(10.f, top - cellHeight), Vec2(1000.f, top));
 		}
 		font->AddVertsForTextInBox2D(
-			textVerts, text, box, textHeight > 0.f ? textHeight : 20.f, GetCurrentColor(), 1.f, alignment,
+			textVerts,
+			text,
+			box,
+			textHeight > 0.f ? textHeight : 20.f,
+			GetCurrentColor(),
+			1.f,
+			alignment,
 			TextBoxMode::SHRINK_TO_FIT);
 	}
 
@@ -198,13 +204,14 @@ RenderRequest DebugObject::SubmitRenderRequest() const
 	RenderRequest request;
 	request.m_pass           = IsScreenObject() ? RenderRequestPass::UI : RenderRequestPass::Opaque;
 	request.m_modelToWorld   = Matrix4x4::Identity;
-	request.m_tint           = Rgba8::White;
+	request.m_tint           = Color::White;
 	request.m_vertexBuffer   = vertexBuffer;
 	request.m_indexBuffer    = nullptr;
 	request.m_shader         = m_shaderResource.IsValid() ? m_shaderResource->GetShader() : nullptr;
 	request.m_blendMode      = BlendMode::ALPHA;
 	request.m_depthMode      = IsScreenObject() ? DepthMode::READ_ONLY_ALWAYS
-		: (mode == DebugRenderMode::USE_DEPTH ? DepthMode::READ_WRITE_LESS_EQUAL : DepthMode::DISABLED);
+												: (mode == DebugRenderMode::USE_DEPTH ? DepthMode::READ_WRITE_LESS_EQUAL
+																					  : DepthMode::DISABLED);
 	request.m_rasterizerMode = RasterizerMode::SOLID_CULL_NONE;
 	switch (type)
 	{

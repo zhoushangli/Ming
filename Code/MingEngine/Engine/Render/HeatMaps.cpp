@@ -99,10 +99,10 @@ void TileHeatMap::AddVertsForDebugDraw(
 	std::vector<Vertex>& verts,
 	AABB2                totalBounds,
 	FloatRange           valueRange,
-	Rgba8                lowColor,
-	Rgba8                highColor,
+	Color                lowColor,
+	Color                highColor,
 	float                specialValue,
-	Rgba8                specialColor) const
+	Color                specialColor) const
 {
 	int  numTilesX = m_dimensions.x;
 	int  numTilesY = m_dimensions.y;
@@ -121,7 +121,7 @@ void TileHeatMap::AddVertsForDebugDraw(
 			Vec2  maxs = mins + tileSize;
 			AABB2 tileBounds(mins, maxs);
 
-			Rgba8 color;
+			Color color;
 			if (value == specialValue)
 			{
 				color = specialColor;

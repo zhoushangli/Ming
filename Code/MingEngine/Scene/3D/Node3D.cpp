@@ -95,6 +95,7 @@ void Node3D::SetLocalTransform(Matrix4x4 const& localTransform)
 {
 	m_transform.SetMatrix(localTransform);
 	PropagateTransformChanged();
+	Notification((int)NotificationType::TransformChanged);
 }
 
 void Node3D::SetWorldTransform(Matrix4x4 const& worldTransform)
@@ -124,6 +125,7 @@ void Node3D::SetLocalPosition(Vec3 const& localPosition)
 {
 	m_transform.SetPosition(localPosition);
 	PropagateTransformChanged();
+	Notification((int)NotificationType::TransformChanged);
 }
 
 void Node3D::SetWorldPosition(Vec3 const& worldPosition)
@@ -146,6 +148,7 @@ void Node3D::SetLocalScale(Vec3 const& scale)
 {
 	m_transform.SetScale(scale);
 	PropagateTransformChanged();
+	Notification((int)NotificationType::TransformChanged);
 }
 
 Vec3 Node3D::GetWorldScale() const
@@ -185,6 +188,7 @@ void Node3D::SetLocalOrientation(EulerAngles const& localOrientation)
 {
 	m_transform.SetOrientation(localOrientation);
 	PropagateTransformChanged();
+	Notification((int)NotificationType::TransformChanged);
 }
 
 void Node3D::SetWorldOrientation(EulerAngles const& worldOrientation)
@@ -266,6 +270,8 @@ void Node3D::OnNotification(int notification)
 		m_transform.SetPosition(m_transform.GetPosition() + m_velocity * deltaSeconds);
 		m_transform.SetOrientation(m_transform.GetOrientation() + m_angularVelocity * deltaSeconds);
 		PropagateTransformChanged();
+		Notification((int)NotificationType::TransformChanged);
+
 		break;
 	}
 	}

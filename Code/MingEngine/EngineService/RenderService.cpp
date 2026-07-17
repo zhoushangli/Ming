@@ -20,6 +20,7 @@ void RenderService::Shutdown()
 	UnregisterEvent("WindowResized", RenderService::OnWindowResized);
 
 	m_viewports.clear();
+	m_lights.clear();
 }
 
 void RenderService::RegisterViewport(Viewport* viewport)
@@ -41,6 +42,95 @@ void RenderService::UnregisterViewport(Viewport* viewport)
 	}
 }
 
+int RenderService::CreateLight(LightType type)
+{
+	LightEntry entry;
+	entry.m_rid         = m_nextLightRid++;
+	entry.m_info.m_type = type;
+	m_lights.push_back(entry);
+	return entry.m_rid;
+}
+
+void RenderService::FreeLight(int rid)
+{
+	auto const foundLight =
+		std::find_if(m_lights.begin(), m_lights.end(), [rid](LightEntry const& entry) { return entry.m_rid == rid; });
+	if (foundLight != m_lights.end())
+	{
+		m_lights.erase(foundLight);
+	}
+}
+
+void RenderService::SetLightTransform(int rid, Matrix4x4 const& transform)
+{
+	LightEntry* light = FindLight(rid);
+	if (light != nullptr)
+	{
+		light->m_info.m_transform = transform;
+	}
+}
+
+void RenderService::SetLightColor(int rid, Color const& color)
+{
+	LightEntry* light = FindLight(rid);
+	if (light != nullptr)
+	{
+		light->m_info.m_color = color;
+	}
+}
+
+void RenderService::SetLightIntensity(int rid, float intensity)
+{
+	LightEntry* light = FindLight(rid);
+	if (light != nullptr)
+	{
+		light->m_info.m_intensity = intensity;
+	}
+}
+
+void RenderService::SetLightRange(int rid, float range)
+{
+	LightEntry* light = FindLight(rid);
+	if (light != nullptr)
+	{
+		light->m_info.m_range = range;
+	}
+}
+
+void RenderService::SetLightAttenuation(int rid, float attenuation)
+{
+	LightEntry* light = FindLight(rid);
+	if (light != nullptr)
+	{
+		light->m_info.m_attenuation = attenuation;
+	}
+}
+
+void RenderService::SetLightSpotAngle(int rid, float angle)
+{
+	LightEntry* light = FindLight(rid);
+	if (light != nullptr)
+	{
+		light->m_info.m_spotAngle = angle;
+	}
+}
+
+void RenderService::SetLightSpotAttenuation(int rid, float attenuation)
+{
+	LightEntry* light = FindLight(rid);
+	if (light != nullptr)
+	{
+		light->m_info.m_spotAttenuation = attenuation;
+	}
+}
+
+RenderService::LightEntry* RenderService::FindLight(int rid)
+{
+	auto const foundLight =
+		std::find_if(m_lights.begin(), m_lights.end(), [rid](LightEntry const& entry) { return entry.m_rid == rid; });
+	return foundLight != m_lights.end() ? &(*foundLight) : nullptr;
+}
+
 void RenderService::Render() const
 {
 	Viewport* presentedViewport = nullptr;
@@ -55,6 +145,12 @@ void RenderService::Render() const
 		// 2) Render into this Viewport's own render targets.
 		viewport->PrepareRenderData();
 		ViewportInfo& viewportInfo = viewport->GetViewportInfo();
+		viewportInfo.m_lights.clear();
+		viewportInfo.m_lights.reserve(m_lights.size());
+		for (LightEntry const& light : m_lights)
+		{
+			viewportInfo.m_lights.push_back(light.m_info);
+		}
 		g_engine->m_renderer->ClearSceneTargets(viewportInfo);
 		g_engine->m_renderer->SetViewport(viewportInfo.m_outputRect.GetDimensions(), viewportInfo.m_outputRect.m_mins);
 		g_engine->m_renderer->RenderViewport(viewportInfo);

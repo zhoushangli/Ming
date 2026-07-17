@@ -76,6 +76,12 @@ bool TrySerialize(Variant const& value, Json& outJson)
 		}
 		return true;
 	}
+	case Variant::Type::Color:
+	{
+		Color const& color = value.As<Color>();
+		outJson            = Json::array({ color.r, color.g, color.b, color.a });
+		return true;
+	}
 	case Variant::Type::ObjectPtr:
 	{
 		Object* object = value.As<Object*>();
@@ -168,6 +174,13 @@ bool TryDeserialize(Json const& json, Variant::Type expectedType, Variant& outVa
 					matrixValues[index] = json[index].get<float>();
 				}
 				outValue = Variant(Matrix4x4(matrixValues));
+				return true;
+			}
+			break;
+		case Variant::Type::Color:
+			if (IsNumberArray(json, 4))
+			{
+				outValue = Variant(Color(json[0].get<float>(), json[1].get<float>(), json[2].get<float>(), json[3].get<float>()));
 				return true;
 			}
 			break;

@@ -1,6 +1,7 @@
 #include "MingEngine/Engine/Render/Renderer.hpp"
 
 #include "MingEngine/Core/Clock.hpp"
+#include "MingEngine/Core/Math/EulerAngles.hpp"
 #include "MingEngine/Core/Object/ResourceLoader.hpp"
 #include "MingEngine/Engine/Render/CameraContext.hpp"
 #include "MingEngine/Engine/Render/DebugGizmos.hpp"
@@ -159,7 +160,7 @@ void Renderer::ResizeViewport(ViewportInfo& viewport, IntVec2 dimensions)
 	viewport.m_pingTexture           = m_renderBackend->CreateRenderTargetTexture("Ping", dimensions);
 	viewport.m_pongTexture           = m_renderBackend->CreateRenderTargetTexture("Pong", dimensions);
 
-	m_renderBackend->ClearRenderTarget(viewport.m_sceneNormalTexture, Rgba8(128, 128, 128, 255));
+	m_renderBackend->ClearRenderTarget(viewport.m_sceneNormalTexture, Color(128, 128, 128, 255));
 	m_renderBackend->ClearDepthStencil(viewport.m_sceneDepthTexture);
 }
 
@@ -187,7 +188,7 @@ void Renderer::ClearSceneTargets(ViewportInfo const& viewport)
 {
 	m_renderBackend->ClearRenderTarget(viewport.m_viewportOutputTexture, viewport.m_clearColor);
 	m_renderBackend->ClearRenderTarget(viewport.m_sceneColorTexture, viewport.m_clearColor);
-	m_renderBackend->ClearRenderTarget(viewport.m_sceneNormalTexture, Rgba8(128, 128, 128, 255));
+	m_renderBackend->ClearRenderTarget(viewport.m_sceneNormalTexture, Color(128, 128, 128, 255));
 	m_renderBackend->ClearDepthStencil(viewport.m_sceneDepthTexture);
 }
 
@@ -211,32 +212,60 @@ void Renderer::PrepareConstants(ViewportInfo const& viewport)
 	// Prepare light constants
 	LightConstants lightConstants  = LightConstants();
 	int            pointLightCount = 0;
+	int            spotLightCount  = 0;
 	for (LightInfo const& light : viewport.m_lights)
 	{
+		Vec3 gpuColor;
+		gpuColor.x = light.m_color.r / 255.f;
+		gpuColor.y = light.m_color.g / 255.f;
+		gpuColor.z = light.m_color.b / 255.f;
+
 		switch (light.m_type)
 		{
-		case LightType::DIRECTIONAL:
-			lightConstants.m_directionalLight.m_direction = light.m_direction;
+		case LightType::Directional:
+		{
+			lightConstants.m_directionalLight.m_direction = light.m_transform.GetIBasis3D().GetNormalized();
 			lightConstants.m_directionalLight.m_intensity = light.m_intensity;
+			lightConstants.m_directionalLight.m_color     = gpuColor;
 			break;
-		case LightType::POINT:
-			if (pointLightCount < kMaxPointLights)
+		}
+		case LightType::Omni:
+		{
+			if (pointLightCount > kMaxPointLights)
 			{
-				Vec3 gpuColor;
-				gpuColor.x = light.m_color.r / 255.f;
-				gpuColor.y = light.m_color.g / 255.f;
-				gpuColor.z = light.m_color.b / 255.f;
-
-				lightConstants.m_pointLights[pointLightCount].m_position  = light.m_position;
-				lightConstants.m_pointLights[pointLightCount].m_intensity = light.m_intensity;
-				lightConstants.m_pointLights[pointLightCount].m_color     = gpuColor;
-				lightConstants.m_pointLights[pointLightCount].m_range     = light.m_range;
-				++pointLightCount;
+				return;
 			}
+			lightConstants.m_pointLights[pointLightCount].m_position    = light.m_transform.GetTranslation3D();
+			lightConstants.m_pointLights[pointLightCount].m_intensity   = light.m_intensity;
+			lightConstants.m_pointLights[pointLightCount].m_color       = gpuColor;
+			lightConstants.m_pointLights[pointLightCount].m_range       = light.m_range;
+			lightConstants.m_pointLights[pointLightCount].m_attenuation = light.m_attenuation;
+			++pointLightCount;
+
 			break;
+		}
+		case LightType::Spot:
+		{
+			if (spotLightCount > kMaxSpotLights)
+			{
+				return;
+			}
+			lightConstants.m_spotLights[spotLightCount].m_position    = light.m_transform.GetTranslation3D();
+			lightConstants.m_spotLights[spotLightCount].m_intensity   = light.m_intensity;
+			lightConstants.m_spotLights[spotLightCount].m_color       = gpuColor;
+			lightConstants.m_spotLights[spotLightCount].m_range       = light.m_range;
+			lightConstants.m_spotLights[spotLightCount].m_attenuation = light.m_attenuation;
+			lightConstants.m_spotLights[spotLightCount].m_direction   = light.m_transform.GetIBasis3D().GetNormalized();
+			lightConstants.m_spotLights[spotLightCount].m_spotAngle   = light.m_spotAngle;
+			lightConstants.m_spotLights[spotLightCount].m_spotAttenuation = light.m_spotAttenuation;
+			++spotLightCount;
+
+			break;
+		}
 		}
 	}
 	lightConstants.m_pointLightCount = pointLightCount;
+	lightConstants.m_spotLightCount  = spotLightCount;
 	m_renderBackend->UpdateAndBindConstantBuffer(BuiltinConstantBufferType::Light, lightConstants);
 
 	// Prepare post-process constants

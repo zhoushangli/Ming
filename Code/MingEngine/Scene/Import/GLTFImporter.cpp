@@ -237,7 +237,7 @@ Ref<Resource> GLTFImporter::Import(
 			ReadFloat(positionData + sizeof(float) * 0),
 			ReadFloat(positionData + sizeof(float) * 1),
 			ReadFloat(positionData + sizeof(float) * 2));
-		vertex.m_color = Rgba8::White;
+		vertex.m_color = Color::White;
 	}
 
 	// 4) Read optional attributes when their supported float formats are present.
