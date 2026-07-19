@@ -13,6 +13,45 @@
 
 #include <algorithm>
 
+namespace
+{
+
+// clang-format off
+const uint8_t kDefaultWhiteTexture[16] =
+{
+	0xFF, 0xFF, 0xFF, 0xFF, // (0,0)
+	0xFF, 0xFF, 0xFF, 0xFF, // (1,0)
+	0xFF, 0xFF, 0xFF, 0xFF, // (0,1)
+	0xFF, 0xFF, 0xFF, 0xFF  // (1,1)
+};
+
+const uint8_t kDefaultMagentaTexture[16] =
+{
+	0xFF, 0x00, 0xFF, 0xFF, // (0,0)
+	0xFF, 0x00, 0xFF, 0xFF, // (1,0)
+	0xFF, 0x00, 0xFF, 0xFF, // (0,1)
+	0xFF, 0x00, 0xFF, 0xFF  // (1,1)
+};
+
+const uint8_t kDefaultNormalTexture[16] =
+{
+	0x80, 0x80, 0xFF, 0xFF, // (0,0)
+	0x80, 0x80, 0xFF, 0xFF, // (1,0)
+	0x80, 0x80, 0xFF, 0xFF, // (0,1)
+	0x80, 0x80, 0xFF, 0xFF  // (1,1)
+};
+
+const uint8_t kDefaultSGETexture[16] =
+{
+	0x80, 0x80, 0x00, 0xFF, // (0,0)
+	0x80, 0x80, 0x00, 0xFF, // (1,0)
+	0x80, 0x80, 0x00, 0xFF, // (0,1)
+	0x80, 0x80, 0x00, 0xFF  // (1,1)
+};
+// clang-format on
+
+} // namespace
+
 Renderer::Renderer(RendererConfig config) : m_config(config) {}
 
 Renderer::~Renderer() {}
@@ -28,6 +67,10 @@ void Renderer::Startup()
 
 	m_renderBackend = new D3D11RenderBackend(m_config);
 	m_renderBackend->Startup();
+	m_defaultWhiteTexture   = CreateGPUTexture("DefaultWhite", IntVec2(2, 2), 4, kDefaultWhiteTexture);
+	m_defaultMagentaTexture = CreateGPUTexture("DefaultMagenta", IntVec2(2, 2), 4, kDefaultMagentaTexture);
+	m_defaultNormalTexture  = CreateGPUTexture("DefaultNormal", IntVec2(2, 2), 4, kDefaultNormalTexture);
+	m_defaultSGETexture     = CreateGPUTexture("DefaultSGE", IntVec2(2, 2), 4, kDefaultSGETexture);
 	m_defaultShaderResource         = ResourceLoader::Load("res://Shaders/DefaultUnlit.hlsl");
 	m_postProcessCopyShaderResource = ResourceLoader::Load("res://Shaders/PostProcessCopy.hlsl");
 
@@ -44,6 +87,15 @@ void Renderer::Shutdown()
 
 	if (m_renderBackend != nullptr)
 	{
+		DestroyTexture(m_defaultWhiteTexture);
+		DestroyTexture(m_defaultMagentaTexture);
+		DestroyTexture(m_defaultNormalTexture);
+		DestroyTexture(m_defaultSGETexture);
+		m_defaultWhiteTexture   = nullptr;
+		m_defaultMagentaTexture = nullptr;
+		m_defaultNormalTexture  = nullptr;
+		m_defaultSGETexture     = nullptr;
+
 		m_renderBackend->Shutdown();
 		delete m_renderBackend;
 		m_renderBackend = nullptr;
@@ -123,8 +175,31 @@ void Renderer::ExecuteRenderRequest(RenderRequest const& request)
 	m_renderBackend->BindShader(shader);
 	for (unsigned int textureSlot = 0; textureSlot < request.m_textures.size(); ++textureSlot)
 	{
-		m_renderBackend->BindTexture(request.m_textures[textureSlot], textureSlot);
-		m_renderBackend->BindSampler(request.m_samplerMode, textureSlot);
+		GPUTexture* texture = request.m_textures[textureSlot];
+		if (texture == nullptr)
+		{
+			switch (textureSlot)
+			{
+			case SurfaceTextureSlot::Diffuse:
+				m_renderBackend->BindTexture(m_defaultWhiteTexture, textureSlot);
+				break;
+			case SurfaceTextureSlot::Normal:
+				m_renderBackend->BindTexture(m_defaultNormalTexture, textureSlot);
+				break;
+			case SurfaceTextureSlot::SGE:
+				m_renderBackend->BindTexture(m_defaultSGETexture, textureSlot);
+				break;
+			default:
+				m_renderBackend->BindTexture(m_defaultWhiteTexture, textureSlot);
+				break;
+			}
+			m_renderBackend->BindSampler(SamplerMode::POINT_CLAMP, textureSlot);
+		}
+		else
+		{
+			m_renderBackend->BindTexture(request.m_textures[textureSlot], textureSlot);
+			m_renderBackend->BindSampler(request.m_samplerMode, textureSlot);
+		}
 	}
 	m_renderBackend->SetBlendMode(request.m_blendMode);
 	m_renderBackend->SetRasterizerMode(request.m_rasterizerMode);
@@ -200,7 +275,7 @@ void Renderer::CopyTextureToBackBuffer(GPUTexture* colorTexture)
 	}
 
 	m_renderBackend->BindBackBuffer();
-	m_renderBackend->BindPostProcessInputs(colorTexture, nullptr, nullptr);
+	m_renderBackend->BindPostProcessInputs(colorTexture, m_defaultWhiteTexture, m_defaultNormalTexture);
 	Shader* copyShader =
 		m_postProcessCopyShaderResource.IsValid() ? m_postProcessCopyShaderResource->GetShader() : nullptr;
 	m_renderBackend->DrawFullscreenTriangle(copyShader, L"FinalCopyToBackBuffer");

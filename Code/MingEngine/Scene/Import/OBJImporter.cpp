@@ -2,6 +2,7 @@
 
 #include "MingEngine/Core/Object/ClassDatabase.hpp"
 #include "MingEngine/Core/Object/ResourceLoader.hpp"
+#include "MingEngine/Core/Render/SurfaceTool.hpp"
 #include "MingEngine/Core/Render/Vertex.hpp"
 #include "MingEngine/Core/Render/VertexUtils.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
@@ -66,11 +67,10 @@ struct OBJData
 	std::vector<Vec3> m_normals;
 	std::vector<Vec2> m_texCoords;
 
-	std::vector<FaceData> m_faces;
-
 	// Engine Data
-	std::vector<Vertex>       m_vertices;
-	std::vector<unsigned int> m_indices;
+	std::vector<Vertex>   m_vertices;
+	std::vector<uint32_t> m_smoothingGroups;
+	bool                  m_allFaceVerticesHaveNormals = true;
 };
 
 struct MTLData
@@ -90,9 +90,9 @@ bool ParseOBJFile(std::string const& sourceVirtualPath, OBJData& outData)
 		outData.m_positions.clear();
 		outData.m_normals.clear();
 		outData.m_texCoords.clear();
-		outData.m_faces.clear();
 		outData.m_vertices.clear();
-		outData.m_indices.clear();
+		outData.m_smoothingGroups.clear();
+		outData.m_allFaceVerticesHaveNormals = true;
 	};
 
 	auto TrimWhitespace = [](std::string const& text) -> std::string
@@ -105,17 +105,6 @@ bool ParseOBJFile(std::string const& sourceVirtualPath, OBJData& outData)
 
 		size_t const end = text.find_last_not_of(" \t\r\n");
 		return text.substr(start, end - start + 1);
-	};
-
-	auto BeginsWith = [](std::string const& text, char const* prefix) -> bool
-	{
-		size_t prefixLength = 0;
-		while (prefix[prefixLength] != '\0')
-		{
-			++prefixLength;
-		}
-
-		return text.size() >= prefixLength && text.compare(0, prefixLength, prefix) == 0;
 	};
 
 	auto Tokenize = [](std::string const& line) -> std::vector<std::string>
@@ -221,12 +210,6 @@ bool ParseOBJFile(std::string const& sourceVirtualPath, OBJData& outData)
 		return true;
 	};
 
-	auto FaceVerticesAreEqual = [](FaceData const& a, FaceData const& b) -> bool
-	{
-		return a.m_positionIndex == b.m_positionIndex && a.m_texCoordIndex == b.m_texCoordIndex
-			   && a.m_normalIndex == b.m_normalIndex;
-	};
-
 	auto ParseMTLVirtualPath =
 		[](std::string const& objVirtualPath, std::string const& mtlPath, std::string& outMtlVirtualPath) -> bool
 	{
@@ -282,9 +265,8 @@ bool ParseOBJFile(std::string const& sourceVirtualPath, OBJData& outData)
 		}
 	}
 
-	std::vector<Color>    colors;
-	std::vector<FaceData> uniqueFaceVertices;
-	bool                  allFaceVerticesHaveNormals = true;
+	std::vector<Color> colors;
+	uint32_t           activeSmoothingGroup = SurfaceTool::NoSmoothingGroup;
 
 	size_t cursor = 0;
 	while (cursor <= text.size())
@@ -385,6 +367,33 @@ bool ParseOBJFile(std::string const& sourceVirtualPath, OBJData& outData)
 			continue;
 		}
 
+		if (tokens[0] == "s")
+		{
+			if (tokens.size() != 2)
+			{
+				ClearOutput();
+				return false;
+			}
+
+			if (tokens[1] == "off" || tokens[1] == "0")
+			{
+				activeSmoothingGroup = SurfaceTool::NoSmoothingGroup;
+				continue;
+			}
+
+			char*               parseEnd       = nullptr;
+			unsigned long const smoothingGroup = std::strtoul(tokens[1].c_str(), &parseEnd, 10);
+			if (parseEnd == tokens[1].c_str() || *parseEnd != '\0' || smoothingGroup == 0
+				|| smoothingGroup >= SurfaceTool::NoSmoothingGroup)
+			{
+				ClearOutput();
+				return false;
+			}
+
+			activeSmoothingGroup = static_cast<uint32_t>(smoothingGroup);
+			continue;
+		}
+
 		if (tokens[0] == "f")
 		{
 			if (tokens.size() < 4)
@@ -419,7 +428,7 @@ bool ParseOBJFile(std::string const& sourceVirtualPath, OBJData& outData)
 
 				if (faceVertex.m_normalIndex < 0)
 				{
-					allFaceVerticesHaveNormals = false;
+					outData.m_allFaceVerticesHaveNormals = false;
 				}
 
 				faceVertices.push_back(faceVertex);
@@ -435,44 +444,24 @@ bool ParseOBJFile(std::string const& sourceVirtualPath, OBJData& outData)
 
 				for (FaceData const& faceVertex : triangle)
 				{
-					outData.m_faces.push_back(faceVertex);
-
-					unsigned int vertexIndex = 0;
-					bool         foundVertex = false;
-					for (size_t existingIndex = 0; existingIndex < uniqueFaceVertices.size(); ++existingIndex)
+					Vertex vertex(outData.m_positions[faceVertex.m_positionIndex], Color::White);
+					if (faceVertex.m_positionIndex < static_cast<int>(colors.size()))
 					{
-						if (FaceVerticesAreEqual(uniqueFaceVertices[existingIndex], faceVertex))
-						{
-							vertexIndex = static_cast<unsigned int>(existingIndex);
-							foundVertex = true;
-							break;
-						}
+						vertex.m_color = colors[faceVertex.m_positionIndex];
 					}
 
-					if (!foundVertex)
+					if (faceVertex.m_texCoordIndex >= 0)
 					{
-						Vertex vertex(outData.m_positions[faceVertex.m_positionIndex], Color::White);
-						if (faceVertex.m_positionIndex < static_cast<int>(colors.size()))
-						{
-							vertex.m_color = colors[faceVertex.m_positionIndex];
-						}
-
-						if (faceVertex.m_texCoordIndex >= 0)
-						{
-							vertex.m_uv = outData.m_texCoords[faceVertex.m_texCoordIndex];
-						}
-
-						if (faceVertex.m_normalIndex >= 0)
-						{
-							vertex.m_normal = outData.m_normals[faceVertex.m_normalIndex];
-						}
-
-						vertexIndex = static_cast<unsigned int>(outData.m_vertices.size());
-						outData.m_vertices.push_back(vertex);
-						uniqueFaceVertices.push_back(faceVertex);
+						vertex.m_uv = outData.m_texCoords[faceVertex.m_texCoordIndex];
 					}
 
-					outData.m_indices.push_back(vertexIndex);
+					if (faceVertex.m_normalIndex >= 0)
+					{
+						vertex.m_normal = outData.m_normals[faceVertex.m_normalIndex];
+					}
+
+					outData.m_vertices.push_back(vertex);
+					outData.m_smoothingGroups.push_back(activeSmoothingGroup);
 				}
 			}
 
@@ -496,14 +485,10 @@ bool ParseOBJFile(std::string const& sourceVirtualPath, OBJData& outData)
 
 			continue;
 		}
-
-		if (BeginsWith(line, "s "))
-		{
-			continue;
-		}
 	}
 
-	if (outData.m_positions.empty() || outData.m_vertices.empty() || outData.m_indices.empty())
+	if (outData.m_positions.empty() || outData.m_vertices.empty()
+		|| outData.m_vertices.size() != outData.m_smoothingGroups.size())
 	{
 		ClearOutput();
 		return false;
@@ -512,46 +497,6 @@ bool ParseOBJFile(std::string const& sourceVirtualPath, OBJData& outData)
 	if (outData.m_name.empty())
 	{
 		outData.m_name = "Mesh";
-	}
-
-	if (!allFaceVerticesHaveNormals)
-	{
-		for (Vertex& vertex : outData.m_vertices)
-		{
-			vertex.m_normal = Vec3::Zero;
-		}
-
-		for (size_t index = 0; index + 2 < outData.m_indices.size(); index += 3)
-		{
-			unsigned int const i0 = outData.m_indices[index];
-			unsigned int const i1 = outData.m_indices[index + 1];
-			unsigned int const i2 = outData.m_indices[index + 2];
-			if (i0 >= outData.m_vertices.size() || i1 >= outData.m_vertices.size() || i2 >= outData.m_vertices.size())
-			{
-				continue;
-			}
-
-			Vec3 const edge01 = outData.m_vertices[i1].m_position - outData.m_vertices[i0].m_position;
-			Vec3 const edge02 = outData.m_vertices[i2].m_position - outData.m_vertices[i0].m_position;
-			Vec3       normal = Vec3::CrossProduct(edge01, edge02);
-			if (normal.GetLengthSquared() <= 0.f)
-			{
-				continue;
-			}
-
-			normal.Normalize();
-			outData.m_vertices[i0].m_normal += normal;
-			outData.m_vertices[i1].m_normal += normal;
-			outData.m_vertices[i2].m_normal += normal;
-		}
-
-		for (Vertex& vertex : outData.m_vertices)
-		{
-			if (vertex.m_normal.GetLengthSquared() > 0.f)
-			{
-				vertex.m_normal.Normalize();
-			}
-		}
 	}
 
 	return true;
@@ -738,9 +683,8 @@ std::vector<ImportOptions> const OBJImporter::GetImportOptions() const { return 
 Ref<Resource> OBJImporter::Import(
 	std::unordered_map<std::string, Variant> const& importOptions, std::string const& sourceVirtualPath)
 {
-	Ref<MeshResource> meshData = CreateRef<MeshResource>();
-
-	(void)GetImportOptionValue(importOptions, "Generate Tangents", Variant::Type::Bool).As<bool>();
+	bool const generateTangents =
+		GetImportOptionValue(importOptions, "Generate Tangents", Variant::Type::Bool).As<bool>();
 	Vec3 const scaleMesh = GetImportOptionValue(importOptions, "Scale Mesh", Variant::Type::Vec3).As<Vec3>();
 
 	OBJData objData;
@@ -753,22 +697,35 @@ Ref<Resource> OBJImporter::Import(
 	importTransform.AppendScaleNonUniform3D(scaleMesh);
 	TransformVertexArray3D(objData.m_vertices, importTransform);
 
+	SurfaceTool surfaceTool;
+	for (size_t vertexIndex = 0; vertexIndex < objData.m_vertices.size(); ++vertexIndex)
+	{
+		Vertex const& vertex = objData.m_vertices[vertexIndex];
+		surfaceTool.SetColor(vertex.m_color);
+		surfaceTool.SetUV(vertex.m_uv);
+		surfaceTool.SetNormal(objData.m_allFaceVerticesHaveNormals ? vertex.m_normal : Vec3::Zero);
+		surfaceTool.SetTangent(vertex.m_tangent);
+		surfaceTool.SetBitangent(vertex.m_bitangent);
+		surfaceTool.SetSmoothingGroup(objData.m_smoothingGroups[vertexIndex]);
+		surfaceTool.AddVertex(vertex.m_position);
+	}
+
+	if (!objData.m_allFaceVerticesHaveNormals)
+	{
+		surfaceTool.GenerateNormals();
+	}
+	if (generateTangents)
+	{
+		surfaceTool.GenerateTangents();
+	}
+	surfaceTool.Index();
+	Ref<MeshResource> meshData = surfaceTool.CreateMeshResource();
+
 	std::filesystem::path physicalPath;
 	g_engine->m_fileSystem->TryGetPhysicalPath(sourceVirtualPath, physicalPath);
 
-	// 1) Copy OBJData into MeshResource
+	// 1) Apply resource metadata
 	meshData->SetName(physicalPath.stem().string());
-	meshData->m_vertexFormat = "PCUTBN";
-	meshData->m_vertexStride = sizeof(Vertex);
-	meshData->m_vertexCount  = static_cast<uint32_t>(objData.m_vertices.size());
-	meshData->m_vertices.resize(meshData->m_vertexCount * meshData->m_vertexStride);
-	memcpy(meshData->m_vertices.data(), objData.m_vertices.data(), meshData->m_vertices.size());
-
-	meshData->m_indexFormat = "uint32";
-	meshData->m_indexStride = sizeof(uint32_t);
-	meshData->m_indexCount  = static_cast<uint32_t>(objData.m_indices.size());
-	meshData->m_indices.resize(meshData->m_indexCount * sizeof(uint32_t));
-	memcpy(meshData->m_indices.data(), objData.m_indices.data(), meshData->m_indices.size());
 
 	// 2) Ensure texture dependencies are imported and load TextureResources
 	MTLData mtlData;

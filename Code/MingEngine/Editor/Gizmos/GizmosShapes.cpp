@@ -62,15 +62,17 @@ EditorWorldGrid3D::EditorWorldGrid3D()
 
 RenderRequest EditorWorldGrid3D::SubmitRenderRequest() const
 {
-	RenderRequest request;
-	request.m_pass         = RenderRequestPass::Opaque;
-	request.m_modelToWorld = GetWorldTransform();
-	request.m_vertexBuffer = m_vertexBuffer;
 	Ref<ShaderResource> shaderResource(ResourceLoader::Load("res://Shaders/GizmosGrid.hlsl"));
+
+	RenderRequest request;
+	request.m_pass           = RenderRequestPass::Opaque;
+	request.m_modelToWorld   = GetWorldTransform();
+	request.m_vertexBuffer   = m_vertexBuffer;
 	request.m_shader         = shaderResource.IsValid() ? shaderResource->GetShader() : nullptr;
 	request.m_blendMode      = BlendMode::ALPHA;
 	request.m_depthMode      = DepthMode::READ_ONLY_LESS_EQUAL;
 	request.m_rasterizerMode = RasterizerMode::SOLID_CULL_NONE;
+
 	return request;
 }
 

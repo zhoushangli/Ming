@@ -332,6 +332,7 @@
     <ClCompile Include="Core\Object\ResourceSaver.cpp" />
     <ClCompile Include="Core\Object\Script.cpp" />
     <ClCompile Include="Core\Object\ScriptLoader.cpp" />
+    <ClCompile Include="Core\Render\SurfaceTool.cpp" />
     <ClCompile Include="Editor\EditorData.cpp" />
     <ClCompile Include="Engine\Application\App.cpp" />
     <ClCompile Include="Core\Clock.cpp" />
@@ -498,6 +499,7 @@
     <ClInclude Include="Core\Object\ResourceSaver.hpp" />
     <ClInclude Include="Core\Object\Script.hpp" />
     <ClInclude Include="Core\Object\ScriptLoader.hpp" />
+    <ClInclude Include="Core\Render\SurfaceTool.hpp" />
     <ClInclude Include="Editor\EditorData.hpp" />
     <ClInclude Include="Engine\Application\App.hpp" />
     <ClInclude Include="Core\Clock.hpp" />
@@ -611,6 +613,7 @@
     <ClInclude Include="Engine\Render\Renderer.hpp" />
     <ClInclude Include="Engine\Render\Shader.hpp" />
     <ClInclude Include="Engine\Render\SpriteAnimDefinition.hpp" />
+    <ClInclude Include="Engine\Render\TextureBindingSlots.hpp" />
     <ClInclude Include="Engine\Render\GPUTexture.hpp" />
     <ClInclude Include="Engine\Render\VertexBuffer.hpp" />
     <ClInclude Include="Editor\Gizmos\EditorGizmos.hpp" />

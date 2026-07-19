@@ -8,6 +8,7 @@
 #include "MingEngine/Engine/Event/EventSystem.hpp"
 #include "MingEngine/Engine/Render/PostProcessChain.hpp"
 #include "MingEngine/Engine/Render/Shader.hpp"
+#include "MingEngine/Engine/Render/TextureBindingSlots.hpp"
 
 #include <string>
 #include <vector>
@@ -44,20 +45,6 @@ struct D3D11_SUBRESOURCE_DATA;
 struct D3D11_RENDER_TARGET_VIEW_DESC;
 struct D3D11_SHADER_RESOURCE_VIEW_DESC;
 struct D3D11_DEPTH_STENCIL_VIEW_DESC;
-
-namespace SurfaceTextureSlot
-{
-static const unsigned int Diffuse = 0;
-} // namespace SurfaceTextureSlot
-
-namespace PostProcessTextureSlot
-{
-static const unsigned int kColor           = 0;
-static const unsigned int kDepth           = 1;
-static const unsigned int kNormal          = 2;
-static const unsigned int CustomInputStart = 8;
-static const unsigned int MaxSamplerSlots  = 16;
-} // namespace PostProcessTextureSlot
 
 enum class BlendMode
 {
@@ -138,7 +125,7 @@ struct LightConstants
 	int                 m_pointLightCount;
 	int                 m_spotLightCount;
 	float               m_padding[2]; // Pad to 16 bytes for array alignment
-	GPUOmniLight       m_pointLights[kMaxPointLights];
+	GPUOmniLight        m_pointLights[kMaxPointLights];
 	GPUSpotLight        m_spotLights[kMaxSpotLights];
 };
 static const int kLightConstantsSlot = 1;
@@ -321,7 +308,6 @@ private:
 private:
 	RendererConfig m_config;
 
-	GPUTexture* m_defaultWhiteTexture = nullptr;
 	GPUTexture* m_defaultBlackTexture = nullptr;
 
 	CameraContext* m_currentCamera = nullptr;

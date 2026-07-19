@@ -53,14 +53,6 @@ Vertex const* GetFullscreenTriangleTopLeftUV()
 } // namespace
 
 // clang-format off
-const uint8_t kDefaultWhiteTexture[16] = 
-{
-	0xFF, 0xFF, 0xFF, 0xFF, // (0,0)
-	0xFF, 0xFF, 0xFF, 0xFF, // (1,0)
-	0xFF, 0xFF, 0xFF, 0xFF, // (0,1)
-	0xFF, 0xFF, 0xFF, 0xFF  // (1,1)
-};
-
 const uint8_t kDefaultBlackTexture[16] = 
 {
 	0x00, 0x00, 0x00, 0xFF, // (0,0)
@@ -68,6 +60,7 @@ const uint8_t kDefaultBlackTexture[16] =
 	0x00, 0x00, 0x00, 0xFF, // (0,1)
 	0x00, 0x00, 0x00, 0xFF  // (1,1)
 };
+
 // clang-format on
 
 //------------------------------------------------------------------------------------------------
@@ -323,9 +316,7 @@ void           D3D11RenderBackend::Startup()
 
 #pragma region Startup: Create default texture
 
-	m_defaultWhiteTexture = CreateGPUTexture("DefaultWhite", IntVec2(2, 2), 4, (uint8_t*)kDefaultWhiteTexture);
 	m_defaultBlackTexture = CreateGPUTexture("DefaultBlack", IntVec2(2, 2), 4, (uint8_t*)kDefaultBlackTexture);
-	BindTexture(m_defaultWhiteTexture);
 
 #pragma endregion
 
@@ -341,9 +332,7 @@ void D3D11RenderBackend::Shutdown()
 	m_currentCamera = nullptr;
 	m_currentShader = nullptr;
 
-	DestroyTexture(m_defaultWhiteTexture);
 	DestroyTexture(m_defaultBlackTexture);
-	m_defaultWhiteTexture = nullptr;
 	m_defaultBlackTexture = nullptr;
 
 	if (m_d3dDeviceContext)
@@ -563,7 +552,7 @@ void D3D11RenderBackend::BindTexture(GPUTexture* textureOrNull, unsigned int slo
 
 	if (textureOrNull == nullptr)
 	{
-		textureOrNull = m_defaultWhiteTexture;
+		ERROR_AND_DIE("BindTexture: texture is null");
 	}
 
 	ID3D11ShaderResourceView* srv = textureOrNull->m_shaderResourceView;

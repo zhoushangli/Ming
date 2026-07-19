@@ -77,4 +77,9 @@ private:
 
 	Ref<ShaderResource> m_defaultShaderResource;
 	Ref<ShaderResource> m_postProcessCopyShaderResource;
+
+	GPUTexture* m_defaultWhiteTexture   = nullptr;
+	GPUTexture* m_defaultMagentaTexture = nullptr;
+	GPUTexture* m_defaultNormalTexture  = nullptr;
+	GPUTexture* m_defaultSGETexture     = nullptr;
 };

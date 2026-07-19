@@ -1,6 +1,7 @@
 #include "MingEngine/Scene/Import/GLTFImporter.hpp"
 
 #include "MingEngine/Core/Object/ResourceLoader.hpp"
+#include "MingEngine/Core/Render/SurfaceTool.hpp"
 #include "MingEngine/Core/Render/Vertex.hpp"
 #include "MingEngine/Core/Render/VertexUtils.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
@@ -366,23 +367,24 @@ Ref<Resource> GLTFImporter::Import(
 	importTransform.AppendScaleNonUniform3D(scaleMesh);
 	TransformVertexArray3D(vertices, importTransform);
 
-	// 7) Copy the imported CPU data into the engine mesh resource.
-	Ref<MeshResource> meshData = CreateRef<MeshResource>();
+	// 7) Build the engine mesh resource through SurfaceTool.
+	SurfaceTool surfaceTool;
+	for (Vertex const& vertex : vertices)
+	{
+		surfaceTool.SetColor(vertex.m_color);
+		surfaceTool.SetUV(vertex.m_uv);
+		surfaceTool.SetNormal(vertex.m_normal);
+		surfaceTool.SetTangent(vertex.m_tangent);
+		surfaceTool.SetBitangent(vertex.m_bitangent);
+		surfaceTool.AddVertex(vertex.m_position);
+	}
+	for (uint32_t index : indices)
+	{
+		surfaceTool.AddIndex(index);
+	}
+
+	Ref<MeshResource> meshData = surfaceTool.CreateMeshResource();
 	meshData->SetName(physicalPath.stem().string());
-
-	meshData->m_vertexFormat = "PCUTBN";
-	meshData->m_vertexStride = sizeof(Vertex);
-	meshData->m_vertexCount  = static_cast<uint32_t>(vertices.size());
-	meshData->m_vertices.resize(meshData->m_vertexCount * meshData->m_vertexStride);
-
-	memcpy(meshData->m_vertices.data(), vertices.data(), meshData->m_vertices.size());
-
-	meshData->m_indexFormat = "uint32";
-	meshData->m_indexStride = sizeof(uint32_t);
-	meshData->m_indexCount  = static_cast<uint32_t>(indices.size());
-	meshData->m_indices.resize(meshData->m_indexCount * meshData->m_indexStride);
-
-	memcpy(meshData->m_indices.data(), indices.data(), meshData->m_indices.size());
 
 	// 8) Resolve the first base color texture from the first material.
 	// Walk: primitive.material → material.baseColorTexture → texture.source → image.uri

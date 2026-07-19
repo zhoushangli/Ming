@@ -621,6 +621,9 @@
     <ClCompile Include="Scene\Resource\ShaderResourceFormat.cpp">
       <Filter>Scene\Resource</Filter>
     </ClCompile>
+    <ClCompile Include="Core\Render\SurfaceTool.cpp">
+      <Filter>Core\Render</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Core\Clock.hpp">
@@ -882,6 +885,9 @@
       <Filter>Engine\Render</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Render\SpriteAnimDefinition.hpp">
+      <Filter>Engine\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Render\TextureBindingSlots.hpp">
       <Filter>Engine\Render</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Render\GPUTexture.hpp">
@@ -1204,6 +1210,9 @@
     </ClInclude>
     <ClInclude Include="Scene\Resource\ShaderResourceFormat.hpp">
       <Filter>Scene\Resource</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Render\SurfaceTool.hpp">
+      <Filter>Core\Render</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
