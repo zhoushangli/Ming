@@ -12,7 +12,7 @@ using namespace Math;
 #include "ThirdParty/GLFW/glfw3.h"
 #include "ThirdParty/GLFW/glfw3native.h"
 
-InputSystem::InputSystem(InputConfig config) : m_config(config) {}
+InputSystem::InputSystem(InputSystemConfig config) : m_config(config) {}
 
 void InputSystem::BindMethods()
 {

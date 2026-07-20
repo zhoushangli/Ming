@@ -58,7 +58,7 @@ void AudioSystem::EndFrame() {}
 //-----------------------------------------------------------------------------------------------
 // Initialization code based on example from "FMOD Studio Programmers API for Windows"
 //
-AudioSystem::AudioSystem(AudioConfig const& config) : m_config(config), m_fmodSystem(nullptr) {}
+AudioSystem::AudioSystem(AudioSystemConfig const& config) : m_config(config), m_fmodSystem(nullptr) {}
 
 //-----------------------------------------------------------------------------------------------
 AudioSystem::~AudioSystem() {}
@@ -115,8 +115,8 @@ SoundID AudioSystem::CreateOrGetSound(const std::string& soundFilePath, FMOD_MOD
 }
 
 //-----------------------------------------------------------------------------------------------
-SoundPlaybackID
-AudioSystem::StartSound(SoundID soundID, bool isLooped, float volume, float balance, float speed, bool isPaused)
+SoundPlaybackID AudioSystem::StartSound(
+	SoundID soundID, bool isLooped, float volume, float balance, float speed, bool isPaused)
 {
 	size_t numSounds = m_registeredSounds.size();
 	if (soundID < 0 || soundID >= numSounds)
@@ -220,16 +220,14 @@ void AudioSystem::ValidateResult(FMOD_RESULT result)
 	{
 		ERROR_RECOVERABLE(Stringf(
 			"MingEngine/Audio SYSTEM ERROR: Got error result code %i - error codes listed in fmod_common.h\n",
-			(int)result
-		));
+			(int)result));
 	}
 }
 
 void AudioSystem::SetNumListeners(int numListeners) { m_fmodSystem->set3DNumListeners(numListeners); }
 
 void AudioSystem::UpdateListener(
-	int listenerIndex, const Vec3& listenerPosition, const Vec3& listenerForward, const Vec3& listenerUp
-)
+	int listenerIndex, const Vec3& listenerPosition, const Vec3& listenerForward, const Vec3& listenerUp)
 {
 	FMOD_VECTOR fmodListenerPosition = EngineToFMODTransform(listenerPosition);
 	FMOD_VECTOR fmodListenerForward  = EngineToFMODTransform(listenerForward);
@@ -248,8 +246,7 @@ SoundPlaybackID AudioSystem::StartSoundAt(
 	float       speed,
 	bool        isPaused,
 	float       minDistance,
-	float       maxDistance
-)
+	float       maxDistance)
 {
 	size_t numSounds = m_registeredSounds.size();
 	if (soundID < 0 || soundID >= numSounds)
@@ -311,4 +308,3 @@ bool AudioSystem::IsPlaying(SoundPlaybackID soundPlaybackID)
 }
 
 #endif // !defined( ENGINE_DISABLE_AUDIO )
-

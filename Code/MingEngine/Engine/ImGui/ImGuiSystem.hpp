@@ -2,7 +2,7 @@
 
 #include "MingEngine/Engine/Application/SystemBase.hpp"
 
-struct ImGuiConfig
+struct ImGuiSystemConfig
 {
 	bool m_isEnable = true;
 };
@@ -12,7 +12,7 @@ class ImGuiSystem : public SystemBase
 	MCLASS(ImGuiSystem, SystemBase)
 
 public:
-	ImGuiSystem(ImGuiConfig config);
+	ImGuiSystem(ImGuiSystemConfig config);
 	~ImGuiSystem();
 
 	void Startup() override;
@@ -26,5 +26,5 @@ public:
 	static void BindMethods();
 
 private:
-	ImGuiConfig m_config;
+	ImGuiSystemConfig m_config;
 };

@@ -28,7 +28,7 @@ struct CursorState
 	CursorMode m_cursorMode = CursorMode::POINTER;
 };
 
-struct InputConfig
+struct InputSystemConfig
 {
 	bool m_isEnable = true;
 };
@@ -38,7 +38,7 @@ class InputSystem : public SystemBase
 	MCLASS(InputSystem, SystemBase)
 
 public:
-	InputSystem(InputConfig config);
+	InputSystem(InputSystemConfig config);
 	~InputSystem();
 
 	void Startup() override;
@@ -46,15 +46,15 @@ public:
 	void BeginFrame() override;
 	void EndFrame() override;
 
-	bool IsKeyDown(int keyCode);
-	bool IsKeyDown(KeyCode input) { return IsKeyDown(ToKeyCode(input)); }
-	bool WasKeyJustPressed(int keyCode);
-	bool WasKeyJustReleased(int keyCode);
-	bool WasKeyJustPressed(KeyCode input) { return WasKeyJustPressed(ToKeyCode(input)); }
-	bool WasKeyJustReleased(KeyCode input) { return WasKeyJustReleased(ToKeyCode(input)); }
+	bool        IsKeyDown(int keyCode);
+	bool        IsKeyDown(KeyCode input) { return IsKeyDown(ToKeyCode(input)); }
+	bool        WasKeyJustPressed(int keyCode);
+	bool        WasKeyJustReleased(int keyCode);
+	bool        WasKeyJustPressed(KeyCode input) { return WasKeyJustPressed(ToKeyCode(input)); }
+	bool        WasKeyJustReleased(KeyCode input) { return WasKeyJustReleased(ToKeyCode(input)); }
 	KeyModifier GetKeyModifiers() const { return m_keyboardState.m_keyModifiers; }
 
-	void HandleKeyCallback(int keyCode, int action, int mods);
+	void                  HandleKeyCallback(int keyCode, int action, int mods);
 	XboxController const& GetController(int controllerID);
 
 	void ClearAllInputStates();
@@ -87,7 +87,7 @@ protected:
 	// +3 for LeftMouse, RightMouse, Count
 	static int constexpr ControllerCount = 4;
 
-	InputConfig m_config;
+	InputSystemConfig m_config;
 
 	CursorMode m_cursorMode = CursorMode::POINTER;
 

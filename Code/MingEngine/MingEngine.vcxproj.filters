@@ -133,6 +133,9 @@
     <Filter Include="ThirdParty\nanosvg">
       <UniqueIdentifier>{2b809901-4de0-43c4-a57d-a424bb7b5b09}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Engine\Network">
+      <UniqueIdentifier>{05c24fb2-e1c2-458e-ba94-f549f1db49a9}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Core\Clock.cpp">
@@ -623,6 +626,9 @@
     </ClCompile>
     <ClCompile Include="Core\Render\SurfaceTool.cpp">
       <Filter>Core\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Network\NetworkSystem.cpp">
+      <Filter>Engine\Network</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1213,6 +1219,9 @@
     </ClInclude>
     <ClInclude Include="Core\Render\SurfaceTool.hpp">
       <Filter>Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Network\NetworkSystem.hpp">
+      <Filter>Engine\Network</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

@@ -28,6 +28,8 @@ Engine::Engine(EngineConfig config) : m_config(config)
 		m_audioSystem = new AudioSystem(config.m_audioConfig);
 	if (config.m_imguiConfig.m_isEnable)
 		m_imguiSystem = new ImGuiSystem(config.m_imguiConfig);
+	if (config.m_networkConfig.m_isEnable)
+		m_networkSystem = new NetworkSystem(config.m_networkConfig);
 }
 
 Engine::~Engine()
@@ -55,6 +57,9 @@ Engine::~Engine()
 
 	delete m_eventSystem;
 	m_eventSystem = nullptr;
+
+	delete m_networkSystem;
+	m_networkSystem = nullptr;
 }
 
 void Engine::Startup()
@@ -75,10 +80,14 @@ void Engine::Startup()
 		m_inputSystem->Startup();
 	if (m_audioSystem != nullptr)
 		m_audioSystem->Startup();
+	if (m_networkSystem != nullptr)
+		m_networkSystem->Startup();
 }
 
 void Engine::Shutdown()
 {
+	if (m_networkSystem != nullptr)
+		m_networkSystem->Shutdown();
 	if (m_audioSystem != nullptr)
 		m_audioSystem->Shutdown();
 	if (m_inputSystem != nullptr)
@@ -115,10 +124,14 @@ void Engine::BeginFrame()
 		m_inputSystem->BeginFrame();
 	if (m_audioSystem != nullptr)
 		m_audioSystem->BeginFrame();
+	if (m_networkSystem != nullptr)
+		m_networkSystem->BeginFrame();
 }
 
 void Engine::EndFrame()
 {
+	if (m_networkSystem != nullptr)
+		m_networkSystem->EndFrame();
 	if (m_imguiSystem != nullptr)
 		m_imguiSystem->EndFrame();
 	if (m_renderer != nullptr)

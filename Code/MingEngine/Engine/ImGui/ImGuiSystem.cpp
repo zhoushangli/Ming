@@ -111,7 +111,7 @@ void ApplyGodotImGuiTheme()
 }
 } // namespace
 
-ImGuiSystem::ImGuiSystem(ImGuiConfig config) : m_config(config) {}
+ImGuiSystem::ImGuiSystem(ImGuiSystemConfig config) : m_config(config) {}
 
 ImGuiSystem::~ImGuiSystem() {}
 

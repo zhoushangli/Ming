@@ -89,7 +89,7 @@ static void FramebufferSizeCallback(GLFWwindow* window, int width, int height)
 }
 } // namespace
 
-WindowSystem::WindowSystem(WindowConfig config) : m_config(config) {}
+WindowSystem::WindowSystem(WindowSystemConfig config) : m_config(config) {}
 
 WindowSystem::~WindowSystem() {}
 

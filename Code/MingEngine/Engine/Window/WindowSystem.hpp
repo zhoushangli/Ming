@@ -8,7 +8,7 @@ struct GLFWwindow;
 
 #include <string>
 
-struct WindowConfig
+struct WindowSystemConfig
 {
 	bool        m_isEnable               = true;
 	float       m_clientAspect           = 16.0f / 9.0f;
@@ -23,7 +23,7 @@ class WindowSystem : public SystemBase
 	MCLASS(WindowSystem, SystemBase)
 
 public:
-	WindowSystem(WindowConfig config);
+	WindowSystem(WindowSystemConfig config);
 	~WindowSystem();
 
 	void Startup() override;
@@ -48,5 +48,5 @@ public:
 	GLFWwindow* m_glfwWindow   = nullptr;
 
 private:
-	WindowConfig m_config;
+	WindowSystemConfig m_config;
 };
