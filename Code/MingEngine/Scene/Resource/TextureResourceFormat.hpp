@@ -9,7 +9,7 @@ class TextureResourceLoader : public ResourceFormatLoader
 
 public:
 	std::vector<std::string> GetSupportedExtensions() const override;
-	Ref<Resource>            Load(std::string const& virtualPath) override;
+	Ref<Resource>            Load(VirtualPath const& virtualPath) override;
 
 protected:
 	static void BindMethods() {};
@@ -20,8 +20,8 @@ class TextureResourceSaver : public ResourceFormatSaver
 	MCLASS(TextureResourceSaver, ResourceFormatSaver)
 
 public:
-	bool CanSave(std::string const& virtualPath, Variant const& value) const override;
-	bool Save(std::string const& virtualPath, Variant const& value) override;
+	bool CanSave(VirtualPath const& virtualPath, Variant const& value) const override;
+	bool Save(VirtualPath const& virtualPath, Variant const& value) override;
 
 protected:
 	static void BindMethods() {};

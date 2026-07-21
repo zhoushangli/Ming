@@ -7,7 +7,7 @@
 
 void ProjectSettingsPopup::Open()
 {
-	m_startScenePath = ProjectSettings::Get()->m_startScenePath;
+	m_startScenePath = ProjectSettings::Get()->m_startScenePath.GetString();
 	m_error.clear();
 	m_openRequested = true;
 }
@@ -39,8 +39,15 @@ void ProjectSettingsPopup::Render([[maybe_unused]] EditorUIContext& context)
 	if (confirm)
 	{
 		Ref<ProjectSettings> settings          = ProjectSettings::Get();
-		std::string const    oldStartScenePath = settings->m_startScenePath;
-		settings->m_startScenePath             = m_startScenePath;
+		VirtualPath const oldStartScenePath = settings->m_startScenePath;
+		VirtualPath       parsedStartScenePath;
+		if (!m_startScenePath.empty() && !VirtualPath::TryParse(m_startScenePath, parsedStartScenePath))
+		{
+			m_error = "Start Scene must be a valid res:// path.";
+			EditorPopupUtils::EndModal();
+			return;
+		}
+		settings->m_startScenePath = parsedStartScenePath;
 		if (ResourceSaver::Save(ProjectSettings::GetSettingsPath(), settings))
 		{
 			ImGui::CloseCurrentPopup();

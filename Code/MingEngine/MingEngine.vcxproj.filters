@@ -513,6 +513,9 @@
     <ClCompile Include="Engine\File\FileSystem.cpp">
       <Filter>Engine\File</Filter>
     </ClCompile>
+    <ClCompile Include="Engine\File\VirtualPath.cpp">
+      <Filter>Engine\File</Filter>
+    </ClCompile>
     <ClCompile Include="Engine\Script\ScriptSystem.cpp">
       <Filter>Engine\Script</Filter>
     </ClCompile>
@@ -1107,6 +1110,9 @@
       <Filter>Editor\UI</Filter>
     </ClInclude>
     <ClInclude Include="Engine\File\FileSystem.hpp">
+      <Filter>Engine\File</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\File\VirtualPath.hpp">
       <Filter>Engine\File</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Script\ScriptSystem.hpp">

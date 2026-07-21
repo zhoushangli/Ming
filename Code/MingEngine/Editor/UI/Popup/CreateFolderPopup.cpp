@@ -31,16 +31,12 @@ bool IsReservedWindowsName(std::string const& name)
 		   && stem[3] >= '1' && stem[3] <= '9';
 }
 
-std::string JoinVirtualPath(std::string const& parentVirtualPath, std::string const& name)
-{
-	return parentVirtualPath == "res://" ? parentVirtualPath + name : parentVirtualPath + "/" + name;
-}
 } // namespace
 
-void CreateFolderPopup::Open(std::string const& parentVirtualPath)
+void CreateFolderPopup::Open(VirtualPath const& parentVirtualPath)
 {
 	m_parentVirtualPath = parentVirtualPath;
-	m_selectedVirtualPath.clear();
+	m_selectedVirtualPath = {};
 	m_error.clear();
 	strcpy_s(m_name, "New Folder");
 	m_focusNameInput = true;
@@ -64,7 +60,7 @@ void CreateFolderPopup::Render(EditorUIContext& context)
 		return;
 	}
 
-	ImGui::Text("Base path: %s", m_parentVirtualPath.c_str());
+	ImGui::Text("Base path: %s", m_parentVirtualPath.CStr());
 	ImGui::TextUnformatted("Name:");
 	if (m_focusNameInput)
 	{
@@ -111,14 +107,14 @@ void CreateFolderPopup::Render(EditorUIContext& context)
 	EditorPopupUtils::EndModal();
 }
 
-bool CreateFolderPopup::ConsumeSelectedVirtualPath(std::string& outVirtualPath)
+bool CreateFolderPopup::ConsumeSelectedVirtualPath(VirtualPath& outVirtualPath)
 {
-	if (m_selectedVirtualPath.empty())
+	if (!m_selectedVirtualPath.IsValid())
 	{
 		return false;
 	}
 	outVirtualPath = std::move(m_selectedVirtualPath);
-	m_selectedVirtualPath.clear();
+	m_selectedVirtualPath = {};
 	return true;
 }
 
@@ -145,7 +141,7 @@ bool CreateFolderPopup::ValidateName(EditorUIContext const& context, std::string
 		outError = "FileSystem is not available.";
 		return false;
 	}
-	if (context.m_fileSystem->Exists(JoinVirtualPath(m_parentVirtualPath, value)))
+	if (context.m_fileSystem->Exists(m_parentVirtualPath.Join(value)))
 	{
 		outError = "An entry with this name already exists.";
 		return false;

@@ -18,7 +18,6 @@ public:
 	void Render(EditorUIContext& context);
 
 	void Warning(std::string const& title, std::string const& message);
-	void SetResourceDropAllowed(bool allowed);
 
 	// Viewport rect — set every frame by ViewportPanel, consumed by EditorCamera / GizmoContext
 	void SetViewportRect(Vec2 origin, Vec2 dims);
@@ -32,8 +31,7 @@ public:
 private:
 	void RenderMainMenuBar();
 	void RenderDockSpace();
-	void BeginResourceDragDropFrame();
-	void ApplyResourceDragDropCursor();
+	void ApplyDragDropCursor();
 
 private:
 	ScenePanel      m_scenePanel;
@@ -45,7 +43,6 @@ private:
 
 	ProjectSettingsPopup m_projectSettingsPopup;
 	WarningPopup         m_warningPopup;
-	bool        m_resourceDropAllowed = false;
 
 	Vec2 m_viewportOrigin = Vec2::Zero;
 	Vec2 m_viewportDims   = Vec2::Zero;

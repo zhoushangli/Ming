@@ -258,7 +258,7 @@ void EditorNode::OnProcess([[maybe_unused]] float deltaSeconds)
 	{
 		if (!SaveScene() && m_editorUI != nullptr)
 		{
-			m_editorUI->Warning("Save Scene Failed", m_editorData.m_currentScenePath);
+			m_editorUI->Warning("Save Scene Failed", m_editorData.m_currentScenePath.GetString());
 		}
 	}
 
@@ -285,13 +285,13 @@ void EditorNode::OnProcess([[maybe_unused]] float deltaSeconds)
 	}
 }
 
-void EditorNode::RequestLoadScene(std::string const& virtualPath)
+void EditorNode::RequestLoadScene(VirtualPath const& virtualPath)
 {
 	if (!m_editorData.m_isSceneDirty)
 	{
 		if (!LoadScene(virtualPath) && m_editorUI != nullptr)
 		{
-			m_editorUI->Warning("Open Scene Failed", virtualPath);
+			m_editorUI->Warning("Open Scene Failed", virtualPath.GetString());
 		}
 		return;
 	}
@@ -304,7 +304,7 @@ void EditorNode::RequestLoadScene(std::string const& virtualPath)
 	m_openUnsavedScenePopup = true;
 }
 
-void EditorNode::RequestCreateScene(std::string const& virtualPath, std::string const& rootName)
+void EditorNode::RequestCreateScene(VirtualPath const& virtualPath, std::string const& rootName)
 {
 	if (!m_editorData.m_isSceneDirty)
 	{
@@ -320,7 +320,7 @@ void EditorNode::RequestCreateScene(std::string const& virtualPath, std::string 
 	m_openUnsavedScenePopup = true;
 }
 
-bool EditorNode::LoadScene(std::string const& virtualPath)
+bool EditorNode::LoadScene(VirtualPath const& virtualPath)
 {
 	Ref<Resource> loadedScene = ResourceLoader::Load(virtualPath);
 	if (!loadedScene.IsValid())
@@ -352,7 +352,7 @@ bool EditorNode::SaveScene()
 {
 	SceneTree* sceneTree = GetSceneTree();
 	Node*      sceneRoot = sceneTree->GetScene();
-	if (sceneRoot == nullptr || m_editorData.m_currentScenePath.empty())
+	if (sceneRoot == nullptr || !m_editorData.m_currentScenePath.IsValid())
 	{
 		return false;
 	}
@@ -386,12 +386,12 @@ bool EditorNode::HasScene() const { return GetSceneTree() != nullptr && GetScene
 
 std::string EditorNode::GetCurrentSceneName() const
 {
-	return m_editorData.m_currentScenePath.empty()
+	return !m_editorData.m_currentScenePath.IsValid()
 			   ? std::string()
-			   : std::filesystem::path(m_editorData.m_currentScenePath).stem().string();
+			   : m_editorData.m_currentScenePath.GetStem();
 }
 
-bool EditorNode::CreateScene(std::string const& virtualPath, std::string const& rootName)
+bool EditorNode::CreateScene(VirtualPath const& virtualPath, std::string const& rootName)
 {
 	Node3D* sceneRoot = new Node3D();
 	sceneRoot->SetName(rootName);
@@ -401,7 +401,7 @@ bool EditorNode::CreateScene(std::string const& virtualPath, std::string const& 
 		delete sceneRoot;
 		if (m_editorUI != nullptr)
 		{
-			m_editorUI->Warning("Create Scene Failed", virtualPath);
+			m_editorUI->Warning("Create Scene Failed", virtualPath.GetString());
 		}
 		return false;
 	}
@@ -431,7 +431,7 @@ void EditorNode::RenderUnsavedScenePopup()
 	}
 
 	ImGui::TextUnformatted(
-		m_editorData.m_currentScenePath.empty() ? "This scene was never saved." : "This scene has unsaved changes.");
+		!m_editorData.m_currentScenePath.IsValid() ? "This scene was never saved." : "This scene has unsaved changes.");
 	ImGui::Dummy(ImVec2(0.f, 12.f));
 	ImGui::TextUnformatted("Save before closing?");
 	ImGui::Dummy(ImVec2(0.f, 12.f));
@@ -451,13 +451,13 @@ void EditorNode::RenderUnsavedScenePopup()
 		}
 		else if (m_editorUI != nullptr)
 		{
-			m_editorUI->Warning("Save Scene Failed", m_editorData.m_currentScenePath);
+			m_editorUI->Warning("Save Scene Failed", m_editorData.m_currentScenePath.GetString());
 		}
 	}
 	else if (cancel)
 	{
 		m_pendingSceneAction = PendingSceneAction::None;
-		m_pendingScenePath.clear();
+		m_pendingScenePath = {};
 		m_pendingSceneRootName.clear();
 		ImGui::CloseCurrentPopup();
 	}
@@ -475,7 +475,7 @@ void EditorNode::ExecutePendingSceneAction()
 	// Execute and clear the deferred scene operation selected before the popup.
 	// e.g. a pending load resumes after Save & Close or Don't Save.
 	PendingSceneAction const action   = m_pendingSceneAction;
-	std::string const        path     = std::move(m_pendingScenePath);
+	VirtualPath const        path     = std::move(m_pendingScenePath);
 	std::string const        rootName = std::move(m_pendingSceneRootName);
 	m_pendingSceneAction              = PendingSceneAction::None;
 
@@ -484,7 +484,8 @@ void EditorNode::ExecutePendingSceneAction()
 							: action == PendingSceneAction::Create && CreateScene(path, rootName);
 	if (!result && action != PendingSceneAction::None && m_editorUI != nullptr)
 	{
-		m_editorUI->Warning(action == PendingSceneAction::Load ? "Open Scene Failed" : "Create Scene Failed", path);
+		m_editorUI->Warning(
+			action == PendingSceneAction::Load ? "Open Scene Failed" : "Create Scene Failed", path.GetString());
 	}
 }
 

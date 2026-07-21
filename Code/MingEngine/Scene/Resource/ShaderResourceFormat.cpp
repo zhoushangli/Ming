@@ -11,7 +11,7 @@ std::string const kShaderExtension = ".hlsl";
 
 std::vector<std::string> ShaderResourceLoader::GetSupportedExtensions() const { return { kShaderExtension }; }
 
-Ref<Resource> ShaderResourceLoader::Load(std::string const& virtualPath)
+Ref<Resource> ShaderResourceLoader::Load(VirtualPath const& virtualPath)
 {
 	if (g_engine == nullptr || g_engine->m_fileSystem == nullptr || g_engine->m_renderer == nullptr)
 	{
@@ -21,19 +21,19 @@ Ref<Resource> ShaderResourceLoader::Load(std::string const& virtualPath)
 	std::filesystem::path physicalPath;
 	if (!g_engine->m_fileSystem->TryGetPhysicalPath(virtualPath, physicalPath))
 	{
-		ERROR_AND_DIE(Stringf("Failed to resolve shader file \"%s\"", virtualPath.c_str()));
+		ERROR_AND_DIE(Stringf("Failed to resolve shader file \"%s\"", virtualPath.CStr()));
 	}
 
 	std::string shaderSource;
 	if (!g_engine->m_fileSystem->ReadText(virtualPath, shaderSource))
 	{
-		ERROR_AND_DIE(Stringf("Failed to read shader file \"%s\"", virtualPath.c_str()));
+		ERROR_AND_DIE(Stringf("Failed to read shader file \"%s\"", virtualPath.CStr()));
 	};
 
 	Shader* shader = g_engine->m_renderer->CreateShader(virtualPath, shaderSource);
 	if (shader == nullptr)
 	{
-		ERROR_AND_DIE(Stringf("Failed to create shader from file \"%s\"", virtualPath.c_str()));
+		ERROR_AND_DIE(Stringf("Failed to create shader from file \"%s\"", virtualPath.CStr()));
 	}
 
 	Ref<ShaderResource> shaderResource = CreateRef<ShaderResource>();

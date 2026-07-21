@@ -28,12 +28,6 @@ struct BinaryBlock
 	size_t m_size   = 0;
 };
 
-bool HasExtension(std::string const& virtualPath, std::string const& extension)
-{
-	return virtualPath.size() >= extension.size()
-		   && virtualPath.compare(virtualPath.size() - extension.size(), extension.size(), extension) == 0;
-}
-
 std::string MakePrelude(size_t headerSize)
 {
 	std::ostringstream stream;
@@ -159,7 +153,7 @@ void CopyPayloadBlock(std::vector<uint8_t> const& payload, BinaryBlock const& bl
 
 std::vector<std::string> MeshResourceLoader::GetSupportedExtensions() const { return { kMeshExtension }; }
 
-Ref<Resource> MeshResourceLoader::Load(std::string const& virtualPath)
+Ref<Resource> MeshResourceLoader::Load(VirtualPath const& virtualPath)
 {
 	if (g_engine == nullptr || g_engine->m_fileSystem == nullptr)
 	{
@@ -243,7 +237,11 @@ Ref<Resource> MeshResourceLoader::Load(std::string const& virtualPath)
 				return Ref<Resource>();
 			}
 
-			std::string          texPath = textureJson.get<std::string>();
+			VirtualPath texPath;
+			if (!VirtualPath::TryParse(textureJson.get<std::string>(), texPath))
+			{
+				return Ref<Resource>();
+			}
 			Ref<Resource>        loaded  = ResourceLoader::Load(texPath);
 			Ref<TextureResource> texResource(loaded);
 			if (!texResource.IsValid())
@@ -268,15 +266,15 @@ Ref<Resource> MeshResourceLoader::Load(std::string const& virtualPath)
 	return meshData;
 }
 
-bool MeshResourceSaver::CanSave(std::string const& virtualPath, Variant const& value) const
+bool MeshResourceSaver::CanSave(VirtualPath const& virtualPath, Variant const& value) const
 {
 	Ref<MeshResource> meshData(value);
-	return meshData.IsValid() && HasExtension(virtualPath, kMeshExtension);
+	return meshData.IsValid() && virtualPath.HasExtension(kMeshExtension);
 }
 
-bool MeshResourceSaver::Save(std::string const& virtualPath, Variant const& value)
+bool MeshResourceSaver::Save(VirtualPath const& virtualPath, Variant const& value)
 {
-	if (g_engine == nullptr || g_engine->m_fileSystem == nullptr || !FileSystem::IsVirtualPath(virtualPath))
+	if (g_engine == nullptr || g_engine->m_fileSystem == nullptr || !virtualPath.IsValid())
 	{
 		return false;
 	}
@@ -309,7 +307,7 @@ bool MeshResourceSaver::Save(std::string const& virtualPath, Variant const& valu
 	{
 		if (texRef.IsValid())
 		{
-			root["textures"].push_back(texRef->GetVirtualPath());
+			root["textures"].push_back(texRef->GetVirtualPath().GetString());
 		}
 	}
 

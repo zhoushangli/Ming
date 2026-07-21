@@ -24,7 +24,7 @@ class FileSystemPanel final : public EditorPanel
 public:
 	FileSystemPanel();
 
-	std::string const& GetSelectedVirtualPath() const;
+	VirtualPath const& GetSelectedVirtualPath() const;
 
 private:
 	void OnRender(EditorUIContext& context) override;
@@ -33,8 +33,8 @@ private:
 	void RenderItemContextMenu(FileEntry const& entry, EditorUIContext& context);
 	void RenderBackgroundContextMenu(EditorUIContext& context);
 	void OpenFile(FileEntry const& entry, EditorUIContext& context);
-	void BeginCreateFolder(std::string const& parentVirtualPath);
-	void BeginCreateScene(std::string const& parentVirtualPath);
+	void BeginCreateFolder(VirtualPath const& parentVirtualPath);
+	void BeginCreateScene(VirtualPath const& parentVirtualPath);
 	void BeginRename(FileEntry const& entry);
 	void FinishRename(FileSystem const& fileSystem, bool apply);
 	void ClearRename();
@@ -46,10 +46,10 @@ private:
 	bool ValidateEntryName(char const* name, std::string& outError) const;
 	bool ValidateName(
 		FileSystem const& fileSystem,
-		std::string const& parentVirtualPath,
+		VirtualPath const& parentVirtualPath,
 		char const* name,
 		std::string& outError,
-		std::string const& ignoredVirtualPath = {}) const;
+		VirtualPath const& ignoredVirtualPath = {}) const;
 
 	bool        DoesEntryMatchFilter(FileEntry const& entry, std::string const& lowerFilterText) const;
 	char const* GetIconNameForPath(std::filesystem::path const& path, bool isDirectory) const;
@@ -60,11 +60,11 @@ private:
 	bool        m_wasFocused = false;
 	bool        m_focusRenameInput = false;
 	bool        m_refreshResourceTree = false;
-	std::string m_selectedVirtualPath;
-	std::string m_renamingVirtualPath;
-	std::string m_pendingRenameVirtualPath;
+	VirtualPath m_selectedVirtualPath;
+	VirtualPath m_renamingVirtualPath;
+	VirtualPath m_pendingRenameVirtualPath;
 	std::string m_pendingRenameName;
-	std::string m_directoryToOpen;
+	VirtualPath m_directoryToOpen;
 	CreateFolderPopup m_createFolderPopup;
 	CreateScenePopup  m_createScenePopup;
 	DeleteEntryPopup  m_deleteEntryPopup;

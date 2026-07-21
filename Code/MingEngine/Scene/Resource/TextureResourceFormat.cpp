@@ -32,12 +32,6 @@ struct BinaryBlock
 	size_t m_size   = 0;
 };
 
-bool HasExtension(std::string const& virtualPath, std::string const& extension)
-{
-	return virtualPath.size() >= extension.size()
-		   && virtualPath.compare(virtualPath.size() - extension.size(), extension.size(), extension) == 0;
-}
-
 std::string MakePrelude(size_t headerSize)
 {
 	std::ostringstream stream;
@@ -152,7 +146,7 @@ bool IsValidTextureData(TextureResource const& texData)
 
 std::vector<std::string> TextureResourceLoader::GetSupportedExtensions() const { return { kTexExtension }; }
 
-Ref<Resource> TextureResourceLoader::Load(std::string const& virtualPath)
+Ref<Resource> TextureResourceLoader::Load(VirtualPath const& virtualPath)
 {
 	if (g_engine == nullptr || g_engine->m_fileSystem == nullptr)
 	{
@@ -246,15 +240,15 @@ Ref<Resource> TextureResourceLoader::Load(std::string const& virtualPath)
 	}
 }
 
-bool TextureResourceSaver::CanSave(std::string const& virtualPath, Variant const& value) const
+bool TextureResourceSaver::CanSave(VirtualPath const& virtualPath, Variant const& value) const
 {
 	Ref<TextureResource> texData(value);
-	return texData.IsValid() && HasExtension(virtualPath, kTexExtension);
+	return texData.IsValid() && virtualPath.HasExtension(kTexExtension);
 }
 
-bool TextureResourceSaver::Save(std::string const& virtualPath, Variant const& value)
+bool TextureResourceSaver::Save(VirtualPath const& virtualPath, Variant const& value)
 {
-	if (g_engine == nullptr || g_engine->m_fileSystem == nullptr || !FileSystem::IsVirtualPath(virtualPath))
+	if (g_engine == nullptr || g_engine->m_fileSystem == nullptr || !virtualPath.IsValid())
 	{
 		return false;
 	}

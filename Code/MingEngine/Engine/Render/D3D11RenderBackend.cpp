@@ -786,20 +786,20 @@ void D3D11RenderBackend::EndEvent()
 
 #pragma region Public: Shader creation
 
-Shader* D3D11RenderBackend::CreateShader(std::string const& shaderVirtualPath, std::string const& shaderSource)
+Shader* D3D11RenderBackend::CreateShader(VirtualPath const& shaderVirtualPath, std::string const& shaderSource)
 {
 	GUARANTEE_OR_DIE(m_d3dDevice, "CreateShader: m_d3dDevice is null");
-	GUARANTEE_OR_DIE(!shaderVirtualPath.empty(), "CreateShader: shaderVirtualPath is empty");
+	GUARANTEE_OR_DIE(shaderVirtualPath.IsValid(), "CreateShader: shaderVirtualPath is invalid");
 
 	std::filesystem::path shaderPhysicalPath;
 	GUARANTEE_OR_DIE(
 		g_engine->m_fileSystem->TryGetPhysicalPath(shaderVirtualPath, shaderPhysicalPath),
-		Stringf("CreateShader: failed to resolve physical path for \"%s\"", shaderVirtualPath.c_str()));
+		Stringf("CreateShader: failed to resolve physical path for \"%s\"", shaderVirtualPath.CStr()));
 
 	std::string const shaderPhysicalPathString = shaderPhysicalPath.string();
 
 	ShaderConfig config;
-	config.m_name = shaderVirtualPath;
+	config.m_name = shaderVirtualPath.GetString();
 
 	Shader* shader = new Shader(config);
 
@@ -813,7 +813,7 @@ Shader* D3D11RenderBackend::CreateShader(std::string const& shaderVirtualPath, s
 		shaderSource.c_str(),
 		config.m_vertexEntryPoint.c_str(),
 		"vs_5_0");
-	GUARANTEE_OR_DIE(vsOK, Stringf("Could not compile vertex shader for '%s'", shaderVirtualPath.c_str()));
+	GUARANTEE_OR_DIE(vsOK, Stringf("Could not compile vertex shader for '%s'", shaderVirtualPath.CStr()));
 
 	bool psOK = CompileShaderToByteCode(
 		psByteCode,
@@ -821,15 +821,15 @@ Shader* D3D11RenderBackend::CreateShader(std::string const& shaderVirtualPath, s
 		shaderSource.c_str(),
 		config.m_pixelEntryPoint.c_str(),
 		"ps_5_0");
-	GUARANTEE_OR_DIE(psOK, Stringf("Could not compile pixel shader for '%s'", shaderVirtualPath.c_str()));
+	GUARANTEE_OR_DIE(psOK, Stringf("Could not compile pixel shader for '%s'", shaderVirtualPath.CStr()));
 
 	// Create VS / PS
 	HRESULT hr =
 		m_d3dDevice->CreateVertexShader(vsByteCode.data(), vsByteCode.size(), nullptr, &shader->m_vertexShader);
-	GUARANTEE_OR_DIE(SUCCEEDED(hr), Stringf("Could not create vertex shader for '%s'", shaderVirtualPath.c_str()));
+	GUARANTEE_OR_DIE(SUCCEEDED(hr), Stringf("Could not create vertex shader for '%s'", shaderVirtualPath.CStr()));
 
 	hr = m_d3dDevice->CreatePixelShader(psByteCode.data(), psByteCode.size(), nullptr, &shader->m_pixelShader);
-	GUARANTEE_OR_DIE(SUCCEEDED(hr), Stringf("Could not create pixel shader for '%s'", shaderVirtualPath.c_str()));
+	GUARANTEE_OR_DIE(SUCCEEDED(hr), Stringf("Could not create pixel shader for '%s'", shaderVirtualPath.CStr()));
 
 	// clang-format off
 	static D3D11_INPUT_ELEMENT_DESC const kPcutbnDesc[] = {
@@ -851,7 +851,7 @@ Shader* D3D11RenderBackend::CreateShader(std::string const& shaderVirtualPath, s
 		vsByteCode.data(),
 		(UINT)vsByteCode.size(),
 		&shader->m_inputLayout);
-	GUARANTEE_OR_DIE(SUCCEEDED(hr), Stringf("Could not create input layout for '%s'", shaderVirtualPath.c_str()));
+	GUARANTEE_OR_DIE(SUCCEEDED(hr), Stringf("Could not create input layout for '%s'", shaderVirtualPath.CStr()));
 
 	return shader;
 }

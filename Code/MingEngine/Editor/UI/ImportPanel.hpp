@@ -17,8 +17,8 @@ public:
 private:
 	void OnRender(EditorUIContext& context) override;
 
-	void                        RefreshSelection(std::string const& selectedPath);
-	void                        RefreshImportConfigCache(std::string const& selectedPath);
+	void                        RefreshSelection(VirtualPath const& selectedPath);
+	void                        RefreshImportConfigCache(VirtualPath const& selectedPath);
 	void                        ApplyCachedImportOptions();
 	int                         FindImporterIndexByClassName(std::string const& importerClassName) const;
 	void                        RebuildImportOptionProperties();
@@ -28,7 +28,7 @@ private:
 	bool                        IsImportOptionModified() const;
 
 private:
-	std::string                              m_cachedSelectedPath;
+	VirtualPath                              m_cachedSelectedPath;
 	std::vector<Ref<ResourceFormatImporter>> m_matchedImporters;
 	int                                      m_selectedImporterIndex = 0;
 	std::vector<InspectorProperty*>          m_importOptionProperties;

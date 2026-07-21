@@ -189,7 +189,7 @@ Particles3D::Particles3D(std::string const& xmlFilePath)
 	m_particles.reserve((size_t)m_maxParticles);
 	m_particleVerts.reserve((size_t)m_maxParticles * 16);
 
-	if (!m_imagePath.empty())
+	if (m_imagePath.IsValid())
 	{
 		Ref<Resource> loaded = ResourceLoader::Load(m_imagePath);
 		m_particleTextureRef = Ref<TextureResource>(loaded);
@@ -232,7 +232,11 @@ void Particles3D::LoadFromXML(std::string const& xmlFilePath)
 
 	m_simulationSpace = ParseXmlAttribute(*visualElement, "simulationSpace", m_simulationSpace);
 	m_billboardType   = ParseXmlAttribute(*visualElement, "billboardType", m_billboardType);
-	m_imagePath       = ParseXmlAttribute(*visualElement, "imagePath", m_imagePath);
+	std::string const imagePath = ParseXmlAttribute(*visualElement, "imagePath", m_imagePath.GetString());
+	if (!imagePath.empty())
+	{
+		VirtualPath::TryParse(imagePath, m_imagePath);
+	}
 	m_startSize       = ParseXmlAttribute(*visualElement, "startSize", m_startSize);
 	m_endSize         = ParseXmlAttribute(*visualElement, "endSize", m_endSize);
 	m_startColor      = ParseXmlAttribute(*visualElement, "startColor", m_startColor);

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "MingEngine/Engine/File/VirtualPath.hpp"
+
 #include <string>
 
 struct EditorUIContext;
@@ -7,9 +9,9 @@ struct EditorUIContext;
 class CreateScenePopup
 {
 public:
-	void Open(std::string const& parentVirtualPath);
+	void Open(VirtualPath const& parentVirtualPath);
 	void Render(EditorUIContext& context);
-	bool ConsumeSelectedVirtualPath(std::string& outVirtualPath);
+	bool ConsumeSelectedVirtualPath(VirtualPath& outVirtualPath);
 
 private:
 	bool ValidateEntryName(char const* name, std::string& outError) const;
@@ -19,7 +21,7 @@ private:
 	char        m_rootName[256] = {};
 	bool        m_openRequested = false;
 	bool        m_focusNameInput = false;
-	std::string m_parentVirtualPath;
-	std::string m_selectedVirtualPath;
+	VirtualPath m_parentVirtualPath;
+	VirtualPath m_selectedVirtualPath;
 	std::string m_error;
 };

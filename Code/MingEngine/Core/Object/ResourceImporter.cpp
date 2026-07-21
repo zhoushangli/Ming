@@ -25,31 +25,10 @@ constexpr char const* kInternalImportDirectory    = "res://.ming/Import/";
 constexpr char const* kImportConfigExtension      = ".import";
 constexpr char const* kDefaultImportedExtension   = "mingres";
 
-std::string ToLower(std::string text)
-{
-	std::transform(
-		text.begin(),
-		text.end(),
-		text.begin(),
-		[](unsigned char character) { return static_cast<char>(std::tolower(character)); });
-	return text;
-}
-
-bool EndsWith(std::string const& text, std::string const& suffix)
-{
-	return text.size() >= suffix.size() && text.compare(text.size() - suffix.size(), suffix.size(), suffix) == 0;
-}
-
 // For example, "res://foo/bar/baz.txt" -> "baz"
-std::string GetImportStem(std::string const& sourceVirtualPath)
+std::string GetImportStem(VirtualPath const& sourceVirtualPath)
 {
-	std::string relativePath;
-	if (!FileSystem::TryGetRelativePath(sourceVirtualPath, relativePath))
-	{
-		return "resource";
-	}
-
-	std::string stem = std::filesystem::path(relativePath).stem().string();
+	std::string stem = sourceVirtualPath.GetStem();
 	if (stem.empty())
 	{
 		stem = "resource";
@@ -58,9 +37,10 @@ std::string GetImportStem(std::string const& sourceVirtualPath)
 	return stem;
 }
 
-std::string GetHashSuffix(std::string const& sourceVirtualPath)
+std::string GetHashSuffix(VirtualPath const& sourceVirtualPath)
 {
-	XXH64_hash_t const hash = XXH3_64bits(sourceVirtualPath.data(), sourceVirtualPath.size());
+	std::string const& path = sourceVirtualPath.GetString();
+	XXH64_hash_t const hash = XXH3_64bits(path.data(), path.size());
 
 	std::ostringstream stream;
 	stream << std::hex << std::setfill('0') << std::setw(16) << hash;
@@ -89,7 +69,7 @@ std::string NormalizeExtension(std::string extension)
 
 // This function reads and validates the JSON object stored beside a source asset.
 // e.g. res://Models/Pawn.obj reads res://Models/Pawn.obj.import.
-bool TryReadImportConfigJson(std::string const& sourceVirtualPath, Json& outMetadata)
+bool TryReadImportConfigJson(VirtualPath const& sourceVirtualPath, Json& outMetadata)
 {
 	outMetadata = Json::object();
 
@@ -111,7 +91,7 @@ bool TryReadImportConfigJson(std::string const& sourceVirtualPath, Json& outMeta
 	}
 
 	if (!metadata.contains("source_file") || !metadata["source_file"].is_string()
-		|| metadata["source_file"].get<std::string>() != sourceVirtualPath)
+		|| metadata["source_file"].get<std::string>() != sourceVirtualPath.GetString())
 	{
 		return false;
 	}
@@ -121,7 +101,7 @@ bool TryReadImportConfigJson(std::string const& sourceVirtualPath, Json& outMeta
 }
 
 Ref<ResourceFormatImporter>
-FindImporterByClassName(std::string const& sourceVirtualPath, std::string const& importerClassName)
+FindImporterByClassName(VirtualPath const& sourceVirtualPath, std::string const& importerClassName)
 {
 	for (Ref<ResourceFormatImporter> const& importer : ResourceImporter::GetMatchedImporters(sourceVirtualPath))
 	{
@@ -186,7 +166,7 @@ Json SerializeNonDefaultImportOptions(
 }
 
 bool TryGetVirtualPathModifiedTime(
-	std::string const&               virtualPath,
+	VirtualPath const&               virtualPath,
 	std::filesystem::file_time_type& outModifiedTime)
 {
 	if (g_engine == nullptr || g_engine->m_fileSystem == nullptr)
@@ -218,12 +198,12 @@ void ResourceImporter::AddImporter(Ref<ResourceFormatImporter> importer)
 	}
 }
 
-bool ResourceImporter::CanImport(std::string const& sourceVirtualPath)
+bool ResourceImporter::CanImport(VirtualPath const& sourceVirtualPath)
 {
 	return !FindMatchedImporters(sourceVirtualPath).empty();
 }
 
-std::vector<Ref<ResourceFormatImporter>> ResourceImporter::GetMatchedImporters(std::string const& sourceVirtualPath)
+std::vector<Ref<ResourceFormatImporter>> ResourceImporter::GetMatchedImporters(VirtualPath const& sourceVirtualPath)
 {
 	return FindMatchedImporters(sourceVirtualPath);
 }
@@ -231,7 +211,7 @@ std::vector<Ref<ResourceFormatImporter>> ResourceImporter::GetMatchedImporters(s
 // This function runs the full import pipeline for a source asset.
 // e.g. it converts res://Models/Pawn.obj, saves a generated mesh, and writes Pawn.obj.import.
 bool ResourceImporter::Import(
-	std::string const&                              sourceVirtualPath,
+	VirtualPath const&                              sourceVirtualPath,
 	Ref<ResourceFormatImporter>                     importer,
 	std::unordered_map<std::string, Variant> const& importOptions)
 {
@@ -251,15 +231,15 @@ bool ResourceImporter::Import(
 		return false;
 	}
 
-	std::string const importPath = GetImportOutputPath(sourceVirtualPath, importer->GetImportedExtension());
+	VirtualPath const importPath = GetImportOutputPath(sourceVirtualPath, importer->GetImportedExtension());
 	if (!ResourceSaver::Save(importPath, importedResource))
 	{
 		return false;
 	}
 
 	Json metadata;
-	metadata["source_file"] = sourceVirtualPath;
-	metadata["import_file"] = importPath;
+	metadata["source_file"] = sourceVirtualPath.GetString();
+	metadata["import_file"] = importPath.GetString();
 	metadata["importer"]    = importer->GetClassName();
 
 	Json serializedOptions = SerializeNonDefaultImportOptions(importer, importOptions);
@@ -276,7 +256,7 @@ bool ResourceImporter::Import(
 	return true;
 }
 
-bool ResourceImporter::Import(std::string const& sourceVirtualPath)
+bool ResourceImporter::Import(VirtualPath const& sourceVirtualPath)
 {
 	std::vector<Ref<ResourceFormatImporter>> importers = FindMatchedImporters(sourceVirtualPath);
 	if (importers.empty())
@@ -287,22 +267,23 @@ bool ResourceImporter::Import(std::string const& sourceVirtualPath)
 	return Import(sourceVirtualPath, importers.front(), {});
 }
 
-bool ResourceImporter::IsImportConfigPath(std::string const& virtualPath)
+bool ResourceImporter::IsImportConfigPath(VirtualPath const& virtualPath)
 {
-	return EndsWith(ToLower(virtualPath), kImportConfigExtension);
+	return virtualPath.HasExtension(kImportConfigExtension);
 }
 
-bool ResourceImporter::IsInternalResourcePath(std::string const& virtualPath)
+bool ResourceImporter::IsInternalResourcePath(VirtualPath const& virtualPath)
 {
-	return virtualPath == "res://.ming"
-		   || virtualPath.compare(0, std::strlen(kInternalResourcePathPrefix), kInternalResourcePathPrefix) == 0;
+	std::string const& path = virtualPath.GetString();
+	return path == "res://.ming"
+		   || path.compare(0, std::strlen(kInternalResourcePathPrefix), kInternalResourcePathPrefix) == 0;
 }
 
 // This function reads the imported cache path from the import config.
 // e.g. res://Models/Pawn.obj.import can point to res://.ming/Import/Pawn_1234.mesh.
-bool ResourceImporter::TryGetImportFile(std::string const& sourceVirtualPath, std::string& outImportVirtualPath)
+bool ResourceImporter::TryGetImportFile(VirtualPath const& sourceVirtualPath, VirtualPath& outImportVirtualPath)
 {
-	outImportVirtualPath.clear();
+	outImportVirtualPath = {};
 
 	Json metadata;
 	if (!TryReadImportConfigJson(sourceVirtualPath, metadata))
@@ -315,8 +296,8 @@ bool ResourceImporter::TryGetImportFile(std::string const& sourceVirtualPath, st
 		return false;
 	}
 
-	std::string importPath = metadata["import_file"].get<std::string>();
-	if (!FileSystem::IsVirtualPath(importPath))
+	VirtualPath importPath;
+	if (!VirtualPath::TryParse(metadata["import_file"].get<std::string>(), importPath))
 	{
 		return false;
 	}
@@ -328,7 +309,7 @@ bool ResourceImporter::TryGetImportFile(std::string const& sourceVirtualPath, st
 // This function reads the import config for a source asset.
 // e.g. res://Models/Pawn.obj reads importer/options from res://Models/Pawn.obj.import.
 bool ResourceImporter::TryReadImportConfig(
-	std::string const&                        sourceVirtualPath,
+	VirtualPath const&                        sourceVirtualPath,
 	std::string&                              outImporterClassName,
 	std::unordered_map<std::string, Variant>& outImportOptions)
 {
@@ -386,7 +367,7 @@ bool ResourceImporter::TryReadImportConfig(
 
 // This function keeps the import config and generated cache complete for a source asset.
 // e.g. a missing res://.ming/Import/Pawn_1234.mesh is regenerated from res://Models/Pawn.obj.
-bool ResourceImporter::EnsureImported(std::string const& sourceVirtualPath)
+bool ResourceImporter::EnsureImported(VirtualPath const& sourceVirtualPath)
 {
 	std::vector<Ref<ResourceFormatImporter>> importers = FindMatchedImporters(sourceVirtualPath);
 	if (importers.empty())
@@ -419,7 +400,7 @@ bool ResourceImporter::EnsureImported(std::string const& sourceVirtualPath)
 	}
 
 	// 3) Validate that the generated cache exists and is at least as new as the source.
-	std::string importPath;
+	VirtualPath importPath;
 	bool        hasFreshCache = false;
 	if (hasConfig && TryGetImportFile(sourceVirtualPath, importPath) && g_engine != nullptr
 		&& g_engine->m_fileSystem != nullptr && g_engine->m_fileSystem->Exists(importPath))
@@ -440,25 +421,25 @@ bool ResourceImporter::EnsureImported(std::string const& sourceVirtualPath)
 
 // This function returns the import config path beside the source asset.
 // e.g. res://Models/Pawn.obj becomes res://Models/Pawn.obj.import.
-std::string ResourceImporter::GetImportConfigPath(std::string const& sourceVirtualPath)
+VirtualPath ResourceImporter::GetImportConfigPath(VirtualPath const& sourceVirtualPath)
 {
-	return sourceVirtualPath + kImportConfigExtension;
+	return VirtualPath(sourceVirtualPath.GetString() + kImportConfigExtension);
 }
 
 // This function returns the generated cache path under the internal import directory.
 // e.g. res://Models/Pawn.obj can become res://.ming/Import/Pawn_1234.mesh.
-std::string
-ResourceImporter::GetImportOutputPath(std::string const& sourceVirtualPath, std::string const& importedExtension)
+VirtualPath
+ResourceImporter::GetImportOutputPath(VirtualPath const& sourceVirtualPath, std::string const& importedExtension)
 {
-	return std::string(kInternalImportDirectory) + GetImportStem(sourceVirtualPath) + "_"
-		   + GetHashSuffix(sourceVirtualPath) + "." + NormalizeExtension(importedExtension);
+	return VirtualPath(std::string(kInternalImportDirectory) + GetImportStem(sourceVirtualPath) + "_"
+		   + GetHashSuffix(sourceVirtualPath) + "." + NormalizeExtension(importedExtension));
 }
 
-std::vector<Ref<ResourceFormatImporter>> ResourceImporter::FindMatchedImporters(std::string const& sourceVirtualPath)
+std::vector<Ref<ResourceFormatImporter>> ResourceImporter::FindMatchedImporters(VirtualPath const& sourceVirtualPath)
 {
 	std::vector<Ref<ResourceFormatImporter>> matchedImporters;
 
-	if (!FileSystem::IsVirtualPath(sourceVirtualPath) || IsInternalResourcePath(sourceVirtualPath)
+	if (!sourceVirtualPath.IsValid() || IsInternalResourcePath(sourceVirtualPath)
 		|| IsImportConfigPath(sourceVirtualPath))
 	{
 		return matchedImporters;
@@ -475,19 +456,11 @@ std::vector<Ref<ResourceFormatImporter>> ResourceImporter::FindMatchedImporters(
 	return matchedImporters;
 }
 
-bool ResourceFormatImporter::CanImport(std::string const& virtualPath) const
+bool ResourceFormatImporter::CanImport(VirtualPath const& virtualPath) const
 {
-	std::string const lowerPath = ToLower(virtualPath);
-
 	for (std::string extension : GetSupportedExtensions())
 	{
-		extension = ToLower(std::move(extension));
-		if (!extension.empty() && extension.front() != '.')
-		{
-			extension.insert(extension.begin(), '.');
-		}
-
-		if (!extension.empty() && EndsWith(lowerPath, extension))
+		if (virtualPath.HasExtension(extension))
 		{
 			return true;
 		}

@@ -222,16 +222,16 @@ void App::StartupScene()
 	auto editorNode = new EditorNode();
 	editorNode->SetName("EditorNode");
 	m_sceneTree->GetRoot()->AddNode(editorNode);
-	std::string const& startScenePath = ProjectSettings::Get()->m_startScenePath;
-	if (!startScenePath.empty())
+	VirtualPath const& startScenePath = ProjectSettings::Get()->m_startScenePath;
+	if (startScenePath.IsValid())
 	{
 		editorNode->LoadScene(startScenePath);
 	}
 
 #else
 
-	std::string const& startScenePath = ProjectSettings::Get()->m_startScenePath;
-	Ref<Resource> loadedScene = startScenePath.empty() ? Ref<Resource>(nullptr) : ResourceLoader::Load(startScenePath);
+	VirtualPath const& startScenePath = ProjectSettings::Get()->m_startScenePath;
+	Ref<Resource> loadedScene = !startScenePath.IsValid() ? Ref<Resource>(nullptr) : ResourceLoader::Load(startScenePath);
 	Variant       sceneValue  = loadedScene;
 	Ref<PackedScene> packedScene(sceneValue);
 	Node*            newSceneRoot = packedScene.IsValid() ? packedScene->Instantiate() : nullptr;

@@ -84,7 +84,7 @@ int ImportPanel::FindImporterIndexByClassName(std::string const& importerClassNa
 	return -1;
 }
 
-void ImportPanel::RefreshImportConfigCache(std::string const& selectedPath)
+void ImportPanel::RefreshImportConfigCache(VirtualPath const& selectedPath)
 {
 	m_hasImportConfig =
 		ResourceImporter::TryReadImportConfig(selectedPath, m_configImporterClassName, m_configImportOptions);
@@ -132,7 +132,7 @@ void ImportPanel::RebuildImportOptionProperties()
 	}
 }
 
-void ImportPanel::RefreshSelection(std::string const& selectedPath)
+void ImportPanel::RefreshSelection(VirtualPath const& selectedPath)
 {
 	if (m_cachedSelectedPath == selectedPath)
 	{
@@ -212,10 +212,10 @@ void ImportPanel::OnRender(EditorUIContext& context)
 		return;
 	}
 
-	std::string const& selectedPath = context.m_editorUI->GetPanel<FileSystemPanel>().GetSelectedVirtualPath();
+	VirtualPath const& selectedPath = context.m_editorUI->GetPanel<FileSystemPanel>().GetSelectedVirtualPath();
 	RefreshSelection(selectedPath);
 
-	if (selectedPath.empty())
+	if (!selectedPath.IsValid())
 	{
 		DrawImportHeader(kSelectImportableFileText, true);
 		ImGui::End();
@@ -239,7 +239,7 @@ void ImportPanel::OnRender(EditorUIContext& context)
 		return;
 	}
 
-	std::string const filename = std::filesystem::path(selectedPath).filename().string();
+	std::string const filename = selectedPath.GetFileName();
 	DrawImportHeader(filename.c_str(), false);
 	ImGui::Spacing();
 
@@ -317,7 +317,7 @@ void ImportPanel::OnRender(EditorUIContext& context)
 	{
 		if (!ResourceImporter::Import(selectedPath, GetSelectedImporter(), m_importOptions))
 		{
-			context.m_editorUI->Warning("Import Failed", selectedPath);
+			context.m_editorUI->Warning("Import Failed", selectedPath.GetString());
 		}
 		else
 		{

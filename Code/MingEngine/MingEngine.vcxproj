@@ -350,6 +350,7 @@
     <ClCompile Include="Core\Object\ClassDatabase.cpp" />
     <ClCompile Include="Engine\Event\EventSystem.cpp" />
     <ClCompile Include="Engine\File\FileSystem.cpp" />
+    <ClCompile Include="Engine\File\VirtualPath.cpp" />
     <ClCompile Include="Engine\File\FileUtils.cpp" />
     <ClCompile Include="Engine\Network\NetworkSystem.cpp" />
     <ClCompile Include="Engine\Render\HeatMaps.cpp" />
@@ -519,6 +520,7 @@
     <ClInclude Include="Core\Object\ClassDatabase.hpp" />
     <ClInclude Include="Engine\Event\EventSystem.hpp" />
     <ClInclude Include="Engine\File\FileSystem.hpp" />
+    <ClInclude Include="Engine\File\VirtualPath.hpp" />
     <ClInclude Include="Engine\File\FileUtils.hpp" />
     <ClInclude Include="Engine\Network\NetworkSystem.hpp" />
     <ClInclude Include="Engine\Render\HeatMaps.hpp" />

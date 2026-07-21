@@ -6,21 +6,12 @@
 
 #include <utility>
 
-namespace
-{
-std::string GetParentVirtualPath(std::string const& virtualPath)
-{
-	size_t const separator = virtualPath.find_last_of('/');
-	return separator <= 5 ? "res://" : virtualPath.substr(0, separator);
-}
-} // namespace
-
-void DeleteEntryPopup::Open(std::string const& targetVirtualPath, bool isDirectory)
+void DeleteEntryPopup::Open(VirtualPath const& targetVirtualPath, bool isDirectory)
 {
 	m_targetVirtualPath = targetVirtualPath;
-	m_parentVirtualPath = GetParentVirtualPath(targetVirtualPath);
+	m_parentVirtualPath = targetVirtualPath.GetParent();
 	m_isDirectory       = isDirectory;
-	m_selectedVirtualPath.clear();
+	m_selectedVirtualPath = {};
 	m_error.clear();
 	m_openRequested = true;
 }
@@ -41,7 +32,7 @@ void DeleteEntryPopup::Render(EditorUIContext& context)
 		return;
 	}
 
-	ImGui::Text("Delete %s?", m_targetVirtualPath.c_str());
+	ImGui::Text("Delete %s?", m_targetVirtualPath.CStr());
 	ImGui::PushStyleColor(ImGuiCol_ChildBg, ImGui::GetStyleColorVec4(ImGuiCol_FrameBg));
 	ImGui::BeginChild(
 		"##DeleteWarning",
@@ -77,13 +68,13 @@ void DeleteEntryPopup::Render(EditorUIContext& context)
 	EditorPopupUtils::EndModal();
 }
 
-bool DeleteEntryPopup::ConsumeSelectedVirtualPath(std::string& outVirtualPath)
+bool DeleteEntryPopup::ConsumeSelectedVirtualPath(VirtualPath& outVirtualPath)
 {
-	if (m_selectedVirtualPath.empty())
+	if (!m_selectedVirtualPath.IsValid())
 	{
 		return false;
 	}
 	outVirtualPath = std::move(m_selectedVirtualPath);
-	m_selectedVirtualPath.clear();
+	m_selectedVirtualPath = {};
 	return true;
 }

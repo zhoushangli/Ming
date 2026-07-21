@@ -1,6 +1,7 @@
 #pragma once
 
 #include "MingEngine/Engine/Application/SystemBase.hpp"
+#include "MingEngine/Engine/File/VirtualPath.hpp"
 
 #include <filesystem>
 #include <memory>
@@ -26,7 +27,7 @@ public:
 	~FileEntry()                           = default;
 
 	std::filesystem::path const&                   GetPhysicalPath() const;
-	std::string const&                             GetVirtualPath() const;
+	VirtualPath const&                             GetVirtualPath() const;
 	std::string const&                             GetName() const;
 	std::string const&                             GetLowerName() const;
 	bool                                           IsDirectory() const;
@@ -40,7 +41,7 @@ public:
 private:
 	FileEntry(
 		std::filesystem::path physicalPath,
-		std::string           virtualPath,
+		VirtualPath           virtualPath,
 		std::string           name,
 		std::string           lowerName,
 		bool                  isDirectory,
@@ -48,7 +49,7 @@ private:
 
 private:
 	std::filesystem::path                   m_physicalPath;
-	std::string                             m_virtualPath;
+	VirtualPath                             m_virtualPath;
 	std::string                             m_name;
 	std::string                             m_lowerName;
 	bool                                    m_isDirectory     = false;
@@ -74,51 +75,49 @@ public:
 	void BeginFrame() override;
 	void EndFrame() override;
 
-	bool ReadText(std::string const& virtualPath, std::string& outText) const;
-	bool WriteText(std::string const& virtualPath, std::string const& text) const;
-	bool ReadBinary(std::string const& virtualPath, std::vector<uint8_t>& outData) const;
-	bool WriteBinary(std::string const& virtualPath, std::vector<uint8_t> const& data) const;
+	bool ReadText(VirtualPath const& virtualPath, std::string& outText) const;
+	bool WriteText(VirtualPath const& virtualPath, std::string const& text) const;
+	bool ReadBinary(VirtualPath const& virtualPath, std::vector<uint8_t>& outData) const;
+	bool WriteBinary(VirtualPath const& virtualPath, std::vector<uint8_t> const& data) const;
 	bool CreateFolder(
-		std::string const& parentVirtualPath,
+		VirtualPath const& parentVirtualPath,
 		std::string const& name,
-		std::string&       outVirtualPath,
+		VirtualPath&       outVirtualPath,
 		std::string&       outError) const;
 	bool Rename(
-		std::string const& virtualPath,
+		VirtualPath const& virtualPath,
 		std::string const& newName,
-		std::string&       outVirtualPath,
+		VirtualPath&       outVirtualPath,
 		std::string&       outError) const;
-	bool Duplicate(std::string const& virtualPath, std::string& outVirtualPath, std::string& outError) const;
-	bool Remove(std::string const& virtualPath, std::string& outError) const;
+	bool Duplicate(VirtualPath const& virtualPath, VirtualPath& outVirtualPath, std::string& outError) const;
+	bool Remove(VirtualPath const& virtualPath, std::string& outError) const;
 
 	std::filesystem::path const& GetResourceRoot() const;
 	void                         ScanResourceTree();
 	bool                         HasResourceTree() const;
 	FileEntry const*             GetResourceRootEntry() const;
 
-	bool        Exists(std::string const& virtualPath) const;
-	static bool IsVirtualPath(std::string const& path);
-	static bool TryGetRelativePath(std::string const& virtualPath, std::string& outRelativePath);
-	std::string ToVirtualPath(std::filesystem::path const& physicalPath) const;
-	bool        TryGetPhysicalPath(std::string const& virtualPath, std::filesystem::path& outPhysicalPath) const;
+	bool Exists(VirtualPath const& virtualPath) const;
+	bool TryToVirtualPath(std::filesystem::path const& physicalPath, VirtualPath& outVirtualPath) const;
+	bool TryGetPhysicalPath(VirtualPath const& virtualPath, std::filesystem::path& outPhysicalPath) const;
 
 	static void BindMethods();
 
 private:
 	bool TryGetWritablePhysicalPath(
-		std::string const& virtualPath,
+		VirtualPath const& virtualPath,
 		std::filesystem::path& outPhysicalPath,
 		std::string& outError,
 		bool allowResourceRoot = false) const;
-	void ScanResourceImports(std::unordered_map<std::string, std::filesystem::file_time_type>& outImportedTimes);
-	FileEntry const*           FindEntry(std::string const& virtualPath) const;
+	void ScanResourceImports(std::unordered_map<VirtualPath, std::filesystem::file_time_type>& outImportedTimes);
+	FileEntry const*           FindEntry(VirtualPath const& virtualPath) const;
 	std::unique_ptr<FileEntry> BuildEntry(
 		std::filesystem::path const&                                            physicalPath,
-		std::string const&                                                      virtualPath,
+		VirtualPath const&                                                      virtualPath,
 		FileEntry*                                                              parent,
 		bool                                                                    isDirectory,
 		FileEntry const*                                                        previousEntry,
-		std::unordered_map<std::string, std::filesystem::file_time_type> const& importedTimes) const;
+		std::unordered_map<VirtualPath, std::filesystem::file_time_type> const& importedTimes) const;
 	void SortChildren(FileEntry& entry) const;
 
 private:

@@ -7,14 +7,14 @@
 class Skybox3D : public VisualizeInstance3D
 {
 public:
-	explicit Skybox3D(std::string const& imagePath);
+	explicit Skybox3D(VirtualPath const& imagePath);
 	~Skybox3D() override;
 
 protected:
 	RenderRequest SubmitRenderRequest() const override;
 
 protected:
-	std::string          m_imagePath;
+	VirtualPath          m_imagePath;
 	Ref<TextureResource> m_textureRef;
 	VertexBuffer*        m_vertexBuffer = nullptr;
 	IndexBuffer*         m_indexBuffer  = nullptr;

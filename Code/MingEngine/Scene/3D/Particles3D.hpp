@@ -88,7 +88,7 @@ public:
 	EmitShape           m_emitShape       = EmitShape::Point;
 	SimulationSpace     m_simulationSpace = SimulationSpace::Local;
 	Math::BillboardType m_billboardType   = Math::BillboardType::FULL_FACING;
-	std::string         m_imagePath;
+	VirtualPath         m_imagePath;
 	float               m_lifetime       = 1.f;
 	float               m_emitRadius     = 0.f;
 	float               m_startSize      = 1.f;

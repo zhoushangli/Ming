@@ -1,9 +1,11 @@
 #pragma once
 
+#include "MingEngine/Core/Object/ClassDatabase.hpp"
 #include "MingEngine/Core/Object/RefCounted.hpp"
 #include "MingEngine/Core/Object/Resource.hpp"
+#include "MingEngine/Core/Object/ResourceLoader.hpp"
+#include "MingEngine/Editor/EditorNode.hpp"
 #include "MingEngine/Editor/UI/EditorIcons.hpp"
-#include "MingEngine/Editor/UI/EditorUI.hpp"
 #include "MingEngine/Editor/UI/EditorUIContext.hpp"
 #include "MingEngine/Editor/UI/EditorUIStyle.hpp"
 #include "MingEngine/Editor/UI/EditorUIWidgets.hpp"
@@ -21,12 +23,19 @@ class InspectorPropertyResource final : public InspectorProperty
 public:
 	using InspectorProperty::InspectorProperty;
 
-	void RenderValue(EditorUIContext& context, Variant const& value) override
+	void RenderValue(EditorUIContext&, Variant const& value) override
 	{
+		ImVec2 const labelPos = ImGui::GetCursorScreenPos();
 		EditorUIWidgets::BeginPropertyRow(GetDisplayName());
+
+		if (GetResource(value) != nullptr)
+		{
+			RenderResetButton(labelPos.y);
+		}
+
 		EditorUIWidgets::NextPropertyColumn();
 
-		RenderResourcePicker(context, value);
+		RenderResourcePicker(value);
 
 		EditorUIWidgets::EndPropertyRow();
 	}
@@ -38,109 +47,89 @@ private:
 		ImVec2 m_max;
 	};
 
-	void RenderResourcePicker(EditorUIContext& context, Variant const& value)
+	void RenderResourcePicker(Variant const& value)
 	{
 		constexpr float rowHeight       = 36.f;
 		constexpr float sideButtonWidth = 24.f;
-		constexpr float spacing         = 2.f;
+		constexpr float spacing         = 5.f;
 
 		float const     availableWidth = ImGui::GetContentRegionAvail().x;
-		float const     pickerWidth    = std::max(1.f, availableWidth - sideButtonWidth - spacing);
+		float const     fieldWidth     = std::max(1.f, availableWidth - sideButtonWidth - spacing);
 		Resource const* resource       = GetResource(value);
-		bool const      hasResource    = resource != nullptr;
 
-		if (hasResource)
-		{
-			RenderReloadButton(rowHeight);
-			ImGui::SameLine(0.f, spacing);
-		}
-
-		float const    occupiedWidth = hasResource ? rowHeight + spacing : 0.f;
-		float const    fieldWidth    = std::max(1.f, pickerWidth - occupiedWidth);
-		bool const     dropPreview   = IsDraggedResourceMatching();
-		DrawRect const fieldRect = RenderAssignButton(context, ImVec2(fieldWidth, rowHeight), resource, dropPreview);
-
+		DrawRect const fieldRect = RenderAssignButton(ImVec2(fieldWidth, rowHeight), resource);
 		ImGui::SameLine(0.f, spacing);
 		DrawRect const expandRect = RenderExpandButton(ImVec2(sideButtonWidth, rowHeight));
-
-		if (dropPreview)
-		{
-			// Draw last so the drop outline stays above the expand icon when their pixels overlap.
-			DrawDropPreviewOutline(fieldRect.m_min, expandRect.m_max);
-		}
 	}
 
-	void RenderReloadButton(float rowHeight) const
+	void RenderResetButton(float y) const
 	{
-		ImGui::InvisibleButton((m_labelId + "_reload").c_str(), ImVec2(rowHeight, rowHeight));
+		float const  buttonSize = ImGui::GetTextLineHeight();
+		float const  rightEdge  = ImGui::GetWindowPos().x + ImGui::GetColumnOffset(1);
+		ImVec2 const buttonPos(rightEdge - buttonSize - ImGui::GetStyle().ItemSpacing.x, y);
 
-		ImVec2 const min      = ImGui::GetItemRectMin();
-		ImVec2 const max      = ImGui::GetItemRectMax();
-		bool const   hovered  = ImGui::IsItemHovered();
-		ImDrawList*  drawList = ImGui::GetWindowDrawList();
-		ImVec4 const color =
-			hovered ? EditorUIStyle::ControlBackgroundHoveredColor() : EditorUIStyle::ControlBackgroundColor();
-		drawList->AddRectFilled(min, max, ImGui::ColorConvertFloat4ToU32(color), 3.f);
+		ImGui::SetCursorScreenPos(buttonPos);
+		bool const clicked = ImGui::InvisibleButton((m_labelId + "_reset").c_str(), ImVec2(buttonSize, buttonSize));
 
-		ImTextureID const textureId = EditorIcons::GetIconId("Reload");
+		ImTextureID const textureId = EditorIcons::GetIconId("ReloadSmall", "Reload");
 		if (textureId != ImTextureID{})
 		{
-			ImVec2 const iconSize(16.f, 16.f);
-			ImVec2 const center((min.x + max.x) * 0.5f, (min.y + max.y) * 0.5f);
-			ImVec2 const iconMin(center.x - iconSize.x * 0.5f, center.y - iconSize.y * 0.5f);
-			EditorIcons::AddImage(drawList, textureId, iconMin, ImVec2(iconMin.x + iconSize.x, iconMin.y + iconSize.y));
+			constexpr float iconInset = 2.f;
+			EditorIcons::AddImage(
+				ImGui::GetWindowDrawList(),
+				textureId,
+				ImVec2(buttonPos.x + iconInset, buttonPos.y + iconInset),
+				ImVec2(buttonPos.x + buttonSize - iconInset, buttonPos.y + buttonSize - iconInset));
 		}
 
-		if (hovered)
+		if (ImGui::IsItemHovered())
 		{
-			ImGui::SetTooltip("Reload");
+			ImGui::SetTooltip("Reset");
 		}
 
-		if (ImGui::IsItemClicked(ImGuiMouseButton_Left))
+		if (clicked)
 		{
 			EmitValueChanged(Variant(static_cast<Object*>(nullptr)));
 		}
 	}
 
-	DrawRect RenderAssignButton(EditorUIContext& context, ImVec2 buttonSize, Resource const* resource, bool dropPreview)
+	DrawRect RenderAssignButton(ImVec2 buttonSize, Resource const* resource)
 	{
-		std::string const buttonId = m_labelId + "_resource";
+		std::string const buttonId   = m_labelId + "_resource";
+		bool              isMatching = IsDraggedResourceMatching();
 		ImGui::InvisibleButton(buttonId.c_str(), buttonSize);
 
 		ImVec2 const min     = ImGui::GetItemRectMin();
 		ImVec2 const max     = ImGui::GetItemRectMax();
 		bool const   hovered = ImGui::IsItemHovered();
 
-		if (dropPreview && context.m_editorUI != nullptr && ImGui::IsMouseHoveringRect(min, max))
-		{
-			context.m_editorUI->SetResourceDropAllowed(true);
-		}
-
 		if (ImGui::BeginDragDropTarget())
 		{
-			ImGuiDragDropFlags const flags =
-				ImGuiDragDropFlags_AcceptBeforeDelivery | ImGuiDragDropFlags_AcceptNoDrawDefaultRect;
-			if (ImGuiPayload const* payload = ImGui::AcceptDragDropPayload("FILESYSTEM_RESOURCE", flags))
+			if (isMatching)
 			{
-				if (payload->DataSize == sizeof(FilePayload) && payload->Data != nullptr)
+				EditorDragDrop& dragDrop = EditorNode::Get()->m_dragDrop;
+				dragDrop.AllowDrop();
+				ImGuiPayload const* payload = ImGui::AcceptDragDropPayload(EditorDragDrop::PayloadType);
+				if (payload != nullptr)
 				{
-					FilePayload const& data = *static_cast<FilePayload const*>(payload->Data);
-
-					if (data.m_resource.IsValid() && data.m_resource->GetClassName() == m_info.m_hintData)
+					VirtualPath virtualPath;
+					if (dragDrop.TryGetData(virtualPath))
 					{
-						if (payload->IsDelivery())
-						{
-							// When we pass a Ref<> to Variant
-							// actually we are just pass in the reference pointer
-							EmitValueChanged(Variant(data.m_resource));
-						}
+						Ref<Resource> res = ResourceLoader::Load(virtualPath);
+						EmitValueChanged(Variant(res));
 					}
 				}
 			}
+
 			ImGui::EndDragDropTarget();
 		}
 
 		DrawAssignButton(min, max, hovered, resource);
+
+		if (isMatching)
+		{
+			DrawDropPreviewOutline(min, max);
+		}
 
 		if (hovered)
 		{
@@ -249,31 +238,39 @@ private:
 	bool IsDraggedResourceMatching() const
 	{
 		ImGuiPayload const* payload = ImGui::GetDragDropPayload();
-		if (payload == nullptr || !payload->IsDataType("FILESYSTEM_RESOURCE"))
+		if (payload != nullptr && payload->IsDataType(EditorDragDrop::PayloadType))
 		{
-			return false;
-		}
-		if (payload->DataSize != sizeof(FilePayload) || payload->Data == nullptr)
-		{
-			return false;
+			EditorNode* editorNode = EditorNode::Get();
+			if (editorNode != nullptr)
+			{
+				VirtualPath draggedPath;
+				if (editorNode->m_dragDrop.TryGetData(draggedPath))
+				{
+					Ref<Resource> const draggedResource = ResourceLoader::Load(draggedPath);
+					if (draggedResource.IsValid()
+						&& ClassDatabase::IsSubclassOf(draggedResource->GetClassName(), m_info.m_hintData))
+					{
+						return true;
+					}
+				}
+			}
 		}
 
-		FilePayload const& data = *static_cast<FilePayload const*>(payload->Data);
-		return data.m_resource.IsValid() && data.m_resource->GetClassName() == m_info.m_hintData;
+		return false;
 	}
 
 	std::string GetResourceDisplayName(Resource const& resource) const
 	{
-		std::string const& sourcePath = resource.GetSourceFilePath();
-		if (!sourcePath.empty())
+		VirtualPath const& sourcePath = resource.GetSourceFilePath();
+		if (sourcePath.IsValid())
 		{
-			return std::filesystem::path(sourcePath).filename().string();
+			return sourcePath.GetFileName();
 		}
 
-		std::string const& virtualPath = resource.GetVirtualPath();
-		if (!virtualPath.empty())
+		VirtualPath const& virtualPath = resource.GetVirtualPath();
+		if (virtualPath.IsValid())
 		{
-			return std::filesystem::path(virtualPath).filename().string();
+			return virtualPath.GetFileName();
 		}
 
 		return resource.GetName();
@@ -281,24 +278,24 @@ private:
 
 	void SetResourceTooltip(Resource const& resource) const
 	{
-		std::string const& sourcePath  = resource.GetSourceFilePath();
-		std::string const& virtualPath = resource.GetVirtualPath();
+		VirtualPath const& sourcePath  = resource.GetSourceFilePath();
+		VirtualPath const& virtualPath = resource.GetVirtualPath();
 
-		if (!sourcePath.empty() && !virtualPath.empty() && sourcePath != virtualPath)
+		if (sourcePath.IsValid() && virtualPath.IsValid() && sourcePath != virtualPath)
 		{
 			ImGui::SetTooltip(
 				"Source: %s\nResource: %s\nType: %s",
-				sourcePath.c_str(),
-				virtualPath.c_str(),
+				sourcePath.CStr(),
+				virtualPath.CStr(),
 				m_info.m_hintData.c_str());
 		}
-		else if (!sourcePath.empty())
+		else if (sourcePath.IsValid())
 		{
-			ImGui::SetTooltip("Source: %s\nType: %s", sourcePath.c_str(), m_info.m_hintData.c_str());
+			ImGui::SetTooltip("Source: %s\nType: %s", sourcePath.CStr(), m_info.m_hintData.c_str());
 		}
-		else if (!virtualPath.empty())
+		else if (virtualPath.IsValid())
 		{
-			ImGui::SetTooltip("Resource: %s\nType: %s", virtualPath.c_str(), m_info.m_hintData.c_str());
+			ImGui::SetTooltip("Resource: %s\nType: %s", virtualPath.CStr(), m_info.m_hintData.c_str());
 		}
 		else
 		{

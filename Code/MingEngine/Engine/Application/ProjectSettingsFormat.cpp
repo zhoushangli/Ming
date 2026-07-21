@@ -15,11 +15,6 @@ using Json = nlohmann::ordered_json;
 constexpr char const* kProjectSettingsExtension = ".ming";
 constexpr uint32_t    kProjectSettingsVersion   = 1;
 
-bool HasExtension(std::string const& virtualPath, std::string const& extension)
-{
-	return virtualPath.size() >= extension.size()
-		   && virtualPath.compare(virtualPath.size() - extension.size(), extension.size(), extension) == 0;
-}
 } // namespace
 
 std::vector<std::string> ProjectSettingsLoader::GetSupportedExtensions() const
@@ -27,7 +22,7 @@ std::vector<std::string> ProjectSettingsLoader::GetSupportedExtensions() const
 	return { kProjectSettingsExtension };
 }
 
-Ref<Resource> ProjectSettingsLoader::Load(std::string const& virtualPath)
+Ref<Resource> ProjectSettingsLoader::Load(VirtualPath const& virtualPath)
 {
 	if (g_engine == nullptr || g_engine->m_fileSystem == nullptr)
 	{
@@ -50,20 +45,24 @@ Ref<Resource> ProjectSettingsLoader::Load(std::string const& virtualPath)
 	}
 
 	Ref<ProjectSettings> settings = CreateRef<ProjectSettings>();
-	settings->m_startScenePath     = root["start_scene_path"].get<std::string>();
+	std::string const startScenePath = root["start_scene_path"].get<std::string>();
+	if (!startScenePath.empty() && !VirtualPath::TryParse(startScenePath, settings->m_startScenePath))
+	{
+		return Ref<Resource>();
+	}
 	settings->SetVirtualPath(virtualPath);
 	return settings;
 }
 
-bool ProjectSettingsSaver::CanSave(std::string const& virtualPath, Variant const& value) const
+bool ProjectSettingsSaver::CanSave(VirtualPath const& virtualPath, Variant const& value) const
 {
 	Ref<ProjectSettings> settings(value);
-	return settings.IsValid() && HasExtension(virtualPath, kProjectSettingsExtension);
+	return settings.IsValid() && virtualPath.HasExtension(kProjectSettingsExtension);
 }
 
-bool ProjectSettingsSaver::Save(std::string const& virtualPath, Variant const& value)
+bool ProjectSettingsSaver::Save(VirtualPath const& virtualPath, Variant const& value)
 {
-	if (g_engine == nullptr || g_engine->m_fileSystem == nullptr || !FileSystem::IsVirtualPath(virtualPath))
+	if (g_engine == nullptr || g_engine->m_fileSystem == nullptr || !virtualPath.IsValid())
 	{
 		return false;
 	}
@@ -77,7 +76,7 @@ bool ProjectSettingsSaver::Save(std::string const& virtualPath, Variant const& v
 	Json root;
 	root["type"]             = "ProjectSettings";
 	root["version"]          = kProjectSettingsVersion;
-	root["start_scene_path"] = settings->m_startScenePath;
+	root["start_scene_path"] = settings->m_startScenePath.GetString();
 
 	if (!g_engine->m_fileSystem->WriteText(virtualPath, root.dump(1, '\t')))
 	{

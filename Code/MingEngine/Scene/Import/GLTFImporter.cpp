@@ -168,7 +168,7 @@ std::string GLTFImporter::GetImportedExtension() const { return "mesh"; }
 std::vector<ImportOptions> const GLTFImporter::GetImportOptions() const { return kGLTFImportOptions; }
 
 Ref<Resource> GLTFImporter::Import(
-	std::unordered_map<std::string, Variant> const& importOptions, std::string const& sourceVirtualPath)
+	std::unordered_map<std::string, Variant> const& importOptions, VirtualPath const& sourceVirtualPath)
 {
 	if (g_engine == nullptr || g_engine->m_fileSystem == nullptr)
 	{
@@ -400,11 +400,11 @@ Ref<Resource> GLTFImporter::Import(
 				tg3_image const& image = gltfModel.images[texture.source];
 				if (image.uri.data != nullptr)
 				{
-					std::string const     uri(image.uri.data, image.uri.len);
-					std::filesystem::path texPhysicalPath = physicalPath.parent_path() / uri;
-					std::string const     texVirtualPath  = g_engine->m_fileSystem->ToVirtualPath(texPhysicalPath);
+					std::string const uri(image.uri.data, image.uri.len);
+					VirtualPath       texVirtualPath;
 
-					if (ResourceImporter::EnsureImported(texVirtualPath))
+					if (sourceVirtualPath.TryResolveRelative(uri, texVirtualPath)
+						&& ResourceImporter::EnsureImported(texVirtualPath))
 					{
 						Ref<Resource> texResource = ResourceLoader::Load(texVirtualPath);
 						meshData->m_textureResources.push_back(texResource);

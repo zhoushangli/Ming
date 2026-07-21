@@ -1,5 +1,7 @@
 #pragma once
 
+#include "MingEngine/Engine/File/VirtualPath.hpp"
+
 #include <string>
 
 struct EditorUIContext;
@@ -7,15 +9,15 @@ struct EditorUIContext;
 class DeleteEntryPopup
 {
 public:
-	void Open(std::string const& targetVirtualPath, bool isDirectory);
+	void Open(VirtualPath const& targetVirtualPath, bool isDirectory);
 	void Render(EditorUIContext& context);
-	bool ConsumeSelectedVirtualPath(std::string& outVirtualPath);
+	bool ConsumeSelectedVirtualPath(VirtualPath& outVirtualPath);
 
 private:
 	bool        m_openRequested = false;
 	bool        m_isDirectory = false;
-	std::string m_parentVirtualPath;
-	std::string m_targetVirtualPath;
-	std::string m_selectedVirtualPath;
+	VirtualPath m_parentVirtualPath;
+	VirtualPath m_targetVirtualPath;
+	VirtualPath m_selectedVirtualPath;
 	std::string m_error;
 };

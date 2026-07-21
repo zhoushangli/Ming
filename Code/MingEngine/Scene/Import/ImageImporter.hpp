@@ -16,7 +16,7 @@ public:
 
 protected:
 	Ref<Resource> Import(
-		std::unordered_map<std::string, Variant> const& importOptions, std::string const& sourceVirtualPath) override;
+		std::unordered_map<std::string, Variant> const& importOptions, VirtualPath const& sourceVirtualPath) override;
 
 protected:
 	static void BindMethods() {};

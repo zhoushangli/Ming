@@ -18,7 +18,7 @@ private:
 	static void BindMethods() {}
 
 public:
-	std::string m_startScenePath;
+	VirtualPath m_startScenePath;
 
 private:
 	static Ref<ProjectSettings> s_instance;

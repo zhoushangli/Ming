@@ -13,7 +13,7 @@ namespace
 float const kHalfSize = 500.f;
 } // namespace
 
-Skybox3D::Skybox3D(std::string const& imagePath) : VisualizeInstance3D(), m_imagePath(imagePath)
+Skybox3D::Skybox3D(VirtualPath const& imagePath) : VisualizeInstance3D(), m_imagePath(imagePath)
 {
 	Ref<Resource> loaded = ResourceLoader::Load(m_imagePath);
 	m_textureRef         = Ref<TextureResource>(loaded);

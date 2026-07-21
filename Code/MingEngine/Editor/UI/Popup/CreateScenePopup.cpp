@@ -35,16 +35,12 @@ bool IsReservedWindowsName(std::string const& name)
 		   && stem[3] >= '1' && stem[3] <= '9';
 }
 
-std::string JoinVirtualPath(std::string const& parentVirtualPath, std::string const& name)
-{
-	return parentVirtualPath == "res://" ? parentVirtualPath + name : parentVirtualPath + "/" + name;
-}
 } // namespace
 
-void CreateScenePopup::Open(std::string const& parentVirtualPath)
+void CreateScenePopup::Open(VirtualPath const& parentVirtualPath)
 {
 	m_parentVirtualPath = parentVirtualPath;
-	m_selectedVirtualPath.clear();
+	m_selectedVirtualPath = {};
 	m_error.clear();
 	m_sceneName[0]    = '\0';
 	m_rootName[0]     = '\0';
@@ -68,7 +64,7 @@ void CreateScenePopup::Render(EditorUIContext& context)
 		return;
 	}
 
-	ImGui::Text("Base path: %s", m_parentVirtualPath.c_str());
+	ImGui::Text("Base path: %s", m_parentVirtualPath.CStr());
 	ImGui::TextUnformatted("Root Type: 3D Scene");
 	ImGui::TextUnformatted("Scene Name (.tscn):");
 	if (m_focusNameInput)
@@ -101,7 +97,7 @@ void CreateScenePopup::Render(EditorUIContext& context)
 		sceneValid = false;
 		sceneError = "Scene name must not include an extension.";
 	}
-	std::string const sceneVirtualPath = JoinVirtualPath(m_parentVirtualPath, sceneName + ".tscn");
+	VirtualPath const sceneVirtualPath = m_parentVirtualPath.Join(sceneName + ".tscn");
 	if (sceneValid && context.m_fileSystem != nullptr && context.m_fileSystem->Exists(sceneVirtualPath))
 	{
 		sceneValid = false;
@@ -160,14 +156,14 @@ void CreateScenePopup::Render(EditorUIContext& context)
 	EditorPopupUtils::EndModal();
 }
 
-bool CreateScenePopup::ConsumeSelectedVirtualPath(std::string& outVirtualPath)
+bool CreateScenePopup::ConsumeSelectedVirtualPath(VirtualPath& outVirtualPath)
 {
-	if (m_selectedVirtualPath.empty())
+	if (!m_selectedVirtualPath.IsValid())
 	{
 		return false;
 	}
 	outVirtualPath = std::move(m_selectedVirtualPath);
-	m_selectedVirtualPath.clear();
+	m_selectedVirtualPath = {};
 	return true;
 }
 

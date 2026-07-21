@@ -12,7 +12,6 @@
 
 namespace
 {
-constexpr char const* kResourcePathPrefix            = "res://";
 constexpr char const* kInternalResourceDirectoryName = ".ming";
 constexpr char const* kImportConfigExtension         = ".import";
 
@@ -36,16 +35,6 @@ std::string GetDisplayName(std::filesystem::path const& path)
 	return displayName;
 }
 
-std::string JoinVirtualPath(std::string const& parentVirtualPath, std::string const& name)
-{
-	if (parentVirtualPath == kResourcePathPrefix)
-	{
-		return parentVirtualPath + name;
-	}
-
-	return parentVirtualPath + "/" + name;
-}
-
 bool IsImportMetadataFile(std::filesystem::path const& path)
 {
 	return path.extension().string() == kImportConfigExtension;
@@ -61,7 +50,7 @@ bool ShouldSkipResourceTreeEntry(std::filesystem::path const& path, bool isDirec
 	return (isDirectory && IsInternalResourceDirectory(path)) || (!isDirectory && IsImportMetadataFile(path));
 }
 
-bool IsVisibleResourceFile(std::string const& virtualPath)
+bool IsVisibleResourceFile(VirtualPath const& virtualPath)
 {
 	return ResourceLoader::CanLoad(virtualPath) || ResourceImporter::CanImport(virtualPath);
 }
@@ -106,7 +95,7 @@ std::string JoinError(std::string const& operation, std::error_code const& error
 
 FileEntry::FileEntry(
 	std::filesystem::path physicalPath,
-	std::string           virtualPath,
+	VirtualPath           virtualPath,
 	std::string           name,
 	std::string           lowerName,
 	bool                  isDirectory,
@@ -117,7 +106,7 @@ FileEntry::FileEntry(
 }
 
 std::filesystem::path const&                   FileEntry::GetPhysicalPath() const { return m_physicalPath; }
-std::string const&                             FileEntry::GetVirtualPath() const { return m_virtualPath; }
+VirtualPath const&                             FileEntry::GetVirtualPath() const { return m_virtualPath; }
 std::string const&                             FileEntry::GetName() const { return m_name; }
 std::string const&                             FileEntry::GetLowerName() const { return m_lowerName; }
 bool                                           FileEntry::IsDirectory() const { return m_isDirectory; }
@@ -130,7 +119,7 @@ std::filesystem::file_time_type                FileEntry::GetImportTime() const 
 
 namespace
 {
-FileEntry const* FindEntryInTree(FileEntry const* rootEntry, std::string const& virtualPath)
+FileEntry const* FindEntryInTree(FileEntry const* rootEntry, VirtualPath const& virtualPath)
 {
 	if (rootEntry == nullptr)
 	{
@@ -164,52 +153,7 @@ void FileSystem::Shutdown() {}
 void FileSystem::BeginFrame() {}
 void FileSystem::EndFrame() {}
 
-bool FileSystem::IsVirtualPath(std::string const& path)
-{
-	std::string relativePath;
-	return TryGetRelativePath(path, relativePath);
-}
-
-bool FileSystem::TryGetRelativePath(std::string const& virtualPath, std::string& outRelativePath)
-{
-	outRelativePath.clear();
-
-	if (virtualPath.empty())
-	{
-		return false;
-	}
-
-	std::string const prefix = kResourcePathPrefix;
-
-	if (virtualPath.compare(0, prefix.size(), prefix) != 0)
-	{
-		return false;
-	}
-
-	outRelativePath = virtualPath.substr(prefix.size());
-
-	if (outRelativePath.empty())
-	{
-		return false;
-	}
-
-	if (outRelativePath.find('\\') != std::string::npos)
-	{
-		return false;
-	}
-
-	if (outRelativePath == ".." || outRelativePath.compare(0, 3, "../") == 0
-		|| outRelativePath.find("/../") != std::string::npos
-		|| (outRelativePath.size() >= 3 && outRelativePath.compare(outRelativePath.size() - 3, 3, "/..") == 0))
-	{
-		outRelativePath.clear();
-		return false;
-	}
-
-	return true;
-}
-
-bool FileSystem::Exists(std::string const& virtualPath) const
+bool FileSystem::Exists(VirtualPath const& virtualPath) const
 {
 	std::filesystem::path physicalPath;
 	if (!TryGetPhysicalPath(virtualPath, physicalPath))
@@ -222,12 +166,12 @@ bool FileSystem::Exists(std::string const& virtualPath) const
 }
 
 bool FileSystem::CreateFolder(
-	std::string const& parentVirtualPath,
+	VirtualPath const& parentVirtualPath,
 	std::string const& name,
-	std::string&       outVirtualPath,
+	VirtualPath&       outVirtualPath,
 	std::string&       outError) const
 {
-	outVirtualPath.clear();
+	outVirtualPath = {};
 	outError.clear();
 	if (!IsValidEntryName(name))
 	{
@@ -254,17 +198,16 @@ bool FileSystem::CreateFolder(
 		return false;
 	}
 
-	outVirtualPath = ToVirtualPath(targetPath);
-	return true;
+	return TryToVirtualPath(targetPath, outVirtualPath);
 }
 
 bool FileSystem::Rename(
-	std::string const& virtualPath,
+	VirtualPath const& virtualPath,
 	std::string const& newName,
-	std::string&       outVirtualPath,
+	VirtualPath&       outVirtualPath,
 	std::string&       outError) const
 {
-	outVirtualPath.clear();
+	outVirtualPath = {};
 	outError.clear();
 	if (!IsValidEntryName(newName))
 	{
@@ -292,13 +235,12 @@ bool FileSystem::Rename(
 		return false;
 	}
 
-	outVirtualPath = ToVirtualPath(targetPath);
-	return true;
+	return TryToVirtualPath(targetPath, outVirtualPath);
 }
 
-bool FileSystem::Duplicate(std::string const& virtualPath, std::string& outVirtualPath, std::string& outError) const
+bool FileSystem::Duplicate(VirtualPath const& virtualPath, VirtualPath& outVirtualPath, std::string& outError) const
 {
-	outVirtualPath.clear();
+	outVirtualPath = {};
 	outError.clear();
 	std::filesystem::path sourcePath;
 	if (!TryGetWritablePhysicalPath(virtualPath, sourcePath, outError))
@@ -334,11 +276,10 @@ bool FileSystem::Duplicate(std::string const& virtualPath, std::string& outVirtu
 		return false;
 	}
 
-	outVirtualPath = ToVirtualPath(targetPath);
-	return true;
+	return TryToVirtualPath(targetPath, outVirtualPath);
 }
 
-bool FileSystem::Remove(std::string const& virtualPath, std::string& outError) const
+bool FileSystem::Remove(VirtualPath const& virtualPath, std::string& outError) const
 {
 	outError.clear();
 	std::filesystem::path physicalPath;
@@ -357,7 +298,7 @@ bool FileSystem::Remove(std::string const& virtualPath, std::string& outError) c
 	return true;
 }
 
-bool FileSystem::ReadText(std::string const& virtualPath, std::string& outText) const
+bool FileSystem::ReadText(VirtualPath const& virtualPath, std::string& outText) const
 {
 	outText.clear();
 
@@ -384,7 +325,7 @@ bool FileSystem::ReadText(std::string const& virtualPath, std::string& outText) 
 	outText = stream.str();
 	return true;
 }
-bool FileSystem::WriteText(std::string const& virtualPath, std::string const& text) const
+bool FileSystem::WriteText(VirtualPath const& virtualPath, std::string const& text) const
 {
 	std::filesystem::path physicalPath;
 	if (!TryGetPhysicalPath(virtualPath, physicalPath))
@@ -413,7 +354,7 @@ bool FileSystem::WriteText(std::string const& virtualPath, std::string const& te
 	return file.good();
 }
 
-bool FileSystem::ReadBinary(std::string const& virtualPath, std::vector<uint8_t>& outData) const
+bool FileSystem::ReadBinary(VirtualPath const& virtualPath, std::vector<uint8_t>& outData) const
 {
 	outData.clear();
 
@@ -446,7 +387,7 @@ bool FileSystem::ReadBinary(std::string const& virtualPath, std::vector<uint8_t>
 	return file.good();
 }
 
-bool FileSystem::WriteBinary(std::string const& virtualPath, std::vector<uint8_t> const& data) const
+bool FileSystem::WriteBinary(VirtualPath const& virtualPath, std::vector<uint8_t> const& data) const
 {
 	std::filesystem::path physicalPath;
 	if (!TryGetPhysicalPath(virtualPath, physicalPath))
@@ -492,7 +433,7 @@ void FileSystem::ScanResourceTree()
 	}
 
 	// 1) Refresh import cache first, while the previous resource tree still holds import times.
-	std::unordered_map<std::string, std::filesystem::file_time_type> importedTimes;
+	std::unordered_map<VirtualPath, std::filesystem::file_time_type> importedTimes;
 	ScanResourceImports(importedTimes);
 
 	// 2) Move the previous tree aside so import times can be copied into the new tree.
@@ -500,7 +441,7 @@ void FileSystem::ScanResourceTree()
 
 	// 3) Rebuild the visible resource tree, hiding generated import metadata/cache entries.
 	m_rootEntry = std::unique_ptr<FileEntry>(
-		new FileEntry(m_resourceRoot, kResourcePathPrefix, kResourcePathPrefix, kResourcePathPrefix, true, nullptr));
+		new FileEntry(m_resourceRoot, VirtualPath::ResourceRoot(), "res://", "res://", true, nullptr));
 	m_rootEntry->m_hasModifiedTime = TryGetLastWriteTime(m_resourceRoot, m_rootEntry->m_modifiedTime);
 
 	for (std::filesystem::directory_entry const& entry : std::filesystem::directory_iterator(m_resourceRoot, errorCode))
@@ -518,7 +459,7 @@ void FileSystem::ScanResourceTree()
 		}
 
 		std::string const          name             = GetDisplayName(entry.path());
-		std::string const          childVirtualPath = JoinVirtualPath(kResourcePathPrefix, name);
+		VirtualPath const          childVirtualPath = VirtualPath::ResourceRoot().Join(name);
 		std::unique_ptr<FileEntry> childEntry       = BuildEntry(
 			entry.path(),
 			childVirtualPath,
@@ -539,35 +480,65 @@ bool FileSystem::HasResourceTree() const { return m_rootEntry != nullptr; }
 
 FileEntry const* FileSystem::GetResourceRootEntry() const { return m_rootEntry.get(); }
 
-std::string FileSystem::ToVirtualPath(std::filesystem::path const& physicalPath) const
+bool FileSystem::TryToVirtualPath(std::filesystem::path const& physicalPath, VirtualPath& outVirtualPath) const
 {
-	std::error_code       errorCode;
-	std::filesystem::path relativePath = std::filesystem::relative(physicalPath, m_resourceRoot, errorCode);
-	if (errorCode || relativePath.empty() || relativePath == ".")
+	outVirtualPath = {};
+	std::error_code errorCode;
+	std::filesystem::path const canonicalRoot = std::filesystem::weakly_canonical(m_resourceRoot, errorCode);
+	if (errorCode)
 	{
-		return kResourcePathPrefix;
+		return false;
 	}
-
-	return std::string(kResourcePathPrefix) + relativePath.generic_string();
+	std::filesystem::path const canonicalPath = std::filesystem::weakly_canonical(physicalPath, errorCode);
+	if (errorCode)
+	{
+		return false;
+	}
+	std::filesystem::path const relativePath = std::filesystem::relative(canonicalPath, canonicalRoot, errorCode);
+	if (errorCode || (!relativePath.empty() && relativePath.begin() != relativePath.end() && *relativePath.begin() == ".."))
+	{
+		return false;
+	}
+	if (relativePath.empty() || relativePath == ".")
+	{
+		outVirtualPath = VirtualPath::ResourceRoot();
+		return true;
+	}
+	return VirtualPath::TryParse("res://" + relativePath.generic_string(), outVirtualPath);
 }
 
-bool FileSystem::TryGetPhysicalPath(std::string const& virtualPath, std::filesystem::path& outPhysicalPath) const
+bool FileSystem::TryGetPhysicalPath(VirtualPath const& virtualPath, std::filesystem::path& outPhysicalPath) const
 {
 	outPhysicalPath.clear();
-
-	std::string relativePath;
-	if (!TryGetRelativePath(virtualPath, relativePath))
+	if (!virtualPath.IsValid())
 	{
 		return false;
 	}
 
-	outPhysicalPath = m_resourceRoot / relativePath;
-
+	std::string const relativePath = virtualPath.GetString().substr(std::string("res://").size());
+	std::error_code errorCode;
+	std::filesystem::path const canonicalRoot = std::filesystem::weakly_canonical(m_resourceRoot, errorCode);
+	if (errorCode)
+	{
+		return false;
+	}
+	std::filesystem::path const candidate = relativePath.empty() ? canonicalRoot : canonicalRoot / relativePath;
+	std::filesystem::path const canonicalPath = std::filesystem::weakly_canonical(candidate, errorCode);
+	if (errorCode)
+	{
+		return false;
+	}
+	VirtualPath roundTrip;
+	if (!TryToVirtualPath(canonicalPath, roundTrip) || roundTrip != virtualPath)
+	{
+		return false;
+	}
+	outPhysicalPath = canonicalPath;
 	return true;
 }
 
 bool FileSystem::TryGetWritablePhysicalPath(
-	std::string const&       virtualPath,
+	VirtualPath const&       virtualPath,
 	std::filesystem::path&   outPhysicalPath,
 	std::string&             outError,
 	bool                     allowResourceRoot) const
@@ -575,7 +546,7 @@ bool FileSystem::TryGetWritablePhysicalPath(
 	outPhysicalPath.clear();
 	outError.clear();
 
-	if (virtualPath == kResourcePathPrefix)
+	if (virtualPath.IsRoot())
 	{
 		if (!allowResourceRoot)
 		{
@@ -624,12 +595,12 @@ bool FileSystem::TryGetWritablePhysicalPath(
 	return true;
 }
 
-FileEntry const* FileSystem::FindEntry(std::string const& virtualPath) const
+FileEntry const* FileSystem::FindEntry(VirtualPath const& virtualPath) const
 {
 	return FindEntryInTree(m_rootEntry.get(), virtualPath);
 }
 
-void FileSystem::ScanResourceImports(std::unordered_map<std::string, std::filesystem::file_time_type>& outImportedTimes)
+void FileSystem::ScanResourceImports(std::unordered_map<VirtualPath, std::filesystem::file_time_type>& outImportedTimes)
 {
 	std::error_code errorCode;
 	for (std::filesystem::recursive_directory_iterator it(m_resourceRoot, errorCode), end; it != end;
@@ -662,8 +633,8 @@ void FileSystem::ScanResourceImports(std::unordered_map<std::string, std::filesy
 			continue;
 		}
 
-		std::string const virtualPath = ToVirtualPath(entry.path());
-		if (!ResourceImporter::CanImport(virtualPath))
+		VirtualPath virtualPath;
+		if (!TryToVirtualPath(entry.path(), virtualPath) || !ResourceImporter::CanImport(virtualPath))
 		{
 			continue;
 		}
@@ -685,11 +656,11 @@ void FileSystem::ScanResourceImports(std::unordered_map<std::string, std::filesy
 
 std::unique_ptr<FileEntry> FileSystem::BuildEntry(
 	std::filesystem::path const&                                            physicalPath,
-	std::string const&                                                      virtualPath,
+	VirtualPath const&                                                      virtualPath,
 	FileEntry*                                                              parent,
 	bool                                                                    isDirectory,
 	FileEntry const*                                                        previousEntry,
-	std::unordered_map<std::string, std::filesystem::file_time_type> const& importedTimes) const
+	std::unordered_map<VirtualPath, std::filesystem::file_time_type> const& importedTimes) const
 {
 	if (ShouldSkipResourceTreeEntry(physicalPath, isDirectory))
 	{
@@ -741,7 +712,7 @@ std::unique_ptr<FileEntry> FileSystem::BuildEntry(
 			}
 
 			std::string const          childName        = GetDisplayName(child.path());
-			std::string const          childVirtualPath = JoinVirtualPath(virtualPath, childName);
+			VirtualPath const          childVirtualPath = virtualPath.Join(childName);
 			std::unique_ptr<FileEntry> childEntry       = BuildEntry(
 				child.path(),
 				childVirtualPath,

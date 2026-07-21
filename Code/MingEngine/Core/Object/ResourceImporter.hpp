@@ -25,7 +25,7 @@ public:
 	virtual std::string                      GetImportedExtension() const;
 	virtual std::vector<ImportOptions> const GetImportOptions() const;
 
-	bool CanImport(std::string const& virtualPath) const;
+	bool CanImport(VirtualPath const& virtualPath) const;
 
 protected:
 	// ResourceFormatImporter::Import only converts a source asset, such as an .obj file, into a Resource.
@@ -33,7 +33,7 @@ protected:
 	// and .import metadata. Loaders/savers work with final resource formats, while importers work with
 	// source assets and may need options because more than one importer can match a file.
 	virtual Ref<Resource>
-	Import(std::unordered_map<std::string, Variant> const& importOptions, std::string const& sourceVirtualPath) = 0;
+	Import(std::unordered_map<std::string, Variant> const& importOptions, VirtualPath const& sourceVirtualPath) = 0;
 
 protected:
 	static void BindMethods() {};
@@ -43,30 +43,30 @@ class ResourceImporter
 {
 public:
 	static void                                     AddImporter(Ref<ResourceFormatImporter> importer);
-	static std::vector<Ref<ResourceFormatImporter>> GetMatchedImporters(std::string const& sourceVirtualPath);
-	static bool                                     CanImport(std::string const& sourceVirtualPath);
+	static std::vector<Ref<ResourceFormatImporter>> GetMatchedImporters(VirtualPath const& sourceVirtualPath);
+	static bool                                     CanImport(VirtualPath const& sourceVirtualPath);
 	static bool                                     Import(
-		std::string const&                              sourceVirtualPath,
+		VirtualPath const&                              sourceVirtualPath,
 		Ref<ResourceFormatImporter>                     importer,
 		std::unordered_map<std::string, Variant> const& importOptions);
-	static bool Import(std::string const& sourceVirtualPath);
+	static bool Import(VirtualPath const& sourceVirtualPath);
 
-	static bool IsImportConfigPath(std::string const& virtualPath);
-	static bool IsInternalResourcePath(std::string const& virtualPath);
-	static bool TryGetImportFile(std::string const& sourceVirtualPath, std::string& outImportVirtualPath);
+	static bool IsImportConfigPath(VirtualPath const& virtualPath);
+	static bool IsInternalResourcePath(VirtualPath const& virtualPath);
+	static bool TryGetImportFile(VirtualPath const& sourceVirtualPath, VirtualPath& outImportVirtualPath);
 	static bool TryReadImportConfig(
-		std::string const&                        sourceVirtualPath,
+		VirtualPath const&                        sourceVirtualPath,
 		std::string&                              outImporterClassName,
 		std::unordered_map<std::string, Variant>& outImportOptions);
-	static bool EnsureImported(std::string const& sourceVirtualPath);
+	static bool EnsureImported(VirtualPath const& sourceVirtualPath);
 
-	static std::string GetImportConfigPath(std::string const& sourceVirtualPath);
-	static std::string GetImportOutputPath(std::string const& sourceVirtualPath, std::string const& importedExtension);
+	static VirtualPath GetImportConfigPath(VirtualPath const& sourceVirtualPath);
+	static VirtualPath GetImportOutputPath(VirtualPath const& sourceVirtualPath, std::string const& importedExtension);
 
 private:
 	static constexpr int MaxImporters = 64;
 
-	static std::vector<Ref<ResourceFormatImporter>> FindMatchedImporters(std::string const& sourceVirtualPath);
+	static std::vector<Ref<ResourceFormatImporter>> FindMatchedImporters(VirtualPath const& sourceVirtualPath);
 
 private:
 	static int                         s_importerCount;

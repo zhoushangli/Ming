@@ -62,7 +62,7 @@ struct OBJData
 {
 	// Source Data
 	std::string       m_name;
-	std::string       m_mtlVirtualPath;
+	VirtualPath       m_mtlVirtualPath;
 	std::vector<Vec3> m_positions;
 	std::vector<Vec3> m_normals;
 	std::vector<Vec2> m_texCoords;
@@ -76,17 +76,17 @@ struct OBJData
 struct MTLData
 {
 	std::string m_name;
-	std::string m_diffuseTexturePath;
-	std::string m_specularTexturePath;
-	std::string m_normalTexturePath;
+	VirtualPath m_diffuseTexturePath;
+	VirtualPath m_specularTexturePath;
+	VirtualPath m_normalTexturePath;
 };
 
-bool ParseOBJFile(std::string const& sourceVirtualPath, OBJData& outData)
+bool ParseOBJFile(VirtualPath const& sourceVirtualPath, OBJData& outData)
 {
 	auto ClearOutput = [&outData]()
 	{
 		outData.m_name.clear();
-		outData.m_mtlVirtualPath.clear();
+		outData.m_mtlVirtualPath = {};
 		outData.m_positions.clear();
 		outData.m_normals.clear();
 		outData.m_texCoords.clear();
@@ -211,33 +211,9 @@ bool ParseOBJFile(std::string const& sourceVirtualPath, OBJData& outData)
 	};
 
 	auto ParseMTLVirtualPath =
-		[](std::string const& objVirtualPath, std::string const& mtlPath, std::string& outMtlVirtualPath) -> bool
+		[](VirtualPath const& objVirtualPath, std::string const& mtlPath, VirtualPath& outMtlVirtualPath) -> bool
 	{
-		outMtlVirtualPath.clear();
-
-		if (mtlPath.empty())
-		{
-			return false;
-		}
-
-		std::filesystem::path mtlPhysicalPath;
-		if (mtlPath.find(":") != std::string::npos)
-		{
-			mtlPhysicalPath = mtlPath;
-		}
-		else
-		{
-			std::filesystem::path objPhysicalPath;
-			if (!g_engine->m_fileSystem->TryGetPhysicalPath(objVirtualPath, objPhysicalPath))
-			{
-				return false;
-			}
-
-			mtlPhysicalPath = objPhysicalPath.parent_path() / mtlPath;
-		}
-
-		outMtlVirtualPath = g_engine->m_fileSystem->ToVirtualPath(mtlPhysicalPath.lexically_normal());
-		return FileSystem::IsVirtualPath(outMtlVirtualPath);
+		return objVirtualPath.TryResolveRelative(mtlPath, outMtlVirtualPath);
 	};
 
 	ClearOutput();
@@ -502,14 +478,14 @@ bool ParseOBJFile(std::string const& sourceVirtualPath, OBJData& outData)
 	return true;
 }
 
-bool ParseMTLFile(std::string const& sourceVirtualPath, MTLData& outMaterials)
+bool ParseMTLFile(VirtualPath const& sourceVirtualPath, MTLData& outMaterials)
 {
 	auto ClearOutput = [&outMaterials]()
 	{
 		outMaterials.m_name.clear();
-		outMaterials.m_diffuseTexturePath.clear();
-		outMaterials.m_specularTexturePath.clear();
-		outMaterials.m_normalTexturePath.clear();
+		outMaterials.m_diffuseTexturePath = {};
+		outMaterials.m_specularTexturePath = {};
+		outMaterials.m_normalTexturePath = {};
 	};
 
 	auto TrimWhitespace = [](std::string const& text) -> std::string
@@ -550,42 +526,12 @@ bool ParseMTLFile(std::string const& sourceVirtualPath, MTLData& outMaterials)
 		return tokens;
 	};
 
-	auto NormalizeVirtualPathSeparators = [](std::string path) -> std::string
+	auto ResolveTextureVirtualPath = [](
+		VirtualPath const& materialVirtualPath, std::string const& texturePath) -> VirtualPath
 	{
-		for (char& character : path)
-		{
-			if (character == '\\')
-			{
-				character = '/';
-			}
-		}
-
-		return path;
-	};
-
-	auto GetParentVirtualPath = [&NormalizeVirtualPathSeparators](std::string const& virtualPath) -> std::string
-	{
-		std::string const normalizedPath = NormalizeVirtualPathSeparators(virtualPath);
-		size_t const      slashIndex     = normalizedPath.find_last_of('/');
-		if (slashIndex == std::string::npos)
-		{
-			return "";
-		}
-
-		return normalizedPath.substr(0, slashIndex + 1);
-	};
-
-	auto ResolveTextureVirtualPath = [&GetParentVirtualPath, &NormalizeVirtualPathSeparators](
-										 std::string const& materialVirtualPath,
-										 std::string const& texturePath) -> std::string
-	{
-		std::string normalizedTexturePath = NormalizeVirtualPathSeparators(texturePath);
-		if (FileSystem::IsVirtualPath(normalizedTexturePath))
-		{
-			return normalizedTexturePath;
-		}
-
-		return GetParentVirtualPath(materialVirtualPath) + normalizedTexturePath;
+		VirtualPath resolvedPath;
+		materialVirtualPath.TryResolveRelative(texturePath, resolvedPath);
+		return resolvedPath;
 	};
 
 	ClearOutput();
@@ -667,8 +613,8 @@ bool ParseMTLFile(std::string const& sourceVirtualPath, MTLData& outMaterials)
 		}
 	}
 
-	return !outMaterials.m_name.empty() || !outMaterials.m_diffuseTexturePath.empty()
-		   || !outMaterials.m_specularTexturePath.empty() || !outMaterials.m_normalTexturePath.empty();
+	return !outMaterials.m_name.empty() || outMaterials.m_diffuseTexturePath.IsValid()
+		   || outMaterials.m_specularTexturePath.IsValid() || outMaterials.m_normalTexturePath.IsValid();
 }
 } // namespace
 
@@ -681,7 +627,7 @@ std::string OBJImporter::GetImportedExtension() const { return "mesh"; }
 std::vector<ImportOptions> const OBJImporter::GetImportOptions() const { return kOBJImportOptions; }
 
 Ref<Resource> OBJImporter::Import(
-	std::unordered_map<std::string, Variant> const& importOptions, std::string const& sourceVirtualPath)
+	std::unordered_map<std::string, Variant> const& importOptions, VirtualPath const& sourceVirtualPath)
 {
 	bool const generateTangents =
 		GetImportOptionValue(importOptions, "Generate Tangents", Variant::Type::Bool).As<bool>();
@@ -729,16 +675,16 @@ Ref<Resource> OBJImporter::Import(
 
 	// 2) Ensure texture dependencies are imported and load TextureResources
 	MTLData mtlData;
-	if (!objData.m_mtlVirtualPath.empty())
+	if (objData.m_mtlVirtualPath.IsValid())
 	{
 		if (!ParseMTLFile(objData.m_mtlVirtualPath, mtlData))
 		{
 			return Ref<Resource>();
 		}
 
-		auto AddTextureResource = [&meshData](std::string const& texVirtualPath) -> bool
+		auto AddTextureResource = [&meshData](VirtualPath const& texVirtualPath) -> bool
 		{
-			if (texVirtualPath.empty())
+			if (!texVirtualPath.IsValid())
 			{
 				return true;
 			}

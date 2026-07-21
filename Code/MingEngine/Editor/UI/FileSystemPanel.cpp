@@ -31,17 +31,6 @@ std::string ToLower(std::string text)
 	return text;
 }
 
-std::string GetParentVirtualPath(std::string const& virtualPath)
-{
-	size_t const separator = virtualPath.find_last_of('/');
-	return separator <= 5 ? "res://" : virtualPath.substr(0, separator);
-}
-
-std::string JoinVirtualPath(std::string const& parentVirtualPath, std::string const& name)
-{
-	return parentVirtualPath == "res://" ? parentVirtualPath + name : parentVirtualPath + "/" + name;
-}
-
 bool IsReservedWindowsName(std::string const& name)
 {
 	std::string const stem = ToLower(std::filesystem::path(name).stem().string());
@@ -53,7 +42,7 @@ bool IsReservedWindowsName(std::string const& name)
 		   && stem[3] <= '9';
 }
 
-FileEntry const* FindEntry(FileEntry const& entry, std::string const& virtualPath)
+FileEntry const* FindEntry(FileEntry const& entry, VirtualPath const& virtualPath)
 {
 	if (entry.GetVirtualPath() == virtualPath)
 	{
@@ -73,7 +62,7 @@ FileEntry const* FindEntry(FileEntry const& entry, std::string const& virtualPat
 
 FileSystemPanel::FileSystemPanel() : EditorPanel("FileSystem") {}
 
-std::string const& FileSystemPanel::GetSelectedVirtualPath() const { return m_selectedVirtualPath; }
+VirtualPath const& FileSystemPanel::GetSelectedVirtualPath() const { return m_selectedVirtualPath; }
 
 void FileSystemPanel::OnRender(EditorUIContext& context)
 {
@@ -82,7 +71,7 @@ void FileSystemPanel::OnRender(EditorUIContext& context)
 
 	ImGui::InputTextWithHint("##FilterFiles", "Filter Files", m_filter, sizeof(m_filter));
 	ImGui::SameLine();
-	ImGui::BeginDisabled(m_selectedVirtualPath.empty());
+	ImGui::BeginDisabled(!m_selectedVirtualPath.IsValid());
 	bool const openSelected = ImGui::Button("Open");
 	ImGui::EndDisabled();
 	ImGui::Separator();
@@ -121,16 +110,16 @@ void FileSystemPanel::OnRender(EditorUIContext& context)
 
 	std::string const lowerFilterText = ToLower(m_filter);
 	RenderEntry(*rootEntry, lowerFilterText, context);
-	if (isFocused && !ImGui::IsAnyItemActive() && ImGui::IsKeyPressed(ImGuiKey_Delete) && !m_selectedVirtualPath.empty()
-		&& m_selectedVirtualPath != "res://")
+	if (isFocused && !ImGui::IsAnyItemActive() && ImGui::IsKeyPressed(ImGuiKey_Delete)
+		&& m_selectedVirtualPath.IsValid() && !m_selectedVirtualPath.IsRoot())
 	{
 		if (FileEntry const* selectedEntry = FindEntry(*rootEntry, m_selectedVirtualPath))
 		{
 			BeginDelete(*selectedEntry);
 		}
 	}
-	if (isFocused && !ImGui::IsAnyItemActive() && ImGui::IsKeyPressed(ImGuiKey_F2)
-		&& m_renamingVirtualPath.empty() && !m_selectedVirtualPath.empty() && m_selectedVirtualPath != "res://")
+	if (isFocused && !ImGui::IsAnyItemActive() && ImGui::IsKeyPressed(ImGuiKey_F2) && !m_renamingVirtualPath.IsValid()
+		&& m_selectedVirtualPath.IsValid() && !m_selectedVirtualPath.IsRoot())
 	{
 		if (FileEntry const* selectedEntry = FindEntry(*rootEntry, m_selectedVirtualPath))
 		{
@@ -140,15 +129,11 @@ void FileSystemPanel::OnRender(EditorUIContext& context)
 	RenderBackgroundContextMenu(context);
 
 	ImGui::EndChild();
-	if (!m_pendingRenameVirtualPath.empty())
+	if (m_pendingRenameVirtualPath.IsValid())
 	{
-		std::string newVirtualPath;
+		VirtualPath newVirtualPath;
 		std::string error;
-		if (context.m_fileSystem->Rename(
-				m_pendingRenameVirtualPath,
-				m_pendingRenameName,
-				newVirtualPath,
-				error))
+		if (context.m_fileSystem->Rename(m_pendingRenameVirtualPath, m_pendingRenameName, newVirtualPath, error))
 		{
 			context.m_fileSystem->ScanResourceTree();
 			m_selectedVirtualPath = newVirtualPath;
@@ -157,7 +142,7 @@ void FileSystemPanel::OnRender(EditorUIContext& context)
 		{
 			ShowError(std::move(error));
 		}
-		m_pendingRenameVirtualPath.clear();
+		m_pendingRenameVirtualPath = {};
 		m_pendingRenameName.clear();
 	}
 	if (m_refreshResourceTree)
@@ -203,11 +188,11 @@ void FileSystemPanel::RenderEntry(FileEntry const& entry, std::string const& low
 		flags |= ImGuiTreeNodeFlags_Selected;
 	}
 
-	ImGui::PushID(entry.GetVirtualPath().c_str());
+	ImGui::PushID(entry.GetVirtualPath().CStr());
 	if (m_directoryToOpen == entry.GetVirtualPath())
 	{
 		ImGui::SetNextItemOpen(true, ImGuiCond_Always);
-		m_directoryToOpen.clear();
+		m_directoryToOpen = {};
 	}
 	bool const   isOpen = ImGui::TreeNodeEx(entry.IsDirectory() ? "##Directory" : "##File", flags);
 	ImVec2 const rowMin = ImGui::GetItemRectMin();
@@ -222,23 +207,6 @@ void FileSystemPanel::RenderEntry(FileEntry const& entry, std::string const& low
 	}
 	RenderItemContextMenu(entry, context);
 	bool const isRenaming = m_renamingVirtualPath == entry.GetVirtualPath();
-
-	if (!isRenaming && !entry.IsDirectory())
-	{
-		if (ImGui::BeginDragDropSource())
-		{
-			FilePayload payload;
-
-			payload.m_resource = ResourceLoader::Load(entry.GetVirtualPath());
-			if (payload.m_resource.IsValid())
-			{
-				ImGui::SetDragDropPayload("FILESYSTEM_RESOURCE", &payload, sizeof(payload));
-				ImGui::TextUnformatted(entry.GetName().c_str());
-			}
-
-			ImGui::EndDragDropSource();
-		}
-	}
 
 	if (isRenaming)
 	{
@@ -263,7 +231,7 @@ void FileSystemPanel::RenderEntry(FileEntry const& entry, std::string const& low
 			m_renameBuffer,
 			sizeof(m_renameBuffer),
 			ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll);
-		bool const cancelled = ImGui::IsItemActive() && ImGui::IsKeyPressed(ImGuiKey_Escape);
+		bool const cancelled   = ImGui::IsItemActive() && ImGui::IsKeyPressed(ImGuiKey_Escape);
 		bool const deactivated = ImGui::IsItemDeactivated();
 		if (cancelled)
 		{
@@ -276,6 +244,16 @@ void FileSystemPanel::RenderEntry(FileEntry const& entry, std::string const& low
 	}
 	else
 	{
+		if (ImGui::BeginDragDropSource())
+		{
+			// We must set dargdrop payload otherwise the drag-drop source will be cancelled
+			EditorNode::Get()->m_dragDrop.SetDragData(entry.GetVirtualPath());
+			ImGui::SetDragDropPayload(EditorDragDrop::PayloadType, nullptr, 0);
+			ImGui::TextUnformatted(entry.GetName().c_str());
+
+			ImGui::EndDragDropSource();
+		}
+
 		EditorUIWidgets::RenderTreeRowContent(
 			GetIconNameForPath(entry.GetPhysicalPath(), entry.IsDirectory()),
 			entry.IsDirectory() ? "Folder" : "File",
@@ -310,10 +288,9 @@ void FileSystemPanel::RenderItemContextMenu(FileEntry const& entry, EditorUICont
 		return;
 	}
 
-	m_selectedVirtualPath    = entry.GetVirtualPath();
-	bool const        isRoot = entry.GetParent() == nullptr;
-	std::string const createBase =
-		entry.IsDirectory() ? entry.GetVirtualPath() : GetParentVirtualPath(entry.GetVirtualPath());
+	m_selectedVirtualPath        = entry.GetVirtualPath();
+	bool const        isRoot     = entry.GetParent() == nullptr;
+	VirtualPath const createBase = entry.IsDirectory() ? entry.GetVirtualPath() : entry.GetVirtualPath().GetParent();
 	if (ImGui::MenuItem("Open"))
 	{
 		OpenFile(entry, context);
@@ -334,7 +311,7 @@ void FileSystemPanel::RenderItemContextMenu(FileEntry const& entry, EditorUICont
 	ImGui::Separator();
 	if (ImGui::MenuItem("Copy Path"))
 	{
-		ImGui::SetClipboardText(entry.GetVirtualPath().c_str());
+		ImGui::SetClipboardText(entry.GetVirtualPath().CStr());
 	}
 	if (ImGui::MenuItem("Copy Absolute Path"))
 	{
@@ -393,7 +370,7 @@ void FileSystemPanel::RenderBackgroundContextMenu(EditorUIContext& context)
 	ImGui::EndPopup();
 }
 
-void FileSystemPanel::BeginCreateFolder(std::string const& parentVirtualPath)
+void FileSystemPanel::BeginCreateFolder(VirtualPath const& parentVirtualPath)
 {
 	m_createFolderPopup.Open(parentVirtualPath);
 }
@@ -413,7 +390,7 @@ void FileSystemPanel::OpenFile(FileEntry const& entry, [[maybe_unused]] EditorUI
 	}
 }
 
-void FileSystemPanel::BeginCreateScene(std::string const& parentVirtualPath)
+void FileSystemPanel::BeginCreateScene(VirtualPath const& parentVirtualPath)
 {
 	m_createScenePopup.Open(parentVirtualPath);
 }
@@ -434,8 +411,8 @@ void FileSystemPanel::FinishRename(FileSystem const& fileSystem, bool apply)
 		return;
 	}
 
-	std::string const parentVirtualPath = GetParentVirtualPath(m_renamingVirtualPath);
-	if (JoinVirtualPath(parentVirtualPath, m_renameBuffer) == m_renamingVirtualPath)
+	VirtualPath const parentVirtualPath = m_renamingVirtualPath.GetParent();
+	if (parentVirtualPath.Join(m_renameBuffer) == m_renamingVirtualPath)
 	{
 		ClearRename();
 		return;
@@ -456,9 +433,9 @@ void FileSystemPanel::FinishRename(FileSystem const& fileSystem, bool apply)
 
 void FileSystemPanel::ClearRename()
 {
-	m_renamingVirtualPath.clear();
-	m_renameBuffer[0]  = '\0';
-	m_focusRenameInput = false;
+	m_renamingVirtualPath = {};
+	m_renameBuffer[0]     = '\0';
+	m_focusRenameInput    = false;
 }
 
 void FileSystemPanel::BeginDelete(FileEntry const& entry)
@@ -468,7 +445,7 @@ void FileSystemPanel::BeginDelete(FileEntry const& entry)
 
 void FileSystemPanel::DuplicateEntry(FileEntry const& entry, FileSystem& fileSystem)
 {
-	std::string duplicateVirtualPath;
+	VirtualPath duplicateVirtualPath;
 	std::string error;
 	if (!fileSystem.Duplicate(entry.GetVirtualPath(), duplicateVirtualPath, error))
 	{
@@ -542,17 +519,17 @@ bool FileSystemPanel::ValidateEntryName(char const* name, std::string& outError)
 
 bool FileSystemPanel::ValidateName(
 	FileSystem const&  fileSystem,
-	std::string const& parentVirtualPath,
+	VirtualPath const& parentVirtualPath,
 	char const*        name,
 	std::string&       outError,
-	std::string const& ignoredVirtualPath) const
+	VirtualPath const& ignoredVirtualPath) const
 {
 	std::string const value = name != nullptr ? name : "";
 	if (!ValidateEntryName(name, outError))
 	{
 		return false;
 	}
-	std::string const candidate = JoinVirtualPath(parentVirtualPath, value);
+	VirtualPath const candidate = parentVirtualPath.Join(value);
 	if (candidate == ignoredVirtualPath)
 	{
 		outError = "Name has not changed.";

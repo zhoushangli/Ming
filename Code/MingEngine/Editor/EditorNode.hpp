@@ -22,6 +22,78 @@ private:
 	NodeHandle m_selectedNodeHandle = NodeHandle::Invalid;
 };
 
+class EditorDragDrop
+{
+public:
+	enum class Type
+	{
+		None,
+		Node,
+		FileSystemEntry
+	};
+
+	static constexpr char const* PayloadType = "EDITOR_DRAG";
+
+	void BeginFrame() { m_dropAllowed = false; }
+	void EndFrame(bool isDragging)
+	{
+		if (!isDragging)
+		{
+			Clear();
+		}
+	}
+
+	void SetDragData(NodeHandle handle)
+	{
+		m_type        = Type::Node;
+		m_virtualPath = {};
+		m_nodeHandle  = handle;
+	}
+	void SetDragData(VirtualPath const& virtualPath)
+	{
+		m_type        = Type::FileSystemEntry;
+		m_virtualPath = virtualPath;
+		m_nodeHandle  = NodeHandle::Invalid;
+	}
+
+	bool TryGetData(NodeHandle& outHandle) const
+	{
+		if (m_type != Type::Node || m_nodeHandle == NodeHandle::Invalid)
+		{
+			return false;
+		}
+
+		outHandle = m_nodeHandle;
+		return true;
+	}
+	bool TryGetData(VirtualPath& outVirtualPath) const
+	{
+		if (m_type != Type::FileSystemEntry || !m_virtualPath.IsValid())
+		{
+			return false;
+		}
+
+		outVirtualPath = m_virtualPath;
+		return true;
+	}
+
+	void AllowDrop() { m_dropAllowed = true; }
+	bool IsDropAllowed() const { return m_dropAllowed; }
+
+	void Clear()
+	{
+		m_type        = Type::None;
+		m_virtualPath = {};
+		m_nodeHandle  = NodeHandle::Invalid;
+	}
+
+private:
+	Type        m_type = Type::None;
+	VirtualPath m_virtualPath;
+	NodeHandle  m_nodeHandle  = NodeHandle::Invalid;
+	bool        m_dropAllowed = false;
+};
+
 class EditorNode : public Node
 {
 	MCLASS(EditorNode, Node);
@@ -37,9 +109,9 @@ public:
 
 	EditorCamera* GetEditorCamera() const { return m_editorCamera; }
 
-	void RequestLoadScene(std::string const& virtualPath);
-	void RequestCreateScene(std::string const& virtualPath, std::string const& rootName);
-	bool LoadScene(std::string const& virtualPath);
+	void RequestLoadScene(VirtualPath const& virtualPath);
+	void RequestCreateScene(VirtualPath const& virtualPath, std::string const& rootName);
+	bool LoadScene(VirtualPath const& virtualPath);
 	bool SaveScene();
 
 	void        MarkSceneDirty();
@@ -60,7 +132,7 @@ public:
 private:
 	void OnReady() override;
 	void OnProcess(float deltaSeconds) override;
-	bool CreateScene(std::string const& virtualPath, std::string const& rootName);
+	bool CreateScene(VirtualPath const& virtualPath, std::string const& rootName);
 	void RenderUnsavedScenePopup();
 	void ExecutePendingSceneAction();
 	// Check if the PIE process is still alive, and if not, clean up the state.
@@ -69,6 +141,7 @@ private:
 
 public:
 	EditorSelection m_selection;
+	EditorDragDrop  m_dragDrop;
 	EditorGizmos*   m_editorGizmos = nullptr;
 	EditorCamera*   m_editorCamera = nullptr;
 	EditorUI*       m_editorUI     = nullptr;
@@ -87,7 +160,7 @@ private:
 	};
 
 	PendingSceneAction m_pendingSceneAction = PendingSceneAction::None;
-	std::string        m_pendingScenePath;
+	VirtualPath        m_pendingScenePath;
 	std::string        m_pendingSceneRootName;
 	bool               m_openUnsavedScenePopup = false;
 

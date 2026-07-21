@@ -10,12 +10,12 @@ namespace
 {
 std::string GetSerializableResourcePath(Resource const& resource)
 {
-	if (!resource.GetSourceFilePath().empty())
+	if (resource.GetSourceFilePath().IsValid())
 	{
-		return resource.GetSourceFilePath();
+		return resource.GetSourceFilePath().GetString();
 	}
 
-	return resource.GetVirtualPath();
+	return resource.GetVirtualPath().GetString();
 }
 
 bool IsNumberArray(VariantJson::Json const& json, size_t expectedSize)
@@ -193,7 +193,12 @@ bool TryDeserialize(Json const& json, Variant::Type expectedType, Variant& outVa
 			}
 			if (json.is_string())
 			{
-				Ref<Resource> resource = ResourceLoader::Load(json.get<std::string>());
+				VirtualPath resourcePath;
+				if (!VirtualPath::TryParse(json.get<std::string>(), resourcePath))
+				{
+					break;
+				}
+				Ref<Resource> resource = ResourceLoader::Load(resourcePath);
 				if (resource.IsValid())
 				{
 					outValue = resource;

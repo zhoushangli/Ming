@@ -13,19 +13,18 @@ void ResourceSaver::AddSaver(Ref<ResourceFormatSaver> saver)
 	}
 }
 
-bool ResourceSaver::Save(std::string const& virtualPath, Variant const& value)
+bool ResourceSaver::Save(VirtualPath const& virtualPath, Variant const& value)
 {
-	if (!FileSystem::IsVirtualPath(virtualPath))
+	if (!virtualPath.IsValid())
 	{
 		return false;
 	}
 
-	std::string const normalizedPath = virtualPath;
 	for (int i = 0; i < s_saverCount; ++i)
 	{
-		if (s_saver[i]->CanSave(normalizedPath, value))
+		if (s_saver[i]->CanSave(virtualPath, value))
 		{
-			return s_saver[i]->Save(normalizedPath, value);
+			return s_saver[i]->Save(virtualPath, value);
 		}
 	}
 

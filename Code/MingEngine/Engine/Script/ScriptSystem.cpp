@@ -48,21 +48,21 @@ void SearchAndRegisterScript(FileEntry const* entry, CScriptBuilder& builder)
 	}
 	else
 	{
-		std::string virtualPath = entry->GetVirtualPath();
-		if (virtualPath.size() >= 3 && virtualPath.compare(virtualPath.size() - 3, 3, ".as") == 0)
+		VirtualPath const& virtualPath = entry->GetVirtualPath();
+		if (virtualPath.HasExtension(".as"))
 		{
 			std::string scriptText;
 			if (!g_engine->m_fileSystem->ReadText(virtualPath, scriptText))
 			{
-				DebuggerPrintf("Failed to read script file: %s\n", virtualPath.c_str());
+				DebuggerPrintf("Failed to read script file: %s\n", virtualPath.CStr());
 				return;
 			}
 
 			int result =
-				builder.AddSectionFromMemory(virtualPath.c_str(), scriptText.c_str(), (unsigned int)scriptText.size());
+				builder.AddSectionFromMemory(virtualPath.CStr(), scriptText.c_str(), (unsigned int)scriptText.size());
 			if (result < 0)
 			{
-				DebuggerPrintf("Failed to add script section: %s\n", virtualPath.c_str());
+				DebuggerPrintf("Failed to add script section: %s\n", virtualPath.CStr());
 				return;
 			}
 		}

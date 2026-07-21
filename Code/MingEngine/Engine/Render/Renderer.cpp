@@ -460,7 +460,7 @@ void Renderer::RenderUI(ViewportInfo const& viewport)
 	}
 }
 
-Shader* Renderer::CreateShader(std::string const& shaderVirtualPath, std::string const& shaderSource)
+Shader* Renderer::CreateShader(VirtualPath const& shaderVirtualPath, std::string const& shaderSource)
 {
 	return m_renderBackend->CreateShader(shaderVirtualPath, shaderSource);
 }

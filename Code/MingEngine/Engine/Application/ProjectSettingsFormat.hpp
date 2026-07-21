@@ -9,7 +9,7 @@ class ProjectSettingsLoader : public ResourceFormatLoader
 
 public:
 	std::vector<std::string> GetSupportedExtensions() const override;
-	Ref<Resource>            Load(std::string const& virtualPath) override;
+	Ref<Resource>            Load(VirtualPath const& virtualPath) override;
 
 protected:
 	static void BindMethods() {}
@@ -20,8 +20,8 @@ class ProjectSettingsSaver : public ResourceFormatSaver
 	MCLASS(ProjectSettingsSaver, ResourceFormatSaver)
 
 public:
-	bool CanSave(std::string const& virtualPath, Variant const& value) const override;
-	bool Save(std::string const& virtualPath, Variant const& value) override;
+	bool CanSave(VirtualPath const& virtualPath, Variant const& value) const override;
+	bool Save(VirtualPath const& virtualPath, Variant const& value) override;
 
 protected:
 	static void BindMethods() {}

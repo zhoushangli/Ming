@@ -8,7 +8,7 @@ class ShaderResourceLoader : public ResourceFormatLoader
 
 public:
 	std::vector<std::string> GetSupportedExtensions() const override;
-	Ref<Resource>            Load(std::string const& virtualPath) override;
+	Ref<Resource>            Load(VirtualPath const& virtualPath) override;
 
 protected:
 	static void BindMethods() {};

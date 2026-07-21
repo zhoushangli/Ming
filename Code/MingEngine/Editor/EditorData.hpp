@@ -1,10 +1,10 @@
 #pragma once
 
-#include <string>
+#include "MingEngine/Engine/File/VirtualPath.hpp"
 
 class EditorData
 {
 public:
-	std::string m_currentScenePath;
+	VirtualPath m_currentScenePath;
 	bool        m_isSceneDirty = false;
 };

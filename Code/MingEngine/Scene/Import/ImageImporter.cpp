@@ -19,7 +19,7 @@ std::string ImageImporter::GetImportedExtension() const { return "tex"; }
 std::vector<ImportOptions> const ImageImporter::GetImportOptions() const { return {}; }
 
 Ref<Resource> ImageImporter::Import(
-	std::unordered_map<std::string, Variant> const& importOptions, std::string const& sourceVirtualPath)
+	std::unordered_map<std::string, Variant> const& importOptions, VirtualPath const& sourceVirtualPath)
 {
 	importOptions;
 

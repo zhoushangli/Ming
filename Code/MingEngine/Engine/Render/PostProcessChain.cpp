@@ -5,7 +5,7 @@
 #include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Engine/Render/D3D11RenderBackend.hpp"
 
-PostProcessPass::PostProcessPass(std::string const& passName, std::string const& postProcessShaderVirtualPath)
+PostProcessPass::PostProcessPass(std::string const& passName, VirtualPath const& postProcessShaderVirtualPath)
 	: m_name(passName), m_wideName(passName.begin(), passName.end())
 {
 	m_postProcessShaderResource = ResourceLoader::Load(postProcessShaderVirtualPath);

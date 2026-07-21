@@ -35,7 +35,7 @@ public:
 class PostProcessPass
 {
 public:
-	PostProcessPass(std::string const& passName, std::string const& postProcessShaderVirtualPath);
+	PostProcessPass(std::string const& passName, VirtualPath const& postProcessShaderVirtualPath);
 	~PostProcessPass();
 
 	bool HasCustomOutput() const;

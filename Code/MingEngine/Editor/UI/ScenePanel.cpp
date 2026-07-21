@@ -143,13 +143,13 @@ void ScenePanel::RenderNode(Node* node, std::string const& filterText, EditorUIC
 	ImGui::PushID(static_cast<int>(handle.GetUID()));
 	ImGui::PushID(static_cast<int>(handle.GetIndex()));
 
-	std::string const displayName = node->GetName().empty() ? node->GetClassName() : node->GetName();
-	bool const        isRenaming  = m_renamingNode == handle;
-	bool const        isOpen      = ImGui::TreeNodeEx("##SceneNodeTree", flags);
-	ImVec2 const      treeItemMin = ImGui::GetItemRectMin();
-	ImVec2 const      treeItemMax = ImGui::GetItemRectMax();
-	bool const        rowHovered  = ImGui::IsMouseHoveringRect(treeItemMin, treeItemMax);
-	bool              treeClicked = rowHovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left);
+	std::string const displayName       = node->GetName().empty() ? node->GetClassName() : node->GetName();
+	bool const        isRenaming        = m_renamingNode == handle;
+	bool const        isOpen            = ImGui::TreeNodeEx("##SceneNodeTree", flags);
+	ImVec2 const      treeItemMin       = ImGui::GetItemRectMin();
+	ImVec2 const      treeItemMax       = ImGui::GetItemRectMax();
+	bool const        rowHovered        = ImGui::IsMouseHoveringRect(treeItemMin, treeItemMax);
+	bool              treeClicked       = rowHovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left);
 	bool              treeDoubleClicked = rowHovered && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left);
 
 	if (ImGui::BeginPopupContextItem("SceneNodeContext"))
@@ -168,20 +168,26 @@ void ScenePanel::RenderNode(Node* node, std::string const& filterText, EditorUIC
 	// Drag/drop must stay attached to the tree item, which has a stable ImGui ID.
 	if (!isRenaming && ImGui::BeginDragDropSource())
 	{
-		ImGui::SetDragDropPayload("SCENE_NODE", &handle, sizeof(handle));
+		EditorDragDrop& dragDrop = EditorNode::Get()->m_dragDrop;
+		dragDrop.SetDragData(handle);
+		ImGui::SetDragDropPayload(EditorDragDrop::PayloadType, nullptr, 0);
+		ImGui::TextUnformatted(node->GetName().c_str());
 
-		ImGui::Text("%s", displayName.c_str());
 		ImGui::EndDragDropSource();
 	}
 
 	if (!isRenaming && ImGui::BeginDragDropTarget())
 	{
-		if (ImGuiPayload const* payload = ImGui::AcceptDragDropPayload("SCENE_NODE"))
+		EditorDragDrop& dragDrop = EditorNode::Get()->m_dragDrop;
+		NodeHandle      draggedHandle;
+		if (dragDrop.TryGetData(draggedHandle) && draggedHandle != handle)
 		{
-			NodeHandle const draggedHandle = *static_cast<NodeHandle const*>(payload->Data);
-
-			m_pendingReparent.m_child  = draggedHandle;
-			m_pendingReparent.m_parent = handle;
+			dragDrop.AllowDrop();
+			if (ImGui::AcceptDragDropPayload(EditorDragDrop::PayloadType) != nullptr)
+			{
+				m_pendingReparent.m_child  = draggedHandle;
+				m_pendingReparent.m_parent = handle;
+			}
 		}
 
 		ImGui::EndDragDropTarget();
@@ -210,7 +216,7 @@ void ScenePanel::RenderNode(Node* node, std::string const& filterText, EditorUIC
 			m_renameBuffer,
 			sizeof(m_renameBuffer),
 			ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll);
-		bool const cancelled = ImGui::IsItemActive() && ImGui::IsKeyPressed(ImGuiKey_Escape);
+		bool const cancelled   = ImGui::IsItemActive() && ImGui::IsKeyPressed(ImGuiKey_Escape);
 		bool const deactivated = ImGui::IsItemDeactivated();
 		if (cancelled)
 		{
@@ -288,8 +294,8 @@ void ScenePanel::BeginRename(Node* node)
 		return;
 	}
 
-	m_renamingNode  = node->GetHandle();
-	m_originalName  = node->GetName();
+	m_renamingNode     = node->GetHandle();
+	m_originalName     = node->GetName();
 	m_focusRenameInput = true;
 	strncpy_s(m_renameBuffer, m_originalName.c_str(), sizeof(m_renameBuffer) - 1);
 }
@@ -307,6 +313,6 @@ void ScenePanel::ClearRename()
 {
 	m_renamingNode = NodeHandle::Invalid;
 	m_originalName.clear();
-	m_renameBuffer[0] = '\0';
+	m_renameBuffer[0]  = '\0';
 	m_focusRenameInput = false;
 }

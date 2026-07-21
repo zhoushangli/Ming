@@ -16,12 +16,6 @@ namespace
 {
 using Json = nlohmann::ordered_json;
 
-bool HasExtension(std::string const& virtualPath, std::string const& extension)
-{
-	return virtualPath.size() >= extension.size()
-		   && virtualPath.compare(virtualPath.size() - extension.size(), extension.size(), extension) == 0;
-}
-
 bool TryParseProperties(Json const& nodeJson, PackedNode& outNode)
 {
 	if (!nodeJson.contains("properties"))
@@ -126,10 +120,9 @@ std::vector<std::string> PackedSceneLoader::GetSupportedExtensions() const
 	return std::vector<std::string>({ ".tscn" });
 }
 
-Ref<Resource> PackedSceneLoader::Load(const std::string& virtualPath)
+Ref<Resource> PackedSceneLoader::Load(VirtualPath const& virtualPath)
 {
-	std::string relativePath;
-	if (!FileSystem::TryGetRelativePath(virtualPath, relativePath) || g_engine == nullptr
+	if (!virtualPath.IsValid() || g_engine == nullptr
 		|| g_engine->m_fileSystem == nullptr)
 	{
 		return Ref<Resource>();
@@ -155,28 +148,26 @@ Ref<Resource> PackedSceneLoader::Load(const std::string& virtualPath)
 		packedScene->m_data          = std::move(loadedData);
 		packedScene->SetVirtualPath(virtualPath);
 
-		size_t      slash = relativePath.find_last_of('/');
-		std::string name  = slash == std::string::npos ? relativePath : relativePath.substr(slash + 1);
-		packedScene->SetName(name);
+		packedScene->SetName(virtualPath.GetFileName());
 		return packedScene;
 	}
 	catch (std::exception const& error)
 	{
-		DebuggerPrintf("PackedScene: failed to load '%s': %s\n", virtualPath.c_str(), error.what());
+		DebuggerPrintf("PackedScene: failed to load '%s': %s\n", virtualPath.CStr(), error.what());
 		return Ref<Resource>();
 	}
 }
 
-bool PackedSceneSaver::CanSave(std::string const& virtualPath, Variant const& value) const
+bool PackedSceneSaver::CanSave(VirtualPath const& virtualPath, Variant const& value) const
 {
 	Ref<PackedScene> packedScene(value);
-	return packedScene.IsValid() && HasExtension(virtualPath, ".tscn");
+	return packedScene.IsValid() && virtualPath.HasExtension(".tscn");
 }
 
-bool PackedSceneSaver::Save(std::string const& virtualPath, Variant const& value)
+bool PackedSceneSaver::Save(VirtualPath const& virtualPath, Variant const& value)
 {
 	Ref<PackedScene> packedScene(value);
-	if (!packedScene.IsValid() || !FileSystem::IsVirtualPath(virtualPath) || g_engine == nullptr
+	if (!packedScene.IsValid() || !virtualPath.IsValid() || g_engine == nullptr
 		|| g_engine->m_fileSystem == nullptr)
 	{
 		return false;
@@ -224,7 +215,7 @@ bool PackedSceneSaver::Save(std::string const& virtualPath, Variant const& value
 	}
 	catch (std::exception const& error)
 	{
-		DebuggerPrintf("PackedScene: failed to save '%s': %s\n", virtualPath.c_str(), error.what());
+		DebuggerPrintf("PackedScene: failed to save '%s': %s\n", virtualPath.CStr(), error.what());
 		return false;
 	}
 }

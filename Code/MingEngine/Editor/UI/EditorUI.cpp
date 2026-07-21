@@ -1,9 +1,9 @@
 #include "MingEngine/Editor/UI/EditorUI.hpp"
 
+#include "MingEngine/Editor/EditorNode.hpp"
 #include "MingEngine/Editor/UI/EditorIcons.hpp"
 #include "MingEngine/Editor/UI/EditorUIContext.hpp"
 #include "MingEngine/Editor/UI/EditorUIStyle.hpp"
-#include "MingEngine/Editor/EditorNode.hpp"
 
 #include "ThirdParty/imgui/imgui.h"
 
@@ -62,12 +62,12 @@ bool RenderMainMenuIconButton(char const* id, char const* iconName, char const* 
 
 void EditorUI::Render(EditorUIContext& context)
 {
-	context.m_editorUI = this;
+	context.m_editorUI       = this;
+	EditorDragDrop& dragDrop = EditorNode::Get()->m_dragDrop;
+	dragDrop.BeginFrame();
 
 	RenderMainMenuBar();
 	RenderDockSpace();
-
-	BeginResourceDragDropFrame();
 
 	m_scenePanel.Render(context);
 	m_importPanel.Render(context);
@@ -75,17 +75,15 @@ void EditorUI::Render(EditorUIContext& context)
 	m_viewportPanel.Render(context);
 	m_inspectorPanel.Render(context);
 	m_outputPanel.Render(context);
-	ApplyResourceDragDropCursor();
 	m_projectSettingsPopup.Render(context);
 	m_warningPopup.Render(context);
+
+	ApplyDragDropCursor();
+	ImGuiPayload const* payload = ImGui::GetDragDropPayload();
+	dragDrop.EndFrame(payload != nullptr && payload->IsDataType(EditorDragDrop::PayloadType));
 }
 
-void EditorUI::Warning(std::string const& title, std::string const& message)
-{
-	m_warningPopup.Open(title, message);
-}
-
-void EditorUI::SetResourceDropAllowed(bool allowed) { m_resourceDropAllowed = m_resourceDropAllowed || allowed; }
+void EditorUI::Warning(std::string const& title, std::string const& message) { m_warningPopup.Open(title, message); }
 
 void EditorUI::SetViewportRect(Vec2 origin, Vec2 dims)
 {
@@ -97,17 +95,16 @@ Vec2 EditorUI::GetViewportOrigin() const { return m_viewportOrigin; }
 Vec2 EditorUI::GetViewportDimensions() const { return m_viewportDims; }
 Vec2 EditorUI::ToViewportPos(Vec2 windowPos) const { return windowPos - m_viewportOrigin; }
 
-void EditorUI::BeginResourceDragDropFrame() { m_resourceDropAllowed = false; }
-
-void EditorUI::ApplyResourceDragDropCursor()
+void EditorUI::ApplyDragDropCursor()
 {
 	ImGuiPayload const* payload = ImGui::GetDragDropPayload();
-	if (payload == nullptr || !payload->IsDataType("FILESYSTEM_RESOURCE"))
+	if (payload == nullptr || !payload->IsDataType(EditorDragDrop::PayloadType))
 	{
 		return;
 	}
 
-	ImGui::SetMouseCursor(m_resourceDropAllowed ? ImGuiMouseCursor_Arrow : ImGuiMouseCursor_NotAllowed);
+	ImGui::SetMouseCursor(
+		EditorNode::Get()->m_dragDrop.IsDropAllowed() ? ImGuiMouseCursor_Arrow : ImGuiMouseCursor_NotAllowed);
 }
 
 void EditorUI::RenderMainMenuBar()
@@ -216,4 +213,3 @@ void EditorUI::RenderDockSpace()
 	ImGui::DockSpace(dockspaceId, ImVec2(0.f, 0.f), ImGuiDockNodeFlags_None);
 	ImGui::End();
 }
-
