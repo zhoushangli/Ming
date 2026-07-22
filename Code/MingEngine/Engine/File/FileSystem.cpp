@@ -149,9 +149,6 @@ FileSystem::FileSystem(FileSystemConfig const& config) : m_resourceRoot(config.m
 void FileSystem::BindMethods() {}
 
 void FileSystem::Startup() { ScanResourceTree(); }
-void FileSystem::Shutdown() {}
-void FileSystem::BeginFrame() {}
-void FileSystem::EndFrame() {}
 
 bool FileSystem::Exists(VirtualPath const& virtualPath) const
 {
@@ -180,8 +177,9 @@ bool FileSystem::CreateFolder(
 	}
 
 	std::filesystem::path parentPath;
-	if (!TryGetWritablePhysicalPath(parentVirtualPath, parentPath, outError, true))
+	if (!TryGetPhysicalPath(parentVirtualPath, parentPath))
 	{
+		outError = "Parent path is invalid.";
 		return false;
 	}
 
@@ -214,10 +212,16 @@ bool FileSystem::Rename(
 		outError = "Name is invalid.";
 		return false;
 	}
+	if (virtualPath.IsRoot())
+	{
+		outError = "The resource root cannot be renamed.";
+		return false;
+	}
 
 	std::filesystem::path sourcePath;
-	if (!TryGetWritablePhysicalPath(virtualPath, sourcePath, outError))
+	if (!TryGetPhysicalPath(virtualPath, sourcePath))
 	{
+		outError = "Virtual path is invalid.";
 		return false;
 	}
 
@@ -228,11 +232,23 @@ bool FileSystem::Rename(
 		outError = "An entry with this name already exists.";
 		return false;
 	}
+
 	std::filesystem::rename(sourcePath, targetPath, errorCode);
+	std::filesystem::path sourceImportConfig = sourcePath.string() + kImportConfigExtension;
+	std::filesystem::path targetImportConfig = targetPath.string() + kImportConfigExtension;
 	if (errorCode)
 	{
 		outError = JoinError("Failed to rename entry", errorCode);
 		return false;
+	}
+	else if (std::filesystem::exists(sourceImportConfig))
+	{
+		std::filesystem::rename(sourceImportConfig, targetImportConfig, errorCode);
+		if (errorCode)
+		{
+			outError = JoinError("Failed to rename entry import metadata", errorCode);
+			return false;
+		}
 	}
 
 	return TryToVirtualPath(targetPath, outVirtualPath);
@@ -242,22 +258,29 @@ bool FileSystem::Duplicate(VirtualPath const& virtualPath, VirtualPath& outVirtu
 {
 	outVirtualPath = {};
 	outError.clear();
-	std::filesystem::path sourcePath;
-	if (!TryGetWritablePhysicalPath(virtualPath, sourcePath, outError))
+	if (virtualPath.IsRoot())
 	{
+		outError = "The resource root cannot be duplicated.";
+		return false;
+	}
+
+	std::filesystem::path sourcePath;
+	if (!TryGetPhysicalPath(virtualPath, sourcePath))
+	{
+		outError = "Virtual path is invalid.";
 		return false;
 	}
 
 	std::filesystem::path const parentPath = sourcePath.parent_path();
-	std::error_code errorCode;
-	bool const isDirectory = std::filesystem::is_directory(sourcePath, errorCode);
+	std::error_code             errorCode;
+	bool const                  isDirectory = std::filesystem::is_directory(sourcePath, errorCode);
 	if (errorCode)
 	{
 		outError = JoinError("Failed to inspect entry", errorCode);
 		return false;
 	}
-	std::string const stem = isDirectory ? sourcePath.filename().string() : sourcePath.stem().string();
-	std::string const extension = isDirectory ? "" : sourcePath.extension().string();
+	std::string const     stem       = isDirectory ? sourcePath.filename().string() : sourcePath.stem().string();
+	std::string const     extension  = isDirectory ? "" : sourcePath.extension().string();
 	std::filesystem::path targetPath = parentPath / (stem + " Copy" + extension);
 	for (uint32_t index = 2; std::filesystem::exists(targetPath, errorCode) && !errorCode; ++index)
 	{
@@ -282,9 +305,16 @@ bool FileSystem::Duplicate(VirtualPath const& virtualPath, VirtualPath& outVirtu
 bool FileSystem::Remove(VirtualPath const& virtualPath, std::string& outError) const
 {
 	outError.clear();
-	std::filesystem::path physicalPath;
-	if (!TryGetWritablePhysicalPath(virtualPath, physicalPath, outError))
+	if (virtualPath.IsRoot())
 	{
+		outError = "The resource root cannot be removed.";
+		return false;
+	}
+
+	std::filesystem::path physicalPath;
+	if (!TryGetPhysicalPath(virtualPath, physicalPath))
+	{
+		outError = "Virtual path is invalid.";
 		return false;
 	}
 
@@ -295,6 +325,125 @@ bool FileSystem::Remove(VirtualPath const& virtualPath, std::string& outError) c
 		outError = errorCode ? JoinError("Failed to delete entry", errorCode) : "Entry does not exist.";
 		return false;
 	}
+
+	std::filesystem::path importConfig = physicalPath.string() + kImportConfigExtension;
+	if (std::filesystem::exists(importConfig, errorCode))
+	{
+		std::filesystem::remove(importConfig, errorCode);
+		if (errorCode)
+		{
+			outError = JoinError("Failed to delete entry import metadata", errorCode);
+			return false;
+		}
+	}
+
+	return true;
+}
+
+bool FileSystem::Move(
+	VirtualPath const& sourceVirtualPath,
+	VirtualPath const& targetDirectoryVirtualPath,
+	VirtualPath&       outVirtualPath,
+	std::string&       outError) const
+{
+	outVirtualPath = {};
+	outError.clear();
+
+	if (sourceVirtualPath.IsRoot())
+	{
+		outError = "The resource root cannot be moved.";
+		return false;
+	}
+
+	std::filesystem::path sourcePath;
+	if (!TryGetPhysicalPath(sourceVirtualPath, sourcePath))
+	{
+		outError = "Source path is invalid.";
+		return false;
+	}
+
+	std::filesystem::path targetDirectoryPath;
+	if (!TryGetPhysicalPath(targetDirectoryVirtualPath, targetDirectoryPath))
+	{
+		outError = "Target directory path is invalid.";
+		return false;
+	}
+	if (sourceVirtualPath.GetParent() == targetDirectoryVirtualPath)
+	{
+		outVirtualPath = sourceVirtualPath;
+		return true;
+	}
+
+	VirtualPath const targetVirtualPath = targetDirectoryVirtualPath.Join(sourceVirtualPath.GetFileName());
+	if (!targetVirtualPath.IsValid())
+	{
+		outError = "Target virtual path is invalid.";
+		return false;
+	}
+
+	std::error_code errorCode;
+	if (!std::filesystem::is_directory(targetDirectoryPath, errorCode) || errorCode)
+	{
+		outError = "The move target is not a directory.";
+		return false;
+	}
+
+	bool const sourceIsDirectory = std::filesystem::is_directory(sourcePath, errorCode);
+
+	if (errorCode)
+	{
+		outError = JoinError("Failed to inspect source entry", errorCode);
+		return false;
+	}
+
+	if (sourceIsDirectory)
+	{
+		std::filesystem::path const relativeTarget = targetDirectoryPath.lexically_relative(sourcePath);
+
+		auto const firstComponent = relativeTarget.begin();
+		bool const targetIsInsideSource =
+			relativeTarget == "." || (firstComponent != relativeTarget.end() && *firstComponent != "..");
+
+		if (targetIsInsideSource)
+		{
+			outError = "A folder cannot be moved into itself or one of its children.";
+			return false;
+		}
+	}
+
+	std::filesystem::path const targetPath = targetDirectoryPath / sourcePath.filename();
+
+	if (std::filesystem::exists(targetPath, errorCode))
+	{
+		outError = "An entry with the same name already exists in the target folder.";
+		return false;
+	}
+
+	if (errorCode)
+	{
+		outError = JoinError("Failed to inspect move target", errorCode);
+		return false;
+	}
+
+	std::filesystem::rename(sourcePath, targetPath, errorCode);
+	std::filesystem::path sourceImportConfig = sourcePath.string() + kImportConfigExtension;
+	std::filesystem::path targetImportConfig = targetPath.string() + kImportConfigExtension;
+	if (errorCode)
+	{
+		outError = JoinError("Failed to move entry", errorCode);
+		return false;
+	}
+	else if (std::filesystem::exists(sourceImportConfig))
+	{
+		std::filesystem::rename(sourceImportConfig, targetImportConfig, errorCode);
+		if (errorCode)
+		{
+			outError = JoinError("Failed to move entry import metadata", errorCode);
+			return false;
+		}
+	}
+
+	outVirtualPath = targetVirtualPath;
 	return true;
 }
 
@@ -483,7 +632,7 @@ FileEntry const* FileSystem::GetResourceRootEntry() const { return m_rootEntry.g
 bool FileSystem::TryToVirtualPath(std::filesystem::path const& physicalPath, VirtualPath& outVirtualPath) const
 {
 	outVirtualPath = {};
-	std::error_code errorCode;
+	std::error_code             errorCode;
 	std::filesystem::path const canonicalRoot = std::filesystem::weakly_canonical(m_resourceRoot, errorCode);
 	if (errorCode)
 	{
@@ -495,7 +644,8 @@ bool FileSystem::TryToVirtualPath(std::filesystem::path const& physicalPath, Vir
 		return false;
 	}
 	std::filesystem::path const relativePath = std::filesystem::relative(canonicalPath, canonicalRoot, errorCode);
-	if (errorCode || (!relativePath.empty() && relativePath.begin() != relativePath.end() && *relativePath.begin() == ".."))
+	if (errorCode
+		|| (!relativePath.empty() && relativePath.begin() != relativePath.end() && *relativePath.begin() == ".."))
 	{
 		return false;
 	}
@@ -515,14 +665,14 @@ bool FileSystem::TryGetPhysicalPath(VirtualPath const& virtualPath, std::filesys
 		return false;
 	}
 
-	std::string const relativePath = virtualPath.GetString().substr(std::string("res://").size());
-	std::error_code errorCode;
+	std::string const           relativePath = virtualPath.GetString().substr(std::string("res://").size());
+	std::error_code             errorCode;
 	std::filesystem::path const canonicalRoot = std::filesystem::weakly_canonical(m_resourceRoot, errorCode);
 	if (errorCode)
 	{
 		return false;
 	}
-	std::filesystem::path const candidate = relativePath.empty() ? canonicalRoot : canonicalRoot / relativePath;
+	std::filesystem::path const candidate     = relativePath.empty() ? canonicalRoot : canonicalRoot / relativePath;
 	std::filesystem::path const canonicalPath = std::filesystem::weakly_canonical(candidate, errorCode);
 	if (errorCode)
 	{
@@ -533,64 +683,6 @@ bool FileSystem::TryGetPhysicalPath(VirtualPath const& virtualPath, std::filesys
 	{
 		return false;
 	}
-	outPhysicalPath = canonicalPath;
-	return true;
-}
-
-bool FileSystem::TryGetWritablePhysicalPath(
-	VirtualPath const&       virtualPath,
-	std::filesystem::path&   outPhysicalPath,
-	std::string&             outError,
-	bool                     allowResourceRoot) const
-{
-	outPhysicalPath.clear();
-	outError.clear();
-
-	if (virtualPath.IsRoot())
-	{
-		if (!allowResourceRoot)
-		{
-			outError = "The resource root cannot be modified.";
-			return false;
-		}
-		outPhysicalPath = m_resourceRoot;
-	}
-	else if (!TryGetPhysicalPath(virtualPath, outPhysicalPath))
-	{
-		outError = "Virtual path is invalid.";
-		return false;
-	}
-
-	std::error_code errorCode;
-	std::filesystem::path const canonicalRoot = std::filesystem::weakly_canonical(m_resourceRoot, errorCode);
-	if (errorCode)
-	{
-		outError = JoinError("Failed to resolve resource root", errorCode);
-		return false;
-	}
-	std::filesystem::path const canonicalPath = std::filesystem::weakly_canonical(outPhysicalPath, errorCode);
-	if (errorCode)
-	{
-		outError = JoinError("Failed to resolve path", errorCode);
-		return false;
-	}
-
-	auto rootPart = canonicalRoot.begin();
-	auto pathPart = canonicalPath.begin();
-	for (; rootPart != canonicalRoot.end() && pathPart != canonicalPath.end(); ++rootPart, ++pathPart)
-	{
-		if (*rootPart != *pathPart)
-		{
-			outError = "Path is outside the resource root.";
-			return false;
-		}
-	}
-	if (rootPart != canonicalRoot.end())
-	{
-		outError = "Path is outside the resource root.";
-		return false;
-	}
-
 	outPhysicalPath = canonicalPath;
 	return true;
 }
@@ -727,7 +819,6 @@ std::unique_ptr<FileEntry> FileSystem::BuildEntry(
 		}
 
 		SortChildren(*result);
-
 	}
 
 	return result;

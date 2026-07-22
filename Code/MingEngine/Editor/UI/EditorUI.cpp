@@ -64,6 +64,7 @@ void EditorUI::Render(EditorUIContext& context)
 {
 	context.m_editorUI       = this;
 	EditorDragDrop& dragDrop = EditorNode::Get()->m_dragDrop;
+
 	dragDrop.BeginFrame();
 
 	RenderMainMenuBar();
@@ -79,8 +80,11 @@ void EditorUI::Render(EditorUIContext& context)
 	m_warningPopup.Render(context);
 
 	ApplyDragDropCursor();
+	
 	ImGuiPayload const* payload = ImGui::GetDragDropPayload();
-	dragDrop.EndFrame(payload != nullptr && payload->IsDataType(EditorDragDrop::PayloadType));
+	bool isDragging = payload != nullptr && payload->IsDataType(EditorDragDrop::PayloadType);
+
+	dragDrop.EndFrame(isDragging);
 }
 
 void EditorUI::Warning(std::string const& title, std::string const& message) { m_warningPopup.Open(title, message); }

@@ -129,6 +129,8 @@ void FileSystemPanel::OnRender(EditorUIContext& context)
 	RenderBackgroundContextMenu(context);
 
 	ImGui::EndChild();
+
+	// Handle pending operations that need to be executed after the UI rendering.
 	if (m_pendingRenameVirtualPath.IsValid())
 	{
 		VirtualPath newVirtualPath;
@@ -145,11 +147,31 @@ void FileSystemPanel::OnRender(EditorUIContext& context)
 		m_pendingRenameVirtualPath = {};
 		m_pendingRenameName.clear();
 	}
+
+	if (m_pendingMoveSourceVirtualPath.IsValid() && m_pendingMoveTargetVirtualPath.IsValid())
+	{
+		VirtualPath newVirtualPath;
+		std::string error;
+		if (context.m_fileSystem->Move(
+				m_pendingMoveSourceVirtualPath, m_pendingMoveTargetVirtualPath, newVirtualPath, error))
+		{
+			context.m_fileSystem->ScanResourceTree();
+			m_selectedVirtualPath = newVirtualPath;
+		}
+		else
+		{
+			ShowError(std::move(error));
+		}
+		m_pendingMoveSourceVirtualPath = {};
+		m_pendingMoveTargetVirtualPath = {};
+	}
+
 	if (m_refreshResourceTree)
 	{
 		context.m_fileSystem->ScanResourceTree();
 		m_refreshResourceTree = false;
 	}
+
 	m_wasFocused = isFocused;
 	ImGui::End();
 
@@ -246,12 +268,31 @@ void FileSystemPanel::RenderEntry(FileEntry const& entry, std::string const& low
 	{
 		if (ImGui::BeginDragDropSource())
 		{
-			// We must set dargdrop payload otherwise the drag-drop source will be cancelled
+			// Submit a marker payload so ImGui keeps the drag source active.
+			// e.g. The actual virtual path remains in EditorDragDrop.
 			EditorNode::Get()->m_dragDrop.SetDragData(entry.GetVirtualPath());
 			ImGui::SetDragDropPayload(EditorDragDrop::PayloadType, nullptr, 0);
 			ImGui::TextUnformatted(entry.GetName().c_str());
 
 			ImGui::EndDragDropSource();
+		}
+
+		if (entry.IsDirectory() && ImGui::BeginDragDropTarget())
+		{
+			EditorDragDrop& dragDrop = EditorNode::Get()->m_dragDrop;
+			VirtualPath     draggedVirtualPath;
+			bool const      canMove = dragDrop.TryGetData(draggedVirtualPath) && !draggedVirtualPath.IsRoot()
+				&& draggedVirtualPath != entry.GetVirtualPath()
+				&& draggedVirtualPath.GetParent() != entry.GetVirtualPath();
+			if (canMove)
+			{
+				dragDrop.AllowDrop();
+				if (ImGui::AcceptDragDropPayload(EditorDragDrop::PayloadType) != nullptr)
+				{
+					MoveEntry(draggedVirtualPath, entry.GetVirtualPath());
+				}
+			}
+			ImGui::EndDragDropTarget();
 		}
 
 		EditorUIWidgets::RenderTreeRowContent(
@@ -601,4 +642,10 @@ char const* FileSystemPanel::GetIconNameForPath(std::filesystem::path const& pat
 	}
 
 	return "File";
+}
+
+void FileSystemPanel::MoveEntry(VirtualPath const& sourceVirtualPath, VirtualPath const& targetVirtualPath)
+{
+	m_pendingMoveSourceVirtualPath = sourceVirtualPath;
+	m_pendingMoveTargetVirtualPath = targetVirtualPath;
 }

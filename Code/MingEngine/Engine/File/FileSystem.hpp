@@ -71,9 +71,6 @@ public:
 	FileSystem(FileSystemConfig const& config);
 
 	void Startup() override;
-	void Shutdown() override;
-	void BeginFrame() override;
-	void EndFrame() override;
 
 	bool ReadText(VirtualPath const& virtualPath, std::string& outText) const;
 	bool WriteText(VirtualPath const& virtualPath, std::string const& text) const;
@@ -91,6 +88,11 @@ public:
 		std::string&       outError) const;
 	bool Duplicate(VirtualPath const& virtualPath, VirtualPath& outVirtualPath, std::string& outError) const;
 	bool Remove(VirtualPath const& virtualPath, std::string& outError) const;
+	bool Move(
+		VirtualPath const& sourceVirtualPath,
+		VirtualPath const& targetDirectoryVirtualPath,
+		VirtualPath&       outVirtualPath,
+		std::string&       outError) const;
 
 	std::filesystem::path const& GetResourceRoot() const;
 	void                         ScanResourceTree();
@@ -104,11 +106,6 @@ public:
 	static void BindMethods();
 
 private:
-	bool TryGetWritablePhysicalPath(
-		VirtualPath const& virtualPath,
-		std::filesystem::path& outPhysicalPath,
-		std::string& outError,
-		bool allowResourceRoot = false) const;
 	void ScanResourceImports(std::unordered_map<VirtualPath, std::filesystem::file_time_type>& outImportedTimes);
 	FileEntry const*           FindEntry(VirtualPath const& virtualPath) const;
 	std::unique_ptr<FileEntry> BuildEntry(

@@ -1,20 +1,13 @@
 #pragma once
 
 #include "MingEngine/Editor/UI/EditorPanel.hpp"
-#include "MingEngine/Core/Object/Object.hpp"
-#include "MingEngine/Core/Object/Resource.hpp"
-#include "MingEngine/Core/Object/RefCounted.hpp"
 #include "MingEngine/Editor/UI/Popup/CreateFolderPopup.hpp"
 #include "MingEngine/Editor/UI/Popup/CreateScenePopup.hpp"
 #include "MingEngine/Editor/UI/Popup/DeleteEntryPopup.hpp"
+#include "MingEngine/Engine/File/VirtualPath.hpp"
 
 #include <filesystem>
 #include <string>
-
-struct FilePayload
-{
-	Ref<Resource> m_resource;
-};
 
 class FileEntry;
 class FileSystem;
@@ -54,6 +47,8 @@ private:
 	bool        DoesEntryMatchFilter(FileEntry const& entry, std::string const& lowerFilterText) const;
 	char const* GetIconNameForPath(std::filesystem::path const& path, bool isDirectory) const;
 
+	void MoveEntry(VirtualPath const& sourceVirtualPath, VirtualPath const& targetVirtualPath);
+
 private:
 	char        m_filter[64] = {};
 	char        m_renameBuffer[256] = {};
@@ -65,6 +60,8 @@ private:
 	VirtualPath m_pendingRenameVirtualPath;
 	std::string m_pendingRenameName;
 	VirtualPath m_directoryToOpen;
+	VirtualPath m_pendingMoveSourceVirtualPath;
+	VirtualPath m_pendingMoveTargetVirtualPath;
 	CreateFolderPopup m_createFolderPopup;
 	CreateScenePopup  m_createScenePopup;
 	DeleteEntryPopup  m_deleteEntryPopup;

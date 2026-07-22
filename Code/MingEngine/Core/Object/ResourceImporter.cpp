@@ -100,8 +100,8 @@ bool TryReadImportConfigJson(VirtualPath const& sourceVirtualPath, Json& outMeta
 	return true;
 }
 
-Ref<ResourceFormatImporter>
-FindImporterByClassName(VirtualPath const& sourceVirtualPath, std::string const& importerClassName)
+Ref<ResourceFormatImporter> FindImporterByClassName(
+	VirtualPath const& sourceVirtualPath, std::string const& importerClassName)
 {
 	for (Ref<ResourceFormatImporter> const& importer : ResourceImporter::GetMatchedImporters(sourceVirtualPath))
 	{
@@ -130,8 +130,7 @@ ImportOptions const* FindImportOption(std::vector<ImportOptions> const& options,
 // This function serializes only user-changed import options.
 // e.g. default scale is omitted, while a custom scale is written into import_options.
 Json SerializeNonDefaultImportOptions(
-	Ref<ResourceFormatImporter>                     importer,
-	std::unordered_map<std::string, Variant> const& importOptions)
+	Ref<ResourceFormatImporter> importer, std::unordered_map<std::string, Variant> const& importOptions)
 {
 	Json serializedOptions = Json::object();
 	if (!importer.IsValid())
@@ -165,9 +164,7 @@ Json SerializeNonDefaultImportOptions(
 	return serializedOptions;
 }
 
-bool TryGetVirtualPathModifiedTime(
-	VirtualPath const&               virtualPath,
-	std::filesystem::file_time_type& outModifiedTime)
+bool TryGetModifiedTime(VirtualPath const& virtualPath, std::filesystem::file_time_type& outModifiedTime)
 {
 	if (g_engine == nullptr || g_engine->m_fileSystem == nullptr)
 	{
@@ -377,7 +374,7 @@ bool ResourceImporter::EnsureImported(VirtualPath const& sourceVirtualPath)
 
 	// 1) Read the source modified time so stale caches can be detected.
 	std::filesystem::file_time_type sourceModifiedTime;
-	if (!TryGetVirtualPathModifiedTime(sourceVirtualPath, sourceModifiedTime))
+	if (!TryGetModifiedTime(sourceVirtualPath, sourceModifiedTime))
 	{
 		return false;
 	}
@@ -394,24 +391,26 @@ bool ResourceImporter::EnsureImported(VirtualPath const& sourceVirtualPath)
 	}
 	if (!importer.IsValid())
 	{
-		importer       = importers.front();
-		importOptions  = {};
+		importer      = importers.front();
+		importOptions = {};
 		importerClassName.clear();
 	}
 
 	// 3) Validate that the generated cache exists and is at least as new as the source.
 	VirtualPath importPath;
-	bool        hasFreshCache = false;
+	bool        hasFreshCache  = false;
+	bool        hasAlignedName = false;
 	if (hasConfig && TryGetImportFile(sourceVirtualPath, importPath) && g_engine != nullptr
 		&& g_engine->m_fileSystem != nullptr && g_engine->m_fileSystem->Exists(importPath))
 	{
 		std::filesystem::file_time_type importModifiedTime;
-		hasFreshCache =
-			TryGetVirtualPathModifiedTime(importPath, importModifiedTime) && importModifiedTime >= sourceModifiedTime;
+		hasFreshCache = TryGetModifiedTime(importPath, importModifiedTime) && importModifiedTime >= sourceModifiedTime;
+
+		hasAlignedName = (importPath == GetImportOutputPath(sourceVirtualPath, importer->GetImportedExtension()));
 	}
 
 	// 4) Reimport when the config is missing/broken, the importer is unavailable, or the cache is stale.
-	if (hasConfig && importerClassName == importer->GetClassName() && hasFreshCache)
+	if (hasConfig && importerClassName == importer->GetClassName() && hasFreshCache && hasAlignedName)
 	{
 		return true;
 	}
@@ -428,11 +427,12 @@ VirtualPath ResourceImporter::GetImportConfigPath(VirtualPath const& sourceVirtu
 
 // This function returns the generated cache path under the internal import directory.
 // e.g. res://Models/Pawn.obj can become res://.ming/Import/Pawn_1234.mesh.
-VirtualPath
-ResourceImporter::GetImportOutputPath(VirtualPath const& sourceVirtualPath, std::string const& importedExtension)
+VirtualPath ResourceImporter::GetImportOutputPath(
+	VirtualPath const& sourceVirtualPath, std::string const& importedExtension)
 {
-	return VirtualPath(std::string(kInternalImportDirectory) + GetImportStem(sourceVirtualPath) + "_"
-		   + GetHashSuffix(sourceVirtualPath) + "." + NormalizeExtension(importedExtension));
+	return VirtualPath(
+		std::string(kInternalImportDirectory) + GetImportStem(sourceVirtualPath) + "_"
+		+ GetHashSuffix(sourceVirtualPath) + "." + NormalizeExtension(importedExtension));
 }
 
 std::vector<Ref<ResourceFormatImporter>> ResourceImporter::FindMatchedImporters(VirtualPath const& sourceVirtualPath)
