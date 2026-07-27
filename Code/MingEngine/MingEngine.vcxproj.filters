@@ -633,6 +633,9 @@
     <ClCompile Include="Engine\Network\NetworkSystem.cpp">
       <Filter>Engine\Network</Filter>
     </ClCompile>
+    <ClCompile Include="Engine\Application\Main_Windows.cpp">
+      <Filter>Engine\Application</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Core\Clock.hpp">
@@ -1228,6 +1231,9 @@
     </ClInclude>
     <ClInclude Include="Engine\Network\NetworkSystem.hpp">
       <Filter>Engine\Network</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Application\Main_Windows.hpp">
+      <Filter>Engine\Application</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
