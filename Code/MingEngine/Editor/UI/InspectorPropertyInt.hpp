@@ -1,24 +1,25 @@
 #pragma once
 
+#include "MingEngine/Editor/UI/EditorUIWidgets.hpp"
 #include "MingEngine/Editor/UI/InspectorProperty.hpp"
-#include "ThirdParty/imgui/imgui.h"
 
 class InspectorPropertyInt final : public InspectorProperty
 {
 public:
 	using InspectorProperty::InspectorProperty;
 
-	void Render() override
+	void RenderValue(EditorUIContext& context, Variant const& value) override
 	{
-		int i = m_value.As<int>();
-		ImGui::Columns(2, nullptr, false);
-		ImGui::TextUnformatted(GetDisplayName().c_str());
-		ImGui::NextColumn();
-		if (ImGui::DragInt(m_labelId.c_str(), &i, 1.0f))
+		(void)context;
+		if (!value.Is<int>())
 		{
-			m_value  = Variant(i);
-			m_edited = true;
+			return;
 		}
-		ImGui::Columns(1);
+
+		int i = value.As<int>();
+		if (EditorUIWidgets::PropertyInt(GetDisplayName(), m_labelId.c_str(), i))
+		{
+			EmitValueChanged(Variant(i));
+		}
 	}
 };

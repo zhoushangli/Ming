@@ -10,6 +10,8 @@ class VertexBuffer;
 
 class EditorGizmoVisual3D : public VisualizeInstance3D
 {
+	MCLASS(EditorGizmoVisual3D, VisualizeInstance3D)
+
 public:
 	EditorGizmoVisual3D() = default;
 	~EditorGizmoVisual3D() override;
@@ -19,7 +21,7 @@ protected:
 
 protected:
 	std::vector<Vertex> m_verts;
-	VertexBuffer* m_vertexBuffer = nullptr;
+	VertexBuffer*       m_vertexBuffer = nullptr;
 };
 
 class EditorWorldGrid3D : public EditorGizmoVisual3D
@@ -31,9 +33,13 @@ protected:
 	RenderRequest SubmitRenderRequest() const override;
 };
 
+// TODO: Current Shader looks strange when get close to the axsis, it will scale up when you
+// look up/down, and scale down when you look horizontally
 class EditorWorldAxis3D : public EditorGizmoVisual3D
 {
 public:
-	EditorWorldAxis3D();
-};
+	EditorWorldAxis3D(Vec3 const& axisStart, Vec3 const& axisEnd, Color const& color);
 
+protected:
+	RenderRequest SubmitRenderRequest() const override;
+};

@@ -1,13 +1,18 @@
 #include "MingEngine/Scene/3D/Particles3D.hpp"
-#include "MingEngine/Scene/3D/Camera3D.hpp"
-#include "MingEngine/Scene/Core/SceneTree.hpp"
 
 #include "MingEngine/Core/ErrorWarningAssert.hpp"
-#include "MingEngine/Core/XmlUtils.hpp"
 #include "MingEngine/Core/Math/MathUtils.hpp"
 #include "MingEngine/Core/Math/RandomNumberGenerator.hpp"
+#include "MingEngine/Core/Object/ResourceLoader.hpp"
+#include "MingEngine/Core/Render/Vertex.hpp"
+#include "MingEngine/Core/XmlUtils.hpp"
 #include "MingEngine/Engine/Render/Renderer.hpp"
 #include "MingEngine/Engine/Render/VertexBuffer.hpp"
+#include "MingEngine/Scene/3D/Camera3D.hpp"
+#include "MingEngine/Scene/Core/SceneTree.hpp"
+#include "MingEngine/Scene/Resource/TextureResource.hpp"
+
+using namespace Math;
 
 namespace
 {
@@ -30,7 +35,8 @@ Particles3D::EmitMode ParseXmlAttribute(
 		return Particles3D::EmitMode::Burst;
 	}
 
-	ERROR_RECOVERABLE(Stringf("Unknown particle emitType '%s' for attribute '%s'; using default emit mode instead.",
+	ERROR_RECOVERABLE(Stringf(
+		"Unknown particle emitType '%s' for attribute '%s'; using default emit mode instead.",
 		value.c_str(),
 		attributeName));
 	return defaultValue;
@@ -55,10 +61,10 @@ Particles3D::SimulationSpace ParseXmlAttribute(
 		return Particles3D::SimulationSpace::World;
 	}
 
-	ERROR_RECOVERABLE(
-		Stringf("Unknown particle simulationSpace '%s' for attribute '%s'; using default simulation space instead.",
-			value.c_str(),
-			attributeName));
+	ERROR_RECOVERABLE(Stringf(
+		"Unknown particle simulationSpace '%s' for attribute '%s'; using default simulation space instead.",
+		value.c_str(),
+		attributeName));
 	return defaultValue;
 }
 
@@ -81,7 +87,8 @@ Particles3D::EmitShape ParseXmlAttribute(
 		return Particles3D::EmitShape::Disc;
 	}
 
-	ERROR_RECOVERABLE(Stringf("Unknown particle emitShape '%s' for attribute '%s'; using default emit shape instead.",
+	ERROR_RECOVERABLE(Stringf(
+		"Unknown particle emitShape '%s' for attribute '%s'; using default emit shape instead.",
 		value.c_str(),
 		attributeName));
 	return defaultValue;
@@ -110,17 +117,18 @@ BillboardType ParseXmlAttribute(XmlElement const& element, char const* attribute
 		return BillboardType::FULL_FACING;
 	}
 
-	ERROR_RECOVERABLE(
-		Stringf("Unknown particle billboardType '%s' for attribute '%s'; using default billboard type instead.",
-			value.c_str(),
-			attributeName));
+	ERROR_RECOVERABLE(Stringf(
+		"Unknown particle billboardType '%s' for attribute '%s'; using default billboard type instead.",
+		value.c_str(),
+		attributeName));
 	return defaultValue;
 }
 
 EulerAngles ParseEulerAnglesAttribute(
 	XmlElement const& element, char const* attributeName, EulerAngles const& defaultValue)
 {
-	Vec3 const angles = ::ParseXmlAttribute(element,
+	Vec3 const angles = ::ParseXmlAttribute(
+		element,
 		attributeName,
 		Vec3(defaultValue.m_yawDegrees, defaultValue.m_pitchDegrees, defaultValue.m_rollDegrees));
 	return EulerAngles(angles.x, angles.y, angles.z);
@@ -129,7 +137,8 @@ EulerAngles ParseEulerAnglesAttribute(
 EulerAngles GetRandomOrientationInRange(EulerAngles const& minOrientation, EulerAngles const& maxOrientation)
 {
 	RandomNumberGenerator& rng = RandomNumberGenerator::Get();
-	return EulerAngles(rng.RollRandomFloatInRange(minOrientation.m_yawDegrees, maxOrientation.m_yawDegrees),
+	return EulerAngles(
+		rng.RollRandomFloatInRange(minOrientation.m_yawDegrees, maxOrientation.m_yawDegrees),
 		rng.RollRandomFloatInRange(minOrientation.m_pitchDegrees, maxOrientation.m_pitchDegrees),
 		rng.RollRandomFloatInRange(minOrientation.m_rollDegrees, maxOrientation.m_rollDegrees));
 }
@@ -180,9 +189,10 @@ Particles3D::Particles3D(std::string const& xmlFilePath)
 	m_particles.reserve((size_t)m_maxParticles);
 	m_particleVerts.reserve((size_t)m_maxParticles * 16);
 
-	if (!m_imagePath.empty())
+	if (m_imagePath.IsValid())
 	{
-		m_particleTexture = g_engine->m_renderer->CreateOrGetTexture(m_imagePath.c_str());
+		Ref<Resource> loaded = ResourceLoader::Load(m_imagePath);
+		m_particleTextureRef = Ref<TextureResource>(loaded);
 	}
 	m_spawnInterval = 1.f / m_spawnRate;
 }
@@ -197,7 +207,8 @@ void Particles3D::LoadFromXML(std::string const& xmlFilePath)
 {
 	XmlDocument doc;
 	XmlError    loadResult = doc.LoadFile(xmlFilePath.c_str());
-	ASSERT_OR_DIE(loadResult == tinyxml2::XML_SUCCESS,
+	ASSERT_OR_DIE(
+		loadResult == tinyxml2::XML_SUCCESS,
 		Stringf("Failed to load particle xml file: %s\n", xmlFilePath.c_str()));
 
 	XmlElement* root = doc.RootElement();
@@ -221,7 +232,11 @@ void Particles3D::LoadFromXML(std::string const& xmlFilePath)
 
 	m_simulationSpace = ParseXmlAttribute(*visualElement, "simulationSpace", m_simulationSpace);
 	m_billboardType   = ParseXmlAttribute(*visualElement, "billboardType", m_billboardType);
-	m_imagePath       = ParseXmlAttribute(*visualElement, "imagePath", m_imagePath);
+	std::string const imagePath = ParseXmlAttribute(*visualElement, "imagePath", m_imagePath.GetString());
+	if (!imagePath.empty())
+	{
+		VirtualPath::TryParse(imagePath, m_imagePath);
+	}
 	m_startSize       = ParseXmlAttribute(*visualElement, "startSize", m_startSize);
 	m_endSize         = ParseXmlAttribute(*visualElement, "endSize", m_endSize);
 	m_startColor      = ParseXmlAttribute(*visualElement, "startColor", m_startColor);
@@ -234,69 +249,82 @@ void Particles3D::LoadFromXML(std::string const& xmlFilePath)
 	m_coneHalfAngleDegrees = ParseXmlAttribute(*motionElement, "coneHalfAngleDegrees", m_coneHalfAngleDegrees);
 }
 
-void Particles3D::OnReady()
+void Particles3D::OnNotification(int notification)
 {
-	m_lastEmitterPos = GetWorldPosition();
-
-	if (m_emitMode == EmitMode::Burst)
+	switch (static_cast<NotificationType>(notification))
 	{
-		for (int i = 0; i < m_burstCount; i++)
-		{
-			SpawnNewParticle(GetWorldPosition());
-		}
-		StopAndDestroyWhenEmpty();
-	}
-}
-
-void Particles3D::OnProcess(float deltaSeconds)
-{
-	if (m_isEmitting)
+	case NotificationType::Ready:
 	{
-		if (m_emitMode == EmitMode::Continuous)
-		{
-			float oldTimer = m_spawnTimer;
-			m_spawnTimer += deltaSeconds;
+		m_lastEmitterPos = GetWorldPosition();
 
-			float spawnTimeInFrame = m_spawnInterval - oldTimer;
-			while (m_spawnTimer >= m_spawnInterval)
+		if (m_emitMode == EmitMode::Burst)
+		{
+			for (int i = 0; i < m_burstCount; i++)
 			{
-				float fraction         = spawnTimeInFrame / deltaSeconds;
-				Vec3  particlePosition = InterpolateClamped(m_lastEmitterPos, GetWorldPosition(), fraction);
-				SpawnNewParticle(particlePosition);
+				SpawnNewParticle(GetWorldPosition());
+			}
+			StopAndDestroyWhenEmpty();
+		}
+		break;
+	}
+	case NotificationType::Process:
+	{
+		float      deltaSeconds = 0.f;
+		SceneTree* sceneTree    = GetSceneTree();
+		if (sceneTree != nullptr)
+		{
+			deltaSeconds = sceneTree->GetDeltaSeconds();
+		}
+		if (m_isEmitting)
+		{
+			if (m_emitMode == EmitMode::Continuous)
+			{
+				float oldTimer = m_spawnTimer;
+				m_spawnTimer += deltaSeconds;
 
-				m_spawnTimer -= m_spawnInterval;
-				spawnTimeInFrame += m_spawnInterval;
+				float spawnTimeInFrame = m_spawnInterval - oldTimer;
+				while (m_spawnTimer >= m_spawnInterval)
+				{
+					float fraction         = spawnTimeInFrame / deltaSeconds;
+					Vec3  particlePosition = InterpolateClamped(m_lastEmitterPos, GetWorldPosition(), fraction);
+					SpawnNewParticle(particlePosition);
+
+					m_spawnTimer -= m_spawnInterval;
+					spawnTimeInFrame += m_spawnInterval;
+				}
 			}
 		}
-	}
 
-	// 1) Spawn new particles based on spawn rate and emitter lifetime
-	// 2) Update existing particles' position, size, color based on their velocity, lifetime, and emitter properties
-	// 3) Remove particles that have exceeded their lifetime
+		// 1) Spawn new particles based on spawn rate and emitter lifetime
+		// 2) Update existing particles' position, size, color based on their velocity, lifetime, and emitter properties
+		// 3) Remove particles that have exceeded their lifetime
 
-	bool hasAliveParticles = false;
-	for (Particle3D& particle : m_particles)
-	{
-		if (!particle.IsEnabled())
+		bool hasAliveParticles = false;
+		for (Particle3D& particle : m_particles)
 		{
-			continue;
+			if (!particle.IsEnabled())
+			{
+				continue;
+			}
+
+			particle.m_lifetimeRemaining -= deltaSeconds;
+			particle.m_position += particle.m_velocity * deltaSeconds;
+
+			hasAliveParticles = true;
 		}
 
-		particle.m_lifetimeRemaining -= deltaSeconds;
-		particle.m_position += particle.m_velocity * deltaSeconds;
+		if (m_destroyWhenEmpty && !hasAliveParticles)
+		{
+			DeleteNode();
+			return;
+		}
 
-		hasAliveParticles = true;
+		m_lastEmitterPos = GetWorldPosition();
+
+		RebuildParticleVerts();
+		break;
 	}
-
-	if (m_destroyWhenEmpty && !hasAliveParticles)
-	{
-		DeleteNode();
-		return;
 	}
-
-	m_lastEmitterPos = GetWorldPosition();
-
-	RebuildParticleVerts();
 }
 
 RenderRequest Particles3D::SubmitRenderRequest() const
@@ -318,11 +346,12 @@ RenderRequest Particles3D::SubmitRenderRequest() const
 	}
 	g_engine->m_renderer->CopyCPUToGPU(m_particleVerts.data(), size, m_particleVertexBuffer);
 
-	request.m_pass           = RenderRequestPass::Opaque;
-	request.m_modelToWorld   = Matrix4x4::Identity;
-	request.m_tint           = Rgba8::White;
-	request.m_vertexBuffer   = m_particleVertexBuffer;
-	request.m_textures[SurfaceTextureSlot::Diffuse] = m_particleTexture;
+	request.m_pass         = RenderRequestPass::Opaque;
+	request.m_modelToWorld = Matrix4x4::Identity;
+	request.m_tint         = Color::White;
+	request.m_vertexBuffer = m_particleVertexBuffer;
+	request.m_textures[SurfaceTextureSlot::Diffuse] =
+		m_particleTextureRef.IsValid() ? m_particleTextureRef->GetGPUTexture() : nullptr;
 	request.m_shader         = nullptr;
 	request.m_blendMode      = BlendMode::ADDITIVE;
 	request.m_depthMode      = DepthMode::READ_WRITE_LESS_EQUAL;
@@ -394,7 +423,7 @@ void Particles3D::RebuildParticleVerts()
 		float lifeProgress = 1.f - particle.m_lifetimeRemaining / particle.m_totalLifetime;
 
 		float size  = Interpolate(m_startSize, m_endSize, lifeProgress);
-		Rgba8 color = Interpolate(m_startColor, m_endColor, lifeProgress);
+		Color color = Interpolate(m_startColor, m_endColor, lifeProgress);
 
 		Vec3 bottomLeft  = Vec3(0.f, -size, -size);
 		Vec3 bottomRight = Vec3(0.f, size, -size);
@@ -466,4 +495,3 @@ Vec3 Particles3D::SimulationToWorld(Vec3 const& simPos) const
 	Matrix4x4 simToWorld = GetSimulationToWorld();
 	return simToWorld.TransformPosition3D(simPos);
 }
-

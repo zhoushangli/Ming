@@ -1,24 +1,25 @@
 #pragma once
 
+#include "MingEngine/Editor/UI/EditorUIWidgets.hpp"
 #include "MingEngine/Editor/UI/InspectorProperty.hpp"
-#include "ThirdParty/imgui/imgui.h"
 
 class InspectorPropertyBool final : public InspectorProperty
 {
 public:
 	using InspectorProperty::InspectorProperty;
 
-	void Render() override
+	void RenderValue(EditorUIContext& context, Variant const& value) override
 	{
-		bool b = m_value.As<bool>();
-		ImGui::Columns(2, nullptr, false);
-		ImGui::TextUnformatted(GetDisplayName().c_str());
-		ImGui::NextColumn();
-		if (ImGui::Checkbox(m_labelId.c_str(), &b))
+		(void)context;
+		if (!value.Is<bool>())
 		{
-			m_value  = Variant(b);
-			m_edited = true;
+			return;
 		}
-		ImGui::Columns(1);
+
+		bool b = value.As<bool>();
+		if (EditorUIWidgets::PropertyBool(GetDisplayName(), m_labelId.c_str(), b))
+		{
+			EmitValueChanged(Variant(b));
+		}
 	}
 };

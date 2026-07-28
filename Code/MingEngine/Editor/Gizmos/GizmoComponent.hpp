@@ -2,18 +2,20 @@
 
 #include "MingEngine/Editor/Gizmos/GizmosShapes.hpp"
 #include "MingEngine/Scene/Core/NodeHandle.hpp"
-#include "MingEngine/Scene/Physics/NodeRaycastUtils.hpp"
 
 #include "MingEngine/Core/Math/EulerAngles.hpp"
 #include "MingEngine/Core/Math/Matrix4x4.hpp"
+#include "MingEngine/Core/Math/RaycastUtils.hpp"
 #include "MingEngine/Core/Math/Vec2.hpp"
 #include "MingEngine/Core/Math/Vec3.hpp"
 #include "MingEngine/Core/Render/Rgba8.hpp"
 
 class Camera3D;
 class GizmoComponent;
+class IndexBuffer;
 class Node3D;
 class SceneTree;
+struct MathRaycastQuery3D;
 
 enum class GizmoAxis
 {
@@ -24,104 +26,127 @@ enum class GizmoAxis
 
 struct GizmoContext
 {
-	SceneTree* m_sceneTree        = nullptr;
-	Camera3D const* m_camera      = nullptr;
-	NodeHandle m_selectedNode     = NodeHandle::Invalid;
-	Node3D* m_selectedNode3D      = nullptr;
-	Vec3 m_originWorld            = Vec3::Zero;
-	float m_scale                 = 1.f;
-	Vec2 m_clientPos              = Vec2::Zero;
-	Vec2 m_clientDimensions       = Vec2::Zero;
+	SceneTree*      m_sceneTree        = nullptr;
+	Camera3D const* m_camera           = nullptr;
+	NodeHandle      m_selectedNode     = NodeHandle::Invalid;
+	Node3D*         m_selectedNode3D   = nullptr;
+	Vec3            m_originWorld      = Vec3::Zero;
+	float           m_scale            = 1.f;
+	Vec2            m_clientPos        = Vec2::Zero;
+	Vec2            m_clientDimensions = Vec2::Zero;
 };
 
 GizmoContext BuildGizmoContext(SceneTree* sceneTree, Camera3D const& camera, Vec2 clientPos = Vec2::Zero);
 
-struct GizmoRaycastResult
-{
-	bool m_didImpact            = false;
-	float m_impactDist          = 0.f;
-	Vec3 m_impactPos            = Vec3::Zero;
-	GizmoComponent* m_component = nullptr;
-};
-
 class GizmoComponent : public EditorGizmoVisual3D
 {
+	MCLASS(GizmoComponent, EditorGizmoVisual3D)
+
 public:
-	GizmoComponent(GizmoAxis axis, Rgba8 const& color);
+	GizmoComponent(GizmoAxis axis, Color const& color);
 	virtual ~GizmoComponent() = default;
 
-	virtual GizmoRaycastResult Raycast(GizmoContext const& context, RaycastInfo const& ray) = 0;
-	virtual void RebuildVertices(GizmoContext const& context)                               = 0;
-	virtual void OnBeginDrag(GizmoContext const& context, GizmoRaycastResult const& hit);
-	virtual void OnDrag(GizmoContext const& context, RaycastInfo const& ray);
+	virtual MathRaycastResult3D Raycast(GizmoContext const& context, MathRaycastQuery3D const& raycastInfo) const;
+	virtual void                OnBeginDrag(GizmoContext const& context, Vec3 const& hitPos);
+	virtual void                OnDrag(
+		GizmoContext const&       context,
+		MathRaycastQuery3D const& startRaycastInfo,
+		MathRaycastQuery3D const& currentRaycastInfo);
 	virtual void OnEndDrag(GizmoContext const& context);
 
+	Vec3 GetWorldVirtualCenter() const;
+
 	void SetHovered(bool isHovered);
-	bool IsHovered() const;
-	bool IsDragging() const;
+	void SetRenderPriority(int renderPriority) { m_renderPriority = renderPriority; }
+
+	bool         IsHovered() const;
+	bool         IsDragging() const;
 	virtual bool IsRotationGizmo() const;
 
 protected:
-	Vec3 GetAxisWorld() const;
-	Vec3 GetPlaneU() const;
-	Vec3 GetPlaneV() const;
-	Rgba8 GetDrawColor() const;
+	RenderRequest SubmitRenderRequest() const override;
+	void          OnNotification(int notification);
+	Vec3          GetAxisWorld() const;
+	Vec3          GetPlaneU() const;
+	Vec3          GetPlaneV() const;
+	Color         GetDrawColor() const;
 
 protected:
-	GizmoAxis m_axis  = GizmoAxis::X;
-	Rgba8 m_baseColor = Rgba8::White;
-	bool m_isHovered  = false;
-	bool m_isDragging = false;
+	GizmoAxis m_axis       = GizmoAxis::X;
+	Color     m_baseColor  = Color::White;
+	bool      m_isHovered  = false;
+	bool      m_isDragging = false;
+
+	// Used for arranging the gizmos in front of each other when they overlap.
+	// This is a local position
+	Vec3 m_virtualCenter  = Vec3::Zero;
+	int  m_renderPriority = 0;
 };
 
 class GizmoAxisArrow : public GizmoComponent
 {
-public:
-	GizmoAxisArrow(GizmoAxis axis, Rgba8 const& color);
+	MCLASS(GizmoAxisArrow, GizmoComponent)
 
-	GizmoRaycastResult Raycast(GizmoContext const& context, RaycastInfo const& ray) override;
-	void RebuildVertices(GizmoContext const& context) override;
-	void OnBeginDrag(GizmoContext const& context, GizmoRaycastResult const& hit) override;
-	void OnDrag(GizmoContext const& context, RaycastInfo const& ray) override;
+public:
+	GizmoAxisArrow(GizmoAxis axis, Color const& color);
+
+	MathRaycastResult3D Raycast(GizmoContext const& context, MathRaycastQuery3D const& raycastInfo) const override;
+	void                OnBeginDrag(GizmoContext const& context, Vec3 const& hitPos) override;
+	void                OnDrag(
+		GizmoContext const&       context,
+		MathRaycastQuery3D const& startRaycastInfo,
+		MathRaycastQuery3D const& currentRaycastInfo) override;
 
 private:
 	Vec3 m_startPosition = Vec3::Zero;
 	Vec3 m_dragOrigin    = Vec3::Zero;
-	float m_startAxisT   = 0.f;
 };
 
 class GizmoPlaneSquare : public GizmoComponent
 {
-public:
-	GizmoPlaneSquare(GizmoAxis axis, Rgba8 const& color);
+	MCLASS(GizmoPlaneSquare, GizmoComponent)
 
-	GizmoRaycastResult Raycast(GizmoContext const& context, RaycastInfo const& ray) override;
-	void RebuildVertices(GizmoContext const& context) override;
-	void OnBeginDrag(GizmoContext const& context, GizmoRaycastResult const& hit) override;
-	void OnDrag(GizmoContext const& context, RaycastInfo const& ray) override;
+public:
+	GizmoPlaneSquare(GizmoAxis axis, Color const& color);
+
+	MathRaycastResult3D Raycast(GizmoContext const& context, MathRaycastQuery3D const& raycastInfo) const override;
+	void                OnBeginDrag(GizmoContext const& context, Vec3 const& hitPos) override;
+	void                OnDrag(
+		GizmoContext const&       context,
+		MathRaycastQuery3D const& startRaycastInfo,
+		MathRaycastQuery3D const& currentRaycastInfo) override;
 
 private:
 	Vec3 m_startPosition = Vec3::Zero;
-	Vec3 m_startHitWorld = Vec3::Zero;
+	Vec3 m_dragOrigin    = Vec3::Zero;
 };
 
 class GizmoRotationArc : public GizmoComponent
 {
-public:
-	GizmoRotationArc(GizmoAxis axis, Rgba8 const& color);
+	MCLASS(GizmoRotationArc, GizmoComponent)
 
-	GizmoRaycastResult Raycast(GizmoContext const& context, RaycastInfo const& ray) override;
-	void RebuildVertices(GizmoContext const& context) override;
-	void OnBeginDrag(GizmoContext const& context, GizmoRaycastResult const& hit) override;
-	void OnDrag(GizmoContext const& context, RaycastInfo const& ray) override;
+public:
+	GizmoRotationArc(GizmoAxis axis, Color const& color);
+	~GizmoRotationArc() override;
+
+	MathRaycastResult3D Raycast(GizmoContext const& context, MathRaycastQuery3D const& raycastInfo) const override;
+	void                OnBeginDrag(GizmoContext const& context, Vec3 const& hitPos) override;
+	void                OnDrag(
+		GizmoContext const&       context,
+		MathRaycastQuery3D const& startRaycastInfo,
+		MathRaycastQuery3D const& currentRaycastInfo) override;
 	void OnEndDrag(GizmoContext const& context) override;
 	bool IsRotationGizmo() const override;
 
-private:
-	EulerAngles m_startOrientation = EulerAngles::Zero;
-	Vec3 m_dragOrigin              = Vec3::Zero;
-	Vec3 m_startVectorWorld        = Vec3::Zero;
-	Vec3 m_currentHitWorld         = Vec3::Zero;
-	float m_currentDegrees         = 0.f;
-};
+protected:
+	RenderRequest SubmitRenderRequest() const override;
+	void          OnNotification(int notification);
 
+private:
+	std::vector<unsigned int> m_indices;
+	IndexBuffer*              m_indexBuffer      = nullptr;
+	EulerAngles               m_startOrientation = EulerAngles::Zero;
+	Vec3                      m_dragOrigin       = Vec3::Zero;
+	Vec3                      m_startVectorWorld = Vec3::Zero;
+	float                     m_currentDegrees   = 0.f;
+};

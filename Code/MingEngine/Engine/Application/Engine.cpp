@@ -1,10 +1,10 @@
 #include "MingEngine/Engine/Application/Engine.hpp"
 
+#include "MingEngine/Core/Math/RandomNumberGenerator.hpp"
 #include "MingEngine/Engine/Audio/AudioSystem.hpp"
 #include "MingEngine/Engine/Input/InputSystem.hpp"
-#include "MingEngine/Core/Math/RandomNumberGenerator.hpp"
 #include "MingEngine/Engine/Render/Renderer.hpp"
-#include "MingEngine/Engine/Window/Window.hpp"
+#include "MingEngine/Engine/Window/WindowSystem.hpp"
 
 Engine* g_engine = nullptr;
 
@@ -15,7 +15,7 @@ Engine::Engine(EngineConfig config) : m_config(config)
 	if (config.m_eventSystemConfig.m_isEnable)
 		m_eventSystem = new EventSystem(config.m_eventSystemConfig);
 	if (config.m_windowConfig.m_isEnable)
-		m_window = new Window(config.m_windowConfig);
+		m_windowSystem = new WindowSystem(config.m_windowConfig);
 	if (config.m_fileSystemConfig.m_isEnable)
 		m_fileSystem = new FileSystem(config.m_fileSystemConfig);
 	if (config.m_scriptSystemConfig.m_isEnabled)
@@ -23,23 +23,28 @@ Engine::Engine(EngineConfig config) : m_config(config)
 	if (config.m_rendererConfig.m_isEnable)
 		m_renderer = new Renderer(config.m_rendererConfig);
 	if (config.m_inputConfig.m_isEnable)
-		m_input = new InputSystem(config.m_inputConfig);
+		m_inputSystem = new InputSystem(config.m_inputConfig);
 	if (config.m_audioConfig.m_isEnable)
-		m_audio = new AudioSystem(config.m_audioConfig);
+		m_audioSystem = new AudioSystem(config.m_audioConfig);
 	if (config.m_imguiConfig.m_isEnable)
-		m_imgui = new ImGuiSystem(config.m_imguiConfig);
+		m_imguiSystem = new ImGuiSystem(config.m_imguiConfig);
+	if (config.m_networkConfig.m_isEnable)
+		m_networkSystem = new NetworkSystem(config.m_networkConfig);
 }
 
 Engine::~Engine()
 {
-	delete m_imgui;
-	m_imgui = nullptr;
+	delete m_imguiSystem;
+	m_imguiSystem = nullptr;
 
-	delete m_audio;
-	m_audio = nullptr;
+	delete m_audioSystem;
+	m_audioSystem = nullptr;
 
-	delete m_input;
-	m_input = nullptr;
+	delete m_inputSystem;
+	m_inputSystem = nullptr;
+
+	delete m_fileSystem;
+	m_fileSystem = nullptr;
 
 	delete m_renderer;
 	m_renderer = nullptr;
@@ -47,52 +52,56 @@ Engine::~Engine()
 	delete m_scriptSystem;
 	m_scriptSystem = nullptr;
 
-	delete m_fileSystem;
-	m_fileSystem = nullptr;
-
-	delete m_window;
-	m_window = nullptr;
+	delete m_windowSystem;
+	m_windowSystem = nullptr;
 
 	delete m_eventSystem;
 	m_eventSystem = nullptr;
+
+	delete m_networkSystem;
+	m_networkSystem = nullptr;
 }
 
 void Engine::Startup()
 {
 	if (m_eventSystem != nullptr)
 		m_eventSystem->Startup();
-	if (m_window != nullptr)
-		m_window->Startup();
+	if (m_windowSystem != nullptr)
+		m_windowSystem->Startup();
+	if (m_renderer != nullptr)
+		m_renderer->Startup();
 	if (m_fileSystem != nullptr)
 		m_fileSystem->Startup();
 	if (m_scriptSystem != nullptr)
 		m_scriptSystem->Startup();
-	if (m_renderer != nullptr)
-		m_renderer->Startup();
-	if (m_imgui != nullptr)
-		m_imgui->Startup();
-	if (m_input != nullptr)
-		m_input->Startup();
-	if (m_audio != nullptr)
-		m_audio->Startup();
+	if (m_imguiSystem != nullptr)
+		m_imguiSystem->Startup();
+	if (m_inputSystem != nullptr)
+		m_inputSystem->Startup();
+	if (m_audioSystem != nullptr)
+		m_audioSystem->Startup();
+	if (m_networkSystem != nullptr)
+		m_networkSystem->Startup();
 }
 
 void Engine::Shutdown()
 {
-	if (m_audio != nullptr)
-		m_audio->Shutdown();
-	if (m_input != nullptr)
-		m_input->Shutdown();
-	if (m_imgui != nullptr)
-		m_imgui->Shutdown();
+	if (m_networkSystem != nullptr)
+		m_networkSystem->Shutdown();
+	if (m_audioSystem != nullptr)
+		m_audioSystem->Shutdown();
+	if (m_inputSystem != nullptr)
+		m_inputSystem->Shutdown();
+	if (m_imguiSystem != nullptr)
+		m_imguiSystem->Shutdown();
 	if (m_renderer != nullptr)
 		m_renderer->Shutdown();
 	if (m_scriptSystem != nullptr)
 		m_scriptSystem->Shutdown();
 	if (m_fileSystem != nullptr)
 		m_fileSystem->Shutdown();
-	if (m_window != nullptr)
-		m_window->Shutdown();
+	if (m_windowSystem != nullptr)
+		m_windowSystem->Shutdown();
 	if (m_eventSystem != nullptr)
 		m_eventSystem->Shutdown();
 }
@@ -101,39 +110,42 @@ void Engine::BeginFrame()
 {
 	if (m_eventSystem != nullptr)
 		m_eventSystem->BeginFrame();
-	if (m_window != nullptr)
-		m_window->BeginFrame();
+	if (m_windowSystem != nullptr)
+		m_windowSystem->BeginFrame();
 	if (m_fileSystem != nullptr)
 		m_fileSystem->BeginFrame();
 	if (m_scriptSystem != nullptr)
 		m_scriptSystem->BeginFrame();
-	if (m_imgui != nullptr)
-		m_imgui->BeginFrame();
+	if (m_imguiSystem != nullptr)
+		m_imguiSystem->BeginFrame();
 	if (m_renderer != nullptr)
 		m_renderer->BeginFrame();
-	if (m_input != nullptr)
-		m_input->BeginFrame();
-	if (m_audio != nullptr)
-		m_audio->BeginFrame();
+	if (m_inputSystem != nullptr)
+		m_inputSystem->BeginFrame();
+	if (m_audioSystem != nullptr)
+		m_audioSystem->BeginFrame();
+	if (m_networkSystem != nullptr)
+		m_networkSystem->BeginFrame();
 }
 
 void Engine::EndFrame()
 {
-	if (m_imgui != nullptr)
-		m_imgui->EndFrame();
+	if (m_networkSystem != nullptr)
+		m_networkSystem->EndFrame();
+	if (m_imguiSystem != nullptr)
+		m_imguiSystem->EndFrame();
 	if (m_renderer != nullptr)
 		m_renderer->EndFrame();
-	if (m_audio != nullptr)
-		m_audio->EndFrame();
-	if (m_input != nullptr)
-		m_input->EndFrame();
+	if (m_audioSystem != nullptr)
+		m_audioSystem->EndFrame();
+	if (m_inputSystem != nullptr)
+		m_inputSystem->EndFrame();
 	if (m_scriptSystem != nullptr)
 		m_scriptSystem->EndFrame();
 	if (m_fileSystem != nullptr)
 		m_fileSystem->EndFrame();
-	if (m_window != nullptr)
-		m_window->EndFrame();
+	if (m_windowSystem != nullptr)
+		m_windowSystem->EndFrame();
 	if (m_eventSystem != nullptr)
 		m_eventSystem->EndFrame();
 }
-

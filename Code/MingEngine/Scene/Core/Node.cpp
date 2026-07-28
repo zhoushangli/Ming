@@ -1,10 +1,12 @@
 #include "MingEngine/Scene/Core/Node.hpp"
 
+#include "MingEngine/Core/ErrorWarningAssert.hpp"
 #include "MingEngine/Core/Object/ClassDatabase.hpp"
+#include "MingEngine/Core/Object/Resource.hpp"
+#include "MingEngine/Core/Object/Script.hpp"
+#include "MingEngine/Engine/Script/ScriptInstance.hpp"
 #include "MingEngine/Scene/Core/SceneTree.hpp"
 #include "MingEngine/Scene/Core/Viewport.hpp"
-
-#include "MingEngine/Core/ErrorWarningAssert.hpp"
 
 #include <cctype>
 #include <exception>
@@ -38,10 +40,35 @@ bool                      Node::GetSerializable() const { return m_data.m_isSeri
 bool                      Node::GetReady() const { return m_data.m_enableReady; }
 bool                      Node::GetProcess() const { return m_data.m_enableProcess; }
 
+Variant Node::GetScript() const
+{
+	if (m_data.m_scriptInstance == nullptr)
+	{
+		return Variant();
+	}
+	else
+	{
+		return Variant(m_data.m_scriptInstance->GetScript());
+	}
+}
+
 void Node::SetName(std::string const& name) { m_data.m_name = EnsureUniqueName(name); }
 void Node::SetSerializable(bool isSerializable) { m_data.m_isSerializable = isSerializable; }
 void Node::SetReady(bool isReady) { m_data.m_enableReady = isReady; }
 void Node::SetProcess(bool isProcess) { m_data.m_enableProcess = isProcess; }
+
+void Node::SetScript(Variant const& script)
+{
+	Ref<Script> scriptRef = script;
+
+	if (!scriptRef.IsValid())
+	{
+		m_data.m_scriptInstance = nullptr;
+		return;
+	}
+
+	m_data.m_scriptInstance = std::move(g_engine->m_scriptSystem->CreateInstance(scriptRef, *this));
+}
 
 Node* Node::FindChildByName(std::string const& name) const
 {
@@ -191,8 +218,24 @@ void Node::BindMethods()
 	ClassDatabase::BindMethod("GetReady", &Node::GetReady);
 	ClassDatabase::BindMethod("SetProcess", &Node::SetProcess);
 	ClassDatabase::BindMethod("GetProcess", &Node::GetProcess);
+	ClassDatabase::BindMethod("SetScript", &Node::SetScript);
+	ClassDatabase::BindMethod("GetScript", &Node::GetScript);
+	ClassDatabase::BindMethod("AddNode", &Node::AddNode);
+	ClassDatabase::BindMethod("DeleteNode", &Node::DeleteNode);
 
-	ADD_PROPERTY(PropertyInfo(Variant::Type::String, "name", PropertyInfo::UsageFlags::None), "SetName", "GetName");
+	ADD_PROPERTY(
+		PropertyInfo(Variant::Type::String, "name", PropertyInfo::Hint::None, "", PropertyInfo::UsageFlags::None),
+		"SetName",
+		"GetName");
+	ADD_PROPERTY(
+		PropertyInfo(
+			Variant::Type::ObjectPtr,
+			"script",
+			PropertyInfo::Hint::ResourceType,
+			Script::GetStaticClassName(),
+			PropertyInfo::UsageFlags::Default),
+		"SetScript",
+		"GetScript");
 }
 
 void Node::AttachChildImmediately(Node* child)
@@ -251,27 +294,27 @@ void Node::OnNotification(int notification)
 	case NotificationType::EnterTree:
 	{
 		OnEnterTree();
-		if (m_scriptInstance != nullptr)
+		if (m_data.m_scriptInstance != nullptr)
 		{
-			m_scriptInstance->CallEnterTree();
+			m_data.m_scriptInstance->CallEnterTree();
 		}
 		break;
 	}
 	case NotificationType::ExitTree:
 	{
 		OnExitTree();
-		if (m_scriptInstance != nullptr)
+		if (m_data.m_scriptInstance != nullptr)
 		{
-			m_scriptInstance->CallExitTree();
+			m_data.m_scriptInstance->CallExitTree();
 		}
 		break;
 	}
 	case NotificationType::Ready:
 	{
 		OnReady();
-		if (m_scriptInstance != nullptr)
+		if (m_data.m_scriptInstance != nullptr)
 		{
-			m_scriptInstance->CallReady();
+			m_data.m_scriptInstance->CallReady();
 		}
 		break;
 	}
@@ -286,9 +329,9 @@ void Node::OnNotification(int notification)
 
 		OnProcess(deltaSeconds);
 
-		if (m_scriptInstance != nullptr)
+		if (m_data.m_scriptInstance != nullptr)
 		{
-			m_scriptInstance->CallProcess(deltaSeconds);
+			m_data.m_scriptInstance->CallProcess(deltaSeconds);
 		}
 		break;
 	}
@@ -451,4 +494,3 @@ void Node::OnExitTree() {}
 void Node::OnReady() {}
 
 void Node::OnProcess([[maybe_unused]] float deltaSeconds) {}
-

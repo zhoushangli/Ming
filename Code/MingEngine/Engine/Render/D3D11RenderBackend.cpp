@@ -1,16 +1,17 @@
 #include "MingEngine/Engine/Render/D3D11RenderBackend.hpp"
 
-#include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Core/ErrorWarningAssert.hpp"
-#include "MingEngine/Core/FileUtils.hpp"
+#include "MingEngine/Core/Object/ResourceLoader.hpp"
+#include "MingEngine/Core/Render/Vertex.hpp"
+#include "MingEngine/Core/Render/VertexUtils.hpp"
 #include "MingEngine/Core/StringUtils.hpp"
+#include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Engine/Render/CameraContext.hpp"
 #include "MingEngine/Engine/Render/ConstantBuffer.hpp"
+#include "MingEngine/Engine/Render/GPUTexture.hpp"
 #include "MingEngine/Engine/Render/IndexBuffer.hpp"
-#include "MingEngine/Engine/Render/Texture.hpp"
-#include "MingEngine/Core/Render/Vertex.hpp"
 #include "MingEngine/Engine/Render/VertexBuffer.hpp"
-#include "MingEngine/Core/Render/VertexUtils.hpp"
+#include "MingEngine/Scene/Resource/TextureResource.hpp"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "ThirdParty/stb/stb_image.h"
@@ -41,9 +42,9 @@ namespace
 Vertex const* GetFullscreenTriangleTopLeftUV()
 {
 	static Vertex const fullscreenTriangle[3] = {
-		Vertex(Vec3(-1.f, -1.f, 0.f), Rgba8::White, Vec2(0.f, 1.f)),
-		Vertex(Vec3(3.f, -1.f, 0.f), Rgba8::White, Vec2(2.f, 1.f)),
-		Vertex(Vec3(-1.f, 3.f, 0.f), Rgba8::White, Vec2(0.f, -1.f)),
+		Vertex(Vec3(-1.f, -1.f, 0.f), Color::White, Vec2(0.f, 1.f)),
+		Vertex(Vec3(3.f, -1.f, 0.f), Color::White, Vec2(2.f, 1.f)),
+		Vertex(Vec3(-1.f, 3.f, 0.f), Color::White, Vec2(0.f, -1.f)),
 	};
 
 	return fullscreenTriangle;
@@ -52,14 +53,6 @@ Vertex const* GetFullscreenTriangleTopLeftUV()
 } // namespace
 
 // clang-format off
-const uint8_t kDefaultWhiteTexture[16] = 
-{
-	0xFF, 0xFF, 0xFF, 0xFF, // (0,0)
-	0xFF, 0xFF, 0xFF, 0xFF, // (1,0)
-	0xFF, 0xFF, 0xFF, 0xFF, // (0,1)
-	0xFF, 0xFF, 0xFF, 0xFF  // (1,1)
-};
-
 const uint8_t kDefaultBlackTexture[16] = 
 {
 	0x00, 0x00, 0x00, 0xFF, // (0,0)
@@ -67,6 +60,7 @@ const uint8_t kDefaultBlackTexture[16] =
 	0x00, 0x00, 0x00, 0xFF, // (0,1)
 	0x00, 0x00, 0x00, 0xFF  // (1,1)
 };
+
 // clang-format on
 
 //------------------------------------------------------------------------------------------------
@@ -86,13 +80,13 @@ void           D3D11RenderBackend::Startup()
 #pragma region Startup: Create device and swap chain
 
 	DXGI_SWAP_CHAIN_DESC swapChainDesc = {};
-	swapChainDesc.BufferDesc.Width     = g_engine->m_window->GetClientDimensions().x;
-	swapChainDesc.BufferDesc.Height    = g_engine->m_window->GetClientDimensions().y;
+	swapChainDesc.BufferDesc.Width     = g_engine->m_windowSystem->GetClientDimensions().x;
+	swapChainDesc.BufferDesc.Height    = g_engine->m_windowSystem->GetClientDimensions().y;
 	swapChainDesc.BufferDesc.Format    = DXGI_FORMAT_R8G8B8A8_UNORM;
 	swapChainDesc.SampleDesc.Count     = 1;
 	swapChainDesc.BufferUsage          = DXGI_USAGE_RENDER_TARGET_OUTPUT;
 	swapChainDesc.BufferCount          = 2;
-	swapChainDesc.OutputWindow         = (HWND)g_engine->m_window->GetHwnd();
+	swapChainDesc.OutputWindow         = (HWND)g_engine->m_windowSystem->GetHwnd();
 	swapChainDesc.Windowed             = true;
 	swapChainDesc.SwapEffect           = DXGI_SWAP_EFFECT_FLIP_DISCARD;
 
@@ -277,8 +271,8 @@ void           D3D11RenderBackend::Startup()
 
 	// 	// Create depth stencil texture and view
 	// 	D3D11_TEXTURE2D_DESC depthTextureDesc = {};
-	// 	depthTextureDesc.Width                = g_engine->m_window->GetClientDimensions().x;
-	// 	depthTextureDesc.Height               = g_engine->m_window->GetClientDimensions().y;
+	// 	depthTextureDesc.Width                = g_engine->m_windowSystem->GetClientDimensions().x;
+	// 	depthTextureDesc.Height               = g_engine->m_windowSystem->GetClientDimensions().y;
 	// 	depthTextureDesc.MipLevels            = 1;
 	// 	depthTextureDesc.ArraySize            = 1;
 	// 	depthTextureDesc.Usage                = D3D11_USAGE_DEFAULT;
@@ -320,18 +314,9 @@ void           D3D11RenderBackend::Startup()
 
 #pragma endregion
 
-#pragma region Startup: Create default shader
-
-	m_defaultShader = CreateOrGetShader("Data/Shaders/DefaultUnlit");
-	BindShader(m_defaultShader);
-
-#pragma endregion
-
 #pragma region Startup: Create default texture
 
-	m_defaultWhiteTexture = CreateTextureFromData("DefaultWhite", IntVec2(2, 2), 4, (uint8_t*)kDefaultWhiteTexture);
-	m_defaultBlackTexture = CreateTextureFromData("DefaultBlack", IntVec2(2, 2), 4, (uint8_t*)kDefaultBlackTexture);
-	BindTexture(m_defaultWhiteTexture);
+	m_defaultBlackTexture = CreateGPUTexture("DefaultBlack", IntVec2(2, 2), 4, (uint8_t*)kDefaultBlackTexture);
 
 #pragma endregion
 
@@ -346,6 +331,9 @@ void D3D11RenderBackend::Shutdown()
 {
 	m_currentCamera = nullptr;
 	m_currentShader = nullptr;
+
+	DestroyTexture(m_defaultBlackTexture);
+	m_defaultBlackTexture = nullptr;
 
 	if (m_d3dDeviceContext)
 	{
@@ -401,24 +389,6 @@ void D3D11RenderBackend::Shutdown()
 		}
 	}
 
-	for (auto& shader : m_cachedShaders)
-	{
-		delete shader;
-	}
-	m_cachedShaders.clear();
-
-	for (auto& pair : m_texturesByName)
-	{
-		delete pair.second;
-	}
-	m_texturesByName.clear();
-
-	for (auto& pair : m_fontsByName)
-	{
-		delete pair.second;
-	}
-	m_fontsByName.clear();
-
 	m_d3dAnnotation->Release();
 	m_d3dRenderTargetView->Release();
 	m_d3dSwapChain->Release();
@@ -461,17 +431,17 @@ void D3D11RenderBackend::CreateRenderingContext() {}
 
 void D3D11RenderBackend::BindCamera(CameraContext const& camera)
 {
-	CameraConstants cameraData         = CameraConstants();
-	cameraData.WorldToCameraTransform  = camera.GetWorldToCameraTransform();
-	cameraData.CameraToRenderTransform = camera.GetCameraToRenderTransform();
-	cameraData.RenderToClipTransform   = camera.GetRenderToClipTransform();
-	cameraData.CameraToWorldTransform  = camera.GetCameraToWorldTransform();
-	cameraData.ClipToCameraTransform   = camera.GetClipToCameraTransform();
+	CameraConstants cameraData           = CameraConstants();
+	cameraData.m_worldToCameraTransform  = camera.GetWorldToCameraTransform();
+	cameraData.m_cameraToRenderTransform = camera.GetCameraToRenderTransform();
+	cameraData.m_renderToClipTransform   = camera.GetRenderToClipTransform();
+	cameraData.m_cameraToWorldTransform  = camera.GetCameraToWorldTransform();
+	cameraData.m_clipToCameraTransform   = camera.GetClipToCameraTransform();
 
 	UpdateAndBindConstantBuffer(BuiltinConstantBufferType::Camera, cameraData);
 }
 
-void D3D11RenderBackend::ClearScreen(Rgba8 const& clearColor)
+void D3D11RenderBackend::ClearScreen(Color const& clearColor)
 {
 	float colorAsFloats[4];
 	clearColor.GetAsFloats(colorAsFloats);
@@ -574,15 +544,15 @@ void D3D11RenderBackend::DrawIndexedVertexBuffer(VertexBuffer* vertexBuffer, Ind
 
 #pragma region Public: High-level bind helpers used by gameplay/render features
 
-void D3D11RenderBackend::BindTexture(Texture* textureOrNull) { BindTexture(textureOrNull, 0); }
+void D3D11RenderBackend::BindTexture(GPUTexture* textureOrNull) { BindTexture(textureOrNull, 0); }
 
-void D3D11RenderBackend::BindTexture(Texture* textureOrNull, unsigned int slot)
+void D3D11RenderBackend::BindTexture(GPUTexture* textureOrNull, unsigned int slot)
 {
 	GUARANTEE_OR_DIE(m_d3dDeviceContext, "BindTexture: m_d3dDeviceContext is null");
 
 	if (textureOrNull == nullptr)
 	{
-		textureOrNull = m_defaultWhiteTexture;
+		ERROR_AND_DIE("BindTexture: texture is null");
 	}
 
 	ID3D11ShaderResourceView* srv = textureOrNull->m_shaderResourceView;
@@ -608,10 +578,7 @@ void D3D11RenderBackend::BindShader(Shader* shader)
 {
 	GUARANTEE_OR_DIE(m_d3dDeviceContext, "BindShader: m_d3dDeviceContext is null");
 
-	if (shader == nullptr)
-	{
-		shader = m_defaultShader;
-	}
+	GUARANTEE_OR_DIE(shader != nullptr, "BindShader: shader is null");
 
 	m_d3dDeviceContext->IASetInputLayout(shader->m_inputLayout);
 	m_d3dDeviceContext->VSSetShader(shader->m_vertexShader, nullptr, 0);
@@ -620,61 +587,15 @@ void D3D11RenderBackend::BindShader(Shader* shader)
 
 #pragma endregion
 
-#pragma region Public: GPU resource creation and cache access
+#pragma region Public: GPU resource creation
 
-Shader* D3D11RenderBackend::CreateOrGetShader(char const* shaderName)
-{
-	GUARANTEE_OR_DIE(shaderName && shaderName[0], "CreateShader(shaderName): shaderName is null/empty");
-
-	std::string shaderKey = shaderName;
-	for (Shader* shader : m_cachedShaders)
-	{
-		if (shader->GetName() == shaderKey)
-		{
-			return shader;
-		}
-	}
-
-	std::string shaderFilename = std::string(shaderName) + ".hlsl";
-
-	std::string shaderSource;
-	int         bytesRead = FileReadToString(shaderSource, shaderFilename);
-
-	GUARANTEE_OR_DIE(bytesRead > 0, Stringf("Failed to read shader file \"%s\"", shaderFilename.c_str()));
-
-	return CreateShader(shaderName, shaderSource.c_str());
-}
-
-Texture* D3D11RenderBackend::CreateOrGetTexture(char const* imageFilePath)
-{
-	// See if we already have this texture previously loaded
-	Texture* existingTexture = GetTextureFromFileName(imageFilePath); // You need to write this
-	if (existingTexture)
-	{
-		return existingTexture;
-	}
-
-	// Never seen this texture before!  Let's load it.
-	Texture* newTexture = CreateTextureFromFile(imageFilePath);
-	return newTexture;
-}
-
-Texture* D3D11RenderBackend::CreateTextureFromImage(const Image& image)
-{
-	return CreateTextureFromData(
-		image.GetImageFilePath().c_str(),
-		image.GetDimensions(),
-		4,
-		(uint8_t*)image.GetRawData());
-}
-
-Texture*
-D3D11RenderBackend::CreateTextureFromData(char const* name, IntVec2 dimensions, int bytesPerTexel, uint8_t* texelData)
+GPUTexture* D3D11RenderBackend::CreateGPUTexture(
+	char const* name, IntVec2 dimensions, int bytesPerTexel, uint8_t const* texelData)
 {
 	// We only support RGBA8 format for now, so require 4 bytes per texel
 	GUARANTEE_OR_DIE(
 		bytesPerTexel == 4,
-		Stringf("CreateTextureFromData requires 4 bytes/texel (RGBA). Got %i for \"%s\"", bytesPerTexel, name));
+		Stringf("CreateGPUTextureFromData requires 4 bytes/texel (RGBA). Got %i for \"%s\"", bytesPerTexel, name));
 
 	D3D11_TEXTURE2D_DESC textureDesc = {};
 	textureDesc.Width                = (UINT)dimensions.x;
@@ -690,12 +611,12 @@ D3D11RenderBackend::CreateTextureFromData(char const* name, IntVec2 dimensions, 
 	textureData.pSysMem                = texelData;
 	textureData.SysMemPitch            = 4 * dimensions.x;
 
-	Texture* newTexture = CreateTextureInternal(name, dimensions, &textureDesc, &textureData);
+	GPUTexture* newTexture = CreateTextureInternal(name, dimensions, &textureDesc, &textureData);
 
 	return newTexture;
 }
 
-Texture* D3D11RenderBackend::CreateRenderTargetTexture(char const* name, IntVec2 dimensions)
+GPUTexture* D3D11RenderBackend::CreateRenderTargetTexture(char const* name, IntVec2 dimensions)
 {
 	D3D11_TEXTURE2D_DESC textureDesc = {};
 	textureDesc.Width                = (UINT)dimensions.x;
@@ -707,12 +628,12 @@ Texture* D3D11RenderBackend::CreateRenderTargetTexture(char const* name, IntVec2
 	textureDesc.BindFlags            = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
 	textureDesc.SampleDesc.Count     = 1;
 
-	Texture* newTexture = CreateTextureInternal(name, dimensions, &textureDesc, nullptr);
+	GPUTexture* newTexture = CreateTextureInternal(name, dimensions, &textureDesc, nullptr);
 
 	return newTexture;
 }
 
-Texture* D3D11RenderBackend::CreateDepthStencilTexture(char const* name, IntVec2 dimensions)
+GPUTexture* D3D11RenderBackend::CreateDepthStencilTexture(char const* name, IntVec2 dimensions)
 {
 	D3D11_TEXTURE2D_DESC depthTextureDesc = {};
 	depthTextureDesc.Width                = (UINT)dimensions.x;
@@ -735,36 +656,18 @@ Texture* D3D11RenderBackend::CreateDepthStencilTexture(char const* name, IntVec2
 	srvDesc.Texture2D.MostDetailedMip       = 0;
 	srvDesc.Texture2D.MipLevels             = 1;
 
-	Texture* newTexture =
+	GPUTexture* newTexture =
 		CreateTextureInternal(name, dimensions, &depthTextureDesc, nullptr, nullptr, &srvDesc, &dsvDesc);
 
 	return newTexture;
 }
 
-void D3D11RenderBackend::DestroyTexture(Texture* texture)
+void D3D11RenderBackend::DestroyTexture(GPUTexture* texture)
 {
 	if (texture)
 	{
-		std::string textureName       = texture->m_name;
-		m_texturesByName[textureName] = nullptr;
-
 		delete texture;
 	}
-}
-
-BitmapFont* D3D11RenderBackend::CreateOrGetBitmapFont(char const* fontFilePathNameWithNoExtension)
-{
-	std::string fontKey = std::string(fontFilePathNameWithNoExtension);
-	auto        found   = m_fontsByName.find(fontKey);
-	if (found != m_fontsByName.end())
-	{
-		return found->second;
-	}
-
-	Texture*    fontTexture   = CreateOrGetTexture(Stringf("%s.png", fontFilePathNameWithNoExtension).c_str());
-	BitmapFont* newBitmapFont = new BitmapFont(fontFilePathNameWithNoExtension, *fontTexture);
-	m_fontsByName[fontKey]    = newBitmapFont;
-	return newBitmapFont;
 }
 
 VertexBuffer* D3D11RenderBackend::CreateVertexBuffer(const unsigned int size, unsigned int stride)
@@ -772,16 +675,10 @@ VertexBuffer* D3D11RenderBackend::CreateVertexBuffer(const unsigned int size, un
 	return new VertexBuffer(m_d3dDevice, size, stride);
 }
 
-VertexBuffer* D3D11RenderBackend::CreateVertexBuffer(std::vector<Vertex> const& verts)
+VertexBuffer* D3D11RenderBackend::CreateVertexBuffer(void const* data, const unsigned int size, unsigned int stride)
 {
-	if (verts.empty())
-	{
-		return nullptr;
-	}
-
-	unsigned int const  vertsSize    = static_cast<unsigned int>(verts.size()) * sizeof(Vertex);
-	VertexBuffer* const vertexBuffer = CreateVertexBuffer(vertsSize, sizeof(Vertex));
-	CopyCPUToGPU(verts.data(), vertsSize, vertexBuffer);
+	VertexBuffer* const vertexBuffer = CreateVertexBuffer(size, stride);
+	CopyCPUToGPU(data, size, vertexBuffer);
 	return vertexBuffer;
 }
 
@@ -795,16 +692,11 @@ IndexBuffer* D3D11RenderBackend::CreateIndexBuffer(const unsigned int size)
 	return new IndexBuffer(m_d3dDevice, size);
 }
 
-IndexBuffer* D3D11RenderBackend::CreateIndexBuffer(std::vector<unsigned int> const& indexes)
+IndexBuffer* D3D11RenderBackend::CreateIndexBuffer(
+	void const* data, const unsigned int size, [[maybe_unused]] unsigned int stride)
 {
-	if (indexes.empty())
-	{
-		return nullptr;
-	}
-
-	unsigned int const indexesSize = static_cast<unsigned int>(indexes.size()) * sizeof(unsigned int);
-	IndexBuffer* const indexBuffer = CreateIndexBuffer(indexesSize);
-	CopyCPUToGPU(indexes.data(), indexesSize, indexBuffer);
+	IndexBuffer* const indexBuffer = CreateIndexBuffer(size);
+	CopyCPUToGPU(data, size, indexBuffer);
 	return indexBuffer;
 }
 
@@ -892,81 +784,58 @@ void D3D11RenderBackend::EndEvent()
 
 #pragma endregion
 
-#pragma region Private: Texture cache internals
+#pragma region Public: Shader creation
 
-Texture* D3D11RenderBackend::CreateTextureFromFile(char const* imageFilePath)
-{
-	Image image(imageFilePath);
-
-	return CreateTextureFromImage(image);
-}
-
-Texture* D3D11RenderBackend::GetTextureFromFileName(char const* imageFilePath)
-{
-	if (imageFilePath == nullptr)
-	{
-		return nullptr;
-	}
-
-	std::string filePath = std::string(imageFilePath);
-	auto        found    = m_texturesByName.find(filePath);
-	if (found != m_texturesByName.end())
-	{
-		return found->second;
-	}
-
-	return nullptr;
-}
-
-#pragma endregion
-
-#pragma region Private: Shader creation internals
-
-Shader* D3D11RenderBackend::CreateShader(char const* shaderName, char const* shaderSource)
+Shader* D3D11RenderBackend::CreateShader(
+	std::string const& shaderName, std::string const& shaderSource, std::string const& shaderSourcePath)
 {
 	GUARANTEE_OR_DIE(m_d3dDevice, "CreateShader: m_d3dDevice is null");
-	GUARANTEE_OR_DIE(shaderName && shaderName[0], "CreateShader: shaderName is null/empty");
-	GUARANTEE_OR_DIE(shaderSource, "CreateShader: shaderSource is null");
+	GUARANTEE_OR_DIE(!shaderName.empty(), "CreateShader: shaderName is empty");
 
 	ShaderConfig config;
 	config.m_name = shaderName;
 
 	Shader* shader = new Shader(config);
+	char const* sourceName = shaderSourcePath.empty() ? shaderName.c_str() : shaderSourcePath.c_str();
 
 	// Compile VS / PS
 	std::vector<unsigned char> vsByteCode;
 	std::vector<unsigned char> psByteCode;
 
-	bool vsOK =
-		CompileShaderToByteCode(vsByteCode, shaderName, shaderSource, config.m_vertexEntryPoint.c_str(), "vs_5_0");
-	GUARANTEE_OR_DIE(vsOK, Stringf("Could not compile vertex shader for '%s'", shaderName));
+	bool vsOK = CompileShaderToByteCode(
+		vsByteCode,
+		sourceName,
+		shaderSource.c_str(),
+		config.m_vertexEntryPoint.c_str(),
+		"vs_5_0");
+	GUARANTEE_OR_DIE(vsOK, Stringf("Could not compile vertex shader for '%s'", shaderName.c_str()));
 
-	bool psOK =
-		CompileShaderToByteCode(psByteCode, shaderName, shaderSource, config.m_pixelEntryPoint.c_str(), "ps_5_0");
-	GUARANTEE_OR_DIE(psOK, Stringf("Could not compile pixel shader for '%s'", shaderName));
+	bool psOK = CompileShaderToByteCode(
+		psByteCode,
+		sourceName,
+		shaderSource.c_str(),
+		config.m_pixelEntryPoint.c_str(),
+		"ps_5_0");
+	GUARANTEE_OR_DIE(psOK, Stringf("Could not compile pixel shader for '%s'", shaderName.c_str()));
 
 	// Create VS / PS
 	HRESULT hr =
 		m_d3dDevice->CreateVertexShader(vsByteCode.data(), vsByteCode.size(), nullptr, &shader->m_vertexShader);
-	GUARANTEE_OR_DIE(SUCCEEDED(hr), Stringf("Could not create vertex shader for '%s'", shaderName));
+	GUARANTEE_OR_DIE(SUCCEEDED(hr), Stringf("Could not create vertex shader for '%s'", shaderName.c_str()));
 
 	hr = m_d3dDevice->CreatePixelShader(psByteCode.data(), psByteCode.size(), nullptr, &shader->m_pixelShader);
-	GUARANTEE_OR_DIE(SUCCEEDED(hr), Stringf("Could not create pixel shader for '%s'", shaderName));
+	GUARANTEE_OR_DIE(SUCCEEDED(hr), Stringf("Could not create pixel shader for '%s'", shaderName.c_str()));
 
+	// clang-format off
 	static D3D11_INPUT_ELEMENT_DESC const kPcutbnDesc[] = {
-		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "COLOR", 0, DXGI_FORMAT_R8G8B8A8_UNORM, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "BITANGENT",
-		  0,
-		  DXGI_FORMAT_R32G32B32_FLOAT,
-		  0,
-		  D3D11_APPEND_ALIGNED_ELEMENT,
-		  D3D11_INPUT_PER_VERTEX_DATA,
-		  0 },
-		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "POSITION", 	0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, 							 D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "COLOR", 		0, DXGI_FORMAT_R8G8B8A8_UNORM, 	0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "TEXCOORD", 	0, DXGI_FORMAT_R32G32_FLOAT, 	0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "TANGENT", 	0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "BITANGENT",	0, DXGI_FORMAT_R32G32B32_FLOAT,	0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "NORMAL", 	0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 	};
+	// clang-format on
 
 	D3D11_INPUT_ELEMENT_DESC const* inputElementDesc  = kPcutbnDesc;
 	UINT                            inputElementCount = (UINT)ARRAYSIZE(kPcutbnDesc);
@@ -977,21 +846,19 @@ Shader* D3D11RenderBackend::CreateShader(char const* shaderName, char const* sha
 		vsByteCode.data(),
 		(UINT)vsByteCode.size(),
 		&shader->m_inputLayout);
-	GUARANTEE_OR_DIE(SUCCEEDED(hr), Stringf("Could not create input layout for '%s'", shaderName));
-
-	m_cachedShaders.push_back(shader);
+	GUARANTEE_OR_DIE(SUCCEEDED(hr), Stringf("Could not create input layout for '%s'", shaderName.c_str()));
 
 	return shader;
 }
 
 bool D3D11RenderBackend::CompileShaderToByteCode(
 	std::vector<unsigned char>& outByteCode,
-	char const*                 name,
+	char const*                 shaderPhysicalPath,
 	char const*                 source,
 	char const*                 entryPoint,
 	char const*                 target)
 {
-	if (source == nullptr || entryPoint == nullptr || target == nullptr)
+	if (shaderPhysicalPath == nullptr || source == nullptr || entryPoint == nullptr || target == nullptr)
 	{
 		return false;
 	}
@@ -1009,7 +876,7 @@ bool D3D11RenderBackend::CompileShaderToByteCode(
 	HRESULT hr = D3DCompile(
 		source,
 		strlen(source),
-		name,
+		shaderPhysicalPath,
 		nullptr,
 		D3D_COMPILE_STANDARD_FILE_INCLUDE,
 		entryPoint,
@@ -1152,7 +1019,7 @@ ID3D11Device* D3D11RenderBackend::GetD3DDevice() const { return m_d3dDevice; }
 
 ID3D11DeviceContext* D3D11RenderBackend::GetD3DDeviceContext() const { return m_d3dDeviceContext; }
 
-void D3D11RenderBackend::ClearRenderTarget(Texture* renderTarget, Rgba8 const& clearColor)
+void D3D11RenderBackend::ClearRenderTarget(GPUTexture* renderTarget, Color const& clearColor)
 {
 	if (renderTarget == nullptr || renderTarget->m_renderTargetView == nullptr)
 	{
@@ -1164,7 +1031,7 @@ void D3D11RenderBackend::ClearRenderTarget(Texture* renderTarget, Rgba8 const& c
 	m_d3dDeviceContext->ClearRenderTargetView(renderTarget->m_renderTargetView, colorAsFloats);
 }
 
-void D3D11RenderBackend::ClearDepthStencil(Texture* depthTexture)
+void D3D11RenderBackend::ClearDepthStencil(GPUTexture* depthTexture)
 {
 	if (depthTexture == nullptr || depthTexture->m_depthStencilView == nullptr)
 	{
@@ -1175,7 +1042,7 @@ void D3D11RenderBackend::ClearDepthStencil(Texture* depthTexture)
 		->ClearDepthStencilView(depthTexture->m_depthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 }
 
-void D3D11RenderBackend::BindRenderTargets(Texture* colorTarget, Texture* depthTarget, Texture* normalTarget)
+void D3D11RenderBackend::BindRenderTargets(GPUTexture* colorTarget, GPUTexture* depthTarget, GPUTexture* normalTarget)
 {
 	ID3D11RenderTargetView* renderTargetViews[2] = { nullptr, nullptr };
 
@@ -1193,14 +1060,14 @@ void D3D11RenderBackend::BindRenderTargets(Texture* colorTarget, Texture* depthT
 	m_d3dDeviceContext->OMSetRenderTargets(2, renderTargetViews, depthStencilView);
 }
 
-void D3D11RenderBackend::BindRenderTarget(Texture* colorTarget, Texture* depthTarget)
+void D3D11RenderBackend::BindRenderTarget(GPUTexture* colorTarget, GPUTexture* depthTarget)
 {
 	ID3D11RenderTargetView* renderTargetView = colorTarget != nullptr ? colorTarget->m_renderTargetView : nullptr;
 	ID3D11DepthStencilView* depthStencilView = depthTarget != nullptr ? depthTarget->m_depthStencilView : nullptr;
 	m_d3dDeviceContext->OMSetRenderTargets(1, &renderTargetView, depthStencilView);
 }
 
-void D3D11RenderBackend::BindPostProcessInputs(Texture* colorInput, Texture* depthInput, Texture* normalInput)
+void D3D11RenderBackend::BindPostProcessInputs(GPUTexture* colorInput, GPUTexture* depthInput, GPUTexture* normalInput)
 {
 	BindTexture(colorInput, 0);
 	BindSampler(SamplerMode::POINT_CLAMP, 0);
@@ -1232,7 +1099,7 @@ void D3D11RenderBackend::BindBackBuffer()
 {
 	m_d3dDeviceContext->OMSetRenderTargets(1, &m_d3dRenderTargetView, nullptr);
 }
-Texture* D3D11RenderBackend::CreateTextureInternal(
+GPUTexture* D3D11RenderBackend::CreateTextureInternal(
 	char const*                            name,
 	IntVec2                                dimensions,
 	D3D11_TEXTURE2D_DESC const*            textureDesc,
@@ -1244,20 +1111,26 @@ Texture* D3D11RenderBackend::CreateTextureInternal(
 	GUARANTEE_OR_DIE(
 		dimensions.x > 0 && dimensions.y > 0,
 		Stringf(
-			"CreateTextureFromData failed for \"%s\" - illegal texture dimensions (%i x %i)",
+			"CreateOrGetTexture failed for \"%s\" - illegal texture dimensions (%i x %i)",
 			name,
 			dimensions.x,
 			dimensions.y));
 
-	GUARANTEE_OR_DIE(textureDesc, Stringf("CreateTextureFromData failed for \"%s\" - textureDesc is null", name));
+	GUARANTEE_OR_DIE(textureDesc, Stringf("CreateOrGetTexture failed for \"%s\" - textureDesc is null", name));
 
-	Texture* newTexture      = new Texture();
+	GPUTexture* newTexture   = new GPUTexture();
 	newTexture->m_name       = name;
 	newTexture->m_dimensions = dimensions;
 
 	HRESULT hr = m_d3dDevice->CreateTexture2D(textureDesc, initialData, &newTexture->m_texture);
 
 	GUARANTEE_OR_DIE(SUCCEEDED(hr), "Could not create texture.");
+
+#if defined(ENGINE_DEBUG_RENDER)
+
+	newTexture->m_texture->SetPrivateData(WKPDID_D3DDebugObjectName, (UINT)strlen(name), name);
+
+#endif
 
 	if ((textureDesc->BindFlags & D3D11_BIND_RENDER_TARGET) != 0)
 	{
@@ -1274,10 +1147,7 @@ Texture* D3D11RenderBackend::CreateTextureInternal(
 		m_d3dDevice->CreateDepthStencilView(newTexture->m_texture, dsvDesc, &newTexture->m_depthStencilView);
 	}
 
-	m_texturesByName[newTexture->m_name] = newTexture;
-
 	return newTexture;
 }
 
 #pragma endregion
-

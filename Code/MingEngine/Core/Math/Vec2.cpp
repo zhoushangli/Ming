@@ -1,10 +1,12 @@
 #include "MingEngine/Core/Math/Vec2.hpp"
 
-#include "MingEngine/Core/StringUtils.hpp"
 #include "MingEngine/Core/Math/MathUtils.hpp"
 #include "MingEngine/Core/Math/Vec3.hpp"
+#include "MingEngine/Core/StringUtils.hpp"
 
 #include <math.h>
+
+using namespace Math;
 
 const Vec2 Vec2::Zero = Vec2(0.f, 0.f);
 const Vec2 Vec2::One  = Vec2(1.f, 1.f);
@@ -104,6 +106,45 @@ Vec2 Vec2::MakeFromPolarDegrees(float degrees, float length)
 Vec2 Vec2::MakeFromPolarRadians(float radians, float length)
 {
 	return Vec2(cosf(radians) * length, sinf(radians) * length);
+}
+
+float Vec2::DotProduct(Vec2 const& a, Vec2 const& b) { return a.x * b.x + a.y * b.y; }
+
+float Vec2::CrossProduct(Vec2 const& a, Vec2 const& b) { return a.x * b.y - a.y * b.x; }
+
+float Vec2::GetProjectedLength(Vec2 const& vector, Vec2 const& basis)
+{
+	Vec2 n = basis.GetNormalized();
+	return DotProduct(vector, n);
+}
+
+Vec2 Vec2::GetProjectedVector(Vec2 const& vector, Vec2 const& basis)
+{
+	Vec2 n = basis.GetNormalized();
+	return n * DotProduct(vector, n);
+}
+
+float Vec2::GetAngleDegreesBetween(Vec2 const& a, Vec2 const& b)
+{
+	float aLen = a.GetLength();
+	float bLen = b.GetLength();
+	if (aLen == 0.f || bLen == 0.f)
+		return 0.f;
+	float dot = DotProduct(a, b) / (aLen * bLen);
+	dot       = Math::GetClamped(dot, -1.f, 1.f);
+	return ConvertRadiansToDegrees(acosf(dot));
+}
+
+Vec2 Vec2::Interpolate(Vec2 const& start, Vec2 const& end, float fraction)
+{
+	return Vec2(
+		Math::Interpolate(start.x, end.x, fraction),
+		Math::Interpolate(start.y, end.y, fraction));
+}
+
+Vec2 Vec2::InterpolateClamped(Vec2 const& start, Vec2 const& end, float fraction)
+{
+	return Interpolate(start, end, GetClampedZeroToOne(fraction));
 }
 
 // Getters
@@ -254,7 +295,7 @@ float Vec2::NormalizeAndGetPreviousLength()
 
 Vec2 const Vec2::GetReflected(Vec2 const& normal) const
 {
-	float dot = DotProduct2D(*this, normal);
+	float dot = DotProduct(*this, normal);
 	return (*this - dot * normal) - dot * normal;
 }
 
@@ -274,4 +315,3 @@ void Vec2::SetFromText(char const* text)
 	x = (float)atof(parts[0].c_str());
 	y = (float)atof(parts[1].c_str());
 }
-

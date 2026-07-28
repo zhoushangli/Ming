@@ -3,7 +3,7 @@
 #include "MingEngine/Engine/Event/EventSystem.hpp"
 
 class Clock;
-class EditorController;
+class EditorCamera;
 class Node;
 class SceneTree;
 
@@ -12,26 +12,15 @@ struct MingRunConfig
 	float m_windowAspect = 16.f / 9.f;
 };
 
-class IProjectModule
-{
-public:
-	virtual ~IProjectModule() = default;
-
-	virtual char const* GetProjectName() const = 0;
-	virtual void RegisterTypes()               = 0;
-	virtual void Startup() {}
-	virtual void Shutdown() {}
-};
-
 namespace MingEngine
 {
-int Run(IProjectModule& project, MingRunConfig const& config);
+int Run(MingRunConfig const& config);
 } // namespace MingEngine
 
 class App
 {
 public:
-	App(IProjectModule& project, MingRunConfig const& config);
+	explicit App(MingRunConfig const& config);
 	~App();
 
 	void Startup();
@@ -60,13 +49,10 @@ private:
 
 	Clock*          m_clock     = nullptr;
 	SceneTree*      m_sceneTree = nullptr;
-	IProjectModule& m_project;
 	MingRunConfig   m_runConfig;
 
-#if defined(MING_EDITOR)
-	EditorController* m_editorController = nullptr;
-	bool              m_isSlowMode       = false;
-#endif
+	EditorCamera* m_editorCamera = nullptr;
+	bool          m_isSlowMode   = false;
 };
 
 extern App* g_app;

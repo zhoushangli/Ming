@@ -106,3 +106,8 @@ void Vec4::Normalize() { *this /= GetLength(); }
 
 Vec4 Vec4::GetNormalized() const { return *this / GetLength(); }
 
+float Vec4::DotProduct(Vec4 const& a, Vec4 const& b)
+{
+	return a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w;
+}
+

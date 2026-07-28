@@ -1,17 +1,23 @@
 #include "MingEngine/Editor/UI/InspectorProperty.hpp"
 
 #include "MingEngine/Editor/UI/InspectorPropertyBool.hpp"
+#include "MingEngine/Editor/UI/InspectorPropertyColor.hpp"
 #include "MingEngine/Editor/UI/InspectorPropertyEuler.hpp"
 #include "MingEngine/Editor/UI/InspectorPropertyFloat.hpp"
 #include "MingEngine/Editor/UI/InspectorPropertyInt.hpp"
+#include "MingEngine/Editor/UI/InspectorPropertyResource.hpp"
 #include "MingEngine/Editor/UI/InspectorPropertyString.hpp"
 #include "MingEngine/Editor/UI/InspectorPropertyVec3.hpp"
-#include "MingEngine/Scene/Core/Node.hpp"
+
+#include <cctype>
+#include <utility>
 
 // Forward declarations for subclasses — included in factory below
 class InspectorPropertyBool;
+class InspectorPropertyColor;
 class InspectorPropertyInt;
 class InspectorPropertyFloat;
+class InspectorPropertyResource;
 class InspectorPropertyString;
 class InspectorPropertyVec3;
 class InspectorPropertyEuler;
@@ -45,30 +51,18 @@ static std::string SnakeToTitle(std::string const& snake)
 
 // ——— Base class ———
 
-InspectorProperty::InspectorProperty(PropertyInfo info, Variant value, std::string labelId)
-	: m_info(std::move(info)), m_value(std::move(value)), m_labelId(std::move(labelId))
+InspectorProperty::InspectorProperty(PropertyInfo info, std::string labelId, ValueChangedCallback onValueChanged)
+	: m_info(std::move(info)), m_labelId(std::move(labelId)), m_onValueChanged(std::move(onValueChanged))
 {
 }
 
-bool InspectorProperty::WasEdited() const { return m_edited; }
+void InspectorProperty::Render(EditorUIContext& context, Variant const& value) { RenderValue(context, value); }
 
-void InspectorProperty::Apply(Node* node)
+void InspectorProperty::EmitValueChanged(Variant const& value) const
 {
-	if (!m_edited || node == nullptr)
-		return;
-
-	MethodBind const* setter = m_info.GetSetter();
-	if (setter != nullptr)
+	if (m_onValueChanged)
 	{
-		setter->Invoke(*node, { m_value });
-	}
-
-	// Refresh from getter
-	MethodBind const* getter = m_info.GetGetter();
-	if (getter != nullptr)
-	{
-		m_value  = getter->Invoke(*node, {});
-		m_edited = false;
+		m_onValueChanged(value);
 	}
 }
 
@@ -80,22 +74,30 @@ std::string InspectorProperty::GetDisplayName() const { return SnakeToTitle(m_in
 
 // ——— Factory ———
 
-InspectorProperty* InspectorProperty::Create(PropertyInfo info, Variant value, std::string labelId)
+InspectorProperty* InspectorProperty::Create(
+	PropertyInfo info, std::string labelId, ValueChangedCallback onValueChanged)
 {
+	if (info.m_type == Variant::Type::ObjectPtr && info.m_hint == PropertyInfo::Hint::ResourceType)
+	{
+		return new InspectorPropertyResource(std::move(info), std::move(labelId), std::move(onValueChanged));
+	}
+
 	switch (info.m_type)
 	{
 	case Variant::Type::Bool:
-		return new InspectorPropertyBool(std::move(info), std::move(value), std::move(labelId));
+		return new InspectorPropertyBool(std::move(info), std::move(labelId), std::move(onValueChanged));
 	case Variant::Type::Int:
-		return new InspectorPropertyInt(std::move(info), std::move(value), std::move(labelId));
+		return new InspectorPropertyInt(std::move(info), std::move(labelId), std::move(onValueChanged));
 	case Variant::Type::Float:
-		return new InspectorPropertyFloat(std::move(info), std::move(value), std::move(labelId));
+		return new InspectorPropertyFloat(std::move(info), std::move(labelId), std::move(onValueChanged));
 	case Variant::Type::String:
-		return new InspectorPropertyString(std::move(info), std::move(value), std::move(labelId));
+		return new InspectorPropertyString(std::move(info), std::move(labelId), std::move(onValueChanged));
+	case Variant::Type::Color:
+		return new InspectorPropertyColor(std::move(info), std::move(labelId), std::move(onValueChanged));
 	case Variant::Type::Vec3:
-		return new InspectorPropertyVec3(std::move(info), std::move(value), std::move(labelId));
+		return new InspectorPropertyVec3(std::move(info), std::move(labelId), std::move(onValueChanged));
 	case Variant::Type::EulerAngles:
-		return new InspectorPropertyEuler(std::move(info), std::move(value), std::move(labelId));
+		return new InspectorPropertyEuler(std::move(info), std::move(labelId), std::move(onValueChanged));
 	default:
 		return nullptr;
 	}

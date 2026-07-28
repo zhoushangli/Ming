@@ -1,8 +1,10 @@
 #include "MingEngine/Editor/UI/EditorUI.hpp"
 
+#include "MingEngine/Editor/EditorNode.hpp"
+#include "MingEngine/Editor/UI/EditorIcons.hpp"
 #include "MingEngine/Editor/UI/EditorUIContext.hpp"
+#include "MingEngine/Editor/UI/EditorUIStyle.hpp"
 
-#include "EditorUI.hpp"
 #include "ThirdParty/imgui/imgui.h"
 
 namespace
@@ -23,36 +25,66 @@ void RenderPanelMenuItem(EditorPanel& panel)
 		panel.Open();
 	}
 }
+
 } // namespace
 
 void EditorUI::Render(EditorUIContext& context)
 {
-	context.m_editorUI = this;
+	context.m_editorUI       = this;
+	EditorDragDrop& dragDrop = EditorNode::Get()->m_dragDrop;
+
+	dragDrop.BeginFrame();
 
 	RenderMainMenuBar();
 	RenderDockSpace();
 
 	m_scenePanel.Render(context);
+	m_importPanel.Render(context);
 	m_fileSystemPanel.Render(context);
 	m_viewportPanel.Render(context);
 	m_inspectorPanel.Render(context);
 	m_outputPanel.Render(context);
-	m_createNodePanel.Render(context);
+	m_projectSettingsPopup.Render(context);
+	m_warningPopup.Render(context);
 
-	RenderWarningPopup();
+	ApplyDragDropCursor();
+	
+	ImGuiPayload const* payload = ImGui::GetDragDropPayload();
+	bool isDragging = payload != nullptr && payload->IsDataType(EditorDragDrop::PayloadType);
+
+	dragDrop.EndFrame(isDragging);
 }
 
-void EditorUI::Warning(std::string const& title, std::string const& message)
+void EditorUI::Warning(std::string const& title, std::string const& message) { m_warningPopup.Open(title, message); }
+
+void EditorUI::SetViewportRect(Vec2 origin, Vec2 dims)
 {
-	m_warningData.m_title   = title;
-	m_warningData.m_message = message;
-	m_showWarningPopup      = true;
+	m_viewportOrigin = origin;
+	m_viewportDims   = dims;
+}
+
+Vec2 EditorUI::GetViewportOrigin() const { return m_viewportOrigin; }
+Vec2 EditorUI::GetViewportDimensions() const { return m_viewportDims; }
+Vec2 EditorUI::ToViewportPos(Vec2 windowPos) const { return windowPos - m_viewportOrigin; }
+
+void EditorUI::ApplyDragDropCursor()
+{
+	ImGuiPayload const* payload = ImGui::GetDragDropPayload();
+	if (payload == nullptr || !payload->IsDataType(EditorDragDrop::PayloadType))
+	{
+		return;
+	}
+
+	ImGui::SetMouseCursor(
+		EditorNode::Get()->m_dragDrop.IsDropAllowed() ? ImGuiMouseCursor_Arrow : ImGuiMouseCursor_NotAllowed);
 }
 
 void EditorUI::RenderMainMenuBar()
 {
+	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, EditorUIStyle::MainMenuFramePadding());
 	if (!ImGui::BeginMainMenuBar())
 	{
+		ImGui::PopStyleVar();
 		return;
 	}
 
@@ -67,16 +99,11 @@ void EditorUI::RenderMainMenuBar()
 	}
 	if (ImGui::BeginMenu("Project"))
 	{
-		ImGui::MenuItem("Project Settings...");
+		if (ImGui::MenuItem("Project Settings..."))
+		{
+			m_projectSettingsPopup.Open();
+		}
 		ImGui::MenuItem("Reload Project");
-		ImGui::EndMenu();
-	}
-	if (ImGui::BeginMenu("Debug"))
-	{
-		ImGui::MenuItem("Start");
-		ImGui::MenuItem("Pause");
-		ImGui::MenuItem("Stop");
-		ImGui::MenuItem("Step Frame");
 		ImGui::EndMenu();
 	}
 	if (ImGui::BeginMenu("Editor"))
@@ -88,6 +115,7 @@ void EditorUI::RenderMainMenuBar()
 	if (ImGui::BeginMenu("Window"))
 	{
 		RenderPanelMenuItem(m_scenePanel);
+		RenderPanelMenuItem(m_importPanel);
 		RenderPanelMenuItem(m_fileSystemPanel);
 		RenderPanelMenuItem(m_viewportPanel);
 		RenderPanelMenuItem(m_inspectorPanel);
@@ -99,8 +127,8 @@ void EditorUI::RenderMainMenuBar()
 		ImGui::MenuItem("About Project QingChen");
 		ImGui::EndMenu();
 	}
-
 	ImGui::EndMainMenuBar();
+	ImGui::PopStyleVar();
 }
 
 void EditorUI::RenderDockSpace()
@@ -126,68 +154,4 @@ void EditorUI::RenderDockSpace()
 	ImGuiID dockspaceId = ImGui::GetID("QingChenEditorDockSpace");
 	ImGui::DockSpace(dockspaceId, ImVec2(0.f, 0.f), ImGuiDockNodeFlags_None);
 	ImGui::End();
-}
-
-void EditorUI::RenderWarningPopup()
-{
-	constexpr char const* popupId     = "WarningPopup";
-	constexpr float       popupWidth  = 420.f;
-	constexpr float       buttonWidth = 120.f;
-
-	if (m_showWarningPopup)
-	{
-		ImGui::OpenPopup(popupId);
-		m_showWarningPopup = false;
-	}
-
-	ImGuiViewport const* viewport = ImGui::GetMainViewport();
-	ImVec2 const popupCenter(
-		viewport->WorkPos.x + viewport->WorkSize.x * 0.5f,
-		viewport->WorkPos.y + viewport->WorkSize.y * 0.5f);
-	ImGui::SetNextWindowPos(popupCenter, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
-	ImGui::SetNextWindowSize(ImVec2(popupWidth, 0.f), ImGuiCond_Appearing);
-
-	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(20.f, 18.f));
-	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(10.f, 12.f));
-
-	ImGuiWindowFlags windowFlags = ImGuiWindowFlags_AlwaysAutoResize;
-	windowFlags |= ImGuiWindowFlags_NoTitleBar;
-	windowFlags |= ImGuiWindowFlags_NoResize;
-	windowFlags |= ImGuiWindowFlags_NoMove;
-	windowFlags |= ImGuiWindowFlags_NoSavedSettings;
-
-	if (ImGui::BeginPopupModal(popupId, nullptr, windowFlags))
-	{
-		ImGuiStyle const& style = ImGui::GetStyle();
-
-		ImGui::PushFont(nullptr, style.FontSizeBase * 1.15f);
-		ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.f, 0.72f, 0.24f, 1.f));
-		ImGui::TextWrapped("WARNING: %s", m_warningData.m_title.c_str());
-		ImGui::PopStyleColor();
-		ImGui::PopFont();
-
-		ImGui::Separator();
-
-		ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.82f, 0.85f, 0.9f, 1.f));
-		ImGui::TextWrapped("%s", m_warningData.m_message.c_str());
-		ImGui::PopStyleColor();
-
-		ImGui::Spacing();
-
-		float const buttonX = ImGui::GetCursorPosX() + ImGui::GetContentRegionAvail().x - buttonWidth;
-		ImGui::SetCursorPosX(buttonX);
-
-		bool const shouldClose = ImGui::Button("OK", ImVec2(buttonWidth, 0.f))
-								 || ImGui::IsKeyPressed(ImGuiKey_Enter, false)
-								 || ImGui::IsKeyPressed(ImGuiKey_Escape, false);
-		if (shouldClose)
-		{
-			ImGui::CloseCurrentPopup();
-			m_warningData = {};
-		}
-
-		ImGui::EndPopup();
-	}
-
-	ImGui::PopStyleVar(2);
 }

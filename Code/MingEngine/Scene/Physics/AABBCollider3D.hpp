@@ -13,13 +13,9 @@ public:
 	~AABBCollider3D() override = default;
 	AABBCollider3D(AABB3 const& localBounds);
 
-	GameRaycastResult Raycast(RaycastInfo const& info) const override;
-
 protected:
-	void OnProcess(float deltaSeconds) override;
 	void RenderDebug() const;
 
 public:
 	AABB3 m_localBounds;
 };
-

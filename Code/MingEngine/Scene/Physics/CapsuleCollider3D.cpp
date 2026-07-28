@@ -1,9 +1,7 @@
 #include "MingEngine/Scene/Physics/CapsuleCollider3D.hpp"
 
 #include "MingEngine/Core/Render/Rgba8.hpp"
-#include "MingEngine/Core/Math/Matrix4x4.hpp"
-#include "MingEngine/Core/Math/RaycastUtils.hpp"
-#include "MingEngine/Engine/Render/DebugRenderer.hpp"
+#include "MingEngine/Engine/Render/DebugGizmos.hpp"
 
 CapsuleCollider3D::CapsuleCollider3D(Capsule3 const& capsule)
 {
@@ -12,34 +10,10 @@ CapsuleCollider3D::CapsuleCollider3D(Capsule3 const& capsule)
 	m_radius     = capsule.m_radius;
 }
 
-GameRaycastResult CapsuleCollider3D::Raycast(RaycastInfo const& info) const
-{
-	GameRaycastResult raycastResult;
-
-	Matrix4x4 worldTransform = GetWorldTransform();
-	Capsule3  capsule(
-		worldTransform.TransformPosition3D(m_localStart),
-		worldTransform.TransformPosition3D(m_localEnd),
-		m_radius
-	);
-	(RaycastResult3D&)raycastResult =
-		RaycastVsCapsule3D(info.m_startPos, info.m_forwardNormal, info.m_maxLength, capsule);
-
-	if (raycastResult.m_didImpact)
-	{
-		raycastResult.m_hitNodeHandle = GetHandle();
-	}
-
-	return raycastResult;
-}
-
-void CapsuleCollider3D::OnProcess([[maybe_unused]] float deltaSeconds) { }
-
 void CapsuleCollider3D::RenderDebug() const
 {
 	Vec3 worldStart = GetWorldTransform().TransformPosition3D(m_localStart);
 	Vec3 worldEnd   = GetWorldTransform().TransformPosition3D(m_localEnd);
 
-	DebugAddWorldWireCapsule(worldStart, worldEnd, m_radius, 0.f, Rgba8::Orange, Rgba8::Orange);
+	DebugGizmos::AddWorldWireCapsule(worldStart, worldEnd, m_radius, 0.f, Color::Orange, Color::Orange);
 }
-

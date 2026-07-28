@@ -3,25 +3,25 @@
 #include "MingEngine/Engine/Application/EngineBuildPreferences.hpp"
 
 #include "MingEngine/Core/Image.hpp"
-#include "MingEngine/Engine/Event/EventSystem.hpp"
 #include "MingEngine/Core/Math/IntVec2.hpp"
 #include "MingEngine/Core/Math/Matrix4x4.hpp"
-#include "MingEngine/Engine/Render/BitmapFont.hpp"
+#include "MingEngine/Engine/Event/EventSystem.hpp"
 #include "MingEngine/Engine/Render/PostProcessChain.hpp"
 #include "MingEngine/Engine/Render/Shader.hpp"
+#include "MingEngine/Engine/Render/TextureBindingSlots.hpp"
 
-#include <map>
+#include <string>
 #include <vector>
 
 class CameraContext;
-class Texture;
+class GPUTexture;
 
 class VertexBuffer;
 class IndexBuffer;
 class ConstantBuffer;
 
 struct Vec2;
-struct Rgba8;
+struct Color;
 struct Vertex;
 
 struct ID3D11Device;
@@ -45,20 +45,6 @@ struct D3D11_SUBRESOURCE_DATA;
 struct D3D11_RENDER_TARGET_VIEW_DESC;
 struct D3D11_SHADER_RESOURCE_VIEW_DESC;
 struct D3D11_DEPTH_STENCIL_VIEW_DESC;
-
-namespace SurfaceTextureSlot
-{
-static const unsigned int Diffuse = 0;
-} // namespace SurfaceTextureSlot
-
-namespace PostProcessTextureSlot
-{
-static const unsigned int kColor           = 0;
-static const unsigned int kDepth           = 1;
-static const unsigned int kNormal          = 2;
-static const unsigned int CustomInputStart = 8;
-static const unsigned int MaxSamplerSlots  = 16;
-} // namespace PostProcessTextureSlot
 
 enum class BlendMode
 {
@@ -104,40 +90,60 @@ struct GPUDirectionalLight
 {
 	Vec3  m_direction;
 	float m_intensity;
+	Vec3  m_color;
+	float m_padding;
 };
 
-struct GPUPointLight
+struct GPUOmniLight
 {
 	Vec3  m_position;
 	float m_range;
 	Vec3  m_color;
 	float m_intensity;
+	float m_attenuation;
+	float m_padding[3];
 };
-static const int kMaxPointLights = 64;
+static const int kMaxPointLights = 16;
+
+struct GPUSpotLight
+{
+	Vec3  m_position;
+	float m_range;
+	Vec3  m_direction;
+	float m_intensity;
+	Vec3  m_color;
+	float m_attenuation;
+	float m_spotAngle;
+	float m_spotAttenuation;
+	float m_padding[2];
+};
+static const int kMaxSpotLights = 16;
 
 struct LightConstants
 {
 	GPUDirectionalLight m_directionalLight;
 	int                 m_pointLightCount;
-	float               m_padding[3]; // Pad to 16 bytes for array alignment
-	GPUPointLight       m_pointLights[kMaxPointLights];
+	int                 m_spotLightCount;
+	float               m_padding[2]; // Pad to 16 bytes for array alignment
+	GPUOmniLight        m_pointLights[kMaxPointLights];
+	GPUSpotLight        m_spotLights[kMaxSpotLights];
 };
 static const int kLightConstantsSlot = 1;
 
 struct CameraConstants
 {
-	Matrix4x4 WorldToCameraTransform;
-	Matrix4x4 CameraToRenderTransform;
-	Matrix4x4 RenderToClipTransform;
-	Matrix4x4 CameraToWorldTransform;
-	Matrix4x4 ClipToCameraTransform;
+	Matrix4x4 m_worldToCameraTransform;
+	Matrix4x4 m_cameraToRenderTransform;
+	Matrix4x4 m_renderToClipTransform;
+	Matrix4x4 m_cameraToWorldTransform;
+	Matrix4x4 m_clipToCameraTransform;
 };
 static const int kCameraConstantsSlot = 2;
 
 struct ModelConstants
 {
-	Matrix4x4 ModelToWorld;
-	float     ModelColor[4];
+	Matrix4x4 m_modelToWorld;
+	float     m_modelColor[4];
 };
 static const int kModelConstantsSlot = 3;
 
@@ -153,7 +159,7 @@ struct FrameConstants
 {
 	float m_time;
 	float m_deltaSeconds;
-	float Padding[2];
+	float m_padding[2];
 };
 static const int kFrameConstantsSlot = 5;
 
@@ -199,7 +205,7 @@ public:
 	// because we need to bind both world camera and UI camera in one render
 	void BindCamera(CameraContext const& camera);
 
-	void ClearScreen(Rgba8 const& clearColor);
+	void ClearScreen(Color const& clearColor);
 	void SetBlendMode(BlendMode blendMode);
 	void SetRasterizerMode(RasterizerMode rasterizerMode);
 	void SetDepthMode(DepthMode depthMode);
@@ -213,31 +219,28 @@ public:
 	void DrawIndexedVertexBuffer(VertexBuffer* vertexBuffer, IndexBuffer* indexBuffer);
 
 	// High-level bind helpers used by gameplay/render features
-	void BindTexture(Texture* textureOrNull);
-	void BindTexture(Texture* textureOrNull, unsigned int slot);
+	void BindTexture(GPUTexture* textureOrNull);
+	void BindTexture(GPUTexture* textureOrNull, unsigned int slot);
 	void BindSampler(SamplerMode samplerMode, unsigned int slot = 0);
 	void BindShader(Shader* shader);
 
 	void            BindConstantBuffer(ConstantBuffer* constantBuffer, int slot);
 	ConstantBuffer* GetBuiltinConstantBuffer(BuiltinConstantBufferType id);
 
-	// GPU resource creation and cache access
-	Shader* CreateOrGetShader(char const* shaderName);
+	// GPU resource creation
+	Shader* CreateShader(
+		std::string const& shaderName, std::string const& shaderSource, std::string const& shaderSourcePath);
 
-	Texture* CreateOrGetTexture(char const* fileDataPath);
-	Texture* CreateTextureFromImage(const Image& image);
-	Texture* CreateTextureFromData(char const* name, IntVec2 dimensions, int bytesPerTexel, uint8_t* texelData);
-	Texture* CreateRenderTargetTexture(char const* name, IntVec2 dimensions);
-	Texture* CreateDepthStencilTexture(char const* name, IntVec2 dimensions);
-	void     DestroyTexture(Texture* texture);
-
-	BitmapFont* CreateOrGetBitmapFont(char const* fontFilePathNameWithNoExtension);
+	GPUTexture* CreateGPUTexture(char const* name, IntVec2 dimensions, int bytesPerTexel, uint8_t const* texelData);
+	GPUTexture* CreateRenderTargetTexture(char const* name, IntVec2 dimensions);
+	GPUTexture* CreateDepthStencilTexture(char const* name, IntVec2 dimensions);
+	void        DestroyTexture(GPUTexture* texture);
 
 	VertexBuffer*   CreateVertexBuffer(const unsigned int size, unsigned int stride);
-	VertexBuffer*   CreateVertexBuffer(std::vector<Vertex> const& verts);
+	VertexBuffer*   CreateVertexBuffer(void const* data, const unsigned int size, unsigned int stride);
 	ConstantBuffer* CreateConstantBuffer(const unsigned int size);
 	IndexBuffer*    CreateIndexBuffer(const unsigned int size);
-	IndexBuffer*    CreateIndexBuffer(std::vector<unsigned int> const& indexes);
+	IndexBuffer*    CreateIndexBuffer(void const* data, const unsigned int size, unsigned int stride);
 
 	// CPU -> GPU uploads
 	void CopyCPUToGPU(const void* data, unsigned int size, VertexBuffer* vertexBuffer);
@@ -252,12 +255,11 @@ public:
 	ID3D11DeviceContext* GetD3DDeviceContext() const;
 	void                 SetViewport(IntVec2 dimensions, IntVec2 topLeft = IntVec2::Zero);
 	void                 ResizeBackBuffer(IntVec2 newDimensions);
-	Texture*             GetTextureFromFileName(char const* fileName);
-	void                 ClearRenderTarget(Texture* renderTarget, Rgba8 const& clearColor);
-	void                 ClearDepthStencil(Texture* depthTexture);
-	void                 BindRenderTargets(Texture* colorTarget, Texture* depthTarget, Texture* normalTarget);
-	void                 BindRenderTarget(Texture* colorTarget, Texture* depthTarget = nullptr);
-	void                 BindPostProcessInputs(Texture* colorInput, Texture* depthInput, Texture* normalInput);
+	void                 ClearRenderTarget(GPUTexture* renderTarget, Color const& clearColor);
+	void                 ClearDepthStencil(GPUTexture* depthTexture);
+	void                 BindRenderTargets(GPUTexture* colorTarget, GPUTexture* depthTarget, GPUTexture* normalTarget);
+	void                 BindRenderTarget(GPUTexture* colorTarget, GPUTexture* depthTarget = nullptr);
+	void                 BindPostProcessInputs(GPUTexture* colorInput, GPUTexture* depthInput, GPUTexture* normalInput);
 	void                 DrawFullscreenTriangle(Shader* shader, wchar_t const* eventName);
 	void                 UnbindAllShaderResourceViews();
 	void                 BindBackBuffer();
@@ -281,13 +283,12 @@ public:
 
 private:
 	// Texture cache internals
-	Texture* CreateTextureFromFile(char const* fileDataPath);
+	GPUTexture* CreateTextureFromFile(char const* fileDataPath);
 
 	// Shader creation internals
-	Shader* CreateShader(char const* shaderName, char const* shaderSource);
-	bool    CompileShaderToByteCode(
+	bool CompileShaderToByteCode(
 		std::vector<unsigned char>& outByteCode,
-		char const*                 name,
+		char const*                 shaderPhysicalPath,
 		char const*                 source,
 		char const*                 entryPoint,
 		char const*                 target);
@@ -296,7 +297,7 @@ private:
 	void BindVertexBuffer(VertexBuffer* vertexBuffer);
 	void BindIndexBuffer(IndexBuffer* indexBuffer);
 
-	Texture* CreateTextureInternal(
+	GPUTexture* CreateTextureInternal(
 		char const*                            name,
 		IntVec2                                dimensions,
 		D3D11_TEXTURE2D_DESC const*            textureDesc,
@@ -308,9 +309,7 @@ private:
 private:
 	RendererConfig m_config;
 
-	Shader*  m_defaultShader       = nullptr;
-	Texture* m_defaultWhiteTexture = nullptr;
-	Texture* m_defaultBlackTexture = nullptr;
+	GPUTexture* m_defaultBlackTexture = nullptr;
 
 	CameraContext* m_currentCamera = nullptr;
 	Shader*        m_currentShader = nullptr;
@@ -324,7 +323,7 @@ private:
 	IDXGISwapChain*            m_d3dSwapChain        = nullptr;
 	ID3D11RenderTargetView*    m_d3dRenderTargetView = nullptr;
 	ID3DUserDefinedAnnotation* m_d3dAnnotation       = nullptr;
-	Texture*                   m_backBufferTexture   = nullptr;
+	GPUTexture*                m_backBufferTexture   = nullptr;
 
 	ID3D11BlendState* m_currentBlendState                  = nullptr;
 	BlendMode         m_desiredBlendMode                   = BlendMode::ALPHA;
@@ -341,16 +340,11 @@ private:
 	DepthMode                m_desiredDepthMode                            = DepthMode::READ_WRITE_LESS_EQUAL;
 	ID3D11DepthStencilState* m_depthStencilStates[(int)(DepthMode::COUNT)] = {};
 
-	std::vector<Shader*> m_cachedShaders;
 	std::vector<uint8_t> m_vertexShaderByteCode;
 	std::vector<uint8_t> m_pixelShaderByteCode;
-
-	std::map<std::string, Texture*>    m_texturesByName;
-	std::map<std::string, BitmapFont*> m_fontsByName;
 
 #if defined(ENGINE_DEBUG_RENDER)
 	void* m_dxgiDebug       = nullptr;
 	void* m_dxgiDebugModule = nullptr;
 #endif
 };
-

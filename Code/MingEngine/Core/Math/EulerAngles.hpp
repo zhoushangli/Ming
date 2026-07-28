@@ -9,6 +9,8 @@ public:
 	EulerAngles() = default;
 	EulerAngles(float yawDegrees, float pitchDegrees, float rollDegrees);
 	static EulerAngles MakeFromForward(Vec3 const& forward);
+	static EulerAngles Interpolate(EulerAngles const& start, EulerAngles const& end, float fraction);
+	static EulerAngles InterpolateClamped(EulerAngles const& start, EulerAngles const& end, float fraction);
 
 	Vec3      GetForwardDir_IFwd_JLeft_KUp() const;
 	Vec3      GetForwardDir_IRight_JUp_KFwd() const;

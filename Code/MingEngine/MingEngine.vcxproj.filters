@@ -10,6 +10,9 @@
     <Filter Include="Editor\UI">
       <UniqueIdentifier>{D2A02EA8-4D3D-45C2-BCDA-D44BE0D3C4B1}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Editor\UI\Popup">
+      <UniqueIdentifier>{B409241B-C7E7-49B7-A60E-0D932347E7AB}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Engine">
       <UniqueIdentifier>{A296CB04-0DAA-496A-8399-293A2B880853}</UniqueIdentifier>
     </Filter>
@@ -22,10 +25,10 @@
     <Filter Include="Engine\Console">
       <UniqueIdentifier>{9315B5CB-8E8E-43F9-8B23-B7C6FE749814}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Engine\Core">
+    <Filter Include="Core">
       <UniqueIdentifier>{B78E0A61-909B-4F5C-A05F-4DEFDE31BD22}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Engine\Core\Object">
+    <Filter Include="Core\Object">
       <UniqueIdentifier>{85A6A2C3-2F43-49A8-A471-73C5F5966CF4}</UniqueIdentifier>
     </Filter>
     <Filter Include="Engine\Event">
@@ -37,11 +40,14 @@
     <Filter Include="Engine\Input">
       <UniqueIdentifier>{BDF5B220-91C8-4225-A7FB-97025589FB92}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Engine\Math">
+    <Filter Include="Core\Math">
       <UniqueIdentifier>{5E941C45-B564-4D4E-974F-334B5426C836}</UniqueIdentifier>
     </Filter>
     <Filter Include="Engine\Render">
       <UniqueIdentifier>{ADF335F8-5225-4485-BBB0-B95D85004C63}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core\Render">
+      <UniqueIdentifier>{7E45D638-9B13-4C9B-8C34-3EAF042D604B}</UniqueIdentifier>
     </Filter>
     <Filter Include="Engine\Window">
       <UniqueIdentifier>{D18B34FA-A728-4D97-8A0A-06E38553F2F1}</UniqueIdentifier>
@@ -72,9 +78,6 @@
     </Filter>
     <Filter Include="ThirdParty\FastNoiseLite">
       <UniqueIdentifier>{BAD439FE-56E9-4ED8-8F25-A545D0C14D9A}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ThirdParty\fmod">
-      <UniqueIdentifier>{20D350C1-375B-4E4D-B4C9-136BF51037CC}</UniqueIdentifier>
     </Filter>
     <Filter Include="ThirdParty\GLFW">
       <UniqueIdentifier>{36662DE9-B2E1-4A65-B47B-3920E5C99886}</UniqueIdentifier>
@@ -124,10 +127,19 @@
     <Filter Include="ThirdParty\angelscript\add_on">
       <UniqueIdentifier>{4ac293e3-9f54-4110-b98e-418b4f6659e7}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ThirdParty\nanosvg">
+      <UniqueIdentifier>{2b809901-4de0-43c4-a57d-a424bb7b5b09}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Engine\Network">
+      <UniqueIdentifier>{05c24fb2-e1c2-458e-ba94-f549f1db49a9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ThirdParty\miniaudio">
+      <UniqueIdentifier>{fc603be4-6932-4a78-9d4c-1c53d22e8e02}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Core\Clock.cpp">
-      <Filter>Engine\Core</Filter>
+      <Filter>Core</Filter>
     </ClCompile>
     <ClCompile Include="EngineService\DevConsole.cpp">
       <Filter>Engine\Console</Filter>
@@ -138,52 +150,76 @@
     <ClCompile Include="Engine\Application\EngineCommon.cpp">
       <Filter>Engine\Application</Filter>
     </ClCompile>
+    <ClCompile Include="Engine\Application\SystemBase.cpp">
+      <Filter>Engine\Application</Filter>
+    </ClCompile>
     <ClCompile Include="Core\ErrorWarningAssert.cpp">
-      <Filter>Engine\Core</Filter>
+      <Filter>Core</Filter>
     </ClCompile>
     <ClCompile Include="Engine\Event\EventSystem.cpp">
       <Filter>Engine\Event</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\FileUtils.cpp">
-      <Filter>Engine\Core</Filter>
     </ClCompile>
     <ClCompile Include="Engine\Render\HeatMaps.cpp">
       <Filter>Engine\Render</Filter>
     </ClCompile>
     <ClCompile Include="Core\Image.cpp">
-      <Filter>Engine\Core</Filter>
+      <Filter>Core</Filter>
     </ClCompile>
     <ClCompile Include="Core\NamedStrings.cpp">
-      <Filter>Engine\Core</Filter>
+      <Filter>Core</Filter>
     </ClCompile>
     <ClCompile Include="Core\Render\Rgba8.cpp">
-      <Filter>Engine\Render</Filter>
+      <Filter>Core\Render</Filter>
     </ClCompile>
     <ClCompile Include="Core\StringUtils.cpp">
-      <Filter>Engine\Core</Filter>
+      <Filter>Core</Filter>
     </ClCompile>
     <ClCompile Include="Core\Time.cpp">
-      <Filter>Engine\Core</Filter>
+      <Filter>Core</Filter>
     </ClCompile>
     <ClCompile Include="Core\Timer.cpp">
-      <Filter>Engine\Core</Filter>
+      <Filter>Core</Filter>
     </ClCompile>
     <ClCompile Include="Core\Render\Vertex.cpp">
-      <Filter>Engine\Render</Filter>
+      <Filter>Core\Render</Filter>
     </ClCompile>
     <ClCompile Include="Core\Render\VertexUtils.cpp">
-      <Filter>Engine\Render</Filter>
+      <Filter>Core\Render</Filter>
     </ClCompile>
     <ClCompile Include="Core\XmlUtils.cpp">
-      <Filter>Engine\Core</Filter>
+      <Filter>Core</Filter>
     </ClCompile>
-    <ClCompile Include="Editor\EditorController.cpp">
+    <ClCompile Include="Editor\EditorCamera.cpp">
       <Filter>Editor</Filter>
     </ClCompile>
     <ClCompile Include="Editor\EditorNode.cpp">
       <Filter>Editor</Filter>
     </ClCompile>
-    <ClCompile Include="Editor\UI\CreateNodePanel.cpp">
+    <ClCompile Include="Editor\UI\Popup\CreateNodePopup.cpp">
+      <Filter>Editor\UI\Popup</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\UI\Popup\CreateFolderPopup.cpp">
+      <Filter>Editor\UI\Popup</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\UI\Popup\CreateScenePopup.cpp">
+      <Filter>Editor\UI\Popup</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\UI\Popup\DeleteEntryPopup.cpp">
+      <Filter>Editor\UI\Popup</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\UI\Popup\EditorPopupUtils.cpp">
+      <Filter>Editor\UI\Popup</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\UI\Popup\ProjectSettingsPopup.cpp">
+      <Filter>Editor\UI\Popup</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\UI\Popup\WarningPopup.cpp">
+      <Filter>Editor\UI\Popup</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\UI\EditorIcons.cpp">
+      <Filter>Editor\UI</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\UI\JetBrainsMonoFontData.cpp">
       <Filter>Editor\UI</Filter>
     </ClCompile>
     <ClCompile Include="Editor\UI\EditorPanel.cpp">
@@ -192,7 +228,13 @@
     <ClCompile Include="Editor\UI\EditorUI.cpp">
       <Filter>Editor\UI</Filter>
     </ClCompile>
+    <ClCompile Include="Editor\UI\EditorUIWidgets.cpp">
+      <Filter>Editor\UI</Filter>
+    </ClCompile>
     <ClCompile Include="Editor\UI\FileSystemPanel.cpp">
+      <Filter>Editor\UI</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\UI\ImportPanel.cpp">
       <Filter>Editor\UI</Filter>
     </ClCompile>
     <ClCompile Include="Editor\UI\InspectorPanel.cpp">
@@ -219,80 +261,83 @@
     <ClCompile Include="Engine\ImGui\ImGuiSystem.cpp">
       <Filter>Engine\ImGui</Filter>
     </ClCompile>
+    <ClCompile Include="Engine\ImGui\DefaultImGuiLayout.cpp">
+      <Filter>Engine\ImGui</Filter>
+    </ClCompile>
     <ClCompile Include="Core\Math\AABB2.cpp">
-      <Filter>Engine\Math</Filter>
+      <Filter>Core\Math</Filter>
     </ClCompile>
     <ClCompile Include="Core\Math\AABB3.cpp">
-      <Filter>Engine\Math</Filter>
+      <Filter>Core\Math</Filter>
     </ClCompile>
     <ClCompile Include="Core\Math\Capsule2.cpp">
-      <Filter>Engine\Math</Filter>
+      <Filter>Core\Math</Filter>
     </ClCompile>
     <ClCompile Include="Core\Math\Capsule3.cpp">
-      <Filter>Engine\Math</Filter>
+      <Filter>Core\Math</Filter>
     </ClCompile>
     <ClCompile Include="Core\Math\Cylinder3.cpp">
-      <Filter>Engine\Math</Filter>
+      <Filter>Core\Math</Filter>
     </ClCompile>
     <ClCompile Include="Core\Math\CylinderZ3.cpp">
-      <Filter>Engine\Math</Filter>
+      <Filter>Core\Math</Filter>
     </ClCompile>
     <ClCompile Include="Core\Math\Disc2.cpp">
-      <Filter>Engine\Math</Filter>
+      <Filter>Core\Math</Filter>
     </ClCompile>
     <ClCompile Include="Core\Math\EulerAngles.cpp">
-      <Filter>Engine\Math</Filter>
+      <Filter>Core\Math</Filter>
     </ClCompile>
     <ClCompile Include="Core\Math\FloatRange.cpp">
-      <Filter>Engine\Math</Filter>
+      <Filter>Core\Math</Filter>
     </ClCompile>
     <ClCompile Include="Core\Math\IntRange.cpp">
-      <Filter>Engine\Math</Filter>
+      <Filter>Core\Math</Filter>
     </ClCompile>
     <ClCompile Include="Core\Math\IntVec2.cpp">
-      <Filter>Engine\Math</Filter>
+      <Filter>Core\Math</Filter>
     </ClCompile>
     <ClCompile Include="Core\Math\IntVec3.cpp">
-      <Filter>Engine\Math</Filter>
+      <Filter>Core\Math</Filter>
     </ClCompile>
     <ClCompile Include="Core\Math\LineSegment2.cpp">
-      <Filter>Engine\Math</Filter>
+      <Filter>Core\Math</Filter>
     </ClCompile>
     <ClCompile Include="Core\Math\MathCommon.cpp">
-      <Filter>Engine\Math</Filter>
+      <Filter>Core\Math</Filter>
     </ClCompile>
     <ClCompile Include="Core\Math\MathUtils.cpp">
-      <Filter>Engine\Math</Filter>
+      <Filter>Core\Math</Filter>
     </ClCompile>
     <ClCompile Include="Core\Math\Matrix4x4.cpp">
-      <Filter>Engine\Math</Filter>
+      <Filter>Core\Math</Filter>
     </ClCompile>
     <ClCompile Include="Core\Math\OBB2.cpp">
-      <Filter>Engine\Math</Filter>
+      <Filter>Core\Math</Filter>
     </ClCompile>
     <ClCompile Include="Core\Math\RandomNumberGenerator.cpp">
-      <Filter>Engine\Math</Filter>
+      <Filter>Core\Math</Filter>
     </ClCompile>
     <ClCompile Include="Core\Math\RaycastUtils.cpp">
-      <Filter>Engine\Math</Filter>
+      <Filter>Core\Math</Filter>
     </ClCompile>
     <ClCompile Include="Core\Math\Sphere3.cpp">
-      <Filter>Engine\Math</Filter>
+      <Filter>Core\Math</Filter>
     </ClCompile>
     <ClCompile Include="Core\Math\Triangle2.cpp">
-      <Filter>Engine\Math</Filter>
+      <Filter>Core\Math</Filter>
     </ClCompile>
     <ClCompile Include="Core\Math\Triangle3.cpp">
-      <Filter>Engine\Math</Filter>
+      <Filter>Core\Math</Filter>
     </ClCompile>
     <ClCompile Include="Core\Math\Vec2.cpp">
-      <Filter>Engine\Math</Filter>
+      <Filter>Core\Math</Filter>
     </ClCompile>
     <ClCompile Include="Core\Math\Vec3.cpp">
-      <Filter>Engine\Math</Filter>
+      <Filter>Core\Math</Filter>
     </ClCompile>
     <ClCompile Include="Core\Math\Vec4.cpp">
-      <Filter>Engine\Math</Filter>
+      <Filter>Core\Math</Filter>
     </ClCompile>
     <ClCompile Include="Engine\Audio\AudioSystem.cpp">
       <Filter>Engine\Audio</Filter>
@@ -303,16 +348,19 @@
     <ClCompile Include="Engine\Input\InputSystem.cpp">
       <Filter>Engine\Input</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Input\KeyButtonState.cpp">
+    <ClCompile Include="Engine\Input\KeyboardState.cpp">
       <Filter>Engine\Input</Filter>
     </ClCompile>
     <ClCompile Include="Engine\Input\XboxController.cpp">
       <Filter>Engine\Input</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Window\Window.cpp">
+    <ClCompile Include="Engine\Window\WindowSystem.cpp">
       <Filter>Engine\Window</Filter>
     </ClCompile>
     <ClCompile Include="Engine\Render\BitmapFont.cpp">
+      <Filter>Engine\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Render\BuiltinShaders.cpp">
       <Filter>Engine\Render</Filter>
     </ClCompile>
     <ClCompile Include="Engine\Render\CameraContext.cpp">
@@ -324,7 +372,10 @@
     <ClCompile Include="Engine\Render\D3D11RenderBackend.cpp">
       <Filter>Engine\Render</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Render\DebugRenderer.cpp">
+    <ClCompile Include="Engine\Render\DebugGizmos.cpp">
+      <Filter>Engine\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Render\DebugObject.cpp">
       <Filter>Engine\Render</Filter>
     </ClCompile>
     <ClCompile Include="Engine\Render\IndexBuffer.cpp">
@@ -339,13 +390,10 @@
     <ClCompile Include="Engine\Render\Shader.cpp">
       <Filter>Engine\Render</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Render\SimpleTriangleFont.cpp">
-      <Filter>Engine\Render</Filter>
-    </ClCompile>
     <ClCompile Include="Engine\Render\SpriteAnimDefinition.cpp">
       <Filter>Engine\Render</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Render\Texture.cpp">
+    <ClCompile Include="Engine\Render\GPUTexture.cpp">
       <Filter>Engine\Render</Filter>
     </ClCompile>
     <ClCompile Include="Engine\Render\VertexBuffer.cpp">
@@ -384,9 +432,6 @@
     <ClCompile Include="Scene\Physics\CylinderZCollider3D.cpp">
       <Filter>Scene\Physics</Filter>
     </ClCompile>
-    <ClCompile Include="Scene\Physics\NodeRaycastUtils.cpp">
-      <Filter>Scene\Physics</Filter>
-    </ClCompile>
     <ClCompile Include="Scene\Physics\TriangleMeshCollider3D.cpp">
       <Filter>Scene\Physics</Filter>
     </ClCompile>
@@ -405,17 +450,8 @@
     <ClCompile Include="EngineService\EngineService.cpp">
       <Filter>EngineService</Filter>
     </ClCompile>
-    <ClCompile Include="Scene\Import\GLBLoader.cpp">
-      <Filter>Scene\Import</Filter>
-    </ClCompile>
-    <ClCompile Include="Scene\Import\JsonLoader.cpp">
-      <Filter>Scene\Import</Filter>
-    </ClCompile>
-    <ClCompile Include="Scene\Import\OBJLoader.cpp">
-      <Filter>Scene\Import</Filter>
-    </ClCompile>
     <ClCompile Include="Core\Object\ClassDatabase.cpp">
-      <Filter>Engine\Core\Object</Filter>
+      <Filter>Core\Object</Filter>
     </ClCompile>
     <ClCompile Include="Scene\Core\Node.cpp">
       <Filter>Scene\Core</Filter>
@@ -438,8 +474,8 @@
     <ClCompile Include="Scene\Resource\MeshResource.cpp">
       <Filter>Scene\Resource</Filter>
     </ClCompile>
-    <ClCompile Include="Scene\SceneCommon.cpp">
-      <Filter>Scene</Filter>
+    <ClCompile Include="Scene\Resource\MeshResourceFormat.cpp">
+      <Filter>Scene\Resource</Filter>
     </ClCompile>
     <ClCompile Include="..\ThirdParty\imgui\backends\imgui_impl_dx11.cpp">
       <Filter>ThirdParty\imgui\backends</Filter>
@@ -448,9 +484,6 @@
       <Filter>ThirdParty\imgui\backends</Filter>
     </ClCompile>
     <ClCompile Include="..\ThirdParty\imgui\imgui.cpp">
-      <Filter>ThirdParty\imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="..\ThirdParty\imgui\imgui_demo.cpp">
       <Filter>ThirdParty\imgui</Filter>
     </ClCompile>
     <ClCompile Include="..\ThirdParty\imgui\imgui_draw.cpp">
@@ -472,10 +505,13 @@
       <Filter>Engine\Application</Filter>
     </ClCompile>
     <ClCompile Include="Core\Object\Variant.cpp">
-      <Filter>Engine\Core\Object</Filter>
+      <Filter>Core\Object</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Object\VariantJson.cpp">
+      <Filter>Core\Object</Filter>
     </ClCompile>
     <ClCompile Include="Core\Object\MethodBind.cpp">
-      <Filter>Engine\Core\Object</Filter>
+      <Filter>Core\Object</Filter>
     </ClCompile>
     <ClCompile Include="Editor\Gizmos\GizmosShapes.cpp">
       <Filter>Editor\Gizmos</Filter>
@@ -489,20 +525,17 @@
     <ClCompile Include="Engine\File\VirtualPath.cpp">
       <Filter>Engine\File</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Script\ScriptResourceIdentity.cpp">
-      <Filter>Engine\Script</Filter>
-    </ClCompile>
     <ClCompile Include="Engine\Script\ScriptSystem.cpp">
-      <Filter>Engine\Script</Filter>
-    </ClCompile>
-    <ClCompile Include="Engine\Script\ScriptModule.cpp">
       <Filter>Engine\Script</Filter>
     </ClCompile>
     <ClCompile Include="Engine\Script\ScriptInstance.cpp">
       <Filter>Engine\Script</Filter>
     </ClCompile>
     <ClCompile Include="Core\Object\Object.cpp">
-      <Filter>Engine\Core\Object</Filter>
+      <Filter>Core\Object</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene\RegisterAllTypes.cpp">
+      <Filter>Scene</Filter>
     </ClCompile>
     <ClCompile Include="Scene\RegisterSceneTypes.cpp">
       <Filter>Scene</Filter>
@@ -513,13 +546,109 @@
     <ClCompile Include="..\ThirdParty\angelscript\add_on\scriptstdstring\scriptstdstring_utils.cpp">
       <Filter>ThirdParty\angelscript\add_on</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Script\ScriptBindings.cpp">
+    <ClCompile Include="Engine\Script\ScriptBinder.cpp">
       <Filter>Engine\Script</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Script\ScriptGenerator.cpp">
+      <Filter>Engine\Script</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Script\ScriptTypeUtils.cpp">
+      <Filter>Engine\Script</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Object\RefCounted.cpp">
+      <Filter>Core\Object</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Object\Resource.cpp">
+      <Filter>Core\Object</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Object\ResourceImporter.cpp">
+      <Filter>Core\Object</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Object\ResourceLoader.cpp">
+      <Filter>Core\Object</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Object\ResourceSaver.cpp">
+      <Filter>Core\Object</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Object\Script.cpp">
+      <Filter>Core\Object</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Object\ScriptLoader.cpp">
+      <Filter>Core\Object</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene\Core\PackedSceneFormat.cpp">
+      <Filter>Scene\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Object\RegisterCoreTypes.cpp">
+      <Filter>Core\Object</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Application\RegisterEngineTypes.cpp">
+      <Filter>Engine\Application</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Script\RegisterBuildinType.cpp">
+      <Filter>Engine\Script</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ThirdParty\angelscript\add_on\scriptarray\scriptarray.cpp">
+      <Filter>ThirdParty\angelscript\add_on</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ThirdParty\angelscript\add_on\debugger\debugger.cpp">
+      <Filter>ThirdParty\angelscript\add_on</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ThirdParty\angelscript\add_on\scriptbuilder\scriptbuilder.cpp">
+      <Filter>ThirdParty\angelscript\add_on</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ThirdParty\angelscript\add_on\scriptdictionary\scriptdictionary.cpp">
+      <Filter>ThirdParty\angelscript\add_on</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene\Import\GLTFImporter.cpp">
+      <Filter>Scene\Import</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene\Import\OBJImporter.cpp">
+      <Filter>Scene\Import</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\File\FileUtils.cpp">
+      <Filter>Engine\File</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene\Core\RaycastSpace3D.cpp">
+      <Filter>Scene\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\EditorData.cpp">
+      <Filter>Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene\Import\ImageImporter.cpp">
+      <Filter>Scene\Import</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene\Resource\TextureResource.cpp">
+      <Filter>Scene\Resource</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene\Resource\TextureResourceFormat.cpp">
+      <Filter>Scene\Resource</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Application\ProjectSettings.cpp">
+      <Filter>Engine\Application</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Application\ProjectSettingsFormat.cpp">
+      <Filter>Engine\Application</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene\Resource\ShaderResource.cpp">
+      <Filter>Scene\Resource</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene\Resource\ShaderResourceFormat.cpp">
+      <Filter>Scene\Resource</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Render\SurfaceTool.cpp">
+      <Filter>Core\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Network\NetworkSystem.cpp">
+      <Filter>Engine\Network</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Application\Main_Windows.cpp">
+      <Filter>Engine\Application</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Core\Clock.hpp">
-      <Filter>Engine\Core</Filter>
+      <Filter>Core</Filter>
     </ClInclude>
     <ClInclude Include="EngineService\DevConsole.hpp">
       <Filter>Engine\Console</Filter>
@@ -533,52 +662,76 @@
     <ClInclude Include="Engine\Application\EngineCommon.hpp">
       <Filter>Engine\Application</Filter>
     </ClInclude>
+    <ClInclude Include="Engine\Application\SystemBase.hpp">
+      <Filter>Engine\Application</Filter>
+    </ClInclude>
     <ClInclude Include="Core\ErrorWarningAssert.hpp">
-      <Filter>Engine\Core</Filter>
+      <Filter>Core</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Event\EventSystem.hpp">
       <Filter>Engine\Event</Filter>
-    </ClInclude>
-    <ClInclude Include="Core\FileUtils.hpp">
-      <Filter>Engine\Core</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Render\HeatMaps.hpp">
       <Filter>Engine\Render</Filter>
     </ClInclude>
     <ClInclude Include="Core\Image.hpp">
-      <Filter>Engine\Core</Filter>
+      <Filter>Core</Filter>
     </ClInclude>
     <ClInclude Include="Core\NamedStrings.hpp">
-      <Filter>Engine\Core</Filter>
+      <Filter>Core</Filter>
     </ClInclude>
     <ClInclude Include="Core\Render\Rgba8.hpp">
-      <Filter>Engine\Render</Filter>
+      <Filter>Core\Render</Filter>
     </ClInclude>
     <ClInclude Include="Core\StringUtils.hpp">
-      <Filter>Engine\Core</Filter>
+      <Filter>Core</Filter>
     </ClInclude>
     <ClInclude Include="Core\Time.hpp">
-      <Filter>Engine\Core</Filter>
+      <Filter>Core</Filter>
     </ClInclude>
     <ClInclude Include="Core\Timer.hpp">
-      <Filter>Engine\Core</Filter>
+      <Filter>Core</Filter>
     </ClInclude>
     <ClInclude Include="Core\Render\Vertex.hpp">
-      <Filter>Engine\Render</Filter>
+      <Filter>Core\Render</Filter>
     </ClInclude>
     <ClInclude Include="Core\Render\VertexUtils.hpp">
-      <Filter>Engine\Render</Filter>
+      <Filter>Core\Render</Filter>
     </ClInclude>
     <ClInclude Include="Core\XmlUtils.hpp">
-      <Filter>Engine\Core</Filter>
+      <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="Editor\EditorController.hpp">
+    <ClInclude Include="Editor\EditorCamera.hpp">
       <Filter>Editor</Filter>
     </ClInclude>
     <ClInclude Include="Editor\EditorNode.hpp">
       <Filter>Editor</Filter>
     </ClInclude>
-    <ClInclude Include="Editor\UI\CreateNodePanel.hpp">
+    <ClInclude Include="Editor\UI\Popup\CreateNodePopup.hpp">
+      <Filter>Editor\UI\Popup</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\UI\Popup\CreateFolderPopup.hpp">
+      <Filter>Editor\UI\Popup</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\UI\Popup\CreateScenePopup.hpp">
+      <Filter>Editor\UI\Popup</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\UI\Popup\DeleteEntryPopup.hpp">
+      <Filter>Editor\UI\Popup</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\UI\Popup\EditorPopupUtils.hpp">
+      <Filter>Editor\UI\Popup</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\UI\Popup\ProjectSettingsPopup.hpp">
+      <Filter>Editor\UI\Popup</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\UI\Popup\WarningPopup.hpp">
+      <Filter>Editor\UI\Popup</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\UI\EditorIcons.hpp">
+      <Filter>Editor\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\UI\JetBrainsMonoFont.hpp">
       <Filter>Editor\UI</Filter>
     </ClInclude>
     <ClInclude Include="Editor\UI\EditorPanel.hpp">
@@ -590,7 +743,16 @@
     <ClInclude Include="Editor\UI\EditorUIContext.hpp">
       <Filter>Editor\UI</Filter>
     </ClInclude>
+    <ClInclude Include="Editor\UI\EditorUIStyle.hpp">
+      <Filter>Editor\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\UI\EditorUIWidgets.hpp">
+      <Filter>Editor\UI</Filter>
+    </ClInclude>
     <ClInclude Include="Editor\UI\FileSystemPanel.hpp">
+      <Filter>Editor\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\UI\ImportPanel.hpp">
       <Filter>Editor\UI</Filter>
     </ClInclude>
     <ClInclude Include="Editor\UI\InspectorPanel.hpp">
@@ -614,80 +776,89 @@
     <ClInclude Include="Engine\ImGui\ImGuiSystem.hpp">
       <Filter>Engine\ImGui</Filter>
     </ClInclude>
+    <ClInclude Include="Engine\ImGui\DefaultImGuiLayout.hpp">
+      <Filter>Engine\ImGui</Filter>
+    </ClInclude>
     <ClInclude Include="Core\Math\AABB2.hpp">
-      <Filter>Engine\Math</Filter>
+      <Filter>Core\Math</Filter>
     </ClInclude>
     <ClInclude Include="Core\Math\AABB3.hpp">
-      <Filter>Engine\Math</Filter>
+      <Filter>Core\Math</Filter>
     </ClInclude>
     <ClInclude Include="Core\Math\Capsule2.hpp">
-      <Filter>Engine\Math</Filter>
+      <Filter>Core\Math</Filter>
     </ClInclude>
     <ClInclude Include="Core\Math\Capsule3.hpp">
-      <Filter>Engine\Math</Filter>
+      <Filter>Core\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Math\Cone3.hpp">
+      <Filter>Core\Math</Filter>
     </ClInclude>
     <ClInclude Include="Core\Math\Cylinder3.hpp">
-      <Filter>Engine\Math</Filter>
+      <Filter>Core\Math</Filter>
     </ClInclude>
     <ClInclude Include="Core\Math\CylinderZ3.hpp">
-      <Filter>Engine\Math</Filter>
+      <Filter>Core\Math</Filter>
     </ClInclude>
     <ClInclude Include="Core\Math\Disc2.hpp">
-      <Filter>Engine\Math</Filter>
+      <Filter>Core\Math</Filter>
     </ClInclude>
     <ClInclude Include="Core\Math\EulerAngles.hpp">
-      <Filter>Engine\Math</Filter>
+      <Filter>Core\Math</Filter>
     </ClInclude>
     <ClInclude Include="Core\Math\FloatRange.hpp">
-      <Filter>Engine\Math</Filter>
+      <Filter>Core\Math</Filter>
     </ClInclude>
     <ClInclude Include="Core\Math\IntRange.hpp">
-      <Filter>Engine\Math</Filter>
+      <Filter>Core\Math</Filter>
     </ClInclude>
     <ClInclude Include="Core\Math\IntVec2.hpp">
-      <Filter>Engine\Math</Filter>
+      <Filter>Core\Math</Filter>
     </ClInclude>
     <ClInclude Include="Core\Math\IntVec3.hpp">
-      <Filter>Engine\Math</Filter>
+      <Filter>Core\Math</Filter>
     </ClInclude>
     <ClInclude Include="Core\Math\LineSegment2.hpp">
-      <Filter>Engine\Math</Filter>
+      <Filter>Core\Math</Filter>
     </ClInclude>
     <ClInclude Include="Core\Math\MathCommon.hpp">
-      <Filter>Engine\Math</Filter>
+      <Filter>Core\Math</Filter>
     </ClInclude>
     <ClInclude Include="Core\Math\MathUtils.hpp">
-      <Filter>Engine\Math</Filter>
+      <Filter>Core\Math</Filter>
     </ClInclude>
     <ClInclude Include="Core\Math\Matrix4x4.hpp">
-      <Filter>Engine\Math</Filter>
+      <Filter>Core\Math</Filter>
     </ClInclude>
     <ClInclude Include="Core\Math\OBB2.hpp">
-      <Filter>Engine\Math</Filter>
+      <Filter>Core\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Math\Quad3.hpp">
+      <Filter>Core\Math</Filter>
     </ClInclude>
     <ClInclude Include="Core\Math\RandomNumberGenerator.hpp">
-      <Filter>Engine\Math</Filter>
+      <Filter>Core\Math</Filter>
     </ClInclude>
     <ClInclude Include="Core\Math\RaycastUtils.hpp">
-      <Filter>Engine\Math</Filter>
+      <Filter>Core\Math</Filter>
     </ClInclude>
     <ClInclude Include="Core\Math\Sphere3.hpp">
-      <Filter>Engine\Math</Filter>
+      <Filter>Core\Math</Filter>
     </ClInclude>
     <ClInclude Include="Core\Math\Triangle2.hpp">
-      <Filter>Engine\Math</Filter>
+      <Filter>Core\Math</Filter>
     </ClInclude>
     <ClInclude Include="Core\Math\Triangle3.hpp">
-      <Filter>Engine\Math</Filter>
+      <Filter>Core\Math</Filter>
     </ClInclude>
     <ClInclude Include="Core\Math\Vec2.hpp">
-      <Filter>Engine\Math</Filter>
+      <Filter>Core\Math</Filter>
     </ClInclude>
     <ClInclude Include="Core\Math\Vec3.hpp">
-      <Filter>Engine\Math</Filter>
+      <Filter>Core\Math</Filter>
     </ClInclude>
     <ClInclude Include="Core\Math\Vec4.hpp">
-      <Filter>Engine\Math</Filter>
+      <Filter>Core\Math</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Audio\AudioSystem.hpp">
       <Filter>Engine\Audio</Filter>
@@ -698,16 +869,19 @@
     <ClInclude Include="Engine\Input\InputSystem.hpp">
       <Filter>Engine\Input</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Input\KeyButtonState.hpp">
+    <ClInclude Include="Engine\Input\KeyboardState.hpp">
       <Filter>Engine\Input</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Input\XboxController.hpp">
       <Filter>Engine\Input</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Window\Window.hpp">
+    <ClInclude Include="Engine\Window\WindowSystem.hpp">
       <Filter>Engine\Window</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Render\BitmapFont.hpp">
+      <Filter>Engine\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Render\BuiltinShaders.hpp">
       <Filter>Engine\Render</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Render\CameraContext.hpp">
@@ -719,7 +893,10 @@
     <ClInclude Include="Engine\Render\D3D11RenderBackend.hpp">
       <Filter>Engine\Render</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Render\DebugRenderer.hpp">
+    <ClInclude Include="Engine\Render\DebugGizmos.hpp">
+      <Filter>Engine\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Render\DebugObject.hpp">
       <Filter>Engine\Render</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Render\IndexBuffer.hpp">
@@ -737,13 +914,13 @@
     <ClInclude Include="Engine\Render\Shader.hpp">
       <Filter>Engine\Render</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Render\SimpleTriangleFont.hpp">
-      <Filter>Engine\Render</Filter>
-    </ClInclude>
     <ClInclude Include="Engine\Render\SpriteAnimDefinition.hpp">
       <Filter>Engine\Render</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Render\Texture.hpp">
+    <ClInclude Include="Engine\Render\TextureBindingSlots.hpp">
+      <Filter>Engine\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Render\GPUTexture.hpp">
       <Filter>Engine\Render</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Render\VertexBuffer.hpp">
@@ -782,9 +959,6 @@
     <ClInclude Include="Scene\Physics\CylinderZCollider3D.hpp">
       <Filter>Scene\Physics</Filter>
     </ClInclude>
-    <ClInclude Include="Scene\Physics\NodeRaycastUtils.hpp">
-      <Filter>Scene\Physics</Filter>
-    </ClInclude>
     <ClInclude Include="Scene\Physics\TriangleMeshCollider3D.hpp">
       <Filter>Scene\Physics</Filter>
     </ClInclude>
@@ -803,17 +977,8 @@
     <ClInclude Include="EngineService\EngineService.hpp">
       <Filter>EngineService</Filter>
     </ClInclude>
-    <ClInclude Include="Scene\Import\GLBLoader.hpp">
-      <Filter>Scene\Import</Filter>
-    </ClInclude>
-    <ClInclude Include="Scene\Import\JsonLoader.hpp">
-      <Filter>Scene\Import</Filter>
-    </ClInclude>
-    <ClInclude Include="Scene\Import\OBJLoader.hpp">
-      <Filter>Scene\Import</Filter>
-    </ClInclude>
     <ClInclude Include="Core\Object\ClassDatabase.hpp">
-      <Filter>Engine\Core\Object</Filter>
+      <Filter>Core\Object</Filter>
     </ClInclude>
     <ClInclude Include="Scene\Core\Node.hpp">
       <Filter>Scene\Core</Filter>
@@ -839,35 +1004,11 @@
     <ClInclude Include="Scene\Resource\MeshResource.hpp">
       <Filter>Scene\Resource</Filter>
     </ClInclude>
-    <ClInclude Include="Scene\SceneCommon.hpp">
-      <Filter>Scene</Filter>
+    <ClInclude Include="Scene\Resource\MeshResourceFormat.hpp">
+      <Filter>Scene\Resource</Filter>
     </ClInclude>
     <ClInclude Include="..\ThirdParty\FastNoiseLite\FastNoiseLite.h">
       <Filter>ThirdParty\FastNoiseLite</Filter>
-    </ClInclude>
-    <ClInclude Include="..\ThirdParty\fmod\fmod.h">
-      <Filter>ThirdParty\fmod</Filter>
-    </ClInclude>
-    <ClInclude Include="..\ThirdParty\fmod\fmod.hpp">
-      <Filter>ThirdParty\fmod</Filter>
-    </ClInclude>
-    <ClInclude Include="..\ThirdParty\fmod\fmod_codec.h">
-      <Filter>ThirdParty\fmod</Filter>
-    </ClInclude>
-    <ClInclude Include="..\ThirdParty\fmod\fmod_common.h">
-      <Filter>ThirdParty\fmod</Filter>
-    </ClInclude>
-    <ClInclude Include="..\ThirdParty\fmod\fmod_dsp.h">
-      <Filter>ThirdParty\fmod</Filter>
-    </ClInclude>
-    <ClInclude Include="..\ThirdParty\fmod\fmod_dsp_effects.h">
-      <Filter>ThirdParty\fmod</Filter>
-    </ClInclude>
-    <ClInclude Include="..\ThirdParty\fmod\fmod_errors.h">
-      <Filter>ThirdParty\fmod</Filter>
-    </ClInclude>
-    <ClInclude Include="..\ThirdParty\fmod\fmod_output.h">
-      <Filter>ThirdParty\fmod</Filter>
     </ClInclude>
     <ClInclude Include="..\ThirdParty\GLFW\glfw3.h">
       <Filter>ThirdParty\GLFW</Filter>
@@ -927,10 +1068,13 @@
       <Filter>Engine\Application</Filter>
     </ClInclude>
     <ClInclude Include="Core\Object\Variant.hpp">
-      <Filter>Engine\Core\Object</Filter>
+      <Filter>Core\Object</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Object\VariantJson.hpp">
+      <Filter>Core\Object</Filter>
     </ClInclude>
     <ClInclude Include="Core\Object\MethodBind.hpp">
-      <Filter>Engine\Core\Object</Filter>
+      <Filter>Core\Object</Filter>
     </ClInclude>
     <ClInclude Include="Editor\Gizmos\GizmosShapes.hpp">
       <Filter>Editor\Gizmos</Filter>
@@ -944,6 +1088,9 @@
     <ClInclude Include="Editor\UI\InspectorPropertyBool.hpp">
       <Filter>Editor\UI</Filter>
     </ClInclude>
+    <ClInclude Include="Editor\UI\InspectorPropertyColor.hpp">
+      <Filter>Editor\UI</Filter>
+    </ClInclude>
     <ClInclude Include="Editor\UI\InspectorPropertyEuler.hpp">
       <Filter>Editor\UI</Filter>
     </ClInclude>
@@ -951,6 +1098,9 @@
       <Filter>Editor\UI</Filter>
     </ClInclude>
     <ClInclude Include="Editor\UI\InspectorPropertyInt.hpp">
+      <Filter>Editor\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\UI\InspectorPropertyResource.hpp">
       <Filter>Editor\UI</Filter>
     </ClInclude>
     <ClInclude Include="Editor\UI\InspectorPropertyString.hpp">
@@ -962,22 +1112,19 @@
     <ClInclude Include="Engine\File\VirtualPath.hpp">
       <Filter>Engine\File</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Script\ScriptResourceIdentity.hpp">
-      <Filter>Engine\Script</Filter>
-    </ClInclude>
     <ClInclude Include="Engine\Script\ScriptSystem.hpp">
       <Filter>Engine\Script</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Script\ScriptModule.hpp">
+    <ClInclude Include="Engine\Script\ScriptTypeUtils.hpp">
       <Filter>Engine\Script</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Script\ScriptInstance.hpp">
       <Filter>Engine\Script</Filter>
     </ClInclude>
     <ClInclude Include="Core\Object\Object.hpp">
-      <Filter>Engine\Core\Object</Filter>
+      <Filter>Core\Object</Filter>
     </ClInclude>
-    <ClInclude Include="Scene\RegisterSceneTypes.hpp">
+    <ClInclude Include="Scene\RegisterAllTypes.hpp">
       <Filter>Scene</Filter>
     </ClInclude>
     <ClInclude Include="..\ThirdParty\angelscript\include\angelscript.h">
@@ -986,8 +1133,104 @@
     <ClInclude Include="..\ThirdParty\angelscript\add_on\scriptstdstring\scriptstdstring.h">
       <Filter>ThirdParty\angelscript\add_on</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Script\ScriptBindings.hpp">
+    <ClInclude Include="Engine\Script\ScriptBinder.hpp">
       <Filter>Engine\Script</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Script\ScriptGenerator.hpp">
+      <Filter>Engine\Script</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ThirdParty\nanosvg\nanosvg.h">
+      <Filter>ThirdParty\nanosvg</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ThirdParty\nanosvg\nanosvgrast.h">
+      <Filter>ThirdParty\nanosvg</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Object\RefCounted.hpp">
+      <Filter>Core\Object</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Object\Resource.hpp">
+      <Filter>Core\Object</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Object\ResourceImporter.hpp">
+      <Filter>Core\Object</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Object\ResourceLoader.hpp">
+      <Filter>Core\Object</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Object\ResourceSaver.hpp">
+      <Filter>Core\Object</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Object\Script.hpp">
+      <Filter>Core\Object</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Object\ScriptLoader.hpp">
+      <Filter>Core\Object</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\Core\PackedSceneFormat.hpp">
+      <Filter>Scene\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Script\RegisterBuildinType.hpp">
+      <Filter>Engine\Script</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ThirdParty\angelscript\add_on\scriptarray\scriptarray.h">
+      <Filter>ThirdParty\angelscript\add_on</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ThirdParty\angelscript\add_on\debugger\debugger.h">
+      <Filter>ThirdParty\angelscript\add_on</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ThirdParty\angelscript\add_on\scriptbuilder\scriptbuilder.h">
+      <Filter>ThirdParty\angelscript\add_on</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ThirdParty\angelscript\add_on\scriptdictionary\scriptdictionary.h">
+      <Filter>ThirdParty\angelscript\add_on</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\Import\GLTFImporter.hpp">
+      <Filter>Scene\Import</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\Import\OBJImporter.hpp">
+      <Filter>Scene\Import</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\File\FileUtils.hpp">
+      <Filter>Engine\File</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\Core\RaycastSpace3D.hpp">
+      <Filter>Scene\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\EditorData.hpp">
+      <Filter>Editor</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\Import\ImageImporter.hpp">
+      <Filter>Scene\Import</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\Resource\TextureResource.hpp">
+      <Filter>Scene\Resource</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\Resource\TextureResourceFormat.hpp">
+      <Filter>Scene\Resource</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Application\ProjectSettings.hpp">
+      <Filter>Engine\Application</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Application\ProjectSettingsFormat.hpp">
+      <Filter>Engine\Application</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\Resource\ShaderResource.hpp">
+      <Filter>Scene\Resource</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\Resource\ShaderResourceFormat.hpp">
+      <Filter>Scene\Resource</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Render\SurfaceTool.hpp">
+      <Filter>Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Network\NetworkSystem.hpp">
+      <Filter>Engine\Network</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Application\Main_Windows.hpp">
+      <Filter>Engine\Application</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ThirdParty\miniaudio\miniaudio.h">
+      <Filter>ThirdParty\miniaudio</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

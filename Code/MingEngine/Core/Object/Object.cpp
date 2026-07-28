@@ -1,9 +1,12 @@
 #include "MingEngine/Core/Object/Object.hpp"
 
 #include "MingEngine/Engine/Script/ScriptInstance.hpp"
+
 Object::~Object() {}
 
 Object::BindMethodsFunc Object::GetBindMethodsFunc() { return &Object::BindMethods; }
+
+void Object::BindMethods() {}
 
 std::string Object::GetStaticClassName() { return "Object"; }
 
@@ -33,10 +36,6 @@ void Object::Notification(int notification, bool reverse)
 	}
 }
 
-void Object::SetScript(std::unique_ptr<ScriptInstance> scriptInstance) { m_scriptInstance = std::move(scriptInstance); }
-
-ScriptInstance* Object::GetScript() { return m_scriptInstance.get(); }
-
 void Object::NotificationForward(int notification)
 {
 	NotificationForwardV(notification);
@@ -56,4 +55,3 @@ void Object::NotificationBackward(int notification)
 
 	NotificationBackwardV(notification);
 }
-

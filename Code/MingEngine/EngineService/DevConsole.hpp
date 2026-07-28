@@ -12,7 +12,7 @@ struct ImGuiInputTextCallbackData;
 
 struct DevConsoleLine
 {
-	Rgba8       m_color;
+	Color       m_color;
 	std::string m_text;
 };
 
@@ -44,17 +44,17 @@ public:
 
 	void AddCommand(std::string const& name, DevConsoleCommandFunc func);
 	void Execute(std::string const& consoleContext, bool echoCommand = true);
-	void AddLine(Rgba8 const& color, std::string const& text);
+	void AddLine(Color const& color, std::string const& text);
 	void Render();
 
 	void ToggleOpen();
 	bool IsOpen() const;
 
-	static const Rgba8 kError;
-	static const Rgba8 kWarning;
-	static const Rgba8 kInfoMajor;
-	static const Rgba8 kInfoMinor;
-	static const Rgba8 kInputText;
+	static const Color kError;
+	static const Color kWarning;
+	static const Color kInfoMajor;
+	static const Color kInfoMinor;
+	static const Color kInputText;
 
 	static bool Quit(EventArgs& args);
 	static bool Clear(EventArgs& args);

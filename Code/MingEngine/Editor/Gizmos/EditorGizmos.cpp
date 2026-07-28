@@ -1,17 +1,35 @@
 #include "MingEngine/Editor/Gizmos/EditorGizmos.hpp"
 
-#include "MingEngine/Editor/EditorController.hpp"
+#include "MingEngine/Editor/EditorCamera.hpp"
 #include "MingEngine/Editor/Gizmos/TransformGizmo3D.hpp"
 #include "MingEngine/Editor/Gizmos/ViewportAxisIndicator.hpp"
 #include "MingEngine/Scene/3D/Camera3D.hpp"
+#include "MingEngine/Scene/Core/SceneTree.hpp"
 
-#include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Core/Math/MathUtils.hpp"
+#include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Engine/Render/CameraContext.hpp"
+
+using namespace Math;
 
 namespace
 {
 float constexpr kEditorGizmoRaycastLength = 10000.f;
+float constexpr kWorldAxisExtent          = 100.f;
+
+Color const kAxisXColor(255, 70, 105, 255);
+Color const kAxisYColor(155, 225, 20, 255);
+Color const kAxisZColor(55, 160, 255, 255);
+
+EditorWorldAxis3D* CreateWorldAxis(
+	Node* parent, char const* name, Vec3 const& axisStart, Vec3 const& axisEnd, Color const& color)
+{
+	EditorWorldAxis3D* axis = new EditorWorldAxis3D(axisStart, axisEnd, color);
+	axis->SetName(name);
+	axis->SetSerializable(false);
+	parent->AddNode(axis);
+	return axis;
+}
 } // namespace
 
 EditorGizmos::EditorGizmos()
@@ -24,10 +42,18 @@ EditorGizmos::EditorGizmos()
 	m_worldGrid->SetSerializable(false);
 	AddNode(m_worldGrid);
 
-	m_worldAxis = new EditorWorldAxis3D();
-	m_worldAxis->SetName("WorldAxis");
-	m_worldAxis->SetSerializable(false);
-	AddNode(m_worldAxis);
+	m_worldAxises[0] =
+		CreateWorldAxis(this, "WorldAxisXPositive", Vec3::Zero, Vec3(kWorldAxisExtent, 0.f, 0.f), kAxisXColor);
+	m_worldAxises[1] =
+		CreateWorldAxis(this, "WorldAxisXNegative", Vec3::Zero, Vec3(-kWorldAxisExtent, 0.f, 0.f), kAxisXColor);
+	m_worldAxises[2] =
+		CreateWorldAxis(this, "WorldAxisYPositive", Vec3::Zero, Vec3(0.f, kWorldAxisExtent, 0.f), kAxisYColor);
+	m_worldAxises[3] =
+		CreateWorldAxis(this, "WorldAxisYNegative", Vec3::Zero, Vec3(0.f, -kWorldAxisExtent, 0.f), kAxisYColor);
+	m_worldAxises[4] =
+		CreateWorldAxis(this, "WorldAxisZPositive", Vec3::Zero, Vec3(0.f, 0.f, kWorldAxisExtent), kAxisZColor);
+	m_worldAxises[5] =
+		CreateWorldAxis(this, "WorldAxisZNegative", Vec3::Zero, Vec3(0.f, 0.f, -kWorldAxisExtent), kAxisZColor);
 
 	m_transformGizmo = new TransformGizmo3D();
 	m_transformGizmo->SetName("TransformGizmo3D");
@@ -45,59 +71,35 @@ EditorGizmos::~EditorGizmos() {}
 void EditorGizmos::OnMouseMove(Camera3D const& camera, Vec2 screenPos)
 {
 	GizmoContext const ctx = BuildGizmoContext(GetSceneTree(), camera, screenPos);
-	float const aspect     = ctx.m_clientDimensions.x / Max(ctx.m_clientDimensions.y, 1.f);
-	CameraContext camCtx   = camera.GetCamera(aspect);
-	RaycastInfo ray = BuildRaycastFromMouse(camCtx, screenPos, ctx.m_clientDimensions, kEditorGizmoRaycastLength);
-	m_transformGizmo->UpdateHover(ctx, ray);
+	m_transformGizmo->UpdateHover(ctx);
 }
 
-bool EditorGizmos::OnBeginDrag(Camera3D const& camera, Vec2 screenPos)
+bool EditorGizmos::BeginDragHovered(Camera3D const& camera, Vec2 screenPos)
 {
 	GizmoContext const ctx = BuildGizmoContext(GetSceneTree(), camera, screenPos);
-	float const aspect     = ctx.m_clientDimensions.x / Max(ctx.m_clientDimensions.y, 1.f);
-	CameraContext camCtx   = camera.GetCamera(aspect);
-	RaycastInfo ray = BuildRaycastFromMouse(camCtx, screenPos, ctx.m_clientDimensions, kEditorGizmoRaycastLength);
-	return m_transformGizmo->BeginDrag(ctx, ray);
+	return m_transformGizmo->BeginDragHovered(ctx);
 }
 
 void EditorGizmos::OnDrag(Camera3D const& camera, Vec2 screenPos)
 {
 	GizmoContext const ctx = BuildGizmoContext(GetSceneTree(), camera, screenPos);
-	float const aspect     = ctx.m_clientDimensions.x / Max(ctx.m_clientDimensions.y, 1.f);
-	CameraContext camCtx   = camera.GetCamera(aspect);
-	RaycastInfo ray = BuildRaycastFromMouse(camCtx, screenPos, ctx.m_clientDimensions, kEditorGizmoRaycastLength);
-	m_transformGizmo->OnDrag(ctx, ray);
+	m_transformGizmo->OnDrag(ctx);
 }
 
 void EditorGizmos::OnEndDrag()
 {
 	if (m_transformGizmo->IsDragging())
 	{
-		Camera3D* camera = EditorController::Get() ? EditorController::Get()->GetCamera() : nullptr;
+		Camera3D* camera = EditorCamera::Get() ? EditorCamera::Get()->GetCamera() : nullptr;
 		if (camera != nullptr)
 		{
-			Vec2 const cursorPos   = g_engine->m_input->GetCursorClientPosition();
-			GizmoContext const ctx = BuildGizmoContext(GetSceneTree(), *camera, cursorPos);
+			Vec2 const         cursorPos = Vec2(g_engine->m_inputSystem->GetCursorClientPosition());
+			GizmoContext const ctx       = BuildGizmoContext(GetSceneTree(), *camera, cursorPos);
 			m_transformGizmo->EndDrag(ctx);
 		}
 	}
 }
 
+bool EditorGizmos::IsHovered() const { return m_transformGizmo != nullptr && m_transformGizmo->IsHovered(); }
+
 bool EditorGizmos::IsDragging() const { return m_transformGizmo != nullptr && m_transformGizmo->IsDragging(); }
-
-NodeHandle EditorGizmos::Raycast(Camera3D const& camera, Vec2 screenPos) const
-{
-	GizmoContext const ctx = BuildGizmoContext(GetSceneTree(), camera, screenPos);
-	float const aspect     = ctx.m_clientDimensions.x / Max(ctx.m_clientDimensions.y, 1.f);
-	CameraContext camCtx   = camera.GetCamera(aspect);
-	RaycastInfo ray = BuildRaycastFromMouse(camCtx, screenPos, ctx.m_clientDimensions, kEditorGizmoRaycastLength);
-
-	GizmoRaycastResult const result = m_transformGizmo->Raycast(ctx, ray);
-	if (result.m_didImpact && result.m_component != nullptr)
-	{
-		return result.m_component->GetHandle();
-	}
-
-	return NodeHandle::Invalid;
-}
-

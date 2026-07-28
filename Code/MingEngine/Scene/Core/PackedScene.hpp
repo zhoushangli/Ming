@@ -1,16 +1,20 @@
 #pragma once
 
+#include "MingEngine/Core/Object/Resource.hpp"
+#include "MingEngine/Core/Object/Variant.hpp"
 #include "MingEngine/Scene/Core/Node.hpp"
 #include "MingEngine/Scene/Core/NodePath.hpp"
-#include "MingEngine/Core/Object/Variant.hpp"
 
 #include <string>
 #include <vector>
 
-// When we seerialize a scene, we will go through the following steps:
-// runtime scene ---> PackedScene ---> json file
-// Pack() / Instantiate() will convert between runtime scene and PackedScene
-// SaveToFile() / LoadFromFile() will convert between PackedScene and json file
+class PackedSceneLoader;
+class PackedSceneSaver;
+
+// When we serialize a scene, we go through the following steps:
+// runtime scene <-> PackedScene <-> .tscn file
+// Pack() / Instantiate() convert between runtime scene and PackedScene.
+// PackedSceneLoader / PackedSceneSaver convert between PackedScene and .tscn files.
 
 struct PackedProperty
 {
@@ -25,9 +29,9 @@ struct PackedProperty
 
 struct PackedNode
 {
-	std::string m_name;
-	std::string m_type;
-	std::string m_parentPath;
+	std::string                 m_name;
+	std::string                 m_type;
+	std::string                 m_parentPath;
 	std::vector<PackedProperty> m_properties;
 };
 
@@ -36,25 +40,26 @@ struct PackedSceneData
 	std::vector<PackedNode> m_packedNodes;
 };
 
-class PackedScene
+class PackedScene : public Resource
 {
+	MCLASS(PackedScene, Resource)
+
+	friend class PackedSceneLoader;
+	friend class PackedSceneSaver;
+
 public:
 	PackedScene()  = default;
 	~PackedScene() = default;
 
 	bool  Pack(Node const* node);
 	Node* Instantiate() const;
-
-	bool SaveToFile(std::string const& filename) const;
-	bool LoadFromFile(std::string const& filename);
+	bool  MoveFrom(Resource&& other) override;
 
 protected:
-	bool ParseNodeRecursively(
-		Node const* node,
-		std::string const& parentPath,
-		std::vector<PackedNode>& outNodes);
+	static void BindMethods() {};
+
+	bool ParseNodeRecursively(Node const* node, std::string const& parentPath, std::vector<PackedNode>& outNodes);
 
 protected:
 	PackedSceneData m_data;
 };
-

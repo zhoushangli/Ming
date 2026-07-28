@@ -3,8 +3,14 @@
 #include <memory>
 #include <string>
 
-#define ADD_PROPERTY(propertyName, setterName, getterName)                                                             \
-	ClassDatabase::AddProperty(GetStaticClassName(), propertyName, setterName, getterName)
+#define ADD_PROPERTY(propertyInfo, setterName, getterName)                                                             \
+	ClassDatabase::AddProperty(GetStaticClassName(), propertyInfo, setterName, getterName)
+
+#define BIND_ENUM(className, enumName)                                                                                 \
+	ClassDatabase::BindConstant(#className, #enumName, static_cast<int>(className::enumName))
+
+#define BIND_CONSTANT(namespaceName, constantName)                                                                     \
+	ClassDatabase::BindConstant(#namespaceName, #constantName, static_cast<int>(namespaceName::constantName))
 
 #define MCLASS(className, inheritName)                                                                                 \
 public:                                                                                                                \
@@ -64,7 +70,7 @@ public:
 
 	// Class information and reflection
 	// Will be overridden by the MCLASS macro in derived classes.
-	static void            BindMethods() {}
+	static void            BindMethods();
 	static BindMethodsFunc GetBindMethodsFunc();
 
 	static std::string  GetStaticClassName();
@@ -72,9 +78,6 @@ public:
 	static void         InitializeClass();
 
 	void Notification(int notification, bool reverse = false);
-
-	void            SetScript(std::unique_ptr<ScriptInstance> scriptInstance);
-	ScriptInstance* GetScript();
 
 protected:
 	void OnNotification([[maybe_unused]] int notification) {}
@@ -85,7 +88,4 @@ protected:
 	virtual void NotificationBackwardV([[maybe_unused]] int notification) {}
 
 	void (Object::* GetOnNotificationFunc() const)(int) { return &Object::OnNotification; }
-
-protected:
-	std::unique_ptr<ScriptInstance> m_scriptInstance;
 };

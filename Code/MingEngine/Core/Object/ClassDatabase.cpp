@@ -3,7 +3,34 @@
 #include "MingEngine/Core/ErrorWarningAssert.hpp"
 #include "MingEngine/Core/StringUtils.hpp"
 
-std::unordered_map<std::string, ClassInfo> ClassDatabase::m_classInfoMap;
+#include <algorithm>
+
+std::unordered_map<std::string, ClassInfo>           ClassDatabase::m_classInfoMap;
+std::unordered_map<std::string, GlobalNamespaceInfo> ClassDatabase::m_namespaceInfoMap;
+std::unordered_map<std::string, Object*>             ClassDatabase::m_globalObjectMap;
+
+namespace
+{
+int GetClassInheritanceDepth(ClassInfo const& classInfo, size_t maxDepth)
+{
+	int         depth           = 0;
+	std::string parentClassName = classInfo.m_parentClassName;
+
+	for (size_t step = 0; !parentClassName.empty() && step <= maxDepth; ++step)
+	{
+		ClassInfo const* parentInfo = ClassDatabase::GetClassInfo(parentClassName);
+		if (parentInfo == nullptr || parentInfo->m_className == parentInfo->m_parentClassName)
+		{
+			break;
+		}
+
+		++depth;
+		parentClassName = parentInfo->m_parentClassName;
+	}
+
+	return depth;
+}
+} // namespace
 
 void ClassDatabase::Startup() { m_classInfoMap.clear(); }
 
@@ -36,13 +63,40 @@ ClassInfo const* ClassDatabase::GetClassInfo(std::string const& className)
 	return &iter->second;
 }
 
-std::vector<ClassInfo const*> ClassDatabase::GetRegisteredClasses()
+std::vector<ClassInfo const*> ClassDatabase::GetRegisteredClasses(bool sortByInheritanceDepth)
 {
 	std::vector<ClassInfo const*> classes;
 	classes.reserve(m_classInfoMap.size());
 	for (auto const& classEntry : m_classInfoMap)
 	{
 		classes.push_back(&classEntry.second);
+	}
+	if (sortByInheritanceDepth)
+	{
+		size_t const maxDepth = classes.size();
+		std::sort(
+			classes.begin(),
+			classes.end(),
+			[maxDepth](ClassInfo const* left, ClassInfo const* right)
+			{
+				if (left == nullptr)
+				{
+					return false;
+				}
+				if (right == nullptr)
+				{
+					return true;
+				}
+
+				int const leftDepth  = GetClassInheritanceDepth(*left, maxDepth);
+				int const rightDepth = GetClassInheritanceDepth(*right, maxDepth);
+				if (leftDepth != rightDepth)
+				{
+					return leftDepth < rightDepth;
+				}
+
+				return left->m_className < right->m_className;
+			});
 	}
 	return classes;
 }
@@ -162,4 +216,35 @@ void ClassDatabase::AddProperty(
 		Stringf("ClassDatabase: getter '%s' is not bound on class '%s'.", getterName.c_str(), className.c_str()));
 
 	m_classInfoMap[className].m_properties.push_back(std::make_unique<PropertyInfo>(std::move(propertyInfo)));
+}
+
+std::vector<GlobalNamespaceInfo const*> ClassDatabase::GetRegisteredGlobalNamespaces()
+{
+	std::vector<GlobalNamespaceInfo const*> globalNamespaces;
+	globalNamespaces.reserve(m_namespaceInfoMap.size());
+	for (auto const& namespaceEntry : m_namespaceInfoMap)
+	{
+		globalNamespaces.push_back(&namespaceEntry.second);
+	}
+	return globalNamespaces;
+}
+
+MethodBind const* ClassDatabase::GetGlobalMethodBind(std::string const& namespaceName, std::string const& methodName)
+{
+	auto namespaceIter = m_namespaceInfoMap.find(namespaceName);
+	if (namespaceIter == m_namespaceInfoMap.end())
+	{
+		return nullptr;
+	}
+
+	auto& methods = namespaceIter->second.m_methods;
+	for (const auto& method : methods)
+	{
+		if (method && method->m_name == methodName)
+		{
+			return method->m_bind.get();
+		}
+	}
+
+	return nullptr;
 }

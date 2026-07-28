@@ -1,17 +1,62 @@
 #include "MingEngine/Engine/Render/Renderer.hpp"
 
 #include "MingEngine/Core/Clock.hpp"
+#include "MingEngine/Core/Math/EulerAngles.hpp"
 #include "MingEngine/Engine/Render/CameraContext.hpp"
-#include "MingEngine/Engine/Render/DebugRenderer.hpp"
+#include "MingEngine/Engine/Render/BuiltinShaders.hpp"
+#include "MingEngine/Engine/Render/DebugGizmos.hpp"
 #include "MingEngine/Engine/Render/PostProcessChain.hpp"
 #include "MingEngine/Engine/Render/RenderContext.hpp"
 #include "MingEngine/Engine/Render/VertexBuffer.hpp"
 
 #include "ThirdParty/imgui/backends/imgui_impl_dx11.h"
 
+#include <algorithm>
+
+namespace
+{
+
+// clang-format off
+const uint8_t kDefaultWhiteTexture[16] =
+{
+	0xFF, 0xFF, 0xFF, 0xFF, // (0,0)
+	0xFF, 0xFF, 0xFF, 0xFF, // (1,0)
+	0xFF, 0xFF, 0xFF, 0xFF, // (0,1)
+	0xFF, 0xFF, 0xFF, 0xFF  // (1,1)
+};
+
+const uint8_t kDefaultMagentaTexture[16] =
+{
+	0xFF, 0x00, 0xFF, 0xFF, // (0,0)
+	0xFF, 0x00, 0xFF, 0xFF, // (1,0)
+	0xFF, 0x00, 0xFF, 0xFF, // (0,1)
+	0xFF, 0x00, 0xFF, 0xFF  // (1,1)
+};
+
+const uint8_t kDefaultNormalTexture[16] =
+{
+	0x80, 0x80, 0xFF, 0xFF, // (0,0)
+	0x80, 0x80, 0xFF, 0xFF, // (1,0)
+	0x80, 0x80, 0xFF, 0xFF, // (0,1)
+	0x80, 0x80, 0xFF, 0xFF  // (1,1)
+};
+
+const uint8_t kDefaultSGETexture[16] =
+{
+	0x80, 0x80, 0x00, 0xFF, // (0,0)
+	0x80, 0x80, 0x00, 0xFF, // (1,0)
+	0x80, 0x80, 0x00, 0xFF, // (0,1)
+	0x80, 0x80, 0x00, 0xFF  // (1,1)
+};
+// clang-format on
+
+} // namespace
+
 Renderer::Renderer(RendererConfig config) : m_config(config) {}
 
 Renderer::~Renderer() {}
+
+void Renderer::BindMethods() {}
 
 void Renderer::Startup()
 {
@@ -22,23 +67,47 @@ void Renderer::Startup()
 
 	m_renderBackend = new D3D11RenderBackend(m_config);
 	m_renderBackend->Startup();
-	m_postProcessCopyShader = m_renderBackend->CreateOrGetShader("Data/Shaders/PostProcessCopy");
+	m_defaultWhiteTexture   = CreateGPUTexture("DefaultWhite", IntVec2(2, 2), 4, kDefaultWhiteTexture);
+	m_defaultMagentaTexture = CreateGPUTexture("DefaultMagenta", IntVec2(2, 2), 4, kDefaultMagentaTexture);
+	m_defaultNormalTexture  = CreateGPUTexture("DefaultNormal", IntVec2(2, 2), 4, kDefaultNormalTexture);
+	m_defaultSGETexture     = CreateGPUTexture("DefaultSGE", IntVec2(2, 2), 4, kDefaultSGETexture);
+	m_defaultShaderResource         = GetBuiltinShaderResource("DefaultUnlit", BuiltinShaders::DefaultUnlit);
+	m_postProcessCopyShaderResource =
+		GetBuiltinShaderResource("PostProcessCopy", BuiltinShaders::PostProcessCopy);
+
+	DebugRenderConfig debugConfig;
+	debugConfig.m_renderer = this;
+	DebugGizmos::Startup(debugConfig);
 }
 
 void Renderer::Shutdown()
 {
+	DebugGizmos::Shutdown();
+	m_defaultShaderResource         = nullptr;
+	m_postProcessCopyShaderResource = nullptr;
+	m_builtinShaderResources.clear();
+
 	if (m_renderBackend != nullptr)
 	{
+		DestroyTexture(m_defaultWhiteTexture);
+		DestroyTexture(m_defaultMagentaTexture);
+		DestroyTexture(m_defaultNormalTexture);
+		DestroyTexture(m_defaultSGETexture);
+		m_defaultWhiteTexture   = nullptr;
+		m_defaultMagentaTexture = nullptr;
+		m_defaultNormalTexture  = nullptr;
+		m_defaultSGETexture     = nullptr;
+
 		m_renderBackend->Shutdown();
 		delete m_renderBackend;
 		m_renderBackend = nullptr;
 	}
-
-	m_postProcessCopyShader = nullptr;
 }
 
 void Renderer::BeginFrame()
 {
+	DebugGizmos::BeginFrame();
+
 	if (m_renderBackend != nullptr)
 	{
 		m_renderBackend->BeginFrame();
@@ -51,6 +120,8 @@ void Renderer::EndFrame()
 	{
 		m_renderBackend->EndFrame();
 	}
+
+	DebugGizmos::EndFrame();
 }
 
 void Renderer::CreateRenderingContext() { m_renderBackend->CreateRenderingContext(); }
@@ -67,9 +138,22 @@ void Renderer::RenderViewport(ViewportInfo& viewport)
 
 	m_renderBackend->BindCamera(*viewport.m_worldCamera);
 	PrepareConstants(viewport);
+	DebugGizmos::PrepareRenderRequests();
 
-	RenderOpaque(viewport);
+	auto sortPass = [](std::vector<RenderRequest>& requests)
+	{
+		std::stable_sort(
+			requests.begin(),
+			requests.end(),
+			[](RenderRequest const& a, RenderRequest const& b) { return a.m_renderPriority < b.m_renderPriority; });
+	};
+	sortPass(viewport.m_renderRequests[static_cast<size_t>(RenderRequestPass::Skybox)]);
+	sortPass(viewport.m_renderRequests[static_cast<size_t>(RenderRequestPass::Opaque)]);
+	sortPass(viewport.m_renderRequests[static_cast<size_t>(RenderRequestPass::Transparent)]);
+	sortPass(viewport.m_renderRequests[static_cast<size_t>(RenderRequestPass::UI)]);
+
 	RenderSkybox(viewport);
+	RenderOpaque(viewport);
 	RenderPostProcess(viewport);
 
 	RenderUI(viewport);
@@ -77,19 +161,47 @@ void Renderer::RenderViewport(ViewportInfo& viewport)
 
 void Renderer::ExecuteRenderRequest(RenderRequest const& request)
 {
-	ModelConstants modelData = ModelConstants();
-	modelData.ModelToWorld   = request.m_modelToWorld;
-	modelData.ModelColor[0]  = request.m_tint.r / 255.f;
-	modelData.ModelColor[1]  = request.m_tint.g / 255.f;
-	modelData.ModelColor[2]  = request.m_tint.b / 255.f;
-	modelData.ModelColor[3]  = request.m_tint.a / 255.f;
+	ModelConstants modelData  = ModelConstants();
+	modelData.m_modelToWorld  = request.m_modelToWorld;
+	modelData.m_modelColor[0] = request.m_tint.r / 255.f;
+	modelData.m_modelColor[1] = request.m_tint.g / 255.f;
+	modelData.m_modelColor[2] = request.m_tint.b / 255.f;
+	modelData.m_modelColor[3] = request.m_tint.a / 255.f;
 	m_renderBackend->UpdateAndBindConstantBuffer(BuiltinConstantBufferType::Model, modelData);
 
-	m_renderBackend->BindShader(request.m_shader);
+	Shader* shader = request.m_shader;
+	if (shader == nullptr && m_defaultShaderResource.IsValid())
+	{
+		shader = m_defaultShaderResource->GetShader();
+	}
+	m_renderBackend->BindShader(shader);
 	for (unsigned int textureSlot = 0; textureSlot < request.m_textures.size(); ++textureSlot)
 	{
-		m_renderBackend->BindTexture(request.m_textures[textureSlot], textureSlot);
-		m_renderBackend->BindSampler(request.m_samplerMode, textureSlot);
+		GPUTexture* texture = request.m_textures[textureSlot];
+		if (texture == nullptr)
+		{
+			switch (textureSlot)
+			{
+			case SurfaceTextureSlot::Diffuse:
+				m_renderBackend->BindTexture(m_defaultWhiteTexture, textureSlot);
+				break;
+			case SurfaceTextureSlot::Normal:
+				m_renderBackend->BindTexture(m_defaultNormalTexture, textureSlot);
+				break;
+			case SurfaceTextureSlot::SGE:
+				m_renderBackend->BindTexture(m_defaultSGETexture, textureSlot);
+				break;
+			default:
+				m_renderBackend->BindTexture(m_defaultWhiteTexture, textureSlot);
+				break;
+			}
+			m_renderBackend->BindSampler(SamplerMode::POINT_CLAMP, textureSlot);
+		}
+		else
+		{
+			m_renderBackend->BindTexture(request.m_textures[textureSlot], textureSlot);
+			m_renderBackend->BindSampler(request.m_samplerMode, textureSlot);
+		}
 	}
 	m_renderBackend->SetBlendMode(request.m_blendMode);
 	m_renderBackend->SetRasterizerMode(request.m_rasterizerMode);
@@ -125,19 +237,19 @@ void Renderer::ResizeViewport(ViewportInfo& viewport, IntVec2 dimensions)
 	viewport.m_pingTexture           = m_renderBackend->CreateRenderTargetTexture("Ping", dimensions);
 	viewport.m_pongTexture           = m_renderBackend->CreateRenderTargetTexture("Pong", dimensions);
 
-	m_renderBackend->ClearRenderTarget(viewport.m_sceneNormalTexture, Rgba8(128, 128, 128, 255));
+	m_renderBackend->ClearRenderTarget(viewport.m_sceneNormalTexture, Color(128, 128, 128, 255));
 	m_renderBackend->ClearDepthStencil(viewport.m_sceneDepthTexture);
 }
 
 void Renderer::DestroyViewportResources(ViewportInfo& viewport)
 {
 	// Keep destruction centralized so every raw pointer is cleared immediately.
-	Texture** textures[] = {
+	GPUTexture** textures[] = {
 		&viewport.m_viewportOutputTexture, &viewport.m_sceneColorTexture, &viewport.m_sceneDepthTexture,
 		&viewport.m_sceneNormalTexture,    &viewport.m_pingTexture,       &viewport.m_pongTexture,
 	};
 
-	for (Texture** texture : textures)
+	for (GPUTexture** texture : textures)
 	{
 		if (*texture != nullptr)
 		{
@@ -153,11 +265,11 @@ void Renderer::ClearSceneTargets(ViewportInfo const& viewport)
 {
 	m_renderBackend->ClearRenderTarget(viewport.m_viewportOutputTexture, viewport.m_clearColor);
 	m_renderBackend->ClearRenderTarget(viewport.m_sceneColorTexture, viewport.m_clearColor);
-	m_renderBackend->ClearRenderTarget(viewport.m_sceneNormalTexture, Rgba8(128, 128, 128, 255));
+	m_renderBackend->ClearRenderTarget(viewport.m_sceneNormalTexture, Color(128, 128, 128, 255));
 	m_renderBackend->ClearDepthStencil(viewport.m_sceneDepthTexture);
 }
 
-void Renderer::CopyTextureToBackBuffer(Texture* colorTexture)
+void Renderer::CopyTextureToBackBuffer(GPUTexture* colorTexture)
 {
 	if (colorTexture == nullptr)
 	{
@@ -165,42 +277,72 @@ void Renderer::CopyTextureToBackBuffer(Texture* colorTexture)
 	}
 
 	m_renderBackend->BindBackBuffer();
-	m_renderBackend->BindPostProcessInputs(colorTexture, nullptr, nullptr);
-	m_renderBackend->DrawFullscreenTriangle(m_postProcessCopyShader, L"FinalCopyToBackBuffer");
+	m_renderBackend->BindPostProcessInputs(colorTexture, m_defaultWhiteTexture, m_defaultNormalTexture);
+	Shader* copyShader =
+		m_postProcessCopyShaderResource.IsValid() ? m_postProcessCopyShaderResource->GetShader() : nullptr;
+	m_renderBackend->DrawFullscreenTriangle(copyShader, L"FinalCopyToBackBuffer");
 	m_renderBackend->UnbindAllShaderResourceViews();
 }
 
 void Renderer::PrepareConstants(ViewportInfo const& viewport)
 {
 	// Prepare light constants
-	LightConstants lightConstants = LightConstants();
-	int pointLightCount           = 0;
+	LightConstants lightConstants  = LightConstants();
+	int            pointLightCount = 0;
+	int            spotLightCount  = 0;
 	for (LightInfo const& light : viewport.m_lights)
 	{
+		Vec3 gpuColor;
+		gpuColor.x = light.m_color.r / 255.f;
+		gpuColor.y = light.m_color.g / 255.f;
+		gpuColor.z = light.m_color.b / 255.f;
+
 		switch (light.m_type)
 		{
-		case LightType::DIRECTIONAL:
-			lightConstants.m_directionalLight.m_direction = light.m_direction;
+		case LightType::Directional:
+		{
+			lightConstants.m_directionalLight.m_direction = light.m_transform.GetIBasis3D().GetNormalized();
 			lightConstants.m_directionalLight.m_intensity = light.m_intensity;
+			lightConstants.m_directionalLight.m_color     = gpuColor;
 			break;
-		case LightType::POINT:
-			if (pointLightCount < kMaxPointLights)
+		}
+		case LightType::Omni:
+		{
+			if (pointLightCount > kMaxPointLights)
 			{
-				Vec3 gpuColor;
-				gpuColor.x = light.m_color.r / 255.f;
-				gpuColor.y = light.m_color.g / 255.f;
-				gpuColor.z = light.m_color.b / 255.f;
-
-				lightConstants.m_pointLights[pointLightCount].m_position  = light.m_position;
-				lightConstants.m_pointLights[pointLightCount].m_intensity = light.m_intensity;
-				lightConstants.m_pointLights[pointLightCount].m_color     = gpuColor;
-				lightConstants.m_pointLights[pointLightCount].m_range     = light.m_range;
-				++pointLightCount;
+				return;
 			}
+			lightConstants.m_pointLights[pointLightCount].m_position    = light.m_transform.GetTranslation3D();
+			lightConstants.m_pointLights[pointLightCount].m_intensity   = light.m_intensity;
+			lightConstants.m_pointLights[pointLightCount].m_color       = gpuColor;
+			lightConstants.m_pointLights[pointLightCount].m_range       = light.m_range;
+			lightConstants.m_pointLights[pointLightCount].m_attenuation = light.m_attenuation;
+			++pointLightCount;
+
 			break;
+		}
+		case LightType::Spot:
+		{
+			if (spotLightCount > kMaxSpotLights)
+			{
+				return;
+			}
+			lightConstants.m_spotLights[spotLightCount].m_position    = light.m_transform.GetTranslation3D();
+			lightConstants.m_spotLights[spotLightCount].m_intensity   = light.m_intensity;
+			lightConstants.m_spotLights[spotLightCount].m_color       = gpuColor;
+			lightConstants.m_spotLights[spotLightCount].m_range       = light.m_range;
+			lightConstants.m_spotLights[spotLightCount].m_attenuation = light.m_attenuation;
+			lightConstants.m_spotLights[spotLightCount].m_direction   = light.m_transform.GetIBasis3D().GetNormalized();
+			lightConstants.m_spotLights[spotLightCount].m_spotAngle   = light.m_spotAngle;
+			lightConstants.m_spotLights[spotLightCount].m_spotAttenuation = light.m_spotAttenuation;
+			++spotLightCount;
+
+			break;
+		}
 		}
 	}
 	lightConstants.m_pointLightCount = pointLightCount;
+	lightConstants.m_spotLightCount  = spotLightCount;
 	m_renderBackend->UpdateAndBindConstantBuffer(BuiltinConstantBufferType::Light, lightConstants);
 
 	// Prepare post-process constants
@@ -214,13 +356,13 @@ void Renderer::PrepareConstants(ViewportInfo const& viewport)
 	// TODO: Actually the renderer should not be responsible for tracking time
 	// this should be passed in from the game or engine layer
 	FrameConstants frameConstants;
-	Clock& systemClock            = Clock::GetSystemClock();
+	Clock&         systemClock    = Clock::GetSystemClock();
 	frameConstants.m_time         = (float)systemClock.GetTotalSeconds();
 	frameConstants.m_deltaSeconds = (float)systemClock.GetDeltaSeconds();
 	m_renderBackend->UpdateAndBindConstantBuffer(BuiltinConstantBufferType::Frame, frameConstants);
 }
 
-void Renderer::RenderOpaque(ViewportInfo const& viewport)
+void Renderer::RenderOpaque(ViewportInfo& viewport)
 {
 	if (viewport.m_worldCamera == nullptr)
 	{
@@ -236,9 +378,16 @@ void Renderer::RenderOpaque(ViewportInfo const& viewport)
 	m_renderBackend->SetRasterizerMode(RasterizerMode::SOLID_CULL_BACK);
 	m_renderBackend->SetDepthMode(DepthMode::READ_WRITE_LESS_EQUAL);
 
-	DebugRenderWorld(*viewport.m_worldCamera);
-
+	// 1) Scene opaque objects write depth first
 	for (RenderRequest const& request : viewport.m_renderRequests[(int)RenderRequestPass::Opaque])
+	{
+		ExecuteRenderRequest(request);
+	}
+
+	// 2) Gizmos world objects
+	//    X-Ray objects use DepthMode::DISABLED / future GREATER to draw behind geometry.
+	//    Normal objects use DepthMode::READ_WRITE_LESS_EQUAL to draw in front.
+	for (RenderRequest const& request : DebugGizmos::GetRenderRequests(RenderRequestPass::Opaque))
 	{
 		ExecuteRenderRequest(request);
 	}
@@ -279,11 +428,13 @@ void Renderer::RenderPostProcess(ViewportInfo& viewport)
 	context.m_pong             = viewport.m_pongTexture;
 	context.m_outputResolution = viewport.m_outputResolution;
 
-	Texture* finalColor = viewport.m_postProcessChain.Render(*m_renderBackend, context);
+	GPUTexture* finalColor = viewport.m_postProcessChain.Render(*m_renderBackend, context);
 
 	m_renderBackend->BindRenderTarget(viewport.m_viewportOutputTexture);
 	m_renderBackend->BindPostProcessInputs(finalColor, viewport.m_sceneDepthTexture, viewport.m_sceneNormalTexture);
-	m_renderBackend->DrawFullscreenTriangle(m_postProcessCopyShader, L"CopyPostProcessToOutput");
+	Shader* copyShader =
+		m_postProcessCopyShaderResource.IsValid() ? m_postProcessCopyShaderResource->GetShader() : nullptr;
+	m_renderBackend->DrawFullscreenTriangle(copyShader, L"CopyPostProcessToOutput");
 	m_renderBackend->UnbindAllShaderResourceViews();
 }
 
@@ -294,6 +445,12 @@ void Renderer::RenderUI(ViewportInfo const& viewport)
 	m_renderBackend->BindCamera(uiCameraData);
 
 	m_renderBackend->BindRenderTarget(viewport.m_viewportOutputTexture);
+
+	// 3) Gizmos screen text / messages
+	for (RenderRequest const& request : DebugGizmos::GetRenderRequests(RenderRequestPass::UI))
+	{
+		ExecuteRenderRequest(request);
+	}
 	m_renderBackend->SetBlendMode(BlendMode::ALPHA);
 	m_renderBackend->SetRasterizerMode(RasterizerMode::SOLID_CULL_NONE);
 	m_renderBackend->SetDepthMode(DepthMode::READ_ONLY_ALWAYS);
@@ -305,57 +462,76 @@ void Renderer::RenderUI(ViewportInfo const& viewport)
 	}
 }
 
-Shader* Renderer::CreateOrGetShader(char const* shaderName) { return m_renderBackend->CreateOrGetShader(shaderName); }
-Texture* Renderer::CreateOrGetTexture(char const* fileDataPath)
+Shader* Renderer::CreateShader(
+	std::string const& shaderName, std::string const& shaderSource, std::string const& shaderSourcePath)
 {
-	return m_renderBackend->CreateOrGetTexture(fileDataPath);
+	return m_renderBackend->CreateShader(shaderName, shaderSource, shaderSourcePath);
 }
-Texture* Renderer::CreateTextureFromImage(const Image& image) { return m_renderBackend->CreateTextureFromImage(image); }
-Texture* Renderer::CreateTextureFromData(char const* name, IntVec2 dimensions, int bytesPerTexel, uint8_t* texelData)
+
+Ref<ShaderResource> Renderer::GetBuiltinShaderResource(
+	std::string const& shaderName, std::string_view shaderSource)
 {
-	return m_renderBackend->CreateTextureFromData(name, dimensions, bytesPerTexel, texelData);
+	auto const found = m_builtinShaderResources.find(shaderName);
+	if (found != m_builtinShaderResources.end())
+	{
+		return found->second;
+	}
+
+	Ref<ShaderResource> shaderResource = CreateRef<ShaderResource>();
+	shaderResource->SetName(shaderName);
+	shaderResource->SetShader(CreateShader(shaderName, std::string(shaderSource)));
+	m_builtinShaderResources.emplace(shaderName, shaderResource);
+	return shaderResource;
 }
-Texture* Renderer::CreateRenderTargetTexture(char const* name, IntVec2 dimensions)
+GPUTexture* Renderer::CreateGPUTexture(
+	char const* name, IntVec2 dimensions, int bytesPerTexel, uint8_t const* texelData)
+{
+	return m_renderBackend->CreateGPUTexture(name, dimensions, bytesPerTexel, texelData);
+}
+GPUTexture* Renderer::CreateRenderTargetTexture(char const* name, IntVec2 dimensions)
 {
 	return m_renderBackend->CreateRenderTargetTexture(name, dimensions);
 }
-Texture* Renderer::CreateDepthStencilTexture(char const* name, IntVec2 dimensions)
+GPUTexture* Renderer::CreateDepthStencilTexture(char const* name, IntVec2 dimensions)
 {
 	return m_renderBackend->CreateDepthStencilTexture(name, dimensions);
 }
-BitmapFont* Renderer::CreateOrGetBitmapFont(char const* fontFilePathNameWithNoExtension)
+
+void Renderer::DestroyTexture(GPUTexture* texture)
 {
-	return m_renderBackend->CreateOrGetBitmapFont(fontFilePathNameWithNoExtension);
+	if (m_renderBackend != nullptr)
+	{
+		m_renderBackend->DestroyTexture(texture);
+	}
 }
 
 VertexBuffer* Renderer::CreateVertexBuffer(const unsigned int size, unsigned int stride)
 {
 	return m_renderBackend->CreateVertexBuffer(size, stride);
 }
-VertexBuffer* Renderer::CreateVertexBuffer(std::vector<Vertex> const& verts)
+VertexBuffer* Renderer::CreateVertexBuffer(void const* data, const unsigned int byteSize, unsigned int stride)
 {
-	return m_renderBackend->CreateVertexBuffer(verts);
+	return m_renderBackend->CreateVertexBuffer(data, byteSize, stride);
 }
 ConstantBuffer* Renderer::CreateConstantBuffer(const unsigned int size)
 {
 	return m_renderBackend->CreateConstantBuffer(size);
 }
 IndexBuffer* Renderer::CreateIndexBuffer(const unsigned int size) { return m_renderBackend->CreateIndexBuffer(size); }
-IndexBuffer* Renderer::CreateIndexBuffer(std::vector<unsigned int> const& indexes)
+IndexBuffer* Renderer::CreateIndexBuffer(void const* data, const unsigned int byteSize, const unsigned int stride)
 {
-	return m_renderBackend->CreateIndexBuffer(indexes);
+	return m_renderBackend->CreateIndexBuffer(data, byteSize, stride);
 }
 
-void Renderer::UpdateVertexBuffer(VertexBuffer* vertexBuffer, std::vector<Vertex> const& verts) 
+void Renderer::UpdateVertexBuffer(VertexBuffer* vertexBuffer, void const* data, unsigned int byteSize)
 {
 	if (vertexBuffer == nullptr)
 	{
 		return;
 	}
 
-	unsigned int vertsSize = static_cast<unsigned int>(verts.size()) * sizeof(Vertex);
-	vertexBuffer->Resize(vertsSize);
-	CopyCPUToGPU(verts.data(), vertsSize, vertexBuffer);
+	vertexBuffer->Resize(byteSize);
+	CopyCPUToGPU(data, byteSize, vertexBuffer);
 }
 
 void Renderer::CopyCPUToGPU(const void* data, unsigned int size, VertexBuffer* vertexBuffer)
@@ -370,9 +546,10 @@ void Renderer::CopyCPUToGPU(const void* data, unsigned int size, IndexBuffer* in
 {
 	m_renderBackend->CopyCPUToGPU(data, size, indexBuffer);
 }
-Texture* Renderer::GetTextureFromFileName(char const* fileName)
+
+void Renderer::BindConstantBuffer(ConstantBuffer* constantBuffer, int slot)
 {
-	return m_renderBackend->GetTextureFromFileName(fileName);
+	m_renderBackend->BindConstantBuffer(constantBuffer, slot);
 }
 
 void Renderer::InitImGuiD3D11Backend()
@@ -383,5 +560,3 @@ void Renderer::InitImGuiD3D11Backend()
 void Renderer::BindBackBuffer() { m_renderBackend->BindBackBuffer(); }
 
 void Renderer::ResizeBackBuffer(IntVec2 newDimensions) { m_renderBackend->ResizeBackBuffer(newDimensions); }
-
-

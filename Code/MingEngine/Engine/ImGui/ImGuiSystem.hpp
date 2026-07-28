@@ -1,21 +1,30 @@
 #pragma once
 
-struct ImGuiConfig
+#include "MingEngine/Engine/Application/SystemBase.hpp"
+
+struct ImGuiSystemConfig
 {
 	bool m_isEnable = true;
 };
 
-class ImGuiSystem
+class ImGuiSystem : public SystemBase
 {
+	MCLASS(ImGuiSystem, SystemBase)
+
 public:
-	ImGuiSystem(ImGuiConfig config);
+	ImGuiSystem(ImGuiSystemConfig config);
 	~ImGuiSystem();
 
-	void Startup();
-	void Shutdown();
-	void BeginFrame();
-	void EndFrame();
+	void Startup() override;
+	void Shutdown() override;
+	void BeginFrame() override;
+	void EndFrame() override;
+
+	bool WantCaptureMouse() const;
+	bool WantCaptureKeyboard() const;
+
+	static void BindMethods();
 
 private:
-	ImGuiConfig m_config;
+	ImGuiSystemConfig m_config;
 };

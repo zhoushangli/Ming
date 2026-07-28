@@ -1,90 +1,12 @@
 #include "MingEngine/Scene/Resource/MeshResource.hpp"
 
-#include "MingEngine/Scene/SceneCommon.hpp"
-#include "MingEngine/Scene/Import/GLBLoader.hpp"
-#include "MingEngine/Scene/Import/OBJLoader.hpp"
-
+#include "MingEngine/Core/Render/Vertex.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
-#include "MingEngine/Core/Render/VertexUtils.hpp"
 #include "MingEngine/Engine/Render/IndexBuffer.hpp"
-#include "MingEngine/Engine/Render/Renderer.hpp"
 #include "MingEngine/Engine/Render/VertexBuffer.hpp"
+#include "MingEngine/Scene/Resource/TextureResource.hpp"
 
-#include <algorithm>
-#include <cctype>
-
-std::vector<MeshResource*> MeshResource::s_loadedMeshes;
-
-namespace
-{
-std::string GetLowercaseExtension(std::string const& filePath)
-{
-	size_t const dotIndex = filePath.find_last_of('.');
-	if (dotIndex == std::string::npos)
-	{
-		return "";
-	}
-
-	std::string extension = filePath.substr(dotIndex);
-	std::transform(
-		extension.begin(),
-		extension.end(),
-		extension.begin(),
-		[](unsigned char c) { return static_cast<char>(std::tolower(c)); }
-	);
-	return extension;
-}
-} // namespace
-
-void MeshData::Clear()
-{
-	m_vertices.clear();
-	m_indices.clear();
-	m_texture = nullptr;
-}
-
-bool MeshData::IsEmpty() const { return m_vertices.empty() || m_indices.empty(); }
-
-MeshResource* MeshResource::CreateOrGetMesh(std::string const& modelFilePath, float scale)
-{
-	for (MeshResource* mesh : s_loadedMeshes)
-	{
-		if (mesh != nullptr && mesh->m_modelFilePath == modelFilePath && mesh->m_scale == scale)
-		{
-			return mesh;
-		}
-	}
-
-	MeshResource* mesh = new MeshResource(modelFilePath, scale);
-	s_loadedMeshes.push_back(mesh);
-	return mesh;
-}
-
-MeshResource::MeshResource(std::string const& modelFilePath, float scale)
-	: m_modelFilePath(modelFilePath), m_scale(scale)
-{
-	std::string const extension = GetLowercaseExtension(modelFilePath);
-	if (extension == ".glb")
-	{
-		GLBLoadOptions options;
-		options.m_uniformScale = scale;
-
-		GLBLoader::LoadFromFile(modelFilePath.c_str(), m_meshData, options);
-	}
-	else
-	{
-		OBJLoadOptions options;
-		options.m_uniformScale = scale;
-
-		OBJLoader::LoadFromFile(modelFilePath.c_str(), m_meshData, options);
-		TransformVertexArray3D(m_meshData.m_vertices, OBJToEngineTransform);
-	}
-
-	m_localBounds = GetVertexBounds3D(m_meshData.m_vertices);
-
-	m_vertexBuffer = g_engine->m_renderer->CreateVertexBuffer(m_meshData.m_vertices);
-	m_indexBuffer  = g_engine->m_renderer->CreateIndexBuffer(m_meshData.m_indices);
-}
+#include <utility>
 
 MeshResource::~MeshResource()
 {
@@ -95,15 +17,80 @@ MeshResource::~MeshResource()
 	m_indexBuffer = nullptr;
 }
 
-void MeshResource::ClearLoadedMeshes()
+bool MeshResource::IsEmpty() const
 {
-	for (MeshResource* mesh : s_loadedMeshes)
-	{
-		delete mesh;
-	}
-
-	s_loadedMeshes.clear();
+	return m_vertices.empty() || m_indices.empty() || m_vertexCount == 0 || m_indexCount == 0;
 }
 
-bool MeshResource::IsEmpty() const { return m_meshData.IsEmpty(); }
+bool MeshResource::MoveFrom(Resource&& other)
+{
+	// 1) Validate type
+	MeshResource* otherMesh = dynamic_cast<MeshResource*>(&other);
+	if (otherMesh == nullptr)
+	{
+		return false;
+	}
 
+	// 2) Move CPU data fields
+	MoveBaseFrom(std::move(other));
+	m_vertexFormat = std::move(otherMesh->m_vertexFormat);
+	m_vertexStride = otherMesh->m_vertexStride;
+	m_vertexCount  = otherMesh->m_vertexCount;
+	m_vertices     = std::move(otherMesh->m_vertices);
+
+	m_indexFormat = std::move(otherMesh->m_indexFormat);
+	m_indexStride = otherMesh->m_indexStride;
+	m_indexCount  = otherMesh->m_indexCount;
+	m_indices     = std::move(otherMesh->m_indices);
+
+	m_textureResources = std::move(otherMesh->m_textureResources);
+	m_bounds           = otherMesh->m_bounds;
+	m_triangles        = std::move(otherMesh->m_triangles);
+
+	// 3) Take ownership of the loaded GPU buffers
+	delete m_vertexBuffer;
+	m_vertexBuffer = std::exchange(otherMesh->m_vertexBuffer, nullptr);
+	delete m_indexBuffer;
+	m_indexBuffer = std::exchange(otherMesh->m_indexBuffer, nullptr);
+
+	return true;
+}
+
+void MeshResource::InitGPUResources()
+{
+	delete m_vertexBuffer;
+	m_vertexBuffer = nullptr;
+	delete m_indexBuffer;
+	m_indexBuffer = nullptr;
+
+	m_vertexBuffer =
+		g_engine->m_renderer->CreateVertexBuffer(m_vertices.data(), m_vertexCount * m_vertexStride, m_vertexStride);
+	m_indexBuffer =
+		g_engine->m_renderer->CreateIndexBuffer(m_indices.data(), m_indexCount * m_indexStride, m_indexStride);
+
+	// Build triangle list for raycast
+	m_triangles.clear();
+	Vertex const*   vertexData = reinterpret_cast<Vertex const*>(m_vertices.data());
+	uint32_t const* indexData  = reinterpret_cast<uint32_t const*>(m_indices.data());
+
+	m_bounds = GetVertexBounds3D(vertexData, m_vertexCount);
+
+	for (uint32_t i = 0; i + 2 < m_indexCount; i += 3)
+	{
+		uint32_t indexA = indexData[i + 0];
+		uint32_t indexB = indexData[i + 1];
+		uint32_t indexC = indexData[i + 2];
+
+		if (indexA >= m_vertexCount || indexB >= m_vertexCount || indexC >= m_vertexCount)
+		{
+			continue;
+		}
+
+		Vec3 pointA = vertexData[indexA].m_position;
+		Vec3 pointB = vertexData[indexB].m_position;
+		Vec3 pointC = vertexData[indexC].m_position;
+
+		Triangle3 triangle(pointA, pointB, pointC);
+		m_triangles.push_back(triangle);
+	}
+}

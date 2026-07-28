@@ -3,22 +3,20 @@
 #include "MingEngine/EngineService/EngineService.hpp"
 #include "MingEngine/EngineService/RenderService.hpp"
 #include "MingEngine/Scene/3D/Camera3D.hpp"
-#include "MingEngine/Scene/3D/Light3D.hpp"
 #include "MingEngine/Scene/3D/VisualizeInstance3D.hpp"
 #include "MingEngine/Scene/Core/SceneTree.hpp"
 
-#include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Core/ErrorWarningAssert.hpp"
+#include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Engine/Render/Renderer.hpp"
-#include "MingEngine/Engine/Window/Window.hpp"
+#include "MingEngine/Engine/Window/WindowSystem.hpp"
 
-#include "Viewport.hpp"
 #include <algorithm>
 
 Viewport::Viewport()
 {
 	IntVec2 defaultResolution =
-		g_engine->m_window != nullptr ? g_engine->m_window->GetClientDimensions() : IntVec2(1280, 720);
+		g_engine->m_windowSystem != nullptr ? g_engine->m_windowSystem->GetClientDimensions() : IntVec2(1280, 720);
 	SetOutputResolution(defaultResolution);
 }
 
@@ -28,22 +26,22 @@ Viewport::~Viewport()
 	g_engine->m_renderer->DestroyViewportResources(m_viewportInfo);
 }
 
-void Viewport::OnEnterTree()
+void Viewport::OnNotification(int notification)
 {
-	// Node propagation assigns SceneTree, NodeHandle, and owning Viewport
-	// before this callback registers the root Viewport for rendering.
-	if (g_engineService != nullptr && g_engineService->m_renderService != nullptr)
+	switch (static_cast<NotificationType>(notification))
 	{
-		g_engineService->m_renderService->RegisterViewport(this);
-	}
-}
-
-void Viewport::OnExitTree()
-{
-	// Unregister before SceneTree clears handles and before the Viewport is deleted.
-	if (g_engineService != nullptr && g_engineService->m_renderService != nullptr)
-	{
-		g_engineService->m_renderService->UnregisterViewport(this);
+	case NotificationType::EnterTree:
+		if (g_engineService != nullptr && g_engineService->m_renderService != nullptr)
+		{
+			g_engineService->m_renderService->RegisterViewport(this);
+		}
+		break;
+	case NotificationType::ExitTree:
+		if (g_engineService != nullptr && g_engineService->m_renderService != nullptr)
+		{
+			g_engineService->m_renderService->UnregisterViewport(this);
+		}
+		break;
 	}
 }
 
@@ -75,34 +73,6 @@ void Viewport::UnregisterVisualizeInstance(VisualizeInstance3D* visualizeInstanc
 		{
 			m_instances.erase(foundInstance);
 		}
-	}
-}
-
-void Viewport::RegisterLight(Light3D* light)
-{
-	if (light == nullptr || !light->GetHandle().IsValid())
-	{
-		return;
-	}
-
-	NodeHandle handle = light->GetHandle();
-	if (std::find(m_lights.begin(), m_lights.end(), handle) == m_lights.end())
-	{
-		m_lights.push_back(handle);
-	}
-}
-
-void Viewport::UnregisterLight(Light3D* light)
-{
-	if (light == nullptr)
-	{
-		return;
-	}
-
-	auto const foundLight = std::find(m_lights.begin(), m_lights.end(), light->GetHandle());
-	if (foundLight != m_lights.end())
-	{
-		m_lights.erase(foundLight);
 	}
 }
 
@@ -153,7 +123,7 @@ void Viewport::UnregisterWorldCamera(Camera3D* camera)
 Camera3D* Viewport::GetWorldCamera() const
 {
 	SceneTree* sceneTree = GetSceneTree();
-	Camera3D* camera     = dynamic_cast<Camera3D*>(sceneTree->ResolveNode(m_worldCameraHandle));
+	Camera3D*  camera    = dynamic_cast<Camera3D*>(sceneTree->ResolveNode(m_worldCameraHandle));
 	return camera;
 }
 
@@ -185,29 +155,28 @@ void Viewport::PrepareRenderData()
 		return;
 	}
 
-	if (m_viewportInfo.m_outputResolution == IntVec2::Zero && g_engine->m_window != nullptr)
+	if (m_viewportInfo.m_outputResolution == IntVec2::Zero && g_engine->m_windowSystem != nullptr)
 	{
 		// The root Viewport defaults to the window size until an editor panel or
 		// another owner explicitly requests a different output resolution.
-		SetOutputResolution(g_engine->m_window->GetClientDimensions());
+		SetOutputResolution(g_engine->m_windowSystem->GetClientDimensions());
 	}
 
 	// 1) CameraContext pointers are transient because NodeHandles may change after reparenting.
-	float aspect                 = m_viewportInfo.m_outputResolution.x / (float)m_viewportInfo.m_outputResolution.y;
+	float     aspect             = m_viewportInfo.m_outputResolution.x / (float)m_viewportInfo.m_outputResolution.y;
 	Camera3D* worldCamera        = GetWorldCamera();
 	m_viewportInfo.m_worldCamera = nullptr;
 	if (worldCamera != nullptr)
 	{
-		m_tmpWorldCamera             = worldCamera->GetCamera(aspect);
+		m_tmpWorldCamera             = worldCamera->GetCameraContext(aspect);
 		m_viewportInfo.m_worldCamera = &m_tmpWorldCamera;
 	}
 
-	// 2) Requests and lights describe only the current frame.
+	// 2) Requests describe only the current frame.
 	for (auto& requests : m_viewportInfo.m_renderRequests)
 	{
 		requests.clear();
 	}
-	m_viewportInfo.m_lights.clear();
 
 	// 3) Resolve handles and prune stale registrations while collecting data.
 	for (auto instanceIter = m_instances.begin(); instanceIter != m_instances.end();)
@@ -230,22 +199,8 @@ void Viewport::PrepareRenderData()
 
 		++instanceIter;
 	}
-
-	for (auto lightIter = m_lights.begin(); lightIter != m_lights.end();)
-	{
-		auto* light = dynamic_cast<Light3D*>(sceneTree->ResolveNode(*lightIter));
-		if (light == nullptr)
-		{
-			lightIter = m_lights.erase(lightIter);
-			continue;
-		}
-
-		m_viewportInfo.m_lights.push_back(light->GetLightInfo());
-		++lightIter;
-	}
 }
 
 ViewportInfo& Viewport::GetViewportInfo() { return m_viewportInfo; }
 
 ViewportInfo const& Viewport::GetViewportInfo() const { return m_viewportInfo; }
-

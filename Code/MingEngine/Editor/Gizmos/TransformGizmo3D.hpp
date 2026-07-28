@@ -2,6 +2,7 @@
 
 #include "MingEngine/Editor/Gizmos/GizmoComponent.hpp"
 #include "MingEngine/Editor/Gizmos/GizmosShapes.hpp"
+#include "MingEngine/Core/Math/RaycastUtils.hpp"
 
 #include <vector>
 
@@ -13,20 +14,28 @@ public:
 	TransformGizmo3D();
 	~TransformGizmo3D() override;
 
-	void UpdateHover(GizmoContext const& context, RaycastInfo const& ray);
-	bool BeginDrag(GizmoContext const& context, RaycastInfo const& ray);
-	void OnDrag(GizmoContext const& context, RaycastInfo const& ray);
+	void UpdateHover(GizmoContext const& context);
+	bool BeginDragHovered(GizmoContext const& context);
+	void OnDrag(GizmoContext const& context);
 	void EndDrag(GizmoContext const& context);
 
+	bool IsHovered() const;
 	bool IsDragging() const;
 
-	GizmoRaycastResult Raycast(GizmoContext const& context, RaycastInfo const& ray) const;
-
 protected:
-	void OnProcess(float deltaSeconds) override;
+	void OnNotification(int notification);
+
+private:
+	GizmoComponent* HitTest(GizmoContext const& context, Vec3& outHitPos) const;
 
 private:
 	std::vector<GizmoComponent*> m_components;
-	GizmoComponent* m_hoveredComponent = nullptr;
-	GizmoComponent* m_activeComponent  = nullptr;
+	GizmoComponent*              m_hoveredComponent = nullptr;
+	GizmoComponent*              m_activeComponent  = nullptr;
+	Vec3                         m_hoveredHitPos    = Vec3::Zero;
+	MathRaycastQuery3D           m_dragStartRaycastInfo;
+	NodeHandle                   m_draggedNodeHandle = NodeHandle::Invalid;
+	Vec3                         m_dragStartPosition = Vec3::Zero;
+	EulerAngles                  m_dragStartOrientation;
+	Vec3                         m_dragStartScale = Vec3::One;
 };

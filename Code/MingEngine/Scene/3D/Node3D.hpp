@@ -17,13 +17,14 @@ public:
 	Node3D()           = default;
 	~Node3D() override = default;
 
-	void Reparent(Node* newParent, bool keepWorldTransform = true) override;
+	void        Reparent(Node* newParent, bool keepWorldTransform = true) override;
 	static void BindMethods();
 
 	Matrix4x4 GetLocalTransform() const;
 	Matrix4x4 GetWorldTransform() const;
-	void SetLocalTransform(Matrix4x4 const& localTransform);
-	void SetWorldTransform(Matrix4x4 const& worldTransform);
+	Matrix4x4 GetWorldInverseTransform() const;
+	void      SetLocalTransform(Matrix4x4 const& localTransform);
+	void      SetWorldTransform(Matrix4x4 const& worldTransform);
 
 	Vec3 GetLocalPosition() const;
 	Vec3 GetWorldPosition() const;
@@ -32,24 +33,24 @@ public:
 
 	EulerAngles GetLocalOrientation() const;
 	EulerAngles GetWorldOrientation() const;
-	void SetLocalOrientation(EulerAngles const& localOrientation);
-	void SetWorldOrientation(EulerAngles const& worldOrientation);
-	void SetWorldForward(Vec3 const& forward);
-	Vec3 GetWorldForward() const;
+	void        SetLocalOrientation(EulerAngles const& localOrientation);
+	void        SetWorldOrientation(EulerAngles const& worldOrientation);
+	void        SetWorldForward(Vec3 const& forward);
+	Vec3        GetWorldForward() const;
 
 	Vec3 GetLocalScale() const;
 	void SetLocalScale(Vec3 const& scale);
+	Vec3 GetWorldScale() const;
+	void SetWorldScale(Vec3 const& scale);
 
 protected:
-	void OnProcess(float deltaSeconds) override;
+	void OnNotification(int notification);
 
 	virtual void OnTransformChanged();
-	void PropagateTransformChanged();
-	Matrix4x4 GetWorldInverseTransform() const;
+	void         PropagateTransformChanged();
 
 protected:
 	Transform3D m_transform;
-	Vec3 m_velocity               = Vec3::Zero;
+	Vec3        m_velocity        = Vec3::Zero;
 	EulerAngles m_angularVelocity = EulerAngles::Zero;
 };
-

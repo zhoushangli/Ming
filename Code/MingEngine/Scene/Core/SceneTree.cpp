@@ -1,23 +1,25 @@
 #include "MingEngine/Scene/Core/SceneTree.hpp"
 
+#include "MingEngine/Core/Math/MathUtils.hpp"
+#include "MingEngine/Engine/Application/Engine.hpp"
+#include "MingEngine/Engine/Render/Renderer.hpp"
 #include "MingEngine/Scene/3D/Light3D.hpp"
 #include "MingEngine/Scene/3D/Node3D.hpp"
+#include "MingEngine/Scene/Core/RaycastSpace3D.hpp"
 #include "MingEngine/Scene/Core/Viewport.hpp"
-#include "MingEngine/Scene/Physics/Collider3D.hpp"
-
-#include "MingEngine/Engine/Application/Engine.hpp"
-#include "MingEngine/Core/Math/MathUtils.hpp"
-#include "MingEngine/Engine/Render/Renderer.hpp"
 
 #include <algorithm>
 
 namespace
 {
-Vec3 GetNormalizedColor(Rgba8 const& color) { return Vec3(color.r / 255.f, color.g / 255.f, color.b / 255.f); }
+Vec3 GetNormalizedColor(Color const& color) { return Vec3(color.r / 255.f, color.g / 255.f, color.b / 255.f); }
 } // namespace
 
 SceneTree::SceneTree()
 {
+	// raycast space should create first and delete last, so node can enter / exit it
+	m_raycastSpace = new RaycastSpace3D();
+
 	// 1) Every SceneTree owns exactly one root Viewport.
 	// 2) Entering the tree registers that Viewport with RenderService.
 	m_root = new Viewport();
@@ -35,6 +37,12 @@ SceneTree::~SceneTree()
 		m_root->MoveToSceneTree(nullptr);
 		delete m_root;
 		m_root = nullptr;
+	}
+
+	if (m_raycastSpace != nullptr)
+	{
+		delete m_raycastSpace;
+		m_raycastSpace = nullptr;
 	}
 }
 
@@ -201,15 +209,6 @@ void SceneTree::ChangeScene(Node* newSceneNode)
 
 Camera3D* SceneTree::GetWorldCamera() const { return m_root->GetWorldCamera(); }
 
-GameRaycastResult SceneTree::Raycast(RaycastInfo const& info) const
-{
-	GameRaycastResult result;
-	result.m_rayStartPos  = info.m_startPos;
-	result.m_rayFwdNormal = info.m_forwardNormal;
-	result.m_rayMaxLength = info.m_maxLength;
-	return result;
-}
-
 float SceneTree::GetDeltaSeconds() const { return m_deltaSeconds; }
 
 Node* SceneTree::ResolveNode(NodeHandle handle) const
@@ -298,4 +297,3 @@ unsigned int SceneTree::FindAvailableNodeIndex() const
 void SceneTree::UpdatePhysics([[maybe_unused]] float deltaSeconds) {
 
 };
-

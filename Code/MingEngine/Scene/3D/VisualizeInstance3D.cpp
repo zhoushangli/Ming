@@ -2,22 +2,22 @@
 
 #include "MingEngine/Scene/Core/Viewport.hpp"
 
-void VisualizeInstance3D::OnEnterTree()
+void VisualizeInstance3D::OnNotification(int notification)
 {
-	Node3D::OnEnterTree();
-	// The owning Viewport is assigned by Node::PropagateEnterTree before this callback.
-	if (m_data.m_viewport != nullptr)
+	switch (static_cast<NotificationType>(notification))
 	{
-		m_data.m_viewport->RegisterVisualizeInstance(this);
-	}
-}
-
-void VisualizeInstance3D::OnExitTree()
-{
-	// Unregister while both the old Viewport and this NodeHandle are still valid.
-	if (m_data.m_viewport != nullptr)
-	{
-		m_data.m_viewport->UnregisterVisualizeInstance(this);
+	case NotificationType::EnterTree:
+		if (m_data.m_viewport != nullptr)
+		{
+			m_data.m_viewport->RegisterVisualizeInstance(this);
+		}
+		break;
+	case NotificationType::ExitTree:
+		if (m_data.m_viewport != nullptr)
+		{
+			m_data.m_viewport->UnregisterVisualizeInstance(this);
+		}
+		break;
 	}
 }
 

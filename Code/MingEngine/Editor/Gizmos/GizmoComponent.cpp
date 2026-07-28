@@ -1,128 +1,100 @@
 #include "MingEngine/Editor/Gizmos/GizmoComponent.hpp"
 
-#include "MingEngine/Editor/EditorNode.hpp"
-#include "MingEngine/Scene/3D/Camera3D.hpp"
-#include "MingEngine/Scene/3D/Node3D.hpp"
-#include "MingEngine/Scene/Core/SceneTree.hpp"
-
-#include "MingEngine/Engine/Application/Engine.hpp"
-#include "MingEngine/Core/StringUtils.hpp"
-#include "MingEngine/Core/Math/AABB3.hpp"
 #include "MingEngine/Core/Math/MathUtils.hpp"
-#include "MingEngine/Engine/Render/DebugRenderer.hpp"
+#include "MingEngine/Core/Math/RaycastUtils.hpp"
+#include "MingEngine/Core/Render/VertexUtils.hpp"
+#include "MingEngine/Core/StringUtils.hpp"
+#include "MingEngine/Editor/EditorCamera.hpp"
+#include "MingEngine/Editor/EditorNode.hpp"
+#include "MingEngine/Editor/UI/EditorUI.hpp"
+#include "MingEngine/Engine/Application/Engine.hpp"
+#include "MingEngine/Engine/Render/BuiltinShaders.hpp"
+#include "MingEngine/Engine/Render/DebugGizmos.hpp"
+#include "MingEngine/Engine/Render/IndexBuffer.hpp"
 #include "MingEngine/Engine/Render/Renderer.hpp"
 #include "MingEngine/Engine/Render/VertexBuffer.hpp"
-#include "MingEngine/Core/Render/VertexUtils.hpp"
+#include "MingEngine/Scene/3D/Camera3D.hpp"
+#include "MingEngine/Scene/3D/Node3D.hpp"
+#include "MingEngine/Scene/Core/Node.hpp"
+#include "MingEngine/Scene/Core/SceneTree.hpp"
+#include "MingEngine/Scene/Resource/ShaderResource.hpp"
 
 #include <cmath>
 
+using namespace Math;
+
 namespace
 {
-float constexpr kGizmoAxisLength        = 1.25f;
+float constexpr kGizmoAxisLength        = 1.1f;
 float constexpr kGizmoArrowRadius       = 0.035f;
-float constexpr kGizmoAxisPickRadius    = 0.11f;
-float constexpr kGizmoPlaneOffset       = 0.36f;
-float constexpr kGizmoPlaneSize         = 0.22f;
-float constexpr kGizmoPlanePickSize     = 0.30f;
-float constexpr kGizmoRotationRadius    = 0.88f;
-float constexpr kGizmoRotationPickWidth = 0.10f;
-int constexpr kGizmoArcSegments         = 32;
+float constexpr kGizmoAxisPickRadius    = 0.1f;
+float constexpr kGizmoPlaneOffset       = 0.3f;
+float constexpr kGizmoPlaneSize         = 0.2f;
+float constexpr kGizmoPlanePickSize     = 0.3f;
+float constexpr kGizmoRotationRadius    = 0.8f;
+float constexpr kGizmoRotationPickWidth = 0.1f;
+int constexpr kGizmoArcSegments         = 128;
+int constexpr kGizmoArcSectionSegments  = 3;
 
-Rgba8 const kHoverColor(255, 235, 90, 255);
-Rgba8 const kActiveColor(255, 170, 30, 255);
-Rgba8 const kGuideColor(220, 220, 220, 255);
+Color const kHoverColor(255, 235, 90, 255);
+Color const kActiveColor(255, 170, 30, 255);
+Color const kGuideColor(220, 220, 220, 255);
 
-float GetRayPointAxisT(Vec3 const& rayStart, Vec3 const& rayForward, Vec3 const& lineOrigin, Vec3 const& lineAxis)
+void AddVertsForRotationRing3D(
+	std::vector<Vertex>&       verts,
+	std::vector<unsigned int>& indices,
+	Vec3 const&                origin,
+	Vec3 const&                axis,
+	Vec3 const&                u,
+	Vec3 const&                v,
+	float                      radius,
+	Color const&               color)
 {
-	Vec3 const w0           = rayStart - lineOrigin;
-	float const a           = DotProduct3D(rayForward, rayForward);
-	float const b           = DotProduct3D(rayForward, lineAxis);
-	float const c           = DotProduct3D(lineAxis, lineAxis);
-	float const d           = DotProduct3D(rayForward, w0);
-	float const e           = DotProduct3D(lineAxis, w0);
-	float const denominator = a * c - b * b;
-	if (Abs(denominator) <= 0.000001f)
+	unsigned int const vertexBase = static_cast<unsigned int>(verts.size());
+	verts.reserve(verts.size() + kGizmoArcSegments * kGizmoArcSectionSegments);
+	indices.reserve(indices.size() + kGizmoArcSegments * kGizmoArcSectionSegments * 6);
+
+	for (int arcSegment = 0; arcSegment < kGizmoArcSegments; ++arcSegment)
 	{
-		return e / c;
+		float const arcFraction = static_cast<float>(arcSegment) / static_cast<float>(kGizmoArcSegments);
+		float const arcDegrees  = arcFraction * 360.f;
+		float const arcCos      = CosDegrees(arcDegrees);
+		float const arcSin      = SinDegrees(arcDegrees);
+		Vec3 const  radial      = u * arcCos + v * arcSin;
+		Vec3 const  tangent     = -u * arcSin + v * arcCos;
+		Vec3 const  position    = origin + radial * radius;
+
+		for (int sectionSegment = 0; sectionSegment < kGizmoArcSectionSegments; ++sectionSegment)
+		{
+			float const sectionFraction =
+				static_cast<float>(sectionSegment) / static_cast<float>(kGizmoArcSectionSegments);
+			float const sectionDegrees = sectionFraction * 360.f;
+			Vec3 const  normal =
+				(axis * CosDegrees(sectionDegrees) + radial * SinDegrees(sectionDegrees)).GetNormalized();
+			Vec3 const bitangent = CrossProduct3D(normal, tangent).GetNormalized();
+
+			verts.emplace_back(position, color, Vec2(arcFraction, sectionFraction), tangent, bitangent, normal);
+		}
 	}
 
-	return (a * e - b * d) / denominator;
-}
-
-float GetDistanceRayToSegment(
-	Vec3 const& rayStart,
-	Vec3 const& rayForward,
-	Vec3 const& segmentStart,
-	Vec3 const& segmentEnd,
-	float& outRayT,
-	float& outSegmentT)
-{
-	Vec3 const segment     = segmentEnd - segmentStart;
-	float const segmentLen = segment.GetLength();
-	if (segmentLen <= 0.000001f)
+	for (int arcSegment = 0; arcSegment < kGizmoArcSegments; ++arcSegment)
 	{
-		outRayT     = 0.f;
-		outSegmentT = 0.f;
-		return GetDistance3D(rayStart, segmentStart);
-	}
+		unsigned int const currentRing = vertexBase + arcSegment * kGizmoArcSectionSegments;
+		unsigned int const nextRing    = vertexBase + ((arcSegment + 1) % kGizmoArcSegments) * kGizmoArcSectionSegments;
 
-	Vec3 const segmentAxis = segment / segmentLen;
-	outSegmentT            = GetRayPointAxisT(rayStart, rayForward, segmentStart, segmentAxis);
-	outSegmentT            = GetClamped(outSegmentT, 0.f, segmentLen);
-	Vec3 const segmentPos  = segmentStart + segmentAxis * outSegmentT;
-	outRayT                = DotProduct3D(segmentPos - rayStart, rayForward);
-	outRayT                = Max(0.f, outRayT);
-	Vec3 const rayPos      = rayStart + rayForward * outRayT;
-	return GetDistance3D(rayPos, segmentPos);
-}
+		for (int sectionSegment = 0; sectionSegment < kGizmoArcSectionSegments; ++sectionSegment)
+		{
+			unsigned int const currentSection = sectionSegment;
+			unsigned int const nextSection    = (sectionSegment + 1) % kGizmoArcSectionSegments;
 
-bool RaycastPlane(RaycastInfo const& ray, Vec3 const& planePoint, Vec3 const& planeNormal, Vec3& outHit, float& outDist)
-{
-	float const denominator = DotProduct3D(ray.m_forwardNormal, planeNormal);
-	if (Abs(denominator) <= 0.000001f)
-	{
-		return false;
-	}
+			indices.push_back(currentRing + nextSection);
+			indices.push_back(currentRing + currentSection);
+			indices.push_back(nextRing + currentSection);
 
-	outDist = DotProduct3D(planePoint - ray.m_startPos, planeNormal) / denominator;
-	if (outDist < 0.f || outDist > ray.m_maxLength)
-	{
-		return false;
-	}
-
-	outHit = ray.m_startPos + ray.m_forwardNormal * outDist;
-	return true;
-}
-
-void UploadVertices(std::vector<Vertex> const& verts, VertexBuffer* buffer)
-{
-	if (verts.empty() || buffer == nullptr || g_engine == nullptr || g_engine->m_renderer == nullptr)
-	{
-		return;
-	}
-
-	g_engine->m_renderer->UpdateVertexBuffer(buffer, verts);
-}
-
-void AddVertsForTorusArc3D(
-	std::vector<Vertex>& verts,
-	Vec3 const& origin,
-	Vec3 const& u,
-	Vec3 const& v,
-	float radius,
-	float startDegrees,
-	float endDegrees,
-	float tubeRadius,
-	Rgba8 const& color)
-{
-	Vec3 previous = origin + u * (CosDegrees(startDegrees) * radius) + v * (SinDegrees(startDegrees) * radius);
-	for (int segmentIndex = 1; segmentIndex <= kGizmoArcSegments; ++segmentIndex)
-	{
-		float const t       = (float)segmentIndex / (float)kGizmoArcSegments;
-		float const degrees = Interpolate(startDegrees, endDegrees, t);
-		Vec3 const current  = origin + u * (CosDegrees(degrees) * radius) + v * (SinDegrees(degrees) * radius);
-		AddVertsForCylinder3D(verts, previous, current, tubeRadius, color);
-		previous = current;
+			indices.push_back(nextRing + currentSection);
+			indices.push_back(nextRing + nextSection);
+			indices.push_back(currentRing + nextSection);
+		}
 	}
 }
 
@@ -143,28 +115,43 @@ EulerAngles GetEulerWithAxisDelta(EulerAngles const& start, GizmoAxis axis, floa
 	}
 	return result;
 }
+
 } // namespace
 
 GizmoContext BuildGizmoContext(SceneTree* sceneTree, Camera3D const& camera, Vec2 clientPos)
 {
 	GizmoContext context;
-	context.m_sceneTree        = sceneTree;
-	context.m_camera           = &camera;
-	context.m_clientPos        = clientPos;
-	context.m_clientDimensions =
-		g_engine && g_engine->m_window ? (Vec2)g_engine->m_window->GetClientDimensions() : Vec2::One;
+	context.m_sceneTree = sceneTree;
+	context.m_camera    = &camera;
 
+	// 1) Convert window-space mouse to viewport-space via EditorUI
+	// 2) EditorUI rect is updated every frame by ViewportPanel
 	EditorNode* editorNode = EditorNode::Get();
+	if (editorNode != nullptr && editorNode->m_editorUI != nullptr)
+	{
+		context.m_clientPos        = editorNode->m_editorUI->ToViewportPos(clientPos);
+		context.m_clientDimensions = editorNode->m_editorUI->GetViewportDimensions();
+	}
+	else
+	{
+		context.m_clientPos = clientPos;
+		context.m_clientDimensions =
+			g_engine && g_engine->m_windowSystem ? (Vec2)g_engine->m_windowSystem->GetClientDimensions() : Vec2::One;
+	}
+
 	if (editorNode != nullptr)
 	{
-		context.m_selectedNode = editorNode->GetSelection().GetSelected();
-		context.m_selectedNode3D =
-			dynamic_cast<Node3D*>(sceneTree != nullptr ? sceneTree->ResolveNode(context.m_selectedNode) : nullptr);
+		if (editorNode != nullptr)
+		{
+			context.m_selectedNode = editorNode->GetSelection().GetSelected();
+			context.m_selectedNode3D =
+				dynamic_cast<Node3D*>(sceneTree != nullptr ? sceneTree->ResolveNode(context.m_selectedNode) : nullptr);
+		}
 	}
 
 	if (context.m_selectedNode3D != nullptr)
 	{
-		context.m_originWorld = context.m_selectedNode3D->GetWorldPosition();
+		context.m_originWorld  = context.m_selectedNode3D->GetWorldPosition();
 		float const cameraDist = (context.m_originWorld - camera.GetWorldPosition()).GetLength();
 		context.m_scale        = Max(0.1f, cameraDist) * 0.15f;
 	}
@@ -172,24 +159,69 @@ GizmoContext BuildGizmoContext(SceneTree* sceneTree, Camera3D const& camera, Vec
 	return context;
 }
 
-GizmoComponent::GizmoComponent(GizmoAxis axis, Rgba8 const& color) : m_axis(axis), m_baseColor(color)
+GizmoComponent::GizmoComponent(GizmoAxis axis, Color const& color) : m_axis(axis), m_baseColor(color)
 {
-	if (g_engine != nullptr && g_engine->m_renderer != nullptr)
+	SetReady(true);
+	SetProcess(true);
+}
+
+RenderRequest GizmoComponent::SubmitRenderRequest() const
+{
+	RenderRequest request;
+	request.m_pass           = RenderRequestPass::Opaque;
+	request.m_renderPriority = m_renderPriority; // Gizmos render after most other objects
+	request.m_modelToWorld   = GetWorldTransform();
+	request.m_vertexBuffer   = m_vertexBuffer;
+	request.m_blendMode      = BlendMode::ALPHA;
+	request.m_depthMode      = DepthMode::DISABLED;
+	request.m_rasterizerMode = RasterizerMode::SOLID_CULL_NONE;
+	request.m_tint           = GetDrawColor();
+	return request;
+}
+
+void GizmoComponent::OnNotification(int notification)
+{
+	switch (static_cast<NotificationType>(notification))
 	{
-		m_vertexBuffer =
-			g_engine->m_renderer->CreateVertexBuffer(std::vector<Vertex>{ Vertex(Vec3::Zero, Rgba8::White) });
+	case NotificationType::Ready:
+	{
+		if (!m_verts.empty() && m_vertexBuffer == nullptr && g_engine != nullptr && g_engine->m_renderer != nullptr)
+		{
+			unsigned int const vertexBufferSize = static_cast<unsigned int>(m_verts.size() * sizeof(Vertex));
+			m_vertexBuffer = g_engine->m_renderer->CreateVertexBuffer(m_verts.data(), vertexBufferSize, sizeof(Vertex));
+		}
+		break;
+	}
 	}
 }
 
-void GizmoComponent::OnBeginDrag(
-	[[maybe_unused]] GizmoContext const& context, [[maybe_unused]] GizmoRaycastResult const& hit)
+MathRaycastResult3D GizmoComponent::Raycast(
+	[[maybe_unused]] GizmoContext const& context, MathRaycastQuery3D const& raycastInfo) const
+{
+	return MathRaycastResult3D(raycastInfo.m_startPos, raycastInfo.m_forwardNormal, raycastInfo.m_maxLength);
+}
+
+void GizmoComponent::OnBeginDrag([[maybe_unused]] GizmoContext const& context, [[maybe_unused]] Vec3 const& hitPos)
 {
 	m_isDragging = true;
 }
 
-void GizmoComponent::OnDrag([[maybe_unused]] GizmoContext const& context, [[maybe_unused]] RaycastInfo const& ray) {}
+void GizmoComponent::OnDrag(
+	[[maybe_unused]] GizmoContext const&       context,
+	[[maybe_unused]] MathRaycastQuery3D const& startRaycastInfo,
+	[[maybe_unused]] MathRaycastQuery3D const& currentRaycastInfo)
+{
+}
 
 void GizmoComponent::OnEndDrag([[maybe_unused]] GizmoContext const& context) { m_isDragging = false; }
+
+Vec3 GizmoComponent::GetWorldVirtualCenter() const
+{
+	Vec3 const worldScale = GetWorldScale();
+	Vec3 const scaledVirtualCenter =
+		Vec3(m_virtualCenter.x * worldScale.x, m_virtualCenter.y * worldScale.y, m_virtualCenter.z * worldScale.z);
+	return scaledVirtualCenter + GetWorldPosition();
+}
 
 void GizmoComponent::SetHovered(bool isHovered) { m_isHovered = isHovered; }
 
@@ -244,7 +276,7 @@ Vec3 GizmoComponent::GetPlaneV() const
 	return Vec3::Up;
 }
 
-Rgba8 GizmoComponent::GetDrawColor() const
+Color GizmoComponent::GetDrawColor() const
 {
 	if (m_isDragging)
 	{
@@ -259,45 +291,35 @@ Rgba8 GizmoComponent::GetDrawColor() const
 	return m_baseColor;
 }
 
-GizmoAxisArrow::GizmoAxisArrow(GizmoAxis axis, Rgba8 const& color) : GizmoComponent(axis, color) {}
-
-GizmoRaycastResult GizmoAxisArrow::Raycast(GizmoContext const& context, RaycastInfo const& ray)
+GizmoAxisArrow::GizmoAxisArrow(GizmoAxis axis, Color const& color) : GizmoComponent(axis, color)
 {
-	GizmoRaycastResult result;
-	Vec3 const axis     = GetAxisWorld();
-	Vec3 const start    = context.m_originWorld + axis * (0.18f * context.m_scale);
-	Vec3 const end      = context.m_originWorld + axis * (kGizmoAxisLength * context.m_scale);
-	float rayT          = 0.f;
-	float axisT         = 0.f;
-	float const dist    = GetDistanceRayToSegment(ray.m_startPos, ray.m_forwardNormal, start, end, rayT, axisT);
-	float const pickRad = kGizmoAxisPickRadius * context.m_scale;
-	if (dist > pickRad || rayT > ray.m_maxLength)
-	{
-		return result;
-	}
+	Vec3 const axisDir = GetAxisWorld();
+	Vec3 const start   = Vec3::Zero;
+	Vec3 const end     = axisDir * kGizmoAxisLength;
+	AddVertsForArrow3D(m_verts, start, end, kGizmoArrowRadius, Color::White);
 
-	result.m_didImpact  = true;
-	result.m_impactDist = rayT;
-	result.m_impactPos  = ray.m_startPos + ray.m_forwardNormal * rayT;
-	result.m_component  = this;
-	return result;
+	m_virtualCenter = axisDir * (kGizmoAxisLength * 0.5f);
 }
 
-void GizmoAxisArrow::RebuildVertices(GizmoContext const& context)
+MathRaycastResult3D GizmoAxisArrow::Raycast(GizmoContext const& context, MathRaycastQuery3D const& raycastInfo) const
 {
-	m_verts.clear();
-
-	Vec3 const axis  = GetAxisWorld();
-	Vec3 const start = context.m_originWorld;
-	Vec3 const end   = context.m_originWorld + axis * (kGizmoAxisLength * context.m_scale);
-	AddVertsForArrow3D(m_verts, start, end, kGizmoArrowRadius * context.m_scale, GetDrawColor());
-
-	UploadVertices(m_verts, m_vertexBuffer);
+	Vec3 const  axisWorld     = GetAxisWorld();
+	float const arrowTipSize  = kGizmoArrowRadius * 4.f;
+	float const pickEndLength = kGizmoAxisLength + arrowTipSize;
+	Vec3 const  arrowEnd      = context.m_originWorld + axisWorld * (pickEndLength * context.m_scale);
+	float const arrowRadius   = kGizmoAxisPickRadius * context.m_scale;
+	return RaycastVsCylinder3D(
+		raycastInfo.m_startPos,
+		raycastInfo.m_forwardNormal,
+		raycastInfo.m_maxLength,
+		context.m_originWorld,
+		arrowEnd,
+		arrowRadius);
 }
 
-void GizmoAxisArrow::OnBeginDrag(GizmoContext const& context, GizmoRaycastResult const& hit)
+void GizmoAxisArrow::OnBeginDrag(GizmoContext const& context, Vec3 const& hitPos)
 {
-	GizmoComponent::OnBeginDrag(context, hit);
+	GizmoComponent::OnBeginDrag(context, hitPos);
 	if (context.m_selectedNode3D == nullptr)
 	{
 		return;
@@ -305,65 +327,60 @@ void GizmoAxisArrow::OnBeginDrag(GizmoContext const& context, GizmoRaycastResult
 
 	m_startPosition = context.m_selectedNode3D->GetWorldPosition();
 	m_dragOrigin    = context.m_originWorld;
-	m_startAxisT    = DotProduct3D(hit.m_impactPos - m_dragOrigin, GetAxisWorld());
 }
 
-void GizmoAxisArrow::OnDrag(GizmoContext const& context, RaycastInfo const& ray)
+void GizmoAxisArrow::OnDrag(
+	GizmoContext const&       context,
+	MathRaycastQuery3D const& startRaycastInfo,
+	MathRaycastQuery3D const& currentRaycastInfo)
 {
-	if (context.m_selectedNode3D == nullptr)
+	if (context.m_selectedNode3D == nullptr || context.m_camera == nullptr)
 	{
 		return;
 	}
 
-	Vec3 const axis          = GetAxisWorld();
-	float const currentAxisT = GetRayPointAxisT(ray.m_startPos, ray.m_forwardNormal, m_dragOrigin, axis);
-	float const delta        = currentAxisT - m_startAxisT;
-	context.m_selectedNode3D->SetWorldPosition(m_startPosition + axis * delta);
-}
-
-GizmoPlaneSquare::GizmoPlaneSquare(GizmoAxis axis, Rgba8 const& color) : GizmoComponent(axis, color) {}
-
-GizmoRaycastResult GizmoPlaneSquare::Raycast(GizmoContext const& context, RaycastInfo const& ray)
-{
-	GizmoRaycastResult result;
-	Vec3 const normal = GetAxisWorld();
-	Vec3 const u      = GetPlaneU();
-	Vec3 const v      = GetPlaneV();
-	Vec3 const center = context.m_originWorld + (u + v) * (kGizmoPlaneOffset * context.m_scale);
-	Vec3 hit;
-	float dist = 0.f;
-	if (!RaycastPlane(ray, center, normal, hit, dist))
+	Vec3 const axis           = GetAxisWorld();
+	Vec3 const cameraForward  = context.m_camera->GetWorldOrientation().GetForwardDir_IFwd_JLeft_KUp();
+	Vec3 const planeDirection = CrossProduct3D(axis, CrossProduct3D(axis, cameraForward));
+	if (planeDirection.GetLengthSquared() <= 1e-6f)
 	{
-		return result;
+		return;
+	}
+	Vec3 const planeNormal = planeDirection.GetNormalized();
+
+	MathRaycastResult3D const startHit = RaycastVsPlane3D(
+		startRaycastInfo.m_startPos,
+		startRaycastInfo.m_forwardNormal,
+		startRaycastInfo.m_maxLength,
+		m_dragOrigin,
+		planeNormal);
+	MathRaycastResult3D const currentHit = RaycastVsPlane3D(
+		currentRaycastInfo.m_startPos,
+		currentRaycastInfo.m_forwardNormal,
+		currentRaycastInfo.m_maxLength,
+		m_dragOrigin,
+		planeNormal);
+	if (!startHit.m_didImpact || !currentHit.m_didImpact)
+	{
+		return;
 	}
 
-	Vec3 const local     = hit - center;
-	float const halfSize = kGizmoPlanePickSize * context.m_scale * 0.5f;
-	if (Abs(DotProduct3D(local, u)) > halfSize || Abs(DotProduct3D(local, v)) > halfSize)
-	{
-		return result;
-	}
-
-	result.m_didImpact  = true;
-	result.m_impactDist = dist;
-	result.m_impactPos  = hit;
-	result.m_component  = this;
-	return result;
+	Vec3 const  dragDelta   = currentHit.m_impactPos - startHit.m_impactPos;
+	float const axisDelta   = DotProduct3D(dragDelta, axis);
+	Vec3 const  translation = axis * axisDelta;
+	context.m_selectedNode3D->SetWorldPosition(m_startPosition + translation);
 }
 
-void GizmoPlaneSquare::RebuildVertices(GizmoContext const& context)
+GizmoPlaneSquare::GizmoPlaneSquare(GizmoAxis axis, Color const& color) : GizmoComponent(axis, color)
 {
-	m_verts.clear();
-
-	Vec3 const u      = GetPlaneU();
-	Vec3 const v      = GetPlaneV();
-	Vec3 const center = context.m_originWorld + (u + v) * (kGizmoPlaneOffset * context.m_scale);
-	float const half  = kGizmoPlaneSize * context.m_scale * 0.5f;
-	Rgba8 const color = GetDrawColor();
+	Vec3 const  u      = GetPlaneU();
+	Vec3 const  v      = GetPlaneV();
+	Vec3 const  center = (u + v) * kGizmoPlaneOffset;
+	float const half   = kGizmoPlaneSize * 0.5f;
 
 	Matrix4x4 const localToWorld(u, v, GetAxisWorld(), center);
-	Vec3 const minCorner = Vec3(-half, -half, 0.f);
-	Vec3 const maxCorner = Vec3(half, half, 0.f);
+	Vec3 const      minCorner = Vec3(-half, -half, 0.f);
+	Vec3 const      maxCorner = Vec3(half, half, 0.f);
 
 	// Two triangles forming a square in the plane
 	Vec3 const p00 = minCorner;
@@ -371,10 +388,10 @@ void GizmoPlaneSquare::RebuildVertices(GizmoContext const& context)
 	Vec3 const p11 = maxCorner;
 	Vec3 const p01 = Vec3(minCorner.x, maxCorner.y, 0.f);
 
-	Vertex v00(p00, color, Vec2(0.f, 0.f));
-	Vertex v10(p10, color, Vec2(1.f, 0.f));
-	Vertex v11(p11, color, Vec2(1.f, 1.f));
-	Vertex v01(p01, color, Vec2(0.f, 1.f));
+	Vertex v00(p00, Color::White, Vec2(0.f, 0.f));
+	Vertex v10(p10, Color::White, Vec2(1.f, 0.f));
+	Vertex v11(p11, Color::White, Vec2(1.f, 1.f));
+	Vertex v01(p01, Color::White, Vec2(0.f, 1.f));
 
 	m_verts.push_back(v00);
 	m_verts.push_back(v10);
@@ -385,89 +402,171 @@ void GizmoPlaneSquare::RebuildVertices(GizmoContext const& context)
 	m_verts.push_back(v01);
 
 	TransformVertexArray3D(m_verts, localToWorld);
-	UploadVertices(m_verts, m_vertexBuffer);
+
+	m_virtualCenter = center;
 }
 
-void GizmoPlaneSquare::OnBeginDrag(GizmoContext const& context, GizmoRaycastResult const& hit)
+MathRaycastResult3D GizmoPlaneSquare::Raycast(GizmoContext const& context, MathRaycastQuery3D const& raycastInfo) const
 {
-	GizmoComponent::OnBeginDrag(context, hit);
+	Vec3 const  planeU      = GetPlaneU();
+	Vec3 const  planeV      = GetPlaneV();
+	Vec3 const  planeCenter = context.m_originWorld + (planeU + planeV) * (kGizmoPlaneOffset * context.m_scale);
+	float const planeHalf   = kGizmoPlanePickSize * context.m_scale * 0.5f;
+	Quad3 const quad(
+		planeCenter - planeU * planeHalf - planeV * planeHalf,
+		planeCenter + planeU * planeHalf - planeV * planeHalf,
+		planeCenter + planeU * planeHalf + planeV * planeHalf,
+		planeCenter - planeU * planeHalf + planeV * planeHalf);
+
+	MathRaycastResult3D const result =
+		RaycastVsQuad3D(raycastInfo.m_startPos, raycastInfo.m_forwardNormal, raycastInfo.m_maxLength, quad);
+
+	return result;
+}
+
+void GizmoPlaneSquare::OnBeginDrag(GizmoContext const& context, Vec3 const& hitPos)
+{
+	GizmoComponent::OnBeginDrag(context, hitPos);
 	if (context.m_selectedNode3D == nullptr)
 	{
 		return;
 	}
 
 	m_startPosition = context.m_selectedNode3D->GetWorldPosition();
-	m_startHitWorld = hit.m_impactPos;
+	m_dragOrigin    = context.m_originWorld;
 }
 
-void GizmoPlaneSquare::OnDrag(GizmoContext const& context, RaycastInfo const& ray)
+void GizmoPlaneSquare::OnDrag(
+	GizmoContext const&       context,
+	MathRaycastQuery3D const& startRaycastInfo,
+	MathRaycastQuery3D const& currentRaycastInfo)
 {
 	if (context.m_selectedNode3D == nullptr)
 	{
 		return;
 	}
 
-	Vec3 hit;
-	float dist = 0.f;
-	if (!RaycastPlane(ray, m_startHitWorld, GetAxisWorld(), hit, dist))
+	Vec3 const                planeNormal = GetAxisWorld();
+	MathRaycastResult3D const startHit    = RaycastVsPlane3D(
+		startRaycastInfo.m_startPos,
+		startRaycastInfo.m_forwardNormal,
+		startRaycastInfo.m_maxLength,
+		m_dragOrigin,
+		planeNormal);
+	MathRaycastResult3D const currentHit = RaycastVsPlane3D(
+		currentRaycastInfo.m_startPos,
+		currentRaycastInfo.m_forwardNormal,
+		currentRaycastInfo.m_maxLength,
+		m_dragOrigin,
+		planeNormal);
+	if (!startHit.m_didImpact || !currentHit.m_didImpact)
 	{
 		return;
 	}
 
-	context.m_selectedNode3D->SetWorldPosition(m_startPosition + (hit - m_startHitWorld));
+	Vec3 const translation = currentHit.m_impactPos - startHit.m_impactPos;
+
+	context.m_selectedNode3D->SetWorldPosition(m_startPosition + translation);
 }
 
-GizmoRotationArc::GizmoRotationArc(GizmoAxis axis, Rgba8 const& color) : GizmoComponent(axis, color) {}
-
-GizmoRaycastResult GizmoRotationArc::Raycast(GizmoContext const& context, RaycastInfo const& ray)
+GizmoRotationArc::GizmoRotationArc(GizmoAxis axis, Color const& color) : GizmoComponent(axis, color)
 {
-	GizmoRaycastResult result;
-	Vec3 hit;
-	float dist = 0.f;
-	if (!RaycastPlane(ray, context.m_originWorld, GetAxisWorld(), hit, dist))
+	Vec3 const u = GetPlaneU();
+	Vec3 const v = GetPlaneV();
+	AddVertsForRotationRing3D(m_verts, m_indices, Vec3::Zero, GetAxisWorld(), u, v, kGizmoRotationRadius, Color::White);
+
+	m_virtualCenter = (u + v).GetNormalized() * 0.5f * kGizmoRotationRadius;
+}
+
+GizmoRotationArc::~GizmoRotationArc()
+{
+	delete m_indexBuffer;
+	m_indexBuffer = nullptr;
+}
+
+RenderRequest GizmoRotationArc::SubmitRenderRequest() const
+{
+	if (m_vertexBuffer == nullptr || m_indexBuffer == nullptr)
+	{
+		return RenderRequest();
+	}
+
+	RenderRequest request = GizmoComponent::SubmitRenderRequest();
+	request.m_indexBuffer = m_indexBuffer;
+	Ref<ShaderResource> shaderResource = g_engine->m_renderer->GetBuiltinShaderResource(
+		"TransformGizmosArc", BuiltinShaders::TransformGizmosArc);
+	request.m_shader = shaderResource.IsValid() ? shaderResource->GetShader() : nullptr;
+	return request;
+}
+
+void GizmoRotationArc::OnNotification(int notification)
+{
+	switch (static_cast<NotificationType>(notification))
+	{
+	case NotificationType::Ready:
+	{
+		if (!m_indices.empty() && m_indexBuffer == nullptr && g_engine != nullptr && g_engine->m_renderer != nullptr)
+		{
+			unsigned int const indexBufferSize = static_cast<unsigned int>(m_indices.size() * sizeof(unsigned int));
+			m_indexBuffer =
+				g_engine->m_renderer->CreateIndexBuffer(m_indices.data(), indexBufferSize, sizeof(unsigned int));
+		}
+		break;
+	}
+	case NotificationType::Process:
+	{
+		Vec3 const cameraPos = EditorCamera::Get()->GetWorldPosition();
+		Vec3 const gizmoPos  = GetWorldPosition();
+		Vec3 const toCamera  = cameraPos - gizmoPos;
+		switch (m_axis)
+		{
+		case GizmoAxis::X:
+			m_virtualCenter = Vec3(0.f, toCamera.y, toCamera.z).GetNormalized() * kGizmoRotationRadius;
+			break;
+		case GizmoAxis::Y:
+			m_virtualCenter = Vec3(toCamera.x, 0.f, toCamera.z).GetNormalized() * kGizmoRotationRadius;
+			break;
+		case GizmoAxis::Z:
+			m_virtualCenter = Vec3(toCamera.x, toCamera.y, 0.f).GetNormalized() * kGizmoRotationRadius;
+			break;
+		}
+		break;
+	}
+	}
+}
+
+MathRaycastResult3D GizmoRotationArc::Raycast(GizmoContext const& context, MathRaycastQuery3D const& raycastInfo) const
+{
+	Vec3 const          worldNormal = GetAxisWorld().GetNormalized();
+	MathRaycastResult3D result      = RaycastVsPlane3D(
+		raycastInfo.m_startPos,
+		raycastInfo.m_forwardNormal,
+		raycastInfo.m_maxLength,
+		context.m_originWorld,
+		worldNormal);
+	if (!result.m_didImpact)
 	{
 		return result;
 	}
 
-	Vec3 const fromOrigin    = hit - context.m_originWorld;
-	float const radius       = fromOrigin.GetLength();
-	float const targetRadius = kGizmoRotationRadius * context.m_scale;
-	if (Abs(radius - targetRadius) > kGizmoRotationPickWidth * context.m_scale)
+	float const hitRadius = (result.m_impactPos - context.m_originWorld).GetLength();
+	float const radius    = kGizmoRotationRadius * context.m_scale;
+	float const pickWidth = kGizmoRotationPickWidth * context.m_scale;
+	if (Abs(hitRadius - radius) > pickWidth)
 	{
-		return result;
+		return MathRaycastResult3D(raycastInfo.m_startPos, raycastInfo.m_forwardNormal, raycastInfo.m_maxLength);
 	}
 
-	result.m_didImpact  = true;
-	result.m_impactDist = dist;
-	result.m_impactPos  = hit;
-	result.m_component  = this;
+	if (DotProduct3D(result.m_impactNormal, raycastInfo.m_forwardNormal) > 0.f)
+	{
+		result.m_impactNormal = -result.m_impactNormal;
+	}
 	return result;
 }
 
-void GizmoRotationArc::RebuildVertices(GizmoContext const& context)
+void GizmoRotationArc::OnBeginDrag(GizmoContext const& context, Vec3 const& hitPos)
 {
-	m_verts.clear();
-
-	Vec3 const u           = GetPlaneU();
-	Vec3 const v           = GetPlaneV();
-	float const radius     = kGizmoRotationRadius * context.m_scale;
-	float const lineRadius = kGizmoArrowRadius * 0.45f * context.m_scale;
-	Rgba8 const color      = GetDrawColor();
-
-	if (m_isDragging)
-	{
-		AddVertsForTorusArc3D(m_verts, context.m_originWorld, u, v, radius, 0.f, 360.f, lineRadius, color);
-		UploadVertices(m_verts, m_vertexBuffer);
-		return;
-	}
-
-	AddVertsForTorusArc3D(m_verts, context.m_originWorld, u, v, radius, -125.f, 125.f, lineRadius, color);
-	UploadVertices(m_verts, m_vertexBuffer);
-}
-
-void GizmoRotationArc::OnBeginDrag(GizmoContext const& context, GizmoRaycastResult const& hit)
-{
-	GizmoComponent::OnBeginDrag(context, hit);
+	GizmoComponent::OnBeginDrag(context, hitPos);
 	if (context.m_selectedNode3D == nullptr)
 	{
 		return;
@@ -475,31 +574,36 @@ void GizmoRotationArc::OnBeginDrag(GizmoContext const& context, GizmoRaycastResu
 
 	m_startOrientation = context.m_selectedNode3D->GetWorldOrientation();
 	m_dragOrigin       = context.m_originWorld;
-	m_startVectorWorld = (hit.m_impactPos - context.m_originWorld).GetNormalized();
-	m_currentHitWorld  = hit.m_impactPos;
+	m_startVectorWorld = (hitPos - context.m_originWorld).GetNormalized();
 	m_currentDegrees   = 0.f;
 }
 
-void GizmoRotationArc::OnDrag(GizmoContext const& context, RaycastInfo const& ray)
+void GizmoRotationArc::OnDrag(
+	GizmoContext const&                        context,
+	[[maybe_unused]] MathRaycastQuery3D const& startRaycastInfo,
+	MathRaycastQuery3D const&                  currentRaycastInfo)
 {
 	if (context.m_selectedNode3D == nullptr)
 	{
 		return;
 	}
 
-	Vec3 hit;
-	float dist = 0.f;
-	if (!RaycastPlane(ray, m_dragOrigin, GetAxisWorld(), hit, dist))
+	MathRaycastResult3D const hit = RaycastVsPlane3D(
+		currentRaycastInfo.m_startPos,
+		currentRaycastInfo.m_forwardNormal,
+		currentRaycastInfo.m_maxLength,
+		m_dragOrigin,
+		GetAxisWorld());
+	if (!hit.m_didImpact)
 	{
 		return;
 	}
 
-	Vec3 currentVector = (hit - m_dragOrigin).GetNormalized();
-	Vec3 const cross   = CrossProduct3D(m_startVectorWorld, currentVector);
-	float const sinVal = DotProduct3D(cross, GetAxisWorld());
-	float const cosVal = DotProduct3D(m_startVectorWorld, currentVector);
-	m_currentDegrees   = ConvertRadiansToDegrees(atan2f(sinVal, cosVal));
-	m_currentHitWorld  = hit;
+	Vec3        currentVector = (hit.m_impactPos - m_dragOrigin).GetNormalized();
+	Vec3 const  cross         = CrossProduct3D(m_startVectorWorld, currentVector);
+	float const sinVal        = DotProduct3D(cross, GetAxisWorld());
+	float const cosVal        = DotProduct3D(m_startVectorWorld, currentVector);
+	m_currentDegrees          = ConvertRadiansToDegrees(atan2f(sinVal, cosVal));
 
 	context.m_selectedNode3D->SetWorldOrientation(GetEulerWithAxisDelta(m_startOrientation, m_axis, m_currentDegrees));
 }
@@ -511,4 +615,3 @@ void GizmoRotationArc::OnEndDrag(GizmoContext const& context)
 }
 
 bool GizmoRotationArc::IsRotationGizmo() const { return true; }
-

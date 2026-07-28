@@ -2,61 +2,125 @@
 
 #include "MingEngine/Core/ErrorWarningAssert.hpp"
 #include "MingEngine/Core/Render/Rgba8.hpp"
-#include "MingEngine/Core/StringUtils.hpp"
 
-#include <ThirdParty/stb/stb_image.h>
+#include "ThirdParty/stb/stb_image.h"
 
-Image::Image() { m_dimensions = IntVec2::Zero; }
+#include <climits>
+#include <cstring>
+#include <fstream>
+#include <limits>
+#include <memory>
+#include <utility>
 
-Image::~Image() {}
-
-Image::Image(IntVec2 size, Rgba8 color)
+bool Image::LoadFromFile(std::string const& physicalPath)
 {
-	GUARANTEE_OR_DIE(size.x > 0 && size.y > 0, "Image: invalid dimensions");
-	m_dimensions = size;
-
-	int const totalTexels = m_dimensions.x * m_dimensions.y;
-	m_texelColors.assign(static_cast<size_t>(totalTexels), color);
-}
-
-Image::Image(char const* imageFilePath) : m_imageFilePath(imageFilePath)
-{
-	GUARANTEE_OR_DIE(imageFilePath != nullptr && imageFilePath[0] != '\0', "Image: imageFilePath is null/empty");
-
-	int numComponents = 0;
-
-	stbi_set_flip_vertically_on_load(true);
-	unsigned char* imageData = stbi_load(imageFilePath, &m_dimensions.x, &m_dimensions.y, &numComponents, 4);
-	stbi_set_flip_vertically_on_load(false);
-
-	GUARANTEE_OR_DIE(imageData != nullptr, Stringf("Failed to load image from file: %s", imageFilePath));
-
-	int totalTexels = m_dimensions.x * m_dimensions.y;
-	m_texelColors.reserve(totalTexels);
-
-	for (int texelIndex = 0; texelIndex < totalTexels; ++texelIndex)
+	// 1) Read the encoded source file once
+	std::ifstream file(physicalPath, std::ios::binary | std::ios::ate);
+	if (!file)
 	{
-		int           byteIndex = texelIndex * 4;
-		unsigned char r         = imageData[byteIndex + 0];
-		unsigned char g         = imageData[byteIndex + 1];
-		unsigned char b         = imageData[byteIndex + 2];
-		unsigned char a         = (numComponents < 4) ? 255 : imageData[byteIndex + 3];
-		m_texelColors.emplace_back(r, g, b, a);
+		return false;
 	}
 
-	stbi_image_free(imageData);
+	std::streamoff const fileSize = file.tellg();
+	if (fileSize <= 0 || fileSize > INT_MAX)
+	{
+		return false;
+	}
+
+	std::vector<uint8_t> encodedData(static_cast<size_t>(fileSize));
+	file.seekg(0, std::ios::beg);
+	if (!file.read(reinterpret_cast<char*>(encodedData.data()), static_cast<std::streamsize>(encodedData.size())))
+	{
+		return false;
+	}
+
+	// 2) Retain and decode the same source bytes
+	return LoadFromMemory(std::move(encodedData));
 }
 
-Image::Image(std::string const& imageFilePath) : Image(imageFilePath.c_str()) {}
+bool Image::LoadFromMemory(std::vector<uint8_t> encodedData)
+{
+	// 1) Validate the encoded input accepted by stb_image
+	if (encodedData.empty() || encodedData.size() > INT_MAX)
+	{
+		return false;
+	}
 
-Rgba8 Image::GetColorAt(int x, int y) const
+	int width          = 0;
+	int height         = 0;
+	int channelsInFile = 0;
+
+	// 2) Decode into temporary RGBA8 storage
+	stbi_set_flip_vertically_on_load(true);
+	std::unique_ptr<stbi_uc, decltype(&stbi_image_free)> decodedPixels(
+		stbi_load_from_memory(
+			encodedData.data(),
+			static_cast<int>(encodedData.size()),
+			&width,
+			&height,
+			&channelsInFile,
+			STBI_rgb_alpha),
+		&stbi_image_free);
+	stbi_set_flip_vertically_on_load(false);
+
+	if (decodedPixels == nullptr || width <= 0 || height <= 0)
+	{
+		return false;
+	}
+
+	size_t const pixelWidth  = static_cast<size_t>(width);
+	size_t const pixelHeight = static_cast<size_t>(height);
+	if (pixelWidth > std::numeric_limits<size_t>::max() / pixelHeight
+		|| pixelWidth * pixelHeight > std::numeric_limits<size_t>::max() / STBI_rgb_alpha)
+	{
+		return false;
+	}
+
+	size_t const         pixelDataSize = pixelWidth * pixelHeight * STBI_rgb_alpha;
+	std::vector<uint8_t> pixels(pixelDataSize);
+	memcpy(pixels.data(), decodedPixels.get(), pixelDataSize);
+
+	// 3) Commit encoded and decoded data only after the full load succeeds
+	m_dimensions  = IntVec2(width, height);
+	m_channels    = STBI_rgb_alpha;
+	m_encodedData = std::move(encodedData);
+	m_pixels      = std::move(pixels);
+	return true;
+}
+
+void Image::Clear()
+{
+	m_dimensions = IntVec2::Zero;
+	m_channels   = 4;
+	m_encodedData.clear();
+	m_pixels.clear();
+}
+
+bool Image::IsValid() const
+{
+	if (m_dimensions.x <= 0 || m_dimensions.y <= 0 || m_channels != 4)
+	{
+		return false;
+	}
+
+	size_t const pixelWidth  = static_cast<size_t>(m_dimensions.x);
+	size_t const pixelHeight = static_cast<size_t>(m_dimensions.y);
+	if (pixelWidth > std::numeric_limits<size_t>::max() / pixelHeight
+		|| pixelWidth * pixelHeight > std::numeric_limits<size_t>::max() / m_channels)
+	{
+		return false;
+	}
+
+	size_t const pixelDataSize = pixelWidth * pixelHeight * m_channels;
+	return m_pixels.size() == pixelDataSize;
+}
+
+bool Image::HasEncodedData() const { return !m_encodedData.empty(); }
+
+Color Image::GetColorAt(int x, int y) const
 {
 	GUARANTEE_OR_DIE(x >= 0 && x < m_dimensions.x && y >= 0 && y < m_dimensions.y, "GetColorAt out of bounds");
-	int const index = y * m_dimensions.x + x;
-	return m_texelColors[static_cast<size_t>(index)];
+
+	size_t const byteIndex = (static_cast<size_t>(y) * m_dimensions.x + x) * m_channels;
+	return Color(m_pixels[byteIndex], m_pixels[byteIndex + 1], m_pixels[byteIndex + 2], m_pixels[byteIndex + 3]);
 }
-
-const std::string& Image::GetImageFilePath() const { return m_imageFilePath; }
-
-const void* Image::GetRawData() const { return m_texelColors.empty() ? nullptr : m_texelColors.data(); }
-

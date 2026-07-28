@@ -12,6 +12,7 @@
 
 class SceneTree;
 class Viewport;
+class ScriptInstance;
 
 // Base object for the runtime scene hierarchy.
 // 1) Nodes own their children and delete them in the destructor.
@@ -30,6 +31,7 @@ public:
 		ExitTree  = 1,
 		Ready     = 2,
 		Process   = 3,
+		TransformChanged = 40,
 	};
 
 public:
@@ -53,8 +55,15 @@ public:
 	void SetReady(bool isReady);
 	void SetProcess(bool isProcess);
 
+	// For Get/Set script, actually we are maintain a script instead of script instance
+	// We just assign script instance by the way
+	// When serializing, we use the script instead of script instance
+	// The tricky part is, we actually store script inside script instance
+	Variant GetScript() const;
+	void    SetScript(Variant const& script);
+
 	// Currently GetNode only supports child
-	// it do not support ../ or .. 
+	// it do not support ../ or ..
 	Node* FindChildByName(std::string const& name) const;
 	Node* GetNode(NodePath const& path) const;
 
@@ -80,6 +89,11 @@ protected:
 	// 2) OnExitTree is called before this node unregisters from its SceneTree.
 	// 3) OnReady is called after this node and its children enter a SceneTree.
 	// 4) OnProcess is called once per frame by SceneTree::UpdateScene.
+	
+	// For c++ side, please DO NOT USE THIS, they are ONLY for script side
+	// this is because these OnXXX will overrider their parent class
+	// but c++ side is normally pipeline function, which we normally do not want to override
+	// so for c++ side, we should use OnNotification instead, which will call along the inherit chain
 	virtual void OnEnterTree();
 	virtual void OnExitTree();
 	virtual void OnReady();
@@ -108,24 +122,18 @@ protected:
 protected:
 	struct NodeData
 	{
-		std::string        m_name;
-		Node*              m_parent    = nullptr;
-		SceneTree*         m_sceneTree = nullptr;
-		Viewport*          m_viewport  = nullptr;
-		std::vector<Node*> m_children;
-		NodeHandle         m_handle;
-		bool               m_isPendingDestroy = false;
-		bool               m_isSerializable   = true;
-
-#if defined(MING_EDITOR)
+		std::string                     m_name;
+		Node*                           m_parent    = nullptr;
+		SceneTree*                      m_sceneTree = nullptr;
+		Viewport*                       m_viewport  = nullptr;
+		std::vector<Node*>              m_children;
+		NodeHandle                      m_handle;
+		std::unique_ptr<ScriptInstance> m_scriptInstance   = nullptr;
+		bool                            m_isPendingDestroy = false;
+		bool                            m_isSerializable   = true;
 		bool m_enableReady   = false;
 		bool m_enableProcess = false;
-#else
-		bool m_enableReady   = true;
-		bool m_enableProcess = true;
-#endif
 	};
 
 	NodeData m_data;
 };
-

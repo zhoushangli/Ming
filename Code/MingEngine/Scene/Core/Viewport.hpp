@@ -5,11 +5,12 @@
 #include "MingEngine/Engine/Render/RenderContext.hpp"
 
 class Camera3D;
-class Light3D;
 class VisualizeInstance3D;
 
 class Viewport : public Node
 {
+	MCLASS(Viewport, Node);
+
 public:
 	Viewport();
 	~Viewport() override;
@@ -19,36 +20,31 @@ public:
 	void RegisterVisualizeInstance(VisualizeInstance3D* visualizeInstance);
 	void UnregisterVisualizeInstance(VisualizeInstance3D* visualizeInstance);
 
-	void RegisterLight(Light3D* light);
-	void UnregisterLight(Light3D* light);
-
-	void RegisterWorldCamera(Camera3D* camera);
-	void UnregisterWorldCamera(Camera3D* camera);
+	void      RegisterWorldCamera(Camera3D* camera);
+	void      UnregisterWorldCamera(Camera3D* camera);
 	Camera3D* GetWorldCamera() const;
 
-	void SetOutputResolution(IntVec2 dimensions);
+	void    SetOutputResolution(IntVec2 dimensions);
 	IntVec2 GetOutputResolution() const;
 
 	// Per-frame preparation:
 	// 1) Resolve cameras and update their projection.
-	// 2) Clear transient request/light arrays.
+	// 2) Clear transient request arrays.
 	// 3) Resolve registered handles and collect current render data.
 	void PrepareRenderData();
 
-	ViewportInfo& GetViewportInfo();
+	ViewportInfo&       GetViewportInfo();
 	ViewportInfo const& GetViewportInfo() const;
 
 protected:
-	void OnEnterTree() override;
-	void OnExitTree() override;
+	void OnNotification(int notification);
 
 private:
 	std::vector<NodeHandle> m_instances;
-	std::vector<NodeHandle> m_lights;
 
 	std::vector<NodeHandle> m_worldCameraInstances;
-	NodeHandle m_worldCameraHandle = NodeHandle::Invalid;
-	CameraContext m_tmpWorldCamera;
+	NodeHandle              m_worldCameraHandle = NodeHandle::Invalid;
+	CameraContext           m_tmpWorldCamera;
 
 	ViewportInfo m_viewportInfo;
 };

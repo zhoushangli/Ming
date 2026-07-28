@@ -1,31 +1,54 @@
 #pragma once
 
-#include <string>
+#include "MingEngine/Core/Object/RefCounted.hpp"
 
-class VirtualPath
+#include <cstddef>
+#include <string>
+#include <string_view>
+
+class VirtualPath : public RefCounted
 {
 public:
-	// Wrong cases:
-	// 1) Empty path
-	// 2) res://
-	// 3) res://../Secret.txt
-	// 4) res://Assets/../Secret.txt
-	// 5) C:/Game/Test.as
-	bool Parse(std::string const& path);
+	VirtualPath() = default;
+	VirtualPath(char const* path);
+	VirtualPath(std::string const& path);
 
-	std::string const& GetRelativePath() const;
+	static bool        TryParse(std::string_view path, VirtualPath& outPath);
+	static VirtualPath ResourceRoot();
 
-	bool        operator==(VirtualPath const& other) const;
-	std::string ToString() const;
+	bool IsValid() const;
+	bool IsRoot() const;
+
+	VirtualPath GetParent() const;
+	std::string GetFileName() const;
+	std::string GetStem() const;
+	std::string GetExtension() const;
+	bool        HasExtension(std::string_view extension) const;
+	VirtualPath Join(std::string_view child) const;
+	bool        TryResolveRelative(std::string_view relativePath, VirtualPath& outPath) const;
+
+	std::string const& GetString() const;
+	char const*        CStr() const;
+
+	bool operator==(VirtualPath const& other) const;
+	bool operator!=(VirtualPath const& other) const;
 
 private:
-	std::string m_relativePath;
+	explicit VirtualPath(std::string path, bool isValidated);
+	static bool TryParseInternal(std::string_view path, std::string& outPath);
+
+private:
+	std::string m_path;
 };
 
-struct VirtualPathHash
+namespace std
+{
+template <>
+struct hash<VirtualPath>
 {
 	size_t operator()(VirtualPath const& path) const noexcept
 	{
-		return std::hash<std::string>{}(path.GetRelativePath());
+		return hash<std::string>{}(path.GetString());
 	}
 };
+}

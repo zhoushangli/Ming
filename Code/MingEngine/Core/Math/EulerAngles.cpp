@@ -1,6 +1,8 @@
 #include "MingEngine/Core/Math/EulerAngles.hpp"
 #include "MingEngine/Core/Math/MathUtils.hpp"
 
+using namespace Math;
+
 const EulerAngles EulerAngles::Zero = EulerAngles(0.f, 0.f, 0.f);
 
 EulerAngles::EulerAngles(float yawDegrees, float pitchDegrees, float rollDegrees)
@@ -13,6 +15,23 @@ EulerAngles EulerAngles::MakeFromForward(Vec3 const& forward)
 	EulerAngles eulerAngles;
 	eulerAngles.SetForwardDir_IFwd(forward);
 	return eulerAngles;
+}
+
+EulerAngles EulerAngles::Interpolate(EulerAngles const& start, EulerAngles const& end, float fraction)
+{
+	float yawDisp   = GetShortestAngularDispDegrees(start.m_yawDegrees, end.m_yawDegrees);
+	float pitchDisp = GetShortestAngularDispDegrees(start.m_pitchDegrees, end.m_pitchDegrees);
+	float rollDisp  = GetShortestAngularDispDegrees(start.m_rollDegrees, end.m_rollDegrees);
+
+	return EulerAngles(
+		start.m_yawDegrees + yawDisp * fraction,
+		start.m_pitchDegrees + pitchDisp * fraction,
+		start.m_rollDegrees + rollDisp * fraction);
+}
+
+EulerAngles EulerAngles::InterpolateClamped(EulerAngles const& start, EulerAngles const& end, float fraction)
+{
+	return Interpolate(start, end, GetClampedZeroToOne(fraction));
 }
 
 Vec3 EulerAngles::GetForwardDir_IFwd_JLeft_KUp() const
@@ -149,14 +168,10 @@ EulerAngles EulerAngles::operator*(float uniformScale) const
 	return EulerAngles(m_yawDegrees * uniformScale, m_pitchDegrees * uniformScale, m_rollDegrees * uniformScale);
 }
 
-bool EulerAngles::operator==(EulerAngles const& compare) const 
+bool EulerAngles::operator==(EulerAngles const& compare) const
 {
 	return m_yawDegrees == compare.m_yawDegrees && m_pitchDegrees == compare.m_pitchDegrees
 		   && m_rollDegrees == compare.m_rollDegrees;
 }
 
-bool EulerAngles::operator!=(EulerAngles const& compare) const
-{
-	return !(*this == compare);
-}
-
+bool EulerAngles::operator!=(EulerAngles const& compare) const { return !(*this == compare); }

@@ -6,6 +6,8 @@ EventSystem::EventSystem(EventSystemConfig const& config) : m_config(config) {}
 
 EventSystem::~EventSystem() {}
 
+void EventSystem::BindMethods() {}
+
 void EventSystem::Startup() {}
 
 void EventSystem::Shutdown()

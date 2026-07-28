@@ -1,9 +1,9 @@
 #pragma once
 
-#include "MingEngine/Core/Render/Rgba8.hpp"
 #include "MingEngine/Core/Math/AABB2.hpp"
 #include "MingEngine/Core/Math/FloatRange.hpp"
 #include "MingEngine/Core/Math/IntVec2.hpp"
+#include "MingEngine/Core/Render/Rgba8.hpp"
 
 #include <vector>
 
@@ -34,11 +34,10 @@ public:
 		std::vector<Vertex>& verts,
 		AABB2                totalBounds  = AABB2::Unit,
 		FloatRange           valueRange   = FloatRange::ZeroToOne,
-		Rgba8                lowColor     = Rgba8::Black,
-		Rgba8                highColor    = Rgba8::White,
+		Color                lowColor     = Color::Black,
+		Color                highColor    = Color::White,
 		float                specialValue = -1,
-		Rgba8                specialColor = Rgba8::Black
-	) const;
+		Color                specialColor = Color::Black) const;
 
 	IntVec2 GetDimensions() const { return m_dimensions; }
 
@@ -52,4 +51,3 @@ private:
 	IntVec2 m_dimensions;
 	float*  m_values = nullptr;
 };
-

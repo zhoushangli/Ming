@@ -1,24 +1,23 @@
 #pragma once
 
-#include "MingEngine/Core/Render/Rgba8.hpp"
 #include "MingEngine/Core/Math/Vec2.hpp"
 #include "MingEngine/Core/Math/Vec3.hpp"
+#include "MingEngine/Core/Render/Rgba8.hpp"
 
 struct Vertex
 {
 public:
 	Vertex();
 	Vertex(Vec3 const& position);
-	Vertex(Vec3 const& position, Rgba8 const& color);
-	Vertex(Vec3 const& position, Rgba8 const& color, Vec2 const& uvTexCoords);
+	Vertex(Vec3 const& position, Color const& color);
+	Vertex(Vec3 const& position, Color const& color, Vec2 const& uvTexCoords);
 	Vertex(
 		Vec3 const&  position,
-		Rgba8 const& color,
+		Color const& color,
 		Vec2 const&  uvTexCoords,
 		Vec3 const&  tangent,
 		Vec3 const&  bitangent,
-		Vec3 const&  normal
-	);
+		Vec3 const&  normal);
 
 	Vertex(
 		float         px,
@@ -38,15 +37,13 @@ public:
 		float         bz,
 		float         nx,
 		float         ny,
-		float         nz
-	);
+		float         nz);
 
 public:
 	Vec3  m_position;
-	Rgba8 m_color;
-	Vec2  m_uvTexCoords;
+	Color m_color;
+	Vec2  m_uv;
 	Vec3  m_tangent;
 	Vec3  m_bitangent;
 	Vec3  m_normal;
 };
-

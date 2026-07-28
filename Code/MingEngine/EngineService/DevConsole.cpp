@@ -10,15 +10,15 @@
 
 #include <cstring>
 
-Rgba8 const DevConsole::kError     = Rgba8(255, 96, 96, 255);
-Rgba8 const DevConsole::kWarning   = Rgba8(255, 220, 96, 255);
-Rgba8 const DevConsole::kInfoMajor = Rgba8(96, 220, 255, 255);
-Rgba8 const DevConsole::kInfoMinor = Rgba8(180, 190, 210, 255);
-Rgba8 const DevConsole::kInputText = Rgba8(255, 255, 255, 255);
+Color const DevConsole::kError     = Color(255, 96, 96, 255);
+Color const DevConsole::kWarning   = Color(255, 220, 96, 255);
+Color const DevConsole::kInfoMajor = Color(96, 220, 255, 255);
+Color const DevConsole::kInfoMinor = Color(180, 190, 210, 255);
+Color const DevConsole::kInputText = Color(255, 255, 255, 255);
 
 namespace
 {
-ImVec4 ToImGuiColor(Rgba8 const& color)
+ImVec4 ToImGuiColor(Color const& color)
 {
 	return ImVec4(color.r / 255.f, color.g / 255.f, color.b / 255.f, color.a / 255.f);
 }
@@ -64,12 +64,12 @@ void DevConsole::Shutdown()
 
 void DevConsole::BeginFrame()
 {
-	if (!IsRuntimeEnabled() || g_engine == nullptr || g_engine->m_input == nullptr)
+	if (!IsRuntimeEnabled() || g_engine == nullptr || g_engine->m_inputSystem == nullptr)
 	{
 		return;
 	}
 
-	if (g_engine->m_input->WasKeyJustPressed(KeyCodeTilde))
+	if (g_engine->m_inputSystem->WasKeyJustPressed(KeyCode::Tilde))
 	{
 		ToggleOpen();
 	}
@@ -105,26 +105,9 @@ void DevConsole::Execute(std::string const& consoleContext, bool echoCommand)
 		return;
 	}
 
-	auto iter = m_commands.find(tokens[0]);
-	if (iter == m_commands.end())
-	{
-		AddLine(kError, Stringf("Unknown command: %s", tokens[0].c_str()));
-		return;
-	}
-
 	if (echoCommand)
 	{
 		AddLine(kInputText, consoleContext);
-	}
-
-	EventArgs args;
-	for (size_t i = 1; i < tokens.size(); ++i)
-	{
-		Strings const keyValue = SplitStringOnDelimiter(tokens[i], '=');
-		if (keyValue.size() == 2 && !keyValue[0].empty())
-		{
-			args.SetValue(keyValue[0], keyValue[1]);
-		}
 	}
 
 	if (m_commandHistory.empty() || m_commandHistory.back() != consoleContext)
@@ -135,13 +118,56 @@ void DevConsole::Execute(std::string const& consoleContext, bool echoCommand)
 			m_commandHistory.erase(m_commandHistory.begin());
 		}
 	}
-
 	m_historyIndex = static_cast<int>(m_commandHistory.size());
+
+	auto iter = m_commands.find(tokens[0]);
+	if (iter == m_commands.end())
+	{
+		AddLine(kError, Stringf("Unknown command: %s", tokens[0].c_str()));
+		return;
+	}
+
+	EventArgs args;
+	for (size_t i = 1; i < tokens.size(); ++i)
+	{
+		std::string const& token      = tokens[i];
+		size_t const       firstEqual = token.find('=');
+		if (firstEqual == std::string::npos)
+		{
+			AddLine(kError, Stringf("Malformed argument '%s'; expected key=value", token.c_str()));
+			return;
+		}
+		if (firstEqual == 0)
+		{
+			AddLine(kError, Stringf("Argument key cannot be empty: '%s'", token.c_str()));
+			return;
+		}
+		if (firstEqual == token.size() - 1)
+		{
+			AddLine(kError, Stringf("Argument value cannot be empty: '%s'", token.c_str()));
+			return;
+		}
+		if (token.find('=', firstEqual + 1) != std::string::npos)
+		{
+			AddLine(kError, Stringf("Argument contains multiple '=' characters: '%s'", token.c_str()));
+			return;
+		}
+
+		std::string const key   = token.substr(0, firstEqual);
+		std::string const value = token.substr(firstEqual + 1);
+		if (args.HasValue(key))
+		{
+			AddLine(kError, Stringf("Duplicate argument: '%s'", key.c_str()));
+			return;
+		}
+		args.SetValue(key, value);
+	}
+
 	iter->second.m_func(args);
 	m_scrollToBottom = true;
 }
 
-void DevConsole::AddLine(Rgba8 const& color, std::string const& text)
+void DevConsole::AddLine(Color const& color, std::string const& text)
 {
 	Strings const splitLines = SplitStringOnDelimiter(text, '\n');
 	for (std::string const& splitLine : splitLines)
@@ -165,7 +191,8 @@ void DevConsole::Render()
 	float const          windowWidth  = std::max(560.f, maxWidth);
 	float const          windowHeight = std::max(320.f, maxHeight);
 	ImVec2 const         windowPos(
-			 viewport->WorkPos.x + margin, viewport->WorkPos.y + viewport->WorkSize.y - windowHeight - margin);
+		viewport->WorkPos.x + margin,
+		viewport->WorkPos.y + viewport->WorkSize.y - windowHeight - margin);
 	ImVec2 const windowSize(windowWidth, windowHeight);
 
 	ImGui::SetNextWindowPos(windowPos, ImGuiCond_Always);
@@ -383,9 +410,5 @@ void DevConsole::RecallHistory(int direction)
 
 bool DevConsole::IsRuntimeEnabled() const
 {
-#if defined(MING_EDITOR)
 	return false;
-#else
-	return true;
-#endif
 }

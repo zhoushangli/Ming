@@ -13,10 +13,7 @@ public:
 	CylinderZCollider3D()           = default;
 	~CylinderZCollider3D() override = default;
 
-	GameRaycastResult Raycast(RaycastInfo const& info) const override;
-
 protected:
-	void OnProcess(float deltaSeconds) override;
 	void RenderDebug() const;
 
 public:
@@ -24,4 +21,3 @@ public:
 	FloatRange m_localZRange  = FloatRange::ZeroToOne;
 	float      m_radius       = 0.5f;
 };
-

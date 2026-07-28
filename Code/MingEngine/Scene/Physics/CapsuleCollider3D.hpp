@@ -14,10 +14,7 @@ public:
 	~CapsuleCollider3D() override = default;
 	CapsuleCollider3D(Capsule3 const& capsule);
 
-	GameRaycastResult Raycast(RaycastInfo const& info) const override;
-
 protected:
-	void OnProcess(float deltaSeconds) override;
 	void RenderDebug() const;
 
 public:
@@ -25,4 +22,3 @@ public:
 	Vec3  m_localEnd   = Vec3::Zero;
 	float m_radius     = 0.5f;
 };
-

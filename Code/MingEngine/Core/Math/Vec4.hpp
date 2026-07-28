@@ -36,6 +36,8 @@ public:
 	void Normalize();
 	Vec4 GetNormalized() const;
 
+	static float DotProduct(Vec4 const& a, Vec4 const& b);
+
 public:
 	float x = 0.f;
 	float y = 0.f;

@@ -5,6 +5,8 @@
 #include "MingEngine/Core/Math/Vec3.hpp"
 #include "MingEngine/Core/Math/Vec4.hpp"
 
+using namespace Math;
+
 Matrix4x4 const Matrix4x4::Zero = Matrix4x4(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 
 Matrix4x4 const Matrix4x4::Identity = Matrix4x4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
@@ -139,8 +141,7 @@ Matrix4x4::Matrix4x4(
 	float iw,
 	float jw,
 	float kw,
-	float tw
-)
+	float tw)
 {
 	m_values[Ix] = ix;
 	m_values[Iy] = iy;
@@ -180,6 +181,15 @@ Vec3 const Matrix4x4::GetJBasis3D() const { return Vec3(m_values[Jx], m_values[J
 Vec3 const Matrix4x4::GetKBasis3D() const { return Vec3(m_values[Kx], m_values[Ky], m_values[Kz]); }
 
 Vec3 const Matrix4x4::GetTranslation3D() const { return Vec3(m_values[Tx], m_values[Ty], m_values[Tz]); }
+
+Vec3 const Matrix4x4::GetScale3D() const
+{
+	Vec3 i, j, k;
+	i = GetIBasis3D();
+	j = GetJBasis3D();
+	k = GetKBasis3D();
+	return Vec3(i.GetLength(), j.GetLength(), k.GetLength());
+}
 
 Vec4 const Matrix4x4::GetIBasis4D() const { return Vec4(m_values[Ix], m_values[Iy], m_values[Iz], m_values[Iw]); }
 
@@ -382,8 +392,8 @@ Matrix4x4 const Matrix4x4::MakeRotationDegreesZ(float rotationDegreesAboutZ)
 	return mat;
 }
 
-Matrix4x4 const
-Matrix4x4::MakeOrthoProjection(float left, float right, float bottom, float top, float zNear, float zFar)
+Matrix4x4 const Matrix4x4::MakeOrthoProjection(
+	float left, float right, float bottom, float top, float zNear, float zFar)
 {
 	Matrix4x4 ortho;
 	ortho.m_values[Ix] = 2.f / (right - left);
@@ -638,13 +648,23 @@ void Matrix4x4::Orthonormalize_XFwd_YLeft_ZUp2()
 
 Matrix4x4 Matrix4x4::GetOrthonormalInverse()
 {
-	Matrix4x4 inv = *this;
-	inv.SetTranslation3D(Vec3(0.f, 0.f, 0.f));
-	inv.Transpose();
+	Vec3 const scale = GetScale3D();
+	Vec3 const inverseScale = Vec3(1.f / scale.x, 1.f / scale.y, 1.f / scale.z);
+
+	Vec3 const iBasis = GetIBasis3D() * inverseScale.x;
+	Vec3 const jBasis = GetJBasis3D() * inverseScale.y;
+	Vec3 const kBasis = GetKBasis3D() * inverseScale.z;
+
+	Matrix4x4 inverseRotation;
+	inverseRotation.SetIJK3D(iBasis, jBasis, kBasis);
+	inverseRotation.Transpose();
 
 	Vec3 invTranslate(-m_values[Tx], -m_values[Ty], -m_values[Tz]);
-	inv.AppendTranslation3D(invTranslate);
 
-	return inv;
+	Matrix4x4 inverseMatrix = Matrix4x4::Identity;
+	inverseMatrix.Append(Matrix4x4::MakeNonUniformScale3D(inverseScale));
+	inverseMatrix.Append(inverseRotation);
+	inverseMatrix.Append(Matrix4x4::MakeTranslation3D(invTranslate));
+
+	return inverseMatrix;
 }
-

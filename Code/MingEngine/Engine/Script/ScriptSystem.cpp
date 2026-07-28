@@ -1,12 +1,21 @@
 #include "MingEngine/Engine/Script/ScriptSystem.hpp"
 
 #include "MingEngine/Core/ErrorWarningAssert.hpp"
+#include "MingEngine/Core/Object/RefCounted.hpp"
+#include "MingEngine/Core/Object/Resource.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Engine/File/FileSystem.hpp"
-#include "MingEngine/Engine/Script/ScriptBindings.hpp"
+#include "MingEngine/Engine/Script/RegisterBuildinType.hpp"
+#include "MingEngine/Engine/Script/ScriptBinder.hpp"
+#include "MingEngine/Engine/Script/ScriptGenerator.hpp"
 
+#include "ThirdParty/angelscript/add_on/scriptarray/scriptarray.h"
+#include "ThirdParty/angelscript/add_on/scriptbuilder/scriptbuilder.h"
+#include "ThirdParty/angelscript/add_on/scriptdictionary/scriptdictionary.h"
 #include "ThirdParty/angelscript/add_on/scriptstdstring/scriptstdstring.h"
 #include "ThirdParty/angelscript/include/angelscript.h"
+
+#include <memory>
 
 #if defined(_DEBUG)
 #pragma comment(lib, "ThirdParty/angelscript/lib/angelscript64d.lib")
@@ -28,32 +37,95 @@ void ScriptMessageCallback(asSMessageInfo const* message, void*)
 	DebuggerPrintf("%s (%d, %d): %s: %s\n", message->section, message->row, message->col, type, message->message);
 }
 
+void SearchAndRegisterScript(FileEntry const* entry, CScriptBuilder& builder)
+{
+	if (entry->IsDirectory())
+	{
+		for (auto const& child : entry->GetChildren())
+		{
+			SearchAndRegisterScript(child.get(), builder);
+		}
+	}
+	else
+	{
+		VirtualPath const& virtualPath = entry->GetVirtualPath();
+		if (virtualPath.HasExtension(".as"))
+		{
+			std::string scriptText;
+			if (!g_engine->m_fileSystem->ReadText(virtualPath, scriptText))
+			{
+				DebuggerPrintf("Failed to read script file: %s\n", virtualPath.CStr());
+				return;
+			}
+
+			int result =
+				builder.AddSectionFromMemory(virtualPath.CStr(), scriptText.c_str(), (unsigned int)scriptText.size());
+			if (result < 0)
+			{
+				DebuggerPrintf("Failed to add script section: %s\n", virtualPath.CStr());
+				return;
+			}
+		}
+	}
+}
+
+// Our include is more for IDE purposes, we do not need to include any script files
+// because we will scan the file system and add all scripts to the module
+static int IgnoreScriptInclude(char const* include, char const* from, CScriptBuilder* builder, void* userParam)
+{
+	include;   // Unused parameter
+	from;      // Unused parameter
+	builder;   // Unused parameter
+	userParam; // Unused parameter
+	return 0;
+}
+
 } // namespace
 
 ScriptSystem::ScriptSystem([[maybe_unused]] ScriptSystemConfig const& config) {}
 
+void ScriptSystem::BindMethods() {}
+
 void ScriptSystem::Startup()
 {
-	m_scriptEngine = asCreateScriptEngine();
-	GUARANTEE_OR_DIE(m_scriptEngine != nullptr, "Failed to create AngelScript engine.");
+	// m_scriptEngine = asCreateScriptEngine();
+	// GUARANTEE_OR_DIE(m_scriptEngine != nullptr, "Failed to create AngelScript engine.");
 
-	int result = m_scriptEngine->SetMessageCallback(asFUNCTION(ScriptMessageCallback), nullptr, asCALL_CDECL);
-	GUARANTEE_OR_DIE(result >= 0, "Failed to register AngelScript message callback.");
+	// int result = m_scriptEngine->SetMessageCallback(asFUNCTION(ScriptMessageCallback), nullptr, asCALL_CDECL);
+	// GUARANTEE_OR_DIE(result >= 0, "Failed to register AngelScript message callback.");
 
-	// Angel Script Add on
-	RegisterStdString(m_scriptEngine);
-	RegisterVec3(m_scriptEngine);
-	RegisterEulerAngles(m_scriptEngine);
-	RegisterMatrix4x4(m_scriptEngine);
+	// result = m_scriptEngine->SetEngineProperty(asEP_PROPERTY_ACCESSOR_MODE, 2);
+	// GUARANTEE_OR_DIE(result >= 0, "Failed to set AngelScript engine property.");
 
-	RegisterNativeObjectType(m_scriptEngine);
-	RegisterBridgeFunctions(m_scriptEngine);
-	GenerateBuiltinScript();
+	// // Angel Script Add on
+	// RegisterStdString(m_scriptEngine);
+	// RegisterVec2(m_scriptEngine);
+	// RegisterVec3(m_scriptEngine);
+	// RegisterVec4(m_scriptEngine);
+	// RegisterAABB2(m_scriptEngine);
+	// RegisterOBB2(m_scriptEngine);
+	// RegisterCapsule3(m_scriptEngine);
+	// RegisterEulerAngles(m_scriptEngine);
+	// RegisterMatrix4x4(m_scriptEngine);
+	// RegisterVariant(m_scriptEngine);
+
+	// RegisterScriptArray(m_scriptEngine, true);
+	// RegisterScriptDictionary(m_scriptEngine);
+
+	// RegisterNativeObjectType(m_scriptEngine);
+	// RegisterBridgeFunctions(m_scriptEngine);
+
+	// GenerateBuiltinScript(m_scriptEngine);
+
+	// if (!BuildGameScriptModule())
+	// {
+	// 	ERROR_AND_DIE("Failed to build game script module.");
+	// }
 }
 
 void ScriptSystem::Shutdown()
 {
-	m_loadedScripts.clear();
+	m_loadedScriptInfos.clear();
 
 	if (m_scriptEngine != nullptr)
 	{
@@ -66,128 +138,101 @@ void ScriptSystem::BeginFrame() {}
 
 void ScriptSystem::EndFrame() {}
 
-std::unique_ptr<ScriptInstance> ScriptSystem::CreateInstance(std::string const& path, Object& owner)
+std::unique_ptr<ScriptInstance> ScriptSystem::CreateInstance(Ref<Script> const& script, Object& owner)
 {
-	ScriptModule* scriptModule = GetOrCreateModule(path);
-	if (scriptModule == nullptr)
+	ScriptInstance* instance   = new ScriptInstance();
+	asITypeInfo*    scriptType = m_loadedScriptInfos[script->GetName()];
+	void*           object     = m_scriptEngine->CreateScriptObject(scriptType);
+
+	instance->m_script = script;
+	instance->m_owner  = &owner;
+	instance->m_module = m_scriptModule;
+	instance->m_object = static_cast<asIScriptObject*>(object);
+
+	asUINT propertyCount = instance->m_object->GetPropertyCount();
+	for (asUINT propertyIndex = 0; propertyIndex < propertyCount; ++propertyIndex)
 	{
-		DebuggerPrintf("Failed to load script module for path: %s\n", path.c_str());
-		return std::unique_ptr<ScriptInstance>();
+		char const* propertyName = instance->m_object->GetPropertyName(propertyIndex);
+		if (propertyName != nullptr && strcmp(propertyName, "nativePtr") == 0)
+		{
+			void* ownerPropertyAddress                   = instance->m_object->GetAddressOfProperty(propertyIndex);
+			*static_cast<Object**>(ownerPropertyAddress) = &owner;
+			break;
+		}
 	}
 
-	std::unique_ptr<ScriptInstance> instance = ScriptInstance::Create(*scriptModule, owner);
-	if (instance == nullptr)
-	{
-		return nullptr;
-	}
+	instance->m_enterTreeFunction = scriptType->GetMethodByDecl("void _EnterTree()");
+	instance->m_exitTreeFunction  = scriptType->GetMethodByDecl("void _ExitTree()");
+	instance->m_readyFunction     = scriptType->GetMethodByDecl("void _Ready()");
+	instance->m_processFunction   = scriptType->GetMethodByDecl("void _Process(float)");
 
-	return instance;
+	return std::unique_ptr<ScriptInstance>(instance);
 }
 
-ScriptModule* ScriptSystem::GetOrCreateModule(std::string const& path)
+bool ScriptSystem::BuildGameScriptModule()
 {
-	VirtualPath virtualPath;
-	if (!virtualPath.Parse(std::string(path)))
+	CScriptBuilder builder;
+	builder.SetIncludeCallback(IgnoreScriptInclude, nullptr);
+
+	int result = builder.StartNewModule(m_scriptEngine, "Game");
+	if (result < 0)
 	{
-		return nullptr;
+		DebuggerPrintf("Failed to start game script module");
+		return false;
 	}
 
-	return GetOrCreateModule(virtualPath);
-}
-
-ScriptModule* ScriptSystem::GetOrCreateModule(VirtualPath const& virtualPath)
-{
-	auto it = m_loadedScripts.find(virtualPath);
-	if (it != m_loadedScripts.end())
-	{
-		return &it->second;
-	}
-
-	ScriptResourceIdentity identity;
-
-	if (!ScriptResourceIdentity::Create(virtualPath, identity))
-	{
-		DebuggerPrintf("Invalid script path: %s\n", virtualPath.ToString().c_str());
-		return nullptr;
-	}
-
-	std::string scriptText;
-	if (!g_engine->m_fileSystem->ReadText(virtualPath, scriptText))
-	{
-		DebuggerPrintf("Failed to read script file: %s\n", virtualPath.ToString().c_str());
-		return nullptr;
-	}
-
-	// asIScriptModule is an empty handle managed by the AngelScript engine
-	// When we call m_scriptEngine->ShutDownAndRelease(); all asIScriptModule instances will be invalidated, so we don't
-	// need to worry about cleaning them up individually
-	std::string      moduleName   = virtualPath.ToString();
-	asIScriptModule* scriptModule = m_scriptEngine->GetModule(moduleName.c_str(), asGM_ALWAYS_CREATE);
-
-	if (scriptModule == nullptr)
-	{
-		DebuggerPrintf("Failed to create script module for: %s\n", virtualPath.ToString().c_str());
-		return nullptr;
-	}
-
-	// Add wrapper script to the module
+	// 1) Add MingEngine.generated.as to the module
 	std::string wrapperText;
-	VirtualPath wrapperPath;
-	if (!wrapperPath.Parse("res://Scripts/MingEngine.generated.as"))
+	if (!g_engine->m_fileSystem->ReadText(kGeneratedScriptResourcePath, wrapperText))
 	{
-		DebuggerPrintf("Invalid wrapper script path: %s\n", wrapperPath.ToString().c_str());
-		return nullptr;
+		DebuggerPrintf("Failed to read script file: %s\n", kGeneratedScriptResourcePath);
+		m_scriptEngine->DiscardModule("Game");
+		return false;
 	}
 
-	if (!g_engine->m_fileSystem->ReadText(wrapperPath, wrapperText))
-	{
-		DebuggerPrintf("Failed to read script file: %s\n", virtualPath.ToString().c_str());
-		return nullptr;
-	}
-
-	int result = scriptModule->AddScriptSection("MingEngine.as", wrapperText.c_str(), wrapperText.size());
-
+	result =
+		builder.AddSectionFromMemory("MingEngine.generated.as", wrapperText.c_str(), (unsigned int)wrapperText.size());
 	if (result < 0)
 	{
 		DebuggerPrintf("Failed to add MingEngine wrapper script.\n");
-		m_scriptEngine->DiscardModule(moduleName.c_str());
-		return nullptr;
+		m_scriptEngine->DiscardModule("Game");
+		return false;
 	}
 
-	// Add the actual script to the module
-	result = scriptModule->AddScriptSection(virtualPath.ToString().c_str(), scriptText.c_str(), scriptText.size());
+	// 2) Loop through file system and add all scripts to the module
+	FileEntry const* rootEntry = g_engine->m_fileSystem->GetResourceRootEntry();
+	if (rootEntry == nullptr)
+	{
+		DebuggerPrintf("Failed to get resource root entry.\n");
+		m_scriptEngine->DiscardModule("Game");
+		return false;
+	}
 
+	SearchAndRegisterScript(rootEntry, builder);
+
+	result = builder.BuildModule();
 	if (result < 0)
 	{
-		DebuggerPrintf("Failed to add script section for: %s\n", virtualPath.ToString().c_str());
-		m_scriptEngine->DiscardModule(moduleName.c_str());
-		return nullptr;
+		DebuggerPrintf("Failed to build game script module");
+		m_scriptEngine->DiscardModule("Game");
+		return false;
 	}
 
-	result = scriptModule->Build();
-	if (result < 0)
+	m_scriptModule = builder.GetModule();
+
+	m_loadedScriptInfos.clear();
+
+	asUINT typeCount = m_scriptModule->GetObjectTypeCount();
+	for (asUINT i = 0; i < typeCount; ++i)
 	{
-		DebuggerPrintf("Failed to build script module for: %s\n", virtualPath.ToString().c_str());
-		m_scriptEngine->DiscardModule(moduleName.c_str());
-		return nullptr;
+		asITypeInfo* typeInfo = m_scriptModule->GetObjectTypeByIndex(i);
+		if (typeInfo == nullptr)
+			continue;
+
+		char const* name = typeInfo->GetName();
+
+		m_loadedScriptInfos[name != nullptr ? name : ""] = typeInfo;
 	}
 
-	asITypeInfo* scriptType = scriptModule->GetTypeInfoByName(identity.GetClassName().c_str());
-
-	if (scriptType == nullptr)
-	{
-		DebuggerPrintf(
-			"Script '%s' does not define class '%s'.\n",
-			virtualPath.ToString().c_str(),
-			identity.GetClassName().c_str());
-
-		m_scriptEngine->DiscardModule(moduleName.c_str());
-		return nullptr;
-	}
-
-	ScriptModule module(std::move(identity), scriptModule, scriptType);
-
-	m_loadedScripts[virtualPath] = std::move(module);
-
-	return &m_loadedScripts[virtualPath];
+	return true;
 }

@@ -1,23 +1,73 @@
 #include "MingEngine/Editor/UI/InspectorPanel.hpp"
 
-#include "MingEngine/Editor/EditorNode.hpp"
-#include "MingEngine/Editor/UI/EditorUIContext.hpp"
-#include "MingEngine/Editor/UI/InspectorProperty.hpp"
 #include "MingEngine/Core/Object/ClassDatabase.hpp"
+#include "MingEngine/Editor/EditorNode.hpp"
+#include "MingEngine/Editor/UI/EditorIcons.hpp"
+#include "MingEngine/Editor/UI/EditorUIContext.hpp"
+#include "MingEngine/Editor/UI/EditorUIStyle.hpp"
+#include "MingEngine/Editor/UI/InspectorProperty.hpp"
 #include "MingEngine/Scene/Core/Node.hpp"
 #include "MingEngine/Scene/Core/SceneTree.hpp"
 
 #include "ThirdParty/imgui/imgui.h"
 
+namespace
+{
+void DrawInspectorClassHeader(std::string const& className)
+{
+	constexpr float iconTextSpacing = 6.f;
+
+	ImVec2 const      iconSize       = EditorUIStyle::InspectorHeaderIconSize();
+	float const       headerHeight   = EditorUIStyle::InspectorHeaderHeight();
+	float const       availableWidth = ImGui::GetContentRegionAvail().x;
+	ImVec2 const      headerMin      = ImGui::GetCursorScreenPos();
+	ImVec2 const      headerMax(headerMin.x + availableWidth, headerMin.y + headerHeight);
+	std::string const headerId = "##InspectorClassHeader_" + className;
+
+	ImGui::InvisibleButton(headerId.c_str(), ImVec2(availableWidth, headerHeight));
+
+	ImDrawList* drawList = ImGui::GetWindowDrawList();
+	drawList->AddRectFilled(
+		headerMin,
+		headerMax,
+		ImGui::ColorConvertFloat4ToU32(EditorUIStyle::ControlBackgroundColor()),
+		3.f);
+
+	ImTextureID const textureId    = EditorIcons::GetIconId(className, "Node");
+	ImVec2 const      textSize     = ImGui::CalcTextSize(className.c_str());
+	float const       contentWidth = iconSize.x + iconTextSpacing + textSize.x;
+	float const       contentX     = headerMin.x + (availableWidth - contentWidth) * 0.5f;
+	float const       iconY        = headerMin.y + (headerHeight - iconSize.y) * 0.5f;
+	float const       textY        = headerMin.y + (headerHeight - textSize.y) * 0.5f;
+
+	if (textureId != ImTextureID{})
+	{
+		EditorIcons::AddImage(
+			drawList,
+			textureId,
+			ImVec2(contentX, iconY),
+			ImVec2(contentX + iconSize.x, iconY + iconSize.y));
+	}
+
+	ImU32 const  textColor = ImGui::GetColorU32(ImGuiCol_Text);
+	ImVec2 const textPos(contentX + iconSize.x + iconTextSpacing, textY);
+	drawList->AddText(textPos, textColor, className.c_str());
+	drawList->AddText(ImVec2(textPos.x + 1.f, textPos.y), textColor, className.c_str());
+}
+} // namespace
+
 InspectorPanel::InspectorPanel() : EditorPanel("Inspector") {}
 
 InspectorPanel::~InspectorPanel()
 {
-	for (InspectorProperty* p : m_properties)
+	for (PropertyGroup& group : m_propertyGroups)
 	{
-		delete p;
+		for (PropertyEntry& entry : group.m_properties)
+		{
+			delete entry.m_property;
+		}
 	}
-	m_properties.clear();
+	m_propertyGroups.clear();
 }
 
 // ——— Selection & inheritance chain ———
@@ -46,75 +96,68 @@ void InspectorPanel::BuildInheritanceChain(std::string const& className)
 
 void InspectorPanel::RebuildProperties(EditorUIContext& context)
 {
-	// 1) Clean up old properties
-	for (InspectorProperty* p : m_properties)
+	for (PropertyGroup& group : m_propertyGroups)
 	{
-		delete p;
+		for (PropertyEntry& entry : group.m_properties)
+		{
+			delete entry.m_property;
+		}
 	}
-	m_properties.clear();
+	m_propertyGroups.clear();
 
-	// 2) Resolve node
 	Node* node = context.m_sceneTree->ResolveNode(m_cachedHandle);
 	if (node == nullptr)
 	{
 		return;
 	}
 
-	// 3) Get properties for the active tab class
-	if (m_activeTabIndex >= m_inheritanceChain.size())
+	for (std::string const& className : m_inheritanceChain)
 	{
-		return;
-	}
+		PropertyGroup group;
+		group.m_className = className;
 
-	std::string const& className = m_inheritanceChain[m_activeTabIndex];
-	std::vector<PropertyInfo> properties = ClassDatabase::GetProperties(className);
-
-	for (PropertyInfo& prop : properties)
-	{
-		if (!prop.HasUsage(PropertyInfo::UsageFlags::Inspector))
+		std::vector<PropertyInfo> properties = ClassDatabase::GetProperties(className);
+		for (PropertyInfo& prop : properties)
 		{
-			continue;
-		}
-
-		// Get current value via getter
-		Variant value;
-		MethodBind const* getter = prop.GetGetter();
-		if (getter != nullptr)
-		{
-			value = getter->Invoke(*node, {});
-		}
-
-		std::string labelId = "##" + className + "::" + prop.m_name;
-
-		InspectorProperty* ip = InspectorProperty::Create(std::move(prop), std::move(value), std::move(labelId));
-		if (ip != nullptr)
-		{
-			m_properties.push_back(ip);
-		}
-	}
-}
-
-// ——— Tab bar ———
-
-void InspectorPanel::RenderTabBar()
-{
-	if (ImGui::BeginTabBar("##ClassTabs", ImGuiTabBarFlags_AutoSelectNewTabs))
-	{
-		for (size_t i = 0; i < m_inheritanceChain.size(); ++i)
-		{
-			std::string tabLabel = m_inheritanceChain[i] + "##tab";
-			if (ImGui::BeginTabItem(tabLabel.c_str()))
+			if (!prop.HasUsage(PropertyInfo::UsageFlags::Inspector))
 			{
-				m_activeTabIndex = i;
-				ImGui::EndTabItem();
+				continue;
+			}
+
+			std::string                             labelId   = "##" + className + "::" + prop.m_name;
+			MethodBind const*                       setter    = prop.GetSetter();
+			MethodBind const*                       getter    = prop.GetGetter();
+			InspectorProperty::ValueChangedCallback onChanged = [node, setter, getter](Variant const& value)
+			{
+				if (node != nullptr && setter != nullptr && getter != nullptr)
+				{
+					Variant const oldValue = getter->Invoke(node, {});
+					if (oldValue == value)
+					{
+						return;
+					}
+					setter->Invoke(node, { value });
+					if (EditorNode::Get() != nullptr)
+					{
+						EditorNode::Get()->MarkSceneDirty();
+					}
+				}
+			};
+
+			InspectorProperty* ip =
+				InspectorProperty::Create(std::move(prop), std::move(labelId), std::move(onChanged));
+			if (ip != nullptr)
+			{
+				group.m_properties.push_back(PropertyEntry{ ip, getter });
 			}
 		}
 
-		ImGui::EndTabBar();
+		if (!group.m_properties.empty())
+		{
+			m_propertyGroups.push_back(std::move(group));
+		}
 	}
 }
-
-// ——— Main render ———
 
 void InspectorPanel::OnRender(EditorUIContext& context)
 {
@@ -149,51 +192,55 @@ void InspectorPanel::OnRender(EditorUIContext& context)
 	bool const selectionChanged = (m_cachedHandle != handle);
 	if (selectionChanged)
 	{
-		m_cachedHandle   = handle;
-		m_activeTabIndex = 0;
+		m_cachedHandle = handle;
 		BuildInheritanceChain(node->GetClassName());
 	}
 
-	// 3) Tab switch detection
-	size_t const previousTabIndex = m_activeTabIndex;
-
-	// 4) Render class tab bar
-	if (!m_inheritanceChain.empty())
-	{
-		RenderTabBar();
-		ImGui::Separator();
-	}
-
-	// Clamp tab index
-	if (m_activeTabIndex >= m_inheritanceChain.size())
-	{
-		m_activeTabIndex = 0;
-	}
-
-	// 5) Rebuild property list when selection or tab changes
-	if (selectionChanged || m_activeTabIndex != previousTabIndex)
+	// 3) Rebuild property list when selection changes
+	if (selectionChanged)
 	{
 		RebuildProperties(context);
 	}
 
 	// 6) Render properties — each InspectorProperty owns its full layout
-	if (m_properties.empty())
+	if (m_propertyGroups.empty())
 	{
-		if (m_activeTabIndex < m_inheritanceChain.size())
-		{
-			ImGui::TextUnformatted(
-				("No editable properties for " + m_inheritanceChain[m_activeTabIndex]).c_str());
-		}
+		ImGui::TextUnformatted("No editable properties");
 	}
 	else
 	{
-		for (InspectorProperty* prop : m_properties)
+		bool isFirstGroup = true;
+		for (PropertyGroup& group : m_propertyGroups)
 		{
-			prop->Render();
-			prop->Apply(node);
+			if (!isFirstGroup)
+			{
+				ImGui::Dummy(ImVec2(0.f, 8.f));
+				ImGui::Separator();
+				ImGui::Dummy(ImVec2(0.f, 8.f));
+			}
+
+			DrawInspectorClassHeader(group.m_className);
+			ImGui::Dummy(ImVec2(0.f, 4.f));
+
+			for (PropertyEntry const& entry : group.m_properties)
+			{
+				if (entry.m_property == nullptr)
+				{
+					continue;
+				}
+
+				Variant value;
+				if (entry.m_getter != nullptr)
+				{
+					value = entry.m_getter->Invoke(node, {});
+				}
+
+				entry.m_property->Render(context, value);
+			}
+
+			isFirstGroup = false;
 		}
 	}
 
 	ImGui::End();
 }
-

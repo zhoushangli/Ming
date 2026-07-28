@@ -38,6 +38,13 @@ public:
 	// Static factory methods
 	static Vec2 MakeFromPolarDegrees(float degrees, float length = 1.f);
 	static Vec2 MakeFromPolarRadians(float radians, float length = 1.f);
+	static float DotProduct(Vec2 const& a, Vec2 const& b);
+	static float CrossProduct(Vec2 const& a, Vec2 const& b);
+	static float GetProjectedLength(Vec2 const& vector, Vec2 const& basis);
+	static Vec2  GetProjectedVector(Vec2 const& vector, Vec2 const& basis);
+	static float GetAngleDegreesBetween(Vec2 const& a, Vec2 const& b);
+	static Vec2  Interpolate(Vec2 const& start, Vec2 const& end, float fraction);
+	static Vec2  InterpolateClamped(Vec2 const& start, Vec2 const& end, float fraction);
 
 	// Getters
 	float GetLength() const;

@@ -3,6 +3,8 @@
 #include "MingEngine/Core/ErrorWarningAssert.hpp"
 #include "MingEngine/Core/Math/MathUtils.hpp"
 
+using namespace Math;
+
 namespace
 {
 constexpr float kScaleEpsilon = 1e-5f;
@@ -11,8 +13,7 @@ void GuaranteeScaleIsInvertible(Vec3 const& scale)
 {
 	GUARANTEE_OR_DIE(
 		Abs(scale.x) > kScaleEpsilon && Abs(scale.y) > kScaleEpsilon && Abs(scale.z) > kScaleEpsilon,
-		"Transform3D scale must be non-zero to build an inverse matrix."
-	);
+		"Transform3D scale must be non-zero to build an inverse matrix.");
 }
 } // namespace
 
@@ -103,4 +104,3 @@ void Transform3D::MarkDirty()
 	m_isMatrixDirty        = true;
 	m_isInverseMatrixDirty = true;
 }
-

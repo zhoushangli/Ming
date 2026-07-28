@@ -6,6 +6,8 @@
 
 #include <string>
 
+using namespace Math;
+
 IntVec3 const IntVec3::Zero = IntVec3(0, 0, 0);
 
 IntVec3::IntVec3(Vec3 const& copyFrom)
@@ -25,8 +27,7 @@ void IntVec3::SetFromText(char const* text)
 	GUARANTEE_OR_DIE(
 		firstComma != std::string::npos && secondComma != std::string::npos
 			&& value.find(',', secondComma + 1) == std::string::npos,
-		"IntVec3 text must be formatted as x,y,z"
-	);
+		"IntVec3 text must be formatted as x,y,z");
 
 	x = std::stoi(value.substr(0, firstComma));
 	y = std::stoi(value.substr(firstComma + 1, secondComma - firstComma - 1));
@@ -60,4 +61,3 @@ void IntVec3::operator-=(IntVec3 const& vecToSubtract)
 	y -= vecToSubtract.y;
 	z -= vecToSubtract.z;
 }
-

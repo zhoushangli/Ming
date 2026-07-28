@@ -1,7 +1,9 @@
 #include "MingEngine/Core/Math/MathUtils.hpp"
 
-#include "MathUtils.hpp"
 #include <math.h>
+
+namespace Math
+{
 
 float Abs(float value) { return (value < 0.f) ? -value : value; }
 
@@ -98,8 +100,7 @@ bool DoDiscsOverlap2D(Disc2 const& discA, Disc2 const& discB)
 }
 
 bool DoDiscAndInfiniteLineOverlap2D(
-	Vec2 const& discCenter, float discRadius, Vec2 const& lineStart, Vec2 const& lineEnd
-)
+	Vec2 const& discCenter, float discRadius, Vec2 const& lineStart, Vec2 const& lineEnd)
 {
 	Vec2  nearestPoint = GetNearestPointOnInfiniteLine2D(discCenter, lineStart, lineEnd);
 	float distSquared  = GetDistanceSquared2D(discCenter, nearestPoint);
@@ -145,8 +146,7 @@ bool DoDiscAndAABBOverlap2D(Disc2 const& disc, AABB2 const& box)
 }
 
 bool DoDiscAndCapsuleOverlap2D(
-	Vec2 const& discCenter, float discRadius, Vec2 const& capsuleStart, Vec2 const& capsuleEnd, float capsuleRadius
-)
+	Vec2 const& discCenter, float discRadius, Vec2 const& capsuleStart, Vec2 const& capsuleEnd, float capsuleRadius)
 {
 	Vec2  nearestPoint = GetNearestPointOnLineSegment2D(discCenter, capsuleStart, capsuleEnd);
 	float distSquared  = GetDistanceSquared2D(discCenter, nearestPoint);
@@ -161,8 +161,7 @@ bool DoDiscAndCapsuleOverlap2D(Disc2 const& disc, Capsule2 const& capsule)
 		disc.m_radius,
 		capsule.m_bone.m_start,
 		capsule.m_bone.m_end,
-		capsule.m_radius
-	);
+		capsule.m_radius);
 }
 
 bool DoDiscAndOBBOverlap2D(Vec2 const& discCenter, float discRadius, OBB2 const& box)
@@ -208,8 +207,7 @@ bool DoCylinderZsOverlap3D(
 	FloatRange const& cylinder1MinMaxZ,
 	Vec2 const&       cylinder2CenterXY,
 	float             cylinder2Radius,
-	FloatRange const& cylinder2MinMaxZ
-)
+	FloatRange const& cylinder2MinMaxZ)
 {
 	float distSquaredXY = GetDistanceSquared2D(cylinder1CenterXY, cylinder2CenterXY);
 	float radiiSum      = cylinder1Radius + cylinder2Radius;
@@ -220,8 +218,7 @@ bool DoCylinderZsOverlap3D(
 }
 
 bool DoCylinderZsOverlap3D(
-	Vec3 const& centerA, float radiusA, float heightA, Vec3 const& centerB, float radiusB, float heightB
-)
+	Vec3 const& centerA, float radiusA, float heightA, Vec3 const& centerB, float radiusB, float heightB)
 {
 	FloatRange rangeA(centerA.z - (heightA * 0.5f), centerA.z + (heightA * 0.5f));
 	FloatRange rangeB(centerB.z - (heightB * 0.5f), centerB.z + (heightB * 0.5f));
@@ -231,8 +228,7 @@ bool DoCylinderZsOverlap3D(
 		rangeA,
 		Vec2(centerB.x, centerB.y),
 		radiusB,
-		rangeB
-	);
+		rangeB);
 }
 
 bool DoSphereAndAABBOverlap3D(Vec3 const& sphereCenter, float sphereRadius, Vec3 const& boxMins, Vec3 const& boxMaxs)
@@ -257,8 +253,7 @@ bool DoCylinderZAndAABBOverlap3D(
 	float             cylinderRadius,
 	FloatRange const& cylinderMinMaxZ,
 	Vec3 const&       boxMins,
-	Vec3 const&       boxMaxs
-)
+	Vec3 const&       boxMaxs)
 {
 	float nearestX    = GetClamped(cylinderCenterXY.x, boxMins.x, boxMaxs.x);
 	float nearestY    = GetClamped(cylinderCenterXY.y, boxMins.y, boxMaxs.y);
@@ -272,8 +267,7 @@ bool DoCylinderZAndAABBOverlap3D(
 }
 
 bool DoCylinderZAndAABBOverlap3D(
-	Vec2 const& cylinderCenterXY, float cylinderRadius, FloatRange const& cylinderMinMaxZ, AABB3 const& box
-)
+	Vec2 const& cylinderCenterXY, float cylinderRadius, FloatRange const& cylinderMinMaxZ, AABB3 const& box)
 {
 	return DoCylinderZAndAABBOverlap3D(cylinderCenterXY, cylinderRadius, cylinderMinMaxZ, box.m_mins, box.m_maxs);
 }
@@ -288,8 +282,7 @@ bool DoCylinderZAndSphereOverlap3D(
 	float             cylinderRadius,
 	FloatRange const& cylinderMinMaxZ,
 	Vec3 const&       sphereCenter,
-	float             sphereRadius
-)
+	float             sphereRadius)
 {
 	float cylinderMinZ = cylinderMinMaxZ.m_min;
 	float cylinderMaxZ = cylinderMinMaxZ.m_max;
@@ -308,8 +301,7 @@ bool DoCylinderZAndSphereOverlap3D(CylinderZ3 const& cylinder, Sphere3 const& sp
 		cylinder.m_radius,
 		cylinder.m_minMaxZ,
 		sphere.m_center,
-		sphere.m_radius
-	);
+		sphere.m_radius);
 }
 
 // Capsule overlap = closest distance between their center segments <= radius sum.
@@ -363,13 +355,11 @@ bool DoCapsulesOverlap3D(Capsule3 const& capsuleA, Capsule3 const& capsuleB)
 
 		UpdateClosestPoint(
 			capsuleA.m_start,
-			GetNearestPointOnLine3D(capsuleA.m_start, capsuleB.m_start, capsuleB.m_end)
-		);
+			GetNearestPointOnLine3D(capsuleA.m_start, capsuleB.m_start, capsuleB.m_end));
 		UpdateClosestPoint(capsuleA.m_end, GetNearestPointOnLine3D(capsuleA.m_end, capsuleB.m_start, capsuleB.m_end));
 		UpdateClosestPoint(
 			capsuleB.m_start,
-			GetNearestPointOnLine3D(capsuleB.m_start, capsuleA.m_start, capsuleA.m_end)
-		);
+			GetNearestPointOnLine3D(capsuleB.m_start, capsuleA.m_start, capsuleA.m_end));
 		UpdateClosestPoint(capsuleB.m_end, GetNearestPointOnLine3D(capsuleB.m_end, capsuleA.m_start, capsuleA.m_end));
 	}
 
@@ -413,36 +403,21 @@ void TransformPositionXY3D(Vec3& pos, Vec2 const& iBasisXY, Vec2 const& jBasisXY
 
 float Interpolate(float start, float end, float fraction) { return start * (1.0f - fraction) + end * fraction; }
 
-Vec3 Interpolate(Vec3 const& start, Vec3 const& end, float fraction)
-{
-	return Vec3(
-		Interpolate(start.x, end.x, fraction),
-		Interpolate(start.y, end.y, fraction),
-		Interpolate(start.z, end.z, fraction)
-	);
-}
+Vec3 Interpolate(Vec3 const& start, Vec3 const& end, float fraction) { return Vec3::Interpolate(start, end, fraction); }
 
-Rgba8 Interpolate(Rgba8 const& start, Rgba8 const& end, float fraction)
+Color Interpolate(Color const& start, Color const& end, float fraction)
 {
-	float r = Interpolate(NormalizeByte(start.r), NormalizeByte(end.r), fraction);
-	float g = Interpolate(NormalizeByte(start.g), NormalizeByte(end.g), fraction);
-	float b = Interpolate(NormalizeByte(start.b), NormalizeByte(end.b), fraction);
-	float a = Interpolate(NormalizeByte(start.a), NormalizeByte(end.a), fraction);
+	float r = Interpolate(::NormalizeByte(start.r), ::NormalizeByte(end.r), fraction);
+	float g = Interpolate(::NormalizeByte(start.g), ::NormalizeByte(end.g), fraction);
+	float b = Interpolate(::NormalizeByte(start.b), ::NormalizeByte(end.b), fraction);
+	float a = Interpolate(::NormalizeByte(start.a), ::NormalizeByte(end.a), fraction);
 
-	return Rgba8(DenormalizeByte(r), DenormalizeByte(g), DenormalizeByte(b), DenormalizeByte(a));
+	return Color(::DenormalizeByte(r), ::DenormalizeByte(g), ::DenormalizeByte(b), ::DenormalizeByte(a));
 }
 
 EulerAngles Interpolate(EulerAngles const& start, EulerAngles const& end, float fraction)
 {
-	float yawDisp   = GetShortestAngularDispDegrees(start.m_yawDegrees, end.m_yawDegrees);
-	float pitchDisp = GetShortestAngularDispDegrees(start.m_pitchDegrees, end.m_pitchDegrees);
-	float rollDisp  = GetShortestAngularDispDegrees(start.m_rollDegrees, end.m_rollDegrees);
-
-	return EulerAngles(
-		start.m_yawDegrees + yawDisp * fraction,
-		start.m_pitchDegrees + pitchDisp * fraction,
-		start.m_rollDegrees + rollDisp * fraction
-	);
+	return EulerAngles::Interpolate(start, end, fraction);
 }
 
 float SmoothStart2(float t) { return t * t; }
@@ -505,10 +480,7 @@ float SmoothStop6(float t)
 	return 1.f - omt2 * omt2 * omt2;
 }
 
-float SmoothStep3(float t)
-{
-	return -2 * t * t * t + 3 * t * t;
-}
+float SmoothStep3(float t) { return -2 * t * t * t + 3 * t * t; }
 
 float SmoothStep5(float t)
 {
@@ -603,8 +575,7 @@ Vec2 ComputeCubicBezier2D(Vec2 const& A, Vec2 const& B, Vec2 const& C, Vec2 cons
 }
 
 Vec2 ComputeQuinticBezier2D(
-	Vec2 const& A, Vec2 const& B, Vec2 const& C, Vec2 const& D, Vec2 const& E, Vec2 const& F, float t
-)
+	Vec2 const& A, Vec2 const& B, Vec2 const& C, Vec2 const& D, Vec2 const& E, Vec2 const& F, float t)
 {
 	Vec2 const ab = Vec2(Interpolate(A.x, B.x, t), Interpolate(A.y, B.y, t));
 	Vec2 const bc = Vec2(Interpolate(B.x, C.x, t), Interpolate(B.y, C.y, t));
@@ -640,8 +611,7 @@ Vec3 ComputeCubicBezier3D(Vec3 const& A, Vec3 const& B, Vec3 const& C, Vec3 cons
 }
 
 Vec3 ComputeQuinticBezier3D(
-	Vec3 const& A, Vec3 const& B, Vec3 const& C, Vec3 const& D, Vec3 const& E, Vec3 const& F, float t
-)
+	Vec3 const& A, Vec3 const& B, Vec3 const& C, Vec3 const& D, Vec3 const& E, Vec3 const& F, float t)
 {
 	Vec3 const ab = Interpolate(A, B, t);
 	Vec3 const bc = Interpolate(B, C, t);
@@ -672,11 +642,10 @@ float InterpolateClamped(float start, float end, float fraction)
 
 Vec3 InterpolateClamped(Vec3 const& start, Vec3 const& end, float fraction)
 {
-	float f = GetClampedZeroToOne(fraction);
-	return Interpolate(start, end, f);
+	return Vec3::InterpolateClamped(start, end, fraction);
 }
 
-Rgba8 InterpolateClamped(Rgba8 const& start, Rgba8 const& end, float fraction)
+Color InterpolateClamped(Color const& start, Color const& end, float fraction)
 {
 	float f = GetClampedZeroToOne(fraction);
 	return Interpolate(start, end, f);
@@ -684,8 +653,7 @@ Rgba8 InterpolateClamped(Rgba8 const& start, Rgba8 const& end, float fraction)
 
 EulerAngles InterpolateClamped(EulerAngles const& start, EulerAngles const& end, float fraction)
 {
-	float f = GetClampedZeroToOne(fraction);
-	return Interpolate(start, end, f);
+	return EulerAngles::InterpolateClamped(start, end, fraction);
 }
 
 float GetFractionWithinRange(float value, float start, float end) { return (value - start) / (end - start); }
@@ -808,18 +776,15 @@ float GetTurnedTowardDegrees(float currentDegrees, float goalDegrees, float maxD
 	}
 }
 
-float DotProduct2D(Vec2 const& a, Vec2 const& b) { return a.x * b.x + a.y * b.y; }
+float DotProduct2D(Vec2 const& a, Vec2 const& b) { return Vec2::DotProduct(a, b); }
 
-float DotProduct3D(Vec3 const& a, Vec3 const& b) { return a.x * b.x + a.y * b.y + a.z * b.z; }
+float DotProduct3D(Vec3 const& a, Vec3 const& b) { return Vec3::DotProduct(a, b); }
 
-float DotProduct4D(Vec4 const& a, Vec4 const& b) { return a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w; }
+float DotProduct4D(Vec4 const& a, Vec4 const& b) { return Vec4::DotProduct(a, b); }
 
-float CrossProduct2D(Vec2 const& a, Vec2 const& b) { return a.x * b.y - a.y * b.x; }
+float CrossProduct2D(Vec2 const& a, Vec2 const& b) { return Vec2::CrossProduct(a, b); }
 
-Vec3 CrossProduct3D(Vec3 const& a, Vec3 const& b)
-{
-	return Vec3(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);
-}
+Vec3 CrossProduct3D(Vec3 const& a, Vec3 const& b) { return Vec3::CrossProduct(a, b); }
 
 Matrix4x4 GetBillboardTransform(
 	BillboardType    billboardType,
@@ -1094,8 +1059,7 @@ bool PushDiscOutOfFixedLine2D(Disc2& discToPush, LineSegment2 const& line)
 }
 
 bool PushDiscOutOfFixedCapsule2D(
-	Vec2& discCenter, float discRadius, Vec2 const& capsuleStart, Vec2 const& capsuleEnd, float capsuleRadius
-)
+	Vec2& discCenter, float discRadius, Vec2 const& capsuleStart, Vec2 const& capsuleEnd, float capsuleRadius)
 {
 	return PushDiscOutOfFixedLine2D(discCenter, discRadius + capsuleRadius, capsuleStart, capsuleEnd);
 }
@@ -1107,8 +1071,7 @@ bool PushDiscOutOfFixedCapsule2D(Disc2& discToPush, Capsule2 const& capsule)
 		discToPush.m_radius,
 		capsule.m_bone.m_start,
 		capsule.m_bone.m_end,
-		capsule.m_radius
-	);
+		capsule.m_radius);
 }
 
 bool PushDiscOutOfFixedOBB2D(Vec2& discCenter, float discRadius, OBB2 const& box)
@@ -1122,34 +1085,13 @@ bool PushDiscOutOfFixedOBB2D(Disc2& discToPush, OBB2 const& box)
 	return PushDiscOutOfFixedOBB2D(discToPush.m_center, discToPush.m_radius, box);
 }
 
-float GetProjectedLength2D(Vec2 const& vector, Vec2 const& basis)
-{
-	Vec2 n = basis.GetNormalized();
-	return DotProduct2D(vector, n);
-}
+float GetProjectedLength2D(Vec2 const& vector, Vec2 const& basis) { return Vec2::GetProjectedLength(vector, basis); }
 
-Vec2 GetProjectedVector2D(Vec2 const& vector, Vec2 const& basis)
-{
-	Vec2 n = basis.GetNormalized();
-	return n * DotProduct2D(vector, n);
-}
+Vec2 GetProjectedVector2D(Vec2 const& vector, Vec2 const& basis) { return Vec2::GetProjectedVector(vector, basis); }
 
-Vec3 GetProjectedVector3D(Vec3 const& vector, Vec3 const& basis)
-{
-	Vec3 n = basis.GetNormalized();
-	return n * DotProduct3D(vector, n);
-}
+Vec3 GetProjectedVector3D(Vec3 const& vector, Vec3 const& basis) { return Vec3::GetProjectedVector(vector, basis); }
 
-float GetAngleDegreesBetweenVectors2D(Vec2 const& a, Vec2 const& b)
-{
-	float aLen = a.GetLength();
-	float bLen = b.GetLength();
-	if (aLen == 0.f || bLen == 0.f)
-		return 0.f;
-	float dot = DotProduct2D(a, b) / (aLen * bLen);
-	dot       = GetClamped(dot, -1.f, 1.f);
-	return ConvertRadiansToDegrees(acosf(dot));
-}
+float GetAngleDegreesBetweenVectors2D(Vec2 const& a, Vec2 const& b) { return Vec2::GetAngleDegreesBetween(a, b); }
 
 int GetTaxicabDistance2D(IntVec2 const& a, IntVec2 const& b) { return abs(a.x - b.x) + abs(a.y - b.y); }
 
@@ -1177,16 +1119,14 @@ bool IsPointInsideAABB2D(Vec2 point, AABB2 const& alignedBox)
 {
 	return (
 		point.x > alignedBox.m_mins.x && point.x < alignedBox.m_maxs.x && point.y > alignedBox.m_mins.y
-		&& point.y < alignedBox.m_maxs.y
-	);
+		&& point.y < alignedBox.m_maxs.y);
 }
 
 bool IsPointInsideAABB3D(Vec3 point, Vec3 const& boxMins, Vec3 const& boxMaxs)
 {
 	return (
 		point.x > boxMins.x && point.x < boxMaxs.x && point.y > boxMins.y && point.y < boxMaxs.y && point.z > boxMins.z
-		&& point.z < boxMaxs.z
-	);
+		&& point.z < boxMaxs.z);
 }
 
 bool IsPointInsideAABB3D(Vec3 point, AABB3 const& alignedBox)
@@ -1241,13 +1181,11 @@ bool IsPointInsideTriangle2D(Vec2 point, Triangle2 const& triangle)
 		point,
 		triangle.m_pointsCounterClockwise[0],
 		triangle.m_pointsCounterClockwise[1],
-		triangle.m_pointsCounterClockwise[2]
-	);
+		triangle.m_pointsCounterClockwise[2]);
 }
 
 bool IsPointInsideOrientedSector2D(
-	Vec2 point, Vec2 sectorOrigin, float sectorForwardDegrees, float sectorApertureDegrees, float sectorRadius
-)
+	Vec2 point, Vec2 sectorOrigin, float sectorForwardDegrees, float sectorApertureDegrees, float sectorRadius)
 {
 	if (!IsPointInsideDisc2D(point, sectorOrigin, sectorRadius))
 	{
@@ -1261,8 +1199,7 @@ bool IsPointInsideOrientedSector2D(
 }
 
 bool IsPointInsideDirectedSector2D(
-	Vec2 point, Vec2 sectorOrigin, Vec2 sectorForwardNormal, float sectorApertureDegrees, float sectorRadius
-)
+	Vec2 point, Vec2 sectorOrigin, Vec2 sectorForwardNormal, float sectorApertureDegrees, float sectorRadius)
 {
 	if (!IsPointInsideDisc2D(point, sectorOrigin, sectorRadius))
 	{
@@ -1300,8 +1237,7 @@ Vec2 GetNearestPointOnAABB2D(Vec2 referencePos, AABB2 const& alignedBox)
 {
 	return Vec2(
 		GetClamped(referencePos.x, alignedBox.m_mins.x, alignedBox.m_maxs.x),
-		GetClamped(referencePos.y, alignedBox.m_mins.y, alignedBox.m_maxs.y)
-	);
+		GetClamped(referencePos.y, alignedBox.m_mins.y, alignedBox.m_maxs.y));
 }
 
 Vec2 GetNearestPointOnOBB2D(Vec2 referencePos, OBB2 const& orientedBox)
@@ -1309,8 +1245,7 @@ Vec2 GetNearestPointOnOBB2D(Vec2 referencePos, OBB2 const& orientedBox)
 	Vec2 localPos        = orientedBox.GetLocalPosForWorldPos(referencePos);
 	Vec2 clampedLocalPos = Vec2(
 		GetClamped(localPos.x, -orientedBox.m_halfDimensions.x, orientedBox.m_halfDimensions.x),
-		GetClamped(localPos.y, -orientedBox.m_halfDimensions.y, orientedBox.m_halfDimensions.y)
-	);
+		GetClamped(localPos.y, -orientedBox.m_halfDimensions.y, orientedBox.m_halfDimensions.y));
 	return orientedBox.GetWorldPosForLocalPos(clampedLocalPos);
 }
 
@@ -1333,8 +1268,7 @@ Vec2 GetNearestPointOnInfiniteLine2D(Vec2 referencePos, LineSegment2 const& line
 	return GetNearestPointOnInfiniteLine2D(
 		referencePos,
 		lineSegmentOnInfiniteLine.m_start,
-		lineSegmentOnInfiniteLine.m_end
-	);
+		lineSegmentOnInfiniteLine.m_end);
 }
 
 Vec2 GetNearestPointOnLineSegment2D(Vec2 referencePos, Vec2 start, Vec2 end)
@@ -1404,8 +1338,7 @@ Vec2 GetNearestPointOnTriangle2D(Vec2 referencePos, Triangle2 const& triangle)
 		referencePos,
 		triangle.m_pointsCounterClockwise[0],
 		triangle.m_pointsCounterClockwise[1],
-		triangle.m_pointsCounterClockwise[2]
-	);
+		triangle.m_pointsCounterClockwise[2]);
 }
 
 Vec3 GetNearestPointOnAABB3D(Vec3 referencePos, AABB3 const& alignedBox)
@@ -1413,8 +1346,7 @@ Vec3 GetNearestPointOnAABB3D(Vec3 referencePos, AABB3 const& alignedBox)
 	return Vec3(
 		GetClamped(referencePos.x, alignedBox.m_mins.x, alignedBox.m_maxs.x),
 		GetClamped(referencePos.y, alignedBox.m_mins.y, alignedBox.m_maxs.y),
-		GetClamped(referencePos.z, alignedBox.m_mins.z, alignedBox.m_maxs.z)
-	);
+		GetClamped(referencePos.z, alignedBox.m_mins.z, alignedBox.m_maxs.z));
 }
 
 Vec3 GetNearestPointOnAABB3D(Vec3 referencePos, Vec3 const& boxMins, Vec3 const& boxMaxs)
@@ -1422,8 +1354,7 @@ Vec3 GetNearestPointOnAABB3D(Vec3 referencePos, Vec3 const& boxMins, Vec3 const&
 	return Vec3(
 		GetClamped(referencePos.x, boxMins.x, boxMaxs.x),
 		GetClamped(referencePos.y, boxMins.y, boxMaxs.y),
-		GetClamped(referencePos.z, boxMins.z, boxMaxs.z)
-	);
+		GetClamped(referencePos.z, boxMins.z, boxMaxs.z));
 }
 
 Vec3 GetNearestPointOnZCylinder3D(Vec3 referencePos, CylinderZ3 const& cylinder)
@@ -1436,8 +1367,7 @@ Vec3 GetNearestPointOnZCylinder3D(Vec3 referencePos, CylinderZ3 const& cylinder)
 }
 
 Vec3 GetNearestPointOnZCylinder3D(
-	Vec3 referencePos, Vec3 const& cylinderStart, float cylinderHeight, float cylinderRadius
-)
+	Vec3 referencePos, Vec3 const& cylinderStart, float cylinderHeight, float cylinderRadius)
 {
 	float const localZ        = referencePos.z - cylinderStart.z;
 	float const clampedLocalZ = GetClamped(localZ, 0.f, cylinderHeight);
@@ -1599,7 +1529,7 @@ Vec3 GetNearestPointOnTriangle3D(Vec3 referencePos, Triangle3 const& triangle)
 		referencePos,
 		triangle.m_pointsCounterClockwise[0],
 		triangle.m_pointsCounterClockwise[1],
-		triangle.m_pointsCounterClockwise[2]
-	);
+		triangle.m_pointsCounterClockwise[2]);
 }
 
+} // namespace Math

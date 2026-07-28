@@ -3,14 +3,12 @@
 #include "MingEngine/Scene/3D/Camera3D.hpp"
 #include "MingEngine/Scene/Core/Node.hpp"
 #include "MingEngine/Scene/Core/NodeHandle.hpp"
-#include "MingEngine/Scene/Physics/Collider3D.hpp"
-
-#include "MingEngine/Core/Math/RaycastUtils.hpp"
 
 #include <string>
 #include <vector>
 
 class Viewport;
+class RaycastSpace3D;
 
 class SceneTree
 {
@@ -42,7 +40,7 @@ public:
 	Camera3D* GetWorldCamera() const;
 	Camera3D* GetUICamera() const;
 
-	virtual GameRaycastResult Raycast(RaycastInfo const& info) const;
+	RaycastSpace3D* GetRaycastSpace() const { return m_raycastSpace; }
 
 	float GetDeltaSeconds() const;
 
@@ -75,8 +73,11 @@ protected:
 	NodeHandle m_sceneHandle  = NodeHandle::Invalid;
 	Node*      m_pendingScene = nullptr;
 
+	// Raycast space is a helping class to manage raycast objects
+	// and perform raycasting in the scene.
+	RaycastSpace3D* m_raycastSpace = nullptr;
+
 	float m_deltaSeconds          = 0.f;
 	float m_physicsUpdateTimer    = 0.f;
 	float m_physicsUpdateInterval = 1.f / 60.f;
 };
-

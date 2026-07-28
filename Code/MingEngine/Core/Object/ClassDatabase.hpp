@@ -5,6 +5,7 @@
 #include "MingEngine/Core/Math/Vec3.hpp"
 #include "MingEngine/Core/Object/MethodBind.hpp"
 #include "MingEngine/Core/Object/Object.hpp"
+#include "MingEngine/Engine/Application/SystemBase.hpp"
 
 #include <functional>
 #include <memory>
@@ -20,12 +21,19 @@ class PackedScene;
 // MethodInfo and ClassInfo must be moved, not copied
 // We indeed need to use std::unique_ptr here
 // Because we want method info deconstruct when the class info is destroyed
+struct ArgumentInfo
+{
+	Variant::Type m_type = Variant::Type::Empty;
+	std::string   m_objectClassName; // "Node", "Resource", etc. Only used when m_type is Variant::Type::ObjectPtr
+	bool          m_isRequired = false;
+};
+
 struct MethodInfo
 {
 	std::string                 m_name;
 	std::unique_ptr<MethodBind> m_bind;
 	Variant::Type               m_returnType = Variant::Type::Empty;
-	std::vector<Variant::Type>  m_argumentTypes;
+	std::vector<ArgumentInfo>   m_argumentInfos;
 	bool                        m_isConst = false;
 };
 
@@ -35,6 +43,15 @@ struct PropertyInfo
 	friend class PackedScene;
 
 public:
+	// Hint indicates how we show the property in the editor
+	// for example, ResourceType hint will show a resource picker in the editor
+	enum class Hint
+	{
+		None,
+		ResourceType,
+	};
+
+	// UsageFlags indicates how we use the property in the engine
 	enum class UsageFlags : unsigned int
 	{
 		None      = 0,
@@ -51,8 +68,8 @@ public:
 
 public:
 	PropertyInfo() = default;
-	PropertyInfo(Variant::Type type, std::string name, UsageFlags usageFlags)
-		: m_type(type), m_name(name), m_usageFlags(usageFlags)
+	PropertyInfo(Variant::Type type, std::string name, Hint hint, std::string hintData, UsageFlags usageFlags)
+		: m_type(type), m_name(name), m_hint(hint), m_hintData(hintData), m_usageFlags(usageFlags)
 	{
 	}
 
@@ -64,13 +81,16 @@ public:
 	MethodBind const* GetSetter() const { return m_setter; }
 	MethodBind const* GetGetter() const { return m_getter; }
 
+public:
 	Variant::Type m_type = Variant::Type::Empty;
 	std::string   m_name;
+	Hint          m_hint = Hint::None;
+	std::string   m_hintData;
 	UsageFlags    m_usageFlags = UsageFlags::None;
+	std::string   m_setterName;
+	std::string   m_getterName;
 
-private:
-	std::string       m_setterName;
-	std::string       m_getterName;
+	// Set after AddProperty registers the class
 	MethodBind const* m_setter = nullptr;
 	MethodBind const* m_getter = nullptr;
 };
@@ -88,6 +108,20 @@ struct ClassInfo
 	std::vector<std::unique_ptr<MethodInfo>>   m_methods;
 };
 
+struct ConstantInfo
+{
+	std::string   m_name;
+	Variant::Type m_type = Variant::Type::Empty;
+	Variant       m_value;
+};
+
+struct GlobalNamespaceInfo
+{
+	std::string                              m_namespaceName;
+	std::vector<ConstantInfo>                m_constants;
+	std::vector<std::unique_ptr<MethodInfo>> m_methods;
+};
+
 class ClassDatabase
 {
 public:
@@ -99,7 +133,7 @@ public:
 
 	static Object*                       CreateInstance(std::string const& className);
 	static ClassInfo const*              GetClassInfo(std::string const& className);
-	static std::vector<ClassInfo const*> GetRegisteredClasses();
+	static std::vector<ClassInfo const*> GetRegisteredClasses(bool sortByInheritanceDepth = false);
 	static bool                          IsSubclassOf(std::string const& className, std::string const& baseClassName);
 
 	static std::vector<PropertyInfo>        GetProperties(std::string const& className);
@@ -115,14 +149,17 @@ public:
 
 	// Only for Object class
 	template <typename T>
-	static void RegisterRootClass(bool canCreateInEditor = true)
+	static void RegisterRootClass(bool canCreateInEditor = true, bool canCreateInstance = true)
 	{
 		std::string className = T::GetStaticClassName();
 		ClassInfo   classInfo;
 		classInfo.m_className = className;
-		if constexpr (!std::is_abstract_v<T>)
+		if constexpr (!std::is_abstract_v<T> && std::is_default_constructible_v<T>)
 		{
-			classInfo.m_creator = &Creator<T>;
+			if (canCreateInstance)
+			{
+				classInfo.m_creator = &Creator<T>;
+			}
 		}
 		classInfo.m_canCreateInEditor = canCreateInEditor;
 		m_classInfoMap[className]     = std::move(classInfo);
@@ -130,19 +167,47 @@ public:
 	}
 
 	template <typename T>
-	static void RegisterClass(bool canCreateInEditor = true)
+	static void RegisterClass(bool canCreateInEditor = true, bool canCreateInstance = true)
 	{
 		std::string className = T::GetStaticClassName();
 		ClassInfo   classInfo;
-		classInfo.m_className       = className;
-		classInfo.m_parentClassName = T::Super::GetStaticClassName();
-		if constexpr (!std::is_abstract_v<T>)
-		{
-			classInfo.m_creator = &Creator<T>;
-		}
+		classInfo.m_className         = className;
+		classInfo.m_parentClassName   = T::Super::GetStaticClassName();
 		classInfo.m_canCreateInEditor = canCreateInEditor;
-		m_classInfoMap[className]     = std::move(classInfo);
+
+		// TODO: We shouldn't include SystemBase here
+		// Should have a better way to handle this (Like have other register function)
+		if constexpr (std::is_base_of_v<SystemBase, T>)
+		{
+			classInfo.m_canCreateInEditor = false;
+		}
+		else if constexpr (!std::is_abstract_v<T>)
+		{
+			if (canCreateInstance)
+			{
+				classInfo.m_creator = &Creator<T>;
+			}
+		}
+
+		m_classInfoMap[className] = std::move(classInfo);
 		T::InitializeClass();
+	}
+
+	template <typename T>
+	static void RegisterGlobalObject(T* object)
+	{
+		static_assert(std::is_base_of_v<Object, T>, "T must be derived from Object");
+		m_globalObjectMap[object->GetClassName()] = object;
+	}
+
+	static Object* GetGlobalObject(std::string const& className)
+	{
+		auto iter = m_globalObjectMap.find(className);
+		if (iter != m_globalObjectMap.end())
+		{
+			return iter->second;
+		}
+		return nullptr;
 	}
 
 	template <typename T>
@@ -152,40 +217,57 @@ public:
 		return object;
 	}
 
-	template <typename ClassType, typename... Args>
-	static void BindMethod(std::string const& methodName, void (ClassType::*method)(Args...))
+	template <typename T>
+	static ArgumentInfo GetArgumentInfo()
 	{
-		std::unique_ptr<MethodInfo> methodInfo = std::make_unique<MethodInfo>();
-		methodInfo->m_name                     = methodName;
-		methodInfo->m_bind                     = std::make_unique<VoidMethodBind<ClassType, Args...>>(method);
-		methodInfo->m_returnType               = Variant::Type::Empty;
-		methodInfo->m_argumentTypes.reserve(sizeof...(Args));
-		(methodInfo->m_argumentTypes.push_back(Variant::GetType<Args>()), ...);
-		m_classInfoMap[ClassType::GetStaticClassName()].m_methods.push_back(std::move(methodInfo));
+		using CleanType   = std::remove_cv_t<std::remove_reference_t<T>>;
+		using PointeeType = std::remove_pointer_t<CleanType>;
+
+		ArgumentInfo argumentInfo;
+		argumentInfo.m_type = Variant::GetType<CleanType>();
+		if constexpr (std::is_pointer_v<CleanType> && std::is_base_of_v<Object, PointeeType>)
+		{
+			argumentInfo.m_type            = Variant::Type::ObjectPtr;
+			argumentInfo.m_objectClassName = PointeeType::GetStaticClassName();
+		}
+		return argumentInfo;
 	}
 
-	template <typename ClassType, typename... Args>
-	static void BindMethod(std::string const& methodName, void (ClassType::*method)(Args...) const)
+	template <typename ClassType, typename ReturnType, typename... Args>
+	static MethodBind* CreateMethodBind(ReturnType (ClassType::*method)(Args...))
 	{
 		std::unique_ptr<MethodInfo> methodInfo = std::make_unique<MethodInfo>();
-		methodInfo->m_name                     = methodName;
-		methodInfo->m_bind                     = std::make_unique<ConstVoidMethodBind<ClassType, Args...>>(method);
-		methodInfo->m_returnType               = Variant::Type::Empty;
-		methodInfo->m_argumentTypes.reserve(sizeof...(Args));
-		(methodInfo->m_argumentTypes.push_back(Variant::GetType<Args>()), ...);
-		methodInfo->m_isConst = true;
-		m_classInfoMap[ClassType::GetStaticClassName()].m_methods.push_back(std::move(methodInfo));
+		MethodBind*                 methodBind = new ReturnMethodBind<ClassType, ReturnType, Args...>(method);
+		return methodBind;
+	}
+
+	template <typename ClassType, typename ReturnType, typename... Args>
+	static MethodBind* CreateMethodBind(ReturnType (ClassType::*method)(Args...) const)
+	{
+		std::unique_ptr<MethodInfo> methodInfo = std::make_unique<MethodInfo>();
+		MethodBind*                 methodBind = new ConstReturnMethodBind<ClassType, ReturnType, Args...>(method);
+		return methodBind;
+	}
+
+	template <typename ReturnType, typename... Args>
+	static MethodBind* CreateMethodBind(ReturnType (*method)(Args...))
+	{
+		std::unique_ptr<MethodInfo> methodInfo = std::make_unique<MethodInfo>();
+		MethodBind*                 methodBind = new GlobalMethodBind<ReturnType, Args...>(method);
+		return methodBind;
 	}
 
 	template <typename ClassType, typename ReturnType, typename... Args>
 	static void BindMethod(std::string const& methodName, ReturnType (ClassType::*method)(Args...))
 	{
 		std::unique_ptr<MethodInfo> methodInfo = std::make_unique<MethodInfo>();
-		methodInfo->m_name                     = methodName;
-		methodInfo->m_bind       = std::make_unique<ReturnMethodBind<ClassType, ReturnType, Args...>>(method);
+
+		methodInfo->m_name       = methodName;
+		methodInfo->m_bind       = std::unique_ptr<MethodBind>(CreateMethodBind(method));
 		methodInfo->m_returnType = Variant::GetType<ReturnType>();
-		methodInfo->m_argumentTypes.reserve(sizeof...(Args));
-		(methodInfo->m_argumentTypes.push_back(Variant::GetType<Args>()), ...);
+		methodInfo->m_argumentInfos.reserve(sizeof...(Args));
+		(methodInfo->m_argumentInfos.push_back(GetArgumentInfo<Args>()), ...);
+
 		m_classInfoMap[ClassType::GetStaticClassName()].m_methods.push_back(std::move(methodInfo));
 	}
 
@@ -193,15 +275,62 @@ public:
 	static void BindMethod(std::string const& methodName, ReturnType (ClassType::*method)(Args...) const)
 	{
 		std::unique_ptr<MethodInfo> methodInfo = std::make_unique<MethodInfo>();
-		methodInfo->m_name                     = methodName;
-		methodInfo->m_bind       = std::make_unique<ConstReturnMethodBind<ClassType, ReturnType, Args...>>(method);
+
+		methodInfo->m_name       = methodName;
+		methodInfo->m_bind       = std::unique_ptr<MethodBind>(CreateMethodBind(method));
 		methodInfo->m_returnType = Variant::GetType<ReturnType>();
-		methodInfo->m_argumentTypes.reserve(sizeof...(Args));
-		(methodInfo->m_argumentTypes.push_back(Variant::GetType<Args>()), ...);
+		methodInfo->m_argumentInfos.reserve(sizeof...(Args));
+		(methodInfo->m_argumentInfos.push_back(GetArgumentInfo<Args>()), ...);
 		methodInfo->m_isConst = true;
+
 		m_classInfoMap[ClassType::GetStaticClassName()].m_methods.push_back(std::move(methodInfo));
 	}
 
+	template <typename ReturnType, typename... Args>
+	static void BindGlobalMethod(
+		std::string const& namespaceName, std::string const& methodName, ReturnType (*method)(Args...))
+	{
+		std::unique_ptr<MethodInfo> methodInfo = std::make_unique<MethodInfo>();
+
+		methodInfo->m_name       = methodName;
+		methodInfo->m_bind       = std::unique_ptr<MethodBind>(CreateMethodBind(method));
+		methodInfo->m_returnType = Variant::GetType<ReturnType>();
+		methodInfo->m_argumentInfos.reserve(sizeof...(Args));
+		(methodInfo->m_argumentInfos.push_back(GetArgumentInfo<Args>()), ...);
+
+		if (m_namespaceInfoMap.find(namespaceName) == m_namespaceInfoMap.end())
+		{
+			GlobalNamespaceInfo globalNamespaceInfo;
+			globalNamespaceInfo.m_namespaceName = namespaceName;
+			m_namespaceInfoMap[namespaceName]   = std::move(globalNamespaceInfo);
+		}
+
+		m_namespaceInfoMap[namespaceName].m_methods.push_back(std::move(methodInfo));
+	}
+
+	static std::vector<GlobalNamespaceInfo const*> GetRegisteredGlobalNamespaces();
+
+	static MethodBind const* GetGlobalMethodBind(std::string const& namespaceName, std::string const& methodName);
+
+	static void BindConstant(std::string const& namespaceName, std::string const& constantName, Variant value)
+	{
+		if (m_namespaceInfoMap.find(namespaceName) == m_namespaceInfoMap.end())
+		{
+			GlobalNamespaceInfo globalNamespaceInfo;
+			globalNamespaceInfo.m_namespaceName = namespaceName;
+			m_namespaceInfoMap[namespaceName]   = std::move(globalNamespaceInfo);
+		}
+
+		ConstantInfo constantInfo;
+		constantInfo.m_name  = constantName;
+		constantInfo.m_type  = value.GetType();
+		constantInfo.m_value = value;
+
+		m_namespaceInfoMap[namespaceName].m_constants.push_back(std::move(constantInfo));
+	}
+
 private:
-	static std::unordered_map<std::string, ClassInfo> m_classInfoMap;
+	static std::unordered_map<std::string, ClassInfo>           m_classInfoMap;
+	static std::unordered_map<std::string, GlobalNamespaceInfo> m_namespaceInfoMap;
+	static std::unordered_map<std::string, Object*>             m_globalObjectMap;
 };

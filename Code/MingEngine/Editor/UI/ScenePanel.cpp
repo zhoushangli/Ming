@@ -1,9 +1,10 @@
 #include "MingEngine/Editor/UI/ScenePanel.hpp"
 
 #include "MingEngine/Editor/EditorNode.hpp"
-#include "MingEngine/Editor/UI/CreateNodePanel.hpp"
 #include "MingEngine/Editor/UI/EditorUI.hpp"
 #include "MingEngine/Editor/UI/EditorUIContext.hpp"
+#include "MingEngine/Editor/UI/EditorUIStyle.hpp"
+#include "MingEngine/Editor/UI/EditorUIWidgets.hpp"
 #include "MingEngine/Scene/Core/Node.hpp"
 #include "MingEngine/Scene/Core/SceneTree.hpp"
 
@@ -61,9 +62,7 @@ void ScenePanel::OnRender(EditorUIContext& context)
 	{
 		if (ImGui::MenuItem("Add Child Node..."))
 		{
-			CreateNodePanelData data;
-			data.m_parentHandle = NodeHandle::Invalid;
-			context.m_editorUI->OpenPanel<CreateNodePanel>(data);
+			m_createNodePopup.Open(NodeHandle::Invalid);
 		}
 		ImGui::EndPopup();
 	}
@@ -87,6 +86,7 @@ void ScenePanel::OnRender(EditorUIContext& context)
 			{
 				ClearRename();
 			}
+			EditorNode::Get()->MarkSceneDirty();
 			selectedNode->DeleteNode();
 		}
 	}
@@ -105,6 +105,7 @@ void ScenePanel::OnRender(EditorUIContext& context)
 	}
 
 	ImGui::End();
+	m_createNodePopup.Render(context);
 }
 
 void ScenePanel::RenderNode(Node* node, std::string const& filterText, EditorUIContext& context)
@@ -142,30 +143,66 @@ void ScenePanel::RenderNode(Node* node, std::string const& filterText, EditorUIC
 	ImGui::PushID(static_cast<int>(handle.GetUID()));
 	ImGui::PushID(static_cast<int>(handle.GetIndex()));
 
-	std::string const displayName = node->GetName().empty() ? node->GetClassName() : node->GetName();
-	bool const        isRenaming  = m_renamingNode == handle;
-	bool const        isOpen      = ImGui::TreeNodeEx(isRenaming ? "##RenamingNode" : displayName.c_str(), flags);
-	bool const        treeClicked = ImGui::IsItemClicked(ImGuiMouseButton_Left);
-	bool const        treeDoubleClicked =
-		ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left);
+	std::string const displayName       = node->GetName().empty() ? node->GetClassName() : node->GetName();
+	bool const        isRenaming        = m_renamingNode == handle;
+	bool const        isOpen            = ImGui::TreeNodeEx("##SceneNodeTree", flags);
+	ImVec2 const      treeItemMin       = ImGui::GetItemRectMin();
+	ImVec2 const      treeItemMax       = ImGui::GetItemRectMax();
+	bool const        rowHovered        = ImGui::IsMouseHoveringRect(treeItemMin, treeItemMax);
+	bool              treeClicked       = rowHovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left);
+	bool              treeDoubleClicked = rowHovered && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left);
 
-	// If the item is clicked, select the node
-	if (treeClicked && context.m_selection != nullptr)
+	if (ImGui::BeginPopupContextItem("SceneNodeContext"))
 	{
-		context.m_selection->SetSelected(handle);
-	}
-
-	if (treeDoubleClicked && !isRenaming)
-	{
-		BeginRename(node);
 		if (context.m_selection != nullptr)
 		{
 			context.m_selection->SetSelected(handle);
 		}
+		if (ImGui::MenuItem("Add Child Node..."))
+		{
+			m_createNodePopup.Open(handle);
+		}
+		ImGui::EndPopup();
 	}
 
+	// Drag/drop must stay attached to the tree item, which has a stable ImGui ID.
+	if (!isRenaming && ImGui::BeginDragDropSource())
+	{
+		EditorDragDrop& dragDrop = EditorNode::Get()->m_dragDrop;
+		dragDrop.SetDragData(handle);
+		ImGui::SetDragDropPayload(EditorDragDrop::PayloadType, nullptr, 0);
+		ImGui::TextUnformatted(node->GetName().c_str());
+
+		ImGui::EndDragDropSource();
+	}
+
+	if (!isRenaming && ImGui::BeginDragDropTarget())
+	{
+		EditorDragDrop& dragDrop = EditorNode::Get()->m_dragDrop;
+		NodeHandle      draggedHandle;
+		if (dragDrop.TryGetData(draggedHandle) && draggedHandle != handle)
+		{
+			dragDrop.AllowDrop();
+			if (ImGui::AcceptDragDropPayload(EditorDragDrop::PayloadType) != nullptr)
+			{
+				m_pendingReparent.m_child  = draggedHandle;
+				m_pendingReparent.m_parent = handle;
+			}
+		}
+
+		ImGui::EndDragDropTarget();
+	}
+
+	ImVec2 const iconSize = EditorUIStyle::SceneTreeIconSize();
+
+	// If the item is clicked, select the node
 	if (isRenaming)
 	{
+		ImGui::SameLine();
+		float const iconY = treeItemMin.y + (treeItemMax.y - treeItemMin.y - iconSize.y) * 0.5f;
+		ImGui::SetCursorScreenPos(ImVec2(ImGui::GetCursorScreenPos().x, iconY));
+		EditorUIWidgets::RenderIcon(node->GetClassName(), Node::GetStaticClassName(), iconSize);
+
 		ImGui::SameLine();
 		ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
 		if (m_focusRenameInput)
@@ -179,7 +216,7 @@ void ScenePanel::RenderNode(Node* node, std::string const& filterText, EditorUIC
 			m_renameBuffer,
 			sizeof(m_renameBuffer),
 			ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll);
-		bool const cancelled = ImGui::IsItemActive() && ImGui::IsKeyPressed(ImGuiKey_Escape);
+		bool const cancelled   = ImGui::IsItemActive() && ImGui::IsKeyPressed(ImGuiKey_Escape);
 		bool const deactivated = ImGui::IsItemDeactivated();
 		if (cancelled)
 		{
@@ -190,42 +227,29 @@ void ScenePanel::RenderNode(Node* node, std::string const& filterText, EditorUIC
 			FinishRename(node, true);
 		}
 	}
-
-	// If the item is dragged, start a drag and drop operation
-	if (!isRenaming && ImGui::BeginDragDropSource())
+	else
 	{
-		ImGui::SetDragDropPayload("SCENE_NODE", &handle, sizeof(handle));
-
-		ImGui::Text("%s", displayName.c_str());
-		ImGui::EndDragDropSource();
+		EditorUIWidgets::RenderTreeRowContent(
+			node->GetClassName(),
+			Node::GetStaticClassName(),
+			displayName,
+			treeItemMin,
+			treeItemMax,
+			iconSize);
 	}
 
-	if (!isRenaming && ImGui::BeginDragDropTarget())
+	if (treeClicked && context.m_selection != nullptr)
 	{
-		if (ImGuiPayload const* payload = ImGui::AcceptDragDropPayload("SCENE_NODE"))
-		{
-			NodeHandle const draggedHandle = *static_cast<NodeHandle const*>(payload->Data);
-
-			m_pendingReparent.m_child  = draggedHandle;
-			m_pendingReparent.m_parent = handle;
-		}
-
-		ImGui::EndDragDropTarget();
+		context.m_selection->SetSelected(handle);
 	}
 
-	if (ImGui::BeginPopupContextItem("SceneNodeContext"))
+	if (treeDoubleClicked && !isRenaming)
 	{
+		BeginRename(node);
 		if (context.m_selection != nullptr)
 		{
 			context.m_selection->SetSelected(handle);
 		}
-		if (ImGui::MenuItem("Add Child Node..."))
-		{
-			CreateNodePanelData data;
-			data.m_parentHandle = handle;
-			context.m_editorUI->OpenPanel<CreateNodePanel>(data);
-		}
-		ImGui::EndPopup();
 	}
 
 	if (isOpen && hasVisibleChildren)
@@ -270,8 +294,8 @@ void ScenePanel::BeginRename(Node* node)
 		return;
 	}
 
-	m_renamingNode  = node->GetHandle();
-	m_originalName  = node->GetName();
+	m_renamingNode     = node->GetHandle();
+	m_originalName     = node->GetName();
 	m_focusRenameInput = true;
 	strncpy_s(m_renameBuffer, m_originalName.c_str(), sizeof(m_renameBuffer) - 1);
 }
@@ -289,6 +313,6 @@ void ScenePanel::ClearRename()
 {
 	m_renamingNode = NodeHandle::Invalid;
 	m_originalName.clear();
-	m_renameBuffer[0] = '\0';
+	m_renameBuffer[0]  = '\0';
 	m_focusRenameInput = false;
 }

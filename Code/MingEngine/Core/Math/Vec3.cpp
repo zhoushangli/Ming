@@ -5,6 +5,8 @@
 
 #include <math.h>
 
+using namespace Math;
+
 const Vec3 Vec3::Zero     = Vec3(0.f, 0.f, 0.f);
 const Vec3 Vec3::One      = Vec3(1.f, 1.f, 1.f);
 const Vec3 Vec3::Forward  = Vec3(1.f, 0.f, 0.f);
@@ -172,3 +174,31 @@ Vec3 Vec3::MakeFromPolarDegrees(float pitchDegrees, float yawDegrees, float leng
 	return MakeFromPolarRadians(pitchRadians, yawRadians, length);
 }
 
+float Vec3::DotProduct(Vec3 const& a, Vec3 const& b) { return a.x * b.x + a.y * b.y + a.z * b.z; }
+
+Vec3 Vec3::CrossProduct(Vec3 const& a, Vec3 const& b)
+{
+	return Vec3(
+		a.y * b.z - a.z * b.y,
+		a.z * b.x - a.x * b.z,
+		a.x * b.y - a.y * b.x);
+}
+
+Vec3 Vec3::GetProjectedVector(Vec3 const& vector, Vec3 const& basis)
+{
+	Vec3 n = basis.GetNormalized();
+	return n * DotProduct(vector, n);
+}
+
+Vec3 Vec3::Interpolate(Vec3 const& start, Vec3 const& end, float fraction)
+{
+	return Vec3(
+		Math::Interpolate(start.x, end.x, fraction),
+		Math::Interpolate(start.y, end.y, fraction),
+		Math::Interpolate(start.z, end.z, fraction));
+}
+
+Vec3 Vec3::InterpolateClamped(Vec3 const& start, Vec3 const& end, float fraction)
+{
+	return Interpolate(start, end, GetClampedZeroToOne(fraction));
+}

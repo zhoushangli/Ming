@@ -1,14 +1,14 @@
 #include "MingEngine/Engine/Render/PostProcessChain.hpp"
 
-#include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Core/ErrorWarningAssert.hpp"
+#include "MingEngine/Core/Object/ResourceLoader.hpp"
+#include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Engine/Render/D3D11RenderBackend.hpp"
-#include "PostProcessChain.hpp"
 
-PostProcessPass::PostProcessPass(std::string const& passName, std::string const& postProcessShaderName)
+PostProcessPass::PostProcessPass(std::string const& passName, VirtualPath const& postProcessShaderVirtualPath)
 	: m_name(passName), m_wideName(passName.begin(), passName.end())
 {
-	m_postProcessShader = g_engine->m_renderer->CreateOrGetShader(postProcessShaderName.c_str());
+	m_postProcessShaderResource = ResourceLoader::Load(postProcessShaderVirtualPath);
 }
 
 PostProcessPass::~PostProcessPass() {}
@@ -34,32 +34,33 @@ bool PostProcessPass::HasCustomInputs() const
 
 void PostProcessChain::AddPass(PostProcessPass const& pass) { m_passes.push_back(pass); }
 
-PostProcessChain::PostProcessChain() { IntVec2 const fullResolution = g_engine->m_window->GetClientDimensions(); }
+PostProcessChain::PostProcessChain() { IntVec2 const fullResolution = g_engine->m_windowSystem->GetClientDimensions(); }
 
 PostProcessChain::~PostProcessChain() {}
 
-Texture* PostProcessChain::Render(D3D11RenderBackend& renderer, PostProcessContext const& context)
+GPUTexture* PostProcessChain::Render(D3D11RenderBackend& renderer, PostProcessContext const& context)
 {
-	IntVec2 const fullResolution = g_engine->m_window->GetClientDimensions();
+	IntVec2 const fullResolution = g_engine->m_windowSystem->GetClientDimensions();
 
 	renderer.BindCamera(*context.m_camera);
 	renderer.SetBlendMode(BlendMode::OPAQUE);
 	renderer.SetRasterizerMode(RasterizerMode::SOLID_CULL_NONE);
 	renderer.SetDepthMode(DepthMode::READ_ONLY_ALWAYS);
 
-	Texture* sceneColor  = context.m_sceneColor;
-	Texture* sceneDepth  = context.m_sceneDepth;
-	Texture* sceneNormal = context.m_sceneNormal;
+	GPUTexture* sceneColor  = context.m_sceneColor;
+	GPUTexture* sceneDepth  = context.m_sceneDepth;
+	GPUTexture* sceneNormal = context.m_sceneNormal;
 
-	Texture* ping = context.m_ping;
-	Texture* pong = context.m_pong;
+	GPUTexture* ping = context.m_ping;
+	GPUTexture* pong = context.m_pong;
 
 	std::vector<PostProcessPass const*> enabledPasses;
 	enabledPasses.reserve(m_passes.size());
 
 	for (PostProcessPass const& pass : m_passes)
 	{
-		if (pass.m_isEnabled && pass.m_postProcessShader != nullptr)
+		if (pass.m_isEnabled && pass.m_postProcessShaderResource.IsValid()
+			&& !pass.m_postProcessShaderResource->IsEmpty())
 		{
 			enabledPasses.push_back(&pass);
 		}
@@ -69,11 +70,11 @@ Texture* PostProcessChain::Render(D3D11RenderBackend& renderer, PostProcessConte
 	// We keep track of it so when case like
 	// PingPong ---> CustomOutput --(used as input in later pass)--> PingPong
 	// We can bind the correct texture as input for the later pass
-	Texture* mainChainColorTexture = sceneColor;
+	GPUTexture* mainChainColorTexture = sceneColor;
 
 	for (PostProcessPass const* pass : enabledPasses)
 	{
-		Texture* outputTexture = nullptr;
+		GPUTexture* outputTexture = nullptr;
 
 		if (pass->HasCustomInputs())
 		{
@@ -102,7 +103,7 @@ Texture* PostProcessChain::Render(D3D11RenderBackend& renderer, PostProcessConte
 						customInput.m_slot,
 						PostProcessTextureSlot::MaxSamplerSlots - 1));
 
-				Texture* customTexture = renderer.GetTextureFromFileName(customInput.m_name.c_str());
+				GPUTexture* customTexture = GetCustomTexture(customInput.m_name.c_str());
 				if (customTexture != nullptr)
 				{
 					renderer.BindTexture(customTexture, customInput.m_slot);
@@ -114,7 +115,7 @@ Texture* PostProcessChain::Render(D3D11RenderBackend& renderer, PostProcessConte
 		bool usesMainChainColor = false;
 		if (pass->HasCustomOutput())
 		{
-			outputTexture = renderer.GetTextureFromFileName(pass->m_customOutput.m_name.c_str());
+			outputTexture = GetCustomTexture(pass->m_customOutput.m_name.c_str());
 		}
 		else
 		{
@@ -124,7 +125,7 @@ Texture* PostProcessChain::Render(D3D11RenderBackend& renderer, PostProcessConte
 
 		renderer.BindRenderTarget(outputTexture);
 		renderer.BindPostProcessInputs(mainChainColorTexture, sceneDepth, sceneNormal);
-		renderer.DrawFullscreenTriangle(pass->m_postProcessShader, pass->m_wideName.c_str());
+		renderer.DrawFullscreenTriangle(pass->m_postProcessShaderResource->GetShader(), pass->m_wideName.c_str());
 		renderer.UnbindAllShaderResourceViews();
 
 		if (usesMainChainColor)
@@ -133,3 +134,18 @@ Texture* PostProcessChain::Render(D3D11RenderBackend& renderer, PostProcessConte
 	return mainChainColorTexture;
 }
 
+void PostProcessChain::RegisterCustomTexture(std::string const& name, GPUTexture* texture)
+{
+	m_customTextures[name] = texture;
+}
+
+GPUTexture* PostProcessChain::GetCustomTexture(std::string const& name) const
+{
+	auto found = m_customTextures.find(name);
+	if (found != m_customTextures.end())
+	{
+		return found->second;
+	}
+
+	return nullptr;
+}

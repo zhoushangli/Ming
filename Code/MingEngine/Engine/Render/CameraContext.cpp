@@ -6,7 +6,10 @@
 #include "MingEngine/Core/Math/Vec2.hpp"
 #include "MingEngine/Core/Math/Vec3.hpp"
 
-void CameraContext::SetOrthogonal(Vec2 const& bottomLeft, Vec2 const& topRight, float near /*= 0.0f*/, float far /*= 1.0f*/)
+using namespace Math;
+
+void CameraContext::SetOrthogonal(
+	Vec2 const& bottomLeft, Vec2 const& topRight, float near /*= 0.0f*/, float far /*= 1.0f*/)
 {
 	m_mode = Orthographic;
 
@@ -54,7 +57,10 @@ Matrix4x4 CameraContext::GetCameraToWorldTransform() const
 	return camToWorld;
 }
 
-Matrix4x4 CameraContext::GetWorldToCameraTransform() const { return GetCameraToWorldTransform().GetOrthonormalInverse(); }
+Matrix4x4 CameraContext::GetWorldToCameraTransform() const
+{
+	return GetCameraToWorldTransform().GetOrthonormalInverse();
+}
 
 AABB2 CameraContext::GetOrthographicBounds() const { return AABB2(m_orthographicBottomLeft, m_orthographicTopRight); }
 
@@ -89,7 +95,8 @@ void CameraContext::Translate2D(Vec2 const& translation)
 
 Matrix4x4 CameraContext::GetOrthographicMatrix() const
 {
-	return Matrix4x4::MakeOrthoProjection(m_orthographicBottomLeft.x,
+	return Matrix4x4::MakeOrthoProjection(
+		m_orthographicBottomLeft.x,
 		m_orthographicTopRight.x,
 		m_orthographicBottomLeft.y,
 		m_orthographicTopRight.y,
@@ -99,7 +106,8 @@ Matrix4x4 CameraContext::GetOrthographicMatrix() const
 
 Matrix4x4 CameraContext::GetPerspectiveMatrix() const
 {
-	return Matrix4x4::MakePerspectiveProjection(m_perspectiveFOV,
+	return Matrix4x4::MakePerspectiveProjection(
+		m_perspectiveFOV,
 		m_perspectiveAspect,
 		m_perspectiveNear,
 		m_perspectiveFar);
@@ -171,4 +179,3 @@ float CameraContext::GetFarZ() const
 	else
 		return m_orthographicFar;
 }
-

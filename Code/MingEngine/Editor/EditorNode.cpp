@@ -1,17 +1,28 @@
 #include "MingEngine/Editor/EditorNode.hpp"
 
+#include "MingEngine/Core/Object/ResourceLoader.hpp"
+#include "MingEngine/Core/Object/ResourceSaver.hpp"
+#include "MingEngine/Core/StringUtils.hpp"
+#include "MingEngine/Editor/EditorCamera.hpp"
 #include "MingEngine/Editor/Gizmos/EditorGizmos.hpp"
 #include "MingEngine/Editor/UI/EditorUI.hpp"
 #include "MingEngine/Editor/UI/EditorUIContext.hpp"
+#include "MingEngine/Editor/UI/Popup/EditorPopupUtils.hpp"
+#include "MingEngine/Engine/Application/Engine.hpp"
+#include "MingEngine/Engine/File/FileSystem.hpp"
+#include "MingEngine/Engine/ImGui/ImGuiSystem.hpp"
+#include "MingEngine/Engine/Input/InputSystem.hpp"
+#include "MingEngine/Engine/Render/DebugGizmos.hpp"
+#include "MingEngine/Engine/Window/WindowSystem.hpp"
 #include "MingEngine/Scene/3D/Camera3D.hpp"
 #include "MingEngine/Scene/3D/Node3D.hpp"
 #include "MingEngine/Scene/Core/PackedScene.hpp"
+#include "MingEngine/Scene/Core/RaycastSpace3D.hpp"
 #include "MingEngine/Scene/Core/SceneTree.hpp"
 
-#include "MingEngine/Engine/Application/Engine.hpp"
-#include "MingEngine/Core/StringUtils.hpp"
-#include "MingEngine/Engine/Input/InputSystem.hpp"
-#include "MingEngine/Engine/Render/DebugRenderer.hpp"
+#include "ThirdParty/imgui/imgui.h"
+
+#include <filesystem>
 
 namespace
 {
@@ -37,30 +48,30 @@ void EditorSelection::SetSelected(NodeHandle handle)
 
 	if (!previousHandle.IsValid() && m_selectedNodeHandle.IsValid())
 	{
-		DebugAddMessage(
+		DebugGizmos::AddMessage(
 			Stringf("Selected Node: %s", FormatNodeHandle(m_selectedNodeHandle).c_str()),
 			5.f,
-			Rgba8::White,
-			Rgba8::White);
+			Color::White,
+			Color::White);
 		return;
 	}
 
 	if (previousHandle.IsValid() && m_selectedNodeHandle.IsValid())
 	{
-		DebugAddMessage(
+		DebugGizmos::AddMessage(
 			Stringf(
 				"Selection Changed: %s -> %s",
 				FormatNodeHandle(previousHandle).c_str(),
 				FormatNodeHandle(m_selectedNodeHandle).c_str()),
 			5.f,
-			Rgba8::White,
-			Rgba8::White);
+			Color::White,
+			Color::White);
 		return;
 	}
 
 	if (previousHandle.IsValid() && !m_selectedNodeHandle.IsValid())
 	{
-		DebugAddMessage("Selection Cleared", 5.f, Rgba8::White, Rgba8::White);
+		DebugGizmos::AddMessage("Selection Cleared", 5.f, Color::White, Color::White);
 	}
 }
 
@@ -70,6 +81,13 @@ EditorNode::EditorNode()
 {
 	s_instance = this;
 	m_editorUI = new EditorUI();
+
+	m_editorCamera = new EditorCamera();
+	m_editorCamera->SetName("EditorCamera");
+	m_editorCamera->SetLocalPosition(Vec3(5.f, 5.f, 5.f));
+	m_editorCamera->SetLocalOrientation(EulerAngles(-135.f, 45.f, 0.f));
+	m_editorCamera->SetSerializable(false);
+	AddNode(m_editorCamera);
 
 	m_editorGizmos = new EditorGizmos();
 	m_editorGizmos->SetName("EditorGizmos");
@@ -97,66 +115,75 @@ EditorSelection& EditorNode::GetSelection() { return m_selection; }
 
 EditorSelection const& EditorNode::GetSelection() const { return m_selection; }
 
-void EditorNode::SaveSceneToFile(Node const* sceneRoot, std::string const& filename)
+void EditorNode::OnMouseMove(Vec2 screenPos, [[maybe_unused]] Vec2 delta)
 {
-	PackedScene packedScene;
-
-	if (!packedScene.Pack(sceneRoot))
+	if (m_editorGizmos == nullptr || m_editorCamera == nullptr)
 	{
 		return;
 	}
 
-	std::string outputFilename = filename;
-	if (outputFilename.find('.') == std::string::npos)
-	{
-		outputFilename += ".json";
-	}
-
-	packedScene.SaveToFile(outputFilename);
-}
-
-void EditorNode::SetActiveCamera(Camera3D* camera) { m_activeCamera = camera; }
-
-void EditorNode::OnMouseMove(Vec2 screenPos, [[maybe_unused]] Vec2 delta)
-{
-	if (m_editorGizmos == nullptr || m_activeCamera == nullptr)
+	Camera3D* camera = m_editorCamera->GetCamera();
+	if (camera == nullptr)
 	{
 		return;
 	}
 
 	if (m_editorGizmos->IsDragging())
 	{
-		m_editorGizmos->OnDrag(*m_activeCamera, screenPos);
+		m_editorGizmos->OnDrag(*camera, screenPos);
 	}
 	else
 	{
-		m_editorGizmos->OnMouseMove(*m_activeCamera, screenPos);
+		m_editorGizmos->OnMouseMove(*camera, screenPos);
 	}
 }
 
 void EditorNode::OnMouseDown(int keyCode, Vec2 screenPos)
 {
-	if (keyCode != KeyCodeLeftMouse)
+	if (!(g_engine->m_imguiSystem->WantCaptureMouse() && m_uiContext.m_isViewportImageHovered))
 	{
 		return;
 	}
 
-	if (m_editorGizmos == nullptr || m_activeCamera == nullptr)
+	if (keyCode != ToKeyCode(KeyCode::LeftMouse))
 	{
 		return;
 	}
 
-	// 1. Let gizmos try first
-	if (m_editorGizmos->OnBeginDrag(*m_activeCamera, screenPos))
+	if (m_editorGizmos == nullptr || m_editorCamera == nullptr)
 	{
-		return; // gizmo ate the event
+		return;
 	}
 
-	// 2. Gizmo didn't eat — try scene selection
-	NodeHandle hit = m_editorGizmos->Raycast(*m_activeCamera, screenPos);
-	if (hit.IsValid())
+	Camera3D* camera = m_editorCamera->GetCamera();
+	if (camera == nullptr)
 	{
-		m_selection.SetSelected(hit);
+		return;
+	}
+
+	// 1) Let hovered gizmos capture the click
+	if (m_editorGizmos->IsHovered())
+	{
+		m_editorGizmos->BeginDragHovered(*camera, screenPos);
+		return;
+	}
+
+	// 2) Gizmo didn't eat — try scene selection
+	Vec2 mousePos           = screenPos;
+	Vec2 viewportDimensions = Vec2(g_engine->m_windowSystem->GetClientDimensions());
+	if (m_editorUI != nullptr)
+	{
+		mousePos           = m_editorUI->ToViewportPos(screenPos);
+		viewportDimensions = m_editorUI->GetViewportDimensions();
+	}
+
+	RaycastSpace3D*       raycastSpace = GetSceneTree()->GetRaycastSpace();
+	RaycastQuery3D        raycastQuery = camera->BuildRaycastFromMouse(mousePos, viewportDimensions, 10000.f);
+	RaycastResult3D const result       = raycastSpace->IntersectRay(raycastQuery);
+
+	if (result.m_didImpact)
+	{
+		m_selection.SetSelected(result.m_owner);
 	}
 	else
 	{
@@ -166,7 +193,7 @@ void EditorNode::OnMouseDown(int keyCode, Vec2 screenPos)
 
 void EditorNode::OnMouseUp(int keyCode, [[maybe_unused]] Vec2 screenPos)
 {
-	if (keyCode != KeyCodeLeftMouse)
+	if (keyCode != ToKeyCode(KeyCode::LeftMouse))
 	{
 		return;
 	}
@@ -177,34 +204,255 @@ void EditorNode::OnMouseUp(int keyCode, [[maybe_unused]] Vec2 screenPos)
 	}
 }
 
+void EditorNode::OnReady()
+{
+	m_uiContext.m_sceneTree  = GetSceneTree();
+	m_uiContext.m_selection  = &m_selection;
+	m_uiContext.m_editorUI   = m_editorUI;
+	m_uiContext.m_fileSystem = g_engine->m_fileSystem;
+}
+
 void EditorNode::OnProcess([[maybe_unused]] float deltaSeconds)
 {
-	if (g_engine->m_input->WasKeyJustPressed('1'))
+	if (m_editorUI != nullptr)
 	{
-		SceneTree* sceneTree = GetSceneTree();
-		SaveSceneToFile(sceneTree->GetScene(), "EditorSavedScene");
+		m_uiContext.m_isViewportImageHovered = false;
+
+		m_editorUI->Render(m_uiContext);
+		RenderUnsavedScenePopup();
 	}
 
-	if (g_engine->m_input->WasKeyJustPressed('2'))
+	InputSystem* input       = g_engine->m_inputSystem;
+	bool const   controlDown = input->IsKeyDown(KeyCode::LeftControl) || input->IsKeyDown(KeyCode::RightControl);
+	if (controlDown && input->WasKeyJustPressed(KeyCode::S) && HasScene())
 	{
-		SceneTree* sceneTree = GetSceneTree();
-
-		PackedScene packedScene;
-		packedScene.LoadFromFile("EditorSavedScene.json");
-
-		Node* newSceneRoot = packedScene.Instantiate();
-
-		if (newSceneRoot != nullptr)
+		if (!SaveScene() && m_editorUI != nullptr)
 		{
-			sceneTree->ChangeScene(newSceneRoot);
+			m_editorUI->Warning("Save Scene Failed", m_editorData.m_currentScenePath.GetString());
 		}
 	}
 
-	if (m_editorUI != nullptr)
+	// 1) Dispatch mouse events when in Pointer mode
+	if (m_editorCamera != nullptr && m_editorCamera->GetControlState() == EditorCamera::EditorControlState::Pointer)
 	{
-		EditorUIContext context;
-		context.m_sceneTree = GetSceneTree();
-		context.m_selection = &m_selection;
-		m_editorUI->Render(context);
+		Vec2 const cursorPos = m_editorCamera->GetCursorClientPos();
+		Vec2 const delta     = m_editorCamera->GetCursorDelta();
+
+		OnMouseMove(cursorPos, delta);
+
+		if (input->WasKeyJustPressed(KeyCode::LeftMouse))
+		{
+			OnMouseDown(ToKeyCode(KeyCode::LeftMouse), cursorPos);
+		}
+
+		if (input->WasKeyJustReleased(KeyCode::LeftMouse))
+		{
+			OnMouseUp(ToKeyCode(KeyCode::LeftMouse), cursorPos);
+		}
 	}
 }
+
+void EditorNode::RequestLoadScene(VirtualPath const& virtualPath)
+{
+	if (!m_editorData.m_isSceneDirty)
+	{
+		if (!LoadScene(virtualPath) && m_editorUI != nullptr)
+		{
+			m_editorUI->Warning("Open Scene Failed", virtualPath.GetString());
+		}
+		return;
+	}
+
+	// Store the requested load so the confirmation popup can resume it.
+	// e.g. ExecutePendingSceneAction() loads m_pendingScenePath after confirmation.
+	m_pendingSceneAction = PendingSceneAction::Load;
+	m_pendingScenePath   = virtualPath;
+	m_pendingSceneRootName.clear();
+	m_openUnsavedScenePopup = true;
+}
+
+void EditorNode::RequestCreateScene(VirtualPath const& virtualPath, std::string const& rootName)
+{
+	if (!m_editorData.m_isSceneDirty)
+	{
+		CreateScene(virtualPath, rootName);
+		return;
+	}
+
+	// Store the requested creation so no file is written before confirmation.
+	// e.g. ExecutePendingSceneAction() creates m_pendingScenePath after confirmation.
+	m_pendingSceneAction    = PendingSceneAction::Create;
+	m_pendingScenePath      = virtualPath;
+	m_pendingSceneRootName  = rootName;
+	m_openUnsavedScenePopup = true;
+}
+
+bool EditorNode::LoadScene(VirtualPath const& virtualPath)
+{
+	Ref<Resource> loadedScene = ResourceLoader::Load(virtualPath);
+	if (!loadedScene.IsValid())
+	{
+		return false;
+	}
+
+	Ref<PackedScene> packedScene(loadedScene);
+	if (!packedScene.IsValid())
+	{
+		return false;
+	}
+
+	Node* newSceneRoot = packedScene->Instantiate();
+	if (!newSceneRoot)
+	{
+		return false;
+	}
+
+	GetSceneTree()->ChangeScene(newSceneRoot);
+	m_editorData.m_currentScenePath = virtualPath;
+	m_editorData.m_isSceneDirty     = false;
+	m_selection.Clear();
+
+	return true;
+}
+
+bool EditorNode::SaveScene()
+{
+	SceneTree* sceneTree = GetSceneTree();
+	Node*      sceneRoot = sceneTree->GetScene();
+	if (sceneRoot == nullptr || !m_editorData.m_currentScenePath.IsValid())
+	{
+		return false;
+	}
+	Ref<PackedScene> packedScene = CreateRef<PackedScene>();
+
+	if (!packedScene->Pack(sceneRoot))
+	{
+		return false;
+	}
+
+	bool const result = ResourceSaver::Save(m_editorData.m_currentScenePath, packedScene);
+	if (result)
+	{
+		m_editorData.m_isSceneDirty = false;
+	}
+
+	return result;
+}
+
+void EditorNode::MarkSceneDirty()
+{
+	if (HasScene())
+	{
+		m_editorData.m_isSceneDirty = true;
+	}
+}
+
+bool EditorNode::IsSceneDirty() const { return m_editorData.m_isSceneDirty; }
+
+bool EditorNode::HasScene() const { return GetSceneTree() != nullptr && GetSceneTree()->GetScene() != nullptr; }
+
+std::string EditorNode::GetCurrentSceneName() const
+{
+	return !m_editorData.m_currentScenePath.IsValid()
+			   ? std::string()
+			   : m_editorData.m_currentScenePath.GetStem();
+}
+
+bool EditorNode::CreateScene(VirtualPath const& virtualPath, std::string const& rootName)
+{
+	Node3D* sceneRoot = new Node3D();
+	sceneRoot->SetName(rootName);
+	Ref<PackedScene> packedScene = CreateRef<PackedScene>();
+	if (!packedScene->Pack(sceneRoot) || !ResourceSaver::Save(virtualPath, packedScene))
+	{
+		delete sceneRoot;
+		if (m_editorUI != nullptr)
+		{
+			m_editorUI->Warning("Create Scene Failed", virtualPath.GetString());
+		}
+		return false;
+	}
+
+	GetSceneTree()->ChangeScene(sceneRoot);
+	m_editorData.m_currentScenePath = virtualPath;
+	m_editorData.m_isSceneDirty     = false;
+	m_selection.Clear();
+	if (g_engine->m_fileSystem != nullptr)
+	{
+		g_engine->m_fileSystem->ScanResourceTree();
+	}
+	return true;
+}
+
+void EditorNode::RenderUnsavedScenePopup()
+{
+	constexpr char const* popupId = "Please Confirm...";
+	if (m_openUnsavedScenePopup)
+	{
+		ImGui::OpenPopup(popupId);
+		m_openUnsavedScenePopup = false;
+	}
+	if (!EditorPopupUtils::BeginModal(popupId, ImVec2(560.f, 0.f), ImGuiWindowFlags_AlwaysAutoResize))
+	{
+		return;
+	}
+
+	ImGui::TextUnformatted(
+		!m_editorData.m_currentScenePath.IsValid() ? "This scene was never saved." : "This scene has unsaved changes.");
+	ImGui::Dummy(ImVec2(0.f, 12.f));
+	ImGui::TextUnformatted("Save before closing?");
+	ImGui::Dummy(ImVec2(0.f, 12.f));
+
+	bool const saveAndClose = ImGui::Button("Save & Close", ImVec2(130.f, 0.f));
+	ImGui::SameLine(0.f, 40.f);
+	bool const cancel = ImGui::Button("Cancel", ImVec2(130.f, 0.f));
+	ImGui::SameLine(0.f, 40.f);
+	bool const dontSave = ImGui::Button("Don't Save", ImVec2(130.f, 0.f));
+
+	if (saveAndClose)
+	{
+		if (SaveScene())
+		{
+			ImGui::CloseCurrentPopup();
+			ExecutePendingSceneAction();
+		}
+		else if (m_editorUI != nullptr)
+		{
+			m_editorUI->Warning("Save Scene Failed", m_editorData.m_currentScenePath.GetString());
+		}
+	}
+	else if (cancel)
+	{
+		m_pendingSceneAction = PendingSceneAction::None;
+		m_pendingScenePath = {};
+		m_pendingSceneRootName.clear();
+		ImGui::CloseCurrentPopup();
+	}
+	else if (dontSave)
+	{
+		ImGui::CloseCurrentPopup();
+		ExecutePendingSceneAction();
+	}
+
+	EditorPopupUtils::EndModal();
+}
+
+void EditorNode::ExecutePendingSceneAction()
+{
+	// Execute and clear the deferred scene operation selected before the popup.
+	// e.g. a pending load resumes after Save & Close or Don't Save.
+	PendingSceneAction const action   = m_pendingSceneAction;
+	VirtualPath const        path     = std::move(m_pendingScenePath);
+	std::string const        rootName = std::move(m_pendingSceneRootName);
+	m_pendingSceneAction              = PendingSceneAction::None;
+
+	bool const result = action == PendingSceneAction::Load
+							? LoadScene(path)
+							: action == PendingSceneAction::Create && CreateScene(path, rootName);
+	if (!result && action != PendingSceneAction::None && m_editorUI != nullptr)
+	{
+		m_editorUI->Warning(
+			action == PendingSceneAction::Load ? "Open Scene Failed" : "Create Scene Failed", path.GetString());
+	}
+}
+

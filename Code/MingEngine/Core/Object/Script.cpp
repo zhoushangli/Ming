@@ -1,0 +1,1 @@
+#include "MingEngine/Core/Object/Script.hpp"

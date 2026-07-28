@@ -16,12 +16,6 @@ public:
 
 	void SetMesh(std::vector<Vertex> const& vertices);
 
-	GameRaycastResult Raycast(RaycastInfo const& info) const override;
-
-protected:
-	void OnProcess(float deltaSeconds) override;
-
 private:
 	std::vector<Vertex> m_vertices;
 };
-

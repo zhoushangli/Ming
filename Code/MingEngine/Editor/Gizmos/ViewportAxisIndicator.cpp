@@ -1,22 +1,26 @@
 #include "MingEngine/Editor/Gizmos/ViewportAxisIndicator.hpp"
 
-#include "MingEngine/Editor/EditorController.hpp"
+#include "MingEngine/Editor/EditorCamera.hpp"
 #include "MingEngine/Scene/3D/Camera3D.hpp"
 #include "MingEngine/Scene/3D/Node3D.hpp"
 #include "MingEngine/Scene/Core/Viewport.hpp"
 
-#include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Core/Math/MathUtils.hpp"
+#include "MingEngine/Engine/Application/Engine.hpp"
+#include "MingEngine/Engine/Render/BuiltinShaders.hpp"
 #include "MingEngine/Engine/Render/Renderer.hpp"
 #include "MingEngine/Engine/Render/VertexBuffer.hpp"
+#include "MingEngine/Scene/Resource/ShaderResource.hpp"
+
+using namespace Math;
 
 #include <algorithm>
 
 namespace
 {
-Rgba8 const kAxisXColor(255, 70, 105, 255);
-Rgba8 const kAxisYColor(155, 225, 20, 255);
-Rgba8 const kAxisZColor(55, 160, 255, 255);
+Color const kAxisXColor(255, 70, 105, 255);
+Color const kAxisYColor(155, 225, 20, 255);
+Color const kAxisZColor(55, 160, 255, 255);
 
 float constexpr kCircleRadius = 10.f;
 float constexpr kLineWidth    = 3.f;
@@ -24,7 +28,7 @@ float constexpr kLineLength   = 50.f;
 int constexpr kCircleSegments = 16;
 
 void AddVertsForAxisLine(
-	std::vector<Vertex>& verts, Vec2 const& start, Vec2 const& end, float thickness, Rgba8 const& color)
+	std::vector<Vertex>& verts, Vec2 const& start, Vec2 const& end, float thickness, Color const& color)
 {
 	Vec2 const dir  = (end - start).GetNormalized();
 	Vec2 const perp = Vec2(-dir.y, dir.x) * (thickness * 0.5f);
@@ -39,14 +43,14 @@ void AddVertsForAxisLine(
 }
 
 void AddVertsForAxisPoint(
-	std::vector<Vertex>& verts, Vec2 const& center, float radius, float thickness, Rgba8 const& color)
+	std::vector<Vertex>& verts, Vec2 const& center, float radius, float thickness, Color const& color)
 {
 	for (int i = 0; i < kCircleSegments; ++i)
 	{
 		float const angle0 = (360.f / kCircleSegments) * (float)i;
 		float const angle1 = (360.f / kCircleSegments) * (float)(i + 1);
-		Vec2 const p0      = center + Vec2::MakeFromPolarDegrees(angle0, radius);
-		Vec2 const p1      = center + Vec2::MakeFromPolarDegrees(angle1, radius);
+		Vec2 const  p0     = center + Vec2::MakeFromPolarDegrees(angle0, radius);
+		Vec2 const  p1     = center + Vec2::MakeFromPolarDegrees(angle1, radius);
 
 		verts.emplace_back(Vec3(center.x, center.y, 0.f), color);
 		verts.emplace_back(Vec3(p0.x, p0.y, 0.f), color);
@@ -60,10 +64,10 @@ void AddVertsForAxisPoint(
 	{
 		float const angle0 = (360.f / kCircleSegments) * (float)i;
 		float const angle1 = (360.f / kCircleSegments) * (float)(i + 1);
-		Vec2 const inner0  = center + Vec2::MakeFromPolarDegrees(angle0, innerR);
-		Vec2 const inner1  = center + Vec2::MakeFromPolarDegrees(angle1, innerR);
-		Vec2 const outer0  = center + Vec2::MakeFromPolarDegrees(angle0, outerR);
-		Vec2 const outer1  = center + Vec2::MakeFromPolarDegrees(angle1, outerR);
+		Vec2 const  inner0 = center + Vec2::MakeFromPolarDegrees(angle0, innerR);
+		Vec2 const  inner1 = center + Vec2::MakeFromPolarDegrees(angle1, innerR);
+		Vec2 const  outer0 = center + Vec2::MakeFromPolarDegrees(angle0, outerR);
+		Vec2 const  outer1 = center + Vec2::MakeFromPolarDegrees(angle1, outerR);
 
 		verts.emplace_back(Vec3(outer0.x, outer0.y, 0.f), color);
 		verts.emplace_back(Vec3(outer1.x, outer1.y, 0.f), color);
@@ -81,45 +85,56 @@ ViewportAxisIndicator::ViewportAxisIndicator()
 	SetReady(true);
 	SetProcess(true);
 
-	m_vertexBuffer = g_engine->m_renderer->CreateVertexBuffer(std::vector<Vertex>{ Vertex(Vec3::Zero, Rgba8::White) });
+	std::vector<Vertex> verts{ Vertex(Vec3::Zero, Color::White) };
+	m_vertexBuffer = g_engine->m_renderer->CreateVertexBuffer(
+		verts.data(),
+		(unsigned int)(verts.size() * sizeof(Vertex)),
+		sizeof(Vertex));
 }
 
 ViewportAxisIndicator::~ViewportAxisIndicator() {}
 
-void ViewportAxisIndicator::OnEnterTree()
+void ViewportAxisIndicator::OnNotification(int notification)
 {
-	EditorGizmoVisual3D::OnEnterTree();
-
-	Camera3D* editorCamera     = EditorController::Get()->GetCamera();
-	EulerAngles cameraRotation = editorCamera->GetWorldOrientation();
-	m_lastCameraRotation       = cameraRotation;
-	RebuildVertexBuffer();
-}
-
-void ViewportAxisIndicator::OnProcess([[maybe_unused]] float deltaSeconds)
-{
-	Camera3D* editorCamera     = EditorController::Get()->GetCamera();
-	EulerAngles cameraRotation = editorCamera->GetWorldOrientation();
-
-	// We just hardcode the position
-	IntVec2 dimensions = m_data.m_viewport->GetOutputResolution();
-	Vec2 center        = (Vec2)dimensions - Vec2(100.f, 100.f);
-
-	if (cameraRotation != m_lastCameraRotation || center != m_center)
+	switch (static_cast<NotificationType>(notification))
 	{
-		m_lastCameraRotation = cameraRotation;
-		m_center = center;
+	case NotificationType::EnterTree:
+	{
+		Camera3D*   editorCamera   = EditorCamera::Get()->GetCamera();
+		EulerAngles cameraRotation = editorCamera->GetWorldOrientation();
+		m_lastCameraRotation       = cameraRotation;
 		RebuildVertexBuffer();
+		break;
+	}
+	case NotificationType::Process:
+	{
+		Camera3D*   editorCamera   = EditorCamera::Get()->GetCamera();
+		EulerAngles cameraRotation = editorCamera->GetWorldOrientation();
+
+		// We just hardcode the position
+		IntVec2 dimensions = m_data.m_viewport->GetOutputResolution();
+		Vec2    center     = (Vec2)dimensions - Vec2(100.f, 100.f);
+
+		if (cameraRotation != m_lastCameraRotation || center != m_center)
+		{
+			m_lastCameraRotation = cameraRotation;
+			m_center             = center;
+			RebuildVertexBuffer();
+		}
+		break;
+	}
 	}
 }
 
 RenderRequest ViewportAxisIndicator::SubmitRenderRequest() const
 {
 	RenderRequest request;
-	request.m_pass           = RenderRequestPass::UI;
-	request.m_modelToWorld   = Matrix4x4::Identity;
-	request.m_vertexBuffer   = m_vertexBuffer;
-	request.m_shader         = g_engine->m_renderer->CreateOrGetShader("Data/Shaders/DefaultUI");
+	request.m_pass         = RenderRequestPass::UI;
+	request.m_modelToWorld = Matrix4x4::Identity;
+	request.m_vertexBuffer = m_vertexBuffer;
+	Ref<ShaderResource> shaderResource =
+		g_engine->m_renderer->GetBuiltinShaderResource("DefaultUI", BuiltinShaders::DefaultUI);
+	request.m_shader         = shaderResource.IsValid() ? shaderResource->GetShader() : nullptr;
 	request.m_blendMode      = BlendMode::ALPHA;
 	request.m_depthMode      = DepthMode::DISABLED;
 	request.m_rasterizerMode = RasterizerMode::SOLID_CULL_NONE;
@@ -158,7 +173,7 @@ void ViewportAxisIndicator::RebuildVertexBuffer()
 
 	for (Axis2D const& axis : m_axises)
 	{
-		Rgba8 axisColor = Rgba8::White;
+		Color axisColor = Color::White;
 		if (axis.m_axis == 0 || axis.m_axis == 3)
 			axisColor = kAxisXColor;
 		else if (axis.m_axis == 1 || axis.m_axis == 4)
@@ -181,6 +196,8 @@ void ViewportAxisIndicator::RebuildVertexBuffer()
 			axisColor);
 	}
 
-	g_engine->m_renderer->UpdateVertexBuffer(m_vertexBuffer, m_verts);
+	g_engine->m_renderer->UpdateVertexBuffer(
+		m_vertexBuffer,
+		m_verts.data(),
+		(unsigned int)(m_verts.size() * sizeof(Vertex)));
 }
-
