@@ -136,6 +136,9 @@
     <Filter Include="ThirdParty\miniaudio">
       <UniqueIdentifier>{fc603be4-6932-4a78-9d4c-1c53d22e8e02}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Editor\Icons">
+      <UniqueIdentifier>{f6a9b2d7-fb76-40d2-8a0c-da3a8571fb25}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Core\Clock.cpp">
@@ -1231,6 +1234,9 @@
     </ClInclude>
     <ClInclude Include="..\ThirdParty\miniaudio\miniaudio.h">
       <Filter>ThirdParty\miniaudio</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\Icons\BuiltinIcons.hpp">
+      <Filter>Editor\Icons</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

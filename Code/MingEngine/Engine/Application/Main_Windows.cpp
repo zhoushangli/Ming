@@ -4,9 +4,54 @@
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#include <shellapi.h>
 
-int WINAPI WinMain( [[maybe_unused]] HINSTANCE applicationInstanceHandle, HINSTANCE, [[maybe_unused]] LPSTR commandLineString, int)
+namespace
 {
-	MingRunConfig config;
-	return MingEngine::Run(config);
+	bool TryParseRunConfig(MingRunConfig &outConfig, int argc, wchar_t **argv)
+	{
+		for (int i = 1; i < argc; ++i)
+		{
+			std::wstring const arg = argv[i];
+			if (arg == L"--game")
+			{
+				outConfig.mode = MingRunMode::Game;
+			}
+			else if (arg == L"--editor")
+			{
+				outConfig.mode = MingRunMode::Editor;
+			}
+			else if (arg == L"--project" && i + 1 < argc)
+			{
+				outConfig.projectPath = argv[i + 1];
+				++i;
+			}
+			else
+			{
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	int Main(int argc, wchar_t **wc_argv)
+	{
+		wc_argv = CommandLineToArgvW(GetCommandLineW(), &argc);
+
+		MingRunConfig config;
+		bool success = TryParseRunConfig(config, argc, wc_argv);
+
+		if (!success)
+		{
+			return EXIT_FAILURE;
+		}
+
+		return MingEngine::Run(config);
+	}
+}
+
+int WINAPI WinMain([[maybe_unused]] HINSTANCE applicationInstanceHandle, HINSTANCE, [[maybe_unused]] LPSTR commandLineString, int)
+{
+	return Main(0, nullptr);
 }

@@ -2,25 +2,34 @@
 
 #include "MingEngine/Engine/Event/EventSystem.hpp"
 
+#include <filesystem>
+
 class Clock;
 class EditorCamera;
 class Node;
 class SceneTree;
 
+enum class MingRunMode
+{
+	Editor,
+	Game
+};
+
 struct MingRunConfig
 {
-	float m_windowAspect = 16.f / 9.f;
+	MingRunMode mode = MingRunMode::Editor;
+	std::filesystem::path projectPath;
 };
 
 namespace MingEngine
 {
-int Run(MingRunConfig const& config);
+	int Run(MingRunConfig const &config);
 } // namespace MingEngine
 
 class App
 {
 public:
-	explicit App(MingRunConfig const& config);
+	explicit App(MingRunConfig const &config);
 	~App();
 
 	void Startup();
@@ -32,7 +41,7 @@ public:
 
 	bool IsQuitting() const { return m_shouldQuit; }
 
-	static bool OnQuit(EventArgs& args);
+	static bool OnQuit(EventArgs &args);
 
 private:
 	void Update(float deltaSeconds);
@@ -45,14 +54,14 @@ private:
 
 private:
 	bool m_shouldRestart = false;
-	bool m_shouldQuit    = false;
+	bool m_shouldQuit = false;
 
-	Clock*          m_clock     = nullptr;
-	SceneTree*      m_sceneTree = nullptr;
-	MingRunConfig   m_runConfig;
+	Clock *m_clock = nullptr;
+	SceneTree *m_sceneTree = nullptr;
+	MingRunConfig m_runConfig;
 
-	EditorCamera* m_editorCamera = nullptr;
-	bool          m_isSlowMode   = false;
+	EditorCamera *m_editorCamera = nullptr;
+	bool m_isSlowMode = false;
 };
 
-extern App* g_app;
+extern App *g_app;

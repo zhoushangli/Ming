@@ -31,8 +31,10 @@ App* g_app = nullptr;
 App::App(MingRunConfig const& config) : m_runConfig(config)
 {
 	EngineConfig engineConfig;
-	engineConfig.m_windowConfig.m_clientAspect = m_runConfig.m_windowAspect;
+	engineConfig.m_windowConfig.m_clientAspect = 16.f / 9.f;
 	engineConfig.m_windowConfig.m_appName      = "MingEngine";
+	engineConfig.m_fileSystemConfig.m_resourceRoot = config.projectPath;
+
 	DevConsoleConfig consoleConfig;
 	consoleConfig.m_isEnable = false;
 

@@ -286,6 +286,7 @@
     <ClInclude Include="Core\Object\ScriptLoader.hpp" />
     <ClInclude Include="Core\Render\SurfaceTool.hpp" />
     <ClInclude Include="Editor\EditorData.hpp" />
+    <ClInclude Include="Editor\Icons\BuiltinIcons.hpp" />
     <ClInclude Include="Engine\Application\App.hpp" />
     <ClInclude Include="Core\Clock.hpp" />
     <ClInclude Include="EngineService\DevConsole.hpp" />
