@@ -26,38 +26,6 @@ void RenderPanelMenuItem(EditorPanel& panel)
 	}
 }
 
-bool RenderMainMenuIconButton(char const* id, char const* iconName, char const* tooltip)
-{
-	ImVec2 const iconSize   = EditorUIStyle::MainMenuIconSize();
-	ImVec2 const buttonSize = EditorUIStyle::MainMenuIconButtonSize();
-
-	ImTextureID const textureId = EditorIcons::GetIconId(iconName);
-	ImGui::PushStyleColor(ImGuiCol_Button, EditorUIStyle::ControlBackgroundColor());
-	ImGui::PushStyleColor(ImGuiCol_ButtonHovered, EditorUIStyle::ControlBackgroundHoveredColor());
-	ImGui::PushStyleColor(ImGuiCol_ButtonActive, EditorUIStyle::ControlBackgroundActiveColor());
-	bool const clicked = ImGui::Button(id, buttonSize);
-	ImGui::PopStyleColor(3);
-
-	if (textureId != ImTextureID{})
-	{
-		ImVec2 const itemMin = ImGui::GetItemRectMin();
-		ImVec2 const itemMax = ImGui::GetItemRectMax();
-		ImVec2 const itemCenter((itemMin.x + itemMax.x) * 0.5f, (itemMin.y + itemMax.y) * 0.5f);
-		ImVec2 const iconMin(itemCenter.x - iconSize.x * 0.5f, itemCenter.y - iconSize.y * 0.5f);
-		EditorIcons::AddImage(
-			ImGui::GetWindowDrawList(),
-			textureId,
-			iconMin,
-			ImVec2(iconMin.x + iconSize.x, iconMin.y + iconSize.y));
-	}
-
-	if (ImGui::IsItemHovered())
-	{
-		ImGui::SetTooltip("%s", tooltip);
-	}
-
-	return clicked;
-}
 } // namespace
 
 void EditorUI::Render(EditorUIContext& context)
@@ -138,14 +106,6 @@ void EditorUI::RenderMainMenuBar()
 		ImGui::MenuItem("Reload Project");
 		ImGui::EndMenu();
 	}
-	if (ImGui::BeginMenu("Debug"))
-	{
-		ImGui::MenuItem("Start");
-		ImGui::MenuItem("Pause");
-		ImGui::MenuItem("Stop");
-		ImGui::MenuItem("Step Frame");
-		ImGui::EndMenu();
-	}
 	if (ImGui::BeginMenu("Editor"))
 	{
 		ImGui::MenuItem("Editor Settings...");
@@ -167,28 +127,6 @@ void EditorUI::RenderMainMenuBar()
 		ImGui::MenuItem("About Project QingChen");
 		ImGui::EndMenu();
 	}
-
-	ImGuiStyle const& style        = ImGui::GetStyle();
-	ImVec2 const      buttonSize   = EditorUIStyle::MainMenuIconButtonSize();
-	float const       toolbarWidth = buttonSize.x * 2.f + style.ItemSpacing.x;
-	float const       toolbarX     = ImGui::GetWindowWidth() - toolbarWidth - style.FramePadding.x;
-	if (toolbarX > ImGui::GetCursorPosX())
-	{
-		ImGui::SetCursorPosX(toolbarX);
-	}
-
-	if (RenderMainMenuIconButton("##EditorPlay", "Play", "Start"))
-	{
-		EditorNode::Get()->PlayScene();
-	}
-
-	ImGui::SameLine();
-
-	if (RenderMainMenuIconButton("##EditorStop", "Stop", "Stop"))
-	{
-		EditorNode::Get()->StopScene();
-	}
-
 	ImGui::EndMainMenuBar();
 	ImGui::PopStyleVar();
 }

@@ -30,7 +30,8 @@ Ref<Resource> ShaderResourceLoader::Load(VirtualPath const& virtualPath)
 		ERROR_AND_DIE(Stringf("Failed to read shader file \"%s\"", virtualPath.CStr()));
 	};
 
-	Shader* shader = g_engine->m_renderer->CreateShader(virtualPath, shaderSource);
+	Shader* shader =
+		g_engine->m_renderer->CreateShader(virtualPath.GetString(), shaderSource, physicalPath.string());
 	if (shader == nullptr)
 	{
 		ERROR_AND_DIE(Stringf("Failed to create shader from file \"%s\"", virtualPath.CStr()));

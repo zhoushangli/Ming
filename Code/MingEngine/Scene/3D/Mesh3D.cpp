@@ -1,8 +1,8 @@
 #include "MingEngine/Scene/3D/Mesh3D.hpp"
 
 #include "MingEngine/Core/Math/RaycastUtils.hpp"
-#include "MingEngine/Core/Object/ResourceLoader.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
+#include "MingEngine/Engine/Render/BuiltinShaders.hpp"
 #include "MingEngine/Engine/Render/DebugGizmos.hpp"
 #include "MingEngine/Engine/Render/Renderer.hpp"
 #include "MingEngine/Scene/Core/SceneTree.hpp"
@@ -164,7 +164,8 @@ RenderRequest Mesh3D::SubmitRenderRequest() const
 	request.m_textures[SurfaceTextureSlot::Diffuse] = m_meshResource->m_textureResources.size() > 0
 														  ? m_meshResource->m_textureResources[0]->GetGPUTexture()
 														  : nullptr;
-	Ref<ShaderResource> shaderResource(ResourceLoader::Load("res://Shaders/DefaultLit.hlsl"));
+	Ref<ShaderResource> shaderResource =
+		g_engine->m_renderer->GetBuiltinShaderResource("DefaultLit", BuiltinShaders::DefaultLit);
 	request.m_shader         = shaderResource.IsValid() ? shaderResource->GetShader() : nullptr;
 	request.m_blendMode      = BlendMode::OPAQUE;
 	request.m_depthMode      = DepthMode::READ_WRITE_LESS_EQUAL;

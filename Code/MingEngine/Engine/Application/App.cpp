@@ -16,36 +16,25 @@
 #include "MingEngine/Scene/3D/Camera3D.hpp"
 #include "MingEngine/Scene/3D/Light3D.hpp"
 #include "MingEngine/Scene/Core/Node.hpp"
-#include "MingEngine/Scene/Core/PackedScene.hpp"
 #include "MingEngine/Scene/Core/SceneTree.hpp"
 #include "MingEngine/Scene/RegisterAllTypes.hpp"
-
-#if defined(MING_EDITOR)
 
 #include "MingEngine/Editor/EditorCamera.hpp"
 #include "MingEngine/Editor/EditorNode.hpp"
 #include "MingEngine/Editor/Gizmos/EditorGizmos.hpp"
 #include "MingEngine/Editor/UI/EditorIcons.hpp"
 
-#endif
-
 #include "ThirdParty/GLFW/glfw3.h"
 
 App* g_app = nullptr;
 
-App::App(IProjectModule& project, MingRunConfig const& config) : m_project(project), m_runConfig(config)
+App::App(MingRunConfig const& config) : m_runConfig(config)
 {
 	EngineConfig engineConfig;
 	engineConfig.m_windowConfig.m_clientAspect = m_runConfig.m_windowAspect;
-	engineConfig.m_windowConfig.m_appName      = m_project.GetProjectName();
+	engineConfig.m_windowConfig.m_appName      = "MingEngine";
 	DevConsoleConfig consoleConfig;
-
-#if defined(MING_EDITOR)
 	consoleConfig.m_isEnable = false;
-#else
-	consoleConfig.m_isEnable = true;
-	consoleConfig.m_fontName = "pixel_operator";
-#endif
 
 	g_engine        = new Engine(engineConfig);
 	g_engineService = new EngineService(consoleConfig);
@@ -67,15 +56,11 @@ void App::Startup()
 	ClassDatabase::Startup();
 
 	RegisterAllTypes();
-	m_project.RegisterTypes();
 
 	g_engine->Startup();
 	g_engineService->Startup();
-	m_project.Startup();
 
-#if defined(MING_EDITOR)
 	EditorIcons::Startup();
-#endif
 
 	StartupScene();
 	RegisterEvent("Quit", App::OnQuit);
@@ -90,14 +75,11 @@ void App::Shutdown()
 		UnregisterEvent("Quit", App::OnQuit);
 	}
 
-	m_project.Shutdown();
 	ClassDatabase::Shutdown();
 
 	ResourceLoader::Shutdown();
 
-#if defined(MING_EDITOR)
 	EditorIcons::Shutdown();
-#endif
 
 	g_engineService->Shutdown();
 	g_engine->Shutdown();
@@ -124,18 +106,6 @@ void App::Update(float deltaSeconds)
 			g_engine->m_inputSystem->ClearCursorDelta();
 		}
 	}
-
-#ifndef MING_EDITOR
-	if (g_engine->m_inputSystem->WasKeyJustPressed(KeyCode::Esc))
-	{
-		bool const isConsoleOpen =
-			g_engineService != nullptr && g_engineService->m_console != nullptr && g_engineService->m_console->IsOpen();
-		if (!isConsoleOpen)
-		{
-			FireEvent("Quit");
-		}
-	}
-#endif
 
 	float const sceneDeltaSeconds = m_clock != nullptr ? static_cast<float>(m_clock->GetDeltaSeconds()) : deltaSeconds;
 	if (m_sceneTree != nullptr)
@@ -217,8 +187,6 @@ void App::StartupScene()
 	m_clock     = new Clock();
 	m_sceneTree = new SceneTree();
 
-#if defined(MING_EDITOR)
-
 	auto editorNode = new EditorNode();
 	editorNode->SetName("EditorNode");
 	m_sceneTree->GetRoot()->AddNode(editorNode);
@@ -227,29 +195,12 @@ void App::StartupScene()
 	{
 		editorNode->LoadScene(startScenePath);
 	}
-
-#else
-
-	VirtualPath const& startScenePath = ProjectSettings::Get()->m_startScenePath;
-	Ref<Resource> loadedScene = !startScenePath.IsValid() ? Ref<Resource>(nullptr) : ResourceLoader::Load(startScenePath);
-	Variant       sceneValue  = loadedScene;
-	Ref<PackedScene> packedScene(sceneValue);
-	Node*            newSceneRoot = packedScene.IsValid() ? packedScene->Instantiate() : nullptr;
-
-	if (newSceneRoot != nullptr)
-	{
-		m_sceneTree->ChangeScene(newSceneRoot);
-	}
-
-#endif
 }
 
 void App::ShutdownScene()
 {
-#if defined(MING_EDITOR)
 	m_editorCamera = nullptr;
 	m_isSlowMode   = false;
-#endif
 
 	delete m_sceneTree;
 	m_sceneTree = nullptr;
@@ -258,11 +209,11 @@ void App::ShutdownScene()
 	m_clock = nullptr;
 }
 
-int MingEngine::Run(IProjectModule& project, MingRunConfig const& config)
+int MingEngine::Run(MingRunConfig const& config)
 {
-	App app(project, config);
+	App app(config);
 	g_app = &app;
-
+ 
 	app.Startup();
 	app.RunMainLoop();
 	app.Shutdown();

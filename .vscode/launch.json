@@ -1,0 +1,14 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Launch MingEngine Debug",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}\\Temporary\\MingEngine_x64_Debug\\MingEngine.exe",
+            "cwd": "${workspaceFolder}\\Run",
+            "preLaunchTask": "Build MingEngine Debug",
+            "stopAtEntry": false
+        }
+    ]
+}

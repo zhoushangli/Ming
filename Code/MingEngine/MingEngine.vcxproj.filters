@@ -219,6 +219,9 @@
     <ClCompile Include="Editor\UI\EditorIcons.cpp">
       <Filter>Editor\UI</Filter>
     </ClCompile>
+    <ClCompile Include="Editor\UI\JetBrainsMonoFontData.cpp">
+      <Filter>Editor\UI</Filter>
+    </ClCompile>
     <ClCompile Include="Editor\UI\EditorPanel.cpp">
       <Filter>Editor\UI</Filter>
     </ClCompile>
@@ -256,6 +259,9 @@
       <Filter>Editor\Gizmos</Filter>
     </ClCompile>
     <ClCompile Include="Engine\ImGui\ImGuiSystem.cpp">
+      <Filter>Engine\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\ImGui\DefaultImGuiLayout.cpp">
       <Filter>Engine\ImGui</Filter>
     </ClCompile>
     <ClCompile Include="Core\Math\AABB2.cpp">
@@ -352,6 +358,9 @@
       <Filter>Engine\Window</Filter>
     </ClCompile>
     <ClCompile Include="Engine\Render\BitmapFont.cpp">
+      <Filter>Engine\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Render\BuiltinShaders.cpp">
       <Filter>Engine\Render</Filter>
     </ClCompile>
     <ClCompile Include="Engine\Render\CameraContext.cpp">
@@ -722,6 +731,9 @@
     <ClInclude Include="Editor\UI\EditorIcons.hpp">
       <Filter>Editor\UI</Filter>
     </ClInclude>
+    <ClInclude Include="Editor\UI\JetBrainsMonoFont.hpp">
+      <Filter>Editor\UI</Filter>
+    </ClInclude>
     <ClInclude Include="Editor\UI\EditorPanel.hpp">
       <Filter>Editor\UI</Filter>
     </ClInclude>
@@ -762,6 +774,9 @@
       <Filter>Editor\Gizmos</Filter>
     </ClInclude>
     <ClInclude Include="Engine\ImGui\ImGuiSystem.hpp">
+      <Filter>Engine\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\ImGui\DefaultImGuiLayout.hpp">
       <Filter>Engine\ImGui</Filter>
     </ClInclude>
     <ClInclude Include="Core\Math\AABB2.hpp">
@@ -864,6 +879,9 @@
       <Filter>Engine\Window</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Render\BitmapFont.hpp">
+      <Filter>Engine\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Render\BuiltinShaders.hpp">
       <Filter>Engine\Render</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Render\CameraContext.hpp">

@@ -131,14 +131,8 @@ protected:
 		std::unique_ptr<ScriptInstance> m_scriptInstance   = nullptr;
 		bool                            m_isPendingDestroy = false;
 		bool                            m_isSerializable   = true;
-
-#if defined(MING_EDITOR)
 		bool m_enableReady   = false;
 		bool m_enableProcess = false;
-#else
-		bool m_enableReady   = true;
-		bool m_enableProcess = true;
-#endif
 	};
 
 	NodeData m_data;

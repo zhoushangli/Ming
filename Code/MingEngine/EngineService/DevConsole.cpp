@@ -410,9 +410,5 @@ void DevConsole::RecallHistory(int direction)
 
 bool DevConsole::IsRuntimeEnabled() const
 {
-#if defined(MING_EDITOR)
 	return false;
-#else
-	return true;
-#endif
 }

@@ -1,7 +1,7 @@
 #include "MingEngine/Engine/Render/DebugObject.hpp"
 
 #include "MingEngine/Core/Math/MathUtils.hpp"
-#include "MingEngine/Core/Object/ResourceLoader.hpp"
+#include "MingEngine/Engine/Render/BuiltinShaders.hpp"
 #include "MingEngine/Core/Render/VertexUtils.hpp"
 #include "MingEngine/Engine/Render/BitmapFont.hpp"
 #include "MingEngine/Engine/Render/Renderer.hpp"
@@ -144,8 +144,9 @@ bool DebugObject::IsScreenObject() const
 void DebugObject::UpdateRenderData(Renderer& renderer, BitmapFont* font, int messageLine)
 {
 	m_texture = nullptr;
-	m_shaderResource =
-		ResourceLoader::Load(IsScreenObject() ? "res://Shaders/DefaultUI.hlsl" : "res://Shaders/DefaultUnlit.hlsl");
+	m_shaderResource = IsScreenObject()
+						   ? renderer.GetBuiltinShaderResource("DefaultUI", BuiltinShaders::DefaultUI)
+						   : renderer.GetBuiltinShaderResource("DefaultUnlit", BuiltinShaders::DefaultUnlit);
 
 	if (UsesUniformColor())
 	{

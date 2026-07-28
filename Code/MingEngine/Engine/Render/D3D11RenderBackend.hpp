@@ -228,7 +228,8 @@ public:
 	ConstantBuffer* GetBuiltinConstantBuffer(BuiltinConstantBufferType id);
 
 	// GPU resource creation
-	Shader* CreateShader(VirtualPath const& shaderVirtualPath, std::string const& shaderSource);
+	Shader* CreateShader(
+		std::string const& shaderName, std::string const& shaderSource, std::string const& shaderSourcePath);
 
 	GPUTexture* CreateGPUTexture(char const* name, IntVec2 dimensions, int bytesPerTexel, uint8_t const* texelData);
 	GPUTexture* CreateRenderTargetTexture(char const* name, IntVec2 dimensions);

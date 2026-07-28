@@ -2,8 +2,8 @@
 
 #include "MingEngine/Core/Clock.hpp"
 #include "MingEngine/Core/Math/EulerAngles.hpp"
-#include "MingEngine/Core/Object/ResourceLoader.hpp"
 #include "MingEngine/Engine/Render/CameraContext.hpp"
+#include "MingEngine/Engine/Render/BuiltinShaders.hpp"
 #include "MingEngine/Engine/Render/DebugGizmos.hpp"
 #include "MingEngine/Engine/Render/PostProcessChain.hpp"
 #include "MingEngine/Engine/Render/RenderContext.hpp"
@@ -71,8 +71,9 @@ void Renderer::Startup()
 	m_defaultMagentaTexture = CreateGPUTexture("DefaultMagenta", IntVec2(2, 2), 4, kDefaultMagentaTexture);
 	m_defaultNormalTexture  = CreateGPUTexture("DefaultNormal", IntVec2(2, 2), 4, kDefaultNormalTexture);
 	m_defaultSGETexture     = CreateGPUTexture("DefaultSGE", IntVec2(2, 2), 4, kDefaultSGETexture);
-	m_defaultShaderResource         = ResourceLoader::Load("res://Shaders/DefaultUnlit.hlsl");
-	m_postProcessCopyShaderResource = ResourceLoader::Load("res://Shaders/PostProcessCopy.hlsl");
+	m_defaultShaderResource         = GetBuiltinShaderResource("DefaultUnlit", BuiltinShaders::DefaultUnlit);
+	m_postProcessCopyShaderResource =
+		GetBuiltinShaderResource("PostProcessCopy", BuiltinShaders::PostProcessCopy);
 
 	DebugRenderConfig debugConfig;
 	debugConfig.m_renderer = this;
@@ -84,6 +85,7 @@ void Renderer::Shutdown()
 	DebugGizmos::Shutdown();
 	m_defaultShaderResource         = nullptr;
 	m_postProcessCopyShaderResource = nullptr;
+	m_builtinShaderResources.clear();
 
 	if (m_renderBackend != nullptr)
 	{
@@ -460,9 +462,26 @@ void Renderer::RenderUI(ViewportInfo const& viewport)
 	}
 }
 
-Shader* Renderer::CreateShader(VirtualPath const& shaderVirtualPath, std::string const& shaderSource)
+Shader* Renderer::CreateShader(
+	std::string const& shaderName, std::string const& shaderSource, std::string const& shaderSourcePath)
 {
-	return m_renderBackend->CreateShader(shaderVirtualPath, shaderSource);
+	return m_renderBackend->CreateShader(shaderName, shaderSource, shaderSourcePath);
+}
+
+Ref<ShaderResource> Renderer::GetBuiltinShaderResource(
+	std::string const& shaderName, std::string_view shaderSource)
+{
+	auto const found = m_builtinShaderResources.find(shaderName);
+	if (found != m_builtinShaderResources.end())
+	{
+		return found->second;
+	}
+
+	Ref<ShaderResource> shaderResource = CreateRef<ShaderResource>();
+	shaderResource->SetName(shaderName);
+	shaderResource->SetShader(CreateShader(shaderName, std::string(shaderSource)));
+	m_builtinShaderResources.emplace(shaderName, shaderResource);
+	return shaderResource;
 }
 GPUTexture* Renderer::CreateGPUTexture(
 	char const* name, IntVec2 dimensions, int bytesPerTexel, uint8_t const* texelData)

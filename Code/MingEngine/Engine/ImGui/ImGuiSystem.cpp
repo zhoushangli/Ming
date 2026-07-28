@@ -1,6 +1,8 @@
 #include "MingEngine/Engine/ImGui/ImGuiSystem.hpp"
 
+#include "MingEngine/Editor/UI/JetBrainsMonoFont.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
+#include "MingEngine/Engine/ImGui/DefaultImGuiLayout.hpp"
 
 #include "ThirdParty/imgui/backends/imgui_impl_dx11.h"
 #include "ThirdParty/imgui/backends/imgui_impl_glfw.h"
@@ -107,7 +109,8 @@ void ApplyGodotImGuiTheme()
 	colors[ImGuiCol_ModalWindowDimBg]          = RGBA(0.f, 0.f, 0.f, 0.45f);
 
 	ImGuiIO& io = ImGui::GetIO();
-	io.Fonts->AddFontFromFileTTF("Data/Fonts/JetBrainsMono-Regular.ttf", 24.0f);
+	io.Fonts->AddFontFromMemoryCompressedTTF(
+		JetBrainsMonoFont::GetData(), static_cast<int>(JetBrainsMonoFont::GetSize()), 24.f);
 }
 } // namespace
 
@@ -126,6 +129,7 @@ void ImGuiSystem::Startup()
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 	io.IniFilename = kImGuiIniFilePath;
+	ImGui::LoadIniSettingsFromMemory(DefaultImGuiLayout::Data.data(), DefaultImGuiLayout::Data.size());
 
 	ApplyGodotImGuiTheme();
 

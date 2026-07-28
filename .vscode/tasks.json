@@ -1,0 +1,38 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Build MingEngine Debug",
+            "type": "process",
+            "command": "C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\MSBuild\\Current\\Bin\\MSBuild.exe",
+            "args": [
+                "${workspaceFolder}\\MingEngine.sln",
+                "/m",
+                "/nologo",
+                "/verbosity:minimal",
+                "/property:Configuration=Debug",
+                "/property:Platform=x64"
+            ],
+            "problemMatcher": "$msCompile",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "Build MingEngine Release",
+            "type": "process",
+            "command": "C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\MSBuild\\Current\\Bin\\MSBuild.exe",
+            "args": [
+                "${workspaceFolder}\\MingEngine.sln",
+                "/m",
+                "/nologo",
+                "/verbosity:minimal",
+                "/property:Configuration=Release",
+                "/property:Platform=x64"
+            ],
+            "problemMatcher": "$msCompile",
+            "group": "build"
+        }
+    ]
+}

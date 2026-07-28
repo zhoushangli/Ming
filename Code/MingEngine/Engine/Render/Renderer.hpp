@@ -5,6 +5,8 @@
 #include "MingEngine/Scene/Resource/ShaderResource.hpp"
 
 #include <string>
+#include <string_view>
+#include <unordered_map>
 
 class ViewportInfo;
 struct RenderRequest;
@@ -32,7 +34,9 @@ public:
 	void DestroyViewportResources(ViewportInfo& viewport);
 	void CopyTextureToBackBuffer(GPUTexture* colorTexture);
 
-	Shader* CreateShader(VirtualPath const& shaderVirtualPath, std::string const& shaderSource);
+	Shader* CreateShader(
+		std::string const& shaderName, std::string const& shaderSource, std::string const& shaderSourcePath = {});
+	Ref<ShaderResource> GetBuiltinShaderResource(std::string const& shaderName, std::string_view shaderSource);
 
 	GPUTexture* CreateGPUTexture(char const* name, IntVec2 dimensions, int bytesPerTexel, uint8_t const* texelData);
 	GPUTexture* CreateRenderTargetTexture(char const* name, IntVec2 dimensions);
@@ -77,6 +81,7 @@ private:
 
 	Ref<ShaderResource> m_defaultShaderResource;
 	Ref<ShaderResource> m_postProcessCopyShaderResource;
+	std::unordered_map<std::string, Ref<ShaderResource>> m_builtinShaderResources;
 
 	GPUTexture* m_defaultWhiteTexture   = nullptr;
 	GPUTexture* m_defaultMagentaTexture = nullptr;

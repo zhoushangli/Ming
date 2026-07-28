@@ -27,11 +27,9 @@
 #include "MingEngine/Scene/Resource/TextureResource.hpp"
 #include "MingEngine/Scene/Resource/TextureResourceFormat.hpp"
 
-#if defined(MING_EDITOR)
 #include "MingEngine/Editor/EditorCamera.hpp"
 #include "MingEngine/Editor/EditorNode.hpp"
 #include "MingEngine/Editor/Gizmos/EditorGizmos.hpp"
-#endif
 
 namespace
 {
@@ -106,11 +104,9 @@ void RegisterSceneTypes()
 	ClassDatabase::RegisterClass<VisualizeInstance3D>(false);
 	ClassDatabase::RegisterClass<Mesh3D>();
 
-#if defined(MING_EDITOR)
 	ClassDatabase::RegisterClass<EditorNode>(false);
 	ClassDatabase::RegisterClass<EditorGizmos>(false);
 	ClassDatabase::RegisterClass<EditorCamera>(false);
-#endif
 }
 
 #pragma endregion

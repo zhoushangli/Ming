@@ -2,13 +2,13 @@
 
 #include "MingEngine/Core/Math/MathUtils.hpp"
 #include "MingEngine/Core/Math/RaycastUtils.hpp"
-#include "MingEngine/Core/Object/ResourceLoader.hpp"
 #include "MingEngine/Core/Render/VertexUtils.hpp"
 #include "MingEngine/Core/StringUtils.hpp"
 #include "MingEngine/Editor/EditorCamera.hpp"
 #include "MingEngine/Editor/EditorNode.hpp"
 #include "MingEngine/Editor/UI/EditorUI.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
+#include "MingEngine/Engine/Render/BuiltinShaders.hpp"
 #include "MingEngine/Engine/Render/DebugGizmos.hpp"
 #include "MingEngine/Engine/Render/IndexBuffer.hpp"
 #include "MingEngine/Engine/Render/Renderer.hpp"
@@ -493,7 +493,8 @@ RenderRequest GizmoRotationArc::SubmitRenderRequest() const
 
 	RenderRequest request = GizmoComponent::SubmitRenderRequest();
 	request.m_indexBuffer = m_indexBuffer;
-	Ref<ShaderResource> shaderResource(ResourceLoader::Load("res://Shaders/TransformGizmosArc.hlsl"));
+	Ref<ShaderResource> shaderResource = g_engine->m_renderer->GetBuiltinShaderResource(
+		"TransformGizmosArc", BuiltinShaders::TransformGizmosArc);
 	request.m_shader = shaderResource.IsValid() ? shaderResource->GetShader() : nullptr;
 	return request;
 }
