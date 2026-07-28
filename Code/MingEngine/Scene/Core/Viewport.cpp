@@ -3,7 +3,7 @@
 #include "MingEngine/EngineService/EngineService.hpp"
 #include "MingEngine/EngineService/RenderService.hpp"
 #include "MingEngine/Scene/3D/Camera3D.hpp"
-#include "MingEngine/Scene/3D/VisualizeInstance3D.hpp"
+#include "MingEngine/Scene/3D/VisualInstance3D.hpp"
 #include "MingEngine/Scene/Core/SceneTree.hpp"
 
 #include "MingEngine/Core/ErrorWarningAssert.hpp"
@@ -45,7 +45,7 @@ void Viewport::OnNotification(int notification)
 	}
 }
 
-void Viewport::RegisterVisualizeInstance(VisualizeInstance3D* visualizeInstance)
+void Viewport::RegisterVisualizeInstance(VisualInstance3D *visualizeInstance)
 {
 	GUARANTEE_OR_DIE(visualizeInstance != nullptr, "Viewport::RegisterVisualizeInstance failed: instance is null.");
 
@@ -61,7 +61,7 @@ void Viewport::RegisterVisualizeInstance(VisualizeInstance3D* visualizeInstance)
 	}
 }
 
-void Viewport::UnregisterVisualizeInstance(VisualizeInstance3D* visualizeInstance)
+void Viewport::UnregisterVisualizeInstance(VisualInstance3D *visualizeInstance)
 {
 	GUARANTEE_OR_DIE(visualizeInstance != nullptr, "Viewport::UnregisterVisualizeInstance failed: instance is null.");
 
@@ -76,7 +76,7 @@ void Viewport::UnregisterVisualizeInstance(VisualizeInstance3D* visualizeInstanc
 	}
 }
 
-void Viewport::RegisterWorldCamera(Camera3D* camera)
+void Viewport::RegisterWorldCamera(Camera3D *camera)
 {
 	if (camera == nullptr)
 	{
@@ -100,14 +100,14 @@ void Viewport::RegisterWorldCamera(Camera3D* camera)
 	}
 }
 
-void Viewport::UnregisterWorldCamera(Camera3D* camera)
+void Viewport::UnregisterWorldCamera(Camera3D *camera)
 {
 	if (camera == nullptr)
 	{
 		return;
 	}
 
-	NodeHandle handle      = camera->GetHandle();
+	NodeHandle handle = camera->GetHandle();
 	auto const foundCamera = std::find(m_worldCameraInstances.begin(), m_worldCameraInstances.end(), handle);
 	if (foundCamera != m_worldCameraInstances.end())
 	{
@@ -120,10 +120,10 @@ void Viewport::UnregisterWorldCamera(Camera3D* camera)
 	}
 }
 
-Camera3D* Viewport::GetWorldCamera() const
+Camera3D *Viewport::GetWorldCamera() const
 {
-	SceneTree* sceneTree = GetSceneTree();
-	Camera3D*  camera    = dynamic_cast<Camera3D*>(sceneTree->ResolveNode(m_worldCameraHandle));
+	SceneTree *sceneTree = GetSceneTree();
+	Camera3D *camera = dynamic_cast<Camera3D *>(sceneTree->ResolveNode(m_worldCameraHandle));
 	return camera;
 }
 
@@ -142,14 +142,14 @@ void Viewport::SetOutputResolution(IntVec2 dimensions)
 	}
 
 	m_viewportInfo.m_outputResolution = dimensions;
-	m_viewportInfo.m_outputRect       = AABB2(Vec2::Zero, (Vec2)dimensions);
+	m_viewportInfo.m_outputRect = AABB2(Vec2::Zero, (Vec2)dimensions);
 
 	g_engine->m_renderer->ResizeViewport(m_viewportInfo, dimensions);
 }
 
 void Viewport::PrepareRenderData()
 {
-	SceneTree* sceneTree = GetSceneTree();
+	SceneTree *sceneTree = GetSceneTree();
 	if (sceneTree == nullptr)
 	{
 		return;
@@ -163,17 +163,17 @@ void Viewport::PrepareRenderData()
 	}
 
 	// 1) CameraContext pointers are transient because NodeHandles may change after reparenting.
-	float     aspect             = m_viewportInfo.m_outputResolution.x / (float)m_viewportInfo.m_outputResolution.y;
-	Camera3D* worldCamera        = GetWorldCamera();
+	float aspect = m_viewportInfo.m_outputResolution.x / (float)m_viewportInfo.m_outputResolution.y;
+	Camera3D *worldCamera = GetWorldCamera();
 	m_viewportInfo.m_worldCamera = nullptr;
 	if (worldCamera != nullptr)
 	{
-		m_tmpWorldCamera             = worldCamera->GetCameraContext(aspect);
+		m_tmpWorldCamera = worldCamera->GetCameraContext(aspect);
 		m_viewportInfo.m_worldCamera = &m_tmpWorldCamera;
 	}
 
 	// 2) Requests describe only the current frame.
-	for (auto& requests : m_viewportInfo.m_renderRequests)
+	for (auto &requests : m_viewportInfo.m_renderRequests)
 	{
 		requests.clear();
 	}
@@ -181,7 +181,7 @@ void Viewport::PrepareRenderData()
 	// 3) Resolve handles and prune stale registrations while collecting data.
 	for (auto instanceIter = m_instances.begin(); instanceIter != m_instances.end();)
 	{
-		auto* instance = dynamic_cast<VisualizeInstance3D*>(sceneTree->ResolveNode(*instanceIter));
+		auto *instance = dynamic_cast<VisualInstance3D *>(sceneTree->ResolveNode(*instanceIter));
 		if (instance == nullptr)
 		{
 			instanceIter = m_instances.erase(instanceIter);
@@ -201,6 +201,6 @@ void Viewport::PrepareRenderData()
 	}
 }
 
-ViewportInfo& Viewport::GetViewportInfo() { return m_viewportInfo; }
+ViewportInfo &Viewport::GetViewportInfo() { return m_viewportInfo; }
 
-ViewportInfo const& Viewport::GetViewportInfo() const { return m_viewportInfo; }
+ViewportInfo const &Viewport::GetViewportInfo() const { return m_viewportInfo; }

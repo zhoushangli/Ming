@@ -7,9 +7,9 @@
 
 #include "MingEngine/Scene/3D/Camera3D.hpp"
 #include "MingEngine/Scene/3D/Light3D.hpp"
-#include "MingEngine/Scene/3D/Mesh3D.hpp"
+#include "MingEngine/Scene/3D/MeshInstance3D.hpp"
 #include "MingEngine/Scene/3D/Node3D.hpp"
-#include "MingEngine/Scene/3D/VisualizeInstance3D.hpp"
+#include "MingEngine/Scene/3D/VisualInstance3D.hpp"
 #include "MingEngine/Scene/Core/Node.hpp"
 #include "MingEngine/Scene/Core/PackedScene.hpp"
 #include "MingEngine/Scene/Core/PackedSceneFormat.hpp"
@@ -33,18 +33,18 @@
 
 namespace
 {
-PackedSceneLoader*     packedSceneLoader     = new PackedSceneLoader();
-MeshResourceLoader*    meshResourceLoader    = new MeshResourceLoader();
-TextureResourceLoader* textureResourceLoader = new TextureResourceLoader();
-ShaderResourceLoader*  shaderResourceLoader  = new ShaderResourceLoader();
+	PackedSceneLoader *packedSceneLoader = new PackedSceneLoader();
+	MeshResourceLoader *meshResourceLoader = new MeshResourceLoader();
+	TextureResourceLoader *textureResourceLoader = new TextureResourceLoader();
+	ShaderResourceLoader *shaderResourceLoader = new ShaderResourceLoader();
 
-PackedSceneSaver*     packedSceneSaver     = new PackedSceneSaver();
-MeshResourceSaver*    meshResourceSaver    = new MeshResourceSaver();
-TextureResourceSaver* textureResourceSaver = new TextureResourceSaver();
+	PackedSceneSaver *packedSceneSaver = new PackedSceneSaver();
+	MeshResourceSaver *meshResourceSaver = new MeshResourceSaver();
+	TextureResourceSaver *textureResourceSaver = new TextureResourceSaver();
 
-OBJImporter*   objImporter   = new OBJImporter();
-GLTFImporter*  gltfImporter  = new GLTFImporter();
-ImageImporter* imageImporter = new ImageImporter();
+	OBJImporter *objImporter = new OBJImporter();
+	GLTFImporter *gltfImporter = new GLTFImporter();
+	ImageImporter *imageImporter = new ImageImporter();
 } // namespace
 
 #pragma region Scene
@@ -101,8 +101,8 @@ void RegisterSceneTypes()
 	ClassDatabase::RegisterClass<CapsuleCollider3D>();
 	ClassDatabase::RegisterClass<CylinderZCollider3D>();
 	ClassDatabase::RegisterClass<TriangleMeshCollider3D>();
-	ClassDatabase::RegisterClass<VisualizeInstance3D>(false);
-	ClassDatabase::RegisterClass<Mesh3D>();
+	ClassDatabase::RegisterClass<VisualInstance3D>(false);
+	ClassDatabase::RegisterClass<MeshInstance3D>();
 
 	ClassDatabase::RegisterClass<EditorNode>(false);
 	ClassDatabase::RegisterClass<EditorGizmos>(false);

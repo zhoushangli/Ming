@@ -223,7 +223,7 @@
     <ClCompile Include="Editor\Gizmos\ViewportAxisIndicator.cpp" />
     <ClCompile Include="Scene\3D\Camera3D.cpp" />
     <ClCompile Include="Scene\3D\Light3D.cpp" />
-    <ClCompile Include="Scene\3D\Mesh3D.cpp" />
+    <ClCompile Include="Scene\3D\MeshInstance3D.cpp" />
     <ClCompile Include="Scene\3D\Node3D.cpp" />
     <ClCompile Include="Scene\3D\Particles3D.cpp" />
     <ClCompile Include="Scene\Core\NodePath.cpp" />
@@ -237,7 +237,7 @@
     <ClCompile Include="Scene\Physics\TriangleMeshCollider3D.cpp" />
     <ClCompile Include="Scene\3D\Skybox3D.cpp" />
     <ClCompile Include="Scene\3D\Transform3D.cpp" />
-    <ClCompile Include="Scene\3D\VisualizeInstance3D.cpp" />
+    <ClCompile Include="Scene\3D\VisualInstance3D.cpp" />
     <ClCompile Include="Scene\3D\WorldEnvironment.cpp" />
     <ClCompile Include="EngineService\EngineService.cpp" />
     <ClCompile Include="Scene\Core\Node.cpp" />
@@ -412,7 +412,7 @@
     <ClInclude Include="Editor\Gizmos\ViewportAxisIndicator.hpp" />
     <ClInclude Include="Scene\3D\Camera3D.hpp" />
     <ClInclude Include="Scene\3D\Light3D.hpp" />
-    <ClInclude Include="Scene\3D\Mesh3D.hpp" />
+    <ClInclude Include="Scene\3D\MeshInstance3D.hpp" />
     <ClInclude Include="Scene\3D\Node3D.hpp" />
     <ClInclude Include="Scene\3D\Particles3D.hpp" />
     <ClInclude Include="Scene\Core\RaycastSpace3D.hpp" />
@@ -425,7 +425,7 @@
     <ClInclude Include="Scene\Physics\TriangleMeshCollider3D.hpp" />
     <ClInclude Include="Scene\3D\Skybox3D.hpp" />
     <ClInclude Include="Scene\3D\Transform3D.hpp" />
-    <ClInclude Include="Scene\3D\VisualizeInstance3D.hpp" />
+    <ClInclude Include="Scene\3D\VisualInstance3D.hpp" />
     <ClInclude Include="Scene\3D\WorldEnvironment.hpp" />
     <ClInclude Include="EngineService\EngineService.hpp" />
     <ClInclude Include="Scene\Core\Node.hpp" />

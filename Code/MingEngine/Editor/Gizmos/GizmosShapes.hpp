@@ -1,6 +1,6 @@
 #pragma once
 
-#include "MingEngine/Scene/3D/VisualizeInstance3D.hpp"
+#include "MingEngine/Scene/3D/VisualInstance3D.hpp"
 
 #include "MingEngine/Core/Render/Vertex.hpp"
 
@@ -8,9 +8,9 @@
 
 class VertexBuffer;
 
-class EditorGizmoVisual3D : public VisualizeInstance3D
+class EditorGizmoVisual3D : public VisualInstance3D
 {
-	MCLASS(EditorGizmoVisual3D, VisualizeInstance3D)
+	MCLASS(EditorGizmoVisual3D, VisualInstance3D)
 
 public:
 	EditorGizmoVisual3D() = default;
@@ -21,7 +21,7 @@ protected:
 
 protected:
 	std::vector<Vertex> m_verts;
-	VertexBuffer*       m_vertexBuffer = nullptr;
+	VertexBuffer *m_vertexBuffer = nullptr;
 };
 
 class EditorWorldGrid3D : public EditorGizmoVisual3D
@@ -38,7 +38,7 @@ protected:
 class EditorWorldAxis3D : public EditorGizmoVisual3D
 {
 public:
-	EditorWorldAxis3D(Vec3 const& axisStart, Vec3 const& axisEnd, Color const& color);
+	EditorWorldAxis3D(Vec3 const &axisStart, Vec3 const &axisEnd, Color const &color);
 
 protected:
 	RenderRequest SubmitRenderRequest() const override;

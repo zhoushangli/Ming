@@ -10,29 +10,29 @@
 
 namespace
 {
-float const kHalfSize = 500.f;
+	float const kHalfSize = 500.f;
 } // namespace
 
-Skybox3D::Skybox3D(VirtualPath const& imagePath) : VisualizeInstance3D(), m_imagePath(imagePath)
+Skybox3D::Skybox3D(VirtualPath const &imagePath) : VisualInstance3D(), m_imagePath(imagePath)
 {
 	Ref<Resource> loaded = ResourceLoader::Load(m_imagePath);
-	m_textureRef         = Ref<TextureResource>(loaded);
+	m_textureRef = Ref<TextureResource>(loaded);
 
-	std::vector<Vertex>       verts;
+	std::vector<Vertex> verts;
 	std::vector<unsigned int> indexes;
 
 	verts.reserve(24);
 	indexes.reserve(36);
 
 	auto AddFace = [&verts, &indexes](
-					   Vec3 const& bl,
-					   Vec3 const& br,
-					   Vec3 const& tr,
-					   Vec3 const& tl,
-					   Vec2 const& uvBL,
-					   Vec2 const& uvBR,
-					   Vec2 const& uvTR,
-					   Vec2 const& uvTL)
+					   Vec3 const &bl,
+					   Vec3 const &br,
+					   Vec3 const &tr,
+					   Vec3 const &tl,
+					   Vec2 const &uvBL,
+					   Vec2 const &uvBR,
+					   Vec2 const &uvTR,
+					   Vec2 const &uvTL)
 	{
 		unsigned int const startIndex = static_cast<unsigned int>(verts.size());
 
@@ -176,16 +176,16 @@ RenderRequest Skybox3D::SubmitRenderRequest() const
 		return request;
 	}
 
-	request.m_pass                                  = RenderRequestPass::Skybox;
-	request.m_modelToWorld                          = GetWorldTransform();
-	request.m_tint                                  = Color::White;
-	request.m_vertexBuffer                          = m_vertexBuffer;
-	request.m_indexBuffer                           = m_indexBuffer;
+	request.m_pass = RenderRequestPass::Skybox;
+	request.m_modelToWorld = GetWorldTransform();
+	request.m_tint = Color::White;
+	request.m_vertexBuffer = m_vertexBuffer;
+	request.m_indexBuffer = m_indexBuffer;
 	request.m_textures[SurfaceTextureSlot::Diffuse] = m_textureRef.IsValid() ? m_textureRef->GetGPUTexture() : nullptr;
-	request.m_shader                                = nullptr;
-	request.m_blendMode                             = BlendMode::OPAQUE;
-	request.m_depthMode                             = DepthMode::READ_ONLY_LESS_EQUAL;
-	request.m_rasterizerMode                        = RasterizerMode::SOLID_CULL_BACK;
-	request.m_samplerMode                           = SamplerMode::POINT_CLAMP;
+	request.m_shader = nullptr;
+	request.m_blendMode = BlendMode::OPAQUE;
+	request.m_depthMode = DepthMode::READ_ONLY_LESS_EQUAL;
+	request.m_rasterizerMode = RasterizerMode::SOLID_CULL_BACK;
+	request.m_samplerMode = SamplerMode::POINT_CLAMP;
 	return request;
 }

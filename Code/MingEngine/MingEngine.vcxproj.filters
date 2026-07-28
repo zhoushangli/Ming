@@ -411,7 +411,7 @@
     <ClCompile Include="Scene\3D\Light3D.cpp">
       <Filter>Scene\3D</Filter>
     </ClCompile>
-    <ClCompile Include="Scene\3D\Mesh3D.cpp">
+    <ClCompile Include="Scene\3D\MeshInstance3D.cpp">
       <Filter>Scene\3D</Filter>
     </ClCompile>
     <ClCompile Include="Scene\3D\Node3D.cpp">
@@ -441,7 +441,7 @@
     <ClCompile Include="Scene\3D\Transform3D.cpp">
       <Filter>Scene\3D</Filter>
     </ClCompile>
-    <ClCompile Include="Scene\3D\VisualizeInstance3D.cpp">
+    <ClCompile Include="Scene\3D\VisualInstance3D.cpp">
       <Filter>Scene\3D</Filter>
     </ClCompile>
     <ClCompile Include="Scene\3D\WorldEnvironment.cpp">
@@ -938,7 +938,7 @@
     <ClInclude Include="Scene\3D\Light3D.hpp">
       <Filter>Scene\3D</Filter>
     </ClInclude>
-    <ClInclude Include="Scene\3D\Mesh3D.hpp">
+    <ClInclude Include="Scene\3D\MeshInstance3D.hpp">
       <Filter>Scene\3D</Filter>
     </ClInclude>
     <ClInclude Include="Scene\3D\Node3D.hpp">
@@ -968,7 +968,7 @@
     <ClInclude Include="Scene\3D\Transform3D.hpp">
       <Filter>Scene\3D</Filter>
     </ClInclude>
-    <ClInclude Include="Scene\3D\VisualizeInstance3D.hpp">
+    <ClInclude Include="Scene\3D\VisualInstance3D.hpp">
       <Filter>Scene\3D</Filter>
     </ClInclude>
     <ClInclude Include="Scene\3D\WorldEnvironment.hpp">
