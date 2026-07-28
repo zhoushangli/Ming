@@ -8,7 +8,7 @@
 //	Downside: ALL games must now have this Code/MingEngine/Engine/Application/EngineBuildPreferences.hpp file.
 //
 
-//#define ENGINE_DISABLE_AUDIO	// (If uncommented) Disables AudioSystem code and fmod linkage.
+//#define ENGINE_DISABLE_AUDIO	// (If uncommented) Disables the AudioSystem backend.
 
 #if defined(_DEBUG)
 #define ENGINE_DEBUG_RENDER	

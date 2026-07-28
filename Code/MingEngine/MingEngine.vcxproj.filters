@@ -79,9 +79,6 @@
     <Filter Include="ThirdParty\FastNoiseLite">
       <UniqueIdentifier>{BAD439FE-56E9-4ED8-8F25-A545D0C14D9A}</UniqueIdentifier>
     </Filter>
-    <Filter Include="ThirdParty\fmod">
-      <UniqueIdentifier>{20D350C1-375B-4E4D-B4C9-136BF51037CC}</UniqueIdentifier>
-    </Filter>
     <Filter Include="ThirdParty\GLFW">
       <UniqueIdentifier>{36662DE9-B2E1-4A65-B47B-3920E5C99886}</UniqueIdentifier>
     </Filter>
@@ -135,6 +132,9 @@
     </Filter>
     <Filter Include="Engine\Network">
       <UniqueIdentifier>{05c24fb2-e1c2-458e-ba94-f549f1db49a9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ThirdParty\miniaudio">
+      <UniqueIdentifier>{fc603be4-6932-4a78-9d4c-1c53d22e8e02}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -1010,30 +1010,6 @@
     <ClInclude Include="..\ThirdParty\FastNoiseLite\FastNoiseLite.h">
       <Filter>ThirdParty\FastNoiseLite</Filter>
     </ClInclude>
-    <ClInclude Include="..\ThirdParty\fmod\fmod.h">
-      <Filter>ThirdParty\fmod</Filter>
-    </ClInclude>
-    <ClInclude Include="..\ThirdParty\fmod\fmod.hpp">
-      <Filter>ThirdParty\fmod</Filter>
-    </ClInclude>
-    <ClInclude Include="..\ThirdParty\fmod\fmod_codec.h">
-      <Filter>ThirdParty\fmod</Filter>
-    </ClInclude>
-    <ClInclude Include="..\ThirdParty\fmod\fmod_common.h">
-      <Filter>ThirdParty\fmod</Filter>
-    </ClInclude>
-    <ClInclude Include="..\ThirdParty\fmod\fmod_dsp.h">
-      <Filter>ThirdParty\fmod</Filter>
-    </ClInclude>
-    <ClInclude Include="..\ThirdParty\fmod\fmod_dsp_effects.h">
-      <Filter>ThirdParty\fmod</Filter>
-    </ClInclude>
-    <ClInclude Include="..\ThirdParty\fmod\fmod_errors.h">
-      <Filter>ThirdParty\fmod</Filter>
-    </ClInclude>
-    <ClInclude Include="..\ThirdParty\fmod\fmod_output.h">
-      <Filter>ThirdParty\fmod</Filter>
-    </ClInclude>
     <ClInclude Include="..\ThirdParty\GLFW\glfw3.h">
       <Filter>ThirdParty\GLFW</Filter>
     </ClInclude>
@@ -1252,6 +1228,9 @@
     </ClInclude>
     <ClInclude Include="Engine\Application\Main_Windows.hpp">
       <Filter>Engine\Application</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ThirdParty\miniaudio\miniaudio.h">
+      <Filter>ThirdParty\miniaudio</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

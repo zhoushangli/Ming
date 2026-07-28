@@ -274,6 +274,7 @@
     <ClInclude Include="..\ThirdParty\angelscript\add_on\scriptdictionary\scriptdictionary.h" />
     <ClInclude Include="..\ThirdParty\angelscript\add_on\scriptstdstring\scriptstdstring.h" />
     <ClInclude Include="..\ThirdParty\angelscript\include\angelscript.h" />
+    <ClInclude Include="..\ThirdParty\miniaudio\miniaudio.h" />
     <ClInclude Include="..\ThirdParty\nanosvg\nanosvg.h" />
     <ClInclude Include="..\ThirdParty\nanosvg\nanosvgrast.h" />
     <ClInclude Include="Core\Object\RefCounted.hpp" />
@@ -439,14 +440,6 @@
     <ClInclude Include="Scene\Resource\MeshResource.hpp" />
     <ClInclude Include="Scene\Resource\MeshResourceFormat.hpp" />
     <ClInclude Include="..\ThirdParty\FastNoiseLite\FastNoiseLite.h" />
-    <ClInclude Include="..\ThirdParty\fmod\fmod.h" />
-    <ClInclude Include="..\ThirdParty\fmod\fmod.hpp" />
-    <ClInclude Include="..\ThirdParty\fmod\fmod_codec.h" />
-    <ClInclude Include="..\ThirdParty\fmod\fmod_common.h" />
-    <ClInclude Include="..\ThirdParty\fmod\fmod_dsp.h" />
-    <ClInclude Include="..\ThirdParty\fmod\fmod_dsp_effects.h" />
-    <ClInclude Include="..\ThirdParty\fmod\fmod_errors.h" />
-    <ClInclude Include="..\ThirdParty\fmod\fmod_output.h" />
     <ClInclude Include="..\ThirdParty\GLFW\glfw3.h" />
     <ClInclude Include="..\ThirdParty\GLFW\glfw3native.h" />
     <ClInclude Include="..\ThirdParty\imgui\backends\imgui_impl_dx11.h" />
