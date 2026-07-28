@@ -1,18 +1,14 @@
 #include "MingEngine/Editor/UI/EditorIcons.hpp"
 
+#include "MingEngine/Editor/Icons/BuiltinIcons.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Engine/Render/GPUTexture.hpp"
 #include "MingEngine/Engine/Render/Renderer.hpp"
 
 #include "ThirdParty/stb/stb_image.h"
 
-#include <filesystem>
-
 namespace
 {
-constexpr char const* kIconDirectory = "Editor/Icon/";
-constexpr char const* kIconExtension = ".png";
-
 ImTextureID ToImTextureId(GPUTexture* texture)
 {
 	if (texture == nullptr)
@@ -61,13 +57,19 @@ GPUTexture* EditorIcons::GetOrCreateIconTexture(std::string const& iconName)
 		return found->second;
 	}
 
-	std::string const filePath = std::string(kIconDirectory) + iconName + kIconExtension;
+	BuiltinIcons::IconData const iconData = BuiltinIcons::Find(iconName);
+	if (!iconData)
+	{
+		s_iconTextures[iconName] = nullptr;
+		return nullptr;
+	}
 
 	int width    = 0;
 	int height   = 0;
 	int channels = 0;
 	stbi_set_flip_vertically_on_load(true);
-	unsigned char* pixels = stbi_load(filePath.c_str(), &width, &height, &channels, 4);
+	unsigned char* pixels = stbi_load_from_memory(
+		iconData.m_data, static_cast<int>(iconData.m_size), &width, &height, &channels, STBI_rgb_alpha);
 	stbi_set_flip_vertically_on_load(false);
 	if (pixels == nullptr)
 	{
@@ -75,7 +77,8 @@ GPUTexture* EditorIcons::GetOrCreateIconTexture(std::string const& iconName)
 		return nullptr;
 	}
 
-	GPUTexture* texture = g_engine->m_renderer->CreateGPUTexture(iconName.c_str(), IntVec2(width, height), 4, pixels);
+	GPUTexture* texture =
+		g_engine->m_renderer->CreateGPUTexture(iconName.c_str(), IntVec2(width, height), STBI_rgb_alpha, pixels);
 
 	stbi_image_free(pixels);
 
