@@ -8,6 +8,16 @@
 
 namespace
 {
+	bool EndsWith(std::wstring const &str, std::wstring const &suffix)
+	{
+		if (str.length() < suffix.length())
+		{
+			return false;
+		}
+
+		return str.compare(str.length() - suffix.length(), suffix.length(), suffix) == 0;
+	}
+
 	bool TryParseRunConfig(MingRunConfig &outConfig, int argc, wchar_t **argv)
 	{
 		for (int i = 1; i < argc; ++i)
@@ -25,6 +35,15 @@ namespace
 			{
 				outConfig.projectPath = argv[i + 1];
 				++i;
+			}
+			else if (EndsWith(arg, L"project.ming"))
+			{
+				std::filesystem::path projectSettingsPath = arg;
+
+				outConfig.mode = MingRunMode::Editor;
+				outConfig.projectPath = projectSettingsPath.parent_path();
+				
+				return true;
 			}
 			else
 			{

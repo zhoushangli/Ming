@@ -27,4 +27,6 @@ public:
 
 private:
 	ImGuiSystemConfig m_config;
+
+	std::string m_iniFilePath;
 };

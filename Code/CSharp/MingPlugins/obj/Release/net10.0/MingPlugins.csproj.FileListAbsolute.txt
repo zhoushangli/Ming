@@ -1,0 +1,14 @@
+C:\Work\Ming\Ming\Code\CSharp\MingPlugins\bin\Release\net10.0\MingPlugins.deps.json
+C:\Work\Ming\Ming\Code\CSharp\MingPlugins\bin\Release\net10.0\MingPlugins.runtimeconfig.json
+C:\Work\Ming\Ming\Code\CSharp\MingPlugins\bin\Release\net10.0\MingPlugins.dll
+C:\Work\Ming\Ming\Code\CSharp\MingPlugins\bin\Release\net10.0\MingPlugins.pdb
+C:\Work\Ming\Ming\Code\CSharp\MingPlugins\obj\Release\net10.0\MingPlugins.GeneratedMSBuildEditorConfig.editorconfig
+C:\Work\Ming\Ming\Code\CSharp\MingPlugins\obj\Release\net10.0\MingPlugins.AssemblyInfoInputs.cache
+C:\Work\Ming\Ming\Code\CSharp\MingPlugins\obj\Release\net10.0\MingPlugins.AssemblyInfo.cs
+C:\Work\Ming\Ming\Code\CSharp\MingPlugins\obj\Release\net10.0\MingPlugins.csproj.CoreCompileInputs.cache
+C:\Work\Ming\Ming\Code\CSharp\MingPlugins\obj\Release\net10.0\MingPlugins.sourcelink.json
+C:\Work\Ming\Ming\Code\CSharp\MingPlugins\obj\Release\net10.0\MingPlugins.dll
+C:\Work\Ming\Ming\Code\CSharp\MingPlugins\obj\Release\net10.0\refint\MingPlugins.dll
+C:\Work\Ming\Ming\Code\CSharp\MingPlugins\obj\Release\net10.0\MingPlugins.pdb
+C:\Work\Ming\Ming\Code\CSharp\MingPlugins\obj\Release\net10.0\MingPlugins.genruntimeconfig.cache
+C:\Work\Ming\Ming\Code\CSharp\MingPlugins\obj\Release\net10.0\ref\MingPlugins.dll
