@@ -1,7 +1,5 @@
 #include "MingEngine/Core/Object/Object.hpp"
 
-#include "MingEngine/Engine/Script/ScriptInstance.hpp"
-
 Object::~Object() {}
 
 Object::BindMethodsFunc Object::GetBindMethodsFunc() { return &Object::BindMethods; }
@@ -39,19 +37,9 @@ void Object::Notification(int notification, bool reverse)
 void Object::NotificationForward(int notification)
 {
 	NotificationForwardV(notification);
-
-	// if (m_scriptInstance != nullptr)
-	// {
-	// 	m_scriptInstance->Notification(notification, false);
-	// }
 }
 
 void Object::NotificationBackward(int notification)
 {
-	// if (m_scriptInstance != nullptr)
-	// {
-	// 	m_scriptInstance->Notification(notification, true);
-	// }
-
 	NotificationBackwardV(notification);
 }

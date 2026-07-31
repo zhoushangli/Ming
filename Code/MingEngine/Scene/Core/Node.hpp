@@ -2,6 +2,7 @@
 
 #include "MingEngine/Core/Object/ClassDatabase.hpp"
 #include "MingEngine/Core/Object/Object.hpp"
+#include "MingEngine/Core/Object/Script.hpp"
 #include "MingEngine/Scene/Core/NodeHandle.hpp"
 #include "MingEngine/Scene/Core/NodePath.hpp"
 
@@ -12,7 +13,6 @@
 
 class SceneTree;
 class Viewport;
-class ScriptInstance;
 
 // Base object for the runtime scene hierarchy.
 // 1) Nodes own their children and delete them in the destructor.
@@ -55,10 +55,8 @@ public:
 	void SetReady(bool isReady);
 	void SetProcess(bool isProcess);
 
-	// For Get/Set script, actually we are maintain a script instead of script instance
-	// We just assign script instance by the way
-	// When serializing, we use the script instead of script instance
-	// The tricky part is, we actually store script inside script instance
+	// Store the assigned script resource independently from any runtime instance.
+	// e.g. A future CSharpScriptInstance can be recreated without losing the serialized script reference.
 	Variant GetScript() const;
 	void    SetScript(Variant const& script);
 
@@ -122,15 +120,15 @@ protected:
 protected:
 	struct NodeData
 	{
-		std::string                     m_name;
-		Node*                           m_parent    = nullptr;
-		SceneTree*                      m_sceneTree = nullptr;
-		Viewport*                       m_viewport  = nullptr;
-		std::vector<Node*>              m_children;
-		NodeHandle                      m_handle;
-		std::unique_ptr<ScriptInstance> m_scriptInstance   = nullptr;
-		bool                            m_isPendingDestroy = false;
-		bool                            m_isSerializable   = true;
+		std::string        m_name;
+		Node*              m_parent    = nullptr;
+		SceneTree*         m_sceneTree = nullptr;
+		Viewport*          m_viewport  = nullptr;
+		std::vector<Node*> m_children;
+		NodeHandle         m_handle;
+		Ref<Script>        m_script;
+		bool               m_isPendingDestroy = false;
+		bool               m_isSerializable   = true;
 		bool m_enableReady   = false;
 		bool m_enableProcess = false;
 	};

@@ -8,17 +8,11 @@
 #include "MingEngine/Core/Object/ResourceLoader.hpp"
 #include "MingEngine/Core/Object/ResourceSaver.hpp"
 #include "MingEngine/Core/Object/Script.hpp"
-#include "MingEngine/Core/Object/ScriptLoader.hpp"
 
 #include "MingEngine/Core/Math/MathUtils.hpp"
 
 #define BIND_GLOBAL_METHOD(namespaceName, method)                                                                      \
 	ClassDatabase::BindGlobalMethod(#namespaceName, #method, &namespaceName::method);
-
-namespace
-{
-ScriptLoader* scriptLoader = new ScriptLoader();
-} // namespace
 
 #pragma region Core
 
@@ -35,10 +29,6 @@ void RegisterCoreTypes()
 	ClassDatabase::RegisterClass<ResourceFormatImporter>(false);
 	ClassDatabase::RegisterClass<ResourceFormatLoader>(false);
 	ClassDatabase::RegisterClass<ResourceFormatSaver>(false);
-
-	// Script loader
-	ClassDatabase::RegisterClass<ScriptLoader>();
-	ResourceLoader::AddLoader(Ref<ScriptLoader>(scriptLoader));
 
 	// --- Global math methods ---
 

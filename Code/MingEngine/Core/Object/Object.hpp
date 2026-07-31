@@ -57,8 +57,6 @@ protected:                                                                      
 		Super::NotificationBackwardV(notification);                                                                    \
 	}
 
-class ScriptInstance;
-
 class Object
 {
 public:

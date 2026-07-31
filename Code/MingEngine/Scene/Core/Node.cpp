@@ -4,7 +4,6 @@
 #include "MingEngine/Core/Object/ClassDatabase.hpp"
 #include "MingEngine/Core/Object/Resource.hpp"
 #include "MingEngine/Core/Object/Script.hpp"
-#include "MingEngine/Engine/Script/ScriptInstance.hpp"
 #include "MingEngine/Scene/Core/SceneTree.hpp"
 #include "MingEngine/Scene/Core/Viewport.hpp"
 
@@ -42,14 +41,12 @@ bool                      Node::GetProcess() const { return m_data.m_enableProce
 
 Variant Node::GetScript() const
 {
-	if (m_data.m_scriptInstance == nullptr)
+	if (!m_data.m_script.IsValid())
 	{
 		return Variant();
 	}
-	else
-	{
-		return Variant(m_data.m_scriptInstance->GetScript());
-	}
+
+	return Variant(m_data.m_script);
 }
 
 void Node::SetName(std::string const& name) { m_data.m_name = EnsureUniqueName(name); }
@@ -59,15 +56,7 @@ void Node::SetProcess(bool isProcess) { m_data.m_enableProcess = isProcess; }
 
 void Node::SetScript(Variant const& script)
 {
-	Ref<Script> scriptRef = script;
-
-	if (!scriptRef.IsValid())
-	{
-		m_data.m_scriptInstance = nullptr;
-		return;
-	}
-
-	m_data.m_scriptInstance = std::move(g_engine->m_scriptSystem->CreateInstance(scriptRef, *this));
+	m_data.m_script = Ref<Script>(script);
 }
 
 Node* Node::FindChildByName(std::string const& name) const
@@ -294,28 +283,16 @@ void Node::OnNotification(int notification)
 	case NotificationType::EnterTree:
 	{
 		OnEnterTree();
-		if (m_data.m_scriptInstance != nullptr)
-		{
-			m_data.m_scriptInstance->CallEnterTree();
-		}
 		break;
 	}
 	case NotificationType::ExitTree:
 	{
 		OnExitTree();
-		if (m_data.m_scriptInstance != nullptr)
-		{
-			m_data.m_scriptInstance->CallExitTree();
-		}
 		break;
 	}
 	case NotificationType::Ready:
 	{
 		OnReady();
-		if (m_data.m_scriptInstance != nullptr)
-		{
-			m_data.m_scriptInstance->CallReady();
-		}
 		break;
 	}
 	case NotificationType::Process:
@@ -328,11 +305,6 @@ void Node::OnNotification(int notification)
 		}
 
 		OnProcess(deltaSeconds);
-
-		if (m_data.m_scriptInstance != nullptr)
-		{
-			m_data.m_scriptInstance->CallProcess(deltaSeconds);
-		}
 		break;
 	}
 	default:

@@ -65,7 +65,8 @@
       <AdditionalLibraryDirectories>$(ProjectDir)..\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /Y /F /I "$(TargetPath)" "$(SolutionDir)Run"</Command>
+      <Command>xcopy /Y /F /I "$(TargetPath)" "$(SolutionDir)Run"
+xcopy /Y /F /I "$(SolutionDir)Code\ThirdParty\DotNetHost\nethost.dll" "$(SolutionDir)Run\"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -84,7 +85,8 @@
       <AdditionalLibraryDirectories>$(ProjectDir)..\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /Y /F /I "$(TargetPath)" "$(SolutionDir)Run"</Command>
+      <Command>xcopy /Y /F /I "$(TargetPath)" "$(SolutionDir)Run"
+xcopy /Y /F /I "$(SolutionDir)Code\ThirdParty\DotNetHost\nethost.dll" "$(SolutionDir)Run\"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -97,19 +99,12 @@
   <ItemGroup>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\ThirdParty\angelscript\add_on\debugger\debugger.cpp" />
-    <ClCompile Include="..\ThirdParty\angelscript\add_on\scriptarray\scriptarray.cpp" />
-    <ClCompile Include="..\ThirdParty\angelscript\add_on\scriptbuilder\scriptbuilder.cpp" />
-    <ClCompile Include="..\ThirdParty\angelscript\add_on\scriptdictionary\scriptdictionary.cpp" />
-    <ClCompile Include="..\ThirdParty\angelscript\add_on\scriptstdstring\scriptstdstring.cpp" />
-    <ClCompile Include="..\ThirdParty\angelscript\add_on\scriptstdstring\scriptstdstring_utils.cpp" />
     <ClCompile Include="Core\Object\RefCounted.cpp" />
     <ClCompile Include="Core\Object\Resource.cpp" />
     <ClCompile Include="Core\Object\ResourceImporter.cpp" />
     <ClCompile Include="Core\Object\ResourceLoader.cpp" />
     <ClCompile Include="Core\Object\ResourceSaver.cpp" />
     <ClCompile Include="Core\Object\Script.cpp" />
-    <ClCompile Include="Core\Object\ScriptLoader.cpp" />
     <ClCompile Include="Core\Render\SurfaceTool.cpp" />
     <ClCompile Include="Editor\EditorData.cpp" />
     <ClCompile Include="Engine\Application\App.cpp" />
@@ -197,12 +192,8 @@
     <ClCompile Include="Engine\Input\InputSystem.cpp" />
     <ClCompile Include="Engine\Input\KeyboardState.cpp" />
     <ClCompile Include="Engine\Input\XboxController.cpp" />
-    <ClCompile Include="Engine\Script\RegisterBuildinType.cpp" />
-    <ClCompile Include="Engine\Script\ScriptBinder.cpp" />
-    <ClCompile Include="Engine\Script\ScriptGenerator.cpp" />
-    <ClCompile Include="Engine\Script\ScriptInstance.cpp" />
+    <ClCompile Include="Engine\Script\DotNetHost.cpp" />
     <ClCompile Include="Engine\Script\ScriptSystem.cpp" />
-    <ClCompile Include="Engine\Script\ScriptTypeUtils.cpp" />
     <ClCompile Include="Engine\Window\WindowSystem.cpp" />
     <ClCompile Include="Engine\Render\BitmapFont.cpp" />
     <ClCompile Include="Engine\Render\BuiltinShaders.cpp" />
@@ -268,12 +259,6 @@
     <ClCompile Include="Scene\Import\ImageImporter.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\ThirdParty\angelscript\add_on\debugger\debugger.h" />
-    <ClInclude Include="..\ThirdParty\angelscript\add_on\scriptarray\scriptarray.h" />
-    <ClInclude Include="..\ThirdParty\angelscript\add_on\scriptbuilder\scriptbuilder.h" />
-    <ClInclude Include="..\ThirdParty\angelscript\add_on\scriptdictionary\scriptdictionary.h" />
-    <ClInclude Include="..\ThirdParty\angelscript\add_on\scriptstdstring\scriptstdstring.h" />
-    <ClInclude Include="..\ThirdParty\angelscript\include\angelscript.h" />
     <ClInclude Include="..\ThirdParty\miniaudio\miniaudio.h" />
     <ClInclude Include="..\ThirdParty\nanosvg\nanosvg.h" />
     <ClInclude Include="..\ThirdParty\nanosvg\nanosvgrast.h" />
@@ -283,7 +268,6 @@
     <ClInclude Include="Core\Object\ResourceLoader.hpp" />
     <ClInclude Include="Core\Object\ResourceSaver.hpp" />
     <ClInclude Include="Core\Object\Script.hpp" />
-    <ClInclude Include="Core\Object\ScriptLoader.hpp" />
     <ClInclude Include="Core\Render\SurfaceTool.hpp" />
     <ClInclude Include="Editor\EditorData.hpp" />
     <ClInclude Include="Editor\Icons\BuiltinIcons.hpp" />
@@ -385,12 +369,8 @@
     <ClInclude Include="Engine\Input\InputSystem.hpp" />
     <ClInclude Include="Engine\Input\KeyboardState.hpp" />
     <ClInclude Include="Engine\Input\XboxController.hpp" />
-    <ClInclude Include="Engine\Script\RegisterBuildinType.hpp" />
-    <ClInclude Include="Engine\Script\ScriptBinder.hpp" />
-    <ClInclude Include="Engine\Script\ScriptGenerator.hpp" />
-    <ClInclude Include="Engine\Script\ScriptInstance.hpp" />
+    <ClInclude Include="Engine\Script\DotNetHost.hpp" />
     <ClInclude Include="Engine\Script\ScriptSystem.hpp" />
-    <ClInclude Include="Engine\Script\ScriptTypeUtils.hpp" />
     <ClInclude Include="Engine\Window\WindowSystem.hpp" />
     <ClInclude Include="Engine\Render\BitmapFont.hpp" />
     <ClInclude Include="Engine\Render\BuiltinShaders.hpp" />

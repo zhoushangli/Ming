@@ -7,8 +7,8 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
-  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="xcopy /Y /F /I /E &quot;$(TargetDir)*&quot; &quot;$(SolutionDir)Run/MingSharp/Api/$()&quot;" />
+  <Target Name="DeployManagedRuntime" AfterTargets="Build">
+    <Exec Command="xcopy /Y /F /I /E &quot;$(TargetDir)*&quot; &quot;$(MSBuildProjectDirectory)\..\..\..\Run\MingSharp\Api\&quot;" />
   </Target>
 
 </Project>
