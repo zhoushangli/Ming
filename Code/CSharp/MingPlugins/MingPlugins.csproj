@@ -12,4 +12,8 @@
     <Exec Command="xcopy /Y /F /I /E &quot;$(TargetDir)*&quot; &quot;$(MSBuildProjectDirectory)\..\..\..\Run\MingSharp\Api\&quot;" />
   </Target>
 
+  <ItemGroup>
+    <ProjectReference Include="..\MingSharp\MingSharp.csproj" />
+  </ItemGroup>
+
 </Project>

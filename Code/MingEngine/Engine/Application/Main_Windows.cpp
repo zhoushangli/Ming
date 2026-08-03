@@ -8,6 +8,23 @@
 
 namespace
 {
+	std::filesystem::path GetExecutableDirectory()
+	{
+		std::wstring executablePath(32768, L'\0');
+
+		DWORD const length = GetModuleFileNameW(
+			nullptr,
+			executablePath.data(),
+			static_cast<DWORD>(executablePath.size()));
+		if (length == 0 || length >= executablePath.size())
+		{
+			return {};
+		}
+
+		executablePath.resize(length);
+		return std::filesystem::path(executablePath).parent_path();
+	}
+
 	bool EndsWith(std::wstring const &str, std::wstring const &suffix)
 	{
 		if (str.length() < suffix.length())
@@ -42,7 +59,35 @@ namespace
 
 				outConfig.mode = MingRunMode::Editor;
 				outConfig.projectPath = projectSettingsPath.parent_path();
-				
+				return true;
+			}
+			else if (arg == L"--generate-bindings")
+			{
+				std::filesystem::path const executableDirectory = GetExecutableDirectory();
+				if (executableDirectory.empty())
+				{
+					return false;
+				}
+
+				std::filesystem::path const engineProjectDirectory = executableDirectory.parent_path();
+				std::filesystem::path       csharpProjectDirectory;
+				if (i + 1 < argc && argv[i + 1] != nullptr && argv[i + 1][0] != L'\0')
+				{
+					csharpProjectDirectory = argv[i + 1];
+					if (csharpProjectDirectory.is_relative())
+					{
+						csharpProjectDirectory = engineProjectDirectory / csharpProjectDirectory;
+					}
+				}
+				else
+				{
+					csharpProjectDirectory = engineProjectDirectory / "Code" / "CSharp" / "MingSharp";
+				}
+
+				outConfig.generateCSharpBindings = true;
+				// lexically_normal is for safety
+				// e.g. C:\Work\Ming\Run\..\Code\CSharp\MingSharp -> C:\Work\Ming\Code\CSharp\MingSharp
+				outConfig.csharpBindingsOutputDirectory = csharpProjectDirectory.lexically_normal();
 				return true;
 			}
 			else

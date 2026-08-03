@@ -1,0 +1,12 @@
+C:\Work\Ming\Ming\Code\CSharp\MingSharp\bin\Release\net10.0\MingSharp.deps.json
+C:\Work\Ming\Ming\Code\CSharp\MingSharp\bin\Release\net10.0\MingSharp.dll
+C:\Work\Ming\Ming\Code\CSharp\MingSharp\bin\Release\net10.0\MingSharp.pdb
+C:\Work\Ming\Ming\Code\CSharp\MingSharp\obj\Release\net10.0\MingSharp.GeneratedMSBuildEditorConfig.editorconfig
+C:\Work\Ming\Ming\Code\CSharp\MingSharp\obj\Release\net10.0\MingSharp.AssemblyInfoInputs.cache
+C:\Work\Ming\Ming\Code\CSharp\MingSharp\obj\Release\net10.0\MingSharp.AssemblyInfo.cs
+C:\Work\Ming\Ming\Code\CSharp\MingSharp\obj\Release\net10.0\MingSharp.csproj.CoreCompileInputs.cache
+C:\Work\Ming\Ming\Code\CSharp\MingSharp\obj\Release\net10.0\MingSharp.sourcelink.json
+C:\Work\Ming\Ming\Code\CSharp\MingSharp\obj\Release\net10.0\MingSharp.dll
+C:\Work\Ming\Ming\Code\CSharp\MingSharp\obj\Release\net10.0\refint\MingSharp.dll
+C:\Work\Ming\Ming\Code\CSharp\MingSharp\obj\Release\net10.0\MingSharp.pdb
+C:\Work\Ming\Ming\Code\CSharp\MingSharp\obj\Release\net10.0\ref\MingSharp.dll

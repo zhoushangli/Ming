@@ -192,6 +192,7 @@ xcopy /Y /F /I "$(SolutionDir)Code\ThirdParty\DotNetHost\nethost.dll" "$(Solutio
     <ClCompile Include="Engine\Input\InputSystem.cpp" />
     <ClCompile Include="Engine\Input\KeyboardState.cpp" />
     <ClCompile Include="Engine\Input\XboxController.cpp" />
+    <ClCompile Include="Engine\Script\CSharpScriptGenerator.cpp" />
     <ClCompile Include="Engine\Script\DotNetHost.cpp" />
     <ClCompile Include="Engine\Script\ScriptSystem.cpp" />
     <ClCompile Include="Engine\Window\WindowSystem.cpp" />
@@ -369,6 +370,7 @@ xcopy /Y /F /I "$(SolutionDir)Code\ThirdParty\DotNetHost\nethost.dll" "$(Solutio
     <ClInclude Include="Engine\Input\InputSystem.hpp" />
     <ClInclude Include="Engine\Input\KeyboardState.hpp" />
     <ClInclude Include="Engine\Input\XboxController.hpp" />
+    <ClInclude Include="Engine\Script\CSharpScriptGenerator.hpp" />
     <ClInclude Include="Engine\Script\DotNetHost.hpp" />
     <ClInclude Include="Engine\Script\ScriptSystem.hpp" />
     <ClInclude Include="Engine\Window\WindowSystem.hpp" />

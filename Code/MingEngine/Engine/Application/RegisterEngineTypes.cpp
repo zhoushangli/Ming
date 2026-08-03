@@ -19,6 +19,8 @@ ProjectSettingsSaver*  projectSettingsSaver  = new ProjectSettingsSaver();
 
 void RegisterEngineTypes()
 {
+	ClassDatabase::SetApiType(ApiType::Runtime);
+
 	ClassDatabase::RegisterClass<ProjectSettingsLoader>();
 	ClassDatabase::RegisterClass<ProjectSettingsSaver>();
 	ResourceLoader::AddLoader(Ref<ProjectSettingsLoader>(projectSettingsLoader));
@@ -26,11 +28,11 @@ void RegisterEngineTypes()
 	ClassDatabase::RegisterClass<ProjectSettings>();
 
 	// Engine system types
-	ClassDatabase::RegisterClass<SystemBase>(false, false);
-	ClassDatabase::RegisterClass<InputSystem>(false, false);
+	ClassDatabase::RegisterClass<SystemBase>(true);
+	ClassDatabase::RegisterClass<InputSystem>();
 
 	// Global objects
-	ClassDatabase::RegisterGlobalObject(g_engine->m_inputSystem);
+	// ClassDatabase::RegisterGlobalObject(g_engine->m_inputSystem);
 }
 
 #pragma endregion

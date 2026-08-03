@@ -1,15 +1,21 @@
 #include "MingEngine/Engine/Application/App.hpp"
 
 #include "MingEngine/Core/Clock.hpp"
+#include "MingEngine/Core/ErrorWarningAssert.hpp"
 #include "MingEngine/Core/Math/MathUtils.hpp"
 #include "MingEngine/Core/Object/ClassDatabase.hpp"
 #include "MingEngine/Core/Object/ResourceLoader.hpp"
 #include "MingEngine/Core/Render/Rgba8.hpp"
 #include "MingEngine/Core/StringUtils.hpp"
+#include "MingEngine/Editor/EditorCamera.hpp"
+#include "MingEngine/Editor/EditorNode.hpp"
+#include "MingEngine/Editor/Gizmos/EditorGizmos.hpp"
+#include "MingEngine/Editor/UI/EditorIcons.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Engine/Application/ProjectSettings.hpp"
 #include "MingEngine/Engine/ImGui/ImGuiSystem.hpp"
 #include "MingEngine/Engine/Input/InputSystem.hpp"
+#include "MingEngine/Engine/Script/CSharpScriptGenerator.hpp"
 #include "MingEngine/Engine/Window/WindowSystem.hpp"
 #include "MingEngine/EngineService/EngineService.hpp"
 #include "MingEngine/EngineService/RenderService.hpp"
@@ -19,11 +25,6 @@
 #include "MingEngine/Scene/Core/SceneTree.hpp"
 #include "MingEngine/Scene/RegisterAllTypes.hpp"
 
-#include "MingEngine/Editor/EditorCamera.hpp"
-#include "MingEngine/Editor/EditorNode.hpp"
-#include "MingEngine/Editor/Gizmos/EditorGizmos.hpp"
-#include "MingEngine/Editor/UI/EditorIcons.hpp"
-
 #include "ThirdParty/GLFW/glfw3.h"
 
 App* g_app = nullptr;
@@ -31,8 +32,8 @@ App* g_app = nullptr;
 App::App(MingRunConfig const& config) : m_runConfig(config)
 {
 	EngineConfig engineConfig;
-	engineConfig.m_windowConfig.m_clientAspect = 16.f / 9.f;
-	engineConfig.m_windowConfig.m_appName      = "MingEngine";
+	engineConfig.m_windowConfig.m_clientAspect     = 16.f / 9.f;
+	engineConfig.m_windowConfig.m_appName          = "MingEngine";
 	engineConfig.m_fileSystemConfig.m_resourceRoot = config.projectPath;
 
 	DevConsoleConfig consoleConfig;
@@ -77,14 +78,14 @@ void App::Shutdown()
 		UnregisterEvent("Quit", App::OnQuit);
 	}
 
-	ClassDatabase::Shutdown();
-
 	ResourceLoader::Shutdown();
 
 	EditorIcons::Shutdown();
 
 	g_engineService->Shutdown();
 	g_engine->Shutdown();
+
+	ClassDatabase::Shutdown();
 }
 
 void App::RunMainLoop()
@@ -213,9 +214,22 @@ void App::ShutdownScene()
 
 int MingEngine::Run(MingRunConfig const& config)
 {
+	if (config.generateCSharpBindings)
+	{
+		ClassDatabase::Startup();
+		RegisterAllTypes();
+
+		CSharpScriptGenerator csharpGenerator;
+		bool const            success = csharpGenerator.GenerateCSharpBindings(config.csharpBindingsOutputDirectory);
+		GUARANTEE_OR_DIE(success, "Failed to generate C# bindings.");
+
+		ClassDatabase::Shutdown();
+		return 0;
+	}
+
 	App app(config);
 	g_app = &app;
- 
+
 	app.Startup();
 	app.RunMainLoop();
 	app.Shutdown();

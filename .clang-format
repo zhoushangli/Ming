@@ -1,0 +1,58 @@
+﻿BasedOnStyle: LLVM
+IndentWidth: 4
+TabWidth: 4
+UseTab: ForContinuationAndIndentation
+ColumnLimit: 120
+BreakAfterReturnType: None
+PenaltyReturnTypeOnItsOwnLine: 1000000
+AccessModifierOffset: -4
+
+# 括号与换行
+AlignAfterOpenBracket: AlwaysBreak
+ContinuationIndentWidth: 4
+BreakBeforeBinaryOperators: NonAssignment
+BreakFunctionDefinitionParameters: false
+BreakTemplateDeclarations: Yes
+Cpp11BracedListStyle: false
+
+# 参数排布（避免挤在一行，增强可读性）
+BinPackArguments: false
+BinPackParameters: false
+AllowAllArgumentsOnNextLine: false
+
+# 对齐核心
+AlignOperands: Align
+AlignTrailingComments: true
+AlignConsecutiveAssignments:
+  Enabled: true
+  AcrossEmptyLines: false
+  AcrossComments: false
+AlignConsecutiveDeclarations:
+  Enabled: true
+  AcrossEmptyLines: false
+  AcrossComments: false
+AlignConsecutiveBitFields:
+  Enabled: true
+  AcrossEmptyLines: false
+  AcrossComments: false
+
+# 指针与空格风格
+DerivePointerAlignment: false
+PointerAlignment: Left
+SpaceBeforeParens: ControlStatements
+
+# include 与空行
+SortIncludes: true
+KeepEmptyLinesAtTheStartOfBlocks: false
+MaxEmptyLinesToKeep: 1
+BreakBeforeBraces: Allman
+
+# clang-format 开关（按块 / 按行）
+# 用法：
+#   // clang-format off
+#   ... 不想被格式化的代码 ...
+#   // clang-format on
+# 也支持：
+#   // @formatter:off
+#   // @formatter:on
+CommentPragmas: '^\s*(clang-format\s+(off|on)|@formatter:(off|on))\b'

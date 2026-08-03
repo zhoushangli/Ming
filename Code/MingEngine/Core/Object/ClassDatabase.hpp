@@ -5,7 +5,6 @@
 #include "MingEngine/Core/Math/Vec3.hpp"
 #include "MingEngine/Core/Object/MethodBind.hpp"
 #include "MingEngine/Core/Object/Object.hpp"
-#include "MingEngine/Engine/Application/SystemBase.hpp"
 
 #include <functional>
 #include <memory>
@@ -25,14 +24,13 @@ struct ArgumentInfo
 {
 	Variant::Type m_type = Variant::Type::Empty;
 	std::string   m_objectClassName; // "Node", "Resource", etc. Only used when m_type is Variant::Type::ObjectPtr
-	bool          m_isRequired = false;
 };
 
 struct MethodInfo
 {
 	std::string                 m_name;
 	std::unique_ptr<MethodBind> m_bind;
-	Variant::Type               m_returnType = Variant::Type::Empty;
+	ArgumentInfo                m_returnInfo;
 	std::vector<ArgumentInfo>   m_argumentInfos;
 	bool                        m_isConst = false;
 };
@@ -95,12 +93,22 @@ public:
 	MethodBind const* m_getter = nullptr;
 };
 
+enum class ApiType
+{
+	None,
+	Runtime,
+	Editor
+};
+
 struct ClassInfo
 {
 	std::string              m_className;
 	std::string              m_parentClassName;
+	ApiType                  m_apiType   = ApiType::None;
+	// IsVirutal means this class can be instantiated
+	// but it should use as the base class for other classes
+	bool                     m_isVirtual = false;
 	std::function<Object*()> m_creator;
-	bool                     m_canCreateInEditor = true;
 
 	// We use unique_ptr to keep the memory stable for PropertyInfo and MethodInfo when vector resize
 	// because our script system needs the method bind pointer to be stable to call them
@@ -147,47 +155,51 @@ public:
 		std::string const& setterName,
 		std::string const& getterName);
 
+	static void    SetApiType(ApiType apiType) { m_currentApiType = apiType; }
+	static ApiType GetApiType() { return m_currentApiType; }
+
 	// Only for Object class
 	template <typename T>
-	static void RegisterRootClass(bool canCreateInEditor = true, bool canCreateInstance = true)
+	static void RegisterRootClass()
 	{
 		std::string className = T::GetStaticClassName();
 		ClassInfo   classInfo;
 		classInfo.m_className = className;
-		if constexpr (!std::is_abstract_v<T> && std::is_default_constructible_v<T>)
-		{
-			if (canCreateInstance)
-			{
-				classInfo.m_creator = &Creator<T>;
-			}
-		}
-		classInfo.m_canCreateInEditor = canCreateInEditor;
-		m_classInfoMap[className]     = std::move(classInfo);
+		classInfo.m_apiType   = ClassDatabase::m_currentApiType;
+		classInfo.m_creator   = &Creator<T>;
+
+		m_classInfoMap[className] = std::move(classInfo);
 		T::InitializeClass();
 	}
 
+	// The meaning of virtual class is not equal to c++ virtual class
+	// For class databse, it means it has a creator, but it should use as the base class for other classes
+	// so normally we do not use the creator
 	template <typename T>
-	static void RegisterClass(bool canCreateInEditor = true, bool canCreateInstance = true)
+	static void RegisterClass(bool isVirtual = false)
 	{
 		std::string className = T::GetStaticClassName();
 		ClassInfo   classInfo;
-		classInfo.m_className         = className;
-		classInfo.m_parentClassName   = T::Super::GetStaticClassName();
-		classInfo.m_canCreateInEditor = canCreateInEditor;
+		classInfo.m_className       = className;
+		classInfo.m_parentClassName = T::Super::GetStaticClassName();
+		classInfo.m_apiType         = ClassDatabase::m_currentApiType;
+		classInfo.m_creator         = &Creator<T>;
+		classInfo.m_isVirtual       = isVirtual;
 
-		// TODO: We shouldn't include SystemBase here
-		// Should have a better way to handle this (Like have other register function)
-		if constexpr (std::is_base_of_v<SystemBase, T>)
-		{
-			classInfo.m_canCreateInEditor = false;
-		}
-		else if constexpr (!std::is_abstract_v<T>)
-		{
-			if (canCreateInstance)
-			{
-				classInfo.m_creator = &Creator<T>;
-			}
-		}
+		m_classInfoMap[className] = std::move(classInfo);
+		T::InitializeClass();
+	}
+
+	// The meaning of abstract class is not equal to c++ abstract class
+	// For class databse, it means we do not provide a creator for this class
+	template <typename T>
+	static void RegisterAbstractClass()
+	{
+		std::string className = T::GetStaticClassName();
+		ClassInfo   classInfo;
+		classInfo.m_className       = className;
+		classInfo.m_parentClassName = T::Super::GetStaticClassName();
+		classInfo.m_apiType         = ClassDatabase::m_currentApiType;
 
 		m_classInfoMap[className] = std::move(classInfo);
 		T::InitializeClass();
@@ -264,7 +276,7 @@ public:
 
 		methodInfo->m_name       = methodName;
 		methodInfo->m_bind       = std::unique_ptr<MethodBind>(CreateMethodBind(method));
-		methodInfo->m_returnType = Variant::GetType<ReturnType>();
+		methodInfo->m_returnInfo = GetArgumentInfo<ReturnType>();
 		methodInfo->m_argumentInfos.reserve(sizeof...(Args));
 		(methodInfo->m_argumentInfos.push_back(GetArgumentInfo<Args>()), ...);
 
@@ -278,7 +290,7 @@ public:
 
 		methodInfo->m_name       = methodName;
 		methodInfo->m_bind       = std::unique_ptr<MethodBind>(CreateMethodBind(method));
-		methodInfo->m_returnType = Variant::GetType<ReturnType>();
+		methodInfo->m_returnInfo = GetArgumentInfo<ReturnType>();
 		methodInfo->m_argumentInfos.reserve(sizeof...(Args));
 		(methodInfo->m_argumentInfos.push_back(GetArgumentInfo<Args>()), ...);
 		methodInfo->m_isConst = true;
@@ -294,7 +306,7 @@ public:
 
 		methodInfo->m_name       = methodName;
 		methodInfo->m_bind       = std::unique_ptr<MethodBind>(CreateMethodBind(method));
-		methodInfo->m_returnType = Variant::GetType<ReturnType>();
+		methodInfo->m_returnInfo = GetArgumentInfo<ReturnType>();
 		methodInfo->m_argumentInfos.reserve(sizeof...(Args));
 		(methodInfo->m_argumentInfos.push_back(GetArgumentInfo<Args>()), ...);
 
@@ -333,4 +345,6 @@ private:
 	static std::unordered_map<std::string, ClassInfo>           m_classInfoMap;
 	static std::unordered_map<std::string, GlobalNamespaceInfo> m_namespaceInfoMap;
 	static std::unordered_map<std::string, Object*>             m_globalObjectMap;
+
+	static ApiType m_currentApiType;
 };

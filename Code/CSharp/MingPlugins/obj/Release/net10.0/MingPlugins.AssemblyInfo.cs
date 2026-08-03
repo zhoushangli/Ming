@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("MingPlugins")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+94da3ba377483bc069a8cf8710479aaef3918f6f")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+403e567c6f3a89dcd7b06b3d1064f4971e924524")]
 [assembly: System.Reflection.AssemblyProductAttribute("MingPlugins")]
 [assembly: System.Reflection.AssemblyTitleAttribute("MingPlugins")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

@@ -1,37 +1,27 @@
 ﻿using System.Runtime.InteropServices;
 using System.Text;
 
+using MingSharp;
+
 namespace MingPlugins
 {
 	public static class Main
 	{
-		[StructLayout(LayoutKind.Sequential)]
-		private unsafe struct NativeCallbacks
-		{
-			public delegate* unmanaged<
-				byte*,
-				int,
-				int> LogUtf8;
-		}
-
-		private static unsafe NativeCallbacks s_nativeCallbacks;
-
 		private static unsafe int Log(string message)
 		{
 			byte[] utf8Bytes = Encoding.UTF8.GetBytes(message);
 
 			fixed (byte* text = utf8Bytes)
 			{
-				return s_nativeCallbacks.LogUtf8(
+				return NativeCalls.LogUtf8(
 					text,
 					utf8Bytes.Length);
 			}
 		}
 
-
 		[UnmanagedCallersOnly]
 		private static unsafe int Initialize(
-			NativeCallbacks* nativeCallbacks,
+			void* nativeCallbacks,
 			int nativeCallbacksSize)
 		{
 			try
@@ -41,20 +31,11 @@ namespace MingPlugins
 					return -1;
 				}
 
-				if (nativeCallbacksSize != sizeof(NativeCallbacks))
-				{
-					return -2;
-				}
+				NativeCalls.Initialize((IntPtr)nativeCallbacks, nativeCallbacksSize);
 
-				if (nativeCallbacks->LogUtf8 == null)
-				{
-					return -3;
-				}
-
-				s_nativeCallbacks = *nativeCallbacks;
-
-				int logResult = Log(
-					"Managed bridge initialized.");
+				MingObject node = MingObject.Create("Node");
+				string className = node.GetClassName();
+				int logResult = Log(className);
 
 				if (logResult != 0)
 				{
@@ -77,7 +58,7 @@ namespace MingPlugins
 			{
 				return 0;
 			}
-			catch (Exception e)
+			catch (Exception)
 			{
 				return -1;
 			}

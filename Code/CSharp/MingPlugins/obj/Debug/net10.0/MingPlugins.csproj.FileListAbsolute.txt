@@ -12,3 +12,7 @@ C:\Work\Ming\Ming\Code\CSharp\MingPlugins\obj\Debug\net10.0\refint\MingPlugins.d
 C:\Work\Ming\Ming\Code\CSharp\MingPlugins\obj\Debug\net10.0\MingPlugins.pdb
 C:\Work\Ming\Ming\Code\CSharp\MingPlugins\obj\Debug\net10.0\MingPlugins.genruntimeconfig.cache
 C:\Work\Ming\Ming\Code\CSharp\MingPlugins\obj\Debug\net10.0\ref\MingPlugins.dll
+C:\Work\Ming\Ming\Code\CSharp\MingPlugins\bin\Debug\net10.0\MingSharp.dll
+C:\Work\Ming\Ming\Code\CSharp\MingPlugins\bin\Debug\net10.0\MingSharp.pdb
+C:\Work\Ming\Ming\Code\CSharp\MingPlugins\obj\Debug\net10.0\MingPlugins.csproj.AssemblyReference.cache
+C:\Work\Ming\Ming\Code\CSharp\MingPlugins\obj\Debug\net10.0\MingPlug.2705D7D6.Up2Date

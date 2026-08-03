@@ -8,6 +8,7 @@
 std::unordered_map<std::string, ClassInfo>           ClassDatabase::m_classInfoMap;
 std::unordered_map<std::string, GlobalNamespaceInfo> ClassDatabase::m_namespaceInfoMap;
 std::unordered_map<std::string, Object*>             ClassDatabase::m_globalObjectMap;
+ApiType                                                ClassDatabase::m_currentApiType = ApiType::None;
 
 namespace
 {

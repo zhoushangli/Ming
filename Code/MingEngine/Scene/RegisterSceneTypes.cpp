@@ -51,6 +51,8 @@ namespace
 
 void RegisterSceneTypes()
 {
+	ClassDatabase::SetApiType(ApiType::Runtime);
+
 	// Resource types
 	ClassDatabase::RegisterClass<MeshResource>();
 	ClassDatabase::RegisterClass<TextureResource>();
@@ -87,26 +89,29 @@ void RegisterSceneTypes()
 
 	// Scene types
 	ClassDatabase::RegisterClass<Node>();
-	ClassDatabase::RegisterClass<RaycastQuery3D>(false);
-	ClassDatabase::RegisterClass<RaycastResult3D>(false, false);
-	ClassDatabase::RegisterClass<RaycastSpace3D>(false, false);
+	ClassDatabase::RegisterClass<RaycastQuery3D>();
+	ClassDatabase::RegisterClass<RaycastResult3D>();
+	ClassDatabase::RegisterClass<RaycastSpace3D>();
 	ClassDatabase::RegisterClass<Node3D>();
 	ClassDatabase::RegisterClass<Camera3D>();
-	ClassDatabase::RegisterClass<Light3D>(false);
+	ClassDatabase::RegisterAbstractClass<Light3D>();
 	ClassDatabase::RegisterClass<DirectionalLight3D>();
 	ClassDatabase::RegisterClass<OmniLight3D>();
 	ClassDatabase::RegisterClass<SpotLight3D>();
-	ClassDatabase::RegisterClass<Collider3D>(false);
+	ClassDatabase::RegisterClass<Collider3D>(true);
 	ClassDatabase::RegisterClass<AABBCollider3D>();
 	ClassDatabase::RegisterClass<CapsuleCollider3D>();
 	ClassDatabase::RegisterClass<CylinderZCollider3D>();
 	ClassDatabase::RegisterClass<TriangleMeshCollider3D>();
-	ClassDatabase::RegisterClass<VisualInstance3D>(false);
+	ClassDatabase::RegisterAbstractClass<VisualInstance3D>();
 	ClassDatabase::RegisterClass<MeshInstance3D>();
 
-	ClassDatabase::RegisterClass<EditorNode>(false);
-	ClassDatabase::RegisterClass<EditorGizmos>(false);
-	ClassDatabase::RegisterClass<EditorCamera>(false);
+	// Editor types
+	ClassDatabase::SetApiType(ApiType::Editor);
+
+	ClassDatabase::RegisterClass<EditorNode>();
+	ClassDatabase::RegisterClass<EditorGizmos>();
+	ClassDatabase::RegisterClass<EditorCamera>();
 }
 
 #pragma endregion

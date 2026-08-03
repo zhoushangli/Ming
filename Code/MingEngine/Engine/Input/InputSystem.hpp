@@ -38,6 +38,7 @@ class InputSystem : public SystemBase
 	MCLASS(InputSystem, SystemBase)
 
 public:
+	InputSystem();
 	InputSystem(InputSystemConfig config);
 	~InputSystem();
 

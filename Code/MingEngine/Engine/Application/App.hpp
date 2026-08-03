@@ -19,6 +19,10 @@ struct MingRunConfig
 {
 	MingRunMode mode = MingRunMode::Editor;
 	std::filesystem::path projectPath;
+
+	// If true, the engine will generate C# bindings for all registered types and exit.
+	bool generateCSharpBindings = false;
+	std::filesystem::path csharpBindingsOutputDirectory;
 };
 
 namespace MingEngine

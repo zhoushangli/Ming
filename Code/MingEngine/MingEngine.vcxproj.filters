@@ -606,6 +606,9 @@
     <ClCompile Include="Engine\Application\Main_Windows.cpp">
       <Filter>Engine\Application</Filter>
     </ClCompile>
+    <ClCompile Include="Engine\Script\CSharpScriptGenerator.cpp">
+      <Filter>Engine\Script</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Core\Clock.hpp">
@@ -1162,6 +1165,9 @@
     </ClInclude>
     <ClInclude Include="Editor\Icons\BuiltinIcons.hpp">
       <Filter>Editor\Icons</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Script\CSharpScriptGenerator.hpp">
+      <Filter>Engine\Script</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

@@ -34,7 +34,7 @@ bool ContainsCaseInsensitive(std::string const& text, std::string const& filterT
 
 bool CanCreateClass(ClassInfo const* classInfo)
 {
-	return classInfo != nullptr && classInfo->m_canCreateInEditor && classInfo->m_creator;
+	return classInfo != nullptr && !classInfo->m_isVirtual && classInfo->m_creator;
 }
 } // namespace
 

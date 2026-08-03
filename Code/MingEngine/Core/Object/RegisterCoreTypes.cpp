@@ -18,17 +18,19 @@
 
 void RegisterCoreTypes()
 {
+	ClassDatabase::SetApiType(ApiType::Runtime);
+
 	// Root
 	ClassDatabase::RegisterRootClass<Object>();
 
 	// Core types
-	ClassDatabase::RegisterClass<RefCounted>(false);
-	ClassDatabase::RegisterClass<Image>(false, true);
-	ClassDatabase::RegisterClass<Resource>(false);
+	ClassDatabase::RegisterClass<RefCounted>();
+	ClassDatabase::RegisterClass<Image>();
+	ClassDatabase::RegisterAbstractClass<Resource>();
 	ClassDatabase::RegisterClass<Script>();
-	ClassDatabase::RegisterClass<ResourceFormatImporter>(false);
-	ClassDatabase::RegisterClass<ResourceFormatLoader>(false);
-	ClassDatabase::RegisterClass<ResourceFormatSaver>(false);
+	ClassDatabase::RegisterAbstractClass<ResourceFormatImporter>();
+	ClassDatabase::RegisterAbstractClass<ResourceFormatLoader>();
+	ClassDatabase::RegisterAbstractClass<ResourceFormatSaver>();
 
 	// --- Global math methods ---
 

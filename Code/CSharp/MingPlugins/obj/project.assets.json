@@ -1,11 +1,30 @@
 {
   "version": 4,
   "targets": {
-    "net10.0": {}
+    "net10.0": {
+      "MingSharp/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v10.0",
+        "compile": {
+          "bin/placeholder/MingSharp.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/MingSharp.dll": {}
+        }
+      }
+    }
   },
-  "libraries": {},
+  "libraries": {
+    "MingSharp/1.0.0": {
+      "type": "project",
+      "path": "../MingSharp/MingSharp.csproj",
+      "msbuildProject": "../MingSharp/MingSharp.csproj"
+    }
+  },
   "projectFileDependencyGroups": {
-    "net10.0": []
+    "net10.0": [
+      "MingSharp >= 1.0.0"
+    ]
   },
   "packageFolders": {
     "C:\\Users\\Shangli Zhou\\.nuget\\packages\\": {},
@@ -39,7 +58,11 @@
         "net10.0": {
           "framework": "net10.0",
           "targetAlias": "net10.0",
-          "projectReferences": {}
+          "projectReferences": {
+            "C:\\Work\\Ming\\Ming\\Code\\CSharp\\MingSharp\\MingSharp.csproj": {
+              "projectPath": "C:\\Work\\Ming\\Ming\\Code\\CSharp\\MingSharp\\MingSharp.csproj"
+            }
+          }
         }
       },
       "warningProperties": {
