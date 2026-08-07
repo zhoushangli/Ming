@@ -1,3 +1,5 @@
+using System.Diagnostics;
+
 namespace MingSharp
 {
 	public partial class CapsuleCollider3D : Collider3D

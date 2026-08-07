@@ -45,26 +45,35 @@ constexpr char const* MingObjectTemplate = R"(namespace MingSharp
 }
 )";
 
-constexpr char const* RootClassTemplate = R"(namespace MingSharp
+constexpr char const* RootClassTemplate = R"(using System.Diagnostics;
+
+namespace MingSharp
 {
 	public partial class {CLASS_NAME} : MingObject
 	{
-		internal {CLASS_NAME}(nint nativeHandle) : base(nativeHandle)
+{METHOD_BINDINGS}		internal {CLASS_NAME}(nint nativeHandle) : base(nativeHandle)
 		{
 		}
 	}
 }
 )";
 
-constexpr char const* DerivedClassTemplate = R"(namespace MingSharp
+constexpr char const* DerivedClassTemplate = R"(using System.Diagnostics;
+
+namespace MingSharp
 {
 	public partial class {CLASS_NAME} : {PARENT_CLASS_NAME}
 	{
-		internal {CLASS_NAME}(nint nativeHandle) : base(nativeHandle)
+{METHOD_BINDINGS}		internal {CLASS_NAME}(nint nativeHandle) : base(nativeHandle)
 		{
 		}
 	}
 }
+)";
+
+constexpr char const* MethodBindingTemplate = R"(		[DebuggerBrowsable(DebuggerBrowsableState.Never)]
+		private static readonly IntPtr {METHOD_BIND_NAME} = NativeCalls.GetMethodBind("{CLASS_NAME}", "{METHOD_NAME}");
+
 )";
 
 void ReplaceAll(std::string& source, std::string const& placeholder, std::string const& value)
@@ -158,6 +167,23 @@ bool CSharpScriptGenerator::GenerateCSharpBindings(std::filesystem::path const& 
 				classInfo->m_parentClassName == "Object" ? "MingObject" : classInfo->m_parentClassName;
 			ReplaceAll(classSource, "{PARENT_CLASS_NAME}", parentClassName);
 		}
+
+		std::string methodBindings;
+		for (std::unique_ptr<MethodInfo> const& methodInfo : classInfo->m_methods)
+		{
+			if (methodInfo == nullptr)
+			{
+				continue;
+			}
+
+			std::string methodBinding = MethodBindingTemplate;
+			ReplaceAll(methodBinding, "{METHOD_BIND_NAME}", methodInfo->m_name + "MethodBind");
+			ReplaceAll(methodBinding, "{CLASS_NAME}", classInfo->m_className);
+			ReplaceAll(methodBinding, "{METHOD_NAME}", methodInfo->m_name);
+			methodBindings += methodBinding;
+		}
+
+		ReplaceAll(classSource, "{METHOD_BINDINGS}", methodBindings);
 		ReplaceAll(classSource, "{CLASS_NAME}", classInfo->m_className);
 
 		std::filesystem::path const classFilePath = generatedDirectory / (classInfo->m_className + ".cs");

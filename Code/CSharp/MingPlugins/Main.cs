@@ -13,7 +13,7 @@ namespace MingPlugins
 
 			fixed (byte* text = utf8Bytes)
 			{
-				return NativeCalls.LogUtf8(
+				return NativeFuncs.LogUtf8(
 					text,
 					utf8Bytes.Length);
 			}
@@ -31,11 +31,11 @@ namespace MingPlugins
 					return -1;
 				}
 
-				NativeCalls.Initialize((IntPtr)nativeCallbacks, nativeCallbacksSize);
+				NativeFuncs.Initialize((IntPtr)nativeCallbacks, nativeCallbacksSize);
 
-				MingObject node = MingObject.Create("Node");
-				string className = node.GetClassName();
-				int logResult = Log(className);
+				Node node = new Node();
+				string isReady = node.GetProcess().ToString();
+				int logResult = Log(isReady);
 
 				if (logResult != 0)
 				{

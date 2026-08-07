@@ -7,22 +7,49 @@
 #include <utility>
 #include <vector>
 
+template <typename T>
+struct PtrToArg
+{
+	using ReferenceType = std::remove_reference_t<T>;
+	using ValueType     = std::remove_cv_t<ReferenceType>;
+
+	// The Decode here reference to we want to get the actual value
+	// form an unknown pointer
+	static decltype(auto) Decode(void* ptr)
+	{
+		if constexpr (std::is_lvalue_reference_v<T> && !std::is_const_v<ReferenceType>)
+		{
+			return *static_cast<ValueType*>(ptr);
+		}
+		else
+		{
+			return *static_cast<ValueType const*>(ptr);
+		}
+	}
+
+	// The Encode here reference to we want to set the actual value
+	// to an unknown pointer
+	static void Encode(ValueType const& value, void* ptr) { *static_cast<ValueType*>(ptr) = value; }
+};
+
 class MethodBind
 {
 public:
 	virtual ~MethodBind() = default;
 
 	virtual Variant Invoke(Object* object, std::vector<Variant> const& arguments) const = 0;
+
+	virtual void PtrCall(Object* object, void** args, void* retPtr) const = 0;
 };
 
 template <typename ClassType, typename ReturnType, typename... Args>
-class ReturnMethodBind final : public MethodBind
+class MemberMethodBind final : public MethodBind
 {
 public:
 	using Method = ReturnType (ClassType::*)(Args...);
 
 public:
-	explicit ReturnMethodBind(Method method) : m_method(method) {}
+	explicit MemberMethodBind(Method method) : m_method(method) {}
 
 	Variant Invoke(Object* object, std::vector<Variant> const& arguments) const override
 	{
@@ -41,10 +68,16 @@ public:
 		return InvokeMethod(instance, arguments, std::index_sequence_for<Args...>{});
 	}
 
+	void PtrCall(Object* object, void** args, void* retPtr) const override
+	{
+		ClassType& instance = static_cast<ClassType&>(*object);
+		PtrCallMethod(instance, args, retPtr, std::index_sequence_for<Args...>{});
+	}
+
 private:
 	template <std::size_t... Indices>
-	Variant
-	InvokeMethod(ClassType& instance, std::vector<Variant> const& arguments, std::index_sequence<Indices...>) const
+	Variant InvokeMethod(
+		ClassType& instance, std::vector<Variant> const& arguments, std::index_sequence<Indices...>) const
 	{
 		// Judge weather the return type is void
 		// If the return type is void, we need to return a empty Variant
@@ -61,18 +94,33 @@ private:
 		}
 	}
 
+	template <std::size_t... Indices>
+	void PtrCallMethod(
+		ClassType& instance, void** args, void* retPtr, std::index_sequence<Indices...>) const
+	{
+		if constexpr (std::is_void_v<ReturnType>)
+		{
+			(instance.*m_method)(PtrToArg<Args>::Decode(args[Indices])...);
+		}
+		else
+		{
+			ReturnType result = (instance.*m_method)(PtrToArg<Args>::Decode(args[Indices])...);
+			PtrToArg<ReturnType>::Encode(result, retPtr);
+		}
+	}
+
 private:
 	Method m_method;
 };
 
 template <typename ClassType, typename ReturnType, typename... Args>
-class ConstReturnMethodBind final : public MethodBind
+class ConstMemberMethodBind final : public MethodBind
 {
 public:
 	using Method = ReturnType (ClassType::*)(Args...) const;
 
 public:
-	explicit ConstReturnMethodBind(Method method) : m_method(method) {}
+	explicit ConstMemberMethodBind(Method method) : m_method(method) {}
 
 	Variant Invoke(Object* object, std::vector<Variant> const& arguments) const override
 	{
@@ -91,6 +139,12 @@ public:
 		return InvokeMethod(instance, arguments, std::index_sequence_for<Args...>{});
 	}
 
+	void PtrCall(Object* object, void** args, void* retPtr) const override
+	{
+		ClassType const& instance = static_cast<ClassType const&>(*object);
+		PtrCallMethod(instance, args, retPtr, std::index_sequence_for<Args...>{});
+	}
+
 private:
 	template <std::size_t... Indices>
 	Variant InvokeMethod(
@@ -105,6 +159,21 @@ private:
 		{
 			ReturnType result = (instance.*m_method)(VariantCaster<Args>::Cast(arguments[Indices])...);
 			return Variant(result);
+		}
+	}
+
+	template <std::size_t... Indices>
+	void PtrCallMethod(
+		ClassType const& instance, void** args, void* retPtr, std::index_sequence<Indices...>) const
+	{
+		if constexpr (std::is_void_v<ReturnType>)
+		{
+			(instance.*m_method)(PtrToArg<Args>::Decode(args[Indices])...);
+		}
+		else
+		{
+			ReturnType result = (instance.*m_method)(PtrToArg<Args>::Decode(args[Indices])...);
+			PtrToArg<ReturnType>::Encode(result, retPtr);
 		}
 	}
 
@@ -131,6 +200,11 @@ public:
 		return InvokeMethod(arguments, std::index_sequence_for<Args...>{});
 	}
 
+	void PtrCall([[maybe_unused]] Object* object, void** args, void* retPtr) const override
+	{
+		PtrCallMethod(args, retPtr, std::index_sequence_for<Args...>{});
+	}
+
 private:
 	template <std::size_t... Indices>
 	Variant InvokeMethod(std::vector<Variant> const& arguments, std::index_sequence<Indices...>) const
@@ -144,6 +218,20 @@ private:
 		{
 			ReturnType result = (*m_method)(VariantCaster<Args>::Cast(arguments[Indices])...);
 			return Variant(result);
+		}
+	}
+
+	template <std::size_t... Indices>
+	void PtrCallMethod(void** args, void* retPtr, std::index_sequence<Indices...>) const
+	{
+		if constexpr (std::is_void_v<ReturnType>)
+		{
+			(*m_method)(PtrToArg<Args>::Decode(args[Indices])...);
+		}
+		else
+		{
+			ReturnType result = (*m_method)(PtrToArg<Args>::Decode(args[Indices])...);
+			PtrToArg<ReturnType>::Encode(result, retPtr);
 		}
 	}
 

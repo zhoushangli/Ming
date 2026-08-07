@@ -1,3 +1,5 @@
+using System.Diagnostics;
+
 namespace MingSharp
 {
 	public partial class CylinderZCollider3D : Collider3D

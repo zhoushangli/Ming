@@ -102,9 +102,9 @@ enum class ApiType
 
 struct ClassInfo
 {
-	std::string              m_className;
-	std::string              m_parentClassName;
-	ApiType                  m_apiType   = ApiType::None;
+	std::string m_className;
+	std::string m_parentClassName;
+	ApiType     m_apiType = ApiType::None;
 	// IsVirutal means this class can be instantiated
 	// but it should use as the base class for other classes
 	bool                     m_isVirtual = false;
@@ -249,7 +249,7 @@ public:
 	static MethodBind* CreateMethodBind(ReturnType (ClassType::*method)(Args...))
 	{
 		std::unique_ptr<MethodInfo> methodInfo = std::make_unique<MethodInfo>();
-		MethodBind*                 methodBind = new ReturnMethodBind<ClassType, ReturnType, Args...>(method);
+		MethodBind*                 methodBind = new MemberMethodBind<ClassType, ReturnType, Args...>(method);
 		return methodBind;
 	}
 
@@ -257,7 +257,7 @@ public:
 	static MethodBind* CreateMethodBind(ReturnType (ClassType::*method)(Args...) const)
 	{
 		std::unique_ptr<MethodInfo> methodInfo = std::make_unique<MethodInfo>();
-		MethodBind*                 methodBind = new ConstReturnMethodBind<ClassType, ReturnType, Args...>(method);
+		MethodBind*                 methodBind = new ConstMemberMethodBind<ClassType, ReturnType, Args...>(method);
 		return methodBind;
 	}
 

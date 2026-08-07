@@ -1,3 +1,5 @@
+using System.Diagnostics;
+
 namespace MingSharp
 {
 	public partial class Collider3D : Node3D

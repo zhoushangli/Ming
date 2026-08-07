@@ -1,3 +1,5 @@
+using System.Diagnostics;
+
 namespace MingSharp
 {
 	public partial class VisualInstance3D : Node3D
