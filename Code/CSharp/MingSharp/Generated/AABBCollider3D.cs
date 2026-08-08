@@ -1,11 +1,11 @@
 using System.Diagnostics;
 
-namespace MingSharp
+namespace MingSharp;
+
+public partial class AABBCollider3D : Collider3D
 {
-	public partial class AABBCollider3D : Collider3D
+	internal AABBCollider3D(nint nativeHandle) : base(nativeHandle)
 	{
-		internal AABBCollider3D(nint nativeHandle) : base(nativeHandle)
-		{
-		}
 	}
+
 }

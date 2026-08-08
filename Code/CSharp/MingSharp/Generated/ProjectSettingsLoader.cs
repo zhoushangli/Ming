@@ -1,11 +1,11 @@
 using System.Diagnostics;
 
-namespace MingSharp
+namespace MingSharp;
+
+public partial class ProjectSettingsLoader : ResourceFormatLoader
 {
-	public partial class ProjectSettingsLoader : ResourceFormatLoader
+	internal ProjectSettingsLoader(nint nativeHandle) : base(nativeHandle)
 	{
-		internal ProjectSettingsLoader(nint nativeHandle) : base(nativeHandle)
-		{
-		}
 	}
+
 }

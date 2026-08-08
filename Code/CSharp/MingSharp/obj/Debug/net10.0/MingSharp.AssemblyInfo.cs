@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("MingSharp")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+bd43302f3aba82bcc0c715b230bf8fee8ffdc0f4")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+661c075cec7920c3bc36257eca9233955ee1c5a5")]
 [assembly: System.Reflection.AssemblyProductAttribute("MingSharp")]
 [assembly: System.Reflection.AssemblyTitleAttribute("MingSharp")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

@@ -1,11 +1,11 @@
 using System.Diagnostics;
 
-namespace MingSharp
+namespace MingSharp;
+
+public partial class TriangleMeshCollider3D : Collider3D
 {
-	public partial class TriangleMeshCollider3D : Collider3D
+	internal TriangleMeshCollider3D(nint nativeHandle) : base(nativeHandle)
 	{
-		internal TriangleMeshCollider3D(nint nativeHandle) : base(nativeHandle)
-		{
-		}
 	}
+
 }

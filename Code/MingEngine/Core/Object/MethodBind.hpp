@@ -32,6 +32,22 @@ struct PtrToArg
 	static void Encode(ValueType const& value, void* ptr) { *static_cast<ValueType*>(ptr) = value; }
 };
 
+// bool is a special case, because for different platform, the size of bool is different
+// so we need to explicitly cast this to uint8_t, which is one byte, and this aligned with C# side code
+template <>
+struct PtrToArg<bool>
+{
+    static bool Decode(void* ptr)
+    {
+        return *static_cast<uint8_t const*>(ptr) != 0;
+    }
+
+    static void Encode(bool value, void* ptr)
+    {
+        *static_cast<uint8_t*>(ptr) = value ? 1 : 0;
+    }
+};
+
 class MethodBind
 {
 public:

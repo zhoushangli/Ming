@@ -1,11 +1,11 @@
 using System.Diagnostics;
 
-namespace MingSharp
+namespace MingSharp;
+
+public partial class Object : MingObject
 {
-	public partial class Object : MingObject
+	internal Object(nint nativeHandle) : base(nativeHandle)
 	{
-		internal Object(nint nativeHandle) : base(nativeHandle)
-		{
-		}
 	}
+
 }

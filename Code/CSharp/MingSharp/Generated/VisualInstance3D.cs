@@ -1,11 +1,11 @@
 using System.Diagnostics;
 
-namespace MingSharp
+namespace MingSharp;
+
+public partial class VisualInstance3D : Node3D
 {
-	public partial class VisualInstance3D : Node3D
+	internal VisualInstance3D(nint nativeHandle) : base(nativeHandle)
 	{
-		internal VisualInstance3D(nint nativeHandle) : base(nativeHandle)
-		{
-		}
 	}
+
 }

@@ -1,11 +1,11 @@
 using System.Diagnostics;
 
-namespace MingSharp
+namespace MingSharp;
+
+public partial class ImageImporter : ResourceFormatImporter
 {
-	public partial class ImageImporter : ResourceFormatImporter
+	internal ImageImporter(nint nativeHandle) : base(nativeHandle)
 	{
-		internal ImageImporter(nint nativeHandle) : base(nativeHandle)
-		{
-		}
 	}
+
 }

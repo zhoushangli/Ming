@@ -1,11 +1,11 @@
 using System.Diagnostics;
 
-namespace MingSharp
+namespace MingSharp;
+
+public partial class MeshResourceLoader : ResourceFormatLoader
 {
-	public partial class MeshResourceLoader : ResourceFormatLoader
+	internal MeshResourceLoader(nint nativeHandle) : base(nativeHandle)
 	{
-		internal MeshResourceLoader(nint nativeHandle) : base(nativeHandle)
-		{
-		}
 	}
+
 }

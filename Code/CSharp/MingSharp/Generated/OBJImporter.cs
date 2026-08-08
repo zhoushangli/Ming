@@ -1,11 +1,11 @@
 using System.Diagnostics;
 
-namespace MingSharp
+namespace MingSharp;
+
+public partial class OBJImporter : ResourceFormatImporter
 {
-	public partial class OBJImporter : ResourceFormatImporter
+	internal OBJImporter(nint nativeHandle) : base(nativeHandle)
 	{
-		internal OBJImporter(nint nativeHandle) : base(nativeHandle)
-		{
-		}
 	}
+
 }

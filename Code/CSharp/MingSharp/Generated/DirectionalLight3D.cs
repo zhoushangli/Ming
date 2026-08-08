@@ -1,11 +1,11 @@
 using System.Diagnostics;
 
-namespace MingSharp
+namespace MingSharp;
+
+public partial class DirectionalLight3D : Light3D
 {
-	public partial class DirectionalLight3D : Light3D
+	internal DirectionalLight3D(nint nativeHandle) : base(nativeHandle)
 	{
-		internal DirectionalLight3D(nint nativeHandle) : base(nativeHandle)
-		{
-		}
 	}
+
 }

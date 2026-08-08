@@ -9,7 +9,8 @@ using GetMethodBindFunc      = void const*(CORECLR_DELEGATE_CALLTYPE*)(uint8_t c
 																	   int32_t        classNameLength,
 																	   uint8_t const* methodName,
 																	   int32_t        methodNameLength);
-using MethodBindPtrCalll     = void(CORECLR_DELEGATE_CALLTYPE*)(void const* methodBind, void* objectPtr, void** args, void* retPtr);
+using MethodBindPtrCallFunc =
+	void(CORECLR_DELEGATE_CALLTYPE*)(void const* methodBind, void* objectPtr, void** args, void* retPtr);
 
 struct NativeCallbacks
 {
@@ -17,7 +18,7 @@ struct NativeCallbacks
 	CreateObjectFunc       m_createObject       = nullptr;
 	GetObjectClassNameFunc m_getObjectClassName = nullptr;
 	GetMethodBindFunc      m_getMethodBind      = nullptr;
-	MethodBindPtrCalll     m_methodBindPtrCall  = nullptr;
+	MethodBindPtrCallFunc  m_methodBindPtrCall  = nullptr;
 };
 
 using InitializeFunc =

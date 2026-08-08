@@ -1,11 +1,11 @@
 using System.Diagnostics;
 
-namespace MingSharp
+namespace MingSharp;
+
+public partial class GLTFImporter : ResourceFormatImporter
 {
-	public partial class GLTFImporter : ResourceFormatImporter
+	internal GLTFImporter(nint nativeHandle) : base(nativeHandle)
 	{
-		internal GLTFImporter(nint nativeHandle) : base(nativeHandle)
-		{
-		}
 	}
+
 }

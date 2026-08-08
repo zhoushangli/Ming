@@ -1,11 +1,11 @@
 using System.Diagnostics;
 
-namespace MingSharp
+namespace MingSharp;
+
+public partial class ShaderResource : Resource
 {
-	public partial class ShaderResource : Resource
+	internal ShaderResource(nint nativeHandle) : base(nativeHandle)
 	{
-		internal ShaderResource(nint nativeHandle) : base(nativeHandle)
-		{
-		}
 	}
+
 }

@@ -1,11 +1,11 @@
 using System.Diagnostics;
 
-namespace MingSharp
+namespace MingSharp;
+
+public partial class ResourceFormatSaver : RefCounted
 {
-	public partial class ResourceFormatSaver : RefCounted
+	internal ResourceFormatSaver(nint nativeHandle) : base(nativeHandle)
 	{
-		internal ResourceFormatSaver(nint nativeHandle) : base(nativeHandle)
-		{
-		}
 	}
+
 }

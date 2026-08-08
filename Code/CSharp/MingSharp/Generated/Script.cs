@@ -1,11 +1,11 @@
 using System.Diagnostics;
 
-namespace MingSharp
+namespace MingSharp;
+
+public partial class Script : Resource
 {
-	public partial class Script : Resource
+	internal Script(nint nativeHandle) : base(nativeHandle)
 	{
-		internal Script(nint nativeHandle) : base(nativeHandle)
-		{
-		}
 	}
+
 }

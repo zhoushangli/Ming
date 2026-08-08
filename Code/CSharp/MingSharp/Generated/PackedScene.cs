@@ -1,11 +1,11 @@
 using System.Diagnostics;
 
-namespace MingSharp
+namespace MingSharp;
+
+public partial class PackedScene : Resource
 {
-	public partial class PackedScene : Resource
+	internal PackedScene(nint nativeHandle) : base(nativeHandle)
 	{
-		internal PackedScene(nint nativeHandle) : base(nativeHandle)
-		{
-		}
 	}
+
 }

@@ -1,11 +1,11 @@
 using System.Diagnostics;
 
-namespace MingSharp
+namespace MingSharp;
+
+public partial class TextureResource : Resource
 {
-	public partial class TextureResource : Resource
+	internal TextureResource(nint nativeHandle) : base(nativeHandle)
 	{
-		internal TextureResource(nint nativeHandle) : base(nativeHandle)
-		{
-		}
 	}
+
 }

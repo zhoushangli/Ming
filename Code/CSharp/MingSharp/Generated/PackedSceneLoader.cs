@@ -1,11 +1,11 @@
 using System.Diagnostics;
 
-namespace MingSharp
+namespace MingSharp;
+
+public partial class PackedSceneLoader : ResourceFormatLoader
 {
-	public partial class PackedSceneLoader : ResourceFormatLoader
+	internal PackedSceneLoader(nint nativeHandle) : base(nativeHandle)
 	{
-		internal PackedSceneLoader(nint nativeHandle) : base(nativeHandle)
-		{
-		}
 	}
+
 }

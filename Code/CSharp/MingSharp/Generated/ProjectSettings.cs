@@ -1,11 +1,11 @@
 using System.Diagnostics;
 
-namespace MingSharp
+namespace MingSharp;
+
+public partial class ProjectSettings : Resource
 {
-	public partial class ProjectSettings : Resource
+	internal ProjectSettings(nint nativeHandle) : base(nativeHandle)
 	{
-		internal ProjectSettings(nint nativeHandle) : base(nativeHandle)
-		{
-		}
 	}
+
 }

@@ -1,11 +1,11 @@
 using System.Diagnostics;
 
-namespace MingSharp
+namespace MingSharp;
+
+public partial class MeshResource : Resource
 {
-	public partial class MeshResource : Resource
+	internal MeshResource(nint nativeHandle) : base(nativeHandle)
 	{
-		internal MeshResource(nint nativeHandle) : base(nativeHandle)
-		{
-		}
 	}
+
 }

@@ -1,11 +1,11 @@
 using System.Diagnostics;
 
-namespace MingSharp
+namespace MingSharp;
+
+public partial class Image : RefCounted
 {
-	public partial class Image : RefCounted
+	internal Image(nint nativeHandle) : base(nativeHandle)
 	{
-		internal Image(nint nativeHandle) : base(nativeHandle)
-		{
-		}
 	}
+
 }
