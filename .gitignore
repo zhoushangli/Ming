@@ -2,3 +2,5 @@ Temporary/
 .vs/
 .vscode/
 Code/CSharp/MingSharp/Generated/
+**/bin/
+**/obj/
