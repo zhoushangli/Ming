@@ -7,32 +7,32 @@
 
 namespace
 {
-Vec3 GetArbitraryTangent(Vec3 const& normal)
+Vector3 GetArbitraryTangent(Vector3 const& normal)
 {
 	if (normal.GetLengthSquared() <= 0.f)
 	{
-		return Vec3::Forward;
+		return Vector3::Forward;
 	}
 
-	Vec3 const normalizedNormal = normal.GetNormalized();
-	Vec3 const helperAxis       = std::abs(normalizedNormal.z) < 0.999f ? Vec3::Up : Vec3::Right;
-	return Vec3::CrossProduct(helperAxis, normalizedNormal).GetNormalized();
+	Vector3 const normalizedNormal = normal.GetNormalized();
+	Vector3 const helperAxis       = std::abs(normalizedNormal.z) < 0.999f ? Vector3::Up : Vector3::Right;
+	return Vector3::CrossProduct(helperAxis, normalizedNormal).GetNormalized();
 }
 } // namespace
 
 void SurfaceTool::SetColor(Color const& color) { m_prevColor = color; }
 
-void SurfaceTool::SetNormal(Vec3 const& normal) { m_prevNormal = normal; }
+void SurfaceTool::SetNormal(Vector3 const& normal) { m_prevNormal = normal; }
 
-void SurfaceTool::SetTangent(Vec3 const& tangent) { m_prevTangent = tangent; }
+void SurfaceTool::SetTangent(Vector3 const& tangent) { m_prevTangent = tangent; }
 
-void SurfaceTool::SetBitangent(Vec3 const& bitangent) { m_prevBitangent = bitangent; }
+void SurfaceTool::SetBitangent(Vector3 const& bitangent) { m_prevBitangent = bitangent; }
 
-void SurfaceTool::SetUV(Vec2 const& uv) { m_prevUV = uv; }
+void SurfaceTool::SetUV(Vector2 const& uv) { m_prevUV = uv; }
 
 void SurfaceTool::SetSmoothingGroup(uint32_t smoothingGroup) { m_prevSmoothingGroup = smoothingGroup; }
 
-void SurfaceTool::AddVertex(Vec3 const& position)
+void SurfaceTool::AddVertex(Vector3 const& position)
 {
 	SurfaceVertex vertex;
 	vertex.m_vertex.m_position  = position;
@@ -106,14 +106,14 @@ void SurfaceTool::GenerateNormals(bool flip)
 
 	GUARANTEE_OR_DIE(m_vertices.size() % 3 == 0, "Vertex count must be a multiple of 3 to generate normals.");
 
-	std::unordered_map<SmoothNormalKey, Vec3, SmoothNormalKeyHash> smoothNormals;
+	std::unordered_map<SmoothNormalKey, Vector3, SmoothNormalKeyHash> smoothNormals;
 	for (size_t triangleStart = 0; triangleStart < m_vertices.size(); triangleStart += 3)
 	{
-		Vec3 const& position0 = m_vertices[triangleStart + 0].m_vertex.m_position;
-		Vec3 const& position1 = m_vertices[triangleStart + 1].m_vertex.m_position;
-		Vec3 const& position2 = m_vertices[triangleStart + 2].m_vertex.m_position;
+		Vector3 const& position0 = m_vertices[triangleStart + 0].m_vertex.m_position;
+		Vector3 const& position1 = m_vertices[triangleStart + 1].m_vertex.m_position;
+		Vector3 const& position2 = m_vertices[triangleStart + 2].m_vertex.m_position;
 
-		Vec3 normal = Vec3::CrossProduct(position1 - position0, position2 - position0);
+		Vector3 normal = Vector3::CrossProduct(position1 - position0, position2 - position0);
 		if (normal.GetLengthSquared() > 0.f)
 		{
 			normal.Normalize();
@@ -146,7 +146,7 @@ void SurfaceTool::GenerateNormals(bool flip)
 		auto const iter = smoothNormals.find(SmoothNormalKey(vertex));
 		if (iter == smoothNormals.end() || iter->second.GetLengthSquared() <= 0.f)
 		{
-			vertex.m_vertex.m_normal = Vec3::Zero;
+			vertex.m_vertex.m_normal = Vector3::Zero;
 			continue;
 		}
 
@@ -178,13 +178,13 @@ void SurfaceTool::GenerateTangents()
 		Vertex&        vertex1        = surfaceVertex1.m_vertex;
 		Vertex&        vertex2        = surfaceVertex2.m_vertex;
 
-		Vec3 const  edge1       = vertex1.m_position - vertex0.m_position;
-		Vec3 const  edge2       = vertex2.m_position - vertex0.m_position;
-		Vec2 const  deltaUV1    = vertex1.m_uv - vertex0.m_uv;
-		Vec2 const  deltaUV2    = vertex2.m_uv - vertex0.m_uv;
-		float const determinant = deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y;
+		Vector3 const edge1       = vertex1.m_position - vertex0.m_position;
+		Vector3 const edge2       = vertex2.m_position - vertex0.m_position;
+		Vector2 const deltaUV1    = vertex1.m_uv - vertex0.m_uv;
+		Vector2 const deltaUV2    = vertex2.m_uv - vertex0.m_uv;
+		float const   determinant = deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y;
 
-		Vec3 tangent = Vec3::Zero;
+		Vector3 tangent = Vector3::Zero;
 		if (std::abs(determinant) > 0.000001f)
 		{
 			tangent = (edge1 * deltaUV2.y - edge2 * deltaUV1.y) / determinant;
@@ -198,7 +198,7 @@ void SurfaceTool::GenerateTangents()
 		for (Vertex* vertex : triangleVertices)
 		{
 			vertex->m_tangent   = tangent.GetLengthSquared() > 0.f ? tangent : GetArbitraryTangent(vertex->m_normal);
-			vertex->m_bitangent = Vec3::CrossProduct(vertex->m_normal, vertex->m_tangent);
+			vertex->m_bitangent = Vector3::CrossProduct(vertex->m_normal, vertex->m_tangent);
 			if (vertex->m_bitangent.GetLengthSquared() > 0.f)
 			{
 				vertex->m_bitangent.Normalize();
@@ -218,10 +218,10 @@ void SurfaceTool::Clear()
 	m_indices.clear();
 
 	m_prevColor          = Color::White;
-	m_prevNormal         = Vec3::Zero;
-	m_prevTangent        = Vec3::Zero;
-	m_prevBitangent      = Vec3::Zero;
-	m_prevUV             = Vec2::Zero;
+	m_prevNormal         = Vector3::Zero;
+	m_prevTangent        = Vector3::Zero;
+	m_prevBitangent      = Vector3::Zero;
+	m_prevUV             = Vector2::Zero;
 	m_prevSmoothingGroup = NoSmoothingGroup;
 }
 

@@ -1,9 +1,9 @@
 #include "MingEngine/Engine/Render/DebugObject.hpp"
 
 #include "MingEngine/Core/Math/MathUtils.hpp"
-#include "MingEngine/Engine/Render/BuiltinShaders.hpp"
 #include "MingEngine/Core/Render/VertexUtils.hpp"
 #include "MingEngine/Engine/Render/BitmapFont.hpp"
+#include "MingEngine/Engine/Render/BuiltinShaders.hpp"
 #include "MingEngine/Engine/Render/Renderer.hpp"
 #include "MingEngine/Engine/Render/VertexBuffer.hpp"
 
@@ -143,7 +143,7 @@ bool DebugObject::IsScreenObject() const
 
 void DebugObject::UpdateRenderData(Renderer& renderer, BitmapFont* font, int messageLine)
 {
-	m_texture = nullptr;
+	m_texture        = nullptr;
 	m_shaderResource = IsScreenObject()
 						   ? renderer.GetBuiltinShaderResource("DefaultUI", BuiltinShaders::DefaultUI)
 						   : renderer.GetBuiltinShaderResource("DefaultUnlit", BuiltinShaders::DefaultUnlit);
@@ -183,7 +183,7 @@ void DebugObject::UpdateRenderData(Renderer& renderer, BitmapFont* font, int mes
 		{
 			float const cellHeight = textHeight > 0.f ? textHeight : 20.f;
 			float const top        = -(cellHeight + 2.f) * static_cast<float>(messageLine);
-			box                    = AABB2(Vec2(10.f, top - cellHeight), Vec2(1000.f, top));
+			box                    = AABB2(Vector2(10.f, top - cellHeight), Vector2(1000.f, top));
 		}
 		font->AddVertsForTextInBox2D(
 			textVerts,

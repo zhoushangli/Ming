@@ -41,7 +41,7 @@ public:
 
 	IntVec2 GetDimensions() const { return m_dimensions; }
 
-	void GeneratePath(std::vector<Vec2>& path, Vec2 position);
+	void GeneratePath(std::vector<Vector2>& path, Vector2 position);
 
 private:
 	int GetIndexForCoords(int x, int y) const;

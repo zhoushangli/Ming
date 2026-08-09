@@ -1,6 +1,6 @@
 using System.Diagnostics;
 
-namespace MingSharp;
+namespace Ming;
 
 public partial class DirectionalLight3D : Light3D
 {

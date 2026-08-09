@@ -98,7 +98,7 @@ void CORECLR_DELEGATE_CALLTYPE MethodBindPtrCall(void const* methodBind, void* o
 	}
 
 	MethodBind const* methodBindPtr = static_cast<MethodBind const*>(methodBind);
-	Object* object = static_cast<Object*>(objectPtr);
+	Object*           object        = static_cast<Object*>(objectPtr);
 	methodBindPtr->PtrCall(object, args, retPtr);
 }
 } // namespace
@@ -107,7 +107,7 @@ bool DotNetHost::Initialize()
 {
 	std::filesystem::path const executableDirectory = GetExecutableDirectory();
 
-	std::filesystem::path const managedApiDirectory = executableDirectory / L"MingSharp" / L"Api";
+	std::filesystem::path const managedApiDirectory = executableDirectory / L"Ming" / L"Api";
 	std::filesystem::path const runtimeConfigPath   = managedApiDirectory / L"MingPlugins.runtimeconfig.json";
 	std::filesystem::path const managedAssemblyPath = managedApiDirectory / L"MingPlugins.dll";
 
@@ -228,7 +228,11 @@ bool DotNetHost::Initialize()
 		return false;
 	}
 
-	NativeCallbacks const nativeCallbacks{ &LogUtf8, &CreateObject, &GetObjectClassName, &GetMethodBind, &MethodBindPtrCall };
+	NativeCallbacks const nativeCallbacks{ &LogUtf8,
+										   &CreateObject,
+										   &GetObjectClassName,
+										   &GetMethodBind,
+										   &MethodBindPtrCall };
 
 	int32_t const initResult = m_initialize(&nativeCallbacks, static_cast<int32_t>(sizeof(nativeCallbacks)));
 	if (initResult != 0)

@@ -3,7 +3,7 @@
 #include "MingEngine/Core/Math/FloatRange.hpp"
 #include "MingEngine/Core/Math/IntVec2.hpp"
 #include "MingEngine/Core/Math/IntVec3.hpp"
-#include "MingEngine/Core/Math/Vec3.hpp"
+#include "MingEngine/Core/Math/Vector3.hpp"
 #include "MingEngine/Core/Render/Rgba8.hpp"
 #include "MingEngine/Core/Render/VertexUtils.hpp"
 #include "MingEngine/Core/StringUtils.hpp"
@@ -22,8 +22,8 @@ char        ParseXmlAttribute(XmlElement const& element, char const* attributeNa
 bool        ParseXmlAttribute(XmlElement const& element, char const* attributeName, bool defaultValue);
 float       ParseXmlAttribute(XmlElement const& element, char const* attributeName, float defaultValue);
 Color       ParseXmlAttribute(XmlElement const& element, char const* attributeName, Color const& defaultValue);
-Vec2        ParseXmlAttribute(XmlElement const& element, char const* attributeName, Vec2 const& defaultValue);
-Vec3        ParseXmlAttribute(XmlElement const& element, char const* attributeName, Vec3 const& defaultValue);
+Vector2     ParseXmlAttribute(XmlElement const& element, char const* attributeName, Vector2 const& defaultValue);
+Vector3     ParseXmlAttribute(XmlElement const& element, char const* attributeName, Vector3 const& defaultValue);
 IntVec2     ParseXmlAttribute(XmlElement const& element, char const* attributeName, IntVec2 const& defaultValue);
 IntVec3     ParseXmlAttribute(XmlElement const& element, char const* attributeName, IntVec3 const& defaultValue);
 std::string ParseXmlAttribute(XmlElement const& element, char const* attributeName, std::string const& defaultValue);

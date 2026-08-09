@@ -3,7 +3,7 @@
 #include "MingEngine/Scene/Physics/Collider3D.hpp"
 
 #include "MingEngine/Core/Math/Capsule3.hpp"
-#include "MingEngine/Core/Math/Vec3.hpp"
+#include "MingEngine/Core/Math/Vector3.hpp"
 
 class CapsuleCollider3D : public Collider3D
 {
@@ -18,7 +18,7 @@ protected:
 	void RenderDebug() const;
 
 public:
-	Vec3  m_localStart = Vec3::Zero;
-	Vec3  m_localEnd   = Vec3::Zero;
-	float m_radius     = 0.5f;
+	Vector3 m_localStart = Vector3::Zero;
+	Vector3 m_localEnd   = Vector3::Zero;
+	float   m_radius     = 0.5f;
 };

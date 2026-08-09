@@ -1,7 +1,7 @@
 #include "MingEngine/Core/Math/IntVec2.hpp"
 
 #include "MingEngine/Core/Math/MathUtils.hpp"
-#include "MingEngine/Core/Math/Vec2.hpp"
+#include "MingEngine/Core/Math/Vector2.hpp"
 #include "MingEngine/Core/StringUtils.hpp"
 
 #include <math.h>
@@ -12,7 +12,7 @@ const IntVec2 IntVec2::Zero = IntVec2(0, 0);
 
 IntVec2::IntVec2(int initialX, int initialY) : x(initialX), y(initialY) {}
 
-IntVec2::IntVec2(const Vec2& copyFrom) : x(RoundDownToInt(copyFrom.x)), y(RoundDownToInt(copyFrom.y)) {}
+IntVec2::IntVec2(const Vector2& copyFrom) : x(RoundDownToInt(copyFrom.x)), y(RoundDownToInt(copyFrom.y)) {}
 
 float IntVec2::GetLength() const { return sqrtf(static_cast<float>(GetLengthSquared())); }
 
@@ -100,7 +100,7 @@ void IntVec2::operator=(IntVec2 const& copyFrom)
 	y = copyFrom.y;
 }
 
-IntVec2::operator Vec2() const { return Vec2(static_cast<float>(x), static_cast<float>(y)); }
+IntVec2::operator Vector2() const { return Vector2(static_cast<float>(x), static_cast<float>(y)); }
 
 void IntVec2::SetFromText(char const* text)
 {

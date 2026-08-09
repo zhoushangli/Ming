@@ -1,13 +1,13 @@
 #pragma once
 
-struct Vec3;
+struct Vector3;
 
 struct IntVec3
 {
 public:
 	IntVec3()                        = default;
 	IntVec3(IntVec3 const& copyFrom) = default;
-	explicit IntVec3(Vec3 const& copyFrom);
+	explicit IntVec3(Vector3 const& copyFrom);
 	explicit IntVec3(int initialX, int initialY, int initialZ);
 
 	void SetFromText(char const* text);

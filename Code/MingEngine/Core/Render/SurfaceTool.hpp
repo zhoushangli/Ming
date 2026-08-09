@@ -30,7 +30,7 @@ private:
 
 	struct SmoothNormalKey
 	{
-		Vec3     m_position;
+		Vector3  m_position;
 		uint32_t m_smoothingGroup;
 
 		SmoothNormalKey(SurfaceVertex const& vertex)
@@ -51,13 +51,13 @@ private:
 			seed ^= value + 0x9e3779b9 + (seed << 6) + (seed >> 2);
 		}
 
-		static void CombineVec2(size_t& seed, Vec2 const& value) noexcept
+		static void CombineVec2(size_t& seed, Vector2 const& value) noexcept
 		{
 			Combine(seed, std::hash<float>{}(value.x));
 			Combine(seed, std::hash<float>{}(value.y));
 		}
 
-		static void CombineVec3(size_t& seed, Vec3 const& value) noexcept
+		static void CombineVec3(size_t& seed, Vector3 const& value) noexcept
 		{
 			Combine(seed, std::hash<float>{}(value.x));
 			Combine(seed, std::hash<float>{}(value.y));
@@ -98,13 +98,13 @@ private:
 
 public:
 	void SetColor(Color const& color);
-	void SetNormal(Vec3 const& normal);
-	void SetTangent(Vec3 const& tangent);
-	void SetBitangent(Vec3 const& bitangent);
-	void SetUV(Vec2 const& uv);
+	void SetNormal(Vector3 const& normal);
+	void SetTangent(Vector3 const& tangent);
+	void SetBitangent(Vector3 const& bitangent);
+	void SetUV(Vector2 const& uv);
 	void SetSmoothingGroup(uint32_t smoothingGroup);
 
-	void AddVertex(Vec3 const& position);
+	void AddVertex(Vector3 const& position);
 	void AddIndex(uint32_t index);
 
 	// Indexed will clean up the index and rebuild it
@@ -124,9 +124,9 @@ private:
 
 	// memory
 	Color    m_prevColor          = Color::White;
-	Vec3     m_prevNormal         = Vec3::Zero;
-	Vec3     m_prevTangent        = Vec3::Zero;
-	Vec3     m_prevBitangent      = Vec3::Zero;
-	Vec2     m_prevUV             = Vec2::Zero;
+	Vector3  m_prevNormal         = Vector3::Zero;
+	Vector3  m_prevTangent        = Vector3::Zero;
+	Vector3  m_prevBitangent      = Vector3::Zero;
+	Vector2  m_prevUV             = Vector2::Zero;
 	uint32_t m_prevSmoothingGroup = NoSmoothingGroup;
 };

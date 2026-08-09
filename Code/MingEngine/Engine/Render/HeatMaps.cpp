@@ -104,9 +104,9 @@ void TileHeatMap::AddVertsForDebugDraw(
 	float                specialValue,
 	Color                specialColor) const
 {
-	int  numTilesX = m_dimensions.x;
-	int  numTilesY = m_dimensions.y;
-	Vec2 tileSize  = totalBounds.GetDimensions();
+	int     numTilesX = m_dimensions.x;
+	int     numTilesY = m_dimensions.y;
+	Vector2 tileSize  = totalBounds.GetDimensions();
 	tileSize.x /= (float)numTilesX;
 	tileSize.y /= (float)numTilesY;
 
@@ -117,9 +117,9 @@ void TileHeatMap::AddVertsForDebugDraw(
 			IntVec2 coords(x, y);
 			float   value = GetValue(coords);
 
-			Vec2  mins = totalBounds.m_mins + Vec2((float)x * tileSize.x, (float)y * tileSize.y);
-			Vec2  maxs = mins + tileSize;
-			AABB2 tileBounds(mins, maxs);
+			Vector2 mins = totalBounds.m_mins + Vector2((float)x * tileSize.x, (float)y * tileSize.y);
+			Vector2 maxs = mins + tileSize;
+			AABB2   tileBounds(mins, maxs);
 
 			Color color;
 			if (value == specialValue)
@@ -133,18 +133,18 @@ void TileHeatMap::AddVertsForDebugDraw(
 				color          = Interpolate(lowColor, highColor, fraction);
 			}
 
-			verts.emplace_back(Vec3(tileBounds.m_mins.x, tileBounds.m_mins.y, 0.f), color);
-			verts.emplace_back(Vec3(tileBounds.m_maxs.x, tileBounds.m_mins.y, 0.f), color);
-			verts.emplace_back(Vec3(tileBounds.m_maxs.x, tileBounds.m_maxs.y, 0.f), color);
+			verts.emplace_back(Vector3(tileBounds.m_mins.x, tileBounds.m_mins.y, 0.f), color);
+			verts.emplace_back(Vector3(tileBounds.m_maxs.x, tileBounds.m_mins.y, 0.f), color);
+			verts.emplace_back(Vector3(tileBounds.m_maxs.x, tileBounds.m_maxs.y, 0.f), color);
 
-			verts.emplace_back(Vec3(tileBounds.m_mins.x, tileBounds.m_mins.y, 0.f), color);
-			verts.emplace_back(Vec3(tileBounds.m_maxs.x, tileBounds.m_maxs.y, 0.f), color);
-			verts.emplace_back(Vec3(tileBounds.m_mins.x, tileBounds.m_maxs.y, 0.f), color);
+			verts.emplace_back(Vector3(tileBounds.m_mins.x, tileBounds.m_mins.y, 0.f), color);
+			verts.emplace_back(Vector3(tileBounds.m_maxs.x, tileBounds.m_maxs.y, 0.f), color);
+			verts.emplace_back(Vector3(tileBounds.m_mins.x, tileBounds.m_maxs.y, 0.f), color);
 		}
 	}
 }
 
-void TileHeatMap::GeneratePath(std::vector<Vec2>& path, Vec2 position)
+void TileHeatMap::GeneratePath(std::vector<Vector2>& path, Vector2 position)
 {
 	path.clear();
 
@@ -155,7 +155,7 @@ void TileHeatMap::GeneratePath(std::vector<Vec2>& path, Vec2 position)
 
 	for (int step = 0; step < maxSteps; ++step)
 	{
-		path.emplace_back(Vec2((float)currentCoords.x + 0.5f, (float)currentCoords.y + 0.5f));
+		path.emplace_back(Vector2((float)currentCoords.x + 0.5f, (float)currentCoords.y + 0.5f));
 
 		IntVec2 bestNeighbor = currentCoords;
 		float   bestValue    = currentValue;

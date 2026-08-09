@@ -3,20 +3,20 @@
 
 using namespace Math;
 
-OBB2::OBB2(Vec2 const& center, Vec2 const& iBasisNormal, Vec2 const& halfDimensions)
+OBB2::OBB2(Vector2 const& center, Vector2 const& iBasisNormal, Vector2 const& halfDimensions)
 	: m_center(center), m_iBasisNormal(iBasisNormal), m_halfDimensions(halfDimensions)
 {
 }
 
-OBB2::OBB2(Vec2 const& center, Vec2 const& halfDimensions, float orientationDegree)
-	: m_center(center), m_iBasisNormal(Vec2::MakeFromPolarDegrees(orientationDegree, 1.f)),
+OBB2::OBB2(Vector2 const& center, Vector2 const& halfDimensions, float orientationDegree)
+	: m_center(center), m_iBasisNormal(Vector2::MakeFromPolarDegrees(orientationDegree, 1.f)),
 	  m_halfDimensions(halfDimensions)
 {
 }
 
-void OBB2::GetCornerPoints(Vec2* out_fourCornerWorldPositions) const
+void OBB2::GetCornerPoints(Vector2* out_fourCornerWorldPositions) const
 {
-	Vec2 jBasisNormal = m_iBasisNormal.GetRotatedBy90Degrees();
+	Vector2 jBasisNormal = m_iBasisNormal.GetRotatedBy90Degrees();
 
 	out_fourCornerWorldPositions[0] =
 		m_center - m_iBasisNormal * m_halfDimensions.x - jBasisNormal * m_halfDimensions.y;
@@ -28,16 +28,16 @@ void OBB2::GetCornerPoints(Vec2* out_fourCornerWorldPositions) const
 		m_center - m_iBasisNormal * m_halfDimensions.x + jBasisNormal * m_halfDimensions.y;
 }
 
-Vec2 OBB2::GetLocalPosForWorldPos(Vec2 const& worldPos) const
+Vector2 OBB2::GetLocalPosForWorldPos(Vector2 const& worldPos) const
 {
-	Vec2 disp         = worldPos - m_center;
-	Vec2 jBasisNormal = m_iBasisNormal.GetRotatedBy90Degrees();
-	return Vec2(DotProduct2D(disp, m_iBasisNormal), DotProduct2D(disp, jBasisNormal));
+	Vector2 disp         = worldPos - m_center;
+	Vector2 jBasisNormal = m_iBasisNormal.GetRotatedBy90Degrees();
+	return Vector2(DotProduct2D(disp, m_iBasisNormal), DotProduct2D(disp, jBasisNormal));
 }
 
-Vec2 OBB2::GetWorldPosForLocalPos(Vec2 const& localPos) const
+Vector2 OBB2::GetWorldPosForLocalPos(Vector2 const& localPos) const
 {
-	Vec2 jBasisNormal = m_iBasisNormal.GetRotatedBy90Degrees();
+	Vector2 jBasisNormal = m_iBasisNormal.GetRotatedBy90Degrees();
 	return m_center + m_iBasisNormal * localPos.x + jBasisNormal * localPos.y;
 }
 

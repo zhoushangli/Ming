@@ -2,7 +2,7 @@
 
 #include "MingEngine/Core/ErrorWarningAssert.hpp"
 #include "MingEngine/Core/Math/MathUtils.hpp"
-#include "MingEngine/Core/Math/Vec3.hpp"
+#include "MingEngine/Core/Math/Vector3.hpp"
 
 #include <string>
 
@@ -10,7 +10,7 @@ using namespace Math;
 
 IntVec3 const IntVec3::Zero = IntVec3(0, 0, 0);
 
-IntVec3::IntVec3(Vec3 const& copyFrom)
+IntVec3::IntVec3(Vector3 const& copyFrom)
 	: x(RoundDownToInt(copyFrom.x)), y(RoundDownToInt(copyFrom.y)), z(RoundDownToInt(copyFrom.z))
 {
 }

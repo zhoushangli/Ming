@@ -1,6 +1,6 @@
 using System.Diagnostics;
 
-namespace MingSharp;
+namespace Ming;
 
 public partial class OmniLight3D : Light3D
 {

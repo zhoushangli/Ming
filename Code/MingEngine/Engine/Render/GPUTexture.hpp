@@ -46,9 +46,9 @@ class SpriteDefinition
 {
 public:
 	explicit SpriteDefinition(
-		SpriteSheet const& spriteSheet, int spriteIndex, Vec2 const& uvAtMins, Vec2 const& uvAtMaxs);
+		SpriteSheet const& spriteSheet, int spriteIndex, Vector2 const& uvAtMins, Vector2 const& uvAtMaxs);
 
-	void               GetUVs(Vec2& out_uvAtMins, Vec2& out_uvAtMaxs) const;
+	void               GetUVs(Vector2& out_uvAtMins, Vector2& out_uvAtMaxs) const;
 	AABB2              GetUVs() const;
 	SpriteSheet const& GetSpriteSheet() const;
 	GPUTexture*        GetTexture() const;
@@ -57,8 +57,8 @@ public:
 protected:
 	SpriteSheet const& m_spriteSheet;
 	int                m_spriteIndex = -1;
-	Vec2               m_uvAtMins    = Vec2::Zero;
-	Vec2               m_uvAtMaxs    = Vec2::One;
+	Vector2            m_uvAtMins    = Vector2::Zero;
+	Vector2            m_uvAtMaxs    = Vector2::One;
 };
 
 class SpriteSheet
@@ -69,7 +69,7 @@ public:
 	GPUTexture*             GetTexture() const;
 	int                     GetNumSprites() const;
 	SpriteDefinition const& GetSpriteDef(int spriteIndex) const;
-	void                    GetSpriteUVs(Vec2& out_uvAtMins, Vec2& out_uvAtMaxs, int spriteIndex) const;
+	void                    GetSpriteUVs(Vector2& out_uvAtMins, Vector2& out_uvAtMaxs, int spriteIndex) const;
 	AABB2                   GetSpriteUVs(int spriteIndex) const;
 	AABB2                   GetSpriteUVs(IntVec2& spriteCoords) const;
 

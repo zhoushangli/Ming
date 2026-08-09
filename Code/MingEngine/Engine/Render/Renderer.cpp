@@ -2,8 +2,8 @@
 
 #include "MingEngine/Core/Clock.hpp"
 #include "MingEngine/Core/Math/EulerAngles.hpp"
-#include "MingEngine/Engine/Render/CameraContext.hpp"
 #include "MingEngine/Engine/Render/BuiltinShaders.hpp"
+#include "MingEngine/Engine/Render/CameraContext.hpp"
 #include "MingEngine/Engine/Render/DebugGizmos.hpp"
 #include "MingEngine/Engine/Render/PostProcessChain.hpp"
 #include "MingEngine/Engine/Render/RenderContext.hpp"
@@ -67,13 +67,12 @@ void Renderer::Startup()
 
 	m_renderBackend = new D3D11RenderBackend(m_config);
 	m_renderBackend->Startup();
-	m_defaultWhiteTexture   = CreateGPUTexture("DefaultWhite", IntVec2(2, 2), 4, kDefaultWhiteTexture);
-	m_defaultMagentaTexture = CreateGPUTexture("DefaultMagenta", IntVec2(2, 2), 4, kDefaultMagentaTexture);
-	m_defaultNormalTexture  = CreateGPUTexture("DefaultNormal", IntVec2(2, 2), 4, kDefaultNormalTexture);
-	m_defaultSGETexture     = CreateGPUTexture("DefaultSGE", IntVec2(2, 2), 4, kDefaultSGETexture);
+	m_defaultWhiteTexture           = CreateGPUTexture("DefaultWhite", IntVec2(2, 2), 4, kDefaultWhiteTexture);
+	m_defaultMagentaTexture         = CreateGPUTexture("DefaultMagenta", IntVec2(2, 2), 4, kDefaultMagentaTexture);
+	m_defaultNormalTexture          = CreateGPUTexture("DefaultNormal", IntVec2(2, 2), 4, kDefaultNormalTexture);
+	m_defaultSGETexture             = CreateGPUTexture("DefaultSGE", IntVec2(2, 2), 4, kDefaultSGETexture);
 	m_defaultShaderResource         = GetBuiltinShaderResource("DefaultUnlit", BuiltinShaders::DefaultUnlit);
-	m_postProcessCopyShaderResource =
-		GetBuiltinShaderResource("PostProcessCopy", BuiltinShaders::PostProcessCopy);
+	m_postProcessCopyShaderResource = GetBuiltinShaderResource("PostProcessCopy", BuiltinShaders::PostProcessCopy);
 
 	DebugRenderConfig debugConfig;
 	debugConfig.m_renderer = this;
@@ -229,7 +228,7 @@ void Renderer::ResizeViewport(ViewportInfo& viewport, IntVec2 dimensions)
 	DestroyViewportResources(viewport);
 
 	viewport.m_outputResolution      = dimensions;
-	viewport.m_outputRect            = AABB2(Vec2::Zero, (Vec2)dimensions);
+	viewport.m_outputRect            = AABB2(Vector2::Zero, (Vector2)dimensions);
 	viewport.m_viewportOutputTexture = m_renderBackend->CreateRenderTargetTexture("ViewportOutput", dimensions);
 	viewport.m_sceneColorTexture     = m_renderBackend->CreateRenderTargetTexture("SceneColor", dimensions);
 	viewport.m_sceneDepthTexture     = m_renderBackend->CreateDepthStencilTexture("SceneDepth", dimensions);
@@ -292,7 +291,7 @@ void Renderer::PrepareConstants(ViewportInfo const& viewport)
 	int            spotLightCount  = 0;
 	for (LightInfo const& light : viewport.m_lights)
 	{
-		Vec3 gpuColor;
+		Vector3 gpuColor;
 		gpuColor.x = light.m_color.r / 255.f;
 		gpuColor.y = light.m_color.g / 255.f;
 		gpuColor.z = light.m_color.b / 255.f;
@@ -347,7 +346,7 @@ void Renderer::PrepareConstants(ViewportInfo const& viewport)
 
 	// Prepare post-process constants
 	PostProcessConstants postProcessConstants;
-	postProcessConstants.m_screenDimensions = (Vec2)viewport.m_outputResolution;
+	postProcessConstants.m_screenDimensions = (Vector2)viewport.m_outputResolution;
 	postProcessConstants.m_cameraNear       = viewport.m_worldCamera->GetNearZ();
 	postProcessConstants.m_cameraFar        = viewport.m_worldCamera->GetFarZ();
 	m_renderBackend->UpdateAndBindConstantBuffer(BuiltinConstantBufferType::PostProcess, postProcessConstants);
@@ -441,7 +440,7 @@ void Renderer::RenderPostProcess(ViewportInfo& viewport)
 void Renderer::RenderUI(ViewportInfo const& viewport)
 {
 	CameraContext uiCameraData = CameraContext();
-	uiCameraData.SetOrthogonal(Vec2::Zero, (Vec2)viewport.m_outputResolution, 0.f, 1.f);
+	uiCameraData.SetOrthogonal(Vector2::Zero, (Vector2)viewport.m_outputResolution, 0.f, 1.f);
 	m_renderBackend->BindCamera(uiCameraData);
 
 	m_renderBackend->BindRenderTarget(viewport.m_viewportOutputTexture);
@@ -468,8 +467,7 @@ Shader* Renderer::CreateShader(
 	return m_renderBackend->CreateShader(shaderName, shaderSource, shaderSourcePath);
 }
 
-Ref<ShaderResource> Renderer::GetBuiltinShaderResource(
-	std::string const& shaderName, std::string_view shaderSource)
+Ref<ShaderResource> Renderer::GetBuiltinShaderResource(std::string const& shaderName, std::string_view shaderSource)
 {
 	auto const found = m_builtinShaderResources.find(shaderName);
 	if (found != m_builtinShaderResources.end())

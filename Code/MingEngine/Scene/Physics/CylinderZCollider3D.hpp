@@ -3,7 +3,7 @@
 #include "MingEngine/Scene/Physics/Collider3D.hpp"
 
 #include "MingEngine/Core/Math/FloatRange.hpp"
-#include "MingEngine/Core/Math/Vec2.hpp"
+#include "MingEngine/Core/Math/Vector2.hpp"
 
 class CylinderZCollider3D : public Collider3D
 {
@@ -17,7 +17,7 @@ protected:
 	void RenderDebug() const;
 
 public:
-	Vec2       m_localStartXY = Vec2::Zero;
+	Vector2    m_localStartXY = Vector2::Zero;
 	FloatRange m_localZRange  = FloatRange::ZeroToOne;
 	float      m_radius       = 0.5f;
 };

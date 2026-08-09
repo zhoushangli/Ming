@@ -1,6 +1,6 @@
 #pragma once
 
-#include "MingEngine/Core/Math/Vec2.hpp"
+#include "MingEngine/Core/Math/Vector2.hpp"
 #include "MingEngine/Editor/EditorData.hpp"
 #include "MingEngine/Editor/UI/EditorUIContext.hpp"
 #include "MingEngine/Scene/Core/Node.hpp"
@@ -119,9 +119,9 @@ public:
 	bool        HasScene() const;
 	std::string GetCurrentSceneName() const;
 
-	void OnMouseMove(Vec2 screenPos, Vec2 delta);
-	void OnMouseDown(int keyCode, Vec2 screenPos);
-	void OnMouseUp(int keyCode, Vec2 screenPos);
+	void OnMouseMove(Vector2 screenPos, Vector2 delta);
+	void OnMouseDown(int keyCode, Vector2 screenPos);
+	void OnMouseUp(int keyCode, Vector2 screenPos);
 
 private:
 	void OnReady() override;

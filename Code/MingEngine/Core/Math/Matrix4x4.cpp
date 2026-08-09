@@ -1,9 +1,9 @@
 #include "MingEngine/Core/Math/Matrix4x4.hpp"
 
 #include "MingEngine/Core/Math/MathUtils.hpp"
-#include "MingEngine/Core/Math/Vec2.hpp"
-#include "MingEngine/Core/Math/Vec3.hpp"
-#include "MingEngine/Core/Math/Vec4.hpp"
+#include "MingEngine/Core/Math/Vector2.hpp"
+#include "MingEngine/Core/Math/Vector3.hpp"
+#include "MingEngine/Core/Math/Vector4.hpp"
 
 using namespace Math;
 
@@ -33,7 +33,7 @@ Matrix4x4::Matrix4x4()
 }
 
 // 2D basis and translation
-Matrix4x4::Matrix4x4(Vec2 const& iBasis2D, Vec2 const& jBasis2D, Vec2 const& translation2D)
+Matrix4x4::Matrix4x4(Vector2 const& iBasis2D, Vector2 const& jBasis2D, Vector2 const& translation2D)
 {
 	m_values[Ix] = iBasis2D.x;
 	m_values[Jx] = jBasis2D.x;
@@ -54,7 +54,8 @@ Matrix4x4::Matrix4x4(Vec2 const& iBasis2D, Vec2 const& jBasis2D, Vec2 const& tra
 }
 
 // 3D basis and translation
-Matrix4x4::Matrix4x4(Vec3 const& iBasis3D, Vec3 const& jBasis3D, Vec3 const& kBasis3D, Vec3 const& translation3D)
+Matrix4x4::Matrix4x4(
+	Vector3 const& iBasis3D, Vector3 const& jBasis3D, Vector3 const& kBasis3D, Vector3 const& translation3D)
 {
 	m_values[Ix] = iBasis3D.x;
 	m_values[Jx] = jBasis3D.x;
@@ -75,7 +76,8 @@ Matrix4x4::Matrix4x4(Vec3 const& iBasis3D, Vec3 const& jBasis3D, Vec3 const& kBa
 }
 
 // 2D basis (with 3 vectors) & 4D translation
-Matrix4x4::Matrix4x4(Vec2 const& IBasis2D, Vec2 const& jBasis2D, Vec2 const& kBasis2D, Vec4 const& translation4D)
+Matrix4x4::Matrix4x4(
+	Vector2 const& IBasis2D, Vector2 const& jBasis2D, Vector2 const& kBasis2D, Vector4 const& translation4D)
 {
 	m_values[Ix] = IBasis2D.x;
 	m_values[Jx] = jBasis2D.x;
@@ -96,7 +98,8 @@ Matrix4x4::Matrix4x4(Vec2 const& IBasis2D, Vec2 const& jBasis2D, Vec2 const& kBa
 }
 
 // 4D basis and translation
-Matrix4x4::Matrix4x4(Vec4 const& iBasis4D, Vec4 const& jBasis4D, Vec4 const& kBasis4D, Vec4 const& translation4D)
+Matrix4x4::Matrix4x4(
+	Vector4 const& iBasis4D, Vector4 const& jBasis4D, Vector4 const& kBasis4D, Vector4 const& translation4D)
 {
 	m_values[Ix] = iBasis4D.x;
 	m_values[Jx] = jBasis4D.x;
@@ -168,38 +171,41 @@ float* Matrix4x4::GetAsFloatArray() { return m_values; }
 
 float const* Matrix4x4::GetAsFloatArray() const { return m_values; }
 
-Vec2 const Matrix4x4::GetIBasis2D() const { return Vec2(m_values[Ix], m_values[Iy]); }
+Vector2 const Matrix4x4::GetIBasis2D() const { return Vector2(m_values[Ix], m_values[Iy]); }
 
-Vec2 const Matrix4x4::GetJBasis2D() const { return Vec2(m_values[Jx], m_values[Jy]); }
+Vector2 const Matrix4x4::GetJBasis2D() const { return Vector2(m_values[Jx], m_values[Jy]); }
 
-Vec2 const Matrix4x4::GetTranslation2D() const { return Vec2(m_values[Tx], m_values[Ty]); }
+Vector2 const Matrix4x4::GetTranslation2D() const { return Vector2(m_values[Tx], m_values[Ty]); }
 
-Vec3 const Matrix4x4::GetIBasis3D() const { return Vec3(m_values[Ix], m_values[Iy], m_values[Iz]); }
+Vector3 const Matrix4x4::GetIBasis3D() const { return Vector3(m_values[Ix], m_values[Iy], m_values[Iz]); }
 
-Vec3 const Matrix4x4::GetJBasis3D() const { return Vec3(m_values[Jx], m_values[Jy], m_values[Jz]); }
+Vector3 const Matrix4x4::GetJBasis3D() const { return Vector3(m_values[Jx], m_values[Jy], m_values[Jz]); }
 
-Vec3 const Matrix4x4::GetKBasis3D() const { return Vec3(m_values[Kx], m_values[Ky], m_values[Kz]); }
+Vector3 const Matrix4x4::GetKBasis3D() const { return Vector3(m_values[Kx], m_values[Ky], m_values[Kz]); }
 
-Vec3 const Matrix4x4::GetTranslation3D() const { return Vec3(m_values[Tx], m_values[Ty], m_values[Tz]); }
+Vector3 const Matrix4x4::GetTranslation3D() const { return Vector3(m_values[Tx], m_values[Ty], m_values[Tz]); }
 
-Vec3 const Matrix4x4::GetScale3D() const
+Vector3 const Matrix4x4::GetScale3D() const
 {
-	Vec3 i, j, k;
+	Vector3 i, j, k;
 	i = GetIBasis3D();
 	j = GetJBasis3D();
 	k = GetKBasis3D();
-	return Vec3(i.GetLength(), j.GetLength(), k.GetLength());
+	return Vector3(i.GetLength(), j.GetLength(), k.GetLength());
 }
 
-Vec4 const Matrix4x4::GetIBasis4D() const { return Vec4(m_values[Ix], m_values[Iy], m_values[Iz], m_values[Iw]); }
+Vector4 const Matrix4x4::GetIBasis4D() const { return Vector4(m_values[Ix], m_values[Iy], m_values[Iz], m_values[Iw]); }
 
-Vec4 const Matrix4x4::GetJBasis4D() const { return Vec4(m_values[Jx], m_values[Jy], m_values[Jz], m_values[Jw]); }
+Vector4 const Matrix4x4::GetJBasis4D() const { return Vector4(m_values[Jx], m_values[Jy], m_values[Jz], m_values[Jw]); }
 
-Vec4 const Matrix4x4::GetKBasis4D() const { return Vec4(m_values[Kx], m_values[Ky], m_values[Kz], m_values[Kw]); }
+Vector4 const Matrix4x4::GetKBasis4D() const { return Vector4(m_values[Kx], m_values[Ky], m_values[Kz], m_values[Kw]); }
 
-Vec4 const Matrix4x4::GetTranslation4D() const { return Vec4(m_values[Tx], m_values[Ty], m_values[Tz], m_values[Tw]); }
+Vector4 const Matrix4x4::GetTranslation4D() const
+{
+	return Vector4(m_values[Tx], m_values[Ty], m_values[Tz], m_values[Tw]);
+}
 
-void Matrix4x4::SetTranslation2D(Vec2 const translationXY)
+void Matrix4x4::SetTranslation2D(Vector2 const translationXY)
 {
 	m_values[Tx] = translationXY.x;
 	m_values[Ty] = translationXY.y;
@@ -207,7 +213,7 @@ void Matrix4x4::SetTranslation2D(Vec2 const translationXY)
 	m_values[Tw] = 1.f;
 }
 
-void Matrix4x4::SetTranslation3D(Vec3 const translationXYZ)
+void Matrix4x4::SetTranslation3D(Vector3 const translationXYZ)
 {
 	m_values[Tx] = translationXYZ.x;
 	m_values[Ty] = translationXYZ.y;
@@ -215,7 +221,7 @@ void Matrix4x4::SetTranslation3D(Vec3 const translationXYZ)
 	m_values[Tw] = 1.f;
 }
 
-void Matrix4x4::SetIJ2D(Vec2 const& iBasis2D, Vec2 const& jBasis2D)
+void Matrix4x4::SetIJ2D(Vector2 const& iBasis2D, Vector2 const& jBasis2D)
 {
 	m_values[Ix] = iBasis2D.x;
 	m_values[Iy] = iBasis2D.y;
@@ -228,7 +234,7 @@ void Matrix4x4::SetIJ2D(Vec2 const& iBasis2D, Vec2 const& jBasis2D)
 	m_values[Jw] = 0.f;
 }
 
-void Matrix4x4::SetIJT2D(Vec2 const& iBasis2D, Vec2 const& jBasis2D, Vec2 const& translationXY)
+void Matrix4x4::SetIJT2D(Vector2 const& iBasis2D, Vector2 const& jBasis2D, Vector2 const& translationXY)
 {
 	SetIJ2D(iBasis2D, jBasis2D);
 
@@ -238,7 +244,7 @@ void Matrix4x4::SetIJT2D(Vec2 const& iBasis2D, Vec2 const& jBasis2D, Vec2 const&
 	m_values[Tw] = 1.f;
 }
 
-void Matrix4x4::SetIJK3D(Vec3 const& iBasis3D, Vec3 const& jBasis3D, Vec3 const& kBasis3D)
+void Matrix4x4::SetIJK3D(Vector3 const& iBasis3D, Vector3 const& jBasis3D, Vector3 const& kBasis3D)
 {
 	m_values[Ix] = iBasis3D.x;
 	m_values[Iy] = iBasis3D.y;
@@ -256,7 +262,8 @@ void Matrix4x4::SetIJK3D(Vec3 const& iBasis3D, Vec3 const& jBasis3D, Vec3 const&
 	m_values[Kw] = 0.f;
 }
 
-void Matrix4x4::SetIJKT3D(Vec3 const& iBasis3D, Vec3 const& jBasis3D, Vec3 const& kBasis3D, Vec3 const& translationXYZ)
+void Matrix4x4::SetIJKT3D(
+	Vector3 const& iBasis3D, Vector3 const& jBasis3D, Vector3 const& kBasis3D, Vector3 const& translationXYZ)
 {
 	SetIJK3D(iBasis3D, jBasis3D, kBasis3D);
 
@@ -266,7 +273,8 @@ void Matrix4x4::SetIJKT3D(Vec3 const& iBasis3D, Vec3 const& jBasis3D, Vec3 const
 	m_values[Tw] = 1.f;
 }
 
-void Matrix4x4::SetIJKT4D(Vec4 const& iBasis4D, Vec4 const& jBasis4D, Vec4 const& kBasis4D, Vec4 const& translation4D)
+void Matrix4x4::SetIJKT4D(
+	Vector4 const& iBasis4D, Vector4 const& jBasis4D, Vector4 const& kBasis4D, Vector4 const& translation4D)
 {
 	m_values[Ix] = iBasis4D.x;
 	m_values[Iy] = iBasis4D.y;
@@ -289,7 +297,7 @@ void Matrix4x4::SetIJKT4D(Vec4 const& iBasis4D, Vec4 const& jBasis4D, Vec4 const
 	m_values[Tw] = translation4D.w;
 }
 
-Matrix4x4 const Matrix4x4::MakeTranslation2D(Vec2 const translation)
+Matrix4x4 const Matrix4x4::MakeTranslation2D(Vector2 const translation)
 {
 	Matrix4x4 mat;
 	mat.m_values[Tx] = translation.x;
@@ -297,7 +305,7 @@ Matrix4x4 const Matrix4x4::MakeTranslation2D(Vec2 const translation)
 	return mat;
 }
 
-Matrix4x4 const Matrix4x4::MakeTranslation3D(Vec3 const translationXYZ)
+Matrix4x4 const Matrix4x4::MakeTranslation3D(Vector3 const translationXYZ)
 {
 	Matrix4x4 mat;
 	mat.m_values[Tx] = translationXYZ.x;
@@ -323,7 +331,7 @@ Matrix4x4 const Matrix4x4::MakeUniformScale3D(float uniformScaleXYZ)
 	return mat;
 }
 
-Matrix4x4 const Matrix4x4::MakeNonUniformScale2D(Vec2 const nonUniformScaleXY)
+Matrix4x4 const Matrix4x4::MakeNonUniformScale2D(Vector2 const nonUniformScaleXY)
 {
 	Matrix4x4 mat;
 	mat.m_values[Ix] = nonUniformScaleXY.x;
@@ -331,7 +339,7 @@ Matrix4x4 const Matrix4x4::MakeNonUniformScale2D(Vec2 const nonUniformScaleXY)
 	return mat;
 }
 
-Matrix4x4 const Matrix4x4::MakeNonUniformScale3D(Vec3 const nonUniformScaleXYZ)
+Matrix4x4 const Matrix4x4::MakeNonUniformScale3D(Vector3 const nonUniformScaleXYZ)
 {
 	Matrix4x4 mat;
 	mat.m_values[Ix] = nonUniformScaleXYZ.x;
@@ -427,14 +435,14 @@ Matrix4x4 const Matrix4x4::MakePerspectiveProjection(float fovYDegrees, float as
 	return perspective;
 }
 
-Vec2 const Matrix4x4::TransformVectorQuantity2D(Vec2 const vectorQuantityXY) const
+Vector2 const Matrix4x4::TransformVectorQuantity2D(Vector2 const vectorQuantityXY) const
 {
 	float x = m_values[Ix] * vectorQuantityXY.x + m_values[Jx] * vectorQuantityXY.y;
 	float y = m_values[Iy] * vectorQuantityXY.x + m_values[Jy] * vectorQuantityXY.y;
-	return Vec2(x, y);
+	return Vector2(x, y);
 }
 
-Vec3 const Matrix4x4::TransformVectorQuantity3D(Vec3 const vectorQuantityXYZ) const
+Vector3 const Matrix4x4::TransformVectorQuantity3D(Vector3 const vectorQuantityXYZ) const
 {
 	float x =
 		m_values[Ix] * vectorQuantityXYZ.x + m_values[Jx] * vectorQuantityXYZ.y + m_values[Kx] * vectorQuantityXYZ.z;
@@ -442,33 +450,33 @@ Vec3 const Matrix4x4::TransformVectorQuantity3D(Vec3 const vectorQuantityXYZ) co
 		m_values[Iy] * vectorQuantityXYZ.x + m_values[Jy] * vectorQuantityXYZ.y + m_values[Ky] * vectorQuantityXYZ.z;
 	float z =
 		m_values[Iz] * vectorQuantityXYZ.x + m_values[Jz] * vectorQuantityXYZ.y + m_values[Kz] * vectorQuantityXYZ.z;
-	return Vec3(x, y, z);
+	return Vector3(x, y, z);
 }
 
-Vec2 const Matrix4x4::TransformPosition2D(Vec2 const positionXY) const
+Vector2 const Matrix4x4::TransformPosition2D(Vector2 const positionXY) const
 {
 	float x = m_values[Ix] * positionXY.x + m_values[Jx] * positionXY.y + m_values[Tx];
 	float y = m_values[Iy] * positionXY.x + m_values[Jy] * positionXY.y + m_values[Ty];
-	return Vec2(x, y);
+	return Vector2(x, y);
 }
 
-Vec3 const Matrix4x4::TransformPosition3D(Vec3 const position3D) const
+Vector3 const Matrix4x4::TransformPosition3D(Vector3 const position3D) const
 {
 	float x = m_values[Ix] * position3D.x + m_values[Jx] * position3D.y + m_values[Kx] * position3D.z + m_values[Tx];
 	float y = m_values[Iy] * position3D.x + m_values[Jy] * position3D.y + m_values[Ky] * position3D.z + m_values[Ty];
 	float z = m_values[Iz] * position3D.x + m_values[Jz] * position3D.y + m_values[Kz] * position3D.z + m_values[Tz];
-	return Vec3(x, y, z);
+	return Vector3(x, y, z);
 }
 
-Vec3 const Matrix4x4::TransformDirection3D(Vec3 const direction3D) const
+Vector3 const Matrix4x4::TransformDirection3D(Vector3 const direction3D) const
 {
 	float x = m_values[Ix] * direction3D.x + m_values[Jx] * direction3D.y + m_values[Kx] * direction3D.z;
 	float y = m_values[Iy] * direction3D.x + m_values[Jy] * direction3D.y + m_values[Ky] * direction3D.z;
 	float z = m_values[Iz] * direction3D.x + m_values[Jz] * direction3D.y + m_values[Kz] * direction3D.z;
-	return Vec3(x, y, z);
+	return Vector3(x, y, z);
 }
 
-Vec4 const Matrix4x4::TransformHomogeneous3D(Vec4 const homogeneous3D) const
+Vector4 const Matrix4x4::TransformHomogeneous3D(Vector4 const homogeneous3D) const
 {
 	float x = m_values[Ix] * homogeneous3D.x + m_values[Jx] * homogeneous3D.y + m_values[Kx] * homogeneous3D.z
 			  + m_values[Tx] * homogeneous3D.w;
@@ -478,7 +486,7 @@ Vec4 const Matrix4x4::TransformHomogeneous3D(Vec4 const homogeneous3D) const
 			  + m_values[Tz] * homogeneous3D.w;
 	float w = m_values[Iw] * homogeneous3D.x + m_values[Jw] * homogeneous3D.y + m_values[Kw] * homogeneous3D.z
 			  + m_values[Tw] * homogeneous3D.w;
-	return Vec4(x, y, z, w);
+	return Vector4(x, y, z, w);
 }
 
 void Matrix4x4::Append(Matrix4x4 const appendThis)
@@ -547,7 +555,7 @@ void Matrix4x4::AppendRotationZ(float degreesAboutZ)
 	Append(rot);
 }
 
-void Matrix4x4::AppendTranslation2D(Vec2 const translationXY)
+void Matrix4x4::AppendTranslation2D(Vector2 const translationXY)
 {
 	Matrix4x4 trans;
 
@@ -557,7 +565,7 @@ void Matrix4x4::AppendTranslation2D(Vec2 const translationXY)
 	Append(trans);
 }
 
-void Matrix4x4::AppendTranslation3D(Vec3 const translationXYZ)
+void Matrix4x4::AppendTranslation3D(Vector3 const translationXYZ)
 {
 	Matrix4x4 trans;
 
@@ -589,7 +597,7 @@ void Matrix4x4::AppendScaleUniform3D(float uniformScaleXYZ)
 	Append(scale);
 }
 
-void Matrix4x4::AppendScaleNonUniform2D(Vec2 const nonUniformScaleXY)
+void Matrix4x4::AppendScaleNonUniform2D(Vector2 const nonUniformScaleXY)
 {
 	Matrix4x4 scale;
 
@@ -599,7 +607,7 @@ void Matrix4x4::AppendScaleNonUniform2D(Vec2 const nonUniformScaleXY)
 	Append(scale);
 }
 
-void Matrix4x4::AppendScaleNonUniform3D(Vec3 const nonUniformScaleXYZ)
+void Matrix4x4::AppendScaleNonUniform3D(Vector3 const nonUniformScaleXYZ)
 {
 	Matrix4x4 scale;
 
@@ -629,37 +637,37 @@ void Matrix4x4::Transpose()
 
 void Matrix4x4::Orthonormalize_XFwd_YLeft_ZUp2()
 {
-	Vec4 iBasis = GetIBasis4D();
+	Vector4 iBasis = GetIBasis4D();
 	iBasis.Normalize();
 
-	Vec4 jBasis = GetJBasis4D();
+	Vector4 jBasis = GetJBasis4D();
 	jBasis -= DotProduct4D(iBasis, jBasis) * iBasis;
 	jBasis.Normalize();
 
-	Vec4 kBasis = GetKBasis4D();
+	Vector4 kBasis = GetKBasis4D();
 	kBasis -= DotProduct4D(iBasis, kBasis) * iBasis;
 	kBasis -= DotProduct4D(jBasis, kBasis) * jBasis;
 	kBasis.Normalize();
 
-	Vec4 translation = GetTranslation4D();
+	Vector4 translation = GetTranslation4D();
 
 	SetIJKT4D(iBasis, jBasis, kBasis, translation);
 }
 
 Matrix4x4 Matrix4x4::GetOrthonormalInverse()
 {
-	Vec3 const scale = GetScale3D();
-	Vec3 const inverseScale = Vec3(1.f / scale.x, 1.f / scale.y, 1.f / scale.z);
+	Vector3 const scale        = GetScale3D();
+	Vector3 const inverseScale = Vector3(1.f / scale.x, 1.f / scale.y, 1.f / scale.z);
 
-	Vec3 const iBasis = GetIBasis3D() * inverseScale.x;
-	Vec3 const jBasis = GetJBasis3D() * inverseScale.y;
-	Vec3 const kBasis = GetKBasis3D() * inverseScale.z;
+	Vector3 const iBasis = GetIBasis3D() * inverseScale.x;
+	Vector3 const jBasis = GetJBasis3D() * inverseScale.y;
+	Vector3 const kBasis = GetKBasis3D() * inverseScale.z;
 
 	Matrix4x4 inverseRotation;
 	inverseRotation.SetIJK3D(iBasis, jBasis, kBasis);
 	inverseRotation.Transpose();
 
-	Vec3 invTranslate(-m_values[Tx], -m_values[Ty], -m_values[Tz]);
+	Vector3 invTranslate(-m_values[Tx], -m_values[Ty], -m_values[Tz]);
 
 	Matrix4x4 inverseMatrix = Matrix4x4::Identity;
 	inverseMatrix.Append(Matrix4x4::MakeNonUniformScale3D(inverseScale));

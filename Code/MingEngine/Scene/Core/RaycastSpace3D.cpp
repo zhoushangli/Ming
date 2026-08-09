@@ -6,13 +6,13 @@
 #include "MingEngine/Core/Object/ClassDatabase.hpp"
 #include "MingEngine/Scene/Core/Node.hpp"
 
-Vec3 RaycastQuery3D::GetStart() const { return m_start; }
-Vec3 RaycastQuery3D::GetDirection() const { return m_direction; }
-float RaycastQuery3D::GetMaxDistance() const { return m_maxDistance; }
-Node* RaycastQuery3D::GetExclude() const { return m_excludeNode; }
+Vector3 RaycastQuery3D::GetStart() const { return m_start; }
+Vector3 RaycastQuery3D::GetDirection() const { return m_direction; }
+float   RaycastQuery3D::GetMaxDistance() const { return m_maxDistance; }
+Node*   RaycastQuery3D::GetExclude() const { return m_excludeNode; }
 
-void RaycastQuery3D::SetStart(Vec3 const& start) { m_start = start; }
-void RaycastQuery3D::SetDirection(Vec3 const& direction) { m_direction = direction; }
+void RaycastQuery3D::SetStart(Vector3 const& start) { m_start = start; }
+void RaycastQuery3D::SetDirection(Vector3 const& direction) { m_direction = direction; }
 void RaycastQuery3D::SetMaxDistance(float maxDistance) { m_maxDistance = maxDistance; }
 void RaycastQuery3D::SetExclude(Node* exclude)
 {
@@ -31,30 +31,42 @@ void RaycastQuery3D::BindMethods()
 	ClassDatabase::BindMethod("SetExclude", &RaycastQuery3D::SetExclude);
 	ClassDatabase::BindMethod("GetExclude", &RaycastQuery3D::GetExclude);
 
-	ADD_PROPERTY(PropertyInfo(Variant::Type::Vec3, "start", PropertyInfo::Hint::None, "", PropertyInfo::UsageFlags::None), "SetStart", "GetStart");
-	ADD_PROPERTY(PropertyInfo(Variant::Type::Vec3, "direction", PropertyInfo::Hint::None, "", PropertyInfo::UsageFlags::None), "SetDirection", "GetDirection");
-	ADD_PROPERTY(PropertyInfo(Variant::Type::Float, "maxDistance", PropertyInfo::Hint::None, "", PropertyInfo::UsageFlags::None), "SetMaxDistance", "GetMaxDistance");
-	ADD_PROPERTY(PropertyInfo(Variant::Type::ObjectPtr, "exclude", PropertyInfo::Hint::None, "", PropertyInfo::UsageFlags::None), "SetExclude", "GetExclude");
+	ADD_PROPERTY(
+		PropertyInfo(Variant::Type::Vec3, "start", PropertyInfo::Hint::None, "", PropertyInfo::UsageFlags::None),
+		"SetStart",
+		"GetStart");
+	ADD_PROPERTY(
+		PropertyInfo(Variant::Type::Vec3, "direction", PropertyInfo::Hint::None, "", PropertyInfo::UsageFlags::None),
+		"SetDirection",
+		"GetDirection");
+	ADD_PROPERTY(
+		PropertyInfo(Variant::Type::Float, "maxDistance", PropertyInfo::Hint::None, "", PropertyInfo::UsageFlags::None),
+		"SetMaxDistance",
+		"GetMaxDistance");
+	ADD_PROPERTY(
+		PropertyInfo(Variant::Type::ObjectPtr, "exclude", PropertyInfo::Hint::None, "", PropertyInfo::UsageFlags::None),
+		"SetExclude",
+		"GetExclude");
 }
 
-bool RaycastResult3D::GetDidImpact() const { return m_didImpact; }
-float RaycastResult3D::GetImpactDistance() const { return m_impactDist; }
-Vec3 RaycastResult3D::GetImpactPosition() const { return m_impactPos; }
-Vec3 RaycastResult3D::GetImpactNormal() const { return m_impactNormal; }
-Vec3 RaycastResult3D::GetRayStartPosition() const { return m_rayStartPos; }
-Vec3 RaycastResult3D::GetRayForwardNormal() const { return m_rayFwdNormal; }
-float RaycastResult3D::GetRayMaxLength() const { return m_rayMaxLength; }
-int RaycastResult3D::GetOwner() const
+bool    RaycastResult3D::GetDidImpact() const { return m_didImpact; }
+float   RaycastResult3D::GetImpactDistance() const { return m_impactDist; }
+Vector3 RaycastResult3D::GetImpactPosition() const { return m_impactPos; }
+Vector3 RaycastResult3D::GetImpactNormal() const { return m_impactNormal; }
+Vector3 RaycastResult3D::GetRayStartPosition() const { return m_rayStartPos; }
+Vector3 RaycastResult3D::GetRayForwardNormal() const { return m_rayFwdNormal; }
+float   RaycastResult3D::GetRayMaxLength() const { return m_rayMaxLength; }
+int     RaycastResult3D::GetOwner() const
 {
 	return m_owner.IsValid() ? static_cast<int>((m_owner.GetUID() << 16) | m_owner.GetIndex()) : -1;
 }
 
 void RaycastResult3D::SetDidImpact(bool didImpact) { m_didImpact = didImpact; }
 void RaycastResult3D::SetImpactDistance(float impactDistance) { m_impactDist = impactDistance; }
-void RaycastResult3D::SetImpactPosition(Vec3 const& impactPosition) { m_impactPos = impactPosition; }
-void RaycastResult3D::SetImpactNormal(Vec3 const& impactNormal) { m_impactNormal = impactNormal; }
-void RaycastResult3D::SetRayStartPosition(Vec3 const& rayStartPosition) { m_rayStartPos = rayStartPosition; }
-void RaycastResult3D::SetRayForwardNormal(Vec3 const& rayForwardNormal) { m_rayFwdNormal = rayForwardNormal; }
+void RaycastResult3D::SetImpactPosition(Vector3 const& impactPosition) { m_impactPos = impactPosition; }
+void RaycastResult3D::SetImpactNormal(Vector3 const& impactNormal) { m_impactNormal = impactNormal; }
+void RaycastResult3D::SetRayStartPosition(Vector3 const& rayStartPosition) { m_rayStartPos = rayStartPosition; }
+void RaycastResult3D::SetRayForwardNormal(Vector3 const& rayForwardNormal) { m_rayFwdNormal = rayForwardNormal; }
 void RaycastResult3D::SetRayMaxLength(float rayMaxLength) { m_rayMaxLength = rayMaxLength; }
 
 void RaycastResult3D::BindMethods()
@@ -75,19 +87,62 @@ void RaycastResult3D::BindMethods()
 	ClassDatabase::BindMethod("GetRayMaxLength", &RaycastResult3D::GetRayMaxLength);
 	ClassDatabase::BindMethod("GetOwner", &RaycastResult3D::GetOwner);
 
-	ADD_PROPERTY(PropertyInfo(Variant::Type::Bool, "didImpact", PropertyInfo::Hint::None, "", PropertyInfo::UsageFlags::None), "SetDidImpact", "GetDidImpact");
-	ADD_PROPERTY(PropertyInfo(Variant::Type::Float, "impactDistance", PropertyInfo::Hint::None, "", PropertyInfo::UsageFlags::None), "SetImpactDistance", "GetImpactDistance");
-	ADD_PROPERTY(PropertyInfo(Variant::Type::Vec3, "impactPosition", PropertyInfo::Hint::None, "", PropertyInfo::UsageFlags::None), "SetImpactPosition", "GetImpactPosition");
-	ADD_PROPERTY(PropertyInfo(Variant::Type::Vec3, "impactNormal", PropertyInfo::Hint::None, "", PropertyInfo::UsageFlags::None), "SetImpactNormal", "GetImpactNormal");
-	ADD_PROPERTY(PropertyInfo(Variant::Type::Vec3, "rayStartPosition", PropertyInfo::Hint::None, "", PropertyInfo::UsageFlags::None), "SetRayStartPosition", "GetRayStartPosition");
-	ADD_PROPERTY(PropertyInfo(Variant::Type::Vec3, "rayForwardNormal", PropertyInfo::Hint::None, "", PropertyInfo::UsageFlags::None), "SetRayForwardNormal", "GetRayForwardNormal");
-	ADD_PROPERTY(PropertyInfo(Variant::Type::Float, "rayMaxLength", PropertyInfo::Hint::None, "", PropertyInfo::UsageFlags::None), "SetRayMaxLength", "GetRayMaxLength");
+	ADD_PROPERTY(
+		PropertyInfo(Variant::Type::Bool, "didImpact", PropertyInfo::Hint::None, "", PropertyInfo::UsageFlags::None),
+		"SetDidImpact",
+		"GetDidImpact");
+	ADD_PROPERTY(
+		PropertyInfo(
+			Variant::Type::Float,
+			"impactDistance",
+			PropertyInfo::Hint::None,
+			"",
+			PropertyInfo::UsageFlags::None),
+		"SetImpactDistance",
+		"GetImpactDistance");
+	ADD_PROPERTY(
+		PropertyInfo(
+			Variant::Type::Vec3,
+			"impactPosition",
+			PropertyInfo::Hint::None,
+			"",
+			PropertyInfo::UsageFlags::None),
+		"SetImpactPosition",
+		"GetImpactPosition");
+	ADD_PROPERTY(
+		PropertyInfo(Variant::Type::Vec3, "impactNormal", PropertyInfo::Hint::None, "", PropertyInfo::UsageFlags::None),
+		"SetImpactNormal",
+		"GetImpactNormal");
+	ADD_PROPERTY(
+		PropertyInfo(
+			Variant::Type::Vec3,
+			"rayStartPosition",
+			PropertyInfo::Hint::None,
+			"",
+			PropertyInfo::UsageFlags::None),
+		"SetRayStartPosition",
+		"GetRayStartPosition");
+	ADD_PROPERTY(
+		PropertyInfo(
+			Variant::Type::Vec3,
+			"rayForwardNormal",
+			PropertyInfo::Hint::None,
+			"",
+			PropertyInfo::UsageFlags::None),
+		"SetRayForwardNormal",
+		"GetRayForwardNormal");
+	ADD_PROPERTY(
+		PropertyInfo(
+			Variant::Type::Float,
+			"rayMaxLength",
+			PropertyInfo::Hint::None,
+			"",
+			PropertyInfo::UsageFlags::None),
+		"SetRayMaxLength",
+		"GetRayMaxLength");
 }
 
-void RaycastSpace3D::BindMethods()
-{
-	ClassDatabase::BindMethod("IntersectRay", &RaycastSpace3D::IntersectRayScript);
-}
+void RaycastSpace3D::BindMethods() { ClassDatabase::BindMethod("IntersectRay", &RaycastSpace3D::IntersectRayScript); }
 
 RaycastSpace3D::~RaycastSpace3D()
 {

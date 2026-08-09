@@ -1,16 +1,14 @@
 #pragma once
 
-#include "MingEngine/Core/Math/Vec2.hpp"
+#include "MingEngine/Core/Math/Vector2.hpp"
 
 struct Triangle2
 {
 public:
 	Triangle2() = default;
-	Triangle2(const Vec2& pointA, const Vec2& pointB, const Vec2& pointC);
-    void Translate(const Vec2& translation);
+	Triangle2(const Vector2& pointA, const Vector2& pointB, const Vector2& pointC);
+	void Translate(const Vector2& translation);
 
 public:
-    Vec2 m_pointsCounterClockwise[3];
+	Vector2 m_pointsCounterClockwise[3];
 };
-
-

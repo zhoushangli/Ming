@@ -10,7 +10,7 @@ EulerAngles::EulerAngles(float yawDegrees, float pitchDegrees, float rollDegrees
 {
 }
 
-EulerAngles EulerAngles::MakeFromForward(Vec3 const& forward)
+EulerAngles EulerAngles::MakeFromForward(Vector3 const& forward)
 {
 	EulerAngles eulerAngles;
 	eulerAngles.SetForwardDir_IFwd(forward);
@@ -34,17 +34,17 @@ EulerAngles EulerAngles::InterpolateClamped(EulerAngles const& start, EulerAngle
 	return Interpolate(start, end, GetClampedZeroToOne(fraction));
 }
 
-Vec3 EulerAngles::GetForwardDir_IFwd_JLeft_KUp() const
+Vector3 EulerAngles::GetForwardDir_IFwd_JLeft_KUp() const
 {
 	float cy = CosDegrees(m_yawDegrees);
 	float sy = SinDegrees(m_yawDegrees);
 	float cp = CosDegrees(m_pitchDegrees);
 	float sp = SinDegrees(m_pitchDegrees);
 
-	return Vec3(cp * cy, cp * sy, -sp);
+	return Vector3(cp * cy, cp * sy, -sp);
 }
 
-Vec3 EulerAngles::GetForwardDir_IRight_JUp_KFwd() const
+Vector3 EulerAngles::GetForwardDir_IRight_JUp_KFwd() const
 {
 	float cy = CosDegrees(m_yawDegrees);
 	float sy = SinDegrees(m_yawDegrees);
@@ -53,10 +53,11 @@ Vec3 EulerAngles::GetForwardDir_IRight_JUp_KFwd() const
 	float cr = CosDegrees(m_rollDegrees);
 	float sr = SinDegrees(m_rollDegrees);
 
-	return Vec3(cr * cy * sp + sr * sy, cr * sy * sp - sr * cy, cp * cr);
+	return Vector3(cr * cy * sp + sr * sy, cr * sy * sp - sr * cy, cp * cr);
 }
 
-void EulerAngles::GetAsVectors_IFwd_JLeft_KUp(Vec3& out_forwardIBasis, Vec3& out_leftJBasis, Vec3& out_upKBasis) const
+void EulerAngles::GetAsVectors_IFwd_JLeft_KUp(
+	Vector3& out_forwardIBasis, Vector3& out_leftJBasis, Vector3& out_upKBasis) const
 {
 	float cy = CosDegrees(m_yawDegrees);
 	float sy = SinDegrees(m_yawDegrees);
@@ -65,14 +66,15 @@ void EulerAngles::GetAsVectors_IFwd_JLeft_KUp(Vec3& out_forwardIBasis, Vec3& out
 	float cr = CosDegrees(m_rollDegrees);
 	float sr = SinDegrees(m_rollDegrees);
 
-	out_forwardIBasis = Vec3(cp * cy, cp * sy, -sp);
+	out_forwardIBasis = Vector3(cp * cy, cp * sy, -sp);
 
-	out_leftJBasis = Vec3(cy * sp * sr - cr * sy, sy * sp * sr + cr * cy, cp * sr);
+	out_leftJBasis = Vector3(cy * sp * sr - cr * sy, sy * sp * sr + cr * cy, cp * sr);
 
-	out_upKBasis = Vec3(cr * cy * sp + sr * sy, cr * sy * sp - sr * cy, cp * cr);
+	out_upKBasis = Vector3(cr * cy * sp + sr * sy, cr * sy * sp - sr * cy, cp * cr);
 }
 
-void EulerAngles::GetAsVectors_IRight_JUp_KFwd(Vec3& out_rightIBasis, Vec3& out_upJBasis, Vec3& out_forwardKBasis) const
+void EulerAngles::GetAsVectors_IRight_JUp_KFwd(
+	Vector3& out_rightIBasis, Vector3& out_upJBasis, Vector3& out_forwardKBasis) const
 {
 	float cy = CosDegrees(m_yawDegrees);
 	float sy = SinDegrees(m_yawDegrees);
@@ -81,53 +83,53 @@ void EulerAngles::GetAsVectors_IRight_JUp_KFwd(Vec3& out_rightIBasis, Vec3& out_
 	float cr = CosDegrees(m_rollDegrees);
 	float sr = SinDegrees(m_rollDegrees);
 
-	out_rightIBasis = Vec3(cp * cy, cp * sy, -sp);
+	out_rightIBasis = Vector3(cp * cy, cp * sy, -sp);
 
-	out_upJBasis = Vec3(cy * sp * sr - cr * sy, sy * sp * sr + cr * cy, cp * sr);
+	out_upJBasis = Vector3(cy * sp * sr - cr * sy, sy * sp * sr + cr * cy, cp * sr);
 
-	out_forwardKBasis = Vec3(cr * cy * sp + sr * sy, cr * sy * sp - sr * cy, cp * cr);
+	out_forwardKBasis = Vector3(cr * cy * sp + sr * sy, cr * sy * sp - sr * cy, cp * cr);
 }
 
 Matrix4x4 EulerAngles::GetAsMatrix_IFwd_JLeft_KUp() const
 {
-	Vec3 i, j, k;
+	Vector3 i, j, k;
 	GetAsVectors_IFwd_JLeft_KUp(i, j, k);
-	return Matrix4x4(i, j, k, Vec3(0.f, 0.f, 0.f));
+	return Matrix4x4(i, j, k, Vector3(0.f, 0.f, 0.f));
 }
 
 Matrix4x4 EulerAngles::GetAsMatrix_IRight_JUp_KFwd() const
 {
-	Vec3 i, j, k;
+	Vector3 i, j, k;
 	GetAsVectors_IRight_JUp_KFwd(i, j, k);
-	return Matrix4x4(i, j, k, Vec3(0.f, 0.f, 0.f));
+	return Matrix4x4(i, j, k, Vector3(0.f, 0.f, 0.f));
 }
 
 void EulerAngles::SetFromMatrix_IFwd_JLeft_KUp(Matrix4x4 const& mat)
 {
-	Vec3 i = mat.GetIBasis3D().GetNormalized(); // forward
-	Vec3 j = mat.GetJBasis3D().GetNormalized(); // left
-	Vec3 k = mat.GetKBasis3D().GetNormalized(); // up
+	Vector3 i = mat.GetIBasis3D().GetNormalized(); // forward
+	Vector3 j = mat.GetJBasis3D().GetNormalized(); // left
+	Vector3 k = mat.GetKBasis3D().GetNormalized(); // up
 
 	m_yawDegrees   = Atan2Degrees(i.y, i.x);
 	m_pitchDegrees = Atan2Degrees(-i.z, i.GetLengthXY());
 	m_rollDegrees  = Atan2Degrees(j.z, k.z);
 }
 
-void EulerAngles::SetForwardDir_IFwd(Vec3 const& forwardIBasis)
+void EulerAngles::SetForwardDir_IFwd(Vector3 const& forwardIBasis)
 {
-	Vec3 helperVector = Vec3::Up;
-	if (DotProduct3D(forwardIBasis, Vec3::Up) > 0.99f)
+	Vector3 helperVector = Vector3::Up;
+	if (DotProduct3D(forwardIBasis, Vector3::Up) > 0.99f)
 	{
-		helperVector = Vec3::Right;
+		helperVector = Vector3::Right;
 	}
 
-	Vec3 leftJBasis = CrossProduct3D(helperVector, forwardIBasis);
+	Vector3 leftJBasis = CrossProduct3D(helperVector, forwardIBasis);
 	leftJBasis.Normalize();
 
-	Vec3 upZBasis = CrossProduct3D(forwardIBasis, leftJBasis);
+	Vector3 upZBasis = CrossProduct3D(forwardIBasis, leftJBasis);
 	upZBasis.Normalize();
 
-	Matrix4x4 mat = Matrix4x4(forwardIBasis, leftJBasis, upZBasis, Vec3::Zero);
+	Matrix4x4 mat = Matrix4x4(forwardIBasis, leftJBasis, upZBasis, Vector3::Zero);
 	SetFromMatrix_IFwd_JLeft_KUp(mat);
 }
 

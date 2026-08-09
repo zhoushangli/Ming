@@ -28,33 +28,33 @@ float constexpr kLineLength   = 50.f;
 int constexpr kCircleSegments = 16;
 
 void AddVertsForAxisLine(
-	std::vector<Vertex>& verts, Vec2 const& start, Vec2 const& end, float thickness, Color const& color)
+	std::vector<Vertex>& verts, Vector2 const& start, Vector2 const& end, float thickness, Color const& color)
 {
-	Vec2 const dir  = (end - start).GetNormalized();
-	Vec2 const perp = Vec2(-dir.y, dir.x) * (thickness * 0.5f);
+	Vector2 const dir  = (end - start).GetNormalized();
+	Vector2 const perp = Vector2(-dir.y, dir.x) * (thickness * 0.5f);
 
-	verts.emplace_back(Vec3(start.x + perp.x, start.y + perp.y, 0.f), color);
-	verts.emplace_back(Vec3(end.x + perp.x, end.y + perp.y, 0.f), color);
-	verts.emplace_back(Vec3(end.x - perp.x, end.y - perp.y, 0.f), color);
+	verts.emplace_back(Vector3(start.x + perp.x, start.y + perp.y, 0.f), color);
+	verts.emplace_back(Vector3(end.x + perp.x, end.y + perp.y, 0.f), color);
+	verts.emplace_back(Vector3(end.x - perp.x, end.y - perp.y, 0.f), color);
 
-	verts.emplace_back(Vec3(start.x + perp.x, start.y + perp.y, 0.f), color);
-	verts.emplace_back(Vec3(end.x - perp.x, end.y - perp.y, 0.f), color);
-	verts.emplace_back(Vec3(start.x - perp.x, start.y - perp.y, 0.f), color);
+	verts.emplace_back(Vector3(start.x + perp.x, start.y + perp.y, 0.f), color);
+	verts.emplace_back(Vector3(end.x - perp.x, end.y - perp.y, 0.f), color);
+	verts.emplace_back(Vector3(start.x - perp.x, start.y - perp.y, 0.f), color);
 }
 
 void AddVertsForAxisPoint(
-	std::vector<Vertex>& verts, Vec2 const& center, float radius, float thickness, Color const& color)
+	std::vector<Vertex>& verts, Vector2 const& center, float radius, float thickness, Color const& color)
 {
 	for (int i = 0; i < kCircleSegments; ++i)
 	{
-		float const angle0 = (360.f / kCircleSegments) * (float)i;
-		float const angle1 = (360.f / kCircleSegments) * (float)(i + 1);
-		Vec2 const  p0     = center + Vec2::MakeFromPolarDegrees(angle0, radius);
-		Vec2 const  p1     = center + Vec2::MakeFromPolarDegrees(angle1, radius);
+		float const   angle0 = (360.f / kCircleSegments) * (float)i;
+		float const   angle1 = (360.f / kCircleSegments) * (float)(i + 1);
+		Vector2 const p0     = center + Vector2::MakeFromPolarDegrees(angle0, radius);
+		Vector2 const p1     = center + Vector2::MakeFromPolarDegrees(angle1, radius);
 
-		verts.emplace_back(Vec3(center.x, center.y, 0.f), color);
-		verts.emplace_back(Vec3(p0.x, p0.y, 0.f), color);
-		verts.emplace_back(Vec3(p1.x, p1.y, 0.f), color);
+		verts.emplace_back(Vector3(center.x, center.y, 0.f), color);
+		verts.emplace_back(Vector3(p0.x, p0.y, 0.f), color);
+		verts.emplace_back(Vector3(p1.x, p1.y, 0.f), color);
 	}
 
 	float const innerR = radius - thickness * 0.5f;
@@ -62,20 +62,20 @@ void AddVertsForAxisPoint(
 
 	for (int i = 0; i < kCircleSegments; ++i)
 	{
-		float const angle0 = (360.f / kCircleSegments) * (float)i;
-		float const angle1 = (360.f / kCircleSegments) * (float)(i + 1);
-		Vec2 const  inner0 = center + Vec2::MakeFromPolarDegrees(angle0, innerR);
-		Vec2 const  inner1 = center + Vec2::MakeFromPolarDegrees(angle1, innerR);
-		Vec2 const  outer0 = center + Vec2::MakeFromPolarDegrees(angle0, outerR);
-		Vec2 const  outer1 = center + Vec2::MakeFromPolarDegrees(angle1, outerR);
+		float const   angle0 = (360.f / kCircleSegments) * (float)i;
+		float const   angle1 = (360.f / kCircleSegments) * (float)(i + 1);
+		Vector2 const inner0 = center + Vector2::MakeFromPolarDegrees(angle0, innerR);
+		Vector2 const inner1 = center + Vector2::MakeFromPolarDegrees(angle1, innerR);
+		Vector2 const outer0 = center + Vector2::MakeFromPolarDegrees(angle0, outerR);
+		Vector2 const outer1 = center + Vector2::MakeFromPolarDegrees(angle1, outerR);
 
-		verts.emplace_back(Vec3(outer0.x, outer0.y, 0.f), color);
-		verts.emplace_back(Vec3(outer1.x, outer1.y, 0.f), color);
-		verts.emplace_back(Vec3(inner1.x, inner1.y, 0.f), color);
+		verts.emplace_back(Vector3(outer0.x, outer0.y, 0.f), color);
+		verts.emplace_back(Vector3(outer1.x, outer1.y, 0.f), color);
+		verts.emplace_back(Vector3(inner1.x, inner1.y, 0.f), color);
 
-		verts.emplace_back(Vec3(outer0.x, outer0.y, 0.f), color);
-		verts.emplace_back(Vec3(inner1.x, inner1.y, 0.f), color);
-		verts.emplace_back(Vec3(inner0.x, inner0.y, 0.f), color);
+		verts.emplace_back(Vector3(outer0.x, outer0.y, 0.f), color);
+		verts.emplace_back(Vector3(inner1.x, inner1.y, 0.f), color);
+		verts.emplace_back(Vector3(inner0.x, inner0.y, 0.f), color);
 	}
 }
 } // namespace
@@ -85,7 +85,7 @@ ViewportAxisIndicator::ViewportAxisIndicator()
 	SetReady(true);
 	SetProcess(true);
 
-	std::vector<Vertex> verts{ Vertex(Vec3::Zero, Color::White) };
+	std::vector<Vertex> verts{ Vertex(Vector3::Zero, Color::White) };
 	m_vertexBuffer = g_engine->m_renderer->CreateVertexBuffer(
 		verts.data(),
 		(unsigned int)(verts.size() * sizeof(Vertex)),
@@ -113,7 +113,7 @@ void ViewportAxisIndicator::OnNotification(int notification)
 
 		// We just hardcode the position
 		IntVec2 dimensions = m_data.m_viewport->GetOutputResolution();
-		Vec2    center     = (Vec2)dimensions - Vec2(100.f, 100.f);
+		Vector2 center     = (Vector2)dimensions - Vector2(100.f, 100.f);
 
 		if (cameraRotation != m_lastCameraRotation || center != m_center)
 		{
@@ -154,9 +154,9 @@ void ViewportAxisIndicator::RebuildVertexBuffer()
 	Matrix4x4 rotMatrix = m_lastCameraRotation.GetAsMatrix_IFwd_JLeft_KUp();
 	rotMatrix           = rotMatrix.GetOrthonormalInverse();
 
-	Vec3 xAxis = rotMatrix.GetIBasis3D();
-	Vec3 yAxis = rotMatrix.GetJBasis3D();
-	Vec3 zAxis = rotMatrix.GetKBasis3D();
+	Vector3 xAxis = rotMatrix.GetIBasis3D();
+	Vector3 yAxis = rotMatrix.GetJBasis3D();
+	Vector3 zAxis = rotMatrix.GetKBasis3D();
 
 	xAxis.y = -xAxis.y;
 	yAxis.y = -yAxis.y;

@@ -13,14 +13,14 @@ public:
 	void RenderValue(EditorUIContext& context, Variant const& value) override
 	{
 		(void)context;
-		if (!value.Is<Vec3>())
+		if (!value.Is<Vector3>())
 		{
 			return;
 		}
 
-		Vec3 v = value.As<Vec3>();
-		Vec3 const defaultValue = m_info.m_name == "scale" ? Vec3::One : Vec3::Zero;
-		bool const edited = EditorUIWidgets::PropertyVec3(GetDisplayName(), m_labelId.c_str(), v, defaultValue);
+		Vector3       v            = value.As<Vector3>();
+		Vector3 const defaultValue = m_info.m_name == "scale" ? Vector3::One : Vector3::Zero;
+		bool const    edited = EditorUIWidgets::PropertyVec3(GetDisplayName(), m_labelId.c_str(), v, defaultValue);
 
 		if (m_info.m_name == "scale")
 		{

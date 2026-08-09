@@ -5,7 +5,7 @@
 
 #include "MingEngine/Core/Math/EulerAngles.hpp"
 #include "MingEngine/Core/Math/Matrix4x4.hpp"
-#include "MingEngine/Core/Math/Vec3.hpp"
+#include "MingEngine/Core/Math/Vector3.hpp"
 
 class Node3D : public Node
 {
@@ -26,22 +26,22 @@ public:
 	void      SetLocalTransform(Matrix4x4 const& localTransform);
 	void      SetWorldTransform(Matrix4x4 const& worldTransform);
 
-	Vec3 GetLocalPosition() const;
-	Vec3 GetWorldPosition() const;
-	void SetLocalPosition(Vec3 const& localPosition);
-	void SetWorldPosition(Vec3 const& worldPosition);
+	Vector3 GetLocalPosition() const;
+	Vector3 GetWorldPosition() const;
+	void    SetLocalPosition(Vector3 const& localPosition);
+	void    SetWorldPosition(Vector3 const& worldPosition);
 
 	EulerAngles GetLocalOrientation() const;
 	EulerAngles GetWorldOrientation() const;
 	void        SetLocalOrientation(EulerAngles const& localOrientation);
 	void        SetWorldOrientation(EulerAngles const& worldOrientation);
-	void        SetWorldForward(Vec3 const& forward);
-	Vec3        GetWorldForward() const;
+	void        SetWorldForward(Vector3 const& forward);
+	Vector3     GetWorldForward() const;
 
-	Vec3 GetLocalScale() const;
-	void SetLocalScale(Vec3 const& scale);
-	Vec3 GetWorldScale() const;
-	void SetWorldScale(Vec3 const& scale);
+	Vector3 GetLocalScale() const;
+	void    SetLocalScale(Vector3 const& scale);
+	Vector3 GetWorldScale() const;
+	void    SetWorldScale(Vector3 const& scale);
 
 protected:
 	void OnNotification(int notification);
@@ -51,6 +51,6 @@ protected:
 
 protected:
 	Transform3D m_transform;
-	Vec3        m_velocity        = Vec3::Zero;
+	Vector3     m_velocity        = Vector3::Zero;
 	EulerAngles m_angularVelocity = EulerAngles::Zero;
 };

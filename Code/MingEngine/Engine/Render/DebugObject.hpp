@@ -54,16 +54,16 @@ public:
 	Color startColor = Color::White;
 	Color endColor   = Color::White;
 
-	Vec3  start  = Vec3::Zero;
-	Vec3  end    = Vec3::Zero;
-	Vec3  center = Vec3::Zero;
-	float radius = 0.f;
+	Vector3 start  = Vector3::Zero;
+	Vector3 end    = Vector3::Zero;
+	Vector3 center = Vector3::Zero;
+	float   radius = 0.f;
 
 	Matrix4x4 transform;
 
 	std::string text;
 	float       textHeight = 0.f;
-	Vec2        alignment  = Vec2(0.5f, 0.5f);
+	Vector2     alignment  = Vector2(0.5f, 0.5f);
 	AABB2       screenBox;
 
 	std::vector<Vertex> verts;

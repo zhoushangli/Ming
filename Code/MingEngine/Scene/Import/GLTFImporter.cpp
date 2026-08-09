@@ -43,7 +43,7 @@ Matrix4x4 GLTFImportMatrix = Matrix4x4(
 );
 
 std::vector<ImportOptions> const kGLTFImportOptions = {
-	{ PropertyInfo(Variant::Type::Vec3, "Scale Mesh", 		 PropertyInfo::Hint::None, "", PropertyInfo::UsageFlags::Default), Variant(Vec3::One) },
+	{ PropertyInfo(Variant::Type::Vec3, "Scale Mesh", 		 PropertyInfo::Hint::None, "", PropertyInfo::UsageFlags::Default), Variant(Vector3::One) },
 };
 // clang-format on
 
@@ -234,7 +234,7 @@ Ref<Resource> GLTFImporter::Import(
 	{
 		Vertex&        vertex       = vertices[i];
 		uint8_t const* positionData = positionView.m_data + i * positionView.m_stride;
-		vertex.m_position           = Vec3(
+		vertex.m_position           = Vector3(
 			ReadFloat(positionData + sizeof(float) * 0),
 			ReadFloat(positionData + sizeof(float) * 1),
 			ReadFloat(positionData + sizeof(float) * 2));
@@ -257,7 +257,7 @@ Ref<Resource> GLTFImporter::Import(
 		{
 			Vertex&        vertex     = vertices[i];
 			uint8_t const* normalData = normalView.m_data + i * normalView.m_stride;
-			vertex.m_normal           = Vec3(
+			vertex.m_normal           = Vector3(
 				ReadFloat(normalData + sizeof(float) * 0),
 				ReadFloat(normalData + sizeof(float) * 1),
 				ReadFloat(normalData + sizeof(float) * 2));
@@ -279,7 +279,7 @@ Ref<Resource> GLTFImporter::Import(
 		{
 			Vertex&        vertex = vertices[i];
 			uint8_t const* uvData = uvView.m_data + i * uvView.m_stride;
-			vertex.m_uv           = Vec2(ReadFloat(uvData + sizeof(float) * 0), ReadFloat(uvData + sizeof(float) * 1));
+			vertex.m_uv = Vector2(ReadFloat(uvData + sizeof(float) * 0), ReadFloat(uvData + sizeof(float) * 1));
 		}
 	}
 
@@ -298,12 +298,12 @@ Ref<Resource> GLTFImporter::Import(
 		{
 			Vertex&        vertex      = vertices[i];
 			uint8_t const* tangentData = tangentView.m_data + i * tangentView.m_stride;
-			vertex.m_tangent           = Vec3(
+			vertex.m_tangent           = Vector3(
 				ReadFloat(tangentData + sizeof(float) * 0),
 				ReadFloat(tangentData + sizeof(float) * 1),
 				ReadFloat(tangentData + sizeof(float) * 2));
 			vertex.m_bitangent =
-				Vec3::CrossProduct(vertex.m_normal, vertex.m_tangent) * ReadFloat(tangentData + sizeof(float) * 3);
+				Vector3::CrossProduct(vertex.m_normal, vertex.m_tangent) * ReadFloat(tangentData + sizeof(float) * 3);
 		}
 	}
 
@@ -356,11 +356,11 @@ Ref<Resource> GLTFImporter::Import(
 	}
 
 	// 6) Apply the engine coordinate conversion and the optional import scale.
-	Vec3       scaleMesh   = Vec3::One;
+	Vector3    scaleMesh   = Vector3::One;
 	auto const scaleOption = importOptions.find("Scale Mesh");
 	if (scaleOption != importOptions.end() && scaleOption->second.GetType() == Variant::Type::Vec3)
 	{
-		scaleMesh = scaleOption->second.As<Vec3>();
+		scaleMesh = scaleOption->second.As<Vector3>();
 	}
 
 	Matrix4x4 importTransform = GLTFImportMatrix;

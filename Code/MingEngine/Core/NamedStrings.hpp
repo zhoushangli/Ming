@@ -19,7 +19,7 @@ public:
 	float                    GetValue(std::string const& keyName, float defaultValue) const;
 	std::string              GetValue(std::string const& keyName, char const* defaultValue) const;
 	Color                    GetValue(std::string const& keyName, Color const& defaultValue) const;
-	Vec2                     GetValue(std::string const& keyName, Vec2 const& defaultValue) const;
+	Vector2                  GetValue(std::string const& keyName, Vector2 const& defaultValue) const;
 	IntVec2                  GetValue(std::string const& keyName, IntVec2 const& defaultValue) const;
 
 	std::string GetDebugInfo() const;

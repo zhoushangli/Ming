@@ -21,7 +21,7 @@ protected:
 
 protected:
 	std::vector<Vertex> m_verts;
-	VertexBuffer *m_vertexBuffer = nullptr;
+	VertexBuffer*       m_vertexBuffer = nullptr;
 };
 
 class EditorWorldGrid3D : public EditorGizmoVisual3D
@@ -38,7 +38,7 @@ protected:
 class EditorWorldAxis3D : public EditorGizmoVisual3D
 {
 public:
-	EditorWorldAxis3D(Vec3 const &axisStart, Vec3 const &axisEnd, Color const &color);
+	EditorWorldAxis3D(Vector3 const& axisStart, Vector3 const& axisEnd, Color const& color);
 
 protected:
 	RenderRequest SubmitRenderRequest() const override;

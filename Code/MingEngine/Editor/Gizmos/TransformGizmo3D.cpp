@@ -179,11 +179,11 @@ void TransformGizmo3D::OnNotification(int notification)
 			if (isVisible)
 			{
 				component->SetWorldPosition(context.m_originWorld);
-				component->SetWorldScale(Vec3(context.m_scale, context.m_scale, context.m_scale));
+				component->SetWorldScale(Vector3(context.m_scale, context.m_scale, context.m_scale));
 			}
 		}
 
-		Vec3 const cameraPos = camera->GetWorldPosition();
+		Vector3 const cameraPos = camera->GetWorldPosition();
 		std::stable_sort(
 			m_components.begin(),
 			m_components.end(),
@@ -209,7 +209,7 @@ bool TransformGizmo3D::IsHovered() const { return m_hoveredComponent != nullptr;
 
 bool TransformGizmo3D::IsDragging() const { return m_activeComponent != nullptr; }
 
-GizmoComponent* TransformGizmo3D::HitTest(GizmoContext const& context, Vec3& outHitPos) const
+GizmoComponent* TransformGizmo3D::HitTest(GizmoContext const& context, Vector3& outHitPos) const
 {
 	if (context.m_selectedNode3D == nullptr || context.m_camera == nullptr)
 	{

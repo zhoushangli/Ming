@@ -2,7 +2,7 @@
 
 #include "MingEngine/Core/Math/AABB3.hpp"
 #include "MingEngine/Core/Math/RaycastUtils.hpp"
-#include "MingEngine/Core/Math/Vec3.hpp"
+#include "MingEngine/Core/Math/Vector3.hpp"
 #include "MingEngine/Core/Object/Object.hpp"
 #include "MingEngine/Core/Object/RefCounted.hpp"
 #include "MingEngine/Scene/Core/NodeHandle.hpp"
@@ -19,13 +19,13 @@ public:
 	RaycastQuery3D() = default;
 	RaycastQuery3D(MathRaycastQuery3D const& other) { this->operator=(other); }
 
-	Vec3  GetStart() const;
-	Vec3  GetDirection() const;
-	float GetMaxDistance() const;
-	Node* GetExclude() const;
+	Vector3 GetStart() const;
+	Vector3 GetDirection() const;
+	float   GetMaxDistance() const;
+	Node*   GetExclude() const;
 
-	void SetStart(Vec3 const& start);
-	void SetDirection(Vec3 const& direction);
+	void SetStart(Vector3 const& start);
+	void SetDirection(Vector3 const& direction);
 	void SetMaxDistance(float maxDistance);
 	void SetExclude(Node* exclude);
 
@@ -42,8 +42,8 @@ protected:
 	static void BindMethods();
 
 public:
-	Vec3       m_start;
-	Vec3       m_direction;
+	Vector3    m_start;
+	Vector3    m_direction;
 	float      m_maxDistance = 10000.f;
 	NodeHandle m_exclude     = NodeHandle::Invalid;
 
@@ -72,21 +72,21 @@ public:
 		return *this;
 	}
 
-	bool  GetDidImpact() const;
-	float GetImpactDistance() const;
-	Vec3  GetImpactPosition() const;
-	Vec3  GetImpactNormal() const;
-	Vec3  GetRayStartPosition() const;
-	Vec3  GetRayForwardNormal() const;
-	float GetRayMaxLength() const;
-	int   GetOwner() const;
+	bool    GetDidImpact() const;
+	float   GetImpactDistance() const;
+	Vector3 GetImpactPosition() const;
+	Vector3 GetImpactNormal() const;
+	Vector3 GetRayStartPosition() const;
+	Vector3 GetRayForwardNormal() const;
+	float   GetRayMaxLength() const;
+	int     GetOwner() const;
 
 	void SetDidImpact(bool didImpact);
 	void SetImpactDistance(float impactDistance);
-	void SetImpactPosition(Vec3 const& impactPosition);
-	void SetImpactNormal(Vec3 const& impactNormal);
-	void SetRayStartPosition(Vec3 const& rayStartPosition);
-	void SetRayForwardNormal(Vec3 const& rayForwardNormal);
+	void SetImpactPosition(Vector3 const& impactPosition);
+	void SetImpactNormal(Vector3 const& impactNormal);
+	void SetRayStartPosition(Vector3 const& rayStartPosition);
+	void SetRayForwardNormal(Vector3 const& rayForwardNormal);
 	void SetRayMaxLength(float rayMaxLength);
 
 protected:
@@ -94,15 +94,15 @@ protected:
 
 public:
 	// Basic raycast result information (required)
-	bool  m_didImpact  = false;
-	float m_impactDist = 0.f;
-	Vec3  m_impactPos;
-	Vec3  m_impactNormal;
+	bool    m_didImpact  = false;
+	float   m_impactDist = 0.f;
+	Vector3 m_impactPos;
+	Vector3 m_impactNormal;
 
 	// Original raycast information (optional)
-	Vec3  m_rayStartPos;
-	Vec3  m_rayFwdNormal;
-	float m_rayMaxLength = 1.f;
+	Vector3 m_rayStartPos;
+	Vector3 m_rayFwdNormal;
+	float   m_rayMaxLength = 1.f;
 
 	NodeHandle m_owner;
 };

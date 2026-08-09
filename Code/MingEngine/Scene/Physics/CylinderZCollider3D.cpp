@@ -5,14 +5,14 @@
 
 void CylinderZCollider3D::RenderDebug() const
 {
-	Vec2       worldStartXY = GetWorldTransform().TransformPosition2D(m_localStartXY);
+	Vector2    worldStartXY = GetWorldTransform().TransformPosition2D(m_localStartXY);
 	FloatRange worldZRange  = FloatRange(
-		GetWorldTransform().TransformPosition3D(Vec3(0.f, 0.f, m_localZRange.m_min)).z,
-		GetWorldTransform().TransformPosition3D(Vec3(0.f, 0.f, m_localZRange.m_max)).z);
+		GetWorldTransform().TransformPosition3D(Vector3(0.f, 0.f, m_localZRange.m_min)).z,
+		GetWorldTransform().TransformPosition3D(Vector3(0.f, 0.f, m_localZRange.m_max)).z);
 
 	DebugGizmos::AddWorldWireCylinder(
-		Vec3(worldStartXY.x, worldStartXY.y, worldZRange.m_min),
-		Vec3(worldStartXY.x, worldStartXY.y, worldZRange.m_max),
+		Vector3(worldStartXY.x, worldStartXY.y, worldZRange.m_min),
+		Vector3(worldStartXY.x, worldStartXY.y, worldZRange.m_max),
 		m_radius,
 		0.f,
 		Color::Cyan,

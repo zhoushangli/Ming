@@ -2,7 +2,7 @@
 
 #include "MingEngine/Core/Math/AABB2.hpp"
 #include "MingEngine/Core/Math/MathUtils.hpp"
-#include "MingEngine/Core/Math/Vec2.hpp"
+#include "MingEngine/Core/Math/Vector2.hpp"
 #include "MingEngine/Core/Render/Vertex.hpp"
 #include "MingEngine/Core/Render/VertexUtils.hpp"
 #include "MingEngine/Engine/Render/GPUTexture.hpp"
@@ -29,15 +29,15 @@ GPUTexture* BitmapFont::GetTexture() { return m_fontGlyphsSpriteSheet.GetTexture
 
 void BitmapFont::AddVertsForText2D(
 	std::vector<Vertex>& verts,
-	Vec2                 textMins,
+	Vector2              textMins,
 	float                cellHeight,
 	std::string const&   text,
 	Color                tint,
 	float                cellAspectScale)
 {
-	float cellWidth  = cellHeight * m_fontDefaultAspect * cellAspectScale;
-	Vec2  pen        = textMins;
-	float lineStartX = textMins.x;
+	float   cellWidth  = cellHeight * m_fontDefaultAspect * cellAspectScale;
+	Vector2 pen        = textMins;
+	float   lineStartX = textMins.x;
 
 	for (char c : text)
 	{
@@ -50,15 +50,15 @@ void BitmapFont::AddVertsForText2D(
 
 		int   index = (int)c;
 		AABB2 uv    = m_fontGlyphsSpriteSheet.GetSpriteUVs(index);
-		AABB2 bounds(pen, pen + Vec2(cellWidth, cellHeight));
+		AABB2 bounds(pen, pen + Vector2(cellWidth, cellHeight));
 
-		verts.emplace_back(Vec3(bounds.m_mins.x, bounds.m_mins.y, 0.f), tint, uv.m_mins);
-		verts.emplace_back(Vec3(bounds.m_maxs.x, bounds.m_mins.y, 0.f), tint, Vec2(uv.m_maxs.x, uv.m_mins.y));
-		verts.emplace_back(Vec3(bounds.m_maxs.x, bounds.m_maxs.y, 0.f), tint, uv.m_maxs);
+		verts.emplace_back(Vector3(bounds.m_mins.x, bounds.m_mins.y, 0.f), tint, uv.m_mins);
+		verts.emplace_back(Vector3(bounds.m_maxs.x, bounds.m_mins.y, 0.f), tint, Vector2(uv.m_maxs.x, uv.m_mins.y));
+		verts.emplace_back(Vector3(bounds.m_maxs.x, bounds.m_maxs.y, 0.f), tint, uv.m_maxs);
 
-		verts.emplace_back(Vec3(bounds.m_mins.x, bounds.m_mins.y, 0.f), tint, uv.m_mins);
-		verts.emplace_back(Vec3(bounds.m_maxs.x, bounds.m_maxs.y, 0.f), tint, uv.m_maxs);
-		verts.emplace_back(Vec3(bounds.m_mins.x, bounds.m_maxs.y, 0.f), tint, Vec2(uv.m_mins.x, uv.m_maxs.y));
+		verts.emplace_back(Vector3(bounds.m_mins.x, bounds.m_mins.y, 0.f), tint, uv.m_mins);
+		verts.emplace_back(Vector3(bounds.m_maxs.x, bounds.m_maxs.y, 0.f), tint, uv.m_maxs);
+		verts.emplace_back(Vector3(bounds.m_mins.x, bounds.m_maxs.y, 0.f), tint, Vector2(uv.m_mins.x, uv.m_maxs.y));
 
 		pen.x += cellWidth;
 	}
@@ -71,19 +71,19 @@ void BitmapFont::AddVertsForTextInBox2D(
 	float                cellHeight,
 	Color                tint,
 	float                cellAspectScale,
-	Vec2                 alignment,
+	Vector2              alignment,
 	TextBoxMode          mode,
 	int                  maxGlyphsToDraw)
 {
-	Vec2  textBoundsDimension = GetTextBoundsDimension(cellHeight, text, cellAspectScale);
-	AABB2 textBounds          = AABB2(box.m_mins, box.m_mins + textBoundsDimension);
+	Vector2 textBoundsDimension = GetTextBoundsDimension(cellHeight, text, cellAspectScale);
+	AABB2   textBounds          = AABB2(box.m_mins, box.m_mins + textBoundsDimension);
 
-	Vec2 gaps = box.GetDimensions() - textBounds.GetDimensions();
+	Vector2 gaps = box.GetDimensions() - textBounds.GetDimensions();
 
 	if (mode == TextBoxMode::SHRINK_TO_FIT)
 	{
-		Vec2 dims    = textBounds.GetDimensions();
-		Vec2 boxDims = box.GetDimensions();
+		Vector2 dims    = textBounds.GetDimensions();
+		Vector2 boxDims = box.GetDimensions();
 
 		float sx    = boxDims.x / dims.x;
 		float sy    = boxDims.y / dims.y;
@@ -100,8 +100,8 @@ void BitmapFont::AddVertsForTextInBox2D(
 		}
 	}
 
-	Vec2  start           = box.m_mins + gaps * alignment;
-	float baselineYOffset = textBoundsDimension.y - cellHeight;
+	Vector2 start           = box.m_mins + gaps * alignment;
+	float   baselineYOffset = textBoundsDimension.y - cellHeight;
 	start.y += baselineYOffset;
 	int         glyphCount = Min((int)text.size(), maxGlyphsToDraw);
 	std::string clipped    = text.substr(0, glyphCount + 1);
@@ -115,7 +115,7 @@ void BitmapFont::AddVertsForText3DAtOriginXForward(
 	std::string const&   text,
 	Color const&         tint /*= Rgba8::kWhite*/,
 	float                cellAspect /*= 1.0f*/,
-	Vec2 const&          alignment /*= Vec2(0.5f, 0.5f)*/,
+	Vector2 const&       alignment /*= Vec2(0.5f, 0.5f)*/,
 	int                  maxGlyphsToDraw /*= 999*/)
 {
 	int glyphCount = Min((int)text.size(), maxGlyphsToDraw);
@@ -125,8 +125,8 @@ void BitmapFont::AddVertsForText3DAtOriginXForward(
 	}
 
 	std::string clippedText    = text.substr(0, glyphCount);
-	Vec2        textDimensions = GetTextBoundsDimension(cellHeight, clippedText, cellAspect);
-	Vec2        textMins       = -textDimensions * alignment;
+	Vector2     textDimensions = GetTextBoundsDimension(cellHeight, clippedText, cellAspect);
+	Vector2     textMins       = -textDimensions * alignment;
 
 	std::vector<Vertex> textVerts;
 	AddVertsForText2D(textVerts, textMins, cellHeight, clippedText, tint, cellAspect);
@@ -175,11 +175,11 @@ float BitmapFont::GetTextHeight(float cellHeight, std::string const& text)
 	return cellHeight * (float)lines;
 }
 
-Vec2 BitmapFont::GetTextBoundsDimension(float cellHeight, std::string const& text, float cellAspectScale /*= 1.f*/)
+Vector2 BitmapFont::GetTextBoundsDimension(float cellHeight, std::string const& text, float cellAspectScale /*= 1.f*/)
 {
 	float textWidth  = GetTextWidth(cellHeight, text, cellAspectScale);
 	float textHeight = GetTextHeight(cellHeight, text);
-	return Vec2(textWidth, textHeight);
+	return Vector2(textWidth, textHeight);
 }
 
 float BitmapFont::GetGlyphAspect(int) const { return m_fontDefaultAspect; }

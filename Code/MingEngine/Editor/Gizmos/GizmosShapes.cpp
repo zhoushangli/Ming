@@ -40,12 +40,12 @@ EditorWorldGrid3D::EditorWorldGrid3D()
 			continue; // Skip the center line, which is drawn by EditorWorldAxis3D
 		}
 
-		Vec3 aCol = Vec3(-(float)kHalfExtent, (float)lineIndex, 0.f);
-		Vec3 bCol = Vec3((float)kHalfExtent, (float)lineIndex, 0.f);
-		Vec3 aRow = Vec3((float)lineIndex, -(float)kHalfExtent, 0.f);
-		Vec3 bRow = Vec3((float)lineIndex, (float)kHalfExtent, 0.f);
+		Vector3 aCol = Vector3(-(float)kHalfExtent, (float)lineIndex, 0.f);
+		Vector3 bCol = Vector3((float)kHalfExtent, (float)lineIndex, 0.f);
+		Vector3 aRow = Vector3((float)lineIndex, -(float)kHalfExtent, 0.f);
+		Vector3 bRow = Vector3((float)lineIndex, (float)kHalfExtent, 0.f);
 
-		Vec3 thickness = Vec3(kHalfThickness, kHalfThickness, kHalfThickness);
+		Vector3 thickness = Vector3(kHalfThickness, kHalfThickness, kHalfThickness);
 
 		AddVertsForAABB3D(m_verts, AABB3(aCol - thickness, bCol + thickness), Color::Gray);
 		AddVertsForAABB3D(m_verts, AABB3(aRow - thickness, bRow + thickness), Color::Gray);
@@ -77,15 +77,15 @@ RenderRequest EditorWorldGrid3D::SubmitRenderRequest() const
 	return request;
 }
 
-EditorWorldAxis3D::EditorWorldAxis3D(Vec3 const& axisStart, Vec3 const& axisEnd, Color const& color)
+EditorWorldAxis3D::EditorWorldAxis3D(Vector3 const& axisStart, Vector3 const& axisEnd, Color const& color)
 {
 	// 1) Build the shader-expanded line quad
 	AddVertsForQuad3D(
 		m_verts,
-		Vec3(0.f, -0.5f, 0.f),
-		Vec3(0.f, 0.5f, 0.f),
-		Vec3(0.f, 0.5f, 1.f),
-		Vec3(0.f, -0.5f, 1.f),
+		Vector3(0.f, -0.5f, 0.f),
+		Vector3(0.f, 0.5f, 0.f),
+		Vector3(0.f, 0.5f, 1.f),
+		Vector3(0.f, -0.5f, 1.f),
 		color);
 
 	// 2) Store the axis start in the model matrix translation

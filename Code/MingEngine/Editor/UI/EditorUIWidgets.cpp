@@ -280,11 +280,7 @@ bool PropertyColor(std::string const& label, char const* id, Color& value)
 	bool edited = false;
 	ImGui::PushID(id);
 
-	ImVec4 const previewColor(
-		colorAsFloats[0],
-		colorAsFloats[1],
-		colorAsFloats[2],
-		colorAsFloats[3]);
+	ImVec4 const previewColor(colorAsFloats[0], colorAsFloats[1], colorAsFloats[2], colorAsFloats[3]);
 	ImVec2 const buttonSize(ImGui::CalcItemWidth(), ImGui::GetFrameHeight());
 
 	if (ImGui::ColorButton("##colorButton", previewColor, ImGuiColorEditFlags_None, buttonSize))
@@ -341,7 +337,7 @@ bool PropertyString(std::string const& label, char const* id, std::string& value
 	return edited;
 }
 
-bool PropertyVec3(std::string const& label, char const* id, Vec3& value, Vec3 const& defaultValue)
+bool PropertyVec3(std::string const& label, char const* id, Vector3& value, Vector3 const& defaultValue)
 {
 	return PropertyTripleFloat(label, id, value.x, value.y, value.z, defaultValue.x, defaultValue.y, defaultValue.z);
 }

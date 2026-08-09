@@ -1,6 +1,6 @@
 using System.Diagnostics;
 
-namespace MingSharp;
+namespace Ming;
 
 public partial class CylinderZCollider3D : Collider3D
 {

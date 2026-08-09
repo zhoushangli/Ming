@@ -1,4 +1,4 @@
-namespace MingSharp;
+namespace Ming;
 
 public partial class Node : MingObject
 {

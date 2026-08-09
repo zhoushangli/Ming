@@ -1,8 +1,8 @@
 #pragma once
 
-#include "MingEngine/Core/Math/Vec2.hpp"
+#include "MingEngine/Core/Math/Vector2.hpp"
 
-struct Vec2;
+struct Vector2;
 
 struct IntVec2
 {
@@ -11,7 +11,7 @@ public:
 	~IntVec2() = default;
 
 	IntVec2(const IntVec2& copyFrom) = default;
-	IntVec2(const Vec2& copyFrom);
+	IntVec2(const Vector2& copyFrom);
 
 	explicit IntVec2(int initialX, int initialY);
 
@@ -42,7 +42,7 @@ public:
 	void operator/=(const float uniformDivisor);
 	void operator=(IntVec2 const& copyFrom);
 
-	operator Vec2() const;
+	operator Vector2() const;
 
 	void SetFromText(char const* text);
 

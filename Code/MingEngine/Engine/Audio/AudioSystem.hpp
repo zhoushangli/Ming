@@ -3,7 +3,7 @@
 #include "MingEngine/Engine/Application/EngineBuildPreferences.hpp"
 #include "MingEngine/Engine/Application/SystemBase.hpp"
 
-#include "MingEngine/Core/Math/Vec3.hpp"
+#include "MingEngine/Core/Math/Vector3.hpp"
 
 #include <cstddef>
 #include <string>
@@ -41,13 +41,9 @@ public:
 	static void BindMethods();
 
 #if !defined(ENGINE_DISABLE_AUDIO)
-	virtual SoundID CreateOrGetSound(std::string const& soundFilePath);
+	virtual SoundID         CreateOrGetSound(std::string const& soundFilePath);
 	virtual SoundPlaybackID StartSound(
-		SoundID soundID,
-		bool    isLooped = false,
-		float   volume   = 1.f,
-		float   balance  = 0.0f,
-		float   speed    = 1.0f);
+		SoundID soundID, bool isLooped = false, float volume = 1.f, float balance = 0.0f, float speed = 1.0f);
 	virtual void StopSound(SoundPlaybackID soundPlaybackID);
 	virtual void SetSoundPlaybackVolume(SoundPlaybackID soundPlaybackID, float volume); // volume is in [0,1]
 	virtual void SetSoundPlaybackBalance(
@@ -56,17 +52,17 @@ public:
 		SoundPlaybackID soundPlaybackID, float speed); // speed is frequency multiplier (1.0 == normal)
 
 	void UpdateListener(
-		int listenerIndex, const Vec3& listenerPosition, const Vec3& listenerForward, const Vec3& listenerUp);
+		int listenerIndex, const Vector3& listenerPosition, const Vector3& listenerForward, const Vector3& listenerUp);
 	virtual SoundPlaybackID StartSoundAt(
-		SoundID     soundID,
-		const Vec3& soundPosition,
-		bool        isLooped    = false,
-		float       volume      = 1.0f,
-		float       balance     = 0.0f,
-		float       speed       = 1.0f,
-		float       minDistance = 1.0f,
-		float       maxDistance = 10.0f);
-	virtual void SetSoundPosition(SoundPlaybackID soundPlaybackID, const Vec3& soundPosition);
+		SoundID        soundID,
+		const Vector3& soundPosition,
+		bool           isLooped    = false,
+		float          volume      = 1.0f,
+		float          balance     = 0.0f,
+		float          speed       = 1.0f,
+		float          minDistance = 1.0f,
+		float          maxDistance = 10.0f);
+	virtual void SetSoundPosition(SoundPlaybackID soundPlaybackID, const Vector3& soundPosition);
 	bool         IsPlaying(SoundPlaybackID soundPlaybackID);
 #endif // !defined( ENGINE_DISABLE_AUDIO )
 

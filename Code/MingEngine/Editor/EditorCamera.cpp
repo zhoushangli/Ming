@@ -44,9 +44,9 @@ void EditorCamera::OnProcess(float deltaSeconds)
 	bool const shouldReset = g_engine->m_inputSystem->WasKeyJustPressed('H');
 	if (shouldReset)
 	{
-		SetLocalPosition(Vec3(0.f, 0.f, 0.f));
+		SetLocalPosition(Vector3(0.f, 0.f, 0.f));
 		SetLocalOrientation(EulerAngles(0.f, 0.f, 0.f));
-		m_velocity        = Vec3(0.f, 0.f, 0.f);
+		m_velocity        = Vector3(0.f, 0.f, 0.f);
 		m_angularVelocity = EulerAngles(0.f, 0.f, 0.f);
 	}
 
@@ -96,14 +96,14 @@ void EditorCamera::EnterControlState(EditorControlState nextState)
 	{
 		g_engine->m_inputSystem->SetCursorMode(CursorMode::POINTER);
 		g_engine->m_inputSystem->ClearCursorDelta();
-		m_lastCursorClientPos = Vec2(g_engine->m_inputSystem->GetCursorClientPosition());
+		m_lastCursorClientPos = Vector2(g_engine->m_inputSystem->GetCursorClientPosition());
 	}
 }
 
 void EditorCamera::UpdateFlyThrough(float deltaSeconds)
 {
 	InputSystem* input      = g_engine->m_inputSystem;
-	Vec2         mouseDelta = Vec2(input->GetCursorClientDelta());
+	Vector2      mouseDelta = Vector2(input->GetCursorClientDelta());
 
 	EulerAngles orientation = GetLocalOrientation();
 	orientation.m_yawDegrees -= mouseDelta.x * kMouseLookSensitivity;
@@ -112,7 +112,7 @@ void EditorCamera::UpdateFlyThrough(float deltaSeconds)
 	orientation.m_rollDegrees  = 0.f;
 	SetLocalOrientation(orientation);
 
-	Vec2 moveInput = Vec2::Zero;
+	Vector2 moveInput = Vector2::Zero;
 	if (input->IsKeyDown('W'))
 	{
 		moveInput.y += 1.f;
@@ -142,13 +142,13 @@ void EditorCamera::UpdateFlyThrough(float deltaSeconds)
 	}
 	verticalInput = GetClamped(verticalInput, -1.f, 1.f);
 
-	Vec3 forward = Vec3(0.f, 0.f, 0.f);
-	Vec3 left    = Vec3(0.f, 0.f, 0.f);
-	Vec3 up      = Vec3(0.f, 0.f, 0.f);
+	Vector3 forward = Vector3(0.f, 0.f, 0.f);
+	Vector3 left    = Vector3(0.f, 0.f, 0.f);
+	Vector3 up      = Vector3(0.f, 0.f, 0.f);
 	orientation.GetAsVectors_IFwd_JLeft_KUp(forward, left, up);
 
-	Vec3 right       = -left;
-	Vec3 movementDir = right * moveInput.x + forward * moveInput.y + Vec3(0.f, 0.f, verticalInput);
+	Vector3 right       = -left;
+	Vector3 movementDir = right * moveInput.x + forward * moveInput.y + Vector3(0.f, 0.f, verticalInput);
 
 	float moveLenSq = movementDir.x * movementDir.x + movementDir.y * movementDir.y + movementDir.z * movementDir.z;
 	if (moveLenSq > 1.f)
@@ -170,12 +170,12 @@ void EditorCamera::UpdateFlyThrough(float deltaSeconds)
 
 void EditorCamera::UpdatePointer([[maybe_unused]] float deltaSeconds)
 {
-	InputSystem* input     = g_engine->m_inputSystem;
-	Vec2 const   cursorPos = Vec2(input->GetCursorClientPosition());
-	m_cursorDelta          = cursorPos - m_lastCursorClientPos;
-	m_lastCursorClientPos  = cursorPos;
+	InputSystem*  input     = g_engine->m_inputSystem;
+	Vector2 const cursorPos = Vector2(input->GetCursorClientPosition());
+	m_cursorDelta           = cursorPos - m_lastCursorClientPos;
+	m_lastCursorClientPos   = cursorPos;
 
-	m_velocity = Vec3::Zero;
+	m_velocity = Vector3::Zero;
 }
 
 void EditorCamera::UpdateCameraChild()
@@ -185,7 +185,7 @@ void EditorCamera::UpdateCameraChild()
 		return;
 	}
 
-	m_camera->SetLocalPosition(Vec3::Zero);
+	m_camera->SetLocalPosition(Vector3::Zero);
 	m_camera->SetLocalOrientation(EulerAngles::Zero);
 }
 

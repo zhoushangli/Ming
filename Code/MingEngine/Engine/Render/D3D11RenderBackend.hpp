@@ -20,7 +20,7 @@ class VertexBuffer;
 class IndexBuffer;
 class ConstantBuffer;
 
-struct Vec2;
+struct Vector2;
 struct Color;
 struct Vertex;
 
@@ -88,34 +88,34 @@ struct RendererConfig
 
 struct GPUDirectionalLight
 {
-	Vec3  m_direction;
-	float m_intensity;
-	Vec3  m_color;
-	float m_padding;
+	Vector3 m_direction;
+	float   m_intensity;
+	Vector3 m_color;
+	float   m_padding;
 };
 
 struct GPUOmniLight
 {
-	Vec3  m_position;
-	float m_range;
-	Vec3  m_color;
-	float m_intensity;
-	float m_attenuation;
-	float m_padding[3];
+	Vector3 m_position;
+	float   m_range;
+	Vector3 m_color;
+	float   m_intensity;
+	float   m_attenuation;
+	float   m_padding[3];
 };
 static const int kMaxPointLights = 16;
 
 struct GPUSpotLight
 {
-	Vec3  m_position;
-	float m_range;
-	Vec3  m_direction;
-	float m_intensity;
-	Vec3  m_color;
-	float m_attenuation;
-	float m_spotAngle;
-	float m_spotAttenuation;
-	float m_padding[2];
+	Vector3 m_position;
+	float   m_range;
+	Vector3 m_direction;
+	float   m_intensity;
+	Vector3 m_color;
+	float   m_attenuation;
+	float   m_spotAngle;
+	float   m_spotAttenuation;
+	float   m_padding[2];
 };
 static const int kMaxSpotLights = 16;
 
@@ -149,9 +149,9 @@ static const int kModelConstantsSlot = 3;
 
 struct PostProcessConstants
 {
-	Vec2  m_screenDimensions;
-	float m_cameraNear;
-	float m_cameraFar;
+	Vector2 m_screenDimensions;
+	float   m_cameraNear;
+	float   m_cameraFar;
 };
 static const int kPostProcessConstantsSlot = 4;
 

@@ -1,19 +1,18 @@
 #pragma once
 
-#include "MingEngine/Core/Math/Vec2.hpp"
+#include "MingEngine/Core/Math/Vector2.hpp"
 
 struct Disc2
 {
 public:
 	Disc2() = default;
-	Disc2(const Vec2& center, float radius);
+	Disc2(const Vector2& center, float radius);
 	Disc2(float centerX, float centerY, float radius);
 
-	void Translate(const Vec2& translation);
-	void SetCenter(const Vec2& newCenter);
+	void Translate(const Vector2& translation);
+	void SetCenter(const Vector2& newCenter);
 
 public:
-	Vec2  m_center = Vec2::Zero;
-	float m_radius = 0.f;
+	Vector2 m_center = Vector2::Zero;
+	float   m_radius = 0.f;
 };
-

@@ -10,29 +10,29 @@
 
 namespace
 {
-	float const kHalfSize = 500.f;
+float const kHalfSize = 500.f;
 } // namespace
 
-Skybox3D::Skybox3D(VirtualPath const &imagePath) : VisualInstance3D(), m_imagePath(imagePath)
+Skybox3D::Skybox3D(VirtualPath const& imagePath) : VisualInstance3D(), m_imagePath(imagePath)
 {
 	Ref<Resource> loaded = ResourceLoader::Load(m_imagePath);
-	m_textureRef = Ref<TextureResource>(loaded);
+	m_textureRef         = Ref<TextureResource>(loaded);
 
-	std::vector<Vertex> verts;
+	std::vector<Vertex>       verts;
 	std::vector<unsigned int> indexes;
 
 	verts.reserve(24);
 	indexes.reserve(36);
 
 	auto AddFace = [&verts, &indexes](
-					   Vec3 const &bl,
-					   Vec3 const &br,
-					   Vec3 const &tr,
-					   Vec3 const &tl,
-					   Vec2 const &uvBL,
-					   Vec2 const &uvBR,
-					   Vec2 const &uvTR,
-					   Vec2 const &uvTL)
+					   Vector3 const& bl,
+					   Vector3 const& br,
+					   Vector3 const& tr,
+					   Vector3 const& tl,
+					   Vector2 const& uvBL,
+					   Vector2 const& uvBR,
+					   Vector2 const& uvTR,
+					   Vector2 const& uvTL)
 	{
 		unsigned int const startIndex = static_cast<unsigned int>(verts.size());
 
@@ -78,74 +78,74 @@ Skybox3D::Skybox3D(VirtualPath const &imagePath) : VisualInstance3D(), m_imagePa
 	// clang-format off
 	// +X
 	AddFace(
-		Vec3( kHalfSize,  kHalfSize, -kHalfSize),
-		Vec3( kHalfSize, -kHalfSize, -kHalfSize),
-		Vec3( kHalfSize, -kHalfSize,  kHalfSize),
-		Vec3( kHalfSize,  kHalfSize,  kHalfSize),
-		Vec2(u2, v2),
-		Vec2(u2, v1),
-		Vec2(u3, v1),
-		Vec2(u3, v2)
+		Vector3( kHalfSize,  kHalfSize, -kHalfSize),
+		Vector3( kHalfSize, -kHalfSize, -kHalfSize),
+		Vector3( kHalfSize, -kHalfSize,  kHalfSize),
+		Vector3( kHalfSize,  kHalfSize,  kHalfSize),
+		Vector2(u2, v2),
+		Vector2(u2, v1),
+		Vector2(u3, v1),
+		Vector2(u3, v2)
 	);
 
 	// -X
 	AddFace(
-		Vec3(-kHalfSize, -kHalfSize, -kHalfSize),
-		Vec3(-kHalfSize,  kHalfSize, -kHalfSize),
-		Vec3(-kHalfSize,  kHalfSize,  kHalfSize),
-		Vec3(-kHalfSize, -kHalfSize,  kHalfSize),
-		Vec2(u1, v1),
-		Vec2(u1, v2),
-		Vec2(u0, v2),
-		Vec2(u0, v1)
+		Vector3(-kHalfSize, -kHalfSize, -kHalfSize),
+		Vector3(-kHalfSize,  kHalfSize, -kHalfSize),
+		Vector3(-kHalfSize,  kHalfSize,  kHalfSize),
+		Vector3(-kHalfSize, -kHalfSize,  kHalfSize),
+		Vector2(u1, v1),
+		Vector2(u1, v2),
+		Vector2(u0, v2),
+		Vector2(u0, v1)
 	);
 
 	// -Z
 	AddFace(
-		Vec3(-kHalfSize, -kHalfSize, -kHalfSize),
-		Vec3( kHalfSize, -kHalfSize, -kHalfSize),
-		Vec3( kHalfSize,  kHalfSize, -kHalfSize),
-		Vec3(-kHalfSize,  kHalfSize, -kHalfSize),
-		Vec2(u1, v1),
-		Vec2(u2, v1),
-		Vec2(u2, v2),
-		Vec2(u1, v2)
+		Vector3(-kHalfSize, -kHalfSize, -kHalfSize),
+		Vector3( kHalfSize, -kHalfSize, -kHalfSize),
+		Vector3( kHalfSize,  kHalfSize, -kHalfSize),
+		Vector3(-kHalfSize,  kHalfSize, -kHalfSize),
+		Vector2(u1, v1),
+		Vector2(u2, v1),
+		Vector2(u2, v2),
+		Vector2(u1, v2)
 	);
 
 	// +Z
 	AddFace(
-		Vec3( kHalfSize, -kHalfSize,  kHalfSize),
-		Vec3(-kHalfSize, -kHalfSize,  kHalfSize),
-		Vec3(-kHalfSize,  kHalfSize,  kHalfSize),
-		Vec3( kHalfSize,  kHalfSize,  kHalfSize),
-		Vec2(u3, v1),
-		Vec2(u4, v1),
-		Vec2(u4, v2),
-		Vec2(u3, v2)
+		Vector3( kHalfSize, -kHalfSize,  kHalfSize),
+		Vector3(-kHalfSize, -kHalfSize,  kHalfSize),
+		Vector3(-kHalfSize,  kHalfSize,  kHalfSize),
+		Vector3( kHalfSize,  kHalfSize,  kHalfSize),
+		Vector2(u3, v1),
+		Vector2(u4, v1),
+		Vector2(u4, v2),
+		Vector2(u3, v2)
 	);
 
 	// +Y
 	AddFace(
-		Vec3(-kHalfSize,  kHalfSize, -kHalfSize),
-		Vec3( kHalfSize,  kHalfSize, -kHalfSize),
-		Vec3( kHalfSize,  kHalfSize,  kHalfSize),
-		Vec3(-kHalfSize,  kHalfSize,  kHalfSize),
-		Vec2(u1, v2),
-		Vec2(u2, v2),
-		Vec2(u2, v3),
-		Vec2(u1, v3)
+		Vector3(-kHalfSize,  kHalfSize, -kHalfSize),
+		Vector3( kHalfSize,  kHalfSize, -kHalfSize),
+		Vector3( kHalfSize,  kHalfSize,  kHalfSize),
+		Vector3(-kHalfSize,  kHalfSize,  kHalfSize),
+		Vector2(u1, v2),
+		Vector2(u2, v2),
+		Vector2(u2, v3),
+		Vector2(u1, v3)
 	);
 
 	// -Y
 	AddFace(
-		Vec3(-kHalfSize, -kHalfSize,  kHalfSize),
-		Vec3( kHalfSize, -kHalfSize,  kHalfSize),
-		Vec3( kHalfSize, -kHalfSize, -kHalfSize),
-		Vec3(-kHalfSize, -kHalfSize, -kHalfSize),
-		Vec2(u1, v0),
-		Vec2(u2, v0),
-		Vec2(u2, v1),
-		Vec2(u1, v1)
+		Vector3(-kHalfSize, -kHalfSize,  kHalfSize),
+		Vector3( kHalfSize, -kHalfSize,  kHalfSize),
+		Vector3( kHalfSize, -kHalfSize, -kHalfSize),
+		Vector3(-kHalfSize, -kHalfSize, -kHalfSize),
+		Vector2(u1, v0),
+		Vector2(u2, v0),
+		Vector2(u2, v1),
+		Vector2(u1, v1)
 	);
 
 	// clang-format on
@@ -176,16 +176,16 @@ RenderRequest Skybox3D::SubmitRenderRequest() const
 		return request;
 	}
 
-	request.m_pass = RenderRequestPass::Skybox;
-	request.m_modelToWorld = GetWorldTransform();
-	request.m_tint = Color::White;
-	request.m_vertexBuffer = m_vertexBuffer;
-	request.m_indexBuffer = m_indexBuffer;
+	request.m_pass                                  = RenderRequestPass::Skybox;
+	request.m_modelToWorld                          = GetWorldTransform();
+	request.m_tint                                  = Color::White;
+	request.m_vertexBuffer                          = m_vertexBuffer;
+	request.m_indexBuffer                           = m_indexBuffer;
 	request.m_textures[SurfaceTextureSlot::Diffuse] = m_textureRef.IsValid() ? m_textureRef->GetGPUTexture() : nullptr;
-	request.m_shader = nullptr;
-	request.m_blendMode = BlendMode::OPAQUE;
-	request.m_depthMode = DepthMode::READ_ONLY_LESS_EQUAL;
-	request.m_rasterizerMode = RasterizerMode::SOLID_CULL_BACK;
-	request.m_samplerMode = SamplerMode::POINT_CLAMP;
+	request.m_shader                                = nullptr;
+	request.m_blendMode                             = BlendMode::OPAQUE;
+	request.m_depthMode                             = DepthMode::READ_ONLY_LESS_EQUAL;
+	request.m_rasterizerMode                        = RasterizerMode::SOLID_CULL_BACK;
+	request.m_samplerMode                           = SamplerMode::POINT_CLAMP;
 	return request;
 }

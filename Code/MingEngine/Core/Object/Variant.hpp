@@ -5,9 +5,9 @@
 #include "MingEngine/Core/Math/EulerAngles.hpp"
 #include "MingEngine/Core/Math/Matrix4x4.hpp"
 #include "MingEngine/Core/Math/OBB2.hpp"
-#include "MingEngine/Core/Math/Vec2.hpp"
-#include "MingEngine/Core/Math/Vec3.hpp"
-#include "MingEngine/Core/Math/Vec4.hpp"
+#include "MingEngine/Core/Math/Vector2.hpp"
+#include "MingEngine/Core/Math/Vector3.hpp"
+#include "MingEngine/Core/Math/Vector4.hpp"
 #include "MingEngine/Core/Object/Object.hpp"
 #include "MingEngine/Core/Render/Rgba8.hpp"
 
@@ -23,9 +23,9 @@ public:
 		int,
 		float,
 		std::string,
-		Vec2,
-		Vec3,
-		Vec4,
+		Vector2,
+		Vector3,
+		Vector4,
 		Color,
 		AABB2,
 		OBB2,
@@ -62,9 +62,9 @@ public:
 	Variant(float value);
 	Variant(char const* value);
 	Variant(std::string const& value);
-	Variant(Vec2 const& value);
-	Variant(Vec3 const& value);
-	Variant(Vec4 const& value);
+	Variant(Vector2 const& value);
+	Variant(Vector3 const& value);
+	Variant(Vector4 const& value);
 	Variant(Color const& value);
 	Variant(AABB2 const& value);
 	Variant(OBB2 const& value);
@@ -110,11 +110,11 @@ public:
 			return Type::Float;
 		if (std::is_same_v<CleanType, std::string>)
 			return Type::String;
-		if (std::is_same_v<CleanType, Vec2>)
+		if (std::is_same_v<CleanType, Vector2>)
 			return Type::Vec2;
-		if (std::is_same_v<CleanType, Vec3>)
+		if (std::is_same_v<CleanType, Vector3>)
 			return Type::Vec3;
-		if (std::is_same_v<CleanType, Vec4>)
+		if (std::is_same_v<CleanType, Vector4>)
 			return Type::Vec4;
 		if (std::is_same_v<CleanType, Color>)
 			return Type::Color;

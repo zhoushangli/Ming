@@ -1,7 +1,7 @@
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace MingSharp;
+namespace Ming;
 
 internal unsafe struct UmanagedCallbacks
 {

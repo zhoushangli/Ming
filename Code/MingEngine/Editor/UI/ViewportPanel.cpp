@@ -19,8 +19,8 @@ ViewportPanel::ViewportPanel() : EditorPanel("Viewport") {}
 void ViewportPanel::OnRender(EditorUIContext& context)
 {
 	EditorNode const* editorNode = EditorNode::Get();
-	std::string sceneName = editorNode != nullptr ? editorNode->GetCurrentSceneName() : std::string();
-	std::string title = sceneName.empty() ? "[empty]" : sceneName;
+	std::string       sceneName  = editorNode != nullptr ? editorNode->GetCurrentSceneName() : std::string();
+	std::string       title      = sceneName.empty() ? "[empty]" : sceneName;
 	if (editorNode != nullptr && editorNode->IsSceneDirty())
 	{
 		title += "(*)";
@@ -68,7 +68,9 @@ void ViewportPanel::OnRender(EditorUIContext& context)
 			ImVec2 const imgMin = ImGui::GetItemRectMin();
 			if (context.m_editorUI != nullptr)
 			{
-				context.m_editorUI->SetViewportRect(Vec2(imgMin.x, imgMin.y), Vec2(availableSize.x, availableSize.y));
+				context.m_editorUI->SetViewportRect(
+					Vector2(imgMin.x, imgMin.y),
+					Vector2(availableSize.x, availableSize.y));
 			}
 		}
 	}

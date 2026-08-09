@@ -85,7 +85,7 @@ void CreateVertexBufferForObject(DebugObject& object)
 
 DebugObject MakeWorldSphereObject(
 	DebugObjectType type,
-	Vec3 const&     center,
+	Vector3 const&  center,
 	float           radius,
 	float           duration,
 	Color const&    startColor,
@@ -102,8 +102,8 @@ DebugObject MakeWorldSphereObject(
 
 DebugObject MakeWorldCylinderObject(
 	DebugObjectType type,
-	Vec3 const&     start,
-	Vec3 const&     end,
+	Vector3 const&  start,
+	Vector3 const&  end,
 	float           radius,
 	float           duration,
 	Color const&    startColor,
@@ -121,8 +121,8 @@ DebugObject MakeWorldCylinderObject(
 
 DebugObject MakeWorldCapsuleObject(
 	DebugObjectType type,
-	Vec3 const&     start,
-	Vec3 const&     end,
+	Vector3 const&  start,
+	Vector3 const&  end,
 	float           radius,
 	float           duration,
 	Color const&    startColor,
@@ -140,8 +140,8 @@ DebugObject MakeWorldCapsuleObject(
 
 DebugObject MakeWorldArrowObject(
 	DebugObjectType type,
-	Vec3 const&     start,
-	Vec3 const&     end,
+	Vector3 const&  start,
+	Vector3 const&  end,
 	float           radius,
 	float           duration,
 	Color const&    startColor,
@@ -297,7 +297,7 @@ std::vector<RenderRequest> const& DebugGizmos::GetRenderRequests(RenderRequestPa
 
 // — Geometry (world space) —
 void DebugGizmos::AddWorldSphere(
-	Vec3 const&     center,
+	Vector3 const&  center,
 	float           radius,
 	float           duration,
 	Color const&    startColor,
@@ -309,7 +309,7 @@ void DebugGizmos::AddWorldSphere(
 }
 
 void DebugGizmos::AddWorldWireSphere(
-	Vec3 const&     center,
+	Vector3 const&  center,
 	float           radius,
 	float           duration,
 	Color const&    startColor,
@@ -327,8 +327,8 @@ void DebugGizmos::AddWorldWireSphere(
 }
 
 void DebugGizmos::AddWorldCylinder(
-	Vec3 const&     start,
-	Vec3 const&     end,
+	Vector3 const&  start,
+	Vector3 const&  end,
 	float           radius,
 	float           duration,
 	Color const&    startColor,
@@ -347,8 +347,8 @@ void DebugGizmos::AddWorldCylinder(
 }
 
 void DebugGizmos::AddWorldWireCylinder(
-	Vec3 const&     start,
-	Vec3 const&     end,
+	Vector3 const&  start,
+	Vector3 const&  end,
 	float           radius,
 	float           duration,
 	Color const&    startColor,
@@ -371,8 +371,8 @@ void DebugGizmos::AddWorldWireCylinder(
 {
 	AddDebugObject(MakeWorldCylinderObject(
 		DebugObjectType::WORLD_WIRE_CYLINDER,
-		Vec3(cylinder.m_centerXY.x, cylinder.m_centerXY.y, cylinder.m_minMaxZ.m_min),
-		Vec3(cylinder.m_centerXY.x, cylinder.m_centerXY.y, cylinder.m_minMaxZ.m_max),
+		Vector3(cylinder.m_centerXY.x, cylinder.m_centerXY.y, cylinder.m_minMaxZ.m_min),
+		Vector3(cylinder.m_centerXY.x, cylinder.m_centerXY.y, cylinder.m_minMaxZ.m_max),
 		cylinder.m_radius,
 		duration,
 		color,
@@ -431,8 +431,8 @@ void DebugGizmos::AddWorldWireAABB(
 }
 
 void DebugGizmos::AddWorldCapsule(
-	Vec3 const&     start,
-	Vec3 const&     end,
+	Vector3 const&  start,
+	Vector3 const&  end,
 	float           radius,
 	float           duration,
 	Color const&    startColor,
@@ -451,8 +451,8 @@ void DebugGizmos::AddWorldCapsule(
 }
 
 void DebugGizmos::AddWorldWireCapsule(
-	Vec3 const&     start,
-	Vec3 const&     end,
+	Vector3 const&  start,
+	Vector3 const&  end,
 	float           radius,
 	float           duration,
 	Color const&    startColor,
@@ -471,8 +471,8 @@ void DebugGizmos::AddWorldWireCapsule(
 }
 
 void DebugGizmos::AddWorldArrow(
-	Vec3 const&     start,
-	Vec3 const&     end,
+	Vector3 const&  start,
+	Vector3 const&  end,
 	float           radius,
 	float           duration,
 	Color const&    startColor,
@@ -484,8 +484,8 @@ void DebugGizmos::AddWorldArrow(
 }
 
 void DebugGizmos::AddWorldWireArrow(
-	Vec3 const&     start,
-	Vec3 const&     end,
+	Vector3 const&  start,
+	Vector3 const&  end,
 	float           radius,
 	float           duration,
 	Color const&    startColor,
@@ -516,10 +516,10 @@ void DebugGizmos::AddBasis(
 	Color const kAxisYColor(155, 225, 20, 255);
 	Color const kAxisZColor(55, 160, 255, 255);
 
-	Vec3 origin = transform.GetTranslation3D();
-	Vec3 xEnd   = transform.TransformPosition3D(Vec3(length, 0.f, 0.f));
-	Vec3 yEnd   = transform.TransformPosition3D(Vec3(0.f, length, 0.f));
-	Vec3 zEnd   = transform.TransformPosition3D(Vec3(0.f, 0.f, length));
+	Vector3 origin = transform.GetTranslation3D();
+	Vector3 xEnd   = transform.TransformPosition3D(Vector3(length, 0.f, 0.f));
+	Vector3 yEnd   = transform.TransformPosition3D(Vector3(0.f, length, 0.f));
+	Vector3 zEnd   = transform.TransformPosition3D(Vector3(0.f, 0.f, length));
 
 	Color xColor = Interpolate(Color::Black, kAxisXColor, colorScale);
 	Color yColor = Interpolate(Color::Black, kAxisYColor, colorScale);
@@ -543,7 +543,7 @@ void DebugGizmos::AddWorldText(
 	std::string const& text,
 	Matrix4x4 const&   transform,
 	float              textHeight,
-	Vec2 const&        alignment,
+	Vector2 const&     alignment,
 	float              duration,
 	Color const&       startColor,
 	Color const&       endColor,
@@ -562,7 +562,7 @@ void DebugGizmos::AddScreenText(
 	std::string const& text,
 	AABB2 const&       box,
 	float              cellHeight,
-	Vec2 const&        alignment,
+	Vector2 const&     alignment,
 	float              duration,
 	Color const&       startColor,
 	Color const&       endColor)
@@ -582,7 +582,7 @@ void DebugGizmos::AddMessage(std::string const& text, float duration, Color cons
 		MakeDebugObject(DebugObjectType::MESSAGE, duration, startColor, endColor, DebugRenderMode::ALWAYS);
 	object.text       = text;
 	object.textHeight = 24.f;
-	object.alignment  = Vec2(0.f, 0.5f);
+	object.alignment  = Vector2(0.f, 0.5f);
 	s_debugMessages.push_back(std::move(object));
 }
 
@@ -625,9 +625,9 @@ void DebugGizmos::AddWorldGrid(float duration, int halfExtent)
 	auto AddSegmentAABB = [&object, &ComputeAlphaForDistance](AABB3 const& aabb, Color baseColor)
 	{
 		// Use segment center distance to compute alpha
-		Vec3  center = aabb.GetCenter();
-		float dist   = sqrtf(center.x * center.x + center.y * center.y);
-		baseColor.a  = ComputeAlphaForDistance(dist);
+		Vector3 center = aabb.GetCenter();
+		float   dist   = sqrtf(center.x * center.x + center.y * center.y);
+		baseColor.a    = ComputeAlphaForDistance(dist);
 		AddVertsForAABB3D(object.verts, aabb, baseColor);
 	};
 
@@ -671,7 +671,9 @@ void DebugGizmos::AddWorldGrid(float duration, int halfExtent)
 			}
 
 			AddSegmentAABB(
-				AABB3(Vec3(x0, lineOffset - halfThickness, 0.f), Vec3(x1, lineOffset + halfThickness, kLineHeight)),
+				AABB3(
+					Vector3(x0, lineOffset - halfThickness, 0.f),
+					Vector3(x1, lineOffset + halfThickness, kLineHeight)),
 				xParallelColor);
 		}
 
@@ -686,7 +688,9 @@ void DebugGizmos::AddWorldGrid(float duration, int halfExtent)
 			}
 
 			AddSegmentAABB(
-				AABB3(Vec3(lineOffset - halfThickness, y0, 0.f), Vec3(lineOffset + halfThickness, y1, kLineHeight)),
+				AABB3(
+					Vector3(lineOffset - halfThickness, y0, 0.f),
+					Vector3(lineOffset + halfThickness, y1, kLineHeight)),
 				yParallelColor);
 		}
 	}

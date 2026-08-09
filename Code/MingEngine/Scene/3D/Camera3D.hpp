@@ -23,9 +23,9 @@ public:
 
 	// The aspect will be determined by the viewport so it is not a parameter of Camera3D
 	// Instead, it will be passed in when GetCamera is called.
-	CameraContext GetCameraContext(float aspect) const;
+	CameraContext      GetCameraContext(float aspect) const;
 	MathRaycastQuery3D BuildRaycastFromMouse(
-		Vec2 const& mousePos, Vec2 const& viewportDimensions, float maxLength) const;
+		Vector2 const& mousePos, Vector2 const& viewportDimensions, float maxLength) const;
 
 	void SetOrthogonal(float size, float nearClip = 0.f, float farClip = 1.f);
 	void SetPerspective(float fovDegrees, float nearClip = 0.1f, float farClip = 100.f);

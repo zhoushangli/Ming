@@ -9,7 +9,7 @@
 
 namespace
 {
-constexpr char const* MingObjectTemplate = R"(namespace MingSharp;
+constexpr char const* MingObjectTemplate = R"(namespace Ming;
 
 public class MingObject
 {
@@ -49,7 +49,7 @@ public class MingObject
 
 constexpr char const* RootClassTemplate = R"(using System.Diagnostics;
 
-namespace MingSharp;
+namespace Ming;
 
 public partial class {CLASS_NAME} : MingObject
 {
@@ -62,7 +62,7 @@ public partial class {CLASS_NAME} : MingObject
 
 constexpr char const* DerivedClassTemplate = R"(using System.Diagnostics;
 
-namespace MingSharp;
+namespace Ming;
 
 public partial class {CLASS_NAME} : {PARENT_CLASS_NAME}
 {
@@ -85,14 +85,15 @@ constexpr char const* MethodTemplate = R"(	public {RETURN_TYPE} {METHOD_NAME}({M
 
 )";
 
-constexpr char const* NativeCallsTemplate = R"(namespace MingSharp;
+constexpr char const* NativeCallsTemplate = R"(namespace Ming;
 
 internal static unsafe class NativeCalls
 {
 {FUNCTIONS}}
 )";
 
-constexpr char const* NativeCallFunctionTemplate = R"(	internal static unsafe {RETURN_TYPE} {METHOD_NAME}(IntPtr methodBind, IntPtr objectPtr{ARGUMENTS})
+constexpr char const* NativeCallFunctionTemplate =
+	R"(	internal static unsafe {RETURN_TYPE} {METHOD_NAME}(IntPtr methodBind, IntPtr objectPtr{ARGUMENTS})
 	{
 {RETURN_VALUE_DECLARATION}{ARGUMENTS_ARRAY_DECLARATION}		NativeFuncs.MethodBindPtrCall(methodBind, objectPtr, {ARGUMENTS_POINTER}, {RETURN_VALUE_POINTER});
 {RETURN_VALUE_RETURN}	}
@@ -257,8 +258,8 @@ std::string GenerateClassMethod(MethodInfo const& methodInfo, NativeCallInfo con
 	{
 		methodCall = "return ";
 	}
-	methodCall += "NativeCalls." + nativeCall.m_name + "(" + methodInfo.m_name +
-		"MethodBind, GetPtr(this)" + callArguments + ")";
+	methodCall +=
+		"NativeCalls." + nativeCall.m_name + "(" + methodInfo.m_name + "MethodBind, GetPtr(this)" + callArguments + ")";
 	if (methodInfo.m_returnInfo.m_type == Variant::Type::Bool)
 	{
 		methodCall += ".ToBool()";
@@ -289,13 +290,14 @@ std::string GenerateNativeCallFunction(NativeCallInfo const& nativeCall)
 		argumentPointers += "&" + argumentName;
 	}
 
-	bool const hasReturnValue = nativeCall.m_returnType != "void";
+	bool const  hasReturnValue         = nativeCall.m_returnType != "void";
 	std::string returnValueDeclaration = hasReturnValue ? "\t\t" + nativeCall.m_returnType + " ret;\n\n" : "";
 	std::string argumentsArrayDeclaration;
 	if (!nativeCall.m_argumentTypes.empty())
 	{
-		argumentsArrayDeclaration = "\t\tvoid** args = stackalloc void*[" +
-			std::to_string(nativeCall.m_argumentTypes.size()) + "] { " + argumentPointers + " };\n\n";
+		argumentsArrayDeclaration = "\t\tvoid** args = stackalloc void*["
+									+ std::to_string(nativeCall.m_argumentTypes.size()) + "] { " + argumentPointers
+									+ " };\n\n";
 	}
 
 	std::string source = NativeCallFunctionTemplate;
@@ -381,7 +383,7 @@ bool CSharpScriptGenerator::GenerateCSharpBindings(std::filesystem::path const& 
 		return false;
 	}
 
-	std::vector<ClassInfo const*> const classes = ClassDatabase::GetRegisteredClasses(true);
+	std::vector<ClassInfo const*> const   classes = ClassDatabase::GetRegisteredClasses(true);
 	std::map<std::string, NativeCallInfo> nativeCalls;
 	std::vector<std::string>              skippedNativeCalls;
 	for (ClassInfo const* classInfo : classes)

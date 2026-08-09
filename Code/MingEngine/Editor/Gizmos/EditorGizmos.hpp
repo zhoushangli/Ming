@@ -4,7 +4,7 @@
 #include "MingEngine/Scene/Core/Node.hpp"
 #include "MingEngine/Scene/Core/NodeHandle.hpp"
 
-#include "MingEngine/Core/Math/Vec2.hpp"
+#include "MingEngine/Core/Math/Vector2.hpp"
 
 #include <array>
 
@@ -21,17 +21,16 @@ public:
 	~EditorGizmos() override;
 
 	// --- Gizmo event routing ---
-	void OnMouseMove(Camera3D const& camera, Vec2 screenPos);
-	bool BeginDragHovered(Camera3D const& camera, Vec2 screenPos);
-	void OnDrag(Camera3D const& camera, Vec2 screenPos);
+	void OnMouseMove(Camera3D const& camera, Vector2 screenPos);
+	bool BeginDragHovered(Camera3D const& camera, Vector2 screenPos);
+	void OnDrag(Camera3D const& camera, Vector2 screenPos);
 	void OnEndDrag();
 	bool IsHovered() const;
 	bool IsDragging() const;
 
 private:
-	EditorWorldGrid3D* m_worldGrid         = nullptr;
-	std::array<EditorWorldAxis3D*, 6> m_worldAxises = {};
-	TransformGizmo3D* m_transformGizmo     = nullptr;
-	ViewportAxisIndicator* m_axisIndicator = nullptr;
+	EditorWorldGrid3D*                m_worldGrid      = nullptr;
+	std::array<EditorWorldAxis3D*, 6> m_worldAxises    = {};
+	TransformGizmo3D*                 m_transformGizmo = nullptr;
+	ViewportAxisIndicator*            m_axisIndicator  = nullptr;
 };
-

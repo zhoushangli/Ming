@@ -106,12 +106,12 @@ Color NamedStrings::GetValue(std::string const& keyName, Color const& defaultVal
 	return defaultValue;
 }
 
-Vec2 NamedStrings::GetValue(std::string const& keyName, Vec2 const& defaultValue) const
+Vector2 NamedStrings::GetValue(std::string const& keyName, Vector2 const& defaultValue) const
 {
 	auto iter = m_keyValuePairs.find(keyName);
 	if (iter != m_keyValuePairs.end())
 	{
-		Vec2 result = defaultValue;
+		Vector2 result = defaultValue;
 		result.SetFromText(iter->second.c_str());
 		return result;
 	}

@@ -3,13 +3,13 @@
 #include "CameraContext.hpp"
 #include "MingEngine/Core/Math/MathUtils.hpp"
 #include "MingEngine/Core/Math/Matrix4x4.hpp"
-#include "MingEngine/Core/Math/Vec2.hpp"
-#include "MingEngine/Core/Math/Vec3.hpp"
+#include "MingEngine/Core/Math/Vector2.hpp"
+#include "MingEngine/Core/Math/Vector3.hpp"
 
 using namespace Math;
 
 void CameraContext::SetOrthogonal(
-	Vec2 const& bottomLeft, Vec2 const& topRight, float near /*= 0.0f*/, float far /*= 1.0f*/)
+	Vector2 const& bottomLeft, Vector2 const& topRight, float near /*= 0.0f*/, float far /*= 1.0f*/)
 {
 	m_mode = Orthographic;
 
@@ -35,15 +35,15 @@ void CameraContext::SetTransform(const Matrix4x4& cameraToWorld)
 	m_orientation.SetFromMatrix_IFwd_JLeft_KUp(cameraToWorld);
 }
 
-void CameraContext::SetPositionAndOrientation(const Vec3& position, const EulerAngles& orientation)
+void CameraContext::SetPositionAndOrientation(const Vector3& position, const EulerAngles& orientation)
 {
 	m_position    = position;
 	m_orientation = orientation;
 }
 
-void CameraContext::SetPosition(const Vec3& position) { m_position = position; }
+void CameraContext::SetPosition(const Vector3& position) { m_position = position; }
 
-Vec3 CameraContext::GetPosition() const { return m_position; }
+Vector3 CameraContext::GetPosition() const { return m_position; }
 
 void CameraContext::SetOrientation(const EulerAngles& orientation) { m_orientation = orientation; }
 
@@ -80,11 +80,11 @@ Matrix4x4 CameraContext::GetClipToCameraTransform() const
 	return renderToCamera;
 }
 
-Vec2 CameraContext::GetOrthographicBottomLeft() const { return m_orthographicBottomLeft; }
+Vector2 CameraContext::GetOrthographicBottomLeft() const { return m_orthographicBottomLeft; }
 
-Vec2 CameraContext::GetOrthographicTopRight() const { return m_orthographicTopRight; }
+Vector2 CameraContext::GetOrthographicTopRight() const { return m_orthographicTopRight; }
 
-void CameraContext::Translate2D(Vec2 const& translation)
+void CameraContext::Translate2D(Vector2 const& translation)
 {
 	m_position.x += translation.x;
 	m_position.y += translation.y;

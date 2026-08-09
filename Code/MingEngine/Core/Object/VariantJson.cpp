@@ -56,8 +56,8 @@ bool TrySerialize(Variant const& value, Json& outJson)
 		return true;
 	case Variant::Type::Vec3:
 	{
-		Vec3 const& vector = value.As<Vec3>();
-		outJson            = Json::array({ vector.x, vector.y, vector.z });
+		Vector3 const& vector = value.As<Vector3>();
+		outJson               = Json::array({ vector.x, vector.y, vector.z });
 		return true;
 	}
 	case Variant::Type::EulerAngles:
@@ -154,7 +154,7 @@ bool TryDeserialize(Json const& json, Variant::Type expectedType, Variant& outVa
 		case Variant::Type::Vec3:
 			if (IsNumberArray(json, 3))
 			{
-				outValue = Variant(Vec3(json[0].get<float>(), json[1].get<float>(), json[2].get<float>()));
+				outValue = Variant(Vector3(json[0].get<float>(), json[1].get<float>(), json[2].get<float>()));
 				return true;
 			}
 			break;
@@ -180,7 +180,8 @@ bool TryDeserialize(Json const& json, Variant::Type expectedType, Variant& outVa
 		case Variant::Type::Color:
 			if (IsNumberArray(json, 4))
 			{
-				outValue = Variant(Color(json[0].get<float>(), json[1].get<float>(), json[2].get<float>(), json[3].get<float>()));
+				outValue = Variant(
+					Color(json[0].get<float>(), json[1].get<float>(), json[2].get<float>(), json[3].get<float>()));
 				return true;
 			}
 			break;

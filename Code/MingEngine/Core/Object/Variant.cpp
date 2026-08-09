@@ -5,9 +5,9 @@ Variant::Variant(int value) : m_value(value), m_type(Type::Int) {}
 Variant::Variant(float value) : m_value(value), m_type(Type::Float) {}
 Variant::Variant(char const* value) : m_value(std::string(value)), m_type(Type::String) {}
 Variant::Variant(std::string const& value) : m_value(value), m_type(Type::String) {}
-Variant::Variant(Vec2 const& value) : m_value(value), m_type(Type::Vec2) {}
-Variant::Variant(Vec3 const& value) : m_value(value), m_type(Type::Vec3) {}
-Variant::Variant(Vec4 const& value) : m_value(value), m_type(Type::Vec4) {}
+Variant::Variant(Vector2 const& value) : m_value(value), m_type(Type::Vec2) {}
+Variant::Variant(Vector3 const& value) : m_value(value), m_type(Type::Vec3) {}
+Variant::Variant(Vector4 const& value) : m_value(value), m_type(Type::Vec4) {}
 Variant::Variant(Color const& value) : m_value(value), m_type(Type::Color) {}
 Variant::Variant(AABB2 const& value) : m_value(value), m_type(Type::AABB2) {}
 Variant::Variant(OBB2 const& value) : m_value(value), m_type(Type::OBB2) {}
@@ -40,11 +40,11 @@ bool Variant::operator==(Variant const& other) const
 	case Type::String:
 		return As<std::string>() == other.As<std::string>();
 	case Type::Vec2:
-		return As<Vec2>() == other.As<Vec2>();
+		return As<Vector2>() == other.As<Vector2>();
 	case Type::Vec3:
-		return As<Vec3>() == other.As<Vec3>();
+		return As<Vector3>() == other.As<Vector3>();
 	case Type::Vec4:
-		return As<Vec4>() == other.As<Vec4>();
+		return As<Vector4>() == other.As<Vector4>();
 	case Type::Color:
 		return As<Color>() == other.As<Color>();
 	case Type::AABB2:

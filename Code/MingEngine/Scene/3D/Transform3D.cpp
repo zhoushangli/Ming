@@ -9,7 +9,7 @@ namespace
 {
 constexpr float kScaleEpsilon = 1e-5f;
 
-void GuaranteeScaleIsInvertible(Vec3 const& scale)
+void GuaranteeScaleIsInvertible(Vector3 const& scale)
 {
 	GUARANTEE_OR_DIE(
 		Abs(scale.x) > kScaleEpsilon && Abs(scale.y) > kScaleEpsilon && Abs(scale.z) > kScaleEpsilon,
@@ -37,7 +37,7 @@ Matrix4x4 Transform3D::GetInverseMatrix() const
 	{
 		GuaranteeScaleIsInvertible(m_scale);
 
-		Vec3 const inverseScale = Vec3(1.f / m_scale.x, 1.f / m_scale.y, 1.f / m_scale.z);
+		Vector3 const inverseScale = Vector3(1.f / m_scale.x, 1.f / m_scale.y, 1.f / m_scale.z);
 
 		Matrix4x4 inverseRotation = m_orientation.GetAsMatrix_IFwd_JLeft_KUp();
 		inverseRotation.Transpose();
@@ -54,12 +54,12 @@ Matrix4x4 Transform3D::GetInverseMatrix() const
 
 void Transform3D::SetMatrix(Matrix4x4 const& transform)
 {
-	Vec3 iBasis = transform.GetIBasis3D();
-	Vec3 jBasis = transform.GetJBasis3D();
-	Vec3 kBasis = transform.GetKBasis3D();
+	Vector3 iBasis = transform.GetIBasis3D();
+	Vector3 jBasis = transform.GetJBasis3D();
+	Vector3 kBasis = transform.GetKBasis3D();
 
 	m_position = transform.GetTranslation3D();
-	m_scale    = Vec3(iBasis.GetLength(), jBasis.GetLength(), kBasis.GetLength());
+	m_scale    = Vector3(iBasis.GetLength(), jBasis.GetLength(), kBasis.GetLength());
 
 	GuaranteeScaleIsInvertible(m_scale);
 
@@ -67,7 +67,7 @@ void Transform3D::SetMatrix(Matrix4x4 const& transform)
 	jBasis /= m_scale.y;
 	kBasis /= m_scale.z;
 
-	Matrix4x4 rotationMatrix(iBasis, jBasis, kBasis, Vec3::Zero);
+	Matrix4x4 rotationMatrix(iBasis, jBasis, kBasis, Vector3::Zero);
 	m_orientation.SetFromMatrix_IFwd_JLeft_KUp(rotationMatrix);
 
 	m_matrix               = transform;
@@ -75,19 +75,19 @@ void Transform3D::SetMatrix(Matrix4x4 const& transform)
 	m_isInverseMatrixDirty = true;
 }
 
-Vec3 Transform3D::GetPosition() const { return m_position; }
+Vector3 Transform3D::GetPosition() const { return m_position; }
 
-Vec3 Transform3D::GetScale() const { return m_scale; }
+Vector3 Transform3D::GetScale() const { return m_scale; }
 
 EulerAngles Transform3D::GetOrientation() const { return m_orientation; }
 
-void Transform3D::SetPosition(Vec3 const& position)
+void Transform3D::SetPosition(Vector3 const& position)
 {
 	m_position = position;
 	MarkDirty();
 }
 
-void Transform3D::SetScale(Vec3 const& scale)
+void Transform3D::SetScale(Vector3 const& scale)
 {
 	m_scale = scale;
 	MarkDirty();

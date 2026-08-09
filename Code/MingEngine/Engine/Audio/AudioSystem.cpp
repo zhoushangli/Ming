@@ -39,21 +39,18 @@ void AudioSystem::EndFrame() {}
 
 struct AudioSystemImpl
 {
-	ma_engine                                          m_engine{};
-	bool                                               m_isInitialized = false;
-	std::map<std::string, SoundID>                     m_registeredSoundIDs;
-	std::vector<std::string>                           m_registeredSoundPaths;
+	ma_engine                                            m_engine{};
+	bool                                                 m_isInitialized = false;
+	std::map<std::string, SoundID>                       m_registeredSoundIDs;
+	std::vector<std::string>                             m_registeredSoundPaths;
 	std::map<SoundPlaybackID, std::unique_ptr<ma_sound>> m_activeSounds;
-	SoundPlaybackID                                    m_nextPlaybackID = 0;
+	SoundPlaybackID                                      m_nextPlaybackID = 0;
 };
 
 namespace
 {
 
-ma_vec3f EngineToAudioPosition(Vec3 const& position)
-{
-	return ma_vec3f{ -position.y, position.z, -position.x };
-}
+ma_vec3f EngineToAudioPosition(Vector3 const& position) { return ma_vec3f{ -position.y, position.z, -position.x }; }
 
 bool CheckMiniaudioResult(ma_result result, char const* operation)
 {
@@ -85,7 +82,7 @@ ma_sound* FindActiveSound(AudioSystemImpl* impl, SoundPlaybackID soundPlaybackID
 SoundPlaybackID AllocatePlaybackID(AudioSystemImpl& impl)
 {
 	while (impl.m_nextPlaybackID == MissingSoundId
-		|| impl.m_activeSounds.find(impl.m_nextPlaybackID) != impl.m_activeSounds.end())
+		   || impl.m_activeSounds.find(impl.m_nextPlaybackID) != impl.m_activeSounds.end())
 		++impl.m_nextPlaybackID;
 
 	return impl.m_nextPlaybackID++;
@@ -94,7 +91,7 @@ SoundPlaybackID AllocatePlaybackID(AudioSystemImpl& impl)
 SoundPlaybackID StartSoundInternal(
 	AudioSystemImpl& impl,
 	SoundID          soundID,
-	Vec3 const*      soundPosition,
+	Vector3 const*   soundPosition,
 	bool             isLooped,
 	float            volume,
 	float            balance,
@@ -111,7 +108,12 @@ SoundPlaybackID StartSoundInternal(
 
 	auto      sound  = std::make_unique<ma_sound>();
 	ma_result result = ma_sound_init_from_file(
-		&impl.m_engine, impl.m_registeredSoundPaths[soundID].c_str(), flags, nullptr, nullptr, sound.get());
+		&impl.m_engine,
+		impl.m_registeredSoundPaths[soundID].c_str(),
+		flags,
+		nullptr,
+		nullptr,
+		sound.get());
 	if (!CheckMiniaudioResult(result, "initialize sound playback"))
 		return MissingSoundId;
 
@@ -160,8 +162,8 @@ void AudioSystem::Startup()
 	int const listenerCount = std::clamp(m_config.m_listenerCount, 1, static_cast<int>(MA_ENGINE_MAX_LISTENERS));
 	if (listenerCount != m_config.m_listenerCount)
 	{
-		ERROR_RECOVERABLE(Stringf(
-			"AudioSystem: listener count %i is invalid; using %i", m_config.m_listenerCount, listenerCount));
+		ERROR_RECOVERABLE(
+			Stringf("AudioSystem: listener count %i is invalid; using %i", m_config.m_listenerCount, listenerCount));
 	}
 
 	ma_engine_config engineConfig = ma_engine_config_init();
@@ -190,7 +192,8 @@ void AudioSystem::Shutdown()
 		for (std::string const& soundPath : m_impl->m_registeredSoundPaths)
 		{
 			CheckMiniaudioResult(
-				ma_resource_manager_unregister_file(resourceManager, soundPath.c_str()), "unregister sound resource");
+				ma_resource_manager_unregister_file(resourceManager, soundPath.c_str()),
+				"unregister sound resource");
 		}
 	}
 
@@ -236,18 +239,19 @@ SoundID AudioSystem::CreateOrGetSound(std::string const& soundFilePath)
 		return MissingSoundId;
 
 	ma_result const result = ma_resource_manager_register_file(
-		resourceManager, soundFilePath.c_str(), MA_RESOURCE_MANAGER_DATA_SOURCE_FLAG_DECODE);
+		resourceManager,
+		soundFilePath.c_str(),
+		MA_RESOURCE_MANAGER_DATA_SOURCE_FLAG_DECODE);
 	if (!CheckMiniaudioResult(result, "register sound resource"))
 		return MissingSoundId;
 
-	SoundID const soundID                        = m_impl->m_registeredSoundPaths.size();
+	SoundID const soundID                       = m_impl->m_registeredSoundPaths.size();
 	m_impl->m_registeredSoundIDs[soundFilePath] = soundID;
 	m_impl->m_registeredSoundPaths.push_back(soundFilePath);
 	return soundID;
 }
 
-SoundPlaybackID AudioSystem::StartSound(
-	SoundID soundID, bool isLooped, float volume, float balance, float speed)
+SoundPlaybackID AudioSystem::StartSound(SoundID soundID, bool isLooped, float volume, float balance, float speed)
 {
 	if (m_impl == nullptr)
 		return MissingSoundId;
@@ -288,7 +292,7 @@ void AudioSystem::SetSoundPlaybackSpeed(SoundPlaybackID soundPlaybackID, float s
 }
 
 void AudioSystem::UpdateListener(
-	int listenerIndex, Vec3 const& listenerPosition, Vec3 const& listenerForward, Vec3 const& listenerUp)
+	int listenerIndex, Vector3 const& listenerPosition, Vector3 const& listenerForward, Vector3 const& listenerUp)
 {
 	if (m_impl == nullptr || !m_impl->m_isInitialized || listenerIndex < 0
 		|| listenerIndex >= static_cast<int>(ma_engine_get_listener_count(&m_impl->m_engine)))
@@ -302,31 +306,46 @@ void AudioSystem::UpdateListener(
 	ma_vec3f const up       = EngineToAudioPosition(listenerUp);
 
 	ma_engine_listener_set_position(
-		&m_impl->m_engine, static_cast<ma_uint32>(listenerIndex), position.x, position.y, position.z);
+		&m_impl->m_engine,
+		static_cast<ma_uint32>(listenerIndex),
+		position.x,
+		position.y,
+		position.z);
 	ma_engine_listener_set_direction(
-		&m_impl->m_engine, static_cast<ma_uint32>(listenerIndex), forward.x, forward.y, forward.z);
-	ma_engine_listener_set_world_up(
-		&m_impl->m_engine, static_cast<ma_uint32>(listenerIndex), up.x, up.y, up.z);
+		&m_impl->m_engine,
+		static_cast<ma_uint32>(listenerIndex),
+		forward.x,
+		forward.y,
+		forward.z);
+	ma_engine_listener_set_world_up(&m_impl->m_engine, static_cast<ma_uint32>(listenerIndex), up.x, up.y, up.z);
 }
 
 SoundPlaybackID AudioSystem::StartSoundAt(
-	SoundID     soundID,
-	Vec3 const& soundPosition,
-	bool        isLooped,
-	float       volume,
-	float       balance,
-	float       speed,
-	float       minDistance,
-	float       maxDistance)
+	SoundID        soundID,
+	Vector3 const& soundPosition,
+	bool           isLooped,
+	float          volume,
+	float          balance,
+	float          speed,
+	float          minDistance,
+	float          maxDistance)
 {
 	if (m_impl == nullptr)
 		return MissingSoundId;
 
 	return StartSoundInternal(
-		*m_impl, soundID, &soundPosition, isLooped, volume, balance, speed, minDistance, maxDistance);
+		*m_impl,
+		soundID,
+		&soundPosition,
+		isLooped,
+		volume,
+		balance,
+		speed,
+		minDistance,
+		maxDistance);
 }
 
-void AudioSystem::SetSoundPosition(SoundPlaybackID soundPlaybackID, Vec3 const& soundPosition)
+void AudioSystem::SetSoundPosition(SoundPlaybackID soundPlaybackID, Vector3 const& soundPosition)
 {
 	ma_sound* sound = FindActiveSound(m_impl, soundPlaybackID, "set sound position");
 	if (sound == nullptr)

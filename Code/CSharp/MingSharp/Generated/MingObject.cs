@@ -1,4 +1,4 @@
-namespace MingSharp;
+namespace Ming;
 
 public class MingObject
 {

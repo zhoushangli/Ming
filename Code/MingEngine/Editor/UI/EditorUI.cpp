@@ -48,24 +48,24 @@ void EditorUI::Render(EditorUIContext& context)
 	m_warningPopup.Render(context);
 
 	ApplyDragDropCursor();
-	
-	ImGuiPayload const* payload = ImGui::GetDragDropPayload();
-	bool isDragging = payload != nullptr && payload->IsDataType(EditorDragDrop::PayloadType);
+
+	ImGuiPayload const* payload    = ImGui::GetDragDropPayload();
+	bool                isDragging = payload != nullptr && payload->IsDataType(EditorDragDrop::PayloadType);
 
 	dragDrop.EndFrame(isDragging);
 }
 
 void EditorUI::Warning(std::string const& title, std::string const& message) { m_warningPopup.Open(title, message); }
 
-void EditorUI::SetViewportRect(Vec2 origin, Vec2 dims)
+void EditorUI::SetViewportRect(Vector2 origin, Vector2 dims)
 {
 	m_viewportOrigin = origin;
 	m_viewportDims   = dims;
 }
 
-Vec2 EditorUI::GetViewportOrigin() const { return m_viewportOrigin; }
-Vec2 EditorUI::GetViewportDimensions() const { return m_viewportDims; }
-Vec2 EditorUI::ToViewportPos(Vec2 windowPos) const { return windowPos - m_viewportOrigin; }
+Vector2 EditorUI::GetViewportOrigin() const { return m_viewportOrigin; }
+Vector2 EditorUI::GetViewportDimensions() const { return m_viewportDims; }
+Vector2 EditorUI::ToViewportPos(Vector2 windowPos) const { return windowPos - m_viewportOrigin; }
 
 void EditorUI::ApplyDragDropCursor()
 {

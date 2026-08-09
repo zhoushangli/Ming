@@ -36,12 +36,12 @@ GPUTexture::~GPUTexture()
 
 // SpriteDefinition
 SpriteDefinition::SpriteDefinition(
-	SpriteSheet const& spriteSheet, int spriteIndex, Vec2 const& uvAtMins, Vec2 const& uvAtMaxs)
+	SpriteSheet const& spriteSheet, int spriteIndex, Vector2 const& uvAtMins, Vector2 const& uvAtMaxs)
 	: m_spriteSheet(spriteSheet), m_spriteIndex(spriteIndex), m_uvAtMins(uvAtMins), m_uvAtMaxs(uvAtMaxs)
 {
 }
 
-void SpriteDefinition::GetUVs(Vec2& out_uvAtMins, Vec2& out_uvAtMaxs) const
+void SpriteDefinition::GetUVs(Vector2& out_uvAtMins, Vector2& out_uvAtMaxs) const
 {
 	out_uvAtMins = m_uvAtMins;
 	out_uvAtMaxs = m_uvAtMaxs;
@@ -73,17 +73,17 @@ SpriteSheet::SpriteSheet(GPUTexture* colorTexture, IntVec2 const& dimension)
 	float cellWidth  = 1.0f / static_cast<float>(dimension.x);
 	float cellHeight = 1.0f / static_cast<float>(dimension.y);
 
-	float texelWidth  = 1.0f / static_cast<float>(m_colorTexture->GetDimensions().x);
-	float texelHeight = 1.0f / static_cast<float>(m_colorTexture->GetDimensions().y);
-	Vec2  texelOffset(texelWidth / 128.f, texelHeight / 128.f);
+	float   texelWidth  = 1.0f / static_cast<float>(m_colorTexture->GetDimensions().x);
+	float   texelHeight = 1.0f / static_cast<float>(m_colorTexture->GetDimensions().y);
+	Vector2 texelOffset(texelWidth / 128.f, texelHeight / 128.f);
 
 	for (int y = dimension.y - 1; y >= 0; --y)
 	{
 		for (int x = 0; x < dimension.x; ++x)
 		{
-			int  spriteIndex = y * dimension.x + x;
-			Vec2 uvMins(cellWidth * x, cellHeight * y);
-			Vec2 uvMaxs(cellWidth * (x + 1), cellHeight * (y + 1));
+			int     spriteIndex = y * dimension.x + x;
+			Vector2 uvMins(cellWidth * x, cellHeight * y);
+			Vector2 uvMaxs(cellWidth * (x + 1), cellHeight * (y + 1));
 			uvMins += texelOffset;
 			uvMaxs -= texelOffset;
 			m_spriteDefs.emplace_back(*this, spriteIndex, uvMins, uvMaxs);
@@ -97,7 +97,7 @@ int SpriteSheet::GetNumSprites() const { return static_cast<int>(m_spriteDefs.si
 
 SpriteDefinition const& SpriteSheet::GetSpriteDef(int spriteIndex) const { return m_spriteDefs[spriteIndex]; }
 
-void SpriteSheet::GetSpriteUVs(Vec2& out_uvAtMins, Vec2& out_uvAtMaxs, int spriteIndex) const
+void SpriteSheet::GetSpriteUVs(Vector2& out_uvAtMins, Vector2& out_uvAtMaxs, int spriteIndex) const
 {
 	m_spriteDefs[spriteIndex].GetUVs(out_uvAtMins, out_uvAtMaxs);
 }

@@ -84,7 +84,7 @@ EditorNode::EditorNode()
 
 	m_editorCamera = new EditorCamera();
 	m_editorCamera->SetName("EditorCamera");
-	m_editorCamera->SetLocalPosition(Vec3(5.f, 5.f, 5.f));
+	m_editorCamera->SetLocalPosition(Vector3(5.f, 5.f, 5.f));
 	m_editorCamera->SetLocalOrientation(EulerAngles(-135.f, 45.f, 0.f));
 	m_editorCamera->SetSerializable(false);
 	AddNode(m_editorCamera);
@@ -115,7 +115,7 @@ EditorSelection& EditorNode::GetSelection() { return m_selection; }
 
 EditorSelection const& EditorNode::GetSelection() const { return m_selection; }
 
-void EditorNode::OnMouseMove(Vec2 screenPos, [[maybe_unused]] Vec2 delta)
+void EditorNode::OnMouseMove(Vector2 screenPos, [[maybe_unused]] Vector2 delta)
 {
 	if (m_editorGizmos == nullptr || m_editorCamera == nullptr)
 	{
@@ -138,7 +138,7 @@ void EditorNode::OnMouseMove(Vec2 screenPos, [[maybe_unused]] Vec2 delta)
 	}
 }
 
-void EditorNode::OnMouseDown(int keyCode, Vec2 screenPos)
+void EditorNode::OnMouseDown(int keyCode, Vector2 screenPos)
 {
 	if (!(g_engine->m_imguiSystem->WantCaptureMouse() && m_uiContext.m_isViewportImageHovered))
 	{
@@ -169,8 +169,8 @@ void EditorNode::OnMouseDown(int keyCode, Vec2 screenPos)
 	}
 
 	// 2) Gizmo didn't eat — try scene selection
-	Vec2 mousePos           = screenPos;
-	Vec2 viewportDimensions = Vec2(g_engine->m_windowSystem->GetClientDimensions());
+	Vector2 mousePos           = screenPos;
+	Vector2 viewportDimensions = Vector2(g_engine->m_windowSystem->GetClientDimensions());
 	if (m_editorUI != nullptr)
 	{
 		mousePos           = m_editorUI->ToViewportPos(screenPos);
@@ -191,7 +191,7 @@ void EditorNode::OnMouseDown(int keyCode, Vec2 screenPos)
 	}
 }
 
-void EditorNode::OnMouseUp(int keyCode, [[maybe_unused]] Vec2 screenPos)
+void EditorNode::OnMouseUp(int keyCode, [[maybe_unused]] Vector2 screenPos)
 {
 	if (keyCode != ToKeyCode(KeyCode::LeftMouse))
 	{
@@ -235,8 +235,8 @@ void EditorNode::OnProcess([[maybe_unused]] float deltaSeconds)
 	// 1) Dispatch mouse events when in Pointer mode
 	if (m_editorCamera != nullptr && m_editorCamera->GetControlState() == EditorCamera::EditorControlState::Pointer)
 	{
-		Vec2 const cursorPos = m_editorCamera->GetCursorClientPos();
-		Vec2 const delta     = m_editorCamera->GetCursorDelta();
+		Vector2 const cursorPos = m_editorCamera->GetCursorClientPos();
+		Vector2 const delta     = m_editorCamera->GetCursorDelta();
 
 		OnMouseMove(cursorPos, delta);
 
@@ -353,9 +353,7 @@ bool EditorNode::HasScene() const { return GetSceneTree() != nullptr && GetScene
 
 std::string EditorNode::GetCurrentSceneName() const
 {
-	return !m_editorData.m_currentScenePath.IsValid()
-			   ? std::string()
-			   : m_editorData.m_currentScenePath.GetStem();
+	return !m_editorData.m_currentScenePath.IsValid() ? std::string() : m_editorData.m_currentScenePath.GetStem();
 }
 
 bool EditorNode::CreateScene(VirtualPath const& virtualPath, std::string const& rootName)
@@ -424,7 +422,7 @@ void EditorNode::RenderUnsavedScenePopup()
 	else if (cancel)
 	{
 		m_pendingSceneAction = PendingSceneAction::None;
-		m_pendingScenePath = {};
+		m_pendingScenePath   = {};
 		m_pendingSceneRootName.clear();
 		ImGui::CloseCurrentPopup();
 	}
@@ -452,7 +450,7 @@ void EditorNode::ExecutePendingSceneAction()
 	if (!result && action != PendingSceneAction::None && m_editorUI != nullptr)
 	{
 		m_editorUI->Warning(
-			action == PendingSceneAction::Load ? "Open Scene Failed" : "Create Scene Failed", path.GetString());
+			action == PendingSceneAction::Load ? "Open Scene Failed" : "Create Scene Failed",
+			path.GetString());
 	}
 }
-

@@ -24,7 +24,7 @@ Matrix4x4 OBJImportMatrix = Matrix4x4(
 
 std::vector<ImportOptions> const kOBJImportOptions = {
 	{ PropertyInfo(Variant::Type::Bool, "Generate Tangents", PropertyInfo::Hint::None, "", PropertyInfo::UsageFlags::Default), Variant(true) },
-	{ PropertyInfo(Variant::Type::Vec3, "Scale Mesh", 		 PropertyInfo::Hint::None, "", PropertyInfo::UsageFlags::Default), Variant(Vec3::One) },
+	{ PropertyInfo(Variant::Type::Vec3, "Scale Mesh", 		 PropertyInfo::Hint::None, "", PropertyInfo::UsageFlags::Default), Variant(Vector3::One) },
 };
 
 // clang-format on
@@ -61,11 +61,11 @@ struct FaceData
 struct OBJData
 {
 	// Source Data
-	std::string       m_name;
-	VirtualPath       m_mtlVirtualPath;
-	std::vector<Vec3> m_positions;
-	std::vector<Vec3> m_normals;
-	std::vector<Vec2> m_texCoords;
+	std::string          m_name;
+	VirtualPath          m_mtlVirtualPath;
+	std::vector<Vector3> m_positions;
+	std::vector<Vector3> m_normals;
+	std::vector<Vector2> m_texCoords;
 
 	// Engine Data
 	std::vector<Vertex>   m_vertices;
@@ -212,9 +212,7 @@ bool ParseOBJFile(VirtualPath const& sourceVirtualPath, OBJData& outData)
 
 	auto ParseMTLVirtualPath =
 		[](VirtualPath const& objVirtualPath, std::string const& mtlPath, VirtualPath& outMtlVirtualPath) -> bool
-	{
-		return objVirtualPath.TryResolveRelative(mtlPath, outMtlVirtualPath);
-	};
+	{ return objVirtualPath.TryResolveRelative(mtlPath, outMtlVirtualPath); };
 
 	ClearOutput();
 
@@ -483,9 +481,9 @@ bool ParseMTLFile(VirtualPath const& sourceVirtualPath, MTLData& outMaterials)
 	auto ClearOutput = [&outMaterials]()
 	{
 		outMaterials.m_name.clear();
-		outMaterials.m_diffuseTexturePath = {};
+		outMaterials.m_diffuseTexturePath  = {};
 		outMaterials.m_specularTexturePath = {};
-		outMaterials.m_normalTexturePath = {};
+		outMaterials.m_normalTexturePath   = {};
 	};
 
 	auto TrimWhitespace = [](std::string const& text) -> std::string
@@ -526,8 +524,8 @@ bool ParseMTLFile(VirtualPath const& sourceVirtualPath, MTLData& outMaterials)
 		return tokens;
 	};
 
-	auto ResolveTextureVirtualPath = [](
-		VirtualPath const& materialVirtualPath, std::string const& texturePath) -> VirtualPath
+	auto ResolveTextureVirtualPath = [](VirtualPath const& materialVirtualPath,
+										std::string const& texturePath) -> VirtualPath
 	{
 		VirtualPath resolvedPath;
 		materialVirtualPath.TryResolveRelative(texturePath, resolvedPath);
@@ -631,7 +629,7 @@ Ref<Resource> OBJImporter::Import(
 {
 	bool const generateTangents =
 		GetImportOptionValue(importOptions, "Generate Tangents", Variant::Type::Bool).As<bool>();
-	Vec3 const scaleMesh = GetImportOptionValue(importOptions, "Scale Mesh", Variant::Type::Vec3).As<Vec3>();
+	Vector3 const scaleMesh = GetImportOptionValue(importOptions, "Scale Mesh", Variant::Type::Vec3).As<Vector3>();
 
 	OBJData objData;
 	if (!ParseOBJFile(sourceVirtualPath, objData))
@@ -649,7 +647,7 @@ Ref<Resource> OBJImporter::Import(
 		Vertex const& vertex = objData.m_vertices[vertexIndex];
 		surfaceTool.SetColor(vertex.m_color);
 		surfaceTool.SetUV(vertex.m_uv);
-		surfaceTool.SetNormal(objData.m_allFaceVerticesHaveNormals ? vertex.m_normal : Vec3::Zero);
+		surfaceTool.SetNormal(objData.m_allFaceVerticesHaveNormals ? vertex.m_normal : Vector3::Zero);
 		surfaceTool.SetTangent(vertex.m_tangent);
 		surfaceTool.SetBitangent(vertex.m_bitangent);
 		surfaceTool.SetSmoothingGroup(objData.m_smoothingGroups[vertexIndex]);

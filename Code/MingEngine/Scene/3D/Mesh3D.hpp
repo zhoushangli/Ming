@@ -4,7 +4,7 @@
 #include "MingEngine/Core/Math/EulerAngles.hpp"
 #include "MingEngine/Core/Math/Matrix4x4.hpp"
 #include "MingEngine/Core/Math/Triangle3.hpp"
-#include "MingEngine/Core/Math/Vec3.hpp"
+#include "MingEngine/Core/Math/Vector3.hpp"
 #include "MingEngine/Core/Render/Rgba8.hpp"
 #include "MingEngine/Scene/3D/VisualizeInstance3D.hpp"
 #include "MingEngine/Scene/Core/RaycastSpace3D.hpp"

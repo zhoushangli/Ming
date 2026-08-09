@@ -1,4 +1,4 @@
-namespace MingSharp;
+namespace Ming;
 
 public static class MingBoolExtensions
 {
@@ -14,7 +14,7 @@ public static class MingBoolExtensions
 }
 
 // Bool is very special, for different platform, the size of bool is different
-// e.g. in x64 bool is 1 byte, but BOOL in Windows is 4 bytes, so we need to use a custom enum to represent bool in MingSharp
+// e.g. in x64 bool is 1 byte, but BOOL in Windows is 4 bytes, so we need to use a custom enum to represent bool in Ming
 public enum MingBool : byte
 {
     False = 0,

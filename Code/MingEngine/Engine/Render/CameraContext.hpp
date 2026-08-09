@@ -2,7 +2,7 @@
 
 #include "MingEngine/Core/Math/AABB2.hpp"
 #include "MingEngine/Core/Math/EulerAngles.hpp"
-#include "MingEngine/Core/Math/Vec2.hpp"
+#include "MingEngine/Core/Math/Vector2.hpp"
 
 class CameraContext
 {
@@ -14,13 +14,13 @@ public:
 		Count
 	};
 
-	void SetOrthogonal(Vec2 const& bottomLeft, Vec2 const& topRight, float near = 0.0f, float far = 1.0f);
+	void SetOrthogonal(Vector2 const& bottomLeft, Vector2 const& topRight, float near = 0.0f, float far = 1.0f);
 	void SetPerspective(float aspect, float fov, float near, float far);
 
 	void        SetTransform(const Matrix4x4& cameraToWorld);
-	void        SetPositionAndOrientation(const Vec3& position, const EulerAngles& orientation);
-	void        SetPosition(const Vec3& position);
-	Vec3        GetPosition() const;
+	void        SetPositionAndOrientation(const Vector3& position, const EulerAngles& orientation);
+	void        SetPosition(const Vector3& position);
+	Vector3     GetPosition() const;
 	void        SetOrientation(const EulerAngles& orientation);
 	EulerAngles GetOrientation() const;
 
@@ -34,9 +34,9 @@ public:
 	Matrix4x4 GetRenderToClipTransform() const;
 	Matrix4x4 GetClipToCameraTransform() const;
 
-	Vec2 GetOrthographicBottomLeft() const;
-	Vec2 GetOrthographicTopRight() const;
-	void Translate2D(Vec2 const& translation);
+	Vector2 GetOrthographicBottomLeft() const;
+	Vector2 GetOrthographicTopRight() const;
+	void    Translate2D(Vector2 const& translation);
 
 	Matrix4x4 GetOrthographicMatrix() const;
 	Matrix4x4 GetPerspectiveMatrix() const;
@@ -51,13 +51,13 @@ public:
 protected:
 	Mode m_mode = Orthographic;
 
-	Vec3        m_position    = Vec3::Zero;
+	Vector3     m_position    = Vector3::Zero;
 	EulerAngles m_orientation = EulerAngles::Zero;
 
-	Vec2  m_orthographicBottomLeft = Vec2::Zero;
-	Vec2  m_orthographicTopRight   = Vec2::Zero;
-	float m_orthographicNear       = 0.0f;
-	float m_orthographicFar        = 1.0f;
+	Vector2 m_orthographicBottomLeft = Vector2::Zero;
+	Vector2 m_orthographicTopRight   = Vector2::Zero;
+	float   m_orthographicNear       = 0.0f;
+	float   m_orthographicFar        = 1.0f;
 
 	float m_perspectiveAspect = 1.0f;
 	float m_perspectiveFOV    = 0.0f;
@@ -66,4 +66,3 @@ protected:
 
 	Matrix4x4 m_cameraToRenderTransform = Matrix4x4::Identity;
 };
-

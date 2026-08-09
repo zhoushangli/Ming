@@ -1,36 +1,36 @@
 #include "MingEngine/Core/Render/Vertex.hpp"
 
 Vertex::Vertex()
-	: m_position(0.f, 0.f, 0.f), m_color(Color()), m_uv(0.f, 0.f), m_tangent(Vec3::Zero), m_bitangent(Vec3::Zero),
-	  m_normal(Vec3::Zero)
+	: m_position(0.f, 0.f, 0.f), m_color(Color()), m_uv(0.f, 0.f), m_tangent(Vector3::Zero), m_bitangent(Vector3::Zero),
+	  m_normal(Vector3::Zero)
 {
 }
 
-Vertex::Vertex(Vec3 const& position)
-	: m_position(position), m_color(Color()), m_uv(0.f, 0.f), m_tangent(Vec3::Zero), m_bitangent(Vec3::Zero),
-	  m_normal(Vec3::Zero)
+Vertex::Vertex(Vector3 const& position)
+	: m_position(position), m_color(Color()), m_uv(0.f, 0.f), m_tangent(Vector3::Zero), m_bitangent(Vector3::Zero),
+	  m_normal(Vector3::Zero)
 {
 }
 
-Vertex::Vertex(Vec3 const& position, Color const& color)
-	: m_position(position), m_color(color), m_uv(0.f, 0.f), m_tangent(Vec3::Zero), m_bitangent(Vec3::Zero),
-	  m_normal(Vec3::Zero)
+Vertex::Vertex(Vector3 const& position, Color const& color)
+	: m_position(position), m_color(color), m_uv(0.f, 0.f), m_tangent(Vector3::Zero), m_bitangent(Vector3::Zero),
+	  m_normal(Vector3::Zero)
 {
 }
 
-Vertex::Vertex(Vec3 const& position, Color const& color, Vec2 const& uvTexCoords)
-	: m_position(position), m_color(color), m_uv(uvTexCoords), m_tangent(Vec3::Zero), m_bitangent(Vec3::Zero),
-	  m_normal(Vec3::Zero)
+Vertex::Vertex(Vector3 const& position, Color const& color, Vector2 const& uvTexCoords)
+	: m_position(position), m_color(color), m_uv(uvTexCoords), m_tangent(Vector3::Zero), m_bitangent(Vector3::Zero),
+	  m_normal(Vector3::Zero)
 {
 }
 
 Vertex::Vertex(
-	Vec3 const&  position,
-	Color const& color,
-	Vec2 const&  uvTexCoords,
-	Vec3 const&  tangent,
-	Vec3 const&  bitangent,
-	Vec3 const&  normal)
+	Vector3 const& position,
+	Color const&   color,
+	Vector2 const& uvTexCoords,
+	Vector3 const& tangent,
+	Vector3 const& bitangent,
+	Vector3 const& normal)
 	: m_position(position), m_color(color), m_uv(uvTexCoords), m_tangent(tangent), m_bitangent(bitangent),
 	  m_normal(normal)
 {

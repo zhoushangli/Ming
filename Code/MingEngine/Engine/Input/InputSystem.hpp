@@ -3,7 +3,7 @@
 #include "MingEngine/Engine/Application/SystemBase.hpp"
 
 #include "MingEngine/Core/Math/IntVec2.hpp"
-#include "MingEngine/Core/Math/Vec2.hpp"
+#include "MingEngine/Core/Math/Vector2.hpp"
 #include "MingEngine/Engine/Input/KeyboardState.hpp"
 #include "MingEngine/Engine/Input/XboxController.hpp"
 
@@ -77,7 +77,7 @@ public:
 	// Returns the cursor position, normalized to the range [0, 1], relative
 	// to the client region, with the y-axis inverted to map from Windows
 	// conventions to game screen camera conventions
-	Vec2 GetCursorNormalizedPosition() const;
+	Vector2 GetCursorNormalizedPosition() const;
 
 	void ClearCursorDelta();
 

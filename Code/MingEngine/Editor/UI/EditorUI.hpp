@@ -1,14 +1,14 @@
 #pragma once
 
-#include "MingEngine/Core/Math/Vec2.hpp"
+#include "MingEngine/Core/Math/Vector2.hpp"
 #include "MingEngine/Editor/UI/FileSystemPanel.hpp"
 #include "MingEngine/Editor/UI/ImportPanel.hpp"
 #include "MingEngine/Editor/UI/InspectorPanel.hpp"
 #include "MingEngine/Editor/UI/OutputPanel.hpp"
-#include "MingEngine/Editor/UI/ScenePanel.hpp"
-#include "MingEngine/Editor/UI/ViewportPanel.hpp"
 #include "MingEngine/Editor/UI/Popup/ProjectSettingsPopup.hpp"
 #include "MingEngine/Editor/UI/Popup/WarningPopup.hpp"
+#include "MingEngine/Editor/UI/ScenePanel.hpp"
+#include "MingEngine/Editor/UI/ViewportPanel.hpp"
 
 struct EditorUIContext;
 
@@ -20,10 +20,10 @@ public:
 	void Warning(std::string const& title, std::string const& message);
 
 	// Viewport rect — set every frame by ViewportPanel, consumed by EditorCamera / GizmoContext
-	void SetViewportRect(Vec2 origin, Vec2 dims);
-	Vec2 GetViewportOrigin() const;
-	Vec2 GetViewportDimensions() const;
-	Vec2 ToViewportPos(Vec2 windowPos) const;
+	void    SetViewportRect(Vector2 origin, Vector2 dims);
+	Vector2 GetViewportOrigin() const;
+	Vector2 GetViewportDimensions() const;
+	Vector2 ToViewportPos(Vector2 windowPos) const;
 
 	template <typename TPanel>
 	TPanel& GetPanel();
@@ -44,8 +44,8 @@ private:
 	ProjectSettingsPopup m_projectSettingsPopup;
 	WarningPopup         m_warningPopup;
 
-	Vec2 m_viewportOrigin = Vec2::Zero;
-	Vec2 m_viewportDims   = Vec2::Zero;
+	Vector2 m_viewportOrigin = Vector2::Zero;
+	Vector2 m_viewportDims   = Vector2::Zero;
 };
 
 template <>

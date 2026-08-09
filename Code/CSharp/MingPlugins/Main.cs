@@ -1,7 +1,7 @@
 ﻿using System.Runtime.InteropServices;
 using System.Text;
 
-using MingSharp;
+using Ming;
 
 namespace MingPlugins
 {
@@ -35,12 +35,10 @@ namespace MingPlugins
 
 				Node node = new Node();
 				string isReady = node.GetProcess().ToString();
-				int logResult = Log(isReady);
-
-				if (logResult != 0)
-				{
-					return -4;
-				}
+				Log(isReady);
+				node.SetProcess(true);
+				isReady = node.GetProcess().ToString();
+				Log(isReady);
 
 				return 0;
 			}

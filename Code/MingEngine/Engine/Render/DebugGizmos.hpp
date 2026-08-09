@@ -65,7 +65,7 @@ public:
 
 	// — Geometry (world space) —
 	static void AddWorldSphere(
-		Vec3 const&     center,
+		Vector3 const&  center,
 		float           radius,
 		float           duration,
 		Color const&    startColor = Color::White,
@@ -73,7 +73,7 @@ public:
 		DebugRenderMode mode       = DebugRenderMode::USE_DEPTH);
 
 	static void AddWorldWireSphere(
-		Vec3 const&     center,
+		Vector3 const&  center,
 		float           radius,
 		float           duration,
 		Color const&    startColor = Color::White,
@@ -81,8 +81,8 @@ public:
 		DebugRenderMode mode       = DebugRenderMode::USE_DEPTH);
 
 	static void AddWorldCylinder(
-		Vec3 const&     start,
-		Vec3 const&     end,
+		Vector3 const&  start,
+		Vector3 const&  end,
 		float           radius,
 		float           duration,
 		Color const&    startColor = Color::White,
@@ -90,8 +90,8 @@ public:
 		DebugRenderMode mode       = DebugRenderMode::USE_DEPTH);
 
 	static void AddWorldWireCylinder(
-		Vec3 const&     start,
-		Vec3 const&     end,
+		Vector3 const&  start,
+		Vector3 const&  end,
 		float           radius,
 		float           duration,
 		Color const&    startColor = Color::White,
@@ -135,8 +135,8 @@ public:
 		DebugRenderMode  mode       = DebugRenderMode::USE_DEPTH);
 
 	static void AddWorldCapsule(
-		Vec3 const&     start,
-		Vec3 const&     end,
+		Vector3 const&  start,
+		Vector3 const&  end,
 		float           radius,
 		float           duration,
 		Color const&    startColor = Color::White,
@@ -144,8 +144,8 @@ public:
 		DebugRenderMode mode       = DebugRenderMode::USE_DEPTH);
 
 	static void AddWorldWireCapsule(
-		Vec3 const&     start,
-		Vec3 const&     end,
+		Vector3 const&  start,
+		Vector3 const&  end,
 		float           radius,
 		float           duration,
 		Color const&    startColor = Color::White,
@@ -153,8 +153,8 @@ public:
 		DebugRenderMode mode       = DebugRenderMode::USE_DEPTH);
 
 	static void AddWorldArrow(
-		Vec3 const&     start,
-		Vec3 const&     end,
+		Vector3 const&  start,
+		Vector3 const&  end,
 		float           radius,
 		float           duration,
 		Color const&    startColor = Color::White,
@@ -162,8 +162,8 @@ public:
 		DebugRenderMode mode       = DebugRenderMode::USE_DEPTH);
 
 	static void AddWorldWireArrow(
-		Vec3 const&     start,
-		Vec3 const&     end,
+		Vector3 const&  start,
+		Vector3 const&  end,
 		float           radius,
 		float           duration,
 		Color const&    startColor = Color::White,
@@ -186,7 +186,7 @@ public:
 		std::string const& text,
 		Matrix4x4 const&   transform,
 		float              textHeight,
-		Vec2 const&        alignment,
+		Vector2 const&     alignment,
 		float              duration,
 		Color const&       startColor = Color::White,
 		Color const&       endColor   = Color::White,
@@ -197,7 +197,7 @@ public:
 		std::string const& text,
 		AABB2 const&       box,
 		float              cellHeight,
-		Vec2 const&        alignment,
+		Vector2 const&     alignment,
 		float              duration,
 		Color const&       startColor = Color::White,
 		Color const&       endColor   = Color::White);

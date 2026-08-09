@@ -2,7 +2,7 @@
 
 #include "MingEngine/Engine/Application/SystemBase.hpp"
 
-#include "MingEngine/Core/Math/Vec2.hpp"
+#include "MingEngine/Core/Math/Vector2.hpp"
 
 struct GLFWwindow;
 

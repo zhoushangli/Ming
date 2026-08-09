@@ -71,7 +71,7 @@ Color ParseXmlAttribute(XmlElement const& element, char const* attributeName, Co
 	return color;
 }
 
-Vec2 ParseXmlAttribute(XmlElement const& element, char const* attributeName, Vec2 const& defaultValue)
+Vector2 ParseXmlAttribute(XmlElement const& element, char const* attributeName, Vector2 const& defaultValue)
 {
 	char const* text = element.Attribute(attributeName);
 	if (text == nullptr)
@@ -79,13 +79,13 @@ Vec2 ParseXmlAttribute(XmlElement const& element, char const* attributeName, Vec
 		return defaultValue;
 	}
 
-	Vec2 value;
+	Vector2 value;
 	value.SetFromText(text);
 
 	return value;
 }
 
-Vec3 ParseXmlAttribute(XmlElement const& element, char const* attributeName, Vec3 const& defaultValue)
+Vector3 ParseXmlAttribute(XmlElement const& element, char const* attributeName, Vector3 const& defaultValue)
 {
 	char const* text = element.Attribute(attributeName);
 	if (text == nullptr)
@@ -99,7 +99,7 @@ Vec3 ParseXmlAttribute(XmlElement const& element, char const* attributeName, Vec
 		return defaultValue;
 	}
 
-	return Vec3(
+	return Vector3(
 		static_cast<float>(atof(parts[0].c_str())),
 		static_cast<float>(atof(parts[1].c_str())),
 		static_cast<float>(atof(parts[2].c_str())));

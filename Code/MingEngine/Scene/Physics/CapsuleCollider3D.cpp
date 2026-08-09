@@ -12,8 +12,8 @@ CapsuleCollider3D::CapsuleCollider3D(Capsule3 const& capsule)
 
 void CapsuleCollider3D::RenderDebug() const
 {
-	Vec3 worldStart = GetWorldTransform().TransformPosition3D(m_localStart);
-	Vec3 worldEnd   = GetWorldTransform().TransformPosition3D(m_localEnd);
+	Vector3 worldStart = GetWorldTransform().TransformPosition3D(m_localStart);
+	Vector3 worldEnd   = GetWorldTransform().TransformPosition3D(m_localEnd);
 
 	DebugGizmos::AddWorldWireCapsule(worldStart, worldEnd, m_radius, 0.f, Color::Orange, Color::Orange);
 }

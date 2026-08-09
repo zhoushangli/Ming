@@ -1,15 +1,14 @@
 #pragma once
 
-#include "MingEngine/Core/Math/Vec3.hpp"
+#include "MingEngine/Core/Math/Vector3.hpp"
 
 struct Triangle3
 {
 public:
 	Triangle3() = default;
-	Triangle3(Vec3 const& pointA, Vec3 const& pointB, Vec3 const& pointC);
-	void Translate(Vec3 const& translation);
+	Triangle3(Vector3 const& pointA, Vector3 const& pointB, Vector3 const& pointC);
+	void Translate(Vector3 const& translation);
 
 public:
-	Vec3 m_pointsCounterClockwise[3];
+	Vector3 m_pointsCounterClockwise[3];
 };
-

@@ -86,9 +86,9 @@ void MeshResource::InitGPUResources()
 			continue;
 		}
 
-		Vec3 pointA = vertexData[indexA].m_position;
-		Vec3 pointB = vertexData[indexB].m_position;
-		Vec3 pointC = vertexData[indexC].m_position;
+		Vector3 pointA = vertexData[indexA].m_position;
+		Vector3 pointB = vertexData[indexB].m_position;
+		Vector3 pointC = vertexData[indexC].m_position;
 
 		Triangle3 triangle(pointA, pointB, pointC);
 		m_triangles.push_back(triangle);

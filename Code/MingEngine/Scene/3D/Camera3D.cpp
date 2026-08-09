@@ -69,7 +69,7 @@ CameraContext Camera3D::GetCameraContext(float aspect) const
 	if (m_mode == CameraContext::Orthographic)
 	{
 		camera.SetCameraToRenderTransform(Matrix4x4::Identity);
-		camera.SetOrthogonal(Vec2::Zero, Vec2(m_size * aspect, m_size), m_nearClip, m_farClip);
+		camera.SetOrthogonal(Vector2::Zero, Vector2(m_size * aspect, m_size), m_nearClip, m_farClip);
 	}
 	else if (m_mode == CameraContext::Perspective)
 	{
@@ -80,7 +80,7 @@ CameraContext Camera3D::GetCameraContext(float aspect) const
 }
 
 MathRaycastQuery3D Camera3D::BuildRaycastFromMouse(
-	Vec2 const& mousePos, Vec2 const& viewportDimensions, float maxLength) const
+	Vector2 const& mousePos, Vector2 const& viewportDimensions, float maxLength) const
 {
 	GUARANTEE_OR_DIE(m_mode == CameraContext::Perspective, "Camera3D mouse raycast only supports perspective cameras");
 
@@ -94,20 +94,19 @@ MathRaycastQuery3D Camera3D::BuildRaycastFromMouse(
 		return raycastInfo;
 	}
 
-	float const screenX       = 2.f * (mousePos.x / viewportDimensions.x) - 1.f;
-	float const screenY       = 1.f - 2.f * (mousePos.y / viewportDimensions.y);
-	float const aspect        = viewportDimensions.x / viewportDimensions.y;
+	float const screenX        = 2.f * (mousePos.x / viewportDimensions.x) - 1.f;
+	float const screenY        = 1.f - 2.f * (mousePos.y / viewportDimensions.y);
+	float const aspect         = viewportDimensions.x / viewportDimensions.y;
 	float const halfFovDegrees = m_fovDegrees * 0.5f;
 	float const halfHeight     = Math::SinDegrees(halfFovDegrees) / Math::CosDegrees(halfFovDegrees);
 	float const halfWidth      = halfHeight * aspect;
 
-	Vec3 forward;
-	Vec3 left;
-	Vec3 up;
+	Vector3 forward;
+	Vector3 left;
+	Vector3 up;
 	GetWorldOrientation().GetAsVectors_IFwd_JLeft_KUp(forward, left, up);
 
-	raycastInfo.m_forwardNormal =
-		(forward - left * screenX * halfWidth + up * screenY * halfHeight).GetNormalized();
+	raycastInfo.m_forwardNormal = (forward - left * screenX * halfWidth + up * screenY * halfHeight).GetNormalized();
 	return raycastInfo;
 }
 

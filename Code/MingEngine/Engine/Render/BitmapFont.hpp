@@ -23,7 +23,7 @@ public:
 
 	void AddVertsForText2D(
 		std::vector<Vertex>& vertexArray,
-		Vec2                 textMins,
+		Vector2              textMins,
 		float                cellHeight,
 		std::string const&   text,
 		Color                tint            = Color::White,
@@ -36,7 +36,7 @@ public:
 		float                cellHeight,
 		Color                tint            = Color::White,
 		float                cellAspectScale = 1.f,
-		Vec2                 alignment       = Vec2(.5f, .5f),
+		Vector2              alignment       = Vector2(.5f, .5f),
 		TextBoxMode          mode            = TextBoxMode::SHRINK_TO_FIT,
 		int                  maxGlyphsToDraw = 99999999);
 
@@ -50,14 +50,14 @@ public:
 		std::string const&   text,
 		Color const&         tint            = Color::White,
 		float                cellAspect      = 1.0f,
-		Vec2 const&          alignment       = Vec2(0.5f, 0.5f),
+		Vector2 const&       alignment       = Vector2(0.5f, 0.5f),
 		int                  maxGlyphsToDraw = 999);
 
 #pragma endregion
 
-	float GetTextWidth(float cellHeight, std::string const& text, float cellAspectScale = 1.f);
-	float GetTextHeight(float cellHeight, std::string const& text);
-	Vec2  GetTextBoundsDimension(float cellHeight, std::string const& text, float cellAspectScale = 1.f);
+	float   GetTextWidth(float cellHeight, std::string const& text, float cellAspectScale = 1.f);
+	float   GetTextHeight(float cellHeight, std::string const& text);
+	Vector2 GetTextBoundsDimension(float cellHeight, std::string const& text, float cellAspectScale = 1.f);
 
 protected:
 	float GetGlyphAspect(int glyphUnicode) const; // For now this will always return m_fontDefaultAspect

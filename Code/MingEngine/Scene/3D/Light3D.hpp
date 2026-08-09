@@ -2,7 +2,7 @@
 
 #include "MingEngine/Scene/3D/Node3D.hpp"
 
-#include "MingEngine/Core/Math/Vec3.hpp"
+#include "MingEngine/Core/Math/Vector3.hpp"
 #include "MingEngine/Core/Render/Rgba8.hpp"
 #include "MingEngine/Engine/Render/RenderContext.hpp"
 

@@ -42,9 +42,9 @@ namespace
 Vertex const* GetFullscreenTriangleTopLeftUV()
 {
 	static Vertex const fullscreenTriangle[3] = {
-		Vertex(Vec3(-1.f, -1.f, 0.f), Color::White, Vec2(0.f, 1.f)),
-		Vertex(Vec3(3.f, -1.f, 0.f), Color::White, Vec2(2.f, 1.f)),
-		Vertex(Vec3(-1.f, 3.f, 0.f), Color::White, Vec2(0.f, -1.f)),
+		Vertex(Vector3(-1.f, -1.f, 0.f), Color::White, Vector2(0.f, 1.f)),
+		Vertex(Vector3(3.f, -1.f, 0.f), Color::White, Vector2(2.f, 1.f)),
+		Vertex(Vector3(-1.f, 3.f, 0.f), Color::White, Vector2(0.f, -1.f)),
 	};
 
 	return fullscreenTriangle;
@@ -795,7 +795,7 @@ Shader* D3D11RenderBackend::CreateShader(
 	ShaderConfig config;
 	config.m_name = shaderName;
 
-	Shader* shader = new Shader(config);
+	Shader*     shader     = new Shader(config);
 	char const* sourceName = shaderSourcePath.empty() ? shaderName.c_str() : shaderSourcePath.c_str();
 
 	// Compile VS / PS

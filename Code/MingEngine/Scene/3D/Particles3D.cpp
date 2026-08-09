@@ -127,10 +127,10 @@ BillboardType ParseXmlAttribute(XmlElement const& element, char const* attribute
 EulerAngles ParseEulerAnglesAttribute(
 	XmlElement const& element, char const* attributeName, EulerAngles const& defaultValue)
 {
-	Vec3 const angles = ::ParseXmlAttribute(
+	Vector3 const angles = ::ParseXmlAttribute(
 		element,
 		attributeName,
-		Vec3(defaultValue.m_yawDegrees, defaultValue.m_pitchDegrees, defaultValue.m_rollDegrees));
+		Vector3(defaultValue.m_yawDegrees, defaultValue.m_pitchDegrees, defaultValue.m_rollDegrees));
 	return EulerAngles(angles.x, angles.y, angles.z);
 }
 
@@ -143,12 +143,12 @@ EulerAngles GetRandomOrientationInRange(EulerAngles const& minOrientation, Euler
 		rng.RollRandomFloatInRange(minOrientation.m_rollDegrees, maxOrientation.m_rollDegrees));
 }
 
-Vec3 GetRandomDirectionInCone(Vec3 const& forwardDirection, float coneHalfAngleDegrees)
+Vector3 GetRandomDirectionInCone(Vector3 const& forwardDirection, float coneHalfAngleDegrees)
 {
-	Vec3 forward = forwardDirection.GetNormalized();
+	Vector3 forward = forwardDirection.GetNormalized();
 	if (forward.GetLengthSquared() <= 1e-5f)
 	{
-		return Vec3::Forward;
+		return Vector3::Forward;
 	}
 
 	if (coneHalfAngleDegrees <= 0.f)
@@ -159,26 +159,26 @@ Vec3 GetRandomDirectionInCone(Vec3 const& forwardDirection, float coneHalfAngleD
 	RandomNumberGenerator& rng            = RandomNumberGenerator::Get();
 	float                  yawDegrees     = rng.RollRandomFloatInRange(-coneHalfAngleDegrees, coneHalfAngleDegrees);
 	float                  pitchDegrees   = rng.RollRandomFloatInRange(-coneHalfAngleDegrees, coneHalfAngleDegrees);
-	Vec3                   localDirection = Vec3::MakeFromPolarDegrees(pitchDegrees, yawDegrees);
+	Vector3                localDirection = Vector3::MakeFromPolarDegrees(pitchDegrees, yawDegrees);
 
 	EulerAngles coneToWorldOrientation = EulerAngles::MakeFromForward(forward);
 	Matrix4x4   coneToWorld            = coneToWorldOrientation.GetAsMatrix_IFwd_JLeft_KUp();
-	Vec3        coneDirection          = coneToWorld.TransformDirection3D(localDirection);
+	Vector3     coneDirection          = coneToWorld.TransformDirection3D(localDirection);
 
 	return coneDirection.GetNormalized();
 }
 
-Vec3 GetRandomPointInDisc(float radius)
+Vector3 GetRandomPointInDisc(float radius)
 {
 	if (radius <= 0.f)
 	{
-		return Vec3::Zero;
+		return Vector3::Zero;
 	}
 
 	RandomNumberGenerator& rng          = RandomNumberGenerator::Get();
 	float const            angleDegrees = rng.RollRandomFloatInRange(0.f, 360.f);
 	float const            distance     = radius * sqrtf(rng.RollRandomFloatZeroToOne());
-	return Vec3(distance * CosDegrees(angleDegrees), distance * SinDegrees(angleDegrees), 0.f);
+	return Vector3(distance * CosDegrees(angleDegrees), distance * SinDegrees(angleDegrees), 0.f);
 }
 } // namespace
 
@@ -230,19 +230,19 @@ void Particles3D::LoadFromXML(std::string const& xmlFilePath)
 	m_maxParticles = ParseXmlAttribute(*emitterElement, "maxParticles", m_maxParticles);
 	m_burstCount   = ParseXmlAttribute(*emitterElement, "burstCount", m_burstCount);
 
-	m_simulationSpace = ParseXmlAttribute(*visualElement, "simulationSpace", m_simulationSpace);
-	m_billboardType   = ParseXmlAttribute(*visualElement, "billboardType", m_billboardType);
+	m_simulationSpace           = ParseXmlAttribute(*visualElement, "simulationSpace", m_simulationSpace);
+	m_billboardType             = ParseXmlAttribute(*visualElement, "billboardType", m_billboardType);
 	std::string const imagePath = ParseXmlAttribute(*visualElement, "imagePath", m_imagePath.GetString());
 	if (!imagePath.empty())
 	{
 		VirtualPath::TryParse(imagePath, m_imagePath);
 	}
-	m_startSize       = ParseXmlAttribute(*visualElement, "startSize", m_startSize);
-	m_endSize         = ParseXmlAttribute(*visualElement, "endSize", m_endSize);
-	m_startColor      = ParseXmlAttribute(*visualElement, "startColor", m_startColor);
-	m_endColor        = ParseXmlAttribute(*visualElement, "endColor", m_endColor);
-	m_orientationMin  = ParseEulerAnglesAttribute(*visualElement, "orientationMin", m_orientationMin);
-	m_orientationMax  = ParseEulerAnglesAttribute(*visualElement, "orientationMax", m_orientationMax);
+	m_startSize      = ParseXmlAttribute(*visualElement, "startSize", m_startSize);
+	m_endSize        = ParseXmlAttribute(*visualElement, "endSize", m_endSize);
+	m_startColor     = ParseXmlAttribute(*visualElement, "startColor", m_startColor);
+	m_endColor       = ParseXmlAttribute(*visualElement, "endColor", m_endColor);
+	m_orientationMin = ParseEulerAnglesAttribute(*visualElement, "orientationMin", m_orientationMin);
+	m_orientationMax = ParseEulerAnglesAttribute(*visualElement, "orientationMax", m_orientationMax);
 
 	m_velocityDirection    = ParseXmlAttribute(*motionElement, "velocityDirection", m_velocityDirection);
 	m_velocityRange        = ParseXmlAttribute(*motionElement, "velocityRange", m_velocityRange);
@@ -285,8 +285,8 @@ void Particles3D::OnNotification(int notification)
 				float spawnTimeInFrame = m_spawnInterval - oldTimer;
 				while (m_spawnTimer >= m_spawnInterval)
 				{
-					float fraction         = spawnTimeInFrame / deltaSeconds;
-					Vec3  particlePosition = InterpolateClamped(m_lastEmitterPos, GetWorldPosition(), fraction);
+					float   fraction         = spawnTimeInFrame / deltaSeconds;
+					Vector3 particlePosition = InterpolateClamped(m_lastEmitterPos, GetWorldPosition(), fraction);
 					SpawnNewParticle(particlePosition);
 
 					m_spawnTimer -= m_spawnInterval;
@@ -360,11 +360,11 @@ RenderRequest Particles3D::SubmitRenderRequest() const
 	return request;
 }
 
-void Particles3D::SpawnNewParticle(Vec3 const& worldPosition)
+void Particles3D::SpawnNewParticle(Vector3 const& worldPosition)
 {
 	auto InitParticle = [&](Particle3D& particle)
 	{
-		Vec3 spawnWorldPosition = worldPosition;
+		Vector3 spawnWorldPosition = worldPosition;
 		if (m_emitShape == EmitShape::Disc)
 		{
 			spawnWorldPosition += GetWorldTransform().TransformDirection3D(GetRandomPointInDisc(m_emitRadius));
@@ -373,10 +373,10 @@ void Particles3D::SpawnNewParticle(Vec3 const& worldPosition)
 		particle.m_position    = WorldToSimulation(spawnWorldPosition);
 		particle.m_orientation = GetRandomOrientationInRange(m_orientationMin, m_orientationMax);
 
-		Vec3  localRandomDir = GetRandomDirectionInCone(m_velocityDirection, m_coneHalfAngleDegrees);
-		Vec3  worldRandomDir = GetWorldTransform().TransformDirection3D(localRandomDir);
-		float speed          = m_velocityRange.GetRandomInRange();
-		particle.m_velocity  = GetWorldToSimulation().TransformDirection3D(worldRandomDir) * speed;
+		Vector3 localRandomDir = GetRandomDirectionInCone(m_velocityDirection, m_coneHalfAngleDegrees);
+		Vector3 worldRandomDir = GetWorldTransform().TransformDirection3D(localRandomDir);
+		float   speed          = m_velocityRange.GetRandomInRange();
+		particle.m_velocity    = GetWorldToSimulation().TransformDirection3D(worldRandomDir) * speed;
 
 		particle.m_lifetimeRemaining = m_lifetime;
 		particle.m_totalLifetime     = m_lifetime;
@@ -425,10 +425,10 @@ void Particles3D::RebuildParticleVerts()
 		float size  = Interpolate(m_startSize, m_endSize, lifeProgress);
 		Color color = Interpolate(m_startColor, m_endColor, lifeProgress);
 
-		Vec3 bottomLeft  = Vec3(0.f, -size, -size);
-		Vec3 bottomRight = Vec3(0.f, size, -size);
-		Vec3 topRight    = Vec3(0.f, size, size);
-		Vec3 topLeft     = Vec3(0.f, -size, size);
+		Vector3 bottomLeft  = Vector3(0.f, -size, -size);
+		Vector3 bottomRight = Vector3(0.f, size, -size);
+		Vector3 topRight    = Vector3(0.f, size, size);
+		Vector3 topLeft     = Vector3(0.f, -size, size);
 
 		AddVertsForQuad3D(m_particleVerts, bottomLeft, bottomRight, topRight, topLeft, color);
 
@@ -443,8 +443,8 @@ void Particles3D::RebuildParticleVerts()
 		}
 		else
 		{
-			Vec3 particleWorldPosition = SimulationToWorld(particle.m_position);
-			particleTransform          = GetBillboardTransform(m_billboardType, cameraTransform, particleWorldPosition);
+			Vector3 particleWorldPosition = SimulationToWorld(particle.m_position);
+			particleTransform = GetBillboardTransform(m_billboardType, cameraTransform, particleWorldPosition);
 		}
 
 		for (size_t i = m_particleVerts.size() - 6; i < m_particleVerts.size(); ++i)
@@ -484,13 +484,13 @@ Matrix4x4 Particles3D::GetWorldToSimulation() const
 	}
 }
 
-Vec3 Particles3D::WorldToSimulation(Vec3 const& worldPos) const
+Vector3 Particles3D::WorldToSimulation(Vector3 const& worldPos) const
 {
 	Matrix4x4 worldToSim = GetWorldToSimulation();
 	return worldToSim.TransformPosition3D(worldPos);
 }
 
-Vec3 Particles3D::SimulationToWorld(Vec3 const& simPos) const
+Vector3 Particles3D::SimulationToWorld(Vector3 const& simPos) const
 {
 	Matrix4x4 simToWorld = GetSimulationToWorld();
 	return simToWorld.TransformPosition3D(simPos);

@@ -1,4 +1,4 @@
-namespace MingSharp;
+namespace Ming;
 
 internal static unsafe class NativeCalls
 {

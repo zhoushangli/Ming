@@ -312,17 +312,17 @@ IntVec2 InputSystem::GetCursorClientDelta() const { return m_cursorClientDelta; 
 
 IntVec2 InputSystem::GetCursorClientPosition() const { return m_cursorClientPosition; }
 
-Vec2 InputSystem::GetCursorNormalizedPosition() const
+Vector2 InputSystem::GetCursorNormalizedPosition() const
 {
 	if (g_engine == nullptr || g_engine->m_windowSystem == nullptr)
 	{
-		return Vec2::Zero;
+		return Vector2::Zero;
 	}
 
 	IntVec2 clientDimensions = g_engine->m_windowSystem->GetClientDimensions();
 	if (clientDimensions.x <= 0 || clientDimensions.y <= 0)
 	{
-		return Vec2::Zero;
+		return Vector2::Zero;
 	}
 
 	IntVec2 clientPos = GetCursorClientPosition();
@@ -334,7 +334,7 @@ Vec2 InputSystem::GetCursorNormalizedPosition() const
 	v = GetClamped(v, 0.f, 1.f);
 
 	v = 1.f - v;
-	return Vec2(u, v);
+	return Vector2(u, v);
 }
 
 void InputSystem::ClearCursorDelta() { m_cursorClientDelta = IntVec2::Zero; }
