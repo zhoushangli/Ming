@@ -107,7 +107,7 @@ bool DotNetHost::Initialize()
 {
 	std::filesystem::path const executableDirectory = GetExecutableDirectory();
 
-	std::filesystem::path const managedApiDirectory = executableDirectory / L"Ming" / L"Api";
+	std::filesystem::path const managedApiDirectory = executableDirectory / L"MingSharp" / L"Api";
 	std::filesystem::path const runtimeConfigPath   = managedApiDirectory / L"MingPlugins.runtimeconfig.json";
 	std::filesystem::path const managedAssemblyPath = managedApiDirectory / L"MingPlugins.dll";
 

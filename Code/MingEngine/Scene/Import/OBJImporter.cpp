@@ -24,7 +24,7 @@ Matrix4x4 OBJImportMatrix = Matrix4x4(
 
 std::vector<ImportOptions> const kOBJImportOptions = {
 	{ PropertyInfo(Variant::Type::Bool, "Generate Tangents", PropertyInfo::Hint::None, "", PropertyInfo::UsageFlags::Default), Variant(true) },
-	{ PropertyInfo(Variant::Type::Vec3, "Scale Mesh", 		 PropertyInfo::Hint::None, "", PropertyInfo::UsageFlags::Default), Variant(Vector3::One) },
+	{ PropertyInfo(Variant::Type::Vector3, "Scale Mesh", 		 PropertyInfo::Hint::None, "", PropertyInfo::UsageFlags::Default), Variant(Vector3::One) },
 };
 
 // clang-format on
@@ -629,7 +629,7 @@ Ref<Resource> OBJImporter::Import(
 {
 	bool const generateTangents =
 		GetImportOptionValue(importOptions, "Generate Tangents", Variant::Type::Bool).As<bool>();
-	Vector3 const scaleMesh = GetImportOptionValue(importOptions, "Scale Mesh", Variant::Type::Vec3).As<Vector3>();
+	Vector3 const scaleMesh = GetImportOptionValue(importOptions, "Scale Mesh", Variant::Type::Vector3).As<Vector3>();
 
 	OBJData objData;
 	if (!ParseOBJFile(sourceVirtualPath, objData))

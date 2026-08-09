@@ -127,12 +127,12 @@ char const* GetVariantTypeName(Variant::Type type)
 		return "Float";
 	case Variant::Type::String:
 		return "String";
-	case Variant::Type::Vec2:
-		return "Vec2";
-	case Variant::Type::Vec3:
-		return "Vec3";
-	case Variant::Type::Vec4:
-		return "Vec4";
+	case Variant::Type::Vector2:
+		return "Vector2";
+	case Variant::Type::Vector3:
+		return "Vector3";
+	case Variant::Type::Vector4:
+		return "Vector4";
 	case Variant::Type::Color:
 		return "Color";
 	case Variant::Type::AABB2:
@@ -173,6 +173,18 @@ bool TryGetNativeTypeInfo(Variant::Type type, bool isReturnType, NativeTypeInfo&
 		return true;
 	case Variant::Type::Float:
 		outTypeInfo = { "Float", "float" };
+		return true;
+	// case Variant::Type::String:
+	// 	outTypeInfo = { "String", "string" };
+	// 	return true;
+	case Variant::Type::Vector2:
+		outTypeInfo = { "Vector2", "Vector2" };
+		return true;
+	case Variant::Type::Vector3:
+		outTypeInfo = { "Vector3", "Vector3" };
+		return true;
+	case Variant::Type::Vector4:
+		outTypeInfo = { "Vector4", "Vector4" };
 		return true;
 	default:
 		return false;
@@ -224,6 +236,14 @@ char const* GetMethodCSharpType(Variant::Type type)
 		return "int";
 	case Variant::Type::Float:
 		return "float";
+	// case Variant::Type::String:
+	// 	return "string";
+	case Variant::Type::Vector2:
+		return "Vector2";
+	case Variant::Type::Vector3:
+		return "Vector3";
+	case Variant::Type::Vector4:
+		return "Vector4";
 	default:
 		return nullptr;
 	}
@@ -367,9 +387,93 @@ bool CSharpScriptGenerator::GenerateCSharpBindings(std::filesystem::path const& 
 		return false;
 	}
 
+	if (!GenerateNativeCalls(generatedDirectory))
+	{
+		ERROR_AND_DIE("Failed to generate C# NativeCalls.");
+	}
+
+	if (!GenerateClassBindings(generatedDirectory))
+	{
+		ERROR_AND_DIE("Failed to generate C# Class Bindings.");
+	}
+
+	return true;
+}
+
+bool CSharpScriptGenerator::GenerateNativeCalls(std::filesystem::path const& outputDirectory)
+{
+	std::map<std::string, NativeCallInfo> nativeCalls;
+	std::vector<std::string>              skippedNativeCalls;
+	for (ClassInfo const* classInfo : ClassDatabase::GetRegisteredClasses(true))
+	{
+		if (classInfo == nullptr || classInfo->m_apiType != ApiType::Runtime)
+		{
+			continue;
+		}
+
+		for (std::unique_ptr<MethodInfo> const& methodInfo : classInfo->m_methods)
+		{
+			if (methodInfo == nullptr)
+			{
+				continue;
+			}
+
+			NativeCallInfo nativeCall;
+			std::string    skipReason;
+			if (TryCreateNativeCall(*methodInfo, nativeCall, skipReason))
+			{
+				std::string const nativeCallName = nativeCall.m_name;
+				nativeCalls.emplace(nativeCallName, std::move(nativeCall));
+			}
+			else
+			{
+				skippedNativeCalls.emplace_back(classInfo->m_className + "." + methodInfo->m_name + ": " + skipReason);
+			}
+		}
+	}
+
+	std::string nativeCallFunctions;
+	for (auto const& [nativeCallName, nativeCall] : nativeCalls)
+	{
+		(void)nativeCallName;
+		nativeCallFunctions += GenerateNativeCallFunction(nativeCall);
+	}
+
+	std::string nativeCallsSource = NativeCallsTemplate;
+	ReplaceAll(nativeCallsSource, "{FUNCTIONS}", nativeCallFunctions);
+
+	std::filesystem::path const nativeCallsFilePath = outputDirectory / "NativeCalls.cs";
+	std::ofstream               nativeCallsFile(nativeCallsFilePath, std::ios::binary | std::ios::trunc);
+	if (!nativeCallsFile.is_open())
+	{
+		return false;
+	}
+
+	nativeCallsFile.write(nativeCallsSource.data(), static_cast<std::streamsize>(nativeCallsSource.size()));
+	nativeCallsFile.close();
+	if (nativeCallsFile.fail())
+	{
+		return false;
+	}
+
+	std::sort(skippedNativeCalls.begin(), skippedNativeCalls.end());
+	if (!skippedNativeCalls.empty())
+	{
+		DebuggerPrintf("Skipped unsupported NativeCalls signatures:\n");
+		for (std::string const& skippedNativeCall : skippedNativeCalls)
+		{
+			DebuggerPrintf("- %s\n", skippedNativeCall.c_str());
+		}
+	}
+
+	return true;
+}
+
+bool CSharpScriptGenerator::GenerateClassBindings(std::filesystem::path const& outputDirectory)
+{
 	// Generate the root C# wrapper class that all engine classes inherit from.
 	std::string const           mingObjectSource   = MingObjectTemplate;
-	std::filesystem::path const mingObjectFilePath = generatedDirectory / "MingObject.cs";
+	std::filesystem::path const mingObjectFilePath = outputDirectory / "MingObject.cs";
 	std::ofstream               mingObjectFile(mingObjectFilePath, std::ios::binary | std::ios::trunc);
 	if (!mingObjectFile.is_open())
 	{
@@ -383,9 +487,7 @@ bool CSharpScriptGenerator::GenerateCSharpBindings(std::filesystem::path const& 
 		return false;
 	}
 
-	std::vector<ClassInfo const*> const   classes = ClassDatabase::GetRegisteredClasses(true);
-	std::map<std::string, NativeCallInfo> nativeCalls;
-	std::vector<std::string>              skippedNativeCalls;
+	std::vector<ClassInfo const*> const classes = ClassDatabase::GetRegisteredClasses(true);
 	for (ClassInfo const* classInfo : classes)
 	{
 		if (classInfo == nullptr || classInfo->m_apiType != ApiType::Runtime)
@@ -426,12 +528,6 @@ bool CSharpScriptGenerator::GenerateCSharpBindings(std::filesystem::path const& 
 			if (TryCreateNativeCall(*methodInfo, nativeCall, skipReason))
 			{
 				classMethods += GenerateClassMethod(*methodInfo, nativeCall);
-				std::string const nativeCallName = nativeCall.m_name;
-				nativeCalls.emplace(nativeCallName, std::move(nativeCall));
-			}
-			else
-			{
-				skippedNativeCalls.emplace_back(classInfo->m_className + "." + methodInfo->m_name + ": " + skipReason);
 			}
 		}
 
@@ -439,7 +535,7 @@ bool CSharpScriptGenerator::GenerateCSharpBindings(std::filesystem::path const& 
 		ReplaceAll(classSource, "{CLASS_METHODS}", classMethods);
 		ReplaceAll(classSource, "{CLASS_NAME}", classInfo->m_className);
 
-		std::filesystem::path const classFilePath = generatedDirectory / (classInfo->m_className + ".cs");
+		std::filesystem::path const classFilePath = outputDirectory / (classInfo->m_className + ".cs");
 		std::ofstream               classFile(classFilePath, std::ios::binary | std::ios::trunc);
 		if (!classFile.is_open())
 		{
@@ -451,40 +547,6 @@ bool CSharpScriptGenerator::GenerateCSharpBindings(std::filesystem::path const& 
 		if (classFile.fail())
 		{
 			return false;
-		}
-	}
-
-	std::string nativeCallFunctions;
-	for (auto const& [nativeCallName, nativeCall] : nativeCalls)
-	{
-		(void)nativeCallName;
-		nativeCallFunctions += GenerateNativeCallFunction(nativeCall);
-	}
-
-	std::string nativeCallsSource = NativeCallsTemplate;
-	ReplaceAll(nativeCallsSource, "{FUNCTIONS}", nativeCallFunctions);
-
-	std::filesystem::path const nativeCallsFilePath = generatedDirectory / "NativeCalls.cs";
-	std::ofstream               nativeCallsFile(nativeCallsFilePath, std::ios::binary | std::ios::trunc);
-	if (!nativeCallsFile.is_open())
-	{
-		return false;
-	}
-
-	nativeCallsFile.write(nativeCallsSource.data(), static_cast<std::streamsize>(nativeCallsSource.size()));
-	nativeCallsFile.close();
-	if (nativeCallsFile.fail())
-	{
-		return false;
-	}
-
-	std::sort(skippedNativeCalls.begin(), skippedNativeCalls.end());
-	if (!skippedNativeCalls.empty())
-	{
-		DebuggerPrintf("Skipped unsupported NativeCalls signatures:\n");
-		for (std::string const& skippedNativeCall : skippedNativeCalls)
-		{
-			DebuggerPrintf("- %s\n", skippedNativeCall.c_str());
 		}
 	}
 

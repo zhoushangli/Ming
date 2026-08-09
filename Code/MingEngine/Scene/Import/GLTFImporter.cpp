@@ -43,7 +43,7 @@ Matrix4x4 GLTFImportMatrix = Matrix4x4(
 );
 
 std::vector<ImportOptions> const kGLTFImportOptions = {
-	{ PropertyInfo(Variant::Type::Vec3, "Scale Mesh", 		 PropertyInfo::Hint::None, "", PropertyInfo::UsageFlags::Default), Variant(Vector3::One) },
+	{ PropertyInfo(Variant::Type::Vector3, "Scale Mesh", 		 PropertyInfo::Hint::None, "", PropertyInfo::UsageFlags::Default), Variant(Vector3::One) },
 };
 // clang-format on
 
@@ -358,7 +358,7 @@ Ref<Resource> GLTFImporter::Import(
 	// 6) Apply the engine coordinate conversion and the optional import scale.
 	Vector3    scaleMesh   = Vector3::One;
 	auto const scaleOption = importOptions.find("Scale Mesh");
-	if (scaleOption != importOptions.end() && scaleOption->second.GetType() == Variant::Type::Vec3)
+	if (scaleOption != importOptions.end() && scaleOption->second.GetType() == Variant::Type::Vector3)
 	{
 		scaleMesh = scaleOption->second.As<Vector3>();
 	}

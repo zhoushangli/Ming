@@ -11,33 +11,33 @@ public:
 
 public:
 	Vector3();
-	Vector3(Vec3 const& other);
-	Vector3(Vec2 const& other);
+	Vector3(Vector3 const& other);
+	Vector3(Vector2 const& other);
 	~Vector3();
 	explicit Vector3(float x, float y, float z);
 	explicit Vector3(float initialX, float initialY);
 
 	// Operators (const)
-	bool          operator==(Vec3 const& compare) const;
-	bool          operator!=(Vec3 const& compare) const;
-	Vector3 const operator+(Vec3 const& vecToAdd) const;
-	Vector3 const operator-(Vec3 const& vecToSubtract) const;
+	bool          operator==(Vector3 const& compare) const;
+	bool          operator!=(Vector3 const& compare) const;
+	Vector3 const operator+(Vector3 const& vecToAdd) const;
+	Vector3 const operator-(Vector3 const& vecToSubtract) const;
 	Vector3 const operator-() const;
 	Vector3 const operator*(float uniformScale) const;
-	Vector3 const operator*(Vec3 const& vecToMultiply) const;
+	Vector3 const operator*(Vector3 const& vecToMultiply) const;
 	Vector3 const operator/(float inverseScale) const;
 
 	// Operators (self-mutating / non-const)
-	void operator+=(Vec3 const& vecToAdd);
-	void operator-=(Vec3 const& vecToSubtract);
+	void operator+=(Vector3 const& vecToAdd);
+	void operator-=(Vector3 const& vecToSubtract);
 	void operator*=(const float uniformScale);
 	void operator/=(const float uniformDivisor);
-	void operator=(Vec3 const& copyFrom);
+	void operator=(Vector3 const& copyFrom);
 
 	// Standalone "friend" functions
-	friend Vector3 const operator*(float uniformScale, Vec3 const& vecToScale);
+	friend Vector3 const operator*(float uniformScale, Vector3 const& vecToScale);
 
-	// Vec3 methods
+	// Vector3 methods
 	float   GetLength() const;
 	float   GetLengthXY() const;
 	float   GetLengthSquared() const;

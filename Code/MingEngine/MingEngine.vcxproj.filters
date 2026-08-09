@@ -324,13 +324,13 @@
     <ClCompile Include="Core\Math\Triangle3.cpp">
       <Filter>Core\Math</Filter>
     </ClCompile>
-    <ClCompile Include="Core\Math\Vec2.cpp">
+    <ClCompile Include="Core\Math\Vector2.cpp">
       <Filter>Core\Math</Filter>
     </ClCompile>
-    <ClCompile Include="Core\Math\Vec3.cpp">
+    <ClCompile Include="Core\Math\Vector3.cpp">
       <Filter>Core\Math</Filter>
     </ClCompile>
-    <ClCompile Include="Core\Math\Vec4.cpp">
+    <ClCompile Include="Core\Math\Vector4.cpp">
       <Filter>Core\Math</Filter>
     </ClCompile>
     <ClCompile Include="Engine\Audio\AudioSystem.cpp">
@@ -815,13 +815,13 @@
     <ClInclude Include="Core\Math\Triangle3.hpp">
       <Filter>Core\Math</Filter>
     </ClInclude>
-    <ClInclude Include="Core\Math\Vec2.hpp">
+    <ClInclude Include="Core\Math\Vector2.hpp">
       <Filter>Core\Math</Filter>
     </ClInclude>
-    <ClInclude Include="Core\Math\Vec3.hpp">
+    <ClInclude Include="Core\Math\Vector3.hpp">
       <Filter>Core\Math</Filter>
     </ClInclude>
-    <ClInclude Include="Core\Math\Vec4.hpp">
+    <ClInclude Include="Core\Math\Vector4.hpp">
       <Filter>Core\Math</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Audio\AudioSystem.hpp">

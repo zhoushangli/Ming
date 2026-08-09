@@ -1,4 +1,4 @@
-#include "Vec3.hpp"
+#include "MingEngine/Core/Math/Vector3.hpp"
 
 #include "MingEngine/Core/Math/MathUtils.hpp"
 #include "MingEngine/Core/Math/Vector2.hpp"

@@ -162,12 +162,12 @@ void ViewportAxisIndicator::RebuildVertexBuffer()
 	yAxis.y = -yAxis.y;
 	zAxis.y = -zAxis.y;
 
-	m_axises[0] = { Vec2(xAxis.y, xAxis.z), xAxis.x, 0, true };
-	m_axises[1] = { Vec2(yAxis.y, yAxis.z), yAxis.x, 1, true };
-	m_axises[2] = { Vec2(zAxis.y, zAxis.z), zAxis.x, 2, true };
-	m_axises[3] = { Vec2(-xAxis.y, -xAxis.z), -xAxis.x, 3, false };
-	m_axises[4] = { Vec2(-yAxis.y, -yAxis.z), -yAxis.x, 4, false };
-	m_axises[5] = { Vec2(-zAxis.y, -zAxis.z), -zAxis.x, 5, false };
+	m_axises[0] = { Vector2(xAxis.y, xAxis.z), xAxis.x, 0, true };
+	m_axises[1] = { Vector2(yAxis.y, yAxis.z), yAxis.x, 1, true };
+	m_axises[2] = { Vector2(zAxis.y, zAxis.z), zAxis.x, 2, true };
+	m_axises[3] = { Vector2(-xAxis.y, -xAxis.z), -xAxis.x, 3, false };
+	m_axises[4] = { Vector2(-yAxis.y, -yAxis.z), -yAxis.x, 4, false };
+	m_axises[5] = { Vector2(-zAxis.y, -zAxis.z), -zAxis.x, 5, false };
 
 	std::sort(m_axises.begin(), m_axises.end(), [](Axis2D const& a, Axis2D const& b) { return a.m_x > b.m_x; });
 

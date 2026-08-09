@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Vec3.hpp"
+#include "MingEngine/Core/Math/Vector3.hpp"
 
 class Cylinder3
 {

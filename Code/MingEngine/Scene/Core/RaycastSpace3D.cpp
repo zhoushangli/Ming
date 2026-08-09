@@ -32,11 +32,11 @@ void RaycastQuery3D::BindMethods()
 	ClassDatabase::BindMethod("GetExclude", &RaycastQuery3D::GetExclude);
 
 	ADD_PROPERTY(
-		PropertyInfo(Variant::Type::Vec3, "start", PropertyInfo::Hint::None, "", PropertyInfo::UsageFlags::None),
+		PropertyInfo(Variant::Type::Vector3, "start", PropertyInfo::Hint::None, "", PropertyInfo::UsageFlags::None),
 		"SetStart",
 		"GetStart");
 	ADD_PROPERTY(
-		PropertyInfo(Variant::Type::Vec3, "direction", PropertyInfo::Hint::None, "", PropertyInfo::UsageFlags::None),
+		PropertyInfo(Variant::Type::Vector3, "direction", PropertyInfo::Hint::None, "", PropertyInfo::UsageFlags::None),
 		"SetDirection",
 		"GetDirection");
 	ADD_PROPERTY(
@@ -102,7 +102,7 @@ void RaycastResult3D::BindMethods()
 		"GetImpactDistance");
 	ADD_PROPERTY(
 		PropertyInfo(
-			Variant::Type::Vec3,
+			Variant::Type::Vector3,
 			"impactPosition",
 			PropertyInfo::Hint::None,
 			"",
@@ -110,12 +110,17 @@ void RaycastResult3D::BindMethods()
 		"SetImpactPosition",
 		"GetImpactPosition");
 	ADD_PROPERTY(
-		PropertyInfo(Variant::Type::Vec3, "impactNormal", PropertyInfo::Hint::None, "", PropertyInfo::UsageFlags::None),
+		PropertyInfo(
+			Variant::Type::Vector3,
+			"impactNormal",
+			PropertyInfo::Hint::None,
+			"",
+			PropertyInfo::UsageFlags::None),
 		"SetImpactNormal",
 		"GetImpactNormal");
 	ADD_PROPERTY(
 		PropertyInfo(
-			Variant::Type::Vec3,
+			Variant::Type::Vector3,
 			"rayStartPosition",
 			PropertyInfo::Hint::None,
 			"",
@@ -124,7 +129,7 @@ void RaycastResult3D::BindMethods()
 		"GetRayStartPosition");
 	ADD_PROPERTY(
 		PropertyInfo(
-			Variant::Type::Vec3,
+			Variant::Type::Vector3,
 			"rayForwardNormal",
 			PropertyInfo::Hint::None,
 			"",

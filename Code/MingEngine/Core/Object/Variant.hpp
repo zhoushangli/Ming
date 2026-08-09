@@ -41,9 +41,9 @@ public:
 		Int,
 		Float,
 		String,
-		Vec2,
-		Vec3,
-		Vec4,
+		Vector2,
+		Vector3,
+		Vector4,
 		Color,
 		AABB2,
 		OBB2,
@@ -111,11 +111,11 @@ public:
 		if (std::is_same_v<CleanType, std::string>)
 			return Type::String;
 		if (std::is_same_v<CleanType, Vector2>)
-			return Type::Vec2;
+			return Type::Vector2;
 		if (std::is_same_v<CleanType, Vector3>)
-			return Type::Vec3;
+			return Type::Vector3;
 		if (std::is_same_v<CleanType, Vector4>)
-			return Type::Vec4;
+			return Type::Vector4;
 		if (std::is_same_v<CleanType, Color>)
 			return Type::Color;
 		if (std::is_same_v<CleanType, AABB2>)

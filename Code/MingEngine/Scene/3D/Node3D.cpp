@@ -39,7 +39,7 @@ void Node3D::BindMethods()
 
 	ADD_PROPERTY(
 		PropertyInfo(
-			Variant::Type::Vec3,
+			Variant::Type::Vector3,
 			"position",
 			PropertyInfo::Hint::None,
 			"",
@@ -58,7 +58,12 @@ void Node3D::BindMethods()
 		"GetLocalOrientation");
 
 	ADD_PROPERTY(
-		PropertyInfo(Variant::Type::Vec3, "scale", PropertyInfo::Hint::None, "", PropertyInfo::UsageFlags::Inspector),
+		PropertyInfo(
+			Variant::Type::Vector3,
+			"scale",
+			PropertyInfo::Hint::None,
+			"",
+			PropertyInfo::UsageFlags::Inspector),
 		"SetLocalScale",
 		"GetLocalScale");
 }

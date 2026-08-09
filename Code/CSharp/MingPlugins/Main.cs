@@ -33,12 +33,9 @@ namespace MingPlugins
 
 				NativeFuncs.Initialize((IntPtr)nativeCallbacks, nativeCallbacksSize);
 
-				Node node = new Node();
-				string isReady = node.GetProcess().ToString();
-				Log(isReady);
-				node.SetProcess(true);
-				isReady = node.GetProcess().ToString();
-				Log(isReady);
+				Node3D node = new Node3D();
+				node.SetLocalPosition(new Vector3(1.0f, 2.0f, 3.0f));
+				Log($"Node3D local position: {node.GetLocalPosition()}");
 
 				return 0;
 			}

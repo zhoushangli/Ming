@@ -184,9 +184,9 @@ xcopy /Y /F /I "$(SolutionDir)Code\ThirdParty\DotNetHost\nethost.dll" "$(Solutio
     <ClCompile Include="Core\Math\Sphere3.cpp" />
     <ClCompile Include="Core\Math\Triangle2.cpp" />
     <ClCompile Include="Core\Math\Triangle3.cpp" />
-    <ClCompile Include="Core\Math\Vec2.cpp" />
-    <ClCompile Include="Core\Math\Vec3.cpp" />
-    <ClCompile Include="Core\Math\Vec4.cpp" />
+    <ClCompile Include="Core\Math\Vector2.cpp" />
+    <ClCompile Include="Core\Math\Vector3.cpp" />
+    <ClCompile Include="Core\Math\Vector4.cpp" />
     <ClCompile Include="Engine\Audio\AudioSystem.cpp" />
     <ClCompile Include="Engine\Input\AnalogJoystick.cpp" />
     <ClCompile Include="Engine\Input\InputSystem.cpp" />
@@ -362,9 +362,9 @@ xcopy /Y /F /I "$(SolutionDir)Code\ThirdParty\DotNetHost\nethost.dll" "$(Solutio
     <ClInclude Include="Core\Math\Sphere3.hpp" />
     <ClInclude Include="Core\Math\Triangle2.hpp" />
     <ClInclude Include="Core\Math\Triangle3.hpp" />
-    <ClInclude Include="Core\Math\Vec2.hpp" />
-    <ClInclude Include="Core\Math\Vec3.hpp" />
-    <ClInclude Include="Core\Math\Vec4.hpp" />
+    <ClInclude Include="Core\Math\Vector2.hpp" />
+    <ClInclude Include="Core\Math\Vector3.hpp" />
+    <ClInclude Include="Core\Math\Vector4.hpp" />
     <ClInclude Include="Engine\Audio\AudioSystem.hpp" />
     <ClInclude Include="Engine\Input\AnalogJoystick.hpp" />
     <ClInclude Include="Engine\Input\InputSystem.hpp" />

@@ -1,9 +1,8 @@
 namespace Ming;
 
-public partial class Node : MingObject
+public partial class Node3D : Node
 {
-    public Node()
-        : this(NativeFuncs.CreateObject("Node"))
+    public Node3D() : this(NativeFuncs.CreateObject("Node3D"))
     {
     }
 }

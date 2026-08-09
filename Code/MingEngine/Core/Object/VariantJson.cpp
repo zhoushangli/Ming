@@ -54,7 +54,7 @@ bool TrySerialize(Variant const& value, Json& outJson)
 	case Variant::Type::String:
 		outJson = value.As<std::string>();
 		return true;
-	case Variant::Type::Vec3:
+	case Variant::Type::Vector3:
 	{
 		Vector3 const& vector = value.As<Vector3>();
 		outJson               = Json::array({ vector.x, vector.y, vector.z });
@@ -151,7 +151,7 @@ bool TryDeserialize(Json const& json, Variant::Type expectedType, Variant& outVa
 				return true;
 			}
 			break;
-		case Variant::Type::Vec3:
+		case Variant::Type::Vector3:
 			if (IsNumberArray(json, 3))
 			{
 				outValue = Variant(Vector3(json[0].get<float>(), json[1].get<float>(), json[2].get<float>()));

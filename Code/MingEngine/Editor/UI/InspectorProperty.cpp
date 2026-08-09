@@ -94,7 +94,7 @@ InspectorProperty* InspectorProperty::Create(
 		return new InspectorPropertyString(std::move(info), std::move(labelId), std::move(onValueChanged));
 	case Variant::Type::Color:
 		return new InspectorPropertyColor(std::move(info), std::move(labelId), std::move(onValueChanged));
-	case Variant::Type::Vec3:
+	case Variant::Type::Vector3:
 		return new InspectorPropertyVec3(std::move(info), std::move(labelId), std::move(onValueChanged));
 	case Variant::Type::EulerAngles:
 		return new InspectorPropertyEuler(std::move(info), std::move(labelId), std::move(onValueChanged));
