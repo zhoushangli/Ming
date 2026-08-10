@@ -90,6 +90,9 @@ xcopy /Y /F /I "$(SolutionDir)Code\ThirdParty\DotNetHost\nethost.dll" "$(Solutio
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ProjectReference Include="..\CSharp\MingPlugins\MingPlugins.csproj">
+      <Project>{1340bef0-1951-eb9e-a3c5-15e26a91156a}</Project>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
   </ItemGroup>

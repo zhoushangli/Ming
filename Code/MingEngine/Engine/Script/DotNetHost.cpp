@@ -101,6 +101,48 @@ void CORECLR_DELEGATE_CALLTYPE MethodBindPtrCall(void const* methodBind, void* o
 	Object*           object        = static_cast<Object*>(objectPtr);
 	methodBindPtr->PtrCall(object, args, retPtr);
 }
+
+void* CORECLR_DELEGATE_CALLTYPE CreateString(void const* str, int32_t length)
+{
+	if (str == nullptr || length <= 0)
+	{
+		return nullptr;
+	}
+
+	return new std::string(reinterpret_cast<char const*>(str), static_cast<size_t>(length));
+}
+
+void* CORECLR_DELEGATE_CALLTYPE GetStringBuffer(void* str)
+{
+	if (str == nullptr)
+	{
+		return nullptr;
+	}
+
+	std::string* stringPtr = static_cast<std::string*>(str);
+	return (void*)stringPtr->data();
+}
+
+int CORECLR_DELEGATE_CALLTYPE GetStringLength(void const* str)
+{
+	if (str == nullptr)
+	{
+		return 0;
+	}
+
+	std::string const* stringPtr = static_cast<std::string const*>(str);
+	return static_cast<int>(stringPtr->size());
+}
+
+void CORECLR_DELEGATE_CALLTYPE DestroyString(void const* str)
+{
+	if (str == nullptr)
+	{
+		return;
+	}
+
+	delete static_cast<std::string const*>(str);
+}
 } // namespace
 
 bool DotNetHost::Initialize()
@@ -228,11 +270,9 @@ bool DotNetHost::Initialize()
 		return false;
 	}
 
-	NativeCallbacks const nativeCallbacks{ &LogUtf8,
-										   &CreateObject,
-										   &GetObjectClassName,
-										   &GetMethodBind,
-										   &MethodBindPtrCall };
+	NativeCallbacks const nativeCallbacks{ &LogUtf8,         &CreateObject,      &GetObjectClassName,
+										   &GetMethodBind,   &MethodBindPtrCall, &CreateString,
+										   &GetStringBuffer, &GetStringLength,   &DestroyString };
 
 	int32_t const initResult = m_initialize(&nativeCallbacks, static_cast<int32_t>(sizeof(nativeCallbacks)));
 	if (initResult != 0)

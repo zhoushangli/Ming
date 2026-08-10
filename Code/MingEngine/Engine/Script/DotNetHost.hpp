@@ -11,6 +11,10 @@ using GetMethodBindFunc      = void const*(CORECLR_DELEGATE_CALLTYPE*)(uint8_t c
 																	   int32_t        methodNameLength);
 using MethodBindPtrCallFunc =
 	void(CORECLR_DELEGATE_CALLTYPE*)(void const* methodBind, void* objectPtr, void** args, void* retPtr);
+using CreateStringFunc    = void*(CORECLR_DELEGATE_CALLTYPE*)(void const* str, int32_t length);
+using GetStringBufferFunc = void*(CORECLR_DELEGATE_CALLTYPE*)(void* str);
+using GetStringLengthFunc = int32_t(CORECLR_DELEGATE_CALLTYPE*)(void const* str);
+using DestroyStringFunc   = void(CORECLR_DELEGATE_CALLTYPE*)(void const* str);
 
 struct NativeCallbacks
 {
@@ -19,6 +23,10 @@ struct NativeCallbacks
 	GetObjectClassNameFunc m_getObjectClassName = nullptr;
 	GetMethodBindFunc      m_getMethodBind      = nullptr;
 	MethodBindPtrCallFunc  m_methodBindPtrCall  = nullptr;
+	CreateStringFunc       m_createString       = nullptr;
+	GetStringBufferFunc    m_getStringBuffer    = nullptr;
+	GetStringLengthFunc    m_getStringLength    = nullptr;
+	DestroyStringFunc      m_destroyString      = nullptr;
 };
 
 using InitializeFunc =

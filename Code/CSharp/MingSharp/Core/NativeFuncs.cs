@@ -10,6 +10,10 @@ internal unsafe struct UmanagedCallbacks
     public delegate* unmanaged<IntPtr, byte*> GetClassName;
     public delegate* unmanaged<byte*, int, byte*, int, IntPtr> GetMethodBind;
     public delegate* unmanaged<IntPtr, IntPtr, void**, void*, void> MethodBindPtrCall;
+    public delegate* unmanaged<byte*, int, IntPtr> CreateString;
+    public delegate* unmanaged<IntPtr, byte*> GetStringBuffer;
+    public delegate* unmanaged<IntPtr, int> GetStringLength;
+    public delegate* unmanaged<IntPtr, void> DestroyString;
 }
 
 public static unsafe class NativeFuncs
@@ -71,5 +75,25 @@ public static unsafe class NativeFuncs
     internal static void MethodBindPtrCall(IntPtr methodBind, IntPtr objPtr, void** args, void* retPtr)
     {
         s_callbacks.MethodBindPtrCall(methodBind, objPtr, args, retPtr);
+    }
+
+    internal static IntPtr CreateString(byte* str, int length)
+    {
+        return s_callbacks.CreateString(str, length);
+    }
+
+    internal static byte* GetStringBuffer(IntPtr strPtr)
+    {
+        return s_callbacks.GetStringBuffer(strPtr);
+    }
+
+    internal static int GetStringLength(IntPtr strPtr)
+    {
+        return s_callbacks.GetStringLength(strPtr);
+    }
+
+    internal static void DestroyString(IntPtr strPtr)
+    {
+        s_callbacks.DestroyString(strPtr);
     }
 }

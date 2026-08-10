@@ -37,15 +37,37 @@ struct PtrToArg
 template <>
 struct PtrToArg<bool>
 {
-    static bool Decode(void* ptr)
-    {
-        return *static_cast<uint8_t const*>(ptr) != 0;
-    }
+	static bool Decode(void* ptr) { return *static_cast<uint8_t const*>(ptr) != 0; }
 
-    static void Encode(bool value, void* ptr)
-    {
-        *static_cast<uint8_t*>(ptr) = value ? 1 : 0;
-    }
+	static void Encode(bool value, void* ptr) { *static_cast<uint8_t*>(ptr) = value ? 1 : 0; }
+};
+
+struct MingString
+{
+	std::string* m_string;
+};
+
+template <>
+struct PtrToArg<std::string>
+{
+	static std::string const& Decode(void* ptr)
+	{
+		MingString const* mingString = static_cast<MingString const*>(ptr);
+
+		return *mingString->m_string;
+	}
+
+	static void Encode(std::string const& value, void* ptr)
+	{
+		MingString* mingString = static_cast<MingString*>(ptr);
+
+		mingString->m_string = new std::string(value);
+	}
+};
+
+template <>
+struct PtrToArg<std::string const&> : PtrToArg<std::string>
+{
 };
 
 class MethodBind
@@ -111,8 +133,7 @@ private:
 	}
 
 	template <std::size_t... Indices>
-	void PtrCallMethod(
-		ClassType& instance, void** args, void* retPtr, std::index_sequence<Indices...>) const
+	void PtrCallMethod(ClassType& instance, void** args, void* retPtr, std::index_sequence<Indices...>) const
 	{
 		if constexpr (std::is_void_v<ReturnType>)
 		{
@@ -179,8 +200,7 @@ private:
 	}
 
 	template <std::size_t... Indices>
-	void PtrCallMethod(
-		ClassType const& instance, void** args, void* retPtr, std::index_sequence<Indices...>) const
+	void PtrCallMethod(ClassType const& instance, void** args, void* retPtr, std::index_sequence<Indices...>) const
 	{
 		if constexpr (std::is_void_v<ReturnType>)
 		{
