@@ -1,6 +1,6 @@
 #pragma once
 
-#include "MingEngine/Core/Render/Rgba8.hpp"
+#include "MingEngine/Core/Render/Color.hpp"
 #include "MingEngine/Engine/Event/EventSystem.hpp"
 
 #include <array>

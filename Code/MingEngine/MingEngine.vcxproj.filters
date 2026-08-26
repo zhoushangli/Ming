@@ -162,7 +162,7 @@
     <ClCompile Include="Core\NamedStrings.cpp">
       <Filter>Core</Filter>
     </ClCompile>
-    <ClCompile Include="Core\Render\Rgba8.cpp">
+    <ClCompile Include="Core\Render\Color.cpp">
       <Filter>Core\Render</Filter>
     </ClCompile>
     <ClCompile Include="Core\StringUtils.cpp">
@@ -450,9 +450,6 @@
     <ClCompile Include="Scene\Core\Node.cpp">
       <Filter>Scene\Core</Filter>
     </ClCompile>
-    <ClCompile Include="Scene\Core\NodeHandle.cpp">
-      <Filter>Scene\Core</Filter>
-    </ClCompile>
     <ClCompile Include="Scene\Core\PackedScene.cpp">
       <Filter>Scene\Core</Filter>
     </ClCompile>
@@ -522,10 +519,10 @@
     <ClCompile Include="Engine\Script\ScriptSystem.cpp">
       <Filter>Engine\Script</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Script\DotNetHost.cpp">
-      <Filter>Engine\Script</Filter>
-    </ClCompile>
     <ClCompile Include="Core\Object\Object.cpp">
+      <Filter>Core\Object</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Object\ObjectID.cpp">
       <Filter>Core\Object</Filter>
     </ClCompile>
     <ClCompile Include="Scene\RegisterAllTypes.cpp">
@@ -644,7 +641,7 @@
     <ClInclude Include="Core\NamedStrings.hpp">
       <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="Core\Render\Rgba8.hpp">
+    <ClInclude Include="Core\Render\Color.hpp">
       <Filter>Core\Render</Filter>
     </ClInclude>
     <ClInclude Include="Core\StringUtils.hpp">
@@ -950,9 +947,6 @@
     <ClInclude Include="Scene\Core\NodePath.hpp">
       <Filter>Scene\Core</Filter>
     </ClInclude>
-    <ClInclude Include="Scene\Core\NodeHandle.hpp">
-      <Filter>Scene\Core</Filter>
-    </ClInclude>
     <ClInclude Include="Scene\Core\PackedScene.hpp">
       <Filter>Scene\Core</Filter>
     </ClInclude>
@@ -1079,10 +1073,10 @@
     <ClInclude Include="Engine\Script\ScriptSystem.hpp">
       <Filter>Engine\Script</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Script\DotNetHost.hpp">
-      <Filter>Engine\Script</Filter>
-    </ClInclude>
     <ClInclude Include="Core\Object\Object.hpp">
+      <Filter>Core\Object</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Object\ObjectID.hpp">
       <Filter>Core\Object</Filter>
     </ClInclude>
     <ClInclude Include="Scene\RegisterAllTypes.hpp">

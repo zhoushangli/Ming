@@ -40,10 +40,17 @@ void ScenePanel::OnRender(EditorUIContext& context)
 	m_pendingReparent.Clear();
 
 	ImGui::Begin(GetTitle(), GetOpenState());
-	if (context.m_sceneTree == nullptr
-		|| (m_renamingNode.IsValid() && context.m_sceneTree->ResolveNode(m_renamingNode) == nullptr))
+	if (context.m_sceneTree == nullptr)
 	{
 		ClearRename();
+	}
+	else if (m_renamingNodeID.IsValid())
+	{
+		Node* renamingNode = ObjectDatabase::GetInstance<Node>(m_renamingNodeID);
+		if (renamingNode == nullptr || renamingNode->GetSceneTree() != context.m_sceneTree)
+		{
+			ClearRename();
+		}
 	}
 
 	ImGui::InputTextWithHint("##FilterNodes", "Filter Nodes", m_filter, sizeof(m_filter));
@@ -62,7 +69,7 @@ void ScenePanel::OnRender(EditorUIContext& context)
 	{
 		if (ImGui::MenuItem("Add Child Node..."))
 		{
-			m_createNodePopup.Open(NodeHandle::Invalid);
+			m_createNodePopup.Open(ObjectID::Invalid);
 		}
 		ImGui::EndPopup();
 	}
@@ -71,18 +78,22 @@ void ScenePanel::OnRender(EditorUIContext& context)
 	if (ImGui::IsWindowHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !ImGui::IsAnyItemHovered()
 		&& context.m_selection != nullptr)
 	{
-		context.m_selection->SetSelected(NodeHandle::Invalid);
+		context.m_selection->SetSelected(ObjectID::Invalid);
 	}
 
 	// If we want to delete the selected node
 	if (ImGui::IsWindowFocused() && ImGui::IsKeyPressed(ImGuiKey_Delete) && context.m_selection != nullptr)
 	{
-		NodeHandle const selectedHandle = context.m_selection->GetSelected();
-		Node*            selectedNode   = context.m_sceneTree->ResolveNode(selectedHandle);
+		ObjectID const selectedNodeID = context.m_selection->GetSelected();
+		Node*          selectedNode   = ObjectDatabase::GetInstance<Node>(selectedNodeID);
+		if (selectedNode != nullptr && selectedNode->GetSceneTree() != context.m_sceneTree)
+		{
+			selectedNode = nullptr;
+		}
 
 		if (selectedNode)
 		{
-			if (selectedHandle == m_renamingNode)
+			if (selectedNodeID == m_renamingNodeID)
 			{
 				ClearRename();
 			}
@@ -92,10 +103,18 @@ void ScenePanel::OnRender(EditorUIContext& context)
 	}
 
 	// If we want to reparent a node
-	if (m_pendingReparent.m_child != NodeHandle::Invalid && m_pendingReparent.m_parent != NodeHandle::Invalid)
+	if (m_pendingReparent.m_childID != ObjectID::Invalid && m_pendingReparent.m_parentID != ObjectID::Invalid)
 	{
-		Node* childNode  = context.m_sceneTree->ResolveNode(m_pendingReparent.m_child);
-		Node* parentNode = context.m_sceneTree->ResolveNode(m_pendingReparent.m_parent);
+		Node* childNode  = ObjectDatabase::GetInstance<Node>(m_pendingReparent.m_childID);
+		Node* parentNode = ObjectDatabase::GetInstance<Node>(m_pendingReparent.m_parentID);
+		if (childNode != nullptr && childNode->GetSceneTree() != context.m_sceneTree)
+		{
+			childNode = nullptr;
+		}
+		if (parentNode != nullptr && parentNode->GetSceneTree() != context.m_sceneTree)
+		{
+			parentNode = nullptr;
+		}
 
 		if (childNode && parentNode)
 		{
@@ -134,17 +153,17 @@ void ScenePanel::RenderNode(Node* node, std::string const& filterText, EditorUIC
 	{
 		flags |= ImGuiTreeNodeFlags_DefaultOpen;
 	}
-	if (context.m_selection != nullptr && context.m_selection->GetSelected() == node->GetHandle())
+	if (context.m_selection != nullptr && context.m_selection->GetSelected() == node->GetObjectID())
 	{
 		flags |= ImGuiTreeNodeFlags_Selected;
 	}
 
-	NodeHandle const handle = node->GetHandle();
-	ImGui::PushID(static_cast<int>(handle.GetUID()));
-	ImGui::PushID(static_cast<int>(handle.GetIndex()));
+	ObjectID const nodeID = node->GetObjectID();
+	ImGui::PushID(static_cast<int>(nodeID.GetUID()));
+	ImGui::PushID(static_cast<int>(nodeID.GetIndex()));
 
 	std::string const displayName       = node->GetName().empty() ? node->GetClassName() : node->GetName();
-	bool const        isRenaming        = m_renamingNode == handle;
+	bool const        isRenaming        = m_renamingNodeID == nodeID;
 	bool const        isOpen            = ImGui::TreeNodeEx("##SceneNodeTree", flags);
 	ImVec2 const      treeItemMin       = ImGui::GetItemRectMin();
 	ImVec2 const      treeItemMax       = ImGui::GetItemRectMax();
@@ -156,11 +175,11 @@ void ScenePanel::RenderNode(Node* node, std::string const& filterText, EditorUIC
 	{
 		if (context.m_selection != nullptr)
 		{
-			context.m_selection->SetSelected(handle);
+			context.m_selection->SetSelected(nodeID);
 		}
 		if (ImGui::MenuItem("Add Child Node..."))
 		{
-			m_createNodePopup.Open(handle);
+			m_createNodePopup.Open(nodeID);
 		}
 		ImGui::EndPopup();
 	}
@@ -169,7 +188,7 @@ void ScenePanel::RenderNode(Node* node, std::string const& filterText, EditorUIC
 	if (!isRenaming && ImGui::BeginDragDropSource())
 	{
 		EditorDragDrop& dragDrop = EditorNode::Get()->m_dragDrop;
-		dragDrop.SetDragData(handle);
+		dragDrop.SetDragData(nodeID);
 		ImGui::SetDragDropPayload(EditorDragDrop::PayloadType, nullptr, 0);
 		ImGui::TextUnformatted(node->GetName().c_str());
 
@@ -179,14 +198,14 @@ void ScenePanel::RenderNode(Node* node, std::string const& filterText, EditorUIC
 	if (!isRenaming && ImGui::BeginDragDropTarget())
 	{
 		EditorDragDrop& dragDrop = EditorNode::Get()->m_dragDrop;
-		NodeHandle      draggedHandle;
-		if (dragDrop.TryGetData(draggedHandle) && draggedHandle != handle)
+		ObjectID        draggedNodeID;
+		if (dragDrop.TryGetData(draggedNodeID) && draggedNodeID != nodeID)
 		{
 			dragDrop.AllowDrop();
 			if (ImGui::AcceptDragDropPayload(EditorDragDrop::PayloadType) != nullptr)
 			{
-				m_pendingReparent.m_child  = draggedHandle;
-				m_pendingReparent.m_parent = handle;
+				m_pendingReparent.m_childID  = draggedNodeID;
+				m_pendingReparent.m_parentID = nodeID;
 			}
 		}
 
@@ -240,7 +259,7 @@ void ScenePanel::RenderNode(Node* node, std::string const& filterText, EditorUIC
 
 	if (treeClicked && context.m_selection != nullptr)
 	{
-		context.m_selection->SetSelected(handle);
+		context.m_selection->SetSelected(nodeID);
 	}
 
 	if (treeDoubleClicked && !isRenaming)
@@ -248,7 +267,7 @@ void ScenePanel::RenderNode(Node* node, std::string const& filterText, EditorUIC
 		BeginRename(node);
 		if (context.m_selection != nullptr)
 		{
-			context.m_selection->SetSelected(handle);
+			context.m_selection->SetSelected(nodeID);
 		}
 	}
 
@@ -294,7 +313,7 @@ void ScenePanel::BeginRename(Node* node)
 		return;
 	}
 
-	m_renamingNode     = node->GetHandle();
+	m_renamingNodeID   = node->GetObjectID();
 	m_originalName     = node->GetName();
 	m_focusRenameInput = true;
 	strncpy_s(m_renameBuffer, m_originalName.c_str(), sizeof(m_renameBuffer) - 1);
@@ -311,7 +330,7 @@ void ScenePanel::FinishRename(Node* node, bool apply)
 
 void ScenePanel::ClearRename()
 {
-	m_renamingNode = NodeHandle::Invalid;
+	m_renamingNodeID = ObjectID::Invalid;
 	m_originalName.clear();
 	m_renameBuffer[0]  = '\0';
 	m_focusRenameInput = false;

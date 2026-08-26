@@ -1,10 +1,10 @@
 #pragma once
 
 #include "MingEngine/Core/Math/Vector2.hpp"
+#include "MingEngine/Core/Object/ObjectID.hpp"
 #include "MingEngine/Editor/EditorData.hpp"
 #include "MingEngine/Editor/UI/EditorUIContext.hpp"
 #include "MingEngine/Scene/Core/Node.hpp"
-#include "MingEngine/Scene/Core/NodeHandle.hpp"
 
 class Camera3D;
 class EditorCamera;
@@ -14,12 +14,12 @@ class EditorGizmos;
 class EditorSelection
 {
 public:
-	NodeHandle GetSelected() const;
-	void       SetSelected(NodeHandle handle);
-	void       Clear();
+	ObjectID GetSelected() const;
+	void     SetSelected(ObjectID nodeID);
+	void     Clear();
 
 private:
-	NodeHandle m_selectedNodeHandle = NodeHandle::Invalid;
+	ObjectID m_selectedNodeID = ObjectID::Invalid;
 };
 
 class EditorDragDrop
@@ -43,27 +43,27 @@ public:
 		}
 	}
 
-	void SetDragData(NodeHandle handle)
+	void SetDragData(ObjectID nodeID)
 	{
 		m_type        = Type::Node;
 		m_virtualPath = {};
-		m_nodeHandle  = handle;
+		m_nodeID      = nodeID;
 	}
 	void SetDragData(VirtualPath const& virtualPath)
 	{
 		m_type        = Type::FileSystemEntry;
 		m_virtualPath = virtualPath;
-		m_nodeHandle  = NodeHandle::Invalid;
+		m_nodeID      = ObjectID::Invalid;
 	}
 
-	bool TryGetData(NodeHandle& outHandle) const
+	bool TryGetData(ObjectID& outNodeID) const
 	{
-		if (m_type != Type::Node || m_nodeHandle == NodeHandle::Invalid)
+		if (m_type != Type::Node || m_nodeID == ObjectID::Invalid)
 		{
 			return false;
 		}
 
-		outHandle = m_nodeHandle;
+		outNodeID = m_nodeID;
 		return true;
 	}
 	bool TryGetData(VirtualPath& outVirtualPath) const
@@ -84,13 +84,13 @@ public:
 	{
 		m_type        = Type::None;
 		m_virtualPath = {};
-		m_nodeHandle  = NodeHandle::Invalid;
+		m_nodeID      = ObjectID::Invalid;
 	}
 
 private:
 	Type        m_type = Type::None;
 	VirtualPath m_virtualPath;
-	NodeHandle  m_nodeHandle  = NodeHandle::Invalid;
+	ObjectID    m_nodeID      = ObjectID::Invalid;
 	bool        m_dropAllowed = false;
 };
 

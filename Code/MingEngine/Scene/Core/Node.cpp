@@ -32,7 +32,6 @@ Node* Node::GetRoot() const
 
 Node*                     Node::GetParent() const { return m_data.m_parent; }
 SceneTree*                Node::GetSceneTree() const { return m_data.m_sceneTree; }
-NodeHandle                Node::GetHandle() const { return m_data.m_handle; }
 std::vector<Node*> const& Node::GetChildren() const { return m_data.m_children; }
 std::string const&        Node::GetName() const { return m_data.m_name; }
 bool                      Node::GetSerializable() const { return m_data.m_isSerializable; }
@@ -406,7 +405,6 @@ void Node::PropagateEnterTree()
 		m_data.m_viewport = parent->m_data.m_viewport;
 	}
 
-	// TODO: In future we should change this to object database and object handle
 	m_data.m_sceneTree->RegisterNode(this);
 
 	Notification((int)NotificationType::EnterTree);

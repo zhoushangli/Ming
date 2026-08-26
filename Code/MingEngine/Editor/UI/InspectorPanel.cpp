@@ -105,8 +105,8 @@ void InspectorPanel::RebuildProperties(EditorUIContext& context)
 	}
 	m_propertyGroups.clear();
 
-	Node* node = context.m_sceneTree->ResolveNode(m_cachedHandle);
-	if (node == nullptr)
+	Node* node = ObjectDatabase::GetInstance<Node>(m_cachedObjectID);
+	if (node == nullptr || node->GetSceneTree() != context.m_sceneTree)
 	{
 		return;
 	}
@@ -171,28 +171,28 @@ void InspectorPanel::OnRender(EditorUIContext& context)
 		return;
 	}
 
-	NodeHandle handle = context.m_selection->GetSelected();
-	if (!handle.IsValid())
+	ObjectID objectID = context.m_selection->GetSelected();
+	if (!objectID.IsValid())
 	{
 		ImGui::TextUnformatted("No object selected");
 		ImGui::End();
 		return;
 	}
 
-	Node* node = context.m_sceneTree->ResolveNode(handle);
-	if (node == nullptr)
+	Node* node = ObjectDatabase::GetInstance<Node>(objectID);
+	if (node == nullptr || node->GetSceneTree() != context.m_sceneTree)
 	{
-		m_cachedHandle = NodeHandle();
+		m_cachedObjectID = ObjectID::Invalid;
 		ImGui::TextUnformatted("Selected object not found");
 		ImGui::End();
 		return;
 	}
 
 	// 2) Detect selection change
-	bool const selectionChanged = (m_cachedHandle != handle);
+	bool const selectionChanged = (m_cachedObjectID != objectID);
 	if (selectionChanged)
 	{
-		m_cachedHandle = handle;
+		m_cachedObjectID = objectID;
 		BuildInheritanceChain(node->GetClassName());
 	}
 

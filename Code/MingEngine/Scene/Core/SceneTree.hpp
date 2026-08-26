@@ -2,7 +2,6 @@
 
 #include "MingEngine/Scene/3D/Camera3D.hpp"
 #include "MingEngine/Scene/Core/Node.hpp"
-#include "MingEngine/Scene/Core/NodeHandle.hpp"
 
 #include <string>
 #include <vector>
@@ -23,9 +22,8 @@ public:
 	// 2) FlushPendingNode detaches, exits, and deletes queued nodes at a controlled point.
 	// 3) The root SceneTree cannot be queued for destruction.
 	void QueueDestroyNode(Node* node);
-	void QueueDestroyNode(NodeHandle node);
 	void FlushPendingNode();
-	void QueueTransformChangedNode(NodeHandle node);
+	void QueueTransformChangedNode(ObjectID nodeID);
 	void FlushTransformChangedNodes();
 
 	void  UpdateScene(float deltaSeconds);
@@ -33,8 +31,6 @@ public:
 	Node* GetScene() const;
 	void  ClearScene();
 	void  ChangeScene(Node* newSceneNode);
-
-	Node* ResolveNode(NodeHandle handle) const;
 
 	void      SetUICamera(Camera3D* camera);
 	Camera3D* GetWorldCamera() const;
@@ -45,12 +41,6 @@ public:
 	float GetDeltaSeconds() const;
 
 protected:
-	struct PendingReparent
-	{
-		NodeHandle m_newParent = NodeHandle::Invalid;
-		NodeHandle m_child     = NodeHandle::Invalid;
-	};
-
 	void         RegisterNode(Node* node);
 	void         UnregisterNode(Node* node);
 	unsigned int FindAvailableNodeIndex() const;
@@ -61,17 +51,16 @@ protected:
 	virtual void UpdatePhysics(float deltaSeconds);
 
 protected:
-	std::vector<NodeHandle> m_pendingDestroyNodes;
-	std::vector<NodeHandle> m_transformChangedNodes;
+	std::vector<ObjectID> m_pendingDestroyNodes;
+	std::vector<ObjectID> m_transformChangedNodes;
 
 	std::vector<Node*> m_registeredNodes;
-	unsigned int       m_nextNodeUID = 1u;
 
 	// tree -> root -> scene node
 	// Scene also need pending, because the old scene needs pending to destroy safely
-	Viewport*  m_root         = nullptr;
-	NodeHandle m_sceneHandle  = NodeHandle::Invalid;
-	Node*      m_pendingScene = nullptr;
+	Viewport* m_root         = nullptr;
+	ObjectID  m_sceneID      = ObjectID::Invalid;
+	Node*     m_pendingScene = nullptr;
 
 	// Raycast space is a helping class to manage raycast objects
 	// and perform raycasting in the scene.

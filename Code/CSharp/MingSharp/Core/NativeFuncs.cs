@@ -3,7 +3,8 @@ using System.Text;
 
 namespace Ming;
 
-internal unsafe struct UmanagedCallbacks
+[StructLayout(LayoutKind.Sequential)]
+internal unsafe struct NativeCallbacks
 {
     public delegate* unmanaged<byte*, int, int> LogUtf8;
     public delegate* unmanaged<byte*, IntPtr> CreateObject;
@@ -16,20 +17,30 @@ internal unsafe struct UmanagedCallbacks
     public delegate* unmanaged<IntPtr, void> DestroyString;
 }
 
+[StructLayout(LayoutKind.Sequential)]
+internal unsafe struct ManagedCallbacks
+{
+    public delegate* unmanaged<int> Ping;
+}
+
 public static unsafe class NativeFuncs
 {
-    private static UmanagedCallbacks s_callbacks;
+    private static NativeCallbacks s_callbacks;
 
     // Store the native function pointer table passed from the engine.
     // e.g. NativeFuncs.Initialize(callbacksPtr, sizeof(NativeCallbacks))
-    public static void Initialize(IntPtr callbacks, int size)
+    public static void Initialize(IntPtr nativeCallbacks, int nativeCallbackSize, IntPtr managedCallbacks, int managedCallbackSize)
     {
-        if (size != sizeof(UmanagedCallbacks))
+        if (nativeCallbackSize != sizeof(NativeCallbacks) || managedCallbackSize != sizeof(ManagedCallbacks))
         {
             throw new InvalidOperationException("Callbacks size mismatch.");
         }
 
-        s_callbacks = *(UmanagedCallbacks*)callbacks;
+        s_callbacks = *(NativeCallbacks*)nativeCallbacks;
+        *(ManagedCallbacks*)managedCallbacks = new ManagedCallbacks
+        {
+            Ping = &Ping
+        };
     }
 
     // Forward a UTF-8 log message to the native engine.
@@ -95,5 +106,11 @@ public static unsafe class NativeFuncs
     internal static void DestroyString(IntPtr strPtr)
     {
         s_callbacks.DestroyString(strPtr);
+    }
+
+    [UnmanagedCallersOnly]
+    internal static int Ping()
+    {
+        return 42; // Arbitrary value to indicate the managed code is alive.
     }
 }

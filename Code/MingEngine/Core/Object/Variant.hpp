@@ -9,7 +9,7 @@
 #include "MingEngine/Core/Math/Vector3.hpp"
 #include "MingEngine/Core/Math/Vector4.hpp"
 #include "MingEngine/Core/Object/Object.hpp"
-#include "MingEngine/Core/Render/Rgba8.hpp"
+#include "MingEngine/Core/Render/Color.hpp"
 
 #include <string>
 #include <variant>

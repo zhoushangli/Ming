@@ -34,7 +34,7 @@ private:
 	GizmoComponent*              m_activeComponent  = nullptr;
 	Vector3                      m_hoveredHitPos    = Vector3::Zero;
 	MathRaycastQuery3D           m_dragStartRaycastInfo;
-	NodeHandle                   m_draggedNodeHandle = NodeHandle::Invalid;
+	ObjectID                     m_draggedNodeID = ObjectID::Invalid;
 	Vector3                      m_dragStartPosition = Vector3::Zero;
 	EulerAngles                  m_dragStartOrientation;
 	Vector3                      m_dragStartScale = Vector3::One;

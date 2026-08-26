@@ -53,32 +53,14 @@ void SceneTree::QueueDestroyNode(Node* node)
 		return;
 	}
 
-	node->m_data.m_isPendingDestroy = true;
-	QueueDestroyNode(node->GetHandle());
-}
-
-void SceneTree::QueueDestroyNode(NodeHandle handle)
-{
-	Node* node = ResolveNode(handle);
-	if (node == nullptr)
+	ObjectID const nodeID = node->GetObjectID();
+	if (!nodeID.IsValid())
 	{
 		return;
 	}
 
-	if (node->m_data.m_isPendingDestroy)
-	{
-		auto const foundHandle = std::find(m_pendingDestroyNodes.begin(), m_pendingDestroyNodes.end(), handle);
-		if (foundHandle != m_pendingDestroyNodes.end())
-		{
-			return;
-		}
-	}
-	else
-	{
-		node->m_data.m_isPendingDestroy = true;
-	}
-
-	m_pendingDestroyNodes.push_back(handle);
+	node->m_data.m_isPendingDestroy = true;
+	m_pendingDestroyNodes.push_back(nodeID);
 }
 
 void SceneTree::FlushPendingNode()
@@ -86,8 +68,8 @@ void SceneTree::FlushPendingNode()
 	// Flush pending scene
 	if (m_pendingScene != nullptr)
 	{
-		Node* previousScene = ResolveNode(m_sceneHandle);
-		if (previousScene != nullptr)
+		Node* previousScene = ObjectDatabase::GetInstance<Node>(m_sceneID);
+		if (previousScene != nullptr && previousScene->GetSceneTree() == this)
 		{
 			m_root->DetachChildImmediately(previousScene);
 			previousScene->MoveToSceneTree(nullptr);
@@ -95,22 +77,22 @@ void SceneTree::FlushPendingNode()
 		}
 
 		m_root->AddNode(m_pendingScene);
-		m_sceneHandle  = m_pendingScene->GetHandle();
+		m_sceneID      = m_pendingScene->GetObjectID();
 		m_pendingScene = nullptr;
 	}
 
 	// Flush pending destroy nodes
-	std::vector<NodeHandle> pendingDestroyNodes = m_pendingDestroyNodes;
+	std::vector<ObjectID> pendingDestroyNodes = m_pendingDestroyNodes;
 	m_pendingDestroyNodes.clear();
 
-	for (NodeHandle handle : pendingDestroyNodes)
+	for (ObjectID nodeID : pendingDestroyNodes)
 	{
-		if (handle == m_sceneHandle)
+		if (nodeID == m_sceneID)
 		{
-			m_sceneHandle = NodeHandle::Invalid;
+			m_sceneID = ObjectID::Invalid;
 		}
 
-		Node* node = ResolveNode(handle);
+		Node* node = ObjectDatabase::GetInstance<Node>(nodeID);
 		if (node == nullptr || node->GetSceneTree() != this || !node->m_data.m_isPendingDestroy)
 		{
 			continue;
@@ -125,32 +107,31 @@ void SceneTree::FlushPendingNode()
 	}
 }
 
-void SceneTree::QueueTransformChangedNode(NodeHandle handle)
+void SceneTree::QueueTransformChangedNode(ObjectID nodeID)
 {
-	if (!handle.IsValid())
+	if (!nodeID.IsValid())
 	{
 		return;
 	}
 
-	if (std::find(m_transformChangedNodes.begin(), m_transformChangedNodes.end(), handle)
+	if (std::find(m_transformChangedNodes.begin(), m_transformChangedNodes.end(), nodeID)
 		!= m_transformChangedNodes.end())
 	{
 		return;
 	}
 
-	m_transformChangedNodes.push_back(handle);
+	m_transformChangedNodes.push_back(nodeID);
 }
 
 void SceneTree::FlushTransformChangedNodes()
 {
-	std::vector<NodeHandle> transformChangedNodes = m_transformChangedNodes;
+	std::vector<ObjectID> transformChangedNodes = m_transformChangedNodes;
 	m_transformChangedNodes.clear();
 
-	for (NodeHandle handle : transformChangedNodes)
+	for (ObjectID nodeID : transformChangedNodes)
 	{
-		Node*   node   = ResolveNode(handle);
-		Node3D* node3D = dynamic_cast<Node3D*>(node);
-		if (node3D != nullptr)
+		Node3D* node3D = ObjectDatabase::GetInstance<Node3D>(nodeID);
+		if (node3D != nullptr && node3D->GetSceneTree() == this)
 		{
 			node3D->OnTransformChanged();
 		}
@@ -187,7 +168,11 @@ void SceneTree::UpdateScene(float deltaSeconds)
 
 Node* SceneTree::GetRoot() const { return m_root; }
 
-Node* SceneTree::GetScene() const { return ResolveNode(m_sceneHandle); }
+Node* SceneTree::GetScene() const
+{
+	Node* scene = ObjectDatabase::GetInstance<Node>(m_sceneID);
+	return scene != nullptr && scene->GetSceneTree() == this ? scene : nullptr;
+}
 
 void SceneTree::ClearScene()
 {
@@ -211,28 +196,6 @@ Camera3D* SceneTree::GetWorldCamera() const { return m_root->GetWorldCamera(); }
 
 float SceneTree::GetDeltaSeconds() const { return m_deltaSeconds; }
 
-Node* SceneTree::ResolveNode(NodeHandle handle) const
-{
-	if (!handle.IsValid())
-	{
-		return nullptr;
-	}
-
-	unsigned int const index = handle.GetIndex();
-	if (index >= m_registeredNodes.size())
-	{
-		return nullptr;
-	}
-
-	Node* node = m_registeredNodes[index];
-	if (node == nullptr || node->m_data.m_handle != handle)
-	{
-		return nullptr;
-	}
-
-	return node;
-}
-
 void SceneTree::RegisterNode(Node* node)
 {
 	if (node == nullptr)
@@ -240,7 +203,7 @@ void SceneTree::RegisterNode(Node* node)
 		return;
 	}
 
-	if (node->m_data.m_handle.IsValid() && ResolveNode(node->m_data.m_handle) == node)
+	if (std::find(m_registeredNodes.begin(), m_registeredNodes.end(), node) != m_registeredNodes.end())
 	{
 		return;
 	}
@@ -254,31 +217,20 @@ void SceneTree::RegisterNode(Node* node)
 	{
 		m_registeredNodes[index] = node;
 	}
-
-	unsigned int uid = m_nextNodeUID & 0x0000ffffu;
-	if (uid == 0x0000ffffu)
-	{
-		uid = 1u;
-	}
-	++m_nextNodeUID;
-
-	node->m_data.m_handle = NodeHandle(uid, index);
 }
 
 void SceneTree::UnregisterNode(Node* node)
 {
-	if (node == nullptr || !node->m_data.m_handle.IsValid())
+	if (node == nullptr)
 	{
 		return;
 	}
 
-	unsigned int const index = node->m_data.m_handle.GetIndex();
-	if (index < m_registeredNodes.size() && m_registeredNodes[index] == node)
+	auto const foundNode = std::find(m_registeredNodes.begin(), m_registeredNodes.end(), node);
+	if (foundNode != m_registeredNodes.end())
 	{
-		m_registeredNodes[index] = nullptr;
+		*foundNode = nullptr;
 	}
-
-	node->m_data.m_handle = NodeHandle::Invalid;
 }
 
 unsigned int SceneTree::FindAvailableNodeIndex() const

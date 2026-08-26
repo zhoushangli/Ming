@@ -15,7 +15,7 @@ public:
 	Viewport();
 	~Viewport() override;
 
-	// Scene objects register by NodeHandle so deferred destruction and reparenting
+	// Scene objects register by ObjectID so deferred destruction and reparenting
 	// cannot leave raw instance or light pointers in the Viewport.
 	void RegisterVisualizeInstance(VisualInstance3D *visualizeInstance);
 	void UnregisterVisualizeInstance(VisualInstance3D *visualizeInstance);
@@ -40,10 +40,10 @@ protected:
 	void OnNotification(int notification);
 
 private:
-	std::vector<NodeHandle> m_instances;
+	std::vector<ObjectID> m_instanceIDs;
 
-	std::vector<NodeHandle> m_worldCameraInstances;
-	NodeHandle m_worldCameraHandle = NodeHandle::Invalid;
+	std::vector<ObjectID> m_worldCameraIDs;
+	ObjectID m_worldCameraID = ObjectID::Invalid;
 	CameraContext m_tmpWorldCamera;
 
 	ViewportInfo m_viewportInfo;

@@ -3,7 +3,6 @@
 #include "MingEngine/Core/Object/ClassDatabase.hpp"
 #include "MingEngine/Core/Object/Object.hpp"
 #include "MingEngine/Core/Object/Script.hpp"
-#include "MingEngine/Scene/Core/NodeHandle.hpp"
 #include "MingEngine/Scene/Core/NodePath.hpp"
 
 #include "MingEngine/Engine/Application/Engine.hpp"
@@ -43,7 +42,6 @@ public:
 
 	Node*                     GetRoot() const;
 	Node*                     GetParent() const;
-	NodeHandle                GetHandle() const;
 	std::vector<Node*> const& GetChildren() const;
 	std::string const&        GetName() const;
 	bool                      GetSerializable() const;
@@ -83,7 +81,7 @@ protected:
 	std::string EnsureUniqueName(std::string const& requestedName) const;
 
 	// Lifecycle callbacks:
-	// 1) OnEnterTree is called after this node receives a SceneTree and NodeHandle.
+	// 1) OnEnterTree is called after this node receives a SceneTree.
 	// 2) OnExitTree is called before this node unregisters from its SceneTree.
 	// 3) OnReady is called after this node and its children enter a SceneTree.
 	// 4) OnProcess is called once per frame by SceneTree::UpdateScene.
@@ -125,7 +123,6 @@ protected:
 		SceneTree*         m_sceneTree = nullptr;
 		Viewport*          m_viewport  = nullptr;
 		std::vector<Node*> m_children;
-		NodeHandle         m_handle;
 		Ref<Script>        m_script;
 		bool               m_isPendingDestroy = false;
 		bool               m_isSerializable   = true;

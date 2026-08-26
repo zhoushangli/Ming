@@ -49,15 +49,16 @@ void Viewport::RegisterVisualizeInstance(VisualInstance3D* visualizeInstance)
 {
 	GUARANTEE_OR_DIE(visualizeInstance != nullptr, "Viewport::RegisterVisualizeInstance failed: instance is null.");
 
-	NodeHandle handle = visualizeInstance->GetHandle();
-	if (!handle.IsValid())
+	SceneTree*     sceneTree  = GetSceneTree();
+	ObjectID const instanceID = visualizeInstance->GetObjectID();
+	if (sceneTree == nullptr || !instanceID.IsValid() || visualizeInstance->GetSceneTree() != sceneTree)
 	{
 		return;
 	}
 
-	if (std::find(m_instances.begin(), m_instances.end(), handle) == m_instances.end())
+	if (std::find(m_instanceIDs.begin(), m_instanceIDs.end(), instanceID) == m_instanceIDs.end())
 	{
-		m_instances.push_back(handle);
+		m_instanceIDs.push_back(instanceID);
 	}
 }
 
@@ -65,13 +66,13 @@ void Viewport::UnregisterVisualizeInstance(VisualInstance3D* visualizeInstance)
 {
 	GUARANTEE_OR_DIE(visualizeInstance != nullptr, "Viewport::UnregisterVisualizeInstance failed: instance is null.");
 
-	NodeHandle handle = visualizeInstance->GetHandle();
-	if (handle.IsValid())
+	ObjectID const instanceID = visualizeInstance->GetObjectID();
+	if (instanceID.IsValid())
 	{
-		auto const foundInstance = std::find(m_instances.begin(), m_instances.end(), handle);
-		if (foundInstance != m_instances.end())
+		auto const foundInstance = std::find(m_instanceIDs.begin(), m_instanceIDs.end(), instanceID);
+		if (foundInstance != m_instanceIDs.end())
 		{
-			m_instances.erase(foundInstance);
+			m_instanceIDs.erase(foundInstance);
 		}
 	}
 }
@@ -83,19 +84,20 @@ void Viewport::RegisterWorldCamera(Camera3D* camera)
 		return;
 	}
 
-	NodeHandle handle = camera->GetHandle();
-	if (!handle.IsValid())
+	SceneTree*     sceneTree = GetSceneTree();
+	ObjectID const cameraID  = camera->GetObjectID();
+	if (sceneTree == nullptr || !cameraID.IsValid() || camera->GetSceneTree() != sceneTree)
 	{
 		return;
 	}
 
-	if (std::find(m_worldCameraInstances.begin(), m_worldCameraInstances.end(), handle) == m_worldCameraInstances.end())
+	if (std::find(m_worldCameraIDs.begin(), m_worldCameraIDs.end(), cameraID) == m_worldCameraIDs.end())
 	{
-		m_worldCameraInstances.push_back(handle);
+		m_worldCameraIDs.push_back(cameraID);
 
-		if (m_worldCameraHandle == NodeHandle::Invalid)
+		if (m_worldCameraID == ObjectID::Invalid)
 		{
-			m_worldCameraHandle = handle;
+			m_worldCameraID = cameraID;
 		}
 	}
 }
@@ -107,15 +109,15 @@ void Viewport::UnregisterWorldCamera(Camera3D* camera)
 		return;
 	}
 
-	NodeHandle handle      = camera->GetHandle();
-	auto const foundCamera = std::find(m_worldCameraInstances.begin(), m_worldCameraInstances.end(), handle);
-	if (foundCamera != m_worldCameraInstances.end())
+	ObjectID const cameraID = camera->GetObjectID();
+	auto const foundCamera  = std::find(m_worldCameraIDs.begin(), m_worldCameraIDs.end(), cameraID);
+	if (foundCamera != m_worldCameraIDs.end())
 	{
-		m_worldCameraInstances.erase(foundCamera);
+		m_worldCameraIDs.erase(foundCamera);
 
-		if (m_worldCameraHandle == handle)
+		if (m_worldCameraID == cameraID)
 		{
-			m_worldCameraHandle = m_worldCameraInstances.empty() ? NodeHandle::Invalid : m_worldCameraInstances.front();
+			m_worldCameraID = m_worldCameraIDs.empty() ? ObjectID::Invalid : m_worldCameraIDs.front();
 		}
 	}
 }
@@ -123,8 +125,13 @@ void Viewport::UnregisterWorldCamera(Camera3D* camera)
 Camera3D* Viewport::GetWorldCamera() const
 {
 	SceneTree* sceneTree = GetSceneTree();
-	Camera3D*  camera    = dynamic_cast<Camera3D*>(sceneTree->ResolveNode(m_worldCameraHandle));
-	return camera;
+	if (sceneTree == nullptr)
+	{
+		return nullptr;
+	}
+
+	Camera3D*  camera    = ObjectDatabase::GetInstance<Camera3D>(m_worldCameraID);
+	return camera != nullptr && camera->GetSceneTree() == sceneTree ? camera : nullptr;
 }
 
 IntVec2 Viewport::GetOutputResolution() const { return m_viewportInfo.m_outputResolution; }
@@ -162,7 +169,7 @@ void Viewport::PrepareRenderData()
 		SetOutputResolution(g_engine->m_windowSystem->GetClientDimensions());
 	}
 
-	// 1) CameraContext pointers are transient because NodeHandles may change after reparenting.
+	// 1) CameraContext pointers are transient because referenced nodes may be destroyed.
 	float     aspect             = m_viewportInfo.m_outputResolution.x / (float)m_viewportInfo.m_outputResolution.y;
 	Camera3D* worldCamera        = GetWorldCamera();
 	m_viewportInfo.m_worldCamera = nullptr;
@@ -178,13 +185,13 @@ void Viewport::PrepareRenderData()
 		requests.clear();
 	}
 
-	// 3) Resolve handles and prune stale registrations while collecting data.
-	for (auto instanceIter = m_instances.begin(); instanceIter != m_instances.end();)
+	// 3) Resolve object IDs and prune stale registrations while collecting data.
+	for (auto instanceIter = m_instanceIDs.begin(); instanceIter != m_instanceIDs.end();)
 	{
-		auto* instance = dynamic_cast<VisualInstance3D*>(sceneTree->ResolveNode(*instanceIter));
-		if (instance == nullptr)
+		auto* instance = ObjectDatabase::GetInstance<VisualInstance3D>(*instanceIter);
+		if (instance == nullptr || instance->GetSceneTree() != sceneTree)
 		{
-			instanceIter = m_instances.erase(instanceIter);
+			instanceIter = m_instanceIDs.erase(instanceIter);
 			continue;
 		}
 

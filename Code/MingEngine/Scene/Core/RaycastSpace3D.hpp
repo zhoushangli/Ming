@@ -5,7 +5,6 @@
 #include "MingEngine/Core/Math/Vector3.hpp"
 #include "MingEngine/Core/Object/Object.hpp"
 #include "MingEngine/Core/Object/RefCounted.hpp"
-#include "MingEngine/Scene/Core/NodeHandle.hpp"
 
 #include <vector>
 
@@ -45,10 +44,7 @@ public:
 	Vector3    m_start;
 	Vector3    m_direction;
 	float      m_maxDistance = 10000.f;
-	NodeHandle m_exclude     = NodeHandle::Invalid;
-
-private:
-	Node* m_excludeNode = nullptr;
+	ObjectID m_exclude = ObjectID::Invalid;
 };
 
 class RaycastResult3D : public RefCounted
@@ -79,8 +75,6 @@ public:
 	Vector3 GetRayStartPosition() const;
 	Vector3 GetRayForwardNormal() const;
 	float   GetRayMaxLength() const;
-	int     GetOwner() const;
-
 	void SetDidImpact(bool didImpact);
 	void SetImpactDistance(float impactDistance);
 	void SetImpactPosition(Vector3 const& impactPosition);
@@ -104,7 +98,7 @@ public:
 	Vector3 m_rayFwdNormal;
 	float   m_rayMaxLength = 1.f;
 
-	NodeHandle m_owner;
+	ObjectID m_owner = ObjectID::Invalid;
 };
 
 class RaycastObject
@@ -116,7 +110,7 @@ public:
 	virtual RaycastResult3D IntersectRay(RaycastQuery3D const& query)    = 0;
 
 public:
-	NodeHandle m_owner = NodeHandle::Invalid;
+	ObjectID m_owner = ObjectID::Invalid;
 };
 
 class RaycastSpace3D : public Object

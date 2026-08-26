@@ -1,7 +1,7 @@
 #include "MingEngine/Core/Image.hpp"
 
 #include "MingEngine/Core/ErrorWarningAssert.hpp"
-#include "MingEngine/Core/Render/Rgba8.hpp"
+#include "MingEngine/Core/Render/Color.hpp"
 
 #include "ThirdParty/stb/stb_image.h"
 

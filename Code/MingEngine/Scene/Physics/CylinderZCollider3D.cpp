@@ -1,6 +1,6 @@
 #include "MingEngine/Scene/Physics/CylinderZCollider3D.hpp"
 
-#include "MingEngine/Core/Render/Rgba8.hpp"
+#include "MingEngine/Core/Render/Color.hpp"
 #include "MingEngine/Engine/Render/DebugGizmos.hpp"
 
 void CylinderZCollider3D::RenderDebug() const

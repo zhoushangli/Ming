@@ -3,7 +3,7 @@
 #include "MingEngine/Core/Math/AABB2.hpp"
 #include "MingEngine/Core/Math/IntVec2.hpp"
 #include "MingEngine/Core/Math/Matrix4x4.hpp"
-#include "MingEngine/Core/Render/Rgba8.hpp"
+#include "MingEngine/Core/Render/Color.hpp"
 #include "MingEngine/Engine/Render/D3D11RenderBackend.hpp"
 #include "MingEngine/Engine/Render/PostProcessChain.hpp"
 

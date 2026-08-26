@@ -1,8 +1,8 @@
 #pragma once
 
+#include "MingEngine/Core/Object/ObjectID.hpp"
 #include "MingEngine/Editor/UI/EditorPanel.hpp"
 #include "MingEngine/Editor/UI/Popup/CreateNodePopup.hpp"
-#include "MingEngine/Scene/Core/NodeHandle.hpp"
 
 #include <string>
 
@@ -25,7 +25,7 @@ private:
 private:
 	char m_filter[64] = {};
 	char m_renameBuffer[256] = {};
-	NodeHandle m_renamingNode = NodeHandle::Invalid;
+	ObjectID m_renamingNodeID = ObjectID::Invalid;
 	std::string m_originalName;
 	bool m_focusRenameInput = false;
 	CreateNodePopup m_createNodePopup;
@@ -34,12 +34,12 @@ private:
 	{
 		void Clear()
 		{
-			m_child  = NodeHandle::Invalid;
-			m_parent = NodeHandle::Invalid;
+			m_childID  = ObjectID::Invalid;
+			m_parentID = ObjectID::Invalid;
 		}
 
-		NodeHandle m_child;
-		NodeHandle m_parent;
+		ObjectID m_childID;
+		ObjectID m_parentID;
 	};
 	PendingReparent m_pendingReparent;
 };

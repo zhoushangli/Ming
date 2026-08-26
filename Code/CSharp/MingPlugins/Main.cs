@@ -22,7 +22,9 @@ namespace MingPlugins
 		[UnmanagedCallersOnly]
 		private static unsafe int Initialize(
 			void* nativeCallbacks,
-			int nativeCallbacksSize)
+			int nativeCallbacksSize,
+			void* managedCallbacks,
+			int managedCallbacksSize)
 		{
 			try
 			{
@@ -31,11 +33,10 @@ namespace MingPlugins
 					return -1;
 				}
 
-				NativeFuncs.Initialize((IntPtr)nativeCallbacks, nativeCallbacksSize);
-
-				Node3D node = new Node3D();
-				node.SetName("MyNode3D");
-				Log($"Node3D name: {node.GetName()}");
+				NativeFuncs.Initialize((IntPtr)nativeCallbacks,
+					nativeCallbacksSize,
+					(IntPtr)managedCallbacks,
+					managedCallbacksSize);
 
 				return 0;
 			}

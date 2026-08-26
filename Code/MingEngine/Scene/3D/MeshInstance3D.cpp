@@ -106,7 +106,7 @@ void MeshInstance3D::OnNotification(int notification)
 		if (raycastSpace != nullptr)
 		{
 			m_raycastObject          = new MeshRaycastObject();
-			m_raycastObject->m_owner = GetHandle();
+			m_raycastObject->m_owner = GetObjectID();
 			m_raycastObject->m_mesh  = this;
 			raycastSpace->AddObject(m_raycastObject);
 		}

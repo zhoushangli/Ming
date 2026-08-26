@@ -1,7 +1,10 @@
 #pragma once
 
+#include "MingEngine/Core/Object/ObjectID.hpp"
+
 #include <memory>
 #include <string>
+#include <vector>
 
 #define ADD_PROPERTY(propertyInfo, setterName, getterName)                                                             \
 	ClassDatabase::AddProperty(GetStaticClassName(), propertyInfo, setterName, getterName)
@@ -59,12 +62,19 @@ protected:                                                                      
 
 class Object
 {
+	friend class ObjectDatabase;
+
 public:
 	using BindMethodsFunc = void (*)();
 
 public:
-	Object() = default;
+	Object();
 	virtual ~Object();
+
+	Object(Object const&);
+	Object& operator=(Object const&);
+	Object(Object&&);
+	Object& operator=(Object&&);
 
 	// Class information and reflection
 	// Will be overridden by the MCLASS macro in derived classes.
@@ -75,7 +85,8 @@ public:
 	virtual std::string GetClassName() const;
 	static void         InitializeClass();
 
-	void Notification(int notification, bool reverse = false);
+	ObjectID GetObjectID() const;
+	void     Notification(int notification, bool reverse = false);
 
 protected:
 	void OnNotification([[maybe_unused]] int notification) {}
@@ -86,4 +97,31 @@ protected:
 	virtual void NotificationBackwardV([[maybe_unused]] int notification) {}
 
 	void (Object::* GetOnNotificationFunc() const)(int) { return &Object::OnNotification; }
+
+private:
+	ObjectID m_id = ObjectID::Invalid;
+};
+
+class ObjectDatabase
+{
+public:
+	static ObjectID AddInstance(Object* object);
+	static void     RemoveInstance(Object* object);
+	static Object*  GetInstance(ObjectID id);
+
+	template <typename T>
+	static T* GetInstance(ObjectID id)
+	{
+		Object* object = GetInstance(id);
+		if (object == nullptr)
+		{
+			return nullptr;
+		}
+
+		return dynamic_cast<T*>(object);
+	}
+
+private:
+	static std::vector<Object*> m_objectSlots;
+	static uint32_t             m_nextObjectUID;
 };

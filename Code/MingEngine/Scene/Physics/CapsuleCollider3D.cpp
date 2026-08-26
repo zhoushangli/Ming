@@ -1,6 +1,6 @@
 #include "MingEngine/Scene/Physics/CapsuleCollider3D.hpp"
 
-#include "MingEngine/Core/Render/Rgba8.hpp"
+#include "MingEngine/Core/Render/Color.hpp"
 #include "MingEngine/Engine/Render/DebugGizmos.hpp"
 
 CapsuleCollider3D::CapsuleCollider3D(Capsule3 const& capsule)

@@ -1,14 +1,14 @@
 #pragma once
 
+#include "MingEngine/Core/Object/ObjectID.hpp"
 #include "MingEngine/Editor/Gizmos/GizmosShapes.hpp"
-#include "MingEngine/Scene/Core/NodeHandle.hpp"
 
 #include "MingEngine/Core/Math/EulerAngles.hpp"
 #include "MingEngine/Core/Math/Matrix4x4.hpp"
 #include "MingEngine/Core/Math/RaycastUtils.hpp"
 #include "MingEngine/Core/Math/Vector2.hpp"
 #include "MingEngine/Core/Math/Vector3.hpp"
-#include "MingEngine/Core/Render/Rgba8.hpp"
+#include "MingEngine/Core/Render/Color.hpp"
 
 class Camera3D;
 class GizmoComponent;
@@ -28,7 +28,7 @@ struct GizmoContext
 {
 	SceneTree*      m_sceneTree        = nullptr;
 	Camera3D const* m_camera           = nullptr;
-	NodeHandle      m_selectedNode     = NodeHandle::Invalid;
+	ObjectID        m_selectedNodeID   = ObjectID::Invalid;
 	Node3D*         m_selectedNode3D   = nullptr;
 	Vector3         m_originWorld      = Vector3::Zero;
 	float           m_scale            = 1.f;

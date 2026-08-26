@@ -240,7 +240,7 @@ void Node3D::PropagateTransformChanged()
 		return;
 	}
 
-	sceneTree->QueueTransformChangedNode(GetHandle());
+	sceneTree->QueueTransformChangedNode(GetObjectID());
 	for (Node* child : GetChildren())
 	{
 		Node3D* child3D = dynamic_cast<Node3D*>(child);

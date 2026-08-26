@@ -42,6 +42,12 @@ struct PtrToArg<bool>
 	static void Encode(bool value, void* ptr) { *static_cast<uint8_t*>(ptr) = value ? 1 : 0; }
 };
 
+
+// MingString is a special case
+// Because C++ std::string and C# string are two different types
+// So everytime we want to pass a string from C++ to C#, we need to convert it to a MingString
+// And everytime we want to pass a string from C# to C++, we need to convert it to a string
+// We will pass the pointer of MingString to C++ side
 struct MingString
 {
 	std::string* m_string;
@@ -53,8 +59,9 @@ struct PtrToArg<std::string>
 	static std::string const& Decode(void* ptr)
 	{
 		MingString const* mingString = static_cast<MingString const*>(ptr);
+		static std::string const emptyString;
 
-		return *mingString->m_string;
+		return mingString == nullptr || mingString->m_string == nullptr ? emptyString : *mingString->m_string;
 	}
 
 	static void Encode(std::string const& value, void* ptr)

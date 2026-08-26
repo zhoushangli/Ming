@@ -26,56 +26,56 @@
 
 namespace
 {
-std::string FormatNodeHandle(NodeHandle handle)
+std::string FormatObjectID(ObjectID objectID)
 {
-	return Stringf("uid=%u index=%u", handle.GetUID(), handle.GetIndex());
+	return Stringf("uid=%u index=%u", objectID.GetUID(), objectID.GetIndex());
 }
 } // namespace
 
 EditorNode* EditorNode::s_instance = nullptr;
 
-NodeHandle EditorSelection::GetSelected() const { return m_selectedNodeHandle; }
+ObjectID EditorSelection::GetSelected() const { return m_selectedNodeID; }
 
-void EditorSelection::SetSelected(NodeHandle handle)
+void EditorSelection::SetSelected(ObjectID nodeID)
 {
-	if (m_selectedNodeHandle == handle)
+	if (m_selectedNodeID == nodeID)
 	{
 		return;
 	}
 
-	NodeHandle const previousHandle = m_selectedNodeHandle;
-	m_selectedNodeHandle            = handle;
+	ObjectID const previousNodeID = m_selectedNodeID;
+	m_selectedNodeID              = nodeID;
 
-	if (!previousHandle.IsValid() && m_selectedNodeHandle.IsValid())
+	if (!previousNodeID.IsValid() && m_selectedNodeID.IsValid())
 	{
 		DebugGizmos::AddMessage(
-			Stringf("Selected Node: %s", FormatNodeHandle(m_selectedNodeHandle).c_str()),
+			Stringf("Selected Node: %s", FormatObjectID(m_selectedNodeID).c_str()),
 			5.f,
 			Color::White,
 			Color::White);
 		return;
 	}
 
-	if (previousHandle.IsValid() && m_selectedNodeHandle.IsValid())
+	if (previousNodeID.IsValid() && m_selectedNodeID.IsValid())
 	{
 		DebugGizmos::AddMessage(
 			Stringf(
 				"Selection Changed: %s -> %s",
-				FormatNodeHandle(previousHandle).c_str(),
-				FormatNodeHandle(m_selectedNodeHandle).c_str()),
+				FormatObjectID(previousNodeID).c_str(),
+				FormatObjectID(m_selectedNodeID).c_str()),
 			5.f,
 			Color::White,
 			Color::White);
 		return;
 	}
 
-	if (previousHandle.IsValid() && !m_selectedNodeHandle.IsValid())
+	if (previousNodeID.IsValid() && !m_selectedNodeID.IsValid())
 	{
 		DebugGizmos::AddMessage("Selection Cleared", 5.f, Color::White, Color::White);
 	}
 }
 
-void EditorSelection::Clear() { SetSelected(NodeHandle::Invalid); }
+void EditorSelection::Clear() { SetSelected(ObjectID::Invalid); }
 
 EditorNode::EditorNode()
 {

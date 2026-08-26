@@ -4,7 +4,7 @@
 #include "MingEngine/Scene/3D/VisualInstance3D.hpp"
 
 #include "MingEngine/Core/Math/MathUtils.hpp"
-#include "MingEngine/Core/Render/Rgba8.hpp"
+#include "MingEngine/Core/Render/Color.hpp"
 #include "MingEngine/Scene/Resource/TextureResource.hpp"
 
 #include <string>

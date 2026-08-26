@@ -1,7 +1,7 @@
 #pragma once
 
 #include "MingEngine/Core/Object/ClassDatabase.hpp"
-#include "MingEngine/Scene/Core/NodeHandle.hpp"
+#include "MingEngine/Core/Object/ObjectID.hpp"
 
 #include <map>
 #include <string>
@@ -13,7 +13,7 @@ class Node;
 class CreateNodePopup
 {
 public:
-	void Open(NodeHandle parentHandle);
+	void Open(ObjectID parentID);
 	void Render(EditorUIContext& context);
 
 private:
@@ -33,6 +33,6 @@ private:
 private:
 	char        m_filter[128] = {};
 	std::string m_selectedClass;
-	NodeHandle  m_parentHandle = NodeHandle::Invalid;
+	ObjectID    m_parentID = ObjectID::Invalid;
 	bool        m_openRequested = false;
 };

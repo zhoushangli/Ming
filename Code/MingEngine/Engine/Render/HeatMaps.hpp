@@ -3,7 +3,7 @@
 #include "MingEngine/Core/Math/AABB2.hpp"
 #include "MingEngine/Core/Math/FloatRange.hpp"
 #include "MingEngine/Core/Math/IntVec2.hpp"
-#include "MingEngine/Core/Render/Rgba8.hpp"
+#include "MingEngine/Core/Render/Color.hpp"
 
 #include <vector>
 

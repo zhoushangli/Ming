@@ -1,4 +1,4 @@
-#include "MingEngine/Core/Render/Rgba8.hpp"
+#include "MingEngine/Core/Render/Color.hpp"
 
 #include "MingEngine/Core/Math/MathUtils.hpp"
 #include "MingEngine/Core/StringUtils.hpp"

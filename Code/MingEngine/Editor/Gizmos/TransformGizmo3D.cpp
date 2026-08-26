@@ -105,7 +105,7 @@ bool TransformGizmo3D::BeginDragHovered(GizmoContext const& context)
 	m_activeComponent = m_hoveredComponent;
 	if (context.m_selectedNode3D != nullptr)
 	{
-		m_draggedNodeHandle    = context.m_selectedNode3D->GetHandle();
+		m_draggedNodeID        = context.m_selectedNode3D->GetObjectID();
 		m_dragStartPosition    = context.m_selectedNode3D->GetLocalPosition();
 		m_dragStartOrientation = context.m_selectedNode3D->GetLocalOrientation();
 		m_dragStartScale       = context.m_selectedNode3D->GetLocalScale();
@@ -135,9 +135,12 @@ void TransformGizmo3D::EndDrag(GizmoContext const& context)
 	if (m_activeComponent != nullptr)
 	{
 		m_activeComponent->OnEndDrag(context);
-		Node3D*    draggedNode = context.m_sceneTree != nullptr
-									 ? dynamic_cast<Node3D*>(context.m_sceneTree->ResolveNode(m_draggedNodeHandle))
-									 : nullptr;
+		Node3D* draggedNode = ObjectDatabase::GetInstance<Node3D>(m_draggedNodeID);
+		if (context.m_sceneTree == nullptr
+			|| (draggedNode != nullptr && draggedNode->GetSceneTree() != context.m_sceneTree))
+		{
+			draggedNode = nullptr;
+		}
 		bool const changed     = draggedNode != nullptr
 								 && (draggedNode->GetLocalPosition() != m_dragStartPosition
 									 || draggedNode->GetLocalOrientation() != m_dragStartOrientation
@@ -146,7 +149,7 @@ void TransformGizmo3D::EndDrag(GizmoContext const& context)
 		{
 			EditorNode::Get()->MarkSceneDirty();
 		}
-		m_draggedNodeHandle = NodeHandle::Invalid;
+		m_draggedNodeID     = ObjectID::Invalid;
 		m_activeComponent   = nullptr;
 	}
 }

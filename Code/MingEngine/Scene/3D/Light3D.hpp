@@ -3,7 +3,7 @@
 #include "MingEngine/Scene/3D/Node3D.hpp"
 
 #include "MingEngine/Core/Math/Vector3.hpp"
-#include "MingEngine/Core/Render/Rgba8.hpp"
+#include "MingEngine/Core/Render/Color.hpp"
 #include "MingEngine/Engine/Render/RenderContext.hpp"
 
 class Light3D : public Node3D

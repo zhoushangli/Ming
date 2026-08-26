@@ -10,7 +10,7 @@
 #include "MingEngine/Core/Math/OBB2.hpp"
 #include "MingEngine/Core/Math/Triangle2.hpp"
 #include "MingEngine/Core/Math/Vector2.hpp"
-#include "MingEngine/Core/Render/Rgba8.hpp"
+#include "MingEngine/Core/Render/Color.hpp"
 
 #include <vector>
 

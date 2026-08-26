@@ -39,17 +39,12 @@ public ref struct MingString : IDisposable
         NativePtr = nativePtr;
     }
 
-    public unsafe static implicit operator MingString(string str)
+    public unsafe static explicit operator MingString(string str)
     {
-        byte[] utf8Bytes = Encoding.UTF8.GetBytes(str);
-        fixed (byte* bytePtr = utf8Bytes)
-        {
-            IntPtr nativePtr = NativeFuncs.CreateString(bytePtr, utf8Bytes.Length);
-            return new MingString(nativePtr);
-        }
+        return Marshaling.ConvertStringToNative(str);
     }
 
-    public unsafe static implicit operator string(MingString mingString)
+    public unsafe static explicit operator string(MingString mingString)
     {
         return mingString.ToString();
     }
@@ -65,11 +60,6 @@ public ref struct MingString : IDisposable
 
     public unsafe override string ToString()
     {
-        if (NativePtr == IntPtr.Zero)
-        {
-            return string.Empty;
-        }
-
-        return Encoding.UTF8.GetString(Buffer, Length);
+        return Marshaling.ConvertStringToManaged(this);
     }
 }

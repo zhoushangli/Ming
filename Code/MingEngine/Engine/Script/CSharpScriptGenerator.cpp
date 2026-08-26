@@ -6,61 +6,11 @@
 #include <algorithm>
 #include <fstream>
 #include <map>
+#include <utility>
 
 namespace
 {
-constexpr char const* MingObjectTemplate = R"(namespace Ming;
-
-public class MingObject
-{
-	internal IntPtr NativePtr;
-
-	internal MingObject(IntPtr ptr)
-	{
-		NativePtr = ptr;
-	}
-
-	internal static IntPtr GetPtr(MingObject? obj)
-	{
-		if (obj == null)
-		{
-			return IntPtr.Zero;
-		}
-
-		ObjectDisposedException.ThrowIf(obj.NativePtr == IntPtr.Zero, obj);
-		return obj.NativePtr;
-	}
-
-	// Create an engine object from the class database and return a C# wrapper of it.
-	// e.g. MingObject.Create("Node")
-	public static MingObject Create(string className)
-	{
-		return new MingObject(NativeFuncs.CreateObject(className));
-	}
-
-	// Return the engine class name of this object.
-	// e.g. node.GetClassName() -> "Node"
-	public string GetClassName()
-	{
-		return NativeFuncs.GetClassName(GetPtr(this));
-	}
-}
-)";
-
-constexpr char const* RootClassTemplate = R"(using System.Diagnostics;
-
-namespace Ming;
-
-public partial class {CLASS_NAME} : MingObject
-{
-{METHOD_BINDINGS}	internal {CLASS_NAME}(nint nativeHandle) : base(nativeHandle)
-	{
-	}
-
-{CLASS_METHODS}}
-)";
-
-constexpr char const* DerivedClassTemplate = R"(using System.Diagnostics;
+constexpr char const* ClassTemplate = R"(using System.Diagnostics;
 
 namespace Ming;
 
@@ -93,25 +43,41 @@ internal static unsafe class NativeCalls
 )";
 
 constexpr char const* NativeCallFunctionTemplate =
-	R"(	internal static unsafe {RETURN_TYPE} {METHOD_NAME}(IntPtr methodBind, IntPtr objectPtr{ARGUMENTS})
+	R"(	internal static {RETURN_TYPE} {METHOD_NAME}(IntPtr methodBind, IntPtr objectPtr{ARGUMENTS})
 	{
-{RETURN_VALUE_DECLARATION}{ARGUMENTS_ARRAY_DECLARATION}		NativeFuncs.MethodBindPtrCall(methodBind, objectPtr, {ARGUMENTS_POINTER}, {RETURN_VALUE_POINTER});
+{RETURN_VALUE_DECLARATION}{ARGUMENT_CONVERSIONS}{ARGUMENTS_ARRAY_DECLARATION}		NativeFuncs.MethodBindPtrCall(methodBind, objectPtr, {ARGUMENTS_POINTER}, {RETURN_VALUE_POINTER});
 {RETURN_VALUE_RETURN}	}
 
 )";
 
-struct NativeTypeInfo
-{
-	char const* m_name;
-	char const* m_csharpType;
-};
-
 struct NativeCallInfo
 {
-	std::string              m_name;
-	std::string              m_returnType;
-	std::vector<std::string> m_argumentTypes;
+	std::string                 m_name;
+	CSharpTypeInfo              m_returnType;
+	std::vector<CSharpTypeInfo> m_argumentTypes;
 };
+
+using NativeCallMap       = std::map<std::string, NativeCallInfo>;
+using MethodNativeCallMap = std::map<MethodInfo const*, std::string>;
+using CSharpTypeMap       = std::map<Variant::Type, CSharpTypeInfo>;
+
+void ReplaceAll(std::string& source, std::string const& placeholder, std::string const& value)
+{
+	size_t position = 0;
+	while ((position = source.find(placeholder, position)) != std::string::npos)
+	{
+		source.replace(position, placeholder.length(), value);
+		position += value.length();
+	}
+}
+
+std::string FormatTypeExpression(
+	std::string expression, std::string const& value = std::string(), std::string const& call = std::string())
+{
+	ReplaceAll(expression, "{VALUE}", value);
+	ReplaceAll(expression, "{CALL}", call);
+	return expression;
+}
 
 char const* GetVariantTypeName(Variant::Type type)
 {
@@ -154,98 +120,75 @@ char const* GetVariantTypeName(Variant::Type type)
 	return "Unknown";
 }
 
-bool TryGetNativeTypeInfo(Variant::Type type, bool isReturnType, NativeTypeInfo& outTypeInfo)
+bool TryCreateNativeCall(
+	MethodInfo const&    methodInfo,
+	CSharpTypeMap const& builtinTypes,
+	NativeCallInfo&      outNativeCall,
+	std::string&         outReason)
 {
-	switch (type)
-	{
-	case Variant::Type::Empty:
-		if (isReturnType)
-		{
-			outTypeInfo = { "Void", "void" };
-			return true;
-		}
-		return false;
-	case Variant::Type::Bool:
-		outTypeInfo = { "Bool", "MingBool" };
-		return true;
-	case Variant::Type::Int:
-		outTypeInfo = { "Int", "int" };
-		return true;
-	case Variant::Type::Float:
-		outTypeInfo = { "Float", "float" };
-		return true;
-	// case Variant::Type::String:
-	// 	outTypeInfo = { "String", "string" };
-	// 	return true;
-	case Variant::Type::Vector2:
-		outTypeInfo = { "Vector2", "Vector2" };
-		return true;
-	case Variant::Type::Vector3:
-		outTypeInfo = { "Vector3", "Vector3" };
-		return true;
-	case Variant::Type::Vector4:
-		outTypeInfo = { "Vector4", "Vector4" };
-		return true;
-	default:
-		return false;
-	}
-}
-
-bool TryCreateNativeCall(MethodInfo const& methodInfo, NativeCallInfo& outNativeCall, std::string& outReason)
-{
-	NativeTypeInfo returnTypeInfo;
-	if (!TryGetNativeTypeInfo(methodInfo.m_returnInfo.m_type, true, returnTypeInfo))
+	auto const returnTypeIter = builtinTypes.find(methodInfo.m_returnInfo.m_type);
+	if (returnTypeIter == builtinTypes.end())
 	{
 		outReason = std::string("unsupported return type ") + GetVariantTypeName(methodInfo.m_returnInfo.m_type);
 		return false;
 	}
 
-	outNativeCall.m_name       = std::string("MingCall_") + returnTypeInfo.m_name;
-	outNativeCall.m_returnType = returnTypeInfo.m_csharpType;
+	outNativeCall.m_name       = std::string("MingCall_") + returnTypeIter->second.m_name;
+	outNativeCall.m_returnType = returnTypeIter->second;
 	outNativeCall.m_argumentTypes.clear();
 	outNativeCall.m_argumentTypes.reserve(methodInfo.m_argumentInfos.size());
 
 	for (ArgumentInfo const& argumentInfo : methodInfo.m_argumentInfos)
 	{
-		NativeTypeInfo argumentTypeInfo;
-		if (!TryGetNativeTypeInfo(argumentInfo.m_type, false, argumentTypeInfo))
+		auto const argumentTypeIter = builtinTypes.find(argumentInfo.m_type);
+		if (argumentInfo.m_type == Variant::Type::Empty || argumentTypeIter == builtinTypes.end())
 		{
 			outReason = std::string("unsupported argument type ") + GetVariantTypeName(argumentInfo.m_type);
 			return false;
 		}
 
 		outNativeCall.m_name += "_";
-		outNativeCall.m_name += argumentTypeInfo.m_name;
-		outNativeCall.m_argumentTypes.emplace_back(argumentTypeInfo.m_csharpType);
+		outNativeCall.m_name += argumentTypeIter->second.m_name;
+		outNativeCall.m_argumentTypes.emplace_back(argumentTypeIter->second);
 	}
 
 	return true;
 }
 
-void ReplaceAll(std::string& source, std::string const& placeholder, std::string const& value);
-
-char const* GetMethodCSharpType(Variant::Type type)
+void CollectBindings(
+	std::vector<ClassInfo const*> const& classes,
+	CSharpTypeMap const&                 builtinTypes,
+	NativeCallMap&                       outNativeCalls,
+	MethodNativeCallMap&                 outMethodNativeCalls,
+	std::vector<std::string>&            outSkippedNativeCalls)
 {
-	switch (type)
+	for (ClassInfo const* classInfo : classes)
 	{
-	case Variant::Type::Empty:
-		return "void";
-	case Variant::Type::Bool:
-		return "bool";
-	case Variant::Type::Int:
-		return "int";
-	case Variant::Type::Float:
-		return "float";
-	// case Variant::Type::String:
-	// 	return "string";
-	case Variant::Type::Vector2:
-		return "Vector2";
-	case Variant::Type::Vector3:
-		return "Vector3";
-	case Variant::Type::Vector4:
-		return "Vector4";
-	default:
-		return nullptr;
+		if (classInfo == nullptr || classInfo->m_apiType != ApiType::Runtime)
+		{
+			continue;
+		}
+
+		for (std::unique_ptr<MethodInfo> const& methodInfo : classInfo->m_methods)
+		{
+			if (methodInfo == nullptr)
+			{
+				continue;
+			}
+
+			NativeCallInfo nativeCall;
+			std::string    skipReason;
+			if (!TryCreateNativeCall(*methodInfo, builtinTypes, nativeCall, skipReason))
+			{
+				outSkippedNativeCalls.emplace_back(
+					classInfo->m_className + "." + methodInfo->m_name + ": " + skipReason);
+				continue;
+			}
+
+			std::string const nativeCallName = nativeCall.m_name;
+			outNativeCalls.emplace(nativeCallName, std::move(nativeCall));
+			outMethodNativeCalls.emplace(methodInfo.get(), nativeCallName);
+		}
 	}
 }
 
@@ -253,41 +196,35 @@ std::string GenerateClassMethod(MethodInfo const& methodInfo, NativeCallInfo con
 {
 	std::string methodArguments;
 	std::string callArguments;
-	for (size_t argumentIndex = 0; argumentIndex < methodInfo.m_argumentInfos.size(); ++argumentIndex)
+	for (size_t argumentIndex = 0; argumentIndex < nativeCall.m_argumentTypes.size(); ++argumentIndex)
 	{
-		ArgumentInfo const& argumentInfo = methodInfo.m_argumentInfos[argumentIndex];
-		std::string const   argumentName = "arg" + std::to_string(argumentIndex + 1);
+		CSharpTypeInfo const& argumentTypeInfo = nativeCall.m_argumentTypes[argumentIndex];
+		std::string const     argumentName     = "arg" + std::to_string(argumentIndex + 1);
 		if (!methodArguments.empty())
 		{
 			methodArguments += ", ";
 		}
-		methodArguments += GetMethodCSharpType(argumentInfo.m_type);
-		methodArguments += " ";
-		methodArguments += argumentName;
+		methodArguments += argumentTypeInfo.m_csType + " " + argumentName;
 
 		callArguments += ", ";
-		callArguments += argumentName;
-		if (argumentInfo.m_type == Variant::Type::Bool)
-		{
-			callArguments += ".ToMingBool()";
-		}
+		callArguments += FormatTypeExpression(argumentTypeInfo.m_csInExpression, argumentName);
 	}
 
-	std::string methodCall;
-	if (methodInfo.m_returnInfo.m_type != Variant::Type::Empty)
-	{
-		methodCall = "return ";
-	}
-	methodCall +=
+	std::string const nativeCallExpression =
 		"NativeCalls." + nativeCall.m_name + "(" + methodInfo.m_name + "MethodBind, GetPtr(this)" + callArguments + ")";
-	if (methodInfo.m_returnInfo.m_type == Variant::Type::Bool)
+	std::string methodCall;
+	if (nativeCall.m_returnType.m_csType == "void")
 	{
-		methodCall += ".ToBool()";
+		methodCall = nativeCallExpression + ";";
 	}
-	methodCall += ";";
+	else
+	{
+		methodCall =
+			FormatTypeExpression(nativeCall.m_returnType.m_csOutExpression, std::string(), nativeCallExpression);
+	}
 
 	std::string source = MethodTemplate;
-	ReplaceAll(source, "{RETURN_TYPE}", GetMethodCSharpType(methodInfo.m_returnInfo.m_type));
+	ReplaceAll(source, "{RETURN_TYPE}", nativeCall.m_returnType.m_csType);
 	ReplaceAll(source, "{METHOD_NAME}", methodInfo.m_name);
 	ReplaceAll(source, "{METHOD_ARGUMENTS}", methodArguments);
 	ReplaceAll(source, "{METHOD_CALL}", methodCall);
@@ -297,21 +234,44 @@ std::string GenerateClassMethod(MethodInfo const& methodInfo, NativeCallInfo con
 std::string GenerateNativeCallFunction(NativeCallInfo const& nativeCall)
 {
 	std::string arguments;
+	std::string argumentConversions;
 	std::string argumentPointers;
 
 	for (size_t argumentIndex = 0; argumentIndex < nativeCall.m_argumentTypes.size(); ++argumentIndex)
 	{
-		std::string const argumentName = "arg" + std::to_string(argumentIndex + 1);
-		arguments += ", " + nativeCall.m_argumentTypes[argumentIndex] + " " + argumentName;
+		CSharpTypeInfo const& argumentTypeInfo = nativeCall.m_argumentTypes[argumentIndex];
+		std::string const     argumentName     = "arg" + std::to_string(argumentIndex + 1);
+		arguments += ", " + argumentTypeInfo.m_callTypeIn + " " + argumentName;
+
+		if (!argumentTypeInfo.m_callIn.empty())
+		{
+			argumentConversions += "\t\t" + FormatTypeExpression(argumentTypeInfo.m_callIn, argumentName) + "\n\n";
+		}
+
 		if (!argumentPointers.empty())
 		{
 			argumentPointers += ", ";
 		}
-		argumentPointers += "&" + argumentName;
+		argumentPointers += FormatTypeExpression(argumentTypeInfo.m_ptrCallArgument, argumentName);
 	}
 
-	bool const  hasReturnValue         = nativeCall.m_returnType != "void";
-	std::string returnValueDeclaration = hasReturnValue ? "\t\t" + nativeCall.m_returnType + " ret;\n\n" : "";
+	bool const  hasReturnValue = nativeCall.m_returnType.m_callTypeOut != "void";
+	std::string returnValueDeclaration;
+	if (hasReturnValue)
+	{
+		returnValueDeclaration = "\t\t";
+		if (nativeCall.m_returnType.m_disposableReturn)
+		{
+			returnValueDeclaration += "using ";
+		}
+		returnValueDeclaration += nativeCall.m_returnType.m_ptrCallType + " ret";
+		if (nativeCall.m_returnType.m_disposableReturn || nativeCall.m_returnType.m_defaultInitializeReturn)
+		{
+			returnValueDeclaration += " = default";
+		}
+		returnValueDeclaration += ";\n\n";
+	}
+
 	std::string argumentsArrayDeclaration;
 	if (!nativeCall.m_argumentTypes.empty())
 	{
@@ -320,28 +280,279 @@ std::string GenerateNativeCallFunction(NativeCallInfo const& nativeCall)
 									+ " };\n\n";
 	}
 
+	std::string returnValueReturn;
+	if (hasReturnValue)
+	{
+		returnValueReturn = "\n\t\t" + FormatTypeExpression(nativeCall.m_returnType.m_callOut, "ret") + "\n";
+	}
+
 	std::string source = NativeCallFunctionTemplate;
-	ReplaceAll(source, "{RETURN_TYPE}", nativeCall.m_returnType);
+	ReplaceAll(source, "{RETURN_TYPE}", nativeCall.m_returnType.m_callTypeOut);
 	ReplaceAll(source, "{METHOD_NAME}", nativeCall.m_name);
 	ReplaceAll(source, "{ARGUMENTS}", arguments);
 	ReplaceAll(source, "{RETURN_VALUE_DECLARATION}", returnValueDeclaration);
+	ReplaceAll(source, "{ARGUMENT_CONVERSIONS}", argumentConversions);
 	ReplaceAll(source, "{ARGUMENTS_ARRAY_DECLARATION}", argumentsArrayDeclaration);
 	ReplaceAll(source, "{ARGUMENTS_POINTER}", nativeCall.m_argumentTypes.empty() ? "null" : "args");
 	ReplaceAll(source, "{RETURN_VALUE_POINTER}", hasReturnValue ? "&ret" : "null");
-	ReplaceAll(source, "{RETURN_VALUE_RETURN}", hasReturnValue ? "\n\t\treturn ret;\n" : "");
+	ReplaceAll(source, "{RETURN_VALUE_RETURN}", returnValueReturn);
 	return source;
 }
 
-void ReplaceAll(std::string& source, std::string const& placeholder, std::string const& value)
+bool WriteTextFile(std::filesystem::path const& filePath, std::string const& contents)
 {
-	size_t position = 0;
-	while ((position = source.find(placeholder, position)) != std::string::npos)
+	std::ofstream file(filePath, std::ios::binary | std::ios::trunc);
+	if (!file.is_open())
 	{
-		source.replace(position, placeholder.length(), value);
-		position += value.length();
+		return false;
 	}
+
+	file.write(contents.data(), static_cast<std::streamsize>(contents.size()));
+	file.close();
+	return !file.fail();
+}
+
+bool GenerateNativeCalls(std::filesystem::path const& outputDirectory, NativeCallMap const& nativeCalls)
+{
+	std::string nativeCallFunctions;
+	for (auto const& [nativeCallName, nativeCall] : nativeCalls)
+	{
+		(void)nativeCallName;
+		nativeCallFunctions += GenerateNativeCallFunction(nativeCall);
+	}
+
+	std::string nativeCallsSource = NativeCallsTemplate;
+	ReplaceAll(nativeCallsSource, "{FUNCTIONS}", nativeCallFunctions);
+	return WriteTextFile(outputDirectory / "NativeCalls.cs", nativeCallsSource);
+}
+
+bool GenerateClassBindings(
+	std::filesystem::path const&         outputDirectory,
+	std::vector<ClassInfo const*> const& classes,
+	NativeCallMap const&                 nativeCalls,
+	MethodNativeCallMap const&           methodNativeCalls)
+{
+	for (ClassInfo const* classInfo : classes)
+	{
+		if (classInfo == nullptr || classInfo->m_apiType != ApiType::Runtime || classInfo->m_className == "Object")
+		{
+			continue;
+		}
+
+		if (classInfo->m_parentClassName.empty())
+		{
+			return false;
+		}
+
+		std::string       classSource = ClassTemplate;
+		std::string const parentClassName =
+			classInfo->m_parentClassName == "Object" ? "MingObject" : classInfo->m_parentClassName;
+		ReplaceAll(classSource, "{PARENT_CLASS_NAME}", parentClassName);
+
+		std::string methodBindings;
+		std::string classMethods;
+		for (std::unique_ptr<MethodInfo> const& methodInfo : classInfo->m_methods)
+		{
+			if (methodInfo == nullptr)
+			{
+				continue;
+			}
+
+			auto const methodCallIter = methodNativeCalls.find(methodInfo.get());
+			if (methodCallIter == methodNativeCalls.end())
+			{
+				continue;
+			}
+
+			auto const nativeCallIter = nativeCalls.find(methodCallIter->second);
+			if (nativeCallIter == nativeCalls.end())
+			{
+				return false;
+			}
+
+			std::string methodBinding = MethodBindingTemplate;
+			ReplaceAll(methodBinding, "{METHOD_BIND_NAME}", methodInfo->m_name + "MethodBind");
+			ReplaceAll(methodBinding, "{CLASS_NAME}", classInfo->m_className);
+			ReplaceAll(methodBinding, "{METHOD_NAME}", methodInfo->m_name);
+			methodBindings += methodBinding;
+			classMethods += GenerateClassMethod(*methodInfo, nativeCallIter->second);
+		}
+
+		ReplaceAll(classSource, "{METHOD_BINDINGS}", methodBindings);
+		ReplaceAll(classSource, "{CLASS_METHODS}", classMethods);
+		ReplaceAll(classSource, "{CLASS_NAME}", classInfo->m_className);
+
+		if (!WriteTextFile(outputDirectory / (classInfo->m_className + ".cs"), classSource))
+		{
+			return false;
+		}
+	}
+
+	return true;
 }
 } // namespace
+
+CSharpScriptGenerator::CSharpScriptGenerator()
+{
+	CSharpTypeInfo typeInfo;
+
+	{
+		typeInfo                             = {};
+		typeInfo.m_name                      = "Void";
+		typeInfo.m_csType                    = "void";
+		typeInfo.m_callTypeIn                = "void";
+		typeInfo.m_callTypeOut               = "void";
+		typeInfo.m_ptrCallType               = "void";
+		typeInfo.m_csInExpression            = "{VALUE}";
+		typeInfo.m_csOutExpression           = "return {CALL};";
+		typeInfo.m_ptrCallArgument           = "&{VALUE}";
+		typeInfo.m_callOut                   = "return {VALUE};";
+		m_builtinTypes[Variant::Type::Empty] = typeInfo;
+	}
+
+	{
+		typeInfo                            = {};
+		typeInfo.m_name                     = "Bool";
+		typeInfo.m_csType                   = "bool";
+		typeInfo.m_callTypeIn               = "MingBool";
+		typeInfo.m_callTypeOut              = "MingBool";
+		typeInfo.m_ptrCallType              = "MingBool";
+		typeInfo.m_csInExpression           = "{VALUE}.ToMingBool()";
+		typeInfo.m_csOutExpression          = "return {CALL}.ToBool();";
+		typeInfo.m_ptrCallArgument          = "&{VALUE}";
+		typeInfo.m_callOut                  = "return {VALUE};";
+		m_builtinTypes[Variant::Type::Bool] = typeInfo;
+	}
+
+	{
+		typeInfo                           = {};
+		typeInfo.m_name                    = "Int";
+		typeInfo.m_csType                  = "int";
+		typeInfo.m_callTypeIn              = "int";
+		typeInfo.m_callTypeOut             = "int";
+		typeInfo.m_ptrCallType             = "int";
+		typeInfo.m_csInExpression          = "{VALUE}";
+		typeInfo.m_csOutExpression         = "return {CALL};";
+		typeInfo.m_ptrCallArgument         = "&{VALUE}";
+		typeInfo.m_callOut                 = "return {VALUE};";
+		m_builtinTypes[Variant::Type::Int] = typeInfo;
+	}
+
+	{
+		typeInfo                             = {};
+		typeInfo.m_name                      = "Float";
+		typeInfo.m_csType                    = "float";
+		typeInfo.m_callTypeIn                = "float";
+		typeInfo.m_callTypeOut               = "float";
+		typeInfo.m_ptrCallType               = "float";
+		typeInfo.m_csInExpression            = "{VALUE}";
+		typeInfo.m_csOutExpression           = "return {CALL};";
+		typeInfo.m_ptrCallArgument           = "&{VALUE}";
+		typeInfo.m_callOut                   = "return {VALUE};";
+		m_builtinTypes[Variant::Type::Float] = typeInfo;
+	}
+
+	{
+		typeInfo                    = {};
+		typeInfo.m_name             = "String";
+		typeInfo.m_csType           = "string";
+		typeInfo.m_callTypeIn       = "string";
+		typeInfo.m_callTypeOut      = "string";
+		typeInfo.m_ptrCallType      = "MingString";
+		typeInfo.m_csInExpression   = "{VALUE}";
+		typeInfo.m_csOutExpression  = "return {CALL};";
+		typeInfo.m_callIn           = "using MingString {VALUE}Native = Marshaling.ConvertStringToNative({VALUE});";
+		typeInfo.m_ptrCallArgument  = "&{VALUE}Native";
+		typeInfo.m_callOut          = "return Marshaling.ConvertStringToManaged({VALUE});";
+		typeInfo.m_disposableReturn = true;
+		typeInfo.m_defaultInitializeReturn    = true;
+		m_builtinTypes[Variant::Type::String] = typeInfo;
+	}
+
+	{
+		typeInfo                               = {};
+		typeInfo.m_name                        = "Vector2";
+		typeInfo.m_csType                      = "Vector2";
+		typeInfo.m_callTypeIn                  = "Vector2";
+		typeInfo.m_callTypeOut                 = "Vector2";
+		typeInfo.m_ptrCallType                 = "Vector2";
+		typeInfo.m_csInExpression              = "{VALUE}";
+		typeInfo.m_csOutExpression             = "return {CALL};";
+		typeInfo.m_ptrCallArgument             = "&{VALUE}";
+		typeInfo.m_callOut                     = "return {VALUE};";
+		m_builtinTypes[Variant::Type::Vector2] = typeInfo;
+	}
+
+	{
+		typeInfo                               = {};
+		typeInfo.m_name                        = "Vector3";
+		typeInfo.m_csType                      = "Vector3";
+		typeInfo.m_callTypeIn                  = "Vector3";
+		typeInfo.m_callTypeOut                 = "Vector3";
+		typeInfo.m_ptrCallType                 = "Vector3";
+		typeInfo.m_csInExpression              = "{VALUE}";
+		typeInfo.m_csOutExpression             = "return {CALL};";
+		typeInfo.m_ptrCallArgument             = "&{VALUE}";
+		typeInfo.m_callOut                     = "return {VALUE};";
+		m_builtinTypes[Variant::Type::Vector3] = typeInfo;
+	}
+
+	{
+		typeInfo                               = {};
+		typeInfo.m_name                        = "Vector4";
+		typeInfo.m_csType                      = "Vector4";
+		typeInfo.m_callTypeIn                  = "Vector4";
+		typeInfo.m_callTypeOut                 = "Vector4";
+		typeInfo.m_ptrCallType                 = "Vector4";
+		typeInfo.m_csInExpression              = "{VALUE}";
+		typeInfo.m_csOutExpression             = "return {CALL};";
+		typeInfo.m_ptrCallArgument             = "&{VALUE}";
+		typeInfo.m_callOut                     = "return {VALUE};";
+		m_builtinTypes[Variant::Type::Vector4] = typeInfo;
+	}
+
+	{
+		typeInfo                               = {};
+		typeInfo.m_name                        = "Color";
+		typeInfo.m_csType                      = "Color";
+		typeInfo.m_callTypeIn                  = "Color";
+		typeInfo.m_callTypeOut                 = "Color";
+		typeInfo.m_ptrCallType                 = "Color";
+		typeInfo.m_csInExpression              = "{VALUE}";
+		typeInfo.m_csOutExpression             = "return {CALL};";
+		typeInfo.m_ptrCallArgument             = "&{VALUE}";
+		typeInfo.m_callOut                     = "return {VALUE};";
+		m_builtinTypes[Variant::Type::Color] = typeInfo;
+	}
+
+	{
+		typeInfo                               = {};
+		typeInfo.m_name                        = "EulerAngles";
+		typeInfo.m_csType                      = "EulerAngles";
+		typeInfo.m_callTypeIn                  = "EulerAngles";
+		typeInfo.m_callTypeOut                 = "EulerAngles";
+		typeInfo.m_ptrCallType                 = "EulerAngles";
+		typeInfo.m_csInExpression              = "{VALUE}";
+		typeInfo.m_csOutExpression             = "return {CALL};";
+		typeInfo.m_ptrCallArgument             = "&{VALUE}";
+		typeInfo.m_callOut                     = "return {VALUE};";
+		m_builtinTypes[Variant::Type::EulerAngles] = typeInfo;
+	}
+
+	{
+		typeInfo                               = {};
+		typeInfo.m_name                        = "Matrix4x4";
+		typeInfo.m_csType                      = "Matrix4x4";
+		typeInfo.m_callTypeIn                  = "Matrix4x4";
+		typeInfo.m_callTypeOut                 = "Matrix4x4";
+		typeInfo.m_ptrCallType                 = "Matrix4x4";
+		typeInfo.m_csInExpression              = "{VALUE}";
+		typeInfo.m_csOutExpression             = "return {CALL};";
+		typeInfo.m_ptrCallArgument             = "&{VALUE}";
+		typeInfo.m_callOut                     = "return {VALUE};";
+		m_builtinTypes[Variant::Type::Matrix4x4] = typeInfo;
+	}
+}
 
 bool CSharpScriptGenerator::GenerateCSharpBindings(std::filesystem::path const& outputDirectory)
 {
@@ -387,74 +598,11 @@ bool CSharpScriptGenerator::GenerateCSharpBindings(std::filesystem::path const& 
 		return false;
 	}
 
-	if (!GenerateNativeCalls(generatedDirectory))
-	{
-		ERROR_AND_DIE("Failed to generate C# NativeCalls.");
-	}
-
-	if (!GenerateClassBindings(generatedDirectory))
-	{
-		ERROR_AND_DIE("Failed to generate C# Class Bindings.");
-	}
-
-	return true;
-}
-
-bool CSharpScriptGenerator::GenerateNativeCalls(std::filesystem::path const& outputDirectory)
-{
-	std::map<std::string, NativeCallInfo> nativeCalls;
-	std::vector<std::string>              skippedNativeCalls;
-	for (ClassInfo const* classInfo : ClassDatabase::GetRegisteredClasses(true))
-	{
-		if (classInfo == nullptr || classInfo->m_apiType != ApiType::Runtime)
-		{
-			continue;
-		}
-
-		for (std::unique_ptr<MethodInfo> const& methodInfo : classInfo->m_methods)
-		{
-			if (methodInfo == nullptr)
-			{
-				continue;
-			}
-
-			NativeCallInfo nativeCall;
-			std::string    skipReason;
-			if (TryCreateNativeCall(*methodInfo, nativeCall, skipReason))
-			{
-				std::string const nativeCallName = nativeCall.m_name;
-				nativeCalls.emplace(nativeCallName, std::move(nativeCall));
-			}
-			else
-			{
-				skippedNativeCalls.emplace_back(classInfo->m_className + "." + methodInfo->m_name + ": " + skipReason);
-			}
-		}
-	}
-
-	std::string nativeCallFunctions;
-	for (auto const& [nativeCallName, nativeCall] : nativeCalls)
-	{
-		(void)nativeCallName;
-		nativeCallFunctions += GenerateNativeCallFunction(nativeCall);
-	}
-
-	std::string nativeCallsSource = NativeCallsTemplate;
-	ReplaceAll(nativeCallsSource, "{FUNCTIONS}", nativeCallFunctions);
-
-	std::filesystem::path const nativeCallsFilePath = outputDirectory / "NativeCalls.cs";
-	std::ofstream               nativeCallsFile(nativeCallsFilePath, std::ios::binary | std::ios::trunc);
-	if (!nativeCallsFile.is_open())
-	{
-		return false;
-	}
-
-	nativeCallsFile.write(nativeCallsSource.data(), static_cast<std::streamsize>(nativeCallsSource.size()));
-	nativeCallsFile.close();
-	if (nativeCallsFile.fail())
-	{
-		return false;
-	}
+	std::vector<ClassInfo const*> const classes = ClassDatabase::GetRegisteredClasses(true);
+	NativeCallMap                       nativeCalls;
+	MethodNativeCallMap                 methodNativeCalls;
+	std::vector<std::string>            skippedNativeCalls;
+	CollectBindings(classes, m_builtinTypes, nativeCalls, methodNativeCalls, skippedNativeCalls);
 
 	std::sort(skippedNativeCalls.begin(), skippedNativeCalls.end());
 	if (!skippedNativeCalls.empty())
@@ -466,88 +614,14 @@ bool CSharpScriptGenerator::GenerateNativeCalls(std::filesystem::path const& out
 		}
 	}
 
-	return true;
-}
-
-bool CSharpScriptGenerator::GenerateClassBindings(std::filesystem::path const& outputDirectory)
-{
-	// Generate the root C# wrapper class that all engine classes inherit from.
-	std::string const           mingObjectSource   = MingObjectTemplate;
-	std::filesystem::path const mingObjectFilePath = outputDirectory / "MingObject.cs";
-	std::ofstream               mingObjectFile(mingObjectFilePath, std::ios::binary | std::ios::trunc);
-	if (!mingObjectFile.is_open())
+	if (!GenerateNativeCalls(generatedDirectory, nativeCalls))
 	{
-		return false;
+		ERROR_AND_DIE("Failed to generate C# NativeCalls.");
 	}
 
-	mingObjectFile.write(mingObjectSource.data(), static_cast<std::streamsize>(mingObjectSource.size()));
-	mingObjectFile.close();
-	if (mingObjectFile.fail())
+	if (!GenerateClassBindings(generatedDirectory, classes, nativeCalls, methodNativeCalls))
 	{
-		return false;
-	}
-
-	std::vector<ClassInfo const*> const classes = ClassDatabase::GetRegisteredClasses(true);
-	for (ClassInfo const* classInfo : classes)
-	{
-		if (classInfo == nullptr || classInfo->m_apiType != ApiType::Runtime)
-		{
-			continue;
-		}
-
-		std::string classSource;
-		if (classInfo->m_parentClassName.empty())
-		{
-			classSource = RootClassTemplate;
-		}
-		else
-		{
-			classSource = DerivedClassTemplate;
-			std::string const parentClassName =
-				classInfo->m_parentClassName == "Object" ? "MingObject" : classInfo->m_parentClassName;
-			ReplaceAll(classSource, "{PARENT_CLASS_NAME}", parentClassName);
-		}
-
-		std::string methodBindings;
-		std::string classMethods;
-		for (std::unique_ptr<MethodInfo> const& methodInfo : classInfo->m_methods)
-		{
-			if (methodInfo == nullptr)
-			{
-				continue;
-			}
-
-			std::string methodBinding = MethodBindingTemplate;
-			ReplaceAll(methodBinding, "{METHOD_BIND_NAME}", methodInfo->m_name + "MethodBind");
-			ReplaceAll(methodBinding, "{CLASS_NAME}", classInfo->m_className);
-			ReplaceAll(methodBinding, "{METHOD_NAME}", methodInfo->m_name);
-			methodBindings += methodBinding;
-
-			NativeCallInfo nativeCall;
-			std::string    skipReason;
-			if (TryCreateNativeCall(*methodInfo, nativeCall, skipReason))
-			{
-				classMethods += GenerateClassMethod(*methodInfo, nativeCall);
-			}
-		}
-
-		ReplaceAll(classSource, "{METHOD_BINDINGS}", methodBindings);
-		ReplaceAll(classSource, "{CLASS_METHODS}", classMethods);
-		ReplaceAll(classSource, "{CLASS_NAME}", classInfo->m_className);
-
-		std::filesystem::path const classFilePath = outputDirectory / (classInfo->m_className + ".cs");
-		std::ofstream               classFile(classFilePath, std::ios::binary | std::ios::trunc);
-		if (!classFile.is_open())
-		{
-			return false;
-		}
-
-		classFile.write(classSource.data(), static_cast<std::streamsize>(classSource.size()));
-		classFile.close();
-		if (classFile.fail())
-		{
-			return false;
-		}
+		ERROR_AND_DIE("Failed to generate C# Class Bindings.");
 	}
 
 	return true;

@@ -38,10 +38,10 @@ bool CanCreateClass(ClassInfo const* classInfo)
 }
 } // namespace
 
-void CreateNodePopup::Open(NodeHandle parentHandle)
+void CreateNodePopup::Open(ObjectID parentID)
 {
 	Reset();
-	m_parentHandle  = parentHandle;
+	m_parentID      = parentID;
 	m_openRequested = true;
 }
 
@@ -300,21 +300,21 @@ bool CreateNodePopup::CreateSelectedNode(EditorUIContext& context)
 
 	if (context.m_selection != nullptr)
 	{
-		context.m_selection->SetSelected(node->GetHandle());
+		context.m_selection->SetSelected(node->GetObjectID());
 	}
 	return true;
 }
 
 Node* CreateNodePopup::ResolveCreateParent(EditorUIContext const& context) const
 {
-	if (context.m_sceneTree == nullptr || !m_parentHandle.IsValid())
+	if (context.m_sceneTree == nullptr || !m_parentID.IsValid())
 	{
 		return nullptr;
 	}
 
 	// Resolve at creation time because the context node may disappear while the modal is open.
-	Node* parent = context.m_sceneTree->ResolveNode(m_parentHandle);
-	if (parent == nullptr)
+	Node* parent = ObjectDatabase::GetInstance<Node>(m_parentID);
+	if (parent == nullptr || parent->GetSceneTree() != context.m_sceneTree)
 	{
 		return nullptr;
 	}
@@ -332,6 +332,6 @@ void CreateNodePopup::Reset()
 {
 	m_selectedClass.clear();
 	m_filter[0]     = '\0';
-	m_parentHandle  = NodeHandle::Invalid;
+	m_parentID      = ObjectID::Invalid;
 	m_openRequested = false;
 }

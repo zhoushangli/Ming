@@ -9,15 +9,14 @@
 Vector3 RaycastQuery3D::GetStart() const { return m_start; }
 Vector3 RaycastQuery3D::GetDirection() const { return m_direction; }
 float   RaycastQuery3D::GetMaxDistance() const { return m_maxDistance; }
-Node*   RaycastQuery3D::GetExclude() const { return m_excludeNode; }
+Node*   RaycastQuery3D::GetExclude() const { return ObjectDatabase::GetInstance<Node>(m_exclude); }
 
 void RaycastQuery3D::SetStart(Vector3 const& start) { m_start = start; }
 void RaycastQuery3D::SetDirection(Vector3 const& direction) { m_direction = direction; }
 void RaycastQuery3D::SetMaxDistance(float maxDistance) { m_maxDistance = maxDistance; }
 void RaycastQuery3D::SetExclude(Node* exclude)
 {
-	m_excludeNode = exclude;
-	m_exclude     = exclude != nullptr ? exclude->GetHandle() : NodeHandle::Invalid;
+	m_exclude = exclude != nullptr ? exclude->GetObjectID() : ObjectID::Invalid;
 }
 
 void RaycastQuery3D::BindMethods()
@@ -56,11 +55,6 @@ Vector3 RaycastResult3D::GetImpactNormal() const { return m_impactNormal; }
 Vector3 RaycastResult3D::GetRayStartPosition() const { return m_rayStartPos; }
 Vector3 RaycastResult3D::GetRayForwardNormal() const { return m_rayFwdNormal; }
 float   RaycastResult3D::GetRayMaxLength() const { return m_rayMaxLength; }
-int     RaycastResult3D::GetOwner() const
-{
-	return m_owner.IsValid() ? static_cast<int>((m_owner.GetUID() << 16) | m_owner.GetIndex()) : -1;
-}
-
 void RaycastResult3D::SetDidImpact(bool didImpact) { m_didImpact = didImpact; }
 void RaycastResult3D::SetImpactDistance(float impactDistance) { m_impactDist = impactDistance; }
 void RaycastResult3D::SetImpactPosition(Vector3 const& impactPosition) { m_impactPos = impactPosition; }
@@ -85,8 +79,6 @@ void RaycastResult3D::BindMethods()
 	ClassDatabase::BindMethod("GetRayForwardNormal", &RaycastResult3D::GetRayForwardNormal);
 	ClassDatabase::BindMethod("SetRayMaxLength", &RaycastResult3D::SetRayMaxLength);
 	ClassDatabase::BindMethod("GetRayMaxLength", &RaycastResult3D::GetRayMaxLength);
-	ClassDatabase::BindMethod("GetOwner", &RaycastResult3D::GetOwner);
-
 	ADD_PROPERTY(
 		PropertyInfo(Variant::Type::Bool, "didImpact", PropertyInfo::Hint::None, "", PropertyInfo::UsageFlags::None),
 		"SetDidImpact",

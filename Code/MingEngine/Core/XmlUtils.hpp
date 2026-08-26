@@ -4,7 +4,7 @@
 #include "MingEngine/Core/Math/IntVec2.hpp"
 #include "MingEngine/Core/Math/IntVec3.hpp"
 #include "MingEngine/Core/Math/Vector3.hpp"
-#include "MingEngine/Core/Render/Rgba8.hpp"
+#include "MingEngine/Core/Render/Color.hpp"
 #include "MingEngine/Core/Render/VertexUtils.hpp"
 #include "MingEngine/Core/StringUtils.hpp"
 

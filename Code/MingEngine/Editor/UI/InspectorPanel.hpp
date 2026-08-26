@@ -1,8 +1,8 @@
 #pragma once
 
+#include "MingEngine/Core/Object/ObjectID.hpp"
 #include "MingEngine/Editor/UI/EditorPanel.hpp"
 #include "MingEngine/Editor/UI/InspectorProperty.hpp"
-#include "MingEngine/Scene/Core/NodeHandle.hpp"
 
 #include <string>
 #include <vector>
@@ -32,7 +32,7 @@ private:
 	void RebuildProperties(EditorUIContext& context);
 
 private:
-	NodeHandle m_cachedHandle;
+	ObjectID m_cachedObjectID;
 	std::vector<std::string> m_inheritanceChain;
 	std::vector<PropertyGroup> m_propertyGroups;
 };

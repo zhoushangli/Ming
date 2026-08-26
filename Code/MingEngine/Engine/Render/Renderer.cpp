@@ -548,7 +548,7 @@ void Renderer::CopyCPUToGPU(const void* data, unsigned int size, IndexBuffer* in
 void Renderer::BindConstantBuffer(ConstantBuffer* constantBuffer, int slot)
 {
 	m_renderBackend->BindConstantBuffer(constantBuffer, slot);
-}
+} 
 
 void Renderer::InitImGuiD3D11Backend()
 {

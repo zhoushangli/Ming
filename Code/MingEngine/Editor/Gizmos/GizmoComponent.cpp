@@ -144,9 +144,13 @@ GizmoContext BuildGizmoContext(SceneTree* sceneTree, Camera3D const& camera, Vec
 	{
 		if (editorNode != nullptr)
 		{
-			context.m_selectedNode = editorNode->GetSelection().GetSelected();
-			context.m_selectedNode3D =
-				dynamic_cast<Node3D*>(sceneTree != nullptr ? sceneTree->ResolveNode(context.m_selectedNode) : nullptr);
+			context.m_selectedNodeID = editorNode->GetSelection().GetSelected();
+			context.m_selectedNode3D = ObjectDatabase::GetInstance<Node3D>(context.m_selectedNodeID);
+			if (sceneTree == nullptr
+				|| (context.m_selectedNode3D != nullptr && context.m_selectedNode3D->GetSceneTree() != sceneTree))
+			{
+				context.m_selectedNode3D = nullptr;
+			}
 		}
 	}
 

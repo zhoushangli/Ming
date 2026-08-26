@@ -121,6 +121,7 @@ xcopy /Y /F /I "$(SolutionDir)Code\ThirdParty\DotNetHost\nethost.dll" "$(Solutio
     <ClCompile Include="Engine\Application\SystemBase.cpp" />
     <ClCompile Include="Core\ErrorWarningAssert.cpp" />
     <ClCompile Include="Core\Object\Object.cpp" />
+    <ClCompile Include="Core\Object\ObjectID.cpp" />
     <ClCompile Include="Core\Object\Variant.cpp" />
     <ClCompile Include="Core\Object\VariantJson.cpp" />
     <ClCompile Include="Core\Object\MethodBind.cpp" />
@@ -133,7 +134,7 @@ xcopy /Y /F /I "$(SolutionDir)Code\ThirdParty\DotNetHost\nethost.dll" "$(Solutio
     <ClCompile Include="Engine\Render\HeatMaps.cpp" />
     <ClCompile Include="Core\Image.cpp" />
     <ClCompile Include="Core\NamedStrings.cpp" />
-    <ClCompile Include="Core\Render\Rgba8.cpp" />
+    <ClCompile Include="Core\Render\Color.cpp" />
     <ClCompile Include="Core\StringUtils.cpp" />
     <ClCompile Include="Core\Time.cpp" />
     <ClCompile Include="Core\Timer.cpp" />
@@ -196,7 +197,6 @@ xcopy /Y /F /I "$(SolutionDir)Code\ThirdParty\DotNetHost\nethost.dll" "$(Solutio
     <ClCompile Include="Engine\Input\KeyboardState.cpp" />
     <ClCompile Include="Engine\Input\XboxController.cpp" />
     <ClCompile Include="Engine\Script\CSharpScriptGenerator.cpp" />
-    <ClCompile Include="Engine\Script\DotNetHost.cpp" />
     <ClCompile Include="Engine\Script\ScriptSystem.cpp" />
     <ClCompile Include="Engine\Window\WindowSystem.cpp" />
     <ClCompile Include="Engine\Render\BitmapFont.cpp" />
@@ -236,7 +236,6 @@ xcopy /Y /F /I "$(SolutionDir)Code\ThirdParty\DotNetHost\nethost.dll" "$(Solutio
     <ClCompile Include="Scene\3D\WorldEnvironment.cpp" />
     <ClCompile Include="EngineService\EngineService.cpp" />
     <ClCompile Include="Scene\Core\Node.cpp" />
-    <ClCompile Include="Scene\Core\NodeHandle.cpp" />
     <ClCompile Include="Scene\Core\PackedScene.cpp" />
     <ClCompile Include="Scene\Core\PackedSceneFormat.cpp" />
     <ClCompile Include="Scene\Core\SceneTree.cpp" />
@@ -287,6 +286,7 @@ xcopy /Y /F /I "$(SolutionDir)Code\ThirdParty\DotNetHost\nethost.dll" "$(Solutio
     <ClInclude Include="Engine\Application\SystemBase.hpp" />
     <ClInclude Include="Core\ErrorWarningAssert.hpp" />
     <ClInclude Include="Core\Object\Object.hpp" />
+    <ClInclude Include="Core\Object\ObjectID.hpp" />
     <ClInclude Include="Core\Object\Variant.hpp" />
     <ClInclude Include="Core\Object\VariantJson.hpp" />
     <ClInclude Include="Core\Object\MethodBind.hpp" />
@@ -299,7 +299,7 @@ xcopy /Y /F /I "$(SolutionDir)Code\ThirdParty\DotNetHost\nethost.dll" "$(Solutio
     <ClInclude Include="Engine\Render\HeatMaps.hpp" />
     <ClInclude Include="Core\Image.hpp" />
     <ClInclude Include="Core\NamedStrings.hpp" />
-    <ClInclude Include="Core\Render\Rgba8.hpp" />
+    <ClInclude Include="Core\Render\Color.hpp" />
     <ClInclude Include="Core\StringUtils.hpp" />
     <ClInclude Include="Core\Time.hpp" />
     <ClInclude Include="Core\Timer.hpp" />
@@ -374,7 +374,6 @@ xcopy /Y /F /I "$(SolutionDir)Code\ThirdParty\DotNetHost\nethost.dll" "$(Solutio
     <ClInclude Include="Engine\Input\KeyboardState.hpp" />
     <ClInclude Include="Engine\Input\XboxController.hpp" />
     <ClInclude Include="Engine\Script\CSharpScriptGenerator.hpp" />
-    <ClInclude Include="Engine\Script\DotNetHost.hpp" />
     <ClInclude Include="Engine\Script\ScriptSystem.hpp" />
     <ClInclude Include="Engine\Window\WindowSystem.hpp" />
     <ClInclude Include="Engine\Render\BitmapFont.hpp" />
@@ -416,7 +415,6 @@ xcopy /Y /F /I "$(SolutionDir)Code\ThirdParty\DotNetHost\nethost.dll" "$(Solutio
     <ClInclude Include="EngineService\EngineService.hpp" />
     <ClInclude Include="Scene\Core\Node.hpp" />
     <ClInclude Include="Scene\Core\NodePath.hpp" />
-    <ClInclude Include="Scene\Core\NodeHandle.hpp" />
     <ClInclude Include="Scene\Core\PackedScene.hpp" />
     <ClInclude Include="Scene\Core\PackedSceneFormat.hpp" />
     <ClInclude Include="Scene\Core\SceneTree.hpp" />

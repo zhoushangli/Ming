@@ -2,7 +2,6 @@
 
 #include "MingEngine/Editor/Gizmos/GizmosShapes.hpp"
 #include "MingEngine/Scene/Core/Node.hpp"
-#include "MingEngine/Scene/Core/NodeHandle.hpp"
 
 #include "MingEngine/Core/Math/Vector2.hpp"
 
