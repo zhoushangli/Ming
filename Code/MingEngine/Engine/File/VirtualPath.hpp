@@ -1,12 +1,11 @@
 #pragma once
 
-#include "MingEngine/Core/Object/RefCounted.hpp"
-
 #include <cstddef>
+#include <functional>
 #include <string>
 #include <string_view>
 
-class VirtualPath : public RefCounted
+class VirtualPath
 {
 public:
 	VirtualPath() = default;

@@ -22,7 +22,7 @@ Ref<ProjectSettings> ProjectSettings::Get()
 	return s_instance;
 }
 
-bool ProjectSettings::MoveFrom(Resource&& other)
+bool ProjectSettings::CopyFrom(Resource&& other)
 {
 	ProjectSettings* otherSettings = dynamic_cast<ProjectSettings*>(&other);
 	if (otherSettings == nullptr)

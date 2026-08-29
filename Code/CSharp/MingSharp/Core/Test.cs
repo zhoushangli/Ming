@@ -1,17 +1,8 @@
 namespace Ming;
 
-public partial class Node3D : Node
+internal sealed class ManagedScriptProbe : Node3D
 {
-    public Node3D() : base(NativeFuncs.CreateObject("Node3D"))
+    internal ManagedScriptProbe()
     {
     }
-
-}
-
-public partial class OmniLight3D : Light3D
-{
-    public OmniLight3D() : base(NativeFuncs.CreateObject("OmniLight3D"))
-    {
-    }
-
 }

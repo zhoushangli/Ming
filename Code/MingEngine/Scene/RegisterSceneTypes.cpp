@@ -89,8 +89,6 @@ void RegisterSceneTypes()
 
 	// Scene types
 	ClassDatabase::RegisterClass<Node>();
-	ClassDatabase::RegisterClass<RaycastQuery3D>();
-	ClassDatabase::RegisterClass<RaycastResult3D>();
 	ClassDatabase::RegisterClass<RaycastSpace3D>();
 	ClassDatabase::RegisterClass<Node3D>();
 	ClassDatabase::RegisterClass<Camera3D>();

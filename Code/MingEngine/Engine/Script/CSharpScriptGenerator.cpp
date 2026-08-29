@@ -16,9 +16,23 @@ namespace Ming;
 
 public partial class {CLASS_NAME} : {PARENT_CLASS_NAME}
 {
-{METHOD_BINDINGS}	internal {CLASS_NAME}(nint nativeHandle) : base(nativeHandle)
-	{
-	}
+    private static readonly Type CachedType = typeof({CLASS_NAME});
+    private const string NativeName = "{CLASS_NAME}";
+
+{METHOD_BINDINGS}	public unsafe {CLASS_NAME}() : base(false)
+    {
+        ConstructAndInitialize(NativeName, CachedType);
+    }
+
+    public unsafe {CLASS_NAME}(nint nativePtr) : base(false)
+    {
+        NativePtr = nativePtr;
+        ConstructAndInitialize(NativeName, CachedType);
+    }
+
+    public unsafe {CLASS_NAME}(bool initialize) : base(initialize)
+    {
+    }
 
 {CLASS_METHODS}}
 )";
@@ -512,44 +526,44 @@ CSharpScriptGenerator::CSharpScriptGenerator()
 	}
 
 	{
-		typeInfo                               = {};
-		typeInfo.m_name                        = "Color";
-		typeInfo.m_csType                      = "Color";
-		typeInfo.m_callTypeIn                  = "Color";
-		typeInfo.m_callTypeOut                 = "Color";
-		typeInfo.m_ptrCallType                 = "Color";
-		typeInfo.m_csInExpression              = "{VALUE}";
-		typeInfo.m_csOutExpression             = "return {CALL};";
-		typeInfo.m_ptrCallArgument             = "&{VALUE}";
-		typeInfo.m_callOut                     = "return {VALUE};";
+		typeInfo                             = {};
+		typeInfo.m_name                      = "Color";
+		typeInfo.m_csType                    = "Color";
+		typeInfo.m_callTypeIn                = "Color";
+		typeInfo.m_callTypeOut               = "Color";
+		typeInfo.m_ptrCallType               = "Color";
+		typeInfo.m_csInExpression            = "{VALUE}";
+		typeInfo.m_csOutExpression           = "return {CALL};";
+		typeInfo.m_ptrCallArgument           = "&{VALUE}";
+		typeInfo.m_callOut                   = "return {VALUE};";
 		m_builtinTypes[Variant::Type::Color] = typeInfo;
 	}
 
 	{
-		typeInfo                               = {};
-		typeInfo.m_name                        = "EulerAngles";
-		typeInfo.m_csType                      = "EulerAngles";
-		typeInfo.m_callTypeIn                  = "EulerAngles";
-		typeInfo.m_callTypeOut                 = "EulerAngles";
-		typeInfo.m_ptrCallType                 = "EulerAngles";
-		typeInfo.m_csInExpression              = "{VALUE}";
-		typeInfo.m_csOutExpression             = "return {CALL};";
-		typeInfo.m_ptrCallArgument             = "&{VALUE}";
-		typeInfo.m_callOut                     = "return {VALUE};";
+		typeInfo                                   = {};
+		typeInfo.m_name                            = "EulerAngles";
+		typeInfo.m_csType                          = "EulerAngles";
+		typeInfo.m_callTypeIn                      = "EulerAngles";
+		typeInfo.m_callTypeOut                     = "EulerAngles";
+		typeInfo.m_ptrCallType                     = "EulerAngles";
+		typeInfo.m_csInExpression                  = "{VALUE}";
+		typeInfo.m_csOutExpression                 = "return {CALL};";
+		typeInfo.m_ptrCallArgument                 = "&{VALUE}";
+		typeInfo.m_callOut                         = "return {VALUE};";
 		m_builtinTypes[Variant::Type::EulerAngles] = typeInfo;
 	}
 
 	{
-		typeInfo                               = {};
-		typeInfo.m_name                        = "Matrix4x4";
-		typeInfo.m_csType                      = "Matrix4x4";
-		typeInfo.m_callTypeIn                  = "Matrix4x4";
-		typeInfo.m_callTypeOut                 = "Matrix4x4";
-		typeInfo.m_ptrCallType                 = "Matrix4x4";
-		typeInfo.m_csInExpression              = "{VALUE}";
-		typeInfo.m_csOutExpression             = "return {CALL};";
-		typeInfo.m_ptrCallArgument             = "&{VALUE}";
-		typeInfo.m_callOut                     = "return {VALUE};";
+		typeInfo                                 = {};
+		typeInfo.m_name                          = "Matrix4x4";
+		typeInfo.m_csType                        = "Matrix4x4";
+		typeInfo.m_callTypeIn                    = "Matrix4x4";
+		typeInfo.m_callTypeOut                   = "Matrix4x4";
+		typeInfo.m_ptrCallType                   = "Matrix4x4";
+		typeInfo.m_csInExpression                = "{VALUE}";
+		typeInfo.m_csOutExpression               = "return {CALL};";
+		typeInfo.m_ptrCallArgument               = "&{VALUE}";
+		typeInfo.m_callOut                       = "return {VALUE};";
 		m_builtinTypes[Variant::Type::Matrix4x4] = typeInfo;
 	}
 }

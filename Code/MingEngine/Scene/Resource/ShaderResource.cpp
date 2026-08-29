@@ -2,14 +2,14 @@
 
 #include <utility>
 
-ShaderResource::~ShaderResource() 
+ShaderResource::~ShaderResource()
 {
 	delete m_shader;
 	m_shader = nullptr;
 }
 
-bool ShaderResource::MoveFrom(Resource&& other)
-{ 
+bool ShaderResource::CopyFrom(Resource&& other)
+{
 	ShaderResource* otherShader = dynamic_cast<ShaderResource*>(&other);
 	if (otherShader == nullptr)
 	{
@@ -21,6 +21,6 @@ bool ShaderResource::MoveFrom(Resource&& other)
 	delete m_shader;
 	m_shader = nullptr;
 	std::swap(m_shader, otherShader->m_shader);
-	
-	return true; 
+
+	return true;
 }

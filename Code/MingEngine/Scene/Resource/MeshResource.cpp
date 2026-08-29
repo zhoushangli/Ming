@@ -22,7 +22,7 @@ bool MeshResource::IsEmpty() const
 	return m_vertices.empty() || m_indices.empty() || m_vertexCount == 0 || m_indexCount == 0;
 }
 
-bool MeshResource::MoveFrom(Resource&& other)
+bool MeshResource::CopyFrom(Resource&& other)
 {
 	// 1) Validate type
 	MeshResource* otherMesh = dynamic_cast<MeshResource*>(&other);

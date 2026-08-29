@@ -27,7 +27,7 @@ void RegisterCoreTypes()
 	ClassDatabase::RegisterClass<RefCounted>();
 	ClassDatabase::RegisterClass<Image>();
 	ClassDatabase::RegisterAbstractClass<Resource>();
-	ClassDatabase::RegisterClass<Script>();
+	ClassDatabase::RegisterAbstractClass<Script>();
 	ClassDatabase::RegisterAbstractClass<ResourceFormatImporter>();
 	ClassDatabase::RegisterAbstractClass<ResourceFormatLoader>();
 	ClassDatabase::RegisterAbstractClass<ResourceFormatSaver>();

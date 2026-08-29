@@ -4,16 +4,13 @@
 #include "MingEngine/Core/Math/RaycastUtils.hpp"
 #include "MingEngine/Core/Math/Vector3.hpp"
 #include "MingEngine/Core/Object/Object.hpp"
-#include "MingEngine/Core/Object/RefCounted.hpp"
 
 #include <vector>
 
 class Node;
 
-class RaycastQuery3D : public RefCounted
+class RaycastQuery3D
 {
-	MCLASS(RaycastQuery3D, RefCounted);
-
 public:
 	RaycastQuery3D() = default;
 	RaycastQuery3D(MathRaycastQuery3D const& other) { this->operator=(other); }
@@ -37,9 +34,6 @@ public:
 		return *this;
 	}
 
-protected:
-	static void BindMethods();
-
 public:
 	Vector3    m_start;
 	Vector3    m_direction;
@@ -47,10 +41,8 @@ public:
 	ObjectID m_exclude = ObjectID::Invalid;
 };
 
-class RaycastResult3D : public RefCounted
+class RaycastResult3D
 {
-	MCLASS(RaycastResult3D, RefCounted);
-
 public:
 	RaycastResult3D() = default;
 	RaycastResult3D(MathRaycastResult3D const& other) { this->operator=(other); }
@@ -82,9 +74,6 @@ public:
 	void SetRayStartPosition(Vector3 const& rayStartPosition);
 	void SetRayForwardNormal(Vector3 const& rayForwardNormal);
 	void SetRayMaxLength(float rayMaxLength);
-
-protected:
-	static void BindMethods();
 
 public:
 	// Basic raycast result information (required)
@@ -124,8 +113,7 @@ public:
 	void AddObject(RaycastObject* object);
 	void RemoveObject(RaycastObject* object);
 
-	RaycastResult3D  IntersectRay(RaycastQuery3D const& query) const;
-	RaycastResult3D* IntersectRayScript(RaycastQuery3D* query) const;
+	RaycastResult3D IntersectRay(RaycastQuery3D const& query) const;
 
 	static void BindMethods();
 

@@ -1,12 +1,13 @@
+using System.Runtime.InteropServices;
+
 namespace Ming;
 
-public class MingObject
+public class MingObject : IDisposable
 {
     internal IntPtr NativePtr;
 
-    internal MingObject(IntPtr ptr)
+    internal MingObject(bool initialize)
     {
-        NativePtr = ptr;
     }
 
     internal static IntPtr GetPtr(MingObject? obj)
@@ -20,11 +21,13 @@ public class MingObject
         return obj.NativePtr;
     }
 
-    // Create an engine object from the class database and return a C# wrapper of it.
-    // e.g. MingObject.Create("Node")
-    public static MingObject Create(string className)
+    public void Dispose()
     {
-        return new MingObject(NativeFuncs.CreateObject(className));
+        if (NativePtr != IntPtr.Zero)
+        {
+            // NativeFuncs.DestroyManagedScriptInstance(NativePtr);
+            NativePtr = IntPtr.Zero;
+        }
     }
 
     // Return the engine class name of this object.
@@ -32,5 +35,32 @@ public class MingObject
     public string GetClassName()
     {
         return NativeFuncs.GetClassName(GetPtr(this));
+    }
+
+    internal void ConstructAndInitialize(string nativeName, Type nativeType)
+    {
+        if (NativePtr == nint.Zero)
+        {
+            NativePtr = NativeFuncs.CreateObject(nativeName);
+
+            // 下一阶段：
+            // BindManagedToNewNative(this, NativePtr, nativeType);
+        }
+        else if (GetType() != nativeType)
+        {
+            GCHandle handle = GCHandle.Alloc(this, GCHandleType.Normal);
+            IntPtr handlePtr = GCHandle.ToIntPtr(handle);
+
+            if (!NativeFuncs.BindManagedScriptInstance(NativePtr, handlePtr))
+            {
+                handle.Free();
+
+                throw new InvalidOperationException(
+                    "Failed to bind managed script instance."
+                );
+            }
+
+            // Native owns handlePtr after a successful callback.
+        }
     }
 }

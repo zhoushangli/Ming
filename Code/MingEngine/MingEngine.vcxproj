@@ -108,6 +108,7 @@ xcopy /Y /F /I "$(SolutionDir)Code\ThirdParty\DotNetHost\nethost.dll" "$(Solutio
     <ClCompile Include="Core\Object\ResourceLoader.cpp" />
     <ClCompile Include="Core\Object\ResourceSaver.cpp" />
     <ClCompile Include="Core\Object\Script.cpp" />
+    <ClCompile Include="Core\Object\ScriptInstance.cpp" />
     <ClCompile Include="Core\Render\SurfaceTool.cpp" />
     <ClCompile Include="Editor\EditorData.cpp" />
     <ClCompile Include="Engine\Application\App.cpp" />
@@ -196,7 +197,9 @@ xcopy /Y /F /I "$(SolutionDir)Code\ThirdParty\DotNetHost\nethost.dll" "$(Solutio
     <ClCompile Include="Engine\Input\InputSystem.cpp" />
     <ClCompile Include="Engine\Input\KeyboardState.cpp" />
     <ClCompile Include="Engine\Input\XboxController.cpp" />
+    <ClCompile Include="Engine\Script\CSharpScript.cpp" />
     <ClCompile Include="Engine\Script\CSharpScriptGenerator.cpp" />
+    <ClCompile Include="Engine\Script\ManagedGCHandle.cpp" />
     <ClCompile Include="Engine\Script\ScriptSystem.cpp" />
     <ClCompile Include="Engine\Window\WindowSystem.cpp" />
     <ClCompile Include="Engine\Render\BitmapFont.cpp" />
@@ -271,6 +274,7 @@ xcopy /Y /F /I "$(SolutionDir)Code\ThirdParty\DotNetHost\nethost.dll" "$(Solutio
     <ClInclude Include="Core\Object\ResourceLoader.hpp" />
     <ClInclude Include="Core\Object\ResourceSaver.hpp" />
     <ClInclude Include="Core\Object\Script.hpp" />
+    <ClInclude Include="Core\Object\ScriptInstance.hpp" />
     <ClInclude Include="Core\Render\SurfaceTool.hpp" />
     <ClInclude Include="Editor\EditorData.hpp" />
     <ClInclude Include="Editor\Icons\BuiltinIcons.hpp" />
@@ -373,7 +377,9 @@ xcopy /Y /F /I "$(SolutionDir)Code\ThirdParty\DotNetHost\nethost.dll" "$(Solutio
     <ClInclude Include="Engine\Input\InputSystem.hpp" />
     <ClInclude Include="Engine\Input\KeyboardState.hpp" />
     <ClInclude Include="Engine\Input\XboxController.hpp" />
+    <ClInclude Include="Engine\Script\CSharpScript.hpp" />
     <ClInclude Include="Engine\Script\CSharpScriptGenerator.hpp" />
+    <ClInclude Include="Engine\Script\ManagedGCHandle.hpp" />
     <ClInclude Include="Engine\Script\ScriptSystem.hpp" />
     <ClInclude Include="Engine\Window\WindowSystem.hpp" />
     <ClInclude Include="Engine\Render\BitmapFont.hpp" />

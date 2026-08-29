@@ -60,6 +60,9 @@ protected:                                                                      
 		Super::NotificationBackwardV(notification);                                                                    \
 	}
 
+class ScriptInstance;
+class Variant;
+
 class Object
 {
 	friend class ObjectDatabase;
@@ -71,10 +74,10 @@ public:
 	Object();
 	virtual ~Object();
 
-	Object(Object const&);
-	Object& operator=(Object const&);
-	Object(Object&&);
-	Object& operator=(Object&&);
+	Object(Object const&) = delete;
+	Object& operator=(Object const&) = delete;
+	Object(Object&&) = delete;
+	Object& operator=(Object&&) = delete;
 
 	// Class information and reflection
 	// Will be overridden by the MCLASS macro in derived classes.
@@ -88,6 +91,13 @@ public:
 	ObjectID GetObjectID() const;
 	void     Notification(int notification, bool reverse = false);
 
+	// Store the assigned script resource independently from any runtime instance.
+	// e.g. A future CSharpScriptInstance can be recreated without losing the serialized script reference.
+	Variant GetScript() const;
+	void    SetScript(Variant const& script);
+	void    SetScriptInstance(std::unique_ptr<ScriptInstance> scriptInstance);
+	ScriptInstance* GetScriptInstance() const;
+
 protected:
 	void OnNotification([[maybe_unused]] int notification) {}
 	void NotificationForward(int notification);
@@ -99,7 +109,8 @@ protected:
 	void (Object::* GetOnNotificationFunc() const)(int) { return &Object::OnNotification; }
 
 private:
-	ObjectID m_id = ObjectID::Invalid;
+	ObjectID                        m_id = ObjectID::Invalid;
+	std::unique_ptr<ScriptInstance> m_scriptInstance;
 };
 
 class ObjectDatabase

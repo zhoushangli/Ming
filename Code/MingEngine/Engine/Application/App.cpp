@@ -24,6 +24,7 @@
 #include "MingEngine/Scene/Core/Node.hpp"
 #include "MingEngine/Scene/Core/SceneTree.hpp"
 #include "MingEngine/Scene/RegisterAllTypes.hpp"
+#include "MingEngine/Engine/Script/CSharpScript.hpp"
 
 #include "ThirdParty/GLFW/glfw3.h"
 
@@ -67,6 +68,15 @@ void App::Startup()
 
 	StartupScene();
 	RegisterEvent("Quit", App::OnQuit);
+
+	Node3D            owner;
+	Ref<CSharpScript> script = CreateRef<CSharpScript>();
+
+	owner.SetScript(script);
+
+	GUARANTEE_OR_DIE(owner.GetScriptInstance() != nullptr, "C# script instance smoke failed.");
+
+	owner.SetScriptInstance(nullptr);
 }
 
 void App::Shutdown()

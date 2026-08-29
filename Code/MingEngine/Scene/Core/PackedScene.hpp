@@ -53,7 +53,7 @@ public:
 
 	bool  Pack(Node const* node);
 	Node* Instantiate() const;
-	bool  MoveFrom(Resource&& other) override;
+	bool  CopyFrom(Resource&& other) override;
 
 protected:
 	static void BindMethods() {};

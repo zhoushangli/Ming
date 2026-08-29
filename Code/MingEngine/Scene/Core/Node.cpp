@@ -38,25 +38,10 @@ bool                      Node::GetSerializable() const { return m_data.m_isSeri
 bool                      Node::GetReady() const { return m_data.m_enableReady; }
 bool                      Node::GetProcess() const { return m_data.m_enableProcess; }
 
-Variant Node::GetScript() const
-{
-	if (!m_data.m_script.IsValid())
-	{
-		return Variant();
-	}
-
-	return Variant(m_data.m_script);
-}
-
 void Node::SetName(std::string const& name) { m_data.m_name = EnsureUniqueName(name); }
 void Node::SetSerializable(bool isSerializable) { m_data.m_isSerializable = isSerializable; }
 void Node::SetReady(bool isReady) { m_data.m_enableReady = isReady; }
 void Node::SetProcess(bool isProcess) { m_data.m_enableProcess = isProcess; }
-
-void Node::SetScript(Variant const& script)
-{
-	m_data.m_script = Ref<Script>(script);
-}
 
 Node* Node::FindChildByName(std::string const& name) const
 {
@@ -206,8 +191,6 @@ void Node::BindMethods()
 	ClassDatabase::BindMethod("GetReady", &Node::GetReady);
 	ClassDatabase::BindMethod("SetProcess", &Node::SetProcess);
 	ClassDatabase::BindMethod("GetProcess", &Node::GetProcess);
-	ClassDatabase::BindMethod("SetScript", &Node::SetScript);
-	ClassDatabase::BindMethod("GetScript", &Node::GetScript);
 	ClassDatabase::BindMethod("AddNode", &Node::AddNode);
 	ClassDatabase::BindMethod("DeleteNode", &Node::DeleteNode);
 
@@ -215,15 +198,6 @@ void Node::BindMethods()
 		PropertyInfo(Variant::Type::String, "name", PropertyInfo::Hint::None, "", PropertyInfo::UsageFlags::None),
 		"SetName",
 		"GetName");
-	ADD_PROPERTY(
-		PropertyInfo(
-			Variant::Type::ObjectPtr,
-			"script",
-			PropertyInfo::Hint::ResourceType,
-			Script::GetStaticClassName(),
-			PropertyInfo::UsageFlags::Default),
-		"SetScript",
-		"GetScript");
 }
 
 void Node::AttachChildImmediately(Node* child)

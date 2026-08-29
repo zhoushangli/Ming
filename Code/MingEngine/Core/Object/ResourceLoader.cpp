@@ -47,8 +47,7 @@ Ref<Resource> ResourceLoader::LoadInternal(VirtualPath const& virtualPath)
 
 	// If the resource is not an internal cache file
 	// check if it has an import config and redirect to the imported file.
-	if (!ResourceImporter::IsInternalResourcePath(virtualPath)
-		&& !ResourceImporter::IsImportConfigPath(virtualPath))
+	if (!ResourceImporter::IsInternalResourcePath(virtualPath) && !ResourceImporter::IsImportConfigPath(virtualPath))
 	{
 		VirtualPath importPath;
 		if (ResourceImporter::TryGetImportFile(virtualPath, importPath) && importPath != virtualPath)
@@ -113,7 +112,7 @@ Ref<Resource> ResourceLoader::Reload(VirtualPath const& virtualPath)
 	// 3) Move fresh data into cached object so existing Ref<> holders see the update
 	if (cachedResource.IsValid())
 	{
-		if (!cachedResource->MoveFrom(std::move(*freshResource)))
+		if (!cachedResource->CopyFrom(std::move(*freshResource)))
 		{
 			return cachedResource;
 		}

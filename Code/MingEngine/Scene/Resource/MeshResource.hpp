@@ -24,7 +24,7 @@ public:
 	~MeshResource();
 
 	bool IsEmpty() const;
-	bool MoveFrom(Resource&& other) override;
+	bool CopyFrom(Resource&& other) override;
 
 	void InitGPUResources();
 
@@ -42,14 +42,13 @@ public:
 	uint32_t             m_indexCount  = 0;
 	std::vector<uint8_t> m_indices;
 
-	
 	// Texture references: paths for serialization, Refs for runtime, GPU handles for rendering
 	std::vector<Ref<TextureResource>> m_textureResources;
-	
+
 	// --------- GPU side data handles -----------
 	VertexBuffer* m_vertexBuffer = nullptr;
 	IndexBuffer*  m_indexBuffer  = nullptr;
-	
-	AABB3 m_bounds; // Mainly for raycast
+
+	AABB3                  m_bounds; // Mainly for raycast
 	std::vector<Triangle3> m_triangles;
 };

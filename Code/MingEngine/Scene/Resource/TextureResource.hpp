@@ -16,7 +16,7 @@ public:
 	~TextureResource();
 
 	bool IsEmpty() const;
-	bool MoveFrom(Resource&& other) override;
+	bool CopyFrom(Resource&& other) override;
 
 	bool InitGPUResources();
 

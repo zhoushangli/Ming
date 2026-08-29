@@ -1,23 +1,38 @@
 #include "MingEngine/Core/Object/Object.hpp"
 
+#include "MingEngine/Core/ErrorWarningAssert.hpp"
+#include "MingEngine/Core/Object/ClassDatabase.hpp"
+#include "MingEngine/Core/Object/Script.hpp"
+#include "MingEngine/Core/Object/ScriptInstance.hpp"
+#include "MingEngine/Core/Object/Variant.hpp"
+
 std::vector<Object*> ObjectDatabase::m_objectSlots;
 uint32_t             ObjectDatabase::m_nextObjectUID = 1u;
 
 Object::Object() { ObjectDatabase::AddInstance(this); }
-
-Object::Object([[maybe_unused]] Object const& other) : Object() {}
-
-Object& Object::operator=([[maybe_unused]] Object const& other) { return *this; }
-
-Object::Object([[maybe_unused]] Object&& other) : Object() {}
-
-Object& Object::operator=([[maybe_unused]] Object&& other) { return *this; }
-
-Object::~Object() { ObjectDatabase::RemoveInstance(this); }
+Object::~Object()
+{
+	SetScriptInstance(nullptr);
+	ObjectDatabase::RemoveInstance(this);
+}
 
 Object::BindMethodsFunc Object::GetBindMethodsFunc() { return &Object::BindMethods; }
 
-void Object::BindMethods() {}
+void Object::BindMethods()
+{
+	ClassDatabase::BindMethod("SetScript", &Object::SetScript);
+	ClassDatabase::BindMethod("GetScript", &Object::GetScript);
+
+	ADD_PROPERTY(
+		PropertyInfo(
+			Variant::Type::ObjectPtr,
+			"script",
+			PropertyInfo::Hint::ResourceType,
+			Script::GetStaticClassName(),
+			PropertyInfo::UsageFlags::Default),
+		"SetScript",
+		"GetScript");
+}
 
 std::string Object::GetStaticClassName() { return "Object"; }
 
@@ -49,9 +64,23 @@ void Object::Notification(int notification, bool reverse)
 	}
 }
 
-void Object::NotificationForward(int notification) { NotificationForwardV(notification); }
+void Object::NotificationForward(int notification)
+{
+	NotificationForwardV(notification);
+	if (m_scriptInstance)
+	{
+		m_scriptInstance->Notification(notification, false);
+	}
+}
 
-void Object::NotificationBackward(int notification) { NotificationBackwardV(notification); }
+void Object::NotificationBackward(int notification)
+{
+	if (m_scriptInstance)
+	{
+		m_scriptInstance->Notification(notification, true);
+	}
+	NotificationBackwardV(notification);
+}
 
 ObjectID ObjectDatabase::AddInstance(Object* object)
 {
@@ -132,3 +161,54 @@ Object* ObjectDatabase::GetInstance(ObjectID handle)
 
 	return object;
 }
+
+Variant Object::GetScript() const
+{
+	if (!m_scriptInstance)
+	{
+		return Variant();
+	}
+
+	return Variant(this->m_scriptInstance->GetScript().Get());
+}
+
+void Object::SetScript(Variant const& script)
+{
+	if (m_scriptInstance)
+	{
+		SetScriptInstance(nullptr);
+	}
+
+	Ref<Script> scriptRef = script;
+	bool result = scriptRef->Instantiate(this);
+
+	if (!result)
+	{
+		DebuggerPrintf("Failed to instantiate script for Object %s\n", GetClassName().c_str());
+		SetScriptInstance(nullptr);
+	}
+}
+
+void Object::SetScriptInstance(std::unique_ptr<ScriptInstance> instance)
+{
+	GUARANTEE_OR_DIE(
+		instance == nullptr || instance->GetOwner() == this,
+		"Object::SetScriptInstance failed: script instance owner mismatch.");
+
+	// We move the script instance into a temporary variable
+	// to ensure that the old position is nullptr
+	// To prevent calling SetScriptInstance recursively in DisposeFromNative
+	std::unique_ptr<ScriptInstance> oldInstance = std::move(m_scriptInstance);
+
+	// We need to release the old script instance before assigning the new one
+	// because the old script hold the same owner as the new one
+	// so the deconstruct function may clear the new script instance mistakenly
+	if (oldInstance != nullptr)
+	{
+		oldInstance.reset();
+	}
+
+	m_scriptInstance = std::move(instance);
+}
+
+ScriptInstance* Object::GetScriptInstance() const { return m_scriptInstance.get(); }

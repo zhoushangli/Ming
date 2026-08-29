@@ -4,6 +4,8 @@
 
 #include <utility>
 
+class ScriptInstance;
+
 class Script : public Resource
 {
 	MCLASS(Script, Resource)
@@ -12,16 +14,9 @@ public:
 	Script()          = default;
 	virtual ~Script() = default;
 
-	bool MoveFrom(Resource&& other) override
-	{
-		if (dynamic_cast<Script*>(&other) == nullptr)
-		{
-			return false;
-		}
+	bool CopyFrom(Resource&& other) override;
 
-		MoveBaseFrom(std::move(other));
-		return true;
-	}
+	virtual bool Instantiate(Object* owner) = 0;
 
 protected:
 	static void BindMethods() {};

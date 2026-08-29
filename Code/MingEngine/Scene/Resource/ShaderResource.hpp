@@ -14,7 +14,7 @@ public:
 	~ShaderResource() override;
 
 	bool IsEmpty() const { return m_shader == nullptr; }
-	bool MoveFrom(Resource&& other) override;
+	bool CopyFrom(Resource&& other) override;
 
 	Shader* GetShader() const { return m_shader; }
 	void    SetShader(Shader* shader) { m_shader = shader; }

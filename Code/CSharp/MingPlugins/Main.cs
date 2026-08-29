@@ -1,63 +1,63 @@
 ﻿using System.Runtime.InteropServices;
 using System.Text;
-
 using Ming;
 
 namespace MingPlugins
 {
-	public static class Main
-	{
-		private static unsafe int Log(string message)
-		{
-			byte[] utf8Bytes = Encoding.UTF8.GetBytes(message);
+    public static class Main
+    {
+        private static unsafe int Log(string message)
+        {
+            byte[] utf8Bytes = Encoding.UTF8.GetBytes(message);
 
-			fixed (byte* text = utf8Bytes)
-			{
-				return NativeFuncs.LogUtf8(
-					text,
-					utf8Bytes.Length);
-			}
-		}
+            fixed (byte* text = utf8Bytes)
+            {
+                return NativeFuncs.LogUtf8(text, utf8Bytes.Length);
+            }
+        }
 
-		[UnmanagedCallersOnly]
-		private static unsafe int Initialize(
-			void* nativeCallbacks,
-			int nativeCallbacksSize,
-			void* managedCallbacks,
-			int managedCallbacksSize)
-		{
-			try
-			{
-				if (nativeCallbacks == null)
-				{
-					return -1;
-				}
+        [UnmanagedCallersOnly]
+        private static unsafe int Initialize(
+            void* nativeCallbacks,
+            int nativeCallbacksSize,
+            void* managedCallbacks,
+            int managedCallbacksSize
+        )
+        {
+            try
+            {
+                if (nativeCallbacks == null)
+                {
+                    return -1;
+                }
 
-				NativeFuncs.Initialize((IntPtr)nativeCallbacks,
-					nativeCallbacksSize,
-					(IntPtr)managedCallbacks,
-					managedCallbacksSize);
+                NativeFuncs.Initialize(
+                    (IntPtr)nativeCallbacks,
+                    nativeCallbacksSize,
+                    (IntPtr)managedCallbacks,
+                    managedCallbacksSize
+                );
 
-				return 0;
-			}
-			catch (Exception exception)
-			{
-				Console.Error.WriteLine(exception);
-				return -5;
-			}
-		}
+                return 0;
+            }
+            catch (Exception exception)
+            {
+                Console.Error.WriteLine(exception);
+                return -5;
+            }
+        }
 
-		[UnmanagedCallersOnly]
-		private static unsafe int Shutdown()
-		{
-			try
-			{
-				return 0;
-			}
-			catch (Exception)
-			{
-				return -1;
-			}
-		}
-	}
+        [UnmanagedCallersOnly]
+        private static unsafe int Shutdown()
+        {
+            try
+            {
+                return 0;
+            }
+            catch (Exception)
+            {
+                return -1;
+            }
+        }
+    }
 }

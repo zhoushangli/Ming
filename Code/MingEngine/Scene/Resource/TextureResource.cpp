@@ -14,7 +14,7 @@ TextureResource::~TextureResource()
 
 bool TextureResource::IsEmpty() const { return !m_image.IsValid() || !m_image->IsValid(); }
 
-bool TextureResource::MoveFrom(Resource&& other)
+bool TextureResource::CopyFrom(Resource&& other)
 {
 	// 1) Validate type
 	TextureResource* otherTex = dynamic_cast<TextureResource*>(&other);
@@ -48,13 +48,13 @@ bool TextureResource::InitGPUResources()
 	}
 
 	m_gpuTexture = g_engine->m_renderer->CreateGPUTexture(
-		GetName().c_str(), m_image->GetDimensions(), m_image->GetChannels(), m_image->GetRawData());
+		GetName().c_str(),
+		m_image->GetDimensions(),
+		m_image->GetChannels(),
+		m_image->GetRawData());
 	return m_gpuTexture != nullptr;
 }
 
-IntVec2 TextureResource::GetDimensions() const
-{
-	return m_image.IsValid() ? m_image->GetDimensions() : IntVec2::Zero;
-}
+IntVec2 TextureResource::GetDimensions() const { return m_image.IsValid() ? m_image->GetDimensions() : IntVec2::Zero; }
 
 int TextureResource::GetChannels() const { return m_image.IsValid() ? m_image->GetChannels() : 0; }

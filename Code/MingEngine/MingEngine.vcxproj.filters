@@ -606,6 +606,15 @@
     <ClCompile Include="Engine\Script\CSharpScriptGenerator.cpp">
       <Filter>Engine\Script</Filter>
     </ClCompile>
+    <ClCompile Include="Core\Object\ScriptInstance.cpp">
+      <Filter>Core\Object</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Script\CSharpScript.cpp">
+      <Filter>Engine\Script</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Script\ManagedGCHandle.cpp">
+      <Filter>Engine\Script</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Core\Clock.hpp">
@@ -1161,6 +1170,15 @@
       <Filter>Editor\Icons</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Script\CSharpScriptGenerator.hpp">
+      <Filter>Engine\Script</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Object\ScriptInstance.hpp">
+      <Filter>Core\Object</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Script\CSharpScript.hpp">
+      <Filter>Engine\Script</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Script\ManagedGCHandle.hpp">
       <Filter>Engine\Script</Filter>
     </ClInclude>
   </ItemGroup>

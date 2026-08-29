@@ -22,9 +22,10 @@ public:
 	const std::string& GetName() const { return m_name; }
 	void               SetName(const std::string& name) { m_name = name; }
 
-	// Move all data from another resource of the same type and leave the source valid but empty.
-	// e.g. cachedResource.MoveFrom(std::move(freshResource))
-	virtual bool MoveFrom(Resource&& other) = 0;
+	// Copy all data from another resource of the same type and leave the source valid but empty.
+	// Mainly used for reloading a resource in-place without creating a new instance
+	// e.g. cachedResource.CopyFrom(std::move(freshResource))
+	virtual bool CopyFrom(Resource&& other) = 0;
 
 protected:
 	static void BindMethods();

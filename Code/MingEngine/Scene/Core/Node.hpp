@@ -53,11 +53,6 @@ public:
 	void SetReady(bool isReady);
 	void SetProcess(bool isProcess);
 
-	// Store the assigned script resource independently from any runtime instance.
-	// e.g. A future CSharpScriptInstance can be recreated without losing the serialized script reference.
-	Variant GetScript() const;
-	void    SetScript(Variant const& script);
-
 	// Currently GetNode only supports child
 	// it do not support ../ or ..
 	Node* FindChildByName(std::string const& name) const;
@@ -123,7 +118,6 @@ protected:
 		SceneTree*         m_sceneTree = nullptr;
 		Viewport*          m_viewport  = nullptr;
 		std::vector<Node*> m_children;
-		Ref<Script>        m_script;
 		bool               m_isPendingDestroy = false;
 		bool               m_isSerializable   = true;
 		bool m_enableReady   = false;
