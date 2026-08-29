@@ -50,16 +50,21 @@ using InvokeTestGCHandleFunc = int32_t(CORECLR_DELEGATE_CALLTYPE*)(void* gcHandl
 using FreeGCHandleFunc       = void(CORECLR_DELEGATE_CALLTYPE*)(void* gcHandle);
 using CollectAndGetStateFunc =
 	void(CORECLR_DELEGATE_CALLTYPE*)(int32_t* allocated, int32_t* freed, int32_t* targetAlive);
-using CreateManagedScriptInstanceFunc = int32_t(CORECLR_DELEGATE_CALLTYPE*)(void* script, void* owner);
+using CreateManagedScriptInstanceFunc   = int32_t(CORECLR_DELEGATE_CALLTYPE*)(void* script, void* owner);
+using ValidateManagedScriptInstanceFunc = int32_t(CORECLR_DELEGATE_CALLTYPE*)(void* gcHandle, void* expectedOwner);
+using CollectAndGetManagedScriptStateFunc =
+	void(CORECLR_DELEGATE_CALLTYPE*)(int32_t* allocated, int32_t* disposed, int32_t* freed, int32_t* targetAlive);
 
 struct ManagedCallbacks
 {
-	ManagedPingFunc                 m_ping                        = nullptr;
-	CreateTestGCHandleFunc          m_createTestGCHandle          = nullptr;
-	InvokeTestGCHandleFunc          m_invokeTestGCHandle          = nullptr;
-	FreeGCHandleFunc                m_freeGCHandle                = nullptr;
-	CollectAndGetStateFunc          m_collectAndGetState          = nullptr;
-	CreateManagedScriptInstanceFunc m_createManagedScriptInstance = nullptr;
+	ManagedPingFunc                   m_ping                          = nullptr;
+	CreateTestGCHandleFunc            m_createTestGCHandle            = nullptr;
+	InvokeTestGCHandleFunc            m_invokeTestGCHandle            = nullptr;
+	FreeGCHandleFunc                  m_freeGCHandle                  = nullptr;
+	CollectAndGetStateFunc            m_collectAndGetState            = nullptr;
+	CreateManagedScriptInstanceFunc   m_createManagedScriptInstance   = nullptr;
+	ValidateManagedScriptInstanceFunc m_validateManagedScriptInstance = nullptr;
+	CollectAndGetManagedScriptStateFunc m_collectAndGetManagedScriptState = nullptr;
 };
 
 //---------------------------------------------------------------------------
@@ -91,6 +96,23 @@ public:
 
 	void FreeGCHandle(void* gcHandle);
 	bool CreateManagedScriptInstance(Script* script, Object* owner);
+
+	bool ValidateManagedScriptInstance(void* gcHandle, Object* expectedOwner)
+	{
+		if (gcHandle == nullptr || expectedOwner == nullptr
+			|| m_managedCallbacks.m_validateManagedScriptInstance == nullptr)
+		{
+			return false;
+		}
+
+		return m_managedCallbacks.m_validateManagedScriptInstance(gcHandle, expectedOwner) != 0;
+	}
+
+	void CollectAndGetManagedScriptState(
+		int32_t& allocated,
+		int32_t& disposed,
+		int32_t& freed,
+		int32_t& targetAlive);
 
 private:
 	using ShutdownFunc = int32_t(CORECLR_DELEGATE_CALLTYPE*)();

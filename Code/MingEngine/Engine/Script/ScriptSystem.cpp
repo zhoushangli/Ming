@@ -209,6 +209,24 @@ bool ScriptSystem::CreateManagedScriptInstance(Script* script, Object* owner)
 	return result != 0;
 }
 
+void ScriptSystem::CollectAndGetManagedScriptState(
+	int32_t& allocated,
+	int32_t& disposed,
+	int32_t& freed,
+	int32_t& targetAlive)
+{
+	allocated   = 0;
+	disposed    = 0;
+	freed       = 0;
+	targetAlive = 0;
+
+	GUARANTEE_OR_DIE(
+		m_managedCallbacks.m_collectAndGetManagedScriptState != nullptr,
+		"Managed script state callback is not initialized.");
+
+	m_managedCallbacks.m_collectAndGetManagedScriptState(&allocated, &disposed, &freed, &targetAlive);
+}
+
 bool ScriptSystem::InitializeDotNetRuntime()
 {
 	std::filesystem::path const executableDirectory = GetExecutableDirectory();

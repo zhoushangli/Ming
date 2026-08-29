@@ -29,6 +29,8 @@ internal unsafe struct ManagedCallbacks
     public delegate* unmanaged<IntPtr, void> FreeGCHandle;
     public delegate* unmanaged<int*, int*, int*, void> CollectAndGetState;
     public delegate* unmanaged<IntPtr, IntPtr, int> CreateManagedScriptInstance;
+    public delegate* unmanaged<IntPtr, IntPtr, int> ValidateManagedScriptInstance;
+    public delegate* unmanaged<int*, int*, int*, int*, void> CollectAndGetManagedScriptState;
 }
 
 public static unsafe class NativeFuncs
@@ -48,6 +50,12 @@ public static unsafe class NativeFuncs
     private static int s_allocatedHandleCount;
     private static int s_freedHandleCount;
     private static WeakReference<GCHandleProbe>? s_lastProbe;
+
+    private static int s_scriptHandleAllocated;
+    private static int s_scriptHandleDisposed;
+    private static int s_scriptHandleFreed;
+
+    private static WeakReference<PlayerController>? s_lastScriptInstance;
 
     #region Native Callback Wrappers
 
@@ -136,6 +144,35 @@ public static unsafe class NativeFuncs
         return s_callbacks.BindManagedScriptInstance(owner, gcHandle) != 0;
     }
 
+    internal static void BindManagedScriptInstance(MingObject instance, IntPtr owner)
+    {
+        GCHandle handle = GCHandle.Alloc(instance, GCHandleType.Normal);
+        IntPtr handlePtr = GCHandle.ToIntPtr(handle);
+        bool transferred = false;
+
+        s_scriptHandleAllocated++;
+
+        try
+        {
+            if (!BindManagedScriptInstance(owner, handlePtr))
+            {
+                throw new InvalidOperationException(
+                    "Failed to bind managed script instance."
+                );
+            }
+
+            transferred = true;
+        }
+        finally
+        {
+            if (!transferred)
+            {
+                handle.Free();
+                s_scriptHandleFreed++;
+            }
+        }
+    }
+
     #endregion
 
     #region Managed Callback Wrappers
@@ -206,13 +243,37 @@ public static unsafe class NativeFuncs
 
             GCHandle handle = GCHandle.FromIntPtr(handlePtr);
 
+            bool isScriptInstance = handle.Target is PlayerController;
+
             if (handle.Target is MingObject instance)
             {
                 instance.Dispose();
+
+                if (isScriptInstance)
+                {
+                    if (instance.NativePtr == IntPtr.Zero)
+                    {
+                        s_scriptHandleDisposed++;
+                    }
+                    else
+                    {
+                        Console.Error.WriteLine(
+                            "Managed script NativePtr was not invalidated."
+                        );
+                    }
+                }
             }
 
             handle.Free();
-            s_freedHandleCount++;
+
+            if (isScriptInstance)
+            {
+                s_scriptHandleFreed++;
+            }
+            else
+            {
+                s_freedHandleCount++;
+            }
         }
         catch (Exception exception)
         {
@@ -243,7 +304,7 @@ public static unsafe class NativeFuncs
         try
         {
             // This checkpoint uses one fixed script type.
-            Type scriptType = typeof(ManagedScriptProbe);
+            Type scriptType = typeof(PlayerController);
 
             ConstructorInfo? constructor = scriptType
                 .GetConstructors(
@@ -261,14 +322,15 @@ public static unsafe class NativeFuncs
             }
 
             // 1) Allocate the managed object without running constructors.
-            var instance = (MingObject)
-                RuntimeHelpers.GetUninitializedObject(scriptType);
+            var instance = (MingObject)RuntimeHelpers.GetUninitializedObject(scriptType);
 
             // 2) Give it the already-existing native owner.
             instance.NativePtr = ownerPtr;
 
             // 3) Run the constructor chain.
             _ = constructor.Invoke(instance, Array.Empty<object?>());
+
+            s_lastScriptInstance = new WeakReference<PlayerController>((PlayerController)instance);
 
             return 1;
         }
@@ -277,6 +339,57 @@ public static unsafe class NativeFuncs
             Console.Error.WriteLine(exception);
             return 0;
         }
+    }
+
+    [UnmanagedCallersOnly]
+    private static int ValidateManagedScriptInstance(IntPtr handlePtr, IntPtr expectedOwner)
+    {
+        try
+        {
+            if (handlePtr == IntPtr.Zero || expectedOwner == IntPtr.Zero)
+            {
+                return 0;
+            }
+
+            // 1) Drop ordinary unreachable managed objects.
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+
+            // 2) Resolve the target only after collection.
+            GCHandle handle = GCHandle.FromIntPtr(handlePtr);
+
+            if (handle.Target is not PlayerController player)
+            {
+                return 0;
+            }
+
+            // 3) Confirm this is still the wrapper of the original native owner.
+            return player.ValidateNativeOwner(expectedOwner) ? 1 : 0;
+        }
+        catch (Exception exception)
+        {
+            Console.Error.WriteLine(exception);
+            return 0;
+        }
+    }
+
+    [UnmanagedCallersOnly]
+    private static unsafe void CollectAndGetManagedScriptState(
+        int* allocated,
+        int* disposed,
+        int* freed,
+        int* targetAlive
+    )
+    {
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        GC.Collect();
+
+        *allocated = s_scriptHandleAllocated;
+        *disposed = s_scriptHandleDisposed;
+        *freed = s_scriptHandleFreed;
+        *targetAlive = s_lastScriptInstance?.TryGetTarget(out _) == true ? 1 : 0;
     }
 
     #endregion
@@ -307,6 +420,8 @@ public static unsafe class NativeFuncs
             FreeGCHandle = &FreeGCHandle,
             CollectAndGetState = &CollectAndGetState,
             CreateManagedScriptInstance = &CreateManagedScriptInstance,
+            ValidateManagedScriptInstance = &ValidateManagedScriptInstance,
+            CollectAndGetManagedScriptState = &CollectAndGetManagedScriptState,
         };
     }
 }

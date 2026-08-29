@@ -14,13 +14,13 @@ public:
 	bool Instantiate(Object* owner) override;
 };
 
-class CSharpScriptInstance : public ScriptInstance
+class CSharpInstance : public ScriptInstance
 {
 	friend class CSharpScript;
 
 public:
-	CSharpScriptInstance(Ref<CSharpScript> script) : m_script(script) {}
-	~CSharpScriptInstance() override;
+	CSharpInstance(Ref<CSharpScript> script) : m_script(script) {}
+	~CSharpInstance() override;
 
 	Object*     GetOwner() const override { return m_owner; }
 	Ref<Script> GetScript() const override { return m_script; }
@@ -28,6 +28,8 @@ public:
 	void Notification(int notification, bool reverse) override;
 
 	bool ReloadGCHandle(void* value) override;
+
+	bool ValidateAfterGC() const;
 
 private:
 	Ref<CSharpScript> m_script;

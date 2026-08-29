@@ -1,5 +1,3 @@
-using System.Runtime.InteropServices;
-
 namespace Ming;
 
 public class MingObject : IDisposable
@@ -48,19 +46,7 @@ public class MingObject : IDisposable
         }
         else if (GetType() != nativeType)
         {
-            GCHandle handle = GCHandle.Alloc(this, GCHandleType.Normal);
-            IntPtr handlePtr = GCHandle.ToIntPtr(handle);
-
-            if (!NativeFuncs.BindManagedScriptInstance(NativePtr, handlePtr))
-            {
-                handle.Free();
-
-                throw new InvalidOperationException(
-                    "Failed to bind managed script instance."
-                );
-            }
-
-            // Native owns handlePtr after a successful callback.
+            NativeFuncs.BindManagedScriptInstance(this, NativePtr);
         }
     }
 }

@@ -1,8 +1,17 @@
 namespace Ming;
 
-internal sealed class ManagedScriptProbe : Node3D
+class PlayerController : Node3D
 {
-    internal ManagedScriptProbe()
+    public string NameSeenInConstructor { get; private set; } = "";
+
+    PlayerController()
     {
+        NameSeenInConstructor = GetName();
+    }
+
+    public bool ValidateNativeOwner(IntPtr expectedOwner)
+    {
+        return NativePtr == expectedOwner
+            && GetName() == NameSeenInConstructor;
     }
 }

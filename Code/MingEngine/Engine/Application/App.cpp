@@ -15,6 +15,7 @@
 #include "MingEngine/Engine/Application/ProjectSettings.hpp"
 #include "MingEngine/Engine/ImGui/ImGuiSystem.hpp"
 #include "MingEngine/Engine/Input/InputSystem.hpp"
+#include "MingEngine/Engine/Script/CSharpScript.hpp"
 #include "MingEngine/Engine/Script/CSharpScriptGenerator.hpp"
 #include "MingEngine/Engine/Window/WindowSystem.hpp"
 #include "MingEngine/EngineService/EngineService.hpp"
@@ -24,7 +25,6 @@
 #include "MingEngine/Scene/Core/Node.hpp"
 #include "MingEngine/Scene/Core/SceneTree.hpp"
 #include "MingEngine/Scene/RegisterAllTypes.hpp"
-#include "MingEngine/Engine/Script/CSharpScript.hpp"
 
 #include "ThirdParty/GLFW/glfw3.h"
 
@@ -69,14 +69,55 @@ void App::Startup()
 	StartupScene();
 	RegisterEvent("Quit", App::OnQuit);
 
-	Node3D            owner;
-	Ref<CSharpScript> script = CreateRef<CSharpScript>();
+	int32_t baseAllocated   = 0;
+	int32_t baseDisposed    = 0;
+	int32_t baseFreed       = 0;
+	int32_t baseTargetAlive = 0;
+	g_engine->m_scriptSystem->CollectAndGetManagedScriptState(
+		baseAllocated,
+		baseDisposed,
+		baseFreed,
+		baseTargetAlive);
 
+	Node3D owner;
+	owner.SetName("CSharpOwner");
+
+	Ref<CSharpScript> script = CreateRef<CSharpScript>();
 	owner.SetScript(script);
 
 	GUARANTEE_OR_DIE(owner.GetScriptInstance() != nullptr, "C# script instance smoke failed.");
 
+	CSharpInstance* instance = dynamic_cast<CSharpInstance*>(owner.GetScriptInstance());
+
+	GUARANTEE_OR_DIE(instance != nullptr, "C# script instance was not created.");
+
+	GUARANTEE_OR_DIE(instance->ValidateAfterGC(), "C# script instance did not survive forced GC.");
+
+	int32_t allocated   = 0;
+	int32_t disposed    = 0;
+	int32_t freed       = 0;
+	int32_t targetAlive = 0;
+	g_engine->m_scriptSystem->CollectAndGetManagedScriptState(allocated, disposed, freed, targetAlive);
+
+	GUARANTEE_OR_DIE(
+		allocated == baseAllocated + 1 && disposed == baseDisposed && freed == baseFreed && targetAlive == 1,
+		"C# script instance state was invalid after forced GC.");
+
 	owner.SetScriptInstance(nullptr);
+	instance = nullptr;
+
+	g_engine->m_scriptSystem->CollectAndGetManagedScriptState(allocated, disposed, freed, targetAlive);
+
+	GUARANTEE_OR_DIE(
+		allocated == baseAllocated + 1 && disposed == baseDisposed + 1 && freed == baseFreed + 1 && targetAlive == 0,
+		"C# script instance was not disposed and released exactly once.");
+
+	owner.SetScriptInstance(nullptr);
+	g_engine->m_scriptSystem->CollectAndGetManagedScriptState(allocated, disposed, freed, targetAlive);
+
+	GUARANTEE_OR_DIE(
+		allocated == baseAllocated + 1 && disposed == baseDisposed + 1 && freed == baseFreed + 1 && targetAlive == 0,
+		"C# script instance was disposed or released more than once.");
 }
 
 void App::Shutdown()

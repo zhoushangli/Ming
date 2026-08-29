@@ -21,9 +21,9 @@ bool CSharpScript::Instantiate(Object* owner)
 		return false;
 	}
 
-	// 1) Create a new CSharpScriptInstance
-	CSharpScriptInstance* scriptInstance = new CSharpScriptInstance(Ref<CSharpScript>(this));
-	scriptInstance->m_owner              = owner;
+	// 1) Create a new CSharpInstance
+	CSharpInstance* scriptInstance = new CSharpInstance(Ref<CSharpScript>(this));
+	scriptInstance->m_owner        = owner;
 	owner->SetScriptInstance(std::unique_ptr<ScriptInstance>(scriptInstance));
 
 	// 2) Initialize the script instance
@@ -38,7 +38,7 @@ bool CSharpScript::Instantiate(Object* owner)
 	return true;
 }
 
-CSharpScriptInstance::~CSharpScriptInstance()
+CSharpInstance::~CSharpInstance()
 {
 	m_gcHandle.Release();
 
@@ -46,9 +46,9 @@ CSharpScriptInstance::~CSharpScriptInstance()
 	m_owner  = nullptr;
 }
 
-void CSharpScriptInstance::Notification(int notification, bool reverse) {}
+void CSharpInstance::Notification(int notification, bool reverse) {}
 
-bool CSharpScriptInstance::ReloadGCHandle(void* value)
+bool CSharpInstance::ReloadGCHandle(void* value)
 {
 	if (value == nullptr || m_gcHandle.IsValid())
 	{
@@ -57,4 +57,14 @@ bool CSharpScriptInstance::ReloadGCHandle(void* value)
 
 	m_gcHandle = ManagedGCHandle(value);
 	return true;
+}
+
+bool CSharpInstance::ValidateAfterGC() const
+{
+	if (!m_gcHandle.IsValid() || m_owner == nullptr)
+	{
+		return false;
+	}
+
+	return g_engine->m_scriptSystem->ValidateManagedScriptInstance(m_gcHandle.GetValue(), m_owner);
 }
