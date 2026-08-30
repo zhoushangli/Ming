@@ -14,7 +14,7 @@ Node::~Node()
 {
 	for (Node* child : m_data.m_children)
 	{
-		delete child;
+		MemDelete(child);
 	}
 	m_data.m_children.clear();
 }
@@ -161,7 +161,7 @@ void Node::DeleteNode()
 			m_data.m_parent->DetachChildImmediately(this);
 		}
 
-		delete this;
+		MemDelete(this);
 		return;
 	}
 
@@ -251,24 +251,24 @@ bool Node::IsAncestorOf(Node const* other) const
 
 void Node::OnNotification(int notification)
 {
-	switch (static_cast<NotificationType>(notification))
+	switch (notification)
 	{
-	case NotificationType::EnterTree:
+	case Notification_EnterTree:
 	{
 		OnEnterTree();
 		break;
 	}
-	case NotificationType::ExitTree:
+	case Notification_ExitTree:
 	{
 		OnExitTree();
 		break;
 	}
-	case NotificationType::Ready:
+	case Notification_Ready:
 	{
 		OnReady();
 		break;
 	}
-	case NotificationType::Process:
+	case Notification_Process:
 	{
 		float      deltaSeconds = 0.f;
 		SceneTree* sceneTree    = GetSceneTree();
@@ -381,7 +381,7 @@ void Node::PropagateEnterTree()
 
 	m_data.m_sceneTree->RegisterNode(this);
 
-	Notification((int)NotificationType::EnterTree);
+	Notification(Notification_EnterTree);
 
 	for (Node* child : children)
 	{
@@ -404,7 +404,7 @@ void Node::PropagateExitTree()
 		}
 	}
 
-	Notification((int)NotificationType::ExitTree, true);
+	Notification(Notification_ExitTree, true);
 
 	m_data.m_sceneTree->UnregisterNode(this);
 
@@ -427,7 +427,7 @@ void Node::PropagateReady()
 
 	if (m_data.m_enableReady)
 	{
-		Notification((int)NotificationType::Ready);
+		Notification(Notification_Ready);
 	}
 }
 

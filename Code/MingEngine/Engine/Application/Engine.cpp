@@ -13,52 +13,52 @@ Engine::Engine(EngineConfig config) : m_config(config)
 	g_engine = this;
 
 	if (config.m_eventSystemConfig.m_isEnable)
-		m_eventSystem = new EventSystem(config.m_eventSystemConfig);
+		m_eventSystem = MemNew<EventSystem>(config.m_eventSystemConfig);
 	if (config.m_windowConfig.m_isEnable)
-		m_windowSystem = new WindowSystem(config.m_windowConfig);
+		m_windowSystem = MemNew<WindowSystem>(config.m_windowConfig);
 	if (config.m_fileSystemConfig.m_isEnable)
-		m_fileSystem = new FileSystem(config.m_fileSystemConfig);
+		m_fileSystem = MemNew<FileSystem>(config.m_fileSystemConfig);
 	if (config.m_scriptSystemConfig.m_isEnabled)
-		m_scriptSystem = new ScriptSystem(config.m_scriptSystemConfig);
+		m_scriptSystem = MemNew<ScriptSystem>(config.m_scriptSystemConfig);
 	if (config.m_rendererConfig.m_isEnable)
-		m_renderer = new Renderer(config.m_rendererConfig);
+		m_renderer = MemNew<Renderer>(config.m_rendererConfig);
 	if (config.m_inputConfig.m_isEnable)
-		m_inputSystem = new InputSystem(config.m_inputConfig);
+		m_inputSystem = MemNew<InputSystem>(config.m_inputConfig);
 	if (config.m_audioConfig.m_isEnable)
-		m_audioSystem = new AudioSystem(config.m_audioConfig);
+		m_audioSystem = MemNew<AudioSystem>(config.m_audioConfig);
 	if (config.m_imguiConfig.m_isEnable)
-		m_imguiSystem = new ImGuiSystem(config.m_imguiConfig);
+		m_imguiSystem = MemNew<ImGuiSystem>(config.m_imguiConfig);
 	if (config.m_networkConfig.m_isEnable)
-		m_networkSystem = new NetworkSystem(config.m_networkConfig);
+		m_networkSystem = MemNew<NetworkSystem>(config.m_networkConfig);
 }
 
 Engine::~Engine()
 {
-	delete m_imguiSystem;
+	MemDelete(m_imguiSystem);
 	m_imguiSystem = nullptr;
 
-	delete m_audioSystem;
+	MemDelete(m_audioSystem);
 	m_audioSystem = nullptr;
 
-	delete m_inputSystem;
+	MemDelete(m_inputSystem);
 	m_inputSystem = nullptr;
 
-	delete m_fileSystem;
+	MemDelete(m_fileSystem);
 	m_fileSystem = nullptr;
 
-	delete m_renderer;
+	MemDelete(m_renderer);
 	m_renderer = nullptr;
 
-	delete m_scriptSystem;
+	MemDelete(m_scriptSystem);
 	m_scriptSystem = nullptr;
 
-	delete m_windowSystem;
+	MemDelete(m_windowSystem);
 	m_windowSystem = nullptr;
 
-	delete m_eventSystem;
+	MemDelete(m_eventSystem);
 	m_eventSystem = nullptr;
 
-	delete m_networkSystem;
+	MemDelete(m_networkSystem);
 	m_networkSystem = nullptr;
 }
 

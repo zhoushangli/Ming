@@ -31,22 +31,6 @@
 #include "MingEngine/Editor/EditorNode.hpp"
 #include "MingEngine/Editor/Gizmos/EditorGizmos.hpp"
 
-namespace
-{
-	PackedSceneLoader *packedSceneLoader = new PackedSceneLoader();
-	MeshResourceLoader *meshResourceLoader = new MeshResourceLoader();
-	TextureResourceLoader *textureResourceLoader = new TextureResourceLoader();
-	ShaderResourceLoader *shaderResourceLoader = new ShaderResourceLoader();
-
-	PackedSceneSaver *packedSceneSaver = new PackedSceneSaver();
-	MeshResourceSaver *meshResourceSaver = new MeshResourceSaver();
-	TextureResourceSaver *textureResourceSaver = new TextureResourceSaver();
-
-	OBJImporter *objImporter = new OBJImporter();
-	GLTFImporter *gltfImporter = new GLTFImporter();
-	ImageImporter *imageImporter = new ImageImporter();
-} // namespace
-
 #pragma region Scene
 
 void RegisterSceneTypes()
@@ -74,18 +58,18 @@ void RegisterSceneTypes()
 	ClassDatabase::RegisterClass<ImageImporter>();
 
 	// Resource format registration
-	ResourceLoader::AddLoader(Ref<PackedSceneLoader>(packedSceneLoader));
-	ResourceLoader::AddLoader(Ref<MeshResourceLoader>(meshResourceLoader));
-	ResourceLoader::AddLoader(Ref<TextureResourceLoader>(textureResourceLoader));
-	ResourceLoader::AddLoader(Ref<ShaderResourceLoader>(shaderResourceLoader));
+	ResourceLoader::AddLoader(CreateRef<PackedSceneLoader>());
+	ResourceLoader::AddLoader(CreateRef<MeshResourceLoader>());
+	ResourceLoader::AddLoader(CreateRef<TextureResourceLoader>());
+	ResourceLoader::AddLoader(CreateRef<ShaderResourceLoader>());
 
-	ResourceSaver::AddSaver(Ref<PackedSceneSaver>(packedSceneSaver));
-	ResourceSaver::AddSaver(Ref<MeshResourceSaver>(meshResourceSaver));
-	ResourceSaver::AddSaver(Ref<TextureResourceSaver>(textureResourceSaver));
+	ResourceSaver::AddSaver(CreateRef<PackedSceneSaver>());
+	ResourceSaver::AddSaver(CreateRef<MeshResourceSaver>());
+	ResourceSaver::AddSaver(CreateRef<TextureResourceSaver>());
 
-	ResourceImporter::AddImporter(Ref<OBJImporter>(objImporter));
-	ResourceImporter::AddImporter(Ref<GLTFImporter>(gltfImporter));
-	ResourceImporter::AddImporter(Ref<ImageImporter>(imageImporter));
+	ResourceImporter::AddImporter(CreateRef<OBJImporter>());
+	ResourceImporter::AddImporter(CreateRef<GLTFImporter>());
+	ResourceImporter::AddImporter(CreateRef<ImageImporter>());
 
 	// Scene types
 	ClassDatabase::RegisterClass<Node>();

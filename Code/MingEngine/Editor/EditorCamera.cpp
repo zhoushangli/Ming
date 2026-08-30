@@ -20,7 +20,7 @@ EditorCamera::EditorCamera()
 {
 	s_instance = this;
 
-	m_camera = new Camera3D(60.f, 0.1f, 100.f);
+	m_camera = MemNew<Camera3D>(60.f, 0.1f, 100.f);
 	AddNode(m_camera);
 
 	SetReady(true);

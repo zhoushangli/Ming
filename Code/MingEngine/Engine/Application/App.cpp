@@ -68,61 +68,35 @@ void App::Startup()
 
 	StartupScene();
 	RegisterEvent("Quit", App::OnQuit);
-
-	int32_t baseAllocated   = 0;
-	int32_t baseDisposed    = 0;
-	int32_t baseFreed       = 0;
-	int32_t baseTargetAlive = 0;
-	g_engine->m_scriptSystem->CollectAndGetManagedScriptState(
-		baseAllocated,
-		baseDisposed,
-		baseFreed,
-		baseTargetAlive);
-
-	Node3D owner;
-	owner.SetName("CSharpOwner");
-
-	Ref<CSharpScript> script = CreateRef<CSharpScript>();
-	owner.SetScript(script);
-
-	GUARANTEE_OR_DIE(owner.GetScriptInstance() != nullptr, "C# script instance smoke failed.");
-
-	CSharpInstance* instance = dynamic_cast<CSharpInstance*>(owner.GetScriptInstance());
-
-	GUARANTEE_OR_DIE(instance != nullptr, "C# script instance was not created.");
-
-	GUARANTEE_OR_DIE(instance->ValidateAfterGC(), "C# script instance did not survive forced GC.");
-
-	int32_t allocated   = 0;
-	int32_t disposed    = 0;
-	int32_t freed       = 0;
-	int32_t targetAlive = 0;
-	g_engine->m_scriptSystem->CollectAndGetManagedScriptState(allocated, disposed, freed, targetAlive);
-
-	GUARANTEE_OR_DIE(
-		allocated == baseAllocated + 1 && disposed == baseDisposed && freed == baseFreed && targetAlive == 1,
-		"C# script instance state was invalid after forced GC.");
-
-	owner.SetScriptInstance(nullptr);
-	instance = nullptr;
-
-	g_engine->m_scriptSystem->CollectAndGetManagedScriptState(allocated, disposed, freed, targetAlive);
-
-	GUARANTEE_OR_DIE(
-		allocated == baseAllocated + 1 && disposed == baseDisposed + 1 && freed == baseFreed + 1 && targetAlive == 0,
-		"C# script instance was not disposed and released exactly once.");
-
-	owner.SetScriptInstance(nullptr);
-	g_engine->m_scriptSystem->CollectAndGetManagedScriptState(allocated, disposed, freed, targetAlive);
-
-	GUARANTEE_OR_DIE(
-		allocated == baseAllocated + 1 && disposed == baseDisposed + 1 && freed == baseFreed + 1 && targetAlive == 0,
-		"C# script instance was disposed or released more than once.");
 }
 
 void App::Shutdown()
 {
+	int32_t allocatedBefore;
+	int32_t disposedBefore;
+	int32_t freedBefore;
+	int32_t aliveBefore;
+	g_engine->m_scriptSystem
+		->CollectAndGetManagedScriptState(allocatedBefore, disposedBefore, freedBefore, aliveBefore);
+
+	int32_t const activeBefore = allocatedBefore - freedBefore;
+	GUARANTEE_OR_DIE(
+		m_sceneTree != nullptr && activeBefore >= 2 && aliveBefore == 1,
+		"SceneTree shutdown smoke did not retain the managed shutdown probes.");
+
 	ShutdownScene();
+
+	int32_t allocatedAfter;
+	int32_t disposedAfter;
+	int32_t freedAfter;
+	int32_t aliveAfter;
+	g_engine->m_scriptSystem->CollectAndGetManagedScriptState(allocatedAfter, disposedAfter, freedAfter, aliveAfter);
+
+	GUARANTEE_OR_DIE(
+		allocatedAfter == allocatedBefore && disposedAfter == disposedBefore + activeBefore
+			&& freedAfter == freedBefore + activeBefore && aliveAfter == 0,
+		"SceneTree shutdown smoke did not release all managed scripts before ScriptSystem shutdown.");
+	DebuggerPrintf("Managed SceneTree shutdown smoke passed.\n");
 
 	if (g_engine != nullptr && g_engine->m_eventSystem != nullptr)
 	{

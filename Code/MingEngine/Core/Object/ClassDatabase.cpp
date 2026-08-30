@@ -8,7 +8,7 @@
 std::unordered_map<std::string, ClassInfo>           ClassDatabase::m_classInfoMap;
 std::unordered_map<std::string, GlobalNamespaceInfo> ClassDatabase::m_namespaceInfoMap;
 std::unordered_map<std::string, Object*>             ClassDatabase::m_globalObjectMap;
-ApiType                                                ClassDatabase::m_currentApiType = ApiType::None;
+ApiType                                              ClassDatabase::m_currentApiType = ApiType::None;
 
 namespace
 {
@@ -39,6 +39,16 @@ void ClassDatabase::Shutdown() { m_classInfoMap.clear(); }
 
 Object* ClassDatabase::CreateInstance(std::string const& className)
 {
+	ConstructorFunc constructor = GetConstructor(className);
+	if (!constructor)
+	{
+		return nullptr;
+	}
+	return constructor();
+}
+
+ConstructorFunc ClassDatabase::GetConstructor(std::string const& className)
+{
 	auto iter = m_classInfoMap.find(className);
 	if (iter == m_classInfoMap.end())
 	{
@@ -46,11 +56,7 @@ Object* ClassDatabase::CreateInstance(std::string const& className)
 	}
 
 	ClassInfo const& classInfo = iter->second;
-	if (!classInfo.m_creator)
-	{
-		return nullptr;
-	}
-	return classInfo.m_creator();
+	return classInfo.m_creator;
 }
 
 ClassInfo const* ClassDatabase::GetClassInfo(std::string const& className)

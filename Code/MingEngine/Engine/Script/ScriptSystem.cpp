@@ -1,7 +1,6 @@
 #include "MingEngine/Engine/Script/ScriptSystem.hpp"
 
 #include "MingEngine/Core/ErrorWarningAssert.hpp"
-#include "MingEngine/Core/Object/ClassDatabase.hpp"
 #include "MingEngine/Core/Object/Script.hpp"
 #include "MingEngine/Core/Object/ScriptInstance.hpp"
 #include "ThirdParty/DotNetHost/hostfxr.h"
@@ -163,6 +162,18 @@ int32_t CORECLR_DELEGATE_CALLTYPE BindManagedScriptInstance(void* ownerValue, vo
 
 	return instance->ReloadGCHandle(gcHandleValue) ? 1 : 0;
 }
+
+ConstructorFunc CORECLR_DELEGATE_CALLTYPE GetConstructor(void* name)
+{
+	if (name == nullptr)
+	{
+		return nullptr;
+	}
+
+	std::string const* namePtr = static_cast<std::string const*>(name);
+	return ClassDatabase::GetConstructor(namePtr->c_str());
+}
+
 } // namespace
 
 ScriptSystem::ScriptSystem([[maybe_unused]] ScriptSystemConfig const& config) {}
@@ -210,10 +221,7 @@ bool ScriptSystem::CreateManagedScriptInstance(Script* script, Object* owner)
 }
 
 void ScriptSystem::CollectAndGetManagedScriptState(
-	int32_t& allocated,
-	int32_t& disposed,
-	int32_t& freed,
-	int32_t& targetAlive)
+	int32_t& allocated, int32_t& disposed, int32_t& freed, int32_t& targetAlive)
 {
 	allocated   = 0;
 	disposed    = 0;
@@ -225,6 +233,14 @@ void ScriptSystem::CollectAndGetManagedScriptState(
 		"Managed script state callback is not initialized.");
 
 	m_managedCallbacks.m_collectAndGetManagedScriptState(&allocated, &disposed, &freed, &targetAlive);
+}
+
+void ScriptSystem::DisposeManagedScriptInstance(void* gcHandle)
+{
+	if (gcHandle != nullptr)
+	{
+		m_managedCallbacks.m_disposeManagedScriptInstance(gcHandle);
+	}
 }
 
 bool ScriptSystem::InitializeDotNetRuntime()
@@ -353,10 +369,17 @@ bool ScriptSystem::InitializeDotNetRuntime()
 		return false;
 	}
 
-	NativeCallbacks const nativeCallbacks{
-		&LogUtf8,      &CreateObject,    &GetObjectClassName, &GetMethodBind, &MethodBindPtrCall,
-		&CreateString, &GetStringBuffer, &GetStringLength,    &DestroyString, &BindManagedScriptInstance
-	};
+	NativeCallbacks const nativeCallbacks{ &LogUtf8,
+										   &CreateObject,
+										   &GetObjectClassName,
+										   &GetMethodBind,
+										   &MethodBindPtrCall,
+										   &CreateString,
+										   &GetStringBuffer,
+										   &GetStringLength,
+										   &DestroyString,
+										   &BindManagedScriptInstance,
+										   &GetConstructor };
 
 	int32_t const initResult = initialize(
 		&nativeCallbacks,

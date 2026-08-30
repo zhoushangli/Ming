@@ -1,5 +1,6 @@
 #pragma once
 
+#include "MingEngine/Core/Memory.hpp"
 #include "MingEngine/Core/Object/ObjectID.hpp"
 
 #include <memory>
@@ -62,22 +63,38 @@ protected:                                                                      
 
 class ScriptInstance;
 class Variant;
+class Object;
+
+// These are for Memory.hpp override
+// so we can call PostInitialize and PreDelete when creating and deleting objects
+void PostInitializeHandler(Object* object);
+bool PreDeleteHandler(Object* object);
 
 class Object
 {
 	friend class ObjectDatabase;
+	friend void PostInitializeHandler(Object* object);
+	friend bool PreDeleteHandler(Object* object);
 
 public:
 	using BindMethodsFunc = void (*)();
 
 public:
+	enum
+	{
+		Notification_PostInitialize   = 0,
+		Notification_PreDelete        = 1,
+		Notification_PreDeleteCleanup = 2,
+	};
+
+public:
 	Object();
 	virtual ~Object();
 
-	Object(Object const&) = delete;
+	Object(Object const&)            = delete;
 	Object& operator=(Object const&) = delete;
-	Object(Object&&) = delete;
-	Object& operator=(Object&&) = delete;
+	Object(Object&&)                 = delete;
+	Object& operator=(Object&&)      = delete;
 
 	// Class information and reflection
 	// Will be overridden by the MCLASS macro in derived classes.
@@ -93,9 +110,9 @@ public:
 
 	// Store the assigned script resource independently from any runtime instance.
 	// e.g. A future CSharpScriptInstance can be recreated without losing the serialized script reference.
-	Variant GetScript() const;
-	void    SetScript(Variant const& script);
-	void    SetScriptInstance(std::unique_ptr<ScriptInstance> scriptInstance);
+	Variant         GetScript() const;
+	void            SetScript(Variant const& script);
+	void            SetScriptInstance(ScriptInstance* scriptInstance);
 	ScriptInstance* GetScriptInstance() const;
 
 protected:
@@ -109,8 +126,13 @@ protected:
 	void (Object::* GetOnNotificationFunc() const)(int) { return &Object::OnNotification; }
 
 private:
-	ObjectID                        m_id = ObjectID::Invalid;
-	std::unique_ptr<ScriptInstance> m_scriptInstance;
+	void PostInitialize();
+	bool PreDelete();
+
+private:
+	ObjectID        m_id             = ObjectID::Invalid;
+	ScriptInstance* m_scriptInstance = nullptr;
+	bool            m_isPreDeleting  = false;
 };
 
 class ObjectDatabase

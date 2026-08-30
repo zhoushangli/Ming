@@ -20,15 +20,15 @@ TransformGizmo3D::TransformGizmo3D()
 	SetReady(true);
 	SetProcess(true);
 
-	GizmoAxisArrow*   arrowX = new GizmoAxisArrow(GizmoAxis::X, kAxisXColor);
-	GizmoAxisArrow*   arrowY = new GizmoAxisArrow(GizmoAxis::Y, kAxisYColor);
-	GizmoAxisArrow*   arrowZ = new GizmoAxisArrow(GizmoAxis::Z, kAxisZColor);
-	GizmoPlaneSquare* planeX = new GizmoPlaneSquare(GizmoAxis::X, kAxisXColor);
-	GizmoPlaneSquare* planeY = new GizmoPlaneSquare(GizmoAxis::Y, kAxisYColor);
-	GizmoPlaneSquare* planeZ = new GizmoPlaneSquare(GizmoAxis::Z, kAxisZColor);
-	GizmoRotationArc* arcX   = new GizmoRotationArc(GizmoAxis::X, kAxisXColor);
-	GizmoRotationArc* arcY   = new GizmoRotationArc(GizmoAxis::Y, kAxisYColor);
-	GizmoRotationArc* arcZ   = new GizmoRotationArc(GizmoAxis::Z, kAxisZColor);
+	GizmoAxisArrow*   arrowX = MemNew<GizmoAxisArrow>(GizmoAxis::X, kAxisXColor);
+	GizmoAxisArrow*   arrowY = MemNew<GizmoAxisArrow>(GizmoAxis::Y, kAxisYColor);
+	GizmoAxisArrow*   arrowZ = MemNew<GizmoAxisArrow>(GizmoAxis::Z, kAxisZColor);
+	GizmoPlaneSquare* planeX = MemNew<GizmoPlaneSquare>(GizmoAxis::X, kAxisXColor);
+	GizmoPlaneSquare* planeY = MemNew<GizmoPlaneSquare>(GizmoAxis::Y, kAxisYColor);
+	GizmoPlaneSquare* planeZ = MemNew<GizmoPlaneSquare>(GizmoAxis::Z, kAxisZColor);
+	GizmoRotationArc* arcX   = MemNew<GizmoRotationArc>(GizmoAxis::X, kAxisXColor);
+	GizmoRotationArc* arcY   = MemNew<GizmoRotationArc>(GizmoAxis::Y, kAxisYColor);
+	GizmoRotationArc* arcZ   = MemNew<GizmoRotationArc>(GizmoAxis::Z, kAxisZColor);
 
 	arrowX->SetSerializable(false);
 	arrowY->SetSerializable(false);
@@ -156,9 +156,9 @@ void TransformGizmo3D::EndDrag(GizmoContext const& context)
 
 void TransformGizmo3D::OnNotification(int notification)
 {
-	switch (static_cast<NotificationType>(notification))
+	switch (notification)
 	{
-	case NotificationType::Process:
+	case Notification_Process:
 	{
 		EditorCamera* editorCamera = EditorCamera::Get();
 		Camera3D*     camera       = editorCamera != nullptr ? editorCamera->GetCamera() : nullptr;

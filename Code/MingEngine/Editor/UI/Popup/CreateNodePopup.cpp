@@ -267,13 +267,13 @@ bool CreateNodePopup::CreateSelectedNode(EditorUIContext& context)
 	Node*   node   = dynamic_cast<Node*>(object);
 	if (node == nullptr)
 	{
-		delete object;
+		MemDelete(object);
 		return false;
 	}
 
 	if (context.m_sceneTree == nullptr)
 	{
-		delete node;
+		MemDelete(node);
 		return false;
 	}
 

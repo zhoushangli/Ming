@@ -24,13 +24,12 @@ class Node : public Object
 	friend class SceneTree;
 
 public:
-	enum class NotificationType : int
+	enum
 	{
-		EnterTree = 0,
-		ExitTree  = 1,
-		Ready     = 2,
-		Process   = 3,
-		TransformChanged = 40,
+		Notification_EnterTree = 3,
+		Notification_ExitTree  = 4,
+		Notification_Ready     = 5,
+		Notification_Process   = 6
 	};
 
 public:

@@ -50,12 +50,12 @@ void Camera3D::BindMethods()
 
 void Camera3D::OnNotification(int notification)
 {
-	switch (static_cast<NotificationType>(notification))
+	switch (notification)
 	{
-	case NotificationType::EnterTree:
+	case Notification_EnterTree:
 		m_data.m_viewport->RegisterWorldCamera(this);
 		break;
-	case NotificationType::ExitTree:
+	case Notification_ExitTree:
 		m_data.m_viewport->UnregisterWorldCamera(this);
 		break;
 	}

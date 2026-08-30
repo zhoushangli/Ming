@@ -4,15 +4,15 @@
 
 void VisualInstance3D::OnNotification(int notification)
 {
-	switch (static_cast<NotificationType>(notification))
+	switch (notification)
 	{
-	case NotificationType::EnterTree:
+	case Notification_EnterTree:
 		if (m_data.m_viewport != nullptr)
 		{
 			m_data.m_viewport->RegisterVisualizeInstance(this);
 		}
 		break;
-	case NotificationType::ExitTree:
+	case Notification_ExitTree:
 		if (m_data.m_viewport != nullptr)
 		{
 			m_data.m_viewport->UnregisterVisualizeInstance(this);

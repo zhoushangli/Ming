@@ -100,6 +100,8 @@ enum class ApiType
 	Editor
 };
 
+using ConstructorFunc = Object* (*)();
+
 struct ClassInfo
 {
 	std::string m_className;
@@ -107,8 +109,8 @@ struct ClassInfo
 	ApiType     m_apiType = ApiType::None;
 	// IsVirutal means this class can be instantiated
 	// but it should use as the base class for other classes
-	bool                     m_isVirtual = false;
-	std::function<Object*()> m_creator;
+	bool            m_isVirtual = false;
+	ConstructorFunc m_creator   = nullptr;
 
 	// We use unique_ptr to keep the memory stable for PropertyInfo and MethodInfo when vector resize
 	// because our script system needs the method bind pointer to be stable to call them
@@ -140,6 +142,7 @@ public:
 	static void Shutdown();
 
 	static Object*                       CreateInstance(std::string const& className);
+	static ConstructorFunc               GetConstructor(std::string const& className);
 	static ClassInfo const*              GetClassInfo(std::string const& className);
 	static std::vector<ClassInfo const*> GetRegisteredClasses(bool sortByInheritanceDepth = false);
 	static bool                          IsSubclassOf(std::string const& className, std::string const& baseClassName);
@@ -225,7 +228,8 @@ public:
 	template <typename T>
 	static Object* Creator()
 	{
-		Object* object = new T();
+		static_assert(std::is_base_of_v<Object, T>, "ClassDatabase creators must construct Object subclasses.");
+		Object* object = MemNew<T>();
 		return object;
 	}
 

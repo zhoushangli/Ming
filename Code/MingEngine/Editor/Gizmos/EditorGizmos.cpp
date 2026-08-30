@@ -24,7 +24,7 @@ Color const kAxisZColor(55, 160, 255, 255);
 EditorWorldAxis3D* CreateWorldAxis(
 	Node* parent, char const* name, Vector3 const& axisStart, Vector3 const& axisEnd, Color const& color)
 {
-	EditorWorldAxis3D* axis = new EditorWorldAxis3D(axisStart, axisEnd, color);
+	EditorWorldAxis3D* axis = MemNew<EditorWorldAxis3D>(axisStart, axisEnd, color);
 	axis->SetName(name);
 	axis->SetSerializable(false);
 	parent->AddNode(axis);
@@ -37,7 +37,7 @@ EditorGizmos::EditorGizmos()
 	SetReady(true);
 	SetProcess(true);
 
-	m_worldGrid = new EditorWorldGrid3D();
+	m_worldGrid = MemNew<EditorWorldGrid3D>();
 	m_worldGrid->SetName("WorldGrid");
 	m_worldGrid->SetSerializable(false);
 	AddNode(m_worldGrid);
@@ -55,12 +55,12 @@ EditorGizmos::EditorGizmos()
 	m_worldAxises[5] =
 		CreateWorldAxis(this, "WorldAxisZNegative", Vector3::Zero, Vector3(0.f, 0.f, -kWorldAxisExtent), kAxisZColor);
 
-	m_transformGizmo = new TransformGizmo3D();
+	m_transformGizmo = MemNew<TransformGizmo3D>();
 	m_transformGizmo->SetName("TransformGizmo3D");
 	m_transformGizmo->SetSerializable(false);
 	AddNode(m_transformGizmo);
 
-	m_axisIndicator = new ViewportAxisIndicator();
+	m_axisIndicator = MemNew<ViewportAxisIndicator>();
 	m_axisIndicator->SetName("ViewportAxisIndicator");
 	m_axisIndicator->SetSerializable(false);
 	AddNode(m_axisIndicator);

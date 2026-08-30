@@ -129,7 +129,7 @@ private:
 		{
 			if (reference->RemoveRef())
 			{
-				delete reference;
+				MemDelete(reference);
 				reference = nullptr;
 			}
 		}
@@ -157,6 +157,6 @@ private:
 template <typename T>
 static Ref<T> CreateRef()
 {
-	T* ptr = new T();
+	T* ptr = MemNew<T>();
 	return Ref<T>(ptr);
 }

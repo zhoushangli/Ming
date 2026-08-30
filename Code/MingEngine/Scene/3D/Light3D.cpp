@@ -54,9 +54,9 @@ float Light3D::GetIntensity() const { return m_intensity; }
 
 void Light3D::OnNotification(int notification)
 {
-	switch (static_cast<NotificationType>(notification))
+	switch (notification)
 	{
-	case NotificationType::EnterTree:
+	case Notification_EnterTree:
 	{
 		RenderService* renderService = g_engineService->m_renderService;
 		if (m_rid < 0 && renderService != nullptr)
@@ -66,12 +66,12 @@ void Light3D::OnNotification(int notification)
 		}
 		break;
 	}
-	case NotificationType::ExitTree:
+	case Notification_ExitTree:
 	{
 		FreeRenderLight();
 		break;
 	}
-	case NotificationType::TransformChanged:
+	case Notification_TransformChanged:
 	{
 		RenderService* renderService = g_engineService->m_renderService;
 		if (m_rid >= 0 && renderService != nullptr)

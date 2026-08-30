@@ -144,7 +144,7 @@ Ref<Resource> PackedSceneLoader::Load(VirtualPath const& virtualPath)
 			return Ref<Resource>();
 		}
 
-		Ref<PackedScene> packedScene = Ref<PackedScene>(new PackedScene());
+		Ref<PackedScene> packedScene = CreateRef<PackedScene>();
 		packedScene->m_data          = std::move(loadedData);
 		packedScene->SetVirtualPath(virtualPath);
 

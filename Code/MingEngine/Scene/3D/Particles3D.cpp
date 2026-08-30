@@ -251,9 +251,9 @@ void Particles3D::LoadFromXML(std::string const& xmlFilePath)
 
 void Particles3D::OnNotification(int notification)
 {
-	switch (static_cast<NotificationType>(notification))
+	switch (notification)
 	{
-	case NotificationType::Ready:
+	case Notification_Ready:
 	{
 		m_lastEmitterPos = GetWorldPosition();
 
@@ -267,7 +267,7 @@ void Particles3D::OnNotification(int notification)
 		}
 		break;
 	}
-	case NotificationType::Process:
+	case Notification_Process:
 	{
 		float      deltaSeconds = 0.f;
 		SceneTree* sceneTree    = GetSceneTree();

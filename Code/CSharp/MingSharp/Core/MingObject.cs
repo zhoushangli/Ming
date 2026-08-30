@@ -1,7 +1,14 @@
+using System.Diagnostics;
+
 namespace Ming;
 
 public class MingObject : IDisposable
 {
+    private static readonly string NativeName = "Object";
+
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+    private unsafe static readonly delegate* unmanaged<IntPtr> NativeCtor = GetConstrcutor(NativeName);
+
     internal IntPtr NativePtr;
 
     internal MingObject(bool initialize)
@@ -17,6 +24,12 @@ public class MingObject : IDisposable
 
         ObjectDisposedException.ThrowIf(obj.NativePtr == IntPtr.Zero, obj);
         return obj.NativePtr;
+    }
+
+    internal unsafe static delegate* unmanaged<nint> GetConstrcutor(string name)
+    {
+        using MingString mingName = Marshaling.ConvertStringToNative(name);
+        return NativeFuncs.GetConstructor((IntPtr)(&mingName));
     }
 
     public void Dispose()
@@ -35,18 +48,16 @@ public class MingObject : IDisposable
         return NativeFuncs.GetClassName(GetPtr(this));
     }
 
-    internal void ConstructAndInitialize(string nativeName, Type nativeType)
+    internal unsafe void ConstructAndInitialize(delegate* unmanaged<IntPtr> nativeCtor, string nativeName, Type nativeType)
     {
-        if (NativePtr == nint.Zero)
+        if (NativePtr == IntPtr.Zero)
         {
-            NativePtr = NativeFuncs.CreateObject(nativeName);
-
-            // 下一阶段：
-            // BindManagedToNewNative(this, NativePtr, nativeType);
+            NativePtr = nativeCtor();
+            // InteropUtils.TieManagedToUnmanaged(this, NativePtr, nativeName, GetType(), cachedType);
         }
-        else if (GetType() != nativeType)
+        else
         {
-            NativeFuncs.BindManagedScriptInstance(this, NativePtr);
+            // InteropUtils.TieManagedToUnmanagedWithPreSetup(this, NativePtr, GetType(), cachedType);
         }
     }
 }

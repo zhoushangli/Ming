@@ -52,8 +52,8 @@ Node* PackedScene::Instantiate() const
 		Node*             node       = dynamic_cast<Node*>(object);
 		if (node == nullptr)
 		{
-			delete object;
-			delete root;
+			MemDelete(object);
+			MemDelete(root);
 			DebuggerPrintf("PackedScene: type '%s' is not a creatable Node.\n", packedNode.m_type.c_str());
 			return nullptr;
 		}
@@ -63,7 +63,7 @@ Node* PackedScene::Instantiate() const
 		{
 			if (!packedNode.m_parentPath.empty())
 			{
-				delete node;
+				MemDelete(node);
 				DebuggerPrintf("PackedScene: the first node must be the scene root and have no parent path.\n");
 				return nullptr;
 			}
@@ -73,8 +73,8 @@ Node* PackedScene::Instantiate() const
 		{
 			if (packedNode.m_parentPath.empty())
 			{
-				delete node;
-				delete root;
+				MemDelete(node);
+				MemDelete(root);
 				DebuggerPrintf("PackedScene: node '%s' creates an additional scene root.\n", packedNode.m_name.c_str());
 				return nullptr;
 			}
@@ -82,8 +82,8 @@ Node* PackedScene::Instantiate() const
 			NodePath const parentPath(packedNode.m_parentPath);
 			if (!parentPath.IsValid() || parentPath.IsAbsolute())
 			{
-				delete node;
-				delete root;
+				MemDelete(node);
+				MemDelete(root);
 				DebuggerPrintf(
 					"PackedScene: node '%s' has invalid scene-relative parent path '%s'.\n",
 					packedNode.m_name.c_str(),
@@ -94,8 +94,8 @@ Node* PackedScene::Instantiate() const
 			Node* parent = root->GetNode(parentPath);
 			if (parent == nullptr)
 			{
-				delete node;
-				delete root;
+				MemDelete(node);
+				MemDelete(root);
 				DebuggerPrintf(
 					"PackedScene: node '%s' has unresolved parent path '%s'.\n",
 					packedNode.m_name.c_str(),
@@ -110,9 +110,9 @@ Node* PackedScene::Instantiate() const
 				std::string const actualName = node->GetName();
 				if (node->GetParent() == nullptr)
 				{
-					delete node;
+					MemDelete(node);
 				}
-				delete root;
+				MemDelete(root);
 				DebuggerPrintf(
 					"PackedScene: sibling name '%s' is not unique; AddNode produced '%s'.\n",
 					requestedName.c_str(),
@@ -226,7 +226,7 @@ bool PackedScene::ParseNodeRecursively(
 		}
 	}
 
-	delete defaultObject;
+	MemDelete(defaultObject);
 	outNodes.push_back(std::move(packedNode));
 
 	std::string const nodePath =

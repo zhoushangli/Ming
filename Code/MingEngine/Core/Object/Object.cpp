@@ -10,10 +10,45 @@ std::vector<Object*> ObjectDatabase::m_objectSlots;
 uint32_t             ObjectDatabase::m_nextObjectUID = 1u;
 
 Object::Object() { ObjectDatabase::AddInstance(this); }
-Object::~Object()
+Object::~Object() { ObjectDatabase::RemoveInstance(this); }
+
+void PostInitializeHandler(Object* object)
 {
+	if (object == nullptr)
+	{
+		return;
+	}
+
+	object->PostInitialize();
+}
+
+bool PreDeleteHandler(Object* object)
+{
+	if (object == nullptr)
+	{
+		return true;
+	}
+
+	return object->PreDelete();
+}
+
+void Object::PostInitialize() { Notification(Notification_PostInitialize, false); }
+
+bool Object::PreDelete()
+{
+	if (m_isPreDeleting)
+	{
+		return false;
+	}
+
+	m_isPreDeleting = true;
+
+	Notification(Notification_PreDelete, true);
+	Notification(Notification_PreDeleteCleanup, true);
+
 	SetScriptInstance(nullptr);
-	ObjectDatabase::RemoveInstance(this);
+
+	return true;
 }
 
 Object::BindMethodsFunc Object::GetBindMethodsFunc() { return &Object::BindMethods; }
@@ -180,7 +215,7 @@ void Object::SetScript(Variant const& script)
 	}
 
 	Ref<Script> scriptRef = script;
-	bool result = scriptRef->Instantiate(this);
+	bool        result    = scriptRef->Instantiate(this);
 
 	if (!result)
 	{
@@ -189,26 +224,22 @@ void Object::SetScript(Variant const& script)
 	}
 }
 
-void Object::SetScriptInstance(std::unique_ptr<ScriptInstance> instance)
+void Object::SetScriptInstance(ScriptInstance* instance)
 {
+	if (m_scriptInstance == instance)
+	{
+		return;
+	}
+
 	GUARANTEE_OR_DIE(
 		instance == nullptr || instance->GetOwner() == this,
 		"Object::SetScriptInstance failed: script instance owner mismatch.");
 
-	// We move the script instance into a temporary variable
-	// to ensure that the old position is nullptr
-	// To prevent calling SetScriptInstance recursively in DisposeFromNative
-	std::unique_ptr<ScriptInstance> oldInstance = std::move(m_scriptInstance);
+	ScriptInstance* oldInstance = std::exchange(m_scriptInstance, nullptr);
 
-	// We need to release the old script instance before assigning the new one
-	// because the old script hold the same owner as the new one
-	// so the deconstruct function may clear the new script instance mistakenly
-	if (oldInstance != nullptr)
-	{
-		oldInstance.reset();
-	}
+	MemDelete(oldInstance);
 
-	m_scriptInstance = std::move(instance);
+	m_scriptInstance = instance;
 }
 
-ScriptInstance* Object::GetScriptInstance() const { return m_scriptInstance.get(); }
+ScriptInstance* Object::GetScriptInstance() const { return m_scriptInstance; }

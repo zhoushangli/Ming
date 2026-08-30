@@ -186,9 +186,9 @@ RenderRequest GizmoComponent::SubmitRenderRequest() const
 
 void GizmoComponent::OnNotification(int notification)
 {
-	switch (static_cast<NotificationType>(notification))
+	switch (notification)
 	{
-	case NotificationType::Ready:
+	case Notification_Ready:
 	{
 		if (!m_verts.empty() && m_vertexBuffer == nullptr && g_engine != nullptr && g_engine->m_renderer != nullptr)
 		{
@@ -514,9 +514,9 @@ RenderRequest GizmoRotationArc::SubmitRenderRequest() const
 
 void GizmoRotationArc::OnNotification(int notification)
 {
-	switch (static_cast<NotificationType>(notification))
+	switch (notification)
 	{
-	case NotificationType::Ready:
+	case Notification_Ready:
 	{
 		if (!m_indices.empty() && m_indexBuffer == nullptr && g_engine != nullptr && g_engine->m_renderer != nullptr)
 		{
@@ -526,7 +526,7 @@ void GizmoRotationArc::OnNotification(int notification)
 		}
 		break;
 	}
-	case NotificationType::Process:
+	case Notification_Process:
 	{
 		Vector3 const cameraPos = EditorCamera::Get()->GetWorldPosition();
 		Vector3 const gizmoPos  = GetWorldPosition();

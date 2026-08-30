@@ -96,9 +96,9 @@ ViewportAxisIndicator::~ViewportAxisIndicator() {}
 
 void ViewportAxisIndicator::OnNotification(int notification)
 {
-	switch (static_cast<NotificationType>(notification))
+	switch (notification)
 	{
-	case NotificationType::EnterTree:
+	case Notification_EnterTree:
 	{
 		Camera3D*   editorCamera   = EditorCamera::Get()->GetCamera();
 		EulerAngles cameraRotation = editorCamera->GetWorldOrientation();
@@ -106,7 +106,7 @@ void ViewportAxisIndicator::OnNotification(int notification)
 		RebuildVertexBuffer();
 		break;
 	}
-	case NotificationType::Process:
+	case Notification_Process:
 	{
 		Camera3D*   editorCamera   = EditorCamera::Get()->GetCamera();
 		EulerAngles cameraRotation = editorCamera->GetWorldOrientation();

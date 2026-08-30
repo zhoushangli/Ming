@@ -35,4 +35,6 @@ private:
 	Ref<CSharpScript> m_script;
 	Object*           m_owner = nullptr;
 	ManagedGCHandle   m_gcHandle;
+	
+	bool m_predeleteNotified = false;
 };

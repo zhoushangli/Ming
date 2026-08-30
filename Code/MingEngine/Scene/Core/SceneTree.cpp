@@ -18,11 +18,11 @@ Vector3 GetNormalizedColor(Color const& color) { return Vector3(color.r / 255.f,
 SceneTree::SceneTree()
 {
 	// raycast space should create first and delete last, so node can enter / exit it
-	m_raycastSpace = new RaycastSpace3D();
+	m_raycastSpace = MemNew<RaycastSpace3D>();
 
 	// 1) Every SceneTree owns exactly one root Viewport.
 	// 2) Entering the tree registers that Viewport with RenderService.
-	m_root = new Viewport();
+	m_root = MemNew<Viewport>();
 	m_root->SetName("Root");
 
 	m_root->MoveToSceneTree(this);
@@ -35,13 +35,13 @@ SceneTree::~SceneTree()
 		// 1) Propagate exit so instances, lights, and the Viewport unregister.
 		// 2) Delete the root only after all lifecycle callbacks have completed.
 		m_root->MoveToSceneTree(nullptr);
-		delete m_root;
+		MemDelete(m_root);
 		m_root = nullptr;
 	}
 
 	if (m_raycastSpace != nullptr)
 	{
-		delete m_raycastSpace;
+		MemDelete(m_raycastSpace);
 		m_raycastSpace = nullptr;
 	}
 }
@@ -73,7 +73,7 @@ void SceneTree::FlushPendingNode()
 		{
 			m_root->DetachChildImmediately(previousScene);
 			previousScene->MoveToSceneTree(nullptr);
-			delete previousScene;
+			MemDelete(previousScene);
 		}
 
 		m_root->AddNode(m_pendingScene);
@@ -103,7 +103,21 @@ void SceneTree::FlushPendingNode()
 			node->m_data.m_parent->DetachChildImmediately(node);
 		}
 		node->MoveToSceneTree(nullptr);
-		delete node;
+		MemDelete(node);
+
+		int32_t allocatedBefore;
+		int32_t disposedBefore;
+		int32_t freedBefore;
+		int32_t aliveBefore;
+		g_engine->m_scriptSystem
+			->CollectAndGetManagedScriptState(allocatedBefore, disposedBefore, freedBefore, aliveBefore);
+		DebuggerPrintf(
+			"Managed script state after deleting managed script instance: allocated=%d, disposed=%d, freed=%d, "
+			"alive=%d\n",
+			allocatedBefore,
+			disposedBefore,
+			freedBefore,
+			aliveBefore);
 	}
 }
 
@@ -158,7 +172,7 @@ void SceneTree::UpdateScene(float deltaSeconds)
 
 		if (node->m_data.m_enableProcess)
 		{
-			node->Notification((int)Node::NotificationType::Process);
+			node->Notification(Node::Notification_Process);
 		}
 	}
 

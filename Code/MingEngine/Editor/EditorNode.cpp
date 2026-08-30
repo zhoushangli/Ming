@@ -82,14 +82,14 @@ EditorNode::EditorNode()
 	s_instance = this;
 	m_editorUI = new EditorUI();
 
-	m_editorCamera = new EditorCamera();
+	m_editorCamera = MemNew<EditorCamera>();
 	m_editorCamera->SetName("EditorCamera");
 	m_editorCamera->SetLocalPosition(Vector3(5.f, 5.f, 5.f));
 	m_editorCamera->SetLocalOrientation(EulerAngles(-135.f, 45.f, 0.f));
 	m_editorCamera->SetSerializable(false);
 	AddNode(m_editorCamera);
 
-	m_editorGizmos = new EditorGizmos();
+	m_editorGizmos = MemNew<EditorGizmos>();
 	m_editorGizmos->SetName("EditorGizmos");
 	m_editorGizmos->SetSerializable(false);
 	AddNode(m_editorGizmos);
@@ -358,12 +358,12 @@ std::string EditorNode::GetCurrentSceneName() const
 
 bool EditorNode::CreateScene(VirtualPath const& virtualPath, std::string const& rootName)
 {
-	Node3D* sceneRoot = new Node3D();
+	Node3D* sceneRoot = MemNew<Node3D>();
 	sceneRoot->SetName(rootName);
 	Ref<PackedScene> packedScene = CreateRef<PackedScene>();
 	if (!packedScene->Pack(sceneRoot) || !ResourceSaver::Save(virtualPath, packedScene))
 	{
-		delete sceneRoot;
+		MemDelete(sceneRoot);
 		if (m_editorUI != nullptr)
 		{
 			m_editorUI->Warning("Create Scene Failed", virtualPath.GetString());

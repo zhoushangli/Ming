@@ -1,6 +1,7 @@
 #pragma once
 
 #include "MingEngine/Core/ErrorWarningAssert.hpp"
+#include "MingEngine/Core/Object/ClassDatabase.hpp"
 #include "MingEngine/Engine/Application/SystemBase.hpp"
 
 #include "ThirdParty/DotNetHost/coreclr_delegates.h"
@@ -25,6 +26,7 @@ using GetStringBufferFunc           = void*(CORECLR_DELEGATE_CALLTYPE*)(void* st
 using GetStringLengthFunc           = int32_t(CORECLR_DELEGATE_CALLTYPE*)(void const* str);
 using DestroyStringFunc             = void(CORECLR_DELEGATE_CALLTYPE*)(void const* str);
 using BindManagedScriptInstanceFunc = int32_t(CORECLR_DELEGATE_CALLTYPE*)(void* owner, void* gcHandle);
+using GetConstructorFunc            = ConstructorFunc(CORECLR_DELEGATE_CALLTYPE*)(void* name);
 
 struct NativeCallbacks
 {
@@ -38,6 +40,7 @@ struct NativeCallbacks
 	GetStringLengthFunc           m_getStringLength           = nullptr;
 	DestroyStringFunc             m_destroyString             = nullptr;
 	BindManagedScriptInstanceFunc m_bindManagedScriptInstance = nullptr;
+	GetConstructorFunc            m_getConstructor            = nullptr;
 };
 
 //---------------------------------------------------------------------------
@@ -54,17 +57,19 @@ using CreateManagedScriptInstanceFunc   = int32_t(CORECLR_DELEGATE_CALLTYPE*)(vo
 using ValidateManagedScriptInstanceFunc = int32_t(CORECLR_DELEGATE_CALLTYPE*)(void* gcHandle, void* expectedOwner);
 using CollectAndGetManagedScriptStateFunc =
 	void(CORECLR_DELEGATE_CALLTYPE*)(int32_t* allocated, int32_t* disposed, int32_t* freed, int32_t* targetAlive);
+using DisposeManagedScriptInstanceFunc = void(CORECLR_DELEGATE_CALLTYPE*)(void* gcHandle);
 
 struct ManagedCallbacks
 {
-	ManagedPingFunc                   m_ping                          = nullptr;
-	CreateTestGCHandleFunc            m_createTestGCHandle            = nullptr;
-	InvokeTestGCHandleFunc            m_invokeTestGCHandle            = nullptr;
-	FreeGCHandleFunc                  m_freeGCHandle                  = nullptr;
-	CollectAndGetStateFunc            m_collectAndGetState            = nullptr;
-	CreateManagedScriptInstanceFunc   m_createManagedScriptInstance   = nullptr;
-	ValidateManagedScriptInstanceFunc m_validateManagedScriptInstance = nullptr;
+	ManagedPingFunc                     m_ping                            = nullptr;
+	CreateTestGCHandleFunc              m_createTestGCHandle              = nullptr;
+	InvokeTestGCHandleFunc              m_invokeTestGCHandle              = nullptr;
+	FreeGCHandleFunc                    m_freeGCHandle                    = nullptr;
+	CollectAndGetStateFunc              m_collectAndGetState              = nullptr;
+	CreateManagedScriptInstanceFunc     m_createManagedScriptInstance     = nullptr;
+	ValidateManagedScriptInstanceFunc   m_validateManagedScriptInstance   = nullptr;
 	CollectAndGetManagedScriptStateFunc m_collectAndGetManagedScriptState = nullptr;
+	DisposeManagedScriptInstanceFunc    m_disposeManagedScriptInstance    = nullptr;
 };
 
 //---------------------------------------------------------------------------
@@ -108,11 +113,9 @@ public:
 		return m_managedCallbacks.m_validateManagedScriptInstance(gcHandle, expectedOwner) != 0;
 	}
 
-	void CollectAndGetManagedScriptState(
-		int32_t& allocated,
-		int32_t& disposed,
-		int32_t& freed,
-		int32_t& targetAlive);
+	void CollectAndGetManagedScriptState(int32_t& allocated, int32_t& disposed, int32_t& freed, int32_t& targetAlive);
+
+	void DisposeManagedScriptInstance(void* gcHandle);
 
 private:
 	using ShutdownFunc = int32_t(CORECLR_DELEGATE_CALLTYPE*)();

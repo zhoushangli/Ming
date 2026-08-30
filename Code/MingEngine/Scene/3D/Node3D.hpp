@@ -14,6 +14,12 @@ class Node3D : public Node
 	friend class SceneTree;
 
 public:
+	enum
+	{
+		Notification_TransformChanged = 40,
+	};
+
+public:
 	Node3D()           = default;
 	~Node3D() override = default;
 

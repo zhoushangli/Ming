@@ -28,15 +28,15 @@ Viewport::~Viewport()
 
 void Viewport::OnNotification(int notification)
 {
-	switch (static_cast<NotificationType>(notification))
+	switch (notification)
 	{
-	case NotificationType::EnterTree:
+	case Notification_EnterTree:
 		if (g_engineService != nullptr && g_engineService->m_renderService != nullptr)
 		{
 			g_engineService->m_renderService->RegisterViewport(this);
 		}
 		break;
-	case NotificationType::ExitTree:
+	case Notification_ExitTree:
 		if (g_engineService != nullptr && g_engineService->m_renderService != nullptr)
 		{
 			g_engineService->m_renderService->UnregisterViewport(this);
@@ -109,8 +109,8 @@ void Viewport::UnregisterWorldCamera(Camera3D* camera)
 		return;
 	}
 
-	ObjectID const cameraID = camera->GetObjectID();
-	auto const foundCamera  = std::find(m_worldCameraIDs.begin(), m_worldCameraIDs.end(), cameraID);
+	ObjectID const cameraID    = camera->GetObjectID();
+	auto const     foundCamera = std::find(m_worldCameraIDs.begin(), m_worldCameraIDs.end(), cameraID);
 	if (foundCamera != m_worldCameraIDs.end())
 	{
 		m_worldCameraIDs.erase(foundCamera);
@@ -130,7 +130,7 @@ Camera3D* Viewport::GetWorldCamera() const
 		return nullptr;
 	}
 
-	Camera3D*  camera    = ObjectDatabase::GetInstance<Camera3D>(m_worldCameraID);
+	Camera3D* camera = ObjectDatabase::GetInstance<Camera3D>(m_worldCameraID);
 	return camera != nullptr && camera->GetSceneTree() == sceneTree ? camera : nullptr;
 }
 

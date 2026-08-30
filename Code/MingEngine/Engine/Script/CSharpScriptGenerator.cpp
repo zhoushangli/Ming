@@ -19,15 +19,18 @@ public partial class {CLASS_NAME} : {PARENT_CLASS_NAME}
     private static readonly Type CachedType = typeof({CLASS_NAME});
     private const string NativeName = "{CLASS_NAME}";
 
+	[DebuggerBrowsable(DebuggerBrowsableState.Never)]
+    private unsafe static readonly delegate* unmanaged<IntPtr> NativeCtor = GetConstrcutor(NativeName);
+
 {METHOD_BINDINGS}	public unsafe {CLASS_NAME}() : base(false)
     {
-        ConstructAndInitialize(NativeName, CachedType);
+        ConstructAndInitialize(NativeCtor, NativeName, CachedType);
     }
 
     public unsafe {CLASS_NAME}(nint nativePtr) : base(false)
     {
         NativePtr = nativePtr;
-        ConstructAndInitialize(NativeName, CachedType);
+        ConstructAndInitialize(NativeCtor, NativeName, CachedType);
     }
 
     public unsafe {CLASS_NAME}(bool initialize) : base(initialize)

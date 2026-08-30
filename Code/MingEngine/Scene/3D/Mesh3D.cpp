@@ -98,9 +98,9 @@ void MeshInstance3D::BindMethods()
 
 void MeshInstance3D::OnNotification(int notification)
 {
-	switch (static_cast<NotificationType>(notification))
+	switch (notification)
 	{
-	case NotificationType::EnterTree:
+	case Notification_EnterTree:
 	{
 		RaycastSpace3D* raycastSpace = GetSceneTree()->GetRaycastSpace();
 		if (raycastSpace != nullptr)
@@ -112,7 +112,7 @@ void MeshInstance3D::OnNotification(int notification)
 		}
 		break;
 	}
-	case NotificationType::ExitTree:
+	case Notification_ExitTree:
 	{
 		RaycastSpace3D* raycastSpace = GetSceneTree()->GetRaycastSpace();
 		if (raycastSpace != nullptr)

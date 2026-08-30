@@ -18,6 +18,7 @@ internal unsafe struct NativeCallbacks
     public delegate* unmanaged<IntPtr, int> GetStringLength;
     public delegate* unmanaged<IntPtr, void> DestroyString;
     public delegate* unmanaged<IntPtr, IntPtr, int> BindManagedScriptInstance;
+    public delegate* unmanaged<IntPtr, delegate* unmanaged<nint>> GetConstructor;
 }
 
 [StructLayout(LayoutKind.Sequential)]
@@ -31,6 +32,7 @@ internal unsafe struct ManagedCallbacks
     public delegate* unmanaged<IntPtr, IntPtr, int> CreateManagedScriptInstance;
     public delegate* unmanaged<IntPtr, IntPtr, int> ValidateManagedScriptInstance;
     public delegate* unmanaged<int*, int*, int*, int*, void> CollectAndGetManagedScriptState;
+    public delegate* unmanaged<IntPtr, void> DisposeManagedScriptInstance;
 }
 
 public static unsafe class NativeFuncs
@@ -173,6 +175,11 @@ public static unsafe class NativeFuncs
         }
     }
 
+    internal static delegate* unmanaged<IntPtr> GetConstructor(IntPtr name)
+    {
+        return s_callbacks.GetConstructor(name);
+    }
+
     #endregion
 
     #region Managed Callback Wrappers
@@ -244,28 +251,6 @@ public static unsafe class NativeFuncs
             GCHandle handle = GCHandle.FromIntPtr(handlePtr);
 
             bool isScriptInstance = handle.Target is PlayerController;
-
-            if (handle.Target is MingObject instance)
-            {
-                instance.Dispose();
-
-                if (isScriptInstance)
-                {
-                    if (instance.NativePtr == IntPtr.Zero)
-                    {
-                        s_scriptHandleDisposed++;
-                    }
-                    else
-                    {
-                        Console.Error.WriteLine(
-                            "Managed script NativePtr was not invalidated."
-                        );
-                    }
-                }
-            }
-
-            handle.Free();
-
             if (isScriptInstance)
             {
                 s_scriptHandleFreed++;
@@ -274,6 +259,8 @@ public static unsafe class NativeFuncs
             {
                 s_freedHandleCount++;
             }
+
+            handle.Free();
         }
         catch (Exception exception)
         {
@@ -330,7 +317,7 @@ public static unsafe class NativeFuncs
             // 3) Run the constructor chain.
             _ = constructor.Invoke(instance, Array.Empty<object?>());
 
-            s_lastScriptInstance = new WeakReference<PlayerController>((PlayerController)instance);
+            // s_lastScriptInstance = new WeakReference<PlayerController>((PlayerController)instance);
 
             return 1;
         }
@@ -392,6 +379,40 @@ public static unsafe class NativeFuncs
         *targetAlive = s_lastScriptInstance?.TryGetTarget(out _) == true ? 1 : 0;
     }
 
+    [UnmanagedCallersOnly]
+    private static void DisposeManagedScriptInstance(IntPtr handlePtr)
+    {
+        try
+        {
+            if (handlePtr == IntPtr.Zero)
+            {
+                return;
+            }
+
+            GCHandle handle = GCHandle.FromIntPtr(handlePtr);
+
+            if (handle.Target is MingObject instance)
+            {
+                instance.Dispose();
+
+                if (instance.NativePtr == IntPtr.Zero)
+                {
+                    s_scriptHandleDisposed++;
+                }
+                else
+                {
+                    Console.Error.WriteLine(
+                        "Managed script NativePtr was not invalidated."
+                    );
+                }
+            }
+        }
+        catch (Exception exception)
+        {
+            Console.Error.WriteLine(exception);
+        }
+    }
+
     #endregion
 
     // Store the native function pointer table passed from the engine.
@@ -422,6 +443,7 @@ public static unsafe class NativeFuncs
             CreateManagedScriptInstance = &CreateManagedScriptInstance,
             ValidateManagedScriptInstance = &ValidateManagedScriptInstance,
             CollectAndGetManagedScriptState = &CollectAndGetManagedScriptState,
+            DisposeManagedScriptInstance = &DisposeManagedScriptInstance
         };
     }
 }

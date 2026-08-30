@@ -24,7 +24,7 @@ bool CSharpScript::Instantiate(Object* owner)
 	// 1) Create a new CSharpInstance
 	CSharpInstance* scriptInstance = new CSharpInstance(Ref<CSharpScript>(this));
 	scriptInstance->m_owner        = owner;
-	owner->SetScriptInstance(std::unique_ptr<ScriptInstance>(scriptInstance));
+	owner->SetScriptInstance(scriptInstance);
 
 	// 2) Initialize the script instance
 	bool const created = g_engine->m_scriptSystem->CreateManagedScriptInstance(this, owner);
@@ -40,13 +40,35 @@ bool CSharpScript::Instantiate(Object* owner)
 
 CSharpInstance::~CSharpInstance()
 {
-	m_gcHandle.Release();
+	if (m_gcHandle.IsValid())
+	{
+		if (!m_predeleteNotified)
+		{
+			g_engine->m_scriptSystem->DisposeManagedScriptInstance(m_gcHandle.GetValue());
+		}
+
+		m_gcHandle.Release();
+	}
 
 	m_script = nullptr;
 	m_owner  = nullptr;
 }
 
-void CSharpInstance::Notification(int notification, bool reverse) {}
+void CSharpInstance::Notification(int notification, bool reverse)
+{
+	switch (notification)
+	{
+	case Object::Notification_PreDeleteCleanup:
+	{
+		m_predeleteNotified = true;
+
+		if (m_gcHandle.IsValid())
+		{
+			g_engine->m_scriptSystem->DisposeManagedScriptInstance(m_gcHandle.GetValue());
+		}
+	}
+	}
+}
 
 bool CSharpInstance::ReloadGCHandle(void* value)
 {

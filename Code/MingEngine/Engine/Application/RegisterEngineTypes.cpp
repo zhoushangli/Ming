@@ -9,12 +9,6 @@
 #include "MingEngine/Engine/Application/SystemBase.hpp"
 #include "MingEngine/Engine/Input/InputSystem.hpp"
 
-namespace
-{
-ProjectSettingsLoader* projectSettingsLoader = new ProjectSettingsLoader();
-ProjectSettingsSaver*  projectSettingsSaver  = new ProjectSettingsSaver();
-} // namespace
-
 #pragma region Engine
 
 void RegisterEngineTypes()
@@ -23,8 +17,8 @@ void RegisterEngineTypes()
 
 	ClassDatabase::RegisterClass<ProjectSettingsLoader>();
 	ClassDatabase::RegisterClass<ProjectSettingsSaver>();
-	ResourceLoader::AddLoader(Ref<ProjectSettingsLoader>(projectSettingsLoader));
-	ResourceSaver::AddSaver(Ref<ProjectSettingsSaver>(projectSettingsSaver));
+	ResourceLoader::AddLoader(CreateRef<ProjectSettingsLoader>());
+	ResourceSaver::AddSaver(CreateRef<ProjectSettingsSaver>());
 	ClassDatabase::RegisterClass<ProjectSettings>();
 
 	// Engine system types
