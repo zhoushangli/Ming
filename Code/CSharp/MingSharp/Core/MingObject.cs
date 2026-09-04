@@ -1,15 +1,28 @@
+namespace Ming;
+
 using System.Diagnostics;
 
-namespace Ming;
 
 public class MingObject : IDisposable
 {
+    private static readonly Type CachedType = typeof(MingObject);
     private static readonly string NativeName = "Object";
 
     [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private unsafe static readonly delegate* unmanaged<IntPtr> NativeCtor = GetConstrcutor(NativeName);
 
     internal IntPtr NativePtr;
+
+    public unsafe MingObject()
+    {
+        ConstructAndInitialize(NativeCtor, CachedType);
+    }
+
+    public unsafe MingObject(nint nativePtr)
+    {
+        NativePtr = nativePtr;
+        ConstructAndInitialize(NativeCtor, CachedType);
+    }
 
     internal MingObject(bool initialize)
     {
@@ -48,16 +61,27 @@ public class MingObject : IDisposable
         return NativeFuncs.GetClassName(GetPtr(this));
     }
 
-    internal unsafe void ConstructAndInitialize(delegate* unmanaged<IntPtr> nativeCtor, string nativeName, Type nativeType)
+    internal unsafe void ConstructAndInitialize(delegate* unmanaged<IntPtr> nativeCtor, Type nativeType)
     {
-        if (NativePtr == IntPtr.Zero)
+        Type managedType = GetType();
+        if (managedType != nativeType)
         {
-            NativePtr = nativeCtor();
-            // InteropUtils.TieManagedToUnmanaged(this, NativePtr, nativeName, GetType(), cachedType);
+            if (NativePtr != IntPtr.Zero)
+            {
+                return;
+            }
+
+            throw new NotSupportedException(
+                $"User-defined managed type '{managedType.FullName}' is not supported yet."
+            );
         }
-        else
+
+        if (NativePtr != IntPtr.Zero)
         {
-            // InteropUtils.TieManagedToUnmanagedWithPreSetup(this, NativePtr, GetType(), cachedType);
+            return;
         }
+
+        NativePtr = nativeCtor();
+        InteropUtils.TieManagedToUnmanaged(this, NativePtr);
     }
 }

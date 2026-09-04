@@ -1,8 +1,10 @@
 #include "MingEngine/Engine/Script/ScriptSystem.hpp"
 
+#include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Core/ErrorWarningAssert.hpp"
 #include "MingEngine/Core/Object/Script.hpp"
 #include "MingEngine/Core/Object/ScriptInstance.hpp"
+
 #include "ThirdParty/DotNetHost/hostfxr.h"
 #include "ThirdParty/DotNetHost/nethost.h"
 
@@ -53,15 +55,6 @@ int32_t CORECLR_DELEGATE_CALLTYPE LogUtf8(uint8_t const* text, int32_t textLengt
 	DebuggerPrintf("[Managed] %s\n", message.c_str());
 
 	return 0;
-}
-
-// Create an object from the class database by class name and return its pointer.
-// e.g. CreateObject("Node")
-void* CORECLR_DELEGATE_CALLTYPE CreateObject(char const* className)
-{
-	if (className == nullptr)
-		return nullptr;
-	return ClassDatabase::CreateInstance(className);
 }
 
 // Return the class name of the given object as a UTF-8 string.
@@ -144,23 +137,15 @@ void CORECLR_DELEGATE_CALLTYPE DestroyString(void const* str)
 	delete static_cast<std::string const*>(str);
 }
 
-int32_t CORECLR_DELEGATE_CALLTYPE BindManagedScriptInstance(void* ownerValue, void* gcHandleValue)
+int32_t CORECLR_DELEGATE_CALLTYPE TieNativeManagedToUnmanaged(void* gcHandleValue, void* nativeValue)
 {
-	if (ownerValue == nullptr || gcHandleValue == nullptr)
+	if (gcHandleValue == nullptr || nativeValue == nullptr)
 	{
 		return 0;
 	}
 
-	Object* owner = static_cast<Object*>(ownerValue);
-
-	ScriptInstance* instance = dynamic_cast<ScriptInstance*>(owner->GetScriptInstance());
-
-	if (instance == nullptr || instance->GetOwner() != owner)
-	{
-		return 0;
-	}
-
-	return instance->ReloadGCHandle(gcHandleValue) ? 1 : 0;
+	Object* owner = static_cast<Object*>(nativeValue);
+	return owner->TrySetNativeBindingGCHandle(gcHandleValue) ? 1 : 0;
 }
 
 ConstructorFunc CORECLR_DELEGATE_CALLTYPE GetConstructor(void* name)
@@ -170,8 +155,34 @@ ConstructorFunc CORECLR_DELEGATE_CALLTYPE GetConstructor(void* name)
 		return nullptr;
 	}
 
-	std::string const* namePtr = static_cast<std::string const*>(name);
-	return ClassDatabase::GetConstructor(namePtr->c_str());
+	MingString const* namePtr = static_cast<MingString const*>(name);
+	if (namePtr->m_string == nullptr)
+	{
+		return nullptr;
+	}
+
+	return ClassDatabase::GetConstructor(namePtr->m_string->c_str());
+}
+
+void* CORECLR_DELEGATE_CALLTYPE UnmanagedGetInstanceBindingManaged(void* nativeValue)
+{
+	if (nativeValue == nullptr)
+	{
+		return nullptr;
+	}
+
+	Object* owner = static_cast<Object*>(nativeValue);
+	return owner->GetNativeBindingGCHandle();
+}
+
+void* CORECLR_DELEGATE_CALLTYPE UnmanagedInstanceBindingCreateManaged(void* nativeValue)
+{
+	if (nativeValue == nullptr || g_engine == nullptr || g_engine->m_scriptSystem == nullptr)
+	{
+		return nullptr;
+	}
+
+	return g_engine->m_scriptSystem->GetOrCreateNativeManagedWrapper(static_cast<Object*>(nativeValue));
 }
 
 } // namespace
@@ -183,6 +194,8 @@ void ScriptSystem::Startup()
 	bool result = InitializeDotNetRuntime();
 
 	GUARANTEE_OR_DIE(result, "Failed to initialize .NET Runtime.");
+
+	RunNativeBindingSmoke();
 }
 
 void ScriptSystem::Shutdown()
@@ -206,18 +219,36 @@ void ScriptSystem::BeginFrame() {}
 
 void ScriptSystem::EndFrame() {}
 
-void ScriptSystem::FreeGCHandle(void* gcHandle)
+void ScriptSystem::ReleaseGCHandle(void* gcHandle)
 {
-	if (m_isInitialized && m_managedCallbacks.m_freeGCHandle != nullptr)
+	if (m_isInitialized && m_managedCallbacks.m_releaseGCHandle != nullptr)
 	{
-		m_managedCallbacks.m_freeGCHandle(gcHandle);
+		m_managedCallbacks.m_releaseGCHandle(gcHandle);
 	}
 }
 
-bool ScriptSystem::CreateManagedScriptInstance(Script* script, Object* owner)
+bool ScriptSystem::CreateUserManagedInstance(CSharpScript* script, Object* owner)
 {
-	int const result = m_managedCallbacks.m_createManagedScriptInstance(script, owner);
-	return result != 0;
+	if (!m_isInitialized || script == nullptr || owner == nullptr
+		|| m_managedCallbacks.m_createUserManagedInstance == nullptr)
+	{
+		return false;
+	}
+
+	void* gcHandle = m_managedCallbacks.m_createUserManagedInstance(script, owner);
+	if (gcHandle == nullptr)
+	{
+		return false;
+	}
+
+	ScriptInstance* instance = owner->GetScriptInstance();
+	if (instance == nullptr || instance->GetOwner() != owner || !instance->ReloadGCHandle(gcHandle))
+	{
+		ReleaseGCHandle(gcHandle);
+		return false;
+	}
+
+	return true;
 }
 
 void ScriptSystem::CollectAndGetManagedScriptState(
@@ -233,14 +264,6 @@ void ScriptSystem::CollectAndGetManagedScriptState(
 		"Managed script state callback is not initialized.");
 
 	m_managedCallbacks.m_collectAndGetManagedScriptState(&allocated, &disposed, &freed, &targetAlive);
-}
-
-void ScriptSystem::DisposeManagedScriptInstance(void* gcHandle)
-{
-	if (gcHandle != nullptr)
-	{
-		m_managedCallbacks.m_disposeManagedScriptInstance(gcHandle);
-	}
 }
 
 bool ScriptSystem::InitializeDotNetRuntime()
@@ -369,17 +392,20 @@ bool ScriptSystem::InitializeDotNetRuntime()
 		return false;
 	}
 
-	NativeCallbacks const nativeCallbacks{ &LogUtf8,
-										   &CreateObject,
-										   &GetObjectClassName,
-										   &GetMethodBind,
-										   &MethodBindPtrCall,
-										   &CreateString,
-										   &GetStringBuffer,
-										   &GetStringLength,
-										   &DestroyString,
-										   &BindManagedScriptInstance,
-										   &GetConstructor };
+	NativeCallbacks const nativeCallbacks{
+		&LogUtf8,
+		&GetObjectClassName,
+		&GetMethodBind,
+		&MethodBindPtrCall,
+		&CreateString,
+		&GetStringBuffer,
+		&GetStringLength,
+		&DestroyString,
+		&TieNativeManagedToUnmanaged,
+		&GetConstructor,
+		&UnmanagedGetInstanceBindingManaged,
+		&UnmanagedInstanceBindingCreateManaged,
+	};
 
 	int32_t const initResult = initialize(
 		&nativeCallbacks,
@@ -397,4 +423,96 @@ bool ScriptSystem::InitializeDotNetRuntime()
 	DebuggerPrintf(".NET Runtime initialized.\n");
 
 	return true;
+}
+
+void* ScriptSystem::GetOrCreateNativeManagedWrapper(Object* owner)
+{
+	if (!m_isInitialized || owner == nullptr)
+	{
+		return nullptr;
+	}
+
+	if (owner->IsNativeBindingGCHandleValid())
+	{
+		return owner->GetNativeBindingGCHandle();
+	}
+
+	std::string nativeClassName = owner->GetClassName();
+	MingString  nativeClassNameStruct;
+	nativeClassNameStruct.m_string = &nativeClassName;
+
+	if (m_managedCallbacks.m_createNativeManagedInstance == nullptr)
+	{
+		return nullptr;
+	}
+
+	void* gcHandle = m_managedCallbacks.m_createNativeManagedInstance(&nativeClassNameStruct, owner);
+	if (gcHandle == nullptr)
+	{
+		return nullptr;
+	}
+
+	if (!owner->TrySetNativeBindingGCHandle(gcHandle))
+	{
+		ReleaseGCHandle(gcHandle);
+		return owner->GetNativeBindingGCHandle();
+	}
+
+	return gcHandle;
+}
+
+void ScriptSystem::RunNativeBindingSmoke()
+{
+	GUARANTEE_OR_DIE(
+		m_managedCallbacks.m_createNativeManagedWrapperForSmoke != nullptr
+			&& m_managedCallbacks.m_validateNativeManagedWrapper != nullptr
+			&& m_managedCallbacks.m_collectAndGetNativeBindingState != nullptr,
+		"Native binding smoke callbacks are not initialized.");
+
+	auto collectState = [this](int32_t& allocated, int32_t& disposed, int32_t& freed) {
+		m_managedCallbacks.m_collectAndGetNativeBindingState(&allocated, &disposed, &freed);
+	};
+
+	int32_t allocatedBefore;
+	int32_t disposedBefore;
+	int32_t freedBefore;
+	collectState(allocatedBefore, disposedBefore, freedBefore);
+
+	Object* managedFirstOwner = static_cast<Object*>(m_managedCallbacks.m_createNativeManagedWrapperForSmoke());
+	GUARANTEE_OR_DIE(
+		managedFirstOwner != nullptr && managedFirstOwner->IsNativeBindingGCHandleValid()
+			&& m_managedCallbacks.m_validateNativeManagedWrapper(managedFirstOwner) != 0,
+		"C#-first native binding identity smoke failed.");
+	MemDelete(managedFirstOwner);
+
+	int32_t allocatedAfterManagedFirst;
+	int32_t disposedAfterManagedFirst;
+	int32_t freedAfterManagedFirst;
+	collectState(allocatedAfterManagedFirst, disposedAfterManagedFirst, freedAfterManagedFirst);
+	GUARANTEE_OR_DIE(
+		allocatedAfterManagedFirst == allocatedBefore + 1 && disposedAfterManagedFirst == disposedBefore + 1
+			&& freedAfterManagedFirst == freedBefore + 1,
+		"C#-first native binding release smoke failed.");
+
+	Object* nativeFirstOwner = ClassDatabase::CreateInstance("Node3D");
+	GUARANTEE_OR_DIE(
+		nativeFirstOwner != nullptr && !nativeFirstOwner->IsNativeBindingGCHandleValid(),
+		"Native object unexpectedly created a managed wrapper during initialization.");
+	GUARANTEE_OR_DIE(
+		m_managedCallbacks.m_validateNativeManagedWrapper(nativeFirstOwner) != 0
+			&& nativeFirstOwner->IsNativeBindingGCHandleValid(),
+		"Native-first lazy binding identity smoke failed.");
+	MemDelete(nativeFirstOwner);
+
+	int32_t allocatedAfterNativeFirst;
+	int32_t disposedAfterNativeFirst;
+	int32_t freedAfterNativeFirst;
+	collectState(allocatedAfterNativeFirst, disposedAfterNativeFirst, freedAfterNativeFirst);
+	GUARANTEE_OR_DIE(
+		allocatedAfterNativeFirst == allocatedAfterManagedFirst + 1
+			&& disposedAfterNativeFirst == disposedAfterManagedFirst + 1
+			&& freedAfterNativeFirst == freedAfterManagedFirst + 1,
+		"Native-first native binding release smoke failed.");
+
+	DebuggerPrintf("Native managed wrapper identity smoke passed.\n");
 }

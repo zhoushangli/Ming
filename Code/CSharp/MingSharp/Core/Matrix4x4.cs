@@ -1,6 +1,7 @@
+namespace Ming;
+
 using System.Runtime.InteropServices;
 
-namespace Ming;
 
 // TODO: The exact meaning of Matrix4x4 needs more discussion
 

@@ -1,4 +1,4 @@
-#include "MingEngine/Engine/Script/ManagedGCHandle.hpp"
+#include "MingEngine/Core/Object/ManagedGCHandle.hpp"
 
 #include "MingEngine/Core/ErrorWarningAssert.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
@@ -34,5 +34,5 @@ void ManagedGCHandle::Release()
 		g_engine != nullptr && g_engine->m_scriptSystem != nullptr,
 		"Cannot release a GCHandle without an active ScriptSystem.");
 
-	g_engine->m_scriptSystem->FreeGCHandle(value);
+	g_engine->m_scriptSystem->ReleaseGCHandle(value);
 }

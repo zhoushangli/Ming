@@ -1,10 +1,10 @@
 #pragma once
 
+#include "MingEngine/Core/Object/ManagedGCHandle.hpp"
 #include "MingEngine/Core/Object/Script.hpp"
 #include "MingEngine/Core/Object/ScriptInstance.hpp"
-#include "MingEngine/Engine/Script/ManagedGCHandle.hpp"
 
-class CSharpScript final : public Script
+class CSharpScript : public Script
 {
 	MCLASS(CSharpScript, Script)
 
@@ -35,6 +35,4 @@ private:
 	Ref<CSharpScript> m_script;
 	Object*           m_owner = nullptr;
 	ManagedGCHandle   m_gcHandle;
-	
-	bool m_predeleteNotified = false;
 };

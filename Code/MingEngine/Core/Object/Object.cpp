@@ -2,6 +2,8 @@
 
 #include "MingEngine/Core/ErrorWarningAssert.hpp"
 #include "MingEngine/Core/Object/ClassDatabase.hpp"
+#include "MingEngine/Core/Object/NativeScript.hpp"
+#include "MingEngine/Core/Object/RefCounted.hpp"
 #include "MingEngine/Core/Object/Script.hpp"
 #include "MingEngine/Core/Object/ScriptInstance.hpp"
 #include "MingEngine/Core/Object/Variant.hpp"
@@ -10,7 +12,11 @@ std::vector<Object*> ObjectDatabase::m_objectSlots;
 uint32_t             ObjectDatabase::m_nextObjectUID = 1u;
 
 Object::Object() { ObjectDatabase::AddInstance(this); }
-Object::~Object() { ObjectDatabase::RemoveInstance(this); }
+Object::~Object()
+{
+	ReleaseNativeBindingGCHandle();
+	ObjectDatabase::RemoveInstance(this);
+}
 
 void PostInitializeHandler(Object* object)
 {
@@ -46,6 +52,7 @@ bool Object::PreDelete()
 	Notification(Notification_PreDelete, true);
 	Notification(Notification_PreDeleteCleanup, true);
 
+	ReleaseNativeBindingGCHandle();
 	SetScriptInstance(nullptr);
 
 	return true;
@@ -242,4 +249,21 @@ void Object::SetScriptInstance(ScriptInstance* instance)
 	m_scriptInstance = instance;
 }
 
-ScriptInstance* Object::GetScriptInstance() const { return m_scriptInstance; }
+bool Object::TrySetNativeBindingGCHandle(void* value)
+{
+	if (value == nullptr || m_nativeBindingGCHandle.IsValid())
+	{
+		return false;
+	}
+
+	m_nativeBindingGCHandle = ManagedGCHandle(value);
+	return true;
+}
+
+void Object::ReleaseNativeBindingGCHandle()
+{
+	if (m_nativeBindingGCHandle.IsValid())
+	{
+		m_nativeBindingGCHandle.Release();
+	}
+}

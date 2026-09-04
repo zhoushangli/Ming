@@ -103,6 +103,8 @@ xcopy /Y /F /I "$(SolutionDir)Code\ThirdParty\DotNetHost\nethost.dll" "$(Solutio
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Core\Memory.cpp" />
+    <ClCompile Include="Core\Object\ManagedGCHandle.cpp" />
+    <ClCompile Include="Core\Object\NativeScript.cpp" />
     <ClCompile Include="Core\Object\RefCounted.cpp" />
     <ClCompile Include="Core\Object\Resource.cpp" />
     <ClCompile Include="Core\Object\ResourceImporter.cpp" />
@@ -200,7 +202,6 @@ xcopy /Y /F /I "$(SolutionDir)Code\ThirdParty\DotNetHost\nethost.dll" "$(Solutio
     <ClCompile Include="Engine\Input\XboxController.cpp" />
     <ClCompile Include="Engine\Script\CSharpScript.cpp" />
     <ClCompile Include="Engine\Script\CSharpScriptGenerator.cpp" />
-    <ClCompile Include="Engine\Script\ManagedGCHandle.cpp" />
     <ClCompile Include="Engine\Script\ScriptSystem.cpp" />
     <ClCompile Include="Engine\Window\WindowSystem.cpp" />
     <ClCompile Include="Engine\Render\BitmapFont.cpp" />
@@ -270,6 +271,8 @@ xcopy /Y /F /I "$(SolutionDir)Code\ThirdParty\DotNetHost\nethost.dll" "$(Solutio
     <ClInclude Include="..\ThirdParty\nanosvg\nanosvg.h" />
     <ClInclude Include="..\ThirdParty\nanosvg\nanosvgrast.h" />
     <ClInclude Include="Core\Memory.hpp" />
+    <ClInclude Include="Core\Object\ManagedGCHandle.hpp" />
+    <ClInclude Include="Core\Object\NativeScript.hpp" />
     <ClInclude Include="Core\Object\RefCounted.hpp" />
     <ClInclude Include="Core\Object\Resource.hpp" />
     <ClInclude Include="Core\Object\ResourceImporter.hpp" />
@@ -381,7 +384,6 @@ xcopy /Y /F /I "$(SolutionDir)Code\ThirdParty\DotNetHost\nethost.dll" "$(Solutio
     <ClInclude Include="Engine\Input\XboxController.hpp" />
     <ClInclude Include="Engine\Script\CSharpScript.hpp" />
     <ClInclude Include="Engine\Script\CSharpScriptGenerator.hpp" />
-    <ClInclude Include="Engine\Script\ManagedGCHandle.hpp" />
     <ClInclude Include="Engine\Script\ScriptSystem.hpp" />
     <ClInclude Include="Engine\Window\WindowSystem.hpp" />
     <ClInclude Include="Engine\Render\BitmapFont.hpp" />

@@ -27,7 +27,7 @@ bool CSharpScript::Instantiate(Object* owner)
 	owner->SetScriptInstance(scriptInstance);
 
 	// 2) Initialize the script instance
-	bool const created = g_engine->m_scriptSystem->CreateManagedScriptInstance(this, owner);
+	bool const created = g_engine->m_scriptSystem->CreateUserManagedInstance(this, owner);
 
 	if (!created || !scriptInstance->m_gcHandle.IsValid())
 	{
@@ -42,11 +42,6 @@ CSharpInstance::~CSharpInstance()
 {
 	if (m_gcHandle.IsValid())
 	{
-		if (!m_predeleteNotified)
-		{
-			g_engine->m_scriptSystem->DisposeManagedScriptInstance(m_gcHandle.GetValue());
-		}
-
 		m_gcHandle.Release();
 	}
 
@@ -54,17 +49,15 @@ CSharpInstance::~CSharpInstance()
 	m_owner  = nullptr;
 }
 
-void CSharpInstance::Notification(int notification, bool reverse)
+void CSharpInstance::Notification(int notification, [[maybe_unused]] bool reverse)
 {
 	switch (notification)
 	{
 	case Object::Notification_PreDeleteCleanup:
 	{
-		m_predeleteNotified = true;
-
 		if (m_gcHandle.IsValid())
 		{
-			g_engine->m_scriptSystem->DisposeManagedScriptInstance(m_gcHandle.GetValue());
+			m_gcHandle.Release();
 		}
 	}
 	}
@@ -72,11 +65,15 @@ void CSharpInstance::Notification(int notification, bool reverse)
 
 bool CSharpInstance::ReloadGCHandle(void* value)
 {
-	if (value == nullptr || m_gcHandle.IsValid())
+	if (value == nullptr)
 	{
 		return false;
 	}
 
+	if (m_gcHandle.IsValid())
+	{
+		m_gcHandle.Release();
+	}
 	m_gcHandle = ManagedGCHandle(value);
 	return true;
 }

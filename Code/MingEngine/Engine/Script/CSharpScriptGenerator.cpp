@@ -10,9 +10,9 @@
 
 namespace
 {
-constexpr char const* ClassTemplate = R"(using System.Diagnostics;
+constexpr char const* ClassTemplate = R"(namespace Ming;
 
-namespace Ming;
+using System.Diagnostics;
 
 public partial class {CLASS_NAME} : {PARENT_CLASS_NAME}
 {
@@ -24,13 +24,13 @@ public partial class {CLASS_NAME} : {PARENT_CLASS_NAME}
 
 {METHOD_BINDINGS}	public unsafe {CLASS_NAME}() : base(false)
     {
-        ConstructAndInitialize(NativeCtor, NativeName, CachedType);
+        ConstructAndInitialize(NativeCtor, CachedType);
     }
 
     public unsafe {CLASS_NAME}(nint nativePtr) : base(false)
     {
         NativePtr = nativePtr;
-        ConstructAndInitialize(NativeCtor, NativeName, CachedType);
+        ConstructAndInitialize(NativeCtor, CachedType);
     }
 
     public unsafe {CLASS_NAME}(bool initialize) : base(initialize)
@@ -57,6 +57,32 @@ constexpr char const* NativeCallsTemplate = R"(namespace Ming;
 internal static unsafe class NativeCalls
 {
 {FUNCTIONS}}
+)";
+
+constexpr char const* ConstructorsTemplate = R"(namespace Ming;
+
+using System;
+using System.Collections.Generic;
+
+internal static class Constructors
+{
+    internal static readonly Dictionary<string, Func<IntPtr, MingObject>> BuiltInMethodConstructors;
+
+    public static MingObject Invoke(string nativeTypeNameStr, IntPtr nativeObjectPtr)
+    {
+        if (!BuiltInMethodConstructors.TryGetValue(nativeTypeNameStr, out var constructor))
+        {
+            throw new InvalidOperationException("Wrapper class not found for type: " + nativeTypeNameStr);
+        }
+
+        return constructor(nativeObjectPtr);
+    }
+
+    static Constructors()
+    {
+        BuiltInMethodConstructors = new();
+{CONSTRUCTORS}    }
+}
 )";
 
 constexpr char const* NativeCallFunctionTemplate =
@@ -341,6 +367,25 @@ bool GenerateNativeCalls(std::filesystem::path const& outputDirectory, NativeCal
 	std::string nativeCallsSource = NativeCallsTemplate;
 	ReplaceAll(nativeCallsSource, "{FUNCTIONS}", nativeCallFunctions);
 	return WriteTextFile(outputDirectory / "NativeCalls.cs", nativeCallsSource);
+}
+
+bool GenerateConstructors(std::filesystem::path const& outputDirectory, std::vector<ClassInfo const*> const& classes)
+{
+	std::string constructorEntries = "        BuiltInMethodConstructors.Add(\"Object\", ptr => new MingObject(ptr));\n";
+	for (ClassInfo const* classInfo : classes)
+	{
+		if (classInfo == nullptr || classInfo->m_apiType != ApiType::Runtime || classInfo->m_className == "Object")
+		{
+			continue;
+		}
+
+		constructorEntries += "        BuiltInMethodConstructors.Add(\"" + classInfo->m_className + "\", ptr => new " +
+							  classInfo->m_className + "(ptr));\n";
+	}
+
+	std::string constructorsSource = ConstructorsTemplate;
+	ReplaceAll(constructorsSource, "{CONSTRUCTORS}", constructorEntries);
+	return WriteTextFile(outputDirectory / "Constructors.cs", constructorsSource);
 }
 
 bool GenerateClassBindings(
@@ -634,6 +679,11 @@ bool CSharpScriptGenerator::GenerateCSharpBindings(std::filesystem::path const& 
 	if (!GenerateNativeCalls(generatedDirectory, nativeCalls))
 	{
 		ERROR_AND_DIE("Failed to generate C# NativeCalls.");
+	}
+
+	if (!GenerateConstructors(generatedDirectory, classes))
+	{
+		ERROR_AND_DIE("Failed to generate C# Constructors.");
 	}
 
 	if (!GenerateClassBindings(generatedDirectory, classes, nativeCalls, methodNativeCalls))

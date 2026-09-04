@@ -1,7 +1,8 @@
+namespace Ming;
+
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace Ming;
 
 [StructLayout(LayoutKind.Sequential)]
 public ref struct MingString : IDisposable

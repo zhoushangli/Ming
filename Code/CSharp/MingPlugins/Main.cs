@@ -38,8 +38,6 @@ namespace MingPlugins
                     managedCallbacksSize
                 );
 
-                PlayerController player = new();
-
                 return 0;
             }
             catch (Exception exception)

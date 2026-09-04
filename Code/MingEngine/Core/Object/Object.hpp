@@ -1,6 +1,7 @@
 #pragma once
 
 #include "MingEngine/Core/Memory.hpp"
+#include "MingEngine/Core/Object/ManagedGCHandle.hpp"
 #include "MingEngine/Core/Object/ObjectID.hpp"
 
 #include <memory>
@@ -113,7 +114,12 @@ public:
 	Variant         GetScript() const;
 	void            SetScript(Variant const& script);
 	void            SetScriptInstance(ScriptInstance* scriptInstance);
-	ScriptInstance* GetScriptInstance() const;
+	ScriptInstance* GetScriptInstance() const { return m_scriptInstance; }
+
+	bool  TrySetNativeBindingGCHandle(void* value);
+	bool  IsNativeBindingGCHandleValid() const { return m_nativeBindingGCHandle.IsValid(); }
+	void* GetNativeBindingGCHandle() const { return m_nativeBindingGCHandle.GetValue(); }
+	void  ReleaseNativeBindingGCHandle();
 
 protected:
 	void OnNotification([[maybe_unused]] int notification) {}
@@ -130,9 +136,11 @@ private:
 	bool PreDelete();
 
 private:
-	ObjectID        m_id             = ObjectID::Invalid;
+	ObjectID        m_id            = ObjectID::Invalid;
+	bool            m_isPreDeleting = false;
+	ManagedGCHandle m_nativeBindingGCHandle;
+
 	ScriptInstance* m_scriptInstance = nullptr;
-	bool            m_isPreDeleting  = false;
 };
 
 class ObjectDatabase

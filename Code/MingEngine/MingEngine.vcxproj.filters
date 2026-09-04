@@ -612,11 +612,14 @@
     <ClCompile Include="Engine\Script\CSharpScript.cpp">
       <Filter>Engine\Script</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Script\ManagedGCHandle.cpp">
-      <Filter>Engine\Script</Filter>
-    </ClCompile>
     <ClCompile Include="Core\Memory.cpp">
       <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Object\NativeScript.cpp">
+      <Filter>Core\Object</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Object\ManagedGCHandle.cpp">
+      <Filter>Core\Object</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1181,11 +1184,14 @@
     <ClInclude Include="Engine\Script\CSharpScript.hpp">
       <Filter>Engine\Script</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Script\ManagedGCHandle.hpp">
-      <Filter>Engine\Script</Filter>
-    </ClInclude>
     <ClInclude Include="Core\Memory.hpp">
       <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Object\NativeScript.hpp">
+      <Filter>Core\Object</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Object\ManagedGCHandle.hpp">
+      <Filter>Core\Object</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

@@ -1,6 +1,7 @@
+namespace Ming;
+
 using System.Text;
 
-namespace Ming;
 
 public static class Marshaling
 {

@@ -1,6 +1,7 @@
+namespace Ming;
+
 using System.Runtime.InteropServices;
 
-namespace Ming;
 
 [StructLayout(LayoutKind.Sequential)]
 public struct Color

@@ -1,15 +1,13 @@
-using System.Reflection;
-using System.Runtime.CompilerServices;
+namespace Ming;
+
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace Ming;
 
 [StructLayout(LayoutKind.Sequential)]
 internal unsafe struct NativeCallbacks
 {
     public delegate* unmanaged<byte*, int, int> LogUtf8;
-    public delegate* unmanaged<byte*, IntPtr> CreateObject;
     public delegate* unmanaged<IntPtr, byte*> GetClassName;
     public delegate* unmanaged<byte*, int, byte*, int, IntPtr> GetMethodBind;
     public delegate* unmanaged<IntPtr, IntPtr, void**, void*, void> MethodBindPtrCall;
@@ -17,8 +15,10 @@ internal unsafe struct NativeCallbacks
     public delegate* unmanaged<IntPtr, byte*> GetStringBuffer;
     public delegate* unmanaged<IntPtr, int> GetStringLength;
     public delegate* unmanaged<IntPtr, void> DestroyString;
-    public delegate* unmanaged<IntPtr, IntPtr, int> BindManagedScriptInstance;
+    public delegate* unmanaged<IntPtr, IntPtr, int> TieNativeManagedToUnmanaged;
     public delegate* unmanaged<IntPtr, delegate* unmanaged<nint>> GetConstructor;
+    public delegate* unmanaged<IntPtr, IntPtr> UnmanagedGetInstanceBindingManaged;
+    public delegate* unmanaged<IntPtr, IntPtr> UnmanagedInstanceBindingCreateManaged;
 }
 
 [StructLayout(LayoutKind.Sequential)]
@@ -27,12 +27,15 @@ internal unsafe struct ManagedCallbacks
     public delegate* unmanaged<int> Ping;
     public delegate* unmanaged<IntPtr> CreateTestGCHandle;
     public delegate* unmanaged<IntPtr, int> InvokeTestGCHandle;
-    public delegate* unmanaged<IntPtr, void> FreeGCHandle;
+    public delegate* unmanaged<IntPtr, void> ReleaseGCHandle;
     public delegate* unmanaged<int*, int*, int*, void> CollectAndGetState;
-    public delegate* unmanaged<IntPtr, IntPtr, int> CreateManagedScriptInstance;
+    public delegate* unmanaged<IntPtr, IntPtr, IntPtr> CreateUserManagedInstance;
+    public delegate* unmanaged<IntPtr, IntPtr, IntPtr> CreateNativeManagedInstance;
     public delegate* unmanaged<IntPtr, IntPtr, int> ValidateManagedScriptInstance;
     public delegate* unmanaged<int*, int*, int*, int*, void> CollectAndGetManagedScriptState;
-    public delegate* unmanaged<IntPtr, void> DisposeManagedScriptInstance;
+    public delegate* unmanaged<IntPtr> CreateNativeManagedWrapperForSmoke;
+    public delegate* unmanaged<IntPtr, int> ValidateNativeManagedWrapper;
+    public delegate* unmanaged<int*, int*, int*, void> CollectAndGetNativeBindingState;
 }
 
 public static unsafe class NativeFuncs
@@ -59,6 +62,10 @@ public static unsafe class NativeFuncs
 
     private static WeakReference<PlayerController>? s_lastScriptInstance;
 
+    private static int s_nativeBindingAllocated;
+    private static int s_nativeBindingDisposed;
+    private static int s_nativeBindingFreed;
+
     #region Native Callback Wrappers
 
     // Forward a UTF-8 log message to the native engine.
@@ -66,18 +73,6 @@ public static unsafe class NativeFuncs
     public static int LogUtf8(byte* text, int length)
     {
         return s_callbacks.LogUtf8(text, length);
-    }
-
-    // Create an engine object by class name and return its native pointer.
-    // e.g. NativeFuncs.CreateObject("Node")
-    internal static IntPtr CreateObject(string className)
-    {
-        byte[] utf8Bytes = Encoding.UTF8.GetBytes(className);
-
-        fixed (byte* text = utf8Bytes)
-        {
-            return s_callbacks.CreateObject(text);
-        }
     }
 
     // Return the engine class name of the given native object pointer.
@@ -136,48 +131,44 @@ public static unsafe class NativeFuncs
         s_callbacks.DestroyString(strPtr);
     }
 
-    internal static bool BindManagedScriptInstance(IntPtr owner, IntPtr gcHandle)
+    internal static bool TieNativeManagedToUnmanaged(IntPtr gcHandle, IntPtr native)
     {
-        if (owner == IntPtr.Zero || gcHandle == IntPtr.Zero)
+        if (gcHandle == IntPtr.Zero || native == IntPtr.Zero)
         {
             return false;
         }
 
-        return s_callbacks.BindManagedScriptInstance(owner, gcHandle) != 0;
+        return s_callbacks.TieNativeManagedToUnmanaged(gcHandle, native) != 0;
     }
 
-    internal static void BindManagedScriptInstance(MingObject instance, IntPtr owner)
+    internal static IntPtr UnmanagedGetInstanceBindingManaged(IntPtr native)
     {
-        GCHandle handle = GCHandle.Alloc(instance, GCHandleType.Normal);
-        IntPtr handlePtr = GCHandle.ToIntPtr(handle);
-        bool transferred = false;
-
-        s_scriptHandleAllocated++;
-
-        try
-        {
-            if (!BindManagedScriptInstance(owner, handlePtr))
-            {
-                throw new InvalidOperationException(
-                    "Failed to bind managed script instance."
-                );
-            }
-
-            transferred = true;
-        }
-        finally
-        {
-            if (!transferred)
-            {
-                handle.Free();
-                s_scriptHandleFreed++;
-            }
-        }
+        return native != IntPtr.Zero
+            ? s_callbacks.UnmanagedGetInstanceBindingManaged(native)
+            : IntPtr.Zero;
     }
 
     internal static delegate* unmanaged<IntPtr> GetConstructor(IntPtr name)
     {
         return s_callbacks.GetConstructor(name);
+    }
+
+    internal static IntPtr UnmanagedInstanceBindingCreateManaged(IntPtr native)
+    {
+        return native != IntPtr.Zero
+            ? s_callbacks.UnmanagedInstanceBindingCreateManaged(native)
+            : IntPtr.Zero;
+    }
+
+    internal static void TrackNativeBindingAllocated()
+    {
+        s_nativeBindingAllocated++;
+    }
+
+    internal static void TrackScriptInstanceAllocated(PlayerController instance)
+    {
+        s_scriptHandleAllocated++;
+        s_lastScriptInstance = new WeakReference<PlayerController>(instance);
     }
 
     #endregion
@@ -239,8 +230,11 @@ public static unsafe class NativeFuncs
     }
 
     [UnmanagedCallersOnly]
-    private static void FreeGCHandle(IntPtr handlePtr)
+    private static void ReleaseGCHandle(IntPtr handlePtr)
     {
+        GCHandle handle;
+        object? target;
+
         try
         {
             if (handlePtr == IntPtr.Zero)
@@ -248,9 +242,55 @@ public static unsafe class NativeFuncs
                 return;
             }
 
-            GCHandle handle = GCHandle.FromIntPtr(handlePtr);
+            handle = GCHandle.FromIntPtr(handlePtr);
+            target = handle.Target;
+        }
+        catch (Exception exception)
+        {
+            Console.Error.WriteLine(exception);
+            return;
+        }
 
-            bool isScriptInstance = handle.Target is PlayerController;
+        bool isScriptInstance = target is PlayerController;
+        bool isNativeBinding = target is MingObject && !isScriptInstance;
+
+        if (target is MingObject instance)
+        {
+            try
+            {
+                instance.Dispose();
+
+                if (isScriptInstance && instance.NativePtr == IntPtr.Zero)
+                {
+                    s_scriptHandleDisposed++;
+                }
+                else if (isScriptInstance)
+                {
+                    Console.Error.WriteLine(
+                        "Managed script NativePtr was not invalidated."
+                    );
+                }
+                else if (isNativeBinding && instance.NativePtr == IntPtr.Zero)
+                {
+                    s_nativeBindingDisposed++;
+                }
+                else if (isNativeBinding)
+                {
+                    Console.Error.WriteLine(
+                        "Native binding NativePtr was not invalidated."
+                    );
+                }
+            }
+            catch (Exception exception)
+            {
+                Console.Error.WriteLine(exception);
+            }
+        }
+
+        try
+        {
+            handle.Free();
+
             if (isScriptInstance)
             {
                 s_scriptHandleFreed++;
@@ -260,7 +300,11 @@ public static unsafe class NativeFuncs
                 s_freedHandleCount++;
             }
 
-            handle.Free();
+            if (isNativeBinding)
+            {
+                s_nativeBindingFreed++;
+            }
+
         }
         catch (Exception exception)
         {
@@ -278,54 +322,6 @@ public static unsafe class NativeFuncs
         *allocated = s_allocatedHandleCount;
         *freed = s_freedHandleCount;
         *targetAlive = s_lastProbe?.TryGetTarget(out _) == true ? 1 : 0;
-    }
-
-    [UnmanagedCallersOnly]
-    private static int CreateManagedScriptInstance(IntPtr scriptPtr, IntPtr ownerPtr)
-    {
-        if (scriptPtr == IntPtr.Zero || ownerPtr == IntPtr.Zero)
-        {
-            return 0;
-        }
-
-        try
-        {
-            // This checkpoint uses one fixed script type.
-            Type scriptType = typeof(PlayerController);
-
-            ConstructorInfo? constructor = scriptType
-                .GetConstructors(
-                    BindingFlags.Public
-                    | BindingFlags.NonPublic
-                    | BindingFlags.Instance
-                )
-                .FirstOrDefault(
-                    candidate => candidate.GetParameters().Length == 0
-                );
-
-            if (constructor == null)
-            {
-                return 0;
-            }
-
-            // 1) Allocate the managed object without running constructors.
-            var instance = (MingObject)RuntimeHelpers.GetUninitializedObject(scriptType);
-
-            // 2) Give it the already-existing native owner.
-            instance.NativePtr = ownerPtr;
-
-            // 3) Run the constructor chain.
-            _ = constructor.Invoke(instance, Array.Empty<object?>());
-
-            // s_lastScriptInstance = new WeakReference<PlayerController>((PlayerController)instance);
-
-            return 1;
-        }
-        catch (Exception exception)
-        {
-            Console.Error.WriteLine(exception);
-            return 0;
-        }
     }
 
     [UnmanagedCallersOnly]
@@ -380,40 +376,57 @@ public static unsafe class NativeFuncs
     }
 
     [UnmanagedCallersOnly]
-    private static void DisposeManagedScriptInstance(IntPtr handlePtr)
+    private static IntPtr CreateNativeManagedWrapperForSmoke()
     {
         try
         {
-            if (handlePtr == IntPtr.Zero)
-            {
-                return;
-            }
-
-            GCHandle handle = GCHandle.FromIntPtr(handlePtr);
-
-            if (handle.Target is MingObject instance)
-            {
-                instance.Dispose();
-
-                if (instance.NativePtr == IntPtr.Zero)
-                {
-                    s_scriptHandleDisposed++;
-                }
-                else
-                {
-                    Console.Error.WriteLine(
-                        "Managed script NativePtr was not invalidated."
-                    );
-                }
-            }
+            Node3D wrapper = new();
+            return wrapper.NativePtr;
         }
         catch (Exception exception)
         {
             Console.Error.WriteLine(exception);
+            return IntPtr.Zero;
         }
     }
 
+    [UnmanagedCallersOnly]
+    private static int ValidateNativeManagedWrapper(IntPtr owner)
+    {
+        try
+        {
+            MingObject? first = InteropUtils.UnmanagedGetManaged(owner);
+            MingObject? second = InteropUtils.UnmanagedGetManaged(owner);
+
+            return first != null
+                && ReferenceEquals(first, second)
+                && first.NativePtr == owner
+                ? 1
+                : 0;
+        }
+        catch (Exception exception)
+        {
+            Console.Error.WriteLine(exception);
+            return 0;
+        }
+    }
+
+    [UnmanagedCallersOnly]
+    private static unsafe void CollectAndGetNativeBindingState(int* allocated, int* disposed, int* freed)
+    {
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        GC.Collect();
+
+        *allocated = s_nativeBindingAllocated;
+        *disposed = s_nativeBindingDisposed;
+        *freed = s_nativeBindingFreed;
+    }
+
     #endregion
+
+
+
 
     // Store the native function pointer table passed from the engine.
     // e.g. NativeFuncs.Initialize(callbacksPtr, sizeof(NativeCallbacks))
@@ -438,12 +451,15 @@ public static unsafe class NativeFuncs
             Ping = &Ping,
             CreateTestGCHandle = &CreateTestGCHandle,
             InvokeTestGCHandle = &InvokeTestGCHandle,
-            FreeGCHandle = &FreeGCHandle,
+            ReleaseGCHandle = &ReleaseGCHandle,
             CollectAndGetState = &CollectAndGetState,
-            CreateManagedScriptInstance = &CreateManagedScriptInstance,
+            CreateUserManagedInstance = &ScriptManagerBridge.CreateUserManagedInstance,
+            CreateNativeManagedInstance = &ScriptManagerBridge.CreateNativeManagedInstance,
             ValidateManagedScriptInstance = &ValidateManagedScriptInstance,
             CollectAndGetManagedScriptState = &CollectAndGetManagedScriptState,
-            DisposeManagedScriptInstance = &DisposeManagedScriptInstance
+            CreateNativeManagedWrapperForSmoke = &CreateNativeManagedWrapperForSmoke,
+            ValidateNativeManagedWrapper = &ValidateNativeManagedWrapper,
+            CollectAndGetNativeBindingState = &CollectAndGetNativeBindingState
         };
     }
 }

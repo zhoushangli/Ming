@@ -1,4 +1,3 @@
-
 namespace Ming;
 
 public struct Vector4 : IEquatable<Vector4>

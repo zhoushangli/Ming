@@ -1,17 +1,12 @@
 namespace Ming;
 
-public class PlayerController
+public class PlayerController : Node3D
 {
     public string NameSeenInConstructor { get; private set; } = "";
 
     public PlayerController()
     {
-        // NameSeenInConstructor = GetName();
-
-        // if (NameSeenInConstructor == "CSharpCreateFailureProbe")
-        // {
-        //     throw new InvalidOperationException("Expected managed script construction failure.");
-        // }
+        NameSeenInConstructor = GetName();
     }
 
     public bool ValidateNativeOwner(IntPtr expectedOwner)
