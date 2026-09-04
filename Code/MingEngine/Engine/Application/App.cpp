@@ -3,6 +3,7 @@
 #include "MingEngine/Core/Clock.hpp"
 #include "MingEngine/Core/ErrorWarningAssert.hpp"
 #include "MingEngine/Core/Math/MathUtils.hpp"
+#include "MingEngine/Core/Memory.hpp"
 #include "MingEngine/Core/Object/ClassDatabase.hpp"
 #include "MingEngine/Core/Object/ResourceLoader.hpp"
 #include "MingEngine/Core/Render/Color.hpp"
@@ -81,8 +82,8 @@ void App::Shutdown()
 
 	int32_t const activeBefore = allocatedBefore - freedBefore;
 	GUARANTEE_OR_DIE(
-		m_sceneTree != nullptr && activeBefore >= 2 && aliveBefore == 1,
-		"SceneTree shutdown smoke did not retain the managed shutdown probes.");
+		m_sceneTree != nullptr && activeBefore >= 0,
+		"Invalid managed script state before SceneTree shutdown.");
 
 	ShutdownScene();
 
@@ -93,10 +94,9 @@ void App::Shutdown()
 	g_engine->m_scriptSystem->CollectAndGetManagedScriptState(allocatedAfter, disposedAfter, freedAfter, aliveAfter);
 
 	GUARANTEE_OR_DIE(
-		allocatedAfter == allocatedBefore && disposedAfter == disposedBefore + activeBefore
-			&& freedAfter == freedBefore + activeBefore && aliveAfter == 0,
-		"SceneTree shutdown smoke did not release all managed scripts before ScriptSystem shutdown.");
-	DebuggerPrintf("Managed SceneTree shutdown smoke passed.\n");
+		allocatedAfter == allocatedBefore && disposedAfter - disposedBefore == activeBefore
+			&& freedAfter - freedBefore == activeBefore && allocatedAfter == freedAfter && aliveAfter == 0,
+		"SceneTree shutdown did not release all managed scripts.");
 
 	if (g_engine != nullptr && g_engine->m_eventSystem != nullptr)
 	{
@@ -213,7 +213,7 @@ void App::RestartImmediately()
 void App::StartupScene()
 {
 	m_clock     = new Clock();
-	m_sceneTree = new SceneTree();
+	m_sceneTree = MemNew<SceneTree>();
 
 	auto editorNode = new EditorNode();
 	editorNode->SetName("EditorNode");
@@ -230,7 +230,7 @@ void App::ShutdownScene()
 	m_editorCamera = nullptr;
 	m_isSlowMode   = false;
 
-	delete m_sceneTree;
+	MemDelete(m_sceneTree);
 	m_sceneTree = nullptr;
 
 	delete m_clock;

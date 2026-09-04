@@ -145,7 +145,7 @@ struct VariantCaster
 	static T Cast(Variant const& value)
 	{
 		using CleanType   = std::remove_cv_t<std::remove_reference_t<T>>;
-		using PointeeType = std::remove_pointer_t<CleanType>;
+		using PointeeType = std::remove_cv_t<std::remove_pointer_t<CleanType>>;
 		using RefType     = std::remove_reference_t<T>;
 
 		// Raw Variant.

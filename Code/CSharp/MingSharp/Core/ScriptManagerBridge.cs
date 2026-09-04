@@ -32,7 +32,7 @@ internal static class ScriptManagerBridge
         s_scriptTypes.Add(scriptPtr, scriptType);
     }
 
-    internal static bool TryGetScriptType(IntPtr scriptPtr, out Type? scriptType)
+    internal static bool TryGetScriptType(IntPtr scriptPtr, out Type scriptType)
     {
         return s_scriptTypes.TryGetValue(scriptPtr, out scriptType);
     }
@@ -64,14 +64,14 @@ internal static class ScriptManagerBridge
 
         try
         {
-            if (!ScriptManagerBridge.TryGetScriptType(scriptPtr, out Type? scriptType) || scriptType == null)
+            if (!ScriptManagerBridge.TryGetScriptType(scriptPtr, out Type scriptType) || scriptType == null)
             {
                 throw new InvalidOperationException(
                     "No managed type is registered for the CSharpScript."
                 );
             }
 
-            ConstructorInfo? constructor = scriptType
+            ConstructorInfo constructor = scriptType
                 .GetConstructors(
                     BindingFlags.Public
                     | BindingFlags.NonPublic
@@ -94,7 +94,7 @@ internal static class ScriptManagerBridge
 
             instance.NativePtr = ownerPtr;
 
-            _ = constructor.Invoke(instance, Array.Empty<object?>());
+            _ = constructor.Invoke(instance, Array.Empty<object>());
 
             GCHandle gcHandle = GCHandle.Alloc(instance, GCHandleType.Normal);
             NativeFuncs.TrackScriptInstanceAllocated((PlayerController)instance);

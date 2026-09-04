@@ -32,7 +32,7 @@ internal static class InteropUtils
         }
     }
 
-    public static MingObject? UnmanagedGetManaged(IntPtr unmanaged)
+    public static MingObject UnmanagedGetManaged(IntPtr unmanaged)
     {
         if (unmanaged == IntPtr.Zero)
         {

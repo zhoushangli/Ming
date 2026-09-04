@@ -1,6 +1,7 @@
 #include "MingEngine/Scene/Core/SceneTree.hpp"
 
 #include "MingEngine/Core/Math/MathUtils.hpp"
+#include "MingEngine/Core/Object/ClassDatabase.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Engine/Render/Renderer.hpp"
 #include "MingEngine/Scene/3D/Light3D.hpp"
@@ -44,6 +45,17 @@ SceneTree::~SceneTree()
 		MemDelete(m_raycastSpace);
 		m_raycastSpace = nullptr;
 	}
+}
+
+void SceneTree::BindMethods()
+{
+	ClassDatabase::BindMethod("GetRoot", &SceneTree::GetRoot);
+	ClassDatabase::BindMethod("GetScene", &SceneTree::GetScene);
+	ClassDatabase::BindMethod("ClearScene", &SceneTree::ClearScene);
+	ClassDatabase::BindMethod("ChangeScene", &SceneTree::ChangeScene);
+	ClassDatabase::BindMethod("GetWorldCamera", &SceneTree::GetWorldCamera);
+	ClassDatabase::BindMethod("GetRaycastSpace", &SceneTree::GetRaycastSpace);
+	ClassDatabase::BindMethod("GetDeltaSeconds", &SceneTree::GetDeltaSeconds);
 }
 
 void SceneTree::QueueDestroyNode(Node* node)

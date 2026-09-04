@@ -6,6 +6,36 @@
 #include <map>
 #include <string>
 
+// CSharpTypeInfo fields are inserted into the following generated C# shape.
+// ObjectPtr public types use ArgumentInfo.m_objectClassName instead of m_csType.
+/*
+public {RETURN_TYPE} Method({ARGUMENT_TYPE} arg1)
+{
+	{RETURN.m_csOutExpression}
+		{OBJECT_RETURN_CAST}{CALL} = NativeCalls.MingCall_{RETURN.m_name}_{ARG.m_name}(
+			methodBind, objectPtr, {ARG.m_csInExpression});
+		{VALUE} in ARG.m_csInExpression = arg1
+}
+
+internal static {RETURN.m_callTypeOut} MingCall_{RETURN.m_name}_{ARG.m_name}(
+	IntPtr methodBind, IntPtr objectPtr, {ARG.m_callTypeIn} arg1)
+{
+	{RETURN.m_disposableReturn ? "using " : ""}{RETURN.m_ptrCallType} ret
+		{RETURN.m_disposableReturn || RETURN.m_defaultInitializeReturn ? " = default" : ""};
+
+	{ARG.m_callIn}
+		{VALUE} in ARG.m_callIn = arg1
+
+	void** args = stackalloc void*[1] { {ARG.m_ptrCallArgument} };
+		{VALUE} in ARG.m_ptrCallArgument = arg1
+
+	NativeFuncs.MethodBindPtrCall(methodBind, objectPtr, args,
+		{RETURN.m_callTypeOut != "void" ? "&ret" : "null"});
+
+	{RETURN.m_callOut}
+		{VALUE} in RETURN.m_callOut = ret
+};
+*/
 struct CSharpTypeInfo
 {
 	std::string m_name;

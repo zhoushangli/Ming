@@ -14,6 +14,8 @@
 #include "MingEngine/Scene/Core/PackedScene.hpp"
 #include "MingEngine/Scene/Core/PackedSceneFormat.hpp"
 #include "MingEngine/Scene/Core/RaycastSpace3D.hpp"
+#include "MingEngine/Scene/Core/SceneTree.hpp"
+#include "MingEngine/Scene/Core/Viewport.hpp"
 #include "MingEngine/Scene/Import/GLTFImporter.hpp"
 #include "MingEngine/Scene/Import/ImageImporter.hpp"
 #include "MingEngine/Scene/Import/OBJImporter.hpp"
@@ -73,6 +75,8 @@ void RegisterSceneTypes()
 
 	// Scene types
 	ClassDatabase::RegisterClass<Node>();
+	ClassDatabase::RegisterClass<Viewport>();
+	ClassDatabase::RegisterClass<SceneTree>();
 	ClassDatabase::RegisterClass<RaycastSpace3D>();
 	ClassDatabase::RegisterClass<Node3D>();
 	ClassDatabase::RegisterClass<Camera3D>();

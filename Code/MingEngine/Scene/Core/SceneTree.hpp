@@ -9,13 +9,15 @@
 class Viewport;
 class RaycastSpace3D;
 
-class SceneTree
+class SceneTree : public Object
 {
+	MCLASS(SceneTree, Object);
+
 	friend class Node;
 
 public:
 	SceneTree();
-	~SceneTree();
+	~SceneTree() override;
 
 	// Deferred destruction:
 	// 1) Nodes request destruction through QueueDestroyNode while they are in this tree.
@@ -41,6 +43,8 @@ public:
 	float GetDeltaSeconds() const;
 
 protected:
+	static void BindMethods();
+
 	void         RegisterNode(Node* node);
 	void         UnregisterNode(Node* node);
 	unsigned int FindAvailableNodeIndex() const;

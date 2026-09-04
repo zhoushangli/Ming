@@ -122,6 +122,16 @@ std::string FormatTypeExpression(
 	return expression;
 }
 
+std::string GetPublicCSharpType(ArgumentInfo const& argumentInfo, CSharpTypeInfo const& typeInfo)
+{
+	if (argumentInfo.m_type != Variant::Type::ObjectPtr || argumentInfo.m_objectClassName.empty())
+	{
+		return typeInfo.m_csType;
+	}
+
+	return argumentInfo.m_objectClassName == "Object" ? "MingObject" : argumentInfo.m_objectClassName;
+}
+
 char const* GetVariantTypeName(Variant::Type type)
 {
 	switch (type)
@@ -242,12 +252,13 @@ std::string GenerateClassMethod(MethodInfo const& methodInfo, NativeCallInfo con
 	for (size_t argumentIndex = 0; argumentIndex < nativeCall.m_argumentTypes.size(); ++argumentIndex)
 	{
 		CSharpTypeInfo const& argumentTypeInfo = nativeCall.m_argumentTypes[argumentIndex];
+		ArgumentInfo const&   argumentInfo     = methodInfo.m_argumentInfos[argumentIndex];
 		std::string const     argumentName     = "arg" + std::to_string(argumentIndex + 1);
 		if (!methodArguments.empty())
 		{
 			methodArguments += ", ";
 		}
-		methodArguments += argumentTypeInfo.m_csType + " " + argumentName;
+		methodArguments += GetPublicCSharpType(argumentInfo, argumentTypeInfo) + " " + argumentName;
 
 		callArguments += ", ";
 		callArguments += FormatTypeExpression(argumentTypeInfo.m_csInExpression, argumentName);
@@ -262,12 +273,19 @@ std::string GenerateClassMethod(MethodInfo const& methodInfo, NativeCallInfo con
 	}
 	else
 	{
-		methodCall =
-			FormatTypeExpression(nativeCall.m_returnType.m_csOutExpression, std::string(), nativeCallExpression);
+		std::string returnExpression = nativeCallExpression;
+		if (methodInfo.m_returnInfo.m_type == Variant::Type::ObjectPtr
+			&& !methodInfo.m_returnInfo.m_objectClassName.empty())
+		{
+			returnExpression = "(" + GetPublicCSharpType(methodInfo.m_returnInfo, nativeCall.m_returnType) + ")"
+							 + returnExpression;
+		}
+		methodCall = FormatTypeExpression(
+			nativeCall.m_returnType.m_csOutExpression, std::string(), returnExpression);
 	}
 
 	std::string source = MethodTemplate;
-	ReplaceAll(source, "{RETURN_TYPE}", nativeCall.m_returnType.m_csType);
+	ReplaceAll(source, "{RETURN_TYPE}", GetPublicCSharpType(methodInfo.m_returnInfo, nativeCall.m_returnType));
 	ReplaceAll(source, "{METHOD_NAME}", methodInfo.m_name);
 	ReplaceAll(source, "{METHOD_ARGUMENTS}", methodArguments);
 	ReplaceAll(source, "{METHOD_CALL}", methodCall);
@@ -379,8 +397,8 @@ bool GenerateConstructors(std::filesystem::path const& outputDirectory, std::vec
 			continue;
 		}
 
-		constructorEntries += "        BuiltInMethodConstructors.Add(\"" + classInfo->m_className + "\", ptr => new " +
-							  classInfo->m_className + "(ptr));\n";
+		constructorEntries += "        BuiltInMethodConstructors.Add(\"" + classInfo->m_className + "\", ptr => new "
+							  + classInfo->m_className + "(ptr));\n";
 	}
 
 	std::string constructorsSource = ConstructorsTemplate;
@@ -613,6 +631,21 @@ CSharpScriptGenerator::CSharpScriptGenerator()
 		typeInfo.m_ptrCallArgument               = "&{VALUE}";
 		typeInfo.m_callOut                       = "return {VALUE};";
 		m_builtinTypes[Variant::Type::Matrix4x4] = typeInfo;
+	}
+
+	{
+		typeInfo                    = {};
+		typeInfo.m_name             = "ObjectPtr";
+		typeInfo.m_csType           = "MingObject";
+		typeInfo.m_callTypeIn       = "IntPtr";
+		typeInfo.m_callTypeOut      = "MingObject";
+		typeInfo.m_ptrCallType      = "IntPtr";
+		typeInfo.m_csInExpression   = "GetPtr({VALUE})";
+		typeInfo.m_csOutExpression  = "return {CALL};";
+		typeInfo.m_ptrCallArgument  = "&{VALUE}";
+		typeInfo.m_callOut          = "return InteropUtils.UnmanagedGetManaged({VALUE});";
+		typeInfo.m_defaultInitializeReturn       = true;
+		m_builtinTypes[Variant::Type::ObjectPtr] = typeInfo;
 	}
 }
 

@@ -28,7 +28,7 @@ public class MingObject : IDisposable
     {
     }
 
-    internal static IntPtr GetPtr(MingObject? obj)
+    internal static IntPtr GetPtr(MingObject obj)
     {
         if (obj == null)
         {

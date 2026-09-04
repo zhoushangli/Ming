@@ -20,13 +20,13 @@ using GetMethodBindFunc      = void const*(CORECLR_DELEGATE_CALLTYPE*)(uint8_t c
 																	   int32_t        methodNameLength);
 using MethodBindPtrCallFunc =
 	void(CORECLR_DELEGATE_CALLTYPE*)(void const* methodBind, void* objectPtr, void** args, void* retPtr);
-using CreateStringFunc                         = void*(CORECLR_DELEGATE_CALLTYPE*)(void const* str, int32_t length);
-using GetStringBufferFunc                      = void*(CORECLR_DELEGATE_CALLTYPE*)(void* str);
-using GetStringLengthFunc                      = int32_t(CORECLR_DELEGATE_CALLTYPE*)(void const* str);
-using DestroyStringFunc                        = void(CORECLR_DELEGATE_CALLTYPE*)(void const* str);
-using TieNativeManagedToUnmanagedFunc          = int32_t(CORECLR_DELEGATE_CALLTYPE*)(void* gcHandle, void* native);
-using GetConstructorFunc                       = ConstructorFunc(CORECLR_DELEGATE_CALLTYPE*)(void* name);
-using UnmanagedGetInstanceBindingManagedFunc   = void*(CORECLR_DELEGATE_CALLTYPE*)(void* native);
+using CreateStringFunc                          = void*(CORECLR_DELEGATE_CALLTYPE*)(void const* str, int32_t length);
+using GetStringBufferFunc                       = void*(CORECLR_DELEGATE_CALLTYPE*)(void* str);
+using GetStringLengthFunc                       = int32_t(CORECLR_DELEGATE_CALLTYPE*)(void const* str);
+using DestroyStringFunc                         = void(CORECLR_DELEGATE_CALLTYPE*)(void const* str);
+using TieNativeManagedToUnmanagedFunc           = int32_t(CORECLR_DELEGATE_CALLTYPE*)(void* gcHandle, void* native);
+using GetConstructorFunc                        = ConstructorFunc(CORECLR_DELEGATE_CALLTYPE*)(void* name);
+using UnmanagedGetInstanceBindingManagedFunc    = void*(CORECLR_DELEGATE_CALLTYPE*)(void* native);
 using UnmanagedInstanceBindingCreateManagedFunc = void*(CORECLR_DELEGATE_CALLTYPE*)(void* native);
 
 struct NativeCallbacks
@@ -67,18 +67,18 @@ using CollectAndGetNativeBindingStateFunc =
 
 struct ManagedCallbacks
 {
-	ManagedPingFunc                         m_ping                               = nullptr;
-	CreateTestGCHandleFunc                  m_createTestGCHandle                 = nullptr;
-	InvokeTestGCHandleFunc                  m_invokeTestGCHandle                 = nullptr;
-	ReleaseGCHandleFunc                     m_releaseGCHandle                    = nullptr;
-	CollectAndGetStateFunc                  m_collectAndGetState                 = nullptr;
-	CreateUserManagedInstanceFunc           m_createUserManagedInstance          = nullptr;
-	CreateNativeManagedInstanceFunc         m_createNativeManagedInstance        = nullptr;
-	ValidateManagedScriptInstanceFunc       m_validateManagedScriptInstance      = nullptr;
-	CollectAndGetManagedScriptStateFunc     m_collectAndGetManagedScriptState    = nullptr;
+	ManagedPingFunc                        m_ping                               = nullptr;
+	CreateTestGCHandleFunc                 m_createTestGCHandle                 = nullptr;
+	InvokeTestGCHandleFunc                 m_invokeTestGCHandle                 = nullptr;
+	ReleaseGCHandleFunc                    m_releaseGCHandle                    = nullptr;
+	CollectAndGetStateFunc                 m_collectAndGetState                 = nullptr;
+	CreateUserManagedInstanceFunc          m_createUserManagedInstance          = nullptr;
+	CreateNativeManagedInstanceFunc        m_createNativeManagedInstance        = nullptr;
+	ValidateManagedScriptInstanceFunc      m_validateManagedScriptInstance      = nullptr;
+	CollectAndGetManagedScriptStateFunc    m_collectAndGetManagedScriptState    = nullptr;
 	CreateNativeManagedWrapperForSmokeFunc m_createNativeManagedWrapperForSmoke = nullptr;
-	ValidateNativeManagedWrapperFunc        m_validateNativeManagedWrapper       = nullptr;
-	CollectAndGetNativeBindingStateFunc     m_collectAndGetNativeBindingState    = nullptr;
+	ValidateNativeManagedWrapperFunc       m_validateNativeManagedWrapper       = nullptr;
+	CollectAndGetNativeBindingStateFunc    m_collectAndGetNativeBindingState    = nullptr;
 };
 
 //---------------------------------------------------------------------------

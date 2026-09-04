@@ -191,8 +191,13 @@ void Node::BindMethods()
 	ClassDatabase::BindMethod("GetReady", &Node::GetReady);
 	ClassDatabase::BindMethod("SetProcess", &Node::SetProcess);
 	ClassDatabase::BindMethod("GetProcess", &Node::GetProcess);
+	ClassDatabase::BindMethod("GetRoot", &Node::GetRoot);
+	ClassDatabase::BindMethod("GetParent", &Node::GetParent);
+	ClassDatabase::BindMethod("FindChildByName", &Node::FindChildByName);
+	ClassDatabase::BindMethod("GetSceneTree", &Node::GetSceneTree);
 	ClassDatabase::BindMethod("AddNode", &Node::AddNode);
 	ClassDatabase::BindMethod("DeleteNode", &Node::DeleteNode);
+	ClassDatabase::BindMethod("Reparent", &Node::Reparent);
 
 	ADD_PROPERTY(
 		PropertyInfo(Variant::Type::String, "name", PropertyInfo::Hint::None, "", PropertyInfo::UsageFlags::None),

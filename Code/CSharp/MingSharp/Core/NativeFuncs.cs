@@ -54,13 +54,13 @@ public static unsafe class NativeFuncs
 
     private static int s_allocatedHandleCount;
     private static int s_freedHandleCount;
-    private static WeakReference<GCHandleProbe>? s_lastProbe;
+    private static WeakReference<GCHandleProbe> s_lastProbe;
 
     private static int s_scriptHandleAllocated;
     private static int s_scriptHandleDisposed;
     private static int s_scriptHandleFreed;
 
-    private static WeakReference<PlayerController>? s_lastScriptInstance;
+    private static WeakReference<PlayerController> s_lastScriptInstance;
 
     private static int s_nativeBindingAllocated;
     private static int s_nativeBindingDisposed;
@@ -233,7 +233,7 @@ public static unsafe class NativeFuncs
     private static void ReleaseGCHandle(IntPtr handlePtr)
     {
         GCHandle handle;
-        object? target;
+        object target;
 
         try
         {
@@ -395,8 +395,8 @@ public static unsafe class NativeFuncs
     {
         try
         {
-            MingObject? first = InteropUtils.UnmanagedGetManaged(owner);
-            MingObject? second = InteropUtils.UnmanagedGetManaged(owner);
+            MingObject first = InteropUtils.UnmanagedGetManaged(owner);
+            MingObject second = InteropUtils.UnmanagedGetManaged(owner);
 
             return first != null
                 && ReferenceEquals(first, second)

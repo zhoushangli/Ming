@@ -237,7 +237,7 @@ public:
 	static ArgumentInfo GetArgumentInfo()
 	{
 		using CleanType   = std::remove_cv_t<std::remove_reference_t<T>>;
-		using PointeeType = std::remove_pointer_t<CleanType>;
+		using PointeeType = std::remove_cv_t<std::remove_pointer_t<CleanType>>;
 
 		ArgumentInfo argumentInfo;
 		argumentInfo.m_type = Variant::GetType<CleanType>();

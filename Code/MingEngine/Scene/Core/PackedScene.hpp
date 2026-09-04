@@ -56,7 +56,7 @@ public:
 	bool  CopyFrom(Resource&& other) override;
 
 protected:
-	static void BindMethods() {};
+	static void BindMethods();
 
 	bool ParseNodeRecursively(Node const* node, std::string const& parentPath, std::vector<PackedNode>& outNodes);
 

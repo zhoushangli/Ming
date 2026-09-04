@@ -5,7 +5,7 @@ using System.Text;
 
 public static class Marshaling
 {
-    public static unsafe MingString ConvertStringToNative(string? str)
+    public static unsafe MingString ConvertStringToNative(string str)
     {
         if (string.IsNullOrEmpty(str))
         {
