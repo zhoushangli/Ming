@@ -5,9 +5,10 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 
-internal static class ScriptManagerBridge
+public static class ScriptManagerBridge
 {
     private static readonly Dictionary<IntPtr, Type> s_scriptTypes = new();
+    private static readonly Dictionary<string, Type> s_scriptPathTypes = new(StringComparer.Ordinal);
 
     internal static void AddScriptType(IntPtr scriptPtr, Type scriptType)
     {
@@ -37,6 +38,31 @@ internal static class ScriptManagerBridge
         return s_scriptTypes.TryGetValue(scriptPtr, out scriptType);
     }
 
+    public static void AddScriptType(string scriptPath, Type scriptType)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(scriptPath);
+        ArgumentNullException.ThrowIfNull(scriptType);
+
+        if (
+            scriptType.IsAbstract
+            || scriptType.ContainsGenericParameters
+            || !typeof(MingObject).IsAssignableFrom(scriptType)
+        )
+        {
+            throw new ArgumentException(
+                $"Type '{scriptType}' is not an instantiable MingObject script.",
+                nameof(scriptType)
+            );
+        }
+
+        s_scriptPathTypes.Add(scriptPath, scriptType);
+    }
+
+    public static bool TryGetScriptType(string scriptPath, out Type scriptType)
+    {
+        return s_scriptPathTypes.TryGetValue(scriptPath, out scriptType);
+    }
+
     internal static void RemoveScriptType(IntPtr scriptPtr)
     {
         s_scriptTypes.Remove(scriptPtr);
@@ -45,12 +71,45 @@ internal static class ScriptManagerBridge
     #region Managed Callbacks
 
     [UnmanagedCallersOnly]
-    internal static int AddScriptBridge(IntPtr scriptPtr, IntPtr scriptPathPtr)
+    internal static int AddScriptBridge(
+        IntPtr scriptPtr,
+        IntPtr scriptPathPtr,
+        int scriptPathLength)
     {
-        // ä¸‹ä¸€æ£€æŸ¥ç‚¹å®žçŽ°ï¼š
-        // scriptPath â†’ Type
-        // AddScriptType(scriptPtr, type)
-        return 0;
+        if (
+            scriptPtr == IntPtr.Zero
+            || scriptPathPtr == IntPtr.Zero
+            || scriptPathLength <= 0
+        )
+        {
+            return 0;
+        }
+
+        try
+        {
+            // 1) Copy the native UTF-8 path
+            string scriptPath = Marshal.PtrToStringUTF8(
+                scriptPathPtr,
+                scriptPathLength
+            );
+
+            // 2) Resolve the registered script type
+            if (!TryGetScriptType(scriptPath, out Type scriptType))
+            {
+                throw new InvalidOperationException(
+                    $"No managed type is registered for '{scriptPath}'."
+                );
+            }
+
+            // 3) Associate the native script resource with the type
+            AddScriptType(scriptPtr, scriptType);
+            return 1;
+        }
+        catch (Exception exception)
+        {
+            Console.Error.WriteLine(exception);
+            return 0;
+        }
     }
 
     [UnmanagedCallersOnly]
@@ -97,7 +156,7 @@ internal static class ScriptManagerBridge
             _ = constructor.Invoke(instance, Array.Empty<object>());
 
             GCHandle gcHandle = GCHandle.Alloc(instance, GCHandleType.Normal);
-            NativeFuncs.TrackScriptInstanceAllocated((PlayerController)instance);
+            NativeFuncs.TrackScriptInstanceAllocated(GCHandle.ToIntPtr(gcHandle), instance);
             return GCHandle.ToIntPtr(gcHandle);
         }
         catch (Exception exception)
@@ -132,9 +191,22 @@ internal static class ScriptManagerBridge
     }
 
     [UnmanagedCallersOnly]
-    internal static void RemoveScriptBridge(IntPtr scriptPtr)
+    internal static int RemoveScriptBridge(IntPtr scriptPtr)
     {
-        RemoveScriptType(scriptPtr);
+        if (scriptPtr == IntPtr.Zero)
+        {
+            return 0;
+        }
+
+        try
+        {
+            return s_scriptTypes.Remove(scriptPtr) ? 1 : 0;
+        }
+        catch (Exception exception)
+        {
+            Console.Error.WriteLine(exception);
+            return 0;
+        }
     }
 
     #endregion

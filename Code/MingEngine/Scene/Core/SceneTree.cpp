@@ -208,7 +208,7 @@ void SceneTree::ClearScene()
 		return;
 	}
 
-	sceneRoot->DeleteNode();
+	sceneRoot->QueueFree();
 }
 
 void SceneTree::ChangeScene(Node* newSceneNode)

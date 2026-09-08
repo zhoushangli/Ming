@@ -64,6 +64,7 @@ void Object::BindMethods()
 {
 	ClassDatabase::BindMethod("SetScript", &Object::SetScript);
 	ClassDatabase::BindMethod("GetScript", &Object::GetScript);
+	ClassDatabase::BindMethod("Free", &Object::Free);
 
 	ADD_PROPERTY(
 		PropertyInfo(
@@ -105,6 +106,8 @@ void Object::Notification(int notification, bool reverse)
 		NotificationForward(notification);
 	}
 }
+
+void Object::Free() { MemDelete(this); }
 
 void Object::NotificationForward(int notification)
 {

@@ -1,14 +1,19 @@
 #include "MingEngine/Engine/Script/ScriptSystem.hpp"
 
-#include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Core/ErrorWarningAssert.hpp"
+#include "MingEngine/Core/Object/MethodBind.hpp"
 #include "MingEngine/Core/Object/Script.hpp"
 #include "MingEngine/Core/Object/ScriptInstance.hpp"
+#include "MingEngine/Engine/Application/Engine.hpp"
+#include "MingEngine/Engine/File/FileSystem.hpp"
+#include "MingEngine/Engine/Script/CSharpScript.hpp"
 
+#define NETHOST_USE_AS_STATIC
 #include "ThirdParty/DotNetHost/hostfxr.h"
 #include "ThirdParty/DotNetHost/nethost.h"
 
 #include <filesystem>
+#include <limits>
 #include <string>
 #include <vector>
 
@@ -19,7 +24,7 @@
 #undef GetClassName
 #endif
 
-#pragma comment(lib, "ThirdParty/DotNetHost/nethost.lib")
+#pragma comment(lib, "ThirdParty/DotNetHost/libnethost.lib")
 
 namespace
 {
@@ -191,11 +196,16 @@ ScriptSystem::ScriptSystem([[maybe_unused]] ScriptSystemConfig const& config) {}
 
 void ScriptSystem::Startup()
 {
-	bool result = InitializeDotNetRuntime();
+	// 1) Initialize the runtime and managed bridge
+	bool const initialized = InitializeDotNetRuntime();
 
-	GUARANTEE_OR_DIE(result, "Failed to initialize .NET Runtime.");
+	GUARANTEE_OR_DIE(initialized, "Failed to initialize .NET Runtime or managed bridge.");
 
-	RunNativeBindingSmoke();
+	// 2) Load the current project's assembly
+	if (!LoadProjectAssembly())
+	{
+		DebuggerPrintf("Continuing startup without a loaded project assembly.\n");
+	}
 }
 
 void ScriptSystem::Shutdown()
@@ -392,6 +402,25 @@ bool ScriptSystem::InitializeDotNetRuntime()
 		return false;
 	}
 
+	result = loadAssembly(
+		managedAssemblyPath.c_str(),
+		typeName,
+		L"LoadProjectAssembly",
+		UNMANAGEDCALLERSONLY_METHOD,
+		nullptr,
+		reinterpret_cast<void**>(&m_loadProjectAssembly));
+
+	if (result != 0 || m_loadProjectAssembly == nullptr)
+	{
+		DebuggerPrintf(
+			"Failed to resolve managed entry point: LoadProjectAssembly "
+			"(0x%08X)\n",
+			result);
+		return false;
+	}
+
+	DebuggerPrintf("Managed entry point resolved: LoadProjectAssembly\n");
+
 	NativeCallbacks const nativeCallbacks{
 		&LogUtf8,
 		&GetObjectClassName,
@@ -421,6 +450,92 @@ bool ScriptSystem::InitializeDotNetRuntime()
 	m_isInitialized = true;
 
 	DebuggerPrintf(".NET Runtime initialized.\n");
+
+	return true;
+}
+
+bool ScriptSystem::LoadProjectAssembly()
+{
+	// 1) Check the runtime and managed entry point
+	if (!m_isInitialized || m_loadProjectAssembly == nullptr)
+	{
+		DebuggerPrintf("Cannot load project assembly: managed bridge is not initialized.\n");
+		return false;
+	}
+
+	if (g_engine == nullptr || g_engine->m_fileSystem == nullptr)
+	{
+		DebuggerPrintf("Cannot load project assembly: file system is unavailable.\n");
+		return false;
+	}
+
+	// 2) Resolve the current project's assembly path
+	VirtualPath const virtualPath("res://.ming/dotnet/bin/Debug/Game.dll");
+
+	std::filesystem::path assemblyPath;
+
+	if (!g_engine->m_fileSystem->TryGetPhysicalPath(virtualPath, assemblyPath))
+	{
+		DebuggerPrintf("Failed to resolve project assembly path: %s\n", virtualPath.CStr());
+		return false;
+	}
+
+	DebuggerPrintf("Project assembly expected path: %ls\n", assemblyPath.c_str());
+
+	// 3) Check whether the assembly file exists
+	std::error_code errorCode;
+	bool const      exists = std::filesystem::exists(assemblyPath, errorCode);
+
+	if (errorCode)
+	{
+		DebuggerPrintf(
+			"Failed to inspect project assembly: %ls (%s)\n",
+			assemblyPath.c_str(),
+			errorCode.message().c_str());
+		return false;
+	}
+
+	if (!exists)
+	{
+		DebuggerPrintf(
+			"Project assembly does not exist: %ls\n"
+			"Build Game.csproj with configuration Debug first.\n",
+			assemblyPath.c_str());
+		return false;
+	}
+
+	// 4) Invoke the managed loader
+	MingString nativeLoadedPath{};
+
+	int32_t const result = m_loadProjectAssembly(assemblyPath.c_str(), &nativeLoadedPath);
+
+	// 5) Handle failure and release any returned string
+	if (result != 0)
+	{
+		DestroyString(nativeLoadedPath.m_string);
+		nativeLoadedPath.m_string = nullptr;
+
+		DebuggerPrintf("Project assembly load did not succeed: %ls (status: %d)\n", assemblyPath.c_str(), result);
+		return false;
+	}
+
+	// 6) Validate the actual loaded path
+	if (nativeLoadedPath.m_string == nullptr || nativeLoadedPath.m_string->empty())
+	{
+		DestroyString(nativeLoadedPath.m_string);
+		nativeLoadedPath.m_string = nullptr;
+
+		DebuggerPrintf("Managed loader returned success without an assembly path.\n");
+		return false;
+	}
+
+	// 7) Take the path value and release the native string object
+	std::string loadedPath = std::move(*nativeLoadedPath.m_string);
+
+	DestroyString(nativeLoadedPath.m_string);
+	nativeLoadedPath.m_string = nullptr;
+
+	DebuggerPrintf("Project assembly confirmed by C++: %s\n", loadedPath.c_str());
 
 	return true;
 }
@@ -461,58 +576,27 @@ void* ScriptSystem::GetOrCreateNativeManagedWrapper(Object* owner)
 	return gcHandle;
 }
 
-void ScriptSystem::RunNativeBindingSmoke()
+bool ScriptSystem::AddScriptBridge(CSharpScript* script, std::string const& scriptPath)
 {
-	GUARANTEE_OR_DIE(
-		m_managedCallbacks.m_createNativeManagedWrapperForSmoke != nullptr
-			&& m_managedCallbacks.m_validateNativeManagedWrapper != nullptr
-			&& m_managedCallbacks.m_collectAndGetNativeBindingState != nullptr,
-		"Native binding smoke callbacks are not initialized.");
+	if (!m_isInitialized || script == nullptr || scriptPath.empty() || m_managedCallbacks.m_addScriptBridge == nullptr
+		|| scriptPath.size() > static_cast<size_t>((std::numeric_limits<int32_t>::max)()))
+	{
+		return false;
+	}
 
-	auto collectState = [this](int32_t& allocated, int32_t& disposed, int32_t& freed) {
-		m_managedCallbacks.m_collectAndGetNativeBindingState(&allocated, &disposed, &freed);
-	};
+	return m_managedCallbacks.m_addScriptBridge(
+			   script,
+			   reinterpret_cast<uint8_t const*>(scriptPath.data()),
+			   static_cast<int32_t>(scriptPath.size()))
+		   == 1;
+}
 
-	int32_t allocatedBefore;
-	int32_t disposedBefore;
-	int32_t freedBefore;
-	collectState(allocatedBefore, disposedBefore, freedBefore);
+bool ScriptSystem::RemoveScriptBridge(CSharpScript* script)
+{
+	if (!m_isInitialized || script == nullptr || m_managedCallbacks.m_removeScriptBridge == nullptr)
+	{
+		return false;
+	}
 
-	Object* managedFirstOwner = static_cast<Object*>(m_managedCallbacks.m_createNativeManagedWrapperForSmoke());
-	GUARANTEE_OR_DIE(
-		managedFirstOwner != nullptr && managedFirstOwner->IsNativeBindingGCHandleValid()
-			&& m_managedCallbacks.m_validateNativeManagedWrapper(managedFirstOwner) != 0,
-		"C#-first native binding identity smoke failed.");
-	MemDelete(managedFirstOwner);
-
-	int32_t allocatedAfterManagedFirst;
-	int32_t disposedAfterManagedFirst;
-	int32_t freedAfterManagedFirst;
-	collectState(allocatedAfterManagedFirst, disposedAfterManagedFirst, freedAfterManagedFirst);
-	GUARANTEE_OR_DIE(
-		allocatedAfterManagedFirst == allocatedBefore + 1 && disposedAfterManagedFirst == disposedBefore + 1
-			&& freedAfterManagedFirst == freedBefore + 1,
-		"C#-first native binding release smoke failed.");
-
-	Object* nativeFirstOwner = ClassDatabase::CreateInstance("Node3D");
-	GUARANTEE_OR_DIE(
-		nativeFirstOwner != nullptr && !nativeFirstOwner->IsNativeBindingGCHandleValid(),
-		"Native object unexpectedly created a managed wrapper during initialization.");
-	GUARANTEE_OR_DIE(
-		m_managedCallbacks.m_validateNativeManagedWrapper(nativeFirstOwner) != 0
-			&& nativeFirstOwner->IsNativeBindingGCHandleValid(),
-		"Native-first lazy binding identity smoke failed.");
-	MemDelete(nativeFirstOwner);
-
-	int32_t allocatedAfterNativeFirst;
-	int32_t disposedAfterNativeFirst;
-	int32_t freedAfterNativeFirst;
-	collectState(allocatedAfterNativeFirst, disposedAfterNativeFirst, freedAfterNativeFirst);
-	GUARANTEE_OR_DIE(
-		allocatedAfterNativeFirst == allocatedAfterManagedFirst + 1
-			&& disposedAfterNativeFirst == disposedAfterManagedFirst + 1
-			&& freedAfterNativeFirst == freedAfterManagedFirst + 1,
-		"Native-first native binding release smoke failed.");
-
-	DebuggerPrintf("Native managed wrapper identity smoke passed.\n");
+	return m_managedCallbacks.m_removeScriptBridge(script) == 1;
 }

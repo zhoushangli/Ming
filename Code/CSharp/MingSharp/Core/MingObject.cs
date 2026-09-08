@@ -11,6 +11,9 @@ public class MingObject : IDisposable
     [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private unsafe static readonly delegate* unmanaged<IntPtr> NativeCtor = GetConstrcutor(NativeName);
 
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+    private static readonly IntPtr FreeMethodBind = NativeFuncs.GetMethodBind("Object", "Free");
+
     internal IntPtr NativePtr;
 
     public unsafe MingObject()
@@ -83,5 +86,10 @@ public class MingObject : IDisposable
 
         NativePtr = nativeCtor();
         InteropUtils.TieManagedToUnmanaged(this, NativePtr);
+    }
+
+    public void Free()
+    {
+        NativeCalls.MingCall_Void(FreeMethodBind, GetPtr(this));
     }
 }

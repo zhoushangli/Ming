@@ -64,6 +64,9 @@ using CreateNativeManagedWrapperForSmokeFunc = void*(CORECLR_DELEGATE_CALLTYPE*)
 using ValidateNativeManagedWrapperFunc       = int32_t(CORECLR_DELEGATE_CALLTYPE*)(void* owner);
 using CollectAndGetNativeBindingStateFunc =
 	void(CORECLR_DELEGATE_CALLTYPE*)(int32_t* allocated, int32_t* disposed, int32_t* freed);
+using AddScriptBridgeFunc =
+	int32_t(CORECLR_DELEGATE_CALLTYPE*)(void* script, uint8_t const* scriptPath, int32_t scriptPathLength);
+using RemoveScriptBridgeFunc = int32_t(CORECLR_DELEGATE_CALLTYPE*)(void* script);
 
 struct ManagedCallbacks
 {
@@ -79,6 +82,8 @@ struct ManagedCallbacks
 	CreateNativeManagedWrapperForSmokeFunc m_createNativeManagedWrapperForSmoke = nullptr;
 	ValidateNativeManagedWrapperFunc       m_validateNativeManagedWrapper       = nullptr;
 	CollectAndGetNativeBindingStateFunc    m_collectAndGetNativeBindingState    = nullptr;
+	AddScriptBridgeFunc                    m_addScriptBridge                    = nullptr;
+	RemoveScriptBridgeFunc                 m_removeScriptBridge                 = nullptr;
 };
 
 //---------------------------------------------------------------------------
@@ -124,19 +129,23 @@ public:
 		return m_managedCallbacks.m_validateManagedScriptInstance(gcHandle, expectedOwner) != 0;
 	}
 
-	void CollectAndGetManagedScriptState(int32_t& allocated, int32_t& disposed, int32_t& freed, int32_t& targetAlive);
-
+	void  CollectAndGetManagedScriptState(int32_t& allocated, int32_t& disposed, int32_t& freed, int32_t& targetAlive);
 	void* GetOrCreateNativeManagedWrapper(Object* owner);
+	bool  AddScriptBridge(CSharpScript* script, std::string const& scriptPath);
+	bool  RemoveScriptBridge(CSharpScript* script);
 
 private:
 	using ShutdownFunc = int32_t(CORECLR_DELEGATE_CALLTYPE*)();
+	using LoadProjectAssemblyFunc =
+		int32_t(CORECLR_DELEGATE_CALLTYPE*)(wchar_t const* assemblyPath, MingString* outLoadedAssemblyPath);
 
 	bool InitializeDotNetRuntime();
-	void RunNativeBindingSmoke();
+	bool LoadProjectAssembly();
 
-	void*        m_hostfxrModule = nullptr;
-	ShutdownFunc m_shutdown      = nullptr;
-	bool         m_isInitialized = false;
+	void*                   m_hostfxrModule       = nullptr;
+	ShutdownFunc            m_shutdown            = nullptr;
+	LoadProjectAssemblyFunc m_loadProjectAssembly = nullptr;
+	bool                    m_isInitialized       = false;
 
 	ManagedCallbacks m_managedCallbacks = {};
 };

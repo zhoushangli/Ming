@@ -108,6 +108,7 @@ public:
 
 	ObjectID GetObjectID() const;
 	void     Notification(int notification, bool reverse = false);
+	void     Free();
 
 	// Store the assigned script resource independently from any runtime instance.
 	// e.g. A future CSharpScriptInstance can be recreated without losing the serialized script reference.

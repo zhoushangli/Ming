@@ -315,7 +315,7 @@ void Particles3D::OnNotification(int notification)
 
 		if (m_destroyWhenEmpty && !hasAliveParticles)
 		{
-			DeleteNode();
+			QueueFree();
 			return;
 		}
 

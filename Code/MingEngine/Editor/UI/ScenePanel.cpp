@@ -98,7 +98,7 @@ void ScenePanel::OnRender(EditorUIContext& context)
 				ClearRename();
 			}
 			EditorNode::Get()->MarkSceneDirty();
-			selectedNode->DeleteNode();
+			selectedNode->QueueFree();
 		}
 	}
 

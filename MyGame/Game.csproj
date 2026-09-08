@@ -1,0 +1,16 @@
+<Project>
+  <PropertyGroup>
+    <MingSdkDirectory Condition="'$(MingSdkDirectory)' == ''">C:/Work/Ming/Ming/Run/MingSharp/Sdk/Ming.NET.Sdk/Sdk</MingSdkDirectory>
+  </PropertyGroup>
+
+  <Import Project="$(MingSdkDirectory)/Sdk.props" />
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Library</OutputType>
+    <AssemblyName>Game</AssemblyName>
+    <RootNamespace>Game</RootNamespace>
+  </PropertyGroup>
+
+  <Import Project="$(MingSdkDirectory)/Sdk.targets" />
+</Project>

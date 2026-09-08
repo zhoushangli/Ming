@@ -36,6 +36,8 @@ internal unsafe struct ManagedCallbacks
     public delegate* unmanaged<IntPtr> CreateNativeManagedWrapperForSmoke;
     public delegate* unmanaged<IntPtr, int> ValidateNativeManagedWrapper;
     public delegate* unmanaged<int*, int*, int*, void> CollectAndGetNativeBindingState;
+    public delegate* unmanaged<IntPtr, IntPtr, int, int> AddScriptBridge;
+    public delegate* unmanaged<IntPtr, int> RemoveScriptBridge;
 }
 
 public static unsafe class NativeFuncs
@@ -52,19 +54,34 @@ public static unsafe class NativeFuncs
         }
     }
 
-    private static int s_allocatedHandleCount;
-    private static int s_freedHandleCount;
+    private static int s_probeHandleAllocated;
+    private static int s_probeHandleFreed;
     private static WeakReference<GCHandleProbe> s_lastProbe;
 
-    private static int s_scriptHandleAllocated;
-    private static int s_scriptHandleDisposed;
-    private static int s_scriptHandleFreed;
+    private static int s_scriptInstanceHandleAllocated;
+    private static int s_scriptInstanceDisposed;
+    private static int s_scriptInstanceHandleFreed;
 
-    private static WeakReference<PlayerController> s_lastScriptInstance;
+    private static WeakReference<MingObject> s_lastScriptInstance;
+    private static readonly HashSet<IntPtr> s_scriptInstanceHandles = new();
 
-    private static int s_nativeBindingAllocated;
+    private static int s_nativeBindingHandleAllocated;
     private static int s_nativeBindingDisposed;
-    private static int s_nativeBindingFreed;
+    private static int s_nativeBindingHandleFreed;
+
+    // Return cumulative binding counts and the number of unreleased binding handles.
+    // e.g. GetBindingSummary() reports NativeBinding, ScriptInstance, and Total rows.
+    public static string GetBindingSummary()
+    {
+        int allocated = s_nativeBindingHandleAllocated + s_scriptInstanceHandleAllocated;
+        int disposed = s_nativeBindingDisposed + s_scriptInstanceDisposed;
+        int freed = s_nativeBindingHandleFreed + s_scriptInstanceHandleFreed;
+
+        return "Managed binding summary (active = allocated - freed):\n"
+            + $"  NativeBinding:  allocated={s_nativeBindingHandleAllocated}, disposed={s_nativeBindingDisposed}, freed={s_nativeBindingHandleFreed}, active={s_nativeBindingHandleAllocated - s_nativeBindingHandleFreed}\n"
+            + $"  ScriptInstance: allocated={s_scriptInstanceHandleAllocated}, disposed={s_scriptInstanceDisposed}, freed={s_scriptInstanceHandleFreed}, active={s_scriptInstanceHandleAllocated - s_scriptInstanceHandleFreed}\n"
+            + $"  Total:          allocated={allocated}, disposed={disposed}, freed={freed}, active={allocated - freed}";
+    }
 
     #region Native Callback Wrappers
 
@@ -162,13 +179,14 @@ public static unsafe class NativeFuncs
 
     internal static void TrackNativeBindingAllocated()
     {
-        s_nativeBindingAllocated++;
+        s_nativeBindingHandleAllocated++;
     }
 
-    internal static void TrackScriptInstanceAllocated(PlayerController instance)
+    internal static void TrackScriptInstanceAllocated(IntPtr handlePtr, MingObject instance)
     {
-        s_scriptHandleAllocated++;
-        s_lastScriptInstance = new WeakReference<PlayerController>(instance);
+        s_scriptInstanceHandles.Add(handlePtr);
+        s_scriptInstanceHandleAllocated++;
+        s_lastScriptInstance = new WeakReference<MingObject>(instance);
     }
 
     #endregion
@@ -192,7 +210,7 @@ public static unsafe class NativeFuncs
 
             GCHandle handle = GCHandle.Alloc(probe, GCHandleType.Normal);
 
-            s_allocatedHandleCount++;
+            s_probeHandleAllocated++;
 
             return GCHandle.ToIntPtr(handle);
         }
@@ -251,7 +269,7 @@ public static unsafe class NativeFuncs
             return;
         }
 
-        bool isScriptInstance = target is PlayerController;
+        bool isScriptInstance = s_scriptInstanceHandles.Contains(handlePtr);
         bool isNativeBinding = target is MingObject && !isScriptInstance;
 
         if (target is MingObject instance)
@@ -262,7 +280,7 @@ public static unsafe class NativeFuncs
 
                 if (isScriptInstance && instance.NativePtr == IntPtr.Zero)
                 {
-                    s_scriptHandleDisposed++;
+                    s_scriptInstanceDisposed++;
                 }
                 else if (isScriptInstance)
                 {
@@ -293,16 +311,16 @@ public static unsafe class NativeFuncs
 
             if (isScriptInstance)
             {
-                s_scriptHandleFreed++;
+                s_scriptInstanceHandles.Remove(handlePtr);
+                s_scriptInstanceHandleFreed++;
             }
-            else
+            else if (isNativeBinding)
             {
-                s_freedHandleCount++;
+                s_nativeBindingHandleFreed++;
             }
-
-            if (isNativeBinding)
+            else if (target is GCHandleProbe)
             {
-                s_nativeBindingFreed++;
+                s_probeHandleFreed++;
             }
 
         }
@@ -319,8 +337,8 @@ public static unsafe class NativeFuncs
         GC.WaitForPendingFinalizers();
         GC.Collect();
 
-        *allocated = s_allocatedHandleCount;
-        *freed = s_freedHandleCount;
+        *allocated = s_probeHandleAllocated;
+        *freed = s_probeHandleFreed;
         *targetAlive = s_lastProbe?.TryGetTarget(out _) == true ? 1 : 0;
     }
 
@@ -369,9 +387,9 @@ public static unsafe class NativeFuncs
         GC.WaitForPendingFinalizers();
         GC.Collect();
 
-        *allocated = s_scriptHandleAllocated;
-        *disposed = s_scriptHandleDisposed;
-        *freed = s_scriptHandleFreed;
+        *allocated = s_scriptInstanceHandleAllocated;
+        *disposed = s_scriptInstanceDisposed;
+        *freed = s_scriptInstanceHandleFreed;
         *targetAlive = s_lastScriptInstance?.TryGetTarget(out _) == true ? 1 : 0;
     }
 
@@ -418,15 +436,12 @@ public static unsafe class NativeFuncs
         GC.WaitForPendingFinalizers();
         GC.Collect();
 
-        *allocated = s_nativeBindingAllocated;
+        *allocated = s_nativeBindingHandleAllocated;
         *disposed = s_nativeBindingDisposed;
-        *freed = s_nativeBindingFreed;
+        *freed = s_nativeBindingHandleFreed;
     }
 
     #endregion
-
-
-
 
     // Store the native function pointer table passed from the engine.
     // e.g. NativeFuncs.Initialize(callbacksPtr, sizeof(NativeCallbacks))
@@ -459,7 +474,9 @@ public static unsafe class NativeFuncs
             CollectAndGetManagedScriptState = &CollectAndGetManagedScriptState,
             CreateNativeManagedWrapperForSmoke = &CreateNativeManagedWrapperForSmoke,
             ValidateNativeManagedWrapper = &ValidateNativeManagedWrapper,
-            CollectAndGetNativeBindingState = &CollectAndGetNativeBindingState
+            CollectAndGetNativeBindingState = &CollectAndGetNativeBindingState,
+            AddScriptBridge = &ScriptManagerBridge.AddScriptBridge,
+            RemoveScriptBridge = &ScriptManagerBridge.RemoveScriptBridge
         };
     }
 }

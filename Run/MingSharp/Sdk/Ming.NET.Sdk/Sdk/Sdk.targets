@@ -1,0 +1,20 @@
+<Project>
+  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
+
+  <PropertyGroup>
+    <MingApiDirectory Condition="'$(MingApiDirectory)' == ''">$(MSBuildThisFileDirectory)../../../Api/</MingApiDirectory>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="MingSharp">
+      <HintPath>$(MingApiDirectory)/MingSharp.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <Target Name="ValidateMingApi" BeforeTargets="PrepareForBuild">
+    <Error
+      Condition="!Exists('$(MingApiDirectory)/MingSharp.dll')"
+      Text="MingSharp.dll was not found in '$(MingApiDirectory)'." />
+  </Target>
+</Project>

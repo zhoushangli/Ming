@@ -151,7 +151,7 @@ void Node::AddNode(Node* child)
 	child->MoveToSceneTree(parentSceneTree);
 }
 
-void Node::DeleteNode()
+void Node::QueueFree()
 {
 	// If the node is not in a scene, we can delete it immediately
 	if (m_data.m_sceneTree == nullptr)
@@ -196,7 +196,7 @@ void Node::BindMethods()
 	ClassDatabase::BindMethod("FindChildByName", &Node::FindChildByName);
 	ClassDatabase::BindMethod("GetSceneTree", &Node::GetSceneTree);
 	ClassDatabase::BindMethod("AddNode", &Node::AddNode);
-	ClassDatabase::BindMethod("DeleteNode", &Node::DeleteNode);
+	ClassDatabase::BindMethod("QueueFree", &Node::QueueFree);
 	ClassDatabase::BindMethod("Reparent", &Node::Reparent);
 
 	ADD_PROPERTY(

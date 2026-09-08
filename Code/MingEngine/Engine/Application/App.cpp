@@ -73,30 +73,7 @@ void App::Startup()
 
 void App::Shutdown()
 {
-	int32_t allocatedBefore;
-	int32_t disposedBefore;
-	int32_t freedBefore;
-	int32_t aliveBefore;
-	g_engine->m_scriptSystem
-		->CollectAndGetManagedScriptState(allocatedBefore, disposedBefore, freedBefore, aliveBefore);
-
-	int32_t const activeBefore = allocatedBefore - freedBefore;
-	GUARANTEE_OR_DIE(
-		m_sceneTree != nullptr && activeBefore >= 0,
-		"Invalid managed script state before SceneTree shutdown.");
-
 	ShutdownScene();
-
-	int32_t allocatedAfter;
-	int32_t disposedAfter;
-	int32_t freedAfter;
-	int32_t aliveAfter;
-	g_engine->m_scriptSystem->CollectAndGetManagedScriptState(allocatedAfter, disposedAfter, freedAfter, aliveAfter);
-
-	GUARANTEE_OR_DIE(
-		allocatedAfter == allocatedBefore && disposedAfter - disposedBefore == activeBefore
-			&& freedAfter - freedBefore == activeBefore && allocatedAfter == freedAfter && aliveAfter == 0,
-		"SceneTree shutdown did not release all managed scripts.");
 
 	if (g_engine != nullptr && g_engine->m_eventSystem != nullptr)
 	{

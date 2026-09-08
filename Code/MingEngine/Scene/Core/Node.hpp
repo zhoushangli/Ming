@@ -64,7 +64,7 @@ public:
 	// 2) DeleteNode deletes detached nodes immediately.
 	// 3) DeleteNode queues in-tree nodes so SceneTree can destroy them at a safe point.
 	void         AddNode(Node* child);
-	void         DeleteNode();
+	void         QueueFree();
 	virtual void Reparent(Node* newParent, bool keepWorldTransform = true);
 
 	static void BindMethods();
