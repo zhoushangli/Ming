@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MingPlugins", "Code\CSharp\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MingSharp", "Code\CSharp\MingSharp\MingSharp.csproj", "{831C5CB7-0FF1-C229-EFC7-20E4F514F205}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MingTools", "Code\CSharp\MingTools\MingTools.csproj", "{5CFEBF8F-57CA-466C-B5B8-3AD5C630E2FB}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -55,6 +57,18 @@ Global
 		{831C5CB7-0FF1-C229-EFC7-20E4F514F205}.Release|x64.Build.0 = Release|Any CPU
 		{831C5CB7-0FF1-C229-EFC7-20E4F514F205}.Release|x86.ActiveCfg = Release|Any CPU
 		{831C5CB7-0FF1-C229-EFC7-20E4F514F205}.Release|x86.Build.0 = Release|Any CPU
+		{5CFEBF8F-57CA-466C-B5B8-3AD5C630E2FB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5CFEBF8F-57CA-466C-B5B8-3AD5C630E2FB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5CFEBF8F-57CA-466C-B5B8-3AD5C630E2FB}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{5CFEBF8F-57CA-466C-B5B8-3AD5C630E2FB}.Debug|x64.Build.0 = Debug|Any CPU
+		{5CFEBF8F-57CA-466C-B5B8-3AD5C630E2FB}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{5CFEBF8F-57CA-466C-B5B8-3AD5C630E2FB}.Debug|x86.Build.0 = Debug|Any CPU
+		{5CFEBF8F-57CA-466C-B5B8-3AD5C630E2FB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5CFEBF8F-57CA-466C-B5B8-3AD5C630E2FB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5CFEBF8F-57CA-466C-B5B8-3AD5C630E2FB}.Release|x64.ActiveCfg = Release|Any CPU
+		{5CFEBF8F-57CA-466C-B5B8-3AD5C630E2FB}.Release|x64.Build.0 = Release|Any CPU
+		{5CFEBF8F-57CA-466C-B5B8-3AD5C630E2FB}.Release|x86.ActiveCfg = Release|Any CPU
+		{5CFEBF8F-57CA-466C-B5B8-3AD5C630E2FB}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -141,8 +141,8 @@ def write_if_changed(output_path: Path, content: bytes) -> bool:
 
 
 def main() -> None:
-    icon_directory = Path(__file__).resolve().parent
-    output_path = icon_directory / "BuiltinIcons.hpp"
+    icon_directory = Path(__file__).resolve().parent / "Icons"
+    output_path = icon_directory.parent / "BuiltinIcons.hpp"
 
     try:
         icons = collect_icons(icon_directory)

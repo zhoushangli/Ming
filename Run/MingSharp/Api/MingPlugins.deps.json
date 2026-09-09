@@ -8,7 +8,8 @@
     ".NETCoreApp,Version=v10.0": {
       "MingPlugins/1.0.0": {
         "dependencies": {
-          "MingSharp": "1.0.0"
+          "MingSharp": "1.0.0",
+          "MingTools": "1.0.0"
         },
         "runtime": {
           "MingPlugins.dll": {}
@@ -17,6 +18,14 @@
       "MingSharp/1.0.0": {
         "runtime": {
           "MingSharp.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      },
+      "MingTools/1.0.0": {
+        "runtime": {
+          "MingTools.dll": {
             "assemblyVersion": "1.0.0.0",
             "fileVersion": "1.0.0.0"
           }
@@ -31,6 +40,11 @@
       "sha512": ""
     },
     "MingSharp/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "MingTools/1.0.0": {
       "type": "project",
       "serviceable": false,
       "sha512": ""

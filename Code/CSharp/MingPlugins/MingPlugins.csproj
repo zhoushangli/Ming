@@ -10,10 +10,16 @@
 
   <Target Name="DeployManagedRuntime" AfterTargets="Build">
     <Exec Command="xcopy /Y /F /I /E &quot;$(TargetDir)*&quot; &quot;$(MSBuildProjectDirectory)\..\..\..\Run\MingSharp\Api\&quot;" />
+    <ItemGroup>
+      <MingSdkFiles Include="$(MSBuildProjectDirectory)/../Ming.NET.Sdk/Sdk/Sdk.props" />
+      <MingSdkFiles Include="$(MSBuildProjectDirectory)/../Ming.NET.Sdk/Sdk/Sdk.targets" />
+    </ItemGroup>
+    <Copy SourceFiles="@(MingSdkFiles)" DestinationFolder="$(MSBuildProjectDirectory)/../../../Run/MingSharp/Tool/Sdk/" SkipUnchangedFiles="true" />
   </Target>
 
   <ItemGroup>
     <ProjectReference Include="..\MingSharp\MingSharp.csproj" />
+    <ProjectReference Include="..\MingTools\MingTools.csproj" />
   </ItemGroup>
 
 </Project>

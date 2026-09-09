@@ -1,6 +1,6 @@
 #include "MingEngine/Editor/UI/EditorIcons.hpp"
 
-#include "MingEngine/Editor/Icons/BuiltinIcons.hpp"
+#include "MingEngine/Editor/BuiltinIcons.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Engine/Render/GPUTexture.hpp"
 #include "MingEngine/Engine/Render/Renderer.hpp"
@@ -69,7 +69,12 @@ GPUTexture* EditorIcons::GetOrCreateIconTexture(std::string const& iconName)
 	int channels = 0;
 	stbi_set_flip_vertically_on_load(true);
 	unsigned char* pixels = stbi_load_from_memory(
-		iconData.m_data, static_cast<int>(iconData.m_size), &width, &height, &channels, STBI_rgb_alpha);
+		iconData.m_data,
+		static_cast<int>(iconData.m_size),
+		&width,
+		&height,
+		&channels,
+		STBI_rgb_alpha);
 	stbi_set_flip_vertically_on_load(false);
 	if (pixels == nullptr)
 	{

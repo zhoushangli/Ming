@@ -127,6 +127,68 @@ void EditorUI::RenderMainMenuBar()
 		ImGui::MenuItem("About Project QingChen");
 		ImGui::EndMenu();
 	}
+
+	// 1) Align the icon buttons to the right side of the menu bar
+	int const    buttonCount    = 3;
+	ImVec2 const buttonSize     = EditorUIStyle::MainMenuIconButtonSize();
+	ImVec2 const iconSize       = EditorUIStyle::MainMenuIconSize();
+	float const  spacing        = ImGui::GetStyle().ItemSpacing.x;
+	float const  rightPadding   = EditorUIStyle::MainMenuHorizontalPadding();
+	float const  totalWidth     = buttonSize.x * (float)buttonCount + spacing * (float)(buttonCount - 1);
+	float const  remainingWidth = ImGui::GetContentRegionAvail().x;
+	if (remainingWidth > totalWidth + rightPadding)
+	{
+		ImGui::SetCursorPosX(ImGui::GetCursorPosX() + remainingWidth - totalWidth - rightPadding);
+	}
+	ImGui::SetCursorPosY((ImGui::GetWindowHeight() - buttonSize.y) * 0.5f);
+
+	// 2) Draw the Play and Stop buttons without attaching actions
+	ImGui::PushStyleVar(
+		ImGuiStyleVar_FramePadding,
+		ImVec2((buttonSize.x - iconSize.x) * 0.5f, (buttonSize.y - iconSize.y) * 0.5f));
+
+	if (ImGui::ImageButton(
+			"##MainMenuBuildCSharp",
+			EditorIcons::GetIconId("BuildCSharp"),
+			iconSize,
+			ImVec2(0.f, 1.f),
+			ImVec2(1.f, 0.f)))
+	{
+		if (g_engine == nullptr || g_engine->m_scriptSystem == nullptr)
+		{
+			DebuggerPrintf("Script system is unavailable.\n");
+		}
+		else
+		{
+			g_engine->m_scriptSystem->EnsureProjectSolution();
+		}
+	}
+
+	ImGui::SameLine(0.f, spacing);
+
+	if (ImGui::ImageButton(
+			"##MainMenuPlay",
+			EditorIcons::GetIconId("Play"),
+			iconSize,
+			ImVec2(0.f, 1.f),
+			ImVec2(1.f, 0.f)))
+	{
+		DebuggerPrintf("Play button clicked\n");
+	}
+
+	ImGui::SameLine(0.f, spacing);
+
+	if (ImGui::ImageButton(
+			"##MainMenuStop",
+			EditorIcons::GetIconId("Stop"),
+			iconSize,
+			ImVec2(0.f, 1.f),
+			ImVec2(1.f, 0.f)))
+	{
+	}
+
+	ImGui::PopStyleVar();
+
 	ImGui::EndMainMenuBar();
 	ImGui::PopStyleVar();
 }

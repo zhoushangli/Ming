@@ -220,6 +220,10 @@ void ScriptSystem::Shutdown()
 	if (m_shutdown != nullptr)
 	{
 		m_shutdown();
+
+		m_shutdown              = nullptr;
+		m_loadProjectAssembly   = nullptr;
+		m_ensureProjectSolution = nullptr;
 	}
 
 	DebuggerPrintf(".NET Runtime shutdown completed.\n");
@@ -419,7 +423,22 @@ bool ScriptSystem::InitializeDotNetRuntime()
 		return false;
 	}
 
-	DebuggerPrintf("Managed entry point resolved: LoadProjectAssembly\n");
+	result = loadAssembly(
+		managedAssemblyPath.c_str(),
+		typeName,
+		L"EnsureProjectSolution",
+		UNMANAGEDCALLERSONLY_METHOD,
+		nullptr,
+		reinterpret_cast<void**>(&m_ensureProjectSolution));
+
+	if (result != 0 || m_ensureProjectSolution == nullptr)
+	{
+		DebuggerPrintf(
+			"Failed to resolve managed entry point: EnsureProjectSolution "
+			"(0x%08X)\n",
+			result);
+		return false;
+	}
 
 	NativeCallbacks const nativeCallbacks{
 		&LogUtf8,
@@ -599,4 +618,62 @@ bool ScriptSystem::RemoveScriptBridge(CSharpScript* script)
 	}
 
 	return m_managedCallbacks.m_removeScriptBridge(script) == 1;
+}
+
+bool ScriptSystem::EnsureProjectSolution()
+{
+	// 1) Check the managed entry point
+	if (!m_isInitialized || m_ensureProjectSolution == nullptr)
+	{
+		DebuggerPrintf(
+			"Cannot ensure C# project files: "
+			"managed bridge is not initialized.\n");
+
+		return false;
+	}
+
+	if (g_engine == nullptr || g_engine->m_fileSystem == nullptr)
+	{
+		DebuggerPrintf(
+			"Cannot ensure C# project files: "
+			"file system is unavailable.\n");
+
+		return false;
+	}
+
+	// 2) Resolve the active project directory
+	std::filesystem::path projectDirectory;
+
+	if (!g_engine->m_fileSystem->TryGetPhysicalPath(VirtualPath("res://"), projectDirectory))
+	{
+		DebuggerPrintf("Failed to resolve the active project directory.\n");
+
+		return false;
+	}
+
+	// 3) Resolve the SDK directory beside the executable
+	std::filesystem::path const executableDirectory = GetExecutableDirectory();
+
+	if (executableDirectory.empty())
+	{
+		DebuggerPrintf("Failed to resolve the executable directory.\n");
+
+		return false;
+	}
+
+	std::filesystem::path const sdkDirectory = executableDirectory / L"MingSharp" / L"Tool" / L"Sdk";
+
+	// 4) Call the managed generator
+	int32_t const result = m_ensureProjectSolution(projectDirectory.c_str(), sdkDirectory.c_str());
+
+	if (result != 0)
+	{
+		DebuggerPrintf("Failed to ensure C# project files: %d\n", result);
+
+		return false;
+	}
+
+	DebuggerPrintf("C# project files are ready: %ls\n", projectDirectory.c_str());
+
+	return true;
 }

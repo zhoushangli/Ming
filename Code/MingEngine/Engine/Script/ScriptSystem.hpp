@@ -133,19 +133,23 @@ public:
 	void* GetOrCreateNativeManagedWrapper(Object* owner);
 	bool  AddScriptBridge(CSharpScript* script, std::string const& scriptPath);
 	bool  RemoveScriptBridge(CSharpScript* script);
+	bool  EnsureProjectSolution();
 
 private:
 	using ShutdownFunc = int32_t(CORECLR_DELEGATE_CALLTYPE*)();
 	using LoadProjectAssemblyFunc =
 		int32_t(CORECLR_DELEGATE_CALLTYPE*)(wchar_t const* assemblyPath, MingString* outLoadedAssemblyPath);
+	using EnsureProjectSolutionFunc =
+		int32_t(CORECLR_DELEGATE_CALLTYPE*)(wchar_t const* projectDirectory, wchar_t const* sdkDirectory);
 
 	bool InitializeDotNetRuntime();
 	bool LoadProjectAssembly();
 
-	void*                   m_hostfxrModule       = nullptr;
-	ShutdownFunc            m_shutdown            = nullptr;
-	LoadProjectAssemblyFunc m_loadProjectAssembly = nullptr;
-	bool                    m_isInitialized       = false;
+	bool                      m_isInitialized         = false;
+	void*                     m_hostfxrModule         = nullptr;
+	ShutdownFunc              m_shutdown              = nullptr;
+	LoadProjectAssemblyFunc   m_loadProjectAssembly   = nullptr;
+	EnsureProjectSolutionFunc m_ensureProjectSolution = nullptr;
 
 	ManagedCallbacks m_managedCallbacks = {};
 };

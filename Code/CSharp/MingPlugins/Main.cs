@@ -160,5 +160,40 @@ namespace MingPlugins
                 return -5;
             }
         }
+
+        [UnmanagedCallersOnly]
+        private static unsafe int EnsureProjectSolution(char* projectDirectory, char* sdkDirectory)
+        {
+            try
+            {
+                // 1) Validate the native pointers
+                if (projectDirectory == null || sdkDirectory == null)
+                {
+                    return -1;
+                }
+
+                // 2) Copy the native strings into managed strings
+                string projectPath = new string(projectDirectory);
+                string sdkPath = new string(sdkDirectory);
+
+                // 3) Generate the missing project files
+                MingTools.ProjectGenerator.EnsureProjectSolution(projectPath, sdkPath);
+
+                return 0;
+            }
+            catch (Exception exception)
+            {
+                // 4) Report the error without crossing the native boundary
+                try
+                {
+                    Log($"Failed to ensure C# project files:\n{exception}");
+                }
+                catch
+                {
+                }
+
+                return -5;
+            }
+        }
     }
 }
