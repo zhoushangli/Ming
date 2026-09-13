@@ -1,3 +1,4 @@
+#include "MingEngine/Core/StringUtils.hpp"
 #include "MingEngine/Scene/Core/SceneTree.hpp"
 
 #include "MingEngine/Core/Math/MathUtils.hpp"
@@ -117,19 +118,6 @@ void SceneTree::FlushPendingNode()
 		node->MoveToSceneTree(nullptr);
 		MemDelete(node);
 
-		int32_t allocatedBefore;
-		int32_t disposedBefore;
-		int32_t freedBefore;
-		int32_t aliveBefore;
-		g_engine->m_scriptSystem
-			->CollectAndGetManagedScriptState(allocatedBefore, disposedBefore, freedBefore, aliveBefore);
-		DebuggerPrintf(
-			"Managed script state after deleting managed script instance: allocated=%d, disposed=%d, freed=%d, "
-			"alive=%d\n",
-			allocatedBefore,
-			disposedBefore,
-			freedBefore,
-			aliveBefore);
 	}
 }
 

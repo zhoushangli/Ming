@@ -199,6 +199,7 @@
     <ClCompile Include="Engine\Input\KeyboardState.cpp" />
     <ClCompile Include="Engine\Input\XboxController.cpp" />
     <ClCompile Include="Engine\Script\CSharpScript.cpp" />
+    <ClCompile Include="Engine\Script\CSharpScriptFormatter.cpp" />
     <ClCompile Include="Engine\Script\CSharpScriptGenerator.cpp" />
     <ClCompile Include="Engine\Script\ScriptSystem.cpp" />
     <ClCompile Include="Engine\Window\WindowSystem.cpp" />
@@ -381,6 +382,7 @@
     <ClInclude Include="Engine\Input\KeyboardState.hpp" />
     <ClInclude Include="Engine\Input\XboxController.hpp" />
     <ClInclude Include="Engine\Script\CSharpScript.hpp" />
+    <ClInclude Include="Engine\Script\CSharpScriptFormatter.hpp" />
     <ClInclude Include="Engine\Script\CSharpScriptGenerator.hpp" />
     <ClInclude Include="Engine\Script\ScriptSystem.hpp" />
     <ClInclude Include="Engine\Window\WindowSystem.hpp" />

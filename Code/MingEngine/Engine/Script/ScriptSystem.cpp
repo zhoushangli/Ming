@@ -4,6 +4,7 @@
 #include "MingEngine/Core/Object/MethodBind.hpp"
 #include "MingEngine/Core/Object/Script.hpp"
 #include "MingEngine/Core/Object/ScriptInstance.hpp"
+#include "MingEngine/Core/StringUtils.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Engine/File/FileSystem.hpp"
 #include "MingEngine/Engine/Script/CSharpScript.hpp"
@@ -55,9 +56,22 @@ int32_t CORECLR_DELEGATE_CALLTYPE LogUtf8(uint8_t const* text, int32_t textLengt
 		return -1;
 	}
 
-	std::string const message(reinterpret_cast<char const*>(text), static_cast<size_t>(textLength));
+	std::string const message(
+		textLength == 0 ? "" : reinterpret_cast<char const*>(text),
+		static_cast<size_t>(textLength));
 
-	DebuggerPrintf("[Managed] %s\n", message.c_str());
+	if (message.compare(0, 8, "[Error] ") == 0)
+	{
+		ERR_PRINT(message.substr(8));
+	}
+	else if (message.compare(0, 10, "[Warning] ") == 0)
+	{
+		WARN_PRINT(message.substr(10));
+	}
+	else
+	{
+		INFO_PRINT(message);
+	}
 
 	return 0;
 }
@@ -204,7 +218,7 @@ void ScriptSystem::Startup()
 	// 2) Load the current project's assembly
 	if (!LoadProjectAssembly())
 	{
-		DebuggerPrintf("Continuing startup without a loaded project assembly.\n");
+		WARN_PRINT("Continuing startup without a loaded project assembly.\n");
 	}
 }
 
@@ -215,6 +229,12 @@ void ScriptSystem::Shutdown()
 		return;
 	}
 
+	// 1) Release retained resources while the managed bridge is still available
+	DetachScriptInstances();
+	m_pendingReloadState.clear();
+	UnloadProjectAssembly();
+
+	// 2) Release the managed entry points
 	m_isInitialized = false;
 
 	if (m_shutdown != nullptr)
@@ -223,15 +243,25 @@ void ScriptSystem::Shutdown()
 
 		m_shutdown              = nullptr;
 		m_loadProjectAssembly   = nullptr;
+		m_unloadProjectAssembly = nullptr;
 		m_ensureProjectSolution = nullptr;
+		m_buildProjectSolution  = nullptr;
 	}
 
-	DebuggerPrintf(".NET Runtime shutdown completed.\n");
+	INFO_PRINT("Script system shutdown completed.\n");
 }
 
 void ScriptSystem::BeginFrame() {}
 
-void ScriptSystem::EndFrame() {}
+void ScriptSystem::EndFrame()
+{
+	// Reload the current project assembly and restore its script instances.
+	// e.g. Press F5 after rebuilding Game.dll.
+	if (m_isInitialized && (GetAsyncKeyState(VK_F5) & 0x1) != 0)
+	{
+		ReloadProjectAssembly();
+	}
+}
 
 void ScriptSystem::ReleaseGCHandle(void* gcHandle)
 {
@@ -265,6 +295,17 @@ bool ScriptSystem::CreateUserManagedInstance(CSharpScript* script, Object* owner
 	return true;
 }
 
+bool ScriptSystem::ValidateManagedScriptInstance(void* gcHandle, Object* expectedOwner)
+{
+	if (gcHandle == nullptr || expectedOwner == nullptr
+		|| m_managedCallbacks.m_validateManagedScriptInstance == nullptr)
+	{
+		return false;
+	}
+
+	return m_managedCallbacks.m_validateManagedScriptInstance(gcHandle, expectedOwner) != 0;
+}
+
 void ScriptSystem::CollectAndGetManagedScriptState(
 	int32_t& allocated, int32_t& disposed, int32_t& freed, int32_t& targetAlive)
 {
@@ -288,45 +329,37 @@ bool ScriptSystem::InitializeDotNetRuntime()
 	std::filesystem::path const runtimeConfigPath   = managedApiDirectory / L"MingPlugins.runtimeconfig.json";
 	std::filesystem::path const managedAssemblyPath = managedApiDirectory / L"MingPlugins.dll";
 
-	if (!std::filesystem::exists(runtimeConfigPath))
-	{
-		DebuggerPrintf("Missing .NET runtime config: %ls\n", runtimeConfigPath.c_str());
-		return false;
-	}
+	ERR_FAIL_COND_V_MSG(
+		!std::filesystem::exists(runtimeConfigPath),
+		false,
+		Stringf("Missing .NET runtime config: %ls\n", runtimeConfigPath.c_str()));
 
-	if (!std::filesystem::exists(managedAssemblyPath))
-	{
-		DebuggerPrintf("Missing managed assembly: %ls\n", managedAssemblyPath.c_str());
-		return false;
-	}
+	ERR_FAIL_COND_V_MSG(
+		!std::filesystem::exists(managedAssemblyPath),
+		false,
+		Stringf("Missing managed assembly: %ls\n", managedAssemblyPath.c_str()));
 
 	size_t hostfxrPathSize = 0;
 
 	int result = get_hostfxr_path(nullptr, &hostfxrPathSize, nullptr);
 
-	if (hostfxrPathSize == 0)
-	{
-		DebuggerPrintf("Failed to determine hostfxr path size: 0x%08X\n", result);
-		return false;
-	}
+	ERR_FAIL_COND_V_MSG(
+		hostfxrPathSize == 0,
+		false,
+		Stringf("Failed to determine hostfxr path size: 0x%08X\n", result));
 
 	std::vector<wchar_t> hostfxrPath(hostfxrPathSize);
 
 	result = get_hostfxr_path(hostfxrPath.data(), &hostfxrPathSize, nullptr);
 
-	if (result != 0)
-	{
-		DebuggerPrintf("Failed to locate hostfxr: 0x%08X\n", result);
-		return false;
-	}
+	ERR_FAIL_COND_V_MSG(result != 0, false, Stringf("Failed to locate hostfxr: 0x%08X\n", result));
 
 	m_hostfxrModule = LoadLibraryW(hostfxrPath.data());
 
-	if (m_hostfxrModule == nullptr)
-	{
-		DebuggerPrintf("Failed to load hostfxr: %ls\n", hostfxrPath.data());
-		return false;
-	}
+	ERR_FAIL_COND_V_MSG(
+		m_hostfxrModule == nullptr,
+		false,
+		Stringf("Failed to load hostfxr: %ls\n", hostfxrPath.data()));
 
 	auto initializeForRuntimeConfig = reinterpret_cast<hostfxr_initialize_for_runtime_config_fn>(
 		GetProcAddress(static_cast<HMODULE>(m_hostfxrModule), "hostfxr_initialize_for_runtime_config"));
@@ -337,11 +370,10 @@ bool ScriptSystem::InitializeDotNetRuntime()
 	auto closeHostContext =
 		reinterpret_cast<hostfxr_close_fn>(GetProcAddress(static_cast<HMODULE>(m_hostfxrModule), "hostfxr_close"));
 
-	if (initializeForRuntimeConfig == nullptr || getRuntimeDelegate == nullptr || closeHostContext == nullptr)
-	{
-		DebuggerPrintf("Failed to load required hostfxr exports.\n");
-		return false;
-	}
+	ERR_FAIL_COND_V_MSG(
+		initializeForRuntimeConfig == nullptr || getRuntimeDelegate == nullptr || closeHostContext == nullptr,
+		false,
+		"Failed to load required hostfxr exports.\n");
 
 	hostfxr_handle hostContext = nullptr;
 
@@ -349,7 +381,7 @@ bool ScriptSystem::InitializeDotNetRuntime()
 
 	if (result != 0 || hostContext == nullptr)
 	{
-		DebuggerPrintf("Failed to initialize .NET host context: 0x%08X\n", result);
+		ERR_PRINT(Stringf("Failed to initialize .NET host context: 0x%08X\n", result));
 
 		if (hostContext != nullptr)
 		{
@@ -369,11 +401,10 @@ bool ScriptSystem::InitializeDotNetRuntime()
 	closeHostContext(hostContext);
 	hostContext = nullptr;
 
-	if (result != 0 || loadAssembly == nullptr)
-	{
-		DebuggerPrintf("Failed to get .NET assembly loader: 0x%08X\n", result);
-		return false;
-	}
+	ERR_FAIL_COND_V_MSG(
+		result != 0 || loadAssembly == nullptr,
+		false,
+		Stringf("Failed to get .NET assembly loader: 0x%08X\n", result));
 
 	wchar_t const* typeName   = L"MingPlugins.Main, MingPlugins";
 	InitializeFunc initialize = nullptr;
@@ -386,11 +417,10 @@ bool ScriptSystem::InitializeDotNetRuntime()
 		nullptr,
 		reinterpret_cast<void**>(&initialize));
 
-	if (result != 0 || initialize == nullptr)
-	{
-		DebuggerPrintf("Failed to load managed Initialize: 0x%08X\n", result);
-		return false;
-	}
+	ERR_FAIL_COND_V_MSG(
+		result != 0 || initialize == nullptr,
+		false,
+		Stringf("Failed to load managed Initialize: 0x%08X\n", result));
 
 	result = loadAssembly(
 		managedAssemblyPath.c_str(),
@@ -400,11 +430,10 @@ bool ScriptSystem::InitializeDotNetRuntime()
 		nullptr,
 		reinterpret_cast<void**>(&m_shutdown));
 
-	if (result != 0 || m_shutdown == nullptr)
-	{
-		DebuggerPrintf("Failed to load managed Shutdown: 0x%08X\n", result);
-		return false;
-	}
+	ERR_FAIL_COND_V_MSG(
+		result != 0 || m_shutdown == nullptr,
+		false,
+		Stringf("Failed to load managed Shutdown: 0x%08X\n", result));
 
 	result = loadAssembly(
 		managedAssemblyPath.c_str(),
@@ -414,14 +443,29 @@ bool ScriptSystem::InitializeDotNetRuntime()
 		nullptr,
 		reinterpret_cast<void**>(&m_loadProjectAssembly));
 
-	if (result != 0 || m_loadProjectAssembly == nullptr)
-	{
-		DebuggerPrintf(
+	ERR_FAIL_COND_V_MSG(
+		result != 0 || m_loadProjectAssembly == nullptr,
+		false,
+		Stringf(
 			"Failed to resolve managed entry point: LoadProjectAssembly "
 			"(0x%08X)\n",
-			result);
-		return false;
-	}
+			result));
+
+	result = loadAssembly(
+		managedAssemblyPath.c_str(),
+		typeName,
+		L"UnloadProjectAssembly",
+		UNMANAGEDCALLERSONLY_METHOD,
+		nullptr,
+		reinterpret_cast<void**>(&m_unloadProjectAssembly));
+
+	ERR_FAIL_COND_V_MSG(
+		result != 0 || m_unloadProjectAssembly == nullptr,
+		false,
+		Stringf(
+			"Failed to resolve managed entry point: UnloadProjectAssembly "
+			"(0x%08X)\n",
+			result));
 
 	result = loadAssembly(
 		managedAssemblyPath.c_str(),
@@ -431,14 +475,29 @@ bool ScriptSystem::InitializeDotNetRuntime()
 		nullptr,
 		reinterpret_cast<void**>(&m_ensureProjectSolution));
 
-	if (result != 0 || m_ensureProjectSolution == nullptr)
-	{
-		DebuggerPrintf(
+	ERR_FAIL_COND_V_MSG(
+		result != 0 || m_ensureProjectSolution == nullptr,
+		false,
+		Stringf(
 			"Failed to resolve managed entry point: EnsureProjectSolution "
 			"(0x%08X)\n",
-			result);
-		return false;
-	}
+			result));
+
+	result = loadAssembly(
+		managedAssemblyPath.c_str(),
+		typeName,
+		L"BuildProjectSolution",
+		UNMANAGEDCALLERSONLY_METHOD,
+		nullptr,
+		reinterpret_cast<void**>(&m_buildProjectSolution));
+
+	ERR_FAIL_COND_V_MSG(
+		result != 0 || m_buildProjectSolution == nullptr,
+		false,
+		Stringf(
+			"Failed to resolve managed entry point: BuildProjectSolution "
+			"(0x%08X)\n",
+			result));
 
 	NativeCallbacks const nativeCallbacks{
 		&LogUtf8,
@@ -460,15 +519,11 @@ bool ScriptSystem::InitializeDotNetRuntime()
 		static_cast<int32_t>(sizeof(nativeCallbacks)),
 		&m_managedCallbacks,
 		static_cast<int32_t>(sizeof(m_managedCallbacks)));
-	if (initResult != 0)
-	{
-		DebuggerPrintf("Managed Initialize failed: 0x%08X\n", initResult);
-		return false;
-	}
+	ERR_FAIL_COND_V_MSG(initResult != 0, false, Stringf("Managed Initialize failed: 0x%08X\n", initResult));
 
 	m_isInitialized = true;
 
-	DebuggerPrintf(".NET Runtime initialized.\n");
+	INFO_PRINT(".NET Runtime initialized.\n");
 
 	return true;
 }
@@ -476,52 +531,42 @@ bool ScriptSystem::InitializeDotNetRuntime()
 bool ScriptSystem::LoadProjectAssembly()
 {
 	// 1) Check the runtime and managed entry point
-	if (!m_isInitialized || m_loadProjectAssembly == nullptr)
-	{
-		DebuggerPrintf("Cannot load project assembly: managed bridge is not initialized.\n");
-		return false;
-	}
+	ERR_FAIL_COND_V_MSG(
+		!m_isInitialized || m_loadProjectAssembly == nullptr,
+		false,
+		"Cannot load project assembly: managed bridge is not initialized.\n");
 
-	if (g_engine == nullptr || g_engine->m_fileSystem == nullptr)
-	{
-		DebuggerPrintf("Cannot load project assembly: file system is unavailable.\n");
-		return false;
-	}
+	ERR_FAIL_COND_V_MSG(
+		g_engine == nullptr || g_engine->m_fileSystem == nullptr,
+		false,
+		"Cannot load project assembly: file system is unavailable.\n");
 
 	// 2) Resolve the current project's assembly path
 	VirtualPath const virtualPath("res://.ming/dotnet/bin/Debug/Game.dll");
 
 	std::filesystem::path assemblyPath;
 
-	if (!g_engine->m_fileSystem->TryGetPhysicalPath(virtualPath, assemblyPath))
-	{
-		DebuggerPrintf("Failed to resolve project assembly path: %s\n", virtualPath.CStr());
-		return false;
-	}
-
-	DebuggerPrintf("Project assembly expected path: %ls\n", assemblyPath.c_str());
+	ERR_FAIL_COND_V_MSG(
+		!g_engine->m_fileSystem->TryGetPhysicalPath(virtualPath, assemblyPath),
+		false,
+		Stringf("Failed to resolve project assembly path: %s\n", virtualPath.CStr()));
 
 	// 3) Check whether the assembly file exists
 	std::error_code errorCode;
 	bool const      exists = std::filesystem::exists(assemblyPath, errorCode);
 
-	if (errorCode)
-	{
-		DebuggerPrintf(
-			"Failed to inspect project assembly: %ls (%s)\n",
-			assemblyPath.c_str(),
-			errorCode.message().c_str());
-		return false;
-	}
+	ERR_FAIL_COND_V_MSG(
+		errorCode,
+		false,
+		Stringf("Failed to inspect project assembly: %ls (%s)\n", assemblyPath.c_str(), errorCode.message().c_str()));
 
-	if (!exists)
-	{
-		DebuggerPrintf(
+	ERR_FAIL_COND_V_MSG(
+		!exists,
+		false,
+		Stringf(
 			"Project assembly does not exist: %ls\n"
 			"Build Game.csproj with configuration Debug first.\n",
-			assemblyPath.c_str());
-		return false;
-	}
+			assemblyPath.c_str()));
 
 	// 4) Invoke the managed loader
 	MingString nativeLoadedPath{};
@@ -534,7 +579,7 @@ bool ScriptSystem::LoadProjectAssembly()
 		DestroyString(nativeLoadedPath.m_string);
 		nativeLoadedPath.m_string = nullptr;
 
-		DebuggerPrintf("Project assembly load did not succeed: %ls (status: %d)\n", assemblyPath.c_str(), result);
+		ERR_PRINT(Stringf("Project assembly load did not succeed: %ls (status: %d)\n", assemblyPath.c_str(), result));
 		return false;
 	}
 
@@ -544,7 +589,7 @@ bool ScriptSystem::LoadProjectAssembly()
 		DestroyString(nativeLoadedPath.m_string);
 		nativeLoadedPath.m_string = nullptr;
 
-		DebuggerPrintf("Managed loader returned success without an assembly path.\n");
+		ERR_PRINT("Managed loader returned success without an assembly path.\n");
 		return false;
 	}
 
@@ -554,9 +599,146 @@ bool ScriptSystem::LoadProjectAssembly()
 	DestroyString(nativeLoadedPath.m_string);
 	nativeLoadedPath.m_string = nullptr;
 
-	DebuggerPrintf("Project assembly confirmed by C++: %s\n", loadedPath.c_str());
+	INFO_PRINT(Stringf("Project assembly loaded: %s\n", loadedPath.c_str()));
 
 	return true;
+}
+
+bool ScriptSystem::UnloadProjectAssembly()
+{
+	// 1) Check the managed entry point
+	ERR_FAIL_COND_V_MSG(
+		!m_isInitialized || m_unloadProjectAssembly == nullptr,
+		false,
+		"Cannot unload project assembly: managed bridge is not initialized.\n");
+
+	// 2) Ask the managed side to unload its context
+	int32_t const result = m_unloadProjectAssembly();
+
+	ERR_FAIL_COND_V_MSG(result != 0, false, Stringf("Failed to unload the project assembly (status: %d)\n", result));
+
+	INFO_PRINT("Project assembly unloaded.\n");
+	return true;
+}
+
+bool ScriptSystem::SaveScriptStates()
+{
+	std::vector<StateBackup> states;
+	auto const owners = m_scriptOwners;
+	for (ObjectID id : owners)
+	{
+		Object* owner = ObjectDatabase::GetInstance(id);
+		auto* instance = owner ? dynamic_cast<CSharpInstance*>(owner->GetScriptInstance()) : nullptr;
+		if (instance == nullptr)
+		{
+			continue;
+		}
+		StateBackup backup{id, Ref<CSharpScript>(static_cast<CSharpScript*>(instance->GetScript().Get())), {}};
+		MingString state{};
+		int32_t const result = m_managedCallbacks.m_serializeScriptState(instance->GetGCHandle(), &state);
+		if (result != 0 && state.m_string != nullptr)
+		{
+			backup.m_state = std::move(*state.m_string);
+		}
+		DestroyString(state.m_string);
+		ERR_FAIL_COND_V_MSG(result == 0 || backup.m_state.empty(), false, "Failed to save script reload state.\n");
+		states.push_back(std::move(backup));
+	}
+	m_pendingReloadState = std::move(states);
+	return true;
+}
+
+void ScriptSystem::DetachScriptInstances()
+{
+	for (auto const& backup : m_pendingReloadState)
+	{
+		Object* owner = ObjectDatabase::GetInstance(backup.m_owner);
+		if (owner != nullptr && owner->GetScriptInstance() != nullptr
+			&& owner->GetScriptInstance()->GetScript().Get() == backup.m_script.Get())
+		{
+			owner->SetScriptInstance(nullptr);
+		}
+	}
+}
+
+bool ScriptSystem::RestoreScriptInstances()
+{
+	// 1) Recreate every instance before restoring any state
+	for (auto const& backup : m_pendingReloadState)
+	{
+		Object* owner = ObjectDatabase::GetInstance(backup.m_owner);
+		if (owner == nullptr || owner->GetScriptInstance() != nullptr)
+		{
+			continue;
+		}
+		m_isRecreatingInstances = true;
+		bool const created = backup.m_script->Instantiate(owner);
+		m_isRecreatingInstances = false;
+		ERR_FAIL_COND_V_MSG(!created, false, "Failed to recreate script; reload state retained.\n");
+	}
+
+	// 2) Keep all original snapshots until the whole restore succeeds
+	for (auto const& backup : m_pendingReloadState)
+	{
+		Object* owner = ObjectDatabase::GetInstance(backup.m_owner);
+		auto* instance = owner ? dynamic_cast<CSharpInstance*>(owner->GetScriptInstance()) : nullptr;
+		if (instance == nullptr || instance->GetScript().Get() != backup.m_script.Get())
+		{
+			continue;
+		}
+		ERR_FAIL_COND_V_MSG(backup.m_state.size() > static_cast<size_t>((std::numeric_limits<int32_t>::max)()),
+			false, "Script reload state is too large.\n");
+		int32_t const result = m_managedCallbacks.m_deserializeScriptState(instance->GetGCHandle(),
+			reinterpret_cast<uint8_t const*>(backup.m_state.data()), static_cast<int32_t>(backup.m_state.size()));
+		ERR_FAIL_COND_V_MSG(result == 0, false, "Failed to restore script; reload state retained.\n");
+	}
+	return true;
+}
+
+bool ScriptSystem::ReloadProjectAssembly()
+{
+	ERR_FAIL_COND_V_MSG(m_isAssemblyReloading || !m_isInitialized, false, "Cannot start script reload.\n");
+	m_isAssemblyReloading = true;
+	bool const wasSuspended = m_scriptExecutionSuspended;
+	m_scriptExecutionSuspended = true;
+	bool success = false;
+	bool detached = wasSuspended;
+	try
+	{
+		// 1) Preserve the first snapshot across failed reload attempts
+		if (!wasSuspended && !SaveScriptStates())
+		{
+			m_scriptExecutionSuspended = false;
+		}
+		else
+		{
+			// 2) Release old handles before unloading and replace partial retries
+			detached = true;
+			DetachScriptInstances();
+			if (UnloadProjectAssembly() && LoadProjectAssembly() && RestoreScriptInstances())
+			{
+				m_pendingReloadState.clear();
+				m_scriptExecutionSuspended = false;
+				success = true;
+			}
+		}
+	}
+	catch (std::exception const& exception)
+	{
+		ERR_PRINT(Stringf("Script reload failed: %s\n", exception.what()));
+	}
+	if (!detached && !success)
+	{
+		m_pendingReloadState.clear();
+		m_scriptExecutionSuspended = false;
+	}
+	m_isRecreatingInstances = false;
+	m_isAssemblyReloading = false;
+	if (success)
+	{
+		INFO_PRINT("Project assembly and script states reloaded.\n");
+	}
+	return success;
 }
 
 void* ScriptSystem::GetOrCreateNativeManagedWrapper(Object* owner)
@@ -620,60 +802,77 @@ bool ScriptSystem::RemoveScriptBridge(CSharpScript* script)
 	return m_managedCallbacks.m_removeScriptBridge(script) == 1;
 }
 
+bool ScriptSystem::BuildProjectSolution()
+{
+	// 1) Check the managed entry point and file system
+	ERR_FAIL_COND_V_MSG(
+		!m_isInitialized || m_buildProjectSolution == nullptr,
+		false,
+		"Cannot build C# project: managed bridge is not initialized.\n");
+
+	ERR_FAIL_COND_V_MSG(
+		g_engine == nullptr || g_engine->m_fileSystem == nullptr,
+		false,
+		"Cannot build C# project: file system is unavailable.\n");
+
+	// 2) Resolve the active project directory
+	std::filesystem::path projectDirectory;
+	ERR_FAIL_COND_V_MSG(
+		!g_engine->m_fileSystem->TryGetPhysicalPath(VirtualPath("res://"), projectDirectory),
+		false,
+		"Failed to resolve the active project directory.\n");
+
+	// 3) Build the solution through the managed entry point
+	int32_t const result = m_buildProjectSolution(projectDirectory.c_str());
+	ERR_FAIL_COND_V_MSG(
+		result != 0,
+		false,
+		Stringf("Failed to build C# project solution: %ls (status: %d)\n", projectDirectory.c_str(), result));
+
+	INFO_PRINT(Stringf("C# project solution built: %ls\n", projectDirectory.c_str()));
+	return true;
+}
+
 bool ScriptSystem::EnsureProjectSolution()
 {
 	// 1) Check the managed entry point
-	if (!m_isInitialized || m_ensureProjectSolution == nullptr)
-	{
-		DebuggerPrintf(
-			"Cannot ensure C# project files: "
-			"managed bridge is not initialized.\n");
+	ERR_FAIL_COND_V_MSG(
+		!m_isInitialized || m_ensureProjectSolution == nullptr,
+		false,
+		"Cannot ensure C# project files: "
+		"managed bridge is not initialized.\n");
 
-		return false;
-	}
-
-	if (g_engine == nullptr || g_engine->m_fileSystem == nullptr)
-	{
-		DebuggerPrintf(
-			"Cannot ensure C# project files: "
-			"file system is unavailable.\n");
-
-		return false;
-	}
+	ERR_FAIL_COND_V_MSG(
+		g_engine == nullptr || g_engine->m_fileSystem == nullptr,
+		false,
+		"Cannot ensure C# project files: "
+		"file system is unavailable.\n");
 
 	// 2) Resolve the active project directory
 	std::filesystem::path projectDirectory;
 
-	if (!g_engine->m_fileSystem->TryGetPhysicalPath(VirtualPath("res://"), projectDirectory))
-	{
-		DebuggerPrintf("Failed to resolve the active project directory.\n");
-
-		return false;
-	}
+	ERR_FAIL_COND_V_MSG(
+		!g_engine->m_fileSystem->TryGetPhysicalPath(VirtualPath("res://"), projectDirectory),
+		false,
+		"Failed to resolve the active project directory.\n");
 
 	// 3) Resolve the SDK directory beside the executable
 	std::filesystem::path const executableDirectory = GetExecutableDirectory();
 
-	if (executableDirectory.empty())
-	{
-		DebuggerPrintf("Failed to resolve the executable directory.\n");
-
-		return false;
-	}
+	ERR_FAIL_COND_V_MSG(executableDirectory.empty(), false, "Failed to resolve the executable directory.\n");
 
 	std::filesystem::path const sdkDirectory = executableDirectory / L"MingSharp" / L"Tool" / L"Sdk";
 
 	// 4) Call the managed generator
 	int32_t const result = m_ensureProjectSolution(projectDirectory.c_str(), sdkDirectory.c_str());
 
-	if (result != 0)
-	{
-		DebuggerPrintf("Failed to ensure C# project files: %d\n", result);
+	ERR_FAIL_COND_V_MSG(result != 0, false, Stringf("Failed to ensure C# project files: %d\n", result));
 
-		return false;
-	}
-
-	DebuggerPrintf("C# project files are ready: %ls\n", projectDirectory.c_str());
+	INFO_PRINT(Stringf("C# project files are ready: %ls\n", projectDirectory.c_str()));
 
 	return true;
 }
+
+void ScriptSystem::RegisterScriptOwner(ObjectID id) { m_scriptOwners.insert(id); }
+
+void ScriptSystem::UnregisterScriptOwner(ObjectID id) { m_scriptOwners.erase(id); }

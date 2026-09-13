@@ -890,7 +890,7 @@ bool D3D11RenderBackend::CompileShaderToByteCode(
 	{
 		if (errorBlob)
 		{
-			DebuggerPrintf((char*)errorBlob->GetBufferPointer());
+			ERR_PRINT(static_cast<char const*>(errorBlob->GetBufferPointer()));
 			errorBlob->Release();
 		}
 		if (shaderBlob)

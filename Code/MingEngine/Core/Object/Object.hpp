@@ -110,8 +110,8 @@ public:
 	void     Notification(int notification, bool reverse = false);
 	void     Free();
 
-	// Store the assigned script resource independently from any runtime instance.
-	// e.g. A future CSharpScriptInstance can be recreated without losing the serialized script reference.
+	// Return the script resource attached to the current runtime instance.
+	// e.g. GetScript() is empty while the instance is detached for reload.
 	Variant         GetScript() const;
 	void            SetScript(Variant const& script);
 	void            SetScriptInstance(ScriptInstance* scriptInstance);

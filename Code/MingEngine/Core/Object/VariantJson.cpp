@@ -1,3 +1,4 @@
+#include "MingEngine/Core/StringUtils.hpp"
 #include "MingEngine/Core/Object/VariantJson.hpp"
 
 #include "MingEngine/Core/ErrorWarningAssert.hpp"
@@ -97,9 +98,8 @@ bool TrySerialize(Variant const& value, Json& outJson)
 			std::string const resourcePath = GetSerializableResourcePath(*resource);
 			if (resourcePath.empty())
 			{
-				DebuggerPrintf(
-					"VariantJson: resource '%s' has no source or virtual path; saving an empty resource path.\n",
-					resource->GetName().c_str());
+				WARN_PRINT(Stringf("VariantJson: resource '%s' has no source or virtual path; saving an empty resource path.\n",
+					resource->GetName().c_str()));
 				outJson = "";
 				return true;
 			}

@@ -8,7 +8,7 @@ void NamedStrings::PopulateFromXmlElementAttributes(XmlElement const& element)
 	XmlAttribute const* attribute = element.FirstAttribute();
 	while (attribute)
 	{
-		DebuggerPrintf("[NamedStrings] Attribute: %-20s | Value: %s\n", attribute->Name(), attribute->Value());
+		INFO_PRINT(Stringf("[NamedStrings] Attribute: %-20s | Value: %s\n", attribute->Name(), attribute->Value()));
 		SetValue(attribute->Name(), attribute->Value());
 		attribute = attribute->Next();
 	}
@@ -142,9 +142,9 @@ std::string NamedStrings::GetDebugInfo() const
 
 void NamedStrings::DebugPrintContents()
 {
-	DebuggerPrintf("NamedStrings Contents:\n");
+	INFO_PRINT("NamedStrings Contents:\n");
 	for (auto const& pair : m_keyValuePairs)
 	{
-		DebuggerPrintf("  Key: %-20s | Value: %s\n", pair.first.c_str(), pair.second.c_str());
+		INFO_PRINT(Stringf("  Key: %-20s | Value: %s\n", pair.first.c_str(), pair.second.c_str()));
 	}
 }

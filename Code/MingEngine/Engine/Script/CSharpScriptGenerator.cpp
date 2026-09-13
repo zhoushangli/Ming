@@ -1,3 +1,4 @@
+#include "MingEngine/Core/StringUtils.hpp"
 #include "MingEngine/Engine/Script/CSharpScriptGenerator.hpp"
 
 #include "MingEngine/Core/ErrorWarningAssert.hpp"
@@ -702,10 +703,10 @@ bool CSharpScriptGenerator::GenerateCSharpBindings(std::filesystem::path const& 
 	std::sort(skippedNativeCalls.begin(), skippedNativeCalls.end());
 	if (!skippedNativeCalls.empty())
 	{
-		DebuggerPrintf("Skipped unsupported NativeCalls signatures:\n");
+		WARN_PRINT("Skipped unsupported NativeCalls signatures:\n");
 		for (std::string const& skippedNativeCall : skippedNativeCalls)
 		{
-			DebuggerPrintf("- %s\n", skippedNativeCall.c_str());
+			WARN_PRINT(Stringf("- %s\n", skippedNativeCall.c_str()));
 		}
 	}
 

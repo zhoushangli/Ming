@@ -1,6 +1,10 @@
 #include "MingEngine/Core/Object/Object.hpp"
 
+#include "MingEngine/Engine/Application/Engine.hpp"
+#include "MingEngine/Engine/Script/ScriptSystem.hpp"
+
 #include "MingEngine/Core/ErrorWarningAssert.hpp"
+#include "MingEngine/Core/StringUtils.hpp"
 #include "MingEngine/Core/Object/ClassDatabase.hpp"
 #include "MingEngine/Core/Object/NativeScript.hpp"
 #include "MingEngine/Core/Object/RefCounted.hpp"
@@ -219,6 +223,9 @@ Variant Object::GetScript() const
 
 void Object::SetScript(Variant const& script)
 {
+	ERR_FAIL_COND_MSG(g_engine != nullptr && g_engine->m_scriptSystem != nullptr
+		&& g_engine->m_scriptSystem->IsScriptExecutionSuspended(),
+		"Cannot replace a script while reload is incomplete.\n");
 	if (m_scriptInstance)
 	{
 		SetScriptInstance(nullptr);
@@ -229,7 +236,7 @@ void Object::SetScript(Variant const& script)
 
 	if (!result)
 	{
-		DebuggerPrintf("Failed to instantiate script for Object %s\n", GetClassName().c_str());
+		ERR_PRINT(Stringf("Failed to instantiate script for Object %s\n", GetClassName().c_str()));
 		SetScriptInstance(nullptr);
 	}
 }

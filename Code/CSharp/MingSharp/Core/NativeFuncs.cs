@@ -38,6 +38,8 @@ internal unsafe struct ManagedCallbacks
     public delegate* unmanaged<int*, int*, int*, void> CollectAndGetNativeBindingState;
     public delegate* unmanaged<IntPtr, IntPtr, int, int> AddScriptBridge;
     public delegate* unmanaged<IntPtr, int> RemoveScriptBridge;
+    public delegate* unmanaged<IntPtr, MingString*, int> SerializeScriptState;
+    public delegate* unmanaged<IntPtr, IntPtr, int, int> DeserializeScriptState;
 }
 
 public static unsafe class NativeFuncs
@@ -77,7 +79,13 @@ public static unsafe class NativeFuncs
         int disposed = s_nativeBindingDisposed + s_scriptInstanceDisposed;
         int freed = s_nativeBindingHandleFreed + s_scriptInstanceHandleFreed;
 
-        return "Managed binding summary (active = allocated - freed):\n"
+        if (allocated == 0 && disposed == 0 && freed == 0)
+        {
+            return "Managed bindings: allocated=0, disposed=0, freed=0, active=0.";
+        }
+
+        string severity = allocated != freed ? "[Warning] " : string.Empty;
+        return severity + "Managed binding summary (active = allocated - freed):\n"
             + $"  NativeBinding:  allocated={s_nativeBindingHandleAllocated}, disposed={s_nativeBindingDisposed}, freed={s_nativeBindingHandleFreed}, active={s_nativeBindingHandleAllocated - s_nativeBindingHandleFreed}\n"
             + $"  ScriptInstance: allocated={s_scriptInstanceHandleAllocated}, disposed={s_scriptInstanceDisposed}, freed={s_scriptInstanceHandleFreed}, active={s_scriptInstanceHandleAllocated - s_scriptInstanceHandleFreed}\n"
             + $"  Total:          allocated={allocated}, disposed={disposed}, freed={freed}, active={allocated - freed}";
@@ -184,9 +192,10 @@ public static unsafe class NativeFuncs
 
     internal static void TrackScriptInstanceAllocated(IntPtr handlePtr, MingObject instance)
     {
+        var weakReference = new WeakReference<MingObject>(instance);
         s_scriptInstanceHandles.Add(handlePtr);
         s_scriptInstanceHandleAllocated++;
-        s_lastScriptInstance = new WeakReference<MingObject>(instance);
+        s_lastScriptInstance = weakReference;
     }
 
     #endregion
@@ -307,7 +316,14 @@ public static unsafe class NativeFuncs
 
         try
         {
-            handle.Free();
+            if (isScriptInstance)
+            {
+                ScriptManagerBridge.FreeScriptGCHandle(handle);
+            }
+            else
+            {
+                handle.Free();
+            }
 
             if (isScriptInstance)
             {
@@ -360,13 +376,13 @@ public static unsafe class NativeFuncs
             // 2) Resolve the target only after collection.
             GCHandle handle = GCHandle.FromIntPtr(handlePtr);
 
-            if (handle.Target is not PlayerController player)
+            if (handle.Target is not MingObject instance)
             {
                 return 0;
             }
 
             // 3) Confirm this is still the wrapper of the original native owner.
-            return player.ValidateNativeOwner(expectedOwner) ? 1 : 0;
+            return instance.NativePtr == expectedOwner ? 1 : 0;
         }
         catch (Exception exception)
         {
@@ -413,14 +429,12 @@ public static unsafe class NativeFuncs
     {
         try
         {
-            MingObject first = InteropUtils.UnmanagedGetManaged(owner);
-            MingObject second = InteropUtils.UnmanagedGetManaged(owner);
+            MingObject managedObject = InteropUtils.UnmanagedGetManaged(owner);
 
-            return first != null
-                && ReferenceEquals(first, second)
-                && first.NativePtr == owner
-                ? 1
-                : 0;
+            return managedObject != null
+                && ReferenceEquals(managedObject, managedObject)
+                && managedObject.NativePtr == owner
+                ? 1 : 0;
         }
         catch (Exception exception)
         {
@@ -476,7 +490,9 @@ public static unsafe class NativeFuncs
             ValidateNativeManagedWrapper = &ValidateNativeManagedWrapper,
             CollectAndGetNativeBindingState = &CollectAndGetNativeBindingState,
             AddScriptBridge = &ScriptManagerBridge.AddScriptBridge,
-            RemoveScriptBridge = &ScriptManagerBridge.RemoveScriptBridge
+            RemoveScriptBridge = &ScriptManagerBridge.RemoveScriptBridge,
+            SerializeScriptState = &ScriptManagerBridge.SerializeState,
+            DeserializeScriptState = &ScriptManagerBridge.DeserializeState
         };
     }
 }

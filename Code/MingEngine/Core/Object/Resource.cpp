@@ -1,3 +1,4 @@
+#include "MingEngine/Core/StringUtils.hpp"
 #include "MingEngine/Core/Object/Resource.hpp"
 
 #include "MingEngine/Core/Object/ClassDatabase.hpp"
@@ -32,14 +33,10 @@ void Resource::SetPathString(std::string const& path)
 	}
 
 	VirtualPath parsedPath;
-	if (VirtualPath::TryParse(path, parsedPath))
-	{
-		m_virtualPath = std::move(parsedPath);
-	}
-	else
-	{
-		DebuggerPrintf("Resource::SetPathString: invalid virtual path '%s'.\n", path.c_str());
-	}
+	ERR_FAIL_COND_MSG(
+		!VirtualPath::TryParse(path, parsedPath),
+		Stringf("Invalid virtual path '%s'.", path.c_str()));
+	m_virtualPath = std::move(parsedPath);
 }
 
 void Resource::MoveBaseFrom(Resource&& other)

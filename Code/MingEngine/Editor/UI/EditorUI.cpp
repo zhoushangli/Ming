@@ -156,11 +156,14 @@ void EditorUI::RenderMainMenuBar()
 	{
 		if (g_engine == nullptr || g_engine->m_scriptSystem == nullptr)
 		{
-			DebuggerPrintf("Script system is unavailable.\n");
+			ERR_PRINT("Script system is unavailable.\n");
 		}
 		else
 		{
-			g_engine->m_scriptSystem->EnsureProjectSolution();
+			if (g_engine->m_scriptSystem->EnsureProjectSolution())
+			{
+				g_engine->m_scriptSystem->BuildProjectSolution();
+			}
 		}
 	}
 
@@ -173,7 +176,7 @@ void EditorUI::RenderMainMenuBar()
 			ImVec2(0.f, 1.f),
 			ImVec2(1.f, 0.f)))
 	{
-		DebuggerPrintf("Play button clicked\n");
+		INFO_PRINT("Play button clicked\n");
 	}
 
 	ImGui::SameLine(0.f, spacing);

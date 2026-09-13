@@ -621,6 +621,9 @@
     <ClCompile Include="Core\Object\ManagedGCHandle.cpp">
       <Filter>Core\Object</Filter>
     </ClCompile>
+    <ClCompile Include="Engine\Script\CSharpScriptFormatter.cpp">
+      <Filter>Engine\Script</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Core\Clock.hpp">
@@ -1192,6 +1195,9 @@
     </ClInclude>
     <ClInclude Include="Core\Object\ManagedGCHandle.hpp">
       <Filter>Core\Object</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Script\CSharpScriptFormatter.hpp">
+      <Filter>Engine\Script</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

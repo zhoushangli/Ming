@@ -1,6 +1,7 @@
 #include "MingEngine/Scene/Core/PackedSceneFormat.hpp"
 
 #include "MingEngine/Core/ErrorWarningAssert.hpp"
+#include "MingEngine/Core/StringUtils.hpp"
 #include "MingEngine/Core/Object/ClassDatabase.hpp"
 #include "MingEngine/Core/Object/VariantJson.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
@@ -35,20 +36,18 @@ bool TryParseProperties(Json const& nodeJson, PackedNode& outNode)
 		PropertyInfo const* property     = ClassDatabase::FindProperty(outNode.m_type, propertyName);
 		if (property == nullptr)
 		{
-			DebuggerPrintf(
-				"PackedScene: skipping unknown property '%s' on type '%s'.\n",
+			WARN_PRINT(Stringf("PackedScene: skipping unknown property '%s' on type '%s'.\n",
 				propertyName.c_str(),
-				outNode.m_type.c_str());
+				outNode.m_type.c_str()));
 			continue;
 		}
 
 		Variant value;
 		if (!VariantJson::TryDeserialize(propertyEntry.value(), property->m_type, value))
 		{
-			DebuggerPrintf(
-				"PackedScene: skipping property '%s' with an incompatible JSON value on type '%s'.\n",
+			WARN_PRINT(Stringf("PackedScene: skipping property '%s' with an incompatible JSON value on type '%s'.\n",
 				propertyName.c_str(),
-				outNode.m_type.c_str());
+				outNode.m_type.c_str()));
 			continue;
 		}
 
@@ -63,7 +62,7 @@ bool TryParseNode(Json const& nodeJson, PackedSceneData& sceneData)
 	if (!nodeJson.contains("name") || !nodeJson["name"].is_string() || !nodeJson.contains("type")
 		|| !nodeJson["type"].is_string())
 	{
-		DebuggerPrintf("PackedScene: every node must contain string fields 'name' and 'type'.\n");
+		ERR_PRINT("PackedScene: every node must contain string fields 'name' and 'type'.\n");
 		return false;
 	}
 
@@ -72,9 +71,8 @@ bool TryParseNode(Json const& nodeJson, PackedSceneData& sceneData)
 	packedNode.m_type = nodeJson["type"].get<std::string>();
 	if (packedNode.m_name.empty() || packedNode.m_name == "." || packedNode.m_name.find('/') != std::string::npos)
 	{
-		DebuggerPrintf(
-			"PackedScene: node name '%s' cannot be represented in a scene path.\n",
-			packedNode.m_name.c_str());
+		ERR_PRINT(Stringf("PackedScene: node name '%s' cannot be represented in a scene path.\n",
+			packedNode.m_name.c_str()));
 		return false;
 	}
 
@@ -98,7 +96,7 @@ bool TryParseScene(Json const& root, PackedSceneData& outData)
 {
 	if (!root.contains("nodes") || !root["nodes"].is_array() || root["nodes"].empty())
 	{
-		DebuggerPrintf("PackedScene: the root JSON must contain a non-empty 'nodes' array.\n");
+		ERR_PRINT("PackedScene: the root JSON must contain a non-empty 'nodes' array.\n");
 		return false;
 	}
 
@@ -153,7 +151,7 @@ Ref<Resource> PackedSceneLoader::Load(VirtualPath const& virtualPath)
 	}
 	catch (std::exception const& error)
 	{
-		DebuggerPrintf("PackedScene: failed to load '%s': %s\n", virtualPath.CStr(), error.what());
+		ERR_PRINT(Stringf("PackedScene: failed to load '%s': %s\n", virtualPath.CStr(), error.what()));
 		return Ref<Resource>();
 	}
 }
@@ -195,7 +193,7 @@ bool PackedSceneSaver::Save(VirtualPath const& virtualPath, Variant const& value
 				}
 				else
 				{
-					DebuggerPrintf("PackedScene: skipping unsavable property '%s'.\n", property.m_name.c_str());
+					WARN_PRINT(Stringf("PackedScene: skipping unsavable property '%s'.\n", property.m_name.c_str()));
 				}
 			}
 		}
@@ -215,7 +213,7 @@ bool PackedSceneSaver::Save(VirtualPath const& virtualPath, Variant const& value
 	}
 	catch (std::exception const& error)
 	{
-		DebuggerPrintf("PackedScene: failed to save '%s': %s\n", virtualPath.CStr(), error.what());
+		ERR_PRINT(Stringf("PackedScene: failed to save '%s': %s\n", virtualPath.CStr(), error.what()));
 		return false;
 	}
 }

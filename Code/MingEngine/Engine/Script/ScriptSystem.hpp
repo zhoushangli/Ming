@@ -3,12 +3,18 @@
 #include "MingEngine/Core/ErrorWarningAssert.hpp"
 #include "MingEngine/Core/Object/ClassDatabase.hpp"
 #include "MingEngine/Engine/Application/SystemBase.hpp"
+#include "MingEngine/Engine/Script/CSharpScript.hpp"
 
 #include "ThirdParty/DotNetHost/coreclr_delegates.h"
 
+#include <set>
+#include <string>
 #include <utility>
+#include <vector>
 
 //---------------------------------------------------------------------------
+
+struct MingString;
 
 // Native callbacks
 
@@ -66,7 +72,10 @@ using CollectAndGetNativeBindingStateFunc =
 	void(CORECLR_DELEGATE_CALLTYPE*)(int32_t* allocated, int32_t* disposed, int32_t* freed);
 using AddScriptBridgeFunc =
 	int32_t(CORECLR_DELEGATE_CALLTYPE*)(void* script, uint8_t const* scriptPath, int32_t scriptPathLength);
-using RemoveScriptBridgeFunc = int32_t(CORECLR_DELEGATE_CALLTYPE*)(void* script);
+using RemoveScriptBridgeFunc   = int32_t(CORECLR_DELEGATE_CALLTYPE*)(void* script);
+using SerializeScriptStateFunc = int32_t(CORECLR_DELEGATE_CALLTYPE*)(void* gcHandle, MingString* outState);
+using DeserializeScriptStateFunc =
+	int32_t(CORECLR_DELEGATE_CALLTYPE*)(void* gcHandle, uint8_t const* state, int32_t length);
 
 struct ManagedCallbacks
 {
@@ -84,6 +93,8 @@ struct ManagedCallbacks
 	CollectAndGetNativeBindingStateFunc    m_collectAndGetNativeBindingState    = nullptr;
 	AddScriptBridgeFunc                    m_addScriptBridge                    = nullptr;
 	RemoveScriptBridgeFunc                 m_removeScriptBridge                 = nullptr;
+	SerializeScriptStateFunc               m_serializeScriptState               = nullptr;
+	DeserializeScriptStateFunc             m_deserializeScriptState             = nullptr;
 };
 
 //---------------------------------------------------------------------------
@@ -100,12 +111,18 @@ struct ScriptSystemConfig
 };
 
 class Script;
-class CSharpScript;
-struct MingString;
 
 class ScriptSystem : public SystemBase
 {
 	MCLASS(ScriptSystem, SystemBase)
+
+private:
+	struct StateBackup
+	{
+		ObjectID          m_owner;
+		Ref<CSharpScript> m_script;
+		std::string       m_state;
+	};
 
 public:
 	ScriptSystem(ScriptSystemConfig const& config);
@@ -115,41 +132,56 @@ public:
 	void BeginFrame() override;
 	void EndFrame() override;
 
-	void ReleaseGCHandle(void* gcHandle);
-	bool CreateUserManagedInstance(CSharpScript* script, Object* owner);
-
-	bool ValidateManagedScriptInstance(void* gcHandle, Object* expectedOwner)
-	{
-		if (gcHandle == nullptr || expectedOwner == nullptr
-			|| m_managedCallbacks.m_validateManagedScriptInstance == nullptr)
-		{
-			return false;
-		}
-
-		return m_managedCallbacks.m_validateManagedScriptInstance(gcHandle, expectedOwner) != 0;
-	}
-
+	void  ReleaseGCHandle(void* gcHandle);
+	bool  CreateUserManagedInstance(CSharpScript* script, Object* owner);
+	bool  ValidateManagedScriptInstance(void* gcHandle, Object* expectedOwner);
 	void  CollectAndGetManagedScriptState(int32_t& allocated, int32_t& disposed, int32_t& freed, int32_t& targetAlive);
 	void* GetOrCreateNativeManagedWrapper(Object* owner);
 	bool  AddScriptBridge(CSharpScript* script, std::string const& scriptPath);
 	bool  RemoveScriptBridge(CSharpScript* script);
-	bool  EnsureProjectSolution();
+
+	bool EnsureProjectSolution();
+	bool BuildProjectSolution();
+
+	bool LoadProjectAssembly();
+	bool UnloadProjectAssembly();
+	bool ReloadProjectAssembly();
+
+	bool TryBeginScriptInstantiation()
+	{
+		return !m_scriptExecutionSuspended || std::exchange(m_isRecreatingInstances, false);
+	}
+	bool IsScriptExecutionSuspended() const { return m_scriptExecutionSuspended; }
+	void RegisterScriptOwner(ObjectID id);
+	void UnregisterScriptOwner(ObjectID id);
 
 private:
 	using ShutdownFunc = int32_t(CORECLR_DELEGATE_CALLTYPE*)();
 	using LoadProjectAssemblyFunc =
 		int32_t(CORECLR_DELEGATE_CALLTYPE*)(wchar_t const* assemblyPath, MingString* outLoadedAssemblyPath);
+	using UnloadProjectAssemblyFunc = int32_t(CORECLR_DELEGATE_CALLTYPE*)();
 	using EnsureProjectSolutionFunc =
 		int32_t(CORECLR_DELEGATE_CALLTYPE*)(wchar_t const* projectDirectory, wchar_t const* sdkDirectory);
+	using BuildProjectSolutionFunc = int32_t(CORECLR_DELEGATE_CALLTYPE*)(wchar_t const* projectDirectory);
 
 	bool InitializeDotNetRuntime();
-	bool LoadProjectAssembly();
+	bool SaveScriptStates();
+	void DetachScriptInstances();
+	bool RestoreScriptInstances();
+	bool m_scriptExecutionSuspended = false;
+	bool m_isRecreatingInstances = false;
 
 	bool                      m_isInitialized         = false;
+	bool                      m_isAssemblyReloading   = false;
 	void*                     m_hostfxrModule         = nullptr;
 	ShutdownFunc              m_shutdown              = nullptr;
 	LoadProjectAssemblyFunc   m_loadProjectAssembly   = nullptr;
+	UnloadProjectAssemblyFunc m_unloadProjectAssembly = nullptr;
 	EnsureProjectSolutionFunc m_ensureProjectSolution = nullptr;
+	BuildProjectSolutionFunc  m_buildProjectSolution  = nullptr;
 
 	ManagedCallbacks m_managedCallbacks = {};
+
+	std::set<ObjectID>       m_scriptOwners;
+	std::vector<StateBackup> m_pendingReloadState;
 };

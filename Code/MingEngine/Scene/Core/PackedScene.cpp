@@ -1,5 +1,8 @@
 #include "MingEngine/Scene/Core/PackedScene.hpp"
 
+#include "MingEngine/Engine/Application/Engine.hpp"
+#include "MingEngine/Engine/Script/ScriptSystem.hpp"
+
 #include "MingEngine/Core/Object/ClassDatabase.hpp"
 
 #include "MingEngine/Core/ErrorWarningAssert.hpp"
@@ -23,6 +26,9 @@ bool PackedProperty::CanApplyTo(PropertyInfo const& propertyInfo) const
 
 bool PackedScene::Pack(Node const* node)
 {
+	ERR_FAIL_COND_V_MSG(g_engine != nullptr && g_engine->m_scriptSystem != nullptr
+		&& g_engine->m_scriptSystem->IsScriptExecutionSuspended(), false,
+		"Cannot pack a scene while script reload is incomplete.\n");
 	m_data.m_packedNodes.clear();
 
 	if (node == nullptr)
@@ -61,7 +67,7 @@ Node* PackedScene::Instantiate() const
 		{
 			MemDelete(object);
 			MemDelete(root);
-			DebuggerPrintf("PackedScene: type '%s' is not a creatable Node.\n", packedNode.m_type.c_str());
+			ERR_PRINT(Stringf("PackedScene: type '%s' is not a creatable Node.\n", packedNode.m_type.c_str()));
 			return nullptr;
 		}
 
@@ -71,7 +77,7 @@ Node* PackedScene::Instantiate() const
 			if (!packedNode.m_parentPath.empty())
 			{
 				MemDelete(node);
-				DebuggerPrintf("PackedScene: the first node must be the scene root and have no parent path.\n");
+				ERR_PRINT("PackedScene: the first node must be the scene root and have no parent path.\n");
 				return nullptr;
 			}
 			root = node;
@@ -82,7 +88,7 @@ Node* PackedScene::Instantiate() const
 			{
 				MemDelete(node);
 				MemDelete(root);
-				DebuggerPrintf("PackedScene: node '%s' creates an additional scene root.\n", packedNode.m_name.c_str());
+				ERR_PRINT(Stringf("PackedScene: node '%s' creates an additional scene root.\n", packedNode.m_name.c_str()));
 				return nullptr;
 			}
 
@@ -91,10 +97,9 @@ Node* PackedScene::Instantiate() const
 			{
 				MemDelete(node);
 				MemDelete(root);
-				DebuggerPrintf(
-					"PackedScene: node '%s' has invalid scene-relative parent path '%s'.\n",
+				ERR_PRINT(Stringf("PackedScene: node '%s' has invalid scene-relative parent path '%s'.\n",
 					packedNode.m_name.c_str(),
-					packedNode.m_parentPath.c_str());
+					packedNode.m_parentPath.c_str()));
 				return nullptr;
 			}
 
@@ -103,10 +108,9 @@ Node* PackedScene::Instantiate() const
 			{
 				MemDelete(node);
 				MemDelete(root);
-				DebuggerPrintf(
-					"PackedScene: node '%s' has unresolved parent path '%s'.\n",
+				ERR_PRINT(Stringf("PackedScene: node '%s' has unresolved parent path '%s'.\n",
 					packedNode.m_name.c_str(),
-					packedNode.m_parentPath.c_str());
+					packedNode.m_parentPath.c_str()));
 				return nullptr;
 			}
 
@@ -120,10 +124,9 @@ Node* PackedScene::Instantiate() const
 					MemDelete(node);
 				}
 				MemDelete(root);
-				DebuggerPrintf(
-					"PackedScene: sibling name '%s' is not unique; AddNode produced '%s'.\n",
+				ERR_PRINT(Stringf("PackedScene: sibling name '%s' is not unique; AddNode produced '%s'.\n",
 					requestedName.c_str(),
-					actualName.c_str());
+					actualName.c_str()));
 				return nullptr;
 			}
 		}
@@ -141,18 +144,16 @@ Node* PackedScene::Instantiate() const
 			PropertyInfo const* property = ClassDatabase::FindProperty(packedNode.m_type, packedProperty.m_name);
 			if (property == nullptr)
 			{
-				DebuggerPrintf(
-					"PackedScene: skipping unknown property '%s' on type '%s'.\n",
+				WARN_PRINT(Stringf("PackedScene: skipping unknown property '%s' on type '%s'.\n",
 					packedProperty.m_name.c_str(),
-					packedNode.m_type.c_str());
+					packedNode.m_type.c_str()));
 				continue;
 			}
 			if (!packedProperty.CanApplyTo(*property))
 			{
-				DebuggerPrintf(
-					"PackedScene: skipping incompatible property '%s' on type '%s'.\n",
+				WARN_PRINT(Stringf("PackedScene: skipping incompatible property '%s' on type '%s'.\n",
 					packedProperty.m_name.c_str(),
-					packedNode.m_type.c_str());
+					packedNode.m_type.c_str()));
 				continue;
 			}
 
@@ -162,11 +163,10 @@ Node* PackedScene::Instantiate() const
 			}
 			catch (std::exception const& error)
 			{
-				DebuggerPrintf(
-					"PackedScene: failed to apply property '%s' on type '%s': %s\n",
+				ERR_PRINT(Stringf("PackedScene: failed to apply property '%s' on type '%s': %s\n",
 					packedProperty.m_name.c_str(),
 					packedNode.m_type.c_str(),
-					error.what());
+					error.what()));
 			}
 		}
 	}
@@ -188,9 +188,8 @@ bool PackedScene::ParseNodeRecursively(
 	packedNode.m_parentPath = parentPath;
 	if (packedNode.m_name.empty() || packedNode.m_name == "." || packedNode.m_name.find('/') != std::string::npos)
 	{
-		DebuggerPrintf(
-			"PackedScene: node name '%s' cannot be represented in a scene path.\n",
-			packedNode.m_name.c_str());
+		ERR_PRINT(Stringf("PackedScene: node name '%s' cannot be represented in a scene path.\n",
+			packedNode.m_name.c_str()));
 		return false;
 	}
 
@@ -198,7 +197,7 @@ bool PackedScene::ParseNodeRecursively(
 	Node*   defaultNode   = dynamic_cast<Node*>(defaultObject);
 	if (defaultObject != nullptr && defaultNode == nullptr)
 	{
-		DebuggerPrintf("PackedScene: default object for type '%s' is not a Node.\n", packedNode.m_type.c_str());
+		ERR_PRINT(Stringf("PackedScene: default object for type '%s' is not a Node.\n", packedNode.m_type.c_str()));
 	}
 
 	std::vector<PropertyInfo const*> properties = ClassDatabase::GetAllProperties(packedNode.m_type);
@@ -225,11 +224,10 @@ bool PackedScene::ParseNodeRecursively(
 		}
 		catch (std::exception const& error)
 		{
-			DebuggerPrintf(
-				"PackedScene: failed to read property '%s' on type '%s': %s\n",
+			ERR_PRINT(Stringf("PackedScene: failed to read property '%s' on type '%s': %s\n",
 				property->m_name.c_str(),
 				packedNode.m_type.c_str(),
-				error.what());
+				error.what()));
 		}
 	}
 

@@ -92,4 +92,13 @@ public class MingObject : IDisposable
     {
         NativeCalls.MingCall_Void(FreeMethodBind, GetPtr(this));
     }
+
+    public virtual void SaveReloadState(Dictionary<string, string> state)
+    {
+    }
+
+    public virtual void RestoreReloadState(
+        IReadOnlyDictionary<string, string> state)
+    {
+    }
 }

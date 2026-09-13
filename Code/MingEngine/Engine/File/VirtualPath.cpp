@@ -1,6 +1,7 @@
 #include "MingEngine/Engine/File/VirtualPath.hpp"
 
 #include "MingEngine/Core/ErrorWarningAssert.hpp"
+#include "MingEngine/Core/StringUtils.hpp"
 
 #include <algorithm>
 #include <cctype>
@@ -12,7 +13,7 @@ constexpr std::string_view kResourcePrefix = "res://";
 
 void ReportInvalidVirtualPath(char const* path)
 {
-	DebuggerPrintf("VirtualPath: invalid path '%s'.\n", path != nullptr ? path : "<null>");
+	ERR_PRINT(Stringf("VirtualPath: invalid path '%s'.\n", path != nullptr ? path : "<null>"));
 }
 
 std::string ToLower(std::string_view text)
@@ -133,7 +134,7 @@ VirtualPath VirtualPath::Join(std::string_view child) const
 {
 	if (!IsValid() || child.empty() || child.front() == '/' || child.back() == '/')
 	{
-		DebuggerPrintf("VirtualPath::Join: invalid child '%.*s'.\n", static_cast<int>(child.size()), child.data());
+		ERR_PRINT(Stringf("VirtualPath::Join: invalid child '%.*s'.\n", static_cast<int>(child.size()), child.data()));
 		return {};
 	}
 
@@ -147,7 +148,7 @@ VirtualPath VirtualPath::Join(std::string_view child) const
 	VirtualPath result;
 	if (!TryParse(joined, result))
 	{
-		DebuggerPrintf("VirtualPath::Join: invalid child '%.*s'.\n", static_cast<int>(child.size()), child.data());
+		ERR_PRINT(Stringf("VirtualPath::Join: invalid child '%.*s'.\n", static_cast<int>(child.size()), child.data()));
 	}
 	return result;
 }
