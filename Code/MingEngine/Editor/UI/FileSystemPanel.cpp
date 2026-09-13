@@ -620,9 +620,9 @@ char const* FileSystemPanel::GetIconNameForPath(std::filesystem::path const& pat
 	{
 		return "PackedScene";
 	}
-	if (extension == ".cs" || extension == ".gd")
+	if (extension == ".cs")
 	{
-		return "Script";
+		return "CSharpScript";
 	}
 	if (extension == ".png" || extension == ".jpg" || extension == ".jpeg" || extension == ".svg")
 	{

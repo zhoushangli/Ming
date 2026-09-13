@@ -34,6 +34,9 @@ public:
 	void BeginFrame();
 	void EndFrame();
 
+	void SetEditorMode(bool enabled) { m_isEditorMode = enabled; }
+	bool IsEditorMode() const { return m_isEditorMode; }
+
 public:
 	EngineConfig m_config;
 
@@ -46,6 +49,9 @@ public:
 	AudioSystem*   m_audioSystem   = nullptr;
 	ImGuiSystem*   m_imguiSystem   = nullptr;
 	NetworkSystem* m_networkSystem = nullptr;
+
+private:
+	bool m_isEditorMode = false;
 };
 
 extern Engine* g_engine;

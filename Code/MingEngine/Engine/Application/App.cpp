@@ -41,7 +41,9 @@ App::App(MingRunConfig const& config) : m_runConfig(config)
 	DevConsoleConfig consoleConfig;
 	consoleConfig.m_isEnable = false;
 
-	g_engine        = new Engine(engineConfig);
+	g_engine = new Engine(engineConfig);
+	g_engine->SetEditorMode(config.mode == MingRunMode::Editor);
+
 	g_engineService = new EngineService(consoleConfig);
 }
 

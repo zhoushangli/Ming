@@ -13,6 +13,7 @@ public:
 	bool CopyFrom(Resource&& other) override;
 
 	bool Instantiate(Object* owner) override;
+	bool InstantiatePlaceHolder(Object* owner) override;
 };
 
 class CSharpInstance : public ScriptInstance

@@ -4,13 +4,13 @@
 #include "MingEngine/Engine/Script/ScriptSystem.hpp"
 
 #include "MingEngine/Core/ErrorWarningAssert.hpp"
-#include "MingEngine/Core/StringUtils.hpp"
 #include "MingEngine/Core/Object/ClassDatabase.hpp"
 #include "MingEngine/Core/Object/NativeScript.hpp"
 #include "MingEngine/Core/Object/RefCounted.hpp"
 #include "MingEngine/Core/Object/Script.hpp"
 #include "MingEngine/Core/Object/ScriptInstance.hpp"
 #include "MingEngine/Core/Object/Variant.hpp"
+#include "MingEngine/Core/StringUtils.hpp"
 
 std::vector<Object*> ObjectDatabase::m_objectSlots;
 uint32_t             ObjectDatabase::m_nextObjectUID = 1u;
@@ -223,21 +223,37 @@ Variant Object::GetScript() const
 
 void Object::SetScript(Variant const& script)
 {
-	ERR_FAIL_COND_MSG(g_engine != nullptr && g_engine->m_scriptSystem != nullptr
-		&& g_engine->m_scriptSystem->IsScriptExecutionSuspended(),
+	ERR_FAIL_COND_MSG(
+		g_engine->m_scriptSystem->IsScriptExecutionSuspended(),
 		"Cannot replace a script while reload is incomplete.\n");
+
+	ERR_FAIL_COND_MSG(!Ref<Script>(script).IsValid(), "Cannot replace a script while reload is incomplete.\n");
+
 	if (m_scriptInstance)
 	{
 		SetScriptInstance(nullptr);
 	}
 
 	Ref<Script> scriptRef = script;
-	bool        result    = scriptRef->Instantiate(this);
 
-	if (!result)
+	// e.g. When we clear the script, we will call like SetScript(Variant())
+	if (scriptRef.IsValid())
 	{
-		ERR_PRINT(Stringf("Failed to instantiate script for Object %s\n", GetClassName().c_str()));
-		SetScriptInstance(nullptr);
+		bool result;
+		if (g_engine->IsEditorMode())
+		{
+			result = scriptRef->InstantiatePlaceHolder(this);
+		}
+		else
+		{
+			result = scriptRef->Instantiate(this);
+		}
+
+		if (!result)
+		{
+			ERR_PRINT(Stringf("Failed to instantiate script for Object %s\n", GetClassName().c_str()));
+			SetScriptInstance(nullptr);
+		}
 	}
 }
 

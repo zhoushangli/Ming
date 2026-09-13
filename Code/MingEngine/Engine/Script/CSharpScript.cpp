@@ -1,5 +1,6 @@
 #include "MingEngine/Engine/Script/CSharpScript.hpp"
 
+#include "MingEngine/Core/Object/PlaceHolderScriptInstance.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Engine/Script/ScriptSystem.hpp"
 
@@ -35,7 +36,7 @@ bool CSharpScript::Instantiate(Object* owner)
 	}
 
 	// 1) Create a new CSharpInstance
-	CSharpInstance* scriptInstance = new CSharpInstance(Ref<CSharpScript>(this));
+	CSharpInstance* scriptInstance = MemNew<CSharpInstance>(Ref<CSharpScript>(this));
 	scriptInstance->m_owner        = owner;
 	owner->SetScriptInstance(scriptInstance);
 
@@ -49,6 +50,19 @@ bool CSharpScript::Instantiate(Object* owner)
 	}
 
 	g_engine->m_scriptSystem->RegisterScriptOwner(owner->GetObjectID());
+	return true;
+}
+
+bool CSharpScript::InstantiatePlaceHolder(Object* owner)
+{
+	if (owner == nullptr)
+	{
+		return false;
+	}
+
+	PlaceHolderScriptInstance* scriptInstance = MemNew<PlaceHolderScriptInstance>(Ref<CSharpScript>(this), owner);
+	owner->SetScriptInstance(scriptInstance);
+
 	return true;
 }
 

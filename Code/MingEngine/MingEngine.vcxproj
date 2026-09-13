@@ -103,6 +103,7 @@
     <ClCompile Include="Core\Memory.cpp" />
     <ClCompile Include="Core\Object\ManagedGCHandle.cpp" />
     <ClCompile Include="Core\Object\NativeScript.cpp" />
+    <ClCompile Include="Core\Object\PlaceHolderScriptInstance.cpp" />
     <ClCompile Include="Core\Object\RefCounted.cpp" />
     <ClCompile Include="Core\Object\Resource.cpp" />
     <ClCompile Include="Core\Object\ResourceImporter.cpp" />
@@ -199,7 +200,7 @@
     <ClCompile Include="Engine\Input\KeyboardState.cpp" />
     <ClCompile Include="Engine\Input\XboxController.cpp" />
     <ClCompile Include="Engine\Script\CSharpScript.cpp" />
-    <ClCompile Include="Engine\Script\CSharpScriptFormatter.cpp" />
+    <ClCompile Include="Engine\Script\CSharpScriptFormat.cpp" />
     <ClCompile Include="Engine\Script\CSharpScriptGenerator.cpp" />
     <ClCompile Include="Engine\Script\ScriptSystem.cpp" />
     <ClCompile Include="Engine\Window\WindowSystem.cpp" />
@@ -272,6 +273,7 @@
     <ClInclude Include="Core\Memory.hpp" />
     <ClInclude Include="Core\Object\ManagedGCHandle.hpp" />
     <ClInclude Include="Core\Object\NativeScript.hpp" />
+    <ClInclude Include="Core\Object\PlaceHolderScriptInstance.hpp" />
     <ClInclude Include="Core\Object\RefCounted.hpp" />
     <ClInclude Include="Core\Object\Resource.hpp" />
     <ClInclude Include="Core\Object\ResourceImporter.hpp" />
@@ -382,7 +384,7 @@
     <ClInclude Include="Engine\Input\KeyboardState.hpp" />
     <ClInclude Include="Engine\Input\XboxController.hpp" />
     <ClInclude Include="Engine\Script\CSharpScript.hpp" />
-    <ClInclude Include="Engine\Script\CSharpScriptFormatter.hpp" />
+    <ClInclude Include="Engine\Script\CSharpScriptFormat.hpp" />
     <ClInclude Include="Engine\Script\CSharpScriptGenerator.hpp" />
     <ClInclude Include="Engine\Script\ScriptSystem.hpp" />
     <ClInclude Include="Engine\Window\WindowSystem.hpp" />

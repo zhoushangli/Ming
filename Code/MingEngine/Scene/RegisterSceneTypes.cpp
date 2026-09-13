@@ -5,6 +5,7 @@
 #include "MingEngine/Core/Object/ResourceLoader.hpp"
 #include "MingEngine/Core/Object/ResourceSaver.hpp"
 
+#include "MingEngine/Engine/Script/CSharpScriptFormat.hpp"
 #include "MingEngine/Scene/3D/Camera3D.hpp"
 #include "MingEngine/Scene/3D/Light3D.hpp"
 #include "MingEngine/Scene/3D/MeshInstance3D.hpp"
@@ -44,16 +45,20 @@ void RegisterSceneTypes()
 	ClassDatabase::RegisterClass<TextureResource>();
 	ClassDatabase::RegisterClass<PackedScene>();
 	ClassDatabase::RegisterClass<ShaderResource>();
+	ClassDatabase::RegisterClass<CSharpScript>();
 
 	// Resource format types
 	ClassDatabase::RegisterClass<PackedSceneLoader>();
 	ClassDatabase::RegisterClass<MeshResourceLoader>();
 	ClassDatabase::RegisterClass<TextureResourceLoader>();
 	ClassDatabase::RegisterClass<ShaderResourceLoader>();
+	ClassDatabase::RegisterClass<CSharpScriptLoader>();
 
 	ClassDatabase::RegisterClass<PackedSceneSaver>();
 	ClassDatabase::RegisterClass<MeshResourceSaver>();
 	ClassDatabase::RegisterClass<TextureResourceSaver>();
+	// ClassDatabase::RegisterClass<ShaderResourceSaver>();
+	ClassDatabase::RegisterClass<CSharpScriptSaver>();
 
 	ClassDatabase::RegisterClass<OBJImporter>();
 	ClassDatabase::RegisterClass<GLTFImporter>();
@@ -64,10 +69,13 @@ void RegisterSceneTypes()
 	ResourceLoader::AddLoader(CreateRef<MeshResourceLoader>());
 	ResourceLoader::AddLoader(CreateRef<TextureResourceLoader>());
 	ResourceLoader::AddLoader(CreateRef<ShaderResourceLoader>());
+	ResourceLoader::AddLoader(CreateRef<CSharpScriptLoader>());
 
 	ResourceSaver::AddSaver(CreateRef<PackedSceneSaver>());
 	ResourceSaver::AddSaver(CreateRef<MeshResourceSaver>());
 	ResourceSaver::AddSaver(CreateRef<TextureResourceSaver>());
+	// ResourceSaver::AddSaver(CreateRef<ShaderResourceSaver>());
+	ResourceSaver::AddSaver(CreateRef<CSharpScriptSaver>());
 
 	ResourceImporter::AddImporter(CreateRef<OBJImporter>());
 	ResourceImporter::AddImporter(CreateRef<GLTFImporter>());
