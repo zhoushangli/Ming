@@ -18,35 +18,33 @@ struct MingString;
 
 // Native callbacks
 
-using LogUtf8Func            = int32_t(CORECLR_DELEGATE_CALLTYPE*)(uint8_t const* text, int32_t length);
-using GetObjectClassNameFunc = char const*(CORECLR_DELEGATE_CALLTYPE*)(void* objectPtr);
-using GetMethodBindFunc      = void const*(CORECLR_DELEGATE_CALLTYPE*)(uint8_t const* className,
-																	   int32_t        classNameLength,
-																	   uint8_t const* methodName,
-																	   int32_t        methodNameLength);
+using LogFunc             = int32_t(CORECLR_DELEGATE_CALLTYPE*)(MingString const* text);
+using CreateStringFunc    = void*(CORECLR_DELEGATE_CALLTYPE*)(void const* str, int32_t length);
+using GetStringBufferFunc = void*(CORECLR_DELEGATE_CALLTYPE*)(void* str);
+using GetStringLengthFunc = int32_t(CORECLR_DELEGATE_CALLTYPE*)(void const* str);
+using DestroyStringFunc   = void(CORECLR_DELEGATE_CALLTYPE*)(void const* str);
+using GetMethodBindFunc   = void const*(CORECLR_DELEGATE_CALLTYPE*)(MingString const* className,
+																	MingString const* methodName);
 using MethodBindPtrCallFunc =
 	void(CORECLR_DELEGATE_CALLTYPE*)(void const* methodBind, void* objectPtr, void** args, void* retPtr);
-using CreateStringFunc                          = void*(CORECLR_DELEGATE_CALLTYPE*)(void const* str, int32_t length);
-using GetStringBufferFunc                       = void*(CORECLR_DELEGATE_CALLTYPE*)(void* str);
-using GetStringLengthFunc                       = int32_t(CORECLR_DELEGATE_CALLTYPE*)(void const* str);
-using DestroyStringFunc                         = void(CORECLR_DELEGATE_CALLTYPE*)(void const* str);
-using TieNativeManagedToUnmanagedFunc           = int32_t(CORECLR_DELEGATE_CALLTYPE*)(void* gcHandle, void* native);
-using GetConstructorFunc                        = ConstructorFunc(CORECLR_DELEGATE_CALLTYPE*)(void* name);
-using UnmanagedGetInstanceBindingManagedFunc    = void*(CORECLR_DELEGATE_CALLTYPE*)(void* native);
+using GetConstructorFunc                     = ConstructorFunc(CORECLR_DELEGATE_CALLTYPE*)(MingString const* name);
+using GetObjectClassNameFunc                 = void(CORECLR_DELEGATE_CALLTYPE*)(void* objectPtr, MingString* outName);
+using TieNativeManagedToUnmanagedFunc        = int32_t(CORECLR_DELEGATE_CALLTYPE*)(void* gcHandle, void* native);
+using UnmanagedGetInstanceBindingManagedFunc = void*(CORECLR_DELEGATE_CALLTYPE*)(void* native);
 using UnmanagedInstanceBindingCreateManagedFunc = void*(CORECLR_DELEGATE_CALLTYPE*)(void* native);
 
 struct NativeCallbacks
 {
-	LogUtf8Func                               m_logUtf8                               = nullptr;
-	GetObjectClassNameFunc                    m_getObjectClassName                    = nullptr;
-	GetMethodBindFunc                         m_getMethodBind                         = nullptr;
-	MethodBindPtrCallFunc                     m_methodBindPtrCall                     = nullptr;
+	LogFunc                                   m_log                                   = nullptr;
 	CreateStringFunc                          m_createString                          = nullptr;
 	GetStringBufferFunc                       m_getStringBuffer                       = nullptr;
 	GetStringLengthFunc                       m_getStringLength                       = nullptr;
 	DestroyStringFunc                         m_destroyString                         = nullptr;
-	TieNativeManagedToUnmanagedFunc           m_tieNativeManagedToUnmanaged           = nullptr;
+	GetMethodBindFunc                         m_getMethodBind                         = nullptr;
+	MethodBindPtrCallFunc                     m_methodBindPtrCall                     = nullptr;
 	GetConstructorFunc                        m_getConstructor                        = nullptr;
+	GetObjectClassNameFunc                    m_getObjectClassName                    = nullptr;
+	TieNativeManagedToUnmanagedFunc           m_tieNativeManagedToUnmanaged           = nullptr;
 	UnmanagedGetInstanceBindingManagedFunc    m_unmanagedGetInstanceBindingManaged    = nullptr;
 	UnmanagedInstanceBindingCreateManagedFunc m_unmanagedInstanceBindingCreateManaged = nullptr;
 };
@@ -55,46 +53,20 @@ struct NativeCallbacks
 
 // Managed callbacks
 
-using ManagedPingFunc        = int32_t(CORECLR_DELEGATE_CALLTYPE*)();
-using CreateTestGCHandleFunc = void*(CORECLR_DELEGATE_CALLTYPE*)();
-using InvokeTestGCHandleFunc = int32_t(CORECLR_DELEGATE_CALLTYPE*)(void* gcHandle);
-using ReleaseGCHandleFunc    = void(CORECLR_DELEGATE_CALLTYPE*)(void* gcHandle);
-using CollectAndGetStateFunc =
-	void(CORECLR_DELEGATE_CALLTYPE*)(int32_t* allocated, int32_t* freed, int32_t* targetAlive);
-using CreateUserManagedInstanceFunc     = void*(CORECLR_DELEGATE_CALLTYPE*)(void* script, void* owner);
-using CreateNativeManagedInstanceFunc   = void*(CORECLR_DELEGATE_CALLTYPE*)(void* nativeClassName, void* owner);
-using ValidateManagedScriptInstanceFunc = int32_t(CORECLR_DELEGATE_CALLTYPE*)(void* gcHandle, void* expectedOwner);
-using CollectAndGetManagedScriptStateFunc =
-	void(CORECLR_DELEGATE_CALLTYPE*)(int32_t* allocated, int32_t* disposed, int32_t* freed, int32_t* targetAlive);
-using CreateNativeManagedWrapperForSmokeFunc = void*(CORECLR_DELEGATE_CALLTYPE*)();
-using ValidateNativeManagedWrapperFunc       = int32_t(CORECLR_DELEGATE_CALLTYPE*)(void* owner);
-using CollectAndGetNativeBindingStateFunc =
-	void(CORECLR_DELEGATE_CALLTYPE*)(int32_t* allocated, int32_t* disposed, int32_t* freed);
-using AddScriptBridgeFunc =
-	int32_t(CORECLR_DELEGATE_CALLTYPE*)(void* script, uint8_t const* scriptPath, int32_t scriptPathLength);
-using RemoveScriptBridgeFunc   = int32_t(CORECLR_DELEGATE_CALLTYPE*)(void* script);
-using SerializeScriptStateFunc = int32_t(CORECLR_DELEGATE_CALLTYPE*)(void* gcHandle, MingString* outState);
-using DeserializeScriptStateFunc =
-	int32_t(CORECLR_DELEGATE_CALLTYPE*)(void* gcHandle, uint8_t const* state, int32_t length);
+using AddScriptBridgeFunc             = int32_t(CORECLR_DELEGATE_CALLTYPE*)(void* script, MingString const* scriptPath);
+using RemoveScriptBridgeFunc          = int32_t(CORECLR_DELEGATE_CALLTYPE*)(void* script);
+using CreateNativeManagedInstanceFunc = void*(CORECLR_DELEGATE_CALLTYPE*)(MingString const* nativeClassName,
+																		  void*             owner);
+using CreateUserManagedInstanceFunc   = void*(CORECLR_DELEGATE_CALLTYPE*)(void* script, void* owner);
+using ReleaseGCHandleFunc             = void(CORECLR_DELEGATE_CALLTYPE*)(void* gcHandle);
 
 struct ManagedCallbacks
 {
-	ManagedPingFunc                        m_ping                               = nullptr;
-	CreateTestGCHandleFunc                 m_createTestGCHandle                 = nullptr;
-	InvokeTestGCHandleFunc                 m_invokeTestGCHandle                 = nullptr;
-	ReleaseGCHandleFunc                    m_releaseGCHandle                    = nullptr;
-	CollectAndGetStateFunc                 m_collectAndGetState                 = nullptr;
-	CreateUserManagedInstanceFunc          m_createUserManagedInstance          = nullptr;
-	CreateNativeManagedInstanceFunc        m_createNativeManagedInstance        = nullptr;
-	ValidateManagedScriptInstanceFunc      m_validateManagedScriptInstance      = nullptr;
-	CollectAndGetManagedScriptStateFunc    m_collectAndGetManagedScriptState    = nullptr;
-	CreateNativeManagedWrapperForSmokeFunc m_createNativeManagedWrapperForSmoke = nullptr;
-	ValidateNativeManagedWrapperFunc       m_validateNativeManagedWrapper       = nullptr;
-	CollectAndGetNativeBindingStateFunc    m_collectAndGetNativeBindingState    = nullptr;
-	AddScriptBridgeFunc                    m_addScriptBridge                    = nullptr;
-	RemoveScriptBridgeFunc                 m_removeScriptBridge                 = nullptr;
-	SerializeScriptStateFunc               m_serializeScriptState               = nullptr;
-	DeserializeScriptStateFunc             m_deserializeScriptState             = nullptr;
+	AddScriptBridgeFunc             m_addScriptBridge             = nullptr;
+	RemoveScriptBridgeFunc          m_removeScriptBridge          = nullptr;
+	CreateNativeManagedInstanceFunc m_createNativeManagedInstance = nullptr;
+	CreateUserManagedInstanceFunc   m_createUserManagedInstance   = nullptr;
+	ReleaseGCHandleFunc             m_releaseGCHandle             = nullptr;
 };
 
 //---------------------------------------------------------------------------
@@ -117,11 +89,15 @@ class ScriptSystem : public SystemBase
 	MCLASS(ScriptSystem, SystemBase)
 
 private:
+	// When we reload the assembly(suppose we have already rebuild a new version), we need to
+	// 1) Record all the Objects and their script
+	// 2) Detach all the script instances from their owners
+	// 3) Unload the assembly and load the new one
+	// 4) Recreate the script instances and reattach them to their owners
 	struct StateBackup
 	{
 		ObjectID          m_owner;
 		Ref<CSharpScript> m_script;
-		std::string       m_state;
 	};
 
 public:
@@ -132,20 +108,16 @@ public:
 	void BeginFrame() override;
 	void EndFrame() override;
 
-	void  ReleaseGCHandle(void* gcHandle);
-	bool  CreateUserManagedInstance(CSharpScript* script, Object* owner);
-	bool  ValidateManagedScriptInstance(void* gcHandle, Object* expectedOwner);
-	void  CollectAndGetManagedScriptState(int32_t& allocated, int32_t& disposed, int32_t& freed, int32_t& targetAlive);
-	void* GetOrCreateNativeManagedWrapper(Object* owner);
-	bool  AddScriptBridge(CSharpScript* script, std::string const& scriptPath);
-	bool  RemoveScriptBridge(CSharpScript* script);
-
 	bool EnsureProjectSolution();
 	bool BuildProjectSolution();
-
-	bool LoadProjectAssembly();
-	bool UnloadProjectAssembly();
 	bool ReloadProjectAssembly();
+
+	bool AddScriptBridge(CSharpScript* script, std::string const& scriptPath);
+	bool RemoveScriptBridge(CSharpScript* script);
+
+	void* GetOrCreateNativeManagedWrapper(Object* owner);
+	bool  CreateUserManagedInstance(CSharpScript* script, Object* owner);
+	void  ReleaseGCHandle(void* gcHandle);
 
 	bool TryBeginScriptInstantiation()
 	{
@@ -158,30 +130,37 @@ public:
 private:
 	using ShutdownFunc = int32_t(CORECLR_DELEGATE_CALLTYPE*)();
 	using LoadProjectAssemblyFunc =
-		int32_t(CORECLR_DELEGATE_CALLTYPE*)(wchar_t const* assemblyPath, MingString* outLoadedAssemblyPath);
+		int32_t(CORECLR_DELEGATE_CALLTYPE*)(MingString const* assemblyPath, MingString* outLoadedAssemblyPath);
 	using UnloadProjectAssemblyFunc = int32_t(CORECLR_DELEGATE_CALLTYPE*)();
 	using EnsureProjectSolutionFunc =
-		int32_t(CORECLR_DELEGATE_CALLTYPE*)(wchar_t const* projectDirectory, wchar_t const* sdkDirectory);
-	using BuildProjectSolutionFunc = int32_t(CORECLR_DELEGATE_CALLTYPE*)(wchar_t const* projectDirectory);
+		int32_t(CORECLR_DELEGATE_CALLTYPE*)(MingString const* projectDirectory, MingString const* sdkDirectory);
+	using BuildProjectSolutionFunc = int32_t(CORECLR_DELEGATE_CALLTYPE*)(MingString const* projectDirectory);
 
 	bool InitializeDotNetRuntime();
-	bool SaveScriptStates();
+	void CollectReloadInstances();
 	void DetachScriptInstances();
 	bool RestoreScriptInstances();
-	bool m_scriptExecutionSuspended = false;
-	bool m_isRecreatingInstances = false;
 
-	bool                      m_isInitialized         = false;
-	bool                      m_isAssemblyReloading   = false;
-	void*                     m_hostfxrModule         = nullptr;
-	ShutdownFunc              m_shutdown              = nullptr;
-	LoadProjectAssemblyFunc   m_loadProjectAssembly   = nullptr;
-	UnloadProjectAssemblyFunc m_unloadProjectAssembly = nullptr;
-	EnsureProjectSolutionFunc m_ensureProjectSolution = nullptr;
-	BuildProjectSolutionFunc  m_buildProjectSolution  = nullptr;
+	bool LoadProjectAssembly();
+	bool UnloadProjectAssembly();
+
+private:
+	bool                      m_scriptExecutionSuspended = false;
+	bool                      m_isRecreatingInstances    = false;
+	bool                      m_isInitialized            = false;
+	bool                      m_isAssemblyReloading      = false;
+	void*                     m_hostfxrModule            = nullptr;
+	ShutdownFunc              m_shutdown                 = nullptr;
+	LoadProjectAssemblyFunc   m_loadProjectAssembly      = nullptr;
+	UnloadProjectAssemblyFunc m_unloadProjectAssembly    = nullptr;
+	EnsureProjectSolutionFunc m_ensureProjectSolution    = nullptr;
+	BuildProjectSolutionFunc  m_buildProjectSolution     = nullptr;
 
 	ManagedCallbacks m_managedCallbacks = {};
 
-	std::set<ObjectID>       m_scriptOwners;
-	std::vector<StateBackup> m_pendingReloadState;
+	std::set<ObjectID> m_scriptOwners;
+
+	// Keep the owners and scripts that must be recreated by the next assembly reload.
+	// e.g. m_pendingReloadInstances is cleared once every instance is restored.
+	std::vector<StateBackup> m_pendingReloadBackups;
 };

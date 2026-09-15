@@ -109,13 +109,3 @@ bool CSharpInstance::ReloadGCHandle(void* value)
 	m_gcHandle = ManagedGCHandle(value);
 	return true;
 }
-
-bool CSharpInstance::ValidateAfterGC() const
-{
-	if (!m_gcHandle.IsValid() || m_owner == nullptr)
-	{
-		return false;
-	}
-
-	return g_engine->m_scriptSystem->ValidateManagedScriptInstance(m_gcHandle.GetValue(), m_owner);
-}

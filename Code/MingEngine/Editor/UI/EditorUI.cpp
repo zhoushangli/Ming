@@ -162,7 +162,10 @@ void EditorUI::RenderMainMenuBar()
 		{
 			if (g_engine->m_scriptSystem->EnsureProjectSolution())
 			{
-				g_engine->m_scriptSystem->BuildProjectSolution();
+				if (g_engine->m_scriptSystem->BuildProjectSolution())
+				{
+					g_engine->m_scriptSystem->ReloadProjectAssembly();
+				}
 			}
 		}
 	}

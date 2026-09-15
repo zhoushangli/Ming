@@ -45,14 +45,13 @@ public class MingObject : IDisposable
     internal unsafe static delegate* unmanaged<nint> GetConstrcutor(string name)
     {
         using MingString mingName = Marshaling.ConvertStringToNative(name);
-        return NativeFuncs.GetConstructor((IntPtr)(&mingName));
+        return NativeFuncs.GetConstructor(in mingName);
     }
 
     public void Dispose()
     {
         if (NativePtr != IntPtr.Zero)
         {
-            // NativeFuncs.DestroyManagedScriptInstance(NativePtr);
             NativePtr = IntPtr.Zero;
         }
     }
@@ -91,14 +90,5 @@ public class MingObject : IDisposable
     public void Free()
     {
         NativeCalls.MingCall_Void(FreeMethodBind, GetPtr(this));
-    }
-
-    public virtual void SaveReloadState(Dictionary<string, string> state)
-    {
-    }
-
-    public virtual void RestoreReloadState(
-        IReadOnlyDictionary<string, string> state)
-    {
     }
 }

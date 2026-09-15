@@ -44,22 +44,11 @@ std::filesystem::path GetExecutableDirectory()
 	return std::filesystem::path(executablePath).parent_path();
 }
 
-int32_t CORECLR_DELEGATE_CALLTYPE LogUtf8(uint8_t const* text, int32_t textLength)
+// Borrow the text for this call without transferring ownership.
+// e.g. Log(&message) leaves the caller's string intact.
+int32_t CORECLR_DELEGATE_CALLTYPE Log(MingString const* text)
 {
-	if (textLength < 0)
-	{
-		return -1;
-	}
-
-	if (text == nullptr && textLength != 0)
-	{
-		return -1;
-	}
-
-	std::string const message(
-		textLength == 0 ? "" : reinterpret_cast<char const*>(text),
-		static_cast<size_t>(textLength));
-
+	std::string const& message = PtrToArg<std::string>::Decode(const_cast<MingString*>(text));
 	if (message.compare(0, 8, "[Error] ") == 0)
 	{
 		ERR_PRINT(message.substr(8));
@@ -72,46 +61,7 @@ int32_t CORECLR_DELEGATE_CALLTYPE LogUtf8(uint8_t const* text, int32_t textLengt
 	{
 		INFO_PRINT(message);
 	}
-
 	return 0;
-}
-
-// Return the class name of the given object as a UTF-8 string.
-// e.g. GetObjectClassName(nodePtr) -> "Node"
-char const* CORECLR_DELEGATE_CALLTYPE GetObjectClassName(void* objectPtr)
-{
-	if (objectPtr == nullptr)
-		return nullptr;
-
-	static std::string classNameBuffer;
-	classNameBuffer = static_cast<Object*>(objectPtr)->GetClassName();
-	return classNameBuffer.c_str();
-}
-
-void const* CORECLR_DELEGATE_CALLTYPE
-GetMethodBind(uint8_t const* className, int32_t classNameLength, uint8_t const* methodName, int32_t methodNameLength)
-{
-	if (className == nullptr || classNameLength <= 0 || methodName == nullptr || methodNameLength <= 0)
-	{
-		return nullptr;
-	}
-
-	std::string const classNameStr(reinterpret_cast<char const*>(className), static_cast<size_t>(classNameLength));
-	std::string const methodNameStr(reinterpret_cast<char const*>(methodName), static_cast<size_t>(methodNameLength));
-
-	return ClassDatabase::GetMethodBind(classNameStr.c_str(), methodNameStr.c_str());
-}
-
-void CORECLR_DELEGATE_CALLTYPE MethodBindPtrCall(void const* methodBind, void* objectPtr, void** args, void* retPtr)
-{
-	if (methodBind == nullptr || objectPtr == nullptr)
-	{
-		return;
-	}
-
-	MethodBind const* methodBindPtr = static_cast<MethodBind const*>(methodBind);
-	Object*           object        = static_cast<Object*>(objectPtr);
-	methodBindPtr->PtrCall(object, args, retPtr);
 }
 
 void* CORECLR_DELEGATE_CALLTYPE CreateString(void const* str, int32_t length)
@@ -156,6 +106,44 @@ void CORECLR_DELEGATE_CALLTYPE DestroyString(void const* str)
 	delete static_cast<std::string const*>(str);
 }
 
+void const* CORECLR_DELEGATE_CALLTYPE GetMethodBind(MingString const* className, MingString const* methodName)
+{
+	if (className == nullptr || className->m_string == nullptr || methodName == nullptr
+		|| methodName->m_string == nullptr)
+		return nullptr;
+	return ClassDatabase::GetMethodBind(className->m_string->c_str(), methodName->m_string->c_str());
+}
+
+void CORECLR_DELEGATE_CALLTYPE MethodBindPtrCall(void const* methodBind, void* objectPtr, void** args, void* retPtr)
+{
+	if (methodBind == nullptr || objectPtr == nullptr)
+	{
+		return;
+	}
+
+	MethodBind const* methodBindPtr = static_cast<MethodBind const*>(methodBind);
+	Object*           object        = static_cast<Object*>(objectPtr);
+	methodBindPtr->PtrCall(object, args, retPtr);
+}
+
+ConstructorFunc CORECLR_DELEGATE_CALLTYPE GetConstructor(MingString const* name)
+{
+	if (name == nullptr || name->m_string == nullptr)
+		return nullptr;
+	return ClassDatabase::GetConstructor(name->m_string->c_str());
+}
+
+// Transfer a newly allocated class name to the caller.
+// e.g. GetObjectClassName(owner, &name) requires the caller to destroy name.m_string.
+void CORECLR_DELEGATE_CALLTYPE GetObjectClassName(void* objectPtr, MingString* outName)
+{
+	if (outName == nullptr)
+		return;
+	*outName = {};
+	if (objectPtr != nullptr)
+		outName->m_string = new std::string(static_cast<Object*>(objectPtr)->GetClassName());
+}
+
 int32_t CORECLR_DELEGATE_CALLTYPE TieNativeManagedToUnmanaged(void* gcHandleValue, void* nativeValue)
 {
 	if (gcHandleValue == nullptr || nativeValue == nullptr)
@@ -165,22 +153,6 @@ int32_t CORECLR_DELEGATE_CALLTYPE TieNativeManagedToUnmanaged(void* gcHandleValu
 
 	Object* owner = static_cast<Object*>(nativeValue);
 	return owner->TrySetNativeBindingGCHandle(gcHandleValue) ? 1 : 0;
-}
-
-ConstructorFunc CORECLR_DELEGATE_CALLTYPE GetConstructor(void* name)
-{
-	if (name == nullptr)
-	{
-		return nullptr;
-	}
-
-	MingString const* namePtr = static_cast<MingString const*>(name);
-	if (namePtr->m_string == nullptr)
-	{
-		return nullptr;
-	}
-
-	return ClassDatabase::GetConstructor(namePtr->m_string->c_str());
 }
 
 void* CORECLR_DELEGATE_CALLTYPE UnmanagedGetInstanceBindingManaged(void* nativeValue)
@@ -231,7 +203,7 @@ void ScriptSystem::Shutdown()
 
 	// 1) Release retained resources while the managed bridge is still available
 	DetachScriptInstances();
-	m_pendingReloadState.clear();
+	m_pendingReloadBackups.clear();
 	UnloadProjectAssembly();
 
 	// 2) Release the managed entry points
@@ -253,73 +225,7 @@ void ScriptSystem::Shutdown()
 
 void ScriptSystem::BeginFrame() {}
 
-void ScriptSystem::EndFrame()
-{
-	// Reload the current project assembly and restore its script instances.
-	// e.g. Press F5 after rebuilding Game.dll.
-	if (m_isInitialized && (GetAsyncKeyState(VK_F5) & 0x1) != 0)
-	{
-		ReloadProjectAssembly();
-	}
-}
-
-void ScriptSystem::ReleaseGCHandle(void* gcHandle)
-{
-	if (m_isInitialized && m_managedCallbacks.m_releaseGCHandle != nullptr)
-	{
-		m_managedCallbacks.m_releaseGCHandle(gcHandle);
-	}
-}
-
-bool ScriptSystem::CreateUserManagedInstance(CSharpScript* script, Object* owner)
-{
-	if (!m_isInitialized || script == nullptr || owner == nullptr
-		|| m_managedCallbacks.m_createUserManagedInstance == nullptr)
-	{
-		return false;
-	}
-
-	void* gcHandle = m_managedCallbacks.m_createUserManagedInstance(script, owner);
-	if (gcHandle == nullptr)
-	{
-		return false;
-	}
-
-	ScriptInstance* instance = owner->GetScriptInstance();
-	if (instance == nullptr || instance->GetOwner() != owner || !instance->ReloadGCHandle(gcHandle))
-	{
-		ReleaseGCHandle(gcHandle);
-		return false;
-	}
-
-	return true;
-}
-
-bool ScriptSystem::ValidateManagedScriptInstance(void* gcHandle, Object* expectedOwner)
-{
-	if (gcHandle == nullptr || expectedOwner == nullptr
-		|| m_managedCallbacks.m_validateManagedScriptInstance == nullptr)
-	{
-		return false;
-	}
-
-	return m_managedCallbacks.m_validateManagedScriptInstance(gcHandle, expectedOwner) != 0;
-}
-
-void ScriptSystem::CollectAndGetManagedScriptState(
-	int32_t& allocated, int32_t& disposed, int32_t& freed, int32_t& targetAlive)
-{
-	allocated   = 0;
-	disposed    = 0;
-	freed       = 0;
-	targetAlive = 0;
-
-	GUARANTEE_OR_DIE(
-		m_managedCallbacks.m_collectAndGetManagedScriptState != nullptr,
-		"Managed script state callback is not initialized.");
-
-	m_managedCallbacks.m_collectAndGetManagedScriptState(&allocated, &disposed, &freed, &targetAlive);
-}
+void ScriptSystem::EndFrame() {}
 
 bool ScriptSystem::InitializeDotNetRuntime()
 {
@@ -500,16 +406,16 @@ bool ScriptSystem::InitializeDotNetRuntime()
 			result));
 
 	NativeCallbacks const nativeCallbacks{
-		&LogUtf8,
-		&GetObjectClassName,
-		&GetMethodBind,
-		&MethodBindPtrCall,
+		&Log,
 		&CreateString,
 		&GetStringBuffer,
 		&GetStringLength,
 		&DestroyString,
-		&TieNativeManagedToUnmanaged,
+		&GetMethodBind,
+		&MethodBindPtrCall,
 		&GetConstructor,
+		&GetObjectClassName,
+		&TieNativeManagedToUnmanaged,
 		&UnmanagedGetInstanceBindingManaged,
 		&UnmanagedInstanceBindingCreateManaged,
 	};
@@ -525,6 +431,86 @@ bool ScriptSystem::InitializeDotNetRuntime()
 
 	INFO_PRINT(".NET Runtime initialized.\n");
 
+	return true;
+}
+
+bool ScriptSystem::EnsureProjectSolution()
+{
+	// 1) Check the managed entry point
+	ERR_FAIL_COND_V_MSG(
+		!m_isInitialized || m_ensureProjectSolution == nullptr,
+		false,
+		"Cannot ensure C# project files: "
+		"managed bridge is not initialized.\n");
+
+	ERR_FAIL_COND_V_MSG(
+		g_engine == nullptr || g_engine->m_fileSystem == nullptr,
+		false,
+		"Cannot ensure C# project files: "
+		"file system is unavailable.\n");
+
+	// 2) Resolve the active project directory
+	std::filesystem::path projectDirectory;
+
+	ERR_FAIL_COND_V_MSG(
+		!g_engine->m_fileSystem->TryGetPhysicalPath(VirtualPath("res://"), projectDirectory),
+		false,
+		"Failed to resolve the active project directory.\n");
+
+	// 3) Resolve the SDK directory beside the executable
+	std::filesystem::path const executableDirectory = GetExecutableDirectory();
+
+	ERR_FAIL_COND_V_MSG(executableDirectory.empty(), false, "Failed to resolve the executable directory.\n");
+
+	std::filesystem::path const sdkDirectory = executableDirectory / L"MingSharp" / L"Tool" / L"Sdk";
+
+	// 4) Call the managed generator
+	auto const       projectUtf8 = projectDirectory.u8string();
+	auto const       sdkUtf8     = sdkDirectory.u8string();
+	std::string      projectText(projectUtf8.begin(), projectUtf8.end());
+	std::string      sdkText(sdkUtf8.begin(), sdkUtf8.end());
+	MingString const nativeProject{ &projectText };
+	MingString const nativeSdk{ &sdkText };
+	int32_t const    result = m_ensureProjectSolution(&nativeProject, &nativeSdk);
+
+	ERR_FAIL_COND_V_MSG(result != 0, false, Stringf("Failed to ensure C# project files: %d\n", result));
+
+	INFO_PRINT(Stringf("C# project files are ready: %ls\n", projectDirectory.c_str()));
+
+	return true;
+}
+
+bool ScriptSystem::BuildProjectSolution()
+{
+	// 1) Check the managed entry point and file system
+	ERR_FAIL_COND_V_MSG(
+		!m_isInitialized || m_buildProjectSolution == nullptr,
+		false,
+		"Cannot build C# project: managed bridge is not initialized.\n");
+
+	ERR_FAIL_COND_V_MSG(
+		g_engine == nullptr || g_engine->m_fileSystem == nullptr,
+		false,
+		"Cannot build C# project: file system is unavailable.\n");
+
+	// 2) Resolve the active project directory
+	std::filesystem::path projectDirectory;
+	ERR_FAIL_COND_V_MSG(
+		!g_engine->m_fileSystem->TryGetPhysicalPath(VirtualPath("res://"), projectDirectory),
+		false,
+		"Failed to resolve the active project directory.\n");
+
+	// 3) Build the solution through the managed entry point
+	auto const       pathUtf8 = projectDirectory.u8string();
+	std::string      pathText(pathUtf8.begin(), pathUtf8.end());
+	MingString const nativePath{ &pathText };
+	int32_t const    result = m_buildProjectSolution(&nativePath);
+	ERR_FAIL_COND_V_MSG(
+		result != 0,
+		false,
+		Stringf("Failed to build C# project solution: %ls (status: %d)\n", projectDirectory.c_str(), result));
+
+	INFO_PRINT(Stringf("C# project solution built: %ls\n", projectDirectory.c_str()));
 	return true;
 }
 
@@ -571,7 +557,10 @@ bool ScriptSystem::LoadProjectAssembly()
 	// 4) Invoke the managed loader
 	MingString nativeLoadedPath{};
 
-	int32_t const result = m_loadProjectAssembly(assemblyPath.c_str(), &nativeLoadedPath);
+	auto const       pathUtf8 = assemblyPath.u8string();
+	std::string      pathText(pathUtf8.begin(), pathUtf8.end());
+	MingString const nativePath{ &pathText };
+	int32_t const    result = m_loadProjectAssembly(&nativePath, &nativeLoadedPath);
 
 	// 5) Handle failure and release any returned string
 	if (result != 0)
@@ -621,124 +610,26 @@ bool ScriptSystem::UnloadProjectAssembly()
 	return true;
 }
 
-bool ScriptSystem::SaveScriptStates()
+bool ScriptSystem::AddScriptBridge(CSharpScript* script, std::string const& scriptPath)
 {
-	std::vector<StateBackup> states;
-	auto const owners = m_scriptOwners;
-	for (ObjectID id : owners)
+	if (!m_isInitialized || script == nullptr || scriptPath.empty() || m_managedCallbacks.m_addScriptBridge == nullptr
+		|| scriptPath.size() > static_cast<size_t>((std::numeric_limits<int32_t>::max)()))
 	{
-		Object* owner = ObjectDatabase::GetInstance(id);
-		auto* instance = owner ? dynamic_cast<CSharpInstance*>(owner->GetScriptInstance()) : nullptr;
-		if (instance == nullptr)
-		{
-			continue;
-		}
-		StateBackup backup{id, Ref<CSharpScript>(static_cast<CSharpScript*>(instance->GetScript().Get())), {}};
-		MingString state{};
-		int32_t const result = m_managedCallbacks.m_serializeScriptState(instance->GetGCHandle(), &state);
-		if (result != 0 && state.m_string != nullptr)
-		{
-			backup.m_state = std::move(*state.m_string);
-		}
-		DestroyString(state.m_string);
-		ERR_FAIL_COND_V_MSG(result == 0 || backup.m_state.empty(), false, "Failed to save script reload state.\n");
-		states.push_back(std::move(backup));
+		return false;
 	}
-	m_pendingReloadState = std::move(states);
-	return true;
+
+	MingString const path{ const_cast<std::string*>(&scriptPath) };
+	return m_managedCallbacks.m_addScriptBridge(script, &path) == 1;
 }
 
-void ScriptSystem::DetachScriptInstances()
+bool ScriptSystem::RemoveScriptBridge(CSharpScript* script)
 {
-	for (auto const& backup : m_pendingReloadState)
+	if (!m_isInitialized || script == nullptr || m_managedCallbacks.m_removeScriptBridge == nullptr)
 	{
-		Object* owner = ObjectDatabase::GetInstance(backup.m_owner);
-		if (owner != nullptr && owner->GetScriptInstance() != nullptr
-			&& owner->GetScriptInstance()->GetScript().Get() == backup.m_script.Get())
-		{
-			owner->SetScriptInstance(nullptr);
-		}
-	}
-}
-
-bool ScriptSystem::RestoreScriptInstances()
-{
-	// 1) Recreate every instance before restoring any state
-	for (auto const& backup : m_pendingReloadState)
-	{
-		Object* owner = ObjectDatabase::GetInstance(backup.m_owner);
-		if (owner == nullptr || owner->GetScriptInstance() != nullptr)
-		{
-			continue;
-		}
-		m_isRecreatingInstances = true;
-		bool const created = backup.m_script->Instantiate(owner);
-		m_isRecreatingInstances = false;
-		ERR_FAIL_COND_V_MSG(!created, false, "Failed to recreate script; reload state retained.\n");
+		return false;
 	}
 
-	// 2) Keep all original snapshots until the whole restore succeeds
-	for (auto const& backup : m_pendingReloadState)
-	{
-		Object* owner = ObjectDatabase::GetInstance(backup.m_owner);
-		auto* instance = owner ? dynamic_cast<CSharpInstance*>(owner->GetScriptInstance()) : nullptr;
-		if (instance == nullptr || instance->GetScript().Get() != backup.m_script.Get())
-		{
-			continue;
-		}
-		ERR_FAIL_COND_V_MSG(backup.m_state.size() > static_cast<size_t>((std::numeric_limits<int32_t>::max)()),
-			false, "Script reload state is too large.\n");
-		int32_t const result = m_managedCallbacks.m_deserializeScriptState(instance->GetGCHandle(),
-			reinterpret_cast<uint8_t const*>(backup.m_state.data()), static_cast<int32_t>(backup.m_state.size()));
-		ERR_FAIL_COND_V_MSG(result == 0, false, "Failed to restore script; reload state retained.\n");
-	}
-	return true;
-}
-
-bool ScriptSystem::ReloadProjectAssembly()
-{
-	ERR_FAIL_COND_V_MSG(m_isAssemblyReloading || !m_isInitialized, false, "Cannot start script reload.\n");
-	m_isAssemblyReloading = true;
-	bool const wasSuspended = m_scriptExecutionSuspended;
-	m_scriptExecutionSuspended = true;
-	bool success = false;
-	bool detached = wasSuspended;
-	try
-	{
-		// 1) Preserve the first snapshot across failed reload attempts
-		if (!wasSuspended && !SaveScriptStates())
-		{
-			m_scriptExecutionSuspended = false;
-		}
-		else
-		{
-			// 2) Release old handles before unloading and replace partial retries
-			detached = true;
-			DetachScriptInstances();
-			if (UnloadProjectAssembly() && LoadProjectAssembly() && RestoreScriptInstances())
-			{
-				m_pendingReloadState.clear();
-				m_scriptExecutionSuspended = false;
-				success = true;
-			}
-		}
-	}
-	catch (std::exception const& exception)
-	{
-		ERR_PRINT(Stringf("Script reload failed: %s\n", exception.what()));
-	}
-	if (!detached && !success)
-	{
-		m_pendingReloadState.clear();
-		m_scriptExecutionSuspended = false;
-	}
-	m_isRecreatingInstances = false;
-	m_isAssemblyReloading = false;
-	if (success)
-	{
-		INFO_PRINT("Project assembly and script states reloaded.\n");
-	}
-	return success;
+	return m_managedCallbacks.m_removeScriptBridge(script) == 1;
 }
 
 void* ScriptSystem::GetOrCreateNativeManagedWrapper(Object* owner)
@@ -777,102 +668,129 @@ void* ScriptSystem::GetOrCreateNativeManagedWrapper(Object* owner)
 	return gcHandle;
 }
 
-bool ScriptSystem::AddScriptBridge(CSharpScript* script, std::string const& scriptPath)
+bool ScriptSystem::CreateUserManagedInstance(CSharpScript* script, Object* owner)
 {
-	if (!m_isInitialized || script == nullptr || scriptPath.empty() || m_managedCallbacks.m_addScriptBridge == nullptr
-		|| scriptPath.size() > static_cast<size_t>((std::numeric_limits<int32_t>::max)()))
+	if (!m_isInitialized || script == nullptr || owner == nullptr
+		|| m_managedCallbacks.m_createUserManagedInstance == nullptr)
 	{
 		return false;
 	}
 
-	return m_managedCallbacks.m_addScriptBridge(
-			   script,
-			   reinterpret_cast<uint8_t const*>(scriptPath.data()),
-			   static_cast<int32_t>(scriptPath.size()))
-		   == 1;
-}
-
-bool ScriptSystem::RemoveScriptBridge(CSharpScript* script)
-{
-	if (!m_isInitialized || script == nullptr || m_managedCallbacks.m_removeScriptBridge == nullptr)
+	void* gcHandle = m_managedCallbacks.m_createUserManagedInstance(script, owner);
+	if (gcHandle == nullptr)
 	{
 		return false;
 	}
 
-	return m_managedCallbacks.m_removeScriptBridge(script) == 1;
-}
+	ScriptInstance* instance = owner->GetScriptInstance();
+	if (instance == nullptr || instance->GetOwner() != owner || !instance->ReloadGCHandle(gcHandle))
+	{
+		ReleaseGCHandle(gcHandle);
+		return false;
+	}
 
-bool ScriptSystem::BuildProjectSolution()
-{
-	// 1) Check the managed entry point and file system
-	ERR_FAIL_COND_V_MSG(
-		!m_isInitialized || m_buildProjectSolution == nullptr,
-		false,
-		"Cannot build C# project: managed bridge is not initialized.\n");
-
-	ERR_FAIL_COND_V_MSG(
-		g_engine == nullptr || g_engine->m_fileSystem == nullptr,
-		false,
-		"Cannot build C# project: file system is unavailable.\n");
-
-	// 2) Resolve the active project directory
-	std::filesystem::path projectDirectory;
-	ERR_FAIL_COND_V_MSG(
-		!g_engine->m_fileSystem->TryGetPhysicalPath(VirtualPath("res://"), projectDirectory),
-		false,
-		"Failed to resolve the active project directory.\n");
-
-	// 3) Build the solution through the managed entry point
-	int32_t const result = m_buildProjectSolution(projectDirectory.c_str());
-	ERR_FAIL_COND_V_MSG(
-		result != 0,
-		false,
-		Stringf("Failed to build C# project solution: %ls (status: %d)\n", projectDirectory.c_str(), result));
-
-	INFO_PRINT(Stringf("C# project solution built: %ls\n", projectDirectory.c_str()));
 	return true;
 }
 
-bool ScriptSystem::EnsureProjectSolution()
+void ScriptSystem::ReleaseGCHandle(void* gcHandle)
 {
-	// 1) Check the managed entry point
-	ERR_FAIL_COND_V_MSG(
-		!m_isInitialized || m_ensureProjectSolution == nullptr,
-		false,
-		"Cannot ensure C# project files: "
-		"managed bridge is not initialized.\n");
-
-	ERR_FAIL_COND_V_MSG(
-		g_engine == nullptr || g_engine->m_fileSystem == nullptr,
-		false,
-		"Cannot ensure C# project files: "
-		"file system is unavailable.\n");
-
-	// 2) Resolve the active project directory
-	std::filesystem::path projectDirectory;
-
-	ERR_FAIL_COND_V_MSG(
-		!g_engine->m_fileSystem->TryGetPhysicalPath(VirtualPath("res://"), projectDirectory),
-		false,
-		"Failed to resolve the active project directory.\n");
-
-	// 3) Resolve the SDK directory beside the executable
-	std::filesystem::path const executableDirectory = GetExecutableDirectory();
-
-	ERR_FAIL_COND_V_MSG(executableDirectory.empty(), false, "Failed to resolve the executable directory.\n");
-
-	std::filesystem::path const sdkDirectory = executableDirectory / L"MingSharp" / L"Tool" / L"Sdk";
-
-	// 4) Call the managed generator
-	int32_t const result = m_ensureProjectSolution(projectDirectory.c_str(), sdkDirectory.c_str());
-
-	ERR_FAIL_COND_V_MSG(result != 0, false, Stringf("Failed to ensure C# project files: %d\n", result));
-
-	INFO_PRINT(Stringf("C# project files are ready: %ls\n", projectDirectory.c_str()));
-
-	return true;
+	if (m_isInitialized && m_managedCallbacks.m_releaseGCHandle != nullptr)
+	{
+		m_managedCallbacks.m_releaseGCHandle(gcHandle);
+	}
 }
 
 void ScriptSystem::RegisterScriptOwner(ObjectID id) { m_scriptOwners.insert(id); }
 
 void ScriptSystem::UnregisterScriptOwner(ObjectID id) { m_scriptOwners.erase(id); }
+
+// Collect the owners and scripts that must be recreated after the assembly reload.
+// e.g. CollectReloadInstances() runs before any script instance is released.
+void ScriptSystem::CollectReloadInstances()
+{
+	std::vector<StateBackup> backups;
+	auto const               owners = m_scriptOwners;
+	for (ObjectID id : owners)
+	{
+		Object* owner    = ObjectDatabase::GetInstance(id);
+		auto*   instance = owner ? dynamic_cast<CSharpInstance*>(owner->GetScriptInstance()) : nullptr;
+		if (instance == nullptr)
+		{
+			continue;
+		}
+
+		// Keep the script resource alive across the assembly unload
+		backups.push_back(
+			StateBackup{ id, Ref<CSharpScript>(static_cast<CSharpScript*>(instance->GetScript().Get())) });
+	}
+	m_pendingReloadBackups = std::move(backups);
+}
+
+void ScriptSystem::DetachScriptInstances()
+{
+	for (auto const& entry : m_pendingReloadBackups)
+	{
+		Object* owner = ObjectDatabase::GetInstance(entry.m_owner);
+		if (owner != nullptr && owner->GetScriptInstance() != nullptr
+			&& owner->GetScriptInstance()->GetScript().Get() == entry.m_script.Get())
+		{
+			owner->SetScriptInstance(nullptr);
+		}
+	}
+}
+
+// Recreate the script instances that were recorded before the assembly reload.
+// e.g. RestoreScriptInstances() runs after the new assembly has been loaded.
+bool ScriptSystem::RestoreScriptInstances()
+{
+	for (auto const& entry : m_pendingReloadBackups)
+	{
+		Object* owner = ObjectDatabase::GetInstance(entry.m_owner);
+		if (owner == nullptr || owner->GetScriptInstance() != nullptr)
+		{
+			continue;
+		}
+		m_isRecreatingInstances = true;
+		bool const created      = entry.m_script->Instantiate(owner);
+		m_isRecreatingInstances = false;
+		ERR_FAIL_COND_V_MSG(!created, false, "Failed to recreate script; the recorded instances are retained.\n");
+	}
+	return true;
+}
+
+bool ScriptSystem::ReloadProjectAssembly()
+{
+	ERR_FAIL_COND_V_MSG(m_isAssemblyReloading || !m_isInitialized, false, "Cannot start script reload.\n");
+	m_isAssemblyReloading      = true;
+	bool const wasSuspended    = m_scriptExecutionSuspended;
+	m_scriptExecutionSuspended = true;
+	bool success               = false;
+	try
+	{
+		// 1) Keep the first list across failed reload attempts
+		if (!wasSuspended)
+		{
+			CollectReloadInstances();
+		}
+
+		// 2) Release old handles before unloading and replace partial retries
+		DetachScriptInstances();
+		if (UnloadProjectAssembly() && LoadProjectAssembly() && RestoreScriptInstances())
+		{
+			m_pendingReloadBackups.clear();
+			m_scriptExecutionSuspended = false;
+			success                    = true;
+		}
+	}
+	catch (std::exception const& exception)
+	{
+		ERR_PRINT(Stringf("Script reload failed: %s\n", exception.what()));
+	}
+	m_isRecreatingInstances = false;
+	m_isAssemblyReloading   = false;
+	if (success)
+	{
+		INFO_PRINT("Project assembly reloaded and script instances recreated.\n");
+	}
+	return success;
+}

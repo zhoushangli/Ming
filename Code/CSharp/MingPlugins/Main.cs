@@ -1,8 +1,7 @@
-﻿using System.Reflection;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Loader;
-using System.Text;
 using Ming;
 
 namespace MingPlugins
@@ -70,15 +69,7 @@ namespace MingPlugins
 
         private static ProjectLoadContextHolder? s_projectLoadContext;
 
-        private static unsafe int Log(string message)
-        {
-            byte[] utf8Bytes = Encoding.UTF8.GetBytes(message);
-
-            fixed (byte* text = utf8Bytes)
-            {
-                return NativeFuncs.LogUtf8(text, utf8Bytes.Length);
-            }
-        }
+        private static int Log(string message) => NativeFuncs.Log(message);
 
         [UnmanagedCallersOnly]
         private static unsafe int Initialize(
@@ -124,7 +115,7 @@ namespace MingPlugins
         {
             try
             {
-                return Log(NativeFuncs.GetBindingSummary());
+                return Log(ScriptManagerBridge.GetBindingSummary());
             }
             catch (Exception)
             {
@@ -133,7 +124,7 @@ namespace MingPlugins
         }
 
         [UnmanagedCallersOnly]
-        private static unsafe int LoadProjectAssembly(char* assemblyPath, MingString* outLoadedAssemblyPath)
+        private static unsafe int LoadProjectAssembly(MingString* assemblyPath, MingString* outLoadedAssemblyPath)
         {
             if (outLoadedAssemblyPath == null)
             {
@@ -152,7 +143,7 @@ namespace MingPlugins
             try
             {
                 // 1) Copy and validate the absolute path
-                path = new string(assemblyPath);
+                path = Marshaling.ConvertStringToManaged(*assemblyPath);
 
                 if (string.IsNullOrWhiteSpace(path) || !Path.IsPathFullyQualified(path))
                 {
@@ -309,7 +300,7 @@ namespace MingPlugins
         }
 
         [UnmanagedCallersOnly]
-        private static unsafe int BuildProjectSolution(char* projectDirectory)
+        private static unsafe int BuildProjectSolution(MingString* projectDirectory)
         {
             try
             {
@@ -319,7 +310,7 @@ namespace MingPlugins
                     return -1;
                 }
 
-                string projectPath = new string(projectDirectory);
+                string projectPath = Marshaling.ConvertStringToManaged(*projectDirectory);
 
                 // 2) Build the project and forward its diagnostics
                 return MingTools.BuildSystem.BuildProjectSolution(projectPath, message => Log(message));
@@ -340,7 +331,7 @@ namespace MingPlugins
         }
 
         [UnmanagedCallersOnly]
-        private static unsafe int EnsureProjectSolution(char* projectDirectory, char* sdkDirectory)
+        private static unsafe int EnsureProjectSolution(MingString* projectDirectory, MingString* sdkDirectory)
         {
             try
             {
@@ -351,8 +342,8 @@ namespace MingPlugins
                 }
 
                 // 2) Copy the native strings into managed strings
-                string projectPath = new string(projectDirectory);
-                string sdkPath = new string(sdkDirectory);
+                string projectPath = Marshaling.ConvertStringToManaged(*projectDirectory);
+                string sdkPath = Marshaling.ConvertStringToManaged(*sdkDirectory);
 
                 // 3) Generate the missing project files
                 MingTools.ProjectGenerator.EnsureProjectSolution(projectPath, sdkPath);

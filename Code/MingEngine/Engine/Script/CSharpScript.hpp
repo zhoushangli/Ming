@@ -31,7 +31,6 @@ public:
 
 	void* GetGCHandle() const { return m_gcHandle.GetValue(); }
 	bool  ReloadGCHandle(void* value) override;
-	bool  ValidateAfterGC() const;
 
 private:
 	Ref<CSharpScript> m_script;

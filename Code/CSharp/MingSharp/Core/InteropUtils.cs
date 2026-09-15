@@ -7,8 +7,7 @@ internal static class InteropUtils
 {
     public static void TieManagedToUnmanaged(MingObject managed, IntPtr unmanaged)
     {
-        GCHandle gcHandle = GCHandle.Alloc(managed, GCHandleType.Normal);
-        IntPtr gcHandlePtr = GCHandle.ToIntPtr(gcHandle);
+        IntPtr gcHandlePtr = ScriptManagerBridge.AllocNativeBindingGCHandle(managed);
         bool transferred = false;
 
         try
@@ -20,14 +19,13 @@ internal static class InteropUtils
                 );
             }
 
-            NativeFuncs.TrackNativeBindingAllocated();
             transferred = true;
         }
         finally
         {
             if (!transferred)
             {
-                gcHandle.Free();
+                ScriptManagerBridge.ReleaseGCHandleCore(gcHandlePtr);
             }
         }
     }

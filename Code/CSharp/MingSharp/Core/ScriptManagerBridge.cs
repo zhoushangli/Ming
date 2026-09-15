@@ -4,7 +4,6 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Loader;
-using System.Text.Json;
 
 public static class ScriptManagerBridge
 {
@@ -13,6 +12,16 @@ public static class ScriptManagerBridge
     private static readonly Dictionary<AssemblyLoadContext, Dictionary<IntPtr, object>> s_strongReferencesByAlc = new();
     private static readonly ConditionalWeakTable<AssemblyLoadContext, object> s_unloadingAlcs = new();
     private static readonly Dictionary<AssemblyLoadContext, HashSet<Type>> s_typesByAlc = new();
+
+    // Classify live script handles independently of diagnostic counters.
+    // e.g. ReleaseGCHandleCore uses membership to remove collectible-context references.
+    private static readonly HashSet<IntPtr> s_scriptInstanceHandles = new();
+    private static int s_scriptInstanceHandleAllocated;
+    private static int s_scriptInstanceHandleFreed;
+    private static int s_nativeBindingHandleAllocated;
+    private static int s_nativeBindingHandleFreed;
+
+    #region Type Registration
 
     internal static void AddScriptType(IntPtr scriptPtr, Type scriptType)
     {
@@ -49,11 +58,6 @@ public static class ScriptManagerBridge
         s_scriptTypes.Add(scriptPtr, scriptType);
     }
 
-    internal static bool TryGetScriptType(IntPtr scriptPtr, out Type scriptType)
-    {
-        return s_scriptTypes.TryGetValue(scriptPtr, out scriptType);
-    }
-
     public static void AddScriptType(string scriptPath, Type scriptType)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(scriptPath);
@@ -75,6 +79,11 @@ public static class ScriptManagerBridge
         s_scriptPathTypes.Add(scriptPath, scriptType);
     }
 
+    internal static bool TryGetScriptType(IntPtr scriptPtr, out Type scriptType)
+    {
+        return s_scriptTypes.TryGetValue(scriptPtr, out scriptType);
+    }
+
     public static bool TryGetScriptType(string scriptPath, out Type scriptType)
     {
         return s_scriptPathTypes.TryGetValue(scriptPath, out scriptType);
@@ -85,18 +94,14 @@ public static class ScriptManagerBridge
         s_scriptTypes.Remove(scriptPtr);
     }
 
-    #region Managed Callbacks
-
     [UnmanagedCallersOnly]
-    internal static int AddScriptBridge(
+    internal static unsafe int AddScriptBridge(
         IntPtr scriptPtr,
-        IntPtr scriptPathPtr,
-        int scriptPathLength)
+        MingString* scriptPathPtr)
     {
         if (
             scriptPtr == IntPtr.Zero
-            || scriptPathPtr == IntPtr.Zero
-            || scriptPathLength <= 0
+            || scriptPathPtr == null
         )
         {
             return 0;
@@ -105,10 +110,7 @@ public static class ScriptManagerBridge
         try
         {
             // 1) Copy the native UTF-8 path
-            string scriptPath = Marshal.PtrToStringUTF8(
-                scriptPathPtr,
-                scriptPathLength
-            );
+            string scriptPath = Marshaling.ConvertStringToManaged(*scriptPathPtr);
 
             // 2) Resolve the registered script type
             if (!TryGetScriptType(scriptPath, out Type scriptType))
@@ -130,10 +132,78 @@ public static class ScriptManagerBridge
     }
 
     [UnmanagedCallersOnly]
-    internal unsafe static IntPtr CreateUserManagedInstance(IntPtr scriptPtr, IntPtr ownerPtr)
+    internal static int RemoveScriptBridge(IntPtr scriptPtr)
     {
-        if (scriptPtr == IntPtr.Zero || ownerPtr == IntPtr.Zero
-        )
+        if (scriptPtr == IntPtr.Zero)
+        {
+            return 0;
+        }
+
+        try
+        {
+            s_scriptTypes.Remove(scriptPtr);
+            return 1;
+        }
+        catch (Exception exception)
+        {
+            Console.Error.WriteLine(exception);
+            return 0;
+        }
+    }
+
+    public static void LookupScriptsInAssembly(Assembly assembly)
+    {
+        foreach (Type type in assembly.GetTypes())
+        {
+            if (type.IsAbstract ||
+                type.ContainsGenericParameters ||
+                !typeof(MingObject).IsAssignableFrom(type))
+            {
+                continue;
+            }
+
+            ScriptPathAttribute attribute =
+                type.GetCustomAttribute<ScriptPathAttribute>(inherit: false);
+
+            if (attribute == null)
+            {
+                continue;
+            }
+
+            AddScriptType(attribute.Path, type);
+        }
+    }
+
+    #endregion
+
+    #region Instance Creation
+
+    [UnmanagedCallersOnly]
+    internal static unsafe IntPtr CreateNativeManagedInstance(MingString* nativeClassNamePtr, IntPtr ownerPtr)
+    {
+        if (nativeClassNamePtr == null || ownerPtr == IntPtr.Zero)
+        {
+            return IntPtr.Zero;
+        }
+
+        try
+        {
+            MingString* nativeClassName = nativeClassNamePtr;
+            string className = Marshaling.ConvertStringToManaged(*nativeClassName);
+            MingObject wrapper = Constructors.Invoke(className, ownerPtr);
+            return AllocNativeBindingGCHandle(wrapper);
+        }
+        catch (Exception exception)
+        {
+            Console.Error.WriteLine(exception);
+            return IntPtr.Zero;
+        }
+    }
+
+    [UnmanagedCallersOnly]
+    internal static unsafe IntPtr CreateUserManagedInstance(IntPtr scriptPtr, IntPtr ownerPtr)
+    {
+        if (scriptPtr == IntPtr.Zero || ownerPtr == IntPtr.Zero)
         {
             return IntPtr.Zero;
         }
@@ -186,18 +256,7 @@ public static class ScriptManagerBridge
 
             _ = constructor.Invoke(instance, Array.Empty<object>());
 
-            GCHandle gcHandle = AllocScriptGCHandle(instance);
-            try
-            {
-                NativeFuncs.TrackScriptInstanceAllocated(GCHandle.ToIntPtr(gcHandle), instance);
-                return GCHandle.ToIntPtr(gcHandle);
-            }
-            catch
-            {
-                instance.Dispose();
-                FreeScriptGCHandle(gcHandle);
-                throw;
-            }
+            return GCHandle.ToIntPtr(AllocScriptGCHandle(instance));
         }
         catch (Exception exception)
         {
@@ -206,134 +265,35 @@ public static class ScriptManagerBridge
         }
     }
 
-    [UnmanagedCallersOnly]
-    internal unsafe static IntPtr CreateNativeManagedInstance(IntPtr nativeClassNamePtr, IntPtr ownerPtr)
-    {
-        if (nativeClassNamePtr == IntPtr.Zero || ownerPtr == IntPtr.Zero)
-        {
-            return IntPtr.Zero;
-        }
+    #endregion
 
+    #region Handle Management
+
+    internal static IntPtr AllocNativeBindingGCHandle(MingObject instance)
+    {
+        GCHandle handle = GCHandle.Alloc(instance, GCHandleType.Normal);
+        s_nativeBindingHandleAllocated++;
+        return GCHandle.ToIntPtr(handle);
+    }
+
+    private static GCHandle AllocScriptGCHandle(MingObject instance)
+    {
+        GCHandle handle = AllocScriptGCHandleCore(instance);
         try
         {
-            MingString* nativeClassName = (MingString*)nativeClassNamePtr;
-            string className = Marshaling.ConvertStringToManaged(*nativeClassName);
-            MingObject wrapper = Constructors.Invoke(className, ownerPtr);
-            GCHandle gcHandle = GCHandle.Alloc(wrapper, GCHandleType.Normal);
-            NativeFuncs.TrackNativeBindingAllocated();
-            return GCHandle.ToIntPtr(gcHandle);
+            s_scriptInstanceHandles.Add(GCHandle.ToIntPtr(handle));
+            s_scriptInstanceHandleAllocated++;
+            return handle;
         }
-        catch (Exception exception)
+        catch
         {
-            Console.Error.WriteLine(exception);
-            return IntPtr.Zero;
+            instance.Dispose();
+            FreeScriptGCHandle(handle);
+            throw;
         }
     }
 
-    [UnmanagedCallersOnly]
-    internal static int RemoveScriptBridge(IntPtr scriptPtr)
-    {
-        if (scriptPtr == IntPtr.Zero)
-        {
-            return 0;
-        }
-
-        try
-        {
-            s_scriptTypes.Remove(scriptPtr);
-            return 1;
-        }
-        catch (Exception exception)
-        {
-            Console.Error.WriteLine(exception);
-            return 0;
-        }
-    }
-
-
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    private static void OnHandlesAlcUnloading(AssemblyLoadContext alc)
-    {
-        // 1) Prevent new strong references during unloading
-        s_unloadingAlcs.GetValue(alc, static _ => new object());
-
-        // 2) Release this context's strong references
-        if (s_strongReferencesByAlc.Remove(alc, out var references))
-        {
-            references.Clear();
-        }
-    }
-
-    [UnmanagedCallersOnly]
-    internal static unsafe int SerializeState(
-    IntPtr handlePtr,
-    MingString* outState)
-    {
-        if (outState == null)
-        {
-            return 0;
-        }
-
-        *outState = default;
-
-        try
-        {
-            if (handlePtr == IntPtr.Zero ||
-                GCHandle.FromIntPtr(handlePtr).Target is not MingObject instance)
-            {
-                return 0;
-            }
-
-            var state = new Dictionary<string, string>(StringComparer.Ordinal);
-            instance.SaveReloadState(state);
-
-            string json = JsonSerializer.Serialize(state);
-            *outState = Marshaling.ConvertStringToNative(json);
-            return 1;
-        }
-        catch (Exception exception)
-        {
-            Console.Error.WriteLine(exception);
-            return 0;
-        }
-    }
-
-    [UnmanagedCallersOnly]
-    internal static int DeserializeState(
-        IntPtr handlePtr,
-        IntPtr statePtr,
-        int stateLength)
-    {
-        try
-        {
-            if (handlePtr == IntPtr.Zero ||
-                statePtr == IntPtr.Zero ||
-                stateLength <= 0 ||
-                GCHandle.FromIntPtr(handlePtr).Target is not MingObject instance)
-            {
-                return 0;
-            }
-
-            string json = Marshal.PtrToStringUTF8(statePtr, stateLength);
-            var state =
-                JsonSerializer.Deserialize<Dictionary<string, string>>(json);
-
-            if (state == null)
-            {
-                return 0;
-            }
-
-            instance.RestoreReloadState(state);
-            return 1;
-        }
-        catch (Exception exception)
-        {
-            Console.Error.WriteLine(exception);
-            return 0;
-        }
-    }
-
-    internal static GCHandle AllocScriptGCHandle(MingObject instance)
+    private static GCHandle AllocScriptGCHandleCore(MingObject instance)
     {
         AssemblyLoadContext alc =
             AssemblyLoadContext.GetLoadContext(instance.GetType().Assembly);
@@ -370,7 +330,52 @@ public static class ScriptManagerBridge
         }
     }
 
-    internal static void FreeScriptGCHandle(GCHandle handle)
+    [UnmanagedCallersOnly]
+    internal static void ReleaseGCHandle(IntPtr handlePtr)
+    {
+        ReleaseGCHandleCore(handlePtr);
+    }
+
+    // Release a handle after normal teardown or failed ownership transfer.
+    // e.g. ReleaseGCHandleCore(handlePtr) invalidates the wrapper before freeing its handle.
+    internal static void ReleaseGCHandleCore(IntPtr handlePtr)
+    {
+        if (handlePtr == IntPtr.Zero)
+            return;
+
+        try
+        {
+            GCHandle handle = GCHandle.FromIntPtr(handlePtr);
+            bool isScriptInstance = s_scriptInstanceHandles.Contains(handlePtr);
+            try
+            {
+                if (handle.Target is MingObject instance)
+                    instance.Dispose();
+            }
+            catch (Exception exception)
+            {
+                Console.Error.WriteLine(exception);
+            }
+
+            if (isScriptInstance)
+            {
+                FreeScriptGCHandle(handle);
+                s_scriptInstanceHandles.Remove(handlePtr);
+                s_scriptInstanceHandleFreed++;
+            }
+            else
+            {
+                handle.Free();
+                s_nativeBindingHandleFreed++;
+            }
+        }
+        catch (Exception exception)
+        {
+            Console.Error.WriteLine(exception);
+        }
+    }
+
+    private static void FreeScriptGCHandle(GCHandle handle)
     {
         object target = handle.Target;
 
@@ -388,6 +393,10 @@ public static class ScriptManagerBridge
 
         handle.Free();
     }
+
+    #endregion
+
+    #region Assembly Context Cleanup
 
     private static void TrackScriptType(Type type)
     {
@@ -412,6 +421,19 @@ public static class ScriptManagerBridge
         }
 
         types.Add(type);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void OnHandlesAlcUnloading(AssemblyLoadContext alc)
+    {
+        // 1) Prevent new strong references during unloading
+        s_unloadingAlcs.GetValue(alc, static _ => new object());
+
+        // 2) Release this context's strong references
+        if (s_strongReferencesByAlc.Remove(alc, out var references))
+        {
+            references.Clear();
+        }
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -446,27 +468,19 @@ public static class ScriptManagerBridge
         types.Clear();
     }
 
-    public static void LookupScriptsInAssembly(Assembly assembly)
+    #endregion
+
+    #region Diagnostics
+
+    public static string GetBindingSummary()
     {
-        foreach (Type type in assembly.GetTypes())
-        {
-            if (type.IsAbstract ||
-                type.ContainsGenericParameters ||
-                !typeof(MingObject).IsAssignableFrom(type))
-            {
-                continue;
-            }
-
-            ScriptPathAttribute attribute =
-                type.GetCustomAttribute<ScriptPathAttribute>(inherit: false);
-
-            if (attribute == null)
-            {
-                continue;
-            }
-
-            AddScriptType(attribute.Path, type);
-        }
+        int allocated = s_nativeBindingHandleAllocated + s_scriptInstanceHandleAllocated;
+        int freed = s_nativeBindingHandleFreed + s_scriptInstanceHandleFreed;
+        string severity = allocated != freed ? "[Warning] " : string.Empty;
+        return severity + "Managed binding summary (active = allocated - freed):\n"
+            + $"  NativeBinding: allocated={s_nativeBindingHandleAllocated}, freed={s_nativeBindingHandleFreed}, active={s_nativeBindingHandleAllocated - s_nativeBindingHandleFreed}\n"
+            + $"  ScriptInstance: allocated={s_scriptInstanceHandleAllocated}, freed={s_scriptInstanceHandleFreed}, active={s_scriptInstanceHandleAllocated - s_scriptInstanceHandleFreed}\n"
+            + $"  Total: allocated={allocated}, freed={freed}, active={allocated - freed}";
     }
 
     #endregion

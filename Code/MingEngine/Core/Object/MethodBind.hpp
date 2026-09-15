@@ -43,11 +43,8 @@ struct PtrToArg<bool>
 };
 
 
-// MingString is a special case
-// Because C++ std::string and C# string are two different types
-// So everytime we want to pass a string from C++ to C#, we need to convert it to a MingString
-// And everytime we want to pass a string from C# to C++, we need to convert it to a string
-// We will pass the pointer of MingString to C++ side
+// Borrow input strings for the call; output strings transfer deletion responsibility to the caller.
+// e.g. MingString input{&text}; outputs allocated with new std::string require deletion.
 struct MingString
 {
 	std::string* m_string;

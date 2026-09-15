@@ -1,9 +1,10 @@
 namespace Ming;
 
 using System.Runtime.InteropServices;
-using System.Text;
 
 
+// Own converted strings; callback inputs are borrowed and must not be disposed.
+// e.g. using MingString text = Marshaling.ConvertStringToNative("hello");
 [StructLayout(LayoutKind.Sequential)]
 public ref struct MingString : IDisposable
 {
