@@ -30,11 +30,18 @@ public static class Marshaling
         return result;
     }
 
-    // Convert a native UTF-32 string into a managed string without taking ownership.
-    // e.g. Marshaling.ConvertStringToManaged(name) leaves name owned by its holder.
-    public static unsafe string ConvertStringToManaged(in String str)
+    // Read the code point count that the native CowData header stores, so no native call is needed.
+    // e.g. GetStringLength(variant.String) returns 4 for a native String that owns "Ming".
+    internal static unsafe uint GetStringLength(in ming_string str)
     {
-        uint length = str.Length;
+        return str.Data == IntPtr.Zero ? 0 : ((ming_string_header*)str.Data)[-1].Size;
+    }
+
+    // Convert a borrowed native UTF-32 string into a managed string without taking ownership.
+    // e.g. Marshaling.ConvertStringToManaged(variant.String) leaves the variant as the owner.
+    public static unsafe string ConvertStringToManaged(in ming_string str)
+    {
+        uint length = GetStringLength(in str);
 
         if (length == 0)
         {
@@ -42,5 +49,12 @@ public static class Marshaling
         }
 
         return Encoding.UTF32.GetString((byte*)str.Data, checked((int)(length * sizeof(uint))));
+    }
+
+    // Convert a native UTF-32 string into a managed string without taking ownership.
+    // e.g. Marshaling.ConvertStringToManaged(name) leaves name owned by its holder.
+    public static unsafe string ConvertStringToManaged(in String str)
+    {
+        return ConvertStringToManaged(in str.NativeValue);
     }
 }

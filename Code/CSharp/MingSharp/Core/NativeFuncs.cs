@@ -77,7 +77,7 @@ public static unsafe class NativeFuncs
     #region Strings
 
     // Copy UTF-32 code points into the string owned by the managed caller.
-    // e.g. CreateString(codes, 4, &result) leaves result owning a 5 element buffer.
+    // e.g. CreateString(codes, 4, &result) leaves result owning 4 code points.
     internal static void CreateString(uint* codePoints, int length, String* outString)
     {
         s_callbacks.CreateString(codePoints, length, outString);

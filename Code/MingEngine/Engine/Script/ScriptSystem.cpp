@@ -65,7 +65,7 @@ int32_t CORECLR_DELEGATE_CALLTYPE Log(String const* text)
 }
 
 // Copy borrowed UTF-32 code points into a String owned by the managed caller.
-// e.g. CreateString(codes, 4, outString) leaves outString owning a 5 element buffer.
+// e.g. CreateString(codes, 4, outString) leaves outString owning 4 code points.
 void CORECLR_DELEGATE_CALLTYPE CreateString(char32_t const* str, int32_t length, String* outString)
 {
 	if (outString == nullptr)
@@ -82,8 +82,8 @@ void CORECLR_DELEGATE_CALLTYPE CreateString(char32_t const* str, int32_t length,
 	*outString = String(str, static_cast<uint32_t>(length));
 }
 
-// Release the UTF-32 buffer owned by the given managed side string.
-// e.g. DestroyString(&text) empties text after freeing its buffer.
+// Drop the reference the given managed side string holds and leave it empty.
+// e.g. DestroyString(&text) empties text and frees its block when it was the last owner.
 void CORECLR_DELEGATE_CALLTYPE DestroyString(String* str)
 {
 	if (str == nullptr)

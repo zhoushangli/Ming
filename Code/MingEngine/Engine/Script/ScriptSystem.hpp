@@ -20,11 +20,11 @@
 using LogFunc = int32_t(CORECLR_DELEGATE_CALLTYPE*)(String const* text);
 
 // Copy borrowed UTF-32 code points into a String owned by the managed caller.
-// e.g. CreateString(codes, 4, outString) leaves outString owning a 5 element buffer.
+// e.g. CreateString(codes, 4, outString) leaves outString owning 4 code points.
 using CreateStringFunc = void(CORECLR_DELEGATE_CALLTYPE*)(char32_t const* str, int32_t length, String* outString);
 
-// Release the buffer owned by the given managed side string.
-// e.g. DestroyString(&text) empties text after freeing its UTF-32 buffer.
+// Drop the reference the given managed side string holds and leave it empty.
+// e.g. DestroyString(&text) empties text and frees its block when it was the last owner.
 using DestroyStringFunc = void(CORECLR_DELEGATE_CALLTYPE*)(String* str);
 using GetMethodBindFunc = void const*(CORECLR_DELEGATE_CALLTYPE*)(String const* className, String const* methodName);
 using MethodBindPtrCallFunc =

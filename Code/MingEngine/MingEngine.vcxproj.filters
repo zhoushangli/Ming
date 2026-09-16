@@ -630,6 +630,9 @@
     <ClCompile Include="Core\String.cpp">
       <Filter>Core</Filter>
     </ClCompile>
+    <ClCompile Include="Core\CowData.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Core\Clock.hpp">
@@ -1209,6 +1212,9 @@
       <Filter>Core\Object</Filter>
     </ClInclude>
     <ClInclude Include="Core\String.hpp">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\CowData.hpp">
       <Filter>Core</Filter>
     </ClInclude>
   </ItemGroup>

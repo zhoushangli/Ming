@@ -8,13 +8,15 @@ using System.Runtime.InteropServices;
 [StructLayout(LayoutKind.Sequential)]
 public ref struct String : IDisposable
 {
-    internal InteropTypes.ming_string NativeValue;
+    internal ming_string NativeValue;
 
     // Read the UTF-32 code points without converting them.
-    // e.g. Data returns the buffer the native side wrote into this string.
-    internal unsafe uint* Data => NativeValue.Data;
+    // e.g. Data returns the block the native side wrote into this string.
+    internal unsafe IntPtr Data => (IntPtr)NativeValue.Data;
 
-    internal uint Length => NativeValue.Length;
+    // Read the code point count that the native block header stores, so no native call is needed.
+    // e.g. Length returns 4 for a native String that owns "Ming".
+    internal unsafe uint Length => Marshaling.GetStringLength(in NativeValue);
 
     public unsafe static explicit operator String(string str)
     {
@@ -26,18 +28,18 @@ public ref struct String : IDisposable
         return str.ToString();
     }
 
-    // Release the UTF-32 buffer owned by this string and leave it empty.
+    // Release the reference this string holds on its native block and leave it empty.
     // e.g. Dispose lets the next assignment reuse the same value.
     public unsafe void Dispose()
     {
-        if (NativeValue.Data == null)
+        if (NativeValue.Data == IntPtr.Zero)
         {
             return;
         }
 
         // The layout mirrors the native String, so the native destructor can release
         // the buffer through this address and no separate shell object is needed.
-        fixed (InteropTypes.ming_string* nativeValue = &NativeValue)
+        fixed (ming_string* nativeValue = &NativeValue)
         {
             NativeFuncs.DestroyString((String*)nativeValue);
         }

@@ -1,11 +1,16 @@
 #pragma once
 
+#include "MingEngine/Core/CowData.hpp"
+
+#include <cstddef>
 #include <cstdint>
 #include <string>
 
-// Own a UTF-32 text buffer. The managed mirror Ming.InteropTypes.ming_string keeps this
-// exact layout, so both sides can read the same string memory without extra callbacks.
-// e.g. String("Ming") owns 4 UTF-32 code points and frees them in ~String.
+// Own UTF-32 text inside a shared copy-on-write block, so copying a string only counts one
+// more owner instead of copying every code point.
+// The managed mirror Ming.ming_string points at the same block, and the block
+// header holds the reference count and the code point count the managed side reads.
+// e.g. String("Ming") owns 4 UTF-32 code points that its copies share.
 class String
 {
 public:
@@ -15,25 +20,26 @@ public:
 	String(char32_t const* data);
 	String(char32_t const* data, uint32_t length);
 
-	String(String const& other);
-	String(String&& other) noexcept;
+	// Copying shares the block and moving takes it over, so both stay allocation free.
+	// e.g. String copy = String("Ming") keeps one block with a reference count of 2.
+	String(String const& other)                = default;
+	String(String&& other) noexcept            = default;
+	String& operator=(String const& other)     = default;
+	String& operator=(String&& other) noexcept = default;
+	~String()                                  = default;
 
-	String& operator=(String const& other);
-	String& operator=(String&& other) noexcept;
 	String  operator+(String const& other) const;
 	String& operator+=(String const& other);
 	String  operator+(char32_t const* other) const;
 	String& operator+=(char32_t const* other);
 
-	~String();
-
-	uint32_t        Length() const { return m_length; };
-	bool            IsEmpty() const { return m_length == 0; };
-	char32_t const* Data() const { return m_data; };
+	uint32_t        Length() const { return m_data.Size(); };
+	bool            IsEmpty() const { return m_data.IsEmpty(); };
+	char32_t const* Data() const { return m_data.Data(); };
 
 	// Read one code point without a bounds check.
 	// e.g. String("Ming")[1] returns U'i'.
-	char32_t operator[](uint32_t index) const { return m_data[index]; };
+	char32_t operator[](uint32_t index) const { return m_data.Data()[index]; };
 
 	bool operator==(String const& other) const;
 	bool operator!=(String const& other) const { return !(*this == other); };
@@ -72,6 +78,8 @@ private:
 	bool EqualsUtf8(char const* data, size_t byteLength) const;
 
 private:
-	char32_t* m_data   = nullptr;
-	uint32_t  m_length = 0;
+	// The code points live in a shared block whose header stores the reference count and the count.
+	CowData<char32_t> m_data;
 };
+
+static_assert(sizeof(String) == sizeof(void*), "String must stay one pointer wide for ming_string.");

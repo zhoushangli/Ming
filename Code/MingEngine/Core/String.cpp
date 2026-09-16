@@ -3,10 +3,10 @@
 #include <algorithm>
 #include <cstring>
 #include <limits>
-#include <new>
 
-// The managed mirror Ming.InteropTypes.ming_string holds the same two fields in this order.
-static_assert(sizeof(String) == 16, "String must stay layout compatible with ming_string.");
+// The managed mirror Ming.ming_string points at the same code points, so the only
+// thing both sides have to agree on is that a String stays one pointer wide.
+static_assert(sizeof(String) == sizeof(void*), "String must stay layout compatible with ming_string.");
 
 namespace
 {
@@ -26,23 +26,6 @@ uint32_t CodePointCount(char32_t const* data)
 	}
 
 	return length;
-}
-
-// Allocate a NUL terminated UTF-32 copy of the given code points.
-// e.g. CopyCodePoints(U"Ming", 4) returns a 5 element buffer owned by the caller.
-char32_t* CopyCodePoints(char32_t const* data, uint32_t length)
-{
-	if (data == nullptr || length == 0)
-	{
-		return nullptr;
-	}
-
-	char32_t* copy = new char32_t[static_cast<size_t>(length) + 1];
-
-	std::copy_n(data, length, copy);
-	copy[length] = U'\0';
-
-	return copy;
 }
 
 // Decode UTF-8 bytes into UTF-32 code points and return the decoded count.
@@ -175,68 +158,16 @@ String::String(std::string const& data)
 		return;
 	}
 
-	// 1) Measure the code points so the UTF-32 buffer is sized exactly
-	// 2) Decode the UTF-8 bytes into the buffer
+	// 1) Measure the code points so the shared block is sized exactly
+	// 2) Decode the UTF-8 bytes into that block
 	uint32_t const codePointCount = DecodeUtf8(data.data(), data.size(), nullptr);
 
-	m_data   = new char32_t[static_cast<size_t>(codePointCount) + 1];
-	m_length = DecodeUtf8(data.data(), data.size(), m_data);
-
-	m_data[m_length] = U'\0';
+	DecodeUtf8(data.data(), data.size(), m_data.Resize(codePointCount));
 }
 
 String::String(char32_t const* data) : String(data, CodePointCount(data == nullptr ? U"" : data)) {}
 
-String::String(char32_t const* data, uint32_t length)
-{
-	m_data   = CopyCodePoints(data, length);
-	m_length = m_data == nullptr ? 0 : length;
-}
-
-String::String(String const& other) : String(other.m_data, other.m_length) {}
-
-String::String(String&& other) noexcept : m_data(other.m_data), m_length(other.m_length)
-{
-	other.m_data   = nullptr;
-	other.m_length = 0;
-}
-
-String& String::operator=(String const& other)
-{
-	if (this == &other)
-	{
-		return *this;
-	}
-
-	// 1) Copy the source content before the current buffer is released
-	// 2) Replace the current buffer with the copy
-	char32_t* const copiedData = CopyCodePoints(other.m_data, other.m_length);
-
-	delete[] m_data;
-
-	m_data   = copiedData;
-	m_length = copiedData == nullptr ? 0 : other.m_length;
-
-	return *this;
-}
-
-String& String::operator=(String&& other) noexcept
-{
-	if (this == &other)
-	{
-		return *this;
-	}
-
-	delete[] m_data;
-
-	m_data   = other.m_data;
-	m_length = other.m_length;
-
-	other.m_data   = nullptr;
-	other.m_length = 0;
-
-	return *this;
-}
+String::String(char32_t const* data, uint32_t length) { m_data.Assign(data, length); }
 
 String String::operator+(String const& other) const
 {
@@ -254,19 +185,13 @@ String& String::operator+=(String const& other)
 		return *this;
 	}
 
-	// 1) Allocate a buffer that fits both strings
-	// 2) Append the other content and terminate the result
-	uint32_t const combinedLength = m_length + other.m_length;
-	char32_t*      combinedData   = new char32_t[static_cast<size_t>(combinedLength) + 1];
+	// 1) Remember the other code points, so appending a string to itself stays valid
+	// 2) Grow the block and copy the other code points behind the existing text
+	uint32_t const  ownLength   = Length();
+	uint32_t const  otherLength = other.Length();
+	char32_t const* otherData   = other.Data();
 
-	std::copy_n(m_data, m_length, combinedData);
-	std::copy_n(other.m_data, other.m_length, combinedData + m_length);
-	combinedData[combinedLength] = U'\0';
-
-	delete[] m_data;
-
-	m_data   = combinedData;
-	m_length = combinedLength;
+	std::copy_n(otherData, otherLength, m_data.Resize(ownLength + otherLength) + ownLength);
 
 	return *this;
 }
@@ -275,36 +200,36 @@ String String::operator+(char32_t const* other) const { return *this + String(ot
 
 String& String::operator+=(char32_t const* other) { return *this += String(other); }
 
-String::~String() { delete[] m_data; }
-
 bool String::operator==(String const& other) const
 {
-	if (m_length != other.m_length)
+	// 1) Compare the counts so the code points can be compared in one pass
+	// 2) Compare the two blocks code point by code point
+	uint32_t const length = Length();
+
+	if (length != other.Length())
 	{
 		return false;
 	}
 
-	if (m_length == 0)
-	{
-		return true;
-	}
-
-	return std::equal(m_data, m_data + m_length, other.m_data);
+	return length == 0 || std::equal(Data(), Data() + length, other.Data());
 }
 
 // Compare this string with UTF-8 bytes without allocating a temporary String.
 // e.g. EqualsUtf8("Mi", 2) is true for String("Mi") and false for String("Ming").
 bool String::EqualsUtf8(char const* data, size_t byteLength) const
 {
+	// 1) Read the code points once so the comparing loop only touches plain memory
+	// 2) Walk both sides and compare the encoded bytes of each code point
+	uint32_t const  length     = Length();
+	char32_t const* codePoints = Data();
+
 	uint32_t index     = 0;
 	size_t   byteIndex = 0;
 
-	while (index < m_length && byteIndex < byteLength)
+	while (index < length && byteIndex < byteLength)
 	{
-		// 1) Encode the next code point of this string as UTF-8
-		// 2) Compare it with the same number of bytes on the other side
 		char           bytes[4]  = {};
-		uint32_t const byteCount = EncodeUtf8(m_data[index], bytes);
+		uint32_t const byteCount = EncodeUtf8(codePoints[index], bytes);
 
 		if (byteCount > byteLength - byteIndex)
 		{
@@ -320,7 +245,7 @@ bool String::EqualsUtf8(char const* data, size_t byteLength) const
 		++index;
 	}
 
-	return index == m_length && byteIndex == byteLength;
+	return index == length && byteIndex == byteLength;
 }
 
 bool String::operator==(char const* other) const
@@ -337,9 +262,14 @@ bool String::operator==(std::string const& other) const { return EqualsUtf8(othe
 
 bool String::Contains(char32_t codePoint) const
 {
-	for (uint32_t index = 0; index < m_length; ++index)
+	// 1) Read the code points once so the loop only touches plain memory
+	// 2) Report the first code point that matches the given one
+	uint32_t const  length     = Length();
+	char32_t const* codePoints = Data();
+
+	for (uint32_t index = 0; index < length; ++index)
 	{
-		if (m_data[index] == codePoint)
+		if (codePoints[index] == codePoint)
 		{
 			return true;
 		}
@@ -350,13 +280,17 @@ bool String::Contains(char32_t codePoint) const
 
 std::string String::ToUtf8() const
 {
-	std::string result;
+	// 1) Read the code points once so the loop only touches plain memory
+	// 2) Encode every code point into the UTF-8 result
+	uint32_t const  length     = Length();
+	char32_t const* codePoints = Data();
+	std::string     result;
 
-	result.reserve(m_length);
+	result.reserve(length);
 
-	for (uint32_t index = 0; index < m_length; ++index)
+	for (uint32_t index = 0; index < length; ++index)
 	{
-		AppendUtf8(m_data[index], result);
+		AppendUtf8(codePoints[index], result);
 	}
 
 	return result;
@@ -364,15 +298,17 @@ std::string String::ToUtf8() const
 
 String String::Substr(uint32_t start, uint32_t length) const
 {
-	if (start >= m_length || length == 0)
+	uint32_t const ownLength = Length();
+
+	if (start >= ownLength || length == 0)
 	{
 		return String();
 	}
 
-	return String(m_data + start, (std::min)(length, m_length - start));
+	return String(Data() + start, (std::min)(length, ownLength - start));
 }
 
-String String::Substr(uint32_t start) const { return Substr(start, m_length); }
+String String::Substr(uint32_t start) const { return Substr(start, Length()); }
 
 String String::FromInt(int64_t value)
 {
@@ -405,23 +341,26 @@ String String::FromInt(int64_t value)
 
 bool String::TryToInt64(int64_t& outValue) const
 {
-	if (m_length == 0)
+	// 1) Take an optional sign and require at least one digit after it
+	// 2) Accumulate digits while checking that the value still fits
+	uint32_t const  length     = Length();
+	char32_t const* codePoints = Data();
+
+	if (length == 0)
 	{
 		return false;
 	}
 
-	// 1) Take an optional sign and require at least one digit after it
-	// 2) Accumulate digits while checking that the value still fits
 	uint32_t index      = 0;
 	bool     isNegative = false;
 
-	if (m_data[0] == U'-' || m_data[0] == U'+')
+	if (codePoints[0] == U'-' || codePoints[0] == U'+')
 	{
-		isNegative = m_data[0] == U'-';
+		isNegative = codePoints[0] == U'-';
 		index      = 1;
 	}
 
-	if (index == m_length)
+	if (index == length)
 	{
 		return false;
 	}
@@ -429,14 +368,14 @@ bool String::TryToInt64(int64_t& outValue) const
 	uint64_t const limit     = static_cast<uint64_t>((std::numeric_limits<int64_t>::max)()) + (isNegative ? 1U : 0U);
 	uint64_t       magnitude = 0;
 
-	for (; index < m_length; ++index)
+	for (; index < length; ++index)
 	{
-		if (m_data[index] < U'0' || m_data[index] > U'9')
+		if (codePoints[index] < U'0' || codePoints[index] > U'9')
 		{
 			return false;
 		}
 
-		uint64_t const digit = static_cast<uint64_t>(m_data[index] - U'0');
+		uint64_t const digit = static_cast<uint64_t>(codePoints[index] - U'0');
 
 		if (magnitude > (limit - digit) / 10)
 		{

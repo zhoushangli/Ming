@@ -494,9 +494,9 @@ CSharpScriptGenerator::CSharpScriptGenerator()
 		typeInfo                            = {};
 		typeInfo.m_name                     = "Bool";
 		typeInfo.m_csType                   = "bool";
-		typeInfo.m_callTypeIn               = "MingBool";
-		typeInfo.m_callTypeOut              = "MingBool";
-		typeInfo.m_ptrCallType              = "MingBool";
+		typeInfo.m_callTypeIn               = "ming_bool";
+		typeInfo.m_callTypeOut              = "ming_bool";
+		typeInfo.m_ptrCallType              = "ming_bool";
 		typeInfo.m_csInExpression           = "{VALUE}.ToMingBool()";
 		typeInfo.m_csOutExpression          = "return {CALL}.ToBool();";
 		typeInfo.m_ptrCallArgument          = "&{VALUE}";
