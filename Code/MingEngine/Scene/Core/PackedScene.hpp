@@ -2,10 +2,10 @@
 
 #include "MingEngine/Core/Object/Resource.hpp"
 #include "MingEngine/Core/Object/Variant.hpp"
+#include "MingEngine/Core/String.hpp"
 #include "MingEngine/Scene/Core/Node.hpp"
 #include "MingEngine/Scene/Core/NodePath.hpp"
 
-#include <string>
 #include <vector>
 
 class PackedSceneLoader;
@@ -19,19 +19,19 @@ class PackedSceneSaver;
 struct PackedProperty
 {
 	PackedProperty() = default;
-	PackedProperty(std::string const& name, Variant const& value);
+	PackedProperty(String const& name, Variant const& value);
 
 	bool CanApplyTo(PropertyInfo const& propertyInfo) const;
 
-	std::string m_name;
-	Variant     m_value;
+	String  m_name;
+	Variant m_value;
 };
 
 struct PackedNode
 {
-	std::string                 m_name;
-	std::string                 m_type;
-	std::string                 m_parentPath;
+	String                      m_name;
+	String                      m_type;
+	String                      m_parentPath;
 	std::vector<PackedProperty> m_properties;
 };
 
@@ -58,7 +58,7 @@ public:
 protected:
 	static void BindMethods();
 
-	bool ParseNodeRecursively(Node const* node, std::string const& parentPath, std::vector<PackedNode>& outNodes);
+	bool ParseNodeRecursively(Node const* node, String const& parentPath, std::vector<PackedNode>& outNodes);
 
 protected:
 	PackedSceneData m_data;

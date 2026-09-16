@@ -192,9 +192,9 @@ Ref<Resource> TextureResourceLoader::Load(VirtualPath const& virtualPath)
 		std::string          texName;
 		std::string          storage;
 		std::string          format;
-		uint32_t             width    = 0;
-		uint32_t             height   = 0;
-		uint32_t             channels = 0;
+		uint32_t             width           = 0;
+		uint32_t             height          = 0;
+		uint32_t             channels        = 0;
 		Ref<TextureResource> textureResource = CreateRef<TextureResource>();
 		if (!root.contains("version") || !root["version"].is_number_unsigned()
 			|| root["version"].get<uint32_t>() != kTexFileVersion || !TryReadString(root, "name", texName)
@@ -217,7 +217,8 @@ Ref<Resource> TextureResourceLoader::Load(VirtualPath const& virtualPath)
 		CopyPayloadBlock(payload, dataBlock, encodedData);
 		Ref<Image> image = CreateRef<Image>();
 		if (!image->LoadFromMemory(std::move(encodedData)) || image->GetDimensions().x != static_cast<int>(width)
-			|| image->GetDimensions().y != static_cast<int>(height) || image->GetChannels() != static_cast<int>(channels))
+			|| image->GetDimensions().y != static_cast<int>(height)
+			|| image->GetChannels() != static_cast<int>(channels))
 		{
 			return Ref<Resource>();
 		}
@@ -266,7 +267,7 @@ bool TextureResourceSaver::Save(VirtualPath const& virtualPath, Variant const& v
 	Json root;
 	root["type"]     = "Texture";
 	root["version"]  = kTexFileVersion;
-	root["name"]     = texData->GetName();
+	root["name"]     = texData->GetName().ToUtf8();
 	root["storage"]  = kTexStorage;
 	root["format"]   = kTexFormat;
 	root["width"]    = image->GetDimensions().x;

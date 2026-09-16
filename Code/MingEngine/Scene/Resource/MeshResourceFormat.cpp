@@ -242,7 +242,7 @@ Ref<Resource> MeshResourceLoader::Load(VirtualPath const& virtualPath)
 			{
 				return Ref<Resource>();
 			}
-			Ref<Resource>        loaded  = ResourceLoader::Load(texPath);
+			Ref<Resource>        loaded = ResourceLoader::Load(texPath);
 			Ref<TextureResource> texResource(loaded);
 			if (!texResource.IsValid())
 			{
@@ -292,7 +292,7 @@ bool MeshResourceSaver::Save(VirtualPath const& virtualPath, Variant const& valu
 	Json root;
 	root["type"]          = "Mesh";
 	root["version"]       = kMeshFileVersion;
-	root["name"]          = meshData->GetName();
+	root["name"]          = meshData->GetName().ToUtf8();
 	root["vertex_format"] = meshData->m_vertexFormat;
 	root["vertex_stride"] = meshData->m_vertexStride;
 	root["vertex_count"]  = meshData->m_vertexCount;

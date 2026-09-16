@@ -46,9 +46,9 @@ std::filesystem::path GetExecutableDirectory()
 
 // Borrow the text for this call without transferring ownership.
 // e.g. Log(&message) leaves the caller's string intact.
-int32_t CORECLR_DELEGATE_CALLTYPE Log(MingString const* text)
+int32_t CORECLR_DELEGATE_CALLTYPE Log(String const* text)
 {
-	std::string const& message = PtrToArg<std::string>::Decode(const_cast<MingString*>(text));
+	std::string const message = text == nullptr ? std::string() : text->ToUtf8();
 	if (message.compare(0, 8, "[Error] ") == 0)
 	{
 		ERR_PRINT(message.substr(8));
@@ -64,54 +64,41 @@ int32_t CORECLR_DELEGATE_CALLTYPE Log(MingString const* text)
 	return 0;
 }
 
-void* CORECLR_DELEGATE_CALLTYPE CreateString(void const* str, int32_t length)
+// Copy borrowed UTF-32 code points into a String owned by the managed caller.
+// e.g. CreateString(codes, 4, outString) leaves outString owning a 5 element buffer.
+void CORECLR_DELEGATE_CALLTYPE CreateString(char32_t const* str, int32_t length, String* outString)
 {
+	if (outString == nullptr)
+	{
+		return;
+	}
+
 	if (str == nullptr || length <= 0)
 	{
-		return nullptr;
+		*outString = String();
+		return;
 	}
 
-	return new std::string(reinterpret_cast<char const*>(str), static_cast<size_t>(length));
+	*outString = String(str, static_cast<uint32_t>(length));
 }
 
-void* CORECLR_DELEGATE_CALLTYPE GetStringBuffer(void* str)
-{
-	if (str == nullptr)
-	{
-		return nullptr;
-	}
-
-	std::string* stringPtr = static_cast<std::string*>(str);
-	return (void*)stringPtr->data();
-}
-
-int32_t CORECLR_DELEGATE_CALLTYPE GetStringLength(void const* str)
-{
-	if (str == nullptr)
-	{
-		return 0;
-	}
-
-	std::string const* stringPtr = static_cast<std::string const*>(str);
-	return static_cast<int32_t>(stringPtr->size());
-}
-
-void CORECLR_DELEGATE_CALLTYPE DestroyString(void const* str)
+// Release the UTF-32 buffer owned by the given managed side string.
+// e.g. DestroyString(&text) empties text after freeing its buffer.
+void CORECLR_DELEGATE_CALLTYPE DestroyString(String* str)
 {
 	if (str == nullptr)
 	{
 		return;
 	}
 
-	delete static_cast<std::string const*>(str);
+	*str = String();
 }
 
-void const* CORECLR_DELEGATE_CALLTYPE GetMethodBind(MingString const* className, MingString const* methodName)
+void const* CORECLR_DELEGATE_CALLTYPE GetMethodBind(String const* className, String const* methodName)
 {
-	if (className == nullptr || className->m_string == nullptr || methodName == nullptr
-		|| methodName->m_string == nullptr)
+	if (className == nullptr || methodName == nullptr)
 		return nullptr;
-	return ClassDatabase::GetMethodBind(className->m_string->c_str(), methodName->m_string->c_str());
+	return ClassDatabase::GetMethodBind(className->ToUtf8(), methodName->ToUtf8());
 }
 
 void CORECLR_DELEGATE_CALLTYPE MethodBindPtrCall(void const* methodBind, void* objectPtr, void** args, void* retPtr)
@@ -126,22 +113,22 @@ void CORECLR_DELEGATE_CALLTYPE MethodBindPtrCall(void const* methodBind, void* o
 	methodBindPtr->PtrCall(object, args, retPtr);
 }
 
-ConstructorFunc CORECLR_DELEGATE_CALLTYPE GetConstructor(MingString const* name)
+ConstructorFunc CORECLR_DELEGATE_CALLTYPE GetConstructor(String const* name)
 {
-	if (name == nullptr || name->m_string == nullptr)
+	if (name == nullptr)
 		return nullptr;
-	return ClassDatabase::GetConstructor(name->m_string->c_str());
+	return ClassDatabase::GetConstructor(name->ToUtf8());
 }
 
 // Transfer a newly allocated class name to the caller.
-// e.g. GetObjectClassName(owner, &name) requires the caller to destroy name.m_string.
-void CORECLR_DELEGATE_CALLTYPE GetObjectClassName(void* objectPtr, MingString* outName)
+// e.g. GetObjectClassName(owner, &name) leaves name owning its UTF-32 buffer.
+void CORECLR_DELEGATE_CALLTYPE GetObjectClassName(void* objectPtr, String* outName)
 {
 	if (outName == nullptr)
 		return;
-	*outName = {};
+	*outName = String();
 	if (objectPtr != nullptr)
-		outName->m_string = new std::string(static_cast<Object*>(objectPtr)->GetClassName());
+		*outName = String(static_cast<Object*>(objectPtr)->GetClassName());
 }
 
 int32_t CORECLR_DELEGATE_CALLTYPE TieNativeManagedToUnmanaged(void* gcHandleValue, void* nativeValue)
@@ -408,8 +395,6 @@ bool ScriptSystem::InitializeDotNetRuntime()
 	NativeCallbacks const nativeCallbacks{
 		&Log,
 		&CreateString,
-		&GetStringBuffer,
-		&GetStringLength,
 		&DestroyString,
 		&GetMethodBind,
 		&MethodBindPtrCall,
@@ -465,13 +450,13 @@ bool ScriptSystem::EnsureProjectSolution()
 	std::filesystem::path const sdkDirectory = executableDirectory / L"MingSharp" / L"Tool" / L"Sdk";
 
 	// 4) Call the managed generator
-	auto const       projectUtf8 = projectDirectory.u8string();
-	auto const       sdkUtf8     = sdkDirectory.u8string();
-	std::string      projectText(projectUtf8.begin(), projectUtf8.end());
-	std::string      sdkText(sdkUtf8.begin(), sdkUtf8.end());
-	MingString const nativeProject{ &projectText };
-	MingString const nativeSdk{ &sdkText };
-	int32_t const    result = m_ensureProjectSolution(&nativeProject, &nativeSdk);
+	auto const    projectUtf8 = projectDirectory.u8string();
+	auto const    sdkUtf8     = sdkDirectory.u8string();
+	std::string   projectText(projectUtf8.begin(), projectUtf8.end());
+	std::string   sdkText(sdkUtf8.begin(), sdkUtf8.end());
+	String const  nativeProject(projectText);
+	String const  nativeSdk(sdkText);
+	int32_t const result = m_ensureProjectSolution(&nativeProject, &nativeSdk);
 
 	ERR_FAIL_COND_V_MSG(result != 0, false, Stringf("Failed to ensure C# project files: %d\n", result));
 
@@ -501,10 +486,10 @@ bool ScriptSystem::BuildProjectSolution()
 		"Failed to resolve the active project directory.\n");
 
 	// 3) Build the solution through the managed entry point
-	auto const       pathUtf8 = projectDirectory.u8string();
-	std::string      pathText(pathUtf8.begin(), pathUtf8.end());
-	MingString const nativePath{ &pathText };
-	int32_t const    result = m_buildProjectSolution(&nativePath);
+	auto const    pathUtf8 = projectDirectory.u8string();
+	std::string   pathText(pathUtf8.begin(), pathUtf8.end());
+	String const  nativePath(pathText);
+	int32_t const result = m_buildProjectSolution(&nativePath);
 	ERR_FAIL_COND_V_MSG(
 		result != 0,
 		false,
@@ -555,38 +540,35 @@ bool ScriptSystem::LoadProjectAssembly()
 			assemblyPath.c_str()));
 
 	// 4) Invoke the managed loader
-	MingString nativeLoadedPath{};
+	String nativeLoadedPath{};
 
-	auto const       pathUtf8 = assemblyPath.u8string();
-	std::string      pathText(pathUtf8.begin(), pathUtf8.end());
-	MingString const nativePath{ &pathText };
-	int32_t const    result = m_loadProjectAssembly(&nativePath, &nativeLoadedPath);
+	auto const    pathUtf8 = assemblyPath.u8string();
+	std::string   pathText(pathUtf8.begin(), pathUtf8.end());
+	String const  nativePath(pathText);
+	int32_t const result = m_loadProjectAssembly(&nativePath, &nativeLoadedPath);
 
 	// 5) Handle failure and release any returned string
 	if (result != 0)
 	{
-		DestroyString(nativeLoadedPath.m_string);
-		nativeLoadedPath.m_string = nullptr;
+		nativeLoadedPath = String();
 
 		ERR_PRINT(Stringf("Project assembly load did not succeed: %ls (status: %d)\n", assemblyPath.c_str(), result));
 		return false;
 	}
 
 	// 6) Validate the actual loaded path
-	if (nativeLoadedPath.m_string == nullptr || nativeLoadedPath.m_string->empty())
+	if (nativeLoadedPath.IsEmpty())
 	{
-		DestroyString(nativeLoadedPath.m_string);
-		nativeLoadedPath.m_string = nullptr;
+		nativeLoadedPath = String();
 
 		ERR_PRINT("Managed loader returned success without an assembly path.\n");
 		return false;
 	}
 
 	// 7) Take the path value and release the native string object
-	std::string loadedPath = std::move(*nativeLoadedPath.m_string);
+	std::string loadedPath = nativeLoadedPath.ToUtf8();
 
-	DestroyString(nativeLoadedPath.m_string);
-	nativeLoadedPath.m_string = nullptr;
+	nativeLoadedPath = String();
 
 	INFO_PRINT(Stringf("Project assembly loaded: %s\n", loadedPath.c_str()));
 
@@ -613,12 +595,12 @@ bool ScriptSystem::UnloadProjectAssembly()
 bool ScriptSystem::AddScriptBridge(CSharpScript* script, std::string const& scriptPath)
 {
 	if (!m_isInitialized || script == nullptr || scriptPath.empty() || m_managedCallbacks.m_addScriptBridge == nullptr
-		|| scriptPath.size() > static_cast<size_t>((std::numeric_limits<int32_t>::max)()))
+		|| scriptPath.size() > static_cast<size_t>((std::numeric_limits<uint32_t>::max)()))
 	{
 		return false;
 	}
 
-	MingString const path{ const_cast<std::string*>(&scriptPath) };
+	String const path(scriptPath);
 	return m_managedCallbacks.m_addScriptBridge(script, &path) == 1;
 }
 
@@ -644,16 +626,16 @@ void* ScriptSystem::GetOrCreateNativeManagedWrapper(Object* owner)
 		return owner->GetNativeBindingGCHandle();
 	}
 
+	// 2) Forward the class name through the managed instance factory
 	std::string nativeClassName = owner->GetClassName();
-	MingString  nativeClassNameStruct;
-	nativeClassNameStruct.m_string = &nativeClassName;
+	String      nativeClassNameString(nativeClassName);
 
 	if (m_managedCallbacks.m_createNativeManagedInstance == nullptr)
 	{
 		return nullptr;
 	}
 
-	void* gcHandle = m_managedCallbacks.m_createNativeManagedInstance(&nativeClassNameStruct, owner);
+	void* gcHandle = m_managedCallbacks.m_createNativeManagedInstance(&nativeClassNameString, owner);
 	if (gcHandle == nullptr)
 	{
 		return nullptr;

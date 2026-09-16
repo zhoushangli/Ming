@@ -11,12 +11,12 @@ public:
 	void RenderValue(EditorUIContext& context, Variant const& value) override
 	{
 		(void)context;
-		if (!value.Is<std::string>())
+		if (!value.Is<String>())
 		{
 			return;
 		}
 
-		std::string str = value.As<std::string>();
+		std::string str = value.As<String>().ToUtf8();
 		if (EditorUIWidgets::PropertyString(GetDisplayName(), m_labelId.c_str(), str))
 		{
 			EmitValueChanged(Variant(str));

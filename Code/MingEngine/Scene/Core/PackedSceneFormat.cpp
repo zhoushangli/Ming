@@ -1,9 +1,9 @@
 #include "MingEngine/Scene/Core/PackedSceneFormat.hpp"
 
 #include "MingEngine/Core/ErrorWarningAssert.hpp"
-#include "MingEngine/Core/StringUtils.hpp"
 #include "MingEngine/Core/Object/ClassDatabase.hpp"
 #include "MingEngine/Core/Object/VariantJson.hpp"
+#include "MingEngine/Core/StringUtils.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Engine/File/FileSystem.hpp"
 #include "MingEngine/Scene/Core/PackedScene.hpp"
@@ -33,21 +33,23 @@ bool TryParseProperties(Json const& nodeJson, PackedNode& outNode)
 	for (auto propertyEntry = propertiesJson.begin(); propertyEntry != propertiesJson.end(); ++propertyEntry)
 	{
 		std::string const   propertyName = propertyEntry.key();
-		PropertyInfo const* property     = ClassDatabase::FindProperty(outNode.m_type, propertyName);
+		PropertyInfo const* property     = ClassDatabase::FindProperty(outNode.m_type.ToUtf8(), propertyName);
 		if (property == nullptr)
 		{
-			WARN_PRINT(Stringf("PackedScene: skipping unknown property '%s' on type '%s'.\n",
+			WARN_PRINT(Stringf(
+				"PackedScene: skipping unknown property '%s' on type '%s'.\n",
 				propertyName.c_str(),
-				outNode.m_type.c_str()));
+				outNode.m_type.ToUtf8().c_str()));
 			continue;
 		}
 
 		Variant value;
 		if (!VariantJson::TryDeserialize(propertyEntry.value(), property->m_type, value))
 		{
-			WARN_PRINT(Stringf("PackedScene: skipping property '%s' with an incompatible JSON value on type '%s'.\n",
+			WARN_PRINT(Stringf(
+				"PackedScene: skipping property '%s' with an incompatible JSON value on type '%s'.\n",
 				propertyName.c_str(),
-				outNode.m_type.c_str()));
+				outNode.m_type.ToUtf8().c_str()));
 			continue;
 		}
 
@@ -69,10 +71,11 @@ bool TryParseNode(Json const& nodeJson, PackedSceneData& sceneData)
 	PackedNode packedNode;
 	packedNode.m_name = nodeJson["name"].get<std::string>();
 	packedNode.m_type = nodeJson["type"].get<std::string>();
-	if (packedNode.m_name.empty() || packedNode.m_name == "." || packedNode.m_name.find('/') != std::string::npos)
+	if (packedNode.m_name.IsEmpty() || packedNode.m_name == "." || packedNode.m_name.Contains(U'/'))
 	{
-		ERR_PRINT(Stringf("PackedScene: node name '%s' cannot be represented in a scene path.\n",
-			packedNode.m_name.c_str()));
+		ERR_PRINT(Stringf(
+			"PackedScene: node name '%s' cannot be represented in a scene path.\n",
+			packedNode.m_name.ToUtf8().c_str()));
 		return false;
 	}
 
@@ -120,8 +123,7 @@ std::vector<std::string> PackedSceneLoader::GetSupportedExtensions() const
 
 Ref<Resource> PackedSceneLoader::Load(VirtualPath const& virtualPath)
 {
-	if (!virtualPath.IsValid() || g_engine == nullptr
-		|| g_engine->m_fileSystem == nullptr)
+	if (!virtualPath.IsValid() || g_engine == nullptr || g_engine->m_fileSystem == nullptr)
 	{
 		return Ref<Resource>();
 	}
@@ -165,8 +167,7 @@ bool PackedSceneSaver::CanSave(VirtualPath const& virtualPath, Variant const& va
 bool PackedSceneSaver::Save(VirtualPath const& virtualPath, Variant const& value)
 {
 	Ref<PackedScene> packedScene(value);
-	if (!packedScene.IsValid() || !virtualPath.IsValid() || g_engine == nullptr
-		|| g_engine->m_fileSystem == nullptr)
+	if (!packedScene.IsValid() || !virtualPath.IsValid() || g_engine == nullptr || g_engine->m_fileSystem == nullptr)
 	{
 		return false;
 	}
@@ -177,9 +178,9 @@ bool PackedSceneSaver::Save(VirtualPath const& virtualPath, Variant const& value
 	for (PackedNode const& node : packedScene->m_data.m_packedNodes)
 	{
 		Json nodeJson;
-		nodeJson["name"]   = node.m_name;
-		nodeJson["type"]   = node.m_type;
-		nodeJson["parent"] = node.m_parentPath;
+		nodeJson["name"]   = node.m_name.ToUtf8();
+		nodeJson["type"]   = node.m_type.ToUtf8();
+		nodeJson["parent"] = node.m_parentPath.ToUtf8();
 
 		if (!node.m_properties.empty())
 		{
@@ -189,11 +190,12 @@ bool PackedSceneSaver::Save(VirtualPath const& virtualPath, Variant const& value
 				Json propertyJson;
 				if (VariantJson::TrySerialize(property.m_value, propertyJson))
 				{
-					nodeJson["properties"][property.m_name] = propertyJson;
+					nodeJson["properties"][property.m_name.ToUtf8()] = propertyJson;
 				}
 				else
 				{
-					WARN_PRINT(Stringf("PackedScene: skipping unsavable property '%s'.\n", property.m_name.c_str()));
+					WARN_PRINT(
+						Stringf("PackedScene: skipping unsavable property '%s'.\n", property.m_name.ToUtf8().c_str()));
 				}
 			}
 		}

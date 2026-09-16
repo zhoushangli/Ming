@@ -2,6 +2,7 @@
 
 #include "MingEngine/Core/ErrorWarningAssert.hpp"
 #include "MingEngine/Core/Object/ClassDatabase.hpp"
+#include "MingEngine/Core/String.hpp"
 #include "MingEngine/Engine/Application/SystemBase.hpp"
 #include "MingEngine/Engine/Script/CSharpScript.hpp"
 
@@ -14,31 +15,30 @@
 
 //---------------------------------------------------------------------------
 
-struct MingString;
-
 // Native callbacks
 
-using LogFunc             = int32_t(CORECLR_DELEGATE_CALLTYPE*)(MingString const* text);
-using CreateStringFunc    = void*(CORECLR_DELEGATE_CALLTYPE*)(void const* str, int32_t length);
-using GetStringBufferFunc = void*(CORECLR_DELEGATE_CALLTYPE*)(void* str);
-using GetStringLengthFunc = int32_t(CORECLR_DELEGATE_CALLTYPE*)(void const* str);
-using DestroyStringFunc   = void(CORECLR_DELEGATE_CALLTYPE*)(void const* str);
-using GetMethodBindFunc   = void const*(CORECLR_DELEGATE_CALLTYPE*)(MingString const* className,
-																	MingString const* methodName);
+using LogFunc = int32_t(CORECLR_DELEGATE_CALLTYPE*)(String const* text);
+
+// Copy borrowed UTF-32 code points into a String owned by the managed caller.
+// e.g. CreateString(codes, 4, outString) leaves outString owning a 5 element buffer.
+using CreateStringFunc = void(CORECLR_DELEGATE_CALLTYPE*)(char32_t const* str, int32_t length, String* outString);
+
+// Release the buffer owned by the given managed side string.
+// e.g. DestroyString(&text) empties text after freeing its UTF-32 buffer.
+using DestroyStringFunc = void(CORECLR_DELEGATE_CALLTYPE*)(String* str);
+using GetMethodBindFunc = void const*(CORECLR_DELEGATE_CALLTYPE*)(String const* className, String const* methodName);
 using MethodBindPtrCallFunc =
 	void(CORECLR_DELEGATE_CALLTYPE*)(void const* methodBind, void* objectPtr, void** args, void* retPtr);
-using GetConstructorFunc                     = ConstructorFunc(CORECLR_DELEGATE_CALLTYPE*)(MingString const* name);
-using GetObjectClassNameFunc                 = void(CORECLR_DELEGATE_CALLTYPE*)(void* objectPtr, MingString* outName);
-using TieNativeManagedToUnmanagedFunc        = int32_t(CORECLR_DELEGATE_CALLTYPE*)(void* gcHandle, void* native);
-using UnmanagedGetInstanceBindingManagedFunc = void*(CORECLR_DELEGATE_CALLTYPE*)(void* native);
+using GetConstructorFunc                        = ConstructorFunc(CORECLR_DELEGATE_CALLTYPE*)(String const* name);
+using GetObjectClassNameFunc                    = void(CORECLR_DELEGATE_CALLTYPE*)(void* objectPtr, String* outName);
+using TieNativeManagedToUnmanagedFunc           = int32_t(CORECLR_DELEGATE_CALLTYPE*)(void* gcHandle, void* native);
+using UnmanagedGetInstanceBindingManagedFunc    = void*(CORECLR_DELEGATE_CALLTYPE*)(void* native);
 using UnmanagedInstanceBindingCreateManagedFunc = void*(CORECLR_DELEGATE_CALLTYPE*)(void* native);
 
 struct NativeCallbacks
 {
 	LogFunc                                   m_log                                   = nullptr;
 	CreateStringFunc                          m_createString                          = nullptr;
-	GetStringBufferFunc                       m_getStringBuffer                       = nullptr;
-	GetStringLengthFunc                       m_getStringLength                       = nullptr;
 	DestroyStringFunc                         m_destroyString                         = nullptr;
 	GetMethodBindFunc                         m_getMethodBind                         = nullptr;
 	MethodBindPtrCallFunc                     m_methodBindPtrCall                     = nullptr;
@@ -53,10 +53,9 @@ struct NativeCallbacks
 
 // Managed callbacks
 
-using AddScriptBridgeFunc             = int32_t(CORECLR_DELEGATE_CALLTYPE*)(void* script, MingString const* scriptPath);
+using AddScriptBridgeFunc             = int32_t(CORECLR_DELEGATE_CALLTYPE*)(void* script, String const* scriptPath);
 using RemoveScriptBridgeFunc          = int32_t(CORECLR_DELEGATE_CALLTYPE*)(void* script);
-using CreateNativeManagedInstanceFunc = void*(CORECLR_DELEGATE_CALLTYPE*)(MingString const* nativeClassName,
-																		  void*             owner);
+using CreateNativeManagedInstanceFunc = void*(CORECLR_DELEGATE_CALLTYPE*)(String const* nativeClassName, void* owner);
 using CreateUserManagedInstanceFunc   = void*(CORECLR_DELEGATE_CALLTYPE*)(void* script, void* owner);
 using ReleaseGCHandleFunc             = void(CORECLR_DELEGATE_CALLTYPE*)(void* gcHandle);
 
@@ -130,11 +129,11 @@ public:
 private:
 	using ShutdownFunc = int32_t(CORECLR_DELEGATE_CALLTYPE*)();
 	using LoadProjectAssemblyFunc =
-		int32_t(CORECLR_DELEGATE_CALLTYPE*)(MingString const* assemblyPath, MingString* outLoadedAssemblyPath);
+		int32_t(CORECLR_DELEGATE_CALLTYPE*)(String const* assemblyPath, String* outLoadedAssemblyPath);
 	using UnloadProjectAssemblyFunc = int32_t(CORECLR_DELEGATE_CALLTYPE*)();
 	using EnsureProjectSolutionFunc =
-		int32_t(CORECLR_DELEGATE_CALLTYPE*)(MingString const* projectDirectory, MingString const* sdkDirectory);
-	using BuildProjectSolutionFunc = int32_t(CORECLR_DELEGATE_CALLTYPE*)(MingString const* projectDirectory);
+		int32_t(CORECLR_DELEGATE_CALLTYPE*)(String const* projectDirectory, String const* sdkDirectory);
+	using BuildProjectSolutionFunc = int32_t(CORECLR_DELEGATE_CALLTYPE*)(String const* projectDirectory);
 
 	bool InitializeDotNetRuntime();
 	void CollectReloadInstances();

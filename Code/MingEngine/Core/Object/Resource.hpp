@@ -1,9 +1,8 @@
 #pragma once
 
 #include "MingEngine/Core/Object/RefCounted.hpp"
+#include "MingEngine/Core/String.hpp"
 #include "MingEngine/Engine/File/VirtualPath.hpp"
-
-#include <string>
 
 class Resource : public RefCounted
 {
@@ -19,9 +18,8 @@ public:
 	// Original user-facing source file path for editor display. Empty means this resource has no separate source file.
 	VirtualPath const& GetSourceFilePath() const { return m_sourceFilePath; }
 	void               SetSourceFilePath(VirtualPath const& path) { m_sourceFilePath = path; }
-	const std::string& GetName() const { return m_name; }
-	void               SetName(const std::string& name) { m_name = name; }
-
+	String const&      GetName() const { return m_name; }
+	void               SetName(String const& name) { m_name = name; }
 	// Copy all data from another resource of the same type and leave the source valid but empty.
 	// Mainly used for reloading a resource in-place without creating a new instance
 	// e.g. cachedResource.CopyFrom(std::move(freshResource))
@@ -30,11 +28,11 @@ public:
 protected:
 	static void BindMethods();
 	void        MoveBaseFrom(Resource&& other);
-	std::string GetPathString() const;
-	void        SetPathString(std::string const& path);
+	String      GetPathString() const;
+	void        SetPathString(String const& path);
 
 protected:
-	std::string m_name;
+	String      m_name;
 	VirtualPath m_virtualPath;
 	VirtualPath m_sourceFilePath;
 };

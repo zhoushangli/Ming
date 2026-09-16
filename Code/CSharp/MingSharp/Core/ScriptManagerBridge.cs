@@ -97,7 +97,7 @@ public static class ScriptManagerBridge
     [UnmanagedCallersOnly]
     internal static unsafe int AddScriptBridge(
         IntPtr scriptPtr,
-        MingString* scriptPathPtr)
+        String* scriptPathPtr)
     {
         if (
             scriptPtr == IntPtr.Zero
@@ -109,7 +109,7 @@ public static class ScriptManagerBridge
 
         try
         {
-            // 1) Copy the native UTF-8 path
+            // 1) Convert the native UTF-32 path
             string scriptPath = Marshaling.ConvertStringToManaged(*scriptPathPtr);
 
             // 2) Resolve the registered script type
@@ -179,7 +179,7 @@ public static class ScriptManagerBridge
     #region Instance Creation
 
     [UnmanagedCallersOnly]
-    internal static unsafe IntPtr CreateNativeManagedInstance(MingString* nativeClassNamePtr, IntPtr ownerPtr)
+    internal static unsafe IntPtr CreateNativeManagedInstance(String* nativeClassNamePtr, IntPtr ownerPtr)
     {
         if (nativeClassNamePtr == null || ownerPtr == IntPtr.Zero)
         {
@@ -188,8 +188,7 @@ public static class ScriptManagerBridge
 
         try
         {
-            MingString* nativeClassName = nativeClassNamePtr;
-            string className = Marshaling.ConvertStringToManaged(*nativeClassName);
+            string className = Marshaling.ConvertStringToManaged(*nativeClassNamePtr);
             MingObject wrapper = Constructors.Invoke(className, ownerPtr);
             return AllocNativeBindingGCHandle(wrapper);
         }

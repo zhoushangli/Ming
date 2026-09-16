@@ -4,6 +4,10 @@ using System.Runtime.InteropServices;
 using System.Runtime.Loader;
 using Ming;
 
+// The engine string wrapper shares its name with System.String once Ming is imported.
+// e.g. String* parameters below are Ming.String, while string stays System.String.
+using String = Ming.String;
+
 namespace MingPlugins
 {
     public static class Main
@@ -124,7 +128,7 @@ namespace MingPlugins
         }
 
         [UnmanagedCallersOnly]
-        private static unsafe int LoadProjectAssembly(MingString* assemblyPath, MingString* outLoadedAssemblyPath)
+        private static unsafe int LoadProjectAssembly(String* assemblyPath, String* outLoadedAssemblyPath)
         {
             if (outLoadedAssemblyPath == null)
             {
@@ -142,7 +146,7 @@ namespace MingPlugins
 
             try
             {
-                // 1) Copy and validate the absolute path
+                // 1) Convert and validate the absolute path
                 path = Marshaling.ConvertStringToManaged(*assemblyPath);
 
                 if (string.IsNullOrWhiteSpace(path) || !Path.IsPathFullyQualified(path))
@@ -300,11 +304,11 @@ namespace MingPlugins
         }
 
         [UnmanagedCallersOnly]
-        private static unsafe int BuildProjectSolution(MingString* projectDirectory)
+        private static unsafe int BuildProjectSolution(String* projectDirectory)
         {
             try
             {
-                // 1) Validate and copy the native project path
+                // 1) Validate and convert the native project path
                 if (projectDirectory == null)
                 {
                     return -1;
@@ -331,7 +335,7 @@ namespace MingPlugins
         }
 
         [UnmanagedCallersOnly]
-        private static unsafe int EnsureProjectSolution(MingString* projectDirectory, MingString* sdkDirectory)
+        private static unsafe int EnsureProjectSolution(String* projectDirectory, String* sdkDirectory)
         {
             try
             {
@@ -341,7 +345,7 @@ namespace MingPlugins
                     return -1;
                 }
 
-                // 2) Copy the native strings into managed strings
+                // 2) Convert the native strings into managed strings
                 string projectPath = Marshaling.ConvertStringToManaged(*projectDirectory);
                 string sdkPath = Marshaling.ConvertStringToManaged(*sdkDirectory);
 

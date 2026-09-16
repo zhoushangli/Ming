@@ -10,6 +10,13 @@
 #include <cctype>
 #include <exception>
 
+namespace
+{
+// Report whether the code point is an ASCII decimal digit.
+// e.g. IsAsciiDigit(U'7') returns true and IsAsciiDigit(U'x') returns false.
+bool IsAsciiDigit(char32_t codePoint) { return codePoint >= U'0' && codePoint <= U'9'; }
+} // namespace
+
 Node::~Node()
 {
 	for (Node* child : m_data.m_children)
@@ -33,17 +40,17 @@ Node* Node::GetRoot() const
 Node*                     Node::GetParent() const { return m_data.m_parent; }
 SceneTree*                Node::GetSceneTree() const { return m_data.m_sceneTree; }
 std::vector<Node*> const& Node::GetChildren() const { return m_data.m_children; }
-std::string const&        Node::GetName() const { return m_data.m_name; }
+String const&             Node::GetName() const { return m_data.m_name; }
 bool                      Node::GetSerializable() const { return m_data.m_isSerializable; }
 bool                      Node::GetReady() const { return m_data.m_enableReady; }
 bool                      Node::GetProcess() const { return m_data.m_enableProcess; }
 
-void Node::SetName(std::string const& name) { m_data.m_name = EnsureUniqueName(name); }
+void Node::SetName(String const& name) { m_data.m_name = EnsureUniqueName(name); }
 void Node::SetSerializable(bool isSerializable) { m_data.m_isSerializable = isSerializable; }
 void Node::SetReady(bool isReady) { m_data.m_enableReady = isReady; }
 void Node::SetProcess(bool isProcess) { m_data.m_enableProcess = isProcess; }
 
-Node* Node::FindChildByName(std::string const& name) const
+Node* Node::FindChildByName(String const& name) const
 {
 	for (Node* child : m_data.m_children)
 	{
@@ -84,7 +91,7 @@ Node* Node::GetNode(NodePath const& path) const
 	std::vector<std::string> const& paths     = path.GetPaths();
 	if (path.IsAbsolute())
 	{
-		if (paths.empty() || paths[0] != current->GetName())
+		if (paths.empty() || current->GetName() != paths[0])
 		{
 			return nullptr;
 		}
@@ -290,15 +297,15 @@ void Node::OnNotification(int notification)
 	}
 }
 
-std::string Node::EnsureUniqueName(std::string const& requestedName) const
+String Node::EnsureUniqueName(String const& requestedName) const
 {
-	std::string const normalizedName = requestedName.empty() ? GetClassName() : requestedName;
+	String const normalizedName = requestedName.IsEmpty() ? String(GetClassName()) : requestedName;
 	if (m_data.m_parent == nullptr)
 	{
 		return normalizedName;
 	}
 
-	auto isAvailable = [this](std::string const& candidate)
+	auto isAvailable = [this](String const& candidate)
 	{
 		for (Node const* sibling : m_data.m_parent->m_data.m_children)
 		{
@@ -315,29 +322,30 @@ std::string Node::EnsureUniqueName(std::string const& requestedName) const
 		return normalizedName;
 	}
 
-	size_t suffixStart = normalizedName.size();
-	while (suffixStart > 0 && std::isdigit(static_cast<unsigned char>(normalizedName[suffixStart - 1])))
+	// 1) Split the trailing digits off so "Node2" becomes "Node" with suffix 2
+	// 2) Count upwards until the name is free
+	uint32_t suffixStart = normalizedName.Length();
+
+	while (suffixStart > 0 && IsAsciiDigit(normalizedName[suffixStart - 1]))
 	{
 		--suffixStart;
 	}
 
-	std::string const  baseName = normalizedName.substr(0, suffixStart);
-	unsigned long long suffix   = 1;
-	if (suffixStart < normalizedName.size())
+	String const baseName = normalizedName.Substr(0, suffixStart);
+	int64_t      suffix   = 0;
+
+	if (suffixStart < normalizedName.Length() && normalizedName.Substr(suffixStart).TryToInt64(suffix))
 	{
-		try
-		{
-			suffix = std::stoull(normalizedName.substr(suffixStart)) + 1;
-		}
-		catch (std::exception const&)
-		{
-			suffix = 1;
-		}
+		++suffix;
+	}
+	else
+	{
+		suffix = 1;
 	}
 
 	for (;; ++suffix)
 	{
-		std::string const candidate = baseName + std::to_string(suffix);
+		String const candidate = baseName + String::FromInt(suffix);
 		if (isAvailable(candidate))
 		{
 			return candidate;

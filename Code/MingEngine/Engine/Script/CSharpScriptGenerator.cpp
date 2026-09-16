@@ -1,5 +1,5 @@
-#include "MingEngine/Core/StringUtils.hpp"
 #include "MingEngine/Engine/Script/CSharpScriptGenerator.hpp"
+#include "MingEngine/Core/StringUtils.hpp"
 
 #include "MingEngine/Core/ErrorWarningAssert.hpp"
 #include "MingEngine/Core/Object/ClassDatabase.hpp"
@@ -278,11 +278,10 @@ std::string GenerateClassMethod(MethodInfo const& methodInfo, NativeCallInfo con
 		if (methodInfo.m_returnInfo.m_type == Variant::Type::ObjectPtr
 			&& !methodInfo.m_returnInfo.m_objectClassName.empty())
 		{
-			returnExpression = "(" + GetPublicCSharpType(methodInfo.m_returnInfo, nativeCall.m_returnType) + ")"
-							 + returnExpression;
+			returnExpression =
+				"(" + GetPublicCSharpType(methodInfo.m_returnInfo, nativeCall.m_returnType) + ")" + returnExpression;
 		}
-		methodCall = FormatTypeExpression(
-			nativeCall.m_returnType.m_csOutExpression, std::string(), returnExpression);
+		methodCall = FormatTypeExpression(nativeCall.m_returnType.m_csOutExpression, std::string(), returnExpression);
 	}
 
 	std::string source = MethodTemplate;
@@ -534,19 +533,19 @@ CSharpScriptGenerator::CSharpScriptGenerator()
 	}
 
 	{
-		typeInfo                    = {};
-		typeInfo.m_name             = "String";
-		typeInfo.m_csType           = "string";
-		typeInfo.m_callTypeIn       = "string";
-		typeInfo.m_callTypeOut      = "string";
-		typeInfo.m_ptrCallType      = "MingString";
-		typeInfo.m_csInExpression   = "{VALUE}";
-		typeInfo.m_csOutExpression  = "return {CALL};";
-		typeInfo.m_callIn           = "using MingString {VALUE}Native = Marshaling.ConvertStringToNative({VALUE});";
-		typeInfo.m_ptrCallArgument  = "&{VALUE}Native";
-		typeInfo.m_callOut          = "return Marshaling.ConvertStringToManaged({VALUE});";
-		typeInfo.m_disposableReturn = true;
-		typeInfo.m_defaultInitializeReturn    = true;
+		typeInfo                           = {};
+		typeInfo.m_name                    = "String";
+		typeInfo.m_csType                  = "string";
+		typeInfo.m_callTypeIn              = "string";
+		typeInfo.m_callTypeOut             = "string";
+		typeInfo.m_ptrCallType             = "String";
+		typeInfo.m_csInExpression          = "{VALUE}";
+		typeInfo.m_csOutExpression         = "return {CALL};";
+		typeInfo.m_callIn                  = "using String {VALUE}Native = Marshaling.ConvertStringToNative({VALUE});";
+		typeInfo.m_ptrCallArgument         = "&{VALUE}Native";
+		typeInfo.m_callOut                 = "return Marshaling.ConvertStringToManaged({VALUE});";
+		typeInfo.m_disposableReturn        = true;
+		typeInfo.m_defaultInitializeReturn = true;
 		m_builtinTypes[Variant::Type::String] = typeInfo;
 	}
 
@@ -635,16 +634,16 @@ CSharpScriptGenerator::CSharpScriptGenerator()
 	}
 
 	{
-		typeInfo                    = {};
-		typeInfo.m_name             = "ObjectPtr";
-		typeInfo.m_csType           = "MingObject";
-		typeInfo.m_callTypeIn       = "IntPtr";
-		typeInfo.m_callTypeOut      = "MingObject";
-		typeInfo.m_ptrCallType      = "IntPtr";
-		typeInfo.m_csInExpression   = "GetPtr({VALUE})";
-		typeInfo.m_csOutExpression  = "return {CALL};";
-		typeInfo.m_ptrCallArgument  = "&{VALUE}";
-		typeInfo.m_callOut          = "return InteropUtils.UnmanagedGetManaged({VALUE});";
+		typeInfo                                 = {};
+		typeInfo.m_name                          = "ObjectPtr";
+		typeInfo.m_csType                        = "MingObject";
+		typeInfo.m_callTypeIn                    = "IntPtr";
+		typeInfo.m_callTypeOut                   = "MingObject";
+		typeInfo.m_ptrCallType                   = "IntPtr";
+		typeInfo.m_csInExpression                = "GetPtr({VALUE})";
+		typeInfo.m_csOutExpression               = "return {CALL};";
+		typeInfo.m_ptrCallArgument               = "&{VALUE}";
+		typeInfo.m_callOut                       = "return InteropUtils.UnmanagedGetManaged({VALUE});";
 		typeInfo.m_defaultInitializeReturn       = true;
 		m_builtinTypes[Variant::Type::ObjectPtr] = typeInfo;
 	}

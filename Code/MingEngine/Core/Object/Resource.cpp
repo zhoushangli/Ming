@@ -1,8 +1,8 @@
-#include "MingEngine/Core/StringUtils.hpp"
 #include "MingEngine/Core/Object/Resource.hpp"
+#include "MingEngine/Core/StringUtils.hpp"
 
-#include "MingEngine/Core/Object/ClassDatabase.hpp"
 #include "MingEngine/Core/ErrorWarningAssert.hpp"
+#include "MingEngine/Core/Object/ClassDatabase.hpp"
 
 #include <utility>
 
@@ -19,23 +19,24 @@ void Resource::BindMethods()
 		"GetPath");
 }
 
-std::string Resource::GetPathString() const
-{
-	return m_virtualPath.GetString();
-}
+String Resource::GetPathString() const { return String(m_virtualPath.GetString()); }
 
-void Resource::SetPathString(std::string const& path)
+void Resource::SetPathString(String const& path)
 {
-	if (path.empty())
+	if (path.IsEmpty())
 	{
 		m_virtualPath = {};
 		return;
 	}
 
+	// 1) The virtual path parser works on UTF-8 text
+	// 2) Keep the text for the error message as well
+	std::string const pathText = path.ToUtf8();
+
 	VirtualPath parsedPath;
 	ERR_FAIL_COND_MSG(
-		!VirtualPath::TryParse(path, parsedPath),
-		Stringf("Invalid virtual path '%s'.", path.c_str()));
+		!VirtualPath::TryParse(pathText, parsedPath),
+		Stringf("Invalid virtual path '%s'.", pathText.c_str()));
 	m_virtualPath = std::move(parsedPath);
 }
 

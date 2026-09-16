@@ -2,6 +2,7 @@
 
 #include "MingEngine/Core/Object/Object.hpp"
 #include "MingEngine/Core/Object/Variant.hpp"
+#include "MingEngine/Core/String.hpp"
 
 #include <stdexcept>
 #include <utility>
@@ -40,38 +41,6 @@ struct PtrToArg<bool>
 	static bool Decode(void* ptr) { return *static_cast<uint8_t const*>(ptr) != 0; }
 
 	static void Encode(bool value, void* ptr) { *static_cast<uint8_t*>(ptr) = value ? 1 : 0; }
-};
-
-
-// Borrow input strings for the call; output strings transfer deletion responsibility to the caller.
-// e.g. MingString input{&text}; outputs allocated with new std::string require deletion.
-struct MingString
-{
-	std::string* m_string;
-};
-
-template <>
-struct PtrToArg<std::string>
-{
-	static std::string const& Decode(void* ptr)
-	{
-		MingString const* mingString = static_cast<MingString const*>(ptr);
-		static std::string const emptyString;
-
-		return mingString == nullptr || mingString->m_string == nullptr ? emptyString : *mingString->m_string;
-	}
-
-	static void Encode(std::string const& value, void* ptr)
-	{
-		MingString* mingString = static_cast<MingString*>(ptr);
-
-		mingString->m_string = new std::string(value);
-	}
-};
-
-template <>
-struct PtrToArg<std::string const&> : PtrToArg<std::string>
-{
 };
 
 class MethodBind

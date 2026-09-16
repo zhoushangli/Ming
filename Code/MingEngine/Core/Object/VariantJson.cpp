@@ -1,5 +1,5 @@
-#include "MingEngine/Core/StringUtils.hpp"
 #include "MingEngine/Core/Object/VariantJson.hpp"
+#include "MingEngine/Core/StringUtils.hpp"
 
 #include "MingEngine/Core/ErrorWarningAssert.hpp"
 #include "MingEngine/Core/Object/Resource.hpp"
@@ -53,7 +53,7 @@ bool TrySerialize(Variant const& value, Json& outJson)
 		outJson = value.As<float>();
 		return true;
 	case Variant::Type::String:
-		outJson = value.As<std::string>();
+		outJson = value.As<String>().ToUtf8();
 		return true;
 	case Variant::Type::Vector3:
 	{
@@ -98,8 +98,9 @@ bool TrySerialize(Variant const& value, Json& outJson)
 			std::string const resourcePath = GetSerializableResourcePath(*resource);
 			if (resourcePath.empty())
 			{
-				WARN_PRINT(Stringf("VariantJson: resource '%s' has no source or virtual path; saving an empty resource path.\n",
-					resource->GetName().c_str()));
+				WARN_PRINT(Stringf(
+					"VariantJson: resource '%s' has no source or virtual path; saving an empty resource path.\n",
+					resource->GetName().ToUtf8().c_str()));
 				outJson = "";
 				return true;
 			}

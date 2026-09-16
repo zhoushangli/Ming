@@ -112,6 +112,7 @@
     <ClCompile Include="Core\Object\Script.cpp" />
     <ClCompile Include="Core\Object\ScriptInstance.cpp" />
     <ClCompile Include="Core\Render\SurfaceTool.cpp" />
+    <ClCompile Include="Core\String.cpp" />
     <ClCompile Include="Editor\EditorData.cpp" />
     <ClCompile Include="Engine\Application\App.cpp" />
     <ClCompile Include="Core\Clock.cpp" />
@@ -282,6 +283,7 @@
     <ClInclude Include="Core\Object\Script.hpp" />
     <ClInclude Include="Core\Object\ScriptInstance.hpp" />
     <ClInclude Include="Core\Render\SurfaceTool.hpp" />
+    <ClInclude Include="Core\String.hpp" />
     <ClInclude Include="Editor\EditorData.hpp" />
     <ClInclude Include="Editor\Icons\BuiltinIcons.hpp" />
     <ClInclude Include="Engine\Application\App.hpp" />

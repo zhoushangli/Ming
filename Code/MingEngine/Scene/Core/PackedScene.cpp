@@ -17,7 +17,7 @@ void PackedScene::BindMethods()
 	ClassDatabase::BindMethod("Instantiate", &PackedScene::Instantiate);
 }
 
-PackedProperty::PackedProperty(std::string const& name, Variant const& value) : m_name(name), m_value(value) {}
+PackedProperty::PackedProperty(String const& name, Variant const& value) : m_name(name), m_value(value) {}
 
 bool PackedProperty::CanApplyTo(PropertyInfo const& propertyInfo) const
 {
@@ -26,8 +26,10 @@ bool PackedProperty::CanApplyTo(PropertyInfo const& propertyInfo) const
 
 bool PackedScene::Pack(Node const* node)
 {
-	ERR_FAIL_COND_V_MSG(g_engine != nullptr && g_engine->m_scriptSystem != nullptr
-		&& g_engine->m_scriptSystem->IsScriptExecutionSuspended(), false,
+	ERR_FAIL_COND_V_MSG(
+		g_engine != nullptr && g_engine->m_scriptSystem != nullptr
+			&& g_engine->m_scriptSystem->IsScriptExecutionSuspended(),
+		false,
 		"Cannot pack a scene while script reload is incomplete.\n");
 	m_data.m_packedNodes.clear();
 
@@ -61,20 +63,20 @@ Node* PackedScene::Instantiate() const
 	for (size_t nodeIndex = 0; nodeIndex < m_data.m_packedNodes.size(); ++nodeIndex)
 	{
 		PackedNode const& packedNode = m_data.m_packedNodes[nodeIndex];
-		Object*           object     = ClassDatabase::CreateInstance(packedNode.m_type);
+		Object*           object     = ClassDatabase::CreateInstance(packedNode.m_type.ToUtf8());
 		Node*             node       = dynamic_cast<Node*>(object);
 		if (node == nullptr)
 		{
 			MemDelete(object);
 			MemDelete(root);
-			ERR_PRINT(Stringf("PackedScene: type '%s' is not a creatable Node.\n", packedNode.m_type.c_str()));
+			ERR_PRINT(Stringf("PackedScene: type '%s' is not a creatable Node.\n", packedNode.m_type.ToUtf8().c_str()));
 			return nullptr;
 		}
 
 		node->SetName(packedNode.m_name);
 		if (nodeIndex == 0)
 		{
-			if (!packedNode.m_parentPath.empty())
+			if (!packedNode.m_parentPath.IsEmpty())
 			{
 				MemDelete(node);
 				ERR_PRINT("PackedScene: the first node must be the scene root and have no parent path.\n");
@@ -84,22 +86,25 @@ Node* PackedScene::Instantiate() const
 		}
 		else
 		{
-			if (packedNode.m_parentPath.empty())
+			if (packedNode.m_parentPath.IsEmpty())
 			{
 				MemDelete(node);
 				MemDelete(root);
-				ERR_PRINT(Stringf("PackedScene: node '%s' creates an additional scene root.\n", packedNode.m_name.c_str()));
+				ERR_PRINT(Stringf(
+					"PackedScene: node '%s' creates an additional scene root.\n",
+					packedNode.m_name.ToUtf8().c_str()));
 				return nullptr;
 			}
 
-			NodePath const parentPath(packedNode.m_parentPath);
+			NodePath const parentPath(packedNode.m_parentPath.ToUtf8());
 			if (!parentPath.IsValid() || parentPath.IsAbsolute())
 			{
 				MemDelete(node);
 				MemDelete(root);
-				ERR_PRINT(Stringf("PackedScene: node '%s' has invalid scene-relative parent path '%s'.\n",
-					packedNode.m_name.c_str(),
-					packedNode.m_parentPath.c_str()));
+				ERR_PRINT(Stringf(
+					"PackedScene: node '%s' has invalid scene-relative parent path '%s'.\n",
+					packedNode.m_name.ToUtf8().c_str(),
+					packedNode.m_parentPath.ToUtf8().c_str()));
 				return nullptr;
 			}
 
@@ -108,25 +113,27 @@ Node* PackedScene::Instantiate() const
 			{
 				MemDelete(node);
 				MemDelete(root);
-				ERR_PRINT(Stringf("PackedScene: node '%s' has unresolved parent path '%s'.\n",
-					packedNode.m_name.c_str(),
-					packedNode.m_parentPath.c_str()));
+				ERR_PRINT(Stringf(
+					"PackedScene: node '%s' has unresolved parent path '%s'.\n",
+					packedNode.m_name.ToUtf8().c_str(),
+					packedNode.m_parentPath.ToUtf8().c_str()));
 				return nullptr;
 			}
 
-			std::string const requestedName = node->GetName();
+			String const requestedName = node->GetName();
 			parent->AddNode(node);
 			if (node->GetParent() != parent || node->GetName() != requestedName)
 			{
-				std::string const actualName = node->GetName();
+				String const actualName = node->GetName();
 				if (node->GetParent() == nullptr)
 				{
 					MemDelete(node);
 				}
 				MemDelete(root);
-				ERR_PRINT(Stringf("PackedScene: sibling name '%s' is not unique; AddNode produced '%s'.\n",
-					requestedName.c_str(),
-					actualName.c_str()));
+				ERR_PRINT(Stringf(
+					"PackedScene: sibling name '%s' is not unique; AddNode produced '%s'.\n",
+					requestedName.ToUtf8().c_str(),
+					actualName.ToUtf8().c_str()));
 				return nullptr;
 			}
 		}
@@ -141,19 +148,22 @@ Node* PackedScene::Instantiate() const
 		Node*             node       = nodes[nodeIndex];
 		for (PackedProperty const& packedProperty : packedNode.m_properties)
 		{
-			PropertyInfo const* property = ClassDatabase::FindProperty(packedNode.m_type, packedProperty.m_name);
+			PropertyInfo const* property =
+				ClassDatabase::FindProperty(packedNode.m_type.ToUtf8(), packedProperty.m_name.ToUtf8());
 			if (property == nullptr)
 			{
-				WARN_PRINT(Stringf("PackedScene: skipping unknown property '%s' on type '%s'.\n",
-					packedProperty.m_name.c_str(),
-					packedNode.m_type.c_str()));
+				WARN_PRINT(Stringf(
+					"PackedScene: skipping unknown property '%s' on type '%s'.\n",
+					packedProperty.m_name.ToUtf8().c_str(),
+					packedNode.m_type.ToUtf8().c_str()));
 				continue;
 			}
 			if (!packedProperty.CanApplyTo(*property))
 			{
-				WARN_PRINT(Stringf("PackedScene: skipping incompatible property '%s' on type '%s'.\n",
-					packedProperty.m_name.c_str(),
-					packedNode.m_type.c_str()));
+				WARN_PRINT(Stringf(
+					"PackedScene: skipping incompatible property '%s' on type '%s'.\n",
+					packedProperty.m_name.ToUtf8().c_str(),
+					packedNode.m_type.ToUtf8().c_str()));
 				continue;
 			}
 
@@ -163,9 +173,10 @@ Node* PackedScene::Instantiate() const
 			}
 			catch (std::exception const& error)
 			{
-				ERR_PRINT(Stringf("PackedScene: failed to apply property '%s' on type '%s': %s\n",
-					packedProperty.m_name.c_str(),
-					packedNode.m_type.c_str(),
+				ERR_PRINT(Stringf(
+					"PackedScene: failed to apply property '%s' on type '%s': %s\n",
+					packedProperty.m_name.ToUtf8().c_str(),
+					packedNode.m_type.ToUtf8().c_str(),
 					error.what()));
 			}
 		}
@@ -174,8 +185,7 @@ Node* PackedScene::Instantiate() const
 	return root;
 }
 
-bool PackedScene::ParseNodeRecursively(
-	Node const* node, std::string const& parentPath, std::vector<PackedNode>& outNodes)
+bool PackedScene::ParseNodeRecursively(Node const* node, String const& parentPath, std::vector<PackedNode>& outNodes)
 {
 	if (node == nullptr || !node->GetSerializable())
 	{
@@ -186,21 +196,23 @@ bool PackedScene::ParseNodeRecursively(
 	packedNode.m_name       = node->GetName();
 	packedNode.m_type       = node->GetClassName();
 	packedNode.m_parentPath = parentPath;
-	if (packedNode.m_name.empty() || packedNode.m_name == "." || packedNode.m_name.find('/') != std::string::npos)
+	if (packedNode.m_name.IsEmpty() || packedNode.m_name == "." || packedNode.m_name.Contains(U'/'))
 	{
-		ERR_PRINT(Stringf("PackedScene: node name '%s' cannot be represented in a scene path.\n",
-			packedNode.m_name.c_str()));
+		ERR_PRINT(Stringf(
+			"PackedScene: node name '%s' cannot be represented in a scene path.\n",
+			packedNode.m_name.ToUtf8().c_str()));
 		return false;
 	}
 
-	Object* defaultObject = ClassDatabase::CreateInstance(packedNode.m_type);
+	Object* defaultObject = ClassDatabase::CreateInstance(packedNode.m_type.ToUtf8());
 	Node*   defaultNode   = dynamic_cast<Node*>(defaultObject);
 	if (defaultObject != nullptr && defaultNode == nullptr)
 	{
-		ERR_PRINT(Stringf("PackedScene: default object for type '%s' is not a Node.\n", packedNode.m_type.c_str()));
+		ERR_PRINT(
+			Stringf("PackedScene: default object for type '%s' is not a Node.\n", packedNode.m_type.ToUtf8().c_str()));
 	}
 
-	std::vector<PropertyInfo const*> properties = ClassDatabase::GetAllProperties(packedNode.m_type);
+	std::vector<PropertyInfo const*> properties = ClassDatabase::GetAllProperties(packedNode.m_type.ToUtf8());
 	for (PropertyInfo const* property : properties)
 	{
 		if (property == nullptr || !property->HasUsage(PropertyInfo::UsageFlags::Storage)
@@ -224,9 +236,10 @@ bool PackedScene::ParseNodeRecursively(
 		}
 		catch (std::exception const& error)
 		{
-			ERR_PRINT(Stringf("PackedScene: failed to read property '%s' on type '%s': %s\n",
+			ERR_PRINT(Stringf(
+				"PackedScene: failed to read property '%s' on type '%s': %s\n",
 				property->m_name.c_str(),
-				packedNode.m_type.c_str(),
+				packedNode.m_type.ToUtf8().c_str(),
 				error.what()));
 		}
 	}
@@ -234,8 +247,9 @@ bool PackedScene::ParseNodeRecursively(
 	MemDelete(defaultObject);
 	outNodes.push_back(std::move(packedNode));
 
-	std::string const nodePath =
-		parentPath.empty() ? "." : (parentPath == "." ? node->GetName() : parentPath + "/" + node->GetName());
+	String const nodePath = parentPath.IsEmpty()
+								? String(".")
+								: (parentPath == "." ? node->GetName() : parentPath + U"/" + node->GetName());
 	for (Node const* child : node->GetChildren())
 	{
 		if (!ParseNodeRecursively(child, nodePath, outNodes))

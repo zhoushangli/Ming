@@ -44,8 +44,8 @@ public class MingObject : IDisposable
 
     internal unsafe static delegate* unmanaged<nint> GetConstrcutor(string name)
     {
-        using MingString mingName = Marshaling.ConvertStringToNative(name);
-        return NativeFuncs.GetConstructor(in mingName);
+        using String nativeName = Marshaling.ConvertStringToNative(name);
+        return NativeFuncs.GetConstructor(in nativeName);
     }
 
     public void Dispose()
@@ -91,4 +91,21 @@ public class MingObject : IDisposable
     {
         NativeCalls.MingCall_Void(FreeMethodBind, GetPtr(this));
     }
+
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+    private static readonly string MethodProxyName_Free = "Free";
+
+    // protected internal virtual bool InvokeMingClassMethod(in String methodName, NativeVariantPtrArgs args, out MingVariant ret)
+    // {
+    //     string methodNameStr = methodName.ToString();
+    //     if (methodNameStr == MethodProxyName_Free)
+    //     {
+    //         Free();
+    //         ret = default;
+    //         return true;
+    //     }
+
+    //     ret = default;
+    //     return false;
+    // }
 }

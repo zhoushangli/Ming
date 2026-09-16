@@ -3,6 +3,7 @@
 #include "MingEngine/Core/Object/ClassDatabase.hpp"
 #include "MingEngine/Core/Object/Object.hpp"
 #include "MingEngine/Core/Object/Script.hpp"
+#include "MingEngine/Core/String.hpp"
 #include "MingEngine/Scene/Core/NodePath.hpp"
 
 #include "MingEngine/Engine/Application/Engine.hpp"
@@ -42,19 +43,19 @@ public:
 	Node*                     GetRoot() const;
 	Node*                     GetParent() const;
 	std::vector<Node*> const& GetChildren() const;
-	std::string const&        GetName() const;
+	String const&             GetName() const;
 	bool                      GetSerializable() const;
 	bool                      GetReady() const;
 	bool                      GetProcess() const;
 
-	void SetName(std::string const& name);
+	void SetName(String const& name);
 	void SetSerializable(bool isSerializable);
 	void SetReady(bool isReady);
 	void SetProcess(bool isProcess);
 
 	// Currently GetNode only supports child
 	// it do not support ../ or ..
-	Node* FindChildByName(std::string const& name) const;
+	Node* FindChildByName(String const& name) const;
 	Node* GetNode(NodePath const& path) const;
 
 	SceneTree* GetSceneTree() const;
@@ -72,14 +73,14 @@ public:
 protected:
 	void OnNotification(int notification);
 
-	std::string EnsureUniqueName(std::string const& requestedName) const;
+	String EnsureUniqueName(String const& requestedName) const;
 
 	// Lifecycle callbacks:
 	// 1) OnEnterTree is called after this node receives a SceneTree.
 	// 2) OnExitTree is called before this node unregisters from its SceneTree.
 	// 3) OnReady is called after this node and its children enter a SceneTree.
 	// 4) OnProcess is called once per frame by SceneTree::UpdateScene.
-	
+
 	// For c++ side, please DO NOT USE THIS, they are ONLY for script side
 	// this is because these OnXXX will overrider their parent class
 	// but c++ side is normally pipeline function, which we normally do not want to override
@@ -112,15 +113,15 @@ protected:
 protected:
 	struct NodeData
 	{
-		std::string        m_name;
+		String             m_name;
 		Node*              m_parent    = nullptr;
 		SceneTree*         m_sceneTree = nullptr;
 		Viewport*          m_viewport  = nullptr;
 		std::vector<Node*> m_children;
 		bool               m_isPendingDestroy = false;
 		bool               m_isSerializable   = true;
-		bool m_enableReady   = false;
-		bool m_enableProcess = false;
+		bool               m_enableReady      = false;
+		bool               m_enableProcess    = false;
 	};
 
 	NodeData m_data;

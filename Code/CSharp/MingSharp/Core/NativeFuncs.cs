@@ -6,15 +6,13 @@ using System.Runtime.InteropServices;
 [StructLayout(LayoutKind.Sequential)]
 internal unsafe struct NativeCallbacks
 {
-    public delegate* unmanaged<MingString*, int> Log;
-    public delegate* unmanaged<byte*, int, IntPtr> CreateString;
-    public delegate* unmanaged<IntPtr, byte*> GetStringBuffer;
-    public delegate* unmanaged<IntPtr, int> GetStringLength;
-    public delegate* unmanaged<IntPtr, void> DestroyString;
-    public delegate* unmanaged<MingString*, MingString*, IntPtr> GetMethodBind;
+    public delegate* unmanaged<String*, int> Log;
+    public delegate* unmanaged<uint*, int, String*, void> CreateString;
+    public delegate* unmanaged<String*, void> DestroyString;
+    public delegate* unmanaged<String*, String*, IntPtr> GetMethodBind;
     public delegate* unmanaged<IntPtr, IntPtr, void**, void*, void> MethodBindPtrCall;
-    public delegate* unmanaged<MingString*, delegate* unmanaged<nint>> GetConstructor;
-    public delegate* unmanaged<IntPtr, MingString*, void> GetClassName;
+    public delegate* unmanaged<String*, delegate* unmanaged<nint>> GetConstructor;
+    public delegate* unmanaged<IntPtr, String*, void> GetClassName;
     public delegate* unmanaged<IntPtr, IntPtr, int> TieNativeManagedToUnmanaged;
     public delegate* unmanaged<IntPtr, IntPtr> UnmanagedGetInstanceBindingManaged;
     public delegate* unmanaged<IntPtr, IntPtr> UnmanagedInstanceBindingCreateManaged;
@@ -23,9 +21,9 @@ internal unsafe struct NativeCallbacks
 [StructLayout(LayoutKind.Sequential)]
 internal unsafe struct ManagedCallbacks
 {
-    public delegate* unmanaged<IntPtr, MingString*, int> AddScriptBridge;
+    public delegate* unmanaged<IntPtr, String*, int> AddScriptBridge;
     public delegate* unmanaged<IntPtr, int> RemoveScriptBridge;
-    public delegate* unmanaged<MingString*, IntPtr, IntPtr> CreateNativeManagedInstance;
+    public delegate* unmanaged<String*, IntPtr, IntPtr> CreateNativeManagedInstance;
     public delegate* unmanaged<IntPtr, IntPtr, IntPtr> CreateUserManagedInstance;
     public delegate* unmanaged<IntPtr, void> ReleaseGCHandle;
 }
@@ -70,7 +68,7 @@ public static unsafe class NativeFuncs
 
     public static int Log(string message)
     {
-        using MingString text = Marshaling.ConvertStringToNative(message);
+        using String text = Marshaling.ConvertStringToNative(message);
         return s_callbacks.Log(&text);
     }
 
@@ -78,24 +76,16 @@ public static unsafe class NativeFuncs
 
     #region Strings
 
-    internal static IntPtr CreateString(byte* str, int length)
+    // Copy UTF-32 code points into the string owned by the managed caller.
+    // e.g. CreateString(codes, 4, &result) leaves result owning a 5 element buffer.
+    internal static void CreateString(uint* codePoints, int length, String* outString)
     {
-        return s_callbacks.CreateString(str, length);
+        s_callbacks.CreateString(codePoints, length, outString);
     }
 
-    internal static byte* GetStringBuffer(IntPtr strPtr)
+    internal static void DestroyString(String* str)
     {
-        return s_callbacks.GetStringBuffer(strPtr);
-    }
-
-    internal static int GetStringLength(IntPtr strPtr)
-    {
-        return s_callbacks.GetStringLength(strPtr);
-    }
-
-    internal static void DestroyString(IntPtr strPtr)
-    {
-        s_callbacks.DestroyString(strPtr);
+        s_callbacks.DestroyString(str);
     }
 
     #endregion
@@ -104,8 +94,8 @@ public static unsafe class NativeFuncs
 
     internal static IntPtr GetMethodBind(string className, string methodName)
     {
-        using MingString nativeClass = Marshaling.ConvertStringToNative(className);
-        using MingString nativeMethod = Marshaling.ConvertStringToNative(methodName);
+        using String nativeClass = Marshaling.ConvertStringToNative(className);
+        using String nativeMethod = Marshaling.ConvertStringToNative(methodName);
         return s_callbacks.GetMethodBind(&nativeClass, &nativeMethod);
     }
 
@@ -119,9 +109,9 @@ public static unsafe class NativeFuncs
         s_callbacks.MethodBindPtrCall(methodBind, objPtr, args, retPtr);
     }
 
-    internal static delegate* unmanaged<IntPtr> GetConstructor(in MingString name)
+    internal static delegate* unmanaged<IntPtr> GetConstructor(in String name)
     {
-        fixed (MingString* namePtr = &name)
+        fixed (String* namePtr = &name)
         {
             return s_callbacks.GetConstructor(namePtr);
         }
@@ -133,7 +123,7 @@ public static unsafe class NativeFuncs
 
     internal static string GetClassName(IntPtr objPtr)
     {
-        using MingString name = default;
+        using String name = default;
         s_callbacks.GetClassName(objPtr, &name);
         return Marshaling.ConvertStringToManaged(name);
     }

@@ -627,6 +627,9 @@
     <ClCompile Include="Core\Object\PlaceHolderScriptInstance.cpp">
       <Filter>Core\Object</Filter>
     </ClCompile>
+    <ClCompile Include="Core\String.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Core\Clock.hpp">
@@ -1204,6 +1207,9 @@
     </ClInclude>
     <ClInclude Include="Core\Object\PlaceHolderScriptInstance.hpp">
       <Filter>Core\Object</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\String.hpp">
+      <Filter>Core</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

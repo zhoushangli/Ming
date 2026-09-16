@@ -1,32 +1,46 @@
 namespace Ming;
 
+using System.Runtime.InteropServices;
 using System.Text;
 
 
 public static class Marshaling
 {
-    public static unsafe MingString ConvertStringToNative(string str)
+    // Convert a managed string into an owned native UTF-32 string.
+    // e.g. using String text = Marshaling.ConvertStringToNative("hello") frees it on Dispose.
+    public static unsafe String ConvertStringToNative(string str)
     {
+        String result = default;
+
         if (string.IsNullOrEmpty(str))
         {
-            return new MingString(IntPtr.Zero);
+            return result;
         }
-        
-        byte[] utf8Bytes = Encoding.UTF8.GetBytes(str);
-        fixed (byte* bytePtr = utf8Bytes)
+
+        // 1) Encode the managed text into UTF-32 code points
+        // 2) Let the native side copy the code points into the result
+        byte[] utf32Bytes = Encoding.UTF32.GetBytes(str);
+        ReadOnlySpan<uint> codePoints = MemoryMarshal.Cast<byte, uint>(utf32Bytes);
+
+        fixed (uint* codePointPtr = codePoints)
         {
-            IntPtr nativePtr = NativeFuncs.CreateString(bytePtr, utf8Bytes.Length);
-            return new MingString(nativePtr);
+            NativeFuncs.CreateString(codePointPtr, codePoints.Length, &result);
         }
+
+        return result;
     }
 
-    public static unsafe string ConvertStringToManaged(in MingString mingString)
+    // Convert a native UTF-32 string into a managed string without taking ownership.
+    // e.g. Marshaling.ConvertStringToManaged(name) leaves name owned by its holder.
+    public static unsafe string ConvertStringToManaged(in String str)
     {
-        if (mingString.NativePtr == IntPtr.Zero)
+        uint length = str.Length;
+
+        if (length == 0)
         {
             return string.Empty;
         }
 
-        return Encoding.UTF8.GetString(mingString.Buffer, mingString.Length);
+        return Encoding.UTF32.GetString((byte*)str.Data, checked((int)(length * sizeof(uint))));
     }
 }

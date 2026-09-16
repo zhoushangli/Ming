@@ -3,8 +3,9 @@
 Variant::Variant(bool value) : m_value(value), m_type(Type::Bool) {}
 Variant::Variant(int value) : m_value(value), m_type(Type::Int) {}
 Variant::Variant(float value) : m_value(value), m_type(Type::Float) {}
-Variant::Variant(char const* value) : m_value(std::string(value)), m_type(Type::String) {}
-Variant::Variant(std::string const& value) : m_value(value), m_type(Type::String) {}
+Variant::Variant(char const* value) : m_value(String(value)), m_type(Type::String) {}
+Variant::Variant(std::string const& value) : m_value(String(value)), m_type(Type::String) {}
+Variant::Variant(String const& value) : m_value(value), m_type(Type::String) {}
 Variant::Variant(Vector2 const& value) : m_value(value), m_type(Type::Vector2) {}
 Variant::Variant(Vector3 const& value) : m_value(value), m_type(Type::Vector3) {}
 Variant::Variant(Vector4 const& value) : m_value(value), m_type(Type::Vector4) {}
@@ -38,7 +39,7 @@ bool Variant::operator==(Variant const& other) const
 	case Type::Float:
 		return As<float>() == other.As<float>();
 	case Type::String:
-		return As<std::string>() == other.As<std::string>();
+		return As<String>() == other.As<String>();
 	case Type::Vector2:
 		return As<Vector2>() == other.As<Vector2>();
 	case Type::Vector3:

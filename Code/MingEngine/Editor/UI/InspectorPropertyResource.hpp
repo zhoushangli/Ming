@@ -273,7 +273,7 @@ private:
 			return virtualPath.GetFileName();
 		}
 
-		return resource.GetName();
+		return resource.GetName().ToUtf8();
 	}
 
 	void SetResourceTooltip(Resource const& resource) const

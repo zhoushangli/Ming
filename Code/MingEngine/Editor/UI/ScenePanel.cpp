@@ -162,7 +162,7 @@ void ScenePanel::RenderNode(Node* node, std::string const& filterText, EditorUIC
 	ImGui::PushID(static_cast<int>(nodeID.GetUID()));
 	ImGui::PushID(static_cast<int>(nodeID.GetIndex()));
 
-	std::string const displayName       = node->GetName().empty() ? node->GetClassName() : node->GetName();
+	std::string const displayName       = node->GetName().IsEmpty() ? node->GetClassName() : node->GetName().ToUtf8();
 	bool const        isRenaming        = m_renamingNodeID == nodeID;
 	bool const        isOpen            = ImGui::TreeNodeEx("##SceneNodeTree", flags);
 	ImVec2 const      treeItemMin       = ImGui::GetItemRectMin();
@@ -190,7 +190,9 @@ void ScenePanel::RenderNode(Node* node, std::string const& filterText, EditorUIC
 		EditorDragDrop& dragDrop = EditorNode::Get()->m_dragDrop;
 		dragDrop.SetDragData(nodeID);
 		ImGui::SetDragDropPayload(EditorDragDrop::PayloadType, nullptr, 0);
-		ImGui::TextUnformatted(node->GetName().c_str());
+
+		std::string const dragName = node->GetName().ToUtf8();
+		ImGui::TextUnformatted(dragName.c_str());
 
 		ImGui::EndDragDropSource();
 	}
@@ -291,7 +293,7 @@ bool ScenePanel::DoesNodeMatchFilter(Node const* node, std::string const& filter
 		return false;
 	}
 
-	std::string const displayName = node->GetName().empty() ? node->GetClassName() : node->GetName();
+	std::string const displayName = node->GetName().IsEmpty() ? node->GetClassName() : node->GetName().ToUtf8();
 	if (ContainsCaseInsensitive(displayName, filterText))
 	{
 		return true;
@@ -314,7 +316,7 @@ void ScenePanel::BeginRename(Node* node)
 	}
 
 	m_renamingNodeID   = node->GetObjectID();
-	m_originalName     = node->GetName();
+	m_originalName     = node->GetName().ToUtf8();
 	m_focusRenameInput = true;
 	strncpy_s(m_renameBuffer, m_originalName.c_str(), sizeof(m_renameBuffer) - 1);
 }

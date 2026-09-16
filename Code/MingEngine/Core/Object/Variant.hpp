@@ -10,6 +10,7 @@
 #include "MingEngine/Core/Math/Vector4.hpp"
 #include "MingEngine/Core/Object/Object.hpp"
 #include "MingEngine/Core/Render/Color.hpp"
+#include "MingEngine/Core/String.hpp"
 
 #include <string>
 #include <variant>
@@ -22,7 +23,7 @@ public:
 		bool,
 		int,
 		float,
-		std::string,
+		String,
 		Vector2,
 		Vector3,
 		Vector4,
@@ -61,7 +62,11 @@ public:
 	Variant(int value);
 	Variant(float value);
 	Variant(char const* value);
+
+	// UTF-8 text is decoded into the owned String value.
+	// e.g. Variant(std::string("res://A.png")) keeps the same text as Variant("res://A.png").
 	Variant(std::string const& value);
+	Variant(String const& value);
 	Variant(Vector2 const& value);
 	Variant(Vector3 const& value);
 	Variant(Vector4 const& value);
@@ -108,7 +113,7 @@ public:
 			return Type::Int;
 		if (std::is_same_v<CleanType, float>)
 			return Type::Float;
-		if (std::is_same_v<CleanType, std::string>)
+		if (std::is_same_v<CleanType, String>)
 			return Type::String;
 		if (std::is_same_v<CleanType, Vector2>)
 			return Type::Vector2;

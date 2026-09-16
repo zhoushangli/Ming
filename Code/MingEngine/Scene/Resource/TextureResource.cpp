@@ -48,7 +48,7 @@ bool TextureResource::InitGPUResources()
 	}
 
 	m_gpuTexture = g_engine->m_renderer->CreateGPUTexture(
-		GetName().c_str(),
+		GetName().ToUtf8().c_str(),
 		m_image->GetDimensions(),
 		m_image->GetChannels(),
 		m_image->GetRawData());
