@@ -33,6 +33,25 @@ int GetClassInheritanceDepth(ClassInfo const& classInfo, size_t maxDepth)
 }
 } // namespace
 
+void ClassDatabase::ApplyArgumentNames(
+	MethodInfo& methodInfo, std::initializer_list<std::string> const& argumentNames, std::string const& methodName)
+{
+	GUARANTEE_OR_DIE(
+		argumentNames.size() == methodInfo.m_argumentInfos.size(),
+		Stringf(
+			"ClassDatabase: method '%s' is bound with %zu argument names but it has %zu arguments.",
+			methodName.c_str(),
+			argumentNames.size(),
+			methodInfo.m_argumentInfos.size()));
+
+	size_t argumentIndex = 0;
+	for (std::string const& argumentName : argumentNames)
+	{
+		methodInfo.m_argumentInfos[argumentIndex].m_name = argumentName;
+		++argumentIndex;
+	}
+}
+
 void ClassDatabase::Startup() { m_classInfoMap.clear(); }
 
 void ClassDatabase::Shutdown() { m_classInfoMap.clear(); }
@@ -139,12 +158,9 @@ std::vector<PropertyInfo> ClassDatabase::GetProperties(std::string const& classN
 
 	std::vector<PropertyInfo> properties;
 	properties.reserve(iter->second.m_properties.size());
-	for (std::unique_ptr<PropertyInfo> const& property : iter->second.m_properties)
+	for (PropertyInfo const& property : iter->second.m_properties)
 	{
-		if (property != nullptr)
-		{
-			properties.push_back(*property);
-		}
+		properties.push_back(property);
 	}
 
 	return properties;
@@ -159,12 +175,9 @@ std::vector<PropertyInfo const*> ClassDatabase::GetAllProperties(std::string con
 	}
 
 	std::vector<PropertyInfo const*> properties = GetAllProperties(iter->second.m_parentClassName);
-	for (std::unique_ptr<PropertyInfo> const& property : iter->second.m_properties)
+	for (PropertyInfo const& property : iter->second.m_properties)
 	{
-		if (property != nullptr)
-		{
-			properties.push_back(property.get());
-		}
+		properties.push_back(&property);
 	}
 
 	return properties;
@@ -176,7 +189,7 @@ PropertyInfo const* ClassDatabase::FindProperty(std::string const& className, st
 	for (auto iter = properties.rbegin(); iter != properties.rend(); ++iter)
 	{
 		PropertyInfo const* property = *iter;
-		if (property != nullptr && property->m_name == propertyName)
+		if (property->m_name == propertyName)
 		{
 			return property;
 		}
@@ -193,11 +206,11 @@ MethodBind const* ClassDatabase::GetMethodBind(std::string const& className, std
 		return nullptr;
 	}
 
-	for (std::unique_ptr<MethodInfo> const& method : classInfo->m_methods)
+	for (MethodInfo const& method : classInfo->m_methods)
 	{
-		if (method != nullptr && method->m_name == methodName)
+		if (method.m_name == methodName)
 		{
-			return method->m_bind.get();
+			return method.m_bind.get();
 		}
 	}
 
@@ -222,7 +235,7 @@ void ClassDatabase::AddProperty(
 		propertyInfo.m_getter != nullptr,
 		Stringf("ClassDatabase: getter '%s' is not bound on class '%s'.", getterName.c_str(), className.c_str()));
 
-	m_classInfoMap[className].m_properties.push_back(std::make_unique<PropertyInfo>(std::move(propertyInfo)));
+	m_classInfoMap[className].m_properties.push_back(std::move(propertyInfo));
 }
 
 std::vector<GlobalNamespaceInfo const*> ClassDatabase::GetRegisteredGlobalNamespaces()
@@ -245,11 +258,11 @@ MethodBind const* ClassDatabase::GetGlobalMethodBind(std::string const& namespac
 	}
 
 	auto& methods = namespaceIter->second.m_methods;
-	for (const auto& method : methods)
+	for (MethodInfo const& method : methods)
 	{
-		if (method && method->m_name == methodName)
+		if (method.m_name == methodName)
 		{
-			return method->m_bind.get();
+			return method.m_bind.get();
 		}
 	}
 

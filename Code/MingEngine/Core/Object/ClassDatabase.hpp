@@ -7,6 +7,7 @@
 #include "MingEngine/Core/Object/Object.hpp"
 
 #include <functional>
+#include <initializer_list>
 #include <memory>
 #include <string>
 #include <type_traits>
@@ -24,6 +25,9 @@ struct ArgumentInfo
 {
 	Variant::Type m_type = Variant::Type::Empty;
 	std::string   m_objectClassName; // "Node", "Resource", etc. Only used when m_type is Variant::Type::ObjectPtr
+	// Parameter name used by the C# bindings, the return info keeps it empty.
+	// e.g. BindMethod("SetName", &Node::SetName, {"name"}) stores "name" here
+	std::string m_name;
 };
 
 struct MethodInfo
@@ -112,10 +116,14 @@ struct ClassInfo
 	bool            m_isVirtual = false;
 	ConstructorFunc m_creator   = nullptr;
 
-	// We use unique_ptr to keep the memory stable for PropertyInfo and MethodInfo when vector resize
-	// because our script system needs the method bind pointer to be stable to call them
-	std::vector<std::unique_ptr<PropertyInfo>> m_properties;
-	std::vector<std::unique_ptr<MethodInfo>>   m_methods;
+	// Registration is the only writer and it runs before anyone keeps a pointer,
+	// so MethodInfo may move while MethodBind stays reachable through MethodInfo::m_bind
+	std::vector<PropertyInfo> m_properties;
+	std::vector<MethodInfo>   m_methods;
+
+	// Virtual methods are the override points exposed to C# scripts, they hold no MethodBind
+	// so we generate the C# override from m_name and m_argumentInfos
+	std::vector<MethodInfo> m_virtualMethods;
 };
 
 struct ConstantInfo
@@ -127,9 +135,9 @@ struct ConstantInfo
 
 struct GlobalNamespaceInfo
 {
-	std::string                              m_namespaceName;
-	std::vector<ConstantInfo>                m_constants;
-	std::vector<std::unique_ptr<MethodInfo>> m_methods;
+	std::string               m_namespaceName;
+	std::vector<ConstantInfo> m_constants;
+	std::vector<MethodInfo>   m_methods;
 };
 
 class ClassDatabase
@@ -252,67 +260,91 @@ public:
 	template <typename ClassType, typename ReturnType, typename... Args>
 	static MethodBind* CreateMethodBind(ReturnType (ClassType::*method)(Args...))
 	{
-		std::unique_ptr<MethodInfo> methodInfo = std::make_unique<MethodInfo>();
-		MethodBind*                 methodBind = new MemberMethodBind<ClassType, ReturnType, Args...>(method);
-		return methodBind;
+		return new MemberMethodBind<ClassType, ReturnType, Args...>(method);
 	}
 
 	template <typename ClassType, typename ReturnType, typename... Args>
 	static MethodBind* CreateMethodBind(ReturnType (ClassType::*method)(Args...) const)
 	{
-		std::unique_ptr<MethodInfo> methodInfo = std::make_unique<MethodInfo>();
-		MethodBind*                 methodBind = new ConstMemberMethodBind<ClassType, ReturnType, Args...>(method);
-		return methodBind;
+		return new ConstMemberMethodBind<ClassType, ReturnType, Args...>(method);
 	}
 
 	template <typename ReturnType, typename... Args>
 	static MethodBind* CreateMethodBind(ReturnType (*method)(Args...))
 	{
-		std::unique_ptr<MethodInfo> methodInfo = std::make_unique<MethodInfo>();
-		MethodBind*                 methodBind = new GlobalMethodBind<ReturnType, Args...>(method);
-		return methodBind;
+		return new GlobalMethodBind<ReturnType, Args...>(method);
 	}
 
+	// The argument names are given in declaration order and every argument needs one.
+	// e.g. BindMethod("SetName", &Node::SetName, {"name"})
 	template <typename ClassType, typename ReturnType, typename... Args>
-	static void BindMethod(std::string const& methodName, ReturnType (ClassType::*method)(Args...))
+	static void BindMethod(
+		std::string const& methodName,
+		ReturnType (ClassType::*method)(Args...),
+		std::initializer_list<std::string> const& argumentNames)
 	{
-		std::unique_ptr<MethodInfo> methodInfo = std::make_unique<MethodInfo>();
+		MethodInfo methodInfo;
 
-		methodInfo->m_name       = methodName;
-		methodInfo->m_bind       = std::unique_ptr<MethodBind>(CreateMethodBind(method));
-		methodInfo->m_returnInfo = GetArgumentInfo<ReturnType>();
-		methodInfo->m_argumentInfos.reserve(sizeof...(Args));
-		(methodInfo->m_argumentInfos.push_back(GetArgumentInfo<Args>()), ...);
+		methodInfo.m_name       = methodName;
+		methodInfo.m_bind       = std::unique_ptr<MethodBind>(CreateMethodBind(method));
+		methodInfo.m_returnInfo = GetArgumentInfo<ReturnType>();
+		methodInfo.m_argumentInfos.reserve(sizeof...(Args));
+		(methodInfo.m_argumentInfos.push_back(GetArgumentInfo<Args>()), ...);
+		ApplyArgumentNames(methodInfo, argumentNames, methodName);
 
 		m_classInfoMap[ClassType::GetStaticClassName()].m_methods.push_back(std::move(methodInfo));
 	}
 
 	template <typename ClassType, typename ReturnType, typename... Args>
-	static void BindMethod(std::string const& methodName, ReturnType (ClassType::*method)(Args...) const)
+	static void BindMethod(
+		std::string const& methodName,
+		ReturnType (ClassType::*method)(Args...) const,
+		std::initializer_list<std::string> const& argumentNames)
 	{
-		std::unique_ptr<MethodInfo> methodInfo = std::make_unique<MethodInfo>();
+		MethodInfo methodInfo;
 
-		methodInfo->m_name       = methodName;
-		methodInfo->m_bind       = std::unique_ptr<MethodBind>(CreateMethodBind(method));
-		methodInfo->m_returnInfo = GetArgumentInfo<ReturnType>();
-		methodInfo->m_argumentInfos.reserve(sizeof...(Args));
-		(methodInfo->m_argumentInfos.push_back(GetArgumentInfo<Args>()), ...);
-		methodInfo->m_isConst = true;
+		methodInfo.m_name       = methodName;
+		methodInfo.m_bind       = std::unique_ptr<MethodBind>(CreateMethodBind(method));
+		methodInfo.m_returnInfo = GetArgumentInfo<ReturnType>();
+		methodInfo.m_argumentInfos.reserve(sizeof...(Args));
+		(methodInfo.m_argumentInfos.push_back(GetArgumentInfo<Args>()), ...);
+		methodInfo.m_isConst = true;
+		ApplyArgumentNames(methodInfo, argumentNames, methodName);
 
 		m_classInfoMap[ClassType::GetStaticClassName()].m_methods.push_back(std::move(methodInfo));
+	}
+
+	// Virtual methods are not callable through MethodBind, they only tell the generator
+	// which C# override points a class exposes.
+	// e.g. BindVirtualMethod("OnProcess", &Node::OnProcess, {"deltaSeconds"})
+	template <typename ClassType, typename ReturnType, typename... Args>
+	static void BindVirtualMethod(
+		std::string const& methodName,
+		[[maybe_unused]] ReturnType (ClassType::*method)(Args...),
+		std::initializer_list<std::string> const& argumentNames)
+	{
+		MethodInfo methodInfo;
+
+		methodInfo.m_name       = methodName;
+		methodInfo.m_returnInfo = GetArgumentInfo<ReturnType>();
+		methodInfo.m_argumentInfos.reserve(sizeof...(Args));
+		(methodInfo.m_argumentInfos.push_back(GetArgumentInfo<Args>()), ...);
+		ApplyArgumentNames(methodInfo, argumentNames, methodName);
+
+		m_classInfoMap[ClassType::GetStaticClassName()].m_virtualMethods.push_back(std::move(methodInfo));
 	}
 
 	template <typename ReturnType, typename... Args>
 	static void BindGlobalMethod(
 		std::string const& namespaceName, std::string const& methodName, ReturnType (*method)(Args...))
 	{
-		std::unique_ptr<MethodInfo> methodInfo = std::make_unique<MethodInfo>();
+		MethodInfo methodInfo;
 
-		methodInfo->m_name       = methodName;
-		methodInfo->m_bind       = std::unique_ptr<MethodBind>(CreateMethodBind(method));
-		methodInfo->m_returnInfo = GetArgumentInfo<ReturnType>();
-		methodInfo->m_argumentInfos.reserve(sizeof...(Args));
-		(methodInfo->m_argumentInfos.push_back(GetArgumentInfo<Args>()), ...);
+		methodInfo.m_name       = methodName;
+		methodInfo.m_bind       = std::unique_ptr<MethodBind>(CreateMethodBind(method));
+		methodInfo.m_returnInfo = GetArgumentInfo<ReturnType>();
+		methodInfo.m_argumentInfos.reserve(sizeof...(Args));
+		(methodInfo.m_argumentInfos.push_back(GetArgumentInfo<Args>()), ...);
 
 		if (m_namespaceInfoMap.find(namespaceName) == m_namespaceInfoMap.end())
 		{
@@ -344,6 +376,12 @@ public:
 
 		m_namespaceInfoMap[namespaceName].m_constants.push_back(std::move(constantInfo));
 	}
+
+private:
+	// Copy the given parameter names into the argument infos in declaration order.
+	// e.g. ApplyArgumentNames(methodInfo, {"name"}, "SetName") names the single argument "name"
+	static void ApplyArgumentNames(
+		MethodInfo& methodInfo, std::initializer_list<std::string> const& argumentNames, std::string const& methodName);
 
 private:
 	static std::unordered_map<std::string, ClassInfo>           m_classInfoMap;

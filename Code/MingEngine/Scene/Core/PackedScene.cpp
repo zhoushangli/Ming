@@ -13,8 +13,8 @@
 
 void PackedScene::BindMethods()
 {
-	ClassDatabase::BindMethod("Pack", &PackedScene::Pack);
-	ClassDatabase::BindMethod("Instantiate", &PackedScene::Instantiate);
+	ClassDatabase::BindMethod("Pack", &PackedScene::Pack, { "node" });
+	ClassDatabase::BindMethod("Instantiate", &PackedScene::Instantiate, {});
 }
 
 PackedProperty::PackedProperty(String const& name, Variant const& value) : m_name(name), m_value(value) {}

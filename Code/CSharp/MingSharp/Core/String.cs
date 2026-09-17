@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 // Wrap a native UTF-32 string, own converted strings and borrow callback inputs.
 // e.g. using String text = Marshaling.ConvertStringToNative("hello");
 [StructLayout(LayoutKind.Sequential)]
-public ref struct String : IDisposable
+public struct String : IDisposable
 {
     internal ming_string NativeValue;
 

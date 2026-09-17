@@ -1,5 +1,5 @@
-#include "MingEngine/Core/StringUtils.hpp"
 #include "MingEngine/Scene/Core/SceneTree.hpp"
+#include "MingEngine/Core/StringUtils.hpp"
 
 #include "MingEngine/Core/Math/MathUtils.hpp"
 #include "MingEngine/Core/Object/ClassDatabase.hpp"
@@ -50,13 +50,13 @@ SceneTree::~SceneTree()
 
 void SceneTree::BindMethods()
 {
-	ClassDatabase::BindMethod("GetRoot", &SceneTree::GetRoot);
-	ClassDatabase::BindMethod("GetScene", &SceneTree::GetScene);
-	ClassDatabase::BindMethod("ClearScene", &SceneTree::ClearScene);
-	ClassDatabase::BindMethod("ChangeScene", &SceneTree::ChangeScene);
-	ClassDatabase::BindMethod("GetWorldCamera", &SceneTree::GetWorldCamera);
-	ClassDatabase::BindMethod("GetRaycastSpace", &SceneTree::GetRaycastSpace);
-	ClassDatabase::BindMethod("GetDeltaSeconds", &SceneTree::GetDeltaSeconds);
+	ClassDatabase::BindMethod("GetRoot", &SceneTree::GetRoot, {});
+	ClassDatabase::BindMethod("GetScene", &SceneTree::GetScene, {});
+	ClassDatabase::BindMethod("ClearScene", &SceneTree::ClearScene, {});
+	ClassDatabase::BindMethod("ChangeScene", &SceneTree::ChangeScene, { "newSceneNode" });
+	ClassDatabase::BindMethod("GetWorldCamera", &SceneTree::GetWorldCamera, {});
+	ClassDatabase::BindMethod("GetRaycastSpace", &SceneTree::GetRaycastSpace, {});
+	ClassDatabase::BindMethod("GetDeltaSeconds", &SceneTree::GetDeltaSeconds, {});
 }
 
 void SceneTree::QueueDestroyNode(Node* node)
@@ -117,7 +117,6 @@ void SceneTree::FlushPendingNode()
 		}
 		node->MoveToSceneTree(nullptr);
 		MemDelete(node);
-
 	}
 }
 

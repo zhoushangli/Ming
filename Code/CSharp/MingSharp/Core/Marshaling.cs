@@ -48,7 +48,7 @@ public static class Marshaling
             return string.Empty;
         }
 
-        return Encoding.UTF32.GetString((byte*)str.Data, checked((int)(length * sizeof(uint))));
+        return Encoding.UTF32.GetString((byte*)str.Data, (int)(length * sizeof(uint)));
     }
 
     // Convert a native UTF-32 string into a managed string without taking ownership.

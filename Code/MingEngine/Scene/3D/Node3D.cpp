@@ -18,14 +18,14 @@ void Node3D::Reparent(Node* newParent, bool keepWorldTransform)
 
 void Node3D::BindMethods()
 {
-	ClassDatabase::BindMethod("SetLocalTransform", &Node3D::SetLocalTransform);
-	ClassDatabase::BindMethod("GetLocalTransform", &Node3D::GetLocalTransform);
-	ClassDatabase::BindMethod("SetLocalPosition", &Node3D::SetLocalPosition);
-	ClassDatabase::BindMethod("GetLocalPosition", &Node3D::GetLocalPosition);
-	ClassDatabase::BindMethod("SetLocalOrientation", &Node3D::SetLocalOrientation);
-	ClassDatabase::BindMethod("GetLocalOrientation", &Node3D::GetLocalOrientation);
-	ClassDatabase::BindMethod("SetLocalScale", &Node3D::SetLocalScale);
-	ClassDatabase::BindMethod("GetLocalScale", &Node3D::GetLocalScale);
+	ClassDatabase::BindMethod("SetLocalTransform", &Node3D::SetLocalTransform, { "localTransform" });
+	ClassDatabase::BindMethod("GetLocalTransform", &Node3D::GetLocalTransform, {});
+	ClassDatabase::BindMethod("SetLocalPosition", &Node3D::SetLocalPosition, { "localPosition" });
+	ClassDatabase::BindMethod("GetLocalPosition", &Node3D::GetLocalPosition, {});
+	ClassDatabase::BindMethod("SetLocalOrientation", &Node3D::SetLocalOrientation, { "localOrientation" });
+	ClassDatabase::BindMethod("GetLocalOrientation", &Node3D::GetLocalOrientation, {});
+	ClassDatabase::BindMethod("SetLocalScale", &Node3D::SetLocalScale, { "scale" });
+	ClassDatabase::BindMethod("GetLocalScale", &Node3D::GetLocalScale, {});
 
 	ADD_PROPERTY(
 		PropertyInfo(

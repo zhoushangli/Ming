@@ -9,10 +9,10 @@ Light3D::~Light3D() { FreeRenderLight(); }
 
 void Light3D::BindMethods()
 {
-	ClassDatabase::BindMethod("SetIntensity", &Light3D::SetIntensity);
-	ClassDatabase::BindMethod("GetIntensity", &Light3D::GetIntensity);
-	ClassDatabase::BindMethod("SetColor", &Light3D::SetColor);
-	ClassDatabase::BindMethod("GetColor", &Light3D::GetColor);
+	ClassDatabase::BindMethod("SetIntensity", &Light3D::SetIntensity, { "intensity" });
+	ClassDatabase::BindMethod("GetIntensity", &Light3D::GetIntensity, {});
+	ClassDatabase::BindMethod("SetColor", &Light3D::SetColor, { "color" });
+	ClassDatabase::BindMethod("GetColor", &Light3D::GetColor, {});
 
 	ADD_PROPERTY(
 		PropertyInfo(
@@ -141,10 +141,10 @@ void OmniLight3D::SyncRenderData()
 
 void OmniLight3D::BindMethods()
 {
-	ClassDatabase::BindMethod("SetRange", &OmniLight3D::SetRange);
-	ClassDatabase::BindMethod("GetRange", &OmniLight3D::GetRange);
-	ClassDatabase::BindMethod("SetAttenuation", &OmniLight3D::SetAttenuation);
-	ClassDatabase::BindMethod("GetAttenuation", &OmniLight3D::GetAttenuation);
+	ClassDatabase::BindMethod("SetRange", &OmniLight3D::SetRange, { "range" });
+	ClassDatabase::BindMethod("GetRange", &OmniLight3D::GetRange, {});
+	ClassDatabase::BindMethod("SetAttenuation", &OmniLight3D::SetAttenuation, { "attenuation" });
+	ClassDatabase::BindMethod("GetAttenuation", &OmniLight3D::GetAttenuation, {});
 	ADD_PROPERTY(
 		PropertyInfo(Variant::Type::Float, "range", PropertyInfo::Hint::None, "", PropertyInfo::UsageFlags::Default),
 		"SetRange",
@@ -186,7 +186,7 @@ void SpotLight3D::SetAttenuation(float attenuation)
 
 void SpotLight3D::SetSpotAngle(float angle)
 {
-	m_spotAngle = angle;
+	m_spotAngle                  = angle;
 	RenderService* renderService = g_engineService->m_renderService;
 	if (m_rid >= 0 && renderService != nullptr)
 	{
@@ -196,7 +196,7 @@ void SpotLight3D::SetSpotAngle(float angle)
 
 void SpotLight3D::SetSpotAttenuation(float attenuation)
 {
-	m_spotAttenuation = attenuation;
+	m_spotAttenuation            = attenuation;
 	RenderService* renderService = g_engineService->m_renderService;
 	if (m_rid >= 0 && renderService != nullptr)
 	{
@@ -206,14 +206,14 @@ void SpotLight3D::SetSpotAttenuation(float attenuation)
 
 void SpotLight3D::BindMethods()
 {
-	ClassDatabase::BindMethod("SetRange", &SpotLight3D::SetRange);
-	ClassDatabase::BindMethod("GetRange", &SpotLight3D::GetRange);
-	ClassDatabase::BindMethod("SetAttenuation", &SpotLight3D::SetAttenuation);
-	ClassDatabase::BindMethod("GetAttenuation", &SpotLight3D::GetAttenuation);
-	ClassDatabase::BindMethod("SetSpotAngle", &SpotLight3D::SetSpotAngle);
-	ClassDatabase::BindMethod("GetSpotAngle", &SpotLight3D::GetSpotAngle);
-	ClassDatabase::BindMethod("SetSpotAttenuation", &SpotLight3D::SetSpotAttenuation);
-	ClassDatabase::BindMethod("GetSpotAttenuation", &SpotLight3D::GetSpotAttenuation);
+	ClassDatabase::BindMethod("SetRange", &SpotLight3D::SetRange, { "range" });
+	ClassDatabase::BindMethod("GetRange", &SpotLight3D::GetRange, {});
+	ClassDatabase::BindMethod("SetAttenuation", &SpotLight3D::SetAttenuation, { "attenuation" });
+	ClassDatabase::BindMethod("GetAttenuation", &SpotLight3D::GetAttenuation, {});
+	ClassDatabase::BindMethod("SetSpotAngle", &SpotLight3D::SetSpotAngle, { "angle" });
+	ClassDatabase::BindMethod("GetSpotAngle", &SpotLight3D::GetSpotAngle, {});
+	ClassDatabase::BindMethod("SetSpotAttenuation", &SpotLight3D::SetSpotAttenuation, { "attenuation" });
+	ClassDatabase::BindMethod("GetSpotAttenuation", &SpotLight3D::GetSpotAttenuation, {});
 	ADD_PROPERTY(
 		PropertyInfo(Variant::Type::Float, "range", PropertyInfo::Hint::None, "", PropertyInfo::UsageFlags::Default),
 		"SetRange",

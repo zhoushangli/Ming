@@ -38,7 +38,7 @@ public partial class {CLASS_NAME} : {PARENT_CLASS_NAME}
     {
     }
 
-{CLASS_METHODS}}
+{CLASS_METHODS}{VIRTUAL_METHODS}{MING_CLASS_METHOD_DISPATCH}{METHOD_NAME_CLASS}}
 )";
 
 constexpr char const* MethodBindingTemplate = R"(	[DebuggerBrowsable(DebuggerBrowsableState.Never)]
@@ -51,6 +51,54 @@ constexpr char const* MethodTemplate = R"(	public {RETURN_TYPE} {METHOD_NAME}({M
 		{METHOD_CALL}
 	}
 
+)";
+
+constexpr char const* VirtualMethodTemplate = R"(	public virtual {RETURN_TYPE} {METHOD_NAME}({METHOD_ARGUMENTS})
+	{
+	}
+
+)";
+
+constexpr char const* MethodNameTemplate = R"(	public new class MethodName : {PARENT_METHOD_NAME_CLASS}
+	{
+{METHOD_NAMES}	}
+)";
+
+constexpr char const* InvokeMingClassMethodTemplate =
+	R"(	protected internal override bool InvokeMingClassMethod(in String methodName, NativeVariantPtrArgs args, out ming_variant ret)
+	{
+		string methodNameStr = methodName.ToString();
+
+{INVOKE_CASES}		return base.InvokeMingClassMethod(methodName, args, out ret);
+	}
+
+)";
+
+constexpr char const* HasMingClassMethodTemplate =
+	R"(	protected internal override bool HasMingClassMethod(in String methodName)
+	{
+		string methodNameStr = methodName.ToString();
+
+{HAS_CONDITION_BLOCK}		return base.HasMingClassMethod(methodName);
+	}
+
+)";
+
+constexpr char const* VoidMethodDispatchCaseTemplate =
+	R"(		if (methodNameStr == MethodName.{METHOD_NAME} && args.Count == {ARGUMENT_COUNT})
+		{
+			{METHOD_CALL};
+			ret = default;
+			return true;
+		}
+)";
+
+constexpr char const* ValueMethodDispatchCaseTemplate =
+	R"(		if (methodNameStr == MethodName.{METHOD_NAME} && args.Count == {ARGUMENT_COUNT})
+		{
+			ret = VariantUtils.CreateFrom({METHOD_CALL});
+			return true;
+		}
 )";
 
 constexpr char const* NativeCallsTemplate = R"(namespace Ming;
@@ -223,47 +271,54 @@ void CollectBindings(
 			continue;
 		}
 
-		for (std::unique_ptr<MethodInfo> const& methodInfo : classInfo->m_methods)
+		for (MethodInfo const& methodInfo : classInfo->m_methods)
 		{
-			if (methodInfo == nullptr)
-			{
-				continue;
-			}
-
 			NativeCallInfo nativeCall;
 			std::string    skipReason;
-			if (!TryCreateNativeCall(*methodInfo, builtinTypes, nativeCall, skipReason))
+			if (!TryCreateNativeCall(methodInfo, builtinTypes, nativeCall, skipReason))
 			{
 				outSkippedNativeCalls.emplace_back(
-					classInfo->m_className + "." + methodInfo->m_name + ": " + skipReason);
+					classInfo->m_className + "." + methodInfo.m_name + ": " + skipReason);
 				continue;
 			}
 
 			std::string const nativeCallName = nativeCall.m_name;
 			outNativeCalls.emplace(nativeCallName, std::move(nativeCall));
-			outMethodNativeCalls.emplace(methodInfo.get(), nativeCallName);
+			outMethodNativeCalls.emplace(&methodInfo, nativeCallName);
 		}
 	}
 }
 
-std::string GenerateClassMethod(MethodInfo const& methodInfo, NativeCallInfo const& nativeCall)
+std::string BuildMethodArgumentList(MethodInfo const& methodInfo, std::vector<CSharpTypeInfo> const& argumentTypes)
 {
 	std::string methodArguments;
+	for (size_t argumentIndex = 0; argumentIndex < argumentTypes.size(); ++argumentIndex)
+	{
+		if (!methodArguments.empty())
+		{
+			methodArguments += ", ";
+		}
+
+		ArgumentInfo const& argumentInfo = methodInfo.m_argumentInfos[argumentIndex];
+		methodArguments += GetPublicCSharpType(argumentInfo, argumentTypes[argumentIndex]) + " " + argumentInfo.m_name;
+	}
+
+	return methodArguments;
+}
+
+std::string GenerateClassMethod(MethodInfo const& methodInfo, NativeCallInfo const& nativeCall)
+{
 	std::string callArguments;
 	for (size_t argumentIndex = 0; argumentIndex < nativeCall.m_argumentTypes.size(); ++argumentIndex)
 	{
 		CSharpTypeInfo const& argumentTypeInfo = nativeCall.m_argumentTypes[argumentIndex];
 		ArgumentInfo const&   argumentInfo     = methodInfo.m_argumentInfos[argumentIndex];
-		std::string const     argumentName     = "arg" + std::to_string(argumentIndex + 1);
-		if (!methodArguments.empty())
-		{
-			methodArguments += ", ";
-		}
-		methodArguments += GetPublicCSharpType(argumentInfo, argumentTypeInfo) + " " + argumentName;
 
 		callArguments += ", ";
-		callArguments += FormatTypeExpression(argumentTypeInfo.m_csInExpression, argumentName);
+		callArguments += FormatTypeExpression(argumentTypeInfo.m_csInExpression, argumentInfo.m_name);
 	}
+
+	std::string const methodArguments = BuildMethodArgumentList(methodInfo, nativeCall.m_argumentTypes);
 
 	std::string const nativeCallExpression =
 		"NativeCalls." + nativeCall.m_name + "(" + methodInfo.m_name + "MethodBind, GetPtr(this)" + callArguments + ")";
@@ -290,6 +345,165 @@ std::string GenerateClassMethod(MethodInfo const& methodInfo, NativeCallInfo con
 	ReplaceAll(source, "{METHOD_ARGUMENTS}", methodArguments);
 	ReplaceAll(source, "{METHOD_CALL}", methodCall);
 	return source;
+}
+
+std::string GenerateClassVirtualMethod(
+	ClassInfo const& classInfo, MethodInfo const& methodInfo, CSharpTypeMap const& builtinTypes)
+{
+	auto const returnTypeIter = builtinTypes.find(methodInfo.m_returnInfo.m_type);
+	if (returnTypeIter == builtinTypes.end())
+	{
+		ERROR_AND_DIE(Stringf(
+			"Cannot generate C# virtual method '%s.%s': unsupported return type %s.",
+			classInfo.m_className.c_str(),
+			methodInfo.m_name.c_str(),
+			GetVariantTypeName(methodInfo.m_returnInfo.m_type)));
+	}
+
+	std::vector<CSharpTypeInfo> argumentTypes;
+	argumentTypes.reserve(methodInfo.m_argumentInfos.size());
+	for (ArgumentInfo const& argumentInfo : methodInfo.m_argumentInfos)
+	{
+		auto const argumentTypeIter = builtinTypes.find(argumentInfo.m_type);
+		if (argumentInfo.m_type == Variant::Type::Empty || argumentTypeIter == builtinTypes.end())
+		{
+			ERROR_AND_DIE(Stringf(
+				"Cannot generate C# virtual method '%s.%s': unsupported argument type %s.",
+				classInfo.m_className.c_str(),
+				methodInfo.m_name.c_str(),
+				GetVariantTypeName(argumentInfo.m_type)));
+		}
+
+		argumentTypes.emplace_back(argumentTypeIter->second);
+	}
+
+	std::string source = VirtualMethodTemplate;
+	ReplaceAll(source, "{RETURN_TYPE}", GetPublicCSharpType(methodInfo.m_returnInfo, returnTypeIter->second));
+	ReplaceAll(source, "{METHOD_NAME}", methodInfo.m_name);
+	ReplaceAll(source, "{METHOD_ARGUMENTS}", BuildMethodArgumentList(methodInfo, argumentTypes));
+	return source;
+}
+
+// Return one line of the generated MethodName class.
+// e.g. BuildMethodNameEntry("Node", "SetName") returns the SetName entry
+std::string BuildMethodNameEntry(std::string const& className, std::string const& methodName)
+{
+	return "\t\tpublic static readonly string " + methodName + " = nameof(" + className + "." + methodName + ");\n";
+}
+
+// The nested MethodName class collects the generated method names so C# scripts can
+// reference them without string literals.
+// e.g. MethodName.OnProcess is the string "OnProcess"
+std::string GenerateMethodNameClass(
+	ClassInfo const& classInfo, MethodNativeCallMap const& methodNativeCalls, std::string const& parentMethodNameClass)
+{
+	std::string methodNames;
+	for (MethodInfo const& methodInfo : classInfo.m_methods)
+	{
+		// Skipped signatures generate no C# method, so there is no name to point at
+		if (methodNativeCalls.find(&methodInfo) == methodNativeCalls.end())
+		{
+			continue;
+		}
+
+		methodNames += BuildMethodNameEntry(classInfo.m_className, methodInfo.m_name);
+	}
+	for (MethodInfo const& virtualMethodInfo : classInfo.m_virtualMethods)
+	{
+		methodNames += BuildMethodNameEntry(classInfo.m_className, virtualMethodInfo.m_name);
+	}
+
+	std::string source = MethodNameTemplate;
+	ReplaceAll(source, "{PARENT_METHOD_NAME_CLASS}", parentMethodNameClass);
+	ReplaceAll(source, "{METHOD_NAMES}", methodNames);
+	return source;
+}
+
+// Build one method call that reads the dispatch arguments out of the variant array.
+// e.g. BuildMingClassMethodCall(classInfo, SetName, builtinTypes) returns
+// SetName(VariantUtils.ConvertTo<string>(args[0]))
+std::string BuildMingClassMethodCall(
+	ClassInfo const& classInfo, MethodInfo const& methodInfo, CSharpTypeMap const& builtinTypes)
+{
+	std::string callArguments;
+	for (size_t argumentIndex = 0; argumentIndex < methodInfo.m_argumentInfos.size(); ++argumentIndex)
+	{
+		ArgumentInfo const& argumentInfo     = methodInfo.m_argumentInfos[argumentIndex];
+		auto const          argumentTypeIter = builtinTypes.find(argumentInfo.m_type);
+		if (argumentInfo.m_type == Variant::Type::Empty || argumentTypeIter == builtinTypes.end())
+		{
+			ERROR_AND_DIE(Stringf(
+				"Cannot generate C# method dispatch for '%s.%s': unsupported argument type %s.",
+				classInfo.m_className.c_str(),
+				methodInfo.m_name.c_str(),
+				GetVariantTypeName(argumentInfo.m_type)));
+		}
+
+		if (!callArguments.empty())
+		{
+			callArguments += ", ";
+		}
+
+		callArguments += "VariantUtils.ConvertTo<" + GetPublicCSharpType(argumentInfo, argumentTypeIter->second)
+						 + ">(args[" + std::to_string(argumentIndex) + "])";
+	}
+
+	return methodInfo.m_name + "(" + callArguments + ")";
+}
+
+// The dispatch overrides let the native side call every method this class owns by name, so a
+// method the base class owns stays reachable through the base call instead of being repeated here.
+// e.g. GenerateMingClassMethodDispatch of Node returns InvokeMingClassMethod and HasMingClassMethod
+std::string GenerateMingClassMethodDispatch(
+	ClassInfo const& classInfo, MethodNativeCallMap const& methodNativeCalls, CSharpTypeMap const& builtinTypes)
+{
+	std::vector<MethodInfo const*> dispatchMethods;
+	for (MethodInfo const& methodInfo : classInfo.m_methods)
+	{
+		// Skipped signatures generate no C# method, so there is nothing to dispatch to
+		if (methodNativeCalls.find(&methodInfo) != methodNativeCalls.end())
+		{
+			dispatchMethods.emplace_back(&methodInfo);
+		}
+	}
+	for (MethodInfo const& virtualMethodInfo : classInfo.m_virtualMethods)
+	{
+		dispatchMethods.emplace_back(&virtualMethodInfo);
+	}
+
+	std::string invokeCases;
+	std::string hasConditions;
+	for (MethodInfo const* methodInfo : dispatchMethods)
+	{
+		std::string caseSource = methodInfo->m_returnInfo.m_type == Variant::Type::Empty
+									 ? VoidMethodDispatchCaseTemplate
+									 : ValueMethodDispatchCaseTemplate;
+		ReplaceAll(caseSource, "{METHOD_NAME}", methodInfo->m_name);
+		ReplaceAll(caseSource, "{ARGUMENT_COUNT}", std::to_string(methodInfo->m_argumentInfos.size()));
+		ReplaceAll(caseSource, "{METHOD_CALL}", BuildMingClassMethodCall(classInfo, *methodInfo, builtinTypes));
+		invokeCases += caseSource;
+
+		if (!hasConditions.empty())
+		{
+			hasConditions += " ||\n\t\t\t";
+		}
+		hasConditions += "methodNameStr == MethodName." + methodInfo->m_name;
+	}
+
+	std::string invokeSource = InvokeMingClassMethodTemplate;
+	// The extra newline keeps a blank line between the last case and the base call
+	ReplaceAll(invokeSource, "{INVOKE_CASES}", invokeCases.empty() ? std::string() : invokeCases + "\n");
+
+	std::string hasConditionBlock;
+	if (!hasConditions.empty())
+	{
+		hasConditionBlock = "\t\tif (" + hasConditions + ")\n\t\t{\n\t\t\treturn true;\n\t\t}\n\n";
+	}
+
+	std::string hasSource = HasMingClassMethodTemplate;
+	ReplaceAll(hasSource, "{HAS_CONDITION_BLOCK}", hasConditionBlock);
+
+	return invokeSource + hasSource;
 }
 
 std::string GenerateNativeCallFunction(NativeCallInfo const& nativeCall)
@@ -409,6 +623,7 @@ bool GenerateConstructors(std::filesystem::path const& outputDirectory, std::vec
 bool GenerateClassBindings(
 	std::filesystem::path const&         outputDirectory,
 	std::vector<ClassInfo const*> const& classes,
+	CSharpTypeMap const&                 builtinTypes,
 	NativeCallMap const&                 nativeCalls,
 	MethodNativeCallMap const&           methodNativeCalls)
 {
@@ -431,14 +646,10 @@ bool GenerateClassBindings(
 
 		std::string methodBindings;
 		std::string classMethods;
-		for (std::unique_ptr<MethodInfo> const& methodInfo : classInfo->m_methods)
+		std::string virtualMethods;
+		for (MethodInfo const& methodInfo : classInfo->m_methods)
 		{
-			if (methodInfo == nullptr)
-			{
-				continue;
-			}
-
-			auto const methodCallIter = methodNativeCalls.find(methodInfo.get());
+			auto const methodCallIter = methodNativeCalls.find(&methodInfo);
 			if (methodCallIter == methodNativeCalls.end())
 			{
 				continue;
@@ -451,15 +662,33 @@ bool GenerateClassBindings(
 			}
 
 			std::string methodBinding = MethodBindingTemplate;
-			ReplaceAll(methodBinding, "{METHOD_BIND_NAME}", methodInfo->m_name + "MethodBind");
+			ReplaceAll(methodBinding, "{METHOD_BIND_NAME}", methodInfo.m_name + "MethodBind");
 			ReplaceAll(methodBinding, "{CLASS_NAME}", classInfo->m_className);
-			ReplaceAll(methodBinding, "{METHOD_NAME}", methodInfo->m_name);
+			ReplaceAll(methodBinding, "{METHOD_NAME}", methodInfo.m_name);
 			methodBindings += methodBinding;
-			classMethods += GenerateClassMethod(*methodInfo, nativeCallIter->second);
+			classMethods += GenerateClassMethod(methodInfo, nativeCallIter->second);
 		}
+
+		for (MethodInfo const& virtualMethodInfo : classInfo->m_virtualMethods)
+		{
+			virtualMethods += GenerateClassVirtualMethod(*classInfo, virtualMethodInfo, builtinTypes);
+		}
+
+		std::string const mingClassMethodDispatch =
+			GenerateMingClassMethodDispatch(*classInfo, methodNativeCalls, builtinTypes);
+
+		std::string const parentMethodNameClass = classInfo->m_parentClassName == "Object"
+													  ? "MingObject.MethodName"
+													  : classInfo->m_parentClassName + ".MethodName";
 
 		ReplaceAll(classSource, "{METHOD_BINDINGS}", methodBindings);
 		ReplaceAll(classSource, "{CLASS_METHODS}", classMethods);
+		ReplaceAll(classSource, "{VIRTUAL_METHODS}", virtualMethods);
+		ReplaceAll(classSource, "{MING_CLASS_METHOD_DISPATCH}", mingClassMethodDispatch);
+		ReplaceAll(
+			classSource,
+			"{METHOD_NAME_CLASS}",
+			GenerateMethodNameClass(*classInfo, methodNativeCalls, parentMethodNameClass));
 		ReplaceAll(classSource, "{CLASS_NAME}", classInfo->m_className);
 
 		if (!WriteTextFile(outputDirectory / (classInfo->m_className + ".cs"), classSource))
@@ -719,7 +948,7 @@ bool CSharpScriptGenerator::GenerateCSharpBindings(std::filesystem::path const& 
 		ERROR_AND_DIE("Failed to generate C# Constructors.");
 	}
 
-	if (!GenerateClassBindings(generatedDirectory, classes, nativeCalls, methodNativeCalls))
+	if (!GenerateClassBindings(generatedDirectory, classes, m_builtinTypes, nativeCalls, methodNativeCalls))
 	{
 		ERROR_AND_DIE("Failed to generate C# Class Bindings.");
 	}

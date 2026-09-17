@@ -82,8 +82,8 @@ RaycastResult3D MeshRaycastObject::IntersectRay(RaycastQuery3D const& query)
 
 void MeshInstance3D::BindMethods()
 {
-	ClassDatabase::BindMethod("SetMeshResource", &MeshInstance3D::SetMeshResource);
-	ClassDatabase::BindMethod("GetMeshResource", &MeshInstance3D::GetMeshResource);
+	ClassDatabase::BindMethod("SetMeshResource", &MeshInstance3D::SetMeshResource, { "meshResource" });
+	ClassDatabase::BindMethod("GetMeshResource", &MeshInstance3D::GetMeshResource, {});
 
 	ADD_PROPERTY(
 		PropertyInfo(

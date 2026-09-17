@@ -66,9 +66,9 @@ Object::BindMethodsFunc Object::GetBindMethodsFunc() { return &Object::BindMetho
 
 void Object::BindMethods()
 {
-	ClassDatabase::BindMethod("SetScript", &Object::SetScript);
-	ClassDatabase::BindMethod("GetScript", &Object::GetScript);
-	ClassDatabase::BindMethod("Free", &Object::Free);
+	ClassDatabase::BindMethod("SetScript", &Object::SetScript, { "script" });
+	ClassDatabase::BindMethod("GetScript", &Object::GetScript, {});
+	ClassDatabase::BindMethod("Free", &Object::Free, {});
 
 	ADD_PROPERTY(
 		PropertyInfo(

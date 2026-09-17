@@ -119,6 +119,109 @@ public static partial class VariantUtils
         throw new NotSupportedException($"Variant cannot be converted to {typeof(T).FullName}.");
     }
 
+    // Write a managed value into a variant so the caller can read it after the wrapped call returns.
+    // e.g. CreateFrom(3.5f) returns a variant tagged Float that owns nothing.
+    public static ming_variant CreateFrom<T>(T value)
+    {
+        ming_variant variant = default;
+
+        if (typeof(T) == typeof(bool))
+        {
+            variant.Type = Variant.Type.Bool;
+            variant.Bool = ((bool)(object)value).ToMingBool();
+            return variant;
+        }
+
+        if (typeof(T) == typeof(int))
+        {
+            variant.Type = Variant.Type.Int;
+            variant.Int = (int)(object)value;
+            return variant;
+        }
+
+        if (typeof(T) == typeof(float))
+        {
+            variant.Type = Variant.Type.Float;
+            variant.Float = (float)(object)value;
+            return variant;
+        }
+
+        if (typeof(T) == typeof(string))
+        {
+            variant.Type = Variant.Type.String;
+
+            // The variant takes over the native copy, so this local must not release it.
+            if (!string.IsNullOrEmpty((string)(object)value))
+            {
+                String nativeString = Marshaling.ConvertStringToNative((string)(object)value);
+                variant.String = nativeString.NativeValue;
+            }
+
+            return variant;
+        }
+
+        if (typeof(T) == typeof(Vector2))
+        {
+            variant.Type = Variant.Type.Vector2;
+            variant.Vector2 = (Vector2)(object)value;
+            return variant;
+        }
+
+        if (typeof(T) == typeof(Vector3))
+        {
+            variant.Type = Variant.Type.Vector3;
+            variant.Vector3 = (Vector3)(object)value;
+            return variant;
+        }
+
+        if (typeof(T) == typeof(Vector4))
+        {
+            variant.Type = Variant.Type.Vector4;
+            variant.Vector4 = (Vector4)(object)value;
+            return variant;
+        }
+
+        if (typeof(T) == typeof(Color))
+        {
+            variant.Type = Variant.Type.Color;
+            variant.Color = (Color)(object)value;
+            return variant;
+        }
+
+        if (typeof(T) == typeof(AABB2))
+        {
+            variant.Type = Variant.Type.AABB2;
+            variant.AABB2 = (AABB2)(object)value;
+            return variant;
+        }
+
+        if (typeof(T) == typeof(EulerAngles))
+        {
+            variant.Type = Variant.Type.EulerAngles;
+            variant.EulerAngles = (EulerAngles)(object)value;
+            return variant;
+        }
+
+        // TODO: the native variant owns these behind OwnedValue, so the managed side needs a
+        // native allocation callback before it can fill that block.
+        // e.g. CreateFrom(Matrix4x4.Identity) would own a 64 byte native block.
+        if (typeof(T) == typeof(OBB2) || typeof(T) == typeof(Capsule3) || typeof(T) == typeof(Matrix4x4))
+        {
+            throw new NotSupportedException(
+                $"Variant cannot store {typeof(T).Name} yet, the owned payload needs a native allocation callback.");
+        }
+
+        // TODO: an object pointer has to keep the wrapped object alive, which has no rule yet.
+        // e.g. CreateFrom(node) needs the ownership contract for object pointers crossing the boundary.
+        if (typeof(MingObject).IsAssignableFrom(typeof(T)))
+        {
+            throw new NotSupportedException(
+                $"Variant cannot store {typeof(T).FullName} yet, the object pointer ownership is not defined.");
+        }
+
+        throw new NotSupportedException($"Variant cannot be created from {typeof(T).FullName}.");
+    }
+
     // Reject a variant whose tag is not the one the caller asked for.
     // e.g. RequireTag on a Variant holding an Int throws when a Float was requested.
     private static void GuaranteeTag(in ming_variant variant, Variant.Type expected)

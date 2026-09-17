@@ -18,14 +18,19 @@ InputSystem::InputSystem(InputSystemConfig config) : m_config(config) {}
 
 void InputSystem::BindMethods()
 {
-	ClassDatabase::BindMethod("IsKeyDown", static_cast<bool (InputSystem::*)(int)>(&InputSystem::IsKeyDown));
+	ClassDatabase::BindMethod(
+		"IsKeyDown",
+		static_cast<bool (InputSystem::*)(int)>(&InputSystem::IsKeyDown),
+		{ "keyCode" });
 	ClassDatabase::BindMethod(
 		"WasKeyJustPressed",
-		static_cast<bool (InputSystem::*)(int)>(&InputSystem::WasKeyJustPressed));
+		static_cast<bool (InputSystem::*)(int)>(&InputSystem::WasKeyJustPressed),
+		{ "keyCode" });
 	ClassDatabase::BindMethod(
 		"WasKeyJustReleased",
-		static_cast<bool (InputSystem::*)(int)>(&InputSystem::WasKeyJustReleased));
-	ClassDatabase::BindMethod("SetCursorMode", &InputSystem::SetCursorModeByInt);
+		static_cast<bool (InputSystem::*)(int)>(&InputSystem::WasKeyJustReleased),
+		{ "keyCode" });
+	ClassDatabase::BindMethod("SetCursorMode", &InputSystem::SetCursorModeByInt, { "cursorMode" });
 
 	// 1) Function keys
 	BIND_CONSTANT(KeyCode, F1);

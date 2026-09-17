@@ -190,21 +190,27 @@ void Node::Reparent(Node* newParent, [[maybe_unused]] bool keepWorldTransform)
 
 void Node::BindMethods()
 {
-	ClassDatabase::BindMethod("SetName", &Node::SetName);
-	ClassDatabase::BindMethod("GetName", &Node::GetName);
-	ClassDatabase::BindMethod("SetSerializable", &Node::SetSerializable);
-	ClassDatabase::BindMethod("GetSerializable", &Node::GetSerializable);
-	ClassDatabase::BindMethod("SetReady", &Node::SetReady);
-	ClassDatabase::BindMethod("GetReady", &Node::GetReady);
-	ClassDatabase::BindMethod("SetProcess", &Node::SetProcess);
-	ClassDatabase::BindMethod("GetProcess", &Node::GetProcess);
-	ClassDatabase::BindMethod("GetRoot", &Node::GetRoot);
-	ClassDatabase::BindMethod("GetParent", &Node::GetParent);
-	ClassDatabase::BindMethod("FindChildByName", &Node::FindChildByName);
-	ClassDatabase::BindMethod("GetSceneTree", &Node::GetSceneTree);
-	ClassDatabase::BindMethod("AddNode", &Node::AddNode);
-	ClassDatabase::BindMethod("QueueFree", &Node::QueueFree);
-	ClassDatabase::BindMethod("Reparent", &Node::Reparent);
+	ClassDatabase::BindMethod("SetName", &Node::SetName, { "name" });
+	ClassDatabase::BindMethod("GetName", &Node::GetName, {});
+	ClassDatabase::BindMethod("SetSerializable", &Node::SetSerializable, { "isSerializable" });
+	ClassDatabase::BindMethod("GetSerializable", &Node::GetSerializable, {});
+	ClassDatabase::BindMethod("SetReady", &Node::SetReady, { "isReady" });
+	ClassDatabase::BindMethod("GetReady", &Node::GetReady, {});
+	ClassDatabase::BindMethod("SetProcess", &Node::SetProcess, { "isProcess" });
+	ClassDatabase::BindMethod("GetProcess", &Node::GetProcess, {});
+	ClassDatabase::BindMethod("GetRoot", &Node::GetRoot, {});
+	ClassDatabase::BindMethod("GetParent", &Node::GetParent, {});
+	ClassDatabase::BindMethod("FindChildByName", &Node::FindChildByName, { "name" });
+	ClassDatabase::BindMethod("GetSceneTree", &Node::GetSceneTree, {});
+	ClassDatabase::BindMethod("AddNode", &Node::AddNode, { "child" });
+	ClassDatabase::BindMethod("QueueFree", &Node::QueueFree, {});
+	ClassDatabase::BindMethod("Reparent", &Node::Reparent, { "newParent", "keepWorldTransform" });
+
+	// Virtual methods are the override points for C# scripts, the C++ side keeps using OnNotification
+	ClassDatabase::BindVirtualMethod("OnEnterTree", &Node::OnEnterTree, {});
+	ClassDatabase::BindVirtualMethod("OnExitTree", &Node::OnExitTree, {});
+	ClassDatabase::BindVirtualMethod("OnReady", &Node::OnReady, {});
+	ClassDatabase::BindVirtualMethod("OnProcess", &Node::OnProcess, { "deltaSeconds" });
 
 	ADD_PROPERTY(
 		PropertyInfo(Variant::Type::String, "name", PropertyInfo::Hint::None, "", PropertyInfo::UsageFlags::None),

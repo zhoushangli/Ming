@@ -23,14 +23,14 @@ Camera3D::Camera3D(float fovDegrees, float nearClip, float farClip)
 
 void Camera3D::BindMethods()
 {
-	ClassDatabase::BindMethod("SetNearClip", &Camera3D::SetNearClip);
-	ClassDatabase::BindMethod("GetNearClip", &Camera3D::GetNearClip);
-	ClassDatabase::BindMethod("SetFarClip", &Camera3D::SetFarClip);
-	ClassDatabase::BindMethod("GetFarClip", &Camera3D::GetFarClip);
-	ClassDatabase::BindMethod("SetFovDegrees", &Camera3D::SetFovDegrees);
-	ClassDatabase::BindMethod("GetFovDegrees", &Camera3D::GetFovDegrees);
-	ClassDatabase::BindMethod("SetSize", &Camera3D::SetSize);
-	ClassDatabase::BindMethod("GetSize", &Camera3D::GetSize);
+	ClassDatabase::BindMethod("SetNearClip", &Camera3D::SetNearClip, { "nearClip" });
+	ClassDatabase::BindMethod("GetNearClip", &Camera3D::GetNearClip, {});
+	ClassDatabase::BindMethod("SetFarClip", &Camera3D::SetFarClip, { "farClip" });
+	ClassDatabase::BindMethod("GetFarClip", &Camera3D::GetFarClip, {});
+	ClassDatabase::BindMethod("SetFovDegrees", &Camera3D::SetFovDegrees, { "fovDegrees" });
+	ClassDatabase::BindMethod("GetFovDegrees", &Camera3D::GetFovDegrees, {});
+	ClassDatabase::BindMethod("SetSize", &Camera3D::SetSize, { "size" });
+	ClassDatabase::BindMethod("GetSize", &Camera3D::GetSize, {});
 
 	PropertyInfo::UsageFlags const usage = PropertyInfo::UsageFlags::Default;
 	ADD_PROPERTY(

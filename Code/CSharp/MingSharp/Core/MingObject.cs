@@ -92,20 +92,36 @@ public class MingObject : IDisposable
         NativeCalls.MingCall_Void(FreeMethodBind, GetPtr(this));
     }
 
-    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-    private static readonly string MethodProxyName_Free = "Free";
+    protected internal virtual bool InvokeMingClassMethod(in String methodName, NativeVariantPtrArgs args, out ming_variant ret)
+    {
+        string methodNameStr = methodName.ToString();
 
-    // protected internal virtual bool InvokeMingClassMethod(in String methodName, NativeVariantPtrArgs args, out MingVariant ret)
-    // {
-    //     string methodNameStr = methodName.ToString();
-    //     if (methodNameStr == MethodProxyName_Free)
-    //     {
-    //         Free();
-    //         ret = default;
-    //         return true;
-    //     }
+        if (methodNameStr == MethodName.Free && args.Count == 0)
+        {
+            Free();
+            ret = default;
+            return true;
+        }
 
-    //     ret = default;
-    //     return false;
-    // }
+        ret = default;
+        return false;
+    }
+
+    protected internal virtual bool HasMingClassMethod(in String methodName)
+    {
+        string methodNameStr = methodName.ToString();
+
+        if (methodNameStr == MethodName.Free)
+        {
+            return true;
+        }
+
+        return false;
+    }
+
+    public class MethodName
+    {
+        public static readonly string Free = nameof(MingObject.Free);
+    }
+
 }
