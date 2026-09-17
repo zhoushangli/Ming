@@ -227,8 +227,6 @@ void Object::SetScript(Variant const& script)
 		g_engine->m_scriptSystem->IsScriptExecutionSuspended(),
 		"Cannot replace a script while reload is incomplete.\n");
 
-	ERR_FAIL_COND_MSG(!Ref<Script>(script).IsValid(), "Cannot replace a script while reload is incomplete.\n");
-
 	if (m_scriptInstance)
 	{
 		SetScriptInstance(nullptr);
@@ -240,14 +238,15 @@ void Object::SetScript(Variant const& script)
 	if (scriptRef.IsValid())
 	{
 		bool result;
-		if (g_engine->IsEditorMode())
-		{
-			result = scriptRef->InstantiatePlaceHolder(this);
-		}
-		else
-		{
-			result = scriptRef->Instantiate(this);
-		}
+		result = scriptRef->Instantiate(this);
+		// if (g_engine->IsEditorMode())
+		// {
+		// 	result = scriptRef->InstantiatePlaceHolder(this);
+		// }
+		// else
+		// {
+		// 	result = scriptRef->Instantiate(this);
+		// }
 
 		if (!result)
 		{
