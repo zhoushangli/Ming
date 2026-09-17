@@ -3,6 +3,7 @@
 #include "MingEngine/Core/Object/PlaceHolderScriptInstance.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Engine/Script/ScriptSystem.hpp"
+#include "MingEngine/Scene/Core/Node.hpp"
 
 CSharpScript::~CSharpScript()
 {
@@ -81,6 +82,12 @@ CSharpInstance::~CSharpInstance()
 	m_owner  = nullptr;
 }
 
+bool CSharpInstance::Call(std::string const& methodName, std::vector<Variant> const& args, Variant& ret)
+{
+	bool result = g_engine->m_scriptSystem->Call(m_gcHandle.GetValue(), methodName, args, ret);
+	return result;
+}
+
 void CSharpInstance::Notification(int notification, [[maybe_unused]] bool reverse)
 {
 	switch (notification)
@@ -92,6 +99,14 @@ void CSharpInstance::Notification(int notification, [[maybe_unused]] bool revers
 			m_gcHandle.Release();
 		}
 	}
+	}
+
+	// TODO: For delete stage, we actually should call C# first then C++ logic
+	// But for normal notification, we should call C++ first then C# logic
+	if (m_gcHandle.IsValid())
+	{
+		Variant ret = Variant();
+		g_engine->m_scriptSystem->Call(m_gcHandle.GetValue(), "_Notification", { Variant(notification) }, ret);
 	}
 }
 

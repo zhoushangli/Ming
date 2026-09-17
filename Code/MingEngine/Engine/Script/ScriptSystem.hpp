@@ -58,6 +58,8 @@ using RemoveScriptBridgeFunc          = int32_t(CORECLR_DELEGATE_CALLTYPE*)(void
 using CreateNativeManagedInstanceFunc = void*(CORECLR_DELEGATE_CALLTYPE*)(String const* nativeClassName, void* owner);
 using CreateUserManagedInstanceFunc   = void*(CORECLR_DELEGATE_CALLTYPE*)(void* script, void* owner);
 using ReleaseGCHandleFunc             = void(CORECLR_DELEGATE_CALLTYPE*)(void* gcHandle);
+using CallFunc                        = int32_t(CORECLR_DELEGATE_CALLTYPE*)(
+	void* gcHandle, String const* methodName, Variant** args, int32_t argCount, Variant* ret);
 
 struct ManagedCallbacks
 {
@@ -66,6 +68,7 @@ struct ManagedCallbacks
 	CreateNativeManagedInstanceFunc m_createNativeManagedInstance = nullptr;
 	CreateUserManagedInstanceFunc   m_createUserManagedInstance   = nullptr;
 	ReleaseGCHandleFunc             m_releaseGCHandle             = nullptr;
+	CallFunc                        m_call                        = nullptr;
 };
 
 //---------------------------------------------------------------------------
@@ -117,6 +120,7 @@ public:
 	void* GetOrCreateNativeManagedWrapper(Object* owner);
 	bool  CreateUserManagedInstance(CSharpScript* script, Object* owner);
 	void  ReleaseGCHandle(void* gcHandle);
+	bool  Call(void* gcHandle, std::string const& methodName, std::vector<Variant> const& args, Variant& ret);
 
 	bool TryBeginScriptInstantiation()
 	{

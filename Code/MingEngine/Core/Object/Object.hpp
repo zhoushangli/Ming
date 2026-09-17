@@ -136,7 +136,7 @@ private:
 	void PostInitialize();
 	bool PreDelete();
 
-private:
+protected:
 	ObjectID        m_id            = ObjectID::Invalid;
 	bool            m_isPreDeleting = false;
 	ManagedGCHandle m_nativeBindingGCHandle;

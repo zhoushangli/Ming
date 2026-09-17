@@ -24,5 +24,6 @@ public:
 	virtual Ref<Script> GetScript() const           = 0;
 	virtual bool        ReloadGCHandle(void* value) = 0;
 
-	virtual void Notification(int notification, bool reverse) = 0;
+	virtual bool Call(std::string const& methodName, std::vector<Variant> const& args, Variant& ret) = 0;
+	virtual void Notification(int notification, bool reverse)                                        = 0;
 };

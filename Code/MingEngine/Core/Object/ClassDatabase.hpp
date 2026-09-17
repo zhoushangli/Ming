@@ -381,7 +381,7 @@ private:
 	// Copy the given parameter names into the argument infos in declaration order.
 	// e.g. ApplyArgumentNames(methodInfo, {"name"}, "SetName") names the single argument "name"
 	static void ApplyArgumentNames(
-		MethodInfo& methodInfo, std::initializer_list<std::string> const& argumentNames, std::string const& methodName);
+		MethodInfo& methodInfo, std::vector<std::string> const& argumentNames, std::string const& methodName);
 
 private:
 	static std::unordered_map<std::string, ClassInfo>           m_classInfoMap;

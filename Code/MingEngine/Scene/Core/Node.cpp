@@ -269,21 +269,38 @@ bool Node::IsAncestorOf(Node const* other) const
 
 void Node::OnNotification(int notification)
 {
+	auto CallScriptVoidMethod = [this](std::string const& methodName, std::vector<Variant> const& args)
+	{
+		Variant ret = Variant();
+		if (m_scriptInstance != nullptr)
+		{
+			return m_scriptInstance->Call(methodName, args, ret);
+		}
+		else if (m_nativeBindingGCHandle.IsValid())
+		{
+			return g_engine->m_scriptSystem->Call(m_nativeBindingGCHandle.GetValue(), methodName, args, ret);
+		}
+		return false;
+	};
+
 	switch (notification)
 	{
 	case Notification_EnterTree:
 	{
 		OnEnterTree();
+		CallScriptVoidMethod("OnEnterTree", {});
 		break;
 	}
 	case Notification_ExitTree:
 	{
+		CallScriptVoidMethod("OnExitTree", {});
 		OnExitTree();
 		break;
 	}
 	case Notification_Ready:
 	{
 		OnReady();
+		CallScriptVoidMethod("OnReady", {});
 		break;
 	}
 	case Notification_Process:
@@ -296,6 +313,7 @@ void Node::OnNotification(int notification)
 		}
 
 		OnProcess(deltaSeconds);
+		CallScriptVoidMethod("OnProcess", { Variant(deltaSeconds) });
 		break;
 	}
 	default:

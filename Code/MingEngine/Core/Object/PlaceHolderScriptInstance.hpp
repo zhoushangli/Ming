@@ -12,9 +12,16 @@ public:
 	// Inherit from ScriptInstance
 	Object*     GetOwner() const override { return m_owner; }
 	Ref<Script> GetScript() const override { return m_script; }
-	bool        ReloadGCHandle(void* value) override {return false; }
+	bool        ReloadGCHandle([[maybe_unused]] void* value) override { return false; }
 
-	void Notification(int notification, bool reverse) override { /* Do nothing */ };
+	bool Call(
+		[[maybe_unused]] std::string const&          methodName,
+		[[maybe_unused]] std::vector<Variant> const& args,
+		[[maybe_unused]] Variant&                    ret) override
+	{
+		return false;
+	}
+	void Notification([[maybe_unused]] int notification, [[maybe_unused]] bool reverse) override { /* Do nothing */ };
 
 private:
 	Object*     m_owner = nullptr;

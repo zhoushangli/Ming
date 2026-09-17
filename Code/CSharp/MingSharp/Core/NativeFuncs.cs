@@ -26,6 +26,7 @@ internal unsafe struct ManagedCallbacks
     public delegate* unmanaged<String*, IntPtr, IntPtr> CreateNativeManagedInstance;
     public delegate* unmanaged<IntPtr, IntPtr, IntPtr> CreateUserManagedInstance;
     public delegate* unmanaged<IntPtr, void> ReleaseGCHandle;
+    public delegate* unmanaged<IntPtr, String*, ming_variant**, int, ming_variant*, int> Call;
 }
 
 public static unsafe class NativeFuncs
@@ -58,7 +59,8 @@ public static unsafe class NativeFuncs
             RemoveScriptBridge = &ScriptManagerBridge.RemoveScriptBridge,
             CreateNativeManagedInstance = &ScriptManagerBridge.CreateNativeManagedInstance,
             CreateUserManagedInstance = &ScriptManagerBridge.CreateUserManagedInstance,
-            ReleaseGCHandle = &ScriptManagerBridge.ReleaseGCHandle
+            ReleaseGCHandle = &ScriptManagerBridge.ReleaseGCHandle,
+            Call = &ScriptManagerBridge.Call
         };
     }
 

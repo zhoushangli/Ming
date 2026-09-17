@@ -92,6 +92,10 @@ public class MingObject : IDisposable
         NativeCalls.MingCall_Void(FreeMethodBind, GetPtr(this));
     }
 
+    public virtual void _Notification(int notification)
+    {
+    }
+
     protected internal virtual bool InvokeMingClassMethod(in String methodName, NativeVariantPtrArgs args, out ming_variant ret)
     {
         string methodNameStr = methodName.ToString();
@@ -99,6 +103,13 @@ public class MingObject : IDisposable
         if (methodNameStr == MethodName.Free && args.Count == 0)
         {
             Free();
+            ret = default;
+            return true;
+        }
+
+        if (methodNameStr == MethodName._Notification && args.Count == 1)
+        {
+            _Notification(VariantUtils.ConvertTo<int>(args[0]));
             ret = default;
             return true;
         }
@@ -111,7 +122,8 @@ public class MingObject : IDisposable
     {
         string methodNameStr = methodName.ToString();
 
-        if (methodNameStr == MethodName.Free)
+        if (methodNameStr == MethodName.Free ||
+            methodNameStr == MethodName._Notification)
         {
             return true;
         }
@@ -122,6 +134,7 @@ public class MingObject : IDisposable
     public class MethodName
     {
         public static readonly string Free = nameof(MingObject.Free);
+        public static readonly string _Notification = nameof(MingObject._Notification);
     }
 
 }

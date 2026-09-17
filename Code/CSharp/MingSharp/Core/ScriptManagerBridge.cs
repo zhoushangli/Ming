@@ -176,7 +176,7 @@ public static class ScriptManagerBridge
 
     #endregion
 
-    #region Instance Creation
+    #region Instance Functions
 
     [UnmanagedCallersOnly]
     internal static unsafe IntPtr CreateNativeManagedInstance(String* nativeClassNamePtr, IntPtr ownerPtr)
@@ -261,6 +261,57 @@ public static class ScriptManagerBridge
         {
             Console.Error.WriteLine(exception);
             return IntPtr.Zero;
+        }
+    }
+
+    [UnmanagedCallersOnly]
+    internal static unsafe int Call(
+        IntPtr objectGCHandle,
+        String* methodName,
+        ming_variant** args,
+        int argc,
+        ming_variant* ret)
+    {
+        if (objectGCHandle == IntPtr.Zero || methodName == null)
+        {
+            return 0;
+        }
+
+        try
+        {
+            var mingObject = (MingObject)GCHandle.FromIntPtr(objectGCHandle).Target;
+
+            if (mingObject == null)
+            {
+                throw new InvalidOperationException(
+                    "The managed object has been garbage collected."
+                );
+            }
+
+            ming_variant retVariant = default;
+            bool methodInvoke = mingObject.InvokeMingClassMethod(
+                in *methodName,
+                new NativeVariantPtrArgs(args, argc),
+                out retVariant
+            );
+
+            if (!methodInvoke)
+            {
+                *ret = default;
+
+                throw new MissingMethodException(
+                    mingObject.GetType().FullName,
+                    methodName->ToString()
+                );
+            }
+
+            *ret = retVariant;
+            return 1;
+        }
+        catch (Exception exception)
+        {
+            Console.Error.WriteLine(exception);
+            return 0;
         }
     }
 

@@ -34,7 +34,7 @@ int GetClassInheritanceDepth(ClassInfo const& classInfo, size_t maxDepth)
 } // namespace
 
 void ClassDatabase::ApplyArgumentNames(
-	MethodInfo& methodInfo, std::initializer_list<std::string> const& argumentNames, std::string const& methodName)
+	MethodInfo& methodInfo, std::vector<std::string> const& argumentNames, std::string const& methodName)
 {
 	GUARANTEE_OR_DIE(
 		argumentNames.size() == methodInfo.m_argumentInfos.size(),

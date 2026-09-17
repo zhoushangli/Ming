@@ -682,6 +682,29 @@ void ScriptSystem::ReleaseGCHandle(void* gcHandle)
 	}
 }
 
+bool ScriptSystem::Call(void* gcHandle, std::string const& methodName, std::vector<Variant> const& args, Variant& ret)
+{
+	if (!m_isInitialized || m_managedCallbacks.m_call == nullptr)
+	{
+		return false;
+	}
+
+	String const nativeMethodName(methodName);
+
+	// Convert the std::vector<Variant> to a Variant** array
+	std::vector<Variant*> argPointers;
+	argPointers.reserve(args.size());
+	for (const auto& arg : args)
+	{
+		argPointers.push_back(const_cast<Variant*>(&arg));
+	}
+
+	return m_managedCallbacks
+				   .m_call(gcHandle, &nativeMethodName, argPointers.data(), static_cast<int32_t>(args.size()), &ret)
+			   ? true
+			   : false;
+}
+
 void ScriptSystem::RegisterScriptOwner(ObjectID id) { m_scriptOwners.insert(id); }
 
 void ScriptSystem::UnregisterScriptOwner(ObjectID id) { m_scriptOwners.erase(id); }
