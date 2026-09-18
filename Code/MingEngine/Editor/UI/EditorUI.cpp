@@ -4,6 +4,7 @@
 #include "MingEngine/Editor/UI/EditorIcons.hpp"
 #include "MingEngine/Editor/UI/EditorUIContext.hpp"
 #include "MingEngine/Editor/UI/EditorUIStyle.hpp"
+#include "MingEngine/Engine/Application/App.hpp"
 
 #include "ThirdParty/imgui/imgui.h"
 
@@ -25,7 +26,6 @@ void RenderPanelMenuItem(EditorPanel& panel)
 		panel.Open();
 	}
 }
-
 } // namespace
 
 void EditorUI::Render(EditorUIContext& context)
@@ -179,7 +179,10 @@ void EditorUI::RenderMainMenuBar()
 			ImVec2(0.f, 1.f),
 			ImVec2(1.f, 0.f)))
 	{
-		INFO_PRINT("Play button clicked\n");
+		if (g_app != nullptr)
+		{
+			g_app->LaunchGame();
+		}
 	}
 
 	ImGui::SameLine(0.f, spacing);

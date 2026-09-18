@@ -26,8 +26,20 @@
 #include "MingEngine/Scene/Core/Node.hpp"
 #include "MingEngine/Scene/Core/SceneTree.hpp"
 #include "MingEngine/Scene/RegisterAllTypes.hpp"
+#include "MingEngine/Scene/Core/PackedScene.hpp"
 
 #include "ThirdParty/GLFW/glfw3.h"
+
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+
+#include <windows.h>
+#include <string>
 
 App* g_app = nullptr;
 
@@ -67,9 +79,16 @@ void App::Startup()
 	g_engine->Startup();
 	g_engineService->Startup();
 
-	EditorIcons::Startup();
+	if (m_runConfig.mode == MingRunMode::Editor)
+	{
+		EditorIcons::Startup();
+		StartupEditor();
+	}
+	else if (m_runConfig.mode == MingRunMode::Game)
+	{
+		StartupGame();
+	}
 
-	StartupScene();
 	RegisterEvent("Quit", App::OnQuit);
 }
 
@@ -174,6 +193,81 @@ void App::Restart() { m_shouldRestart = true; }
 
 void App::Quit() { m_shouldQuit = true; }
 
+bool App::LaunchGame()
+{
+    // 1) Get the current executable path
+    std::wstring executablePath(32768, L'\0');
+
+    DWORD const length = GetModuleFileNameW(
+        nullptr,
+        executablePath.data(),
+        static_cast<DWORD>(executablePath.size()));
+
+    if (length == 0 || length >= executablePath.size())
+    {
+        ERR_PRINT("Failed to get the executable path.\n");
+        return false;
+    }
+
+    executablePath.resize(length);
+
+    // 2) Resolve the current project directory
+    if (m_runConfig.projectPath.empty())
+    {
+        ERR_PRINT("Cannot launch game: project path is empty.\n");
+        return false;
+    }
+
+    std::error_code error;
+    std::filesystem::path const projectDirectory =
+        std::filesystem::absolute(m_runConfig.projectPath, error);
+
+    if (error)
+    {
+        ERR_PRINT("Failed to resolve the project directory.\n");
+        return false;
+    }
+
+    std::wstring const projectArgument = (projectDirectory / L".").wstring();
+
+    // 3) Build the game-mode command line
+    std::wstring commandLine =
+        L"\"" + executablePath +
+        L"\" --game --project \"" + projectArgument + L"\"";
+
+    STARTUPINFOW startupInfo{};
+    startupInfo.cb = sizeof(startupInfo);
+
+    PROCESS_INFORMATION processInfo{};
+
+    // 4) Start the game process
+    if (!CreateProcessW(
+            executablePath.c_str(),
+            commandLine.data(),
+            nullptr,
+            nullptr,
+            FALSE,
+            0,
+            nullptr,
+            nullptr,
+            &startupInfo,
+            &processInfo))
+    {
+        DWORD const errorCode = GetLastError();
+        std::string const message =
+            "Failed to launch game. Windows error: " +
+            std::to_string(errorCode) + "\n";
+
+        ERR_PRINT(message.c_str());
+        return false;
+    }
+
+    // 5) Release the launch-only process handles
+    CloseHandle(processInfo.hThread);
+    CloseHandle(processInfo.hProcess);
+    return true;
+}
+
 bool App::OnQuit([[maybe_unused]] EventArgs& args)
 {
 	if (g_app != nullptr)
@@ -186,10 +280,10 @@ bool App::OnQuit([[maybe_unused]] EventArgs& args)
 void App::RestartImmediately()
 {
 	ShutdownScene();
-	StartupScene();
+	StartupEditor();
 }
 
-void App::StartupScene()
+void App::StartupEditor()
 {
 	m_clock     = new Clock();
 	m_sceneTree = MemNew<SceneTree>();
@@ -201,6 +295,36 @@ void App::StartupScene()
 	if (startScenePath.IsValid())
 	{
 		editorNode->LoadScene(startScenePath);
+	}
+}
+
+void App::StartupGame()
+{
+	m_clock     = new Clock();
+	m_sceneTree = MemNew<SceneTree>();
+
+	VirtualPath const& startScenePath = ProjectSettings::Get()->m_startScenePath;
+	if (startScenePath.IsValid())
+	{
+		Ref<Resource> loadedScene = ResourceLoader::Load(startScenePath);
+		if (!loadedScene.IsValid())
+		{
+			return;
+		}
+
+		Ref<PackedScene> packedScene(loadedScene);
+		if (!packedScene.IsValid())
+		{
+			return;
+		}
+
+		Node* newSceneRoot = packedScene->Instantiate();
+		if (!newSceneRoot)
+		{
+			return;
+		}
+
+		m_sceneTree->ChangeScene(newSceneRoot);
 	}
 }
 

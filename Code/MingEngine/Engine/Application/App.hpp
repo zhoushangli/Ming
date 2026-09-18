@@ -17,23 +17,23 @@ enum class MingRunMode
 
 struct MingRunConfig
 {
-	MingRunMode mode = MingRunMode::Editor;
+	MingRunMode           mode = MingRunMode::Editor;
 	std::filesystem::path projectPath;
 
 	// If true, the engine will generate C# bindings for all registered types and exit.
-	bool generateCSharpBindings = false;
+	bool                  generateCSharpBindings = false;
 	std::filesystem::path csharpBindingsOutputDirectory;
 };
 
 namespace MingEngine
 {
-	int Run(MingRunConfig const &config);
+int Run(MingRunConfig const& config);
 } // namespace MingEngine
 
 class App
 {
 public:
-	explicit App(MingRunConfig const &config);
+	explicit App(MingRunConfig const& config);
 	~App();
 
 	void Startup();
@@ -43,9 +43,11 @@ public:
 	void Restart();
 	void Quit();
 
+	bool LaunchGame();
+
 	bool IsQuitting() const { return m_shouldQuit; }
 
-	static bool OnQuit(EventArgs &args);
+	static bool OnQuit(EventArgs& args);
 
 private:
 	void Update(float deltaSeconds);
@@ -53,19 +55,21 @@ private:
 	void BeginFrame();
 	void EndFrame();
 	void RestartImmediately();
-	void StartupScene();
 	void ShutdownScene();
+
+	void StartupEditor();
+	void StartupGame();
 
 private:
 	bool m_shouldRestart = false;
-	bool m_shouldQuit = false;
+	bool m_shouldQuit    = false;
 
-	Clock *m_clock = nullptr;
-	SceneTree *m_sceneTree = nullptr;
+	Clock*        m_clock     = nullptr;
+	SceneTree*    m_sceneTree = nullptr;
 	MingRunConfig m_runConfig;
 
-	EditorCamera *m_editorCamera = nullptr;
-	bool m_isSlowMode = false;
+	EditorCamera* m_editorCamera = nullptr;
+	bool          m_isSlowMode   = false;
 };
 
-extern App *g_app;
+extern App* g_app;

@@ -42,12 +42,12 @@ SceneTree*                Node::GetSceneTree() const { return m_data.m_sceneTree
 std::vector<Node*> const& Node::GetChildren() const { return m_data.m_children; }
 String const&             Node::GetName() const { return m_data.m_name; }
 bool                      Node::GetSerializable() const { return m_data.m_isSerializable; }
-bool                      Node::GetReady() const { return m_data.m_enableReady; }
+bool                      Node::GetReady() const { return m_data.m_readyPending; }
 bool                      Node::GetProcess() const { return m_data.m_enableProcess; }
 
 void Node::SetName(String const& name) { m_data.m_name = EnsureUniqueName(name); }
 void Node::SetSerializable(bool isSerializable) { m_data.m_isSerializable = isSerializable; }
-void Node::SetReady(bool isReady) { m_data.m_enableReady = isReady; }
+void Node::SetReady(bool isReady) { m_data.m_readyPending = isReady; }
 void Node::SetProcess(bool isProcess) { m_data.m_enableProcess = isProcess; }
 
 Node* Node::FindChildByName(String const& name) const
@@ -299,6 +299,8 @@ void Node::OnNotification(int notification)
 	}
 	case Notification_Ready:
 	{
+		SetProcess(true);
+
 		OnReady();
 		CallScriptVoidMethod("OnReady", {});
 		break;
@@ -462,8 +464,9 @@ void Node::PropagateReady()
 		}
 	}
 
-	if (m_data.m_enableReady)
+	if (m_data.m_readyPending)
 	{
+		m_data.m_readyPending = false;
 		Notification(Notification_Ready);
 	}
 }

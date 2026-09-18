@@ -238,15 +238,14 @@ void Object::SetScript(Variant const& script)
 	if (scriptRef.IsValid())
 	{
 		bool result;
-		result = scriptRef->Instantiate(this);
-		// if (g_engine->IsEditorMode())
-		// {
-		// 	result = scriptRef->InstantiatePlaceHolder(this);
-		// }
-		// else
-		// {
-		// 	result = scriptRef->Instantiate(this);
-		// }
+		if (g_engine->IsEditorMode())
+		{
+			result = scriptRef->InstantiatePlaceHolder(this);
+		}
+		else
+		{
+			result = scriptRef->Instantiate(this);
+		}
 
 		if (!result)
 		{

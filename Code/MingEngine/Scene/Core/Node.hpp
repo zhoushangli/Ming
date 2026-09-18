@@ -120,7 +120,11 @@ protected:
 		std::vector<Node*> m_children;
 		bool               m_isPendingDestroy = false;
 		bool               m_isSerializable   = true;
-		bool               m_enableReady      = false;
+
+		// For readyPending and enableProcess
+		// 1) readyPending will be used once when PropagateReady is called and set to false
+		// 2) enableProcess will be set to true when Notification_Ready is called
+		bool               m_readyPending     = true;
 		bool               m_enableProcess    = false;
 	};
 
