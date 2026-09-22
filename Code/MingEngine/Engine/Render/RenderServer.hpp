@@ -42,13 +42,12 @@ public:
 
 #pragma endregion
 
+#pragma region Viewport API
+
 	// Viewport lifecycle:
 	// 1) A Viewport creates its RID and initial size before entering a SceneTree.
 	// 2) Entering / leaving a SceneTree only toggles the active flag.
 	// 3) The RID and its GPU resources are released on destruction.
-
-#pragma region Viewport API
-
 	RID         ViewportCreate();
 	void        ViewportFree(RID viewport);
 	void        ViewportSetActive(RID viewport, bool active);
