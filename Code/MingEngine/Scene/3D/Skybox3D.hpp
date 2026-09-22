@@ -7,15 +7,12 @@
 class Skybox3D : public VisualInstance3D
 {
 public:
-	explicit Skybox3D(VirtualPath const &imagePath);
+	explicit Skybox3D(VirtualPath const& imagePath);
 	~Skybox3D() override;
 
 protected:
-	RenderRequest SubmitRenderRequest() const override;
-
-protected:
-	VirtualPath m_imagePath;
+	VirtualPath          m_imagePath;
 	Ref<TextureResource> m_textureRef;
-	VertexBuffer *m_vertexBuffer = nullptr;
-	IndexBuffer *m_indexBuffer = nullptr;
+	VertexBuffer*        m_vertexBuffer = nullptr;
+	IndexBuffer*         m_indexBuffer  = nullptr;
 };

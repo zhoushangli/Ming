@@ -3,7 +3,8 @@
 #include "MingEngine/Core/ErrorWarningAssert.hpp"
 #include "MingEngine/Core/Object/ResourceLoader.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
-#include "MingEngine/Engine/Render/D3D11RenderBackend.hpp"
+#include "MingEngine/Engine/Render/RenderBackend.hpp"
+#include "MingEngine/Engine/Render/TextureBindingSlots.hpp"
 
 PostProcessPass::PostProcessPass(std::string const& passName, VirtualPath const& postProcessShaderVirtualPath)
 	: m_name(passName), m_wideName(passName.begin(), passName.end())
@@ -38,7 +39,7 @@ PostProcessChain::PostProcessChain() { IntVec2 const fullResolution = g_engine->
 
 PostProcessChain::~PostProcessChain() {}
 
-GPUTexture* PostProcessChain::Render(D3D11RenderBackend& renderer, PostProcessContext const& context)
+GPUTexture* PostProcessChain::Render(RenderBackend& renderer, PostProcessContext const& context)
 {
 	IntVec2 const fullResolution = g_engine->m_windowSystem->GetClientDimensions();
 

@@ -8,7 +8,9 @@
 #include "MingEngine/Scene/Core/Viewport.hpp"
 
 #include <cctype>
+#include <charconv>
 #include <exception>
+#include <limits>
 
 namespace
 {
@@ -360,17 +362,16 @@ String Node::EnsureUniqueName(String const& requestedName) const
 	String const baseName = normalizedName.Substr(0, suffixStart);
 	int64_t      suffix   = 0;
 
-	if (suffixStart < normalizedName.Length() && normalizedName.Substr(suffixStart).TryToInt64(suffix))
+	std::string const digits = normalizedName.Substr(suffixStart).ToUtf8();
+	auto const result = std::from_chars(digits.data(), digits.data() + digits.size(), suffix);
+	if (result.ec != std::errc{} || suffix == (std::numeric_limits<int64_t>::max)())
 	{
-		++suffix;
-	}
-	else
-	{
-		suffix = 1;
+		suffix = 0;
 	}
 
-	for (;; ++suffix)
+	for (;;)
 	{
+		suffix = suffix == (std::numeric_limits<int64_t>::max)() ? 1 : suffix + 1;
 		String const candidate = baseName + String::FromInt(suffix);
 		if (isAvailable(candidate))
 		{

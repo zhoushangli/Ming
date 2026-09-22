@@ -1,14 +1,14 @@
 #pragma once
 
 #include "MingEngine/Engine/Application/SystemBase.hpp"
-#include "MingEngine/Engine/Render/D3D11RenderBackend.hpp"
+#include "MingEngine/Engine/Render/RenderBackend.hpp"
 #include "MingEngine/Scene/Resource/ShaderResource.hpp"
 
 #include <string>
 #include <string_view>
 #include <unordered_map>
 
-class ViewportInfo;
+struct ViewportData;
 struct RenderRequest;
 
 class Renderer : public SystemBase
@@ -16,7 +16,7 @@ class Renderer : public SystemBase
 	MCLASS(Renderer, SystemBase)
 
 public:
-	Renderer(RendererConfig config);
+	Renderer(RendererServerConfig config);
 	~Renderer();
 
 	void Startup() override;
@@ -29,9 +29,9 @@ public:
 	// 1) Create lazily before the first render.
 	// 2) Resize only this Viewport's targets.
 	// 3) Destroy before the owning Viewport or Renderer shuts down.
-	void RenderViewport(ViewportInfo& viewport);
-	void ResizeViewport(ViewportInfo& viewport, IntVec2 dimensions);
-	void DestroyViewportResources(ViewportInfo& viewport);
+	void RenderViewport(ViewportData& viewport);
+	void ResizeViewport(ViewportData& viewport, IntVec2 dimensions);
+	void DestroyViewportResources(ViewportData& viewport);
 	void CopyTextureToBackBuffer(GPUTexture* colorTexture);
 
 	Shader* CreateShader(
@@ -56,31 +56,37 @@ public:
 	void CopyCPUToGPU(const void* data, unsigned int size, IndexBuffer* indexBuffer);
 	void BindConstantBuffer(ConstantBuffer* constantBuffer, int slot);
 
-	// This function is specifically for initializing the ImGui D3D11 backend in ImGuiSystem
-	void InitImGuiD3D11Backend();
+	// Drive the ImGui renderer backend owned by the active RenderBackend.
+	// e.g. g_engine->m_renderServer->RenderImGui(ImGui::GetDrawData())
+	bool        InitImGui();
+	void        ShutdownImGui();
+	void        BeginImGuiFrame();
+	void        RenderImGui(ImDrawData* drawData);
+	ImTextureID GetImGuiTextureID(GPUTexture* texture) const;
+
 	void BindBackBuffer();
 	void ResizeBackBuffer(IntVec2 newDimensions);
 
 	void SetViewport(IntVec2 dimensions, IntVec2 topLeft = IntVec2::Zero);
-	void ClearSceneTargets(ViewportInfo const& viewport);
+	void ClearSceneTargets(ViewportData const& viewport);
 
 	static void BindMethods();
 
 private:
 	void ExecuteRenderRequest(RenderRequest const& request);
 
-	void PrepareConstants(ViewportInfo const& viewport);
-	void RenderOpaque(ViewportInfo& viewport);
-	void RenderSkybox(ViewportInfo const& viewport);
-	void RenderPostProcess(ViewportInfo& viewport);
-	void RenderUI(ViewportInfo const& viewport);
+	void PrepareConstants(ViewportData const& viewport);
+	void RenderOpaque(ViewportData& viewport);
+	void RenderSkybox(ViewportData const& viewport);
+	void RenderPostProcess(ViewportData& viewport);
+	void RenderUI(ViewportData const& viewport);
 
 private:
-	RendererConfig      m_config;
-	D3D11RenderBackend* m_renderBackend = nullptr;
+	RendererServerConfig m_config;
+	RenderBackend*       m_renderBackend = nullptr;
 
-	Ref<ShaderResource> m_defaultShaderResource;
-	Ref<ShaderResource> m_postProcessCopyShaderResource;
+	Ref<ShaderResource>                                  m_defaultShaderResource;
+	Ref<ShaderResource>                                  m_postProcessCopyShaderResource;
 	std::unordered_map<std::string, Ref<ShaderResource>> m_builtinShaderResources;
 
 	GPUTexture* m_defaultWhiteTexture   = nullptr;

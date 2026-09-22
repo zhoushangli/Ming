@@ -64,18 +64,9 @@ public:
 	// e.g. String::FromInt(512) returns "512" and String::FromInt(-7) returns "-7".
 	static String FromInt(int64_t value);
 
-	// Parse this string as a decimal integer and report whether it is one.
-	// e.g. TryToInt64("12", value) returns true with value 12; "1x" returns false.
-	bool TryToInt64(int64_t& outValue) const;
-
 	// Convert the UTF-32 content into UTF-8 text for the narrow string APIs.
 	// e.g. String(U'\u4e2d').ToUtf8() returns the 3 byte sequence E4 B8 AD.
 	std::string ToUtf8() const;
-
-private:
-	// Compare this string with UTF-8 bytes without allocating a temporary String.
-	// e.g. EqualsUtf8("Mi", 2) is true for String("Mi") and false for String("Ming").
-	bool EqualsUtf8(char const* data, size_t byteLength) const;
 
 private:
 	// The code points live in a shared block whose header stores the reference count and the count.

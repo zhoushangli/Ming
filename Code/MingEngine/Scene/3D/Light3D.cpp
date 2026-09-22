@@ -1,7 +1,7 @@
 #include "MingEngine/Scene/3D/Light3D.hpp"
+#include "MingEngine/Engine/Application/Engine.hpp"
 
-#include "MingEngine/EngineService/EngineService.hpp"
-#include "MingEngine/EngineService/RenderService.hpp"
+#include "MingEngine/Engine/Render/RenderServer.hpp"
 
 Light3D::Light3D() = default;
 Light3D::Light3D(LightType type) : m_lightType(type) {}
@@ -31,21 +31,21 @@ void Light3D::BindMethods()
 
 void Light3D::SetColor(Color const& color)
 {
-	m_color                      = color;
-	RenderService* renderService = g_engineService->m_renderService;
-	if (m_rid >= 0 && renderService != nullptr)
+	m_color                     = color;
+	RenderServer* renderService = g_engine != nullptr ? g_engine->m_renderServer : nullptr;
+	if (m_rid.IsValid() && renderService != nullptr)
 	{
-		renderService->SetLightColor(m_rid, color);
+		renderService->LightSetColor(m_rid, color);
 	}
 }
 
 void Light3D::SetIntensity(float intensity)
 {
-	m_intensity                  = intensity;
-	RenderService* renderService = g_engineService->m_renderService;
-	if (m_rid >= 0 && renderService != nullptr)
+	m_intensity                 = intensity;
+	RenderServer* renderService = g_engine != nullptr ? g_engine->m_renderServer : nullptr;
+	if (m_rid.IsValid() && renderService != nullptr)
 	{
-		renderService->SetLightIntensity(m_rid, intensity);
+		renderService->LightSetIntensity(m_rid, intensity);
 	}
 }
 
@@ -58,10 +58,10 @@ void Light3D::OnNotification(int notification)
 	{
 	case Notification_EnterTree:
 	{
-		RenderService* renderService = g_engineService->m_renderService;
-		if (m_rid < 0 && renderService != nullptr)
+		RenderServer* renderService = g_engine != nullptr ? g_engine->m_renderServer : nullptr;
+		if (!m_rid.IsValid() && renderService != nullptr)
 		{
-			m_rid = renderService->CreateLight(m_lightType);
+			m_rid = renderService->LightCreate(m_lightType);
 			SyncRenderData();
 		}
 		break;
@@ -73,10 +73,10 @@ void Light3D::OnNotification(int notification)
 	}
 	case Notification_TransformChanged:
 	{
-		RenderService* renderService = g_engineService->m_renderService;
-		if (m_rid >= 0 && renderService != nullptr)
+		RenderServer* renderService = g_engine != nullptr ? g_engine->m_renderServer : nullptr;
+		if (m_rid.IsValid() && renderService != nullptr)
 		{
-			renderService->SetLightTransform(m_rid, GetWorldTransform());
+			renderService->LightSetTransform(m_rid, GetWorldTransform());
 		}
 		break;
 	}
@@ -85,57 +85,57 @@ void Light3D::OnNotification(int notification)
 
 void Light3D::SyncRenderData()
 {
-	RenderService* renderService = g_engineService->m_renderService;
-	if (m_rid < 0 || renderService == nullptr)
+	RenderServer* renderService = g_engine != nullptr ? g_engine->m_renderServer : nullptr;
+	if (!m_rid.IsValid() || renderService == nullptr)
 	{
 		return;
 	}
 
-	renderService->SetLightTransform(m_rid, GetWorldTransform());
-	renderService->SetLightColor(m_rid, m_color);
-	renderService->SetLightIntensity(m_rid, m_intensity);
+	renderService->LightSetTransform(m_rid, GetWorldTransform());
+	renderService->LightSetColor(m_rid, m_color);
+	renderService->LightSetIntensity(m_rid, m_intensity);
 }
 
 void Light3D::FreeRenderLight()
 {
-	RenderService* renderService = g_engineService->m_renderService;
-	if (m_rid >= 0 && renderService != nullptr)
+	RenderServer* renderService = g_engine != nullptr ? g_engine->m_renderServer : nullptr;
+	if (m_rid.IsValid() && renderService != nullptr)
 	{
-		renderService->FreeLight(m_rid);
+		renderService->LightFree(m_rid);
 	}
-	m_rid = -1;
+	m_rid = RID::Invalid;
 }
 
 OmniLight3D::OmniLight3D() : Light3D(LightType::Omni) {}
 
 void OmniLight3D::SetRange(float range)
 {
-	m_range                      = range;
-	RenderService* renderService = g_engineService->m_renderService;
-	if (m_rid >= 0 && renderService != nullptr)
+	m_range                     = range;
+	RenderServer* renderService = g_engine != nullptr ? g_engine->m_renderServer : nullptr;
+	if (m_rid.IsValid() && renderService != nullptr)
 	{
-		renderService->SetLightRange(m_rid, range);
+		renderService->LightSetRange(m_rid, range);
 	}
 }
 
 void OmniLight3D::SetAttenuation(float attenuation)
 {
-	m_attenuation                = attenuation;
-	RenderService* renderService = g_engineService->m_renderService;
-	if (m_rid >= 0 && renderService != nullptr)
+	m_attenuation               = attenuation;
+	RenderServer* renderService = g_engine != nullptr ? g_engine->m_renderServer : nullptr;
+	if (m_rid.IsValid() && renderService != nullptr)
 	{
-		renderService->SetLightAttenuation(m_rid, attenuation);
+		renderService->LightSetAttenuation(m_rid, attenuation);
 	}
 }
 
 void OmniLight3D::SyncRenderData()
 {
 	Light3D::SyncRenderData();
-	RenderService* renderService = g_engineService->m_renderService;
-	if (m_rid >= 0 && renderService != nullptr)
+	RenderServer* renderService = g_engine != nullptr ? g_engine->m_renderServer : nullptr;
+	if (m_rid.IsValid() && renderService != nullptr)
 	{
-		renderService->SetLightRange(m_rid, m_range);
-		renderService->SetLightAttenuation(m_rid, m_attenuation);
+		renderService->LightSetRange(m_rid, m_range);
+		renderService->LightSetAttenuation(m_rid, m_attenuation);
 	}
 }
 
@@ -166,41 +166,41 @@ SpotLight3D::SpotLight3D() : Light3D(LightType::Spot) {}
 
 void SpotLight3D::SetRange(float range)
 {
-	m_range                      = range;
-	RenderService* renderService = g_engineService->m_renderService;
-	if (m_rid >= 0 && renderService != nullptr)
+	m_range                     = range;
+	RenderServer* renderService = g_engine != nullptr ? g_engine->m_renderServer : nullptr;
+	if (m_rid.IsValid() && renderService != nullptr)
 	{
-		renderService->SetLightRange(m_rid, range);
+		renderService->LightSetRange(m_rid, range);
 	}
 }
 
 void SpotLight3D::SetAttenuation(float attenuation)
 {
-	m_attenuation                = attenuation;
-	RenderService* renderService = g_engineService->m_renderService;
-	if (m_rid >= 0 && renderService != nullptr)
+	m_attenuation               = attenuation;
+	RenderServer* renderService = g_engine != nullptr ? g_engine->m_renderServer : nullptr;
+	if (m_rid.IsValid() && renderService != nullptr)
 	{
-		renderService->SetLightAttenuation(m_rid, attenuation);
+		renderService->LightSetAttenuation(m_rid, attenuation);
 	}
 }
 
 void SpotLight3D::SetSpotAngle(float angle)
 {
-	m_spotAngle                  = angle;
-	RenderService* renderService = g_engineService->m_renderService;
-	if (m_rid >= 0 && renderService != nullptr)
+	m_spotAngle                 = angle;
+	RenderServer* renderService = g_engine != nullptr ? g_engine->m_renderServer : nullptr;
+	if (m_rid.IsValid() && renderService != nullptr)
 	{
-		renderService->SetLightSpotAngle(m_rid, angle);
+		renderService->LightSetSpotAngle(m_rid, angle);
 	}
 }
 
 void SpotLight3D::SetSpotAttenuation(float attenuation)
 {
-	m_spotAttenuation            = attenuation;
-	RenderService* renderService = g_engineService->m_renderService;
-	if (m_rid >= 0 && renderService != nullptr)
+	m_spotAttenuation           = attenuation;
+	RenderServer* renderService = g_engine != nullptr ? g_engine->m_renderServer : nullptr;
+	if (m_rid.IsValid() && renderService != nullptr)
 	{
-		renderService->SetLightSpotAttenuation(m_rid, attenuation);
+		renderService->LightSetSpotAttenuation(m_rid, attenuation);
 	}
 }
 
@@ -250,12 +250,12 @@ void SpotLight3D::BindMethods()
 void SpotLight3D::SyncRenderData()
 {
 	Light3D::SyncRenderData();
-	RenderService* renderService = g_engineService->m_renderService;
-	if (m_rid >= 0 && renderService != nullptr)
+	RenderServer* renderService = g_engine != nullptr ? g_engine->m_renderServer : nullptr;
+	if (m_rid.IsValid() && renderService != nullptr)
 	{
-		renderService->SetLightRange(m_rid, m_range);
-		renderService->SetLightAttenuation(m_rid, m_attenuation);
-		renderService->SetLightSpotAngle(m_rid, m_spotAngle);
-		renderService->SetLightSpotAttenuation(m_rid, m_spotAttenuation);
+		renderService->LightSetRange(m_rid, m_range);
+		renderService->LightSetAttenuation(m_rid, m_attenuation);
+		renderService->LightSetSpotAngle(m_rid, m_spotAngle);
+		renderService->LightSetSpotAttenuation(m_rid, m_spotAttenuation);
 	}
 }

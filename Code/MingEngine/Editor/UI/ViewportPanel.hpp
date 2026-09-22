@@ -15,7 +15,5 @@ private:
 	void OnRender(EditorUIContext& context) override;
 
 private:
-	IntVec2 m_dimensions = IntVec2::Zero;
-	bool    m_snap       = false;
+	bool m_snap = false;
 };
-

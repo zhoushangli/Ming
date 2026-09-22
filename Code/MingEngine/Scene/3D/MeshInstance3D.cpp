@@ -2,12 +2,9 @@
 
 #include "MingEngine/Core/Math/RaycastUtils.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
-#include "MingEngine/Engine/Render/BuiltinShaders.hpp"
-#include "MingEngine/Engine/Render/DebugGizmos.hpp"
-#include "MingEngine/Engine/Render/Renderer.hpp"
+#include "MingEngine/Engine/Render/RenderServer.hpp"
 #include "MingEngine/Scene/Core/SceneTree.hpp"
 #include "MingEngine/Scene/Resource/MeshResource.hpp"
-#include "MingEngine/Scene/Resource/ShaderResource.hpp"
 
 RaycastResult3D MeshRaycastObject::IntersectBounds(RaycastQuery3D const& query)
 {
@@ -98,6 +95,8 @@ void MeshInstance3D::BindMethods()
 
 void MeshInstance3D::OnNotification(int notification)
 {
+	RenderServer* server = g_engine != nullptr ? g_engine->m_renderServer : nullptr;
+
 	switch (notification)
 	{
 	case Notification_EnterTree:
@@ -110,6 +109,13 @@ void MeshInstance3D::OnNotification(int notification)
 			m_raycastObject->m_mesh  = this;
 			raycastSpace->AddObject(m_raycastObject);
 		}
+
+		// The mesh may be assigned before the node enters the tree, so register it here too.
+		if (server != nullptr && m_instanceRID.IsValid() && m_meshResource.IsValid())
+		{
+			m_meshRID = server->MeshCreate(m_meshResource);
+			server->InstanceSetBase(m_instanceRID, m_meshRID);
+		}
 		break;
 	}
 	case Notification_ExitTree:
@@ -121,55 +127,56 @@ void MeshInstance3D::OnNotification(int notification)
 			delete m_raycastObject;
 			m_raycastObject = nullptr;
 		}
+
+		if (server != nullptr && m_meshRID.IsValid())
+		{
+			server->MeshFree(m_meshRID);
+			m_meshRID = RID::Invalid;
+		}
 		break;
 	}
 	}
 }
 
-MeshInstance3D::~MeshInstance3D() { m_meshResource = nullptr; }
-
 bool MeshInstance3D::IsEmpty() const { return m_meshResource == nullptr || m_meshResource->IsEmpty(); }
 
 void MeshInstance3D::SetMeshResource(Variant meshResource)
 {
-	Ref<MeshResource> mesh = meshResource;
-	if (!mesh.IsValid())
+	RenderServer* server = g_engine != nullptr ? g_engine->m_renderServer : nullptr;
+
+	// 1) Unregister the previous Mesh RID so the registry does not grow.
+	// 2) Register the new resource and attach it as this instance's Base.
+	if (server != nullptr && m_meshRID.IsValid())
 	{
-		m_meshResource = nullptr;
-		return;
+		server->MeshFree(m_meshRID);
+		m_meshRID = RID::Invalid;
 	}
 
-	m_meshResource = mesh;
+	Ref<MeshResource> mesh = meshResource;
+	m_meshResource         = mesh;
+
+	if (server != nullptr && m_instanceRID.IsValid())
+	{
+		if (m_meshResource.IsValid())
+		{
+			m_meshRID = server->MeshCreate(m_meshResource);
+		}
+
+		server->InstanceSetBase(m_instanceRID, m_meshRID);
+	}
 }
 
 Variant MeshInstance3D::GetMeshResource() const { return m_meshResource; }
 
-void MeshInstance3D::SetTint(Color tint) { m_tint = tint; }
+void MeshInstance3D::SetTint(Color tint)
+{
+	m_tint = tint;
+
+	RenderServer* server = g_engine != nullptr ? g_engine->m_renderServer : nullptr;
+	if (server != nullptr && m_instanceRID.IsValid())
+	{
+		server->InstanceSetTint(m_instanceRID, tint);
+	}
+}
 
 Color MeshInstance3D::GetTint() const { return m_tint; }
-
-RenderRequest MeshInstance3D::SubmitRenderRequest() const
-{
-	RenderRequest request;
-	if (m_meshResource == nullptr || m_meshResource->IsEmpty())
-	{
-		return request;
-	}
-
-	request.m_pass                                  = RenderRequestPass::Opaque;
-	request.m_modelToWorld                          = GetWorldTransform();
-	request.m_tint                                  = m_tint;
-	request.m_vertexBuffer                          = m_meshResource->m_vertexBuffer;
-	request.m_indexBuffer                           = m_meshResource->m_indexBuffer;
-	request.m_textures[SurfaceTextureSlot::Diffuse] = m_meshResource->m_textureResources.size() > 0
-														  ? m_meshResource->m_textureResources[0]->GetGPUTexture()
-														  : nullptr;
-	Ref<ShaderResource> shaderResource =
-		g_engine->m_renderer->GetBuiltinShaderResource("DefaultLit", BuiltinShaders::DefaultLit);
-	request.m_shader         = shaderResource.IsValid() ? shaderResource->GetShader() : nullptr;
-	request.m_blendMode      = BlendMode::OPAQUE;
-	request.m_depthMode      = DepthMode::READ_WRITE_LESS_EQUAL;
-	request.m_rasterizerMode = RasterizerMode::SOLID_CULL_BACK;
-	request.m_samplerMode    = SamplerMode::POINT_CLAMP;
-	return request;
-}

@@ -1,11 +1,9 @@
 #pragma once
 
+#include "MingEngine/Core/Render/RID.hpp"
 #include "MingEngine/Scene/Core/Node.hpp"
 
-#include "MingEngine/Engine/Render/RenderContext.hpp"
-
 class Camera3D;
-class VisualInstance3D;
 
 class Viewport : public Node
 {
@@ -15,36 +13,33 @@ public:
 	Viewport();
 	~Viewport() override;
 
-	// Scene objects register by ObjectID so deferred destruction and reparenting
-	// cannot leave raw instance or light pointers in the Viewport.
-	void RegisterVisualizeInstance(VisualInstance3D *visualizeInstance);
-	void UnregisterVisualizeInstance(VisualInstance3D *visualizeInstance);
+	void      RegisterWorldCamera(Camera3D* camera);
+	void      UnregisterWorldCamera(Camera3D* camera);
+	Camera3D* GetWorldCamera() const;
 
-	void RegisterWorldCamera(Camera3D *camera);
-	void UnregisterWorldCamera(Camera3D *camera);
-	Camera3D *GetWorldCamera() const;
-
-	void SetOutputResolution(IntVec2 dimensions);
+	void    SetResolution(IntVec2 dimensions);
 	IntVec2 GetOutputResolution() const;
 
 	// Per-frame preparation:
 	// 1) Resolve cameras and update their projection.
-	// 2) Clear transient request arrays.
-	// 3) Resolve registered handles and collect current render data.
+	// 2) Begin the frame on the RenderServer, which clears the transient request data.
+	// 3) Resolve registered handles and submit current render requests through the RID.
 	void PrepareRenderData();
 
-	ViewportInfo &GetViewportInfo();
-	ViewportInfo const &GetViewportInfo() const;
+	// All Viewport render state lives on the RenderServer and is addressed by this RID.
+	RID GetViewportRID() const { return m_viewportRID; }
+
+	// Scenario that owns this Viewport's instances on the RenderServer.
+	RID GetScenarioRID() const { return m_scenarioRID; }
 
 protected:
 	void OnNotification(int notification);
 
 private:
-	std::vector<ObjectID> m_instanceIDs;
-
 	std::vector<ObjectID> m_worldCameraIDs;
-	ObjectID m_worldCameraID = ObjectID::Invalid;
-	CameraContext m_tmpWorldCamera;
+	ObjectID              m_worldCameraID = ObjectID::Invalid;
 
-	ViewportInfo m_viewportInfo;
+	RID     m_viewportRID      = RID::Invalid;
+	RID     m_scenarioRID      = RID::Invalid;
+	IntVec2 m_outputResolution = IntVec2::Zero;
 };

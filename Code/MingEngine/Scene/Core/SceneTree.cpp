@@ -4,7 +4,6 @@
 #include "MingEngine/Core/Math/MathUtils.hpp"
 #include "MingEngine/Core/Object/ClassDatabase.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
-#include "MingEngine/Engine/Render/Renderer.hpp"
 #include "MingEngine/Scene/3D/Light3D.hpp"
 #include "MingEngine/Scene/3D/Node3D.hpp"
 #include "MingEngine/Scene/Core/RaycastSpace3D.hpp"
@@ -23,7 +22,7 @@ SceneTree::SceneTree()
 	m_raycastSpace = MemNew<RaycastSpace3D>();
 
 	// 1) Every SceneTree owns exactly one root Viewport.
-	// 2) Entering the tree registers that Viewport with RenderService.
+	// 2) Entering the tree registers that Viewport with RenderServer.
 	m_root = MemNew<Viewport>();
 	m_root->SetName("Root");
 

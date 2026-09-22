@@ -52,9 +52,6 @@
     <Filter Include="Engine\Window">
       <UniqueIdentifier>{D18B34FA-A728-4D97-8A0A-06E38553F2F1}</UniqueIdentifier>
     </Filter>
-    <Filter Include="EngineService">
-      <UniqueIdentifier>{CCFE32C9-D746-4F7C-AC74-DDC44A39F06F}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Scene">
       <UniqueIdentifier>{1CCDAC95-AC80-40F2-86F6-637873E5CB3A}</UniqueIdentifier>
     </Filter>
@@ -130,13 +127,16 @@
     <Filter Include="Editor\Icons">
       <UniqueIdentifier>{f6a9b2d7-fb76-40d2-8a0c-da3a8571fb25}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Scene\2D">
+      <UniqueIdentifier>{ee7351fa-f52d-4758-b774-1ca39938894b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Scene\GUI">
+      <UniqueIdentifier>{1d21996f-44a5-46ff-8b68-27876efcb924}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Core\Clock.cpp">
       <Filter>Core</Filter>
-    </ClCompile>
-    <ClCompile Include="EngineService\DevConsole.cpp">
-      <Filter>Engine\Console</Filter>
     </ClCompile>
     <ClCompile Include="Engine\Application\Engine.cpp">
       <Filter>Engine\Application</Filter>
@@ -441,9 +441,6 @@
     <ClCompile Include="Scene\3D\WorldEnvironment.cpp">
       <Filter>Scene\3D</Filter>
     </ClCompile>
-    <ClCompile Include="EngineService\EngineService.cpp">
-      <Filter>EngineService</Filter>
-    </ClCompile>
     <ClCompile Include="Core\Object\ClassDatabase.cpp">
       <Filter>Core\Object</Filter>
     </ClCompile>
@@ -459,8 +456,8 @@
     <ClCompile Include="Scene\Core\Viewport.cpp">
       <Filter>Scene\Core</Filter>
     </ClCompile>
-    <ClCompile Include="EngineService\RenderService.cpp">
-      <Filter>EngineService</Filter>
+    <ClCompile Include="Engine\Render\RenderServer.cpp">
+      <Filter>Engine\Render</Filter>
     </ClCompile>
     <ClCompile Include="Scene\Resource\MeshResource.cpp">
       <Filter>Scene\Resource</Filter>
@@ -633,13 +630,28 @@
     <ClCompile Include="Core\CowData.cpp">
       <Filter>Core</Filter>
     </ClCompile>
+    <ClCompile Include="Scene\Core\CanvasItem.cpp">
+      <Filter>Scene\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene\GUI\Control.cpp">
+      <Filter>Scene\GUI</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene\GUI\ColorRect.cpp">
+      <Filter>Scene\GUI</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Render\RenderTypes.cpp">
+      <Filter>Engine\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Render\RenderBackend.cpp">
+      <Filter>Engine\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\RID.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Core\Clock.hpp">
       <Filter>Core</Filter>
-    </ClInclude>
-    <ClInclude Include="EngineService\DevConsole.hpp">
-      <Filter>Engine\Console</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Application\Engine.hpp">
       <Filter>Engine\Application</Filter>
@@ -962,9 +974,6 @@
     <ClInclude Include="Scene\3D\WorldEnvironment.hpp">
       <Filter>Scene\3D</Filter>
     </ClInclude>
-    <ClInclude Include="EngineService\EngineService.hpp">
-      <Filter>EngineService</Filter>
-    </ClInclude>
     <ClInclude Include="Core\Object\ClassDatabase.hpp">
       <Filter>Core\Object</Filter>
     </ClInclude>
@@ -983,8 +992,8 @@
     <ClInclude Include="Scene\Core\Viewport.hpp">
       <Filter>Scene\Core</Filter>
     </ClInclude>
-    <ClInclude Include="EngineService\RenderService.hpp">
-      <Filter>EngineService</Filter>
+    <ClInclude Include="Engine\Render\RenderServer.hpp">
+      <Filter>Engine\Render</Filter>
     </ClInclude>
     <ClInclude Include="Scene\Resource\MeshResource.hpp">
       <Filter>Scene\Resource</Filter>
@@ -1215,6 +1224,24 @@
       <Filter>Core</Filter>
     </ClInclude>
     <ClInclude Include="Core\CowData.hpp">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\Core\CanvasItem.hpp">
+      <Filter>Scene\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\GUI\Control.hpp">
+      <Filter>Scene\GUI</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\GUI\ColorRect.hpp">
+      <Filter>Scene\GUI</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Render\RenderTypes.hpp">
+      <Filter>Engine\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Render\RenderBackend.hpp">
+      <Filter>Engine\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\RID.hpp">
       <Filter>Core</Filter>
     </ClInclude>
   </ItemGroup>

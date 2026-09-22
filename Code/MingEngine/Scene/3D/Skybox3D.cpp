@@ -5,6 +5,7 @@
 #include "MingEngine/Core/Render/Vertex.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Engine/Render/IndexBuffer.hpp"
+#include "MingEngine/Engine/Render/RenderServer.hpp"
 #include "MingEngine/Engine/Render/VertexBuffer.hpp"
 #include "MingEngine/Scene/Resource/TextureResource.hpp"
 
@@ -150,11 +151,11 @@ Skybox3D::Skybox3D(VirtualPath const& imagePath) : VisualInstance3D(), m_imagePa
 
 	// clang-format on
 
-	m_vertexBuffer = g_engine->m_renderer->CreateVertexBuffer(
+	m_vertexBuffer = g_engine->m_renderServer->CreateVertexBuffer(
 		verts.data(),
 		(unsigned int)(verts.size() * sizeof(Vertex)),
 		sizeof(Vertex));
-	m_indexBuffer = g_engine->m_renderer->CreateIndexBuffer(
+	m_indexBuffer = g_engine->m_renderServer->CreateIndexBuffer(
 		indexes.data(),
 		(unsigned int)(indexes.size() * sizeof(unsigned int)),
 		sizeof(unsigned int));
@@ -166,26 +167,4 @@ Skybox3D::~Skybox3D()
 	m_vertexBuffer = nullptr;
 	delete m_indexBuffer;
 	m_indexBuffer = nullptr;
-}
-
-RenderRequest Skybox3D::SubmitRenderRequest() const
-{
-	RenderRequest request;
-	if (m_vertexBuffer == nullptr || m_indexBuffer == nullptr)
-	{
-		return request;
-	}
-
-	request.m_pass                                  = RenderRequestPass::Skybox;
-	request.m_modelToWorld                          = GetWorldTransform();
-	request.m_tint                                  = Color::White;
-	request.m_vertexBuffer                          = m_vertexBuffer;
-	request.m_indexBuffer                           = m_indexBuffer;
-	request.m_textures[SurfaceTextureSlot::Diffuse] = m_textureRef.IsValid() ? m_textureRef->GetGPUTexture() : nullptr;
-	request.m_shader                                = nullptr;
-	request.m_blendMode                             = BlendMode::OPAQUE;
-	request.m_depthMode                             = DepthMode::READ_ONLY_LESS_EQUAL;
-	request.m_rasterizerMode                        = RasterizerMode::SOLID_CULL_BACK;
-	request.m_samplerMode                           = SamplerMode::POINT_CLAMP;
-	return request;
 }

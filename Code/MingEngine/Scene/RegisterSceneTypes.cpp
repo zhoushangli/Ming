@@ -4,19 +4,24 @@
 #include "MingEngine/Core/Object/ResourceImporter.hpp"
 #include "MingEngine/Core/Object/ResourceLoader.hpp"
 #include "MingEngine/Core/Object/ResourceSaver.hpp"
-
+#include "MingEngine/Editor/EditorCamera.hpp"
+#include "MingEngine/Editor/EditorNode.hpp"
+#include "MingEngine/Editor/Gizmos/EditorGizmos.hpp"
 #include "MingEngine/Engine/Script/CSharpScriptFormat.hpp"
 #include "MingEngine/Scene/3D/Camera3D.hpp"
 #include "MingEngine/Scene/3D/Light3D.hpp"
 #include "MingEngine/Scene/3D/MeshInstance3D.hpp"
 #include "MingEngine/Scene/3D/Node3D.hpp"
 #include "MingEngine/Scene/3D/VisualInstance3D.hpp"
+#include "MingEngine/Scene/Core/CanvasItem.hpp"
 #include "MingEngine/Scene/Core/Node.hpp"
 #include "MingEngine/Scene/Core/PackedScene.hpp"
 #include "MingEngine/Scene/Core/PackedSceneFormat.hpp"
 #include "MingEngine/Scene/Core/RaycastSpace3D.hpp"
 #include "MingEngine/Scene/Core/SceneTree.hpp"
 #include "MingEngine/Scene/Core/Viewport.hpp"
+#include "MingEngine/Scene/GUI/ColorRect.hpp"
+#include "MingEngine/Scene/GUI/Control.hpp"
 #include "MingEngine/Scene/Import/GLTFImporter.hpp"
 #include "MingEngine/Scene/Import/ImageImporter.hpp"
 #include "MingEngine/Scene/Import/OBJImporter.hpp"
@@ -29,10 +34,6 @@
 #include "MingEngine/Scene/Resource/ShaderResourceFormat.hpp"
 #include "MingEngine/Scene/Resource/TextureResource.hpp"
 #include "MingEngine/Scene/Resource/TextureResourceFormat.hpp"
-
-#include "MingEngine/Editor/EditorCamera.hpp"
-#include "MingEngine/Editor/EditorNode.hpp"
-#include "MingEngine/Editor/Gizmos/EditorGizmos.hpp"
 
 #pragma region Scene
 
@@ -99,6 +100,9 @@ void RegisterSceneTypes()
 	ClassDatabase::RegisterClass<TriangleMeshCollider3D>();
 	ClassDatabase::RegisterAbstractClass<VisualInstance3D>();
 	ClassDatabase::RegisterClass<MeshInstance3D>();
+	ClassDatabase::RegisterClass<CanvasItem>();
+	ClassDatabase::RegisterClass<Control>();
+	ClassDatabase::RegisterClass<ColorRect>();
 
 	// Editor types
 	ClassDatabase::SetApiType(ApiType::Editor);

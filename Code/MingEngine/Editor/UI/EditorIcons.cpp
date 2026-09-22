@@ -3,7 +3,7 @@
 #include "MingEngine/Editor/BuiltinIcons.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Engine/Render/GPUTexture.hpp"
-#include "MingEngine/Engine/Render/Renderer.hpp"
+#include "MingEngine/Engine/Render/RenderServer.hpp"
 
 #include "ThirdParty/stb/stb_image.h"
 
@@ -16,7 +16,7 @@ ImTextureID ToImTextureId(GPUTexture* texture)
 		return {};
 	}
 
-	return (ImTextureID)(intptr_t)texture->GetShaderResourceView();
+	return g_engine->m_renderServer->GetImGuiTextureID(texture);
 }
 
 ImVec2 GetEditorIconUv0() { return ImVec2(0.f, 1.f); }
@@ -36,9 +36,9 @@ void EditorIcons::Shutdown()
 {
 	for (auto& pair : s_iconTextures)
 	{
-		if (g_engine != nullptr && g_engine->m_renderer != nullptr)
+		if (g_engine != nullptr && g_engine->m_renderServer != nullptr)
 		{
-			g_engine->m_renderer->DestroyTexture(pair.second);
+			g_engine->m_renderServer->DestroyTexture(pair.second);
 		}
 	}
 	s_iconTextures.clear();
@@ -83,7 +83,7 @@ GPUTexture* EditorIcons::GetOrCreateIconTexture(std::string const& iconName)
 	}
 
 	GPUTexture* texture =
-		g_engine->m_renderer->CreateGPUTexture(iconName.c_str(), IntVec2(width, height), STBI_rgb_alpha, pixels);
+		g_engine->m_renderServer->CreateGPUTexture(iconName.c_str(), IntVec2(width, height), STBI_rgb_alpha, pixels);
 
 	stbi_image_free(pixels);
 

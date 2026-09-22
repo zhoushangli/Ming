@@ -19,14 +19,13 @@
 #include "MingEngine/Engine/Script/CSharpScript.hpp"
 #include "MingEngine/Engine/Script/CSharpScriptGenerator.hpp"
 #include "MingEngine/Engine/Window/WindowSystem.hpp"
-#include "MingEngine/EngineService/EngineService.hpp"
-#include "MingEngine/EngineService/RenderService.hpp"
+#include "MingEngine/Engine/Render/RenderServer.hpp"
 #include "MingEngine/Scene/3D/Camera3D.hpp"
 #include "MingEngine/Scene/3D/Light3D.hpp"
 #include "MingEngine/Scene/Core/Node.hpp"
+#include "MingEngine/Scene/Core/PackedScene.hpp"
 #include "MingEngine/Scene/Core/SceneTree.hpp"
 #include "MingEngine/Scene/RegisterAllTypes.hpp"
-#include "MingEngine/Scene/Core/PackedScene.hpp"
 
 #include "ThirdParty/GLFW/glfw3.h"
 
@@ -38,8 +37,8 @@
 #define WIN32_LEAN_AND_MEAN
 #endif
 
-#include <windows.h>
 #include <string>
+#include <windows.h>
 
 App* g_app = nullptr;
 
@@ -50,21 +49,14 @@ App::App(MingRunConfig const& config) : m_runConfig(config)
 	engineConfig.m_windowConfig.m_appName          = "MingEngine";
 	engineConfig.m_fileSystemConfig.m_resourceRoot = config.projectPath;
 
-	DevConsoleConfig consoleConfig;
-	consoleConfig.m_isEnable = false;
-
 	g_engine = new Engine(engineConfig);
 	g_engine->SetEditorMode(config.mode == MingRunMode::Editor);
 
-	g_engineService = new EngineService(consoleConfig);
 }
 
 App::~App()
 {
 	ShutdownScene();
-
-	delete g_engineService;
-	g_engineService = nullptr;
 
 	delete g_engine;
 	g_engine = nullptr;
@@ -77,7 +69,6 @@ void App::Startup()
 	RegisterAllTypes();
 
 	g_engine->Startup();
-	g_engineService->Startup();
 
 	if (m_runConfig.mode == MingRunMode::Editor)
 	{
@@ -105,7 +96,6 @@ void App::Shutdown()
 
 	EditorIcons::Shutdown();
 
-	g_engineService->Shutdown();
 	g_engine->Shutdown();
 
 	ClassDatabase::Shutdown();
@@ -142,19 +132,15 @@ void App::Update(float deltaSeconds)
 
 void App::Render() const
 {
-	if (g_engineService != nullptr)
+	if (g_engine != nullptr && g_engine->m_renderServer != nullptr)
 	{
-		g_engineService->Render();
+		g_engine->m_renderServer->Render();
 	}
 }
 
 void App::BeginFrame()
 {
 	g_engine->BeginFrame();
-	if (g_engineService != nullptr)
-	{
-		g_engineService->BeginFrame();
-	}
 }
 
 void App::EndFrame()
@@ -164,10 +150,6 @@ void App::EndFrame()
 		m_sceneTree->FlushPendingNode();
 	}
 
-	if (g_engineService != nullptr)
-	{
-		g_engineService->EndFrame();
-	}
 	g_engine->EndFrame();
 
 	if (m_shouldRestart)
@@ -195,77 +177,69 @@ void App::Quit() { m_shouldQuit = true; }
 
 bool App::LaunchGame()
 {
-    // 1) Get the current executable path
-    std::wstring executablePath(32768, L'\0');
+	// 1) Get the current executable path
+	std::wstring executablePath(32768, L'\0');
 
-    DWORD const length = GetModuleFileNameW(
-        nullptr,
-        executablePath.data(),
-        static_cast<DWORD>(executablePath.size()));
+	DWORD const length = GetModuleFileNameW(nullptr, executablePath.data(), static_cast<DWORD>(executablePath.size()));
 
-    if (length == 0 || length >= executablePath.size())
-    {
-        ERR_PRINT("Failed to get the executable path.\n");
-        return false;
-    }
+	if (length == 0 || length >= executablePath.size())
+	{
+		ERR_PRINT("Failed to get the executable path.\n");
+		return false;
+	}
 
-    executablePath.resize(length);
+	executablePath.resize(length);
 
-    // 2) Resolve the current project directory
-    if (m_runConfig.projectPath.empty())
-    {
-        ERR_PRINT("Cannot launch game: project path is empty.\n");
-        return false;
-    }
+	// 2) Resolve the current project directory
+	if (m_runConfig.projectPath.empty())
+	{
+		ERR_PRINT("Cannot launch game: project path is empty.\n");
+		return false;
+	}
 
-    std::error_code error;
-    std::filesystem::path const projectDirectory =
-        std::filesystem::absolute(m_runConfig.projectPath, error);
+	std::error_code             error;
+	std::filesystem::path const projectDirectory = std::filesystem::absolute(m_runConfig.projectPath, error);
 
-    if (error)
-    {
-        ERR_PRINT("Failed to resolve the project directory.\n");
-        return false;
-    }
+	if (error)
+	{
+		ERR_PRINT("Failed to resolve the project directory.\n");
+		return false;
+	}
 
-    std::wstring const projectArgument = (projectDirectory / L".").wstring();
+	std::wstring const projectArgument = (projectDirectory / L".").wstring();
 
-    // 3) Build the game-mode command line
-    std::wstring commandLine =
-        L"\"" + executablePath +
-        L"\" --game --project \"" + projectArgument + L"\"";
+	// 3) Build the game-mode command line
+	std::wstring commandLine = L"\"" + executablePath + L"\" --game --project \"" + projectArgument + L"\"";
 
-    STARTUPINFOW startupInfo{};
-    startupInfo.cb = sizeof(startupInfo);
+	STARTUPINFOW startupInfo{};
+	startupInfo.cb = sizeof(startupInfo);
 
-    PROCESS_INFORMATION processInfo{};
+	PROCESS_INFORMATION processInfo{};
 
-    // 4) Start the game process
-    if (!CreateProcessW(
-            executablePath.c_str(),
-            commandLine.data(),
-            nullptr,
-            nullptr,
-            FALSE,
-            0,
-            nullptr,
-            nullptr,
-            &startupInfo,
-            &processInfo))
-    {
-        DWORD const errorCode = GetLastError();
-        std::string const message =
-            "Failed to launch game. Windows error: " +
-            std::to_string(errorCode) + "\n";
+	// 4) Start the game process
+	if (!CreateProcessW(
+			executablePath.c_str(),
+			commandLine.data(),
+			nullptr,
+			nullptr,
+			FALSE,
+			0,
+			nullptr,
+			nullptr,
+			&startupInfo,
+			&processInfo))
+	{
+		DWORD const       errorCode = GetLastError();
+		std::string const message   = "Failed to launch game. Windows error: " + std::to_string(errorCode) + "\n";
 
-        ERR_PRINT(message.c_str());
-        return false;
-    }
+		ERR_PRINT(message.c_str());
+		return false;
+	}
 
-    // 5) Release the launch-only process handles
-    CloseHandle(processInfo.hThread);
-    CloseHandle(processInfo.hProcess);
-    return true;
+	// 5) Release the launch-only process handles
+	CloseHandle(processInfo.hThread);
+	CloseHandle(processInfo.hProcess);
+	return true;
 }
 
 bool App::OnQuit([[maybe_unused]] EventArgs& args)

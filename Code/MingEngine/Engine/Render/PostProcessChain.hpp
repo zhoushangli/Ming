@@ -8,8 +8,8 @@
 #include <string>
 #include <vector>
 
-class D3D11RenderBackend;
 class GPUTexture;
+class RenderBackend;
 
 struct OutputTextureRef
 {
@@ -70,7 +70,7 @@ public:
 	~PostProcessChain();
 
 	void        AddPass(PostProcessPass const& pass);
-	GPUTexture* Render(D3D11RenderBackend& renderer, PostProcessContext const& context);
+	GPUTexture* Render(RenderBackend& renderer, PostProcessContext const& context);
 
 	void        RegisterCustomTexture(std::string const& name, GPUTexture* texture);
 	GPUTexture* GetCustomTexture(std::string const& name) const;

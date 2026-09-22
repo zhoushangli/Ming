@@ -17,9 +17,6 @@ public:
 	~EditorGizmoVisual3D() override;
 
 protected:
-	RenderRequest SubmitRenderRequest() const override;
-
-protected:
 	std::vector<Vertex> m_verts;
 	VertexBuffer*       m_vertexBuffer = nullptr;
 };
@@ -28,9 +25,6 @@ class EditorWorldGrid3D : public EditorGizmoVisual3D
 {
 public:
 	EditorWorldGrid3D();
-
-protected:
-	RenderRequest SubmitRenderRequest() const override;
 };
 
 // TODO: Current Shader looks strange when get close to the axsis, it will scale up when you
@@ -39,7 +33,4 @@ class EditorWorldAxis3D : public EditorGizmoVisual3D
 {
 public:
 	EditorWorldAxis3D(Vector3 const& axisStart, Vector3 const& axisEnd, Color const& color);
-
-protected:
-	RenderRequest SubmitRenderRequest() const override;
 };

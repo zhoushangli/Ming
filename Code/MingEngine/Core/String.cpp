@@ -2,7 +2,6 @@
 
 #include <algorithm>
 #include <cstring>
-#include <limits>
 
 // The managed mirror Ming.ming_string points at the same code points, so the only
 // thing both sides have to agree on is that a String stays one pointer wide.
@@ -167,7 +166,7 @@ String::String(std::string const& data)
 
 String::String(char32_t const* data) : String(data, CodePointCount(data == nullptr ? U"" : data)) {}
 
-String::String(char32_t const* data, uint32_t length) { m_data.Assign(data, length); }
+String::String(char32_t const* data, uint32_t length) { m_data.SetData(data, length); }
 
 String String::operator+(String const& other) const
 {
@@ -185,13 +184,7 @@ String& String::operator+=(String const& other)
 		return *this;
 	}
 
-	// 1) Remember the other code points, so appending a string to itself stays valid
-	// 2) Grow the block and copy the other code points behind the existing text
-	uint32_t const  ownLength   = Length();
-	uint32_t const  otherLength = other.Length();
-	char32_t const* otherData   = other.Data();
-
-	std::copy_n(otherData, otherLength, m_data.Resize(ownLength + otherLength) + ownLength);
+	m_data.Append(other.m_data);
 
 	return *this;
 }
@@ -214,40 +207,6 @@ bool String::operator==(String const& other) const
 	return length == 0 || std::equal(Data(), Data() + length, other.Data());
 }
 
-// Compare this string with UTF-8 bytes without allocating a temporary String.
-// e.g. EqualsUtf8("Mi", 2) is true for String("Mi") and false for String("Ming").
-bool String::EqualsUtf8(char const* data, size_t byteLength) const
-{
-	// 1) Read the code points once so the comparing loop only touches plain memory
-	// 2) Walk both sides and compare the encoded bytes of each code point
-	uint32_t const  length     = Length();
-	char32_t const* codePoints = Data();
-
-	uint32_t index     = 0;
-	size_t   byteIndex = 0;
-
-	while (index < length && byteIndex < byteLength)
-	{
-		char           bytes[4]  = {};
-		uint32_t const byteCount = EncodeUtf8(codePoints[index], bytes);
-
-		if (byteCount > byteLength - byteIndex)
-		{
-			return false;
-		}
-
-		if (std::memcmp(bytes, data + byteIndex, byteCount) != 0)
-		{
-			return false;
-		}
-
-		byteIndex += byteCount;
-		++index;
-	}
-
-	return index == length && byteIndex == byteLength;
-}
-
 bool String::operator==(char const* other) const
 {
 	if (other == nullptr)
@@ -255,10 +214,17 @@ bool String::operator==(char const* other) const
 		return IsEmpty();
 	}
 
-	return EqualsUtf8(other, std::strlen(other));
+	String const otherString(other);
+
+	return *this == otherString;
 }
 
-bool String::operator==(std::string const& other) const { return EqualsUtf8(other.data(), other.size()); }
+bool String::operator==(std::string const& other) const
+{
+	String const otherString(other);
+
+	return *this == otherString;
+}
 
 bool String::Contains(char32_t codePoint) const
 {
@@ -337,62 +303,4 @@ String String::FromInt(int64_t value)
 	std::reverse(digits, digits + digitCount);
 
 	return String(digits, digitCount);
-}
-
-bool String::TryToInt64(int64_t& outValue) const
-{
-	// 1) Take an optional sign and require at least one digit after it
-	// 2) Accumulate digits while checking that the value still fits
-	uint32_t const  length     = Length();
-	char32_t const* codePoints = Data();
-
-	if (length == 0)
-	{
-		return false;
-	}
-
-	uint32_t index      = 0;
-	bool     isNegative = false;
-
-	if (codePoints[0] == U'-' || codePoints[0] == U'+')
-	{
-		isNegative = codePoints[0] == U'-';
-		index      = 1;
-	}
-
-	if (index == length)
-	{
-		return false;
-	}
-
-	uint64_t const limit     = static_cast<uint64_t>((std::numeric_limits<int64_t>::max)()) + (isNegative ? 1U : 0U);
-	uint64_t       magnitude = 0;
-
-	for (; index < length; ++index)
-	{
-		if (codePoints[index] < U'0' || codePoints[index] > U'9')
-		{
-			return false;
-		}
-
-		uint64_t const digit = static_cast<uint64_t>(codePoints[index] - U'0');
-
-		if (magnitude > (limit - digit) / 10)
-		{
-			return false;
-		}
-
-		magnitude = magnitude * 10 + digit;
-	}
-
-	// The negative side reaches one value further than the positive one
-	if (isNegative && magnitude == limit)
-	{
-		outValue = (std::numeric_limits<int64_t>::min)();
-		return true;
-	}
-
-	outValue = isNegative ? -static_cast<int64_t>(magnitude) : static_cast<int64_t>(magnitude);
-
-	return true;
 }

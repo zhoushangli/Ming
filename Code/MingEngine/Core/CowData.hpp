@@ -1,7 +1,12 @@
 #pragma once
 
+#include "MingEngine/Core/ErrorWarningAssert.hpp"
+
 #include <cstdint>
+#include <cstdlib>
 #include <cstring>
+#include <limits>
+#include <new>
 #include <type_traits>
 #include <utility>
 
@@ -9,10 +14,10 @@
 // The whole block is one allocation, so the header is reachable by stepping one Header
 // back from the element pointer that Data() hands out.
 // e.g. Two CowData copied from each other share one block until DataW() is called.
-// Layout: ┌────────────┬────────────┬───────────...
-//         │ ref. count │ data size  │ T[]
-//         └────────────┴────────────┴───────────...
-//         ↑ block start              ↑ Data()
+// Layout: ┌───────────┬───────────┬───────────────┬───────────...
+//         │ ref. size │ data size │ capacity size │ T[]
+//         └───────────┴───────────┴───────────────┴───────────...
+//         ↑ block start                           ↑ Data()
 template <typename T>
 class CowData
 {
@@ -21,102 +26,223 @@ private:
 	{
 		uint32_t m_refCount = 1;
 		uint32_t m_size     = 0;
+		uint32_t m_capacity = 0;
 	};
 
-	static_assert(std::is_trivially_copyable_v<T>, "CowData only copies raw bytes, use trivial types.");
-	static_assert(alignof(T) <= alignof(Header), "The elements must not need more alignment than the header.");
+	// trivially copyable this type shouldn't manage memory itself
+	// e.g. std::string is not trivially copyable
+	static_assert(std::is_trivially_copyable_v<T>);
+	static_assert(alignof(T) <= alignof(Header));
+	static_assert(sizeof(Header) == 16);
 
 public:
 	CowData() = default;
 	~CowData() { Release(); }
 
 	CowData(CowData const& other) { Share(other); }
-	CowData(CowData&& other) noexcept : m_data(other.m_data) { other.m_data = nullptr; }
-
+	CowData(CowData&& other) noexcept : m_data(std::exchange(other.m_data, nullptr)) {}
 	CowData& operator=(CowData const& other)
 	{
-		if (m_data != other.m_data)
+		if (this != &other)
 		{
 			Release();
 			Share(other);
 		}
 		return *this;
 	}
-
 	CowData& operator=(CowData&& other) noexcept
 	{
-		std::swap(m_data, other.m_data);
+		if (this != &other)
+		{
+			Release();
+			m_data = std::exchange(other.m_data, nullptr);
+		}
 		return *this;
 	}
 
-	uint32_t Size() const { return m_data == nullptr ? 0u : GetHeader()->m_size; }
+	uint32_t Size() const { return m_data == nullptr ? 0 : GetHeader()->m_size; }
+	uint32_t Capacity() const { return m_data == nullptr ? 0 : GetHeader()->m_capacity; }
 	bool     IsEmpty() const { return Size() == 0; }
-	T const* Data() const { return m_data; }
 
-	// Hand out a writable pointer and break the sharing first, so every other owner keeps
-	// the content it had.
-	// e.g. DataW()[0] = U'A' leaves the copies of this data untouched.
-	T* DataW()
+	T const* Data() const { return m_data; }
+	T*       DataW()
 	{
-		CopyIfShared();
-		return m_data;
+		return EnsureWritable(Size()) ? m_data : nullptr;
 	}
 
-	// Replace the content with a copy of the given elements and own a fresh block.
-	// e.g. Assign(codes, 4) drops the old block instead of writing into it.
-	void Assign(T const* data, uint32_t size)
+	void SetData(T const* data, uint32_t count)
 	{
-		Header* header = nullptr;
-		if (size > 0 && data != nullptr)
+		if (count == 0)
 		{
-			header = Allocate(size);
-			std::memcpy(header + 1, data, sizeof(T) * size);
+			Clear();
+			return;
 		}
 
+		ERR_FAIL_COND_MSG(data == nullptr, "CowData source is null");
+		uintptr_t const source = reinterpret_cast<uintptr_t>(data);
+		uintptr_t const start = reinterpret_cast<uintptr_t>(m_data);
+		if (m_data != nullptr && source >= start && source - start < Size() * sizeof(T))
+		{
+			ERR_FAIL_COND_MSG((source - start) % sizeof(T) != 0 ||
+				count > Size() - (source - start) / sizeof(T), "CowData source range is invalid");
+		}
+
+		Header* newHeader = Create(count, count);
+		ERR_FAIL_COND_MSG(newHeader == nullptr, "CowData allocation failed");
+		T* newData = reinterpret_cast<T*>(newHeader + 1);
+		std::memcpy(newData, data, count * sizeof(T));
 		Release();
-		m_data = header == nullptr ? nullptr : reinterpret_cast<T*>(header + 1);
+		m_data = newData;
 	}
 
-	// Own a new block of the given element count and hand out a writable pointer to it.
-	// The first min(old size, new size) elements keep the values they had.
-	// e.g. Resize(6) on a 4 element block keeps 4 values and leaves 2 elements uninitialized.
+	void Append(T value)
+	{
+		uint32_t const oldSize = Size();
+		ERR_FAIL_COND_MSG(oldSize == std::numeric_limits<uint32_t>::max(), "CowData size overflow");
+		uint32_t const newSize = oldSize + 1;
+		if (!EnsureWritable(newSize))
+		{
+			return;
+		}
+
+		m_data[Size()]      = value;
+		GetHeader()->m_size = newSize;
+	}
+	void Append(T const* data, uint32_t count)
+	{
+		if (count == 0)
+		{
+			return;
+		}
+
+		ERR_FAIL_COND_MSG(data == nullptr, "CowData source is null");
+
+		uint32_t const oldSize = Size();
+
+		if (oldSize > std::numeric_limits<uint32_t>::max() - count)
+		{
+			ERR_FAIL_MSG("CowData size overflow");
+		}
+
+		uintptr_t const source = reinterpret_cast<uintptr_t>(data);
+		uintptr_t const start = reinterpret_cast<uintptr_t>(m_data);
+		bool const isSelfAppend = m_data != nullptr && source >= start && source - start < oldSize * sizeof(T);
+		uint32_t sourceIndex = 0;
+		if (isSelfAppend)
+		{
+			sourceIndex = static_cast<uint32_t>((source - start) / sizeof(T));
+			ERR_FAIL_COND_MSG((source - start) % sizeof(T) != 0 ||
+				count > oldSize - sourceIndex, "CowData source range is invalid");
+		}
+
+		uint32_t const newSize = oldSize + count;
+		if (!EnsureWritable(newSize))
+		{
+			return;
+		}
+		if (isSelfAppend)
+		{
+			data = m_data + sourceIndex;
+		}
+		std::memcpy(m_data + oldSize, data, count * sizeof(T));
+		GetHeader()->m_size = newSize;
+	}
+	void Append(CowData const& other) { Append(other.Data(), other.Size()); }
+
 	T* Resize(uint32_t size)
 	{
 		if (size == 0)
 		{
-			Release();
+			Clear();
 			return nullptr;
 		}
 
-		Header* header = Allocate(size);
-		if (m_data != nullptr)
+		if (!EnsureWritable(size))
 		{
-			uint32_t const keptSize = size < Size() ? size : Size();
-			std::memcpy(header + 1, m_data, sizeof(T) * keptSize);
+			return nullptr;
 		}
-
-		Release();
-		m_data = reinterpret_cast<T*>(header + 1);
-
+		GetHeader()->m_size = size;
 		return m_data;
 	}
-
-	void Clear() { Release(); }
+	void Clear()
+	{
+		Release();
+		m_data = nullptr;
+	}
 
 private:
-	Header* GetHeader() const { return reinterpret_cast<Header*>(m_data) - 1; }
+	Header* GetHeader() const { return reinterpret_cast<Header*>(reinterpret_cast<uint8_t*>(m_data) - sizeof(Header)); }
 
-	// Allocate one block that holds the header and the elements with a single owner.
-	// e.g. Allocate(4) returns room for 4 elements and a reference count of 1.
-	static Header* Allocate(uint32_t size)
+	bool EnsureWritable(uint32_t requiredCapacity)
 	{
-		Header* header     = static_cast<Header*>(::operator new(sizeof(Header) + sizeof(T) * size));
-		header->m_refCount = 1;
+		if (m_data == nullptr && requiredCapacity == 0)
+		{
+			return true;
+		}
+
+		if (m_data != nullptr && GetHeader()->m_refCount == 1 && requiredCapacity <= Capacity())
+		{
+			return true;
+		}
+
+		uint32_t newCapacity = Capacity() > 2 ? Capacity() : 2;
+		while (requiredCapacity > newCapacity)
+		{
+			if (newCapacity > std::numeric_limits<uint32_t>::max() / 2)
+			{
+				newCapacity = requiredCapacity;
+				break;
+			}
+
+			newCapacity <<= 1;
+		}
+
+		Header* newHeader = Create(Size(), newCapacity);
+		if (newHeader == nullptr)
+		{
+			ERR_PRINT("CowData allocation failed");
+			return false;
+		}
+		T* newData = reinterpret_cast<T*>(newHeader + 1);
+
+		if (Size() > 0)
+		{
+			std::memcpy(newData, m_data, Size() * sizeof(T));
+		}
+		Release();
+		m_data = newData;
+		return true;
+	}
+
+	static Header* Create(uint32_t size, uint32_t capacity)
+	{
+		if (capacity < size)
+		{
+			ERR_PRINT("CowData capacity is less than size");
+			return nullptr;
+		}
+
+		if (capacity > (std::numeric_limits<size_t>::max() - sizeof(Header)) / sizeof(T))
+		{
+			ERR_PRINT("CowData allocation size overflow");
+			return nullptr;
+		}
+
+		size_t const totalSize = sizeof(Header) + capacity * sizeof(T);
+		void* const  block     = std::malloc(totalSize);
+		if (block == nullptr)
+		{
+			return nullptr;
+		}
+
+		Header* header     = new (block) Header;
 		header->m_size     = size;
+		header->m_capacity = capacity;
+		header->m_refCount = 1;
+
 		return header;
 	}
 
-	// Share the data block and increase the reference count
 	void Share(CowData const& other)
 	{
 		m_data = other.m_data;
@@ -125,9 +251,6 @@ private:
 			GetHeader()->m_refCount++;
 		}
 	}
-
-	// Drop this reference to the block and free the block when it was the last one.
-	// e.g. Release() on the only owner of a 4 element block frees the whole allocation.
 	void Release()
 	{
 		if (m_data == nullptr)
@@ -135,33 +258,12 @@ private:
 			return;
 		}
 
-		// The header sits right before the elements, so freeing it frees the whole block
-		// that Allocate() requested with a single ::operator new call.
 		Header* header = GetHeader();
-
-		--header->m_refCount;
-		if (header->m_refCount == 0)
+		if (--header->m_refCount == 0)
 		{
-			::operator delete(header);
+			std::free(header);
 		}
-
 		m_data = nullptr;
-	}
-
-	// If you are about to write into the data
-	// We just copy ourself and release the old block
-	void CopyIfShared()
-	{
-		if (m_data == nullptr || GetHeader()->m_refCount == 1)
-		{
-			return;
-		}
-
-		uint32_t const size = GetHeader()->m_size;
-		Header*        copy = Allocate(size);
-		std::memcpy(copy + 1, m_data, sizeof(T) * size);
-		Release();
-		m_data = reinterpret_cast<T*>(copy + 1);
 	}
 
 private:

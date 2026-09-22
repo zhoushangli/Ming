@@ -28,7 +28,7 @@ class MeshInstance3D : public VisualInstance3D
 
 public:
 	MeshInstance3D() = default;
-	~MeshInstance3D() override;
+	~MeshInstance3D() override { m_meshResource = nullptr; }
 
 	bool IsEmpty() const;
 
@@ -40,13 +40,16 @@ public:
 protected:
 	static void BindMethods();
 
-	void          OnNotification(int notification);
-	RenderRequest SubmitRenderRequest() const override;
+	void OnNotification(int notification);
 
 protected:
 	Ref<MeshResource> m_meshResource;
 	bool              m_useMaterialTextures = true;
 	Color             m_tint                = Color::White;
+
+	// Mesh RID that is attached as this instance's Base while the node stays in the tree.
+	// e.g. SetMeshResource() frees the old RID and registers the new resource again
+	RID m_meshRID = RID::Invalid;
 
 	MeshRaycastObject* m_raycastObject;
 };

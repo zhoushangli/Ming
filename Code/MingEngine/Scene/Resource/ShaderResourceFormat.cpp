@@ -2,6 +2,7 @@
 
 #include "MingEngine/Core/ErrorWarningAssert.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
+#include "MingEngine/Engine/Render/RenderServer.hpp"
 #include "MingEngine/Scene/Resource/ShaderResource.hpp"
 
 namespace
@@ -13,7 +14,7 @@ std::vector<std::string> ShaderResourceLoader::GetSupportedExtensions() const { 
 
 Ref<Resource> ShaderResourceLoader::Load(VirtualPath const& virtualPath)
 {
-	if (g_engine == nullptr || g_engine->m_fileSystem == nullptr || g_engine->m_renderer == nullptr)
+	if (g_engine == nullptr || g_engine->m_fileSystem == nullptr || g_engine->m_renderServer == nullptr)
 	{
 		return Ref<Resource>();
 	}
@@ -31,7 +32,7 @@ Ref<Resource> ShaderResourceLoader::Load(VirtualPath const& virtualPath)
 	};
 
 	Shader* shader =
-		g_engine->m_renderer->CreateShader(virtualPath.GetString(), shaderSource, physicalPath.string());
+		g_engine->m_renderServer->CreateShader(virtualPath.GetString(), shaderSource, physicalPath.string());
 	if (shader == nullptr)
 	{
 		ERROR_AND_DIE(Stringf("Failed to create shader from file \"%s\"", virtualPath.CStr()));

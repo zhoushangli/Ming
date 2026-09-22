@@ -64,12 +64,11 @@ public:
 	virtual bool IsRotationGizmo() const;
 
 protected:
-	RenderRequest SubmitRenderRequest() const override;
-	void          OnNotification(int notification);
-	Vector3       GetAxisWorld() const;
-	Vector3       GetPlaneU() const;
-	Vector3       GetPlaneV() const;
-	Color         GetDrawColor() const;
+	void    OnNotification(int notification);
+	Vector3 GetAxisWorld() const;
+	Vector3 GetPlaneU() const;
+	Vector3 GetPlaneV() const;
+	Color   GetDrawColor() const;
 
 protected:
 	GizmoAxis m_axis       = GizmoAxis::X;
@@ -139,8 +138,7 @@ public:
 	bool IsRotationGizmo() const override;
 
 protected:
-	RenderRequest SubmitRenderRequest() const override;
-	void          OnNotification(int notification);
+	void OnNotification(int notification);
 
 private:
 	std::vector<unsigned int> m_indices;

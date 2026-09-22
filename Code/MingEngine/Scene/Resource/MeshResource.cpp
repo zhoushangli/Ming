@@ -2,6 +2,7 @@
 
 #include "MingEngine/Core/Render/Vertex.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
+#include "MingEngine/Engine/Render/RenderServer.hpp"
 #include "MingEngine/Engine/Render/IndexBuffer.hpp"
 #include "MingEngine/Engine/Render/VertexBuffer.hpp"
 #include "MingEngine/Scene/Resource/TextureResource.hpp"
@@ -64,9 +65,9 @@ void MeshResource::InitGPUResources()
 	m_indexBuffer = nullptr;
 
 	m_vertexBuffer =
-		g_engine->m_renderer->CreateVertexBuffer(m_vertices.data(), m_vertexCount * m_vertexStride, m_vertexStride);
+		g_engine->m_renderServer->CreateVertexBuffer(m_vertices.data(), m_vertexCount * m_vertexStride, m_vertexStride);
 	m_indexBuffer =
-		g_engine->m_renderer->CreateIndexBuffer(m_indices.data(), m_indexCount * m_indexStride, m_indexStride);
+		g_engine->m_renderServer->CreateIndexBuffer(m_indices.data(), m_indexCount * m_indexStride, m_indexStride);
 
 	// Build triangle list for raycast
 	m_triangles.clear();

@@ -4,12 +4,11 @@
 #include "MingEngine/Core/Math/EulerAngles.hpp"
 #include "MingEngine/Engine/Render/BuiltinShaders.hpp"
 #include "MingEngine/Engine/Render/CameraContext.hpp"
+#include "MingEngine/Engine/Render/D3D11RenderBackend.hpp"
 #include "MingEngine/Engine/Render/DebugGizmos.hpp"
 #include "MingEngine/Engine/Render/PostProcessChain.hpp"
 #include "MingEngine/Engine/Render/RenderContext.hpp"
 #include "MingEngine/Engine/Render/VertexBuffer.hpp"
-
-#include "ThirdParty/imgui/backends/imgui_impl_dx11.h"
 
 #include <algorithm>
 
@@ -52,7 +51,7 @@ const uint8_t kDefaultSGETexture[16] =
 
 } // namespace
 
-Renderer::Renderer(RendererConfig config) : m_config(config) {}
+Renderer::Renderer(RendererServerConfig config) : m_config(config) {}
 
 Renderer::~Renderer() {}
 
@@ -125,13 +124,20 @@ void Renderer::EndFrame()
 
 void Renderer::CreateRenderingContext() { m_renderBackend->CreateRenderingContext(); }
 
-void Renderer::RenderViewport(ViewportInfo& viewport)
+void Renderer::RenderViewport(ViewportData& viewport)
 {
 	// 1) Ensure this Viewport owns correctly sized targets.
 	// 2) Render world passes and post process into the output texture.
 	// 3) Render UI on top without presenting to the back buffer here.
-	if (viewport.m_worldCamera == nullptr || viewport.m_viewportOutputTexture == nullptr)
+	if (viewport.m_viewportOutputTexture == nullptr)
 	{
+		return;
+	}
+
+	if (viewport.m_worldCamera == nullptr)
+	{
+		DebugGizmos::PrepareRenderRequests();
+		RenderUI(viewport);
 		return;
 	}
 
@@ -216,7 +222,7 @@ void Renderer::ExecuteRenderRequest(RenderRequest const& request)
 	}
 }
 
-void Renderer::ResizeViewport(ViewportInfo& viewport, IntVec2 dimensions)
+void Renderer::ResizeViewport(ViewportData& viewport, IntVec2 dimensions)
 {
 	if (dimensions.x <= 0 || dimensions.y <= 0)
 	{
@@ -240,7 +246,7 @@ void Renderer::ResizeViewport(ViewportInfo& viewport, IntVec2 dimensions)
 	m_renderBackend->ClearDepthStencil(viewport.m_sceneDepthTexture);
 }
 
-void Renderer::DestroyViewportResources(ViewportInfo& viewport)
+void Renderer::DestroyViewportResources(ViewportData& viewport)
 {
 	// Keep destruction centralized so every raw pointer is cleared immediately.
 	GPUTexture** textures[] = {
@@ -260,7 +266,7 @@ void Renderer::DestroyViewportResources(ViewportInfo& viewport)
 
 void Renderer::SetViewport(IntVec2 dimensions, IntVec2 topLeft) { m_renderBackend->SetViewport(dimensions, topLeft); }
 
-void Renderer::ClearSceneTargets(ViewportInfo const& viewport)
+void Renderer::ClearSceneTargets(ViewportData const& viewport)
 {
 	m_renderBackend->ClearRenderTarget(viewport.m_viewportOutputTexture, viewport.m_clearColor);
 	m_renderBackend->ClearRenderTarget(viewport.m_sceneColorTexture, viewport.m_clearColor);
@@ -283,7 +289,7 @@ void Renderer::CopyTextureToBackBuffer(GPUTexture* colorTexture)
 	m_renderBackend->UnbindAllShaderResourceViews();
 }
 
-void Renderer::PrepareConstants(ViewportInfo const& viewport)
+void Renderer::PrepareConstants(ViewportData const& viewport)
 {
 	// Prepare light constants
 	LightConstants lightConstants  = LightConstants();
@@ -361,7 +367,7 @@ void Renderer::PrepareConstants(ViewportInfo const& viewport)
 	m_renderBackend->UpdateAndBindConstantBuffer(BuiltinConstantBufferType::Frame, frameConstants);
 }
 
-void Renderer::RenderOpaque(ViewportInfo& viewport)
+void Renderer::RenderOpaque(ViewportData& viewport)
 {
 	if (viewport.m_worldCamera == nullptr)
 	{
@@ -392,7 +398,7 @@ void Renderer::RenderOpaque(ViewportInfo& viewport)
 	}
 }
 
-void Renderer::RenderSkybox(ViewportInfo const& viewport)
+void Renderer::RenderSkybox(ViewportData const& viewport)
 {
 	if (viewport.m_worldCamera == nullptr)
 	{
@@ -411,7 +417,7 @@ void Renderer::RenderSkybox(ViewportInfo const& viewport)
 	}
 }
 
-void Renderer::RenderPostProcess(ViewportInfo& viewport)
+void Renderer::RenderPostProcess(ViewportData& viewport)
 {
 	if (viewport.m_worldCamera == nullptr)
 	{
@@ -437,7 +443,7 @@ void Renderer::RenderPostProcess(ViewportInfo& viewport)
 	m_renderBackend->UnbindAllShaderResourceViews();
 }
 
-void Renderer::RenderUI(ViewportInfo const& viewport)
+void Renderer::RenderUI(ViewportData const& viewport)
 {
 	CameraContext uiCameraData = CameraContext();
 	uiCameraData.SetOrthogonal(Vector2::Zero, (Vector2)viewport.m_outputResolution, 0.f, 1.f);
@@ -481,15 +487,18 @@ Ref<ShaderResource> Renderer::GetBuiltinShaderResource(std::string const& shader
 	m_builtinShaderResources.emplace(shaderName, shaderResource);
 	return shaderResource;
 }
+
 GPUTexture* Renderer::CreateGPUTexture(
 	char const* name, IntVec2 dimensions, int bytesPerTexel, uint8_t const* texelData)
 {
 	return m_renderBackend->CreateGPUTexture(name, dimensions, bytesPerTexel, texelData);
 }
+
 GPUTexture* Renderer::CreateRenderTargetTexture(char const* name, IntVec2 dimensions)
 {
 	return m_renderBackend->CreateRenderTargetTexture(name, dimensions);
 }
+
 GPUTexture* Renderer::CreateDepthStencilTexture(char const* name, IntVec2 dimensions)
 {
 	return m_renderBackend->CreateDepthStencilTexture(name, dimensions);
@@ -548,11 +557,19 @@ void Renderer::CopyCPUToGPU(const void* data, unsigned int size, IndexBuffer* in
 void Renderer::BindConstantBuffer(ConstantBuffer* constantBuffer, int slot)
 {
 	m_renderBackend->BindConstantBuffer(constantBuffer, slot);
-} 
+}
 
-void Renderer::InitImGuiD3D11Backend()
+bool Renderer::InitImGui() { return m_renderBackend->InitImGui(); }
+
+void Renderer::ShutdownImGui() { m_renderBackend->ShutdownImGui(); }
+
+void Renderer::BeginImGuiFrame() { m_renderBackend->BeginImGuiFrame(); }
+
+void Renderer::RenderImGui(ImDrawData* drawData) { m_renderBackend->RenderImGui(drawData); }
+
+ImTextureID Renderer::GetImGuiTextureID(GPUTexture* texture) const
 {
-	ImGui_ImplDX11_Init(m_renderBackend->GetD3DDevice(), m_renderBackend->GetD3DDeviceContext());
+	return m_renderBackend->GetImGuiTextureID(texture);
 }
 
 void Renderer::BindBackBuffer() { m_renderBackend->BindBackBuffer(); }

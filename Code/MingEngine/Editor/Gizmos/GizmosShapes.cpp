@@ -4,27 +4,13 @@
 #include "MingEngine/Core/Math/AABB3.hpp"
 #include "MingEngine/Core/Render/VertexUtils.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
-#include "MingEngine/Engine/Render/BuiltinShaders.hpp"
-#include "MingEngine/Engine/Render/Renderer.hpp"
+#include "MingEngine/Engine/Render/RenderServer.hpp"
 #include "MingEngine/Engine/Render/VertexBuffer.hpp"
-#include "MingEngine/Scene/Resource/ShaderResource.hpp"
 
 EditorGizmoVisual3D::~EditorGizmoVisual3D()
 {
 	delete m_vertexBuffer;
 	m_vertexBuffer = nullptr;
-}
-
-RenderRequest EditorGizmoVisual3D::SubmitRenderRequest() const
-{
-	RenderRequest request;
-	request.m_pass           = RenderRequestPass::Opaque;
-	request.m_modelToWorld   = GetWorldTransform();
-	request.m_vertexBuffer   = m_vertexBuffer;
-	request.m_blendMode      = BlendMode::ALPHA;
-	request.m_depthMode      = DepthMode::READ_WRITE_LESS_EQUAL;
-	request.m_rasterizerMode = RasterizerMode::SOLID_CULL_NONE;
-	return request;
 }
 
 EditorWorldGrid3D::EditorWorldGrid3D()
@@ -51,30 +37,13 @@ EditorWorldGrid3D::EditorWorldGrid3D()
 		AddVertsForAABB3D(m_verts, AABB3(aRow - thickness, bRow + thickness), Color::Gray);
 	}
 
-	if (!m_verts.empty() && g_engine != nullptr && g_engine->m_renderer != nullptr)
+	if (!m_verts.empty() && g_engine != nullptr && g_engine->m_renderServer != nullptr)
 	{
-		m_vertexBuffer = g_engine->m_renderer->CreateVertexBuffer(
+		m_vertexBuffer = g_engine->m_renderServer->CreateVertexBuffer(
 			m_verts.data(),
 			(unsigned int)(m_verts.size() * sizeof(Vertex)),
 			sizeof(Vertex));
 	}
-}
-
-RenderRequest EditorWorldGrid3D::SubmitRenderRequest() const
-{
-	Ref<ShaderResource> shaderResource =
-		g_engine->m_renderer->GetBuiltinShaderResource("GizmosGrid", BuiltinShaders::GizmosGrid);
-
-	RenderRequest request;
-	request.m_pass           = RenderRequestPass::Opaque;
-	request.m_modelToWorld   = GetWorldTransform();
-	request.m_vertexBuffer   = m_vertexBuffer;
-	request.m_shader         = shaderResource.IsValid() ? shaderResource->GetShader() : nullptr;
-	request.m_blendMode      = BlendMode::ALPHA;
-	request.m_depthMode      = DepthMode::READ_ONLY_LESS_EQUAL;
-	request.m_rasterizerMode = RasterizerMode::SOLID_CULL_NONE;
-
-	return request;
 }
 
 EditorWorldAxis3D::EditorWorldAxis3D(Vector3 const& axisStart, Vector3 const& axisEnd, Color const& color)
@@ -97,26 +66,11 @@ EditorWorldAxis3D::EditorWorldAxis3D(Vector3 const& axisStart, Vector3 const& ax
 	SetWorldScale(axisEnd);
 
 	// 4) Create the static vertex buffer
-	if (!m_verts.empty() && g_engine != nullptr && g_engine->m_renderer != nullptr)
+	if (!m_verts.empty() && g_engine != nullptr && g_engine->m_renderServer != nullptr)
 	{
-		m_vertexBuffer = g_engine->m_renderer->CreateVertexBuffer(
+		m_vertexBuffer = g_engine->m_renderServer->CreateVertexBuffer(
 			m_verts.data(),
 			(unsigned int)(m_verts.size() * sizeof(Vertex)),
 			sizeof(Vertex));
 	}
-}
-
-RenderRequest EditorWorldAxis3D::SubmitRenderRequest() const
-{
-	RenderRequest request;
-	request.m_pass         = RenderRequestPass::Opaque;
-	request.m_modelToWorld = GetWorldTransform();
-	request.m_vertexBuffer = m_vertexBuffer;
-	Ref<ShaderResource> shaderResource =
-		g_engine->m_renderer->GetBuiltinShaderResource("GizmosAxis", BuiltinShaders::GizmosAxis);
-	request.m_shader         = shaderResource.IsValid() ? shaderResource->GetShader() : nullptr;
-	request.m_blendMode      = BlendMode::ALPHA;
-	request.m_depthMode      = DepthMode::READ_WRITE_LESS_EQUAL;
-	request.m_rasterizerMode = RasterizerMode::SOLID_CULL_NONE;
-	return request;
 }

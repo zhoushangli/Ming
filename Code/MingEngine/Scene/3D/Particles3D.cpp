@@ -6,7 +6,7 @@
 #include "MingEngine/Core/Object/ResourceLoader.hpp"
 #include "MingEngine/Core/Render/Vertex.hpp"
 #include "MingEngine/Core/XmlUtils.hpp"
-#include "MingEngine/Engine/Render/Renderer.hpp"
+#include "MingEngine/Engine/Render/RenderServer.hpp"
 #include "MingEngine/Engine/Render/VertexBuffer.hpp"
 #include "MingEngine/Scene/3D/Camera3D.hpp"
 #include "MingEngine/Scene/Core/SceneTree.hpp"
@@ -325,39 +325,6 @@ void Particles3D::OnNotification(int notification)
 		break;
 	}
 	}
-}
-
-RenderRequest Particles3D::SubmitRenderRequest() const
-{
-	RenderRequest request;
-	if (m_particleVerts.empty())
-	{
-		return request;
-	}
-
-	unsigned int const size = static_cast<unsigned int>(m_particleVerts.size() * sizeof(Vertex));
-	if (m_particleVertexBuffer == nullptr)
-	{
-		m_particleVertexBuffer = g_engine->m_renderer->CreateVertexBuffer(size, sizeof(Vertex));
-	}
-	else if (m_particleVertexBuffer->GetSize() < size)
-	{
-		m_particleVertexBuffer->Resize(size);
-	}
-	g_engine->m_renderer->CopyCPUToGPU(m_particleVerts.data(), size, m_particleVertexBuffer);
-
-	request.m_pass         = RenderRequestPass::Opaque;
-	request.m_modelToWorld = Matrix4x4::Identity;
-	request.m_tint         = Color::White;
-	request.m_vertexBuffer = m_particleVertexBuffer;
-	request.m_textures[SurfaceTextureSlot::Diffuse] =
-		m_particleTextureRef.IsValid() ? m_particleTextureRef->GetGPUTexture() : nullptr;
-	request.m_shader         = nullptr;
-	request.m_blendMode      = BlendMode::ADDITIVE;
-	request.m_depthMode      = DepthMode::READ_WRITE_LESS_EQUAL;
-	request.m_rasterizerMode = RasterizerMode::SOLID_CULL_NONE;
-	request.m_samplerMode    = SamplerMode::POINT_CLAMP;
-	return request;
 }
 
 void Particles3D::SpawnNewParticle(Vector3 const& worldPosition)

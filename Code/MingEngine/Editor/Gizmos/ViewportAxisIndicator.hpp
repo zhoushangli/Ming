@@ -26,8 +26,7 @@ public:
 	~ViewportAxisIndicator() override;
 
 protected:
-	void          OnNotification(int notification);
-	RenderRequest SubmitRenderRequest() const override;
+	void OnNotification(int notification);
 
 private:
 	void RebuildVertexBuffer();

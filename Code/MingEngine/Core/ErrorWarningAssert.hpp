@@ -4,13 +4,13 @@
 //
 // Summary of error and assertion macros:
 //	#define ERROR_AND_DIE( errorText )						// "MUST not reach this point"; Show error dialogue, then
-//shut down the app 	#define ERROR_RECOVERABLE( errorText )					// "SHOULD not reach this point"; Show
-//warning dialogue, then proceed 	#define GUARANTEE_OR_DIE( condition, errorText )		// "MUST be true"; If condition
-//is false, show error dialogue then shut down the app 	#define GUARANTEE_RECOVERABLE( condition, errorText )	//
-//"SHOULD be true"; If condition is false, show warning dialogue then proceed 	#define ASSERT_OR_DIE( condition,
-//errorText )			// Same as GUARANTEE_OR_DIE, but removed if DISABLE_ASSERTS is #defined 	#define
-//ASSERT_RECOVERABLE( condition, errorText )		// Same as GUARANTEE_RECOVERABLE, but removed if DISABLE_ASSERTS is
-//#defined
+// shut down the app 	#define ERROR_RECOVERABLE( errorText )					// "SHOULD not reach this point"; Show
+// warning dialogue, then proceed 	#define GUARANTEE_OR_DIE( condition, errorText )		// "MUST be true"; If
+// condition is false, show error dialogue then shut down the app 	#define GUARANTEE_RECOVERABLE( condition, errorText
+// )	// "SHOULD be true"; If condition is false, show warning dialogue then proceed 	#define ASSERT_OR_DIE(
+//condition, errorText )			// Same as GUARANTEE_OR_DIE, but removed if DISABLE_ASSERTS is #defined 	#define
+// ASSERT_RECOVERABLE( condition, errorText )		// Same as GUARANTEE_RECOVERABLE, but removed if DISABLE_ASSERTS is
+// #defined
 //
 
 //-----------------------------------------------------------------------------------------------
@@ -51,6 +51,15 @@ void ReportMessage(
 	if (true)                                                                                                          \
 	{                                                                                                                  \
 		ReportMessage(__FILE__, __FUNCTION__, __LINE__, "Error", message);                                             \
+	}                                                                                                                  \
+	else                                                                                                               \
+		((void)0)
+
+#define ERR_FAIL_MSG(message)                                                                          \
+	if (true)                                                                                                          \
+	{                                                                                                                  \
+		ERR_PRINT(message);                                                                                            \
+		return;                                                                                                        \
 	}                                                                                                                  \
 	else                                                                                                               \
 		((void)0)

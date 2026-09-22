@@ -3,7 +3,7 @@
 #include "MingEngine/Core/Math/RandomNumberGenerator.hpp"
 #include "MingEngine/Engine/Audio/AudioSystem.hpp"
 #include "MingEngine/Engine/Input/InputSystem.hpp"
-#include "MingEngine/Engine/Render/Renderer.hpp"
+#include "MingEngine/Engine/Render/RenderServer.hpp"
 #include "MingEngine/Engine/Window/WindowSystem.hpp"
 
 Engine* g_engine = nullptr;
@@ -20,8 +20,10 @@ Engine::Engine(EngineConfig config) : m_config(config)
 		m_fileSystem = MemNew<FileSystem>(config.m_fileSystemConfig);
 	if (config.m_scriptSystemConfig.m_isEnabled)
 		m_scriptSystem = MemNew<ScriptSystem>(config.m_scriptSystemConfig);
-	if (config.m_rendererConfig.m_isEnable)
-		m_renderer = MemNew<Renderer>(config.m_rendererConfig);
+	if (config.m_rendererServerConfig.m_isEnable)
+	{
+		m_renderServer = new RenderServer(config.m_rendererServerConfig);
+	}
 	if (config.m_inputConfig.m_isEnable)
 		m_inputSystem = MemNew<InputSystem>(config.m_inputConfig);
 	if (config.m_audioConfig.m_isEnable)
@@ -46,8 +48,8 @@ Engine::~Engine()
 	MemDelete(m_fileSystem);
 	m_fileSystem = nullptr;
 
-	MemDelete(m_renderer);
-	m_renderer = nullptr;
+	delete m_renderServer;
+	m_renderServer = nullptr;
 
 	MemDelete(m_scriptSystem);
 	m_scriptSystem = nullptr;
@@ -68,8 +70,8 @@ void Engine::Startup()
 		m_eventSystem->Startup();
 	if (m_windowSystem != nullptr)
 		m_windowSystem->Startup();
-	if (m_renderer != nullptr)
-		m_renderer->Startup();
+	if (m_renderServer != nullptr)
+		m_renderServer->Startup();
 	if (m_fileSystem != nullptr)
 		m_fileSystem->Startup();
 	if (m_scriptSystem != nullptr)
@@ -94,8 +96,8 @@ void Engine::Shutdown()
 		m_inputSystem->Shutdown();
 	if (m_imguiSystem != nullptr)
 		m_imguiSystem->Shutdown();
-	if (m_renderer != nullptr)
-		m_renderer->Shutdown();
+	if (m_renderServer != nullptr)
+		m_renderServer->Shutdown();
 	if (m_scriptSystem != nullptr)
 		m_scriptSystem->Shutdown();
 	if (m_fileSystem != nullptr)
@@ -118,8 +120,8 @@ void Engine::BeginFrame()
 		m_scriptSystem->BeginFrame();
 	if (m_imguiSystem != nullptr)
 		m_imguiSystem->BeginFrame();
-	if (m_renderer != nullptr)
-		m_renderer->BeginFrame();
+	if (m_renderServer != nullptr)
+		m_renderServer->BeginFrame();
 	if (m_inputSystem != nullptr)
 		m_inputSystem->BeginFrame();
 	if (m_audioSystem != nullptr)
@@ -134,8 +136,8 @@ void Engine::EndFrame()
 		m_networkSystem->EndFrame();
 	if (m_imguiSystem != nullptr)
 		m_imguiSystem->EndFrame();
-	if (m_renderer != nullptr)
-		m_renderer->EndFrame();
+	if (m_renderServer != nullptr)
+		m_renderServer->EndFrame();
 	if (m_audioSystem != nullptr)
 		m_audioSystem->EndFrame();
 	if (m_inputSystem != nullptr)

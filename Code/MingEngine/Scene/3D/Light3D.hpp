@@ -29,7 +29,7 @@ protected:
 	void         FreeRenderLight();
 
 protected:
-	int       m_rid       = -1;
+	RID       m_rid       = RID::Invalid;
 	LightType m_lightType = LightType::Omni;
 	Color     m_color     = Color::White;
 	float     m_intensity = 1.f;

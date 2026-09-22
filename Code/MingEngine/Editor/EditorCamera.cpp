@@ -5,7 +5,6 @@
 #include "MingEngine/Core/Math/MathUtils.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Engine/Input/InputSystem.hpp"
-#include "MingEngine/EngineService/EngineService.hpp"
 
 using namespace Math;
 
@@ -69,9 +68,7 @@ void EditorCamera::OnProcess(float deltaSeconds)
 void EditorCamera::UpdateControlState()
 {
 	InputSystem* input = g_engine->m_inputSystem;
-	bool const   isConsoleOpen =
-		(g_engineService != nullptr) && (g_engineService->m_console != nullptr) && g_engineService->m_console->IsOpen();
-	EditorControlState const desiredState = !isConsoleOpen && input->IsKeyDown(KeyCode::RightMouse)
+	EditorControlState const desiredState = input->IsKeyDown(KeyCode::RightMouse)
 												? EditorControlState::FlyThrough
 												: EditorControlState::Pointer;
 

@@ -2,7 +2,7 @@
 
 #include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Engine/Render/GPUTexture.hpp"
-#include "MingEngine/Engine/Render/Renderer.hpp"
+#include "MingEngine/Engine/Render/RenderServer.hpp"
 
 #include <utility>
 
@@ -42,12 +42,12 @@ bool TextureResource::InitGPUResources()
 	m_gpuTexture = nullptr;
 
 	// 2) Create new GPU texture from CPU pixel data
-	if (g_engine == nullptr || g_engine->m_renderer == nullptr || IsEmpty())
+	if (g_engine == nullptr || g_engine->m_renderServer == nullptr || IsEmpty())
 	{
 		return false;
 	}
 
-	m_gpuTexture = g_engine->m_renderer->CreateGPUTexture(
+	m_gpuTexture = g_engine->m_renderServer->CreateGPUTexture(
 		GetName().ToUtf8().c_str(),
 		m_image->GetDimensions(),
 		m_image->GetChannels(),

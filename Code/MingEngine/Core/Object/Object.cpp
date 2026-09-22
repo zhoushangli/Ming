@@ -152,7 +152,7 @@ ObjectID ObjectDatabase::AddInstance(Object* object)
 		}
 	}
 
-	if (index > ObjectID::kMaxObjectIndex)
+	if (index > ObjectID::kMaxIndex)
 	{
 		return ObjectID::Invalid;
 	}
@@ -167,7 +167,7 @@ ObjectID ObjectDatabase::AddInstance(Object* object)
 	}
 
 	uint32_t const uid = m_nextObjectUID;
-	m_nextObjectUID    = uid == ObjectID::kMaxObjectUID ? 1u : uid + 1u;
+	m_nextObjectUID    = uid == ObjectID::kMaxUID ? 1u : uid + 1u;
 
 	object->m_id = ObjectID(uid, static_cast<uint32_t>(index));
 	return object->m_id;

@@ -8,16 +8,14 @@
 #include "MingEngine/Editor/EditorNode.hpp"
 #include "MingEngine/Editor/UI/EditorUI.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
-#include "MingEngine/Engine/Render/BuiltinShaders.hpp"
 #include "MingEngine/Engine/Render/DebugGizmos.hpp"
 #include "MingEngine/Engine/Render/IndexBuffer.hpp"
-#include "MingEngine/Engine/Render/Renderer.hpp"
+#include "MingEngine/Engine/Render/RenderServer.hpp"
 #include "MingEngine/Engine/Render/VertexBuffer.hpp"
 #include "MingEngine/Scene/3D/Camera3D.hpp"
 #include "MingEngine/Scene/3D/Node3D.hpp"
 #include "MingEngine/Scene/Core/Node.hpp"
 #include "MingEngine/Scene/Core/SceneTree.hpp"
-#include "MingEngine/Scene/Resource/ShaderResource.hpp"
 
 #include <cmath>
 
@@ -170,30 +168,17 @@ GizmoComponent::GizmoComponent(GizmoAxis axis, Color const& color) : m_axis(axis
 	SetProcess(true);
 }
 
-RenderRequest GizmoComponent::SubmitRenderRequest() const
-{
-	RenderRequest request;
-	request.m_pass           = RenderRequestPass::Opaque;
-	request.m_renderPriority = m_renderPriority; // Gizmos render after most other objects
-	request.m_modelToWorld   = GetWorldTransform();
-	request.m_vertexBuffer   = m_vertexBuffer;
-	request.m_blendMode      = BlendMode::ALPHA;
-	request.m_depthMode      = DepthMode::DISABLED;
-	request.m_rasterizerMode = RasterizerMode::SOLID_CULL_NONE;
-	request.m_tint           = GetDrawColor();
-	return request;
-}
-
 void GizmoComponent::OnNotification(int notification)
 {
 	switch (notification)
 	{
 	case Notification_Ready:
 	{
-		if (!m_verts.empty() && m_vertexBuffer == nullptr && g_engine != nullptr && g_engine->m_renderer != nullptr)
+		if (!m_verts.empty() && m_vertexBuffer == nullptr && g_engine != nullptr && g_engine->m_renderServer != nullptr)
 		{
 			unsigned int const vertexBufferSize = static_cast<unsigned int>(m_verts.size() * sizeof(Vertex));
-			m_vertexBuffer = g_engine->m_renderer->CreateVertexBuffer(m_verts.data(), vertexBufferSize, sizeof(Vertex));
+			m_vertexBuffer =
+				g_engine->m_renderServer->CreateVertexBuffer(m_verts.data(), vertexBufferSize, sizeof(Vertex));
 		}
 		break;
 	}
@@ -497,32 +482,18 @@ GizmoRotationArc::~GizmoRotationArc()
 	m_indexBuffer = nullptr;
 }
 
-RenderRequest GizmoRotationArc::SubmitRenderRequest() const
-{
-	if (m_vertexBuffer == nullptr || m_indexBuffer == nullptr)
-	{
-		return RenderRequest();
-	}
-
-	RenderRequest request = GizmoComponent::SubmitRenderRequest();
-	request.m_indexBuffer = m_indexBuffer;
-	Ref<ShaderResource> shaderResource =
-		g_engine->m_renderer->GetBuiltinShaderResource("TransformGizmosArc", BuiltinShaders::TransformGizmosArc);
-	request.m_shader = shaderResource.IsValid() ? shaderResource->GetShader() : nullptr;
-	return request;
-}
-
 void GizmoRotationArc::OnNotification(int notification)
 {
 	switch (notification)
 	{
 	case Notification_Ready:
 	{
-		if (!m_indices.empty() && m_indexBuffer == nullptr && g_engine != nullptr && g_engine->m_renderer != nullptr)
+		if (!m_indices.empty() && m_indexBuffer == nullptr && g_engine != nullptr
+			&& g_engine->m_renderServer != nullptr)
 		{
 			unsigned int const indexBufferSize = static_cast<unsigned int>(m_indices.size() * sizeof(unsigned int));
 			m_indexBuffer =
-				g_engine->m_renderer->CreateIndexBuffer(m_indices.data(), indexBufferSize, sizeof(unsigned int));
+				g_engine->m_renderServer->CreateIndexBuffer(m_indices.data(), indexBufferSize, sizeof(unsigned int));
 		}
 		break;
 	}

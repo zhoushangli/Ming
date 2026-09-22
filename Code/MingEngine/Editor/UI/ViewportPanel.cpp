@@ -3,10 +3,12 @@
 #include "MingEngine/Editor/EditorNode.hpp"
 #include "MingEngine/Editor/UI/EditorUI.hpp"
 #include "MingEngine/Editor/UI/EditorUIContext.hpp"
+#include "MingEngine/Engine/Render/RenderServer.hpp"
 #include "MingEngine/Scene/Core/SceneTree.hpp"
 #include "MingEngine/Scene/Core/Viewport.hpp"
 
 #include "MingEngine/Core/Math/MathUtils.hpp"
+#include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Engine/Event/EventSystem.hpp"
 #include "MingEngine/Engine/Render/GPUTexture.hpp"
 
@@ -43,23 +45,21 @@ void ViewportPanel::OnRender(EditorUIContext& context)
 	int           width         = Max(static_cast<int>(availableSize.x), 1);
 	int           height        = Max(static_cast<int>(availableSize.y), 1);
 	IntVec2 const panelDimensions(width, height);
-	if (panelDimensions != m_dimensions)
-	{
-		m_dimensions = panelDimensions;
-		EventArgs args;
-		args.SetValue("width", std::to_string(width));
-		args.SetValue("height", std::to_string(height));
-		FireEvent("EditorViewportResized", args);
-	}
 
 	Viewport* viewport =
 		context.m_sceneTree != nullptr ? dynamic_cast<Viewport*>(context.m_sceneTree->GetRoot()) : nullptr;
+	if (viewport != nullptr && viewport->GetOutputResolution() != panelDimensions)
+	{
+		// The Viewport keeps its own output resolution, the panel only requests the size.
+		viewport->SetResolution(panelDimensions);
+	}
+
 	if (viewport != nullptr)
 	{
-		GPUTexture* viewportTexture = viewport->GetViewportInfo().m_viewportOutputTexture;
+		GPUTexture* viewportTexture = g_engine->m_renderServer->ViewportGetTexture(viewport->GetViewportRID());
 		if (viewportTexture != nullptr)
 		{
-			ImTextureID  textureId  = (ImTextureID)(intptr_t)viewportTexture->GetShaderResourceView();
+			ImTextureID  textureId  = g_engine->m_renderServer->GetImGuiTextureID(viewportTexture);
 			ImTextureRef textureRef = ImTextureRef(textureId);
 			ImGui::Image(textureRef, availableSize);
 

@@ -5,22 +5,22 @@
 #include "MingEngine/Engine/File/FileSystem.hpp"
 #include "MingEngine/Engine/ImGui/ImGuiSystem.hpp"
 #include "MingEngine/Engine/Input/InputSystem.hpp"
-#include "MingEngine/Engine/Render/Renderer.hpp"
+#include "MingEngine/Engine/Network/NetworkSystem.hpp"
+#include "MingEngine/Engine/Render/RenderServer.hpp"
 #include "MingEngine/Engine/Script/ScriptSystem.hpp"
 #include "MingEngine/Engine/Window/WindowSystem.hpp"
-#include "MingEngine/Engine/Network/NetworkSystem.hpp"
 
 struct EngineConfig
 {
-	EventSystemConfig   m_eventSystemConfig;
-	WindowSystemConfig  m_windowConfig;
-	FileSystemConfig    m_fileSystemConfig;
-	ScriptSystemConfig  m_scriptSystemConfig;
-	RendererConfig      m_rendererConfig;
-	AudioSystemConfig   m_audioConfig;
-	InputSystemConfig   m_inputConfig;
-	ImGuiSystemConfig   m_imguiConfig;
-	NetworkSystemConfig m_networkConfig;
+	EventSystemConfig    m_eventSystemConfig;
+	WindowSystemConfig   m_windowConfig;
+	FileSystemConfig     m_fileSystemConfig;
+	ScriptSystemConfig   m_scriptSystemConfig;
+	RendererServerConfig m_rendererServerConfig;
+	AudioSystemConfig    m_audioConfig;
+	InputSystemConfig    m_inputConfig;
+	ImGuiSystemConfig    m_imguiConfig;
+	NetworkSystemConfig  m_networkConfig;
 };
 
 class Engine
@@ -44,11 +44,12 @@ public:
 	WindowSystem*  m_windowSystem  = nullptr;
 	FileSystem*    m_fileSystem    = nullptr;
 	ScriptSystem*  m_scriptSystem  = nullptr;
-	Renderer*      m_renderer      = nullptr;
 	InputSystem*   m_inputSystem   = nullptr;
 	AudioSystem*   m_audioSystem   = nullptr;
 	ImGuiSystem*   m_imguiSystem   = nullptr;
 	NetworkSystem* m_networkSystem = nullptr;
+
+	RenderServer* m_renderServer = nullptr;
 
 private:
 	bool m_isEditorMode = false;

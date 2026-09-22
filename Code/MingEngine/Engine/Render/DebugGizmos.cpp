@@ -12,7 +12,6 @@
 #include "MingEngine/Engine/Render/CameraContext.hpp"
 #include "MingEngine/Engine/Render/Renderer.hpp"
 #include "MingEngine/Engine/Render/VertexBuffer.hpp"
-#include "MingEngine/EngineService/EngineService.hpp"
 
 using namespace Math;
 
@@ -205,11 +204,6 @@ void DebugGizmos::Startup(DebugRenderConfig const& config)
 
 	g_engine->m_eventSystem->RegisterEvent("Dev_DebugRenderClear", Command_DebugRenderClear);
 	g_engine->m_eventSystem->RegisterEvent("Dev_DebugRenderToggle", Command_DebugRenderToggle);
-	if (g_engineService != nullptr && g_engineService->m_console != nullptr)
-	{
-		g_engineService->m_console->AddCommand("DebugRenderClear", Command_DebugRenderClear);
-		g_engineService->m_console->AddCommand("DebugRenderToggle", Command_DebugRenderToggle);
-	}
 }
 
 void DebugGizmos::Shutdown()

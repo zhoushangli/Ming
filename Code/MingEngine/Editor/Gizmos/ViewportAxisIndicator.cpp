@@ -7,10 +7,8 @@
 
 #include "MingEngine/Core/Math/MathUtils.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
-#include "MingEngine/Engine/Render/BuiltinShaders.hpp"
-#include "MingEngine/Engine/Render/Renderer.hpp"
+#include "MingEngine/Engine/Render/RenderServer.hpp"
 #include "MingEngine/Engine/Render/VertexBuffer.hpp"
-#include "MingEngine/Scene/Resource/ShaderResource.hpp"
 
 using namespace Math;
 
@@ -86,7 +84,7 @@ ViewportAxisIndicator::ViewportAxisIndicator()
 	SetProcess(true);
 
 	std::vector<Vertex> verts{ Vertex(Vector3::Zero, Color::White) };
-	m_vertexBuffer = g_engine->m_renderer->CreateVertexBuffer(
+	m_vertexBuffer = g_engine->m_renderServer->CreateVertexBuffer(
 		verts.data(),
 		(unsigned int)(verts.size() * sizeof(Vertex)),
 		sizeof(Vertex));
@@ -124,21 +122,6 @@ void ViewportAxisIndicator::OnNotification(int notification)
 		break;
 	}
 	}
-}
-
-RenderRequest ViewportAxisIndicator::SubmitRenderRequest() const
-{
-	RenderRequest request;
-	request.m_pass         = RenderRequestPass::UI;
-	request.m_modelToWorld = Matrix4x4::Identity;
-	request.m_vertexBuffer = m_vertexBuffer;
-	Ref<ShaderResource> shaderResource =
-		g_engine->m_renderer->GetBuiltinShaderResource("DefaultUI", BuiltinShaders::DefaultUI);
-	request.m_shader         = shaderResource.IsValid() ? shaderResource->GetShader() : nullptr;
-	request.m_blendMode      = BlendMode::ALPHA;
-	request.m_depthMode      = DepthMode::DISABLED;
-	request.m_rasterizerMode = RasterizerMode::SOLID_CULL_NONE;
-	return request;
 }
 
 void ViewportAxisIndicator::RebuildVertexBuffer()
@@ -196,7 +179,7 @@ void ViewportAxisIndicator::RebuildVertexBuffer()
 			axisColor);
 	}
 
-	g_engine->m_renderer->UpdateVertexBuffer(
+	g_engine->m_renderServer->UpdateVertexBuffer(
 		m_vertexBuffer,
 		m_verts.data(),
 		(unsigned int)(m_verts.size() * sizeof(Vertex)));

@@ -7,6 +7,8 @@
 #include "MingEngine/Core/Math/Matrix4x4.hpp"
 #include "MingEngine/Engine/Event/EventSystem.hpp"
 #include "MingEngine/Engine/Render/PostProcessChain.hpp"
+#include "MingEngine/Engine/Render/RenderBackend.hpp"
+#include "MingEngine/Engine/Render/RenderTypes.hpp"
 #include "MingEngine/Engine/Render/Shader.hpp"
 #include "MingEngine/Engine/Render/TextureBindingSlots.hpp"
 
@@ -46,159 +48,17 @@ struct D3D11_RENDER_TARGET_VIEW_DESC;
 struct D3D11_SHADER_RESOURCE_VIEW_DESC;
 struct D3D11_DEPTH_STENCIL_VIEW_DESC;
 
-enum class BlendMode
-{
-	ALPHA,
-	ADDITIVE,
-	OPAQUE,
-	COUNT
-};
-
-enum class SamplerMode
-{
-	POINT_CLAMP,
-	BILINEAR_CLAMP,
-	POINT_WRAP,
-	BILINEAR_WRAP,
-	COUNT
-};
-
-enum class RasterizerMode
-{
-	SOLID_CULL_NONE,
-	SOLID_CULL_BACK,
-	WIREFRAME_CULL_NONE,
-	WIREFRAME_CULL_BACK,
-	COUNT
-};
-
-enum class DepthMode
-{
-	DISABLED,
-	READ_ONLY_ALWAYS,
-	READ_ONLY_LESS_EQUAL,
-	READ_WRITE_LESS_EQUAL,
-	COUNT
-};
-
-struct RendererConfig
-{
-	bool m_isEnable = true;
-};
-
-struct GPUDirectionalLight
-{
-	Vector3 m_direction;
-	float   m_intensity;
-	Vector3 m_color;
-	float   m_padding;
-};
-
-struct GPUOmniLight
-{
-	Vector3 m_position;
-	float   m_range;
-	Vector3 m_color;
-	float   m_intensity;
-	float   m_attenuation;
-	float   m_padding[3];
-};
-static const int kMaxPointLights = 16;
-
-struct GPUSpotLight
-{
-	Vector3 m_position;
-	float   m_range;
-	Vector3 m_direction;
-	float   m_intensity;
-	Vector3 m_color;
-	float   m_attenuation;
-	float   m_spotAngle;
-	float   m_spotAttenuation;
-	float   m_padding[2];
-};
-static const int kMaxSpotLights = 16;
-
-struct LightConstants
-{
-	GPUDirectionalLight m_directionalLight;
-	int                 m_pointLightCount;
-	int                 m_spotLightCount;
-	float               m_padding[2]; // Pad to 16 bytes for array alignment
-	GPUOmniLight        m_pointLights[kMaxPointLights];
-	GPUSpotLight        m_spotLights[kMaxSpotLights];
-};
-static const int kLightConstantsSlot = 1;
-
-struct CameraConstants
-{
-	Matrix4x4 m_worldToCameraTransform;
-	Matrix4x4 m_cameraToRenderTransform;
-	Matrix4x4 m_renderToClipTransform;
-	Matrix4x4 m_cameraToWorldTransform;
-	Matrix4x4 m_clipToCameraTransform;
-};
-static const int kCameraConstantsSlot = 2;
-
-struct ModelConstants
-{
-	Matrix4x4 m_modelToWorld;
-	float     m_modelColor[4];
-};
-static const int kModelConstantsSlot = 3;
-
-struct PostProcessConstants
-{
-	Vector2 m_screenDimensions;
-	float   m_cameraNear;
-	float   m_cameraFar;
-};
-static const int kPostProcessConstantsSlot = 4;
-
-struct FrameConstants
-{
-	float m_time;
-	float m_deltaSeconds;
-	float m_padding[2];
-};
-static const int kFrameConstantsSlot = 5;
-
-enum class BuiltinConstantBufferType
-{
-	Light,
-	Camera,
-	Model,
-	PostProcess,
-	Frame,
-	Count
-};
-
-struct BuiltinConstantBufferDesc
-{
-	char const* name = nullptr;
-	size_t      size = 0;
-	int         slot = 0;
-};
-
-static BuiltinConstantBufferDesc const BuiltinConstantBufferDescs[] = {
-	{ "Light", sizeof(LightConstants), kLightConstantsSlot },
-	{ "Camera", sizeof(CameraConstants), kCameraConstantsSlot },
-	{ "Model", sizeof(ModelConstants), kModelConstantsSlot },
-	{ "PostProcess", sizeof(PostProcessConstants), kPostProcessConstantsSlot },
-	{ "Frame", sizeof(FrameConstants), kFrameConstantsSlot },
-};
-
-class D3D11RenderBackend
+class D3D11RenderBackend : public RenderBackend
 {
 public:
-	D3D11RenderBackend(RendererConfig config);
+	D3D11RenderBackend(RendererServerConfig config);
 	~D3D11RenderBackend();
 
 	// Lifetime and frame loop
-	void Startup();
-	void Shutdown();
-	void BeginFrame();
-	void EndFrame();
+	void Startup() override;
+	void Shutdown() override;
+	void BeginFrame() override;
+	void EndFrame() override;
 	void CreateRenderingContext();
 
 	// We still need bind camera
@@ -264,6 +124,14 @@ public:
 	void                 UnbindAllShaderResourceViews();
 	void                 BindBackBuffer();
 
+	// Drive the ImGui renderer backend with this backend's D3D11 device.
+	// e.g. RenderImGui(ImGui::GetDrawData())
+	bool        InitImGui() override;
+	void        ShutdownImGui() override;
+	void        BeginImGuiFrame() override;
+	void        RenderImGui(ImDrawData* drawData) override;
+	ImTextureID GetImGuiTextureID(GPUTexture* texture) const override;
+
 	template <typename T>
 	void UpdateConstantBuffer(ConstantBuffer* constantBuffer, const T& data)
 	{
@@ -307,7 +175,7 @@ private:
 		D3D11_DEPTH_STENCIL_VIEW_DESC const*   dsvDesc = nullptr);
 
 private:
-	RendererConfig m_config;
+	RendererServerConfig m_config;
 
 	GPUTexture* m_defaultBlackTexture = nullptr;
 
