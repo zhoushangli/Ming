@@ -9,7 +9,6 @@
 #include "MingEngine/Core/Time.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Engine/Render/BitmapFont.hpp"
-#include "MingEngine/Engine/Render/CameraContext.hpp"
 #include "MingEngine/Engine/Render/Renderer.hpp"
 #include "MingEngine/Engine/Render/VertexBuffer.hpp"
 

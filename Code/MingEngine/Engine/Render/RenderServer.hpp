@@ -48,11 +48,18 @@ public:
 	// 1) A Viewport creates its RID and initial size before entering a SceneTree.
 	// 2) Entering / leaving a SceneTree only toggles the active flag.
 	// 3) The RID and its GPU resources are released on destruction.
-	RID         ViewportCreate();
-	void        ViewportFree(RID viewport);
-	void        ViewportSetActive(RID viewport, bool active);
-	void        ViewportSetResolution(RID viewport, IntVec2 size);
-	void        ViewportBeginFrame(RID viewport, CameraContext const* camera);
+	RID  ViewportCreate();
+	void ViewportFree(RID viewport);
+	void ViewportSetActive(RID viewport, bool active);
+	void ViewportSetResolution(RID viewport, IntVec2 size);
+	void ViewportBeginFrame(RID viewport);
+
+	// Camera binding:
+	// 1) Camera3D binds itself on EnterTree and clears on ExitTree.
+	// 2) A Viewport without a camera still renders UI, but world passes are skipped.
+	void ViewportSetCamera(RID viewport, RID camera);
+	void ViewportFreeCamera(RID viewport, RID camera);
+
 	void        ViewportSubmitRenderRequest(RID viewport, RenderRequest const& request);
 	GPUTexture* ViewportGetTexture(RID viewport) const;
 	void        ViewportSetScenario(RID viewport, RID scenario);
@@ -77,13 +84,23 @@ public:
 
 	RID  LightCreate(LightType type);
 	void LightFree(RID rid);
-	void LightSetTransform(RID rid, Matrix4x4 const& transform);
 	void LightSetColor(RID rid, Color const& color);
 	void LightSetIntensity(RID rid, float intensity);
 	void LightSetRange(RID rid, float range);
 	void LightSetAttenuation(RID rid, float attenuation);
 	void LightSetSpotAngle(RID rid, float angle);
 	void LightSetSpotAttenuation(RID rid, float attenuation);
+
+#pragma endregion
+
+#pragma region Camera API
+
+	RID  CameraCreate();
+	void CameraFree(RID camera);
+
+	void CameraSetTransform(RID camera, Matrix4x4 const& cameraToWorld);
+	void CameraSetPerspective(RID camera, float fovDegrees, float nearZ, float farZ);
+	void CameraSetOrthographic(RID camera, float size, float nearZ, float farZ);
 
 #pragma endregion
 
@@ -114,15 +131,16 @@ public:
 private:
 	static bool OnWindowResized(EventArgs& args);
 
-	RenderRequest BuildInstanceRenderRequest(InstanceData const& instance);
+	RenderRequest BuildInstanceRenderRequest(Instance const& instance);
 
 private:
 	Renderer* m_renderer = nullptr;
 	bool      m_started  = false;
 
-	RIDOwner<LightInfo>    m_lightOwner;
+	RIDOwner<LightData>    m_lightOwner;
 	RIDOwner<MeshData>     m_meshOwner;
 	RIDOwner<ScenarioData> m_scenarioOwner;
-	RIDOwner<InstanceData> m_instanceOwner;
+	RIDOwner<Instance>     m_instanceOwner;
 	RIDOwner<ViewportData> m_viewportOwner;
+	RIDOwner<CameraData>   m_cameraOwner;
 };

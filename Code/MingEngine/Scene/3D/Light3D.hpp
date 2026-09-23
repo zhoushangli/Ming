@@ -1,14 +1,14 @@
 #pragma once
 
-#include "MingEngine/Scene/3D/Node3D.hpp"
+#include "MingEngine/Scene/3D/VisualInstance3D.hpp"
 
 #include "MingEngine/Core/Math/Vector3.hpp"
 #include "MingEngine/Core/Render/Color.hpp"
 #include "MingEngine/Engine/Render/RenderContext.hpp"
 
-class Light3D : public Node3D
+class Light3D : public VisualInstance3D
 {
-	MCLASS(Light3D, Node3D);
+	MCLASS(Light3D, VisualInstance3D);
 
 public:
 	Light3D();
@@ -29,7 +29,7 @@ protected:
 	void         FreeRenderLight();
 
 protected:
-	RID       m_rid       = RID::Invalid;
+	RID       m_lightRID  = RID::Invalid;
 	LightType m_lightType = LightType::Omni;
 	Color     m_color     = Color::White;
 	float     m_intensity = 1.f;

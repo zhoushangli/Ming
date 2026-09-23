@@ -173,20 +173,10 @@ void Viewport::PrepareRenderData()
 
 	RenderServer* server = g_engine->m_renderServer;
 
-	// 1) The camera is copied into the server, so referenced nodes may be destroyed freely.
-	float     aspect      = m_outputResolution.x / (float)m_outputResolution.y;
-	Camera3D* worldCamera = GetWorldCamera();
-	if (worldCamera != nullptr)
-	{
-		CameraContext camera = worldCamera->GetCameraContext(aspect);
-		server->ViewportBeginFrame(m_viewportRID, &camera);
-	}
-	else
-	{
-		server->ViewportBeginFrame(m_viewportRID, nullptr);
-	}
-
+	// 1) The camera is bound to this Viewport by Camera3D on EnterTree / ExitTree.
 	// 2) BeginFrame cleared this frame's request arrays, collection fills them again.
 	// 3) Instances are drawn by the RenderServer through the Scenario instance list.
+	server->ViewportBeginFrame(m_viewportRID);
+
 	CollectCanvasItems(this, this, *server, static_cast<float>(m_outputResolution.y), m_viewportRID);
 }

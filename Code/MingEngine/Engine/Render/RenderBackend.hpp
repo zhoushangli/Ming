@@ -7,7 +7,7 @@
 
 #include <string>
 
-class CameraContext;
+class Projection;
 class GPUTexture;
 class Shader;
 class VertexBuffer;
@@ -27,7 +27,7 @@ public:
 	virtual void EndFrame()               = 0;
 	virtual void CreateRenderingContext() = 0;
 
-	virtual void BindCamera(CameraContext const& camera) = 0;
+	virtual void BindCamera(Projection const& projection) = 0;
 
 	virtual void SetBlendMode(BlendMode mode)           = 0;
 	virtual void SetRasterizerMode(RasterizerMode mode) = 0;

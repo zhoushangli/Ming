@@ -22,7 +22,6 @@
 #include "MingEngine/Engine/Event/EventSystem.hpp"
 #include "MingEngine/Engine/Render/RenderContext.hpp"
 
-class CameraContext;
 class Renderer;
 
 enum class DebugRenderMode

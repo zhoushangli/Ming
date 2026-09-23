@@ -6,10 +6,10 @@
 #include "MingEngine/Core/Render/VertexUtils.hpp"
 #include "MingEngine/Core/StringUtils.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
-#include "MingEngine/Engine/Render/CameraContext.hpp"
 #include "MingEngine/Engine/Render/ConstantBuffer.hpp"
 #include "MingEngine/Engine/Render/GPUTexture.hpp"
 #include "MingEngine/Engine/Render/IndexBuffer.hpp"
+#include "MingEngine/Engine/Render/Projection.hpp"
 #include "MingEngine/Engine/Render/VertexBuffer.hpp"
 #include "MingEngine/Scene/Resource/TextureResource.hpp"
 
@@ -331,7 +331,6 @@ void           D3D11RenderBackend::Startup()
 
 void D3D11RenderBackend::Shutdown()
 {
-	m_currentCamera = nullptr;
 	m_currentShader = nullptr;
 
 	DestroyTexture(m_defaultBlackTexture);
@@ -431,14 +430,14 @@ void D3D11RenderBackend::CreateRenderingContext() {}
 
 #pragma region Public: Camera and pipeline state
 
-void D3D11RenderBackend::BindCamera(CameraContext const& camera)
+void D3D11RenderBackend::BindCamera(Projection const& projection)
 {
 	CameraConstants cameraData           = CameraConstants();
-	cameraData.m_worldToCameraTransform  = camera.GetWorldToCameraTransform();
-	cameraData.m_cameraToRenderTransform = camera.GetCameraToRenderTransform();
-	cameraData.m_renderToClipTransform   = camera.GetRenderToClipTransform();
-	cameraData.m_cameraToWorldTransform  = camera.GetCameraToWorldTransform();
-	cameraData.m_clipToCameraTransform   = camera.GetClipToCameraTransform();
+	cameraData.m_worldToCameraTransform  = projection.GetWorldToCameraTransform();
+	cameraData.m_cameraToRenderTransform = projection.GetCameraToRenderTransform();
+	cameraData.m_renderToClipTransform   = projection.GetRenderToClipTransform();
+	cameraData.m_cameraToWorldTransform  = projection.GetCameraToWorldTransform();
+	cameraData.m_clipToCameraTransform   = projection.GetClipToCameraTransform();
 
 	UpdateAndBindConstantBuffer(BuiltinConstantBufferType::Camera, cameraData);
 }

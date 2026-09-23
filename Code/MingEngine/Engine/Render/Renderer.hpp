@@ -10,6 +10,9 @@
 
 struct ViewportData;
 struct RenderRequest;
+struct CameraData;
+
+class Projection;
 
 class Renderer : public SystemBase
 {
@@ -29,7 +32,7 @@ public:
 	// 1) Create lazily before the first render.
 	// 2) Resize only this Viewport's targets.
 	// 3) Destroy before the owning Viewport or Renderer shuts down.
-	void RenderViewport(ViewportData& viewport);
+	void RenderViewport(ViewportData& viewport, CameraData const* camera);
 	void ResizeViewport(ViewportData& viewport, IntVec2 dimensions);
 	void DestroyViewportResources(ViewportData& viewport);
 	void CopyTextureToBackBuffer(GPUTexture* colorTexture);
@@ -75,10 +78,10 @@ public:
 private:
 	void ExecuteRenderRequest(RenderRequest const& request);
 
-	void PrepareConstants(ViewportData const& viewport);
+	void PrepareConstants(ViewportData const& viewport, Projection const& projection);
 	void RenderOpaque(ViewportData& viewport);
 	void RenderSkybox(ViewportData const& viewport);
-	void RenderPostProcess(ViewportData& viewport);
+	void RenderPostProcess(ViewportData& viewport, Projection const& projection);
 	void RenderUI(ViewportData const& viewport);
 
 private:

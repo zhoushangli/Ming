@@ -37,10 +37,10 @@ void RenderServer::Shutdown()
 
 	UnregisterEvent("WindowResized", RenderServer::OnWindowResized);
 
-	// Drop every registered light so no stale LightInfo survives a restart.
+	// 1) Detach light bases before releasing registered lights.
 	for (RID lightRID : m_lightOwner.GetRIDList())
 	{
-		m_lightOwner.Free(lightRID);
+		LightFree(lightRID);
 	}
 
 	m_renderer->Shutdown();
@@ -92,7 +92,7 @@ void RenderServer::ViewportSetResolution(RID viewport, IntVec2 size)
 	m_renderer->ResizeViewport(*viewportData, size);
 }
 
-void RenderServer::ViewportBeginFrame(RID viewport, CameraContext const* camera)
+void RenderServer::ViewportBeginFrame(RID viewport)
 {
 	ViewportData* viewportData = m_viewportOwner.GetOrNull(viewport);
 	if (viewportData == nullptr)
@@ -106,24 +106,28 @@ void RenderServer::ViewportBeginFrame(RID viewport, CameraContext const* camera)
 		requests.clear();
 	}
 
-	// 2) The camera is copied so the server never references a scene node.
-	viewportData->m_worldCamera = nullptr;
-	if (camera != nullptr)
-	{
-		viewportData->m_camera      = *camera;
-		viewportData->m_worldCamera = &viewportData->m_camera;
-	}
+	// 2) Clear lights until per-viewport collection is implemented.
+	viewportData->m_lights.clear();
+}
 
-	// 3) Lights are server wide and only valid for the current frame.
-	std::vector<LightInfo>& lights = viewportData->m_lights;
-	lights.clear();
-	for (RID lightRID : m_lightOwner.GetRIDList())
+void RenderServer::ViewportSetCamera(RID viewport, RID camera)
+{
+	ViewportData* viewportData = m_viewportOwner.GetOrNull(viewport);
+	if (viewportData != nullptr)
 	{
-		LightInfo const* light = m_lightOwner.GetOrNull(lightRID);
-		if (light != nullptr)
-		{
-			lights.push_back(*light);
-		}
+		viewportData->m_camera = camera;
+	}
+}
+
+void RenderServer::ViewportFreeCamera(RID viewport, RID camera)
+{
+	ViewportData* viewportData = m_viewportOwner.GetOrNull(viewport);
+
+	// Only the camera that is currently bound clears itself, so another camera's
+	// binding survives when a different camera leaves the tree.
+	if (viewportData != nullptr && viewportData->m_camera == camera)
+	{
+		viewportData->m_camera = RID::Invalid;
 	}
 }
 
@@ -146,25 +150,35 @@ GPUTexture* RenderServer::ViewportGetTexture(RID viewport) const
 
 RID RenderServer::LightCreate(LightType type)
 {
-	LightInfo light;
+	LightData light;
 	light.m_type = type;
 	return m_lightOwner.CreateRID(light);
 }
 
-void RenderServer::LightFree(RID rid) { m_lightOwner.Free(rid); }
-
-void RenderServer::LightSetTransform(RID rid, Matrix4x4 const& transform)
+void RenderServer::LightFree(RID rid)
 {
-	LightInfo* light = m_lightOwner.GetOrNull(rid);
-	if (light != nullptr)
+	if (m_lightOwner.GetOrNull(rid) == nullptr)
 	{
-		light->m_transform = transform;
+		return;
 	}
+
+	// 1) Detach every instance before releasing its light data.
+	for (RID instanceRID : m_instanceOwner.GetRIDList())
+	{
+		Instance* instance = m_instanceOwner.GetOrNull(instanceRID);
+		if (instance->m_baseType == InstanceBaseType::Light && instance->m_base == rid)
+		{
+			InstanceSetBase(instanceRID, RID::Invalid);
+		}
+	}
+
+	// 2) Release the light independently of its instances.
+	m_lightOwner.Free(rid);
 }
 
 void RenderServer::LightSetColor(RID rid, Color const& color)
 {
-	LightInfo* light = m_lightOwner.GetOrNull(rid);
+	LightData* light = m_lightOwner.GetOrNull(rid);
 	if (light != nullptr)
 	{
 		light->m_color = color;
@@ -173,7 +187,7 @@ void RenderServer::LightSetColor(RID rid, Color const& color)
 
 void RenderServer::LightSetIntensity(RID rid, float intensity)
 {
-	LightInfo* light = m_lightOwner.GetOrNull(rid);
+	LightData* light = m_lightOwner.GetOrNull(rid);
 	if (light != nullptr)
 	{
 		light->m_intensity = intensity;
@@ -182,7 +196,7 @@ void RenderServer::LightSetIntensity(RID rid, float intensity)
 
 void RenderServer::LightSetRange(RID rid, float range)
 {
-	LightInfo* light = m_lightOwner.GetOrNull(rid);
+	LightData* light = m_lightOwner.GetOrNull(rid);
 	if (light != nullptr)
 	{
 		light->m_range = range;
@@ -191,7 +205,7 @@ void RenderServer::LightSetRange(RID rid, float range)
 
 void RenderServer::LightSetAttenuation(RID rid, float attenuation)
 {
-	LightInfo* light = m_lightOwner.GetOrNull(rid);
+	LightData* light = m_lightOwner.GetOrNull(rid);
 	if (light != nullptr)
 	{
 		light->m_attenuation = attenuation;
@@ -200,7 +214,7 @@ void RenderServer::LightSetAttenuation(RID rid, float attenuation)
 
 void RenderServer::LightSetSpotAngle(RID rid, float angle)
 {
-	LightInfo* light = m_lightOwner.GetOrNull(rid);
+	LightData* light = m_lightOwner.GetOrNull(rid);
 	if (light != nullptr)
 	{
 		light->m_spotAngle = angle;
@@ -209,10 +223,66 @@ void RenderServer::LightSetSpotAngle(RID rid, float angle)
 
 void RenderServer::LightSetSpotAttenuation(RID rid, float attenuation)
 {
-	LightInfo* light = m_lightOwner.GetOrNull(rid);
+	LightData* light = m_lightOwner.GetOrNull(rid);
 	if (light != nullptr)
 	{
 		light->m_spotAttenuation = attenuation;
+	}
+}
+
+RID RenderServer::CameraCreate() { return m_cameraOwner.CreateRID(); }
+
+void RenderServer::CameraFree(RID camera)
+{
+	if (m_cameraOwner.GetOrNull(camera) == nullptr)
+	{
+		return;
+	}
+
+	// 1) Detach every Viewport that still renders with this camera.
+	for (RID viewportRID : m_viewportOwner.GetRIDList())
+	{
+		ViewportData* viewportData = m_viewportOwner.GetOrNull(viewportRID);
+		if (viewportData != nullptr && viewportData->m_camera == camera)
+		{
+			viewportData->m_camera = RID::Invalid;
+		}
+	}
+
+	// 2) Release the camera independently of its viewports.
+	m_cameraOwner.Free(camera);
+}
+
+void RenderServer::CameraSetTransform(RID camera, Matrix4x4 const& cameraToWorld)
+{
+	CameraData* cameraData = m_cameraOwner.GetOrNull(camera);
+	if (cameraData != nullptr)
+	{
+		cameraData->m_cameraToWorld = cameraToWorld;
+	}
+}
+
+void RenderServer::CameraSetPerspective(RID camera, float fovDegrees, float nearZ, float farZ)
+{
+	CameraData* cameraData = m_cameraOwner.GetOrNull(camera);
+	if (cameraData != nullptr)
+	{
+		cameraData->m_mode       = CameraMode::Perspective;
+		cameraData->m_fovDegrees = fovDegrees;
+		cameraData->m_nearZ      = nearZ;
+		cameraData->m_farZ       = farZ;
+	}
+}
+
+void RenderServer::CameraSetOrthographic(RID camera, float size, float nearZ, float farZ)
+{
+	CameraData* cameraData = m_cameraOwner.GetOrNull(camera);
+	if (cameraData != nullptr)
+	{
+		cameraData->m_mode  = CameraMode::Orthographic;
+		cameraData->m_size  = size;
+		cameraData->m_nearZ = nearZ;
+		cameraData->m_farZ  = farZ;
 	}
 }
 
@@ -228,12 +298,13 @@ void RenderServer::Render()
 
 		// 1) Only the Scenario bound to this Viewport contributes instances.
 		// 2) A missing camera still renders UI, but the world passes have no viewpoint.
-		ScenarioData* scenarioData = m_scenarioOwner.GetOrNull(viewportData->m_scenario);
-		if (scenarioData != nullptr && viewportData->m_worldCamera != nullptr)
+		CameraData const* cameraData   = m_cameraOwner.GetOrNull(viewportData->m_camera);
+		ScenarioData*     scenarioData = m_scenarioOwner.GetOrNull(viewportData->m_scenario);
+		if (scenarioData != nullptr && cameraData != nullptr)
 		{
 			for (RID instanceRID : scenarioData->m_instances)
 			{
-				InstanceData const* instance = m_instanceOwner.GetOrNull(instanceRID);
+				Instance const* instance = m_instanceOwner.GetOrNull(instanceRID);
 				if (instance == nullptr)
 				{
 					continue;
@@ -249,7 +320,7 @@ void RenderServer::Render()
 
 		m_renderer->ClearSceneTargets(*viewportData);
 		m_renderer->SetViewport(viewportData->m_outputResolution);
-		m_renderer->RenderViewport(*viewportData);
+		m_renderer->RenderViewport(*viewportData, cameraData);
 	}
 }
 
@@ -329,7 +400,7 @@ RID RenderServer::InstanceCreate() { return m_instanceOwner.CreateRID(); }
 
 void RenderServer::InstanceFree(RID instance)
 {
-	InstanceData const* data = m_instanceOwner.GetOrNull(instance);
+	Instance const* data = m_instanceOwner.GetOrNull(instance);
 	if (data == nullptr)
 	{
 		return;
@@ -353,7 +424,7 @@ void RenderServer::InstanceFree(RID instance)
 
 void RenderServer::InstanceSetTransform(RID instance, Matrix4x4 const& transform)
 {
-	InstanceData* data = m_instanceOwner.GetOrNull(instance);
+	Instance* data = m_instanceOwner.GetOrNull(instance);
 	if (data != nullptr)
 	{
 		data->m_transform = transform;
@@ -362,7 +433,7 @@ void RenderServer::InstanceSetTransform(RID instance, Matrix4x4 const& transform
 
 void RenderServer::InstanceSetTint(RID instance, Color tint)
 {
-	InstanceData* data = m_instanceOwner.GetOrNull(instance);
+	Instance* data = m_instanceOwner.GetOrNull(instance);
 	if (data != nullptr)
 	{
 		data->m_tint = tint;
@@ -371,14 +442,14 @@ void RenderServer::InstanceSetTint(RID instance, Color tint)
 
 void RenderServer::InstanceSetVisible(RID instance, bool visible)
 {
-	InstanceData* data = m_instanceOwner.GetOrNull(instance);
+	Instance* data = m_instanceOwner.GetOrNull(instance);
 	if (data != nullptr)
 	{
 		data->m_visible = visible;
 	}
 }
 
-RenderRequest RenderServer::BuildInstanceRenderRequest(InstanceData const& instance)
+RenderRequest RenderServer::BuildInstanceRenderRequest(Instance const& instance)
 {
 	RenderRequest request;
 
@@ -426,7 +497,7 @@ void RenderServer::MeshFree(RID mesh)
 	// 2) The switch keeps other Base types untouched when they are added later.
 	for (RID rid : m_instanceOwner.GetRIDList())
 	{
-		InstanceData* instance = m_instanceOwner.GetOrNull(rid);
+		Instance* instance = m_instanceOwner.GetOrNull(rid);
 		switch (instance->m_baseType)
 		{
 		case InstanceBaseType::Mesh:
@@ -456,7 +527,7 @@ void RenderServer::ScenarioFree(RID scenario)
 
 	for (RID rid : m_instanceOwner.GetRIDList())
 	{
-		InstanceData* instance = m_instanceOwner.GetOrNull(rid);
+		Instance* instance = m_instanceOwner.GetOrNull(rid);
 		if (instance->m_scenario == scenario)
 		{
 			instance->m_scenario = RID::Invalid;
@@ -477,7 +548,7 @@ void RenderServer::ScenarioFree(RID scenario)
 
 void RenderServer::InstanceSetBase(RID instance, RID base)
 {
-	InstanceData* data = m_instanceOwner.GetOrNull(instance);
+	Instance* data = m_instanceOwner.GetOrNull(instance);
 	if (data == nullptr)
 	{
 		return;
@@ -489,10 +560,15 @@ void RenderServer::InstanceSetBase(RID instance, RID base)
 	{
 		baseType = InstanceBaseType::Mesh;
 	}
+	else if (base != RID::Invalid && m_lightOwner.GetOrNull(base) != nullptr)
+	{
+		baseType = InstanceBaseType::Light;
+	}
 
 	switch (baseType)
 	{
 	case InstanceBaseType::Mesh:
+	case InstanceBaseType::Light:
 		data->m_base = base;
 		break;
 	case InstanceBaseType::None:
@@ -506,7 +582,7 @@ void RenderServer::InstanceSetBase(RID instance, RID base)
 
 void RenderServer::InstanceSetScenario(RID instance, RID scenario)
 {
-	InstanceData* data = m_instanceOwner.GetOrNull(instance);
+	Instance* data = m_instanceOwner.GetOrNull(instance);
 	if (data == nullptr)
 	{
 		return;

@@ -3,10 +3,10 @@
 #include "MingEngine/Core/Clock.hpp"
 #include "MingEngine/Core/Math/EulerAngles.hpp"
 #include "MingEngine/Engine/Render/BuiltinShaders.hpp"
-#include "MingEngine/Engine/Render/CameraContext.hpp"
 #include "MingEngine/Engine/Render/D3D11RenderBackend.hpp"
 #include "MingEngine/Engine/Render/DebugGizmos.hpp"
 #include "MingEngine/Engine/Render/PostProcessChain.hpp"
+#include "MingEngine/Engine/Render/Projection.hpp"
 #include "MingEngine/Engine/Render/RenderContext.hpp"
 #include "MingEngine/Engine/Render/VertexBuffer.hpp"
 
@@ -48,6 +48,15 @@ const uint8_t kDefaultSGETexture[16] =
 	0x80, 0x80, 0x00, 0xFF  // (1,1)
 };
 // clang-format on
+
+// The aspect ratio belongs to the Viewport, so the camera data never stores it.
+// e.g. a 1920x1080 Viewport yields an aspect of 1.777
+float GetViewportAspect(ViewportData const& viewport)
+{
+	return viewport.m_outputResolution.y > 0
+			   ? (float)viewport.m_outputResolution.x / (float)viewport.m_outputResolution.y
+			   : 1.f;
+}
 
 } // namespace
 
@@ -124,7 +133,7 @@ void Renderer::EndFrame()
 
 void Renderer::CreateRenderingContext() { m_renderBackend->CreateRenderingContext(); }
 
-void Renderer::RenderViewport(ViewportData& viewport)
+void Renderer::RenderViewport(ViewportData& viewport, CameraData const* camera)
 {
 	// 1) Ensure this Viewport owns correctly sized targets.
 	// 2) Render world passes and post process into the output texture.
@@ -134,15 +143,18 @@ void Renderer::RenderViewport(ViewportData& viewport)
 		return;
 	}
 
-	if (viewport.m_worldCamera == nullptr)
+	if (camera == nullptr)
 	{
 		DebugGizmos::PrepareRenderRequests();
 		RenderUI(viewport);
 		return;
 	}
 
-	m_renderBackend->BindCamera(*viewport.m_worldCamera);
-	PrepareConstants(viewport);
+	// The Renderer combines the camera with the Viewport aspect into one prepared result.
+	Projection projection(*camera, GetViewportAspect(viewport));
+
+	m_renderBackend->BindCamera(projection);
+	PrepareConstants(viewport, projection);
 	DebugGizmos::PrepareRenderRequests();
 
 	auto sortPass = [](std::vector<RenderRequest>& requests)
@@ -159,7 +171,7 @@ void Renderer::RenderViewport(ViewportData& viewport)
 
 	RenderSkybox(viewport);
 	RenderOpaque(viewport);
-	RenderPostProcess(viewport);
+	RenderPostProcess(viewport, projection);
 
 	RenderUI(viewport);
 }
@@ -289,72 +301,20 @@ void Renderer::CopyTextureToBackBuffer(GPUTexture* colorTexture)
 	m_renderBackend->UnbindAllShaderResourceViews();
 }
 
-void Renderer::PrepareConstants(ViewportData const& viewport)
+void Renderer::PrepareConstants(ViewportData const& viewport, Projection const& projection)
 {
-	// Prepare light constants
-	LightConstants lightConstants  = LightConstants();
-	int            pointLightCount = 0;
-	int            spotLightCount  = 0;
-	for (LightInfo const& light : viewport.m_lights)
-	{
-		Vector3 gpuColor;
-		gpuColor.x = light.m_color.r / 255.f;
-		gpuColor.y = light.m_color.g / 255.f;
-		gpuColor.z = light.m_color.b / 255.f;
-
-		switch (light.m_type)
-		{
-		case LightType::Directional:
-		{
-			lightConstants.m_directionalLight.m_direction = light.m_transform.GetIBasis3D().GetNormalized();
-			lightConstants.m_directionalLight.m_intensity = light.m_intensity;
-			lightConstants.m_directionalLight.m_color     = gpuColor;
-			break;
-		}
-		case LightType::Omni:
-		{
-			if (pointLightCount > kMaxPointLights)
-			{
-				return;
-			}
-			lightConstants.m_pointLights[pointLightCount].m_position    = light.m_transform.GetTranslation3D();
-			lightConstants.m_pointLights[pointLightCount].m_intensity   = light.m_intensity;
-			lightConstants.m_pointLights[pointLightCount].m_color       = gpuColor;
-			lightConstants.m_pointLights[pointLightCount].m_range       = light.m_range;
-			lightConstants.m_pointLights[pointLightCount].m_attenuation = light.m_attenuation;
-			++pointLightCount;
-
-			break;
-		}
-		case LightType::Spot:
-		{
-			if (spotLightCount > kMaxSpotLights)
-			{
-				return;
-			}
-			lightConstants.m_spotLights[spotLightCount].m_position    = light.m_transform.GetTranslation3D();
-			lightConstants.m_spotLights[spotLightCount].m_intensity   = light.m_intensity;
-			lightConstants.m_spotLights[spotLightCount].m_color       = gpuColor;
-			lightConstants.m_spotLights[spotLightCount].m_range       = light.m_range;
-			lightConstants.m_spotLights[spotLightCount].m_attenuation = light.m_attenuation;
-			lightConstants.m_spotLights[spotLightCount].m_direction   = light.m_transform.GetIBasis3D().GetNormalized();
-			lightConstants.m_spotLights[spotLightCount].m_spotAngle   = light.m_spotAngle;
-			lightConstants.m_spotLights[spotLightCount].m_spotAttenuation = light.m_spotAttenuation;
-			++spotLightCount;
-
-			break;
-		}
-		}
-	}
-	lightConstants.m_pointLightCount = pointLightCount;
-	lightConstants.m_spotLightCount  = spotLightCount;
+	// 1) Disable lighting until per-viewport light collection is implemented.
+	LightConstants lightConstants                 = {};
+	lightConstants.m_pointLightCount              = 0;
+	lightConstants.m_spotLightCount               = 0;
+	lightConstants.m_directionalLight.m_intensity = 0.f;
 	m_renderBackend->UpdateAndBindConstantBuffer(BuiltinConstantBufferType::Light, lightConstants);
 
 	// Prepare post-process constants
 	PostProcessConstants postProcessConstants;
 	postProcessConstants.m_screenDimensions = (Vector2)viewport.m_outputResolution;
-	postProcessConstants.m_cameraNear       = viewport.m_worldCamera->GetNearZ();
-	postProcessConstants.m_cameraFar        = viewport.m_worldCamera->GetFarZ();
+	postProcessConstants.m_cameraNear       = projection.GetNearZ();
+	postProcessConstants.m_cameraFar        = projection.GetFarZ();
 	m_renderBackend->UpdateAndBindConstantBuffer(BuiltinConstantBufferType::PostProcess, postProcessConstants);
 
 	// Prepare frame constants
@@ -369,11 +329,6 @@ void Renderer::PrepareConstants(ViewportData const& viewport)
 
 void Renderer::RenderOpaque(ViewportData& viewport)
 {
-	if (viewport.m_worldCamera == nullptr)
-	{
-		return;
-	}
-
 	m_renderBackend->BindRenderTargets(
 		viewport.m_sceneColorTexture,
 		viewport.m_sceneDepthTexture,
@@ -400,11 +355,6 @@ void Renderer::RenderOpaque(ViewportData& viewport)
 
 void Renderer::RenderSkybox(ViewportData const& viewport)
 {
-	if (viewport.m_worldCamera == nullptr)
-	{
-		return;
-	}
-
 	m_renderBackend->BindRenderTargets(viewport.m_sceneColorTexture, viewport.m_sceneDepthTexture, nullptr);
 
 	m_renderBackend->SetBlendMode(BlendMode::ALPHA);
@@ -417,15 +367,10 @@ void Renderer::RenderSkybox(ViewportData const& viewport)
 	}
 }
 
-void Renderer::RenderPostProcess(ViewportData& viewport)
+void Renderer::RenderPostProcess(ViewportData& viewport, Projection const& projection)
 {
-	if (viewport.m_worldCamera == nullptr)
-	{
-		return;
-	}
-
 	PostProcessContext context;
-	context.m_camera           = viewport.m_worldCamera;
+	context.m_camera           = &projection;
 	context.m_sceneColor       = viewport.m_sceneColorTexture;
 	context.m_sceneDepth       = viewport.m_sceneDepthTexture;
 	context.m_sceneNormal      = viewport.m_sceneNormalTexture;
@@ -445,9 +390,16 @@ void Renderer::RenderPostProcess(ViewportData& viewport)
 
 void Renderer::RenderUI(ViewportData const& viewport)
 {
-	CameraContext uiCameraData = CameraContext();
-	uiCameraData.SetOrthogonal(Vector2::Zero, (Vector2)viewport.m_outputResolution, 0.f, 1.f);
-	m_renderBackend->BindCamera(uiCameraData);
+	// UI is drawn in pixel space: one orthographic unit is one output pixel.
+	// e.g. a 1920x1080 Viewport covers bounds (0,0) to (1920,1080)
+	CameraData uiCameraData;
+	uiCameraData.m_mode  = CameraMode::Orthographic;
+	uiCameraData.m_size  = (float)viewport.m_outputResolution.y;
+	uiCameraData.m_nearZ = 0.f;
+	uiCameraData.m_farZ  = 1.f;
+
+	Projection uiProjection(uiCameraData, GetViewportAspect(viewport));
+	m_renderBackend->BindCamera(uiProjection);
 
 	m_renderBackend->BindRenderTarget(viewport.m_viewportOutputTexture);
 

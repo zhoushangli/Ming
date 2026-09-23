@@ -16,7 +16,7 @@ void VisualInstance3D::OnNotification(int notification)
 	{
 	case Notification_EnterTree:
 	{
-		// 1) Create the instance once the owning Viewport is known.
+		// 1) Use the instance created with this node.
 		// 2) Join the Viewport Scenario so the RenderServer can draw this node.
 		if (m_data.m_viewport != nullptr)
 		{
@@ -24,6 +24,11 @@ void VisualInstance3D::OnNotification(int notification)
 			server->InstanceSetTransform(m_instanceRID, GetWorldTransform());
 			server->InstanceSetVisible(m_instanceRID, m_isVisible);
 		}
+		break;
+	}
+	case Notification_ExitTree:
+	{
+		server->InstanceSetScenario(m_instanceRID, RID::Invalid);
 		break;
 	}
 	case Notification_TransformChanged:

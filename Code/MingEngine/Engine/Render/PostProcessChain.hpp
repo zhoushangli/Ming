@@ -1,7 +1,6 @@
 #pragma once
 
 #include "MingEngine/Core/Math/IntVec2.hpp"
-#include "MingEngine/Engine/Render/CameraContext.hpp"
 #include "MingEngine/Scene/Resource/ShaderResource.hpp"
 
 #include <map>
@@ -9,6 +8,7 @@
 #include <vector>
 
 class GPUTexture;
+class Projection;
 class RenderBackend;
 
 struct OutputTextureRef
@@ -54,13 +54,13 @@ public:
 
 struct PostProcessContext
 {
-	CameraContext const* m_camera;
-	GPUTexture*          m_sceneColor;
-	GPUTexture*          m_sceneDepth;
-	GPUTexture*          m_sceneNormal;
-	GPUTexture*          m_ping;
-	GPUTexture*          m_pong;
-	IntVec2              m_outputResolution;
+	Projection const* m_camera;
+	GPUTexture*       m_sceneColor;
+	GPUTexture*       m_sceneDepth;
+	GPUTexture*       m_sceneNormal;
+	GPUTexture*       m_ping;
+	GPUTexture*       m_pong;
+	IntVec2           m_outputResolution;
 };
 
 class PostProcessChain

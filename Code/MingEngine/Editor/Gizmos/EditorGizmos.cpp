@@ -8,7 +8,6 @@
 
 #include "MingEngine/Core/Math/MathUtils.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
-#include "MingEngine/Engine/Render/CameraContext.hpp"
 
 using namespace Math;
 

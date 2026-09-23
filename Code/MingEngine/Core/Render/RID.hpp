@@ -24,8 +24,16 @@ private:
 	uint64_t m_data = 0xffffffffffffffffull;
 };
 
+// By conclude to a single base class
+// we can have a single static s_nextUID for all RIDOwner<T> instances.
+class RIDOwnerBase
+{
+protected:
+	inline static int s_nextUID = 0;
+};
+
 template <typename T>
-class RIDOwner
+class RIDOwner : public RIDOwnerBase
 {
 private:
 	struct Entry
@@ -194,7 +202,5 @@ public:
 	}
 
 private:
-	inline static int s_nextUID = 0;
-
 	std::vector<Entry> m_entries;
 };

@@ -15,7 +15,7 @@
 #include <string>
 #include <vector>
 
-class CameraContext;
+class Projection;
 class GPUTexture;
 
 class VertexBuffer;
@@ -63,7 +63,7 @@ public:
 
 	// We still need bind camera
 	// because we need to bind both world camera and UI camera in one render
-	void BindCamera(CameraContext const& camera);
+	void BindCamera(Projection const& projection);
 
 	void ClearScreen(Color const& clearColor);
 	void SetBlendMode(BlendMode blendMode);
@@ -179,8 +179,7 @@ private:
 
 	GPUTexture* m_defaultBlackTexture = nullptr;
 
-	CameraContext* m_currentCamera = nullptr;
-	Shader*        m_currentShader = nullptr;
+	Shader* m_currentShader = nullptr;
 
 	VertexBuffer*   m_currentVertexBuffer                                           = nullptr;
 	IndexBuffer*    m_currentIndexBuffer                                            = nullptr;

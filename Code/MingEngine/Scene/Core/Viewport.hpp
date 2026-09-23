@@ -21,9 +21,9 @@ public:
 	IntVec2 GetOutputResolution() const;
 
 	// Per-frame preparation:
-	// 1) Resolve cameras and update their projection.
-	// 2) Begin the frame on the RenderServer, which clears the transient request data.
-	// 3) Resolve registered handles and submit current render requests through the RID.
+	// 1) Begin the frame on the RenderServer, which clears the transient request data.
+	// 2) Resolve registered handles and submit current render requests through the RID.
+	// Cameras are bound to the Viewport by Camera3D on EnterTree / ExitTree.
 	void PrepareRenderData();
 
 	// All Viewport render state lives on the RenderServer and is addressed by this RID.

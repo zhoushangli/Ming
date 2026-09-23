@@ -357,9 +357,6 @@
     <ClCompile Include="Engine\Render\BuiltinShaders.cpp">
       <Filter>Engine\Render</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Render\CameraContext.cpp">
-      <Filter>Engine\Render</Filter>
-    </ClCompile>
     <ClCompile Include="Engine\Render\ConstantBuffer.cpp">
       <Filter>Engine\Render</Filter>
     </ClCompile>
@@ -376,6 +373,9 @@
       <Filter>Engine\Render</Filter>
     </ClCompile>
     <ClCompile Include="Engine\Render\PostProcessChain.cpp">
+      <Filter>Engine\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Render\Projection.cpp">
       <Filter>Engine\Render</Filter>
     </ClCompile>
     <ClCompile Include="Engine\Render\Renderer.cpp">
@@ -884,9 +884,6 @@
     <ClInclude Include="Engine\Render\BuiltinShaders.hpp">
       <Filter>Engine\Render</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Render\CameraContext.hpp">
-      <Filter>Engine\Render</Filter>
-    </ClInclude>
     <ClInclude Include="Engine\Render\ConstantBuffer.hpp">
       <Filter>Engine\Render</Filter>
     </ClInclude>
@@ -903,6 +900,9 @@
       <Filter>Engine\Render</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Render\PostProcessChain.hpp">
+      <Filter>Engine\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Render\Projection.hpp">
       <Filter>Engine\Render</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Render\RenderContext.hpp">
