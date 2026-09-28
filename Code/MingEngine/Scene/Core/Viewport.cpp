@@ -10,37 +10,6 @@
 
 #include <algorithm>
 
-namespace
-{
-
-void CollectCanvasItems(Node* node, Viewport* owner, RenderServer& server, float viewportHeight, RID viewportRID)
-{
-	// 1) Leave nested Viewports to their own collection pass
-	if (node != owner && dynamic_cast<Viewport*>(node) != nullptr)
-	{
-		return;
-	}
-
-	// 2) Collect the parent before its children
-	if (auto* item = dynamic_cast<CanvasItem*>(node))
-	{
-		RenderRequest request = item->BuildRenderRequest(server, viewportHeight);
-
-		if (request.IsValid())
-		{
-			server.ViewportSubmitRenderRequest(viewportRID, request);
-		}
-	}
-
-	// 3) Preserve child order
-	for (Node* child : node->GetChildren())
-	{
-		CollectCanvasItems(child, owner, server, viewportHeight, viewportRID);
-	}
-}
-
-} // namespace
-
 Viewport::Viewport()
 {
 	IntVec2 defaultResolution =
@@ -82,61 +51,58 @@ void Viewport::OnNotification(int notification)
 	}
 }
 
-void Viewport::RegisterWorldCamera(Camera3D* camera)
+void Viewport::AddCamera(Camera3D* camera)
 {
 	if (camera == nullptr)
 	{
 		return;
 	}
 
-	SceneTree*     sceneTree = GetSceneTree();
-	ObjectID const cameraID  = camera->GetObjectID();
-	if (sceneTree == nullptr || !cameraID.IsValid() || camera->GetSceneTree() != sceneTree)
-	{
-		return;
-	}
-
-	if (std::find(m_worldCameraIDs.begin(), m_worldCameraIDs.end(), cameraID) == m_worldCameraIDs.end())
-	{
-		m_worldCameraIDs.push_back(cameraID);
-
-		if (m_worldCameraID == ObjectID::Invalid)
-		{
-			m_worldCameraID = cameraID;
-		}
-	}
+	m_cameras.insert(camera);
 }
 
-void Viewport::UnregisterWorldCamera(Camera3D* camera)
+void Viewport::RemoveCamera(Camera3D* camera)
 {
 	if (camera == nullptr)
 	{
 		return;
 	}
 
-	ObjectID const cameraID    = camera->GetObjectID();
-	auto const     foundCamera = std::find(m_worldCameraIDs.begin(), m_worldCameraIDs.end(), cameraID);
-	if (foundCamera != m_worldCameraIDs.end())
+	m_cameras.erase(camera);
+	if (m_currentCamera == camera)
 	{
-		m_worldCameraIDs.erase(foundCamera);
-
-		if (m_worldCameraID == cameraID)
-		{
-			m_worldCameraID = m_worldCameraIDs.empty() ? ObjectID::Invalid : m_worldCameraIDs.front();
-		}
+		SetCurrentCamera(nullptr);
 	}
 }
 
-Camera3D* Viewport::GetWorldCamera() const
+void Viewport::SetCurrentCamera(Camera3D* camera)
 {
-	SceneTree* sceneTree = GetSceneTree();
-	if (sceneTree == nullptr)
+	if (camera == m_currentCamera)
 	{
-		return nullptr;
+		return;
 	}
 
-	Camera3D* camera = ObjectDatabase::GetInstance<Camera3D>(m_worldCameraID);
-	return camera != nullptr && camera->GetSceneTree() == sceneTree ? camera : nullptr;
+	m_currentCamera = camera;
+
+	if (camera != nullptr)
+	{
+		g_engine->m_renderServer->ViewportSetCamera(m_viewportRID, camera->GetCameraRID());
+	}
+	else
+	{
+		g_engine->m_renderServer->ViewportSetCamera(m_viewportRID, RID::Invalid);
+	}
+}
+
+Camera3D* Viewport::GetCurrentCamera() const { return m_currentCamera; }
+
+void Viewport::ChangeToNextCamera()
+{
+	for (auto& it : m_cameras)
+	{
+		it->SetCurrent();
+		return;
+	}
 }
 
 IntVec2 Viewport::GetOutputResolution() const { return m_outputResolution; }
@@ -155,28 +121,4 @@ void Viewport::SetResolution(IntVec2 dimensions)
 
 	m_outputResolution = dimensions;
 	g_engine->m_renderServer->ViewportSetResolution(m_viewportRID, dimensions);
-}
-
-void Viewport::PrepareRenderData()
-{
-	if (GetSceneTree() == nullptr)
-	{
-		return;
-	}
-
-	if (m_outputResolution == IntVec2::Zero && g_engine->m_windowSystem != nullptr)
-	{
-		// The root Viewport defaults to the window size until an editor panel or
-		// another owner explicitly requests a different output resolution.
-		SetResolution(g_engine->m_windowSystem->GetClientDimensions());
-	}
-
-	RenderServer* server = g_engine->m_renderServer;
-
-	// 1) The camera is bound to this Viewport by Camera3D on EnterTree / ExitTree.
-	// 2) BeginFrame cleared this frame's request arrays, collection fills them again.
-	// 3) Instances are drawn by the RenderServer through the Scenario instance list.
-	server->ViewportBeginFrame(m_viewportRID);
-
-	CollectCanvasItems(this, this, *server, static_cast<float>(m_outputResolution.y), m_viewportRID);
 }

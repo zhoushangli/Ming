@@ -29,6 +29,9 @@ public:
 	Vector2            GetCursorClientPos() const { return m_lastCursorClientPos; }
 	Vector2            GetCursorDelta() const { return m_cursorDelta; }
 
+protected:
+	void OnNotification(int notification);
+
 private:
 	void UpdateControlState();
 	void EnterControlState(EditorControlState nextState);

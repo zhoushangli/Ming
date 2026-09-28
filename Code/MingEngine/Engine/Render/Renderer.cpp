@@ -51,11 +51,23 @@ const uint8_t kDefaultSGETexture[16] =
 
 // The aspect ratio belongs to the Viewport, so the camera data never stores it.
 // e.g. a 1920x1080 Viewport yields an aspect of 1.777
-float GetViewportAspect(ViewportData const& viewport)
+float GetViewportAspect(ViewportData const* viewport)
 {
-	return viewport.m_outputResolution.y > 0
-			   ? (float)viewport.m_outputResolution.x / (float)viewport.m_outputResolution.y
-			   : 1.f;
+	if (viewport == nullptr || viewport->m_outputResolution.y <= 0)
+	{
+		return 1.f;
+	}
+
+	return (float)viewport->m_outputResolution.x / (float)viewport->m_outputResolution.y;
+}
+
+// Convert a color to the normalized rgb triple the light constant buffers carry.
+// e.g. Color::White becomes Vector3(1, 1, 1)
+Vector3 GetColorAsRGB(Color const& color)
+{
+	float colorAsFloats[4];
+	color.GetAsFloats(colorAsFloats);
+	return Vector3(colorAsFloats[0], colorAsFloats[1], colorAsFloats[2]);
 }
 
 } // namespace
@@ -79,7 +91,6 @@ void Renderer::Startup()
 	m_defaultMagentaTexture         = CreateGPUTexture("DefaultMagenta", IntVec2(2, 2), 4, kDefaultMagentaTexture);
 	m_defaultNormalTexture          = CreateGPUTexture("DefaultNormal", IntVec2(2, 2), 4, kDefaultNormalTexture);
 	m_defaultSGETexture             = CreateGPUTexture("DefaultSGE", IntVec2(2, 2), 4, kDefaultSGETexture);
-	m_defaultShaderResource         = GetBuiltinShaderResource("DefaultUnlit", BuiltinShaders::DefaultUnlit);
 	m_postProcessCopyShaderResource = GetBuiltinShaderResource("PostProcessCopy", BuiltinShaders::PostProcessCopy);
 
 	DebugRenderConfig debugConfig;
@@ -90,7 +101,6 @@ void Renderer::Startup()
 void Renderer::Shutdown()
 {
 	DebugGizmos::Shutdown();
-	m_defaultShaderResource         = nullptr;
 	m_postProcessCopyShaderResource = nullptr;
 	m_builtinShaderResources.clear();
 
@@ -133,12 +143,17 @@ void Renderer::EndFrame()
 
 void Renderer::CreateRenderingContext() { m_renderBackend->CreateRenderingContext(); }
 
-void Renderer::RenderViewport(ViewportData& viewport, CameraData const* camera)
+void Renderer::RenderViewport(ViewportData* viewport, CameraData* camera)
 {
+	if (viewport == nullptr)
+	{
+		return;
+	}
+
 	// 1) Ensure this Viewport owns correctly sized targets.
 	// 2) Render world passes and post process into the output texture.
 	// 3) Render UI on top without presenting to the back buffer here.
-	if (viewport.m_viewportOutputTexture == nullptr)
+	if (viewport->m_viewportOutputTexture == nullptr)
 	{
 		return;
 	}
@@ -149,6 +164,8 @@ void Renderer::RenderViewport(ViewportData& viewport, CameraData const* camera)
 		RenderUI(viewport);
 		return;
 	}
+
+	SetViewport(viewport->m_outputResolution, viewport->m_outputRect.m_mins);
 
 	// The Renderer combines the camera with the Viewport aspect into one prepared result.
 	Projection projection(*camera, GetViewportAspect(viewport));
@@ -164,10 +181,10 @@ void Renderer::RenderViewport(ViewportData& viewport, CameraData const* camera)
 			requests.end(),
 			[](RenderRequest const& a, RenderRequest const& b) { return a.m_renderPriority < b.m_renderPriority; });
 	};
-	sortPass(viewport.m_renderRequests[static_cast<size_t>(RenderRequestPass::Skybox)]);
-	sortPass(viewport.m_renderRequests[static_cast<size_t>(RenderRequestPass::Opaque)]);
-	sortPass(viewport.m_renderRequests[static_cast<size_t>(RenderRequestPass::Transparent)]);
-	sortPass(viewport.m_renderRequests[static_cast<size_t>(RenderRequestPass::UI)]);
+	sortPass(viewport->m_renderRequests[static_cast<size_t>(RenderRequestPass::Skybox)]);
+	sortPass(viewport->m_renderRequests[static_cast<size_t>(RenderRequestPass::Opaque)]);
+	sortPass(viewport->m_renderRequests[static_cast<size_t>(RenderRequestPass::Transparent)]);
+	sortPass(viewport->m_renderRequests[static_cast<size_t>(RenderRequestPass::UI)]);
 
 	RenderSkybox(viewport);
 	RenderOpaque(viewport);
@@ -186,12 +203,10 @@ void Renderer::ExecuteRenderRequest(RenderRequest const& request)
 	modelData.m_modelColor[3] = request.m_tint.a / 255.f;
 	m_renderBackend->UpdateAndBindConstantBuffer(BuiltinConstantBufferType::Model, modelData);
 
-	Shader* shader = request.m_shader;
-	if (shader == nullptr && m_defaultShaderResource.IsValid())
-	{
-		shader = m_defaultShaderResource->GetShader();
-	}
-	m_renderBackend->BindShader(shader);
+	// Requests always carry a shader, because the RenderServer fills the fallback at collection time.
+	// e.g. BuildInstanceRenderRequest() and ViewportSubmitRenderRequest() both guarantee it
+	m_renderBackend->BindShader(request.m_shader);
+
 	for (unsigned int textureSlot = 0; textureSlot < request.m_textures.size(); ++textureSlot)
 	{
 		GPUTexture* texture = request.m_textures[textureSlot];
@@ -234,8 +249,13 @@ void Renderer::ExecuteRenderRequest(RenderRequest const& request)
 	}
 }
 
-void Renderer::ResizeViewport(ViewportData& viewport, IntVec2 dimensions)
+void Renderer::ResizeViewport(ViewportData* viewport, IntVec2 dimensions)
 {
+	if (viewport == nullptr)
+	{
+		return;
+	}
+
 	if (dimensions.x <= 0 || dimensions.y <= 0)
 	{
 		return;
@@ -245,25 +265,30 @@ void Renderer::ResizeViewport(ViewportData& viewport, IntVec2 dimensions)
 	// Callers must not retain texture or SRV pointers across this operation.
 	DestroyViewportResources(viewport);
 
-	viewport.m_outputResolution      = dimensions;
-	viewport.m_outputRect            = AABB2(Vector2::Zero, (Vector2)dimensions);
-	viewport.m_viewportOutputTexture = m_renderBackend->CreateRenderTargetTexture("ViewportOutput", dimensions);
-	viewport.m_sceneColorTexture     = m_renderBackend->CreateRenderTargetTexture("SceneColor", dimensions);
-	viewport.m_sceneDepthTexture     = m_renderBackend->CreateDepthStencilTexture("SceneDepth", dimensions);
-	viewport.m_sceneNormalTexture    = m_renderBackend->CreateRenderTargetTexture("SceneNormal", dimensions);
-	viewport.m_pingTexture           = m_renderBackend->CreateRenderTargetTexture("Ping", dimensions);
-	viewport.m_pongTexture           = m_renderBackend->CreateRenderTargetTexture("Pong", dimensions);
+	viewport->m_outputResolution      = dimensions;
+	viewport->m_outputRect            = AABB2(Vector2::Zero, (Vector2)dimensions);
+	viewport->m_viewportOutputTexture = m_renderBackend->CreateRenderTargetTexture("ViewportOutput", dimensions);
+	viewport->m_sceneColorTexture     = m_renderBackend->CreateRenderTargetTexture("SceneColor", dimensions);
+	viewport->m_sceneDepthTexture     = m_renderBackend->CreateDepthStencilTexture("SceneDepth", dimensions);
+	viewport->m_sceneNormalTexture    = m_renderBackend->CreateRenderTargetTexture("SceneNormal", dimensions);
+	viewport->m_pingTexture           = m_renderBackend->CreateRenderTargetTexture("Ping", dimensions);
+	viewport->m_pongTexture           = m_renderBackend->CreateRenderTargetTexture("Pong", dimensions);
 
-	m_renderBackend->ClearRenderTarget(viewport.m_sceneNormalTexture, Color(128, 128, 128, 255));
-	m_renderBackend->ClearDepthStencil(viewport.m_sceneDepthTexture);
+	m_renderBackend->ClearRenderTarget(viewport->m_sceneNormalTexture, Color(128, 128, 128, 255));
+	m_renderBackend->ClearDepthStencil(viewport->m_sceneDepthTexture);
 }
 
-void Renderer::DestroyViewportResources(ViewportData& viewport)
+void Renderer::DestroyViewportResources(ViewportData* viewport)
 {
+	if (viewport == nullptr)
+	{
+		return;
+	}
+
 	// Keep destruction centralized so every raw pointer is cleared immediately.
 	GPUTexture** textures[] = {
-		&viewport.m_viewportOutputTexture, &viewport.m_sceneColorTexture, &viewport.m_sceneDepthTexture,
-		&viewport.m_sceneNormalTexture,    &viewport.m_pingTexture,       &viewport.m_pongTexture,
+		&viewport->m_viewportOutputTexture, &viewport->m_sceneColorTexture, &viewport->m_sceneDepthTexture,
+		&viewport->m_sceneNormalTexture,    &viewport->m_pingTexture,       &viewport->m_pongTexture,
 	};
 
 	for (GPUTexture** texture : textures)
@@ -278,12 +303,17 @@ void Renderer::DestroyViewportResources(ViewportData& viewport)
 
 void Renderer::SetViewport(IntVec2 dimensions, IntVec2 topLeft) { m_renderBackend->SetViewport(dimensions, topLeft); }
 
-void Renderer::ClearSceneTargets(ViewportData const& viewport)
+void Renderer::ClearSceneTargets(ViewportData* viewport)
 {
-	m_renderBackend->ClearRenderTarget(viewport.m_viewportOutputTexture, viewport.m_clearColor);
-	m_renderBackend->ClearRenderTarget(viewport.m_sceneColorTexture, viewport.m_clearColor);
-	m_renderBackend->ClearRenderTarget(viewport.m_sceneNormalTexture, Color(128, 128, 128, 255));
-	m_renderBackend->ClearDepthStencil(viewport.m_sceneDepthTexture);
+	if (viewport == nullptr)
+	{
+		return;
+	}
+
+	m_renderBackend->ClearRenderTarget(viewport->m_viewportOutputTexture, viewport->m_clearColor);
+	m_renderBackend->ClearRenderTarget(viewport->m_sceneColorTexture, viewport->m_clearColor);
+	m_renderBackend->ClearRenderTarget(viewport->m_sceneNormalTexture, Color(128, 128, 128, 255));
+	m_renderBackend->ClearDepthStencil(viewport->m_sceneDepthTexture);
 }
 
 void Renderer::CopyTextureToBackBuffer(GPUTexture* colorTexture)
@@ -301,18 +331,67 @@ void Renderer::CopyTextureToBackBuffer(GPUTexture* colorTexture)
 	m_renderBackend->UnbindAllShaderResourceViews();
 }
 
-void Renderer::PrepareConstants(ViewportData const& viewport, Projection const& projection)
+void Renderer::PrepareConstants(ViewportData const* viewport, Projection const& projection)
 {
-	// 1) Disable lighting until per-viewport light collection is implemented.
-	LightConstants lightConstants                 = {};
-	lightConstants.m_pointLightCount              = 0;
-	lightConstants.m_spotLightCount               = 0;
-	lightConstants.m_directionalLight.m_intensity = 0.f;
+	// 1) The shaders read their lights from one constant buffer, so the collected lights are copied in here.
+	// 2) Positional lights land in the omni or the spot array depending on their LightData::m_type.
+	LightConstants lightConstants = {};
+
+	ViewportData::LightInstance const& directionalLight = viewport->m_directionalLight;
+	if (directionalLight.m_instance != nullptr)
+	{
+		GPUDirectionalLight& gpuLight = lightConstants.m_directionalLight;
+
+		gpuLight.m_direction = directionalLight.m_instance->m_transform.GetIBasis3D().GetNormalized();
+		gpuLight.m_intensity = directionalLight.m_lightData->m_intensity;
+		gpuLight.m_color     = GetColorAsRGB(directionalLight.m_lightData->m_color);
+	}
+
+	for (ViewportData::LightInstance const& lightInstance : viewport->m_pointLights)
+	{
+		LightData const& lightData = *lightInstance.m_lightData;
+		Matrix4x4 const& transform = lightInstance.m_instance->m_transform;
+
+		// Lights beyond the shader arrays are dropped, because the counts would otherwise overrun them.
+		if (lightData.m_type == LightType::Spot)
+		{
+			if (lightConstants.m_spotLightCount >= kMaxSpotLights)
+			{
+				continue;
+			}
+
+			GPUSpotLight& gpuLight = lightConstants.m_spotLights[lightConstants.m_spotLightCount++];
+
+			gpuLight.m_position        = transform.GetTranslation3D();
+			gpuLight.m_range           = lightData.m_range;
+			gpuLight.m_direction       = transform.GetIBasis3D().GetNormalized();
+			gpuLight.m_intensity       = lightData.m_intensity;
+			gpuLight.m_color           = GetColorAsRGB(lightData.m_color);
+			gpuLight.m_attenuation     = lightData.m_attenuation;
+			gpuLight.m_spotAngle       = lightData.m_spotAngle;
+			gpuLight.m_spotAttenuation = lightData.m_spotAttenuation;
+			continue;
+		}
+
+		if (lightConstants.m_pointLightCount >= kMaxPointLights)
+		{
+			continue;
+		}
+
+		GPUOmniLight& gpuLight = lightConstants.m_pointLights[lightConstants.m_pointLightCount++];
+
+		gpuLight.m_position    = transform.GetTranslation3D();
+		gpuLight.m_range       = lightData.m_range;
+		gpuLight.m_color       = GetColorAsRGB(lightData.m_color);
+		gpuLight.m_intensity   = lightData.m_intensity;
+		gpuLight.m_attenuation = lightData.m_attenuation;
+	}
+
 	m_renderBackend->UpdateAndBindConstantBuffer(BuiltinConstantBufferType::Light, lightConstants);
 
 	// Prepare post-process constants
 	PostProcessConstants postProcessConstants;
-	postProcessConstants.m_screenDimensions = (Vector2)viewport.m_outputResolution;
+	postProcessConstants.m_screenDimensions = (Vector2)viewport->m_outputResolution;
 	postProcessConstants.m_cameraNear       = projection.GetNearZ();
 	postProcessConstants.m_cameraFar        = projection.GetFarZ();
 	m_renderBackend->UpdateAndBindConstantBuffer(BuiltinConstantBufferType::PostProcess, postProcessConstants);
@@ -327,19 +406,19 @@ void Renderer::PrepareConstants(ViewportData const& viewport, Projection const& 
 	m_renderBackend->UpdateAndBindConstantBuffer(BuiltinConstantBufferType::Frame, frameConstants);
 }
 
-void Renderer::RenderOpaque(ViewportData& viewport)
+void Renderer::RenderOpaque(ViewportData* viewport)
 {
 	m_renderBackend->BindRenderTargets(
-		viewport.m_sceneColorTexture,
-		viewport.m_sceneDepthTexture,
-		viewport.m_sceneNormalTexture);
+		viewport->m_sceneColorTexture,
+		viewport->m_sceneDepthTexture,
+		viewport->m_sceneNormalTexture);
 
 	m_renderBackend->SetBlendMode(BlendMode::ALPHA);
 	m_renderBackend->SetRasterizerMode(RasterizerMode::SOLID_CULL_BACK);
 	m_renderBackend->SetDepthMode(DepthMode::READ_WRITE_LESS_EQUAL);
 
 	// 1) Scene opaque objects write depth first
-	for (RenderRequest const& request : viewport.m_renderRequests[(int)RenderRequestPass::Opaque])
+	for (RenderRequest const& request : viewport->m_renderRequests[(int)RenderRequestPass::Opaque])
 	{
 		ExecuteRenderRequest(request);
 	}
@@ -353,55 +432,57 @@ void Renderer::RenderOpaque(ViewportData& viewport)
 	}
 }
 
-void Renderer::RenderSkybox(ViewportData const& viewport)
+void Renderer::RenderSkybox(ViewportData const* viewport)
 {
-	m_renderBackend->BindRenderTargets(viewport.m_sceneColorTexture, viewport.m_sceneDepthTexture, nullptr);
+	m_renderBackend->BindRenderTargets(viewport->m_sceneColorTexture, viewport->m_sceneDepthTexture, nullptr);
 
 	m_renderBackend->SetBlendMode(BlendMode::ALPHA);
 	m_renderBackend->SetRasterizerMode(RasterizerMode::SOLID_CULL_BACK);
 	m_renderBackend->SetDepthMode(DepthMode::READ_WRITE_LESS_EQUAL);
 
-	for (RenderRequest const& request : viewport.m_renderRequests[(int)RenderRequestPass::Skybox])
+	for (RenderRequest const& request : viewport->m_renderRequests[(int)RenderRequestPass::Skybox])
 	{
 		ExecuteRenderRequest(request);
 	}
 }
 
-void Renderer::RenderPostProcess(ViewportData& viewport, Projection const& projection)
+void Renderer::RenderPostProcess(ViewportData* viewport, Projection const& projection)
 {
 	PostProcessContext context;
 	context.m_camera           = &projection;
-	context.m_sceneColor       = viewport.m_sceneColorTexture;
-	context.m_sceneDepth       = viewport.m_sceneDepthTexture;
-	context.m_sceneNormal      = viewport.m_sceneNormalTexture;
-	context.m_ping             = viewport.m_pingTexture;
-	context.m_pong             = viewport.m_pongTexture;
-	context.m_outputResolution = viewport.m_outputResolution;
+	context.m_sceneColor       = viewport->m_sceneColorTexture;
+	context.m_sceneDepth       = viewport->m_sceneDepthTexture;
+	context.m_sceneNormal      = viewport->m_sceneNormalTexture;
+	context.m_ping             = viewport->m_pingTexture;
+	context.m_pong             = viewport->m_pongTexture;
+	context.m_outputResolution = viewport->m_outputResolution;
 
-	GPUTexture* finalColor = viewport.m_postProcessChain.Render(*m_renderBackend, context);
+	GPUTexture* finalColor = viewport->m_postProcessChain.Render(*m_renderBackend, context);
 
-	m_renderBackend->BindRenderTarget(viewport.m_viewportOutputTexture);
-	m_renderBackend->BindPostProcessInputs(finalColor, viewport.m_sceneDepthTexture, viewport.m_sceneNormalTexture);
+	m_renderBackend->BindRenderTarget(viewport->m_viewportOutputTexture);
+	m_renderBackend->BindPostProcessInputs(finalColor, viewport->m_sceneDepthTexture, viewport->m_sceneNormalTexture);
 	Shader* copyShader =
 		m_postProcessCopyShaderResource.IsValid() ? m_postProcessCopyShaderResource->GetShader() : nullptr;
 	m_renderBackend->DrawFullscreenTriangle(copyShader, L"CopyPostProcessToOutput");
 	m_renderBackend->UnbindAllShaderResourceViews();
 }
 
-void Renderer::RenderUI(ViewportData const& viewport)
+void Renderer::RenderUI(ViewportData const* viewport)
 {
+	SetViewport(viewport->m_outputResolution, viewport->m_outputRect.m_mins);
+
 	// UI is drawn in pixel space: one orthographic unit is one output pixel.
 	// e.g. a 1920x1080 Viewport covers bounds (0,0) to (1920,1080)
 	CameraData uiCameraData;
 	uiCameraData.m_mode  = CameraMode::Orthographic;
-	uiCameraData.m_size  = (float)viewport.m_outputResolution.y;
+	uiCameraData.m_size  = (float)viewport->m_outputResolution.y;
 	uiCameraData.m_nearZ = 0.f;
 	uiCameraData.m_farZ  = 1.f;
 
 	Projection uiProjection(uiCameraData, GetViewportAspect(viewport));
 	m_renderBackend->BindCamera(uiProjection);
 
-	m_renderBackend->BindRenderTarget(viewport.m_viewportOutputTexture);
+	m_renderBackend->BindRenderTarget(viewport->m_viewportOutputTexture);
 
 	// 3) Gizmos screen text / messages
 	for (RenderRequest const& request : DebugGizmos::GetRenderRequests(RenderRequestPass::UI))
@@ -412,7 +493,7 @@ void Renderer::RenderUI(ViewportData const& viewport)
 	m_renderBackend->SetRasterizerMode(RasterizerMode::SOLID_CULL_NONE);
 	m_renderBackend->SetDepthMode(DepthMode::READ_ONLY_ALWAYS);
 
-	std::vector<RenderRequest> const& uiRequests = viewport.m_renderRequests[(int)RenderRequestPass::UI];
+	std::vector<RenderRequest> const& uiRequests = viewport->m_renderRequests[(int)RenderRequestPass::UI];
 	for (size_t requestIndex = 0; requestIndex < uiRequests.size(); ++requestIndex)
 	{
 		ExecuteRenderRequest(uiRequests[requestIndex]);

@@ -65,12 +65,25 @@ void EditorCamera::OnProcess(float deltaSeconds)
 	UpdateCameraChild();
 }
 
+// TODO: Shouldn't use ready here
+// consider let EditorCamera inheriate from Camera3D directly
+void EditorCamera::OnNotification(int notification)
+{
+	switch (notification)
+	{
+	case Notification_Ready:
+	{
+		m_camera->SetCurrent();
+		break;
+	}
+	}
+}
+
 void EditorCamera::UpdateControlState()
 {
-	InputSystem* input = g_engine->m_inputSystem;
-	EditorControlState const desiredState = input->IsKeyDown(KeyCode::RightMouse)
-												? EditorControlState::FlyThrough
-												: EditorControlState::Pointer;
+	InputSystem*             input = g_engine->m_inputSystem;
+	EditorControlState const desiredState =
+		input->IsKeyDown(KeyCode::RightMouse) ? EditorControlState::FlyThrough : EditorControlState::Pointer;
 
 	EnterControlState(desiredState);
 }

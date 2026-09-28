@@ -3,6 +3,7 @@
 #include "MingEngine/Core/Render/RID.hpp"
 #include "MingEngine/Engine/Event/EventSystem.hpp"
 #include "MingEngine/Engine/Render/RenderContext.hpp"
+#include "MingEngine/Scene/Resource/MaterialResource.hpp"
 #include "MingEngine/Scene/Resource/MeshResource.hpp"
 #include "MingEngine/Scene/Resource/ShaderResource.hpp"
 
@@ -29,6 +30,18 @@ public:
 
 	void Render();
 
+#pragma region Canvas API
+
+	RID  CanvasItemCreate();
+	void CanvasItemFree(RID item);
+	void CanvasItemSetViewport(RID item, RID viewport);
+	void CanvasItemSetPosition(RID item, Vector2 const& position);
+	void CanvasItemSetVisible(RID item, bool visible);
+	void CanvasItemClear(RID item);
+	void CanvasItemAddRect(RID item, AABB2 const& rect, Color const& color);
+
+#pragma endregion
+
 #pragma region Instance API
 
 	RID  InstanceCreate();
@@ -36,7 +49,6 @@ public:
 
 	void InstanceSetBase(RID instance, RID base);
 	void InstanceSetTransform(RID instance, Matrix4x4 const& transform);
-	void InstanceSetTint(RID instance, Color tint);
 	void InstanceSetVisible(RID instance, bool visible);
 	void InstanceSetScenario(RID instance, RID scenario);
 
@@ -68,8 +80,25 @@ public:
 
 #pragma region Mesh API
 
-	RID  MeshCreate(Ref<MeshResource> const& mesh);
+	// Mesh registration:
+	// 1) MeshCreate() uploads the CPU data and owns the GPU buffers until MeshFree().
+	// 2) MeshRefresh() rebuilds the GPU buffers of an existing RID, so instances keep rendering.
+	// 3) One MeshResource registers once, no matter how many instances share it.
+	RID  MeshCreate(MeshResource const& meshResource);
 	void MeshFree(RID mesh);
+	void MeshRefresh(RID mesh, MeshResource const& meshResource);
+
+#pragma endregion
+
+#pragma region Texture API
+
+	// Texture registration:
+	// 1) TextureCreate() uploads the CPU image and owns the GPUTexture until TextureFree().
+	// 2) TextureRefresh() rebuilds the GPUTexture of an existing RID, so meshes keep sampling it.
+	// 3) One TextureResource registers once, no matter how many meshes reference it.
+	RID  TextureCreate(TextureResource const& textureResource);
+	void TextureFree(RID texture);
+	void TextureRefresh(RID texture, TextureResource const& textureResource);
 
 #pragma endregion
 
@@ -108,6 +137,12 @@ public:
 
 	Ref<ShaderResource> GetBuiltinShaderResource(std::string const& name, std::string_view source);
 
+	// Default resources every system can fall back to; created by Startup() and released before the Renderer.
+	// e.g. meshes without a material draw with the default material, requests without a shader use the default unlit
+	Ref<ShaderResource>   GetDefaultUnlitShaderResource() const;
+	Ref<ShaderResource>   GetDefaultLitShaderResource() const;
+	Ref<MaterialResource> GetDefaultMaterialResource() const;
+
 	GPUTexture* CreateGPUTexture(char const* name, IntVec2 dimensions, int bytesPerTexel, uint8_t const* data);
 
 	void DestroyTexture(GPUTexture* texture);
@@ -131,16 +166,42 @@ public:
 private:
 	static bool OnWindowResized(EventArgs& args);
 
-	RenderRequest BuildInstanceRenderRequest(Instance const& instance);
+	void          PrepareViewportData(ViewportData* viewportData);
+	RenderRequest BuildInstanceRenderRequest(Instance const* instance);
+
+	// Fill shader, textures, tint and draw states of one request from a material.
+	// e.g. BuildInstanceRenderRequest() calls it with the mesh material or the default material
+	void ApplyMaterialToRequest(MaterialResource const& materialResource, RenderRequest& request);
+
+	// GPU buffer registrations stay private because only MeshCreate()/MeshFree() use them.
+	RID  RegisterVertexBuffer(VertexBuffer* vertexBuffer);
+	void FreeVertexBuffer(RID vertexBuffer);
+	RID  RegisterIndexBuffer(IndexBuffer* indexBuffer);
+	void FreeIndexBuffer(RID indexBuffer);
+
+	// Rebuild the GPU resources a registration owns from the CPU data of its resource.
+	// e.g. MeshCreate() and MeshRefresh() both go through PrepareMeshData()
+	bool PrepareMeshData(MeshData& data, MeshResource const& meshResource);
+	bool PrepareTextureData(TextureData& data, TextureResource const& textureResource);
+
+	void PrepareCanvasItemRequests(RID viewport, ViewportData* viewportData);
 
 private:
 	Renderer* m_renderer = nullptr;
 	bool      m_started  = false;
 
-	RIDOwner<LightData>    m_lightOwner;
-	RIDOwner<MeshData>     m_meshOwner;
-	RIDOwner<ScenarioData> m_scenarioOwner;
-	RIDOwner<Instance>     m_instanceOwner;
-	RIDOwner<ViewportData> m_viewportOwner;
-	RIDOwner<CameraData>   m_cameraOwner;
+	Ref<ShaderResource>   m_defaultUnlit;
+	Ref<ShaderResource>   m_defaultLit;
+	Ref<MaterialResource> m_defaultMaterial;
+
+	RIDOwner<CanvasItemData>   m_canvasItemOwner;
+	RIDOwner<LightData>        m_lightOwner;
+	RIDOwner<MeshData>         m_meshOwner;
+	RIDOwner<VertexBufferData> m_vertexBufferOwner;
+	RIDOwner<IndexBufferData>  m_indexBufferOwner;
+	RIDOwner<TextureData>      m_textureOwner;
+	RIDOwner<ScenarioData>     m_scenarioOwner;
+	RIDOwner<Instance>         m_instanceOwner;
+	RIDOwner<ViewportData>     m_viewportOwner;
+	RIDOwner<CameraData>       m_cameraOwner;
 };

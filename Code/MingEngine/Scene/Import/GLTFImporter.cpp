@@ -406,8 +406,15 @@ Ref<Resource> GLTFImporter::Import(
 					if (sourceVirtualPath.TryResolveRelative(uri, texVirtualPath)
 						&& ResourceImporter::EnsureImported(texVirtualPath))
 					{
-						Ref<Resource> texResource = ResourceLoader::Load(texVirtualPath);
-						meshData->m_textureResources.push_back(texResource);
+						Ref<TextureResource> textureResource(ResourceLoader::Load(texVirtualPath));
+						if (textureResource.IsValid())
+						{
+							// The material is set after CreateMeshResource() registered the mesh, so re-register it.
+							meshData->m_materialResource = CreateRef<MaterialResource>();
+							meshData->m_materialResource->m_textureResources[SurfaceTextureSlot::Diffuse] =
+								textureResource;
+							meshData->InitGPUResources();
+						}
 					}
 				}
 			}

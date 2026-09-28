@@ -67,18 +67,24 @@ void Camera3D::OnNotification(int notification)
 
 		// 1) Join the Viewport camera list so scene queries can still find this camera.
 		// 2) Bind the RID so the Viewport renders from this camera.
-		m_data.m_viewport->RegisterWorldCamera(this);
-		server->ViewportSetCamera(m_data.m_viewport->GetViewportRID(), m_cameraRID);
+		m_data.m_viewport->AddCamera(this);
 		SyncRenderData();
+
+		if (m_data.m_viewport->GetCurrentCamera() == nullptr)
+		{
+			SetCurrent();
+		}
+
 		break;
 	}
 	case Notification_ExitTree:
 	{
-		if (m_data.m_viewport != nullptr)
+		if (m_data.m_viewport == nullptr)
 		{
-			m_data.m_viewport->UnregisterWorldCamera(this);
-			server->ViewportFreeCamera(m_data.m_viewport->GetViewportRID(), m_cameraRID);
+			break;
 		}
+
+		m_data.m_viewport->RemoveCamera(this);
 		break;
 	}
 	case Notification_TransformChanged:
@@ -195,4 +201,12 @@ void Camera3D::SetSize(float size)
 {
 	m_size = size;
 	SyncRenderData();
+}
+
+void Camera3D::SetCurrent()
+{
+	if (m_data.m_viewport != nullptr)
+	{
+		m_data.m_viewport->SetCurrentCamera(this);
+	}
 }

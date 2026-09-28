@@ -5,6 +5,7 @@ namespace SurfaceTextureSlot
 static const unsigned int Diffuse = 0;
 static const unsigned int Normal  = 1;
 static const unsigned int SGE     = 2;
+static const unsigned int Count   = 3;
 } // namespace SurfaceTextureSlot
 
 namespace PostProcessTextureSlot

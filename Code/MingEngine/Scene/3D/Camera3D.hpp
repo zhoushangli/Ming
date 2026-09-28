@@ -43,6 +43,9 @@ public:
 	void SetFovDegrees(float fovDegrees);
 	void SetSize(float size);
 
+	void SetCurrent();
+	void ClearCurrentCamera();
+
 	static void BindMethods();
 
 protected:

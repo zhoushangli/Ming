@@ -3,6 +3,8 @@
 #include "MingEngine/Core/Render/RID.hpp"
 #include "MingEngine/Scene/Core/Node.hpp"
 
+#include <set>
+
 class Camera3D;
 
 class Viewport : public Node
@@ -13,18 +15,14 @@ public:
 	Viewport();
 	~Viewport() override;
 
-	void      RegisterWorldCamera(Camera3D* camera);
-	void      UnregisterWorldCamera(Camera3D* camera);
-	Camera3D* GetWorldCamera() const;
+	void      AddCamera(Camera3D* camera);
+	void      RemoveCamera(Camera3D* camera);
+	void      SetCurrentCamera(Camera3D* camera);
+	Camera3D* GetCurrentCamera() const;
+	void      ChangeToNextCamera();
 
 	void    SetResolution(IntVec2 dimensions);
 	IntVec2 GetOutputResolution() const;
-
-	// Per-frame preparation:
-	// 1) Begin the frame on the RenderServer, which clears the transient request data.
-	// 2) Resolve registered handles and submit current render requests through the RID.
-	// Cameras are bound to the Viewport by Camera3D on EnterTree / ExitTree.
-	void PrepareRenderData();
 
 	// All Viewport render state lives on the RenderServer and is addressed by this RID.
 	RID GetViewportRID() const { return m_viewportRID; }
@@ -36,8 +34,8 @@ protected:
 	void OnNotification(int notification);
 
 private:
-	std::vector<ObjectID> m_worldCameraIDs;
-	ObjectID              m_worldCameraID = ObjectID::Invalid;
+	Camera3D*           m_currentCamera = nullptr;
+	std::set<Camera3D*> m_cameras;
 
 	RID     m_viewportRID      = RID::Invalid;
 	RID     m_scenarioRID      = RID::Invalid;

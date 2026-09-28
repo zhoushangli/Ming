@@ -34,22 +34,19 @@ public:
 
 	void    SetMeshResource(Variant meshResource);
 	Variant GetMeshResource() const;
-	void    SetTint(Color tint);
-	Color   GetTint() const;
 
 protected:
 	static void BindMethods();
 
 	void OnNotification(int notification);
 
+	// Bind the Mesh RID of the current resource as this instance's Base.
+	// e.g. SetMeshResource() and EnterTree both only forward the resource RID
+	void SyncMeshBase();
+
 protected:
 	Ref<MeshResource> m_meshResource;
 	bool              m_useMaterialTextures = true;
-	Color             m_tint                = Color::White;
-
-	// Mesh RID that is attached as this instance's Base while the node stays in the tree.
-	// e.g. SetMeshResource() frees the old RID and registers the new resource again
-	RID m_meshRID = RID::Invalid;
 
 	MeshRaycastObject* m_raycastObject;
 };

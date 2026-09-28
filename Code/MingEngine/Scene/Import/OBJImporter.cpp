@@ -671,7 +671,7 @@ Ref<Resource> OBJImporter::Import(
 	// 1) Apply resource metadata
 	meshData->SetName(physicalPath.stem().string());
 
-	// 2) Ensure texture dependencies are imported and load TextureResources
+	// 2) Ensure texture dependencies are imported and store them on the mesh material
 	MTLData mtlData;
 	if (objData.m_mtlVirtualPath.IsValid())
 	{
@@ -680,7 +680,9 @@ Ref<Resource> OBJImporter::Import(
 			return Ref<Resource>();
 		}
 
-		auto AddTextureResource = [&meshData](VirtualPath const& texVirtualPath) -> bool
+		meshData->m_materialResource = CreateRef<MaterialResource>();
+
+		auto AddTextureResource = [&meshData](VirtualPath const& texVirtualPath, unsigned int slot) -> bool
 		{
 			if (!texVirtualPath.IsValid())
 			{
@@ -699,15 +701,20 @@ Ref<Resource> OBJImporter::Import(
 				return false;
 			}
 
-			meshData->m_textureResources.push_back(textureResource);
+			meshData->m_materialResource->m_textureResources[slot] = textureResource;
 			return true;
 		};
 
-		if (!AddTextureResource(mtlData.m_diffuseTexturePath) || !AddTextureResource(mtlData.m_specularTexturePath)
-			|| !AddTextureResource(mtlData.m_normalTexturePath))
+		// The MTL channels map straight onto the SurfaceTextureSlot order.
+		if (!AddTextureResource(mtlData.m_diffuseTexturePath, SurfaceTextureSlot::Diffuse)
+			|| !AddTextureResource(mtlData.m_normalTexturePath, SurfaceTextureSlot::Normal)
+			|| !AddTextureResource(mtlData.m_specularTexturePath, SurfaceTextureSlot::SGE))
 		{
 			return Ref<Resource>();
 		}
+
+		// The material is set after CreateMeshResource() registered the mesh, so re-register it.
+		meshData->InitGPUResources();
 	}
 
 	return meshData;

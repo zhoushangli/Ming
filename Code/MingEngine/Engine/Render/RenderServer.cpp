@@ -1,8 +1,12 @@
 #include "MingEngine/Engine/Render/RenderServer.hpp"
 
 #include "MingEngine/Core/Memory.hpp"
+#include "MingEngine/Core/Render/Vertex.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
+#include "MingEngine/Engine/Render/BuiltinShaders.hpp"
+#include "MingEngine/Engine/Render/IndexBuffer.hpp"
 #include "MingEngine/Engine/Render/Renderer.hpp"
+#include "MingEngine/Engine/Render/VertexBuffer.hpp"
 
 #include <algorithm>
 
@@ -22,6 +26,16 @@ void RenderServer::Startup()
 	}
 
 	m_renderer->Startup();
+
+	// Engine-facing default resources live here, so other systems never reach into the Renderer.
+	// e.g. a mesh without a material, or a request without a shader, falls back to one of these
+	m_defaultUnlit    = m_renderer->GetBuiltinShaderResource("DefaultUnlit", BuiltinShaders::DefaultUnlit);
+	m_defaultLit      = m_renderer->GetBuiltinShaderResource("DefaultLit", BuiltinShaders::DefaultLit);
+	m_defaultMaterial = CreateRef<MaterialResource>();
+
+	// Empty texture slots keep the Renderer default textures bound, so a plain mesh renders white.
+	// e.g. the default material only carries the lit shader and leaves every texture slot empty
+	m_defaultMaterial->m_shaderResource = m_defaultLit;
 
 	RegisterEvent("WindowResized", RenderServer::OnWindowResized);
 
@@ -43,6 +57,38 @@ void RenderServer::Shutdown()
 		LightFree(lightRID);
 	}
 
+	// 2) Release every registered GPU resource while the Renderer is still alive.
+	//    Releasing them later would be reported as a live D3D object leak.
+	for (RID meshRID : m_meshOwner.GetRIDList())
+	{
+		MeshFree(meshRID);
+	}
+
+	for (RID textureRID : m_textureOwner.GetRIDList())
+	{
+		TextureFree(textureRID);
+	}
+
+	for (RID vertexBufferRID : m_vertexBufferOwner.GetRIDList())
+	{
+		FreeVertexBuffer(vertexBufferRID);
+	}
+
+	for (RID indexBufferRID : m_indexBufferOwner.GetRIDList())
+	{
+		FreeIndexBuffer(indexBufferRID);
+	}
+
+	for (RID canvasItemRID : m_canvasItemOwner.GetRIDList())
+	{
+		CanvasItemFree(canvasItemRID);
+	}
+
+	// 3) The defaults own builtin shader resources, so they are released before the Renderer shuts down.
+	m_defaultMaterial = nullptr;
+	m_defaultLit      = nullptr;
+	m_defaultUnlit    = nullptr;
+
 	m_renderer->Shutdown();
 	m_started = false;
 }
@@ -61,11 +107,20 @@ void RenderServer::ViewportFree(RID viewport)
 		return;
 	}
 
+	for (RID itemRID : m_canvasItemOwner.GetRIDList())
+	{
+		CanvasItemData* item = m_canvasItemOwner.GetOrNull(itemRID);
+		if (item != nullptr && item->viewport == viewport)
+		{
+			item->viewport = RID::Invalid;
+		}
+	}
+
 	// 1) GPU resources can only be released while the Renderer is alive.
 	// 2) Drop the RID from the owner before its storage is freed.
 	if (m_started)
 	{
-		m_renderer->DestroyViewportResources(*viewportData);
+		m_renderer->DestroyViewportResources(viewportData);
 	}
 
 	m_viewportOwner.Free(viewport);
@@ -89,7 +144,7 @@ void RenderServer::ViewportSetResolution(RID viewport, IntVec2 size)
 	}
 
 	// Resize rebuilds every render target owned by this Viewport.
-	m_renderer->ResizeViewport(*viewportData, size);
+	m_renderer->ResizeViewport(viewportData, size);
 }
 
 void RenderServer::ViewportBeginFrame(RID viewport)
@@ -106,8 +161,9 @@ void RenderServer::ViewportBeginFrame(RID viewport)
 		requests.clear();
 	}
 
-	// 2) Clear lights until per-viewport collection is implemented.
-	viewportData->m_lights.clear();
+	// 2) Lights are collected again by PrepareViewportData(), so drop the previous frame.
+	viewportData->m_directionalLight = {};
+	viewportData->m_pointLights.clear();
 }
 
 void RenderServer::ViewportSetCamera(RID viewport, RID camera)
@@ -139,7 +195,15 @@ void RenderServer::ViewportSubmitRenderRequest(RID viewport, RenderRequest const
 		return;
 	}
 
-	viewportData->m_renderRequests[static_cast<size_t>(request.m_pass)].push_back(request);
+	// Fill the default shader for requests that carry none, because the backend rejects a null one.
+	// e.g. a caller that only sets vertices, pass and blend state still gets a drawable request
+	RenderRequest preparedRequest = request;
+	if (preparedRequest.m_shader == nullptr)
+	{
+		preparedRequest.m_shader = m_defaultUnlit->GetShader();
+	}
+
+	viewportData->m_renderRequests[static_cast<size_t>(preparedRequest.m_pass)].push_back(preparedRequest);
 }
 
 GPUTexture* RenderServer::ViewportGetTexture(RID viewport) const
@@ -296,31 +360,72 @@ void RenderServer::Render()
 			continue;
 		}
 
-		// 1) Only the Scenario bound to this Viewport contributes instances.
-		// 2) A missing camera still renders UI, but the world passes have no viewpoint.
-		CameraData const* cameraData   = m_cameraOwner.GetOrNull(viewportData->m_camera);
-		ScenarioData*     scenarioData = m_scenarioOwner.GetOrNull(viewportData->m_scenario);
-		if (scenarioData != nullptr && cameraData != nullptr)
-		{
-			for (RID instanceRID : scenarioData->m_instances)
-			{
-				Instance const* instance = m_instanceOwner.GetOrNull(instanceRID);
-				if (instance == nullptr)
-				{
-					continue;
-				}
+		CameraData* cameraData = m_cameraOwner.GetOrNull(viewportData->m_camera);
 
-				RenderRequest request = BuildInstanceRenderRequest(*instance);
-				if (request.IsValid())
-				{
-					ViewportSubmitRenderRequest(viewportRID, request);
-				}
-			}
+		PrepareViewportData(viewportData);
+		PrepareCanvasItemRequests(viewportRID, viewportData);
+
+		m_renderer->ClearSceneTargets(viewportData);
+		m_renderer->RenderViewport(viewportData, cameraData);
+	}
+}
+
+void RenderServer::PrepareCanvasItemRequests(RID viewport, ViewportData* viewportData)
+{
+	for (RID itemRID : m_canvasItemOwner.GetRIDList())
+	{
+		CanvasItemData* item = m_canvasItemOwner.GetOrNull(itemRID);
+		if (item == nullptr || item->viewport != viewport || !item->visible || item->commands.empty())
+		{
+			continue;
 		}
 
-		m_renderer->ClearSceneTargets(*viewportData);
-		m_renderer->SetViewport(viewportData->m_outputResolution);
-		m_renderer->RenderViewport(*viewportData, cameraData);
+		std::vector<Vertex> vertices;
+		for (CanvasItemData::Command const* command : item->commands)
+		{
+			switch (command->type)
+			{
+			case CanvasItemData::Command::TYPE_RECT:
+			{
+				CanvasItemData::CommandRect const* rectCommand = static_cast<CanvasItemData::CommandRect const*>(command);
+				AABB2 const& rect = rectCommand->rect;
+				float const x = item->position.x;
+				float const y = static_cast<float>(viewportData->m_outputResolution.y) - item->position.y;
+				Vector3 a(x + rect.m_mins.x, y - rect.m_mins.y, 0.0f);
+				Vector3 b(x + rect.m_maxs.x, y - rect.m_mins.y, 0.0f);
+				Vector3 c(x + rect.m_maxs.x, y - rect.m_maxs.y, 0.0f);
+				Vector3 d(x + rect.m_mins.x, y - rect.m_maxs.y, 0.0f);
+				vertices.emplace_back(a, rectCommand->color, Vector2::Zero);
+				vertices.emplace_back(b, rectCommand->color, Vector2::Zero);
+				vertices.emplace_back(c, rectCommand->color, Vector2::Zero);
+				vertices.emplace_back(a, rectCommand->color, Vector2::Zero);
+				vertices.emplace_back(c, rectCommand->color, Vector2::Zero);
+				vertices.emplace_back(d, rectCommand->color, Vector2::Zero);
+				break;
+			}
+			}
+		}
+		if (vertices.empty())
+		{
+			continue;
+		}
+
+		unsigned int const byteSize = static_cast<unsigned int>(vertices.size() * sizeof(Vertex));
+		if (item->vertexBuffer == nullptr || item->vertexBuffer->GetSize() != byteSize)
+		{
+			delete item->vertexBuffer;
+			item->vertexBuffer = m_renderer->CreateVertexBuffer(byteSize, sizeof(Vertex));
+		}
+		m_renderer->CopyCPUToGPU(vertices.data(), byteSize, item->vertexBuffer);
+
+		RenderRequest request;
+		request.m_pass = RenderRequestPass::UI;
+		request.m_vertexBuffer = item->vertexBuffer;
+		request.m_shader = m_defaultUnlit->GetShader();
+		request.m_blendMode = BlendMode::ALPHA;
+		request.m_depthMode = DepthMode::READ_ONLY_ALWAYS;
+		request.m_rasterizerMode = RasterizerMode::SOLID_CULL_NONE;
+		viewportData->m_renderRequests[static_cast<size_t>(RenderRequestPass::UI)].push_back(request);
 	}
 }
 
@@ -344,6 +449,12 @@ Ref<ShaderResource> RenderServer::GetBuiltinShaderResource(std::string const& na
 {
 	return m_renderer->GetBuiltinShaderResource(name, source);
 }
+
+Ref<ShaderResource> RenderServer::GetDefaultUnlitShaderResource() const { return m_defaultUnlit; }
+
+Ref<ShaderResource> RenderServer::GetDefaultLitShaderResource() const { return m_defaultLit; }
+
+Ref<MaterialResource> RenderServer::GetDefaultMaterialResource() const { return m_defaultMaterial; }
 
 GPUTexture* RenderServer::CreateGPUTexture(char const* name, IntVec2 dimensions, int bytesPerTexel, uint8_t const* data)
 {
@@ -396,6 +507,71 @@ ImTextureID RenderServer::GetImGuiTextureID(GPUTexture* texture) const
 	return m_renderer->GetImGuiTextureID(texture);
 }
 
+RID RenderServer::CanvasItemCreate() { return m_canvasItemOwner.CreateRID(); }
+
+void RenderServer::CanvasItemFree(RID rid)
+{
+	CanvasItemData* item = m_canvasItemOwner.GetOrNull(rid);
+	if (item == nullptr)
+	{
+		return;
+	}
+
+	delete item->vertexBuffer;
+	item->vertexBuffer = nullptr;
+	m_canvasItemOwner.Free(rid);
+}
+
+void RenderServer::CanvasItemSetViewport(RID rid, RID viewport)
+{
+	CanvasItemData* item = m_canvasItemOwner.GetOrNull(rid);
+	if (item != nullptr && (!viewport.IsValid() || m_viewportOwner.GetOrNull(viewport) != nullptr))
+	{
+		item->viewport = viewport;
+	}
+}
+
+void RenderServer::CanvasItemSetPosition(RID rid, Vector2 const& position)
+{
+	CanvasItemData* item = m_canvasItemOwner.GetOrNull(rid);
+	if (item != nullptr)
+	{
+		item->position = position;
+	}
+}
+
+void RenderServer::CanvasItemSetVisible(RID rid, bool visible)
+{
+	CanvasItemData* item = m_canvasItemOwner.GetOrNull(rid);
+	if (item != nullptr)
+	{
+		item->visible = visible;
+	}
+}
+
+void RenderServer::CanvasItemClear(RID rid)
+{
+	CanvasItemData* item = m_canvasItemOwner.GetOrNull(rid);
+	if (item != nullptr)
+	{
+		item->ClearCommands();
+	}
+}
+
+void RenderServer::CanvasItemAddRect(RID rid, AABB2 const& rect, Color const& color)
+{
+	CanvasItemData* item = m_canvasItemOwner.GetOrNull(rid);
+	if (item == nullptr || rect.GetWidth() <= 0 || rect.GetHeight() <= 0)
+	{
+		return;
+	}
+
+	CanvasItemData::CommandRect* command = new CanvasItemData::CommandRect();
+	command->rect = rect;
+	command->color = color;
+	item->commands.push_back(command);
+}
+
 RID RenderServer::InstanceCreate() { return m_instanceOwner.CreateRID(); }
 
 void RenderServer::InstanceFree(RID instance)
@@ -431,15 +607,6 @@ void RenderServer::InstanceSetTransform(RID instance, Matrix4x4 const& transform
 	}
 }
 
-void RenderServer::InstanceSetTint(RID instance, Color tint)
-{
-	Instance* data = m_instanceOwner.GetOrNull(instance);
-	if (data != nullptr)
-	{
-		data->m_tint = tint;
-	}
-}
-
 void RenderServer::InstanceSetVisible(RID instance, bool visible)
 {
 	Instance* data = m_instanceOwner.GetOrNull(instance);
@@ -449,46 +616,307 @@ void RenderServer::InstanceSetVisible(RID instance, bool visible)
 	}
 }
 
-RenderRequest RenderServer::BuildInstanceRenderRequest(Instance const& instance)
+void RenderServer::PrepareViewportData(ViewportData* viewportData)
+{
+	if (viewportData == nullptr)
+	{
+		return;
+	}
+
+	// 1) Requests and lights only describe the current frame.
+	viewportData->m_directionalLight = {};
+	viewportData->m_pointLights.clear();
+	for (auto& requests : viewportData->m_renderRequests)
+	{
+		requests.clear();
+	}
+
+	RID           scenarioRID  = viewportData->m_scenario;
+	ScenarioData* scenarioData = m_scenarioOwner.GetOrNull(scenarioRID);
+
+	if (scenarioData == nullptr)
+	{
+		return;
+	}
+
+	// 2) Every instance of the Scenario contributes a request or a light.
+	for (RID instanceRID : scenarioData->m_instances)
+	{
+		Instance* instance = m_instanceOwner.GetOrNull(instanceRID);
+		if (instance == nullptr)
+		{
+			continue;
+		}
+
+		switch (instance->m_baseType)
+		{
+		case InstanceBaseType::None:
+			continue;
+		case InstanceBaseType::Mesh:
+		{
+			RenderRequest request = BuildInstanceRenderRequest(instance);
+			if (!request.IsValid())
+			{
+				continue;
+			}
+			viewportData->m_renderRequests[static_cast<size_t>(request.m_pass)].push_back(request);
+			break;
+		}
+		case InstanceBaseType::Light:
+		{
+			LightData* lightData = m_lightOwner.GetOrNull(instance->m_base);
+
+			// Lights of invisible instances are dropped like their mesh counterparts.
+			// e.g. SetVisible(false) on a Light3D removes its contribution for this frame
+			if (lightData == nullptr || !instance->m_visible)
+			{
+				continue;
+			}
+
+			// Only the first directional light and kMaxPointLights positional lights reach the shader.
+			// e.g. further lights of the Scene stay without a GPU counterpart this frame
+			if (lightData->m_type == LightType::Directional)
+			{
+				if (viewportData->m_directionalLight.m_instance == nullptr)
+				{
+					viewportData->m_directionalLight = { instance, lightData };
+				}
+				break;
+			}
+
+			if (viewportData->m_pointLights.size() < static_cast<size_t>(kMaxPointLights))
+			{
+				viewportData->m_pointLights.push_back({ instance, lightData });
+			}
+			break;
+		}
+		}
+	}
+}
+
+RenderRequest RenderServer::BuildInstanceRenderRequest(Instance const* instance)
 {
 	RenderRequest request;
 
 	// 1) Invisible instances never produce a request.
 	// 2) The Base type decides how the instance is drawn.
-	if (!instance.m_visible)
+	// 3) The mesh material fills shader, textures, tint and draw states.
+	if (!instance->m_visible)
 	{
 		return request;
 	}
 
-	switch (instance.m_baseType)
+	switch (instance->m_baseType)
 	{
 	case InstanceBaseType::Mesh:
-		// MeshData only marks the RID as registered, so there are no GPU handles yet.
-		// The request stays empty until the mesh render path stores buffers and shaders again.
+	{
+		MeshData* meshData = m_meshOwner.GetOrNull(instance->m_base);
+		if (meshData == nullptr)
+		{
+			return request;
+		}
+
+		VertexBufferData* vertexBufferData = m_vertexBufferOwner.GetOrNull(meshData->m_vertexBufferRID);
+		if (vertexBufferData == nullptr)
+		{
+			return request;
+		}
+
+		request.m_vertexBuffer = vertexBufferData->m_vertexBuffer;
+
+		if (meshData->m_indexBufferRID != RID::Invalid)
+		{
+			IndexBufferData* indexBufferData = m_indexBufferOwner.GetOrNull(meshData->m_indexBufferRID);
+			if (indexBufferData == nullptr)
+			{
+				return request;
+			}
+
+			request.m_indexBuffer = indexBufferData->m_indexBuffer;
+		}
+
+		// Meshes without a material of their own fall back to the shared default material.
+		MaterialResource* materialResource = meshData->m_materialResource.IsValid()
+												 ? meshData->m_materialResource.Get()
+												 : GetDefaultMaterialResource().Get();
+
+		if (materialResource != nullptr)
+		{
+			ApplyMaterialToRequest(*materialResource, request);
+		}
 		break;
+	}
 	case InstanceBaseType::None:
+		break;
 	default:
 		break;
 	}
 
+	request.m_modelToWorld = instance->m_transform;
+
 	return request;
 }
 
-RID RenderServer::MeshCreate(Ref<MeshResource> const& mesh)
+void RenderServer::ApplyMaterialToRequest(MaterialResource const& materialResource, RenderRequest& request)
 {
-	if (!mesh.IsValid())
+	// 1) Missing texture slots stay nullptr so ExecuteRenderRequest() binds the default textures.
+	// 2) A missing shader is replaced here, because the backend rejects a null one when drawing.
+	for (size_t slot = 0; slot < SurfaceTextureSlot::Count; ++slot)
+	{
+		Ref<TextureResource> const& textureResource = materialResource.m_textureResources[slot];
+		if (!textureResource.IsValid())
+		{
+			continue;
+		}
+
+		TextureData* textureData = m_textureOwner.GetOrNull(textureResource->GetTextureRID());
+		request.m_textures[slot] = textureData != nullptr ? textureData->m_texture : nullptr;
+	}
+
+	if (materialResource.m_shaderResource.IsValid())
+	{
+		request.m_shader = materialResource.m_shaderResource->GetShader();
+	}
+	else
+	{
+		// e.g. a material that only overrides tint still needs a shader to draw with
+		request.m_shader = m_defaultUnlit->GetShader();
+	}
+
+	request.m_tint           = materialResource.m_tint;
+	request.m_blendMode      = materialResource.m_blendMode;
+	request.m_depthMode      = materialResource.m_depthMode;
+	request.m_rasterizerMode = materialResource.m_rasterizerMode;
+	request.m_samplerMode    = materialResource.m_samplerMode;
+}
+
+RID RenderServer::RegisterVertexBuffer(VertexBuffer* vertexBuffer)
+{
+	RID               vertexBufferRID = m_vertexBufferOwner.CreateRID();
+	VertexBufferData* data            = m_vertexBufferOwner.GetOrNull(vertexBufferRID);
+	data->m_vertexBuffer              = vertexBuffer;
+
+	return vertexBufferRID;
+}
+
+void RenderServer::FreeVertexBuffer(RID vertexBuffer)
+{
+	VertexBufferData* data = m_vertexBufferOwner.GetOrNull(vertexBuffer);
+	if (data == nullptr)
+	{
+		return;
+	}
+
+	delete data->m_vertexBuffer;
+	data->m_vertexBuffer = nullptr;
+
+	m_vertexBufferOwner.Free(vertexBuffer);
+}
+
+RID RenderServer::RegisterIndexBuffer(IndexBuffer* indexBuffer)
+{
+	RID              indexBufferRID = m_indexBufferOwner.CreateRID();
+	IndexBufferData* data           = m_indexBufferOwner.GetOrNull(indexBufferRID);
+	data->m_indexBuffer             = indexBuffer;
+
+	return indexBufferRID;
+}
+
+void RenderServer::FreeIndexBuffer(RID indexBuffer)
+{
+	IndexBufferData* data = m_indexBufferOwner.GetOrNull(indexBuffer);
+	if (data == nullptr)
+	{
+		return;
+	}
+
+	delete data->m_indexBuffer;
+	data->m_indexBuffer = nullptr;
+
+	m_indexBufferOwner.Free(indexBuffer);
+}
+
+bool RenderServer::PrepareMeshData(MeshData& data, MeshResource const& meshResource)
+{
+	// 1) Nothing can be uploaded while the Renderer is down.
+	// 2) A refresh must not keep the GPU buffers of the previous upload alive.
+	if (!m_started)
+	{
+		return false;
+	}
+
+	FreeVertexBuffer(data.m_vertexBufferRID);
+	FreeIndexBuffer(data.m_indexBufferRID);
+	data.m_vertexBufferRID  = RID::Invalid;
+	data.m_indexBufferRID   = RID::Invalid;
+	data.m_materialResource = meshResource.m_materialResource;
+
+	if (meshResource.IsEmpty())
+	{
+		return false;
+	}
+
+	VertexBuffer* vertexBuffer = m_renderer->CreateVertexBuffer(
+		meshResource.m_vertices.data(),
+		meshResource.m_vertexCount * meshResource.m_vertexStride,
+		meshResource.m_vertexStride);
+
+	if (vertexBuffer == nullptr)
+	{
+		return false;
+	}
+
+	data.m_vertexBufferRID = RegisterVertexBuffer(vertexBuffer);
+
+	IndexBuffer* indexBuffer = m_renderer->CreateIndexBuffer(
+		meshResource.m_indices.data(),
+		meshResource.m_indexCount * meshResource.m_indexStride,
+		meshResource.m_indexStride);
+
+	if (indexBuffer == nullptr)
+	{
+		FreeVertexBuffer(data.m_vertexBufferRID);
+		data.m_vertexBufferRID = RID::Invalid;
+		return false;
+	}
+
+	data.m_indexBufferRID = RegisterIndexBuffer(indexBuffer);
+
+	return true;
+}
+
+RID RenderServer::MeshCreate(MeshResource const& meshResource)
+{
+	if (!m_started)
 	{
 		return RID::Invalid;
 	}
 
-	// The MeshResource is not retained here: MeshData only marks the RID as registered,
-	// so the scene keeps owning the resource and unloading is never blocked by the RenderServer.
-	return m_meshOwner.CreateRID();
+	RID       meshRID = m_meshOwner.CreateRID();
+	MeshData* data    = m_meshOwner.GetOrNull(meshRID);
+
+	if (!PrepareMeshData(*data, meshResource))
+	{
+		m_meshOwner.Free(meshRID);
+		return RID::Invalid;
+	}
+
+	return meshRID;
+}
+
+void RenderServer::MeshRefresh(RID mesh, MeshResource const& meshResource)
+{
+	MeshData* data = m_meshOwner.GetOrNull(mesh);
+	if (data != nullptr)
+	{
+		PrepareMeshData(*data, meshResource);
+	}
 }
 
 void RenderServer::MeshFree(RID mesh)
 {
-	if (m_meshOwner.GetOrNull(mesh) == nullptr)
+	MeshData* data = m_meshOwner.GetOrNull(mesh);
+	if (data == nullptr)
 	{
 		return;
 	}
@@ -513,7 +941,88 @@ void RenderServer::MeshFree(RID mesh)
 		}
 	}
 
+	// 3) The GPU buffers belong to this registration, so they are released with it.
+	FreeVertexBuffer(data->m_vertexBufferRID);
+	FreeIndexBuffer(data->m_indexBufferRID);
+	data->m_vertexBufferRID = RID::Invalid;
+	data->m_indexBufferRID  = RID::Invalid;
+
 	m_meshOwner.Free(mesh);
+}
+
+bool RenderServer::PrepareTextureData(TextureData& data, TextureResource const& textureResource)
+{
+	// 1) Nothing can be uploaded while the Renderer is down.
+	// 2) A refresh must not keep the GPUTexture of the previous upload alive.
+	if (!m_started)
+	{
+		return false;
+	}
+
+	if (data.m_texture != nullptr)
+	{
+		m_renderer->DestroyTexture(data.m_texture);
+		data.m_texture = nullptr;
+	}
+
+	if (textureResource.IsEmpty())
+	{
+		return false;
+	}
+
+	data.m_texture = m_renderer->CreateGPUTexture(
+		textureResource.GetName().ToUtf8().c_str(),
+		textureResource.GetDimensions(),
+		textureResource.GetChannels(),
+		textureResource.GetImage()->GetRawData());
+
+	return data.m_texture != nullptr;
+}
+
+RID RenderServer::TextureCreate(TextureResource const& textureResource)
+{
+	if (!m_started)
+	{
+		return RID::Invalid;
+	}
+
+	RID          textureRID = m_textureOwner.CreateRID();
+	TextureData* data       = m_textureOwner.GetOrNull(textureRID);
+
+	if (!PrepareTextureData(*data, textureResource))
+	{
+		m_textureOwner.Free(textureRID);
+		return RID::Invalid;
+	}
+
+	return textureRID;
+}
+
+void RenderServer::TextureRefresh(RID texture, TextureResource const& textureResource)
+{
+	TextureData* data = m_textureOwner.GetOrNull(texture);
+	if (data != nullptr)
+	{
+		PrepareTextureData(*data, textureResource);
+	}
+}
+
+void RenderServer::TextureFree(RID texture)
+{
+	TextureData* data = m_textureOwner.GetOrNull(texture);
+	if (data == nullptr)
+	{
+		return;
+	}
+
+	// GPU resources can only be released while the Renderer is alive.
+	if (m_started && data->m_texture != nullptr)
+	{
+		m_renderer->DestroyTexture(data->m_texture);
+	}
+	data->m_texture = nullptr;
+
+	m_textureOwner.Free(texture);
 }
 
 RID RenderServer::ScenarioCreate() { return m_scenarioOwner.CreateRID(); }

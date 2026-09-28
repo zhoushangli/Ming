@@ -14,7 +14,6 @@ struct ID3D11DepthStencilView;
 class GPUTexture
 {
 	friend class D3D11RenderBackend; // Only the Renderer can create new GPUTexture objects!
-	friend class TextureResource;    // TextureResource owns and destroys its GPUTexture
 
 private:
 	GPUTexture();                                // can't instantiate directly; must ask Renderer to do it for you

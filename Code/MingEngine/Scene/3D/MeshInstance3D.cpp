@@ -95,8 +95,6 @@ void MeshInstance3D::BindMethods()
 
 void MeshInstance3D::OnNotification(int notification)
 {
-	RenderServer* server = g_engine != nullptr ? g_engine->m_renderServer : nullptr;
-
 	switch (notification)
 	{
 	case Notification_EnterTree:
@@ -110,12 +108,8 @@ void MeshInstance3D::OnNotification(int notification)
 			raycastSpace->AddObject(m_raycastObject);
 		}
 
-		// The mesh may be assigned before the node enters the tree, so register it here too.
-		if (server != nullptr && m_instanceRID.IsValid() && m_meshResource.IsValid())
-		{
-			m_meshRID = server->MeshCreate(m_meshResource);
-			server->InstanceSetBase(m_instanceRID, m_meshRID);
-		}
+		// The mesh may be assigned before the node enters the tree, so bind it here too.
+		SyncMeshBase();
 		break;
 	}
 	case Notification_ExitTree:
@@ -127,56 +121,33 @@ void MeshInstance3D::OnNotification(int notification)
 			delete m_raycastObject;
 			m_raycastObject = nullptr;
 		}
-
-		if (server != nullptr && m_meshRID.IsValid())
-		{
-			server->MeshFree(m_meshRID);
-			m_meshRID = RID::Invalid;
-		}
 		break;
 	}
 	}
+}
+
+void MeshInstance3D::SyncMeshBase()
+{
+	RenderServer* server = g_engine != nullptr ? g_engine->m_renderServer : nullptr;
+	if (server == nullptr || !m_instanceRID.IsValid())
+	{
+		return;
+	}
+
+	// An invalid Base RID keeps the instance type at None, so it produces no request.
+	RID meshRID = m_meshResource.IsValid() ? m_meshResource->GetMeshRID() : RID::Invalid;
+	server->InstanceSetBase(m_instanceRID, meshRID);
 }
 
 bool MeshInstance3D::IsEmpty() const { return m_meshResource == nullptr || m_meshResource->IsEmpty(); }
 
 void MeshInstance3D::SetMeshResource(Variant meshResource)
 {
-	RenderServer* server = g_engine != nullptr ? g_engine->m_renderServer : nullptr;
-
-	// 1) Unregister the previous Mesh RID so the registry does not grow.
-	// 2) Register the new resource and attach it as this instance's Base.
-	if (server != nullptr && m_meshRID.IsValid())
-	{
-		server->MeshFree(m_meshRID);
-		m_meshRID = RID::Invalid;
-	}
-
 	Ref<MeshResource> mesh = meshResource;
 	m_meshResource         = mesh;
 
-	if (server != nullptr && m_instanceRID.IsValid())
-	{
-		if (m_meshResource.IsValid())
-		{
-			m_meshRID = server->MeshCreate(m_meshResource);
-		}
-
-		server->InstanceSetBase(m_instanceRID, m_meshRID);
-	}
+	// The resource owns its single Mesh RID, so the instance only points at it.
+	SyncMeshBase();
 }
 
 Variant MeshInstance3D::GetMeshResource() const { return m_meshResource; }
-
-void MeshInstance3D::SetTint(Color tint)
-{
-	m_tint = tint;
-
-	RenderServer* server = g_engine != nullptr ? g_engine->m_renderServer : nullptr;
-	if (server != nullptr && m_instanceRID.IsValid())
-	{
-		server->InstanceSetTint(m_instanceRID, tint);
-	}
-}
-
-Color MeshInstance3D::GetTint() const { return m_tint; }

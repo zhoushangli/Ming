@@ -202,7 +202,7 @@ public unsafe struct ming_string
 
 // Describe the native CowData header that sits right before the code points of a block.
 // e.g. ((ming_string_header*)Data)[-1].Size is the code point count of that string.
-[StructLayout(LayoutKind.Sequential, Pack = 8)]
+[StructLayout(LayoutKind.Sequential, Size = 16)]
 public struct ming_string_header
 {
     public uint RefCount;

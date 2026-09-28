@@ -11,7 +11,11 @@ public:
 
 	Vector2 GetLocalPosition() const override { return m_position; }
 
-	void SetPosition(Vector2 const& position) { m_position = position; }
+	void SetPosition(Vector2 const& position)
+	{
+		m_position = position;
+		SyncPosition();
+	}
 
 	Vector2 GetSize() const { return m_size; }
 

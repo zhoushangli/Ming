@@ -58,17 +58,8 @@
     <Filter Include="Scene\3D">
       <UniqueIdentifier>{1E92DCC9-D8F0-4A48-B780-DC5358C2806E}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Scene\Core">
-      <UniqueIdentifier>{4F21D01C-8451-4760-BDF2-F6E55D327144}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Scene\Import">
-      <UniqueIdentifier>{4D6B3428-FC4F-4FAD-A9ED-F46B6CEC4C85}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Scene\Physics">
       <UniqueIdentifier>{F891985C-4CC9-4FDE-AA27-5E93A18234C3}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Scene\Resource">
-      <UniqueIdentifier>{77706308-3EE6-4FBD-8150-603F627724BC}</UniqueIdentifier>
     </Filter>
     <Filter Include="ThirdParty">
       <UniqueIdentifier>{66728401-E569-487D-944D-3079E98658E6}</UniqueIdentifier>
@@ -130,8 +121,17 @@
     <Filter Include="Scene\2D">
       <UniqueIdentifier>{ee7351fa-f52d-4758-b774-1ca39938894b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Scene\Core">
+      <UniqueIdentifier>{4F21D01C-8451-4760-BDF2-F6E55D327144}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Scene\Resource">
+      <UniqueIdentifier>{77706308-3EE6-4FBD-8150-603F627724BC}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Scene\GUI">
       <UniqueIdentifier>{1d21996f-44a5-46ff-8b68-27876efcb924}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Scene\Import">
+      <UniqueIdentifier>{4D6B3428-FC4F-4FAD-A9ED-F46B6CEC4C85}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -636,17 +636,18 @@
     <ClCompile Include="Scene\GUI\Control.cpp">
       <Filter>Scene\GUI</Filter>
     </ClCompile>
-    <ClCompile Include="Scene\GUI\ColorRect.cpp">
-      <Filter>Scene\GUI</Filter>
-    </ClCompile>
     <ClCompile Include="Engine\Render\RenderTypes.cpp">
       <Filter>Engine\Render</Filter>
     </ClCompile>
     <ClCompile Include="Engine\Render\RenderBackend.cpp">
       <Filter>Engine\Render</Filter>
     </ClCompile>
-    <ClCompile Include="Core\RID.cpp">
-      <Filter>Core</Filter>
+    <ClCompile Include="Core\Render\RID.cpp" />
+    <ClCompile Include="Scene\GUI\ColorRect.cpp">
+      <Filter>Scene\GUI</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene\Resource\MaterialResource.cpp">
+      <Filter>Scene\Resource</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1241,8 +1242,9 @@
     <ClInclude Include="Engine\Render\RenderBackend.hpp">
       <Filter>Engine\Render</Filter>
     </ClInclude>
-    <ClInclude Include="Core\RID.hpp">
-      <Filter>Core</Filter>
+    <ClInclude Include="Core\Render\RID.hpp" />
+    <ClInclude Include="Scene\Resource\MaterialResource.hpp">
+      <Filter>Scene\Resource</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

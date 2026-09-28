@@ -1,15 +1,19 @@
 #include "MingEngine/Scene/Resource/TextureResource.hpp"
 
 #include "MingEngine/Engine/Application/Engine.hpp"
-#include "MingEngine/Engine/Render/GPUTexture.hpp"
 #include "MingEngine/Engine/Render/RenderServer.hpp"
 
 #include <utility>
 
 TextureResource::~TextureResource()
 {
-	delete m_gpuTexture;
-	m_gpuTexture = nullptr;
+	// The registration is released while the RenderServer still owns the GPUTexture.
+	RenderServer* server = (g_engine != nullptr) ? g_engine->m_renderServer : nullptr;
+	if (server != nullptr && m_textureRID.IsValid())
+	{
+		server->TextureFree(m_textureRID);
+		m_textureRID = RID::Invalid;
+	}
 }
 
 bool TextureResource::IsEmpty() const { return !m_image.IsValid() || !m_image->IsValid(); }
@@ -27,32 +31,50 @@ bool TextureResource::CopyFrom(Resource&& other)
 	MoveBaseFrom(std::move(other));
 	m_image = std::move(otherTex->m_image);
 
-	// 3) Take ownership of the loaded GPU texture
-	delete m_gpuTexture;
-	m_gpuTexture = nullptr;
-	std::swap(m_gpuTexture, otherTex->m_gpuTexture);
+	// 3) Hand the loaded GPU texture to the registration of this resource.
+	//    The other resource gives up its RID so it cannot free what this one keeps.
+	RenderServer* server = (g_engine != nullptr) ? g_engine->m_renderServer : nullptr;
+	if (server != nullptr)
+	{
+		if (m_textureRID.IsValid())
+		{
+			server->TextureRefresh(m_textureRID, *this);
+		}
+		else
+		{
+			m_textureRID = server->TextureCreate(*this);
+		}
+
+		if (otherTex->m_textureRID.IsValid())
+		{
+			server->TextureFree(otherTex->m_textureRID);
+			otherTex->m_textureRID = RID::Invalid;
+		}
+	}
 
 	return true;
 }
 
 bool TextureResource::InitGPUResources()
 {
-	// 1) Destroy old GPU texture
-	delete m_gpuTexture;
-	m_gpuTexture = nullptr;
-
-	// 2) Create new GPU texture from CPU pixel data
-	if (g_engine == nullptr || g_engine->m_renderServer == nullptr || IsEmpty())
+	// 1) Nothing can be uploaded while the RenderServer is down.
+	// 2) Register the image once and then keep that RID stable across reloads.
+	RenderServer* server = (g_engine != nullptr) ? g_engine->m_renderServer : nullptr;
+	if (server == nullptr || IsEmpty())
 	{
 		return false;
 	}
 
-	m_gpuTexture = g_engine->m_renderServer->CreateGPUTexture(
-		GetName().ToUtf8().c_str(),
-		m_image->GetDimensions(),
-		m_image->GetChannels(),
-		m_image->GetRawData());
-	return m_gpuTexture != nullptr;
+	if (m_textureRID.IsValid())
+	{
+		server->TextureRefresh(m_textureRID, *this);
+	}
+	else
+	{
+		m_textureRID = server->TextureCreate(*this);
+	}
+
+	return m_textureRID.IsValid();
 }
 
 IntVec2 TextureResource::GetDimensions() const { return m_image.IsValid() ? m_image->GetDimensions() : IntVec2::Zero; }

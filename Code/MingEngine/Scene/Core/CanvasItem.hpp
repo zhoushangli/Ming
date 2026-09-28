@@ -1,13 +1,8 @@
 #pragma once
 
 #include "MingEngine/Core/Math/AABB2.hpp"
-#include "MingEngine/Core/Render/Vertex.hpp"
-#include "MingEngine/Engine/Render/RenderContext.hpp"
-#include "MingEngine/Engine/Render/VertexBuffer.hpp"
+#include "MingEngine/Core/Render/RID.hpp"
 #include "MingEngine/Scene/Core/Node.hpp"
-
-#include <memory>
-#include <vector>
 
 class RenderServer;
 
@@ -18,10 +13,12 @@ class CanvasItem : public Node
 public:
 	enum
 	{
-		Notification_Draw = 50
+		Notification_Draw = 30
 	};
 
 	static void BindMethods() {}
+	CanvasItem();
+	~CanvasItem() override;
 
 	CanvasItem*     GetParentItem() const;
 	virtual Vector2 GetLocalPosition() const;
@@ -33,15 +30,14 @@ public:
 
 	void QueueRedraw();
 
-	RenderRequest BuildRenderRequest(RenderServer& renderer, float viewportHeight);
-
 protected:
 	void DrawRect(AABB2 const& rect, Color const& color);
+	void SyncPosition();
+	void OnNotification(int notification);
 
 private:
 	bool m_visible       = true;
 	bool m_redrawPending = true;
 
-	std::vector<Vertex>           m_localVertices;
-	std::unique_ptr<VertexBuffer> m_vertexBuffer;
+	RID m_canvasItemRID = RID::Invalid;
 };

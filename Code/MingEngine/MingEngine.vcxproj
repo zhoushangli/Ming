@@ -256,6 +256,7 @@
     <ClCompile Include="Scene\RegisterAllTypes.cpp" />
     <ClCompile Include="Scene\RegisterSceneTypes.cpp" />
     <ClCompile Include="Engine\Render\RenderServer.cpp" />
+    <ClCompile Include="Scene\Resource\MaterialResource.cpp" />
     <ClCompile Include="Scene\Resource\MeshResource.cpp" />
     <ClCompile Include="Scene\Resource\MeshResourceFormat.cpp" />
     <ClCompile Include="..\ThirdParty\imgui\backends\imgui_impl_dx11.cpp" />
@@ -445,6 +446,7 @@
     <ClInclude Include="Scene\Core\Viewport.hpp" />
     <ClInclude Include="Scene\RegisterAllTypes.hpp" />
     <ClInclude Include="Engine\Render\RenderServer.hpp" />
+    <ClInclude Include="Scene\Resource\MaterialResource.hpp" />
     <ClInclude Include="Scene\Resource\MeshResource.hpp" />
     <ClInclude Include="Scene\Resource\MeshResourceFormat.hpp" />
     <ClInclude Include="..\ThirdParty\FastNoiseLite\FastNoiseLite.h" />

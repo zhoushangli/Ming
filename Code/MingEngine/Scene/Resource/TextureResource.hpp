@@ -2,8 +2,7 @@
 
 #include "MingEngine/Core/Image.hpp"
 #include "MingEngine/Core/Object/Resource.hpp"
-
-class GPUTexture;
+#include "MingEngine/Core/Render/RID.hpp"
 
 class TextureResource : public Resource
 {
@@ -20,10 +19,10 @@ public:
 
 	bool InitGPUResources();
 
-	GPUTexture* GetGPUTexture() const { return m_gpuTexture; }
-	Ref<Image>  GetImage() const { return m_image; }
-	IntVec2     GetDimensions() const;
-	int         GetChannels() const;
+	RID        GetTextureRID() const { return m_textureRID; }
+	Ref<Image> GetImage() const { return m_image; }
+	IntVec2    GetDimensions() const;
+	int        GetChannels() const;
 
 protected:
 	static void BindMethods() {}
@@ -32,5 +31,7 @@ public:
 	Ref<Image> m_image;
 
 private:
-	GPUTexture* m_gpuTexture = nullptr;
+	// Texture RID on the RenderServer; RID::Invalid means the image has no GPU data yet.
+	// e.g. InitGPUResources() registers it and MeshCreate() copies this RID into MeshData
+	RID m_textureRID = RID::Invalid;
 };

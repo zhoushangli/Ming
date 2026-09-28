@@ -204,7 +204,7 @@ void SceneTree::ChangeScene(Node* newSceneNode)
 	m_pendingScene = newSceneNode;
 }
 
-Camera3D* SceneTree::GetWorldCamera() const { return m_root->GetWorldCamera(); }
+Camera3D* SceneTree::GetWorldCamera() const { return m_root->GetCurrentCamera(); }
 
 float SceneTree::GetDeltaSeconds() const { return m_deltaSeconds; }
 

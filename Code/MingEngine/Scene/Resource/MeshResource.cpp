@@ -2,20 +2,21 @@
 
 #include "MingEngine/Core/Render/Vertex.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
-#include "MingEngine/Engine/Render/RenderServer.hpp"
 #include "MingEngine/Engine/Render/IndexBuffer.hpp"
+#include "MingEngine/Engine/Render/RenderServer.hpp"
 #include "MingEngine/Engine/Render/VertexBuffer.hpp"
-#include "MingEngine/Scene/Resource/TextureResource.hpp"
 
 #include <utility>
 
 MeshResource::~MeshResource()
 {
-	delete m_vertexBuffer;
-	m_vertexBuffer = nullptr;
-
-	delete m_indexBuffer;
-	m_indexBuffer = nullptr;
+	// The registration is released while the RenderServer still owns the GPU buffers.
+	RenderServer* server = (g_engine != nullptr) ? g_engine->m_renderServer : nullptr;
+	if (server != nullptr && m_meshRID.IsValid())
+	{
+		server->MeshFree(m_meshRID);
+		m_meshRID = RID::Invalid;
+	}
 }
 
 bool MeshResource::IsEmpty() const
@@ -44,32 +45,38 @@ bool MeshResource::CopyFrom(Resource&& other)
 	m_indexCount  = otherMesh->m_indexCount;
 	m_indices     = std::move(otherMesh->m_indices);
 
-	m_textureResources = std::move(otherMesh->m_textureResources);
+	m_materialResource = std::move(otherMesh->m_materialResource);
 	m_bounds           = otherMesh->m_bounds;
 	m_triangles        = std::move(otherMesh->m_triangles);
 
-	// 3) Take ownership of the loaded GPU buffers
-	delete m_vertexBuffer;
-	m_vertexBuffer = std::exchange(otherMesh->m_vertexBuffer, nullptr);
-	delete m_indexBuffer;
-	m_indexBuffer = std::exchange(otherMesh->m_indexBuffer, nullptr);
+	// 3) Hand the loaded GPU data to the registration of this resource.
+	//    The other resource gives up its RID so it cannot free what this one keeps.
+	RenderServer* server = (g_engine != nullptr) ? g_engine->m_renderServer : nullptr;
+	if (server != nullptr)
+	{
+		if (m_meshRID.IsValid())
+		{
+			server->MeshRefresh(m_meshRID, *this);
+		}
+		else
+		{
+			m_meshRID = server->MeshCreate(*this);
+		}
+
+		if (otherMesh->m_meshRID.IsValid())
+		{
+			server->MeshFree(otherMesh->m_meshRID);
+			otherMesh->m_meshRID = RID::Invalid;
+		}
+	}
 
 	return true;
 }
 
 void MeshResource::InitGPUResources()
 {
-	delete m_vertexBuffer;
-	m_vertexBuffer = nullptr;
-	delete m_indexBuffer;
-	m_indexBuffer = nullptr;
-
-	m_vertexBuffer =
-		g_engine->m_renderServer->CreateVertexBuffer(m_vertices.data(), m_vertexCount * m_vertexStride, m_vertexStride);
-	m_indexBuffer =
-		g_engine->m_renderServer->CreateIndexBuffer(m_indices.data(), m_indexCount * m_indexStride, m_indexStride);
-
-	// Build triangle list for raycast
+	// 1) Build the CPU triangle list used by raycasts.
+	// 2) Register the mesh once and then keep that RID stable across reloads.
 	m_triangles.clear();
 	Vertex const*   vertexData = reinterpret_cast<Vertex const*>(m_vertices.data());
 	uint32_t const* indexData  = reinterpret_cast<uint32_t const*>(m_indices.data());
@@ -94,4 +101,18 @@ void MeshResource::InitGPUResources()
 		Triangle3 triangle(pointA, pointB, pointC);
 		m_triangles.push_back(triangle);
 	}
+
+	RenderServer* server = (g_engine != nullptr) ? g_engine->m_renderServer : nullptr;
+	if (server == nullptr || IsEmpty())
+	{
+		return;
+	}
+
+	if (m_meshRID.IsValid())
+	{
+		server->MeshRefresh(m_meshRID, *this);
+		return;
+	}
+
+	m_meshRID = server->MeshCreate(*this);
 }

@@ -1,10 +1,8 @@
 #include "MingEngine/Scene/Resource/MeshResourceFormat.hpp"
 
-#include "MingEngine/Core/Object/ResourceLoader.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Engine/File/FileSystem.hpp"
 #include "MingEngine/Scene/Resource/MeshResource.hpp"
-#include "MingEngine/Scene/Resource/TextureResource.hpp"
 
 #include "ThirdParty/nlohmann/json.hpp"
 
@@ -223,36 +221,6 @@ Ref<Resource> MeshResourceLoader::Load(VirtualPath const& virtualPath)
 	CopyPayloadBlock(payload, verticesBlock, meshData->m_vertices);
 	CopyPayloadBlock(payload, indicesBlock, meshData->m_indices);
 
-	if (root.contains("textures"))
-	{
-		if (!root["textures"].is_array())
-		{
-			return Ref<Resource>();
-		}
-
-		for (Json const& textureJson : root["textures"])
-		{
-			if (!textureJson.is_string())
-			{
-				return Ref<Resource>();
-			}
-
-			VirtualPath texPath;
-			if (!VirtualPath::TryParse(textureJson.get<std::string>(), texPath))
-			{
-				return Ref<Resource>();
-			}
-			Ref<Resource>        loaded = ResourceLoader::Load(texPath);
-			Ref<TextureResource> texResource(loaded);
-			if (!texResource.IsValid())
-			{
-				return Ref<Resource>();
-			}
-
-			meshData->m_textureResources.push_back(texResource);
-		}
-	}
-
 	if (!IsValidMeshData(*meshData))
 	{
 		return Ref<Resource>();
@@ -301,15 +269,6 @@ bool MeshResourceSaver::Save(VirtualPath const& virtualPath, Variant const& valu
 	root["index_stride"]  = meshData->m_indexStride;
 	root["index_count"]   = meshData->m_indexCount;
 	root["indices"]       = MakeBlockJson(indicesBlock);
-	root["textures"]      = Json::array();
-
-	for (Ref<TextureResource> const& texRef : meshData->m_textureResources)
-	{
-		if (texRef.IsValid())
-		{
-			root["textures"].push_back(texRef->GetVirtualPath().GetString());
-		}
-	}
 
 	std::string const jsonText   = root.dump(1, '\t');
 	size_t            headerSize = kMinHeaderSize;
