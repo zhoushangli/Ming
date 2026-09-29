@@ -181,6 +181,7 @@ public:
 	// e.g. Camera3D binds itself here on EnterTree via ViewportSetCamera()
 	RID m_camera   = RID::Invalid;
 	RID m_scenario = RID::Invalid;
+	std::vector<RID> m_canvasLayers;
 
 	// output resolution indicates the size of the render target
 	// output rect indicates the portion of the render target to render to
@@ -235,23 +236,36 @@ struct CanvasItemData
 		CommandRect() { type = TYPE_RECT; }
 	};
 
-	CanvasItemData() = default;
-	CanvasItemData(CanvasItemData const&) = delete;
+	CanvasItemData()                                 = default;
+	CanvasItemData(CanvasItemData const&)            = delete;
 	CanvasItemData& operator=(CanvasItemData const&) = delete;
 	~CanvasItemData() { ClearCommands(); }
 
 	void ClearCommands()
 	{
-		for (Command* command : commands)
+		for (Command* command : m_commands)
 		{
 			delete command;
 		}
-		commands.clear();
+		m_commands.clear();
 	}
 
-	RID           viewport = RID::Invalid;
-	Vector2       position = Vector2::Zero;
-	bool          visible = true;
-	std::vector<Command*> commands;
-	VertexBuffer* vertexBuffer = nullptr;
+	RID              m_viewport = RID::Invalid;
+	RID              m_parent   = RID::Invalid;
+	RID              m_layer    = RID::Invalid;
+	std::vector<RID> m_children;
+
+	Vector2               m_position = Vector2::Zero;
+	bool                  m_visible  = true;
+	std::vector<Command*> m_commands;
+	VertexBuffer*         m_vertexBuffer = nullptr;
+};
+
+struct CanvasLayerData
+{
+	CanvasLayerData() = default;
+	~CanvasLayerData() = default;
+
+	RID              m_viewport = RID::Invalid;
+	std::vector<RID> m_children;
 };

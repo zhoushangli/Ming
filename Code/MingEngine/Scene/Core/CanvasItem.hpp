@@ -16,7 +16,6 @@ public:
 		Notification_Draw = 30
 	};
 
-	static void BindMethods() {}
 	CanvasItem();
 	~CanvasItem() override;
 
@@ -31,13 +30,18 @@ public:
 	void QueueRedraw();
 
 protected:
+	static void BindMethods() {}
+
 	void DrawRect(AABB2 const& rect, Color const& color);
+
 	void SyncPosition();
+
 	void OnNotification(int notification);
 
 private:
 	bool m_visible       = true;
 	bool m_redrawPending = true;
 
-	RID m_canvasItemRID = RID::Invalid;
+	RID m_canvasItemRID  = RID::Invalid;
+	RID m_canvasLayerRID = RID::Invalid;
 };

@@ -16,6 +16,8 @@ Viewport::Viewport()
 		g_engine->m_windowSystem != nullptr ? g_engine->m_windowSystem->GetClientDimensions() : IntVec2(1280, 720);
 
 	m_viewportRID      = g_engine->m_renderServer->ViewportCreate();
+	m_canvasLayerRID   = g_engine->m_renderServer->CanvasLayerCreate();
+	g_engine->m_renderServer->CanvasLayerSetViewport(m_canvasLayerRID, m_viewportRID);
 	m_outputResolution = defaultResolution;
 	g_engine->m_renderServer->ViewportSetResolution(m_viewportRID, m_outputResolution);
 
@@ -28,6 +30,7 @@ Viewport::~Viewport()
 {
 	// Viewport GPU resources must be destroyed while Engine and Renderer still exist.
 	g_engine->m_renderServer->ScenarioFree(m_scenarioRID);
+	g_engine->m_renderServer->CanvasLayerFree(m_canvasLayerRID);
 	g_engine->m_renderServer->ViewportFree(m_viewportRID);
 }
 

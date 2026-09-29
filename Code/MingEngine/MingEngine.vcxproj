@@ -231,6 +231,7 @@
     <ClCompile Include="Scene\3D\Node3D.cpp" />
     <ClCompile Include="Scene\3D\Particles3D.cpp" />
     <ClCompile Include="Scene\Core\CanvasItem.cpp" />
+    <ClCompile Include="Scene\Core\CanvasLayer.cpp" />
     <ClCompile Include="Scene\Core\NodePath.cpp" />
     <ClCompile Include="Scene\Core\RaycastSpace3D.cpp" />
     <ClCompile Include="Scene\GUI\ColorRect.cpp" />
@@ -424,6 +425,7 @@
     <ClInclude Include="Scene\3D\Node3D.hpp" />
     <ClInclude Include="Scene\3D\Particles3D.hpp" />
     <ClInclude Include="Scene\Core\CanvasItem.hpp" />
+    <ClInclude Include="Scene\Core\CanvasLayer.hpp" />
     <ClInclude Include="Scene\Core\RaycastSpace3D.hpp" />
     <ClInclude Include="Scene\GUI\ColorRect.hpp" />
     <ClInclude Include="Scene\GUI\Control.hpp" />

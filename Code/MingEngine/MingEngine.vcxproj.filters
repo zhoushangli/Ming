@@ -649,6 +649,9 @@
     <ClCompile Include="Scene\Resource\MaterialResource.cpp">
       <Filter>Scene\Resource</Filter>
     </ClCompile>
+    <ClCompile Include="Scene\Core\CanvasLayer.cpp">
+      <Filter>Scene\Core</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Core\Clock.hpp">
@@ -1245,6 +1248,9 @@
     <ClInclude Include="Core\Render\RID.hpp" />
     <ClInclude Include="Scene\Resource\MaterialResource.hpp">
       <Filter>Scene\Resource</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\Core\CanvasLayer.hpp">
+      <Filter>Scene\Core</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

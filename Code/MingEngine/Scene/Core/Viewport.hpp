@@ -26,6 +26,7 @@ public:
 
 	// All Viewport render state lives on the RenderServer and is addressed by this RID.
 	RID GetViewportRID() const { return m_viewportRID; }
+	RID GetCanvasLayerRID() const { return m_canvasLayerRID; }
 
 	// Scenario that owns this Viewport's instances on the RenderServer.
 	RID GetScenarioRID() const { return m_scenarioRID; }
@@ -38,6 +39,7 @@ private:
 	std::set<Camera3D*> m_cameras;
 
 	RID     m_viewportRID      = RID::Invalid;
+	RID     m_canvasLayerRID   = RID::Invalid;
 	RID     m_scenarioRID      = RID::Invalid;
 	IntVec2 m_outputResolution = IntVec2::Zero;
 };

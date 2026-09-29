@@ -35,10 +35,21 @@ public:
 	RID  CanvasItemCreate();
 	void CanvasItemFree(RID item);
 	void CanvasItemSetViewport(RID item, RID viewport);
+	void CanvasItemSetParent(RID item, RID parent);
 	void CanvasItemSetPosition(RID item, Vector2 const& position);
 	void CanvasItemSetVisible(RID item, bool visible);
 	void CanvasItemClear(RID item);
 	void CanvasItemAddRect(RID item, AABB2 const& rect, Color const& color);
+
+#pragma endregion
+
+#pragma region CanvasLayer API
+
+	RID  CanvasLayerCreate();
+	void CanvasLayerFree(RID layer);
+	void CanvasLayerSetViewport(RID layer, RID viewport);
+	void CanvasLayerAddChild(RID layer, RID child);
+	void CanvasLayerRemoveChild(RID layer, RID child);
 
 #pragma endregion
 
@@ -184,7 +195,8 @@ private:
 	bool PrepareMeshData(MeshData& data, MeshResource const& meshResource);
 	bool PrepareTextureData(TextureData& data, TextureResource const& textureResource);
 
-	void PrepareCanvasItemRequests(RID viewport, ViewportData* viewportData);
+	void PrepareCanvasLayerRequests(RID layer, RID viewport, ViewportData* viewportData);
+	void PrepareCanvasItemRequests(RID item, RID viewport, ViewportData* viewportData, Vector2 const& parentPosition);
 
 private:
 	Renderer* m_renderer = nullptr;
@@ -195,6 +207,7 @@ private:
 	Ref<MaterialResource> m_defaultMaterial;
 
 	RIDOwner<CanvasItemData>   m_canvasItemOwner;
+	RIDOwner<CanvasLayerData>  m_canvasLayerOwner;
 	RIDOwner<LightData>        m_lightOwner;
 	RIDOwner<MeshData>         m_meshOwner;
 	RIDOwner<VertexBufferData> m_vertexBufferOwner;

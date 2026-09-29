@@ -1,13 +1,30 @@
 #include "MingEngine/Scene/Core/CanvasItem.hpp"
+
 #include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Engine/Render/RenderServer.hpp"
+#include "MingEngine/Scene/Core/CanvasLayer.hpp"
 #include "MingEngine/Scene/Core/Viewport.hpp"
 
 CanvasItem::CanvasItem() { m_canvasItemRID = g_engine->m_renderServer->CanvasItemCreate(); }
 
 CanvasItem::~CanvasItem() { g_engine->m_renderServer->CanvasItemFree(m_canvasItemRID); }
 
-CanvasItem* CanvasItem::GetParentItem() const { return dynamic_cast<CanvasItem*>(GetParent()); }
+CanvasItem* CanvasItem::GetParentItem() const
+{
+	for (Node* ancestor = GetParent(); ancestor != nullptr && ancestor != m_data.m_viewport;
+		 ancestor       = ancestor->GetParent())
+	{
+		if (CanvasItem* item = dynamic_cast<CanvasItem*>(ancestor))
+		{
+			return item;
+		}
+		if (dynamic_cast<CanvasLayer*>(ancestor) != nullptr)
+		{
+			break;
+		}
+	}
+	return nullptr;
+}
 
 Vector2 CanvasItem::GetLocalPosition() const { return Vector2::Zero; }
 
@@ -67,16 +84,57 @@ void CanvasItem::OnNotification(int notification)
 	switch (notification)
 	{
 	case Notification_EnterTree:
+	{
+		CanvasItem* parentItem = nullptr;
+		m_canvasLayerRID       = RID::Invalid;
+		for (Node* ancestor = GetParent(); ancestor != nullptr && ancestor != m_data.m_viewport;
+			 ancestor       = ancestor->GetParent())
+		{
+			if (CanvasItem* item = dynamic_cast<CanvasItem*>(ancestor))
+			{
+				parentItem       = item;
+				m_canvasLayerRID = parentItem->m_canvasLayerRID;
+				break;
+			}
+			if (CanvasLayer* layer = dynamic_cast<CanvasLayer*>(ancestor))
+			{
+				m_canvasLayerRID = layer->GetCanvasLayerRID();
+				break;
+			}
+		}
+		if (!m_canvasLayerRID.IsValid())
+		{
+			m_canvasLayerRID = m_data.m_viewport->GetCanvasLayerRID();
+		}
+
 		server->CanvasItemSetViewport(m_canvasItemRID, m_data.m_viewport->GetViewportRID());
-		SyncPosition();
+		if (parentItem != nullptr)
+		{
+			server->CanvasItemSetParent(m_canvasItemRID, parentItem->m_canvasItemRID);
+		}
+		else
+		{
+			server->CanvasLayerAddChild(m_canvasLayerRID, m_canvasItemRID);
+		}
+		server->CanvasItemSetPosition(m_canvasItemRID, GetLocalPosition());
 		server->CanvasItemSetVisible(m_canvasItemRID, m_visible);
+
 		if (m_redrawPending)
 		{
 			QueueRedraw();
 		}
 		break;
+	}
 	case Notification_ExitTree:
+		server->CanvasItemSetParent(m_canvasItemRID, RID::Invalid);
 		server->CanvasItemSetViewport(m_canvasItemRID, RID::Invalid);
+
+		if (m_canvasLayerRID.IsValid())
+		{
+			m_canvasLayerRID = RID::Invalid;
+			server->CanvasLayerRemoveChild(m_canvasLayerRID, m_canvasItemRID);
+		}
+
 		break;
 	}
 }
