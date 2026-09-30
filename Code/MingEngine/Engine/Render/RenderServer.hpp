@@ -86,6 +86,7 @@ public:
 	void        ViewportSubmitRenderRequest(RID viewport, RenderRequest const& request);
 	GPUTexture* ViewportGetTexture(RID viewport) const;
 	void        ViewportSetScenario(RID viewport, RID scenario);
+	void        ViewportSetPresentToScreen(RID viewport, bool presentToScreen);
 
 #pragma endregion
 

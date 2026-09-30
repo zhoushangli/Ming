@@ -378,6 +378,11 @@ void RenderServer::Render()
 
 		m_renderer->ClearSceneTargets(viewportData);
 		m_renderer->RenderViewport(viewportData, cameraData);
+
+		if (viewportData->m_presentToScreen)
+		{
+			m_renderer->CopyTextureToBackBuffer(viewportData->m_viewportOutputTexture);
+		}
 	}
 }
 
@@ -1288,4 +1293,13 @@ void RenderServer::ViewportSetScenario(RID viewport, RID scenario)
 	}
 
 	data->m_scenario = scenario;
+}
+
+void RenderServer::ViewportSetPresentToScreen(RID viewport, bool presentToScreen)
+{
+	ViewportData* data = m_viewportOwner.GetOrNull(viewport);
+	if (data != nullptr)
+	{
+		data->m_presentToScreen = presentToScreen;
+	}
 }

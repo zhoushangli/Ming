@@ -8,6 +8,7 @@
 #include "MingEngine/Scene/3D/Node3D.hpp"
 #include "MingEngine/Scene/Core/RaycastSpace3D.hpp"
 #include "MingEngine/Scene/Core/Viewport.hpp"
+#include "MingEngine/Scene/Core/Window.hpp"
 
 #include <algorithm>
 
@@ -23,7 +24,7 @@ SceneTree::SceneTree()
 
 	// 1) Every SceneTree owns exactly one root Viewport.
 	// 2) Entering the tree registers that Viewport with RenderServer.
-	m_root = MemNew<Viewport>();
+	m_root = MemNew<Window>();
 	m_root->SetName("Root");
 
 	m_root->MoveToSceneTree(this);

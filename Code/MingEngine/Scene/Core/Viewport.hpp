@@ -34,7 +34,7 @@ public:
 protected:
 	void OnNotification(int notification);
 
-private:
+protected:
 	Camera3D*           m_currentCamera = nullptr;
 	std::set<Camera3D*> m_cameras;
 
@@ -42,4 +42,12 @@ private:
 	RID     m_canvasLayerRID   = RID::Invalid;
 	RID     m_scenarioRID      = RID::Invalid;
 	IntVec2 m_outputResolution = IntVec2::Zero;
+};
+
+class SubViewport : public Viewport
+{
+	MCLASS(SubViewport, Viewport);
+
+protected:
+	static void BindMethods() {}
 };

@@ -7,29 +7,14 @@ class ColorRect : public Control
 	MCLASS(ColorRect, Control);
 
 public:
-	static void BindMethods() {}
-
-	void SetColor(Color const& color)
-	{
-		if (m_color == color)
-		{
-			return;
-		}
-
-		m_color = color;
-		QueueRedraw();
-	}
+	void SetColor(Color const& color);
 
 	Color GetColor() const { return m_color; }
 
 protected:
-	void OnNotification(int notification)
-	{
-		if (notification == Notification_Draw)
-		{
-			DrawRect(GetLocalRect(), m_color);
-		}
-	}
+	static void BindMethods() {}
+
+	void OnNotification(int notification);
 
 private:
 	Color m_color = Color::White;

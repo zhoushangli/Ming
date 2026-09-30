@@ -26,6 +26,7 @@
 #include "MingEngine/Scene/Core/PackedScene.hpp"
 #include "MingEngine/Scene/Core/SceneTree.hpp"
 #include "MingEngine/Scene/RegisterAllTypes.hpp"
+#include "MingEngine/Scene/GUI/ColorRect.hpp"
 
 #include "ThirdParty/GLFW/glfw3.h"
 
@@ -51,7 +52,6 @@ App::App(MingRunConfig const& config) : m_runConfig(config)
 
 	g_engine = new Engine(engineConfig);
 	g_engine->SetEditorMode(config.mode == MingRunMode::Editor);
-
 }
 
 App::~App()
@@ -274,32 +274,16 @@ void App::StartupEditor()
 
 void App::StartupGame()
 {
-	m_clock     = new Clock();
-	m_sceneTree = MemNew<SceneTree>();
+    m_clock = new Clock();
+    m_sceneTree = MemNew<SceneTree>();
 
-	VirtualPath const& startScenePath = ProjectSettings::Get()->m_startScenePath;
-	if (startScenePath.IsValid())
-	{
-		Ref<Resource> loadedScene = ResourceLoader::Load(startScenePath);
-		if (!loadedScene.IsValid())
-		{
-			return;
-		}
+    ColorRect* square = MemNew<ColorRect>();
+    square->SetName("WhiteSquare");
+    square->SetPosition(Vector2(24.0f, 24.0f));
+    square->SetSize(Vector2(64.0f, 64.0f));
+    square->SetColor(Color::White);
 
-		Ref<PackedScene> packedScene(loadedScene);
-		if (!packedScene.IsValid())
-		{
-			return;
-		}
-
-		Node* newSceneRoot = packedScene->Instantiate();
-		if (!newSceneRoot)
-		{
-			return;
-		}
-
-		m_sceneTree->ChangeScene(newSceneRoot);
-	}
+    m_sceneTree->GetRoot()->AddNode(square);
 }
 
 void App::ShutdownScene()

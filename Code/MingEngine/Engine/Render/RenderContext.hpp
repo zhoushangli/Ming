@@ -175,7 +175,11 @@ public:
 	// 1) Game fills cameras, dimensions, requests, lights, and post-process passes.
 	// 2) Renderer creates and resizes the GPU textures below.
 	// 3) All transient data and GPU resources belong to this Viewport only.
+
+	// m_presentToScreen indicates this viewport should present to the backbuffer
+	// Which is like the main viewport
 	bool m_active = false;
+	bool m_presentToScreen = false;
 
 	// Camera that renders this viewport; RID::Invalid means UI only.
 	// e.g. Camera3D binds itself here on EnterTree via ViewportSetCamera()
