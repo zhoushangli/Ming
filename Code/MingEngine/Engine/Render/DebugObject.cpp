@@ -182,18 +182,25 @@ void DebugObject::UpdateRenderData(Renderer& renderer, BitmapFont* font, int mes
 		if (type == DebugObjectType::MESSAGE)
 		{
 			float const cellHeight = textHeight > 0.f ? textHeight : 20.f;
-			float const top        = -(cellHeight + 2.f) * static_cast<float>(messageLine);
-			box                    = AABB2(Vector2(10.f, top - cellHeight), Vector2(1000.f, top));
+			float const top        = (cellHeight + 2.f) * static_cast<float>(messageLine);
+			box                    = AABB2(Vector2(10.f, top), Vector2(1000.f, top + cellHeight));
 		}
+		// Reflect the UI box into BitmapFont's Y-up space, then reflect its vertices back.
+		// e.g. UI Y bounds [10,30] become font Y bounds [-30,-10]
+		AABB2 const fontBox(Vector2(box.m_mins.x, -box.m_maxs.y), Vector2(box.m_maxs.x, -box.m_mins.y));
 		font->AddVertsForTextInBox2D(
 			textVerts,
 			text,
-			box,
+			fontBox,
 			textHeight > 0.f ? textHeight : 20.f,
 			GetCurrentColor(),
 			1.f,
-			alignment,
+			Vector2(alignment.x, 1.f - alignment.y),
 			TextBoxMode::SHRINK_TO_FIT);
+		for (Vertex& vertex : textVerts)
+		{
+			vertex.m_position.y = -vertex.m_position.y;
+		}
 	}
 
 	m_texture = font->GetTexture();

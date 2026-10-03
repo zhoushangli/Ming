@@ -16,17 +16,19 @@
 #include "MingEngine/Engine/Application/ProjectSettings.hpp"
 #include "MingEngine/Engine/ImGui/ImGuiSystem.hpp"
 #include "MingEngine/Engine/Input/InputSystem.hpp"
+#include "MingEngine/Engine/Render/RenderServer.hpp"
 #include "MingEngine/Engine/Script/CSharpScript.hpp"
 #include "MingEngine/Engine/Script/CSharpScriptGenerator.hpp"
 #include "MingEngine/Engine/Window/WindowSystem.hpp"
-#include "MingEngine/Engine/Render/RenderServer.hpp"
 #include "MingEngine/Scene/3D/Camera3D.hpp"
 #include "MingEngine/Scene/3D/Light3D.hpp"
 #include "MingEngine/Scene/Core/Node.hpp"
 #include "MingEngine/Scene/Core/PackedScene.hpp"
 #include "MingEngine/Scene/Core/SceneTree.hpp"
+#include "MingEngine/Scene/GUI/Label.hpp"
+#include "MingEngine/Scene/GUI/TextureRect.hpp"
 #include "MingEngine/Scene/RegisterAllTypes.hpp"
-#include "MingEngine/Scene/GUI/ColorRect.hpp"
+#include "MingEngine/Scene/Resource/FontResource.hpp"
 
 #include "ThirdParty/GLFW/glfw3.h"
 
@@ -138,10 +140,7 @@ void App::Render() const
 	}
 }
 
-void App::BeginFrame()
-{
-	g_engine->BeginFrame();
-}
+void App::BeginFrame() { g_engine->BeginFrame(); }
 
 void App::EndFrame()
 {
@@ -274,16 +273,23 @@ void App::StartupEditor()
 
 void App::StartupGame()
 {
-    m_clock = new Clock();
-    m_sceneTree = MemNew<SceneTree>();
+	m_clock     = new Clock();
+	m_sceneTree = MemNew<SceneTree>();
 
-    ColorRect* square = MemNew<ColorRect>();
-    square->SetName("WhiteSquare");
-    square->SetPosition(Vector2(24.0f, 24.0f));
-    square->SetSize(Vector2(64.0f, 64.0f));
-    square->SetColor(Color::White);
+	Label* label = MemNew<Label>();
 
-    m_sceneTree->GetRoot()->AddNode(square);
+	Ref<FontResource> fontResource = ResourceLoader::Load("res://fusion-pixel-12px-proportional-zh_hans.ttf");
+
+	label->SetName("WhiteSquare");
+	label->SetPosition(Vector2(24.0f, 24.0f));
+	label->SetSize(Vector2(1024.0f, 1024.0f));
+	label->SetText("Hello, MingEngine!");
+	label->SetFont(fontResource);
+	label->SetFontSize(64);
+	label->SetHorizontalAlignment(HorizontalAlignment::Right);
+	label->SetVerticalAlignment(VerticalAlignment::Bottom);
+
+	m_sceneTree->GetRoot()->AddNode(label);
 }
 
 void App::ShutdownScene()

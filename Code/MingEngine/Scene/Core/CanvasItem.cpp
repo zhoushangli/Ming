@@ -148,3 +148,24 @@ void CanvasItem::DrawRect(AABB2 const& rect, Color const& color)
 
 	g_engine->m_renderServer->CanvasItemAddRect(m_canvasItemRID, rect, color);
 }
+
+void CanvasItem::DrawTextureRect(Ref<TextureResource> const& texture, Rect2 const& rect, bool isTiling)
+{
+	if (!texture.IsValid())
+	{
+		return;
+	}
+
+	g_engine->m_renderServer->CanvasItemAddTextureRect(m_canvasItemRID, texture, rect, isTiling);
+}
+
+void CanvasItem::DrawTextureRectRegion(
+	Ref<TextureResource> const& texture, Rect2 const& rect, Rect2 const& sourceRect, Color const& color)
+{
+	if (!texture.IsValid())
+	{
+		return;
+	}
+
+	g_engine->m_renderServer->CanvasItemAddTextureRectRegion(m_canvasItemRID, texture, rect, sourceRect, color);
+}

@@ -1,5 +1,6 @@
 #include "MingEngine/Engine/Render/RenderServer.hpp"
 
+#include "MingEngine/Core/Math/Rect2.hpp"
 #include "MingEngine/Core/Memory.hpp"
 #include "MingEngine/Core/Render/Vertex.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
@@ -9,6 +10,7 @@
 #include "MingEngine/Engine/Render/VertexBuffer.hpp"
 
 #include <algorithm>
+#include <cmath>
 
 RenderServer::RenderServer(RendererServerConfig config) { m_renderer = MemNew<Renderer>(config); }
 
@@ -30,6 +32,7 @@ void RenderServer::Startup()
 	// Engine-facing default resources live here, so other systems never reach into the Renderer.
 	// e.g. a mesh without a material, or a request without a shader, falls back to one of these
 	m_defaultUnlit    = m_renderer->GetBuiltinShaderResource("DefaultUnlit", BuiltinShaders::DefaultUnlit);
+	m_defaultUI       = m_renderer->GetBuiltinShaderResource("DefaultUI", BuiltinShaders::DefaultUI);
 	m_defaultLit      = m_renderer->GetBuiltinShaderResource("DefaultLit", BuiltinShaders::DefaultLit);
 	m_defaultMaterial = CreateRef<MaterialResource>();
 
@@ -88,6 +91,7 @@ void RenderServer::Shutdown()
 	m_defaultMaterial = nullptr;
 	m_defaultLit      = nullptr;
 	m_defaultUnlit    = nullptr;
+	m_defaultUI       = nullptr;
 
 	m_renderer->Shutdown();
 	m_started = false;
@@ -410,49 +414,82 @@ void RenderServer::PrepareCanvasItemRequests(
 	Vector2 const position = parentPosition + item->m_position;
 	if (!item->m_commands.empty())
 	{
-		std::vector<Vertex> vertices;
-		for (CanvasItemData::Command const* command : item->m_commands)
+		for (CanvasItemData::Command* command : item->m_commands)
 		{
-			switch (command->type)
+			CanvasItemData::CommandRect const* rectCommand = static_cast<CanvasItemData::CommandRect const*>(command);
+
+			Rect2 const& rect           = rectCommand->rect;
+			Vector2      uvMin          = Vector2::Zero;
+			Vector2      uvMax          = Vector2::One;
+			GPUTexture*  texture        = nullptr;
+			SamplerMode  samplerMode    = SamplerMode::POINT_CLAMP;
+
+			if (rectCommand->texture.IsValid())
 			{
-			case CanvasItemData::Command::TYPE_RECT:
+				TextureData* textureData = m_textureOwner.GetOrNull(rectCommand->texture->GetTextureRID());
+				if (textureData == nullptr || textureData->m_texture == nullptr)
+				{
+					continue;
+				}
+
+				texture = textureData->m_texture;
+
+				if (rectCommand->hasRegion)
+				{
+					IntVec2 const dimensions = rectCommand->texture->GetDimensions();
+					if (dimensions.x <= 0 || dimensions.y <= 0)
+					{
+						continue;
+					}
+
+					Rect2 const& source = rectCommand->sourceRect;
+					uvMin = Vector2(source.m_position.x / dimensions.x, source.m_position.y / dimensions.y);
+					uvMax = Vector2(
+						(source.m_position.x + source.m_size.x) / dimensions.x,
+						(source.m_position.y + source.m_size.y) / dimensions.y);
+				}
+
+				if (rectCommand->isTiling)
+				{
+					IntVec2 const dimensions = rectCommand->texture->GetDimensions();
+					if (dimensions.x <= 0 || dimensions.y <= 0)
+					{
+						continue;
+					}
+					uvMax = Vector2(std::abs(rect.m_size.x) / dimensions.x, std::abs(rect.m_size.y) / dimensions.y);
+					samplerMode = SamplerMode::POINT_WRAP;
+				}
+			}
+
+			float const   x = position.x + rect.m_position.x;
+			float const   y = position.y + rect.m_position.y;
+			Vector3 const a(x, y, 0.0f);
+			Vector3 const b(x + rect.m_size.x, y, 0.0f);
+			Vector3 const c(x + rect.m_size.x, y + rect.m_size.y, 0.0f);
+			Vector3 const d(x, y + rect.m_size.y, 0.0f);
+
+			Vertex vertices[] = {
+				Vertex(a, rectCommand->color, uvMin), Vertex(b, rectCommand->color, Vector2(uvMax.x, uvMin.y)),
+				Vertex(c, rectCommand->color, uvMax), Vertex(a, rectCommand->color, uvMin),
+				Vertex(c, rectCommand->color, uvMax), Vertex(d, rectCommand->color, Vector2(uvMin.x, uvMax.y)),
+			};
+
+			unsigned int const byteSize = sizeof(vertices);
+			if (command->vertexBuffer == nullptr)
 			{
-				CanvasItemData::CommandRect const* rectCommand =
-					static_cast<CanvasItemData::CommandRect const*>(command);
-				AABB2 const& rect = rectCommand->rect;
-				float const  x    = position.x;
-				float const  y    = static_cast<float>(viewportData->m_outputResolution.y) - position.y;
-				Vector3      a(x + rect.m_mins.x, y - rect.m_mins.y, 0.0f);
-				Vector3      b(x + rect.m_maxs.x, y - rect.m_mins.y, 0.0f);
-				Vector3      c(x + rect.m_maxs.x, y - rect.m_maxs.y, 0.0f);
-				Vector3      d(x + rect.m_mins.x, y - rect.m_maxs.y, 0.0f);
-				vertices.emplace_back(a, rectCommand->color, Vector2::Zero);
-				vertices.emplace_back(b, rectCommand->color, Vector2::Zero);
-				vertices.emplace_back(c, rectCommand->color, Vector2::Zero);
-				vertices.emplace_back(a, rectCommand->color, Vector2::Zero);
-				vertices.emplace_back(c, rectCommand->color, Vector2::Zero);
-				vertices.emplace_back(d, rectCommand->color, Vector2::Zero);
-				break;
+				command->vertexBuffer = m_renderer->CreateVertexBuffer(byteSize, sizeof(Vertex));
 			}
-			}
-		}
-		if (!vertices.empty())
-		{
-			unsigned int const byteSize = static_cast<unsigned int>(vertices.size() * sizeof(Vertex));
-			if (item->m_vertexBuffer == nullptr || item->m_vertexBuffer->GetSize() != byteSize)
-			{
-				delete item->m_vertexBuffer;
-				item->m_vertexBuffer = m_renderer->CreateVertexBuffer(byteSize, sizeof(Vertex));
-			}
-			m_renderer->CopyCPUToGPU(vertices.data(), byteSize, item->m_vertexBuffer);
+			m_renderer->CopyCPUToGPU(vertices, byteSize, command->vertexBuffer);
 
 			RenderRequest request;
-			request.m_pass           = RenderRequestPass::UI;
-			request.m_vertexBuffer   = item->m_vertexBuffer;
-			request.m_shader         = m_defaultUnlit->GetShader();
-			request.m_blendMode      = BlendMode::ALPHA;
-			request.m_depthMode      = DepthMode::READ_ONLY_ALWAYS;
-			request.m_rasterizerMode = RasterizerMode::SOLID_CULL_NONE;
+			request.m_pass                                  = RenderRequestPass::UI;
+			request.m_vertexBuffer                          = command->vertexBuffer;
+			request.m_shader                                = m_defaultUI->GetShader();
+			request.m_textures[SurfaceTextureSlot::Diffuse] = texture;
+			request.m_samplerMode                           = samplerMode;
+			request.m_blendMode                             = BlendMode::ALPHA;
+			request.m_depthMode                             = DepthMode::READ_ONLY_ALWAYS;
+			request.m_rasterizerMode                        = RasterizerMode::SOLID_CULL_NONE;
 			viewportData->m_renderRequests[static_cast<size_t>(RenderRequestPass::UI)].push_back(request);
 		}
 	}
@@ -559,8 +596,6 @@ void RenderServer::CanvasItemFree(RID rid)
 			child->m_parent = RID::Invalid;
 		}
 	}
-	delete item->m_vertexBuffer;
-	item->m_vertexBuffer = nullptr;
 	m_canvasItemOwner.Free(rid);
 }
 
@@ -654,8 +689,44 @@ void RenderServer::CanvasItemAddRect(RID rid, AABB2 const& rect, Color const& co
 	}
 
 	CanvasItemData::CommandRect* command = new CanvasItemData::CommandRect();
-	command->rect                        = rect;
+	command->rect.m_position             = rect.m_mins;
+	command->rect.m_size                 = rect.m_maxs - rect.m_mins;
 	command->color                       = color;
+	item->m_commands.push_back(command);
+}
+
+void RenderServer::CanvasItemAddTextureRect(
+	RID rid, Ref<TextureResource> const& texture, Rect2 const& rect, bool isTiling)
+{
+	CanvasItemData* item = m_canvasItemOwner.GetOrNull(rid);
+	if (item == nullptr || !texture.IsValid() || rect.GetSize().x == 0.0f || rect.GetSize().y == 0.0f)
+	{
+		return;
+	}
+
+	CanvasItemData::CommandRect* command = new CanvasItemData::CommandRect();
+	command->texture                     = texture;
+	command->rect                        = rect;
+	command->isTiling                    = isTiling;
+	item->m_commands.push_back(command);
+}
+
+void RenderServer::CanvasItemAddTextureRectRegion(
+	RID rid, Ref<TextureResource> const& texture, Rect2 const& rect, Rect2 const& sourceRect, Color const& color)
+{
+	CanvasItemData* item = m_canvasItemOwner.GetOrNull(rid);
+	if (item == nullptr || !texture.IsValid() || rect.m_size.x <= 0.0f || rect.m_size.y <= 0.0f
+		|| sourceRect.m_size.x <= 0.0f || sourceRect.m_size.y <= 0.0f)
+	{
+		return;
+	}
+
+	auto* command       = new CanvasItemData::CommandRect();
+	command->texture    = texture;
+	command->rect       = rect;
+	command->sourceRect = sourceRect;
+	command->hasRegion  = true;
+	command->color      = color;
 	item->m_commands.push_back(command);
 }
 

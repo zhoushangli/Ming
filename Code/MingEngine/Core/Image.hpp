@@ -25,6 +25,10 @@ public:
 	// e.g. image->LoadFromMemory(std::move(pngData))
 	bool LoadFromMemory(std::vector<uint8_t> encodedData);
 
+	// Store raw RGBA8 pixels without decoding an image file.
+	// e.g. image->LoadFromRGBA8(IntVec2(16, 16), std::move(rgbaPixels))
+	bool LoadFromRGBA8(IntVec2 dimensions, std::vector<uint8_t> rgbaPixels);
+
 	void Clear();
 	bool IsValid() const;
 	bool HasEncodedData() const;

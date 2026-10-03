@@ -679,6 +679,18 @@
     <ClCompile Include="Scene\Core\Window.cpp">
       <Filter>Scene\Core</Filter>
     </ClCompile>
+    <ClCompile Include="Engine\Render\TextServer.cpp">
+      <Filter>Engine\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene\Resource\FontResource.cpp">
+      <Filter>Scene\Resource</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene\Resource\FontResourceFormat.cpp">
+      <Filter>Scene\Resource</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene\GUI\GUIDefinitions.cpp">
+      <Filter>Scene\GUI</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Core\Clock.hpp">
@@ -1305,6 +1317,21 @@
     </ClInclude>
     <ClInclude Include="Scene\Core\Window.hpp">
       <Filter>Scene\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Render\TextServer.hpp">
+      <Filter>Engine\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\Resource\FontResource.hpp">
+      <Filter>Scene\Resource</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\Resource\FontResourceFormat.hpp">
+      <Filter>Scene\Resource</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ThirdParty\stb\stb_truetype.h">
+      <Filter>ThirdParty\stb</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\GUI\GUIDefinitions.hpp">
+      <Filter>Scene\GUI</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

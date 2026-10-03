@@ -9,7 +9,9 @@ struct CameraData;
 class Projection
 {
 public:
-	Projection(CameraData const& camera, float aspect);
+	// Use a top-left origin with Y down for orthographic UI when yDown is true.
+	// e.g. Projection uiProjection(uiCameraData, aspect, true)
+	Projection(CameraData const& camera, float aspect, bool yDown = false);
 
 	Matrix4x4 GetCameraToWorldTransform() const { return m_cameraToWorld; }
 	Matrix4x4 GetWorldToCameraTransform() const { return m_worldToCamera; }

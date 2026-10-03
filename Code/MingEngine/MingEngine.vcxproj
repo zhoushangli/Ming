@@ -204,6 +204,7 @@
     <ClCompile Include="Engine\Input\XboxController.cpp" />
     <ClCompile Include="Engine\Render\RenderBackend.cpp" />
     <ClCompile Include="Engine\Render\RenderTypes.cpp" />
+    <ClCompile Include="Engine\Render\TextServer.cpp" />
     <ClCompile Include="Engine\Script\CSharpScript.cpp" />
     <ClCompile Include="Engine\Script\CSharpScriptFormat.cpp" />
     <ClCompile Include="Engine\Script\CSharpScriptGenerator.cpp" />
@@ -238,6 +239,7 @@
     <ClCompile Include="Scene\Core\Window.cpp" />
     <ClCompile Include="Scene\GUI\ColorRect.cpp" />
     <ClCompile Include="Scene\GUI\Control.cpp" />
+    <ClCompile Include="Scene\GUI\GUIDefinitions.cpp" />
     <ClCompile Include="Scene\GUI\HBoxContainer.cpp" />
     <ClCompile Include="Scene\GUI\Label.cpp" />
     <ClCompile Include="Scene\GUI\MarginContainer.cpp" />
@@ -266,6 +268,8 @@
     <ClCompile Include="Scene\RegisterAllTypes.cpp" />
     <ClCompile Include="Scene\RegisterSceneTypes.cpp" />
     <ClCompile Include="Engine\Render\RenderServer.cpp" />
+    <ClCompile Include="Scene\Resource\FontResource.cpp" />
+    <ClCompile Include="Scene\Resource\FontResourceFormat.cpp" />
     <ClCompile Include="Scene\Resource\MaterialResource.cpp" />
     <ClCompile Include="Scene\Resource\MeshResource.cpp" />
     <ClCompile Include="Scene\Resource\MeshResourceFormat.cpp" />
@@ -287,6 +291,7 @@
     <ClInclude Include="..\ThirdParty\miniaudio\miniaudio.h" />
     <ClInclude Include="..\ThirdParty\nanosvg\nanosvg.h" />
     <ClInclude Include="..\ThirdParty\nanosvg\nanosvgrast.h" />
+    <ClInclude Include="..\ThirdParty\stb\stb_truetype.h" />
     <ClInclude Include="Core\CowData.hpp" />
     <ClInclude Include="Core\Math\Rect2.hpp" />
     <ClInclude Include="Core\Memory.hpp" />
@@ -405,6 +410,7 @@
     <ClInclude Include="Engine\Input\XboxController.hpp" />
     <ClInclude Include="Engine\Render\RenderBackend.hpp" />
     <ClInclude Include="Engine\Render\RenderTypes.hpp" />
+    <ClInclude Include="Engine\Render\TextServer.hpp" />
     <ClInclude Include="Engine\Script\CSharpScript.hpp" />
     <ClInclude Include="Engine\Script\CSharpScriptFormat.hpp" />
     <ClInclude Include="Engine\Script\CSharpScriptGenerator.hpp" />
@@ -440,6 +446,7 @@
     <ClInclude Include="Scene\Core\Window.hpp" />
     <ClInclude Include="Scene\GUI\ColorRect.hpp" />
     <ClInclude Include="Scene\GUI\Control.hpp" />
+    <ClInclude Include="Scene\GUI\GUIDefinitions.hpp" />
     <ClInclude Include="Scene\GUI\HBoxContainer.hpp" />
     <ClInclude Include="Scene\GUI\Label.hpp" />
     <ClInclude Include="Scene\GUI\MarginContainer.hpp" />
@@ -466,6 +473,8 @@
     <ClInclude Include="Scene\Core\Viewport.hpp" />
     <ClInclude Include="Scene\RegisterAllTypes.hpp" />
     <ClInclude Include="Engine\Render\RenderServer.hpp" />
+    <ClInclude Include="Scene\Resource\FontResource.hpp" />
+    <ClInclude Include="Scene\Resource\FontResourceFormat.hpp" />
     <ClInclude Include="Scene\Resource\MaterialResource.hpp" />
     <ClInclude Include="Scene\Resource\MeshResource.hpp" />
     <ClInclude Include="Scene\Resource\MeshResourceFormat.hpp" />

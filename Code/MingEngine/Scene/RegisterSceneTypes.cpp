@@ -22,6 +22,7 @@
 #include "MingEngine/Scene/Core/Viewport.hpp"
 #include "MingEngine/Scene/GUI/ColorRect.hpp"
 #include "MingEngine/Scene/GUI/Control.hpp"
+#include "MingEngine/Scene/GUI/Label.hpp"
 #include "MingEngine/Scene/Import/GLTFImporter.hpp"
 #include "MingEngine/Scene/Import/ImageImporter.hpp"
 #include "MingEngine/Scene/Import/OBJImporter.hpp"
@@ -29,6 +30,8 @@
 #include "MingEngine/Scene/Physics/CapsuleCollider3D.hpp"
 #include "MingEngine/Scene/Physics/CylinderZCollider3D.hpp"
 #include "MingEngine/Scene/Physics/TriangleMeshCollider3D.hpp"
+#include "MingEngine/Scene/Resource/FontResource.hpp"
+#include "MingEngine/Scene/Resource/FontResourceFormat.hpp"
 #include "MingEngine/Scene/Resource/MeshResourceFormat.hpp"
 #include "MingEngine/Scene/Resource/ShaderResource.hpp"
 #include "MingEngine/Scene/Resource/ShaderResourceFormat.hpp"
@@ -43,6 +46,7 @@ void RegisterSceneTypes()
 
 	// Resource types
 	ClassDatabase::RegisterClass<MeshResource>();
+	ClassDatabase::RegisterClass<FontResource>();
 	ClassDatabase::RegisterClass<TextureResource>();
 	ClassDatabase::RegisterClass<PackedScene>();
 	ClassDatabase::RegisterClass<ShaderResource>();
@@ -51,6 +55,7 @@ void RegisterSceneTypes()
 	// Resource format types
 	ClassDatabase::RegisterClass<PackedSceneLoader>();
 	ClassDatabase::RegisterClass<MeshResourceLoader>();
+	ClassDatabase::RegisterClass<FontResourceLoader>();
 	ClassDatabase::RegisterClass<TextureResourceLoader>();
 	ClassDatabase::RegisterClass<ShaderResourceLoader>();
 	ClassDatabase::RegisterClass<CSharpScriptLoader>();
@@ -68,6 +73,7 @@ void RegisterSceneTypes()
 	// Resource format registration
 	ResourceLoader::AddLoader(CreateRef<PackedSceneLoader>());
 	ResourceLoader::AddLoader(CreateRef<MeshResourceLoader>());
+	ResourceLoader::AddLoader(CreateRef<FontResourceLoader>());
 	ResourceLoader::AddLoader(CreateRef<TextureResourceLoader>());
 	ResourceLoader::AddLoader(CreateRef<ShaderResourceLoader>());
 	ResourceLoader::AddLoader(CreateRef<CSharpScriptLoader>());
@@ -103,6 +109,7 @@ void RegisterSceneTypes()
 	ClassDatabase::RegisterClass<CanvasItem>();
 	ClassDatabase::RegisterClass<Control>();
 	ClassDatabase::RegisterClass<ColorRect>();
+	ClassDatabase::RegisterClass<Label>();
 
 	// Editor types
 	ClassDatabase::SetApiType(ApiType::Editor);

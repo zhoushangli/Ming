@@ -51,7 +51,6 @@ bool Image::LoadFromMemory(std::vector<uint8_t> encodedData)
 	int channelsInFile = 0;
 
 	// 2) Decode into temporary RGBA8 storage
-	stbi_set_flip_vertically_on_load(true);
 	std::unique_ptr<stbi_uc, decltype(&stbi_image_free)> decodedPixels(
 		stbi_load_from_memory(
 			encodedData.data(),
@@ -61,7 +60,6 @@ bool Image::LoadFromMemory(std::vector<uint8_t> encodedData)
 			&channelsInFile,
 			STBI_rgb_alpha),
 		&stbi_image_free);
-	stbi_set_flip_vertically_on_load(false);
 
 	if (decodedPixels == nullptr || width <= 0 || height <= 0)
 	{
@@ -85,6 +83,32 @@ bool Image::LoadFromMemory(std::vector<uint8_t> encodedData)
 	m_channels    = STBI_rgb_alpha;
 	m_encodedData = std::move(encodedData);
 	m_pixels      = std::move(pixels);
+	return true;
+}
+
+bool Image::LoadFromRGBA8(IntVec2 dimensions, std::vector<uint8_t> rgbaPixels)
+{
+	if (dimensions.x <= 0 || dimensions.y <= 0)
+	{
+		return false;
+	}
+
+	size_t const width  = static_cast<size_t>(dimensions.x);
+	size_t const height = static_cast<size_t>(dimensions.y);
+	if (width > std::numeric_limits<size_t>::max() / height || width * height > std::numeric_limits<size_t>::max() / 4)
+	{
+		return false;
+	}
+
+	if (rgbaPixels.size() != width * height * 4)
+	{
+		return false;
+	}
+
+	m_dimensions = dimensions;
+	m_channels   = 4;
+	m_encodedData.clear();
+	m_pixels = std::move(rgbaPixels);
 	return true;
 }
 

@@ -18,23 +18,23 @@ Matrix4x4 const kCameraToRenderTransform_Perspective = Matrix4x4(
 
 // Orthographic cameras cover (0,0) to (size * aspect, size).
 // e.g. size 10 with aspect 2 covers x in [0, 20] and y in [0, 10]
-Matrix4x4 MakeOrthographicProjection(CameraData const& camera, float aspect)
+Matrix4x4 MakeOrthographicProjection(CameraData const& camera, float aspect, bool yDown)
 {
 	return Matrix4x4::MakeOrthoProjection(
 		0.f,
 		camera.m_size * aspect,
-		0.f,
-		camera.m_size,
+		yDown ? camera.m_size : 0.f,
+		yDown ? 0.f : camera.m_size,
 		camera.m_nearZ,
 		camera.m_farZ);
 }
 
-Matrix4x4 MakeOrthographicInverseProjection(CameraData const& camera, float aspect)
+Matrix4x4 MakeOrthographicInverseProjection(CameraData const& camera, float aspect, bool yDown)
 {
 	float l = 0.f;
 	float r = camera.m_size * aspect;
-	float b = 0.f;
-	float t = camera.m_size;
+	float b = yDown ? camera.m_size : 0.f;
+	float t = yDown ? 0.f : camera.m_size;
 	float n = camera.m_nearZ;
 	float f = camera.m_farZ;
 
@@ -79,7 +79,8 @@ Matrix4x4 MakePerspectiveInverseProjection(CameraData const& camera, float aspec
 
 // Every matrix is derived once so camera binding and post process share one result.
 // e.g. a Perspective camera gets kCameraToRenderTransform_Perspective, an Orthographic one gets Identity
-Projection::Projection(CameraData const& camera, float aspect) : m_nearZ(camera.m_nearZ), m_farZ(camera.m_farZ)
+Projection::Projection(CameraData const& camera, float aspect, bool yDown)
+	: m_nearZ(camera.m_nearZ), m_farZ(camera.m_farZ)
 {
 	m_cameraToWorld = camera.m_cameraToWorld;
 	m_worldToCamera = m_cameraToWorld.GetOrthonormalInverse();
@@ -88,10 +89,10 @@ Projection::Projection(CameraData const& camera, float aspect) : m_nearZ(camera.
 
 	m_cameraToRender = isPerspective ? kCameraToRenderTransform_Perspective : Matrix4x4::Identity;
 	m_renderToClip =
-		isPerspective ? MakePerspectiveProjection(camera, aspect) : MakeOrthographicProjection(camera, aspect);
+		isPerspective ? MakePerspectiveProjection(camera, aspect) : MakeOrthographicProjection(camera, aspect, yDown);
 
 	Matrix4x4 renderToClipInverse = isPerspective ? MakePerspectiveInverseProjection(camera, aspect)
-												  : MakeOrthographicInverseProjection(camera, aspect);
+												  : MakeOrthographicInverseProjection(camera, aspect, yDown);
 
 	// clipToCamera reverses the camera-to-render transform first, then the projection
 	Matrix4x4 renderToCamera = m_cameraToRender.GetOrthonormalInverse();

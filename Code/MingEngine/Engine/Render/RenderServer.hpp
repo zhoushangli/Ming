@@ -39,7 +39,12 @@ public:
 	void CanvasItemSetPosition(RID item, Vector2 const& position);
 	void CanvasItemSetVisible(RID item, bool visible);
 	void CanvasItemClear(RID item);
+
 	void CanvasItemAddRect(RID item, AABB2 const& rect, Color const& color);
+	void CanvasItemAddTextureRect(
+		RID item, Ref<TextureResource> const& texture, Rect2 const& rect, bool isTiling = false);
+	void CanvasItemAddTextureRectRegion(
+		RID item, Ref<TextureResource> const& texture, Rect2 const& rect, Rect2 const& sourceRect, Color const& color);
 
 #pragma endregion
 
@@ -204,6 +209,7 @@ private:
 	bool      m_started  = false;
 
 	Ref<ShaderResource>   m_defaultUnlit;
+	Ref<ShaderResource>   m_defaultUI;
 	Ref<ShaderResource>   m_defaultLit;
 	Ref<MaterialResource> m_defaultMaterial;
 

@@ -471,15 +471,15 @@ void Renderer::RenderUI(ViewportData const* viewport)
 {
 	SetViewport(viewport->m_outputResolution, viewport->m_outputRect.m_mins);
 
-	// UI is drawn in pixel space: one orthographic unit is one output pixel.
-	// e.g. a 1920x1080 Viewport covers bounds (0,0) to (1920,1080)
+	// UI uses a top-left origin with Y down, and one unit is one output pixel.
+	// e.g. (0,0) is the top-left and (1920,1080) is the bottom-right
 	CameraData uiCameraData;
 	uiCameraData.m_mode  = CameraMode::Orthographic;
 	uiCameraData.m_size  = (float)viewport->m_outputResolution.y;
 	uiCameraData.m_nearZ = 0.f;
 	uiCameraData.m_farZ  = 1.f;
 
-	Projection uiProjection(uiCameraData, GetViewportAspect(viewport));
+	Projection uiProjection(uiCameraData, GetViewportAspect(viewport), true);
 	m_renderBackend->BindCamera(uiProjection);
 
 	m_renderBackend->BindRenderTarget(viewport->m_viewportOutputTexture);

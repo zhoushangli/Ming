@@ -24,6 +24,7 @@ Engine::Engine(EngineConfig config) : m_config(config)
 	{
 		m_renderServer = new RenderServer(config.m_rendererServerConfig);
 	}
+	m_textServer = new TextServer();
 	if (config.m_inputConfig.m_isEnable)
 		m_inputSystem = MemNew<InputSystem>(config.m_inputConfig);
 	if (config.m_audioConfig.m_isEnable)
@@ -50,6 +51,9 @@ Engine::~Engine()
 
 	delete m_renderServer;
 	m_renderServer = nullptr;
+
+	delete m_textServer;
+	m_textServer = nullptr;
 
 	MemDelete(m_scriptSystem);
 	m_scriptSystem = nullptr;

@@ -3,12 +3,15 @@
 #include "MingEngine/Core/Math/AABB2.hpp"
 #include "MingEngine/Core/Math/IntVec2.hpp"
 #include "MingEngine/Core/Math/Matrix4x4.hpp"
+#include "MingEngine/Core/Math/Rect2.hpp"
 #include "MingEngine/Core/Render/Color.hpp"
 #include "MingEngine/Core/Render/RID.hpp"
 #include "MingEngine/Engine/Render/PostProcessChain.hpp"
 #include "MingEngine/Engine/Render/RenderTypes.hpp"
 #include "MingEngine/Engine/Render/TextureBindingSlots.hpp"
+#include "MingEngine/Engine/Render/VertexBuffer.hpp"
 #include "MingEngine/Scene/Resource/MaterialResource.hpp"
+#include "MingEngine/Scene/Resource/TextureResource.hpp"
 
 #include <array>
 #include <vector>
@@ -178,13 +181,13 @@ public:
 
 	// m_presentToScreen indicates this viewport should present to the backbuffer
 	// Which is like the main viewport
-	bool m_active = false;
+	bool m_active          = false;
 	bool m_presentToScreen = false;
 
 	// Camera that renders this viewport; RID::Invalid means UI only.
 	// e.g. Camera3D binds itself here on EnterTree via ViewportSetCamera()
-	RID m_camera   = RID::Invalid;
-	RID m_scenario = RID::Invalid;
+	RID              m_camera   = RID::Invalid;
+	RID              m_scenario = RID::Invalid;
 	std::vector<RID> m_canvasLayers;
 
 	// output resolution indicates the size of the render target
@@ -228,14 +231,20 @@ struct CanvasItemData
 			TYPE_RECT,
 		};
 
-		Type type;
-		virtual ~Command() = default;
+		Type          type;
+		VertexBuffer* vertexBuffer = nullptr;
+		virtual ~Command() { delete vertexBuffer; }
 	};
 
 	struct CommandRect : Command
 	{
-		AABB2 rect;
-		Color color;
+		Rect2                rect;
+		Color                color = Color::White;
+		Ref<TextureResource> texture;
+		bool                 isTiling = false;
+
+		Rect2 sourceRect;
+		bool  hasRegion = false;
 
 		CommandRect() { type = TYPE_RECT; }
 	};
@@ -262,12 +271,11 @@ struct CanvasItemData
 	Vector2               m_position = Vector2::Zero;
 	bool                  m_visible  = true;
 	std::vector<Command*> m_commands;
-	VertexBuffer*         m_vertexBuffer = nullptr;
 };
 
 struct CanvasLayerData
 {
-	CanvasLayerData() = default;
+	CanvasLayerData()  = default;
 	~CanvasLayerData() = default;
 
 	RID              m_viewport = RID::Invalid;

@@ -192,6 +192,8 @@ public:
 		DebugRenderMode    mode       = DebugRenderMode::USE_DEPTH);
 
 	// — Geometry (screen space) —
+	// Draw screen text in a top-left-origin box with Y down and top-to-bottom alignment.
+	// e.g. box [(10,10),(210,50)] with alignment (0,0) places text at the top-left
 	static void AddScreenText(
 		std::string const& text,
 		AABB2 const&       box,

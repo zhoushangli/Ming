@@ -7,6 +7,7 @@
 #include "MingEngine/Engine/Input/InputSystem.hpp"
 #include "MingEngine/Engine/Network/NetworkSystem.hpp"
 #include "MingEngine/Engine/Render/RenderServer.hpp"
+#include "MingEngine/Engine/Render/TextServer.hpp"
 #include "MingEngine/Engine/Script/ScriptSystem.hpp"
 #include "MingEngine/Engine/Window/WindowSystem.hpp"
 
@@ -50,6 +51,7 @@ public:
 	NetworkSystem* m_networkSystem = nullptr;
 
 	RenderServer* m_renderServer = nullptr;
+	TextServer*   m_textServer   = nullptr;
 
 private:
 	bool m_isEditorMode = false;
