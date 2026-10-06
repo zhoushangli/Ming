@@ -3,6 +3,20 @@
 #include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Engine/Render/TextServer.hpp"
 
+#include <cmath>
+
+Vector2 Label::GetMinimumSize() const
+{
+	if (!m_font.IsValid() || !m_font->GetFontRID().IsValid() || g_engine == nullptr
+		|| g_engine->m_textServer == nullptr)
+	{
+		return Vector2::Zero;
+	}
+
+	TextLine const line = g_engine->m_textServer->GetTextLine(m_font->GetFontRID(), m_text, static_cast<float>(m_fontSize));
+	return Vector2(line.m_width, std::abs(line.m_config.m_ascent) + std::abs(line.m_config.m_descent));
+}
+
 void Label::SetText(String const& text)
 {
 	if (m_text == text)
@@ -11,6 +25,7 @@ void Label::SetText(String const& text)
 	}
 
 	m_text = text;
+	PropagateMinimumSizeChanged();
 	QueueRedraw();
 }
 
@@ -22,6 +37,7 @@ void Label::SetFont(Ref<FontResource> const& font)
 	}
 
 	m_font = font;
+	PropagateMinimumSizeChanged();
 	QueueRedraw();
 }
 
@@ -33,6 +49,7 @@ void Label::SetFontSize(int fontSize)
 	}
 
 	m_fontSize = fontSize;
+	PropagateMinimumSizeChanged();
 	QueueRedraw();
 }
 

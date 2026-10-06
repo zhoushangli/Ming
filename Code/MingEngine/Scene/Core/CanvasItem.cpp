@@ -42,8 +42,15 @@ Vector2 CanvasItem::GetGlobalPosition() const
 
 void CanvasItem::SetVisible(bool visible)
 {
+	if (m_visible == visible)
+	{
+		return;
+	}
+
 	m_visible = visible;
 	g_engine->m_renderServer->CanvasItemSetVisible(m_canvasItemRID, visible);
+
+	Notification(Notification_VisibilityChanged);
 }
 
 bool CanvasItem::IsVisible() const { return m_visible; }

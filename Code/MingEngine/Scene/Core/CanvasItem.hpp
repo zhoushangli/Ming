@@ -14,9 +14,11 @@ class CanvasItem : public Node
 public:
 	enum
 	{
-		Notification_Draw = 30
+		Notification_Draw              = 30,
+		Notification_VisibilityChanged = 33
 	};
 
+public:
 	CanvasItem();
 	~CanvasItem() override;
 

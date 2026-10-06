@@ -10,6 +10,8 @@ class Label : public Control
 	MCLASS(Label, Control);
 
 public:
+	Vector2 GetMinimumSize() const override;
+
 	String const&     GetText() const { return m_text; }
 	Ref<FontResource> GetFont() const { return m_font; }
 	int               GetFontSize() const { return m_fontSize; }
@@ -25,7 +27,7 @@ public:
 protected:
 	static void BindMethods() {}
 
-    void OnNotification(int notification);
+	void OnNotification(int notification);
 
 private:
 	HorizontalAlignment m_horizontalAlignment = HorizontalAlignment::Left;

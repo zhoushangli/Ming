@@ -26,7 +26,12 @@
 #include "MingEngine/Scene/Core/PackedScene.hpp"
 #include "MingEngine/Scene/Core/SceneTree.hpp"
 #include "MingEngine/Scene/GUI/Label.hpp"
+#include "MingEngine/Scene/GUI/ColorRect.hpp"
 #include "MingEngine/Scene/GUI/TextureRect.hpp"
+#include "MingEngine/Scene/GUI/Container.hpp"
+#include "MingEngine/Scene/GUI/HBoxContainer.hpp"
+#include "MingEngine/Scene/GUI/MarginContainer.hpp"
+#include "MingEngine/Scene/GUI/VBoxContainer.hpp"
 #include "MingEngine/Scene/RegisterAllTypes.hpp"
 #include "MingEngine/Scene/Resource/FontResource.hpp"
 
@@ -276,20 +281,100 @@ void App::StartupGame()
 	m_clock     = new Clock();
 	m_sceneTree = MemNew<SceneTree>();
 
+	// 1) Build the standalone margin and horizontal box examples
+	Control* example = MemNew<Control>();
+	example->SetName("ContainerExample");
+
+	auto addBackdrop = [example](char const* name, Vector2 const& position, Vector2 const& size)
+	{
+		ColorRect* backdrop = MemNew<ColorRect>();
+		backdrop->SetName(name);
+		backdrop->SetColor(Color(40, 48, 64));
+		backdrop->SetPosition(position);
+		backdrop->SetSize(size);
+		example->AddNode(backdrop);
+	};
+
+	auto addRect = [](Node* parent, char const* name, Color const& color, Vector2 const& minimum)
+	{
+		ColorRect* rect = MemNew<ColorRect>();
+		rect->SetName(name);
+		rect->SetColor(color);
+		rect->SetCustomMinimumSize(minimum);
+		parent->AddNode(rect);
+	};
+
+	addBackdrop("MarginBackdrop", Vector2(40.0f, 80.0f), Vector2(300.0f, 140.0f));
+	MarginContainer* margin = MemNew<MarginContainer>();
+	margin->SetName("Margin");
+	margin->SetPosition(Vector2(40.0f, 80.0f));
+	margin->SetMargins(20.0f, 12.0f, 24.0f, 16.0f);
+	addRect(margin, "Child", Color::Green, Vector2(80.0f, 40.0f));
+	margin->SetSize(Vector2(300.0f, 140.0f));
+	example->AddNode(margin);
+
+	addBackdrop("BoxBackdrop", Vector2(40.0f, 260.0f), Vector2(360.0f, 80.0f));
+	HBoxContainer* box = MemNew<HBoxContainer>();
+	box->SetName("Box");
+	box->SetPosition(Vector2(40.0f, 260.0f));
+	box->SetSeparation(20.0f);
+	addRect(box, "First", Color::Red, Vector2(80.0f, 40.0f));
+	addRect(box, "Second", Color::Green, Vector2(100.0f, 60.0f));
+	box->SetSize(Vector2(360.0f, 80.0f));
+	example->AddNode(box);
+
+	// 2) Build Margin -> VBox -> Label + HBox
+	Ref<FontResource> font = ResourceLoader::Load("res://fusion-pixel-12px-proportional-zh_hans.ttf");
+	if (!font.IsValid())
+	{
+		WARN_PRINT("Container example needs res://fusion-pixel-12px-proportional-zh_hans.ttf.");
+	}
+
+	MarginContainer* nested = MemNew<MarginContainer>();
+	nested->SetName("Nested");
+	nested->SetPosition(Vector2(460.0f, 80.0f));
+	nested->SetMargins(16.0f, 12.0f, 16.0f, 12.0f);
+
+	VBoxContainer* column = MemNew<VBoxContainer>();
+	column->SetName("VBox");
+	column->SetSeparation(12.0f);
+	nested->AddNode(column);
+
 	Label* label = MemNew<Label>();
+	label->SetName("Label");
+	label->SetFont(font);
+	label->SetFontSize(32);
+	label->SetText("Ming UI");
+	column->AddNode(label);
 
-	Ref<FontResource> fontResource = ResourceLoader::Load("res://fusion-pixel-12px-proportional-zh_hans.ttf");
+	HBoxContainer* row = MemNew<HBoxContainer>();
+	row->SetName("HBox");
+	row->SetSeparation(20.0f);
+	addRect(row, "First", Color::Red, Vector2(80.0f, 40.0f));
+	addRect(row, "Second", Color::Green, Vector2(100.0f, 60.0f));
+	column->AddNode(row);
 
-	label->SetName("WhiteSquare");
-	label->SetPosition(Vector2(24.0f, 24.0f));
-	label->SetSize(Vector2(1024.0f, 1024.0f));
-	label->SetText("Hello, MingEngine!");
-	label->SetFont(fontResource);
-	label->SetFontSize(64);
-	label->SetHorizontalAlignment(HorizontalAlignment::Right);
-	label->SetVerticalAlignment(VerticalAlignment::Bottom);
+	nested->SetSize(nested->GetCombinedMinimumSize());
+	addBackdrop("NestedBackdrop", nested->GetLocalPosition(), nested->GetSize());
+	example->AddNode(nested);
 
-	m_sceneTree->GetRoot()->AddNode(label);
+	// 3) Add static example titles
+	auto addLabel = [example, &font](char const* name, char const* text, Vector2 const& position)
+	{
+		Label* caption = MemNew<Label>();
+		caption->SetName(name);
+		caption->SetFont(font);
+		caption->SetFontSize(32);
+		caption->SetText(text);
+		caption->SetPosition(position);
+		example->AddNode(caption);
+	};
+
+	addLabel("MarginTitle", "MarginContainer", Vector2(40.0f, 48.0f));
+	addLabel("BoxTitle", "HBoxContainer", Vector2(40.0f, 228.0f));
+	addLabel("NestedTitle", "Margin -> VBox -> Label + HBox", Vector2(460.0f, 48.0f));
+
+	m_sceneTree->GetRoot()->AddNode(example);
 }
 
 void App::ShutdownScene()

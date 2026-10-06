@@ -42,6 +42,9 @@ public:
 
 	float GetDeltaSeconds() const;
 
+	void QueueContainerSort(ObjectID containerID);
+	void FlushContainerSort();
+
 protected:
 	static void BindMethods();
 
@@ -57,6 +60,7 @@ protected:
 protected:
 	std::vector<ObjectID> m_pendingDestroyNodes;
 	std::vector<ObjectID> m_transformChangedNodes;
+	std::vector<ObjectID> m_pendingContainerSort;
 
 	std::vector<Node*> m_registeredNodes;
 

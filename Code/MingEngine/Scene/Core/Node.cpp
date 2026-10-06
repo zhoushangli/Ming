@@ -235,6 +235,8 @@ void Node::AttachChildImmediately(Node* child)
 	child->m_data.m_parent = this;
 	m_data.m_children.push_back(child);
 	child->m_data.m_name = child->EnsureUniqueName(child->m_data.m_name);
+
+	Notification(Notification_ChildrenChanged);
 }
 
 void Node::DetachChildImmediately(Node* child)
@@ -252,6 +254,8 @@ void Node::DetachChildImmediately(Node* child)
 
 	(*foundChild)->m_data.m_parent = nullptr;
 	m_data.m_children.erase(foundChild);
+
+	Notification(Notification_ChildrenChanged);
 }
 
 bool Node::IsAncestorOf(Node const* other) const
@@ -363,7 +367,7 @@ String Node::EnsureUniqueName(String const& requestedName) const
 	int64_t      suffix   = 0;
 
 	std::string const digits = normalizedName.Substr(suffixStart).ToUtf8();
-	auto const result = std::from_chars(digits.data(), digits.data() + digits.size(), suffix);
+	auto const        result = std::from_chars(digits.data(), digits.data() + digits.size(), suffix);
 	if (result.ec != std::errc{} || suffix == (std::numeric_limits<int64_t>::max)())
 	{
 		suffix = 0;
@@ -371,7 +375,7 @@ String Node::EnsureUniqueName(String const& requestedName) const
 
 	for (;;)
 	{
-		suffix = suffix == (std::numeric_limits<int64_t>::max)() ? 1 : suffix + 1;
+		suffix                 = suffix == (std::numeric_limits<int64_t>::max)() ? 1 : suffix + 1;
 		String const candidate = baseName + String::FromInt(suffix);
 		if (isAvailable(candidate))
 		{

@@ -20,9 +20,14 @@
 #include "MingEngine/Scene/Core/RaycastSpace3D.hpp"
 #include "MingEngine/Scene/Core/SceneTree.hpp"
 #include "MingEngine/Scene/Core/Viewport.hpp"
+#include "MingEngine/Scene/GUI/BoxContainer.hpp"
 #include "MingEngine/Scene/GUI/ColorRect.hpp"
+#include "MingEngine/Scene/GUI/Container.hpp"
 #include "MingEngine/Scene/GUI/Control.hpp"
+#include "MingEngine/Scene/GUI/HBoxContainer.hpp"
 #include "MingEngine/Scene/GUI/Label.hpp"
+#include "MingEngine/Scene/GUI/MarginContainer.hpp"
+#include "MingEngine/Scene/GUI/VBoxContainer.hpp"
 #include "MingEngine/Scene/Import/GLTFImporter.hpp"
 #include "MingEngine/Scene/Import/ImageImporter.hpp"
 #include "MingEngine/Scene/Import/OBJImporter.hpp"
@@ -110,6 +115,11 @@ void RegisterSceneTypes()
 	ClassDatabase::RegisterClass<Control>();
 	ClassDatabase::RegisterClass<ColorRect>();
 	ClassDatabase::RegisterClass<Label>();
+	ClassDatabase::RegisterClass<Container>();
+	ClassDatabase::RegisterClass<MarginContainer>();
+	ClassDatabase::RegisterClass<BoxContainer>();
+	ClassDatabase::RegisterClass<HBoxContainer>();
+	ClassDatabase::RegisterClass<VBoxContainer>();
 
 	// Editor types
 	ClassDatabase::SetApiType(ApiType::Editor);

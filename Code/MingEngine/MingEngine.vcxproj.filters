@@ -691,6 +691,12 @@
     <ClCompile Include="Scene\GUI\GUIDefinitions.cpp">
       <Filter>Scene\GUI</Filter>
     </ClCompile>
+    <ClCompile Include="Scene\GUI\Container.cpp">
+      <Filter>Scene\GUI</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene\GUI\BoxContainer.cpp">
+      <Filter>Scene\GUI</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Core\Clock.hpp">
@@ -1331,6 +1337,12 @@
       <Filter>ThirdParty\stb</Filter>
     </ClInclude>
     <ClInclude Include="Scene\GUI\GUIDefinitions.hpp">
+      <Filter>Scene\GUI</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\GUI\Container.hpp">
+      <Filter>Scene\GUI</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\GUI\BoxContainer.hpp">
       <Filter>Scene\GUI</Filter>
     </ClInclude>
   </ItemGroup>

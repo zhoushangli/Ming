@@ -27,10 +27,11 @@ class Node : public Object
 public:
 	enum
 	{
-		Notification_EnterTree = 3,
-		Notification_ExitTree  = 4,
-		Notification_Ready     = 5,
-		Notification_Process   = 6
+		Notification_EnterTree       = 3,
+		Notification_ExitTree        = 4,
+		Notification_Ready           = 5,
+		Notification_Process         = 6,
+		Notification_ChildrenChanged = 7
 	};
 
 public:
@@ -124,8 +125,8 @@ protected:
 		// For readyPending and enableProcess
 		// 1) readyPending will be used once when PropagateReady is called and set to false
 		// 2) enableProcess will be set to true when Notification_Ready is called
-		bool               m_readyPending     = true;
-		bool               m_enableProcess    = false;
+		bool m_readyPending  = true;
+		bool m_enableProcess = false;
 	};
 
 	NodeData m_data;

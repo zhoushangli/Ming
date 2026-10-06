@@ -9,6 +9,7 @@
 #include "MingEngine/Scene/Core/RaycastSpace3D.hpp"
 #include "MingEngine/Scene/Core/Viewport.hpp"
 #include "MingEngine/Scene/Core/Window.hpp"
+#include "MingEngine/Scene/GUI/Container.hpp"
 
 #include <algorithm>
 
@@ -177,6 +178,7 @@ void SceneTree::UpdateScene(float deltaSeconds)
 
 	UpdatePhysics(deltaSeconds);
 	FlushTransformChangedNodes();
+	FlushContainerSort();
 }
 
 Node* SceneTree::GetRoot() const { return m_root; }
@@ -208,6 +210,41 @@ void SceneTree::ChangeScene(Node* newSceneNode)
 Camera3D* SceneTree::GetWorldCamera() const { return m_root->GetCurrentCamera(); }
 
 float SceneTree::GetDeltaSeconds() const { return m_deltaSeconds; }
+
+void SceneTree::QueueContainerSort(ObjectID containerID)
+{
+	if (!containerID.IsValid())
+	{
+		return;
+	}
+
+	if (std::find(m_pendingContainerSort.begin(), m_pendingContainerSort.end(), containerID)
+		!= m_pendingContainerSort.end())
+	{
+		return;
+	}
+
+	m_pendingContainerSort.push_back(containerID);
+}
+
+void SceneTree::FlushContainerSort()
+{
+	// 1) Take the current batch and leave new requests for the next frame
+	std::vector<ObjectID> pendingContainerSort;
+	pendingContainerSort.swap(m_pendingContainerSort);
+
+	// 2) Resolve each container before executing its request
+	for (ObjectID containerID : pendingContainerSort)
+	{
+		Container* container = ObjectDatabase::GetInstance<Container>(containerID);
+		if (container == nullptr || container->GetSceneTree() != this)
+		{
+			continue;
+		}
+
+		container->SortChildren();
+	}
+}
 
 void SceneTree::RegisterNode(Node* node)
 {
