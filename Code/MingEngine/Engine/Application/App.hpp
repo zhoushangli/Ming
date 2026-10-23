@@ -3,6 +3,7 @@
 #include "MingEngine/Engine/Event/EventSystem.hpp"
 
 #include <filesystem>
+#include <string>
 
 class Clock;
 class EditorCamera;
@@ -11,13 +12,14 @@ class SceneTree;
 
 enum class MingRunMode
 {
+	ProjectManager,
 	Editor,
 	Game
 };
 
 struct MingRunConfig
 {
-	MingRunMode           mode = MingRunMode::Editor;
+	MingRunMode           mode = MingRunMode::ProjectManager;
 	std::filesystem::path projectPath;
 
 	// If true, the engine will generate C# bindings for all registered types and exit.
@@ -59,6 +61,8 @@ private:
 
 	void StartupEditor();
 	void StartupGame();
+	void DrawProjectManager();
+	void OpenProject();
 
 private:
 	bool m_shouldRestart = false;
@@ -67,6 +71,7 @@ private:
 	Clock*        m_clock     = nullptr;
 	SceneTree*    m_sceneTree = nullptr;
 	MingRunConfig m_runConfig;
+	std::string   m_projectManagerError;
 
 	EditorCamera* m_editorCamera = nullptr;
 	bool          m_isSlowMode   = false;

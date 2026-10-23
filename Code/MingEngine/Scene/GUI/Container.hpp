@@ -17,9 +17,9 @@ public:
 public:
 	static void BindMethods() {}
 
-	Vector2 GetMinimumSize() const override;
+	Vector2 GetInternalMinimumSize() const override;
 
-	void QueueSort();
+	void MarkDirty();
 	void FitChildInRect(Control* child, Rect2 const& rect);
 
 protected:
@@ -30,5 +30,7 @@ protected:
 private:
 	void SortChildren();
 
+	// Weather it is waiting for the SceneTree to call SortChildren
+	// if it is true, then we do not need to call SortChildren again
 	bool m_sortPending = false;
 };

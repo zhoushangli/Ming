@@ -13,7 +13,7 @@ Control* Container::GetLayoutChild(Node* child) const
 	return control;
 }
 
-Vector2 Container::GetMinimumSize() const
+Vector2 Container::GetInternalMinimumSize() const
 {
 	Vector2 minimumSize = Vector2::Zero;
 
@@ -40,7 +40,7 @@ Vector2 Container::GetMinimumSize() const
 	return minimumSize;
 }
 
-void Container::QueueSort()
+void Container::MarkDirty()
 {
 	SceneTree* sceneTree = GetSceneTree();
 	if (sceneTree == nullptr || m_data.m_isPendingDestroy || m_sortPending)
@@ -79,7 +79,7 @@ void Container::FitChildInRect(Control* child, Rect2 const& rect)
 	}
 
 	child->SetPosition(rect.GetPosition());
-	child->SetSize(rect.GetSize());
+	child->UpdateSize(rect.GetSize());
 }
 
 void Container::OnNotification(int notification)
@@ -91,12 +91,13 @@ void Container::OnNotification(int notification)
 	case Notification_MinimumSizeChanged:
 	case Notification_VisibilityChanged:
 	{
-		QueueSort();
+		MarkDirty();
 		break;
 	}
 
 	case Notification_ChildrenChanged:
 	{
+		// Not only dirty, but also need to recalculate the minimum size and inform the parent
 		PropagateMinimumSizeChanged();
 		break;
 	}

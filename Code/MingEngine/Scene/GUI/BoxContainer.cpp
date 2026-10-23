@@ -1,9 +1,9 @@
 #include "MingEngine/Scene/GUI/BoxContainer.hpp"
 
-Vector2 BoxContainer::GetMinimumSize() const
+Vector2 BoxContainer::GetInternalMinimumSize() const
 {
 	Vector2 minimumSize = Vector2::Zero;
-	bool hasChild = false;
+	bool    hasChild    = false;
 
 	for (Node* child : GetChildren())
 	{
@@ -14,7 +14,7 @@ Vector2 BoxContainer::GetMinimumSize() const
 		}
 
 		Vector2 const childMinimumSize = control->GetCombinedMinimumSize();
-		float const separation = hasChild ? m_separation : 0.0f;
+		float const   separation       = hasChild ? m_separation : 0.0f;
 		if (m_vertical)
 		{
 			minimumSize.y += childMinimumSize.y + separation;
@@ -60,7 +60,7 @@ void BoxContainer::OnNotification(int notification)
 		}
 
 		Vector2 const childMinimumSize = control->GetCombinedMinimumSize();
-		Rect2 rect;
+		Rect2         rect;
 		if (m_vertical)
 		{
 			rect.SetPosition(Vector2(0.0f, offset));

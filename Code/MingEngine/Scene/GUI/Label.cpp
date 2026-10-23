@@ -5,7 +5,7 @@
 
 #include <cmath>
 
-Vector2 Label::GetMinimumSize() const
+Vector2 Label::GetInternalMinimumSize() const
 {
 	if (!m_font.IsValid() || !m_font->GetFontRID().IsValid() || g_engine == nullptr
 		|| g_engine->m_textServer == nullptr)
@@ -13,7 +13,8 @@ Vector2 Label::GetMinimumSize() const
 		return Vector2::Zero;
 	}
 
-	TextLine const line = g_engine->m_textServer->GetTextLine(m_font->GetFontRID(), m_text, static_cast<float>(m_fontSize));
+	TextLine const line =
+		g_engine->m_textServer->GetTextLine(m_font->GetFontRID(), m_text, static_cast<float>(m_fontSize));
 	return Vector2(line.m_width, std::abs(line.m_config.m_ascent) + std::abs(line.m_config.m_descent));
 }
 

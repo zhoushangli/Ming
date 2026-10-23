@@ -25,17 +25,18 @@
 #include "MingEngine/Scene/Core/Node.hpp"
 #include "MingEngine/Scene/Core/PackedScene.hpp"
 #include "MingEngine/Scene/Core/SceneTree.hpp"
-#include "MingEngine/Scene/GUI/Label.hpp"
 #include "MingEngine/Scene/GUI/ColorRect.hpp"
-#include "MingEngine/Scene/GUI/TextureRect.hpp"
 #include "MingEngine/Scene/GUI/Container.hpp"
 #include "MingEngine/Scene/GUI/HBoxContainer.hpp"
+#include "MingEngine/Scene/GUI/Label.hpp"
 #include "MingEngine/Scene/GUI/MarginContainer.hpp"
+#include "MingEngine/Scene/GUI/TextureRect.hpp"
 #include "MingEngine/Scene/GUI/VBoxContainer.hpp"
 #include "MingEngine/Scene/RegisterAllTypes.hpp"
 #include "MingEngine/Scene/Resource/FontResource.hpp"
 
 #include "ThirdParty/GLFW/glfw3.h"
+#include "ThirdParty/imgui/imgui.h"
 
 #ifndef NOMINMAX
 #define NOMINMAX
@@ -45,8 +46,11 @@
 #define WIN32_LEAN_AND_MEAN
 #endif
 
+#include <commdlg.h>
 #include <string>
 #include <windows.h>
+
+#pragma comment(lib, "Comdlg32.lib")
 
 App* g_app = nullptr;
 
@@ -56,6 +60,10 @@ App::App(MingRunConfig const& config) : m_runConfig(config)
 	engineConfig.m_windowConfig.m_clientAspect     = 16.f / 9.f;
 	engineConfig.m_windowConfig.m_appName          = "MingEngine";
 	engineConfig.m_fileSystemConfig.m_resourceRoot = config.projectPath;
+	if (config.mode == MingRunMode::ProjectManager)
+	{
+		engineConfig.m_windowConfig.m_appName = "MingEngine - Project Manager";
+	}
 
 	g_engine = new Engine(engineConfig);
 	g_engine->SetEditorMode(config.mode == MingRunMode::Editor);
@@ -85,6 +93,12 @@ void App::Startup()
 	else if (m_runConfig.mode == MingRunMode::Game)
 	{
 		StartupGame();
+	}
+	else
+	{
+		GLFWwindow* window = g_engine->m_windowSystem->GetGLFWWindow();
+		glfwRestoreWindow(window);
+		glfwSetWindowSize(window, 720, 360);
 	}
 
 	RegisterEvent("Quit", App::OnQuit);
@@ -118,6 +132,12 @@ void App::RunMainLoop()
 
 void App::Update(float deltaSeconds)
 {
+	if (m_runConfig.mode == MingRunMode::ProjectManager)
+	{
+		DrawProjectManager();
+		return;
+	}
+
 	GLFWwindow* window   = g_engine->m_windowSystem->GetGLFWWindow();
 	bool const  hasFocus = window != nullptr && glfwGetWindowAttrib(window, GLFW_FOCUSED);
 
@@ -258,7 +278,114 @@ bool App::OnQuit([[maybe_unused]] EventArgs& args)
 void App::RestartImmediately()
 {
 	ShutdownScene();
-	StartupEditor();
+
+	if (m_runConfig.mode == MingRunMode::Editor)
+	{
+		StartupEditor();
+	}
+	else if (m_runConfig.mode == MingRunMode::Game)
+	{
+		StartupGame();
+	}
+}
+
+void App::DrawProjectManager()
+{
+	ImGuiViewport const* viewport = ImGui::GetMainViewport();
+	ImGui::SetNextWindowPos(viewport->WorkPos);
+	ImGui::SetNextWindowSize(viewport->WorkSize);
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(24.f, 24.f));
+	if (ImGui::Begin(
+			"Project Manager",
+			nullptr,
+			ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings))
+	{
+		ImGui::TextUnformatted("MingEngine");
+		ImGui::Spacing();
+		ImGui::TextWrapped("Select project.ming to open a project.");
+		ImGui::Spacing();
+		if (ImGui::Button("Open Project...", ImVec2(240.f, 42.f)))
+		{
+			OpenProject();
+		}
+		if (!m_projectManagerError.empty())
+		{
+			ImGui::Spacing();
+			ImGui::TextWrapped("%s", m_projectManagerError.c_str());
+		}
+	}
+	ImGui::End();
+	ImGui::PopStyleVar();
+}
+
+void App::OpenProject()
+{
+	m_projectManagerError.clear();
+
+	// 1) Select an existing project settings file without changing the working directory
+	std::wstring  selectedPath(32768, L'\0');
+	OPENFILENAMEW dialog{};
+	dialog.lStructSize = sizeof(dialog);
+	dialog.hwndOwner   = static_cast<HWND>(g_engine->m_windowSystem->GetHwnd());
+	dialog.lpstrFilter = L"Ming project (project.ming)\0*.ming\0\0";
+	dialog.lpstrFile   = selectedPath.data();
+	dialog.nMaxFile    = static_cast<DWORD>(selectedPath.size());
+	dialog.lpstrTitle  = L"Open Ming Project";
+	dialog.Flags       = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_NOCHANGEDIR | OFN_EXPLORER;
+	if (!GetOpenFileNameW(&dialog))
+	{
+		DWORD const error = CommDlgExtendedError();
+		if (error != 0)
+		{
+			m_projectManagerError = "Failed to open the file dialog. Windows error: " + std::to_string(error);
+		}
+		return;
+	}
+
+	// 2) Validate the selected file before launching the editor
+	std::filesystem::path const settingsPath(selectedPath.c_str());
+	std::error_code             error;
+	if (settingsPath.filename() != L"project.ming" || !std::filesystem::is_regular_file(settingsPath, error) || error)
+	{
+		m_projectManagerError = "Please select an existing project.ming file.";
+		return;
+	}
+
+	std::wstring executablePath(32768, L'\0');
+	DWORD const  length = GetModuleFileNameW(nullptr, executablePath.data(), static_cast<DWORD>(executablePath.size()));
+	if (length == 0 || length >= executablePath.size())
+	{
+		m_projectManagerError = "Failed to get the executable path.";
+		return;
+	}
+	executablePath.resize(length);
+
+	// 3) Launch the editor with an absolute project path and close the manager only on success
+	std::wstring const projectArgument = (settingsPath.parent_path() / L".").wstring();
+	std::wstring       commandLine     = L"\"" + executablePath + L"\" --editor --project \"" + projectArgument + L"\"";
+	std::wstring const workingDirectory = std::filesystem::path(executablePath).parent_path().wstring();
+	STARTUPINFOW       startupInfo{};
+	startupInfo.cb = sizeof(startupInfo);
+	PROCESS_INFORMATION processInfo{};
+	if (!CreateProcessW(
+			executablePath.c_str(),
+			commandLine.data(),
+			nullptr,
+			nullptr,
+			FALSE,
+			0,
+			nullptr,
+			workingDirectory.c_str(),
+			&startupInfo,
+			&processInfo))
+	{
+		m_projectManagerError = "Failed to launch the editor. Windows error: " + std::to_string(GetLastError());
+		return;
+	}
+
+	CloseHandle(processInfo.hThread);
+	CloseHandle(processInfo.hProcess);
+	Quit();
 }
 
 void App::StartupEditor()

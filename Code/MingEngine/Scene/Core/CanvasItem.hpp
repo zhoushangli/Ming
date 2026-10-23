@@ -7,6 +7,9 @@
 
 class RenderServer;
 
+// Canvas Item is the render side entry for 2d rendering functions, like 2d nodes or ui nodes
+// Basically, canvas item will register itself to the render server
+// and provide vairous drawing functions to the render server
 class CanvasItem : public Node
 {
 	MCLASS(CanvasItem, Node);

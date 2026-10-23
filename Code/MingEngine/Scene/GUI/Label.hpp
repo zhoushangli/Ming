@@ -2,19 +2,19 @@
 
 #include "MingEngine/Core/String.hpp"
 #include "MingEngine/Scene/GUI/Control.hpp"
-#include "MingEngine/Scene/Resource/FontResource.hpp"
 #include "MingEngine/Scene/GUI/GUIDefinitions.hpp"
+#include "MingEngine/Scene/Resource/FontResource.hpp"
 
 class Label : public Control
 {
 	MCLASS(Label, Control);
 
 public:
-	Vector2 GetMinimumSize() const override;
+	Vector2 GetInternalMinimumSize() const override;
 
-	String const&     GetText() const { return m_text; }
-	Ref<FontResource> GetFont() const { return m_font; }
-	int               GetFontSize() const { return m_fontSize; }
+	String const&       GetText() const { return m_text; }
+	Ref<FontResource>   GetFont() const { return m_font; }
+	int                 GetFontSize() const { return m_fontSize; }
 	HorizontalAlignment GetHorizontalAlignment() const { return m_horizontalAlignment; }
 	VerticalAlignment   GetVerticalAlignment() const { return m_verticalAlignment; }
 

@@ -1,10 +1,27 @@
 #include "MingEngine/Scene/GUI/Control.hpp"
 
-Vector2 Control::GetMinimumSize() const { return Vector2::Zero; }
+void Control::UpdateSize(Vector2 const& newSize)
+{
+	Vector2 const minimumSize = GetCombinedMinimumSize();
+
+	Vector2 const updatedSize(
+		newSize.x < minimumSize.x ? minimumSize.x : newSize.x,
+		newSize.y < minimumSize.y ? minimumSize.y : newSize.y);
+
+	if (m_size == updatedSize)
+	{
+		return;
+	}
+
+	SetSize(updatedSize);
+	QueueRedraw();
+}
+
+Vector2 Control::GetInternalMinimumSize() const { return Vector2::Zero; }
 
 Vector2 Control::GetCombinedMinimumSize() const
 {
-	Vector2 const minimumSize = GetMinimumSize();
+	Vector2 const minimumSize = GetInternalMinimumSize();
 
 	return Vector2(
 		minimumSize.x < m_customMinimumSize.x ? m_customMinimumSize.x : minimumSize.x,
@@ -19,20 +36,8 @@ void Control::SetPosition(Vector2 const& position)
 
 void Control::SetSize(Vector2 const& size)
 {
-	Vector2 const minimumSize = GetCombinedMinimumSize();
-
-	Vector2 const newSize(
-		size.x < minimumSize.x ? minimumSize.x : size.x,
-		size.y < minimumSize.y ? minimumSize.y : size.y);
-
-	if (m_size == newSize)
-	{
-		return;
-	}
-
-	m_size = newSize;
+	m_size = size;
 	Notification(Notification_Resized);
-	QueueRedraw();
 }
 
 void Control::SetCustomMinimumSize(Vector2 const& size)
@@ -50,8 +55,9 @@ void Control::SetCustomMinimumSize(Vector2 const& size)
 
 void Control::PropagateMinimumSizeChanged()
 {
-	SetSize(m_size);
+	UpdateSize(m_size);
 
+	// Notification spread the message along the inherit chain, from child to parent
 	Notification(Notification_MinimumSizeChanged);
 
 	if (Control* parent = dynamic_cast<Control*>(GetParent()))

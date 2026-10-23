@@ -175,6 +175,11 @@ void ScriptSystem::Startup()
 	GUARANTEE_OR_DIE(initialized, "Failed to initialize .NET Runtime or managed bridge.");
 
 	// 2) Load the current project's assembly
+	if (g_engine->m_fileSystem->GetResourceRoot().empty())
+	{
+		return;
+	}
+
 	if (!LoadProjectAssembly())
 	{
 		WARN_PRINT("Continuing startup without a loaded project assembly.\n");

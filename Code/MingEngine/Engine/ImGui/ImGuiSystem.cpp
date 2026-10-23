@@ -130,28 +130,30 @@ void ImGuiSystem::Startup()
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
 
-	std::filesystem::path iniFilePhysicalPath;
-	if (!g_engine->m_fileSystem->TryGetPhysicalPath(kImGuiIniFilePath, iniFilePhysicalPath))
-	{
-		return;
-	}
-
-	// TODO: We need to have a universal entry to create and ensure path
-	std::filesystem::create_directories(iniFilePhysicalPath.parent_path());
-	m_iniFilePath = iniFilePhysicalPath.string();
-
 	ImGuiIO& io = ImGui::GetIO();
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
-	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-	io.IniFilename = m_iniFilePath.c_str();
+	io.IniFilename = nullptr;
 
-	if (std::filesystem::exists(iniFilePhysicalPath))
+	std::filesystem::path iniFilePhysicalPath;
+	if (g_engine->m_fileSystem->TryGetPhysicalPath(kImGuiIniFilePath, iniFilePhysicalPath))
 	{
-		ImGui::LoadIniSettingsFromDisk(io.IniFilename);
-	}
-	else
-	{
-		ImGui::LoadIniSettingsFromMemory(DefaultImGuiLayout::Data.data(), DefaultImGuiLayout::Data.size());
+		io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+		std::error_code error;
+		std::filesystem::create_directories(iniFilePhysicalPath.parent_path(), error);
+		if (!error)
+		{
+			m_iniFilePath = iniFilePhysicalPath.string();
+			io.IniFilename = m_iniFilePath.c_str();
+		}
+
+		if (std::filesystem::is_regular_file(iniFilePhysicalPath, error) && !error)
+		{
+			ImGui::LoadIniSettingsFromDisk(iniFilePhysicalPath.string().c_str());
+		}
+		else
+		{
+			ImGui::LoadIniSettingsFromMemory(DefaultImGuiLayout::Data.data(), DefaultImGuiLayout::Data.size());
+		}
 	}
 
 	ApplyGodotImGuiTheme();

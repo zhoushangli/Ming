@@ -7,7 +7,7 @@ class MarginContainer : public Container
 	MCLASS(MarginContainer, Container);
 
 public:
-	Vector2 GetMinimumSize() const override;
+	Vector2 GetInternalMinimumSize() const override;
 
 	float GetMarginLeft() const { return m_marginLeft; }
 	float GetMarginTop() const { return m_marginTop; }
@@ -22,11 +22,11 @@ public:
 
 protected:
 	static void BindMethods() {}
-	void OnNotification(int notification);
+	void        OnNotification(int notification);
 
 private:
-	float m_marginLeft = 0.0f;
-	float m_marginTop = 0.0f;
-	float m_marginRight = 0.0f;
+	float m_marginLeft   = 0.0f;
+	float m_marginTop    = 0.0f;
+	float m_marginRight  = 0.0f;
 	float m_marginBottom = 0.0f;
 };

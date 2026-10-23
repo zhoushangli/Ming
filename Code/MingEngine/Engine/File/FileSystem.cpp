@@ -576,7 +576,7 @@ std::filesystem::path const &FileSystem::GetResourceRoot() const { return m_reso
 void FileSystem::ScanResourceTree()
 {
 	std::error_code errorCode;
-	if (!std::filesystem::exists(m_resourceRoot, errorCode) || !std::filesystem::is_directory(m_resourceRoot, errorCode))
+	if (m_resourceRoot.empty() || !std::filesystem::exists(m_resourceRoot, errorCode) || !std::filesystem::is_directory(m_resourceRoot, errorCode))
 	{
 		m_rootEntry.reset();
 		return;
@@ -660,7 +660,7 @@ bool FileSystem::TryToVirtualPath(std::filesystem::path const &physicalPath, Vir
 bool FileSystem::TryGetPhysicalPath(VirtualPath const &virtualPath, std::filesystem::path &outPhysicalPath) const
 {
 	outPhysicalPath.clear();
-	if (!virtualPath.IsValid())
+	if (m_resourceRoot.empty() || !virtualPath.IsValid())
 	{
 		return false;
 	}

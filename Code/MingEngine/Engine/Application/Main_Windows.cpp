@@ -25,16 +25,6 @@ namespace
 		return std::filesystem::path(executablePath).parent_path();
 	}
 
-	bool EndsWith(std::wstring const &str, std::wstring const &suffix)
-	{
-		if (str.length() < suffix.length())
-		{
-			return false;
-		}
-
-		return str.compare(str.length() - suffix.length(), suffix.length(), suffix) == 0;
-	}
-
 	bool TryParseRunConfig(MingRunConfig &outConfig, int argc, wchar_t **argv)
 	{
 		for (int i = 1; i < argc; ++i)
@@ -53,13 +43,12 @@ namespace
 				outConfig.projectPath = argv[i + 1];
 				++i;
 			}
-			else if (EndsWith(arg, L"project.ming"))
+			else if (std::filesystem::path(arg).filename() == L"project.ming")
 			{
 				std::filesystem::path projectSettingsPath = arg;
 
 				outConfig.mode = MingRunMode::Editor;
-				outConfig.projectPath = projectSettingsPath.parent_path();
-				return true;
+				outConfig.projectPath = projectSettingsPath;
 			}
 			else if (arg == L"--generate-bindings")
 			{
@@ -96,18 +85,54 @@ namespace
 			}
 		}
 
+		if (outConfig.projectPath.empty())
+		{
+			if (outConfig.mode == MingRunMode::Game)
+			{
+				return false;
+			}
+			outConfig.mode = MingRunMode::ProjectManager;
+		}
+		else
+		{
+			std::error_code error;
+			outConfig.projectPath = std::filesystem::absolute(outConfig.projectPath, error);
+			if (error)
+			{
+				return false;
+			}
+			if (outConfig.projectPath.filename() == L"project.ming")
+			{
+				outConfig.projectPath = outConfig.projectPath.parent_path();
+			}
+			if (!std::filesystem::is_regular_file(outConfig.projectPath / L"project.ming", error) || error)
+			{
+				return false;
+			}
+			if (outConfig.mode == MingRunMode::ProjectManager)
+			{
+				outConfig.mode = MingRunMode::Editor;
+			}
+		}
+
 		return true;
 	}
 
 	int Main(int argc, wchar_t **wc_argv)
 	{
 		wc_argv = CommandLineToArgvW(GetCommandLineW(), &argc);
+		if (wc_argv == nullptr)
+		{
+			return EXIT_FAILURE;
+		}
 
 		MingRunConfig config;
 		bool success = TryParseRunConfig(config, argc, wc_argv);
+		LocalFree(wc_argv);
 
 		if (!success)
 		{
+			MessageBoxW(nullptr, L"Invalid startup arguments or project path. Select a directory containing project.ming.", L"MingEngine", MB_OK | MB_ICONERROR);
 			return EXIT_FAILURE;
 		}
 

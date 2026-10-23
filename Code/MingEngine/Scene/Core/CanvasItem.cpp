@@ -5,9 +5,15 @@
 #include "MingEngine/Scene/Core/CanvasLayer.hpp"
 #include "MingEngine/Scene/Core/Viewport.hpp"
 
-CanvasItem::CanvasItem() { m_canvasItemRID = g_engine->m_renderServer->CanvasItemCreate(); }
+CanvasItem::CanvasItem() 
+{ 
+	m_canvasItemRID = g_engine->m_renderServer->CanvasItemCreate(); 
+}
 
-CanvasItem::~CanvasItem() { g_engine->m_renderServer->CanvasItemFree(m_canvasItemRID); }
+CanvasItem::~CanvasItem() 
+{ 
+	g_engine->m_renderServer->CanvasItemFree(m_canvasItemRID); 
+}
 
 CanvasItem* CanvasItem::GetParentItem() const
 {
