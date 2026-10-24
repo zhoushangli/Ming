@@ -51,7 +51,7 @@ void ViewportPanel::OnRender(EditorUIContext& context)
 	if (viewport != nullptr && viewport->GetOutputResolution() != panelDimensions)
 	{
 		// The Viewport keeps its own output resolution, the panel only requests the size.
-		viewport->SetResolution(panelDimensions);
+		viewport->UpdateResolution(panelDimensions);
 	}
 
 	if (viewport != nullptr)

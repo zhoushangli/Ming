@@ -25,6 +25,7 @@
 #include "MingEngine/Scene/Core/Node.hpp"
 #include "MingEngine/Scene/Core/PackedScene.hpp"
 #include "MingEngine/Scene/Core/SceneTree.hpp"
+#include "MingEngine/Scene/Core/Viewport.hpp"
 #include "MingEngine/Scene/GUI/ColorRect.hpp"
 #include "MingEngine/Scene/GUI/Container.hpp"
 #include "MingEngine/Scene/GUI/HBoxContainer.hpp"
@@ -46,9 +47,9 @@
 #define WIN32_LEAN_AND_MEAN
 #endif
 
+#include <windows.h>
 #include <commdlg.h>
 #include <string>
-#include <windows.h>
 
 #pragma comment(lib, "Comdlg32.lib")
 
@@ -101,7 +102,7 @@ void App::Startup()
 		glfwSetWindowSize(window, 720, 360);
 	}
 
-	RegisterEvent("Quit", App::OnQuit);
+	m_quitEventID = RegisterEvent("Quit", App::OnQuit);
 }
 
 void App::Shutdown()
@@ -110,7 +111,8 @@ void App::Shutdown()
 
 	if (g_engine != nullptr && g_engine->m_eventSystem != nullptr)
 	{
-		UnregisterEvent("Quit", App::OnQuit);
+		UnregisterEvent("Quit", m_quitEventID);
+		m_quitEventID = 0;
 	}
 
 	ResourceLoader::Shutdown();
@@ -153,6 +155,11 @@ void App::Update(float deltaSeconds)
 	float const sceneDeltaSeconds = m_clock != nullptr ? static_cast<float>(m_clock->GetDeltaSeconds()) : deltaSeconds;
 	if (m_sceneTree != nullptr)
 	{
+		if (m_uiResizeSizeLabel != nullptr)
+		{
+			IntVec2 const size = static_cast<Viewport*>(m_sceneTree->GetRoot())->GetOutputResolution();
+			m_uiResizeSizeLabel->SetText(Stringf("Viewport: %d x %d", size.x, size.y).c_str());
+		}
 		m_sceneTree->UpdateScene(sceneDeltaSeconds);
 	}
 }
@@ -408,19 +415,12 @@ void App::StartupGame()
 	m_clock     = new Clock();
 	m_sceneTree = MemNew<SceneTree>();
 
-	// 1) Build the standalone margin and horizontal box examples
-	Control* example = MemNew<Control>();
-	example->SetName("ContainerExample");
-
-	auto addBackdrop = [example](char const* name, Vector2 const& position, Vector2 const& size)
+	// 1) Load the font and build the visual test helpers
+	Ref<FontResource> font = ResourceLoader::Load("res://fusion-pixel-12px-proportional-zh_hans.ttf");
+	if (!font.IsValid())
 	{
-		ColorRect* backdrop = MemNew<ColorRect>();
-		backdrop->SetName(name);
-		backdrop->SetColor(Color(40, 48, 64));
-		backdrop->SetPosition(position);
-		backdrop->SetSize(size);
-		example->AddNode(backdrop);
-	};
+		WARN_PRINT("UI layout test needs res://fusion-pixel-12px-proportional-zh_hans.ttf.");
+	}
 
 	auto addRect = [](Node* parent, char const* name, Color const& color, Vector2 const& minimum)
 	{
@@ -429,83 +429,120 @@ void App::StartupGame()
 		rect->SetColor(color);
 		rect->SetCustomMinimumSize(minimum);
 		parent->AddNode(rect);
+		return rect;
 	};
 
-	addBackdrop("MarginBackdrop", Vector2(40.0f, 80.0f), Vector2(300.0f, 140.0f));
-	MarginContainer* margin = MemNew<MarginContainer>();
-	margin->SetName("Margin");
-	margin->SetPosition(Vector2(40.0f, 80.0f));
-	margin->SetMargins(20.0f, 12.0f, 24.0f, 16.0f);
-	addRect(margin, "Child", Color::Green, Vector2(80.0f, 40.0f));
-	margin->SetSize(Vector2(300.0f, 140.0f));
-	example->AddNode(margin);
-
-	addBackdrop("BoxBackdrop", Vector2(40.0f, 260.0f), Vector2(360.0f, 80.0f));
-	HBoxContainer* box = MemNew<HBoxContainer>();
-	box->SetName("Box");
-	box->SetPosition(Vector2(40.0f, 260.0f));
-	box->SetSeparation(20.0f);
-	addRect(box, "First", Color::Red, Vector2(80.0f, 40.0f));
-	addRect(box, "Second", Color::Green, Vector2(100.0f, 60.0f));
-	box->SetSize(Vector2(360.0f, 80.0f));
-	example->AddNode(box);
-
-	// 2) Build Margin -> VBox -> Label + HBox
-	Ref<FontResource> font = ResourceLoader::Load("res://fusion-pixel-12px-proportional-zh_hans.ttf");
-	if (!font.IsValid())
+	auto addLabel = [&font](Node* parent, char const* name, char const* text, int fontSize)
 	{
-		WARN_PRINT("Container example needs res://fusion-pixel-12px-proportional-zh_hans.ttf.");
-	}
+		Label* label = MemNew<Label>();
+		label->SetName(name);
+		label->SetFont(font);
+		label->SetFontSize(fontSize);
+		label->SetText(text);
+		parent->AddNode(label);
+		return label;
+	};
+
+	// 2) Build three nested margins that follow the root Viewport in both axes
+	MarginContainer* example = MemNew<MarginContainer>();
+	example->SetName("UIResizeTest");
+	example->SetMargins(24.0f, 24.0f, 24.0f, 24.0f);
+	addRect(example, "OuterBackground", Color(40, 80, 125), Vector2::Zero);
 
 	MarginContainer* nested = MemNew<MarginContainer>();
-	nested->SetName("Nested");
-	nested->SetPosition(Vector2(460.0f, 80.0f));
-	nested->SetMargins(16.0f, 12.0f, 16.0f, 12.0f);
+	nested->SetName("MiddleMargin");
+	nested->SetMargins(16.0f, 16.0f, 16.0f, 16.0f);
+	example->AddNode(nested);
+	addRect(nested, "MiddleBackground", Color(35, 125, 110), Vector2::Zero);
+
+	MarginContainer* content = MemNew<MarginContainer>();
+	content->SetName("InnerMargin");
+	content->SetMargins(16.0f, 16.0f, 16.0f, 16.0f);
+	nested->AddNode(content);
+	addRect(content, "InnerBackground", Color(25, 30, 40), Vector2::Zero);
 
 	VBoxContainer* column = MemNew<VBoxContainer>();
-	column->SetName("VBox");
+	column->SetName("Content");
 	column->SetSeparation(12.0f);
-	nested->AddNode(column);
+	content->AddNode(column);
 
-	Label* label = MemNew<Label>();
-	label->SetName("Label");
-	label->SetFont(font);
-	label->SetFontSize(32);
-	label->SetText("Ming UI");
-	column->AddNode(label);
+	// 3) Compare fill and shrink alignment inside visible allocated rectangles
+	Label* title = addLabel(column, "Title", "Ming UI Size Flags Test", 28);
+	title->SetHorizontalAlignment(HorizontalAlignment::Center);
+	Label* hint = addLabel(column, "Hint", "Resize window. Dark areas show allocated rectangles.", 20);
+	hint->SetHorizontalAlignment(HorizontalAlignment::Center);
+	m_uiResizeSizeLabel = addLabel(column, "ViewportSize", "Viewport", 20);
+	m_uiResizeSizeLabel->SetHorizontalAlignment(HorizontalAlignment::Center);
 
-	HBoxContainer* row = MemNew<HBoxContainer>();
-	row->SetName("HBox");
-	row->SetSeparation(20.0f);
-	addRect(row, "First", Color::Red, Vector2(80.0f, 40.0f));
-	addRect(row, "Second", Color::Green, Vector2(100.0f, 60.0f));
-	column->AddNode(row);
-
-	nested->SetSize(nested->GetCombinedMinimumSize());
-	addBackdrop("NestedBackdrop", nested->GetLocalPosition(), nested->GetSize());
-	example->AddNode(nested);
-
-	// 3) Add static example titles
-	auto addLabel = [example, &font](char const* name, char const* text, Vector2 const& position)
+	auto addAlignmentRow = [&](char const* name, bool vertical)
 	{
-		Label* caption = MemNew<Label>();
-		caption->SetName(name);
-		caption->SetFont(font);
-		caption->SetFontSize(32);
-		caption->SetText(text);
-		caption->SetPosition(position);
-		example->AddNode(caption);
+		HBoxContainer* row = MemNew<HBoxContainer>();
+		row->SetName(name);
+		row->SetSeparation(12.0f);
+		if (vertical)
+		{
+			row->SetVerticalSizeFlags(Control::Size_ExpandFill);
+		}
+		column->AddNode(row);
+
+		char const* const names[] = {"Fill", "Shrink Begin", "Shrink Center", "Shrink End"};
+		int const flags[] = {Control::Size_Fill, Control::Size_ShrinkBegin, Control::Size_ShrinkCenter, Control::Size_ShrinkEnd};
+		Color const colors[] = {Color(70, 145, 235), Color(220, 80, 80), Color(80, 190, 120), Color(220, 180, 70)};
+		for (int index = 0; index < 4; ++index)
+		{
+			VBoxContainer* group = MemNew<VBoxContainer>();
+			group->SetName(names[index]);
+			group->SetSeparation(4.0f);
+			group->SetHorizontalSizeFlags(Control::Size_ExpandFill);
+			row->AddNode(group);
+			addLabel(group, "Caption", names[index], 16);
+
+			MarginContainer* slot = MemNew<MarginContainer>();
+			slot->SetName("AllocatedArea");
+			slot->SetCustomMinimumSize(Vector2(96.0f, vertical ? 80.0f : 36.0f));
+			slot->SetVerticalSizeFlags(Control::Size_ExpandFill);
+			group->AddNode(slot);
+			addRect(slot, "Background", Color(45, 55, 70), Vector2::Zero);
+
+			ColorRect* sample = addRect(slot, "Sample", colors[index], Vector2(48.0f, 24.0f));
+			sample->SetHorizontalSizeFlags(vertical ? Control::Size_ShrinkCenter : flags[index]);
+			sample->SetVerticalSizeFlags(vertical ? flags[index] : Control::Size_ShrinkCenter);
+		}
 	};
 
-	addLabel("MarginTitle", "MarginContainer", Vector2(40.0f, 48.0f));
-	addLabel("BoxTitle", "HBoxContainer", Vector2(40.0f, 228.0f));
-	addLabel("NestedTitle", "Margin -> VBox -> Label + HBox", Vector2(460.0f, 48.0f));
+	addLabel(column, "HorizontalHint", "Horizontal alignment", 18);
+	addAlignmentRow("HorizontalAlignment", false);
+	addLabel(column, "VerticalHint", "Vertical alignment (this row expands vertically)", 18);
+	addAlignmentRow("VerticalAlignment", true);
+
+	// 4) Compare fixed width, expand with fill, and expand with shrink center
+	addLabel(column, "ExpandHint", "HBox: fixed red | Expand + Fill green | Expand + Center yellow", 18);
+	MarginContainer* expandArea = MemNew<MarginContainer>();
+	expandArea->SetName("ExpandArea");
+	expandArea->SetMargins(8.0f, 8.0f, 8.0f, 8.0f);
+	column->AddNode(expandArea);
+	addRect(expandArea, "Background", Color(45, 55, 70), Vector2::Zero);
+
+	HBoxContainer* expandRow = MemNew<HBoxContainer>();
+	expandRow->SetName("ExpandComparison");
+	expandRow->SetSeparation(12.0f);
+	expandArea->AddNode(expandRow);
+	addRect(expandRow, "Fixed", Color(220, 80, 80), Vector2(80.0f, 28.0f));
+	ColorRect* expandFill = addRect(expandRow, "ExpandFill", Color(80, 190, 120), Vector2(80.0f, 28.0f));
+	expandFill->SetHorizontalSizeFlags(Control::Size_ExpandFill);
+	ColorRect* expandCenter = addRect(expandRow, "ExpandCenter", Color(220, 180, 70), Vector2(80.0f, 28.0f));
+	expandCenter->SetHorizontalSizeFlags(Control::Size_Expand | Control::Size_ShrinkCenter);
+
+	Label* corner = addLabel(content, "BottomRight", "BOTTOM RIGHT | fixed margins", 20);
+	corner->SetHorizontalAlignment(HorizontalAlignment::Right);
+	corner->SetVerticalAlignment(VerticalAlignment::Bottom);
 
 	m_sceneTree->GetRoot()->AddNode(example);
 }
 
 void App::ShutdownScene()
 {
+	m_uiResizeSizeLabel = nullptr;
 	m_editorCamera = nullptr;
 	m_isSlowMode   = false;
 

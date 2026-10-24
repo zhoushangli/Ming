@@ -9,8 +9,16 @@
 #include <string>
 #include <vector>
 
-using EventArgs                = NamedStrings;
-using EventCallbackFunctionPtr = bool (*)(EventArgs&);
+using EventArgs         = NamedStrings;
+using EventConnectionID = uint64_t;
+using EventCallback     = std::function<bool(EventArgs&)>;
+
+struct EventSubscription
+{
+	EventConnectionID m_id       = 0;
+	ObjectID          m_targetID = ObjectID::Invalid;
+	EventCallback     m_callback;
+};
 
 struct EventSystemConfig
 {
@@ -30,10 +38,18 @@ public:
 	void BeginFrame() override;
 	void EndFrame() override;
 
-	void RegisterEvent(std::string const& eventName, EventCallbackFunctionPtr ptr);
-	void UnregisterEvent(std::string const& eventName, EventCallbackFunctionPtr ptr);
-	int  FireEvent(std::string const& eventName, EventArgs& args);
-	int  FireEvent(std::string const& eventName);
+	template <typename T>
+	EventConnectionID RegisterEvent(std::string const& eventName, T* target, bool (T::*memberFunc)(EventArgs&))
+	{
+		EventCallback callback = [target, memberFunc](EventArgs& args) -> bool { return (target->*memberFunc)(args); };
+
+		return RegisterEvent(eventName, callback);
+	}
+
+	EventConnectionID RegisterEvent(std::string const& eventName, EventCallback callback);
+	void              UnregisterEvent(std::string const& eventName, EventConnectionID connectionID);
+	int               FireEvent(std::string const& eventName, EventArgs& args);
+	int               FireEvent(std::string const& eventName);
 
 	bool    IsEventRegistered(std::string const& eventName) const;
 	Strings GetRegisteredEventNames() const;
@@ -41,11 +57,22 @@ public:
 	static void BindMethods();
 
 protected:
-	EventSystemConfig                                            m_config;
-	std::map<std::string, std::vector<EventCallbackFunctionPtr>> m_subscriptionListsByEventName;
+	EventSystemConfig m_config;
+
+	EventConnectionID                                     m_nextConnectionID = 1;
+	std::map<std::string, std::vector<EventSubscription>> m_eventMap;
 };
 
-void RegisterEvent(std::string const& eventName, EventCallbackFunctionPtr ptr);
-void UnregisterEvent(std::string const& eventName, EventCallbackFunctionPtr ptr);
+EventConnectionID RegisterEvent(std::string const& eventName, EventCallback ptr);
+
+template <typename T>
+EventConnectionID RegisterEvent(std::string const& eventName, T* target, bool (T::*memberFunc)(EventArgs&))
+{
+	EventCallback callback = [target, memberFunc](EventArgs& args) -> bool { return (target->*memberFunc)(args); };
+
+	return RegisterEvent(eventName, callback);
+}
+
+void UnregisterEvent(std::string const& eventName, EventConnectionID connectionID);
 int  FireEvent(std::string const& eventName);
 int  FireEvent(std::string const& eventName, EventArgs& args);

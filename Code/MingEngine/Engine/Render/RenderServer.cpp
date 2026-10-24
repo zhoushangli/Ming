@@ -40,7 +40,7 @@ void RenderServer::Startup()
 	// e.g. the default material only carries the lit shader and leaves every texture slot empty
 	m_defaultMaterial->m_shaderResource = m_defaultLit;
 
-	RegisterEvent("WindowResized", RenderServer::OnWindowResized);
+	m_windowResizedEventID = RegisterEvent("WindowResized", RenderServer::OnWindowResized);
 
 	m_started = true;
 }
@@ -52,7 +52,8 @@ void RenderServer::Shutdown()
 		return;
 	}
 
-	UnregisterEvent("WindowResized", RenderServer::OnWindowResized);
+	UnregisterEvent("WindowResized", m_windowResizedEventID);
+	m_windowResizedEventID = 0;
 
 	// 1) Detach light bases before releasing registered lights.
 	for (RID lightRID : m_lightOwner.GetRIDList())

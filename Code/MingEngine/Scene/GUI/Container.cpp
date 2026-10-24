@@ -43,24 +43,24 @@ Vector2 Container::GetInternalMinimumSize() const
 void Container::MarkDirty()
 {
 	SceneTree* sceneTree = GetSceneTree();
-	if (sceneTree == nullptr || m_data.m_isPendingDestroy || m_sortPending)
+	if (sceneTree == nullptr || m_data.m_isPendingDestroy || m_updatePending)
 	{
 		return;
 	}
 
-	m_sortPending = true;
+	m_updatePending = true;
 	sceneTree->QueueContainerSort(GetObjectID());
 }
 
-void Container::SortChildren()
+void Container::UpdateLayout()
 {
-	if (!m_sortPending)
+	if (!m_updatePending)
 	{
 		return;
 	}
 
 	// 1) Consume the current request
-	m_sortPending = false;
+	m_updatePending = false;
 
 	if (GetSceneTree() == nullptr || m_data.m_isPendingDestroy)
 	{
@@ -68,18 +68,54 @@ void Container::SortChildren()
 	}
 
 	// 2) Let the concrete container assign child rectangles
-	Notification(Notification_SortChildren);
+	Notification(Notification_UpdateLayout);
 }
 
-void Container::FitChildInRect(Control* child, Rect2 const& rect)
+void Container::UpdateChildRect(Control* child, Rect2 const& rect)
 {
 	if (child == nullptr || child->GetParent() != this)
 	{
 		return;
 	}
 
-	child->SetPosition(rect.GetPosition());
-	child->UpdateSize(rect.GetSize());
+	Vector2 const minimumSize     = child->GetCombinedMinimumSize();
+	Vector2 const allocatedSize   = rect.GetSize();
+	Vector2       position        = rect.GetPosition();
+	Vector2       size            = allocatedSize;
+	int const     horizontalFlags = child->GetHorizontalSizeFlags();
+	int const     verticalFlags   = child->GetVerticalSizeFlags();
+
+	// 1) Apply horizontal size and alignment
+	if ((horizontalFlags & Control::Size_Fill) == 0)
+	{
+		size.x = minimumSize.x;
+		if ((horizontalFlags & Control::Size_ShrinkEnd) != 0)
+		{
+			position.x += allocatedSize.x - size.x;
+		}
+		else if ((horizontalFlags & Control::Size_ShrinkCenter) != 0)
+		{
+			position.x += (allocatedSize.x - size.x) * 0.5f;
+		}
+	}
+
+	// 2) Apply vertical size and alignment
+	if ((verticalFlags & Control::Size_Fill) == 0)
+	{
+		size.y = minimumSize.y;
+		if ((verticalFlags & Control::Size_ShrinkEnd) != 0)
+		{
+			position.y += allocatedSize.y - size.y;
+		}
+		else if ((verticalFlags & Control::Size_ShrinkCenter) != 0)
+		{
+			position.y += (allocatedSize.y - size.y) * 0.5f;
+		}
+	}
+
+	// 3) Apply the child rectangle
+	child->SetPosition(position);
+	child->UpdateSize(size);
 }
 
 void Container::OnNotification(int notification)
@@ -104,7 +140,7 @@ void Container::OnNotification(int notification)
 
 	case Notification_ExitTree:
 	{
-		m_sortPending = false;
+		m_updatePending = false;
 		break;
 	}
 	}

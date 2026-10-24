@@ -13,8 +13,12 @@ void ColorRect::SetColor(Color const& color)
 
 void ColorRect::OnNotification(int notification)
 {
-	if (notification == Notification_Draw)
+	switch (notification)
+	{
+	case Notification_Draw:
 	{
 		DrawRect(GetLocalRect(), m_color);
+		break;
+	}
 	}
 }

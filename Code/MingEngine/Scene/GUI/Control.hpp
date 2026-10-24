@@ -17,6 +17,19 @@ public:
 		Notification_MinimumSizeChanged = 32
 	};
 
+	// Without Fill, the control uses its minimum size and defaults to begin alignment.
+	// e.g. Size_ExpandFill fills its allocation, while Size_Expand alone keeps the minimum size at the beginning.
+	enum SizeFlags
+	{
+		Size_ShrinkBegin  = 0,
+		Size_Fill         = 1 << 0,
+		Size_Expand       = 1 << 1,
+		Size_ShrinkCenter = 1 << 2,
+		Size_ShrinkEnd    = 1 << 3,
+
+		Size_ExpandFill = Size_Expand | Size_Fill
+	};
+
 public:
 	static void BindMethods() {}
 
@@ -30,9 +43,14 @@ public:
 	Vector2         GetCustomMinimumSize() const { return m_customMinimumSize; }
 	Vector2         GetCombinedMinimumSize() const;
 
-	void SetPosition(Vector2 const& position);
+	int GetHorizontalSizeFlags() const { return m_horizontalSizeFlags; }
+	int GetVerticalSizeFlags() const { return m_verticalSizeFlags; }
 
+	void SetPosition(Vector2 const& position);
 	void SetCustomMinimumSize(Vector2 const& size);
+
+	void SetHorizontalSizeFlags(int flags);
+	void SetVerticalSizeFlags(int flags);
 
 	// Propagate is spread the message along tree structure
 	void PropagateMinimumSizeChanged();
@@ -47,4 +65,7 @@ private:
 	Vector2 m_position          = Vector2::Zero;
 	Vector2 m_size              = Vector2::Zero;
 	Vector2 m_customMinimumSize = Vector2::Zero;
+
+	int m_horizontalSizeFlags = Size_Fill;
+	int m_verticalSizeFlags   = Size_Fill;
 };

@@ -205,8 +205,9 @@ private:
 	void PrepareCanvasItemRequests(RID item, RID viewport, ViewportData* viewportData, Vector2 const& parentPosition);
 
 private:
-	Renderer* m_renderer = nullptr;
-	bool      m_started  = false;
+	Renderer*         m_renderer             = nullptr;
+	bool              m_started              = false;
+	EventConnectionID m_windowResizedEventID = 0;
 
 	Ref<ShaderResource>   m_defaultUnlit;
 	Ref<ShaderResource>   m_defaultUI;

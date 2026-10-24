@@ -229,20 +229,23 @@ void SceneTree::QueueContainerSort(ObjectID containerID)
 
 void SceneTree::FlushContainerSort()
 {
-	// 1) Take the current batch and leave new requests for the next frame
-	std::vector<ObjectID> pendingContainerSort;
-	pendingContainerSort.swap(m_pendingContainerSort);
-
-	// 2) Resolve each container before executing its request
-	for (ObjectID containerID : pendingContainerSort)
+	// We do not use swap because we want all the containers to be update in one frame
+	// e.g. 
+	// Container A
+	// 	| Container B
+	// 	| Container C
+	// If Container A is dirty, it will also update Container B and C in this loop
+	// instead of update Container B and C in the next frame
+	while (m_pendingContainerSort.size() > 0)
 	{
-		Container* container = ObjectDatabase::GetInstance<Container>(containerID);
-		if (container == nullptr || container->GetSceneTree() != this)
-		{
-			continue;
-		}
+		ObjectID containerID = m_pendingContainerSort.back();
+		m_pendingContainerSort.pop_back();
 
-		container->SortChildren();
+		Container* container = ObjectDatabase::GetInstance<Container>(containerID);
+		if (container != nullptr && container->GetSceneTree() == this)
+		{
+			container->UpdateLayout();
+		}
 	}
 }
 

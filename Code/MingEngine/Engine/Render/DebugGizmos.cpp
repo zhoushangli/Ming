@@ -24,6 +24,9 @@ std::vector<DebugObject> s_debugMessages;
 
 bool s_isVisible = true;
 
+EventConnectionID s_clearEventID  = 0;
+EventConnectionID s_toggleEventID = 0;
+
 std::array<std::vector<RenderRequest>, static_cast<size_t>(RenderRequestPass::Count)> s_renderRequests;
 
 void AddDebugObject(DebugObject&& object)
@@ -201,14 +204,16 @@ void DebugGizmos::Startup(DebugRenderConfig const& config)
 	s_debugMessages.clear();
 	s_isVisible = true;
 
-	g_engine->m_eventSystem->RegisterEvent("Dev_DebugRenderClear", Command_DebugRenderClear);
-	g_engine->m_eventSystem->RegisterEvent("Dev_DebugRenderToggle", Command_DebugRenderToggle);
+	s_clearEventID  = g_engine->m_eventSystem->RegisterEvent("Dev_DebugRenderClear", Command_DebugRenderClear);
+	s_toggleEventID = g_engine->m_eventSystem->RegisterEvent("Dev_DebugRenderToggle", Command_DebugRenderToggle);
 }
 
 void DebugGizmos::Shutdown()
 {
-	g_engine->m_eventSystem->UnregisterEvent("Dev_DebugRenderClear", Command_DebugRenderClear);
-	g_engine->m_eventSystem->UnregisterEvent("Dev_DebugRenderToggle", Command_DebugRenderToggle);
+	g_engine->m_eventSystem->UnregisterEvent("Dev_DebugRenderClear", s_clearEventID);
+	g_engine->m_eventSystem->UnregisterEvent("Dev_DebugRenderToggle", s_toggleEventID);
+	s_clearEventID  = 0;
+	s_toggleEventID = 0;
 
 	s_debugRenderConfig.m_renderer = nullptr;
 	s_debugObjects.clear();

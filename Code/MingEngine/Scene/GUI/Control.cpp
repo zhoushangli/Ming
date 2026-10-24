@@ -1,5 +1,8 @@
 #include "MingEngine/Scene/GUI/Control.hpp"
 
+#include "MingEngine/Scene/Core/Viewport.hpp"
+#include "MingEngine/Scene/GUI/Container.hpp"
+
 void Control::UpdateSize(Vector2 const& newSize)
 {
 	Vector2 const minimumSize = GetCombinedMinimumSize();
@@ -14,6 +17,7 @@ void Control::UpdateSize(Vector2 const& newSize)
 	}
 
 	SetSize(updatedSize);
+
 	QueueRedraw();
 }
 
@@ -53,6 +57,36 @@ void Control::SetCustomMinimumSize(Vector2 const& size)
 	PropagateMinimumSizeChanged();
 }
 
+void Control::SetHorizontalSizeFlags(int flags)
+{
+	if (m_horizontalSizeFlags == flags)
+	{
+		return;
+	}
+
+	m_horizontalSizeFlags = flags;
+
+	if (Container* parent = dynamic_cast<Container*>(GetParent()))
+	{
+		parent->MarkDirty();
+	}
+}
+
+void Control::SetVerticalSizeFlags(int flags)
+{
+	if (m_verticalSizeFlags == flags)
+	{
+		return;
+	}
+
+	m_verticalSizeFlags = flags;
+
+	if (Container* parent = dynamic_cast<Container*>(GetParent()))
+	{
+		parent->MarkDirty();
+	}
+}
+
 void Control::PropagateMinimumSizeChanged()
 {
 	UpdateSize(m_size);
@@ -68,11 +102,31 @@ void Control::PropagateMinimumSizeChanged()
 
 void Control::OnNotification(int notification)
 {
-	if (notification == Notification_VisibilityChanged)
+	switch (notification)
+	{
+	case Notification_EnterTree:
+	{
+		if (m_data.m_viewport != nullptr && GetParentItem() == nullptr)
+		{
+			m_data.m_viewport->AddRootControl(this);
+		}
+		break;
+	}
+	case Notification_ExitTree:
+	{
+		if (m_data.m_viewport != nullptr)
+		{
+			m_data.m_viewport->RemoveRootControl(this);
+		}
+		break;
+	}
+	case Notification_VisibilityChanged:
 	{
 		if (Control* parent = dynamic_cast<Control*>(GetParent()))
 		{
 			parent->PropagateMinimumSizeChanged();
 		}
+		break;
+	}
 	}
 }

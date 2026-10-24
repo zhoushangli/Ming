@@ -7,6 +7,7 @@
 
 class Clock;
 class EditorCamera;
+class Label;
 class Node;
 class SceneTree;
 
@@ -65,16 +66,18 @@ private:
 	void OpenProject();
 
 private:
-	bool m_shouldRestart = false;
-	bool m_shouldQuit    = false;
+	bool              m_shouldRestart = false;
+	bool              m_shouldQuit    = false;
+	EventConnectionID m_quitEventID   = 0;
 
 	Clock*        m_clock     = nullptr;
 	SceneTree*    m_sceneTree = nullptr;
 	MingRunConfig m_runConfig;
 	std::string   m_projectManagerError;
 
-	EditorCamera* m_editorCamera = nullptr;
-	bool          m_isSlowMode   = false;
+	EditorCamera* m_editorCamera      = nullptr;
+	bool          m_isSlowMode        = false;
+	Label*        m_uiResizeSizeLabel = nullptr;
 };
 
 extern App* g_app;

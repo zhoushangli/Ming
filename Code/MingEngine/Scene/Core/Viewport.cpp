@@ -7,6 +7,7 @@
 #include "MingEngine/Scene/3D/Camera3D.hpp"
 #include "MingEngine/Scene/Core/CanvasItem.hpp"
 #include "MingEngine/Scene/Core/SceneTree.hpp"
+#include "MingEngine/Scene/GUI/Control.hpp"
 
 #include <algorithm>
 
@@ -15,8 +16,8 @@ Viewport::Viewport()
 	IntVec2 defaultResolution =
 		g_engine->m_windowSystem != nullptr ? g_engine->m_windowSystem->GetClientDimensions() : IntVec2(1280, 720);
 
-	m_viewportRID      = g_engine->m_renderServer->ViewportCreate();
-	m_canvasLayerRID   = g_engine->m_renderServer->CanvasLayerCreate();
+	m_viewportRID    = g_engine->m_renderServer->ViewportCreate();
+	m_canvasLayerRID = g_engine->m_renderServer->CanvasLayerCreate();
 	g_engine->m_renderServer->CanvasLayerSetViewport(m_canvasLayerRID, m_viewportRID);
 	m_outputResolution = defaultResolution;
 	g_engine->m_renderServer->ViewportSetResolution(m_viewportRID, m_outputResolution);
@@ -109,6 +110,40 @@ void Viewport::ChangeToNextCamera()
 }
 
 IntVec2 Viewport::GetOutputResolution() const { return m_outputResolution; }
+
+void Viewport::UpdateResolution(IntVec2 dimensions)
+{
+	if (dimensions.x <= 0 || dimensions.y <= 0)
+	{
+		return;
+	}
+
+	SetResolution(dimensions);
+
+	for (Control* rootControl : m_rootControls)
+	{
+		if (rootControl != nullptr)
+		{
+			rootControl->UpdateSize((Vector2)dimensions);
+		}
+	}
+}
+
+void Viewport::AddRootControl(Control* control)
+{
+	if (control == nullptr || std::find(m_rootControls.begin(), m_rootControls.end(), control) != m_rootControls.end())
+	{
+		return;
+	}
+
+	m_rootControls.push_back(control);
+	control->UpdateSize(Vector2(m_outputResolution));
+}
+
+void Viewport::RemoveRootControl(Control* control)
+{
+	m_rootControls.erase(std::remove(m_rootControls.begin(), m_rootControls.end(), control), m_rootControls.end());
+}
 
 void Viewport::SetResolution(IntVec2 dimensions)
 {

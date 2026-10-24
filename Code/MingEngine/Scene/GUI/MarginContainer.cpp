@@ -26,20 +26,22 @@ void MarginContainer::SetMargins(float left, float top, float right, float botto
 
 void MarginContainer::OnNotification(int notification)
 {
-	if (notification != Notification_SortChildren)
+	switch (notification)
 	{
-		return;
-	}
-
-	Rect2 rect;
-	rect.SetPosition(Vector2(m_marginLeft, m_marginTop));
-	rect.SetSize(GetSize() - Vector2(m_marginLeft + m_marginRight, m_marginTop + m_marginBottom));
-
-	for (Node* child : GetChildren())
+	case Notification_UpdateLayout:
 	{
-		if (Control* control = GetLayoutChild(child))
+		Rect2 rect;
+		rect.SetPosition(Vector2(m_marginLeft, m_marginTop));
+		rect.SetSize(GetSize() - Vector2(m_marginLeft + m_marginRight, m_marginTop + m_marginBottom));
+
+		for (Node* child : GetChildren())
 		{
-			FitChildInRect(control, rect);
+			if (Control* control = GetLayoutChild(child))
+			{
+				UpdateChildRect(control, rect);
+			}
 		}
+		break;
+	}
 	}
 }

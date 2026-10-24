@@ -45,34 +45,68 @@ void BoxContainer::SetSeparation(float separation)
 
 void BoxContainer::OnNotification(int notification)
 {
-	if (notification != Notification_SortChildren)
+	switch (notification)
 	{
-		return;
+	case Notification_UpdateLayout:
+	{
+		// 1) Count children that expand along the main axis
+		int expandCount = 0;
+		for (Node* child : GetChildren())
+		{
+			Control* control = GetLayoutChild(child);
+			if (control == nullptr)
+			{
+				continue;
+			}
+
+			int const flags = m_vertical ? control->GetVerticalSizeFlags() : control->GetHorizontalSizeFlags();
+
+			if ((flags & Control::Size_Expand) != 0)
+			{
+				++expandCount;
+			}
+		}
+
+		// 2) Divide positive remaining space along the main axis
+		Vector2 const minimumSize     = GetInternalMinimumSize();
+		float const   availableLength = m_vertical ? GetSize().y : GetSize().x;
+		float const   minimumLength   = m_vertical ? minimumSize.y : minimumSize.x;
+		float const   extraSpace      = availableLength - minimumLength;
+		float const   extraPerChild   = expandCount > 0 && extraSpace > 0.0f ? extraSpace / (float)expandCount : 0.0f;
+
+		// 3) Assign child rectangles
+		float offset = 0.0f;
+		for (Node* child : GetChildren())
+		{
+			Control* control = GetLayoutChild(child);
+			if (control == nullptr)
+			{
+				continue;
+			}
+
+			Vector2 const childMinimumSize = control->GetCombinedMinimumSize();
+			int const     flags  = m_vertical ? control->GetVerticalSizeFlags() : control->GetHorizontalSizeFlags();
+			float         length = m_vertical ? childMinimumSize.y : childMinimumSize.x;
+			if ((flags & Control::Size_Expand) != 0)
+			{
+				length += extraPerChild;
+			}
+
+			Rect2 rect;
+			if (m_vertical)
+			{
+				rect.SetPosition(Vector2(0.0f, offset));
+				rect.SetSize(Vector2(GetSize().x, length));
+			}
+			else
+			{
+				rect.SetPosition(Vector2(offset, 0.0f));
+				rect.SetSize(Vector2(length, GetSize().y));
+			}
+			UpdateChildRect(control, rect);
+			offset += length + m_separation;
+		}
+		break;
 	}
-
-	float offset = 0.0f;
-	for (Node* child : GetChildren())
-	{
-		Control* control = GetLayoutChild(child);
-		if (control == nullptr)
-		{
-			continue;
-		}
-
-		Vector2 const childMinimumSize = control->GetCombinedMinimumSize();
-		Rect2         rect;
-		if (m_vertical)
-		{
-			rect.SetPosition(Vector2(0.0f, offset));
-			rect.SetSize(Vector2(GetSize().x, childMinimumSize.y));
-			offset += childMinimumSize.y + m_separation;
-		}
-		else
-		{
-			rect.SetPosition(Vector2(offset, 0.0f));
-			rect.SetSize(Vector2(childMinimumSize.x, GetSize().y));
-			offset += childMinimumSize.x + m_separation;
-		}
-		FitChildInRect(control, rect);
 	}
 }

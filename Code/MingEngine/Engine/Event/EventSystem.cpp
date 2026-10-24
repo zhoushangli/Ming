@@ -12,42 +12,60 @@ void EventSystem::Startup() {}
 
 void EventSystem::Shutdown()
 {
-	for (auto& pair : m_subscriptionListsByEventName)
+	for (auto& pair : m_eventMap)
 	{
 		pair.second.clear();
 	}
-	m_subscriptionListsByEventName.clear();
+	m_eventMap.clear();
 }
 
 void EventSystem::BeginFrame() {}
 
 void EventSystem::EndFrame() {}
 
-void EventSystem::RegisterEvent(std::string const& eventName, EventCallbackFunctionPtr ptr)
+EventConnectionID EventSystem::RegisterEvent(std::string const& eventName, EventCallback callback)
 {
-	m_subscriptionListsByEventName[eventName].push_back(ptr);
+	EventConnectionID connectionID = m_nextConnectionID++;
+	EventSubscription subscription;
+	subscription.m_id       = connectionID;
+	subscription.m_targetID = ObjectID::Invalid; // No specific target for this subscription
+	subscription.m_callback = callback;
+
+	m_eventMap[eventName].push_back(subscription);
+
+	return connectionID;
 }
 
-void EventSystem::UnregisterEvent(std::string const& eventName, EventCallbackFunctionPtr ptr)
+void EventSystem::UnregisterEvent(std::string const& eventName, EventConnectionID connectionID)
 {
-	auto& callbackList = m_subscriptionListsByEventName[eventName];
-	auto  it           = std::find(callbackList.begin(), callbackList.end(), ptr);
-	if (it != callbackList.end())
+	auto it = m_eventMap.find(eventName);
+	if (it != m_eventMap.end())
 	{
-		callbackList.erase(it);
+		std::vector<EventSubscription>& callbackList = it->second;
+		callbackList.erase(
+			std::remove_if(
+				callbackList.begin(),
+				callbackList.end(),
+				[connectionID](const EventSubscription& subscription) { return subscription.m_id == connectionID; }),
+			callbackList.end());
+
+		if (callbackList.empty())
+		{
+			m_eventMap.erase(it);
+		}
 	}
 }
 
 int EventSystem::FireEvent(std::string const& eventName, EventArgs& args)
 {
-	auto& callbackList = m_subscriptionListsByEventName[eventName];
-	int   numCallbacks = 0;
-	for (auto& callback : callbackList)
+	std::vector<EventSubscription> const& subscriptionList = m_eventMap[eventName];
+	int                                   numCallbacks     = 0;
+	for (const EventSubscription& subscription : subscriptionList)
 	{
-		numCallbacks++;
-		if (callback(args))
+		if (subscription.m_callback)
 		{
-			break; // Stop propagation if callback returns true
+			subscription.m_callback(args);
+			numCallbacks++;
 		}
 	}
 
@@ -62,16 +80,16 @@ int EventSystem::FireEvent(std::string const& eventName)
 
 bool EventSystem::IsEventRegistered(std::string const& eventName) const
 {
-	auto it = m_subscriptionListsByEventName.find(eventName);
-	return it != m_subscriptionListsByEventName.end();
+	auto it = m_eventMap.find(eventName);
+	return it != m_eventMap.end();
 }
 
 Strings EventSystem::GetRegisteredEventNames() const
 {
 	Strings registeredEventNames;
-	registeredEventNames.reserve(m_subscriptionListsByEventName.size());
+	registeredEventNames.reserve(m_eventMap.size());
 
-	for (auto const& pair : m_subscriptionListsByEventName)
+	for (auto const& pair : m_eventMap)
 	{
 		registeredEventNames.push_back(pair.first);
 	}
@@ -79,14 +97,14 @@ Strings EventSystem::GetRegisteredEventNames() const
 	return registeredEventNames;
 }
 
-void RegisterEvent(std::string const& eventName, EventCallbackFunctionPtr ptr)
+EventConnectionID RegisterEvent(std::string const& eventName, EventCallback ptr)
 {
-	g_engine->m_eventSystem->RegisterEvent(eventName, ptr);
+	return g_engine->m_eventSystem->RegisterEvent(eventName, ptr);
 }
 
-void UnregisterEvent(std::string const& eventName, EventCallbackFunctionPtr ptr)
+void UnregisterEvent(std::string const& eventName, EventConnectionID connectionID)
 {
-	g_engine->m_eventSystem->UnregisterEvent(eventName, ptr);
+	g_engine->m_eventSystem->UnregisterEvent(eventName, connectionID);
 }
 
 int FireEvent(std::string const& eventName) { return g_engine->m_eventSystem->FireEvent(eventName); }
