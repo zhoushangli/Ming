@@ -4,6 +4,7 @@
 
 #include "MingEngine/Core/Math/IntVec2.hpp"
 #include "MingEngine/Core/Math/Vector2.hpp"
+#include "MingEngine/Engine/Input/InputEvent.hpp"
 #include "MingEngine/Engine/Input/KeyboardState.hpp"
 #include "MingEngine/Engine/Input/XboxController.hpp"
 
@@ -12,6 +13,8 @@
 #undef APIENTRY
 #undef GLFW_APIENTRY_DEFINED
 #endif
+
+#include <vector>
 
 enum class CursorMode
 {
@@ -55,20 +58,17 @@ public:
 	bool        WasKeyJustReleased(KeyCode input) { return WasKeyJustReleased(ToKeyCode(input)); }
 	KeyModifier GetKeyModifiers() const { return m_keyboardState.m_keyModifiers; }
 
-	void                  HandleKeyCallback(int keyCode, int action, int mods);
 	XboxController const& GetController(int controllerID);
 
 	void ClearAllInputStates();
 
-	// In pointer mode, the cursor should be visible, freely able to move, and not
-	// locked to the window. In FPS mode, the cursor should be hidden, reset to the
-	// center of the window each frame, and record the delta each frame.
+	// Immediately switch between a visible pointer and GLFW's disabled cursor mode.
+	// e.g. SetCursorMode(CursorMode::FPS) captures the cursor for camera movement.
 	void SetCursorMode(CursorMode cursorMode);
 	void SetCursorModeByInt(int cursorMode);
 
-	// Returns the current frame cursor delta in pixels, relative to the client
-	// region. This is how much the cursor moved last frame before it was reset
-	// to the center of the screen. Only valid in FPS mode, will be zero otherwise.
+	// Return accumulated motion from processed events in FPS mode, or zero in pointer mode.
+	// e.g. Two motions of (2, 1) and (3, -1) produce a frame delta of (5, 0).
 	IntVec2 GetCursorClientDelta() const;
 
 	// Returns the cursor position, in pixels relative to the client region.
@@ -81,6 +81,10 @@ public:
 
 	void ClearCursorDelta();
 
+	void                    AddInputEvent(InputEvent const& event);
+	std::vector<InputEvent> GetInputEvents();
+	void                    ProcessInputEvent(InputEvent const& event);
+
 protected:
 	static void BindMethods();
 
@@ -92,12 +96,15 @@ protected:
 
 	CursorMode m_cursorMode = CursorMode::POINTER;
 
-	IntVec2 m_cursorClientPosition     = IntVec2::Zero;
-	IntVec2 m_prevCursorClientPosition = IntVec2::Zero;
-	IntVec2 m_cursorClientDelta        = IntVec2::Zero;
+	IntVec2 m_cursorClientPosition = IntVec2::Zero;
+	Vector2 m_cursorClientDelta    = Vector2::Zero;
 
 	KeyboardState  m_keyboardState;
 	XboxController m_controllers[ControllerCount] = {
 		XboxController(0), XboxController(1), XboxController(2), XboxController(3)
 	};
+
+private:
+	std::vector<InputEvent> m_pendingInputEvents;
+	bool m_windowFocused = true;
 };

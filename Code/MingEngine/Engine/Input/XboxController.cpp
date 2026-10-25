@@ -4,7 +4,6 @@
 #include <Windows.h> // must #include Windows.h before #including Xinput.h
 #include <Xinput.h>  // include the Xinput API header file (interface)
 
-#include "MingEngine/Core/Math/MathUtils.hpp"
 #pragma comment(lib, "xinput") // Link in the xinput.lib static library
 
 XboxController::XboxController() {}
@@ -49,42 +48,81 @@ bool XboxController::WasButtonJustReleased(XboxButtonID buttonID) const
 	return btn.m_justReleased;
 }
 
-void XboxController::Update()
+void XboxController::CollectInputEvents(std::vector<InputEvent>& events) const
 {
-	XINPUT_STATE xboxControllerState = {};
-	DWORD        result              = XInputGetState(m_id, &xboxControllerState);
+	XINPUT_STATE sample = {};
+	bool const connected = XInputGetState(m_id, &sample) == ERROR_SUCCESS;
 
-	m_isConnected = (result == ERROR_SUCCESS);
-
-	if (!m_isConnected)
+	// 1) Record connection changes without changing the processed state
+	if (connected != m_isConnected)
 	{
-		Reset();
+		InputEvent event;
+		event.m_type         = InputEventType::ControllerConnection;
+		event.m_controllerID = m_id;
+		event.m_connected    = connected;
+		events.push_back(event);
+	}
+	if (!connected)
+	{
 		return;
 	}
 
-	// Joysticks
-	UpdateJoystick(m_leftStick, xboxControllerState.Gamepad.sThumbLX, xboxControllerState.Gamepad.sThumbLY);
-	UpdateJoystick(m_rightStick, xboxControllerState.Gamepad.sThumbRX, xboxControllerState.Gamepad.sThumbRY);
+	// 2) Queue changed buttons in XboxButtonID order
+	unsigned short constexpr buttonFlags[] = {
+		XINPUT_GAMEPAD_A, XINPUT_GAMEPAD_B, XINPUT_GAMEPAD_X, XINPUT_GAMEPAD_Y,
+		XINPUT_GAMEPAD_START, XINPUT_GAMEPAD_BACK,
+		XINPUT_GAMEPAD_DPAD_UP, XINPUT_GAMEPAD_DPAD_DOWN, XINPUT_GAMEPAD_DPAD_LEFT, XINPUT_GAMEPAD_DPAD_RIGHT,
+		XINPUT_GAMEPAD_LEFT_THUMB, XINPUT_GAMEPAD_RIGHT_THUMB,
+		XINPUT_GAMEPAD_LEFT_SHOULDER, XINPUT_GAMEPAD_RIGHT_SHOULDER
+	};
+	static_assert(sizeof(buttonFlags) / sizeof(buttonFlags[0]) == static_cast<int>(XboxButtonID::NUM));
+	for (int button = 0; button < static_cast<int>(XboxButtonID::NUM); ++button)
+	{
+		bool const pressed = (sample.Gamepad.wButtons & buttonFlags[button]) != 0;
+		if (pressed != m_buttons[button].m_isDown)
+		{
+			InputEvent event;
+			event.m_type             = InputEventType::ControllerButton;
+			event.m_controllerID     = m_id;
+			event.m_controllerButton = button;
+			event.m_pressed          = pressed;
+			events.push_back(event);
+		}
+	}
 
-	// Triggers
-	UpdateTrigger(m_leftTrigger, xboxControllerState.Gamepad.bLeftTrigger);
-	UpdateTrigger(m_rightTrigger, xboxControllerState.Gamepad.bRightTrigger);
+	// 3) Queue normalized axes and keep deadzone correction in event processing
+	auto normalizeStick = [](short value) { return value < 0 ? value / 32768.f : value / 32767.f; };
+	float const axes[] = {
+		normalizeStick(sample.Gamepad.sThumbLX), normalizeStick(sample.Gamepad.sThumbLY),
+		normalizeStick(sample.Gamepad.sThumbRX), normalizeStick(sample.Gamepad.sThumbRY),
+		sample.Gamepad.bLeftTrigger / 255.f, sample.Gamepad.bRightTrigger / 255.f
+	};
+	Vector2 const left = m_leftStick.GetRawUncorrectedPosition();
+	Vector2 const right = m_rightStick.GetRawUncorrectedPosition();
+	float const previousAxes[] = { left.x, left.y, right.x, right.y, m_leftTrigger, m_rightTrigger };
+	static_assert(sizeof(axes) / sizeof(axes[0]) == static_cast<int>(ControllerAxis::COUNT));
+	for (int axis = 0; axis < static_cast<int>(ControllerAxis::COUNT); ++axis)
+	{
+		if (axes[axis] != previousAxes[axis])
+		{
+			InputEvent event;
+			event.m_type           = InputEventType::ControllerAxis;
+			event.m_controllerID   = m_id;
+			event.m_controllerAxis = static_cast<ControllerAxis>(axis);
+			event.m_axisValue      = axes[axis];
+			events.push_back(event);
+		}
+	}
+}
 
-	// Buttons
-	UpdateButton(XboxButtonID::A, xboxControllerState.Gamepad.wButtons, XINPUT_GAMEPAD_A);
-	UpdateButton(XboxButtonID::B, xboxControllerState.Gamepad.wButtons, XINPUT_GAMEPAD_B);
-	UpdateButton(XboxButtonID::X, xboxControllerState.Gamepad.wButtons, XINPUT_GAMEPAD_X);
-	UpdateButton(XboxButtonID::Y, xboxControllerState.Gamepad.wButtons, XINPUT_GAMEPAD_Y);
-	UpdateButton(XboxButtonID::START, xboxControllerState.Gamepad.wButtons, XINPUT_GAMEPAD_START);
-	UpdateButton(XboxButtonID::BACK, xboxControllerState.Gamepad.wButtons, XINPUT_GAMEPAD_BACK);
-	UpdateButton(XboxButtonID::DPAD_UP, xboxControllerState.Gamepad.wButtons, XINPUT_GAMEPAD_DPAD_UP);
-	UpdateButton(XboxButtonID::DPAD_DOWN, xboxControllerState.Gamepad.wButtons, XINPUT_GAMEPAD_DPAD_DOWN);
-	UpdateButton(XboxButtonID::DPAD_LEFT, xboxControllerState.Gamepad.wButtons, XINPUT_GAMEPAD_DPAD_LEFT);
-	UpdateButton(XboxButtonID::DPAD_RIGHT, xboxControllerState.Gamepad.wButtons, XINPUT_GAMEPAD_DPAD_RIGHT);
-	UpdateButton(XboxButtonID::LEFT_THUMB, xboxControllerState.Gamepad.wButtons, XINPUT_GAMEPAD_LEFT_THUMB);
-	UpdateButton(XboxButtonID::RIGHT_THUMB, xboxControllerState.Gamepad.wButtons, XINPUT_GAMEPAD_RIGHT_THUMB);
-	UpdateButton(XboxButtonID::LEFT_SHOULDER, xboxControllerState.Gamepad.wButtons, XINPUT_GAMEPAD_LEFT_SHOULDER);
-	UpdateButton(XboxButtonID::RIGHT_SHOULDER, xboxControllerState.Gamepad.wButtons, XINPUT_GAMEPAD_RIGHT_SHOULDER);
+void XboxController::EndFrame()
+{
+	for (KeyButtonState& button : m_buttons)
+	{
+		button.m_justPressed  = false;
+		button.m_justReleased = false;
+		button.m_repeatCount  = 0;
+	}
 }
 
 void XboxController::Reset()
@@ -100,28 +138,6 @@ void XboxController::Reset()
 	}
 
 	SetVibration(0, 0);
-}
-
-void XboxController::UpdateJoystick(AnalogJoystick& out_joystick, short rawX, short rawY)
-{
-	// Normalize to [-1, 1]
-	float normX = (rawX < 0) ? (rawX / 32768.f) : (rawX / 32767.f);
-	float normY = (rawY < 0) ? (rawY / 32768.f) : (rawY / 32767.f);
-	out_joystick.UpdatePosition(normX, normY);
-}
-
-void XboxController::UpdateTrigger(float& out_triggerValue, unsigned char rawValue)
-{
-	out_triggerValue = rawValue / 255.f;
-}
-
-void XboxController::UpdateButton(XboxButtonID buttonID, unsigned short buttonFlags, unsigned short buttonFlag)
-{
-	KeyButtonState& btn = m_buttons[(int)buttonID];
-	bool const wasDown  = btn.m_isDown;
-	btn.m_isDown        = (buttonFlags & buttonFlag) == buttonFlag;
-	btn.m_justPressed   = btn.m_isDown && !wasDown;
-	btn.m_justReleased  = !btn.m_isDown && wasDown;
 }
 
 void XboxController::SetVibration(unsigned short leftMotor, unsigned short rightMotor) const

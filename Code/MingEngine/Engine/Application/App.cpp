@@ -172,7 +172,10 @@ void App::Render() const
 	}
 }
 
-void App::BeginFrame() { g_engine->BeginFrame(); }
+void App::BeginFrame()
+{
+	g_engine->BeginFrame();
+}
 
 void App::EndFrame()
 {

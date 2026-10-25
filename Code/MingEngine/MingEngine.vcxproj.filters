@@ -697,6 +697,9 @@
     <ClCompile Include="Scene\GUI\BoxContainer.cpp">
       <Filter>Scene\GUI</Filter>
     </ClCompile>
+    <ClCompile Include="Engine\Input\InputEvent.cpp">
+      <Filter>Engine\Input</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Core\Clock.hpp">
@@ -1344,6 +1347,9 @@
     </ClInclude>
     <ClInclude Include="Scene\GUI\BoxContainer.hpp">
       <Filter>Scene\GUI</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Input\InputEvent.hpp">
+      <Filter>Engine\Input</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

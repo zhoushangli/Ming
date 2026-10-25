@@ -5,6 +5,7 @@
 #include "MingEngine/Core/Math/Vector2.hpp"
 
 struct GLFWwindow;
+enum class CursorMode;
 
 #include <string>
 
@@ -35,6 +36,7 @@ public:
 	GLFWwindow* GetGLFWWindow() const;
 	void*       GetHwnd() const;
 	IntVec2     GetClientDimensions() const;
+	void        SetCursorMode(CursorMode mode);
 
 protected:
 	static void BindMethods();

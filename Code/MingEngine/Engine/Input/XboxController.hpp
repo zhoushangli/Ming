@@ -2,6 +2,9 @@
 
 #include "MingEngine/Engine/Input/AnalogJoystick.hpp"
 #include "MingEngine/Engine/Input/KeyboardState.hpp"
+#include "MingEngine/Engine/Input/InputEvent.hpp"
+
+#include <vector>
 
 enum class XboxButtonID
 {
@@ -46,11 +49,9 @@ public:
 	void SetVibration(unsigned short leftMotor = 0.f, unsigned short rightMotor = 0.f) const;
 
 private:
-	void Update();
+	void CollectInputEvents(std::vector<InputEvent>& events) const;
+	void EndFrame();
 	void Reset();
-	void UpdateJoystick(AnalogJoystick& out_joystick, short rawX, short rawY);
-	void UpdateTrigger(float& out_triggerValue, unsigned char rawValue);
-	void UpdateButton(XboxButtonID buttonID, unsigned short buttonFlags, unsigned short buttonFlag);
 
 private:
 	int            m_id           = -1;
