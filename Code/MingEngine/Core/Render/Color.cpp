@@ -22,9 +22,13 @@ Color const Color::DarkGray         = Color(32, 32, 32);
 Color const Color::TranslucentBlack = Color(0, 0, 0, 128);
 Color const Color::Transparent      = Color(0, 0, 0, 0);
 
-Color::Color() : r(255), g(255), b(255), a(255) {}
+Color::Color() : r(255), g(255), b(255), a(255)
+{
+}
 
-Color::Color(unsigned char red, unsigned char green, unsigned char blue) : r(red), g(green), b(blue), a(255) {}
+Color::Color(unsigned char red, unsigned char green, unsigned char blue) : r(red), g(green), b(blue), a(255)
+{
+}
 
 Color::Color(unsigned char red, unsigned char green, unsigned char blue, unsigned char alpha)
 	: r(red), g(green), b(blue), a(alpha)
@@ -36,7 +40,10 @@ bool Color::operator==(Color const& other) const
 	return r == other.r && g == other.g && b == other.b && a == other.a;
 }
 
-bool Color::operator!=(Color const& other) const { return !(*this == other); }
+bool Color::operator!=(Color const& other) const
+{
+	return !(*this == other);
+}
 
 Color const Color::operator+(float value) const
 {
@@ -79,13 +86,25 @@ Color const Color::operator/(float value) const
 		static_cast<unsigned char>(GetClamped(static_cast<float>(a) / value, 0.f, 255.f)));
 }
 
-void Color::operator+=(float value) { *this = *this + value; }
+void Color::operator+=(float value)
+{
+	*this = *this + value;
+}
 
-void Color::operator-=(float value) { *this = *this - value; }
+void Color::operator-=(float value)
+{
+	*this = *this - value;
+}
 
-void Color::operator*=(float value) { *this = *this * value; }
+void Color::operator*=(float value)
+{
+	*this = *this * value;
+}
 
-void Color::operator/=(float value) { *this = *this / value; }
+void Color::operator/=(float value)
+{
+	*this = *this / value;
+}
 
 void Color::SetFromText(const char* text)
 {
@@ -117,7 +136,10 @@ void Color::GetAsFloats(float* colorAsFloats) const
 	colorAsFloats[3] = NormalizeByte(a);
 }
 
-float NormalizeByte(unsigned char byteValue) { return static_cast<float>(byteValue) / 255.f; }
+float NormalizeByte(unsigned char byteValue)
+{
+	return static_cast<float>(byteValue) / 255.f;
+}
 
 unsigned char DenormalizeByte(float normalizedValue)
 {
@@ -125,7 +147,10 @@ unsigned char DenormalizeByte(float normalizedValue)
 	return static_cast<unsigned char>(GetClamped(v, 0.f, 255.f));
 }
 
-Color const operator+(float value, Color const& color) { return color + value; }
+Color const operator+(float value, Color const& color)
+{
+	return color + value;
+}
 
 Color const operator-(float value, Color const& color)
 {
@@ -136,7 +161,10 @@ Color const operator-(float value, Color const& color)
 		static_cast<unsigned char>(GetClamped(value - static_cast<float>(color.a), 0.f, 255.f)));
 }
 
-Color const operator*(float value, Color const& color) { return color * value; }
+Color const operator*(float value, Color const& color)
+{
+	return color * value;
+}
 
 Color const operator/(float value, Color const& color)
 {

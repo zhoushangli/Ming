@@ -224,6 +224,10 @@ public:
 
 struct CanvasItemData
 {
+	bool m_clipChildren = false;
+	Vector2 m_childrenClipSize = Vector2::Zero;
+	bool m_clipContents = false;
+	Vector2 m_clipSize = Vector2::Zero;
 	struct Command
 	{
 		enum Type
@@ -233,6 +237,7 @@ struct CanvasItemData
 
 		Type          type;
 		VertexBuffer* vertexBuffer = nullptr;
+
 		virtual ~Command() { delete vertexBuffer; }
 	};
 
@@ -241,6 +246,7 @@ struct CanvasItemData
 		Rect2                rect;
 		Color                color = Color::White;
 		Ref<TextureResource> texture;
+		RID viewportTexture = RID::Invalid;
 		bool                 isTiling = false;
 
 		Rect2 sourceRect;
@@ -252,6 +258,7 @@ struct CanvasItemData
 	CanvasItemData()                                 = default;
 	CanvasItemData(CanvasItemData const&)            = delete;
 	CanvasItemData& operator=(CanvasItemData const&) = delete;
+
 	~CanvasItemData() { ClearCommands(); }
 
 	void ClearCommands()
@@ -260,6 +267,7 @@ struct CanvasItemData
 		{
 			delete command;
 		}
+
 		m_commands.clear();
 	}
 

@@ -27,9 +27,15 @@ void TileHeatMap::SetAllValues(float value)
 	}
 }
 
-int TileHeatMap::GetIndexForCoords(int x, int y) const { return y * m_dimensions.x + x; }
+int TileHeatMap::GetIndexForCoords(int x, int y) const
+{
+	return y * m_dimensions.x + x;
+}
 
-int TileHeatMap::GetIndexForCoords(IntVec2 const& coords) const { return GetIndexForCoords(coords.x, coords.y); }
+int TileHeatMap::GetIndexForCoords(IntVec2 const& coords) const
+{
+	return GetIndexForCoords(coords.x, coords.y);
+}
 
 float TileHeatMap::GetValue(int x, int y) const
 {
@@ -49,11 +55,20 @@ void TileHeatMap::AddValue(int x, int y, float value)
 	m_values[idx] += value;
 }
 
-float TileHeatMap::GetValue(IntVec2 const& coords) const { return GetValue(coords.x, coords.y); }
+float TileHeatMap::GetValue(IntVec2 const& coords) const
+{
+	return GetValue(coords.x, coords.y);
+}
 
-void TileHeatMap::SetValue(IntVec2 const& coords, float value) { return SetValue(coords.x, coords.y, value); }
+void TileHeatMap::SetValue(IntVec2 const& coords, float value)
+{
+	return SetValue(coords.x, coords.y, value);
+}
 
-void TileHeatMap::AddValue(IntVec2 const& coords, float value) { return AddValue(coords.x, coords.y, value); }
+void TileHeatMap::AddValue(IntVec2 const& coords, float value)
+{
+	return AddValue(coords.x, coords.y, value);
+}
 
 float TileHeatMap::GetMinValue() const
 {

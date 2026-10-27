@@ -17,7 +17,9 @@ void PackedScene::BindMethods()
 	ClassDatabase::BindMethod("Instantiate", &PackedScene::Instantiate, {});
 }
 
-PackedProperty::PackedProperty(String const& name, Variant const& value) : m_name(name), m_value(value) {}
+PackedProperty::PackedProperty(String const& name, Variant const& value) : m_name(name), m_value(value)
+{
+}
 
 bool PackedProperty::CanApplyTo(PropertyInfo const& propertyInfo) const
 {
@@ -82,6 +84,7 @@ Node* PackedScene::Instantiate() const
 				ERR_PRINT("PackedScene: the first node must be the scene root and have no parent path.\n");
 				return nullptr;
 			}
+
 			root = node;
 		}
 		else
@@ -129,6 +132,7 @@ Node* PackedScene::Instantiate() const
 				{
 					MemDelete(node);
 				}
+
 				MemDelete(root);
 				ERR_PRINT(Stringf(
 					"PackedScene: sibling name '%s' is not unique; AddNode produced '%s'.\n",
@@ -137,6 +141,7 @@ Node* PackedScene::Instantiate() const
 				return nullptr;
 			}
 		}
+
 		nodes.push_back(node);
 	}
 
@@ -158,6 +163,7 @@ Node* PackedScene::Instantiate() const
 					packedNode.m_type.ToUtf8().c_str()));
 				continue;
 			}
+
 			if (!packedProperty.CanApplyTo(*property))
 			{
 				WARN_PRINT(Stringf(
@@ -171,6 +177,7 @@ Node* PackedScene::Instantiate() const
 			{
 				property->GetSetter()->Invoke(node, { packedProperty.m_value });
 			}
+
 			catch (std::exception const& error)
 			{
 				ERR_PRINT(Stringf(
@@ -232,8 +239,10 @@ bool PackedScene::ParseNodeRecursively(Node const* node, String const& parentPat
 					continue;
 				}
 			}
+
 			packedNode.m_properties.emplace_back(property->m_name, value);
 		}
+
 		catch (std::exception const& error)
 		{
 			ERR_PRINT(Stringf(

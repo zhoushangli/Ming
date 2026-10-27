@@ -61,7 +61,10 @@ TransformGizmo3D::TransformGizmo3D()
 	m_components.push_back(arcZ);
 }
 
-TransformGizmo3D::~TransformGizmo3D() { m_components.clear(); }
+TransformGizmo3D::~TransformGizmo3D()
+{
+	m_components.clear();
+}
 
 void TransformGizmo3D::UpdateHover(GizmoContext const& context)
 {
@@ -94,6 +97,7 @@ bool TransformGizmo3D::BeginDragHovered(GizmoContext const& context)
 	{
 		return false;
 	}
+
 	if (context.m_camera == nullptr)
 	{
 		return false;
@@ -141,16 +145,18 @@ void TransformGizmo3D::EndDrag(GizmoContext const& context)
 		{
 			draggedNode = nullptr;
 		}
-		bool const changed     = draggedNode != nullptr
-								 && (draggedNode->GetLocalPosition() != m_dragStartPosition
-									 || draggedNode->GetLocalOrientation() != m_dragStartOrientation
-									 || draggedNode->GetLocalScale() != m_dragStartScale);
+
+		bool const changed = draggedNode != nullptr
+							 && (draggedNode->GetLocalPosition() != m_dragStartPosition
+								 || draggedNode->GetLocalOrientation() != m_dragStartOrientation
+								 || draggedNode->GetLocalScale() != m_dragStartScale);
 		if (changed && EditorNode::Get() != nullptr)
 		{
 			EditorNode::Get()->MarkSceneDirty();
 		}
-		m_draggedNodeID     = ObjectID::Invalid;
-		m_activeComponent   = nullptr;
+
+		m_draggedNodeID   = ObjectID::Invalid;
+		m_activeComponent = nullptr;
 	}
 }
 
@@ -168,6 +174,7 @@ void TransformGizmo3D::OnNotification(int notification)
 			{
 				component->SetVisible(false);
 			}
+
 			return;
 		}
 
@@ -208,9 +215,15 @@ void TransformGizmo3D::OnNotification(int notification)
 	}
 }
 
-bool TransformGizmo3D::IsHovered() const { return m_hoveredComponent != nullptr; }
+bool TransformGizmo3D::IsHovered() const
+{
+	return m_hoveredComponent != nullptr;
+}
 
-bool TransformGizmo3D::IsDragging() const { return m_activeComponent != nullptr; }
+bool TransformGizmo3D::IsDragging() const
+{
+	return m_activeComponent != nullptr;
+}
 
 GizmoComponent* TransformGizmo3D::HitTest(GizmoContext const& context, Vector3& outHitPos) const
 {

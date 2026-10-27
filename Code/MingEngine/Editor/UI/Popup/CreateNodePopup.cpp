@@ -23,7 +23,10 @@ std::string ToLower(std::string const& text)
 		lowerText.begin(),
 		lowerText.end(),
 		lowerText.begin(),
-		[](unsigned char character) { return static_cast<char>(std::tolower(character)); });
+		[](unsigned char character)
+		{
+			return static_cast<char>(std::tolower(character));
+		});
 	return lowerText;
 }
 
@@ -75,11 +78,13 @@ void CreateNodePopup::Render(EditorUIContext& context)
 		{
 			continue;
 		}
+
 		if (classInfo->m_className == Node::GetStaticClassName())
 		{
 			nodeClass = classInfo;
 			continue;
 		}
+
 		if (!ClassDatabase::IsSubclassOf(classInfo->m_className, Node::GetStaticClassName()))
 		{
 			continue;
@@ -97,6 +102,7 @@ void CreateNodePopup::Render(EditorUIContext& context)
 			RenderClassNode(nodeClass, childrenByClass, m_filter, context);
 		}
 	}
+
 	ImGui::EndChild();
 	ImGui::PopStyleColor();
 
@@ -139,17 +145,21 @@ bool CreateNodePopup::RenderClassNode(
 										childrenIter->second.begin(),
 										childrenIter->second.end(),
 										[this, &childrenByClass, &filterText](ClassInfo const* child)
-										{ return DoesClassBranchMatch(child, childrenByClass, filterText); });
+										{
+											return DoesClassBranchMatch(child, childrenByClass, filterText);
+										});
 
 	ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth;
 	if (!hasVisibleChildren)
 	{
 		flags |= ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
 	}
+
 	if (!filterText.empty())
 	{
 		flags |= ImGuiTreeNodeFlags_DefaultOpen;
 	}
+
 	if (m_selectedClass == classInfo->m_className)
 	{
 		flags |= ImGuiTreeNodeFlags_Selected;
@@ -168,6 +178,7 @@ bool CreateNodePopup::RenderClassNode(
 	{
 		ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled));
 	}
+
 	EditorUIWidgets::RenderTreeRowContent(
 		classInfo->m_className,
 		Node::GetStaticClassName(),
@@ -193,6 +204,7 @@ bool CreateNodePopup::RenderClassNode(
 				{
 					ImGui::TreePop();
 				}
+
 				ImGui::PopID();
 				return true;
 			}
@@ -214,6 +226,7 @@ bool CreateNodePopup::RenderClassNode(
 				return true;
 			}
 		}
+
 		ImGui::TreePop();
 	}
 
@@ -230,6 +243,7 @@ bool CreateNodePopup::DoesClassBranchMatch(
 	{
 		return false;
 	}
+
 	if (ContainsCaseInsensitive(classInfo->m_className, filterText))
 	{
 		return true;
@@ -240,6 +254,7 @@ bool CreateNodePopup::DoesClassBranchMatch(
 	{
 		return false;
 	}
+
 	for (ClassInfo const* child : childrenIter->second)
 	{
 		if (DoesClassBranchMatch(child, childrenByClass, filterText))
@@ -247,6 +262,7 @@ bool CreateNodePopup::DoesClassBranchMatch(
 			return true;
 		}
 	}
+
 	return false;
 }
 
@@ -291,6 +307,7 @@ bool CreateNodePopup::CreateSelectedNode(EditorUIContext& context)
 		{
 			parent = sceneRoot;
 		}
+
 		node->SetName(m_selectedClass);
 
 		parent->AddNode(node);
@@ -302,6 +319,7 @@ bool CreateNodePopup::CreateSelectedNode(EditorUIContext& context)
 	{
 		context.m_selection->SetSelected(node->GetObjectID());
 	}
+
 	return true;
 }
 

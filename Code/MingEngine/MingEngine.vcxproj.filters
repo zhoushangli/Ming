@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Filter Include="Editor">
@@ -187,6 +187,9 @@
       <Filter>Editor</Filter>
     </ClCompile>
     <ClCompile Include="Editor\EditorNode.cpp">
+      <Filter>Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\EditorUndoRedo.cpp">
       <Filter>Editor</Filter>
     </ClCompile>
     <ClCompile Include="Editor\UI\Popup\CreateNodePopup.cpp">
@@ -636,6 +639,12 @@
     <ClCompile Include="Scene\GUI\Control.cpp">
       <Filter>Scene\GUI</Filter>
     </ClCompile>
+    <ClCompile Include="Scene\GUI\BaseButton.cpp">
+      <Filter>Scene\GUI</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene\GUI\Button.cpp">
+      <Filter>Scene\GUI</Filter>
+    </ClCompile>
     <ClCompile Include="Engine\Render\RenderTypes.cpp">
       <Filter>Engine\Render</Filter>
     </ClCompile>
@@ -671,6 +680,9 @@
       <Filter>Scene\GUI</Filter>
     </ClCompile>
     <ClCompile Include="Scene\GUI\Label.cpp">
+      <Filter>Scene\GUI</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene\GUI\LineEdit.cpp">
       <Filter>Scene\GUI</Filter>
     </ClCompile>
     <ClCompile Include="Core\Math\Rect2.cpp">
@@ -1212,6 +1224,9 @@
     <ClInclude Include="Editor\EditorData.hpp">
       <Filter>Editor</Filter>
     </ClInclude>
+    <ClInclude Include="Editor\EditorUndoRedo.hpp">
+      <Filter>Editor</Filter>
+    </ClInclude>
     <ClInclude Include="Scene\Import\ImageImporter.hpp">
       <Filter>Scene\Import</Filter>
     </ClInclude>
@@ -1284,6 +1299,12 @@
     <ClInclude Include="Scene\GUI\Control.hpp">
       <Filter>Scene\GUI</Filter>
     </ClInclude>
+    <ClInclude Include="Scene\GUI\BaseButton.hpp">
+      <Filter>Scene\GUI</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\GUI\Button.hpp">
+      <Filter>Scene\GUI</Filter>
+    </ClInclude>
     <ClInclude Include="Scene\GUI\ColorRect.hpp">
       <Filter>Scene\GUI</Filter>
     </ClInclude>
@@ -1321,6 +1342,9 @@
     <ClInclude Include="Scene\GUI\Label.hpp">
       <Filter>Scene\GUI</Filter>
     </ClInclude>
+    <ClInclude Include="Scene\GUI\LineEdit.hpp">
+      <Filter>Scene\GUI</Filter>
+    </ClInclude>
     <ClInclude Include="Core\Math\Rect2.hpp">
       <Filter>Core\Math</Filter>
     </ClInclude>
@@ -1351,5 +1375,28 @@
     <ClInclude Include="Engine\Input\InputEvent.hpp">
       <Filter>Engine\Input</Filter>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Scene\GUI\SpinBox.cpp"><Filter>Scene\GUI</Filter></ClCompile>
+    <ClInclude Include="Scene\GUI\SpinBox.hpp"><Filter>Scene\GUI</Filter></ClInclude>
+    <ClCompile Include="Scene\GUI\OptionButton.cpp"><Filter>Scene\GUI</Filter></ClCompile>
+    <ClInclude Include="Scene\GUI\OptionButton.hpp"><Filter>Scene\GUI</Filter></ClInclude>
+    <ClCompile Include="Scene\GUI\PopupPanel.cpp"><Filter>Scene\GUI</Filter></ClCompile>
+    <ClInclude Include="Scene\GUI\PopupPanel.hpp"><Filter>Scene\GUI</Filter></ClInclude>
+    <ClCompile Include="Scene\GUI\ScrollContainer.cpp"><Filter>Scene\GUI</Filter></ClCompile>
+    <ClInclude Include="Scene\GUI\ScrollContainer.hpp"><Filter>Scene\GUI</Filter></ClInclude>
+    <ClCompile Include="Editor\UI\EditorControlHost.cpp"><Filter>Editor\UI</Filter></ClCompile>
+    <ClInclude Include="Editor\UI\EditorControlHost.hpp"><Filter>Editor\UI</Filter></ClInclude>
+    <ClInclude Include="Editor\UI\InspectorPropertyVec2.hpp"><Filter>Editor\UI</Filter></ClInclude>
+    <ClInclude Include="Editor\UI\InspectorPropertyEnum.hpp"><Filter>Editor\UI</Filter></ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Scene\GUI\Tree.cpp"><Filter>Scene\GUI</Filter></ClCompile>
+    <ClInclude Include="Scene\GUI\Tree.hpp"><Filter>Scene\GUI</Filter></ClInclude>
+    <ClCompile Include="Scene\GUI\TabContainer.cpp"><Filter>Scene\GUI</Filter></ClCompile>
+    <ClInclude Include="Scene\GUI\TabContainer.hpp"><Filter>Scene\GUI</Filter></ClInclude>
+    <ClCompile Include="Scene\GUI\SubViewportContainer.cpp"><Filter>Scene\GUI</Filter></ClCompile>
+    <ClInclude Include="Scene\GUI\SubViewportContainer.hpp"><Filter>Scene\GUI</Filter></ClInclude>
+    <ClCompile Include="Editor\UI\EditorUINative.cpp"><Filter>Editor\UI</Filter></ClCompile>
   </ItemGroup>
 </Project>

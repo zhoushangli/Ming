@@ -41,7 +41,10 @@ public:
 	template <typename T>
 	EventConnectionID RegisterEvent(std::string const& eventName, T* target, bool (T::*memberFunc)(EventArgs&))
 	{
-		EventCallback callback = [target, memberFunc](EventArgs& args) -> bool { return (target->*memberFunc)(args); };
+		EventCallback callback = [target, memberFunc](EventArgs& args) -> bool
+		{
+			return (target->*memberFunc)(args);
+		};
 
 		return RegisterEvent(eventName, callback);
 	}
@@ -68,7 +71,10 @@ EventConnectionID RegisterEvent(std::string const& eventName, EventCallback ptr)
 template <typename T>
 EventConnectionID RegisterEvent(std::string const& eventName, T* target, bool (T::*memberFunc)(EventArgs&))
 {
-	EventCallback callback = [target, memberFunc](EventArgs& args) -> bool { return (target->*memberFunc)(args); };
+	EventCallback callback = [target, memberFunc](EventArgs& args) -> bool
+	{
+		return (target->*memberFunc)(args);
+	};
 
 	return RegisterEvent(eventName, callback);
 }

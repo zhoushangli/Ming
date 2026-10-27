@@ -6,7 +6,9 @@ class Cone3
 {
 public:
 	Cone3() = default;
+
 	Cone3(Vector3 const& start, Vector3 const& end, float radius) : m_start(start), m_end(end), m_radius(radius) {}
+
 	~Cone3() = default;
 
 public:

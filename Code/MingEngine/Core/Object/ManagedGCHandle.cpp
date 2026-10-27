@@ -6,7 +6,9 @@
 
 #include <utility>
 
-ManagedGCHandle::ManagedGCHandle(ManagedGCHandle&& other) : m_value(std::exchange(other.m_value, nullptr)) {}
+ManagedGCHandle::ManagedGCHandle(ManagedGCHandle&& other) : m_value(std::exchange(other.m_value, nullptr))
+{
+}
 
 ManagedGCHandle& ManagedGCHandle::operator=(ManagedGCHandle&& other)
 {

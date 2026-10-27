@@ -25,13 +25,17 @@ bool IsDebuggerAvailable()
 	// Get a handle to KERNEL32.DLL
 	static HINSTANCE hInstanceKernel32 = GetModuleHandle(TEXT("KERNEL32"));
 	if (!hInstanceKernel32)
+	{
 		return false;
+	}
 
 	// Get a handle to the IsDebuggerPresent() function in KERNEL32.DLL
 	static IsDebuggerPresentFunc* isDebuggerPresentFunc =
 		(IsDebuggerPresentFunc*)GetProcAddress(hInstanceKernel32, "IsDebuggerPresent");
 	if (!isDebuggerPresentFunc)
+	{
 		return false;
+	}
 
 	// Now CALL that function and return its result
 	BOOL const isDebuggerAvailable = isDebuggerPresentFunc();
@@ -65,6 +69,7 @@ void ReportMessage(
 	{
 		module.remove_prefix(separator + 1);
 	}
+
 	module = module.substr(0, module.find_last_of('.'));
 
 	std::string output;
@@ -72,15 +77,18 @@ void ReportMessage(
 	{
 		output = std::string(filePath) + "(" + std::to_string(lineNum) + "): ";
 	}
+
 	output += "[" + std::string(module) + "][" + severity + "] " + message;
 	while (!output.empty() && (output.back() == '\n' || output.back() == '\r'))
 	{
 		output.pop_back();
 	}
+
 	if (std::string_view(severity) != "Info")
 	{
 		output += "\n    Function: " + std::string(functionName);
 	}
+
 	output += '\n';
 	WriteDebugMessage(output);
 }
@@ -111,7 +119,9 @@ UINT GetWindowsMessageBoxIconFlagForSeverityLevel(MsgSeverityLevel severity)
 char const* FindStartOfFileNameWithinFilePath(char const* filePath)
 {
 	if (filePath == nullptr)
+	{
 		return nullptr;
+	}
 
 	size_t      pathLen = strlen(filePath);
 	char const* scan    = filePath + pathLen; // start with null terminator after last character
@@ -225,9 +235,13 @@ __declspec(noreturn) void FatalError(
 	if (reasonForError.empty())
 	{
 		if (conditionText)
+		{
 			errorMessage = Stringf("Error: \"%s\" is false!", conditionText);
+		}
 		else
+		{
 			errorMessage = "Unspecified fatal error";
+		}
 	}
 
 	char const* fileName         = FindStartOfFileNameWithinFilePath(filePath);
@@ -292,9 +306,13 @@ void RecoverableWarning(
 	if (reasonForWarning.empty())
 	{
 		if (conditionText)
+		{
 			errorMessage = Stringf("Warning: \"%s\" is false!", conditionText);
+		}
 		else
+		{
 			errorMessage = "Unspecified warning";
+		}
 	}
 
 	char const* fileName         = FindStartOfFileNameWithinFilePath(filePath);

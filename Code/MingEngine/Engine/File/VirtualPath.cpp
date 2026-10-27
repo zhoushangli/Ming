@@ -19,9 +19,14 @@ void ReportInvalidVirtualPath(char const* path)
 std::string ToLower(std::string_view text)
 {
 	std::string result(text);
-	std::transform(result.begin(), result.end(), result.begin(), [](unsigned char value) {
-		return static_cast<char>(std::tolower(value));
-	});
+	std::transform(
+		result.begin(),
+		result.end(),
+		result.begin(),
+		[](unsigned char value)
+		{
+			return static_cast<char>(std::tolower(value));
+		});
 	return result;
 }
 }
@@ -35,13 +40,11 @@ VirtualPath::VirtualPath(char const* path)
 	}
 }
 
-VirtualPath::VirtualPath(std::string const& path)
-	: VirtualPath(path.c_str())
+VirtualPath::VirtualPath(std::string const& path) : VirtualPath(path.c_str())
 {
 }
 
-VirtualPath::VirtualPath(std::string path, bool)
-	: m_path(std::move(path))
+VirtualPath::VirtualPath(std::string path, bool) : m_path(std::move(path))
 {
 }
 
@@ -85,6 +88,7 @@ VirtualPath VirtualPath::GetParent() const
 	{
 		return ResourceRoot();
 	}
+
 	return VirtualPath(m_path.substr(0, separator), true);
 }
 
@@ -94,28 +98,31 @@ std::string VirtualPath::GetFileName() const
 	{
 		return {};
 	}
+
 	return m_path.substr(m_path.find_last_of('/') + 1);
 }
 
 std::string VirtualPath::GetStem() const
 {
-	std::string const fileName = GetFileName();
+	std::string const fileName  = GetFileName();
 	size_t const      extension = fileName.find_last_of('.');
 	if (extension == std::string::npos || extension == 0)
 	{
 		return fileName;
 	}
+
 	return fileName.substr(0, extension);
 }
 
 std::string VirtualPath::GetExtension() const
 {
-	std::string const fileName = GetFileName();
+	std::string const fileName  = GetFileName();
 	size_t const      extension = fileName.find_last_of('.');
 	if (extension == std::string::npos || extension == 0 || extension + 1 == fileName.size())
 	{
 		return {};
 	}
+
 	return ToLower(std::string_view(fileName).substr(extension));
 }
 
@@ -127,6 +134,7 @@ bool VirtualPath::HasExtension(std::string_view extension) const
 		dottedExtension.append(extension);
 		return GetExtension() == ToLower(dottedExtension);
 	}
+
 	return GetExtension() == ToLower(extension);
 }
 
@@ -143,6 +151,7 @@ VirtualPath VirtualPath::Join(std::string_view child) const
 	{
 		joined.push_back('/');
 	}
+
 	joined.append(child);
 
 	VirtualPath result;
@@ -150,6 +159,7 @@ VirtualPath VirtualPath::Join(std::string_view child) const
 	{
 		ERR_PRINT(Stringf("VirtualPath::Join: invalid child '%.*s'.\n", static_cast<int>(child.size()), child.data()));
 	}
+
 	return result;
 }
 
@@ -167,6 +177,7 @@ bool VirtualPath::TryResolveRelative(std::string_view relativePath, VirtualPath&
 	{
 		return TryParse(normalized, outPath);
 	}
+
 	if (normalized.front() == '/')
 	{
 		return false;
@@ -179,7 +190,8 @@ bool VirtualPath::TryResolveRelative(std::string_view relativePath, VirtualPath&
 		return false;
 	}
 
-	std::string_view baseRelative(base.GetString().data() + kResourcePrefix.size(),
+	std::string_view baseRelative(
+		base.GetString().data() + kResourcePrefix.size(),
 		base.GetString().size() - kResourcePrefix.size());
 	size_t position = 0;
 	while (position < baseRelative.size())
@@ -192,8 +204,9 @@ bool VirtualPath::TryResolveRelative(std::string_view relativePath, VirtualPath&
 	position = 0;
 	while (position <= normalized.size())
 	{
-		size_t const separator = normalized.find('/', position);
-		std::string_view const segment(normalized.data() + position,
+		size_t const           separator = normalized.find('/', position);
+		std::string_view const segment(
+			normalized.data() + position,
 			(separator == std::string::npos ? normalized.size() : separator) - position);
 		if (segment.empty() || segment == ".")
 		{
@@ -205,6 +218,7 @@ bool VirtualPath::TryResolveRelative(std::string_view relativePath, VirtualPath&
 			{
 				return false;
 			}
+
 			segments.pop_back();
 		}
 		else
@@ -216,6 +230,7 @@ bool VirtualPath::TryResolveRelative(std::string_view relativePath, VirtualPath&
 		{
 			break;
 		}
+
 		position = separator + 1;
 	}
 
@@ -226,8 +241,10 @@ bool VirtualPath::TryResolveRelative(std::string_view relativePath, VirtualPath&
 		{
 			resolved.push_back('/');
 		}
+
 		resolved.append(segments[index]);
 	}
+
 	return TryParse(resolved, outPath);
 }
 
@@ -258,11 +275,13 @@ bool VirtualPath::TryParseInternal(std::string_view path, std::string& outPath)
 	{
 		return false;
 	}
+
 	if (path == kResourcePrefix)
 	{
 		outPath.assign(path);
 		return true;
 	}
+
 	if (path.back() == '/')
 	{
 		return false;
@@ -272,12 +291,13 @@ bool VirtualPath::TryParseInternal(std::string_view path, std::string& outPath)
 	size_t                 position = 0;
 	while (position < relative.size())
 	{
-		size_t const separator = relative.find('/', position);
-		std::string_view const segment = relative.substr(position, separator - position);
+		size_t const           separator = relative.find('/', position);
+		std::string_view const segment   = relative.substr(position, separator - position);
 		if (segment.empty() || segment == "." || segment == "..")
 		{
 			return false;
 		}
+
 		position = separator == std::string_view::npos ? relative.size() : separator + 1;
 	}
 

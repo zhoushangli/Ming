@@ -3,7 +3,7 @@ namespace Ming;
 public struct Vector2 : IEquatable<Vector2>
 {
     public float X;
-    public float Y; 
+    public float Y;
 
     public Vector2(float x, float y)
     {

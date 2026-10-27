@@ -1,4 +1,1 @@
 #include "MathCommon.hpp"
-
-
-

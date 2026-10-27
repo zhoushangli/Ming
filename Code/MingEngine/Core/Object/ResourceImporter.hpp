@@ -32,8 +32,8 @@ protected:
 	// ResourceImporter::Import owns the full import pipeline: importer selection, output path, saving,
 	// and .import metadata. Loaders/savers work with final resource formats, while importers work with
 	// source assets and may need options because more than one importer can match a file.
-	virtual Ref<Resource>
-	Import(std::unordered_map<std::string, Variant> const& importOptions, VirtualPath const& sourceVirtualPath) = 0;
+	virtual Ref<Resource> Import(
+		std::unordered_map<std::string, Variant> const& importOptions, VirtualPath const& sourceVirtualPath) = 0;
 
 protected:
 	static void BindMethods() {};

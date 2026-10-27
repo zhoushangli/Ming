@@ -139,7 +139,10 @@ bool Image::IsValid() const
 	return m_pixels.size() == pixelDataSize;
 }
 
-bool Image::HasEncodedData() const { return !m_encodedData.empty(); }
+bool Image::HasEncodedData() const
+{
+	return !m_encodedData.empty();
+}
 
 Color Image::GetColorAt(int x, int y) const
 {

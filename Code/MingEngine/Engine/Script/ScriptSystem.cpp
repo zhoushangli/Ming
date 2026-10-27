@@ -61,6 +61,7 @@ int32_t CORECLR_DELEGATE_CALLTYPE Log(String const* text)
 	{
 		INFO_PRINT(message);
 	}
+
 	return 0;
 }
 
@@ -97,7 +98,10 @@ void CORECLR_DELEGATE_CALLTYPE DestroyString(String* str)
 void const* CORECLR_DELEGATE_CALLTYPE GetMethodBind(String const* className, String const* methodName)
 {
 	if (className == nullptr || methodName == nullptr)
+	{
 		return nullptr;
+	}
+
 	return ClassDatabase::GetMethodBind(className->ToUtf8(), methodName->ToUtf8());
 }
 
@@ -116,7 +120,10 @@ void CORECLR_DELEGATE_CALLTYPE MethodBindPtrCall(void const* methodBind, void* o
 ConstructorFunc CORECLR_DELEGATE_CALLTYPE GetConstructor(String const* name)
 {
 	if (name == nullptr)
+	{
 		return nullptr;
+	}
+
 	return ClassDatabase::GetConstructor(name->ToUtf8());
 }
 
@@ -125,10 +132,14 @@ ConstructorFunc CORECLR_DELEGATE_CALLTYPE GetConstructor(String const* name)
 void CORECLR_DELEGATE_CALLTYPE GetObjectClassName(void* objectPtr, String* outName)
 {
 	if (outName == nullptr)
+	{
 		return;
+	}
 	*outName = String();
 	if (objectPtr != nullptr)
+	{
 		*outName = String(static_cast<Object*>(objectPtr)->GetClassName());
+	}
 }
 
 int32_t CORECLR_DELEGATE_CALLTYPE TieNativeManagedToUnmanaged(void* gcHandleValue, void* nativeValue)
@@ -165,7 +176,9 @@ void* CORECLR_DELEGATE_CALLTYPE UnmanagedInstanceBindingCreateManaged(void* nati
 
 } // namespace
 
-ScriptSystem::ScriptSystem([[maybe_unused]] ScriptSystemConfig const& config) {}
+ScriptSystem::ScriptSystem([[maybe_unused]] ScriptSystemConfig const& config)
+{
+}
 
 void ScriptSystem::Startup()
 {
@@ -215,9 +228,13 @@ void ScriptSystem::Shutdown()
 	INFO_PRINT("Script system shutdown completed.\n");
 }
 
-void ScriptSystem::BeginFrame() {}
+void ScriptSystem::BeginFrame()
+{
+}
 
-void ScriptSystem::EndFrame() {}
+void ScriptSystem::EndFrame()
+{
+}
 
 bool ScriptSystem::InitializeDotNetRuntime()
 {
@@ -710,9 +727,15 @@ bool ScriptSystem::Call(void* gcHandle, std::string const& methodName, std::vect
 			   : false;
 }
 
-void ScriptSystem::RegisterScriptOwner(ObjectID id) { m_scriptOwners.insert(id); }
+void ScriptSystem::RegisterScriptOwner(ObjectID id)
+{
+	m_scriptOwners.insert(id);
+}
 
-void ScriptSystem::UnregisterScriptOwner(ObjectID id) { m_scriptOwners.erase(id); }
+void ScriptSystem::UnregisterScriptOwner(ObjectID id)
+{
+	m_scriptOwners.erase(id);
+}
 
 // Collect the owners and scripts that must be recreated after the assembly reload.
 // e.g. CollectReloadInstances() runs before any script instance is released.
@@ -733,6 +756,7 @@ void ScriptSystem::CollectReloadInstances()
 		backups.push_back(
 			StateBackup{ id, Ref<CSharpScript>(static_cast<CSharpScript*>(instance->GetScript().Get())) });
 	}
+
 	m_pendingReloadBackups = std::move(backups);
 }
 
@@ -760,11 +784,13 @@ bool ScriptSystem::RestoreScriptInstances()
 		{
 			continue;
 		}
+
 		m_isRecreatingInstances = true;
 		bool const created      = entry.m_script->Instantiate(owner);
 		m_isRecreatingInstances = false;
 		ERR_FAIL_COND_V_MSG(!created, false, "Failed to recreate script; the recorded instances are retained.\n");
 	}
+
 	return true;
 }
 
@@ -792,15 +818,18 @@ bool ScriptSystem::ReloadProjectAssembly()
 			success                    = true;
 		}
 	}
+
 	catch (std::exception const& exception)
 	{
 		ERR_PRINT(Stringf("Script reload failed: %s\n", exception.what()));
 	}
+
 	m_isRecreatingInstances = false;
 	m_isAssemblyReloading   = false;
 	if (success)
 	{
 		INFO_PRINT("Project assembly reloaded and script instances recreated.\n");
 	}
+
 	return success;
 }

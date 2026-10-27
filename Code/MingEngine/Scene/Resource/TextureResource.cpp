@@ -16,7 +16,10 @@ TextureResource::~TextureResource()
 	}
 }
 
-bool TextureResource::IsEmpty() const { return !m_image.IsValid() || !m_image->IsValid(); }
+bool TextureResource::IsEmpty() const
+{
+	return !m_image.IsValid() || !m_image->IsValid();
+}
 
 bool TextureResource::CopyFrom(Resource&& other)
 {
@@ -77,6 +80,12 @@ bool TextureResource::InitGPUResources()
 	return m_textureRID.IsValid();
 }
 
-IntVec2 TextureResource::GetDimensions() const { return m_image.IsValid() ? m_image->GetDimensions() : IntVec2::Zero; }
+IntVec2 TextureResource::GetDimensions() const
+{
+	return m_image.IsValid() ? m_image->GetDimensions() : IntVec2::Zero;
+}
 
-int TextureResource::GetChannels() const { return m_image.IsValid() ? m_image->GetChannels() : 0; }
+int TextureResource::GetChannels() const
+{
+	return m_image.IsValid() ? m_image->GetChannels() : 0;
+}

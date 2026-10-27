@@ -21,10 +21,19 @@
 public:                                                                                                                \
 	using Self  = className;                                                                                           \
 	using Super = inheritName;                                                                                         \
-	static std::string     GetStaticClassName() { return #className; }                                                 \
-	virtual std::string    GetClassName() const { return #className; }                                                 \
-	static BindMethodsFunc GetBindMethodsFunc() { return &Self::BindMethods; }                                         \
-	static void            InitializeClass()                                                                           \
+	static std::string GetStaticClassName()                                                                            \
+	{                                                                                                                  \
+		return #className;                                                                                             \
+	}                                                                                                                  \
+	virtual std::string GetClassName() const                                                                           \
+	{                                                                                                                  \
+		return #className;                                                                                             \
+	}                                                                                                                  \
+	static BindMethodsFunc GetBindMethodsFunc()                                                                        \
+	{                                                                                                                  \
+		return &Self::BindMethods;                                                                                     \
+	}                                                                                                                  \
+	static void InitializeClass()                                                                                      \
 	{                                                                                                                  \
 		static bool isClassInitialized = false;                                                                        \
 		if (isClassInitialized)                                                                                        \
@@ -40,7 +49,10 @@ public:                                                                         
 	}                                                                                                                  \
                                                                                                                        \
 protected:                                                                                                             \
-	void (Object::* GetOnNotificationFunc() const)(int) { return (void (Object::*)(int)) & Self::OnNotification; }     \
+	void (Object::* GetOnNotificationFunc() const)(int)                                                                \
+	{                                                                                                                  \
+		return (void (Object::*)(int)) & Self::OnNotification;                                                         \
+	}                                                                                                                  \
                                                                                                                        \
 	virtual void NotificationForwardV(int notification)                                                                \
 	{                                                                                                                  \
@@ -112,22 +124,27 @@ public:
 
 	// Return the script resource attached to the current runtime instance.
 	// e.g. GetScript() is empty while the instance is detached for reload.
-	Variant         GetScript() const;
-	void            SetScript(Variant const& script);
-	void            SetScriptInstance(ScriptInstance* scriptInstance);
+	Variant GetScript() const;
+	void    SetScript(Variant const& script);
+	void    SetScriptInstance(ScriptInstance* scriptInstance);
+
 	ScriptInstance* GetScriptInstance() const { return m_scriptInstance; }
 
-	bool  TrySetNativeBindingGCHandle(void* value);
+	bool TrySetNativeBindingGCHandle(void* value);
+
 	bool  IsNativeBindingGCHandleValid() const { return m_nativeBindingGCHandle.IsValid(); }
 	void* GetNativeBindingGCHandle() const { return m_nativeBindingGCHandle.GetValue(); }
-	void  ReleaseNativeBindingGCHandle();
+
+	void ReleaseNativeBindingGCHandle();
 
 protected:
 	void OnNotification([[maybe_unused]] int notification) {}
+
 	void NotificationForward(int notification);
 	void NotificationBackward(int notification);
 
 	virtual void NotificationForwardV([[maybe_unused]] int notification) {}
+
 	virtual void NotificationBackwardV([[maybe_unused]] int notification) {}
 
 	void (Object::* GetOnNotificationFunc() const)(int) { return &Object::OnNotification; }

@@ -65,7 +65,9 @@ EditorGizmos::EditorGizmos()
 	AddNode(m_axisIndicator);
 }
 
-EditorGizmos::~EditorGizmos() {}
+EditorGizmos::~EditorGizmos()
+{
+}
 
 void EditorGizmos::OnMouseMove(Camera3D const& camera, Vector2 screenPos)
 {
@@ -99,6 +101,12 @@ void EditorGizmos::OnEndDrag()
 	}
 }
 
-bool EditorGizmos::IsHovered() const { return m_transformGizmo != nullptr && m_transformGizmo->IsHovered(); }
+bool EditorGizmos::IsHovered() const
+{
+	return m_transformGizmo != nullptr && m_transformGizmo->IsHovered();
+}
 
-bool EditorGizmos::IsDragging() const { return m_transformGizmo != nullptr && m_transformGizmo->IsDragging(); }
+bool EditorGizmos::IsDragging() const
+{
+	return m_transformGizmo != nullptr && m_transformGizmo->IsDragging();
+}

@@ -24,8 +24,18 @@
 #include "MingEngine/Scene/GUI/ColorRect.hpp"
 #include "MingEngine/Scene/GUI/Container.hpp"
 #include "MingEngine/Scene/GUI/Control.hpp"
+#include "MingEngine/Scene/GUI/BaseButton.hpp"
+#include "MingEngine/Scene/GUI/Button.hpp"
 #include "MingEngine/Scene/GUI/HBoxContainer.hpp"
 #include "MingEngine/Scene/GUI/Label.hpp"
+#include "MingEngine/Scene/GUI/LineEdit.hpp"
+#include "MingEngine/Scene/GUI/SpinBox.hpp"
+#include "MingEngine/Scene/GUI/OptionButton.hpp"
+#include "MingEngine/Scene/GUI/PopupPanel.hpp"
+#include "MingEngine/Scene/GUI/Tree.hpp"
+#include "MingEngine/Scene/GUI/TabContainer.hpp"
+#include "MingEngine/Scene/GUI/SubViewportContainer.hpp"
+#include "MingEngine/Scene/GUI/ScrollContainer.hpp"
 #include "MingEngine/Scene/GUI/MarginContainer.hpp"
 #include "MingEngine/Scene/GUI/VBoxContainer.hpp"
 #include "MingEngine/Scene/Import/GLTFImporter.hpp"
@@ -113,8 +123,18 @@ void RegisterSceneTypes()
 	ClassDatabase::RegisterClass<MeshInstance3D>();
 	ClassDatabase::RegisterClass<CanvasItem>();
 	ClassDatabase::RegisterClass<Control>();
+	ClassDatabase::RegisterAbstractClass<BaseButton>();
+	ClassDatabase::RegisterClass<Button>();
 	ClassDatabase::RegisterClass<ColorRect>();
 	ClassDatabase::RegisterClass<Label>();
+	ClassDatabase::RegisterClass<LineEdit>();
+	ClassDatabase::RegisterClass<SpinBox>();
+	ClassDatabase::RegisterClass<OptionButton>();
+	ClassDatabase::RegisterClass<PopupPanel>();
+	ClassDatabase::RegisterClass<Tree>();
+	ClassDatabase::RegisterClass<TabContainer>();
+	ClassDatabase::RegisterClass<SubViewportContainer>();
+	ClassDatabase::RegisterClass<ScrollContainer>();
 	ClassDatabase::RegisterClass<Container>();
 	ClassDatabase::RegisterClass<MarginContainer>();
 	ClassDatabase::RegisterClass<BoxContainer>();

@@ -5,8 +5,12 @@
 #include "MingEngine/Editor/UI/EditorUIContext.hpp"
 #include "MingEngine/Editor/UI/EditorUIStyle.hpp"
 #include "MingEngine/Engine/Application/App.hpp"
+#include "MingEngine/Engine/Application/Engine.hpp"
 
 #include "ThirdParty/imgui/imgui.h"
+#include "MingEngine/Scene/Core/SceneTree.hpp"
+#include "MingEngine/Scene/Core/Viewport.hpp"
+#include "MingEngine/Scene/GUI/SubViewportContainer.hpp"
 
 namespace
 {
@@ -28,8 +32,10 @@ void RenderPanelMenuItem(EditorPanel& panel)
 }
 } // namespace
 
-void EditorUI::Render(EditorUIContext& context)
+void EditorUI::RenderLegacy(EditorUIContext& context)
 {
+	m_inspectorPanel.GetHost().BeginFrame();
+	m_projectSettingsPopup.GetHost().BeginFrame();
 	context.m_editorUI       = this;
 	EditorDragDrop& dragDrop = EditorNode::Get()->m_dragDrop;
 
@@ -46,6 +52,8 @@ void EditorUI::Render(EditorUIContext& context)
 	m_outputPanel.Render(context);
 	m_projectSettingsPopup.Render(context);
 	m_warningPopup.Render(context);
+	m_inspectorPanel.GetHost().EndFrame();
+	m_projectSettingsPopup.GetHost().EndFrame();
 
 	ApplyDragDropCursor();
 
@@ -55,7 +63,86 @@ void EditorUI::Render(EditorUIContext& context)
 	dragDrop.EndFrame(isDragging);
 }
 
-void EditorUI::Warning(std::string const& title, std::string const& message) { m_warningPopup.Open(title, message); }
+bool EditorUI::HandleInput(InputEvent const& event)
+{
+	if (g_engine->m_imguiSystem == nullptr)
+	{
+		if (m_owner == nullptr)
+		{
+			return false;
+		}
+
+		if (event.m_type == InputEventType::WindowFocus && !event.m_focused)
+		{
+			m_navigating = false;
+		}
+
+		static_cast<Viewport*>(m_owner->GetSceneTree()->GetRoot())->ProcessInputEvent(event);
+		return true;
+	}
+
+	if (event.m_type == InputEventType::WindowFocus || event.m_type == InputEventType::CursorEnter)
+	{
+		m_inspectorPanel.GetHost().HandleInput(event);
+		m_projectSettingsPopup.GetHost().HandleInput(event);
+		return false;
+	}
+
+	if (m_projectSettingsPopup.IsOpen())
+	{
+		m_inspectorPanel.GetHost().Interrupt();
+		m_projectSettingsPopup.GetHost().HandleInput(event);
+		return event.m_type == InputEventType::MouseMotion || event.m_type == InputEventType::MouseButton
+			   || event.m_type == InputEventType::MouseWheel || event.m_type == InputEventType::Key
+			   || event.m_type == InputEventType::Text;
+	}
+
+	if (ImGui::IsPopupOpen(nullptr, ImGuiPopupFlags_AnyPopupId))
+	{
+		m_inspectorPanel.GetHost().Interrupt();
+		return event.m_type == InputEventType::MouseMotion || event.m_type == InputEventType::MouseButton
+			   || event.m_type == InputEventType::MouseWheel || event.m_type == InputEventType::Key
+			   || event.m_type == InputEventType::Text;
+	}
+
+	return m_inspectorPanel.GetHost().HandleInput(event);
+}
+
+bool EditorUI::IsNativeInputActive() const
+{
+	if (g_engine->m_imguiSystem == nullptr)
+	{
+		if (m_owner == nullptr)
+		{
+			return true;
+		}
+
+		Viewport* root = static_cast<Viewport*>(m_owner->GetSceneTree()->GetRoot());
+		return root->GetGuiPopup() != nullptr || (root->GetGuiFocus() != nullptr && root->GetGuiFocus() != m_sceneView)
+			   || (!IsSceneNavigationActive() && !IsSceneHovered());
+	}
+
+	Vector2 const cursor(g_engine->m_inputSystem->GetCursorClientPosition());
+	return m_inspectorPanel.GetHost().HasKeyboardFocus() || m_projectSettingsPopup.GetHost().HasKeyboardFocus()
+		   || m_inspectorPanel.GetHost().HasMouseCapture() || m_projectSettingsPopup.GetHost().HasMouseCapture()
+		   || m_inspectorPanel.GetHost().Contains(cursor) || m_projectSettingsPopup.GetHost().Contains(cursor);
+}
+
+void EditorUI::FinishInput(EditorUIContext& context)
+{
+	m_inspectorPanel.FinishInput(context);
+}
+
+void EditorUI::Warning(std::string const& title, std::string const& message)
+{
+	if (g_engine->m_imguiSystem == nullptr)
+	{
+		ShowNativePopup(1, String(title + ": " + message));
+		return;
+	}
+
+	m_warningPopup.Open(title, message);
+}
 
 void EditorUI::SetViewportRect(Vector2 origin, Vector2 dims)
 {
@@ -63,9 +150,20 @@ void EditorUI::SetViewportRect(Vector2 origin, Vector2 dims)
 	m_viewportDims   = dims;
 }
 
-Vector2 EditorUI::GetViewportOrigin() const { return m_viewportOrigin; }
-Vector2 EditorUI::GetViewportDimensions() const { return m_viewportDims; }
-Vector2 EditorUI::ToViewportPos(Vector2 windowPos) const { return windowPos - m_viewportOrigin; }
+Vector2 EditorUI::GetViewportOrigin() const
+{
+	return m_viewportOrigin;
+}
+
+Vector2 EditorUI::GetViewportDimensions() const
+{
+	return m_viewportDims;
+}
+
+Vector2 EditorUI::ToViewportPos(Vector2 windowPos) const
+{
+	return m_sceneView != nullptr ? m_sceneView->ToViewportPosition(windowPos) : windowPos - m_viewportOrigin;
+}
 
 void EditorUI::ApplyDragDropCursor()
 {
@@ -97,21 +195,25 @@ void EditorUI::RenderMainMenuBar()
 		ImGui::MenuItem("Save Scene As...");
 		ImGui::EndMenu();
 	}
+
 	if (ImGui::BeginMenu("Project"))
 	{
 		if (ImGui::MenuItem("Project Settings..."))
 		{
 			m_projectSettingsPopup.Open();
 		}
+
 		ImGui::MenuItem("Reload Project");
 		ImGui::EndMenu();
 	}
+
 	if (ImGui::BeginMenu("Editor"))
 	{
 		ImGui::MenuItem("Editor Settings...");
 		ImGui::MenuItem("Reset Layout");
 		ImGui::EndMenu();
 	}
+
 	if (ImGui::BeginMenu("Window"))
 	{
 		RenderPanelMenuItem(m_scenePanel);
@@ -122,6 +224,7 @@ void EditorUI::RenderMainMenuBar()
 		RenderPanelMenuItem(m_outputPanel);
 		ImGui::EndMenu();
 	}
+
 	if (ImGui::BeginMenu("Help"))
 	{
 		ImGui::MenuItem("About Project QingChen");
@@ -140,6 +243,7 @@ void EditorUI::RenderMainMenuBar()
 	{
 		ImGui::SetCursorPosX(ImGui::GetCursorPosX() + remainingWidth - totalWidth - rightPadding);
 	}
+
 	ImGui::SetCursorPosY((ImGui::GetWindowHeight() - buttonSize.y) * 0.5f);
 
 	// 2) Draw the Play and Stop buttons without attaching actions

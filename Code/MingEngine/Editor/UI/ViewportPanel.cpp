@@ -16,7 +16,9 @@
 
 using namespace Math;
 
-ViewportPanel::ViewportPanel() : EditorPanel("Viewport") {}
+ViewportPanel::ViewportPanel() : EditorPanel("Viewport")
+{
+}
 
 void ViewportPanel::OnRender(EditorUIContext& context)
 {
@@ -27,6 +29,7 @@ void ViewportPanel::OnRender(EditorUIContext& context)
 	{
 		title += "(*)";
 	}
+
 	title += "###Viewport";
 	ImGui::Begin(title.c_str(), GetOpenState());
 	ImGui::Button("Select");
@@ -74,6 +77,7 @@ void ViewportPanel::OnRender(EditorUIContext& context)
 			}
 		}
 	}
+
 	context.m_isViewportImageHovered = ImGui::IsItemHovered();
 
 	ImGui::End();

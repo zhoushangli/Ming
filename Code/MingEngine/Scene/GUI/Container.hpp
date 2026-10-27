@@ -23,6 +23,8 @@ public:
 public:
 	static void BindMethods() {}
 
+	Container() { SetMouseFilter(MouseFilter::Pass); }
+
 	Vector2 GetInternalMinimumSize() const override;
 
 	void MarkDirty();

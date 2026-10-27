@@ -9,7 +9,8 @@ class ProjectSettings : public Resource
 	MCLASS(ProjectSettings, Resource)
 
 public:
-	static Ref<ProjectSettings>  Get();
+	static Ref<ProjectSettings> Get();
+
 	static constexpr char const* GetSettingsPath() { return "res://project.ming"; }
 
 	bool CopyFrom(Resource&& other) override;

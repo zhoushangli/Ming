@@ -21,6 +21,7 @@ internal static class InteropUtils
 
             transferred = true;
         }
+
         finally
         {
             if (!transferred)

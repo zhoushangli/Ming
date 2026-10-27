@@ -2,13 +2,21 @@
 
 #include "MingEngine/Engine/Application/Engine.hpp"
 
-EventSystem::EventSystem(EventSystemConfig const& config) : m_config(config) {}
+EventSystem::EventSystem(EventSystemConfig const& config) : m_config(config)
+{
+}
 
-EventSystem::~EventSystem() {}
+EventSystem::~EventSystem()
+{
+}
 
-void EventSystem::BindMethods() {}
+void EventSystem::BindMethods()
+{
+}
 
-void EventSystem::Startup() {}
+void EventSystem::Startup()
+{
+}
 
 void EventSystem::Shutdown()
 {
@@ -16,12 +24,17 @@ void EventSystem::Shutdown()
 	{
 		pair.second.clear();
 	}
+
 	m_eventMap.clear();
 }
 
-void EventSystem::BeginFrame() {}
+void EventSystem::BeginFrame()
+{
+}
 
-void EventSystem::EndFrame() {}
+void EventSystem::EndFrame()
+{
+}
 
 EventConnectionID EventSystem::RegisterEvent(std::string const& eventName, EventCallback callback)
 {
@@ -46,7 +59,10 @@ void EventSystem::UnregisterEvent(std::string const& eventName, EventConnectionI
 			std::remove_if(
 				callbackList.begin(),
 				callbackList.end(),
-				[connectionID](const EventSubscription& subscription) { return subscription.m_id == connectionID; }),
+				[connectionID](const EventSubscription& subscription)
+				{
+					return subscription.m_id == connectionID;
+				}),
 			callbackList.end());
 
 		if (callbackList.empty())
@@ -107,7 +123,10 @@ void UnregisterEvent(std::string const& eventName, EventConnectionID connectionI
 	g_engine->m_eventSystem->UnregisterEvent(eventName, connectionID);
 }
 
-int FireEvent(std::string const& eventName) { return g_engine->m_eventSystem->FireEvent(eventName); }
+int FireEvent(std::string const& eventName)
+{
+	return g_engine->m_eventSystem->FireEvent(eventName);
+}
 
 int FireEvent(std::string const& eventName, EventArgs& args)
 {

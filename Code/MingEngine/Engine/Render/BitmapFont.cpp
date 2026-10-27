@@ -25,7 +25,10 @@ BitmapFont::BitmapFont(char const* fontFilePathNameWithNoExtension, GPUTexture& 
 	m_fontDefaultAspect = texAspect / gridAspect;
 }
 
-GPUTexture* BitmapFont::GetTexture() { return m_fontGlyphsSpriteSheet.GetTexture(); }
+GPUTexture* BitmapFont::GetTexture()
+{
+	return m_fontGlyphsSpriteSheet.GetTexture();
+}
 
 void BitmapFont::AddVertsForText2D(
 	std::vector<Vertex>& verts,
@@ -182,4 +185,7 @@ Vector2 BitmapFont::GetTextBoundsDimension(float cellHeight, std::string const& 
 	return Vector2(textWidth, textHeight);
 }
 
-float BitmapFont::GetGlyphAspect(int) const { return m_fontDefaultAspect; }
+float BitmapFont::GetGlyphAspect(int) const
+{
+	return m_fontDefaultAspect;
+}

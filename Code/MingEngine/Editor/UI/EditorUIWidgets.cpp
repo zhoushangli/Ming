@@ -98,6 +98,7 @@ bool PropertyTripleFloat(
 			z = defaultZ;
 		}
 	}
+
 	ImGui::SetCursorScreenPos(
 		ImVec2(labelPos.x, labelPos.y + ImGui::GetTextLineHeight() + ImGui::GetStyle().ItemSpacing.y));
 
@@ -210,9 +211,15 @@ void BeginPropertyRow(std::string const& label)
 	ImGui::TextUnformatted(label.c_str());
 }
 
-void NextPropertyColumn() { ImGui::NextColumn(); }
+void NextPropertyColumn()
+{
+	ImGui::NextColumn();
+}
 
-void EndPropertyRow() { ImGui::Columns(1); }
+void EndPropertyRow()
+{
+	ImGui::Columns(1);
+}
 
 bool PropertyBool(std::string const& label, char const* id, bool& value)
 {

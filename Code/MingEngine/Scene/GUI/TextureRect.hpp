@@ -30,6 +30,8 @@ public:
 	};
 
 public:
+	TextureRect() { SetMouseFilter(MouseFilter::Ignore); }
+
 	Ref<TextureResource> GetTexture() const { return m_texture; }
 	bool                 GetHorizontalFlip() const { return m_horizontalFlip; }
 	bool                 GetVerticalFlip() const { return m_verticalFlip; }

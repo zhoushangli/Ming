@@ -194,6 +194,7 @@ Particles3D::Particles3D(std::string const& xmlFilePath)
 		Ref<Resource> loaded = ResourceLoader::Load(m_imagePath);
 		m_particleTextureRef = Ref<TextureResource>(loaded);
 	}
+
 	m_spawnInterval = 1.f / m_spawnRate;
 }
 
@@ -237,6 +238,7 @@ void Particles3D::LoadFromXML(std::string const& xmlFilePath)
 	{
 		VirtualPath::TryParse(imagePath, m_imagePath);
 	}
+
 	m_startSize      = ParseXmlAttribute(*visualElement, "startSize", m_startSize);
 	m_endSize        = ParseXmlAttribute(*visualElement, "endSize", m_endSize);
 	m_startColor     = ParseXmlAttribute(*visualElement, "startColor", m_startColor);
@@ -263,10 +265,13 @@ void Particles3D::OnNotification(int notification)
 			{
 				SpawnNewParticle(GetWorldPosition());
 			}
+
 			StopAndDestroyWhenEmpty();
 		}
+
 		break;
 	}
+
 	case Notification_Process:
 	{
 		float      deltaSeconds = 0.f;
@@ -275,6 +280,7 @@ void Particles3D::OnNotification(int notification)
 		{
 			deltaSeconds = sceneTree->GetDeltaSeconds();
 		}
+
 		if (m_isEmitting)
 		{
 			if (m_emitMode == EmitMode::Continuous)
@@ -376,6 +382,7 @@ void Particles3D::RebuildParticleVerts()
 	{
 		return;
 	}
+
 	Matrix4x4 cameraTransform = activeCamera->GetWorldTransform();
 
 	m_particleVerts.clear();

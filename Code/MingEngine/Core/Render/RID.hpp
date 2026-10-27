@@ -44,6 +44,7 @@ private:
 
 public:
 	RIDOwner() = default;
+
 	~RIDOwner()
 	{
 		for (Entry& entry : m_entries)
@@ -91,6 +92,7 @@ public:
 
 		return rid;
 	}
+
 	RID CreateRID(T const& value)
 	{
 		size_t index = 0;
@@ -143,6 +145,7 @@ public:
 
 		return entry.m_value;
 	}
+
 	T const* GetOrNull(RID rid) const
 	{
 		if (!rid.IsValid())
@@ -164,6 +167,7 @@ public:
 
 		return entry.m_value;
 	}
+
 	std::vector<RID> GetRIDList() const
 	{
 		std::vector<RID> rids;
@@ -183,6 +187,7 @@ public:
 		T const* value = GetOrNull(rid);
 		return value != nullptr;
 	}
+
 	void Free(RID rid)
 	{
 		T* value = GetOrNull(rid);

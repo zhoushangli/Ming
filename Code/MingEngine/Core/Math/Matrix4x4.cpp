@@ -167,23 +167,50 @@ Matrix4x4::Matrix4x4(
 	m_values[Tw] = tw;
 }
 
-float* Matrix4x4::GetAsFloatArray() { return m_values; }
+float* Matrix4x4::GetAsFloatArray()
+{
+	return m_values;
+}
 
-float const* Matrix4x4::GetAsFloatArray() const { return m_values; }
+float const* Matrix4x4::GetAsFloatArray() const
+{
+	return m_values;
+}
 
-Vector2 const Matrix4x4::GetIBasis2D() const { return Vector2(m_values[Ix], m_values[Iy]); }
+Vector2 const Matrix4x4::GetIBasis2D() const
+{
+	return Vector2(m_values[Ix], m_values[Iy]);
+}
 
-Vector2 const Matrix4x4::GetJBasis2D() const { return Vector2(m_values[Jx], m_values[Jy]); }
+Vector2 const Matrix4x4::GetJBasis2D() const
+{
+	return Vector2(m_values[Jx], m_values[Jy]);
+}
 
-Vector2 const Matrix4x4::GetTranslation2D() const { return Vector2(m_values[Tx], m_values[Ty]); }
+Vector2 const Matrix4x4::GetTranslation2D() const
+{
+	return Vector2(m_values[Tx], m_values[Ty]);
+}
 
-Vector3 const Matrix4x4::GetIBasis3D() const { return Vector3(m_values[Ix], m_values[Iy], m_values[Iz]); }
+Vector3 const Matrix4x4::GetIBasis3D() const
+{
+	return Vector3(m_values[Ix], m_values[Iy], m_values[Iz]);
+}
 
-Vector3 const Matrix4x4::GetJBasis3D() const { return Vector3(m_values[Jx], m_values[Jy], m_values[Jz]); }
+Vector3 const Matrix4x4::GetJBasis3D() const
+{
+	return Vector3(m_values[Jx], m_values[Jy], m_values[Jz]);
+}
 
-Vector3 const Matrix4x4::GetKBasis3D() const { return Vector3(m_values[Kx], m_values[Ky], m_values[Kz]); }
+Vector3 const Matrix4x4::GetKBasis3D() const
+{
+	return Vector3(m_values[Kx], m_values[Ky], m_values[Kz]);
+}
 
-Vector3 const Matrix4x4::GetTranslation3D() const { return Vector3(m_values[Tx], m_values[Ty], m_values[Tz]); }
+Vector3 const Matrix4x4::GetTranslation3D() const
+{
+	return Vector3(m_values[Tx], m_values[Ty], m_values[Tz]);
+}
 
 Vector3 const Matrix4x4::GetScale3D() const
 {
@@ -194,11 +221,20 @@ Vector3 const Matrix4x4::GetScale3D() const
 	return Vector3(i.GetLength(), j.GetLength(), k.GetLength());
 }
 
-Vector4 const Matrix4x4::GetIBasis4D() const { return Vector4(m_values[Ix], m_values[Iy], m_values[Iz], m_values[Iw]); }
+Vector4 const Matrix4x4::GetIBasis4D() const
+{
+	return Vector4(m_values[Ix], m_values[Iy], m_values[Iz], m_values[Iw]);
+}
 
-Vector4 const Matrix4x4::GetJBasis4D() const { return Vector4(m_values[Jx], m_values[Jy], m_values[Jz], m_values[Jw]); }
+Vector4 const Matrix4x4::GetJBasis4D() const
+{
+	return Vector4(m_values[Jx], m_values[Jy], m_values[Jz], m_values[Jw]);
+}
 
-Vector4 const Matrix4x4::GetKBasis4D() const { return Vector4(m_values[Kx], m_values[Ky], m_values[Kz], m_values[Kw]); }
+Vector4 const Matrix4x4::GetKBasis4D() const
+{
+	return Vector4(m_values[Kx], m_values[Ky], m_values[Kz], m_values[Kw]);
+}
 
 Vector4 const Matrix4x4::GetTranslation4D() const
 {
@@ -502,6 +538,7 @@ void Matrix4x4::Append(Matrix4x4 const appendThis)
 											 + m_values[3 * 4 + col] * appendThis.m_values[row * 4 + 3];
 		}
 	}
+
 	for (int i = 0; i < 16; ++i)
 	{
 		m_values[i] = result.m_values[i];

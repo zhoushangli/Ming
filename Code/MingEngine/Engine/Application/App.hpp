@@ -49,6 +49,7 @@ public:
 	bool LaunchGame();
 
 	bool IsQuitting() const { return m_shouldQuit; }
+	SceneTree* GetSceneTree() const { return m_sceneTree; }
 
 	static bool OnQuit(EventArgs& args);
 
@@ -74,10 +75,12 @@ private:
 	SceneTree*    m_sceneTree = nullptr;
 	MingRunConfig m_runConfig;
 	std::string   m_projectManagerError;
+	Label* m_projectManagerErrorLabel = nullptr;
 
 	EditorCamera* m_editorCamera      = nullptr;
 	bool          m_isSlowMode        = false;
 	Label*        m_uiResizeSizeLabel = nullptr;
+	int           m_uiRegenerateCount = 0;
 };
 
 extern App* g_app;

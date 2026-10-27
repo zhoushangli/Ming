@@ -2,8 +2,7 @@
 
 #include "ThirdParty/imgui/imgui.h"
 
-OutputPanel::OutputPanel()
-	: EditorPanel("Output")
+OutputPanel::OutputPanel() : EditorPanel("Output")
 {
 }
 
@@ -19,18 +18,22 @@ void OutputPanel::OnRender([[maybe_unused]] EditorUIContext& context)
 			ImGui::TextUnformatted("[Warning] Viewport is a placeholder in this phase");
 			ImGui::EndTabItem();
 		}
+
 		if (ImGui::BeginTabItem("Console"))
 		{
 			ImGui::TextUnformatted("> Console input placeholder");
 			ImGui::EndTabItem();
 		}
+
 		if (ImGui::BeginTabItem("Profiler"))
 		{
 			ImGui::TextUnformatted("Frame: -- ms");
 			ImGui::TextUnformatted("Draw Calls: --");
 			ImGui::EndTabItem();
 		}
+
 		ImGui::EndTabBar();
 	}
+
 	ImGui::End();
 }

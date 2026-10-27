@@ -111,6 +111,7 @@ EulerAngles GetEulerWithAxisDelta(EulerAngles const& start, GizmoAxis axis, floa
 		result.m_yawDegrees += degrees;
 		break;
 	}
+
 	return result;
 }
 
@@ -180,6 +181,7 @@ void GizmoComponent::OnNotification(int notification)
 			m_vertexBuffer =
 				g_engine->m_renderServer->CreateVertexBuffer(m_verts.data(), vertexBufferSize, sizeof(Vertex));
 		}
+
 		break;
 	}
 	}
@@ -203,7 +205,10 @@ void GizmoComponent::OnDrag(
 {
 }
 
-void GizmoComponent::OnEndDrag([[maybe_unused]] GizmoContext const& context) { m_isDragging = false; }
+void GizmoComponent::OnEndDrag([[maybe_unused]] GizmoContext const& context)
+{
+	m_isDragging = false;
+}
 
 Vector3 GizmoComponent::GetWorldVirtualCenter() const
 {
@@ -213,13 +218,25 @@ Vector3 GizmoComponent::GetWorldVirtualCenter() const
 	return scaledVirtualCenter + GetWorldPosition();
 }
 
-void GizmoComponent::SetHovered(bool isHovered) { m_isHovered = isHovered; }
+void GizmoComponent::SetHovered(bool isHovered)
+{
+	m_isHovered = isHovered;
+}
 
-bool GizmoComponent::IsHovered() const { return m_isHovered; }
+bool GizmoComponent::IsHovered() const
+{
+	return m_isHovered;
+}
 
-bool GizmoComponent::IsDragging() const { return m_isDragging; }
+bool GizmoComponent::IsDragging() const
+{
+	return m_isDragging;
+}
 
-bool GizmoComponent::IsRotationGizmo() const { return false; }
+bool GizmoComponent::IsRotationGizmo() const
+{
+	return false;
+}
 
 Vector3 GizmoComponent::GetAxisWorld() const
 {
@@ -336,6 +353,7 @@ void GizmoAxisArrow::OnDrag(
 	{
 		return;
 	}
+
 	Vector3 const planeNormal = planeDirection.GetNormalized();
 
 	MathRaycastResult3D const startHit = RaycastVsPlane3D(
@@ -495,8 +513,10 @@ void GizmoRotationArc::OnNotification(int notification)
 			m_indexBuffer =
 				g_engine->m_renderServer->CreateIndexBuffer(m_indices.data(), indexBufferSize, sizeof(unsigned int));
 		}
+
 		break;
 	}
+
 	case Notification_Process:
 	{
 		Vector3 const cameraPos = EditorCamera::Get()->GetWorldPosition();
@@ -514,6 +534,7 @@ void GizmoRotationArc::OnNotification(int notification)
 			m_virtualCenter = Vector3(toCamera.x, toCamera.y, 0.f).GetNormalized() * kGizmoRotationRadius;
 			break;
 		}
+
 		break;
 	}
 	}
@@ -545,6 +566,7 @@ MathRaycastResult3D GizmoRotationArc::Raycast(GizmoContext const& context, MathR
 	{
 		result.m_impactNormal = -result.m_impactNormal;
 	}
+
 	return result;
 }
 
@@ -598,4 +620,7 @@ void GizmoRotationArc::OnEndDrag(GizmoContext const& context)
 	m_currentDegrees = 0.f;
 }
 
-bool GizmoRotationArc::IsRotationGizmo() const { return true; }
+bool GizmoRotationArc::IsRotationGizmo() const
+{
+	return true;
+}

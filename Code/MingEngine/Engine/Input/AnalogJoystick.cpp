@@ -4,17 +4,35 @@
 
 using namespace Math;
 
-Vector2 AnalogJoystick::GetPosition() const { return m_correctedPosition; }
+Vector2 AnalogJoystick::GetPosition() const
+{
+	return m_correctedPosition;
+}
 
-float AnalogJoystick::GetMagnitude() const { return m_correctedPosition.GetLength(); }
+float AnalogJoystick::GetMagnitude() const
+{
+	return m_correctedPosition.GetLength();
+}
 
-float AnalogJoystick::GetOrientationDegrees() const { return m_correctedPosition.GetOrientationDegrees(); }
+float AnalogJoystick::GetOrientationDegrees() const
+{
+	return m_correctedPosition.GetOrientationDegrees();
+}
 
-Vector2 AnalogJoystick::GetRawUncorrectedPosition() const { return m_rawPosition; }
+Vector2 AnalogJoystick::GetRawUncorrectedPosition() const
+{
+	return m_rawPosition;
+}
 
-float AnalogJoystick::GetInnerDeadZoneFraction() const { return m_innerDeadZoneFraction; }
+float AnalogJoystick::GetInnerDeadZoneFraction() const
+{
+	return m_innerDeadZoneFraction;
+}
 
-float AnalogJoystick::GetOuterDeadZoneFraction() const { return m_outerDeadZoneFraction; }
+float AnalogJoystick::GetOuterDeadZoneFraction() const
+{
+	return m_outerDeadZoneFraction;
+}
 
 void AnalogJoystick::Reset()
 {

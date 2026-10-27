@@ -43,8 +43,9 @@ public:
 	OmniLight3D();
 	~OmniLight3D() override = default;
 
-	void  SetRange(float range);
-	void  SetAttenuation(float attenuation);
+	void SetRange(float range);
+	void SetAttenuation(float attenuation);
+
 	float GetRange() const { return m_range; }
 	float GetAttenuation() const { return m_attenuation; }
 

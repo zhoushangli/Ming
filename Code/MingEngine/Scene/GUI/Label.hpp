@@ -10,6 +10,8 @@ class Label : public Control
 	MCLASS(Label, Control);
 
 public:
+	Label() { SetMouseFilter(MouseFilter::Ignore); }
+
 	Vector2 GetInternalMinimumSize() const override;
 
 	String const&       GetText() const { return m_text; }

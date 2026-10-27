@@ -33,6 +33,8 @@ public:
 	Node* GetScene() const;
 	void  ClearScene();
 	void  ChangeScene(Node* newSceneNode);
+	void SetSceneViewport(Viewport* viewport);
+	Viewport* GetSceneViewport() const;
 
 	void      SetUICamera(Camera3D* camera);
 	Camera3D* GetWorldCamera() const;
@@ -43,7 +45,7 @@ public:
 	float GetDeltaSeconds() const;
 
 	void QueueContainerSort(ObjectID containerID);
-	void FlushContainerSort();
+	void FlushContainerUpdate();
 
 protected:
 	static void BindMethods();
@@ -60,7 +62,7 @@ protected:
 protected:
 	std::vector<ObjectID> m_pendingDestroyNodes;
 	std::vector<ObjectID> m_transformChangedNodes;
-	std::vector<ObjectID> m_pendingContainerSort;
+	std::vector<ObjectID> m_pendingContainerUpdate;
 
 	std::vector<Node*> m_registeredNodes;
 
@@ -68,6 +70,7 @@ protected:
 	// Scene also need pending, because the old scene needs pending to destroy safely
 	Viewport* m_root         = nullptr;
 	ObjectID  m_sceneID      = ObjectID::Invalid;
+	ObjectID  m_sceneViewportID = ObjectID::Invalid;
 	Node*     m_pendingScene = nullptr;
 
 	// Raycast space is a helping class to manage raycast objects

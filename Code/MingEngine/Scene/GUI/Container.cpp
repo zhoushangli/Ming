@@ -31,6 +31,7 @@ Vector2 Container::GetInternalMinimumSize() const
 		{
 			minimumSize.x = childMinimumSize.x;
 		}
+
 		if (minimumSize.y < childMinimumSize.y)
 		{
 			minimumSize.y = childMinimumSize.y;

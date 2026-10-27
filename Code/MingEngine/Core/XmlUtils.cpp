@@ -38,6 +38,7 @@ bool ParseXmlAttribute(XmlElement const& element, char const* attributeName, boo
 	{
 		return true;
 	}
+
 	if (value == "false" || value == "0")
 	{
 		return false;

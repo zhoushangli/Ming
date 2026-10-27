@@ -6,7 +6,10 @@
 
 #include <utility>
 
-std::vector<std::string> FontResourceLoader::GetSupportedExtensions() const { return { ".ttf" }; }
+std::vector<std::string> FontResourceLoader::GetSupportedExtensions() const
+{
+	return { ".ttf" };
+}
 
 Ref<Resource> FontResourceLoader::Load(VirtualPath const& path)
 {

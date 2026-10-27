@@ -17,8 +17,8 @@ private:
 	bool ValidateName(EditorUIContext const& context, std::string& outError) const;
 
 private:
-	char        m_name[256] = {};
-	bool        m_openRequested = false;
+	char        m_name[256]      = {};
+	bool        m_openRequested  = false;
 	bool        m_focusNameInput = false;
 	VirtualPath m_parentVirtualPath;
 	VirtualPath m_selectedVirtualPath;

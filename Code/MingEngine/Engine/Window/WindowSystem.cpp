@@ -14,9 +14,9 @@
 
 namespace
 {
-Vector2 s_previousMousePosition = Vector2::Zero;
+Vector2 s_previousMousePosition    = Vector2::Zero;
 bool    s_hasPreviousMousePosition = false;
-int     s_previousCursorMode = GLFW_CURSOR_NORMAL;
+int     s_previousCursorMode       = GLFW_CURSOR_NORMAL;
 
 static void AddInputEvent(InputEvent const& event)
 {
@@ -37,26 +37,27 @@ static Vector2 GetMousePosition(GLFWwindow* window)
 static int GetMouseModifiers(GLFWwindow* window)
 {
 	int mods = 0;
-	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS
-		|| glfwGetKey(window, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS)
+	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS)
 	{
 		mods |= GLFW_MOD_SHIFT;
 	}
+
 	if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS
 		|| glfwGetKey(window, GLFW_KEY_RIGHT_CONTROL) == GLFW_PRESS)
 	{
 		mods |= GLFW_MOD_CONTROL;
 	}
-	if (glfwGetKey(window, GLFW_KEY_LEFT_ALT) == GLFW_PRESS
-		|| glfwGetKey(window, GLFW_KEY_RIGHT_ALT) == GLFW_PRESS)
+
+	if (glfwGetKey(window, GLFW_KEY_LEFT_ALT) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_RIGHT_ALT) == GLFW_PRESS)
 	{
 		mods |= GLFW_MOD_ALT;
 	}
-	if (glfwGetKey(window, GLFW_KEY_LEFT_SUPER) == GLFW_PRESS
-		|| glfwGetKey(window, GLFW_KEY_RIGHT_SUPER) == GLFW_PRESS)
+
+	if (glfwGetKey(window, GLFW_KEY_LEFT_SUPER) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_RIGHT_SUPER) == GLFW_PRESS)
 	{
 		mods |= GLFW_MOD_SUPER;
 	}
+
 	return mods;
 }
 
@@ -92,7 +93,7 @@ static void MouseButtonCallback(GLFWwindow* window, int button, int action, int 
 static void CursorPosCallback(GLFWwindow* window, double x, double y)
 {
 	Vector2 const position(static_cast<float>(x), static_cast<float>(y));
-	int const cursorMode = glfwGetInputMode(window, GLFW_CURSOR);
+	int const     cursorMode = glfwGetInputMode(window, GLFW_CURSOR);
 
 	InputEvent event;
 	event.m_type      = InputEventType::MouseMotion;
@@ -164,11 +165,17 @@ static void FramebufferSizeCallback(GLFWwindow* window, int width, int height)
 }
 } // namespace
 
-WindowSystem::WindowSystem(WindowSystemConfig config) : m_config(config) {}
+WindowSystem::WindowSystem(WindowSystemConfig config) : m_config(config)
+{
+}
 
-WindowSystem::~WindowSystem() {}
+WindowSystem::~WindowSystem()
+{
+}
 
-void WindowSystem::BindMethods() {}
+void WindowSystem::BindMethods()
+{
+}
 
 void WindowSystem::Startup()
 {
@@ -191,9 +198,14 @@ void WindowSystem::Shutdown()
 	glfwTerminate();
 }
 
-void WindowSystem::BeginFrame() { RunMessagePump(); }
+void WindowSystem::BeginFrame()
+{
+	RunMessagePump();
+}
 
-void WindowSystem::EndFrame() {}
+void WindowSystem::EndFrame()
+{
+}
 
 void WindowSystem::SetCursorMode(CursorMode mode)
 {
@@ -209,8 +221,38 @@ void WindowSystem::SetCursorMode(CursorMode mode)
 	}
 
 	s_hasPreviousMousePosition = false;
-	s_previousCursorMode = nativeMode;
+	s_previousCursorMode       = nativeMode;
 	glfwSetInputMode(m_glfwWindow, GLFW_CURSOR, nativeMode);
+}
+
+String WindowSystem::GetClipboardText() const
+{
+	if (m_glfwWindow == nullptr)
+	{
+		return {};
+	}
+
+	glfwGetError(nullptr);
+	char const* text = glfwGetClipboardString(m_glfwWindow);
+	if (glfwGetError(nullptr) != GLFW_NO_ERROR || text == nullptr)
+	{
+		return {};
+	}
+
+	return String(text);
+}
+
+bool WindowSystem::SetClipboardText(String const& text)
+{
+	if (m_glfwWindow == nullptr)
+	{
+		return false;
+	}
+
+	std::string const utf8 = text.ToUtf8();
+	glfwGetError(nullptr);
+	glfwSetClipboardString(m_glfwWindow, utf8.c_str());
+	return glfwGetError(nullptr) == GLFW_NO_ERROR;
 }
 
 void WindowSystem::CreateGLFWWindow()
@@ -259,9 +301,15 @@ void WindowSystem::RunMessagePump()
 	}
 }
 
-void* WindowSystem::GetHwnd() const { return m_windowHandle; }
+void* WindowSystem::GetHwnd() const
+{
+	return m_windowHandle;
+}
 
-GLFWwindow* WindowSystem::GetGLFWWindow() const { return m_glfwWindow; }
+GLFWwindow* WindowSystem::GetGLFWWindow() const
+{
+	return m_glfwWindow;
+}
 
 IntVec2 WindowSystem::GetClientDimensions() const
 {

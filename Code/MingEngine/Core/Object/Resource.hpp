@@ -14,12 +14,18 @@ public:
 
 	// Actual resource path used by loaders and caches. Imported assets may point at .ming/Import files here.
 	VirtualPath const& GetVirtualPath() const { return m_virtualPath; }
-	void               SetVirtualPath(VirtualPath const& path) { m_virtualPath = path; }
+
+	void SetVirtualPath(VirtualPath const& path) { m_virtualPath = path; }
+
 	// Original user-facing source file path for editor display. Empty means this resource has no separate source file.
 	VirtualPath const& GetSourceFilePath() const { return m_sourceFilePath; }
-	void               SetSourceFilePath(VirtualPath const& path) { m_sourceFilePath = path; }
-	String const&      GetName() const { return m_name; }
-	void               SetName(String const& name) { m_name = name; }
+
+	void SetSourceFilePath(VirtualPath const& path) { m_sourceFilePath = path; }
+
+	String const& GetName() const { return m_name; }
+
+	void SetName(String const& name) { m_name = name; }
+
 	// Copy all data from another resource of the same type and leave the source valid but empty.
 	// Mainly used for reloading a resource in-place without creating a new instance
 	// e.g. cachedResource.CopyFrom(std::move(freshResource))

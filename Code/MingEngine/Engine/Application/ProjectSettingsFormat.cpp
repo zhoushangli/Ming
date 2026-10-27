@@ -44,12 +44,13 @@ Ref<Resource> ProjectSettingsLoader::Load(VirtualPath const& virtualPath)
 		return Ref<Resource>();
 	}
 
-	Ref<ProjectSettings> settings = CreateRef<ProjectSettings>();
-	std::string const startScenePath = root["start_scene_path"].get<std::string>();
+	Ref<ProjectSettings> settings       = CreateRef<ProjectSettings>();
+	std::string const    startScenePath = root["start_scene_path"].get<std::string>();
 	if (!startScenePath.empty() && !VirtualPath::TryParse(startScenePath, settings->m_startScenePath))
 	{
 		return Ref<Resource>();
 	}
+
 	settings->SetVirtualPath(virtualPath);
 	return settings;
 }

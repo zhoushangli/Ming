@@ -1,7 +1,9 @@
 #include "MingEngine/Core/Math/LineSegment2.hpp"
 #include "MingEngine/Core/Math/MathUtils.hpp"
 
-LineSegment2::LineSegment2(const Vector2& start, const Vector2& end) : m_start(start), m_end(end) {}
+LineSegment2::LineSegment2(const Vector2& start, const Vector2& end) : m_start(start), m_end(end)
+{
+}
 
 void LineSegment2::Translate(const Vector2& translation)
 {

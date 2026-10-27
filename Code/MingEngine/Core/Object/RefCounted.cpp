@@ -33,6 +33,11 @@ bool RefCounted::RemoveRef()
 	return (m_refCount == 0);
 }
 
-int RefCounted::GetRefCount() const { return m_refCount; }
+int RefCounted::GetRefCount() const
+{
+	return m_refCount;
+}
 
-void RefCounted::BindMethods() {}
+void RefCounted::BindMethods()
+{
+}

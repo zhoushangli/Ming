@@ -34,6 +34,8 @@ public:
 	bool IsVisibleInHierarchy() const;
 
 	void QueueRedraw();
+	void SetCanvasClip(bool enabled, Vector2 const& size);
+	void SetChildrenClip(bool enabled, Vector2 const& size);
 
 protected:
 	static void BindMethods() {}
@@ -44,6 +46,7 @@ protected:
 	// he just need to care about what he looks like in his own local space, not the global space.
 	void DrawRect(AABB2 const& rect, Color const& color);
 	void DrawTextureRect(Ref<TextureResource> const& texture, Rect2 const& rect, bool isTiling = false);
+	void DrawViewportRect(RID viewport, Rect2 const& rect);
 	void DrawTextureRectRegion(
 		Ref<TextureResource> const& texture,
 		Rect2 const&                rect,

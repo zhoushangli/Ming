@@ -5,7 +5,10 @@
 
 #include <utility>
 
-FontResource::~FontResource() { SetFontRID(RID::Invalid); }
+FontResource::~FontResource()
+{
+	SetFontRID(RID::Invalid);
+}
 
 void FontResource::SetFontRID(RID rid)
 {
@@ -18,6 +21,7 @@ void FontResource::SetFontRID(RID rid)
 	{
 		g_engine->m_textServer->FreeFont(m_fontRID);
 	}
+
 	m_fontRID = rid;
 }
 

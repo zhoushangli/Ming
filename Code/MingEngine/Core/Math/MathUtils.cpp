@@ -5,9 +5,15 @@
 namespace Math
 {
 
-float Abs(float value) { return (value < 0.f) ? -value : value; }
+float Abs(float value)
+{
+	return (value < 0.f) ? -value : value;
+}
 
-int Abs(int value) { return (value < 0) ? -value : value; }
+int Abs(int value)
+{
+	return (value < 0) ? -value : value;
+}
 
 float Sign(float value)
 {
@@ -25,23 +31,50 @@ float Sign(float value)
 	}
 }
 
-float Min(float a, float b) { return (a < b) ? a : b; }
+float Min(float a, float b)
+{
+	return (a < b) ? a : b;
+}
 
-int Min(int a, int b) { return (a < b) ? a : b; }
+int Min(int a, int b)
+{
+	return (a < b) ? a : b;
+}
 
-float Max(float a, float b) { return (a > b) ? a : b; }
+float Max(float a, float b)
+{
+	return (a > b) ? a : b;
+}
 
-int Max(int a, int b) { return (a > b) ? a : b; }
+int Max(int a, int b)
+{
+	return (a > b) ? a : b;
+}
 
-float ConvertDegreesToRadians(float degrees) { return degrees * kDegreesToRadiansMultiplier; }
+float ConvertDegreesToRadians(float degrees)
+{
+	return degrees * kDegreesToRadiansMultiplier;
+}
 
-float ConvertRadiansToDegrees(float radians) { return radians * kRadiansToDegreesMultiplier; }
+float ConvertRadiansToDegrees(float radians)
+{
+	return radians * kRadiansToDegreesMultiplier;
+}
 
-float CosDegrees(float degrees) { return cosf(ConvertDegreesToRadians(degrees)); }
+float CosDegrees(float degrees)
+{
+	return cosf(ConvertDegreesToRadians(degrees));
+}
 
-float SinDegrees(float degrees) { return sinf(ConvertDegreesToRadians(degrees)); }
+float SinDegrees(float degrees)
+{
+	return sinf(ConvertDegreesToRadians(degrees));
+}
 
-float Atan2Degrees(float y, float x) { return ConvertRadiansToDegrees(atan2f(y, x)); }
+float Atan2Degrees(float y, float x)
+{
+	return ConvertRadiansToDegrees(atan2f(y, x));
+}
 
 float GetDistance2D(Vector2 const& a, Vector2 const& b)
 {
@@ -408,7 +441,10 @@ void TransformPositionXY3D(Vector3& pos, Vector2 const& iBasisXY, Vector2 const&
 	pos.y         = pos2D.y;
 }
 
-float Interpolate(float start, float end, float fraction) { return start * (1.0f - fraction) + end * fraction; }
+float Interpolate(float start, float end, float fraction)
+{
+	return start * (1.0f - fraction) + end * fraction;
+}
 
 Vector3 Interpolate(Vector3 const& start, Vector3 const& end, float fraction)
 {
@@ -430,7 +466,10 @@ EulerAngles Interpolate(EulerAngles const& start, EulerAngles const& end, float 
 	return EulerAngles::Interpolate(start, end, fraction);
 }
 
-float SmoothStart2(float t) { return t * t; }
+float SmoothStart2(float t)
+{
+	return t * t;
+}
 
 float SmoothStart3(float t)
 {
@@ -490,7 +529,10 @@ float SmoothStop6(float t)
 	return 1.f - omt2 * omt2 * omt2;
 }
 
-float SmoothStep3(float t) { return -2 * t * t * t + 3 * t * t; }
+float SmoothStep3(float t)
+{
+	return -2 * t * t * t + 3 * t * t;
+}
 
 float SmoothStep5(float t)
 {
@@ -517,7 +559,10 @@ float Hesitate5(float t)
 
 float String(float t)
 {
-	auto fastExpDecay = [](float x) { return 1.0f / (1.0f + x + 0.5f * x * x); };
+	auto fastExpDecay = [](float x)
+	{
+		return 1.0f / (1.0f + x + 0.5f * x * x);
+	};
 
 	float frequency = 4.0f;
 	float decay     = 8.0f;
@@ -529,7 +574,10 @@ float String(float t)
 
 float String(float t, float frequency, float decay)
 {
-	auto fastExpDecay = [](float x) { return 1.0f / (1.0f + x + 0.5f * x * x); };
+	auto fastExpDecay = [](float x)
+	{
+		return 1.0f / (1.0f + x + 0.5f * x * x);
+	};
 
 	float d = fastExpDecay(decay * t);
 
@@ -666,7 +714,10 @@ EulerAngles InterpolateClamped(EulerAngles const& start, EulerAngles const& end,
 	return EulerAngles::InterpolateClamped(start, end, fraction);
 }
 
-float GetFractionWithinRange(float value, float start, float end) { return (value - start) / (end - start); }
+float GetFractionWithinRange(float value, float start, float end)
+{
+	return (value - start) / (end - start);
+}
 
 float RangeMap(float inValue, float inStart, float inEnd, float outStart, float outEnd)
 {
@@ -776,6 +827,7 @@ float GetTurnedTowardDegrees(float currentDegrees, float goalDegrees, float maxD
 	{
 		return currentDegrees + maxDeltaDegrees;
 	}
+
 	if (delta < -maxDeltaDegrees)
 	{
 		return currentDegrees - maxDeltaDegrees;
@@ -786,15 +838,30 @@ float GetTurnedTowardDegrees(float currentDegrees, float goalDegrees, float maxD
 	}
 }
 
-float DotProduct2D(Vector2 const& a, Vector2 const& b) { return Vector2::DotProduct(a, b); }
+float DotProduct2D(Vector2 const& a, Vector2 const& b)
+{
+	return Vector2::DotProduct(a, b);
+}
 
-float DotProduct3D(Vector3 const& a, Vector3 const& b) { return Vector3::DotProduct(a, b); }
+float DotProduct3D(Vector3 const& a, Vector3 const& b)
+{
+	return Vector3::DotProduct(a, b);
+}
 
-float DotProduct4D(Vector4 const& a, Vector4 const& b) { return Vector4::DotProduct(a, b); }
+float DotProduct4D(Vector4 const& a, Vector4 const& b)
+{
+	return Vector4::DotProduct(a, b);
+}
 
-float CrossProduct2D(Vector2 const& a, Vector2 const& b) { return Vector2::CrossProduct(a, b); }
+float CrossProduct2D(Vector2 const& a, Vector2 const& b)
+{
+	return Vector2::CrossProduct(a, b);
+}
 
-Vector3 CrossProduct3D(Vector3 const& a, Vector3 const& b) { return Vector3::CrossProduct(a, b); }
+Vector3 CrossProduct3D(Vector3 const& a, Vector3 const& b)
+{
+	return Vector3::CrossProduct(a, b);
+}
 
 Matrix4x4 GetBillboardTransform(
 	BillboardType    billboardType,
@@ -1117,7 +1184,10 @@ float GetAngleDegreesBetweenVectors2D(Vector2 const& a, Vector2 const& b)
 	return Vector2::GetAngleDegreesBetween(a, b);
 }
 
-int GetTaxicabDistance2D(IntVec2 const& a, IntVec2 const& b) { return abs(a.x - b.x) + abs(a.y - b.y); }
+int GetTaxicabDistance2D(IntVec2 const& a, IntVec2 const& b)
+{
+	return abs(a.x - b.x) + abs(a.y - b.y);
+}
 
 int GetTaxicabDistance2D(Vector2 const& a, Vector2 const& b)
 {
@@ -1190,11 +1260,19 @@ bool IsPointInsideTriangle2D(Vector2 point, Vector2 ccw0, Vector2 ccw1, Vector2 
 	Vector2 toPoint2 = point - ccw2;
 
 	if (DotProduct2D(edge0Rotate90, toPoint0) < 0.f)
+	{
 		return false;
+	}
+
 	if (DotProduct2D(edge1Rotate90, toPoint1) < 0.f)
+	{
 		return false;
+	}
+
 	if (DotProduct2D(edge2Rotate90, toPoint2) < 0.f)
+	{
 		return false;
+	}
 
 	return true;
 }
@@ -1304,9 +1382,14 @@ Vector2 GetNearestPointOnLineSegment2D(Vector2 referencePos, Vector2 start, Vect
 	Vector2 endToRef   = referencePos - end;
 
 	if (DotProduct2D(startToRef, startToEnd) <= 0.f)
+	{
 		return start;
+	}
+
 	if (DotProduct2D(endToRef, endToStart) <= 0.f)
+	{
 		return end;
+	}
 
 	return GetNearestPointOnInfiniteLine2D(referencePos, start, end);
 }

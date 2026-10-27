@@ -11,4 +11,3 @@ public:
 
 	bool Instantiate(Object* owner) override;
 };
-

@@ -3,6 +3,7 @@
 #include "MingEngine/Engine/Application/SystemBase.hpp"
 
 #include "MingEngine/Core/Math/Vector2.hpp"
+#include "MingEngine/Core/String.hpp"
 
 struct GLFWwindow;
 enum class CursorMode;
@@ -37,6 +38,8 @@ public:
 	void*       GetHwnd() const;
 	IntVec2     GetClientDimensions() const;
 	void        SetCursorMode(CursorMode mode);
+	String      GetClipboardText() const;
+	bool        SetClipboardText(String const& text);
 
 protected:
 	static void BindMethods();

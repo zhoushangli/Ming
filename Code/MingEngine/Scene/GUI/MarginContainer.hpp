@@ -15,6 +15,7 @@ public:
 	float GetMarginBottom() const { return m_marginBottom; }
 
 	void SetMargins(float left, float top, float right, float bottom);
+
 	void SetMarginLeft(float margin) { SetMargins(margin, m_marginTop, m_marginRight, m_marginBottom); }
 	void SetMarginTop(float margin) { SetMargins(m_marginLeft, margin, m_marginRight, m_marginBottom); }
 	void SetMarginRight(float margin) { SetMargins(m_marginLeft, m_marginTop, margin, m_marginBottom); }
@@ -22,7 +23,8 @@ public:
 
 protected:
 	static void BindMethods() {}
-	void        OnNotification(int notification);
+
+	void OnNotification(int notification);
 
 private:
 	float m_marginLeft   = 0.0f;

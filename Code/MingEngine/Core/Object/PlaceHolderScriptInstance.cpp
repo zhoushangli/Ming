@@ -1,7 +1,7 @@
 #include "MingEngine/Core/Object/PlaceHolderScriptInstance.hpp"
 
-PlaceHolderScriptInstance::~PlaceHolderScriptInstance() 
+PlaceHolderScriptInstance::~PlaceHolderScriptInstance()
 {
-    m_owner = nullptr;
-    m_script = nullptr;
+	m_owner  = nullptr;
+	m_script = nullptr;
 }

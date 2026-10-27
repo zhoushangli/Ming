@@ -15,7 +15,9 @@ IntVec3::IntVec3(Vector3 const& copyFrom)
 {
 }
 
-IntVec3::IntVec3(int initialX, int initialY, int initialZ) : x(initialX), y(initialY), z(initialZ) {}
+IntVec3::IntVec3(int initialX, int initialY, int initialZ) : x(initialX), y(initialY), z(initialZ)
+{
+}
 
 void IntVec3::SetFromText(char const* text)
 {
@@ -34,9 +36,15 @@ void IntVec3::SetFromText(char const* text)
 	z = std::stoi(value.substr(secondComma + 1));
 }
 
-bool IntVec3::operator==(IntVec3 const& compare) const { return x == compare.x && y == compare.y && z == compare.z; }
+bool IntVec3::operator==(IntVec3 const& compare) const
+{
+	return x == compare.x && y == compare.y && z == compare.z;
+}
 
-bool IntVec3::operator!=(IntVec3 const& compare) const { return !(*this == compare); }
+bool IntVec3::operator!=(IntVec3 const& compare) const
+{
+	return !(*this == compare);
+}
 
 IntVec3 IntVec3::operator+(IntVec3 const& vecToAdd) const
 {

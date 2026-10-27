@@ -1,14 +1,29 @@
 #include "MingEngine/Scene/Core/NodePath.hpp"
 
-NodePath::NodePath(std::string path) { Parse(std::move(path)); }
+NodePath::NodePath(std::string path)
+{
+	Parse(std::move(path));
+}
 
-bool NodePath::IsValid() const { return !m_paths.empty(); }
+bool NodePath::IsValid() const
+{
+	return !m_paths.empty();
+}
 
-bool NodePath::IsAbsolute() const { return m_isAbsolute; }
+bool NodePath::IsAbsolute() const
+{
+	return m_isAbsolute;
+}
 
-bool NodePath::IsCurrent() const { return !m_isAbsolute && m_paths.size() == 1 && m_paths[0] == "."; }
+bool NodePath::IsCurrent() const
+{
+	return !m_isAbsolute && m_paths.size() == 1 && m_paths[0] == ".";
+}
 
-std::vector<std::string> const& NodePath::GetPaths() const { return m_paths; }
+std::vector<std::string> const& NodePath::GetPaths() const
+{
+	return m_paths;
+}
 
 void NodePath::Parse(std::string path)
 {
@@ -43,6 +58,7 @@ void NodePath::Parse(std::string path)
 		{
 			break;
 		}
+
 		segmentStart = separator + 1;
 	}
 }

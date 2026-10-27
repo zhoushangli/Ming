@@ -32,7 +32,7 @@ void NetworkSystem::Startup()
 		GUARANTEE_OR_DIE(false, "NetworkSystem is already started.");
 	}
 
-	WSADATA data;
+	WSADATA   data;
 	int const result = WSAStartup(MAKEWORD(2, 2), &data);
 	GUARANTEE_OR_DIE(result == 0, Stringf("WSAStartup failed with error: %d", result));
 
@@ -76,6 +76,7 @@ void NetworkSystem::BeginFrame()
 		{
 			ProcessConnections();
 		}
+
 		break;
 
 	case NetworkState::ClientConnected:
@@ -87,7 +88,9 @@ void NetworkSystem::BeginFrame()
 	}
 }
 
-void NetworkSystem::EndFrame() {}
+void NetworkSystem::EndFrame()
+{
+}
 
 bool NetworkSystem::StartServer(uint16_t port)
 {
@@ -105,7 +108,7 @@ bool NetworkSystem::StartServer(uint16_t port)
 	}
 
 	unsigned long blockingMode = 1;
-	int result = ioctlsocket(listenSocket, FIONBIO, &blockingMode);
+	int           result       = ioctlsocket(listenSocket, FIONBIO, &blockingMode);
 	if (result == SOCKET_ERROR)
 	{
 		int const errorCode = WSAGetLastError();
@@ -185,7 +188,7 @@ bool NetworkSystem::StartClient(std::string const& ipAddress, uint16_t port)
 	}
 
 	unsigned long blockingMode = 1;
-	int result = ioctlsocket(serverSocket, FIONBIO, &blockingMode);
+	int           result       = ioctlsocket(serverSocket, FIONBIO, &blockingMode);
 	if (result == SOCKET_ERROR)
 	{
 		int const errorCode = WSAGetLastError();
@@ -194,8 +197,8 @@ bool NetworkSystem::StartClient(std::string const& ipAddress, uint16_t port)
 		return false;
 	}
 
-	result = connect(
-		serverSocket, reinterpret_cast<sockaddr*>(&serverAddress), static_cast<int>(sizeof(serverAddress)));
+	result =
+		connect(serverSocket, reinterpret_cast<sockaddr*>(&serverAddress), static_cast<int>(sizeof(serverAddress)));
 	if (result == SOCKET_ERROR)
 	{
 		int const errorCode = WSAGetLastError();
@@ -248,6 +251,7 @@ bool NetworkSystem::SendStringToAll(std::string const& text)
 		{
 			connection.m_outgoingBytes.push_back(static_cast<uint8_t>(character));
 		}
+
 		connection.m_outgoingBytes.push_back('\0');
 	}
 
@@ -278,6 +282,7 @@ std::vector<std::string> NetworkSystem::ConsumeReceivedStrings(std::size_t conne
 			message.push_back(static_cast<char>(incomingBytes.front()));
 			incomingBytes.pop_front();
 		}
+
 		incomingBytes.pop_front();
 		messages.push_back(std::move(message));
 	}
@@ -297,11 +302,12 @@ void NetworkSystem::AcceptNewClients()
 			{
 				ERROR_RECOVERABLE(Stringf("Failed to accept new client. Error code: %d", errorCode));
 			}
+
 			return;
 		}
 
 		unsigned long blockingMode = 1;
-		int const result = ioctlsocket(newClientSocket, FIONBIO, &blockingMode);
+		int const     result       = ioctlsocket(newClientSocket, FIONBIO, &blockingMode);
 		if (result == SOCKET_ERROR)
 		{
 			int const errorCode = WSAGetLastError();
@@ -333,8 +339,8 @@ void NetworkSystem::UpdateClientConnection()
 	FD_SET(serverSocket, &writeSockets);
 	FD_SET(serverSocket, &exceptSockets);
 
-	timeval waitTime = {};
-	int const result = select(0, nullptr, &writeSockets, &exceptSockets, &waitTime);
+	timeval   waitTime = {};
+	int const result   = select(0, nullptr, &writeSockets, &exceptSockets, &waitTime);
 	if (result == SOCKET_ERROR)
 	{
 		int const errorCode = WSAGetLastError();
@@ -342,16 +348,19 @@ void NetworkSystem::UpdateClientConnection()
 		ERROR_RECOVERABLE(Stringf("Failed to check client connection. Error code: %d", errorCode));
 		return;
 	}
+
 	if (result == 0)
 	{
 		return;
 	}
+
 	if (FD_ISSET(serverSocket, &exceptSockets))
 	{
 		StopClient();
 		ERROR_RECOVERABLE("Client connection attempt failed.");
 		return;
 	}
+
 	if (FD_ISSET(serverSocket, &writeSockets))
 	{
 		m_state = NetworkState::ClientConnected;
@@ -371,6 +380,7 @@ void NetworkSystem::ProcessConnections()
 			{
 				m_state = NetworkState::Idle;
 			}
+
 			continue;
 		}
 
@@ -386,14 +396,14 @@ bool NetworkSystem::SendQueuedData(NetworkConnection& connection)
 	}
 
 	std::array<char, NETWORK_BUFFER_SIZE> sendBuffer = {};
-	std::size_t const byteCount = std::min(sendBuffer.size(), connection.m_outgoingBytes.size());
+	std::size_t const                     byteCount  = std::min(sendBuffer.size(), connection.m_outgoingBytes.size());
 	for (std::size_t byteIndex = 0; byteIndex < byteCount; ++byteIndex)
 	{
 		sendBuffer[byteIndex] = static_cast<char>(connection.m_outgoingBytes[byteIndex]);
 	}
 
-	int const result = send(
-		static_cast<SOCKET>(connection.m_socket), sendBuffer.data(), static_cast<int>(byteCount), 0);
+	int const result =
+		send(static_cast<SOCKET>(connection.m_socket), sendBuffer.data(), static_cast<int>(byteCount), 0);
 	if (result == SOCKET_ERROR)
 	{
 		int const errorCode = WSAGetLastError();
@@ -405,6 +415,7 @@ bool NetworkSystem::SendQueuedData(NetworkConnection& connection)
 		ERROR_RECOVERABLE(Stringf("Failed to send network data. Error code: %d", errorCode));
 		return false;
 	}
+
 	if (result == 0)
 	{
 		return false;
@@ -414,6 +425,7 @@ bool NetworkSystem::SendQueuedData(NetworkConnection& connection)
 	{
 		connection.m_outgoingBytes.pop_front();
 	}
+
 	return true;
 }
 
@@ -433,8 +445,10 @@ bool NetworkSystem::ReceiveIncomingData(NetworkConnection& connection)
 			{
 				connection.m_incomingBytes.push_back(static_cast<uint8_t>(receiveBuffer[receivedByteIndex]));
 			}
+
 			continue;
 		}
+
 		if (result == 0)
 		{
 			return false;
@@ -468,5 +482,6 @@ void NetworkSystem::CloseAllConnections()
 	{
 		closesocket(static_cast<SOCKET>(connection.m_socket));
 	}
+
 	m_connections.clear();
 }

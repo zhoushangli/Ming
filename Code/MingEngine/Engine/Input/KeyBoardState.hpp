@@ -144,22 +144,30 @@ enum class KeyModifier : uint8_t
 	Alt     = 1 << 2,
 	Super   = 1 << 3
 };
-constexpr KeyModifier  operator|(KeyModifier lhs, KeyModifier rhs) { return (KeyModifier)((int)lhs | (int)rhs); }
+
+constexpr KeyModifier operator|(KeyModifier lhs, KeyModifier rhs)
+{
+	return (KeyModifier)((int)lhs | (int)rhs);
+}
+
 constexpr KeyModifier& operator|=(KeyModifier& lhs, KeyModifier rhs)
 {
 	lhs = lhs | rhs;
 	return lhs;
 }
 
-constexpr int ToKeyCode(KeyCode input) { return static_cast<int>(input); }
+constexpr int ToKeyCode(KeyCode input)
+{
+	return static_cast<int>(input);
+}
 
 struct KeyButtonState
 {
 public:
-	bool     m_isDown      = false;
-	bool     m_justPressed = false;
+	bool     m_isDown       = false;
+	bool     m_justPressed  = false;
 	bool     m_justReleased = false;
-	uint16_t m_repeatCount = 0;
+	uint16_t m_repeatCount  = 0;
 };
 
 struct KeyboardState

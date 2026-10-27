@@ -23,6 +23,7 @@ struct MathRaycastQuery3D
 struct MathRaycastResult2D
 {
 	MathRaycastResult2D() = default;
+
 	MathRaycastResult2D(Vector2 rayStartPos, Vector2 rayFwdNormal, float rayMaxLength)
 		: m_rayStartPos(rayStartPos), m_rayFwdNormal(rayFwdNormal), m_rayMaxLength(rayMaxLength)
 	{
@@ -43,6 +44,7 @@ struct MathRaycastResult2D
 struct MathRaycastResult3D
 {
 	MathRaycastResult3D() = default;
+
 	MathRaycastResult3D(Vector3 rayStartPos, Vector3 rayFwdNormal, float rayMaxLength)
 		: m_rayStartPos(rayStartPos), m_rayFwdNormal(rayFwdNormal), m_rayMaxLength(rayMaxLength)
 	{

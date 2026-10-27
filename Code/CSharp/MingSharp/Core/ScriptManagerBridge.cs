@@ -124,6 +124,7 @@ public static class ScriptManagerBridge
             AddScriptType(scriptPtr, scriptType);
             return 1;
         }
+
         catch (Exception exception)
         {
             Console.Error.WriteLine(exception);
@@ -144,6 +145,7 @@ public static class ScriptManagerBridge
             s_scriptTypes.Remove(scriptPtr);
             return 1;
         }
+
         catch (Exception exception)
         {
             Console.Error.WriteLine(exception);
@@ -192,6 +194,7 @@ public static class ScriptManagerBridge
             MingObject wrapper = Constructors.Invoke(className, ownerPtr);
             return AllocNativeBindingGCHandle(wrapper);
         }
+
         catch (Exception exception)
         {
             Console.Error.WriteLine(exception);
@@ -257,6 +260,7 @@ public static class ScriptManagerBridge
 
             return GCHandle.ToIntPtr(AllocScriptGCHandle(instance));
         }
+
         catch (Exception exception)
         {
             Console.Error.WriteLine(exception);
@@ -308,6 +312,7 @@ public static class ScriptManagerBridge
             *ret = retVariant;
             return 1;
         }
+
         catch (Exception exception)
         {
             Console.Error.WriteLine(exception);
@@ -335,6 +340,7 @@ public static class ScriptManagerBridge
             s_scriptInstanceHandleAllocated++;
             return handle;
         }
+
         catch
         {
             instance.Dispose();
@@ -373,6 +379,7 @@ public static class ScriptManagerBridge
             references.Add(GCHandle.ToIntPtr(handle), instance);
             return handle;
         }
+
         catch
         {
             handle.Free();
@@ -391,7 +398,9 @@ public static class ScriptManagerBridge
     internal static void ReleaseGCHandleCore(IntPtr handlePtr)
     {
         if (handlePtr == IntPtr.Zero)
+        {
             return;
+        }
 
         try
         {
@@ -400,8 +409,11 @@ public static class ScriptManagerBridge
             try
             {
                 if (handle.Target is MingObject instance)
+                {
                     instance.Dispose();
+                }
             }
+
             catch (Exception exception)
             {
                 Console.Error.WriteLine(exception);
@@ -419,6 +431,7 @@ public static class ScriptManagerBridge
                 s_nativeBindingHandleFreed++;
             }
         }
+
         catch (Exception exception)
         {
             Console.Error.WriteLine(exception);

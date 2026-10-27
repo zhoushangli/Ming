@@ -17,11 +17,17 @@ Vector2::Vector2() = default;
 Vector2::Vector2(Vector2 const& copy) = default;
 
 //-----------------------------------------------------------------------------------------------
-Vector2::Vector2(float initialX, float initialY) : x(initialX), y(initialY) {}
+Vector2::Vector2(float initialX, float initialY) : x(initialX), y(initialY)
+{
+}
 
-Vector2::Vector2(Vector3 const& copyFrom) : x(copyFrom.x), y(copyFrom.y) {}
+Vector2::Vector2(Vector3 const& copyFrom) : x(copyFrom.x), y(copyFrom.y)
+{
+}
 
-Vector2::Vector2(IntVec2 const& copyFrom) : x(static_cast<float>(copyFrom.x)), y(static_cast<float>(copyFrom.y)) {}
+Vector2::Vector2(IntVec2 const& copyFrom) : x(static_cast<float>(copyFrom.x)), y(static_cast<float>(copyFrom.y))
+{
+}
 
 Vector2::~Vector2() = default;
 
@@ -38,7 +44,10 @@ Vector2 const Vector2::operator-(Vector2 const& vecToSubtract) const
 }
 
 //------------------------------------------------------------------------------------------------
-Vector2 const Vector2::operator-() const { return Vector2(-this->x, -this->y); }
+Vector2 const Vector2::operator-() const
+{
+	return Vector2(-this->x, -this->y);
+}
 
 //-----------------------------------------------------------------------------------------------
 Vector2 const Vector2::operator*(float uniformScale) const
@@ -100,10 +109,16 @@ Vector2 const operator*(float uniformScale, Vector2 const& vecToScale)
 }
 
 //-----------------------------------------------------------------------------------------------
-bool Vector2::operator==(Vector2 const& compare) const { return x == compare.x && y == compare.y; }
+bool Vector2::operator==(Vector2 const& compare) const
+{
+	return x == compare.x && y == compare.y;
+}
 
 //-----------------------------------------------------------------------------------------------
-bool Vector2::operator!=(Vector2 const& compare) const { return x != compare.x || y != compare.y; }
+bool Vector2::operator!=(Vector2 const& compare) const
+{
+	return x != compare.x || y != compare.y;
+}
 
 // Static factory methods
 Vector2 Vector2::MakeFromPolarDegrees(float degrees, float length)
@@ -117,9 +132,15 @@ Vector2 Vector2::MakeFromPolarRadians(float radians, float length)
 	return Vector2(cosf(radians) * length, sinf(radians) * length);
 }
 
-float Vector2::DotProduct(Vector2 const& a, Vector2 const& b) { return a.x * b.x + a.y * b.y; }
+float Vector2::DotProduct(Vector2 const& a, Vector2 const& b)
+{
+	return a.x * b.x + a.y * b.y;
+}
 
-float Vector2::CrossProduct(Vector2 const& a, Vector2 const& b) { return a.x * b.y - a.y * b.x; }
+float Vector2::CrossProduct(Vector2 const& a, Vector2 const& b)
+{
+	return a.x * b.y - a.y * b.x;
+}
 
 float Vector2::GetProjectedLength(Vector2 const& vector, Vector2 const& basis)
 {
@@ -138,7 +159,10 @@ float Vector2::GetAngleDegreesBetween(Vector2 const& a, Vector2 const& b)
 	float aLen = a.GetLength();
 	float bLen = b.GetLength();
 	if (aLen == 0.f || bLen == 0.f)
+	{
 		return 0.f;
+	}
+
 	float dot = DotProduct(a, b) / (aLen * bLen);
 	dot       = Math::GetClamped(dot, -1.f, 1.f);
 	return ConvertRadiansToDegrees(acosf(dot));
@@ -155,17 +179,35 @@ Vector2 Vector2::InterpolateClamped(Vector2 const& start, Vector2 const& end, fl
 }
 
 // Getters
-float Vector2::GetLength() const { return sqrtf(x * x + y * y); }
+float Vector2::GetLength() const
+{
+	return sqrtf(x * x + y * y);
+}
 
-float Vector2::GetLengthSquared() const { return x * x + y * y; }
+float Vector2::GetLengthSquared() const
+{
+	return x * x + y * y;
+}
 
-float Vector2::GetOrientationDegrees() const { return atan2f(y, x) * kRadiansToDegreesMultiplier; }
+float Vector2::GetOrientationDegrees() const
+{
+	return atan2f(y, x) * kRadiansToDegreesMultiplier;
+}
 
-float Vector2::GetOrientationRadians() const { return atan2f(y, x); }
+float Vector2::GetOrientationRadians() const
+{
+	return atan2f(y, x);
+}
 
-Vector2 Vector2::GetRotatedBy90Degrees() const { return Vector2(-y, x); }
+Vector2 Vector2::GetRotatedBy90Degrees() const
+{
+	return Vector2(-y, x);
+}
 
-Vector2 Vector2::GetRotatedByMinus90Degrees() const { return Vector2(y, -x); }
+Vector2 Vector2::GetRotatedByMinus90Degrees() const
+{
+	return Vector2(y, -x);
+}
 
 Vector2 Vector2::GetRotatedByDegrees(float degrees) const
 {
@@ -248,6 +290,7 @@ Vector2 Vector2::GetClamped(float maxLength) const
 		float scale = maxLength / len;
 		return Vector2(x * scale, y * scale);
 	}
+
 	return *this;
 }
 
@@ -258,6 +301,7 @@ Vector2 Vector2::GetNormalized() const
 	{
 		return Vector2(x / len, y / len);
 	}
+
 	return Vector2(0.f, 0.f);
 }
 
@@ -306,7 +350,10 @@ Vector2 const Vector2::GetReflected(Vector2 const& normal) const
 	return (*this - dot * normal) - dot * normal;
 }
 
-void Vector2::Reflect(Vector2 const& normal) { *this = GetReflected(normal); }
+void Vector2::Reflect(Vector2 const& normal)
+{
+	*this = GetReflected(normal);
+}
 
 void Vector2::SetFromText(char const* text)
 {

@@ -12,7 +12,7 @@ class ResourceFormatSaver : public RefCounted
 
 public:
 	virtual bool CanSave(VirtualPath const& virtualPath, Variant const& value) const = 0;
-	virtual bool Save(VirtualPath const& virtualPath, Variant const& value) = 0;
+	virtual bool Save(VirtualPath const& virtualPath, Variant const& value)          = 0;
 
 protected:
 	static void BindMethods() {};

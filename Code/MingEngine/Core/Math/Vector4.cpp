@@ -9,7 +9,9 @@ Vector4::Vector4()                     = default;
 Vector4::Vector4(Vector4 const& other) = default;
 Vector4::~Vector4()                    = default;
 
-Vector4::Vector4(float xVal, float yVal, float zVal, float wVal) : x(xVal), y(yVal), z(zVal), w(wVal) {}
+Vector4::Vector4(float xVal, float yVal, float zVal, float wVal) : x(xVal), y(yVal), z(zVal), w(wVal)
+{
+}
 
 bool Vector4::operator==(Vector4 const& compare) const
 {
@@ -31,7 +33,10 @@ Vector4 const Vector4::operator-(Vector4 const& vecToSubtract) const
 	return Vector4(x - vecToSubtract.x, y - vecToSubtract.y, z - vecToSubtract.z, w - vecToSubtract.w);
 }
 
-Vector4 const Vector4::operator-() const { return Vector4(-x, -y, -z, -w); }
+Vector4 const Vector4::operator-() const
+{
+	return Vector4(-x, -y, -z, -w);
+}
 
 Vector4 const Vector4::operator*(float uniformScale) const
 {
@@ -97,12 +102,27 @@ Vector4 const operator*(float uniformScale, Vector4 const& vecToScale)
 		vecToScale.w * uniformScale);
 }
 
-float Vector4::GetLength() const { return sqrtf(GetLengthSquared()); }
+float Vector4::GetLength() const
+{
+	return sqrtf(GetLengthSquared());
+}
 
-float Vector4::GetLengthSquared() const { return x * x + y * y + z * z + w * w; }
+float Vector4::GetLengthSquared() const
+{
+	return x * x + y * y + z * z + w * w;
+}
 
-void Vector4::Normalize() { *this /= GetLength(); }
+void Vector4::Normalize()
+{
+	*this /= GetLength();
+}
 
-Vector4 Vector4::GetNormalized() const { return *this / GetLength(); }
+Vector4 Vector4::GetNormalized() const
+{
+	return *this / GetLength();
+}
 
-float Vector4::DotProduct(Vector4 const& a, Vector4 const& b) { return a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w; }
+float Vector4::DotProduct(Vector4 const& a, Vector4 const& b)
+{
+	return a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w;
+}

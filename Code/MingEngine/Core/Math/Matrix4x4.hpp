@@ -105,6 +105,7 @@ public:
 		Kx, Ky, Kz, Kw,
 		Tx, Ty, Tz, Tw
 	}; // index nicknames
+
 	// clang-format on
 
 	float m_values[16];

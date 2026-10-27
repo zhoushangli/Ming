@@ -23,11 +23,11 @@ private:
 	void ClearRename();
 
 private:
-	char m_filter[64] = {};
-	char m_renameBuffer[256] = {};
-	ObjectID m_renamingNodeID = ObjectID::Invalid;
-	std::string m_originalName;
-	bool m_focusRenameInput = false;
+	char            m_filter[64]        = {};
+	char            m_renameBuffer[256] = {};
+	ObjectID        m_renamingNodeID    = ObjectID::Invalid;
+	std::string     m_originalName;
+	bool            m_focusRenameInput = false;
 	CreateNodePopup m_createNodePopup;
 
 	struct PendingReparent
@@ -41,5 +41,6 @@ private:
 		ObjectID m_childID;
 		ObjectID m_parentID;
 	};
+
 	PendingReparent m_pendingReparent;
 };

@@ -64,6 +64,7 @@ struct GPUOmniLight
 	float   m_attenuation;
 	float   m_padding[3];
 };
+
 static const int kMaxPointLights = 16;
 
 struct GPUSpotLight
@@ -78,6 +79,7 @@ struct GPUSpotLight
 	float   m_spotAttenuation;
 	float   m_padding[2];
 };
+
 static const int kMaxSpotLights = 16;
 
 struct LightConstants
@@ -89,6 +91,7 @@ struct LightConstants
 	GPUOmniLight        m_pointLights[kMaxPointLights];
 	GPUSpotLight        m_spotLights[kMaxSpotLights];
 };
+
 static const int kLightConstantsSlot = 1;
 
 struct CameraConstants
@@ -99,6 +102,7 @@ struct CameraConstants
 	Matrix4x4 m_cameraToWorldTransform;
 	Matrix4x4 m_clipToCameraTransform;
 };
+
 static const int kCameraConstantsSlot = 2;
 
 struct ModelConstants
@@ -106,6 +110,7 @@ struct ModelConstants
 	Matrix4x4 m_modelToWorld;
 	float     m_modelColor[4];
 };
+
 static const int kModelConstantsSlot = 3;
 
 struct PostProcessConstants
@@ -114,6 +119,7 @@ struct PostProcessConstants
 	float   m_cameraNear;
 	float   m_cameraFar;
 };
+
 static const int kPostProcessConstantsSlot = 4;
 
 struct FrameConstants
@@ -122,6 +128,7 @@ struct FrameConstants
 	float m_deltaSeconds;
 	float m_padding[2];
 };
+
 static const int kFrameConstantsSlot = 5;
 
 enum class BuiltinConstantBufferType

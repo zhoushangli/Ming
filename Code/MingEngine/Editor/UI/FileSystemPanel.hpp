@@ -38,10 +38,10 @@ private:
 	void ShowError(std::string error);
 	bool ValidateEntryName(char const* name, std::string& outError) const;
 	bool ValidateName(
-		FileSystem const& fileSystem,
+		FileSystem const&  fileSystem,
 		VirtualPath const& parentVirtualPath,
-		char const* name,
-		std::string& outError,
+		char const*        name,
+		std::string&       outError,
 		VirtualPath const& ignoredVirtualPath = {}) const;
 
 	bool        DoesEntryMatchFilter(FileEntry const& entry, std::string const& lowerFilterText) const;
@@ -50,18 +50,18 @@ private:
 	void MoveEntry(VirtualPath const& sourceVirtualPath, VirtualPath const& targetVirtualPath);
 
 private:
-	char        m_filter[64] = {};
-	char        m_renameBuffer[256] = {};
-	bool        m_wasFocused = false;
-	bool        m_focusRenameInput = false;
-	bool        m_refreshResourceTree = false;
-	VirtualPath m_selectedVirtualPath;
-	VirtualPath m_renamingVirtualPath;
-	VirtualPath m_pendingRenameVirtualPath;
-	std::string m_pendingRenameName;
-	VirtualPath m_directoryToOpen;
-	VirtualPath m_pendingMoveSourceVirtualPath;
-	VirtualPath m_pendingMoveTargetVirtualPath;
+	char              m_filter[64]          = {};
+	char              m_renameBuffer[256]   = {};
+	bool              m_wasFocused          = false;
+	bool              m_focusRenameInput    = false;
+	bool              m_refreshResourceTree = false;
+	VirtualPath       m_selectedVirtualPath;
+	VirtualPath       m_renamingVirtualPath;
+	VirtualPath       m_pendingRenameVirtualPath;
+	std::string       m_pendingRenameName;
+	VirtualPath       m_directoryToOpen;
+	VirtualPath       m_pendingMoveSourceVirtualPath;
+	VirtualPath       m_pendingMoveTargetVirtualPath;
 	CreateFolderPopup m_createFolderPopup;
 	CreateScenePopup  m_createScenePopup;
 	DeleteEntryPopup  m_deleteEntryPopup;

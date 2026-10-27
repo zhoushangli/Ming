@@ -10,7 +10,10 @@ namespace
 std::string const kShaderExtension = ".hlsl";
 }
 
-std::vector<std::string> ShaderResourceLoader::GetSupportedExtensions() const { return { kShaderExtension }; }
+std::vector<std::string> ShaderResourceLoader::GetSupportedExtensions() const
+{
+	return { kShaderExtension };
+}
 
 Ref<Resource> ShaderResourceLoader::Load(VirtualPath const& virtualPath)
 {

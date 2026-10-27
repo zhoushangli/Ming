@@ -57,6 +57,7 @@ public:
 	Vector3 GetWorldVirtualCenter() const;
 
 	void SetHovered(bool isHovered);
+
 	void SetRenderPriority(int renderPriority) { m_renderPriority = renderPriority; }
 
 	bool         IsHovered() const;

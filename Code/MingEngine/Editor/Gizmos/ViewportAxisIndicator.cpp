@@ -90,7 +90,9 @@ ViewportAxisIndicator::ViewportAxisIndicator()
 		sizeof(Vertex));
 }
 
-ViewportAxisIndicator::~ViewportAxisIndicator() {}
+ViewportAxisIndicator::~ViewportAxisIndicator()
+{
+}
 
 void ViewportAxisIndicator::OnNotification(int notification)
 {
@@ -104,6 +106,7 @@ void ViewportAxisIndicator::OnNotification(int notification)
 		RebuildVertexBuffer();
 		break;
 	}
+
 	case Notification_Process:
 	{
 		Camera3D*   editorCamera   = EditorCamera::Get()->GetCamera();
@@ -119,6 +122,7 @@ void ViewportAxisIndicator::OnNotification(int notification)
 			m_center             = center;
 			RebuildVertexBuffer();
 		}
+
 		break;
 	}
 	}
@@ -152,17 +156,29 @@ void ViewportAxisIndicator::RebuildVertexBuffer()
 	m_axises[4] = { Vector2(-yAxis.y, -yAxis.z), -yAxis.x, 4, false };
 	m_axises[5] = { Vector2(-zAxis.y, -zAxis.z), -zAxis.x, 5, false };
 
-	std::sort(m_axises.begin(), m_axises.end(), [](Axis2D const& a, Axis2D const& b) { return a.m_x > b.m_x; });
+	std::sort(
+		m_axises.begin(),
+		m_axises.end(),
+		[](Axis2D const& a, Axis2D const& b)
+		{
+			return a.m_x > b.m_x;
+		});
 
 	for (Axis2D const& axis : m_axises)
 	{
 		Color axisColor = Color::White;
 		if (axis.m_axis == 0 || axis.m_axis == 3)
+		{
 			axisColor = kAxisXColor;
+		}
 		else if (axis.m_axis == 1 || axis.m_axis == 4)
+		{
 			axisColor = kAxisYColor;
+		}
 		else if (axis.m_axis == 2 || axis.m_axis == 5)
+		{
 			axisColor = kAxisZColor;
+		}
 
 		axisColor.a = (unsigned char)RangeMap(axis.m_x, -1.f, 1.f, 255, 100);
 

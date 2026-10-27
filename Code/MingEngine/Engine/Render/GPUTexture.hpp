@@ -21,9 +21,8 @@ private:
 	~GPUTexture();
 
 public:
-	IntVec2            GetDimensions() const { return m_dimensions; }
-	std::string const& GetImageFilePath() const { return m_name; }
-
+	IntVec2                   GetDimensions() const { return m_dimensions; }
+	std::string const&        GetImageFilePath() const { return m_name; }
 	ID3D11ShaderResourceView* GetShaderResourceView() const { return m_shaderResourceView; }
 	ID3D11RenderTargetView*   GetRenderTargetView() const { return m_renderTargetView; }
 	ID3D11DepthStencilView*   GetDepthStencilView() const { return m_depthStencilView; }

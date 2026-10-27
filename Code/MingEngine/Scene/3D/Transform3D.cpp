@@ -75,11 +75,20 @@ void Transform3D::SetMatrix(Matrix4x4 const& transform)
 	m_isInverseMatrixDirty = true;
 }
 
-Vector3 Transform3D::GetPosition() const { return m_position; }
+Vector3 Transform3D::GetPosition() const
+{
+	return m_position;
+}
 
-Vector3 Transform3D::GetScale() const { return m_scale; }
+Vector3 Transform3D::GetScale() const
+{
+	return m_scale;
+}
 
-EulerAngles Transform3D::GetOrientation() const { return m_orientation; }
+EulerAngles Transform3D::GetOrientation() const
+{
+	return m_orientation;
+}
 
 void Transform3D::SetPosition(Vector3 const& position)
 {

@@ -1,6 +1,5 @@
 #pragma once
 
-
 class ManagedGCHandle
 {
 public:
@@ -17,8 +16,7 @@ public:
 
 	~ManagedGCHandle();
 
-	bool IsValid() const { return m_value != nullptr; }
-
+	bool  IsValid() const { return m_value != nullptr; }
 	void* GetValue() const { return m_value; }
 
 	void Release();

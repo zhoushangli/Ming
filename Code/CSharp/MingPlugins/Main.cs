@@ -19,7 +19,10 @@ namespace MingPlugins
         {
             private PluginLoadContext? _context;
             private readonly WeakReference _weakReference;
-            public bool IsLoaded { get; set; }
+            public bool IsLoaded
+            {
+                get; set;
+            }
 
             private ProjectLoadContextHolder(PluginLoadContext context, WeakReference weakReference)
             {
@@ -107,6 +110,7 @@ namespace MingPlugins
 
                 return 0;
             }
+
             catch (Exception exception)
             {
                 Console.Error.WriteLine(exception);
@@ -121,6 +125,7 @@ namespace MingPlugins
             {
                 return Log(ScriptManagerBridge.GetBindingSummary());
             }
+
             catch (Exception)
             {
                 return -1;
@@ -164,11 +169,13 @@ namespace MingPlugins
                 {
                     attributes = File.GetAttributes(path);
                 }
+
                 catch (FileNotFoundException)
                 {
                     Log($"[Error] Project assembly does not exist: {path}");
                     return 1;
                 }
+
                 catch (DirectoryNotFoundException)
                 {
                     Log($"[Error] Project assembly does not exist: {path}");
@@ -217,6 +224,7 @@ namespace MingPlugins
 
                 return 0;
             }
+
             catch (Exception exception)
             {
                 // 6) Clear partial registrations and retain the holder for unload verification
@@ -224,6 +232,7 @@ namespace MingPlugins
                 {
                     s_projectLoadContext?.Unload();
                 }
+
                 catch (Exception cleanupException)
                 {
                     Console.Error.WriteLine(cleanupException);
@@ -234,6 +243,7 @@ namespace MingPlugins
                 {
                     Log($"[Error] Failed to load project assembly: {path}\n{exception}");
                 }
+
                 catch
                 {
                 }
@@ -288,6 +298,7 @@ namespace MingPlugins
                 Log("Project assembly unloaded.");
                 return 0;
             }
+
             catch (Exception exception)
             {
                 // 5) Report failure without propagating logging exceptions
@@ -295,6 +306,7 @@ namespace MingPlugins
                 {
                     Log($"[Error] Failed to unload the project assembly:\n{exception}");
                 }
+
                 catch
                 {
                 }
@@ -319,6 +331,7 @@ namespace MingPlugins
                 // 2) Build the project and forward its diagnostics
                 return MingTools.BuildSystem.BuildProjectSolution(projectPath, message => Log(message));
             }
+
             catch (Exception exception)
             {
                 // 3) Report the error without crossing the native boundary
@@ -326,6 +339,7 @@ namespace MingPlugins
                 {
                     Log($"[Error] Failed to build C# project solution:\n{exception}");
                 }
+
                 catch
                 {
                 }
@@ -354,6 +368,7 @@ namespace MingPlugins
 
                 return 0;
             }
+
             catch (Exception exception)
             {
                 // 4) Report the error without crossing the native boundary
@@ -361,6 +376,7 @@ namespace MingPlugins
                 {
                     Log($"[Error] Failed to ensure C# project files:\n{exception}");
                 }
+
                 catch
                 {
                 }

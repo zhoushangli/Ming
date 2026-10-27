@@ -51,6 +51,9 @@ public:
 	{
 		None,
 		ResourceType,
+		Range,
+		Enum,
+		Path,
 	};
 
 	// UsageFlags indicates how we use the property in the engine
@@ -70,6 +73,7 @@ public:
 
 public:
 	PropertyInfo() = default;
+
 	PropertyInfo(Variant::Type type, std::string name, Hint hint, std::string hintData, UsageFlags usageFlags)
 		: m_type(type), m_name(name), m_hint(hint), m_hintData(hintData), m_usageFlags(usageFlags)
 	{
@@ -79,6 +83,7 @@ public:
 	{
 		return (static_cast<unsigned int>(value) & static_cast<unsigned int>(flag)) != 0;
 	}
+
 	bool              HasUsage(UsageFlags usage) const { return HasFlag(m_usageFlags, usage); }
 	MethodBind const* GetSetter() const { return m_setter; }
 	MethodBind const* GetGetter() const { return m_getter; }
@@ -166,7 +171,8 @@ public:
 		std::string const& setterName,
 		std::string const& getterName);
 
-	static void    SetApiType(ApiType apiType) { m_currentApiType = apiType; }
+	static void SetApiType(ApiType apiType) { m_currentApiType = apiType; }
+
 	static ApiType GetApiType() { return m_currentApiType; }
 
 	// Only for Object class
@@ -230,6 +236,7 @@ public:
 		{
 			return iter->second;
 		}
+
 		return nullptr;
 	}
 
@@ -254,6 +261,7 @@ public:
 			argumentInfo.m_type            = Variant::Type::ObjectPtr;
 			argumentInfo.m_objectClassName = PointeeType::GetStaticClassName();
 		}
+
 		return argumentInfo;
 	}
 

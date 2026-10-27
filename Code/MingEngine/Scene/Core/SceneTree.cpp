@@ -15,7 +15,10 @@
 
 namespace
 {
-Vector3 GetNormalizedColor(Color const& color) { return Vector3(color.r / 255.f, color.g / 255.f, color.b / 255.f); }
+Vector3 GetNormalizedColor(Color const& color)
+{
+	return Vector3(color.r / 255.f, color.g / 255.f, color.b / 255.f);
+}
 } // namespace
 
 SceneTree::SceneTree()
@@ -85,12 +88,12 @@ void SceneTree::FlushPendingNode()
 		Node* previousScene = ObjectDatabase::GetInstance<Node>(m_sceneID);
 		if (previousScene != nullptr && previousScene->GetSceneTree() == this)
 		{
-			m_root->DetachChildImmediately(previousScene);
+			previousScene->GetParent()->DetachChildImmediately(previousScene);
 			previousScene->MoveToSceneTree(nullptr);
 			MemDelete(previousScene);
 		}
 
-		m_root->AddNode(m_pendingScene);
+		GetSceneViewport()->AddNode(m_pendingScene);
 		m_sceneID      = m_pendingScene->GetObjectID();
 		m_pendingScene = nullptr;
 	}
@@ -116,6 +119,7 @@ void SceneTree::FlushPendingNode()
 		{
 			node->m_data.m_parent->DetachChildImmediately(node);
 		}
+
 		node->MoveToSceneTree(nullptr);
 		MemDelete(node);
 	}
@@ -178,10 +182,13 @@ void SceneTree::UpdateScene(float deltaSeconds)
 
 	UpdatePhysics(deltaSeconds);
 	FlushTransformChangedNodes();
-	FlushContainerSort();
+	FlushContainerUpdate();
 }
 
-Node* SceneTree::GetRoot() const { return m_root; }
+Node* SceneTree::GetRoot() const
+{
+	return m_root;
+}
 
 Node* SceneTree::GetScene() const
 {
@@ -207,9 +214,26 @@ void SceneTree::ChangeScene(Node* newSceneNode)
 	m_pendingScene = newSceneNode;
 }
 
-Camera3D* SceneTree::GetWorldCamera() const { return m_root->GetCurrentCamera(); }
+Camera3D* SceneTree::GetWorldCamera() const
+{
+	return GetSceneViewport()->GetCurrentCamera();
+}
 
-float SceneTree::GetDeltaSeconds() const { return m_deltaSeconds; }
+void SceneTree::SetSceneViewport(Viewport* viewport)
+{
+	m_sceneViewportID = viewport != nullptr ? viewport->GetObjectID() : ObjectID::Invalid;
+}
+
+Viewport* SceneTree::GetSceneViewport() const
+{
+	Viewport* viewport = ObjectDatabase::GetInstance<Viewport>(m_sceneViewportID);
+	return viewport != nullptr && viewport->GetSceneTree() == this ? viewport : m_root;
+}
+
+float SceneTree::GetDeltaSeconds() const
+{
+	return m_deltaSeconds;
+}
 
 void SceneTree::QueueContainerSort(ObjectID containerID)
 {
@@ -218,28 +242,28 @@ void SceneTree::QueueContainerSort(ObjectID containerID)
 		return;
 	}
 
-	if (std::find(m_pendingContainerSort.begin(), m_pendingContainerSort.end(), containerID)
-		!= m_pendingContainerSort.end())
+	if (std::find(m_pendingContainerUpdate.begin(), m_pendingContainerUpdate.end(), containerID)
+		!= m_pendingContainerUpdate.end())
 	{
 		return;
 	}
 
-	m_pendingContainerSort.push_back(containerID);
+	m_pendingContainerUpdate.push_back(containerID);
 }
 
-void SceneTree::FlushContainerSort()
+void SceneTree::FlushContainerUpdate()
 {
 	// We do not use swap because we want all the containers to be update in one frame
-	// e.g. 
+	// e.g.
 	// Container A
 	// 	| Container B
 	// 	| Container C
 	// If Container A is dirty, it will also update Container B and C in this loop
 	// instead of update Container B and C in the next frame
-	while (m_pendingContainerSort.size() > 0)
+	while (m_pendingContainerUpdate.size() > 0)
 	{
-		ObjectID containerID = m_pendingContainerSort.back();
-		m_pendingContainerSort.pop_back();
+		ObjectID containerID = m_pendingContainerUpdate.back();
+		m_pendingContainerUpdate.pop_back();
 
 		Container* container = ObjectDatabase::GetInstance<Container>(containerID);
 		if (container != nullptr && container->GetSceneTree() == this)

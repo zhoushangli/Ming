@@ -38,6 +38,9 @@ public:
 	void CanvasItemSetParent(RID item, RID parent);
 	void CanvasItemSetPosition(RID item, Vector2 const& position);
 	void CanvasItemSetVisible(RID item, bool visible);
+	void CanvasItemSetClip(RID item, bool enabled, Vector2 const& size);
+	void CanvasItemSetChildrenClip(RID item, bool enabled, Vector2 const& size);
+	void CanvasItemAddViewportRect(RID item, RID viewport, Rect2 const& rect);
 	void CanvasItemClear(RID item);
 
 	void CanvasItemAddRect(RID item, AABB2 const& rect, Color const& color);
@@ -202,7 +205,8 @@ private:
 	bool PrepareTextureData(TextureData& data, TextureResource const& textureResource);
 
 	void PrepareCanvasLayerRequests(RID layer, RID viewport, ViewportData* viewportData);
-	void PrepareCanvasItemRequests(RID item, RID viewport, ViewportData* viewportData, Vector2 const& parentPosition);
+	void PrepareCanvasItemRequests(RID item, RID viewport, ViewportData* viewportData, Vector2 const& parentPosition,
+		AABB2 const* parentClip = nullptr);
 
 private:
 	Renderer*         m_renderer             = nullptr;

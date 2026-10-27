@@ -8,9 +8,15 @@
 // 1) Copy or steal the payload of the other variant
 // 2) Keep the tag, so a copy always describes the bytes it holds
 // e.g. Copying a Variant holding a String adds one owner to the same text block.
-Variant::Variant(Variant const& other) { CopyFrom(other); }
+Variant::Variant(Variant const& other)
+{
+	CopyFrom(other);
+}
 
-Variant::Variant(Variant&& other) noexcept { MoveFrom(other); }
+Variant::Variant(Variant&& other) noexcept
+{
+	MoveFrom(other);
+}
 
 Variant& Variant::operator=(Variant const& other)
 {
@@ -36,47 +42,104 @@ Variant& Variant::operator=(Variant&& other) noexcept
 	return *this;
 }
 
-Variant::~Variant() { Clear(); }
+Variant::~Variant()
+{
+	Clear();
+}
 
-Variant::Variant(bool value) : m_type(Type::Bool) { m_payload.m_bool = value; }
+Variant::Variant(bool value) : m_type(Type::Bool)
+{
+	m_payload.m_bool = value;
+}
 
-Variant::Variant(int value) : m_type(Type::Int) { m_payload.m_int = value; }
+Variant::Variant(int value) : m_type(Type::Int)
+{
+	m_payload.m_int = value;
+}
 
-Variant::Variant(float value) : m_type(Type::Float) { m_payload.m_float = value; }
+Variant::Variant(float value) : m_type(Type::Float)
+{
+	m_payload.m_float = value;
+}
 
 // Text is stored in place, so the payload owns a String that shares its code points.
 // e.g. Variant("res://A.png") keeps the decoded text alive for as long as this variant lives.
-Variant::Variant(char const* value) : m_type(Type::String) { new (m_payload.m_bytes) String(value); }
+Variant::Variant(char const* value) : m_type(Type::String)
+{
+	new (m_payload.m_bytes) String(value);
+}
 
-Variant::Variant(std::string const& value) : m_type(Type::String) { new (m_payload.m_bytes) String(value); }
+Variant::Variant(std::string const& value) : m_type(Type::String)
+{
+	new (m_payload.m_bytes) String(value);
+}
 
-Variant::Variant(String const& value) : m_type(Type::String) { new (m_payload.m_bytes) String(value); }
+Variant::Variant(String const& value) : m_type(Type::String)
+{
+	new (m_payload.m_bytes) String(value);
+}
 
-Variant::Variant(Vector2 const& value) : m_type(Type::Vector2) { Write(value); }
+Variant::Variant(Vector2 const& value) : m_type(Type::Vector2)
+{
+	Write(value);
+}
 
-Variant::Variant(Vector3 const& value) : m_type(Type::Vector3) { Write(value); }
+Variant::Variant(Vector3 const& value) : m_type(Type::Vector3)
+{
+	Write(value);
+}
 
-Variant::Variant(Vector4 const& value) : m_type(Type::Vector4) { Write(value); }
+Variant::Variant(Vector4 const& value) : m_type(Type::Vector4)
+{
+	Write(value);
+}
 
-Variant::Variant(Color const& value) : m_type(Type::Color) { Write(value); }
+Variant::Variant(Color const& value) : m_type(Type::Color)
+{
+	Write(value);
+}
 
-Variant::Variant(AABB2 const& value) : m_type(Type::AABB2) { Write(value); }
+Variant::Variant(AABB2 const& value) : m_type(Type::AABB2)
+{
+	Write(value);
+}
 
-Variant::Variant(EulerAngles const& value) : m_type(Type::EulerAngles) { Write(value); }
+Variant::Variant(EulerAngles const& value) : m_type(Type::EulerAngles)
+{
+	Write(value);
+}
 
 // These types are wider than the payload, so this variant owns a heap copy of the value.
 // e.g. Variant(Matrix4x4()) owns one Matrix4x4 that ~Variant deletes.
-Variant::Variant(OBB2 const& value) : m_type(Type::OBB2) { m_payload.m_pointer = MemNew<OBB2>(value); }
+Variant::Variant(OBB2 const& value) : m_type(Type::OBB2)
+{
+	m_payload.m_pointer = MemNew<OBB2>(value);
+}
 
-Variant::Variant(Capsule3 const& value) : m_type(Type::Capsule3) { m_payload.m_pointer = MemNew<Capsule3>(value); }
+Variant::Variant(Capsule3 const& value) : m_type(Type::Capsule3)
+{
+	m_payload.m_pointer = MemNew<Capsule3>(value);
+}
 
-Variant::Variant(Matrix4x4 const& value) : m_type(Type::Matrix4x4) { m_payload.m_pointer = MemNew<Matrix4x4>(value); }
+Variant::Variant(Matrix4x4 const& value) : m_type(Type::Matrix4x4)
+{
+	m_payload.m_pointer = MemNew<Matrix4x4>(value);
+}
 
-Variant::Variant(Object* const& value) : m_type(Type::ObjectPtr) { m_payload.m_pointer = value; }
+Variant::Variant(Object* const& value) : m_type(Type::ObjectPtr)
+{
+	m_payload.m_pointer = value;
+}
 
-bool Variant::IsEmpty() const { return m_type == Type::Empty; }
+bool Variant::IsEmpty() const
+{
+	return m_type == Type::Empty;
+}
 
-Variant::Type Variant::GetType() const { return m_type; }
+Variant::Type Variant::GetType() const
+{
+	return m_type;
+}
 
 // 1) Copy the value the other variant holds
 // 2) Adopt the tag of the other variant
@@ -193,12 +256,14 @@ bool Variant::operator==(Variant const& other) const
 		return left.m_center == right.m_center && left.m_iBasisNormal == right.m_iBasisNormal
 			   && left.m_halfDimensions == right.m_halfDimensions;
 	}
+
 	case Type::Capsule3:
 	{
 		Capsule3 const& left  = As<Capsule3>();
 		Capsule3 const& right = other.As<Capsule3>();
 		return left.m_start == right.m_start && left.m_end == right.m_end && left.m_radius == right.m_radius;
 	}
+
 	case Type::EulerAngles:
 	{
 		EulerAngles const& left  = As<EulerAngles>();
@@ -206,6 +271,7 @@ bool Variant::operator==(Variant const& other) const
 		return left.m_yawDegrees == right.m_yawDegrees && left.m_pitchDegrees == right.m_pitchDegrees
 			   && left.m_rollDegrees == right.m_rollDegrees;
 	}
+
 	case Type::Matrix4x4:
 	{
 		float const* left  = As<Matrix4x4>().GetAsFloatArray();
@@ -217,8 +283,10 @@ bool Variant::operator==(Variant const& other) const
 				return false;
 			}
 		}
+
 		return true;
 	}
+
 	case Type::ObjectPtr:
 	{
 		return As<Object*>() == other.As<Object*>();
@@ -228,4 +296,7 @@ bool Variant::operator==(Variant const& other) const
 	return false;
 }
 
-bool Variant::operator!=(Variant const& other) const { return !(*this == other); }
+bool Variant::operator!=(Variant const& other) const
+{
+	return !(*this == other);
+}

@@ -222,7 +222,9 @@ void DebugGizmos::Shutdown()
 }
 
 // — Per-frame —
-void DebugGizmos::BeginFrame() {}
+void DebugGizmos::BeginFrame()
+{
+}
 
 void DebugGizmos::EndFrame()
 {
@@ -233,9 +235,15 @@ void DebugGizmos::EndFrame()
 }
 
 // — Control —
-void DebugGizmos::SetVisible() { s_isVisible = true; }
+void DebugGizmos::SetVisible()
+{
+	s_isVisible = true;
+}
 
-void DebugGizmos::SetHidden() { s_isVisible = false; }
+void DebugGizmos::SetHidden()
+{
+	s_isVisible = false;
+}
 
 void DebugGizmos::Clear()
 {

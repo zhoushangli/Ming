@@ -67,12 +67,17 @@ const uint8_t kDefaultBlackTexture[16] =
 
 //------------------------------------------------------------------------------------------------
 // Lifetime and frame loop
-D3D11RenderBackend::D3D11RenderBackend(RendererServerConfig config) : m_config(config) {}
+D3D11RenderBackend::D3D11RenderBackend(RendererServerConfig config) : m_config(config)
+{
+}
 
-D3D11RenderBackend::~D3D11RenderBackend() {}
+D3D11RenderBackend::~D3D11RenderBackend()
+{
+}
 
 #pragma region Public: Lifetime and frame loop
-void           D3D11RenderBackend::Startup()
+
+void D3D11RenderBackend::Startup()
 {
 	unsigned int deviceFlags = 0;
 #if defined(ENGINE_DEBUG_RENDER)
@@ -128,6 +133,7 @@ void           D3D11RenderBackend::Startup()
 	{
 		ERROR_AND_DIE("Could create render target view for swap chain buffer.");
 	}
+
 	backBuffer->Release();
 
 #pragma endregion
@@ -411,7 +417,9 @@ void D3D11RenderBackend::Shutdown()
 #endif
 }
 
-void D3D11RenderBackend::BeginFrame() {}
+void D3D11RenderBackend::BeginFrame()
+{
+}
 
 void D3D11RenderBackend::EndFrame()
 {
@@ -424,7 +432,9 @@ void D3D11RenderBackend::EndFrame()
 	}
 }
 
-void D3D11RenderBackend::CreateRenderingContext() {}
+void D3D11RenderBackend::CreateRenderingContext()
+{
+}
 
 #pragma endregion
 
@@ -450,11 +460,20 @@ void D3D11RenderBackend::ClearScreen(Color const& clearColor)
 	m_d3dDeviceContext->ClearRenderTargetView(m_d3dRenderTargetView, colorAsFloats);
 }
 
-void D3D11RenderBackend::SetBlendMode(BlendMode blendMode) { m_desiredBlendMode = blendMode; }
+void D3D11RenderBackend::SetBlendMode(BlendMode blendMode)
+{
+	m_desiredBlendMode = blendMode;
+}
 
-void D3D11RenderBackend::SetRasterizerMode(RasterizerMode rasterizerMode) { m_desiredRasterizerMode = rasterizerMode; }
+void D3D11RenderBackend::SetRasterizerMode(RasterizerMode rasterizerMode)
+{
+	m_desiredRasterizerMode = rasterizerMode;
+}
 
-void D3D11RenderBackend::SetDepthMode(DepthMode depthMode) { m_desiredDepthMode = depthMode; }
+void D3D11RenderBackend::SetDepthMode(DepthMode depthMode)
+{
+	m_desiredDepthMode = depthMode;
+}
 
 void D3D11RenderBackend::SetStatesIfChanged()
 {
@@ -545,7 +564,10 @@ void D3D11RenderBackend::DrawIndexedVertexBuffer(VertexBuffer* vertexBuffer, Ind
 
 #pragma region Public: High-level bind helpers used by gameplay/render features
 
-void D3D11RenderBackend::BindTexture(GPUTexture* textureOrNull) { BindTexture(textureOrNull, 0); }
+void D3D11RenderBackend::BindTexture(GPUTexture* textureOrNull)
+{
+	BindTexture(textureOrNull, 0);
+}
 
 void D3D11RenderBackend::BindTexture(GPUTexture* textureOrNull, unsigned int slot)
 {
@@ -894,8 +916,12 @@ bool D3D11RenderBackend::CompileShaderToByteCode(
 			ERR_PRINT(static_cast<char const*>(errorBlob->GetBufferPointer()));
 			errorBlob->Release();
 		}
+
 		if (shaderBlob)
+		{
 			shaderBlob->Release();
+		}
+
 		return false;
 	}
 
@@ -904,7 +930,10 @@ bool D3D11RenderBackend::CompileShaderToByteCode(
 
 	shaderBlob->Release();
 	if (errorBlob)
+	{
 		errorBlob->Release();
+	}
+
 	return true;
 }
 
@@ -1027,9 +1056,15 @@ void D3D11RenderBackend::ResizeBackBuffer(IntVec2 newDimensions)
 	GUARANTEE_OR_DIE(SUCCEEDED(hr), "Could not create resized back buffer RTV.");
 }
 
-ID3D11Device* D3D11RenderBackend::GetD3DDevice() const { return m_d3dDevice; }
+ID3D11Device* D3D11RenderBackend::GetD3DDevice() const
+{
+	return m_d3dDevice;
+}
 
-ID3D11DeviceContext* D3D11RenderBackend::GetD3DDeviceContext() const { return m_d3dDeviceContext; }
+ID3D11DeviceContext* D3D11RenderBackend::GetD3DDeviceContext() const
+{
+	return m_d3dDeviceContext;
+}
 
 void D3D11RenderBackend::ClearRenderTarget(GPUTexture* renderTarget, Color const& clearColor)
 {
@@ -1112,13 +1147,25 @@ void D3D11RenderBackend::BindBackBuffer()
 	m_d3dDeviceContext->OMSetRenderTargets(1, &m_d3dRenderTargetView, nullptr);
 }
 
-bool D3D11RenderBackend::InitImGui() { return ImGui_ImplDX11_Init(m_d3dDevice, m_d3dDeviceContext); }
+bool D3D11RenderBackend::InitImGui()
+{
+	return ImGui_ImplDX11_Init(m_d3dDevice, m_d3dDeviceContext);
+}
 
-void D3D11RenderBackend::ShutdownImGui() { ImGui_ImplDX11_Shutdown(); }
+void D3D11RenderBackend::ShutdownImGui()
+{
+	ImGui_ImplDX11_Shutdown();
+}
 
-void D3D11RenderBackend::BeginImGuiFrame() { ImGui_ImplDX11_NewFrame(); }
+void D3D11RenderBackend::BeginImGuiFrame()
+{
+	ImGui_ImplDX11_NewFrame();
+}
 
-void D3D11RenderBackend::RenderImGui(ImDrawData* drawData) { ImGui_ImplDX11_RenderDrawData(drawData); }
+void D3D11RenderBackend::RenderImGui(ImDrawData* drawData)
+{
+	ImGui_ImplDX11_RenderDrawData(drawData);
+}
 
 ImTextureID D3D11RenderBackend::GetImGuiTextureID(GPUTexture* texture) const
 {

@@ -85,10 +85,14 @@ RID TextServer::CreateFont(std::vector<uint8_t> bytes)
 		m_fontOwner.Free(rid);
 		return RID::Invalid;
 	}
+
 	return rid;
 }
 
-void TextServer::FreeFont(RID font) { m_fontOwner.Free(font); }
+void TextServer::FreeFont(RID font)
+{
+	m_fontOwner.Free(font);
+}
 
 int TextServer::GetGlyphIndex(RID font, char32_t codePoint) const
 {
@@ -152,6 +156,7 @@ TextLine TextServer::GetTextLine(RID font, String const& text, float pixelHeight
 		line.m_glyphs.push_back({ codePoint, glyphIndex, line.m_width, advance });
 		line.m_width += advance;
 	}
+
 	return line;
 }
 

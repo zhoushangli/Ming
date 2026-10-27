@@ -18,8 +18,8 @@ private:
 
 private:
 	char        m_sceneName[256] = {};
-	char        m_rootName[256] = {};
-	bool        m_openRequested = false;
+	char        m_rootName[256]  = {};
+	bool        m_openRequested  = false;
 	bool        m_focusNameInput = false;
 	VirtualPath m_parentVirtualPath;
 	VirtualPath m_selectedVirtualPath;

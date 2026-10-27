@@ -1,4 +1,5 @@
 #include "MingEngine/Editor/EditorCamera.hpp"
+#include "MingEngine/Editor/EditorNode.hpp"
 
 #include "MingEngine/Scene/3D/Camera3D.hpp"
 
@@ -34,13 +35,17 @@ EditorCamera::~EditorCamera()
 	}
 }
 
-EditorCamera* EditorCamera::Get() { return s_instance; }
+EditorCamera* EditorCamera::Get()
+{
+	return s_instance;
+}
 
 void EditorCamera::OnProcess(float deltaSeconds)
 {
 	// PCG editor commands will move to a scene-local world/editor manager.
 
-	bool const shouldReset = g_engine->m_inputSystem->WasKeyJustPressed('H');
+	bool const shouldReset = g_engine->m_inputSystem->WasKeyJustPressed('H')
+        && (EditorNode::Get() == nullptr || !EditorNode::Get()->IsEditingNativeControl());
 	if (shouldReset)
 	{
 		SetLocalPosition(Vector3(0.f, 0.f, 0.f));
@@ -81,6 +86,20 @@ void EditorCamera::OnNotification(int notification)
 
 void EditorCamera::UpdateControlState()
 {
+	if (g_engine->m_imguiSystem == nullptr && EditorNode::Get() != nullptr)
+	{
+		EnterControlState(
+			EditorNode::Get()->IsSceneNavigationActive() ? EditorControlState::FlyThrough
+														 : EditorControlState::Pointer);
+		return;
+	}
+
+	if (EditorNode::Get() != nullptr && EditorNode::Get()->IsEditingNativeControl())
+	{
+		EnterControlState(EditorControlState::Pointer);
+		return;
+	}
+
 	InputSystem*             input = g_engine->m_inputSystem;
 	EditorControlState const desiredState =
 		input->IsKeyDown(KeyCode::RightMouse) ? EditorControlState::FlyThrough : EditorControlState::Pointer;
@@ -127,18 +146,22 @@ void EditorCamera::UpdateFlyThrough(float deltaSeconds)
 	{
 		moveInput.y += 1.f;
 	}
+
 	if (input->IsKeyDown('S'))
 	{
 		moveInput.y -= 1.f;
 	}
+
 	if (input->IsKeyDown('A'))
 	{
 		moveInput.x -= 1.f;
 	}
+
 	if (input->IsKeyDown('D'))
 	{
 		moveInput.x += 1.f;
 	}
+
 	moveInput = moveInput.GetClamped(1.f);
 
 	float verticalInput = 0.f;
@@ -146,10 +169,12 @@ void EditorCamera::UpdateFlyThrough(float deltaSeconds)
 	{
 		verticalInput -= 1.f;
 	}
+
 	if (input->IsKeyDown('C'))
 	{
 		verticalInput += 1.f;
 	}
+
 	verticalInput = GetClamped(verticalInput, -1.f, 1.f);
 
 	Vector3 forward = Vector3(0.f, 0.f, 0.f);
@@ -199,4 +224,7 @@ void EditorCamera::UpdateCameraChild()
 	m_camera->SetLocalOrientation(EulerAngles::Zero);
 }
 
-Camera3D* EditorCamera::GetCamera() const { return m_camera; }
+Camera3D* EditorCamera::GetCamera() const
+{
+	return m_camera;
+}

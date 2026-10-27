@@ -27,7 +27,10 @@ int RandomNumberGenerator::RollRandomIntInRange(int minInclusive, int maxInclusi
 	return minInclusive + std::rand() % range;
 }
 
-float RandomNumberGenerator::RollRandomFloatZeroToOne() { return (float)((float)std::rand() / float(RAND_MAX)); }
+float RandomNumberGenerator::RollRandomFloatZeroToOne()
+{
+	return (float)((float)std::rand() / float(RAND_MAX));
+}
 
 float RandomNumberGenerator::RollRandomFloatInRange(float minInclusive, float maxInclusive)
 {

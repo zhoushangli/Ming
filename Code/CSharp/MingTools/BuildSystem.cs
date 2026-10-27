@@ -58,7 +58,7 @@ public static class BuildSystem
 
         Task<string> standardOutput = process.StandardOutput.ReadToEndAsync();
         Task<string> standardError = process.StandardError.ReadToEndAsync();
-        
+
         process.WaitForExit();
 
         // 4) Forward the build output on the calling thread

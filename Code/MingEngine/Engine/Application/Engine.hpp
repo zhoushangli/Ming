@@ -36,6 +36,7 @@ public:
 	void EndFrame();
 
 	void SetEditorMode(bool enabled) { m_isEditorMode = enabled; }
+
 	bool IsEditorMode() const { return m_isEditorMode; }
 
 public:

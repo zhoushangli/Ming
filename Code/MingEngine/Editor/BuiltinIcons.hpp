@@ -15,7 +15,10 @@ struct IconData
 	uint8_t const* m_data = nullptr;
 	size_t         m_size = 0;
 
-	explicit operator bool() const { return m_data != nullptr; }
+	explicit operator bool() const
+	{
+		return m_data != nullptr;
+	}
 };
 
 namespace Detail
@@ -24171,7 +24174,10 @@ inline IconData Find(std::string_view iconName)
 		begin,
 		end,
 		iconName,
-		[](Detail::IconEntry const& entry, std::string_view value) { return entry.m_name < value; });
+		[](Detail::IconEntry const& entry, std::string_view value)
+		{
+			return entry.m_name < value;
+		});
 
 	if (found == end || found->m_name != iconName)
 	{

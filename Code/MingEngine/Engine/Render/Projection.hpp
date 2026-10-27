@@ -18,9 +18,8 @@ public:
 	Matrix4x4 GetCameraToRenderTransform() const { return m_cameraToRender; }
 	Matrix4x4 GetRenderToClipTransform() const { return m_renderToClip; }
 	Matrix4x4 GetClipToCameraTransform() const { return m_clipToCamera; }
-
-	float GetNearZ() const { return m_nearZ; }
-	float GetFarZ() const { return m_farZ; }
+	float     GetNearZ() const { return m_nearZ; }
+	float     GetFarZ() const { return m_farZ; }
 
 private:
 	Matrix4x4 m_cameraToWorld  = Matrix4x4::Identity;

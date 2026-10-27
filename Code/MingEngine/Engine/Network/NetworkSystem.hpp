@@ -26,6 +26,7 @@ public:
 	};
 
 	NetworkSystem(NetworkSystemConfig const& config) : m_config(config) {}
+
 	virtual ~NetworkSystem() = default;
 
 	virtual void Startup() override;
@@ -47,7 +48,7 @@ public:
 	std::size_t  GetConnectionCount() const { return m_connections.size(); }
 
 private:
-	using SocketHandle = uintptr_t;
+	using SocketHandle                                  = uintptr_t;
 	static constexpr SocketHandle INVALID_SOCKET_HANDLE = ~SocketHandle(0);
 
 	struct NetworkConnection

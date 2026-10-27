@@ -33,6 +33,7 @@ bool IsNumberArray(VariantJson::Json const& json, size_t expectedSize)
 			return false;
 		}
 	}
+
 	return true;
 }
 } // namespace
@@ -55,18 +56,27 @@ bool TrySerialize(Variant const& value, Json& outJson)
 	case Variant::Type::String:
 		outJson = value.As<String>().ToUtf8();
 		return true;
+	case Variant::Type::Vector2:
+	{
+		Vector2 const& vector = value.As<Vector2>();
+		outJson = Json::array({ vector.x, vector.y });
+		return true;
+	}
+
 	case Variant::Type::Vector3:
 	{
 		Vector3 const& vector = value.As<Vector3>();
 		outJson               = Json::array({ vector.x, vector.y, vector.z });
 		return true;
 	}
+
 	case Variant::Type::EulerAngles:
 	{
 		EulerAngles const& angles = value.As<EulerAngles>();
 		outJson                   = Json::array({ angles.m_yawDegrees, angles.m_pitchDegrees, angles.m_rollDegrees });
 		return true;
 	}
+
 	case Variant::Type::Matrix4x4:
 	{
 		outJson             = Json::array();
@@ -75,14 +85,17 @@ bool TrySerialize(Variant const& value, Json& outJson)
 		{
 			outJson.push_back(matrix[index]);
 		}
+
 		return true;
 	}
+
 	case Variant::Type::Color:
 	{
 		Color const& color = value.As<Color>();
 		outJson            = Json::array({ color.r, color.g, color.b, color.a });
 		return true;
 	}
+
 	case Variant::Type::ObjectPtr:
 	{
 		Object* object = value.As<Object*>();
@@ -108,8 +121,10 @@ bool TrySerialize(Variant const& value, Json& outJson)
 			outJson = resourcePath;
 			return true;
 		}
+
 		return false;
 	}
+
 	case Variant::Type::Empty:
 		outJson = nullptr;
 		return true;
@@ -130,6 +145,7 @@ bool TryDeserialize(Json const& json, Variant::Type expectedType, Variant& outVa
 				outValue = Variant(json.get<bool>());
 				return true;
 			}
+
 			break;
 		case Variant::Type::Int:
 			if (json.is_number_integer())
@@ -137,6 +153,7 @@ bool TryDeserialize(Json const& json, Variant::Type expectedType, Variant& outVa
 				outValue = Variant(json.get<int>());
 				return true;
 			}
+
 			break;
 		case Variant::Type::Float:
 			if (json.is_number())
@@ -144,6 +161,7 @@ bool TryDeserialize(Json const& json, Variant::Type expectedType, Variant& outVa
 				outValue = Variant(json.get<float>());
 				return true;
 			}
+
 			break;
 		case Variant::Type::String:
 			if (json.is_string())
@@ -151,6 +169,15 @@ bool TryDeserialize(Json const& json, Variant::Type expectedType, Variant& outVa
 				outValue = Variant(json.get<std::string>());
 				return true;
 			}
+
+			break;
+		case Variant::Type::Vector2:
+			if (IsNumberArray(json, 2))
+			{
+				outValue = Variant(Vector2(json[0].get<float>(), json[1].get<float>()));
+				return true;
+			}
+
 			break;
 		case Variant::Type::Vector3:
 			if (IsNumberArray(json, 3))
@@ -158,6 +185,7 @@ bool TryDeserialize(Json const& json, Variant::Type expectedType, Variant& outVa
 				outValue = Variant(Vector3(json[0].get<float>(), json[1].get<float>(), json[2].get<float>()));
 				return true;
 			}
+
 			break;
 		case Variant::Type::EulerAngles:
 			if (IsNumberArray(json, 3))
@@ -165,6 +193,7 @@ bool TryDeserialize(Json const& json, Variant::Type expectedType, Variant& outVa
 				outValue = Variant(EulerAngles(json[0].get<float>(), json[1].get<float>(), json[2].get<float>()));
 				return true;
 			}
+
 			break;
 		case Variant::Type::Matrix4x4:
 			if (IsNumberArray(json, 16))
@@ -174,9 +203,11 @@ bool TryDeserialize(Json const& json, Variant::Type expectedType, Variant& outVa
 				{
 					matrixValues[index] = json[index].get<float>();
 				}
+
 				outValue = Variant(Matrix4x4(matrixValues));
 				return true;
 			}
+
 			break;
 		case Variant::Type::Color:
 			if (IsNumberArray(json, 4))
@@ -185,6 +216,7 @@ bool TryDeserialize(Json const& json, Variant::Type expectedType, Variant& outVa
 					Color(json[0].get<float>(), json[1].get<float>(), json[2].get<float>(), json[3].get<float>()));
 				return true;
 			}
+
 			break;
 		case Variant::Type::ObjectPtr:
 			if (json.is_null())
@@ -193,6 +225,7 @@ bool TryDeserialize(Json const& json, Variant::Type expectedType, Variant& outVa
 				outValue       = Variant(object);
 				return true;
 			}
+
 			if (json.is_string())
 			{
 				VirtualPath resourcePath;
@@ -200,6 +233,7 @@ bool TryDeserialize(Json const& json, Variant::Type expectedType, Variant& outVa
 				{
 					break;
 				}
+
 				Ref<Resource> resource = ResourceLoader::Load(resourcePath);
 				if (resource.IsValid())
 				{
@@ -207,6 +241,7 @@ bool TryDeserialize(Json const& json, Variant::Type expectedType, Variant& outVa
 					return true;
 				}
 			}
+
 			break;
 		case Variant::Type::Empty:
 			if (json.is_null())
@@ -214,11 +249,13 @@ bool TryDeserialize(Json const& json, Variant::Type expectedType, Variant& outVa
 				outValue = Variant();
 				return true;
 			}
+
 			break;
 		default:
 			break;
 		}
 	}
+
 	catch (std::exception const&)
 	{
 		return false;

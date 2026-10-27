@@ -61,6 +61,9 @@ public:
 
 	SceneTree* GetSceneTree() const;
 
+	Viewport* GetViewport() const { return m_data.m_viewport; }
+	bool      IsQueuedForDeletion() const { return m_data.m_isPendingDestroy; }
+
 	// Hierarchy mutation rules:
 	// 1) AddNode attaches immediately.
 	// 2) DeleteNode deletes detached nodes immediately.

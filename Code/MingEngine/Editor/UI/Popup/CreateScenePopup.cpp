@@ -19,8 +19,14 @@ namespace
 {
 std::string ToLower(std::string text)
 {
-	std::transform(text.begin(), text.end(), text.begin(), [](unsigned char character)
-		{ return static_cast<char>(std::tolower(character)); });
+	std::transform(
+		text.begin(),
+		text.end(),
+		text.begin(),
+		[](unsigned char character)
+		{
+			return static_cast<char>(std::tolower(character));
+		});
 	return text;
 }
 
@@ -31,21 +37,22 @@ bool IsReservedWindowsName(std::string const& name)
 	{
 		return true;
 	}
-	return stem.size() == 4 && (stem.compare(0, 3, "com") == 0 || stem.compare(0, 3, "lpt") == 0)
-		   && stem[3] >= '1' && stem[3] <= '9';
+
+	return stem.size() == 4 && (stem.compare(0, 3, "com") == 0 || stem.compare(0, 3, "lpt") == 0) && stem[3] >= '1'
+		   && stem[3] <= '9';
 }
 
 } // namespace
 
 void CreateScenePopup::Open(VirtualPath const& parentVirtualPath)
 {
-	m_parentVirtualPath = parentVirtualPath;
+	m_parentVirtualPath   = parentVirtualPath;
 	m_selectedVirtualPath = {};
 	m_error.clear();
-	m_sceneName[0]    = '\0';
-	m_rootName[0]     = '\0';
-	m_focusNameInput  = true;
-	m_openRequested   = true;
+	m_sceneName[0]   = '\0';
+	m_rootName[0]    = '\0';
+	m_focusNameInput = true;
+	m_openRequested  = true;
 }
 
 void CreateScenePopup::Render(EditorUIContext& context)
@@ -56,6 +63,7 @@ void CreateScenePopup::Render(EditorUIContext& context)
 		ImGui::OpenPopup(popupId);
 		m_openRequested = false;
 	}
+
 	if (!EditorPopupUtils::BeginModal(
 			popupId,
 			ImVec2(520.f, 0.f),
@@ -72,6 +80,7 @@ void CreateScenePopup::Render(EditorUIContext& context)
 		ImGui::SetKeyboardFocusHere();
 		m_focusNameInput = false;
 	}
+
 	ImGui::SetNextItemWidth(-FLT_MIN);
 	bool const sceneSubmitted = ImGui::InputText(
 		"##CreateSceneName",
@@ -88,30 +97,32 @@ void CreateScenePopup::Render(EditorUIContext& context)
 		sizeof(m_rootName),
 		ImGuiInputTextFlags_EnterReturnsTrue);
 
-	std::string sceneError;
-	std::string rootError;
-	std::string const sceneName = m_sceneName;
-	bool sceneValid = ValidateEntryName(m_sceneName, sceneError);
+	std::string       sceneError;
+	std::string       rootError;
+	std::string const sceneName  = m_sceneName;
+	bool              sceneValid = ValidateEntryName(m_sceneName, sceneError);
 	if (sceneValid && std::filesystem::path(sceneName).has_extension())
 	{
 		sceneValid = false;
 		sceneError = "Scene name must not include an extension.";
 	}
+
 	VirtualPath const sceneVirtualPath = m_parentVirtualPath.Join(sceneName + ".tscn");
 	if (sceneValid && context.m_fileSystem != nullptr && context.m_fileSystem->Exists(sceneVirtualPath))
 	{
 		sceneValid = false;
 		sceneError = "A scene with this name already exists.";
 	}
+
 	if (context.m_fileSystem == nullptr)
 	{
 		sceneValid = false;
 		sceneError = "FileSystem is not available.";
 	}
 
-	std::string const rootName = m_rootName[0] != '\0' ? m_rootName : m_sceneName;
-	bool const rootValid = ValidateEntryName(rootName.c_str(), rootError);
-	bool const isValid   = sceneValid && rootValid;
+	std::string const rootName  = m_rootName[0] != '\0' ? m_rootName : m_sceneName;
+	bool const        rootValid = ValidateEntryName(rootName.c_str(), rootError);
+	bool const        isValid   = sceneValid && rootValid;
 
 	ImGui::PushStyleColor(ImGuiCol_ChildBg, ImGui::GetStyleColorVec4(ImGuiCol_FrameBg));
 	ImGui::BeginChild(
@@ -162,7 +173,8 @@ bool CreateScenePopup::ConsumeSelectedVirtualPath(VirtualPath& outVirtualPath)
 	{
 		return false;
 	}
-	outVirtualPath = std::move(m_selectedVirtualPath);
+
+	outVirtualPath        = std::move(m_selectedVirtualPath);
 	m_selectedVirtualPath = {};
 	return true;
 }
@@ -175,16 +187,19 @@ bool CreateScenePopup::ValidateEntryName(char const* name, std::string& outError
 		outError = "Name cannot be empty.";
 		return false;
 	}
+
 	if (value == "." || value == ".." || value.front() == ' ' || value.back() == ' ' || value.back() == '.')
 	{
 		outError = "Name cannot be '.', '..', or start/end with a space.";
 		return false;
 	}
+
 	if (value.find_first_of("<>:\"/\\|?*") != std::string::npos || IsReservedWindowsName(value))
 	{
 		outError = "Name contains invalid characters or is reserved by Windows.";
 		return false;
 	}
+
 	outError.clear();
 	return true;
 }

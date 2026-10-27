@@ -16,6 +16,7 @@ MathRaycastResult3D GetClosestImpact(MathRaycastResult3D const& resultA, MathRay
 	{
 		return resultB;
 	}
+
 	if (!resultB.m_didImpact)
 	{
 		return resultA;

@@ -159,13 +159,25 @@ uint32_t ReadIndex(uint8_t const* data, int32_t componentType)
 
 } // namespace
 
-std::vector<std::string> GLTFImporter::GetSupportedExtensions() const { return { ".gltf", ".glb" }; }
+std::vector<std::string> GLTFImporter::GetSupportedExtensions() const
+{
+	return { ".gltf", ".glb" };
+}
 
-std::string GLTFImporter::GetVisibleName() const { return "glTF as Mesh"; }
+std::string GLTFImporter::GetVisibleName() const
+{
+	return "glTF as Mesh";
+}
 
-std::string GLTFImporter::GetImportedExtension() const { return "mesh"; }
+std::string GLTFImporter::GetImportedExtension() const
+{
+	return "mesh";
+}
 
-std::vector<ImportOptions> const GLTFImporter::GetImportOptions() const { return kGLTFImportOptions; }
+std::vector<ImportOptions> const GLTFImporter::GetImportOptions() const
+{
+	return kGLTFImportOptions;
+}
 
 Ref<Resource> GLTFImporter::Import(
 	std::unordered_map<std::string, Variant> const& importOptions, VirtualPath const& sourceVirtualPath)
@@ -338,6 +350,7 @@ Ref<Resource> GLTFImporter::Import(
 			{
 				return Ref<Resource>();
 			}
+
 			indices.push_back(localIndex);
 		}
 	}
@@ -378,6 +391,7 @@ Ref<Resource> GLTFImporter::Import(
 		surfaceTool.SetBitangent(vertex.m_bitangent);
 		surfaceTool.AddVertex(vertex.m_position);
 	}
+
 	for (uint32_t index : indices)
 	{
 		surfaceTool.AddIndex(index);

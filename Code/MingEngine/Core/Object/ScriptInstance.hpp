@@ -13,6 +13,7 @@ class ScriptInstance
 {
 public:
 	ScriptInstance() = default;
+
 	virtual ~ScriptInstance() {}
 
 	ScriptInstance(ScriptInstance const&)            = delete;
@@ -20,7 +21,8 @@ public:
 	ScriptInstance(ScriptInstance&&)                 = delete;
 	ScriptInstance& operator=(ScriptInstance&&)      = delete;
 
-	virtual Object*     GetOwner() const { return nullptr; }
+	virtual Object* GetOwner() const { return nullptr; }
+
 	virtual Ref<Script> GetScript() const           = 0;
 	virtual bool        ReloadGCHandle(void* value) = 0;
 

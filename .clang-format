@@ -42,10 +42,21 @@ PointerAlignment: Left
 SpaceBeforeParens: ControlStatements
 
 # include 与空行
-SortIncludes: true
+SortIncludes: Never
 KeepEmptyLinesAtTheStartOfBlocks: false
 MaxEmptyLinesToKeep: 1
 BreakBeforeBraces: Allman
+InsertBraces: true
+AllowShortBlocksOnASingleLine: Never
+AllowShortFunctionsOnASingleLine: InlineOnly
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLambdasOnASingleLine: None
+AllowShortLoopsOnASingleLine: false
+AllowShortEnumsOnASingleLine: false
+SeparateDefinitionBlocks: Leave
+ReflowComments: Never
+BreakStringLiterals: false
+FixNamespaceComments: false
 
 # clang-format 开关（按块 / 按行）
 # 用法：

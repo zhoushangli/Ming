@@ -5,7 +5,9 @@
 class Object;
 
 // Non-Object allocations do not participate in the Object lifecycle.
-inline void PostInitializeHandler(void*) {}
+inline void PostInitializeHandler(void*)
+{
+}
 
 inline bool PreDeleteHandler(void*)
 {

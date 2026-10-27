@@ -19,7 +19,10 @@ void Resource::BindMethods()
 		"GetPath");
 }
 
-String Resource::GetPathString() const { return String(m_virtualPath.GetString()); }
+String Resource::GetPathString() const
+{
+	return String(m_virtualPath.GetString());
+}
 
 void Resource::SetPathString(String const& path)
 {

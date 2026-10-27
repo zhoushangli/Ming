@@ -28,6 +28,7 @@ class MeshInstance3D : public VisualInstance3D
 
 public:
 	MeshInstance3D() = default;
+
 	~MeshInstance3D() override { m_meshResource = nullptr; }
 
 	bool IsEmpty() const;

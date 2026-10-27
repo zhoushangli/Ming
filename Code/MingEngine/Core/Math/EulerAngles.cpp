@@ -176,4 +176,7 @@ bool EulerAngles::operator==(EulerAngles const& compare) const
 		   && m_rollDegrees == compare.m_rollDegrees;
 }
 
-bool EulerAngles::operator!=(EulerAngles const& compare) const { return !(*this == compare); }
+bool EulerAngles::operator!=(EulerAngles const& compare) const
+{
+	return !(*this == compare);
+}

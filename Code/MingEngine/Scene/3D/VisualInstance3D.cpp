@@ -24,25 +24,32 @@ void VisualInstance3D::OnNotification(int notification)
 			server->InstanceSetTransform(m_instanceRID, GetWorldTransform());
 			server->InstanceSetVisible(m_instanceRID, m_isVisible);
 		}
+
 		break;
 	}
+
 	case Notification_ExitTree:
 	{
 		server->InstanceSetScenario(m_instanceRID, RID::Invalid);
 		break;
 	}
+
 	case Notification_TransformChanged:
 	{
 		if (m_instanceRID.IsValid())
 		{
 			server->InstanceSetTransform(m_instanceRID, GetWorldTransform());
 		}
+
 		break;
 	}
 	}
 }
 
-VisualInstance3D::VisualInstance3D() { m_instanceRID = g_engine->m_renderServer->InstanceCreate(); }
+VisualInstance3D::VisualInstance3D()
+{
+	m_instanceRID = g_engine->m_renderServer->InstanceCreate();
+}
 
 VisualInstance3D::~VisualInstance3D()
 {
@@ -64,4 +71,7 @@ void VisualInstance3D::SetVisible(bool visible)
 	}
 }
 
-bool VisualInstance3D::GetVisible() const { return m_isVisible; }
+bool VisualInstance3D::GetVisible() const
+{
+	return m_isVisible;
+}

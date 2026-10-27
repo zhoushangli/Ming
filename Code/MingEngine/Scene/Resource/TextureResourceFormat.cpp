@@ -67,6 +67,7 @@ bool TryParsePrelude(std::string const& prelude, uint32_t& outVersion, size_t& o
 		outHeaderSize = static_cast<size_t>(std::stoull(headerSizeToken.substr(std::strlen(headerSizePrefix))));
 		return true;
 	}
+
 	catch (std::exception const&)
 	{
 		return false;
@@ -144,7 +145,10 @@ bool IsValidTextureData(TextureResource const& texData)
 
 } // namespace
 
-std::vector<std::string> TextureResourceLoader::GetSupportedExtensions() const { return { kTexExtension }; }
+std::vector<std::string> TextureResourceLoader::GetSupportedExtensions() const
+{
+	return { kTexExtension };
+}
 
 Ref<Resource> TextureResourceLoader::Load(VirtualPath const& virtualPath)
 {
@@ -235,6 +239,7 @@ Ref<Resource> TextureResourceLoader::Load(VirtualPath const& virtualPath)
 
 		return textureResource;
 	}
+
 	catch (std::exception const&)
 	{
 		return Ref<Resource>();

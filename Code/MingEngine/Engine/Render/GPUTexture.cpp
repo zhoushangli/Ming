@@ -5,7 +5,9 @@
 
 #include <d3d11.h>
 
-GPUTexture::GPUTexture() {}
+GPUTexture::GPUTexture()
+{
+}
 
 GPUTexture::~GPUTexture()
 {
@@ -47,11 +49,20 @@ void SpriteDefinition::GetUVs(Vector2& out_uvAtMins, Vector2& out_uvAtMaxs) cons
 	out_uvAtMaxs = m_uvAtMaxs;
 }
 
-AABB2 SpriteDefinition::GetUVs() const { return AABB2(m_uvAtMins, m_uvAtMaxs); }
+AABB2 SpriteDefinition::GetUVs() const
+{
+	return AABB2(m_uvAtMins, m_uvAtMaxs);
+}
 
-SpriteSheet const& SpriteDefinition::GetSpriteSheet() const { return m_spriteSheet; }
+SpriteSheet const& SpriteDefinition::GetSpriteSheet() const
+{
+	return m_spriteSheet;
+}
 
-GPUTexture* SpriteDefinition::GetTexture() const { return m_spriteSheet.GetTexture(); }
+GPUTexture* SpriteDefinition::GetTexture() const
+{
+	return m_spriteSheet.GetTexture();
+}
 
 float SpriteDefinition::GetAspect() const
 {
@@ -91,18 +102,30 @@ SpriteSheet::SpriteSheet(GPUTexture* colorTexture, IntVec2 const& dimension)
 	}
 }
 
-GPUTexture* SpriteSheet::GetTexture() const { return m_colorTexture; }
+GPUTexture* SpriteSheet::GetTexture() const
+{
+	return m_colorTexture;
+}
 
-int SpriteSheet::GetNumSprites() const { return static_cast<int>(m_spriteDefs.size()); }
+int SpriteSheet::GetNumSprites() const
+{
+	return static_cast<int>(m_spriteDefs.size());
+}
 
-SpriteDefinition const& SpriteSheet::GetSpriteDef(int spriteIndex) const { return m_spriteDefs[spriteIndex]; }
+SpriteDefinition const& SpriteSheet::GetSpriteDef(int spriteIndex) const
+{
+	return m_spriteDefs[spriteIndex];
+}
 
 void SpriteSheet::GetSpriteUVs(Vector2& out_uvAtMins, Vector2& out_uvAtMaxs, int spriteIndex) const
 {
 	m_spriteDefs[spriteIndex].GetUVs(out_uvAtMins, out_uvAtMaxs);
 }
 
-AABB2 SpriteSheet::GetSpriteUVs(int spriteIndex) const { return m_spriteDefs[spriteIndex].GetUVs(); }
+AABB2 SpriteSheet::GetSpriteUVs(int spriteIndex) const
+{
+	return m_spriteDefs[spriteIndex].GetUVs();
+}
 
 AABB2 SpriteSheet::GetSpriteUVs(IntVec2& spriteCoords) const
 {

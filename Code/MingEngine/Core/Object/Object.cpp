@@ -15,7 +15,11 @@
 std::vector<Object*> ObjectDatabase::m_objectSlots;
 uint32_t             ObjectDatabase::m_nextObjectUID = 1u;
 
-Object::Object() { ObjectDatabase::AddInstance(this); }
+Object::Object()
+{
+	ObjectDatabase::AddInstance(this);
+}
+
 Object::~Object()
 {
 	ReleaseNativeBindingGCHandle();
@@ -42,7 +46,10 @@ bool PreDeleteHandler(Object* object)
 	return object->PreDelete();
 }
 
-void Object::PostInitialize() { Notification(Notification_PostInitialize, false); }
+void Object::PostInitialize()
+{
+	Notification(Notification_PostInitialize, false);
+}
 
 bool Object::PreDelete()
 {
@@ -62,7 +69,10 @@ bool Object::PreDelete()
 	return true;
 }
 
-Object::BindMethodsFunc Object::GetBindMethodsFunc() { return &Object::BindMethods; }
+Object::BindMethodsFunc Object::GetBindMethodsFunc()
+{
+	return &Object::BindMethods;
+}
 
 void Object::BindMethods()
 {
@@ -81,11 +91,20 @@ void Object::BindMethods()
 		"GetScript");
 }
 
-std::string Object::GetStaticClassName() { return "Object"; }
+std::string Object::GetStaticClassName()
+{
+	return "Object";
+}
 
-std::string Object::GetClassName() const { return "Object"; }
+std::string Object::GetClassName() const
+{
+	return "Object";
+}
 
-ObjectID Object::GetObjectID() const { return m_id; }
+ObjectID Object::GetObjectID() const
+{
+	return m_id;
+}
 
 void Object::InitializeClass()
 {
@@ -111,7 +130,10 @@ void Object::Notification(int notification, bool reverse)
 	}
 }
 
-void Object::Free() { MemDelete(this); }
+void Object::Free()
+{
+	MemDelete(this);
+}
 
 void Object::NotificationForward(int notification)
 {
@@ -128,6 +150,7 @@ void Object::NotificationBackward(int notification)
 	{
 		m_scriptInstance->Notification(notification, true);
 	}
+
 	NotificationBackwardV(notification);
 }
 

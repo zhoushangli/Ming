@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|x64">
@@ -150,6 +150,7 @@
     <ClCompile Include="Core\XmlUtils.cpp" />
     <ClCompile Include="Editor\EditorCamera.cpp" />
     <ClCompile Include="Editor\EditorNode.cpp" />
+    <ClCompile Include="Editor\EditorUndoRedo.cpp" />
     <ClCompile Include="Editor\UI\Popup\CreateNodePopup.cpp" />
     <ClCompile Include="Editor\UI\Popup\CreateFolderPopup.cpp" />
     <ClCompile Include="Editor\UI\Popup\CreateScenePopup.cpp" />
@@ -242,9 +243,12 @@
     <ClCompile Include="Scene\GUI\Container.cpp" />
     <ClCompile Include="Scene\GUI\BoxContainer.cpp" />
     <ClCompile Include="Scene\GUI\Control.cpp" />
+    <ClCompile Include="Scene\GUI\BaseButton.cpp" />
+    <ClCompile Include="Scene\GUI\Button.cpp" />
     <ClCompile Include="Scene\GUI\GUIDefinitions.cpp" />
     <ClCompile Include="Scene\GUI\HBoxContainer.cpp" />
     <ClCompile Include="Scene\GUI\Label.cpp" />
+    <ClCompile Include="Scene\GUI\LineEdit.cpp" />
     <ClCompile Include="Scene\GUI\MarginContainer.cpp" />
     <ClCompile Include="Scene\GUI\NinePatchRect.cpp" />
     <ClCompile Include="Scene\GUI\PanelContainer.cpp" />
@@ -312,6 +316,7 @@
     <ClInclude Include="Core\Render\RID.hpp" />
     <ClInclude Include="Core\String.hpp" />
     <ClInclude Include="Editor\EditorData.hpp" />
+    <ClInclude Include="Editor\EditorUndoRedo.hpp" />
     <ClInclude Include="Editor\Icons\BuiltinIcons.hpp" />
     <ClInclude Include="Engine\Application\App.hpp" />
     <ClInclude Include="Core\Clock.hpp" />
@@ -452,9 +457,12 @@
     <ClInclude Include="Scene\GUI\Container.hpp" />
     <ClInclude Include="Scene\GUI\BoxContainer.hpp" />
     <ClInclude Include="Scene\GUI\Control.hpp" />
+    <ClInclude Include="Scene\GUI\BaseButton.hpp" />
+    <ClInclude Include="Scene\GUI\Button.hpp" />
     <ClInclude Include="Scene\GUI\GUIDefinitions.hpp" />
     <ClInclude Include="Scene\GUI\HBoxContainer.hpp" />
     <ClInclude Include="Scene\GUI\Label.hpp" />
+    <ClInclude Include="Scene\GUI\LineEdit.hpp" />
     <ClInclude Include="Scene\GUI\MarginContainer.hpp" />
     <ClInclude Include="Scene\GUI\NinePatchRect.hpp" />
     <ClInclude Include="Scene\GUI\PanelContainer.hpp" />
@@ -511,4 +519,27 @@
   </ItemGroup>
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
+  <ItemGroup>
+    <ClCompile Include="Scene\GUI\SpinBox.cpp" />
+    <ClInclude Include="Scene\GUI\SpinBox.hpp" />
+    <ClCompile Include="Scene\GUI\OptionButton.cpp" />
+    <ClInclude Include="Scene\GUI\OptionButton.hpp" />
+    <ClCompile Include="Scene\GUI\PopupPanel.cpp" />
+    <ClInclude Include="Scene\GUI\PopupPanel.hpp" />
+    <ClCompile Include="Scene\GUI\ScrollContainer.cpp" />
+    <ClInclude Include="Scene\GUI\ScrollContainer.hpp" />
+    <ClCompile Include="Editor\UI\EditorControlHost.cpp" />
+    <ClInclude Include="Editor\UI\EditorControlHost.hpp" />
+    <ClInclude Include="Editor\UI\InspectorPropertyVec2.hpp" />
+    <ClInclude Include="Editor\UI\InspectorPropertyEnum.hpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Scene\GUI\Tree.cpp" />
+    <ClInclude Include="Scene\GUI\Tree.hpp" />
+    <ClCompile Include="Scene\GUI\TabContainer.cpp" />
+    <ClInclude Include="Scene\GUI\TabContainer.hpp" />
+    <ClCompile Include="Scene\GUI\SubViewportContainer.cpp" />
+    <ClInclude Include="Scene\GUI\SubViewportContainer.hpp" />
+    <ClCompile Include="Editor\UI\EditorUINative.cpp" />
+  </ItemGroup>
 </Project>

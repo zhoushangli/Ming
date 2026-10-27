@@ -18,6 +18,7 @@ bool Collider3D::RemoveCollideCallback(size_t callbackId)
 		m_collideCallbacks.erase(iter);
 		return true;
 	}
+
 	return false;
 }
 

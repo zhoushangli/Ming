@@ -8,9 +8,9 @@
 
 void DeleteEntryPopup::Open(VirtualPath const& targetVirtualPath, bool isDirectory)
 {
-	m_targetVirtualPath = targetVirtualPath;
-	m_parentVirtualPath = targetVirtualPath.GetParent();
-	m_isDirectory       = isDirectory;
+	m_targetVirtualPath   = targetVirtualPath;
+	m_parentVirtualPath   = targetVirtualPath.GetParent();
+	m_isDirectory         = isDirectory;
 	m_selectedVirtualPath = {};
 	m_error.clear();
 	m_openRequested = true;
@@ -24,6 +24,7 @@ void DeleteEntryPopup::Render(EditorUIContext& context)
 		ImGui::OpenPopup(popupId);
 		m_openRequested = false;
 	}
+
 	if (!EditorPopupUtils::BeginModal(
 			popupId,
 			ImVec2(520.f, 0.f),
@@ -40,7 +41,7 @@ void DeleteEntryPopup::Render(EditorUIContext& context)
 		ImGuiChildFlags_Borders | ImGuiChildFlags_AutoResizeY | ImGuiChildFlags_AlwaysAutoResize);
 	ImGui::TextWrapped(
 		m_isDirectory ? "The folder and all of its contents will be permanently deleted."
-						  : "The file will be permanently deleted.");
+					  : "The file will be permanently deleted.");
 	ImGui::TextColored(ImVec4(0.9f, 0.55f, 0.2f, 1.f), "This action does not use the Recycle Bin.");
 	ImGui::EndChild();
 	ImGui::PopStyleColor();
@@ -74,7 +75,8 @@ bool DeleteEntryPopup::ConsumeSelectedVirtualPath(VirtualPath& outVirtualPath)
 	{
 		return false;
 	}
-	outVirtualPath = std::move(m_selectedVirtualPath);
+
+	outVirtualPath        = std::move(m_selectedVirtualPath);
 	m_selectedVirtualPath = {};
 	return true;
 }

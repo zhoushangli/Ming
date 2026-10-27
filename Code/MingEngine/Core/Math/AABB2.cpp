@@ -8,22 +8,38 @@ const AABB2 AABB2::Zero          = AABB2(0.f, 0.f, 0.f, 0.f);
 const AABB2 AABB2::Unit          = AABB2(0.f, 0.f, 1.f, 1.f);
 const AABB2 AABB2::kCenteredUnit = AABB2(-0.5f, -0.5f, 0.5f, 0.5f);
 
-AABB2::AABB2(const Vector2& mins, const Vector2& maxs) : m_mins(mins), m_maxs(maxs) {}
+AABB2::AABB2(const Vector2& mins, const Vector2& maxs) : m_mins(mins), m_maxs(maxs)
+{
+}
 
-AABB2::AABB2(float minX, float minY, float maxX, float maxY) : m_mins(minX, minY), m_maxs(maxX, maxY) {}
+AABB2::AABB2(float minX, float minY, float maxX, float maxY) : m_mins(minX, minY), m_maxs(maxX, maxY)
+{
+}
 
 bool AABB2::IsPointInside(const Vector2& point) const
 {
 	return (point.x >= m_mins.x && point.x <= m_maxs.x && point.y >= m_mins.y && point.y <= m_maxs.y);
 }
 
-float const AABB2::GetWidth() const { return m_maxs.x - m_mins.x; }
+float const AABB2::GetWidth() const
+{
+	return m_maxs.x - m_mins.x;
+}
 
-float const AABB2::GetHeight() const { return m_maxs.y - m_mins.y; }
+float const AABB2::GetHeight() const
+{
+	return m_maxs.y - m_mins.y;
+}
 
-Vector2 const AABB2::GetCenter() const { return (m_mins + m_maxs) * 0.5f; }
+Vector2 const AABB2::GetCenter() const
+{
+	return (m_mins + m_maxs) * 0.5f;
+}
 
-Vector2 const AABB2::GetDimensions() const { return m_maxs - m_mins; }
+Vector2 const AABB2::GetDimensions() const
+{
+	return m_maxs - m_mins;
+}
 
 Vector2 const AABB2::GetNearestPoint(const Vector2& point) const
 {
@@ -62,7 +78,10 @@ void AABB2::SetDimensions(const Vector2& newDimensions)
 	m_maxs         = m_mins + newDimensions;
 }
 
-void AABB2::Shrink(float uniformAmount) { Shrink(uniformAmount, uniformAmount); }
+void AABB2::Shrink(float uniformAmount)
+{
+	Shrink(uniformAmount, uniformAmount);
+}
 
 void AABB2::Shrink(float amountX, float amountY)
 {
@@ -113,5 +132,6 @@ AABB2& AABB2::operator=(const AABB2& other)
 		m_mins = other.m_mins;
 		m_maxs = other.m_maxs;
 	}
+
 	return *this;
 }

@@ -73,6 +73,7 @@ CSharpInstance::~CSharpInstance()
 	{
 		g_engine->m_scriptSystem->UnregisterScriptOwner(m_owner->GetObjectID());
 	}
+
 	if (m_gcHandle.IsValid())
 	{
 		m_gcHandle.Release();
@@ -121,6 +122,7 @@ bool CSharpInstance::ReloadGCHandle(void* value)
 	{
 		m_gcHandle.Release();
 	}
+
 	m_gcHandle = ManagedGCHandle(value);
 	return true;
 }

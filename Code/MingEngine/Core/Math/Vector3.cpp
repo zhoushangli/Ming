@@ -18,13 +18,19 @@ const Vector3 Vector3::Down     = Vector3(0.f, 0.f, -1.f);
 
 Vector3::Vector3() = default;
 
-Vector3::Vector3(float initialX, float initialY, float initialZ) : x(initialX), y(initialY), z(initialZ) {}
+Vector3::Vector3(float initialX, float initialY, float initialZ) : x(initialX), y(initialY), z(initialZ)
+{
+}
 
 Vector3::Vector3(Vector3 const& other) = default;
 
-Vector3::Vector3(float initialX, float initialY) : x(initialX), y(initialY), z(0.f) {}
+Vector3::Vector3(float initialX, float initialY) : x(initialX), y(initialY), z(0.f)
+{
+}
 
-Vector3::Vector3(Vector2 const& other) : x(other.x), y(other.y), z(0.f) {}
+Vector3::Vector3(Vector2 const& other) : x(other.x), y(other.y), z(0.f)
+{
+}
 
 Vector3::~Vector3() = default;
 
@@ -38,7 +44,10 @@ Vector3 const Vector3::operator-(Vector3 const& vecToSubtract) const
 	return Vector3(x - vecToSubtract.x, y - vecToSubtract.y, z - vecToSubtract.z);
 }
 
-Vector3 const Vector3::operator-() const { return Vector3(-x, -y, -z); }
+Vector3 const Vector3::operator-() const
+{
+	return Vector3(-x, -y, -z);
+}
 
 Vector3 const Vector3::operator*(float uniformScale) const
 {
@@ -95,21 +104,45 @@ Vector3 const operator*(float uniformScale, Vector3 const& vecToScale)
 	return Vector3(vecToScale.x * uniformScale, vecToScale.y * uniformScale, vecToScale.z * uniformScale);
 }
 
-bool Vector3::operator==(Vector3 const& compare) const { return x == compare.x && y == compare.y && z == compare.z; }
+bool Vector3::operator==(Vector3 const& compare) const
+{
+	return x == compare.x && y == compare.y && z == compare.z;
+}
 
-bool Vector3::operator!=(Vector3 const& compare) const { return x != compare.x || y != compare.y || z != compare.z; }
+bool Vector3::operator!=(Vector3 const& compare) const
+{
+	return x != compare.x || y != compare.y || z != compare.z;
+}
 
-float Vector3::GetLength() const { return sqrtf(x * x + y * y + z * z); }
+float Vector3::GetLength() const
+{
+	return sqrtf(x * x + y * y + z * z);
+}
 
-float Vector3::GetLengthXY() const { return sqrtf(x * x + y * y); }
+float Vector3::GetLengthXY() const
+{
+	return sqrtf(x * x + y * y);
+}
 
-float Vector3::GetLengthSquared() const { return x * x + y * y + z * z; }
+float Vector3::GetLengthSquared() const
+{
+	return x * x + y * y + z * z;
+}
 
-float Vector3::GetLengthXYSquared() const { return x * x + y * y; }
+float Vector3::GetLengthXYSquared() const
+{
+	return x * x + y * y;
+}
 
-float Vector3::GetOrientationAboutZDegrees() const { return ConvertRadiansToDegrees(atan2f(y, x)); }
+float Vector3::GetOrientationAboutZDegrees() const
+{
+	return ConvertRadiansToDegrees(atan2f(y, x));
+}
 
-float Vector3::GetOrientationAboutZRadians() const { return atan2f(y, x); }
+float Vector3::GetOrientationAboutZRadians() const
+{
+	return atan2f(y, x);
+}
 
 Vector3 Vector3::GetRotatedAboutZDegrees(float degrees) const
 {
@@ -177,7 +210,10 @@ Vector3 Vector3::MakeFromPolarDegrees(float pitchDegrees, float yawDegrees, floa
 	return MakeFromPolarRadians(pitchRadians, yawRadians, length);
 }
 
-float Vector3::DotProduct(Vector3 const& a, Vector3 const& b) { return a.x * b.x + a.y * b.y + a.z * b.z; }
+float Vector3::DotProduct(Vector3 const& a, Vector3 const& b)
+{
+	return a.x * b.x + a.y * b.y + a.z * b.z;
+}
 
 Vector3 Vector3::CrossProduct(Vector3 const& a, Vector3 const& b)
 {

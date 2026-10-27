@@ -10,7 +10,8 @@ class FontResource : public Resource
 public:
 	~FontResource() override;
 
-	RID  GetFontRID() const { return m_fontRID; }
+	RID GetFontRID() const { return m_fontRID; }
+
 	void SetFontRID(RID rid);
 	bool CopyFrom(Resource&& other) override;
 

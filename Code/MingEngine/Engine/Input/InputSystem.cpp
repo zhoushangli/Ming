@@ -7,9 +7,13 @@
 
 using namespace Math;
 
-InputSystem::InputSystem() : InputSystem(InputSystemConfig{}) {}
+InputSystem::InputSystem() : InputSystem(InputSystemConfig{})
+{
+}
 
-InputSystem::InputSystem(InputSystemConfig config) : m_config(config) {}
+InputSystem::InputSystem(InputSystemConfig config) : m_config(config)
+{
+}
 
 void InputSystem::BindMethods()
 {
@@ -159,7 +163,9 @@ void InputSystem::BindMethods()
 	BIND_ENUM(CursorMode, COUNT);
 }
 
-InputSystem::~InputSystem() {}
+InputSystem::~InputSystem()
+{
+}
 
 void InputSystem::Startup()
 {
@@ -175,6 +181,7 @@ void InputSystem::Shutdown()
 {
 	m_keyboardState = {};
 	m_pendingInputEvents.clear();
+	m_inputEventCallback = {};
 }
 
 void InputSystem::BeginFrame()
@@ -194,7 +201,13 @@ void InputSystem::BeginFrame()
 	{
 		// 3) Apply each event before observing its resulting state
 		ProcessInputEvent(event);
-		
+
+		auto callback = m_inputEventCallback;
+		if (callback)
+		{
+			callback(event);
+		}
+
 		if (debugInputEvents)
 		{
 			std::string message = "Input ";
@@ -264,6 +277,7 @@ void InputSystem::BeginFrame()
 				IntVec2 const delta = GetCursorClientDelta();
 				message += Stringf(" | frameDelta=(%d,%d)", delta.x, delta.y);
 			}
+
 			if (event.m_type == InputEventType::Key || event.m_type == InputEventType::MouseButton
 				|| event.m_type == InputEventType::MouseMotion || event.m_type == InputEventType::MouseWheel)
 			{
@@ -285,6 +299,7 @@ void InputSystem::EndFrame()
 		state.m_justReleased  = false;
 		state.m_repeatCount   = 0;
 	}
+
 	for (XboxController& controller : m_controllers)
 	{
 		controller.EndFrame();
@@ -344,12 +359,14 @@ void InputSystem::ProcessInputEvent(InputEvent const& event)
 		{
 			keyCode = ToKeyCode(KeyCode::RightMouse);
 		}
+
 		break;
 	case InputEventType::MouseMotion:
 		if (m_windowFocused && m_cursorMode == CursorMode::FPS)
 		{
 			m_cursorClientDelta += event.m_relative;
 		}
+
 		break;
 	case InputEventType::Text:
 		if (event.m_codepoint <= 255)
@@ -358,6 +375,7 @@ void InputSystem::ProcessInputEvent(InputEvent const& event)
 			args.SetValue("asKey", std::to_string(event.m_codepoint));
 			FireEvent("CharInput", args);
 		}
+
 		break;
 	case InputEventType::WindowFocus:
 		m_windowFocused = event.m_focused;
@@ -365,6 +383,7 @@ void InputSystem::ProcessInputEvent(InputEvent const& event)
 		{
 			ClearAllInputStates();
 		}
+
 		break;
 	case InputEventType::ControllerConnection:
 	case InputEventType::ControllerButton:
@@ -374,6 +393,7 @@ void InputSystem::ProcessInputEvent(InputEvent const& event)
 		{
 			return;
 		}
+
 		XboxController& controller = m_controllers[event.m_controllerID];
 		if (event.m_type == InputEventType::ControllerConnection)
 		{
@@ -385,8 +405,10 @@ void InputSystem::ProcessInputEvent(InputEvent const& event)
 			{
 				controller.m_isConnected = true;
 			}
+
 			return;
 		}
+
 		if (!m_windowFocused || !controller.m_isConnected)
 		{
 			return;
@@ -398,8 +420,9 @@ void InputSystem::ProcessInputEvent(InputEvent const& event)
 			{
 				return;
 			}
+
 			KeyButtonState& button = controller.m_buttons[event.m_controllerButton];
-			button.m_justPressed  |= event.m_pressed && !button.m_isDown;
+			button.m_justPressed |= event.m_pressed && !button.m_isDown;
 			button.m_justReleased |= !event.m_pressed && button.m_isDown;
 			button.m_isDown = event.m_pressed;
 		}
@@ -431,8 +454,10 @@ void InputSystem::ProcessInputEvent(InputEvent const& event)
 				break;
 			}
 		}
+
 		break;
 	}
+
 	default:
 		break;
 	}
@@ -492,11 +517,13 @@ void InputSystem::SetCursorMode(CursorMode cursorMode)
 	{
 		return;
 	}
+
 	if (m_cursorMode != cursorMode)
 	{
 		m_cursorMode = cursorMode;
 		ClearCursorDelta();
 	}
+
 	if (g_engine != nullptr && g_engine->m_windowSystem != nullptr)
 	{
 		g_engine->m_windowSystem->SetCursorMode(cursorMode);
@@ -518,7 +545,10 @@ IntVec2 InputSystem::GetCursorClientDelta() const
 	return IntVec2(static_cast<int>(m_cursorClientDelta.x), static_cast<int>(m_cursorClientDelta.y));
 }
 
-IntVec2 InputSystem::GetCursorClientPosition() const { return m_cursorClientPosition; }
+IntVec2 InputSystem::GetCursorClientPosition() const
+{
+	return m_cursorClientPosition;
+}
 
 Vector2 InputSystem::GetCursorNormalizedPosition() const
 {
@@ -545,9 +575,20 @@ Vector2 InputSystem::GetCursorNormalizedPosition() const
 	return Vector2(u, v);
 }
 
-void InputSystem::ClearCursorDelta() { m_cursorClientDelta = Vector2::Zero; }
+void InputSystem::ClearCursorDelta()
+{
+	m_cursorClientDelta = Vector2::Zero;
+}
 
-void InputSystem::AddInputEvent(InputEvent const& event) { m_pendingInputEvents.push_back(event); }
+void InputSystem::SetInputEventCallback(std::function<void(InputEvent const&)> callback)
+{
+	m_inputEventCallback = std::move(callback);
+}
+
+void InputSystem::AddInputEvent(InputEvent const& event)
+{
+	m_pendingInputEvents.push_back(event);
+}
 
 std::vector<InputEvent> InputSystem::GetInputEvents()
 {

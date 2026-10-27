@@ -151,6 +151,7 @@ Ref<Resource> PackedSceneLoader::Load(VirtualPath const& virtualPath)
 		packedScene->SetName(virtualPath.GetFileName());
 		return packedScene;
 	}
+
 	catch (std::exception const& error)
 	{
 		ERR_PRINT(Stringf("PackedScene: failed to load '%s': %s\n", virtualPath.CStr(), error.what()));
@@ -210,9 +211,11 @@ bool PackedSceneSaver::Save(VirtualPath const& virtualPath, Variant const& value
 		{
 			return false;
 		}
+
 		packedScene->SetVirtualPath(virtualPath);
 		return true;
 	}
+
 	catch (std::exception const& error)
 	{
 		ERR_PRINT(Stringf("PackedScene: failed to save '%s': %s\n", virtualPath.CStr(), error.what()));

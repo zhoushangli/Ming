@@ -389,6 +389,7 @@ bool ResourceImporter::EnsureImported(VirtualPath const& sourceVirtualPath)
 	{
 		importer = FindImporterByClassName(sourceVirtualPath, importerClassName);
 	}
+
 	if (!importer.IsValid())
 	{
 		importer      = importers.front();
@@ -469,6 +470,12 @@ bool ResourceFormatImporter::CanImport(VirtualPath const& virtualPath) const
 	return false;
 }
 
-std::string ResourceFormatImporter::GetImportedExtension() const { return kDefaultImportedExtension; }
+std::string ResourceFormatImporter::GetImportedExtension() const
+{
+	return kDefaultImportedExtension;
+}
 
-std::vector<ImportOptions> const ResourceFormatImporter::GetImportOptions() const { return {}; }
+std::vector<ImportOptions> const ResourceFormatImporter::GetImportOptions() const
+{
+	return {};
+}

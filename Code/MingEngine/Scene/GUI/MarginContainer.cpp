@@ -41,6 +41,7 @@ void MarginContainer::OnNotification(int notification)
 				UpdateChildRect(control, rect);
 			}
 		}
+
 		break;
 	}
 	}

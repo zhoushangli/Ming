@@ -13,7 +13,9 @@ PostProcessPass::PostProcessPass(std::string const& passName, VirtualPath const&
 	m_postProcessShaderResource = ResourceLoader::Load(postProcessShaderVirtualPath);
 }
 
-PostProcessPass::~PostProcessPass() {}
+PostProcessPass::~PostProcessPass()
+{
+}
 
 bool PostProcessPass::HasCustomOutput() const
 {
@@ -31,14 +33,23 @@ bool PostProcessPass::HasCustomInputs() const
 			return true;
 		}
 	}
+
 	return false;
 }
 
-void PostProcessChain::AddPass(PostProcessPass const& pass) { m_passes.push_back(pass); }
+void PostProcessChain::AddPass(PostProcessPass const& pass)
+{
+	m_passes.push_back(pass);
+}
 
-PostProcessChain::PostProcessChain() { IntVec2 const fullResolution = g_engine->m_windowSystem->GetClientDimensions(); }
+PostProcessChain::PostProcessChain()
+{
+	IntVec2 const fullResolution = g_engine->m_windowSystem->GetClientDimensions();
+}
 
-PostProcessChain::~PostProcessChain() {}
+PostProcessChain::~PostProcessChain()
+{
+}
 
 GPUTexture* PostProcessChain::Render(RenderBackend& renderer, PostProcessContext const& context)
 {
@@ -131,8 +142,11 @@ GPUTexture* PostProcessChain::Render(RenderBackend& renderer, PostProcessContext
 		renderer.UnbindAllShaderResourceViews();
 
 		if (usesMainChainColor)
+		{
 			mainChainColorTexture = outputTexture;
+		}
 	}
+
 	return mainChainColorTexture;
 }
 

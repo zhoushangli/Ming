@@ -52,9 +52,15 @@ void ClassDatabase::ApplyArgumentNames(
 	}
 }
 
-void ClassDatabase::Startup() { m_classInfoMap.clear(); }
+void ClassDatabase::Startup()
+{
+	m_classInfoMap.clear();
+}
 
-void ClassDatabase::Shutdown() { m_classInfoMap.clear(); }
+void ClassDatabase::Shutdown()
+{
+	m_classInfoMap.clear();
+}
 
 Object* ClassDatabase::CreateInstance(std::string const& className)
 {
@@ -63,6 +69,7 @@ Object* ClassDatabase::CreateInstance(std::string const& className)
 	{
 		return nullptr;
 	}
+
 	return constructor();
 }
 
@@ -97,6 +104,7 @@ std::vector<ClassInfo const*> ClassDatabase::GetRegisteredClasses(bool sortByInh
 	{
 		classes.push_back(&classEntry.second);
 	}
+
 	if (sortByInheritanceDepth)
 	{
 		size_t const maxDepth = classes.size();
@@ -109,6 +117,7 @@ std::vector<ClassInfo const*> ClassDatabase::GetRegisteredClasses(bool sortByInh
 				{
 					return false;
 				}
+
 				if (right == nullptr)
 				{
 					return true;
@@ -124,6 +133,7 @@ std::vector<ClassInfo const*> ClassDatabase::GetRegisteredClasses(bool sortByInh
 				return left->m_className < right->m_className;
 			});
 	}
+
 	return classes;
 }
 
@@ -142,6 +152,7 @@ bool ClassDatabase::IsSubclassOf(std::string const& className, std::string const
 		{
 			return false;
 		}
+
 		currentClassName = classInfo->m_parentClassName;
 	}
 
@@ -246,6 +257,7 @@ std::vector<GlobalNamespaceInfo const*> ClassDatabase::GetRegisteredGlobalNamesp
 	{
 		globalNamespaces.push_back(&namespaceEntry.second);
 	}
+
 	return globalNamespaces;
 }
 

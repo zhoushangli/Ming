@@ -23,7 +23,10 @@ std::string ToLower(std::string const& text)
 		lowerText.begin(),
 		lowerText.end(),
 		lowerText.begin(),
-		[](unsigned char character) { return static_cast<char>(std::tolower(character)); });
+		[](unsigned char character)
+		{
+			return static_cast<char>(std::tolower(character));
+		});
 	return lowerText;
 }
 
@@ -33,7 +36,9 @@ bool ContainsCaseInsensitive(std::string const& text, std::string const& filterT
 }
 } // namespace
 
-ScenePanel::ScenePanel() : EditorPanel("Scene") {}
+ScenePanel::ScenePanel() : EditorPanel("Scene")
+{
+}
 
 void ScenePanel::OnRender(EditorUIContext& context)
 {
@@ -71,6 +76,7 @@ void ScenePanel::OnRender(EditorUIContext& context)
 		{
 			m_createNodePopup.Open(ObjectID::Invalid);
 		}
+
 		ImGui::EndPopup();
 	}
 
@@ -97,6 +103,7 @@ void ScenePanel::OnRender(EditorUIContext& context)
 			{
 				ClearRename();
 			}
+
 			EditorNode::Get()->MarkSceneDirty();
 			selectedNode->QueueFree();
 		}
@@ -111,6 +118,7 @@ void ScenePanel::OnRender(EditorUIContext& context)
 		{
 			childNode = nullptr;
 		}
+
 		if (parentNode != nullptr && parentNode->GetSceneTree() != context.m_sceneTree)
 		{
 			parentNode = nullptr;
@@ -120,6 +128,7 @@ void ScenePanel::OnRender(EditorUIContext& context)
 		{
 			childNode->Reparent(parentNode, true);
 		}
+
 		m_pendingReparent.Clear();
 	}
 
@@ -149,10 +158,12 @@ void ScenePanel::RenderNode(Node* node, std::string const& filterText, EditorUIC
 	{
 		flags |= ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
 	}
+
 	if (!filterText.empty())
 	{
 		flags |= ImGuiTreeNodeFlags_DefaultOpen;
 	}
+
 	if (context.m_selection != nullptr && context.m_selection->GetSelected() == node->GetObjectID())
 	{
 		flags |= ImGuiTreeNodeFlags_Selected;
@@ -177,10 +188,12 @@ void ScenePanel::RenderNode(Node* node, std::string const& filterText, EditorUIC
 		{
 			context.m_selection->SetSelected(nodeID);
 		}
+
 		if (ImGui::MenuItem("Add Child Node..."))
 		{
 			m_createNodePopup.Open(nodeID);
 		}
+
 		ImGui::EndPopup();
 	}
 
@@ -279,6 +292,7 @@ void ScenePanel::RenderNode(Node* node, std::string const& filterText, EditorUIC
 		{
 			RenderNode(child, filterText, context);
 		}
+
 		ImGui::TreePop();
 	}
 
@@ -298,6 +312,7 @@ bool ScenePanel::DoesNodeMatchFilter(Node const* node, std::string const& filter
 	{
 		return true;
 	}
+
 	for (Node const* child : node->GetChildren())
 	{
 		if (DoesNodeMatchFilter(child, filterText))
@@ -305,6 +320,7 @@ bool ScenePanel::DoesNodeMatchFilter(Node const* node, std::string const& filter
 			return true;
 		}
 	}
+
 	return false;
 }
 
@@ -327,6 +343,7 @@ void ScenePanel::FinishRename(Node* node, bool apply)
 	{
 		node->SetName(apply ? m_renameBuffer : m_originalName);
 	}
+
 	ClearRename();
 }
 

@@ -15,7 +15,10 @@ DebugObject::~DebugObject()
 	vertexBuffer = nullptr;
 }
 
-DebugObject::DebugObject(DebugObject&& other) noexcept { *this = std::move(other); }
+DebugObject::DebugObject(DebugObject&& other) noexcept
+{
+	*this = std::move(other);
+}
 
 DebugObject& DebugObject::operator=(DebugObject&& other) noexcept
 {
@@ -155,6 +158,7 @@ void DebugObject::UpdateRenderData(Renderer& renderer, BitmapFont* font, int mes
 		{
 			vertex.m_color = GetCurrentColor();
 		}
+
 		UploadVertices(renderer, coloredVerts);
 		return;
 	}
@@ -185,6 +189,7 @@ void DebugObject::UpdateRenderData(Renderer& renderer, BitmapFont* font, int mes
 			float const top        = (cellHeight + 2.f) * static_cast<float>(messageLine);
 			box                    = AABB2(Vector2(10.f, top), Vector2(1000.f, top + cellHeight));
 		}
+
 		// Reflect the UI box into BitmapFont's Y-up space, then reflect its vertices back.
 		// e.g. UI Y bounds [10,30] become font Y bounds [-30,-10]
 		AABB2 const fontBox(Vector2(box.m_mins.x, -box.m_maxs.y), Vector2(box.m_maxs.x, -box.m_mins.y));
@@ -233,10 +238,12 @@ RenderRequest DebugObject::SubmitRenderRequest() const
 	default:
 		break;
 	}
+
 	request.m_samplerMode = m_texture != nullptr ? SamplerMode::BILINEAR_CLAMP : SamplerMode::POINT_CLAMP;
 	if (m_texture != nullptr)
 	{
 		request.m_textures[0] = m_texture;
 	}
+
 	return request;
 }

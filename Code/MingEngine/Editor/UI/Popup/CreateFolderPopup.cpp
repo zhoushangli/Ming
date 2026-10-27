@@ -15,8 +15,14 @@ namespace
 {
 std::string ToLower(std::string text)
 {
-	std::transform(text.begin(), text.end(), text.begin(), [](unsigned char character)
-		{ return static_cast<char>(std::tolower(character)); });
+	std::transform(
+		text.begin(),
+		text.end(),
+		text.begin(),
+		[](unsigned char character)
+		{
+			return static_cast<char>(std::tolower(character));
+		});
 	return text;
 }
 
@@ -27,15 +33,16 @@ bool IsReservedWindowsName(std::string const& name)
 	{
 		return true;
 	}
-	return stem.size() == 4 && (stem.compare(0, 3, "com") == 0 || stem.compare(0, 3, "lpt") == 0)
-		   && stem[3] >= '1' && stem[3] <= '9';
+
+	return stem.size() == 4 && (stem.compare(0, 3, "com") == 0 || stem.compare(0, 3, "lpt") == 0) && stem[3] >= '1'
+		   && stem[3] <= '9';
 }
 
 } // namespace
 
 void CreateFolderPopup::Open(VirtualPath const& parentVirtualPath)
 {
-	m_parentVirtualPath = parentVirtualPath;
+	m_parentVirtualPath   = parentVirtualPath;
 	m_selectedVirtualPath = {};
 	m_error.clear();
 	strcpy_s(m_name, "New Folder");
@@ -67,6 +74,7 @@ void CreateFolderPopup::Render(EditorUIContext& context)
 		ImGui::SetKeyboardFocusHere();
 		m_focusNameInput = false;
 	}
+
 	ImGui::SetNextItemWidth(-FLT_MIN);
 	bool const submitted = ImGui::InputText(
 		"##CreateFolderName",
@@ -75,7 +83,7 @@ void CreateFolderPopup::Render(EditorUIContext& context)
 		ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll);
 
 	std::string validationError;
-	bool const isValid = ValidateName(context, validationError);
+	bool const  isValid = ValidateName(context, validationError);
 	ImGui::PushStyleColor(ImGuiCol_ChildBg, ImGui::GetStyleColorVec4(ImGuiCol_FrameBg));
 	ImGui::BeginChild("##CreateFolderValidation", ImVec2(0.f, 42.f), true);
 	ImGui::TextColored(
@@ -113,7 +121,8 @@ bool CreateFolderPopup::ConsumeSelectedVirtualPath(VirtualPath& outVirtualPath)
 	{
 		return false;
 	}
-	outVirtualPath = std::move(m_selectedVirtualPath);
+
+	outVirtualPath        = std::move(m_selectedVirtualPath);
 	m_selectedVirtualPath = {};
 	return true;
 }
@@ -126,26 +135,31 @@ bool CreateFolderPopup::ValidateName(EditorUIContext const& context, std::string
 		outError = "Name cannot be empty.";
 		return false;
 	}
+
 	if (value == "." || value == ".." || value.front() == ' ' || value.back() == ' ' || value.back() == '.')
 	{
 		outError = "Name cannot be '.', '..', or start/end with a space.";
 		return false;
 	}
+
 	if (value.find_first_of("<>:\"/\\|?*") != std::string::npos || IsReservedWindowsName(value))
 	{
 		outError = "Name contains invalid characters or is reserved by Windows.";
 		return false;
 	}
+
 	if (context.m_fileSystem == nullptr)
 	{
 		outError = "FileSystem is not available.";
 		return false;
 	}
+
 	if (context.m_fileSystem->Exists(m_parentVirtualPath.Join(value)))
 	{
 		outError = "An entry with this name already exists.";
 		return false;
 	}
+
 	outError.clear();
 	return true;
 }

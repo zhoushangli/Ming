@@ -336,6 +336,7 @@ std::string GenerateClassMethod(MethodInfo const& methodInfo, NativeCallInfo con
 			returnExpression =
 				"(" + GetPublicCSharpType(methodInfo.m_returnInfo, nativeCall.m_returnType) + ")" + returnExpression;
 		}
+
 		methodCall = FormatTypeExpression(nativeCall.m_returnType.m_csOutExpression, std::string(), returnExpression);
 	}
 
@@ -408,6 +409,7 @@ std::string GenerateMethodNameClass(
 
 		methodNames += BuildMethodNameEntry(classInfo.m_className, methodInfo.m_name);
 	}
+
 	for (MethodInfo const& virtualMethodInfo : classInfo.m_virtualMethods)
 	{
 		methodNames += BuildMethodNameEntry(classInfo.m_className, virtualMethodInfo.m_name);
@@ -466,6 +468,7 @@ std::string GenerateMingClassMethodDispatch(
 			dispatchMethods.emplace_back(&methodInfo);
 		}
 	}
+
 	for (MethodInfo const& virtualMethodInfo : classInfo.m_virtualMethods)
 	{
 		dispatchMethods.emplace_back(&virtualMethodInfo);
@@ -487,6 +490,7 @@ std::string GenerateMingClassMethodDispatch(
 		{
 			hasConditions += " ||\n\t\t\t";
 		}
+
 		hasConditions += "methodNameStr == MethodName." + methodInfo->m_name;
 	}
 
@@ -527,6 +531,7 @@ std::string GenerateNativeCallFunction(NativeCallInfo const& nativeCall)
 		{
 			argumentPointers += ", ";
 		}
+
 		argumentPointers += FormatTypeExpression(argumentTypeInfo.m_ptrCallArgument, argumentName);
 	}
 
@@ -539,11 +544,13 @@ std::string GenerateNativeCallFunction(NativeCallInfo const& nativeCall)
 		{
 			returnValueDeclaration += "using ";
 		}
+
 		returnValueDeclaration += nativeCall.m_returnType.m_ptrCallType + " ret";
 		if (nativeCall.m_returnType.m_disposableReturn || nativeCall.m_returnType.m_defaultInitializeReturn)
 		{
 			returnValueDeclaration += " = default";
 		}
+
 		returnValueDeclaration += ";\n\n";
 	}
 
@@ -908,6 +915,7 @@ bool CSharpScriptGenerator::GenerateCSharpBindings(std::filesystem::path const& 
 			{
 				return false;
 			}
+
 			continue;
 		}
 
@@ -917,6 +925,7 @@ bool CSharpScriptGenerator::GenerateCSharpBindings(std::filesystem::path const& 
 			return false;
 		}
 	}
+
 	if (errorCode)
 	{
 		return false;

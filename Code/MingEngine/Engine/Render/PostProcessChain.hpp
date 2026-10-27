@@ -15,6 +15,7 @@ struct OutputTextureRef
 {
 public:
 	OutputTextureRef(std::string const& name) : m_name(name) {};
+
 	bool IsValid() const { return m_name != "Undefined"; }
 
 public:
@@ -25,6 +26,7 @@ struct InputTextureRef
 {
 public:
 	InputTextureRef(std::string const& name, int slot) : m_name(name), m_slot(slot) {};
+
 	bool IsValid() const { return m_name != "Undefined" && m_slot != -1; }
 
 public:

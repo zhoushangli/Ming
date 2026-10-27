@@ -29,17 +29,32 @@ FloatRange& FloatRange::operator=(const FloatRange& other)
 		m_min = other.m_min;
 		m_max = other.m_max;
 	}
+
 	return *this;
 }
 
-bool FloatRange::operator==(const FloatRange& other) const { return m_min == other.m_min && m_max == other.m_max; }
+bool FloatRange::operator==(const FloatRange& other) const
+{
+	return m_min == other.m_min && m_max == other.m_max;
+}
 
-bool FloatRange::operator!=(const FloatRange& other) const { return !(*this == other); }
+bool FloatRange::operator!=(const FloatRange& other) const
+{
+	return !(*this == other);
+}
 
 // Methods
-bool FloatRange::IsOnRange(float value) const { return value >= m_min && value <= m_max; }
+bool FloatRange::IsOnRange(float value) const
+{
+	return value >= m_min && value <= m_max;
+}
 
-bool FloatRange::IsOverlap(const FloatRange& other) const { return (m_min < other.m_max) && (other.m_min < m_max); }
+bool FloatRange::IsOverlap(const FloatRange& other) const
+{
+	return (m_min < other.m_max) && (other.m_min < m_max);
+}
 
-float FloatRange::GetRandomInRange() const { return RandomNumberGenerator::Get().RollRandomFloatInRange(m_min, m_max); }
-
+float FloatRange::GetRandomInRange() const
+{
+	return RandomNumberGenerator::Get().RollRandomFloatInRange(m_min, m_max);
+}

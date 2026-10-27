@@ -10,19 +10,19 @@
 // Otherwise the second window will overwrite the first window's image
 class Window : public Viewport
 {
-    MCLASS(Window, Viewport);
+	MCLASS(Window, Viewport);
 
 public:
-    Window();
+	Window();
+	void OnInputEvent(InputEvent const& event);
 
 protected:
-    static void BindMethods() {}
-    
-    void OnNotification(int notification);
+	static void BindMethods() {}
 
-    bool OnWindowResized(EventArgs& args);
+	void OnNotification(int notification);
 
+	bool OnWindowResized(EventArgs& args);
 
 private:
-    EventConnectionID m_windowResizedEventID = 0;
+	EventConnectionID m_windowResizedEventID = 0;
 };

@@ -27,7 +27,10 @@ std::string ToLower(std::string text)
 		text.begin(),
 		text.end(),
 		text.begin(),
-		[](unsigned char character) { return static_cast<char>(std::tolower(character)); });
+		[](unsigned char character)
+		{
+			return static_cast<char>(std::tolower(character));
+		});
 	return text;
 }
 
@@ -38,6 +41,7 @@ bool IsReservedWindowsName(std::string const& name)
 	{
 		return true;
 	}
+
 	return stem.size() == 4 && (stem.compare(0, 3, "com") == 0 || stem.compare(0, 3, "lpt") == 0) && stem[3] >= '1'
 		   && stem[3] <= '9';
 }
@@ -48,6 +52,7 @@ FileEntry const* FindEntry(FileEntry const& entry, VirtualPath const& virtualPat
 	{
 		return &entry;
 	}
+
 	for (std::unique_ptr<FileEntry> const& child : entry.GetChildren())
 	{
 		if (FileEntry const* found = FindEntry(*child, virtualPath))
@@ -55,14 +60,20 @@ FileEntry const* FindEntry(FileEntry const& entry, VirtualPath const& virtualPat
 			return found;
 		}
 	}
+
 	return nullptr;
 }
 
 } // namespace
 
-FileSystemPanel::FileSystemPanel() : EditorPanel("FileSystem") {}
+FileSystemPanel::FileSystemPanel() : EditorPanel("FileSystem")
+{
+}
 
-VirtualPath const& FileSystemPanel::GetSelectedVirtualPath() const { return m_selectedVirtualPath; }
+VirtualPath const& FileSystemPanel::GetSelectedVirtualPath() const
+{
+	return m_selectedVirtualPath;
+}
 
 void FileSystemPanel::OnRender(EditorUIContext& context)
 {
@@ -98,6 +109,7 @@ void FileSystemPanel::OnRender(EditorUIContext& context)
 		ImGui::End();
 		return;
 	}
+
 	if (openSelected)
 	{
 		if (FileEntry const* selectedEntry = FindEntry(*rootEntry, m_selectedVirtualPath))
@@ -118,6 +130,7 @@ void FileSystemPanel::OnRender(EditorUIContext& context)
 			BeginDelete(*selectedEntry);
 		}
 	}
+
 	if (isFocused && !ImGui::IsAnyItemActive() && ImGui::IsKeyPressed(ImGuiKey_F2) && !m_renamingVirtualPath.IsValid()
 		&& m_selectedVirtualPath.IsValid() && !m_selectedVirtualPath.IsRoot())
 	{
@@ -126,6 +139,7 @@ void FileSystemPanel::OnRender(EditorUIContext& context)
 			BeginRename(*selectedEntry);
 		}
 	}
+
 	RenderBackgroundContextMenu(context);
 
 	ImGui::EndChild();
@@ -144,6 +158,7 @@ void FileSystemPanel::OnRender(EditorUIContext& context)
 		{
 			ShowError(std::move(error));
 		}
+
 		m_pendingRenameVirtualPath = {};
 		m_pendingRenameName.clear();
 	}
@@ -152,8 +167,8 @@ void FileSystemPanel::OnRender(EditorUIContext& context)
 	{
 		VirtualPath newVirtualPath;
 		std::string error;
-		if (context.m_fileSystem->Move(
-				m_pendingMoveSourceVirtualPath, m_pendingMoveTargetVirtualPath, newVirtualPath, error))
+		if (context.m_fileSystem
+				->Move(m_pendingMoveSourceVirtualPath, m_pendingMoveTargetVirtualPath, newVirtualPath, error))
 		{
 			context.m_fileSystem->ScanResourceTree();
 			m_selectedVirtualPath = newVirtualPath;
@@ -162,6 +177,7 @@ void FileSystemPanel::OnRender(EditorUIContext& context)
 		{
 			ShowError(std::move(error));
 		}
+
 		m_pendingMoveSourceVirtualPath = {};
 		m_pendingMoveTargetVirtualPath = {};
 	}
@@ -189,7 +205,9 @@ void FileSystemPanel::RenderEntry(FileEntry const& entry, std::string const& low
 		entry.GetChildren().begin(),
 		entry.GetChildren().end(),
 		[this, &lowerFilterText](std::unique_ptr<FileEntry> const& child)
-		{ return DoesEntryMatchFilter(*child, lowerFilterText); });
+		{
+			return DoesEntryMatchFilter(*child, lowerFilterText);
+		});
 
 	ImGuiTreeNodeFlags flags =
 		ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick | ImGuiTreeNodeFlags_SpanAvailWidth;
@@ -197,14 +215,17 @@ void FileSystemPanel::RenderEntry(FileEntry const& entry, std::string const& low
 	{
 		flags |= ImGuiTreeNodeFlags_DefaultOpen;
 	}
+
 	if (!entry.IsDirectory() || !hasVisibleChildren)
 	{
 		flags |= ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
 	}
+
 	if (!lowerFilterText.empty())
 	{
 		flags |= ImGuiTreeNodeFlags_DefaultOpen;
 	}
+
 	if (m_selectedVirtualPath == entry.GetVirtualPath())
 	{
 		flags |= ImGuiTreeNodeFlags_Selected;
@@ -216,6 +237,7 @@ void FileSystemPanel::RenderEntry(FileEntry const& entry, std::string const& low
 		ImGui::SetNextItemOpen(true, ImGuiCond_Always);
 		m_directoryToOpen = {};
 	}
+
 	bool const   isOpen = ImGui::TreeNodeEx(entry.IsDirectory() ? "##Directory" : "##File", flags);
 	ImVec2 const rowMin = ImGui::GetItemRectMin();
 	ImVec2 const rowMax = ImGui::GetItemRectMax();
@@ -223,10 +245,12 @@ void FileSystemPanel::RenderEntry(FileEntry const& entry, std::string const& low
 	{
 		m_selectedVirtualPath = entry.GetVirtualPath();
 	}
+
 	if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
 	{
 		OpenFile(entry, context);
 	}
+
 	RenderItemContextMenu(entry, context);
 	bool const isRenaming = m_renamingVirtualPath == entry.GetVirtualPath();
 
@@ -248,6 +272,7 @@ void FileSystemPanel::RenderEntry(FileEntry const& entry, std::string const& low
 			ImGui::SetKeyboardFocusHere();
 			m_focusRenameInput = false;
 		}
+
 		bool const submitted = ImGui::InputText(
 			"##FileName",
 			m_renameBuffer,
@@ -282,8 +307,8 @@ void FileSystemPanel::RenderEntry(FileEntry const& entry, std::string const& low
 			EditorDragDrop& dragDrop = EditorNode::Get()->m_dragDrop;
 			VirtualPath     draggedVirtualPath;
 			bool const      canMove = dragDrop.TryGetData(draggedVirtualPath) && !draggedVirtualPath.IsRoot()
-				&& draggedVirtualPath != entry.GetVirtualPath()
-				&& draggedVirtualPath.GetParent() != entry.GetVirtualPath();
+									  && draggedVirtualPath != entry.GetVirtualPath()
+									  && draggedVirtualPath.GetParent() != entry.GetVirtualPath();
 			if (canMove)
 			{
 				dragDrop.AllowDrop();
@@ -292,6 +317,7 @@ void FileSystemPanel::RenderEntry(FileEntry const& entry, std::string const& low
 					MoveEntry(draggedVirtualPath, entry.GetVirtualPath());
 				}
 			}
+
 			ImGui::EndDragDropTarget();
 		}
 
@@ -336,6 +362,7 @@ void FileSystemPanel::RenderItemContextMenu(FileEntry const& entry, EditorUICont
 	{
 		OpenFile(entry, context);
 	}
+
 	ImGui::Separator();
 	if (ImGui::BeginMenu("Create New"))
 	{
@@ -343,42 +370,52 @@ void FileSystemPanel::RenderItemContextMenu(FileEntry const& entry, EditorUICont
 		{
 			BeginCreateFolder(createBase);
 		}
+
 		if (ImGui::MenuItem("Scene..."))
 		{
 			BeginCreateScene(createBase);
 		}
+
 		ImGui::EndMenu();
 	}
+
 	ImGui::Separator();
 	if (ImGui::MenuItem("Copy Path"))
 	{
 		ImGui::SetClipboardText(entry.GetVirtualPath().CStr());
 	}
+
 	if (ImGui::MenuItem("Copy Absolute Path"))
 	{
 		ImGui::SetClipboardText(entry.GetPhysicalPath().lexically_normal().string().c_str());
 	}
+
 	if (ImGui::MenuItem("Rename...", nullptr, false, !isRoot))
 	{
 		BeginRename(entry);
 	}
+
 	if (ImGui::MenuItem("Duplicate...", nullptr, false, !isRoot) && context.m_fileSystem != nullptr)
 	{
 		DuplicateEntry(entry, *context.m_fileSystem);
 	}
+
 	if (ImGui::MenuItem("Delete", nullptr, false, !isRoot))
 	{
 		BeginDelete(entry);
 	}
+
 	ImGui::Separator();
 	if (entry.IsDirectory() && ImGui::MenuItem("Open in Terminal"))
 	{
 		OpenInTerminal(entry.GetPhysicalPath());
 	}
+
 	if (ImGui::MenuItem("Open in File Manager"))
 	{
 		OpenInFileManager(entry.GetPhysicalPath(), !entry.IsDirectory());
 	}
+
 	ImGui::EndPopup();
 }
 
@@ -395,19 +432,23 @@ void FileSystemPanel::RenderBackgroundContextMenu(EditorUIContext& context)
 	{
 		BeginCreateFolder("res://");
 	}
+
 	if (ImGui::MenuItem("New Scene..."))
 	{
 		BeginCreateScene("res://");
 	}
+
 	ImGui::Separator();
 	if (ImGui::MenuItem("Open in Terminal"))
 	{
 		OpenInTerminal(context.m_fileSystem->GetResourceRoot());
 	}
+
 	if (ImGui::MenuItem("Open in File Manager"))
 	{
 		OpenInFileManager(context.m_fileSystem->GetResourceRoot(), false);
 	}
+
 	ImGui::EndPopup();
 }
 
@@ -493,6 +534,7 @@ void FileSystemPanel::DuplicateEntry(FileEntry const& entry, FileSystem& fileSys
 		ShowError(std::move(error));
 		return;
 	}
+
 	m_selectedVirtualPath = duplicateVirtualPath;
 	m_refreshResourceTree = true;
 }
@@ -507,6 +549,7 @@ void FileSystemPanel::OpenInTerminal(std::filesystem::path const& path)
 		escapedDirectory.insert(position, 1, L'\'');
 		position += 2;
 	}
+
 	std::wstring const parameters = L"-NoExit -Command Set-Location -LiteralPath '" + escapedDirectory + L"'";
 	HINSTANCE const    result =
 		ShellExecuteW(nullptr, L"open", L"powershell.exe", parameters.c_str(), directory.c_str(), SW_SHOWNORMAL);
@@ -544,16 +587,19 @@ bool FileSystemPanel::ValidateEntryName(char const* name, std::string& outError)
 		outError = "Name cannot be empty.";
 		return false;
 	}
+
 	if (value == "." || value == ".." || value.front() == ' ' || value.back() == ' ' || value.back() == '.')
 	{
 		outError = "Name cannot be '.', '..', or start/end with a space.";
 		return false;
 	}
+
 	if (value.find_first_of("<>:\"/\\|?*") != std::string::npos || IsReservedWindowsName(value))
 	{
 		outError = "Name contains invalid characters or is reserved by Windows.";
 		return false;
 	}
+
 	outError.clear();
 	return true;
 }
@@ -570,17 +616,20 @@ bool FileSystemPanel::ValidateName(
 	{
 		return false;
 	}
+
 	VirtualPath const candidate = parentVirtualPath.Join(value);
 	if (candidate == ignoredVirtualPath)
 	{
 		outError = "Name has not changed.";
 		return false;
 	}
+
 	if (fileSystem.Exists(candidate))
 	{
 		outError = "An entry with this name already exists.";
 		return false;
 	}
+
 	outError.clear();
 	return true;
 }
@@ -620,22 +669,27 @@ char const* FileSystemPanel::GetIconNameForPath(std::filesystem::path const& pat
 	{
 		return "PackedScene";
 	}
+
 	if (extension == ".cs")
 	{
 		return "CSharpScript";
 	}
+
 	if (extension == ".png" || extension == ".jpg" || extension == ".jpeg" || extension == ".svg")
 	{
 		return "Texture2D";
 	}
+
 	if (extension == ".fbx" || extension == ".obj" || extension == ".glb" || extension == ".gltf")
 	{
 		return "Mesh";
 	}
+
 	if (extension == ".wav" || extension == ".mp3" || extension == ".ogg")
 	{
 		return "AudioStream";
 	}
+
 	if (extension == ".shader" || extension == ".hlsl")
 	{
 		return "Shader";

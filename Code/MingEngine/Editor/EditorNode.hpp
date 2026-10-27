@@ -3,6 +3,7 @@
 #include "MingEngine/Core/Math/Vector2.hpp"
 #include "MingEngine/Core/Object/ObjectID.hpp"
 #include "MingEngine/Editor/EditorData.hpp"
+#include "MingEngine/Editor/EditorUndoRedo.hpp"
 #include "MingEngine/Editor/UI/EditorUIContext.hpp"
 #include "MingEngine/Scene/Core/Node.hpp"
 
@@ -35,6 +36,7 @@ public:
 	static constexpr char const* PayloadType = "EDITOR_DRAG";
 
 	void BeginFrame() { m_dropAllowed = false; }
+
 	void EndFrame(bool isDragging)
 	{
 		if (!isDragging)
@@ -49,6 +51,7 @@ public:
 		m_virtualPath = {};
 		m_nodeID      = nodeID;
 	}
+
 	void SetDragData(VirtualPath const& virtualPath)
 	{
 		m_type        = Type::FileSystemEntry;
@@ -66,6 +69,7 @@ public:
 		outNodeID = m_nodeID;
 		return true;
 	}
+
 	bool TryGetData(VirtualPath& outVirtualPath) const
 	{
 		if (m_type != Type::FileSystemEntry || !m_virtualPath.IsValid())
@@ -78,6 +82,7 @@ public:
 	}
 
 	void AllowDrop() { m_dropAllowed = true; }
+
 	bool IsDropAllowed() const { return m_dropAllowed; }
 
 	void Clear()
@@ -103,6 +108,14 @@ public:
 	~EditorNode() override;
 
 	static EditorNode* Get();
+	bool HandleGuiInput(InputEvent const& event);
+	bool IsEditingNativeControl() const;
+	void ResolvePendingSceneAction(int choice);
+	bool IsSceneNavigationActive() const;
+	void RequestQuit();
+
+	EditorUndoRedo&       GetUndoRedo() { return m_undoRedo; }
+	EditorUndoRedo const& GetUndoRedo() const { return m_undoRedo; }
 
 	EditorSelection&       GetSelection();
 	EditorSelection const& GetSelection() const;
@@ -141,13 +154,15 @@ private:
 	static EditorNode* s_instance;
 
 	EditorData      m_editorData;
+	EditorUndoRedo  m_undoRedo;
 	EditorUIContext m_uiContext;
 
 	enum class PendingSceneAction
 	{
 		None,
 		Load,
-		Create
+		Create,
+		Quit
 	};
 
 	PendingSceneAction m_pendingSceneAction = PendingSceneAction::None;

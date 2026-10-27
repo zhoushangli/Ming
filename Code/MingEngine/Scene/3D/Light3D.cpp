@@ -3,12 +3,19 @@
 
 #include "MingEngine/Engine/Render/RenderServer.hpp"
 
-Light3D::Light3D() : Light3D(LightType::Omni) {}
+Light3D::Light3D() : Light3D(LightType::Omni)
+{
+}
+
 Light3D::Light3D(LightType type) : m_lightType(type)
 {
 	m_lightRID = g_engine->m_renderServer->LightCreate(type);
 }
-Light3D::~Light3D() { FreeRenderLight(); }
+
+Light3D::~Light3D()
+{
+	FreeRenderLight();
+}
 
 void Light3D::BindMethods()
 {
@@ -52,8 +59,15 @@ void Light3D::SetIntensity(float intensity)
 	}
 }
 
-Color Light3D::GetColor() const { return m_color; }
-float Light3D::GetIntensity() const { return m_intensity; }
+Color Light3D::GetColor() const
+{
+	return m_color;
+}
+
+float Light3D::GetIntensity() const
+{
+	return m_intensity;
+}
 
 void Light3D::OnNotification(int notification)
 {
@@ -67,6 +81,7 @@ void Light3D::OnNotification(int notification)
 			SyncRenderData();
 			renderService->InstanceSetBase(m_instanceRID, m_lightRID);
 		}
+
 		break;
 	}
 	}
@@ -91,10 +106,13 @@ void Light3D::FreeRenderLight()
 	{
 		renderService->LightFree(m_lightRID);
 	}
+
 	m_lightRID = RID::Invalid;
 }
 
-OmniLight3D::OmniLight3D() : Light3D(LightType::Omni) {}
+OmniLight3D::OmniLight3D() : Light3D(LightType::Omni)
+{
+}
 
 void OmniLight3D::SetRange(float range)
 {
@@ -148,9 +166,13 @@ void OmniLight3D::BindMethods()
 		"GetAttenuation");
 }
 
-DirectionalLight3D::DirectionalLight3D() : Light3D(LightType::Directional) {}
+DirectionalLight3D::DirectionalLight3D() : Light3D(LightType::Directional)
+{
+}
 
-SpotLight3D::SpotLight3D() : Light3D(LightType::Spot) {}
+SpotLight3D::SpotLight3D() : Light3D(LightType::Spot)
+{
+}
 
 void SpotLight3D::SetRange(float range)
 {

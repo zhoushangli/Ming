@@ -16,7 +16,10 @@ namespace
 {
 // Report whether the code point is an ASCII decimal digit.
 // e.g. IsAsciiDigit(U'7') returns true and IsAsciiDigit(U'x') returns false.
-bool IsAsciiDigit(char32_t codePoint) { return codePoint >= U'0' && codePoint <= U'9'; }
+bool IsAsciiDigit(char32_t codePoint)
+{
+	return codePoint >= U'0' && codePoint <= U'9';
+}
 } // namespace
 
 Node::~Node()
@@ -25,6 +28,7 @@ Node::~Node()
 	{
 		MemDelete(child);
 	}
+
 	m_data.m_children.clear();
 }
 
@@ -39,18 +43,60 @@ Node* Node::GetRoot() const
 	return current;
 }
 
-Node*                     Node::GetParent() const { return m_data.m_parent; }
-SceneTree*                Node::GetSceneTree() const { return m_data.m_sceneTree; }
-std::vector<Node*> const& Node::GetChildren() const { return m_data.m_children; }
-String const&             Node::GetName() const { return m_data.m_name; }
-bool                      Node::GetSerializable() const { return m_data.m_isSerializable; }
-bool                      Node::GetReady() const { return m_data.m_readyPending; }
-bool                      Node::GetProcess() const { return m_data.m_enableProcess; }
+Node* Node::GetParent() const
+{
+	return m_data.m_parent;
+}
 
-void Node::SetName(String const& name) { m_data.m_name = EnsureUniqueName(name); }
-void Node::SetSerializable(bool isSerializable) { m_data.m_isSerializable = isSerializable; }
-void Node::SetReady(bool isReady) { m_data.m_readyPending = isReady; }
-void Node::SetProcess(bool isProcess) { m_data.m_enableProcess = isProcess; }
+SceneTree* Node::GetSceneTree() const
+{
+	return m_data.m_sceneTree;
+}
+
+std::vector<Node*> const& Node::GetChildren() const
+{
+	return m_data.m_children;
+}
+
+String const& Node::GetName() const
+{
+	return m_data.m_name;
+}
+
+bool Node::GetSerializable() const
+{
+	return m_data.m_isSerializable;
+}
+
+bool Node::GetReady() const
+{
+	return m_data.m_readyPending;
+}
+
+bool Node::GetProcess() const
+{
+	return m_data.m_enableProcess;
+}
+
+void Node::SetName(String const& name)
+{
+	m_data.m_name = EnsureUniqueName(name);
+}
+
+void Node::SetSerializable(bool isSerializable)
+{
+	m_data.m_isSerializable = isSerializable;
+}
+
+void Node::SetReady(bool isReady)
+{
+	m_data.m_readyPending = isReady;
+}
+
+void Node::SetProcess(bool isProcess)
+{
+	m_data.m_enableProcess = isProcess;
+}
 
 Node* Node::FindChildByName(String const& name) const
 {
@@ -97,6 +143,7 @@ Node* Node::GetNode(NodePath const& path) const
 		{
 			return nullptr;
 		}
+
 		nameIndex = 1;
 	}
 
@@ -116,6 +163,7 @@ Node* Node::GetNode(NodePath const& path) const
 		{
 			return nullptr;
 		}
+
 		current = next;
 	}
 
@@ -267,6 +315,7 @@ bool Node::IsAncestorOf(Node const* other) const
 		{
 			return true;
 		}
+
 		current = current->m_data.m_parent;
 	}
 
@@ -286,6 +335,7 @@ void Node::OnNotification(int notification)
 		{
 			return g_engine->m_scriptSystem->Call(m_nativeBindingGCHandle.GetValue(), methodName, args, ret);
 		}
+
 		return false;
 	};
 
@@ -297,12 +347,14 @@ void Node::OnNotification(int notification)
 		CallScriptVoidMethod("OnEnterTree", {});
 		break;
 	}
+
 	case Notification_ExitTree:
 	{
 		CallScriptVoidMethod("OnExitTree", {});
 		OnExitTree();
 		break;
 	}
+
 	case Notification_Ready:
 	{
 		SetProcess(true);
@@ -311,6 +363,7 @@ void Node::OnNotification(int notification)
 		CallScriptVoidMethod("OnReady", {});
 		break;
 	}
+
 	case Notification_Process:
 	{
 		float      deltaSeconds = 0.f;
@@ -324,6 +377,7 @@ void Node::OnNotification(int notification)
 		CallScriptVoidMethod("OnProcess", { Variant(deltaSeconds) });
 		break;
 	}
+
 	default:
 		break;
 	}
@@ -346,6 +400,7 @@ String Node::EnsureUniqueName(String const& requestedName) const
 				return false;
 			}
 		}
+
 		return true;
 	};
 
@@ -476,10 +531,18 @@ void Node::PropagateReady()
 	}
 }
 
-void Node::OnEnterTree() {}
+void Node::OnEnterTree()
+{
+}
 
-void Node::OnExitTree() {}
+void Node::OnExitTree()
+{
+}
 
-void Node::OnReady() {}
+void Node::OnReady()
+{
+}
 
-void Node::OnProcess([[maybe_unused]] float deltaSeconds) {}
+void Node::OnProcess([[maybe_unused]] float deltaSeconds)
+{
+}

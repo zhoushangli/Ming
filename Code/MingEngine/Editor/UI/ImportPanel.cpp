@@ -28,17 +28,20 @@ void DrawImportHeader(char const* text, bool disabled)
 	ImGui::Dummy(ImVec2(frameWidth, frameHeight));
 
 	ImVec2 const textSize = ImGui::CalcTextSize(text);
-	ImVec2 const textPos(
-		framePos.x + style.FramePadding.x,
-		framePos.y + (frameHeight - textSize.y) * 0.5f);
-	ImU32 const textColor = ImGui::GetColorU32(disabled ? ImGuiCol_TextDisabled : ImGuiCol_Text);
+	ImVec2 const textPos(framePos.x + style.FramePadding.x, framePos.y + (frameHeight - textSize.y) * 0.5f);
+	ImU32 const  textColor = ImGui::GetColorU32(disabled ? ImGuiCol_TextDisabled : ImGuiCol_Text);
 	drawList->AddText(textPos, textColor, text);
 }
 } // namespace
 
-ImportPanel::ImportPanel() : EditorPanel("Import") {}
+ImportPanel::ImportPanel() : EditorPanel("Import")
+{
+}
 
-ImportPanel::~ImportPanel() { ClearImportOptionProperties(); }
+ImportPanel::~ImportPanel()
+{
+	ClearImportOptionProperties();
+}
 
 void ImportPanel::ClearImportOptionProperties()
 {
@@ -46,6 +49,7 @@ void ImportPanel::ClearImportOptionProperties()
 	{
 		delete property;
 	}
+
 	m_importOptionProperties.clear();
 }
 
@@ -124,7 +128,10 @@ void ImportPanel::RebuildImportOptionProperties()
 	{
 		std::string labelId = "##ImportOption::" + importer->GetVisibleName() + "::" + option.m_propertyInfo.m_name;
 		InspectorProperty::ValueChangedCallback onChanged =
-			[this, name = option.m_propertyInfo.m_name](Variant const& value) { m_importOptions[name] = value; };
+			[this, name = option.m_propertyInfo.m_name](Variant const& value)
+		{
+			m_importOptions[name] = value;
+		};
 
 		InspectorProperty* property =
 			InspectorProperty::Create(option.m_propertyInfo, std::move(labelId), std::move(onChanged));
@@ -243,7 +250,7 @@ void ImportPanel::OnRender(EditorUIContext& context)
 	DrawImportHeader(filename.c_str(), false);
 	ImGui::Spacing();
 
-	std::string                 preview          = selectedImporter.IsValid() ? selectedImporter->GetVisibleName() : "";
+	std::string preview = selectedImporter.IsValid() ? selectedImporter->GetVisibleName() : "";
 
 	ImGui::TextUnformatted("Import As:");
 	ImGui::PushStyleColor(ImGuiCol_FrameBg, IM_COL32(0x50, 0x59, 0x68, 0xFF));
@@ -275,8 +282,10 @@ void ImportPanel::OnRender(EditorUIContext& context)
 				ImGui::SetItemDefaultFocus();
 			}
 		}
+
 		ImGui::EndCombo();
 	}
+
 	ImGui::PopStyleColor(3);
 
 	selectedImporter = GetSelectedImporter();

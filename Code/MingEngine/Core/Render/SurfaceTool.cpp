@@ -20,17 +20,35 @@ Vector3 GetArbitraryTangent(Vector3 const& normal)
 }
 } // namespace
 
-void SurfaceTool::SetColor(Color const& color) { m_prevColor = color; }
+void SurfaceTool::SetColor(Color const& color)
+{
+	m_prevColor = color;
+}
 
-void SurfaceTool::SetNormal(Vector3 const& normal) { m_prevNormal = normal; }
+void SurfaceTool::SetNormal(Vector3 const& normal)
+{
+	m_prevNormal = normal;
+}
 
-void SurfaceTool::SetTangent(Vector3 const& tangent) { m_prevTangent = tangent; }
+void SurfaceTool::SetTangent(Vector3 const& tangent)
+{
+	m_prevTangent = tangent;
+}
 
-void SurfaceTool::SetBitangent(Vector3 const& bitangent) { m_prevBitangent = bitangent; }
+void SurfaceTool::SetBitangent(Vector3 const& bitangent)
+{
+	m_prevBitangent = bitangent;
+}
 
-void SurfaceTool::SetUV(Vector2 const& uv) { m_prevUV = uv; }
+void SurfaceTool::SetUV(Vector2 const& uv)
+{
+	m_prevUV = uv;
+}
 
-void SurfaceTool::SetSmoothingGroup(uint32_t smoothingGroup) { m_prevSmoothingGroup = smoothingGroup; }
+void SurfaceTool::SetSmoothingGroup(uint32_t smoothingGroup)
+{
+	m_prevSmoothingGroup = smoothingGroup;
+}
 
 void SurfaceTool::AddVertex(Vector3 const& position)
 {
@@ -45,7 +63,10 @@ void SurfaceTool::AddVertex(Vector3 const& position)
 	m_vertices.push_back(vertex);
 }
 
-void SurfaceTool::AddIndex(uint32_t index) { m_indices.push_back(index); }
+void SurfaceTool::AddIndex(uint32_t index)
+{
+	m_indices.push_back(index);
+}
 
 void SurfaceTool::Index()
 {
@@ -118,6 +139,7 @@ void SurfaceTool::GenerateNormals(bool flip)
 		{
 			normal.Normalize();
 		}
+
 		if (flip)
 		{
 			normal = -normal;

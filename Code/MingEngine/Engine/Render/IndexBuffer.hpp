@@ -5,24 +5,24 @@ struct ID3D11Buffer;
 
 class IndexBuffer
 {
-    friend class D3D11RenderBackend;
+	friend class D3D11RenderBackend;
 
 public:
-    IndexBuffer(ID3D11Device* device, unsigned int size);
-    IndexBuffer(const IndexBuffer& copy) = delete;
-    virtual ~IndexBuffer();
+	IndexBuffer(ID3D11Device* device, unsigned int size);
+	IndexBuffer(const IndexBuffer& copy) = delete;
+	virtual ~IndexBuffer();
 
-    void Resize(unsigned int size);
+	void Resize(unsigned int size);
 
-    unsigned int GetSize();
-    unsigned int GetStride();
-    unsigned int GetCount();
-
-private:
-    void Create();
+	unsigned int GetSize();
+	unsigned int GetStride();
+	unsigned int GetCount();
 
 private:
-    ID3D11Device* m_device = nullptr;
-    ID3D11Buffer* m_buffer = nullptr;
-    unsigned int m_size = 0;
+	void Create();
+
+private:
+	ID3D11Device* m_device = nullptr;
+	ID3D11Buffer* m_buffer = nullptr;
+	unsigned int  m_size   = 0;
 };

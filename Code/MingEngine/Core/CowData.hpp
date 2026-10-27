@@ -37,10 +37,13 @@ private:
 
 public:
 	CowData() = default;
+
 	~CowData() { Release(); }
 
 	CowData(CowData const& other) { Share(other); }
+
 	CowData(CowData&& other) noexcept : m_data(std::exchange(other.m_data, nullptr)) {}
+
 	CowData& operator=(CowData const& other)
 	{
 		if (this != &other)
@@ -48,8 +51,10 @@ public:
 			Release();
 			Share(other);
 		}
+
 		return *this;
 	}
+
 	CowData& operator=(CowData&& other) noexcept
 	{
 		if (this != &other)
@@ -57,18 +62,15 @@ public:
 			Release();
 			m_data = std::exchange(other.m_data, nullptr);
 		}
+
 		return *this;
 	}
 
 	uint32_t Size() const { return m_data == nullptr ? 0 : GetHeader()->m_size; }
 	uint32_t Capacity() const { return m_data == nullptr ? 0 : GetHeader()->m_capacity; }
 	bool     IsEmpty() const { return Size() == 0; }
-
 	T const* Data() const { return m_data; }
-	T*       DataW()
-	{
-		return EnsureWritable(Size()) ? m_data : nullptr;
-	}
+	T*       DataW() { return EnsureWritable(Size()) ? m_data : nullptr; }
 
 	void SetData(T const* data, uint32_t count)
 	{
@@ -80,11 +82,12 @@ public:
 
 		ERR_FAIL_COND_MSG(data == nullptr, "CowData source is null");
 		uintptr_t const source = reinterpret_cast<uintptr_t>(data);
-		uintptr_t const start = reinterpret_cast<uintptr_t>(m_data);
+		uintptr_t const start  = reinterpret_cast<uintptr_t>(m_data);
 		if (m_data != nullptr && source >= start && source - start < Size() * sizeof(T))
 		{
-			ERR_FAIL_COND_MSG((source - start) % sizeof(T) != 0 ||
-				count > Size() - (source - start) / sizeof(T), "CowData source range is invalid");
+			ERR_FAIL_COND_MSG(
+				(source - start) % sizeof(T) != 0 || count > Size() - (source - start) / sizeof(T),
+				"CowData source range is invalid");
 		}
 
 		Header* newHeader = Create(count, count);
@@ -108,6 +111,7 @@ public:
 		m_data[Size()]      = value;
 		GetHeader()->m_size = newSize;
 	}
+
 	void Append(T const* data, uint32_t count)
 	{
 		if (count == 0)
@@ -124,15 +128,16 @@ public:
 			ERR_FAIL_MSG("CowData size overflow");
 		}
 
-		uintptr_t const source = reinterpret_cast<uintptr_t>(data);
-		uintptr_t const start = reinterpret_cast<uintptr_t>(m_data);
-		bool const isSelfAppend = m_data != nullptr && source >= start && source - start < oldSize * sizeof(T);
-		uint32_t sourceIndex = 0;
+		uintptr_t const source       = reinterpret_cast<uintptr_t>(data);
+		uintptr_t const start        = reinterpret_cast<uintptr_t>(m_data);
+		bool const      isSelfAppend = m_data != nullptr && source >= start && source - start < oldSize * sizeof(T);
+		uint32_t        sourceIndex  = 0;
 		if (isSelfAppend)
 		{
 			sourceIndex = static_cast<uint32_t>((source - start) / sizeof(T));
-			ERR_FAIL_COND_MSG((source - start) % sizeof(T) != 0 ||
-				count > oldSize - sourceIndex, "CowData source range is invalid");
+			ERR_FAIL_COND_MSG(
+				(source - start) % sizeof(T) != 0 || count > oldSize - sourceIndex,
+				"CowData source range is invalid");
 		}
 
 		uint32_t const newSize = oldSize + count;
@@ -140,13 +145,16 @@ public:
 		{
 			return;
 		}
+
 		if (isSelfAppend)
 		{
 			data = m_data + sourceIndex;
 		}
+
 		std::memcpy(m_data + oldSize, data, count * sizeof(T));
 		GetHeader()->m_size = newSize;
 	}
+
 	void Append(CowData const& other) { Append(other.Data(), other.Size()); }
 
 	T* Resize(uint32_t size)
@@ -161,9 +169,11 @@ public:
 		{
 			return nullptr;
 		}
+
 		GetHeader()->m_size = size;
 		return m_data;
 	}
+
 	void Clear()
 	{
 		Release();
@@ -203,12 +213,14 @@ private:
 			ERR_PRINT("CowData allocation failed");
 			return false;
 		}
+
 		T* newData = reinterpret_cast<T*>(newHeader + 1);
 
 		if (Size() > 0)
 		{
 			std::memcpy(newData, m_data, Size() * sizeof(T));
 		}
+
 		Release();
 		m_data = newData;
 		return true;
@@ -251,6 +263,7 @@ private:
 			GetHeader()->m_refCount++;
 		}
 	}
+
 	void Release()
 	{
 		if (m_data == nullptr)
@@ -263,6 +276,7 @@ private:
 		{
 			std::free(header);
 		}
+
 		m_data = nullptr;
 	}
 

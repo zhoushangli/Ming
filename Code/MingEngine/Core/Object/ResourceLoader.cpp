@@ -58,6 +58,7 @@ Ref<Resource> ResourceLoader::LoadInternal(VirtualPath const& virtualPath)
 				// Keep the user-selected source path so editor UI can show Pawn.obj instead of the imported cache file.
 				resource->SetSourceFilePath(virtualPath);
 			}
+
 			return resource;
 		}
 	}
@@ -91,10 +92,14 @@ Ref<Resource> ResourceLoader::Load(VirtualPath const& virtualPath)
 	{
 		s_loadedResources[virtualPath] = resource;
 	}
+
 	return resource;
 }
 
-Ref<Resource> ResourceLoader::LoadUncached(VirtualPath const& virtualPath) { return LoadInternal(virtualPath); }
+Ref<Resource> ResourceLoader::LoadUncached(VirtualPath const& virtualPath)
+{
+	return LoadInternal(virtualPath);
+}
 
 Ref<Resource> ResourceLoader::Reload(VirtualPath const& virtualPath)
 {
@@ -116,6 +121,7 @@ Ref<Resource> ResourceLoader::Reload(VirtualPath const& virtualPath)
 		{
 			return cachedResource;
 		}
+
 		return cachedResource;
 	}
 
@@ -135,5 +141,6 @@ bool ResourceFormatLoader::CanLoad(VirtualPath const& virtualPath) const
 			return true;
 		}
 	}
+
 	return false;
 }

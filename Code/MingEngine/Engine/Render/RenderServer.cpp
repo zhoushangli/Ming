@@ -1,4 +1,5 @@
 #include "MingEngine/Engine/Render/RenderServer.hpp"
+#include <functional>
 
 #include "MingEngine/Core/Math/Rect2.hpp"
 #include "MingEngine/Core/Memory.hpp"
@@ -12,7 +13,10 @@
 #include <algorithm>
 #include <cmath>
 
-RenderServer::RenderServer(RendererServerConfig config) { m_renderer = MemNew<Renderer>(config); }
+RenderServer::RenderServer(RendererServerConfig config)
+{
+	m_renderer = MemNew<Renderer>(config);
+}
 
 RenderServer::~RenderServer()
 {
@@ -98,11 +102,20 @@ void RenderServer::Shutdown()
 	m_started = false;
 }
 
-void RenderServer::BeginFrame() { m_renderer->BeginFrame(); }
+void RenderServer::BeginFrame()
+{
+	m_renderer->BeginFrame();
+}
 
-void RenderServer::EndFrame() { m_renderer->EndFrame(); }
+void RenderServer::EndFrame()
+{
+	m_renderer->EndFrame();
+}
 
-RID RenderServer::ViewportCreate() { return m_viewportOwner.CreateRID(); }
+RID RenderServer::ViewportCreate()
+{
+	return m_viewportOwner.CreateRID();
+}
 
 void RenderServer::ViewportFree(RID viewport)
 {
@@ -120,6 +133,7 @@ void RenderServer::ViewportFree(RID viewport)
 			CanvasItemSetViewport(itemRID, RID::Invalid);
 		}
 	}
+
 	for (RID layerRID : viewportData->m_canvasLayers)
 	{
 		CanvasLayerData* layer = m_canvasLayerOwner.GetOrNull(layerRID);
@@ -307,7 +321,10 @@ void RenderServer::LightSetSpotAttenuation(RID rid, float attenuation)
 	}
 }
 
-RID RenderServer::CameraCreate() { return m_cameraOwner.CreateRID(); }
+RID RenderServer::CameraCreate()
+{
+	return m_cameraOwner.CreateRID();
+}
 
 void RenderServer::CameraFree(RID camera)
 {
@@ -365,29 +382,66 @@ void RenderServer::CameraSetOrthographic(RID camera, float size, float nearZ, fl
 
 void RenderServer::Render()
 {
-	for (RID viewportRID : m_viewportOwner.GetRIDList())
+	std::vector<RID>         completed;
+	std::vector<RID>         visiting;
+	std::function<void(RID)> render = [&](RID viewportRID)
 	{
-		ViewportData* viewportData = m_viewportOwner.GetOrNull(viewportRID);
-		if (viewportData == nullptr || !viewportData->m_active)
+		if (std::find(completed.begin(), completed.end(), viewportRID) != completed.end())
 		{
-			continue;
+			return;
 		}
 
-		CameraData* cameraData = m_cameraOwner.GetOrNull(viewportData->m_camera);
-
-		PrepareViewportData(viewportData);
-		for (RID layerRID : viewportData->m_canvasLayers)
+		ViewportData* data = m_viewportOwner.GetOrNull(viewportRID);
+		if (data == nullptr || !data->m_active)
 		{
-			PrepareCanvasLayerRequests(layerRID, viewportRID, viewportData);
+			return;
 		}
 
-		m_renderer->ClearSceneTargets(viewportData);
-		m_renderer->RenderViewport(viewportData, cameraData);
-
-		if (viewportData->m_presentToScreen)
+		if (std::find(visiting.begin(), visiting.end(), viewportRID) != visiting.end())
 		{
-			m_renderer->CopyTextureToBackBuffer(viewportData->m_viewportOutputTexture);
+			ERR_PRINT("Cyclic viewport texture dependency.\n");
+			return;
 		}
+
+		visiting.push_back(viewportRID);
+		for (RID itemRID : m_canvasItemOwner.GetRIDList())
+		{
+			CanvasItemData* item = m_canvasItemOwner.GetOrNull(itemRID);
+			if (item == nullptr || item->m_viewport != viewportRID || !item->m_visible)
+			{
+				continue;
+			}
+
+			for (CanvasItemData::Command* command : item->m_commands)
+			{
+				RID const source = static_cast<CanvasItemData::CommandRect*>(command)->viewportTexture;
+				if (source.IsValid() && source != viewportRID)
+				{
+					render(source);
+				}
+			}
+		}
+
+		visiting.pop_back();
+		PrepareViewportData(data);
+		for (RID layer : data->m_canvasLayers)
+		{
+			PrepareCanvasLayerRequests(layer, viewportRID, data);
+		}
+
+		m_renderer->ClearSceneTargets(data);
+		m_renderer->RenderViewport(data, m_cameraOwner.GetOrNull(data->m_camera));
+		if (data->m_presentToScreen)
+		{
+			m_renderer->CopyTextureToBackBuffer(data->m_viewportOutputTexture);
+		}
+
+		completed.push_back(viewportRID);
+	};
+
+	for (RID viewport : m_viewportOwner.GetRIDList())
+	{
+		render(viewport);
 	}
 }
 
@@ -398,6 +452,7 @@ void RenderServer::PrepareCanvasLayerRequests(RID layer, RID viewport, ViewportD
 	{
 		return;
 	}
+
 	for (RID itemRID : layerData->m_children)
 	{
 		PrepareCanvasItemRequests(itemRID, viewport, viewportData, Vector2::Zero);
@@ -405,27 +460,63 @@ void RenderServer::PrepareCanvasLayerRequests(RID layer, RID viewport, ViewportD
 }
 
 void RenderServer::PrepareCanvasItemRequests(
-	RID itemRID, RID viewport, ViewportData* viewportData, Vector2 const& parentPosition)
+	RID itemRID, RID viewport, ViewportData* viewportData, Vector2 const& parentPosition, AABB2 const* parentClip)
 {
 	CanvasItemData* item = m_canvasItemOwner.GetOrNull(itemRID);
 	if (item == nullptr || item->m_viewport != viewport || !item->m_visible)
 	{
 		return;
 	}
+
 	Vector2 const position = parentPosition + item->m_position;
+	AABB2         clip;
+	if (parentClip != nullptr)
+	{
+		clip = *parentClip;
+	}
+
+	if (item->m_clipContents)
+	{
+		AABB2 const ownClip(position, position + item->m_clipSize);
+		clip       = parentClip == nullptr
+						 ? ownClip
+						 : AABB2(
+							   Vector2(std::max(clip.m_mins.x, ownClip.m_mins.x), std::max(clip.m_mins.y, ownClip.m_mins.y)),
+							   Vector2(std::min(clip.m_maxs.x, ownClip.m_maxs.x), std::min(clip.m_maxs.y, ownClip.m_maxs.y)));
+		parentClip = &clip;
+	}
+
+	if (parentClip != nullptr && (clip.GetWidth() <= 0.f || clip.GetHeight() <= 0.f))
+	{
+		return;
+	}
+
 	if (!item->m_commands.empty())
 	{
 		for (CanvasItemData::Command* command : item->m_commands)
 		{
 			CanvasItemData::CommandRect const* rectCommand = static_cast<CanvasItemData::CommandRect const*>(command);
 
-			Rect2 const& rect           = rectCommand->rect;
-			Vector2      uvMin          = Vector2::Zero;
-			Vector2      uvMax          = Vector2::One;
-			GPUTexture*  texture        = nullptr;
-			SamplerMode  samplerMode    = SamplerMode::POINT_CLAMP;
+			Rect2 const& rect        = rectCommand->rect;
+			Vector2      uvMin       = Vector2::Zero;
+			Vector2      uvMax       = Vector2::One;
+			GPUTexture*  texture     = nullptr;
+			SamplerMode  samplerMode = SamplerMode::POINT_CLAMP;
 
-			if (rectCommand->texture.IsValid())
+			if (rectCommand->viewportTexture.IsValid())
+			{
+				if (rectCommand->viewportTexture == viewport)
+				{
+					continue;
+				}
+
+				texture = ViewportGetTexture(rectCommand->viewportTexture);
+				if (texture == nullptr)
+				{
+					continue;
+				}
+			}
+			else if (rectCommand->texture.IsValid())
 			{
 				TextureData* textureData = m_textureOwner.GetOrNull(rectCommand->texture->GetTextureRID());
 				if (textureData == nullptr || textureData->m_texture == nullptr)
@@ -457,17 +548,52 @@ void RenderServer::PrepareCanvasItemRequests(
 					{
 						continue;
 					}
+
 					uvMax = Vector2(std::abs(rect.m_size.x) / dimensions.x, std::abs(rect.m_size.y) / dimensions.y);
 					samplerMode = SamplerMode::POINT_WRAP;
 				}
 			}
 
-			float const   x = position.x + rect.m_position.x;
-			float const   y = position.y + rect.m_position.y;
-			Vector3 const a(x, y, 0.0f);
-			Vector3 const b(x + rect.m_size.x, y, 0.0f);
-			Vector3 const c(x + rect.m_size.x, y + rect.m_size.y, 0.0f);
-			Vector3 const d(x, y + rect.m_size.y, 0.0f);
+			Vector2 minimum = position + rect.m_position;
+			Vector2 maximum = minimum + rect.m_size;
+			if (parentClip != nullptr)
+			{
+				if (minimum.x > maximum.x)
+				{
+					std::swap(minimum.x, maximum.x);
+					std::swap(uvMin.x, uvMax.x);
+				}
+
+				if (minimum.y > maximum.y)
+				{
+					std::swap(minimum.y, maximum.y);
+					std::swap(uvMin.y, uvMax.y);
+				}
+
+				Vector2 const clippedMin(std::max(minimum.x, clip.m_mins.x), std::max(minimum.y, clip.m_mins.y));
+				Vector2 const clippedMax(std::min(maximum.x, clip.m_maxs.x), std::min(maximum.y, clip.m_maxs.y));
+				if (clippedMax.x <= clippedMin.x || clippedMax.y <= clippedMin.y)
+				{
+					continue;
+				}
+
+				Vector2 const uvSize       = uvMax - uvMin;
+				Vector2 const originalSize = maximum - minimum;
+				uvMax                      = uvMin
+											 + Vector2(
+												 uvSize.x * (clippedMax.x - minimum.x) / originalSize.x,
+												 uvSize.y * (clippedMax.y - minimum.y) / originalSize.y);
+				uvMin += Vector2(
+					uvSize.x * (clippedMin.x - minimum.x) / originalSize.x,
+					uvSize.y * (clippedMin.y - minimum.y) / originalSize.y);
+				minimum = clippedMin;
+				maximum = clippedMax;
+			}
+
+			Vector3 const a(minimum.x, minimum.y, 0.f);
+			Vector3 const b(maximum.x, minimum.y, 0.f);
+			Vector3 const c(maximum.x, maximum.y, 0.f);
+			Vector3 const d(minimum.x, maximum.y, 0.f);
 
 			Vertex vertices[] = {
 				Vertex(a, rectCommand->color, uvMin), Vertex(b, rectCommand->color, Vector2(uvMax.x, uvMin.y)),
@@ -480,6 +606,7 @@ void RenderServer::PrepareCanvasItemRequests(
 			{
 				command->vertexBuffer = m_renderer->CreateVertexBuffer(byteSize, sizeof(Vertex));
 			}
+
 			m_renderer->CopyCPUToGPU(vertices, byteSize, command->vertexBuffer);
 
 			RenderRequest request;
@@ -494,9 +621,25 @@ void RenderServer::PrepareCanvasItemRequests(
 			viewportData->m_renderRequests[static_cast<size_t>(RenderRequestPass::UI)].push_back(request);
 		}
 	}
+
+	AABB2 childrenClip;
+	if (item->m_clipChildren)
+	{
+		AABB2 const ownClip(position, position + item->m_childrenClipSize);
+		childrenClip = parentClip == nullptr ? ownClip
+											 : AABB2(
+												   Vector2(
+													   std::max(parentClip->m_mins.x, ownClip.m_mins.x),
+													   std::max(parentClip->m_mins.y, ownClip.m_mins.y)),
+												   Vector2(
+													   std::min(parentClip->m_maxs.x, ownClip.m_maxs.x),
+													   std::min(parentClip->m_maxs.y, ownClip.m_maxs.y)));
+		parentClip   = &childrenClip;
+	}
+
 	for (RID childRID : item->m_children)
 	{
-		PrepareCanvasItemRequests(childRID, viewport, viewportData, position);
+		PrepareCanvasItemRequests(childRID, viewport, viewportData, position, parentClip);
 	}
 }
 
@@ -521,18 +664,30 @@ Ref<ShaderResource> RenderServer::GetBuiltinShaderResource(std::string const& na
 	return m_renderer->GetBuiltinShaderResource(name, source);
 }
 
-Ref<ShaderResource> RenderServer::GetDefaultUnlitShaderResource() const { return m_defaultUnlit; }
+Ref<ShaderResource> RenderServer::GetDefaultUnlitShaderResource() const
+{
+	return m_defaultUnlit;
+}
 
-Ref<ShaderResource> RenderServer::GetDefaultLitShaderResource() const { return m_defaultLit; }
+Ref<ShaderResource> RenderServer::GetDefaultLitShaderResource() const
+{
+	return m_defaultLit;
+}
 
-Ref<MaterialResource> RenderServer::GetDefaultMaterialResource() const { return m_defaultMaterial; }
+Ref<MaterialResource> RenderServer::GetDefaultMaterialResource() const
+{
+	return m_defaultMaterial;
+}
 
 GPUTexture* RenderServer::CreateGPUTexture(char const* name, IntVec2 dimensions, int bytesPerTexel, uint8_t const* data)
 {
 	return m_renderer->CreateGPUTexture(name, dimensions, bytesPerTexel, data);
 }
 
-void RenderServer::DestroyTexture(GPUTexture* texture) { m_renderer->DestroyTexture(texture); }
+void RenderServer::DestroyTexture(GPUTexture* texture)
+{
+	m_renderer->DestroyTexture(texture);
+}
 
 VertexBuffer* RenderServer::CreateVertexBuffer(unsigned int size, unsigned int stride)
 {
@@ -544,7 +699,10 @@ VertexBuffer* RenderServer::CreateVertexBuffer(void const* data, unsigned int si
 	return m_renderer->CreateVertexBuffer(data, size, stride);
 }
 
-IndexBuffer* RenderServer::CreateIndexBuffer(unsigned int size) { return m_renderer->CreateIndexBuffer(size); }
+IndexBuffer* RenderServer::CreateIndexBuffer(unsigned int size)
+{
+	return m_renderer->CreateIndexBuffer(size);
+}
 
 IndexBuffer* RenderServer::CreateIndexBuffer(void const* data, unsigned int size, unsigned int stride)
 {
@@ -561,11 +719,20 @@ void RenderServer::CopyCPUToGPU(void const* data, unsigned int size, VertexBuffe
 	m_renderer->CopyCPUToGPU(data, size, buffer);
 }
 
-bool RenderServer::InitImGui() { return m_renderer->InitImGui(); }
+bool RenderServer::InitImGui()
+{
+	return m_renderer->InitImGui();
+}
 
-void RenderServer::ShutdownImGui() { m_renderer->ShutdownImGui(); }
+void RenderServer::ShutdownImGui()
+{
+	m_renderer->ShutdownImGui();
+}
 
-void RenderServer::BeginImGuiFrame() { m_renderer->BeginImGuiFrame(); }
+void RenderServer::BeginImGuiFrame()
+{
+	m_renderer->BeginImGuiFrame();
+}
 
 void RenderServer::RenderImGui(ImDrawData* drawData)
 {
@@ -578,7 +745,10 @@ ImTextureID RenderServer::GetImGuiTextureID(GPUTexture* texture) const
 	return m_renderer->GetImGuiTextureID(texture);
 }
 
-RID RenderServer::CanvasItemCreate() { return m_canvasItemOwner.CreateRID(); }
+RID RenderServer::CanvasItemCreate()
+{
+	return m_canvasItemOwner.CreateRID();
+}
 
 void RenderServer::CanvasItemFree(RID rid)
 {
@@ -597,6 +767,7 @@ void RenderServer::CanvasItemFree(RID rid)
 			child->m_parent = RID::Invalid;
 		}
 	}
+
 	m_canvasItemOwner.Free(rid);
 }
 
@@ -609,6 +780,7 @@ void RenderServer::CanvasItemSetViewport(RID rid, RID viewport)
 		{
 			CanvasItemSetParent(rid, RID::Invalid);
 		}
+
 		item->m_viewport = viewport;
 	}
 }
@@ -620,17 +792,20 @@ void RenderServer::CanvasItemSetParent(RID rid, RID parent)
 	{
 		return;
 	}
+
 	CanvasItemData* parentItem = m_canvasItemOwner.GetOrNull(parent);
 	if (parent.IsValid() && (parentItem == nullptr || parent == rid || parentItem->m_viewport != item->m_viewport))
 	{
 		return;
 	}
+
 	for (RID ancestor = parent; ancestor.IsValid();)
 	{
 		if (ancestor == rid)
 		{
 			return;
 		}
+
 		CanvasItemData* ancestorItem = m_canvasItemOwner.GetOrNull(ancestor);
 		ancestor                     = ancestorItem != nullptr ? ancestorItem->m_parent : RID::Invalid;
 	}
@@ -640,11 +815,13 @@ void RenderServer::CanvasItemSetParent(RID rid, RID parent)
 		auto& children = oldParent->m_children;
 		children.erase(std::remove(children.begin(), children.end(), rid), children.end());
 	}
+
 	if (CanvasLayerData* oldLayer = m_canvasLayerOwner.GetOrNull(item->m_layer))
 	{
 		auto& children = oldLayer->m_children;
 		children.erase(std::remove(children.begin(), children.end(), rid), children.end());
 	}
+
 	item->m_parent = RID::Invalid;
 	item->m_layer  = RID::Invalid;
 	if (parentItem != nullptr)
@@ -660,6 +837,15 @@ void RenderServer::CanvasItemSetPosition(RID rid, Vector2 const& position)
 	if (item != nullptr)
 	{
 		item->m_position = position;
+	}
+}
+
+void RenderServer::CanvasItemSetClip(RID rid, bool enabled, Vector2 const& size)
+{
+	if (CanvasItemData* item = m_canvasItemOwner.GetOrNull(rid))
+	{
+		item->m_clipContents = enabled;
+		item->m_clipSize = size;
 	}
 }
 
@@ -731,7 +917,10 @@ void RenderServer::CanvasItemAddTextureRectRegion(
 	item->m_commands.push_back(command);
 }
 
-RID RenderServer::CanvasLayerCreate() { return m_canvasLayerOwner.CreateRID(); }
+RID RenderServer::CanvasLayerCreate()
+{
+	return m_canvasLayerOwner.CreateRID();
+}
 
 void RenderServer::CanvasLayerFree(RID layer)
 {
@@ -740,6 +929,7 @@ void RenderServer::CanvasLayerFree(RID layer)
 	{
 		return;
 	}
+
 	CanvasLayerSetViewport(layer, RID::Invalid);
 	for (RID childRID : layerData->m_children)
 	{
@@ -749,6 +939,7 @@ void RenderServer::CanvasLayerFree(RID layer)
 			child->m_layer = RID::Invalid;
 		}
 	}
+
 	m_canvasLayerOwner.Free(layer);
 }
 
@@ -759,11 +950,13 @@ void RenderServer::CanvasLayerSetViewport(RID layer, RID viewport)
 	{
 		return;
 	}
+
 	if (ViewportData* oldViewport = m_viewportOwner.GetOrNull(layerData->m_viewport))
 	{
 		auto& layers = oldViewport->m_canvasLayers;
 		layers.erase(std::remove(layers.begin(), layers.end(), layer), layers.end());
 	}
+
 	layerData->m_viewport = viewport;
 	if (ViewportData* newViewport = m_viewportOwner.GetOrNull(viewport))
 	{
@@ -799,7 +992,10 @@ void RenderServer::CanvasLayerRemoveChild(RID layer, RID child)
 	}
 }
 
-RID RenderServer::InstanceCreate() { return m_instanceOwner.CreateRID(); }
+RID RenderServer::InstanceCreate()
+{
+	return m_instanceOwner.CreateRID();
+}
 
 void RenderServer::InstanceFree(RID instance)
 {
@@ -886,9 +1082,11 @@ void RenderServer::PrepareViewportData(ViewportData* viewportData)
 			{
 				continue;
 			}
+
 			viewportData->m_renderRequests[static_cast<size_t>(request.m_pass)].push_back(request);
 			break;
 		}
+
 		case InstanceBaseType::Light:
 		{
 			LightData* lightData = m_lightOwner.GetOrNull(instance->m_base);
@@ -908,6 +1106,7 @@ void RenderServer::PrepareViewportData(ViewportData* viewportData)
 				{
 					viewportData->m_directionalLight = { instance, lightData };
 				}
+
 				break;
 			}
 
@@ -915,6 +1114,7 @@ void RenderServer::PrepareViewportData(ViewportData* viewportData)
 			{
 				viewportData->m_pointLights.push_back({ instance, lightData });
 			}
+
 			break;
 		}
 		}
@@ -971,8 +1171,10 @@ RenderRequest RenderServer::BuildInstanceRenderRequest(Instance const* instance)
 		{
 			ApplyMaterialToRequest(*materialResource, request);
 		}
+
 		break;
 	}
+
 	case InstanceBaseType::None:
 		break;
 	default:
@@ -1161,6 +1363,7 @@ void RenderServer::MeshFree(RID mesh)
 				instance->m_base     = RID::Invalid;
 				instance->m_baseType = InstanceBaseType::None;
 			}
+
 			break;
 		case InstanceBaseType::None:
 		default:
@@ -1247,12 +1450,16 @@ void RenderServer::TextureFree(RID texture)
 	{
 		m_renderer->DestroyTexture(data->m_texture);
 	}
+
 	data->m_texture = nullptr;
 
 	m_textureOwner.Free(texture);
 }
 
-RID RenderServer::ScenarioCreate() { return m_scenarioOwner.CreateRID(); }
+RID RenderServer::ScenarioCreate()
+{
+	return m_scenarioOwner.CreateRID();
+}
 
 void RenderServer::ScenarioFree(RID scenario)
 {
@@ -1373,5 +1580,30 @@ void RenderServer::ViewportSetPresentToScreen(RID viewport, bool presentToScreen
 	if (data != nullptr)
 	{
 		data->m_presentToScreen = presentToScreen;
+	}
+}
+
+void RenderServer::CanvasItemSetChildrenClip(RID item, bool enabled, Vector2 const& size)
+{
+	if (CanvasItemData* data = m_canvasItemOwner.GetOrNull(item))
+	{
+		data->m_clipChildren     = enabled;
+		data->m_childrenClipSize = size;
+	}
+}
+
+void RenderServer::CanvasItemAddViewportRect(RID item, RID viewport, Rect2 const& rect)
+{
+	if (CanvasItemData* data = m_canvasItemOwner.GetOrNull(item))
+	{
+		if (data->m_viewport == viewport)
+		{
+			return;
+		}
+
+		auto* command            = new CanvasItemData::CommandRect();
+		command->rect            = rect;
+		command->viewportTexture = viewport;
+		data->m_commands.push_back(command);
 	}
 }

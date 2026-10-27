@@ -14,6 +14,7 @@
 #undef GLFW_APIENTRY_DEFINED
 #endif
 
+#include <functional>
 #include <vector>
 
 enum class CursorMode
@@ -50,10 +51,13 @@ public:
 	void BeginFrame() override;
 	void EndFrame() override;
 
-	bool        IsKeyDown(int keyCode);
-	bool        IsKeyDown(KeyCode input) { return IsKeyDown(ToKeyCode(input)); }
-	bool        WasKeyJustPressed(int keyCode);
-	bool        WasKeyJustReleased(int keyCode);
+	bool IsKeyDown(int keyCode);
+
+	bool IsKeyDown(KeyCode input) { return IsKeyDown(ToKeyCode(input)); }
+
+	bool WasKeyJustPressed(int keyCode);
+	bool WasKeyJustReleased(int keyCode);
+
 	bool        WasKeyJustPressed(KeyCode input) { return WasKeyJustPressed(ToKeyCode(input)); }
 	bool        WasKeyJustReleased(KeyCode input) { return WasKeyJustReleased(ToKeyCode(input)); }
 	KeyModifier GetKeyModifiers() const { return m_keyboardState.m_keyModifiers; }
@@ -84,6 +88,7 @@ public:
 	void                    AddInputEvent(InputEvent const& event);
 	std::vector<InputEvent> GetInputEvents();
 	void                    ProcessInputEvent(InputEvent const& event);
+	void                    SetInputEventCallback(std::function<void(InputEvent const&)> callback);
 
 protected:
 	static void BindMethods();
@@ -105,6 +110,7 @@ protected:
 	};
 
 private:
-	std::vector<InputEvent> m_pendingInputEvents;
-	bool m_windowFocused = true;
+	std::vector<InputEvent>                m_pendingInputEvents;
+	std::function<void(InputEvent const&)> m_inputEventCallback;
+	bool                                   m_windowFocused = true;
 };

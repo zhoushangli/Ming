@@ -33,8 +33,10 @@ public:
 	String  operator+(char32_t const* other) const;
 	String& operator+=(char32_t const* other);
 
-	uint32_t        Length() const { return m_data.Size(); };
-	bool            IsEmpty() const { return m_data.IsEmpty(); };
+	uint32_t Length() const { return m_data.Size(); };
+
+	bool IsEmpty() const { return m_data.IsEmpty(); };
+
 	char32_t const* Data() const { return m_data.Data(); };
 
 	// Read one code point without a bounds check.
@@ -42,13 +44,17 @@ public:
 	char32_t operator[](uint32_t index) const { return m_data.Data()[index]; };
 
 	bool operator==(String const& other) const;
+
 	bool operator!=(String const& other) const { return !(*this == other); };
 
 	// Compare against UTF-8 text directly, so literals need no temporary String.
 	// e.g. node.GetName() == "Camera" walks both sides once without allocating.
 	bool operator==(char const* other) const;
+
 	bool operator!=(char const* other) const { return !(*this == other); };
+
 	bool operator==(std::string const& other) const;
+
 	bool operator!=(std::string const& other) const { return !(*this == other); };
 
 	// Report whether the given code point occurs in this string.

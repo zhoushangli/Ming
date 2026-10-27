@@ -33,6 +33,7 @@ std::vector<std::string> NamedStrings::GetKeys() const
 		(void)value;
 		keys.push_back(key);
 	}
+
 	return keys;
 }
 
@@ -43,6 +44,7 @@ std::string NamedStrings::GetValue(std::string const& keyName, std::string const
 	{
 		return iter->second;
 	}
+
 	return defaultValue;
 }
 
@@ -56,11 +58,13 @@ bool NamedStrings::GetValue(std::string const& keyName, bool defaultValue) const
 		{
 			return true;
 		}
+
 		if (value == "false" || value == "0")
 		{
 			return false;
 		}
 	}
+
 	return defaultValue;
 }
 
@@ -71,6 +75,7 @@ int NamedStrings::GetValue(std::string const& keyName, int defaultValue) const
 	{
 		return atoi(iter->second.c_str());
 	}
+
 	return defaultValue;
 }
 
@@ -81,6 +86,7 @@ float NamedStrings::GetValue(std::string const& keyName, float defaultValue) con
 	{
 		return (float)atof(iter->second.c_str());
 	}
+
 	return defaultValue;
 }
 
@@ -91,6 +97,7 @@ std::string NamedStrings::GetValue(std::string const& keyName, char const* defau
 	{
 		return iter->second;
 	}
+
 	return std::string(defaultValue);
 }
 
@@ -103,6 +110,7 @@ Color NamedStrings::GetValue(std::string const& keyName, Color const& defaultVal
 		result.SetFromText(iter->second.c_str());
 		return result;
 	}
+
 	return defaultValue;
 }
 
@@ -115,6 +123,7 @@ Vector2 NamedStrings::GetValue(std::string const& keyName, Vector2 const& defaul
 		result.SetFromText(iter->second.c_str());
 		return result;
 	}
+
 	return defaultValue;
 }
 
@@ -127,6 +136,7 @@ IntVec2 NamedStrings::GetValue(std::string const& keyName, IntVec2 const& defaul
 		result.SetFromText(iter->second.c_str());
 		return result;
 	}
+
 	return defaultValue;
 }
 
@@ -137,6 +147,7 @@ std::string NamedStrings::GetDebugInfo() const
 	{
 		debugInfo += Stringf("Key: %-10s | Value: %s", pair.first.c_str(), pair.second.c_str());
 	}
+
 	return debugInfo;
 }
 

@@ -654,6 +654,7 @@ void AddVertsForCylinder3D(
 	{
 		return;
 	}
+
 	iBasis /= iLen;
 
 	Vector3 jBasis = CrossProduct3D(kBasis, iBasis); // already normalized if i,k are orthonormal
@@ -764,6 +765,7 @@ void AddVertsForCylinder3D(
 	{
 		return;
 	}
+
 	iBasis /= iLen;
 	Vector3 jBasis = CrossProduct3D(kBasis, iBasis);
 
@@ -916,6 +918,7 @@ void AddVertsForCapsule3D(
 	{
 		return;
 	}
+
 	iBasis /= iLen;
 	Vector3 jBasis = CrossProduct3D(kBasis, iBasis);
 
@@ -928,7 +931,10 @@ void AddVertsForCapsule3D(
 	float const bodyVMinFrac = radius / totalVLength;
 	float const bodyVMaxFrac = (radius + axisLength) / totalVLength;
 
-	auto GetRadialDir = [&](float yaw) -> Vector3 { return iBasis * cosf(yaw) + jBasis * sinf(yaw); };
+	auto GetRadialDir = [&](float yaw) -> Vector3
+	{
+		return iBasis * cosf(yaw) + jBasis * sinf(yaw);
+	};
 
 	auto GetHemispherePoint = [&](Vector3 const& center, float yaw, float pitch) -> Vector3
 	{
@@ -936,9 +942,15 @@ void AddVertsForCapsule3D(
 		return center + GetRadialDir(yaw) * (radius * radialScale) + kBasis * (radius * sinf(pitch));
 	};
 
-	auto GetU = [&](float yawFrac) -> float { return UVs.m_mins.x + yawFrac * uRange; };
+	auto GetU = [&](float yawFrac) -> float
+	{
+		return UVs.m_mins.x + yawFrac * uRange;
+	};
 
-	auto GetV = [&](float vFrac) -> float { return UVs.m_mins.y + vFrac * vRange; };
+	auto GetV = [&](float vFrac) -> float
+	{
+		return UVs.m_mins.y + vFrac * vRange;
+	};
 
 	auto AddCapsuleVertex = [&](Vector3 const& position, Vector3 const& normal, float yaw, float u, float v)
 	{
@@ -1109,6 +1121,7 @@ void AddVertsForCone3D(
 	{
 		return;
 	}
+
 	iBasis /= iLen;
 
 	Vector3 jBasis = CrossProduct3D(kBasis, iBasis);
@@ -1210,6 +1223,7 @@ void AddVertsForCone3D(
 	{
 		return;
 	}
+
 	iBasis /= iLen;
 	Vector3 jBasis = CrossProduct3D(kBasis, iBasis);
 

@@ -61,6 +61,7 @@ bool TryParsePrelude(std::string const& prelude, uint32_t& outVersion, size_t& o
 		outHeaderSize = static_cast<size_t>(std::stoull(headerSizeToken.substr(std::strlen(headerSizePrefix))));
 		return true;
 	}
+
 	catch (std::exception const&)
 	{
 		return false;
@@ -149,7 +150,10 @@ void CopyPayloadBlock(std::vector<uint8_t> const& payload, BinaryBlock const& bl
 
 } // namespace
 
-std::vector<std::string> MeshResourceLoader::GetSupportedExtensions() const { return { kMeshExtension }; }
+std::vector<std::string> MeshResourceLoader::GetSupportedExtensions() const
+{
+	return { kMeshExtension };
+}
 
 Ref<Resource> MeshResourceLoader::Load(VirtualPath const& virtualPath)
 {

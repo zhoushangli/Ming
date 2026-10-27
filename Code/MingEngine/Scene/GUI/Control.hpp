@@ -1,6 +1,7 @@
 #pragma once
 
 #include "MingEngine/Scene/Core/CanvasItem.hpp"
+#include "MingEngine/Engine/Input/InputEvent.hpp"
 
 // Control inherits from CanvasItem, which means Control can call all these render functions
 // but Control has its own unique features, like size, position, minimum size, etc.
@@ -14,7 +15,25 @@ public:
 	enum
 	{
 		Notification_Resized            = 31,
-		Notification_MinimumSizeChanged = 32
+		Notification_MinimumSizeChanged = 32,
+		Notification_MouseEnter         = 35,
+		Notification_MouseExit          = 36,
+		Notification_FocusEnter         = 37,
+		Notification_FocusExit          = 38,
+		Notification_GuiInputCancelled  = 39
+	};
+
+	enum class MouseFilter
+	{
+		Stop,
+		Pass,
+		Ignore
+	};
+	enum class FocusMode
+	{
+		None,
+		Click,
+		All
 	};
 
 	// Without Fill, the control uses its minimum size and defaults to begin alignment.
@@ -33,15 +52,33 @@ public:
 public:
 	static void BindMethods() {}
 
-	void UpdateSize(Vector2 const& newSize);
+	void         UpdateSize(Vector2 const& newSize);
+	virtual bool IsPointInside(Vector2 const& localPosition) const;
+	// If GuiInput returns true
+	// it means the event is consumed and should not propagate to other controls.
+	virtual bool GuiInput(InputEvent const& event);
+
+	virtual bool IsDisabled() const { return false; }
+	MouseFilter  GetMouseFilter() const { return m_mouseFilter; }
+	FocusMode    GetFocusMode() const { return m_focusMode; }
+
+	void SetMouseFilter(MouseFilter filter);
+	void SetFocusMode(FocusMode mode);
+	void GrabFocus();
+	void ReleaseFocus();
+	bool HasFocus() const;
+	void SetClipContents(bool enabled);
+	bool IsClippingContents() const { return m_clipContents; }
 
 	Vector2 GetSize() const { return m_size; }
 	AABB2   GetLocalRect() const { return AABB2(Vector2::Zero, m_size); }
 	Vector2 GetLocalPosition() const override { return m_position; }
 
 	virtual Vector2 GetInternalMinimumSize() const;
-	Vector2         GetCustomMinimumSize() const { return m_customMinimumSize; }
-	Vector2         GetCombinedMinimumSize() const;
+
+	Vector2 GetCustomMinimumSize() const { return m_customMinimumSize; }
+
+	Vector2 GetCombinedMinimumSize() const;
 
 	int GetHorizontalSizeFlags() const { return m_horizontalSizeFlags; }
 	int GetVerticalSizeFlags() const { return m_verticalSizeFlags; }
@@ -66,6 +103,9 @@ private:
 	Vector2 m_size              = Vector2::Zero;
 	Vector2 m_customMinimumSize = Vector2::Zero;
 
-	int m_horizontalSizeFlags = Size_Fill;
-	int m_verticalSizeFlags   = Size_Fill;
+	int         m_horizontalSizeFlags = Size_Fill;
+	int         m_verticalSizeFlags   = Size_Fill;
+	MouseFilter m_mouseFilter         = MouseFilter::Stop;
+	FocusMode   m_focusMode           = FocusMode::None;
+	bool        m_clipContents        = false;
 };

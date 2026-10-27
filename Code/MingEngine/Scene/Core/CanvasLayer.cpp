@@ -4,9 +4,15 @@
 #include "MingEngine/Engine/Render/RenderServer.hpp"
 #include "MingEngine/Scene/Core/Viewport.hpp"
 
-CanvasLayer::CanvasLayer() { m_canvasLayerRID = g_engine->m_renderServer->CanvasLayerCreate(); }
+CanvasLayer::CanvasLayer()
+{
+	m_canvasLayerRID = g_engine->m_renderServer->CanvasLayerCreate();
+}
 
-CanvasLayer::~CanvasLayer() { g_engine->m_renderServer->CanvasLayerFree(m_canvasLayerRID); }
+CanvasLayer::~CanvasLayer()
+{
+	g_engine->m_renderServer->CanvasLayerFree(m_canvasLayerRID);
+}
 
 void CanvasLayer::OnNotification(int notification)
 {

@@ -3,7 +3,7 @@
 bool EditorPopupUtils::BeginModal(char const* title, ImVec2 initialSize, ImGuiWindowFlags flags)
 {
 	ImGuiViewport const* viewport = ImGui::GetMainViewport();
-	ImVec2 const center(
+	ImVec2 const         center(
 		viewport->WorkPos.x + viewport->WorkSize.x * 0.5f,
 		viewport->WorkPos.y + viewport->WorkSize.y * 0.5f);
 	ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
@@ -12,15 +12,14 @@ bool EditorPopupUtils::BeginModal(char const* title, ImVec2 initialSize, ImGuiWi
 	ImGui::PushStyleColor(ImGuiCol_PopupBg, ImGui::GetStyleColorVec4(ImGuiCol_WindowBg));
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(20.f, 18.f));
 	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(10.f, 12.f));
-	bool const isOpen = ImGui::BeginPopupModal(
-		title,
-		nullptr,
-		flags | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings);
+	bool const isOpen =
+		ImGui::BeginPopupModal(title, nullptr, flags | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings);
 	ImGui::PopStyleColor();
 	if (!isOpen)
 	{
 		ImGui::PopStyleVar(2);
 	}
+
 	return isOpen;
 }
 
@@ -32,8 +31,7 @@ void EditorPopupUtils::EndModal()
 
 void EditorPopupUtils::BeginButtonRow(int buttonCount, float buttonWidth, float buttonGap)
 {
-	float const width = buttonWidth * static_cast<float>(buttonCount)
-					+ buttonGap * static_cast<float>(buttonCount - 1);
+	float const width = buttonWidth * static_cast<float>(buttonCount) + buttonGap * static_cast<float>(buttonCount - 1);
 	ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (ImGui::GetContentRegionAvail().x - width) * 0.5f);
 }
 

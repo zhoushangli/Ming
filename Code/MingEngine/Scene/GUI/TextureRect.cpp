@@ -67,8 +67,9 @@ void TextureRect::OnNotification(int notification)
 		{
 			return;
 		}
-		if (m_texture->GetDimensions().x <= 0 || m_texture->GetDimensions().y <= 0 ||
-			GetSize().x <= 0.0f || GetSize().y <= 0.0f)
+
+		if (m_texture->GetDimensions().x <= 0 || m_texture->GetDimensions().y <= 0 || GetSize().x <= 0.0f
+			|| GetSize().y <= 0.0f)
 		{
 			return;
 		}
@@ -85,23 +86,27 @@ void TextureRect::OnNotification(int notification)
 			size = GetSize();
 			break;
 		}
+
 		case StretchMode::Tile:
 		{
 			size     = GetSize();
 			isTiling = true;
 			break;
 		}
+
 		case StretchMode::Keep:
 		{
 			size = (Vector2)m_texture->GetDimensions();
 			break;
 		}
+
 		case StretchMode::KeepCentered:
 		{
 			size   = (Vector2)m_texture->GetDimensions();
 			offset = (GetSize() - size) * 0.5f;
 			break;
 		}
+
 		case StretchMode::KeepAspect:
 		{
 			Vector2 textureSize  = (Vector2)m_texture->GetDimensions();
@@ -118,8 +123,10 @@ void TextureRect::OnNotification(int notification)
 				size.y = GetSize().y;
 				size.x = size.y * textureRatio;
 			}
+
 			break;
 		}
+
 		case StretchMode::KeepAspectCentered:
 		{
 			Vector2 textureSize  = (Vector2)m_texture->GetDimensions();
@@ -140,6 +147,7 @@ void TextureRect::OnNotification(int notification)
 			offset = (GetSize() - size) * 0.5f;
 			break;
 		}
+
 		case StretchMode::KeepAspectCovered:
 		{
 			Vector2 textureSize  = (Vector2)m_texture->GetDimensions();
@@ -167,6 +175,7 @@ void TextureRect::OnNotification(int notification)
 			offset.x += size.x;
 			size.x = -size.x;
 		}
+
 		if (m_verticalFlip)
 		{
 			offset.y += size.y;
@@ -174,7 +183,7 @@ void TextureRect::OnNotification(int notification)
 		}
 
 		rect.m_position = offset;
-		rect.m_size = size;
+		rect.m_size     = size;
 		DrawTextureRect(m_texture, rect, isTiling);
 	}
 	}

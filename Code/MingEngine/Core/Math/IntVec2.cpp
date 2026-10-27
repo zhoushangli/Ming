@@ -10,23 +10,48 @@ using namespace Math;
 
 const IntVec2 IntVec2::Zero = IntVec2(0, 0);
 
-IntVec2::IntVec2(int initialX, int initialY) : x(initialX), y(initialY) {}
+IntVec2::IntVec2(int initialX, int initialY) : x(initialX), y(initialY)
+{
+}
 
-IntVec2::IntVec2(const Vector2& copyFrom) : x(RoundDownToInt(copyFrom.x)), y(RoundDownToInt(copyFrom.y)) {}
+IntVec2::IntVec2(const Vector2& copyFrom) : x(RoundDownToInt(copyFrom.x)), y(RoundDownToInt(copyFrom.y))
+{
+}
 
-float IntVec2::GetLength() const { return sqrtf(static_cast<float>(GetLengthSquared())); }
+float IntVec2::GetLength() const
+{
+	return sqrtf(static_cast<float>(GetLengthSquared()));
+}
 
-int IntVec2::GetLengthSquared() const { return (x * x) + (y * y); }
+int IntVec2::GetLengthSquared() const
+{
+	return (x * x) + (y * y);
+}
 
-int IntVec2::GetTaxicabLength() const { return abs(x) + abs(y); }
+int IntVec2::GetTaxicabLength() const
+{
+	return abs(x) + abs(y);
+}
 
-float IntVec2::GetOrientationRadians() const { return atan2f((float)y, (float)x); }
+float IntVec2::GetOrientationRadians() const
+{
+	return atan2f((float)y, (float)x);
+}
 
-float IntVec2::GetOrientationDegrees() const { return ConvertRadiansToDegrees(GetOrientationRadians()); }
+float IntVec2::GetOrientationDegrees() const
+{
+	return ConvertRadiansToDegrees(GetOrientationRadians());
+}
 
-IntVec2 IntVec2::GetRotatedBy90Degrees() const { return IntVec2(-y, x); }
+IntVec2 IntVec2::GetRotatedBy90Degrees() const
+{
+	return IntVec2(-y, x);
+}
 
-IntVec2 IntVec2::GetRotatedByMinus90Degrees() const { return IntVec2(y, -x); }
+IntVec2 IntVec2::GetRotatedByMinus90Degrees() const
+{
+	return IntVec2(y, -x);
+}
 
 void IntVec2::Rotate90Degrees()
 {
@@ -42,18 +67,30 @@ void IntVec2::RotateMinus90Degrees()
 	y        = -oldX;
 }
 
-bool IntVec2::operator==(const IntVec2& other) const { return (x == other.x) && (y == other.y); }
+bool IntVec2::operator==(const IntVec2& other) const
+{
+	return (x == other.x) && (y == other.y);
+}
 
-bool IntVec2::operator!=(IntVec2 const& compare) const { return !(*this == compare); }
+bool IntVec2::operator!=(IntVec2 const& compare) const
+{
+	return !(*this == compare);
+}
 
-IntVec2 const IntVec2::operator+(IntVec2 const& vecToAdd) const { return IntVec2(x + vecToAdd.x, y + vecToAdd.y); }
+IntVec2 const IntVec2::operator+(IntVec2 const& vecToAdd) const
+{
+	return IntVec2(x + vecToAdd.x, y + vecToAdd.y);
+}
 
 IntVec2 const IntVec2::operator-(IntVec2 const& vecToSubtract) const
 {
 	return IntVec2(x - vecToSubtract.x, y - vecToSubtract.y);
 }
 
-IntVec2 const IntVec2::operator-() const { return IntVec2(-x, -y); }
+IntVec2 const IntVec2::operator-() const
+{
+	return IntVec2(-x, -y);
+}
 
 IntVec2 const IntVec2::operator*(float uniformScale) const
 {
@@ -100,7 +137,10 @@ void IntVec2::operator=(IntVec2 const& copyFrom)
 	y = copyFrom.y;
 }
 
-IntVec2::operator Vector2() const { return Vector2(static_cast<float>(x), static_cast<float>(y)); }
+IntVec2::operator Vector2() const
+{
+	return Vector2(static_cast<float>(x), static_cast<float>(y));
+}
 
 void IntVec2::SetFromText(char const* text)
 {

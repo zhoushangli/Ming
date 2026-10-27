@@ -126,7 +126,9 @@ public:
 	{
 		return !m_scriptExecutionSuspended || std::exchange(m_isRecreatingInstances, false);
 	}
+
 	bool IsScriptExecutionSuspended() const { return m_scriptExecutionSuspended; }
+
 	void RegisterScriptOwner(ObjectID id);
 	void UnregisterScriptOwner(ObjectID id);
 

@@ -68,6 +68,7 @@ public:
 		{
 			RefPointer(other.reference);
 		}
+
 		return *this;
 	}
 
@@ -78,6 +79,7 @@ public:
 			RefPointer(other.reference);
 			other.RefPointer(nullptr);
 		}
+
 		return *this;
 	}
 
@@ -91,6 +93,7 @@ public:
 		{
 			RefPointer(nullptr);
 		}
+
 		return *this;
 	}
 
@@ -100,21 +103,18 @@ public:
 		RefPointer(dynamic_cast<T*>(other.Get()));
 	}
 
-	T* Get() const { return reference; }
-	T* operator->() { return reference; }
-	T& operator*() { return *reference; }
-	T* operator->() const { return reference; }
-	T& operator*() const { return *reference; }
-
+	T*   Get() const { return reference; }
+	T*   operator->() { return reference; }
+	T&   operator*() { return *reference; }
+	T*   operator->() const { return reference; }
+	T&   operator*() const { return *reference; }
 	bool IsValid() const { return reference != nullptr; }
 	bool IsNull() const { return reference == nullptr; }
-
 	bool operator==(const Ref<T>& other) const { return reference == other.reference; }
 	bool operator!=(const Ref<T>& other) const { return reference != other.reference; }
 	bool operator==(const T* ptr) const { return reference == ptr; }
 	bool operator!=(const T* ptr) const { return reference != ptr; }
-
-	operator Variant() const { return Variant(reference); }
+		 operator Variant() const { return Variant(reference); }
 
 private:
 	void RefPointer(T* ptr)

@@ -10,8 +10,11 @@ public:
 	virtual ~SystemBase() = default;
 
 	virtual void Startup() {}
+
 	virtual void Shutdown() {}
+
 	virtual void BeginFrame() {}
+
 	virtual void EndFrame() {}
 
 	static void BindMethods();

@@ -5,35 +5,119 @@
 #include "MingEngine/Core/Math/RaycastUtils.hpp"
 #include "MingEngine/Scene/Core/Node.hpp"
 
-Vector3 RaycastQuery3D::GetStart() const { return m_start; }
-Vector3 RaycastQuery3D::GetDirection() const { return m_direction; }
-float   RaycastQuery3D::GetMaxDistance() const { return m_maxDistance; }
-Node*   RaycastQuery3D::GetExclude() const { return ObjectDatabase::GetInstance<Node>(m_exclude); }
+Vector3 RaycastQuery3D::GetStart() const
+{
+	return m_start;
+}
 
-void RaycastQuery3D::SetStart(Vector3 const& start) { m_start = start; }
-void RaycastQuery3D::SetDirection(Vector3 const& direction) { m_direction = direction; }
-void RaycastQuery3D::SetMaxDistance(float maxDistance) { m_maxDistance = maxDistance; }
+Vector3 RaycastQuery3D::GetDirection() const
+{
+	return m_direction;
+}
+
+float RaycastQuery3D::GetMaxDistance() const
+{
+	return m_maxDistance;
+}
+
+Node* RaycastQuery3D::GetExclude() const
+{
+	return ObjectDatabase::GetInstance<Node>(m_exclude);
+}
+
+void RaycastQuery3D::SetStart(Vector3 const& start)
+{
+	m_start = start;
+}
+
+void RaycastQuery3D::SetDirection(Vector3 const& direction)
+{
+	m_direction = direction;
+}
+
+void RaycastQuery3D::SetMaxDistance(float maxDistance)
+{
+	m_maxDistance = maxDistance;
+}
+
 void RaycastQuery3D::SetExclude(Node* exclude)
 {
 	m_exclude = exclude != nullptr ? exclude->GetObjectID() : ObjectID::Invalid;
 }
 
-bool    RaycastResult3D::GetDidImpact() const { return m_didImpact; }
-float   RaycastResult3D::GetImpactDistance() const { return m_impactDist; }
-Vector3 RaycastResult3D::GetImpactPosition() const { return m_impactPos; }
-Vector3 RaycastResult3D::GetImpactNormal() const { return m_impactNormal; }
-Vector3 RaycastResult3D::GetRayStartPosition() const { return m_rayStartPos; }
-Vector3 RaycastResult3D::GetRayForwardNormal() const { return m_rayFwdNormal; }
-float   RaycastResult3D::GetRayMaxLength() const { return m_rayMaxLength; }
-void RaycastResult3D::SetDidImpact(bool didImpact) { m_didImpact = didImpact; }
-void RaycastResult3D::SetImpactDistance(float impactDistance) { m_impactDist = impactDistance; }
-void RaycastResult3D::SetImpactPosition(Vector3 const& impactPosition) { m_impactPos = impactPosition; }
-void RaycastResult3D::SetImpactNormal(Vector3 const& impactNormal) { m_impactNormal = impactNormal; }
-void RaycastResult3D::SetRayStartPosition(Vector3 const& rayStartPosition) { m_rayStartPos = rayStartPosition; }
-void RaycastResult3D::SetRayForwardNormal(Vector3 const& rayForwardNormal) { m_rayFwdNormal = rayForwardNormal; }
-void RaycastResult3D::SetRayMaxLength(float rayMaxLength) { m_rayMaxLength = rayMaxLength; }
+bool RaycastResult3D::GetDidImpact() const
+{
+	return m_didImpact;
+}
 
-void RaycastSpace3D::BindMethods() {}
+float RaycastResult3D::GetImpactDistance() const
+{
+	return m_impactDist;
+}
+
+Vector3 RaycastResult3D::GetImpactPosition() const
+{
+	return m_impactPos;
+}
+
+Vector3 RaycastResult3D::GetImpactNormal() const
+{
+	return m_impactNormal;
+}
+
+Vector3 RaycastResult3D::GetRayStartPosition() const
+{
+	return m_rayStartPos;
+}
+
+Vector3 RaycastResult3D::GetRayForwardNormal() const
+{
+	return m_rayFwdNormal;
+}
+
+float RaycastResult3D::GetRayMaxLength() const
+{
+	return m_rayMaxLength;
+}
+
+void RaycastResult3D::SetDidImpact(bool didImpact)
+{
+	m_didImpact = didImpact;
+}
+
+void RaycastResult3D::SetImpactDistance(float impactDistance)
+{
+	m_impactDist = impactDistance;
+}
+
+void RaycastResult3D::SetImpactPosition(Vector3 const& impactPosition)
+{
+	m_impactPos = impactPosition;
+}
+
+void RaycastResult3D::SetImpactNormal(Vector3 const& impactNormal)
+{
+	m_impactNormal = impactNormal;
+}
+
+void RaycastResult3D::SetRayStartPosition(Vector3 const& rayStartPosition)
+{
+	m_rayStartPos = rayStartPosition;
+}
+
+void RaycastResult3D::SetRayForwardNormal(Vector3 const& rayForwardNormal)
+{
+	m_rayFwdNormal = rayForwardNormal;
+}
+
+void RaycastResult3D::SetRayMaxLength(float rayMaxLength)
+{
+	m_rayMaxLength = rayMaxLength;
+}
+
+void RaycastSpace3D::BindMethods()
+{
+}
 
 RaycastSpace3D::~RaycastSpace3D()
 {

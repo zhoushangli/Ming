@@ -77,6 +77,7 @@ void Camera3D::OnNotification(int notification)
 
 		break;
 	}
+
 	case Notification_ExitTree:
 	{
 		if (m_data.m_viewport == nullptr)
@@ -87,6 +88,7 @@ void Camera3D::OnNotification(int notification)
 		m_data.m_viewport->RemoveCamera(this);
 		break;
 	}
+
 	case Notification_TransformChanged:
 	{
 		server->CameraSetTransform(m_cameraRID, GetWorldTransform());
@@ -163,7 +165,10 @@ void Camera3D::SetPerspective(float fovDegrees, float nearClip, float farClip)
 	SyncRenderData();
 }
 
-CameraMode Camera3D::GetMode() const { return m_mode; }
+CameraMode Camera3D::GetMode() const
+{
+	return m_mode;
+}
 
 void Camera3D::SetMode(CameraMode mode)
 {
@@ -171,7 +176,10 @@ void Camera3D::SetMode(CameraMode mode)
 	SyncRenderData();
 }
 
-float Camera3D::GetNearClip() const { return m_nearClip; }
+float Camera3D::GetNearClip() const
+{
+	return m_nearClip;
+}
 
 void Camera3D::SetNearClip(float nearClip)
 {
@@ -179,7 +187,10 @@ void Camera3D::SetNearClip(float nearClip)
 	SyncRenderData();
 }
 
-float Camera3D::GetFarClip() const { return m_farClip; }
+float Camera3D::GetFarClip() const
+{
+	return m_farClip;
+}
 
 void Camera3D::SetFarClip(float farClip)
 {
@@ -187,7 +198,10 @@ void Camera3D::SetFarClip(float farClip)
 	SyncRenderData();
 }
 
-float Camera3D::GetFovDegrees() const { return m_fovDegrees; }
+float Camera3D::GetFovDegrees() const
+{
+	return m_fovDegrees;
+}
 
 void Camera3D::SetFovDegrees(float fovDegrees)
 {
@@ -195,7 +209,10 @@ void Camera3D::SetFovDegrees(float fovDegrees)
 	SyncRenderData();
 }
 
-float Camera3D::GetSize() const { return m_size; }
+float Camera3D::GetSize() const
+{
+	return m_size;
+}
 
 void Camera3D::SetSize(float size)
 {

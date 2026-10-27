@@ -11,5 +11,5 @@
 //#define ENGINE_DISABLE_AUDIO	// (If uncommented) Disables the AudioSystem backend.
 
 #if defined(_DEBUG)
-#define ENGINE_DEBUG_RENDER	
+#define ENGINE_DEBUG_RENDER
 #endif

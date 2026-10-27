@@ -10,13 +10,16 @@ public:
 	explicit BoxContainer(bool vertical = false) : m_vertical(vertical) {}
 
 	Vector2 GetInternalMinimumSize() const override;
-	bool    IsVertical() const { return m_vertical; }
-	float   GetSeparation() const { return m_separation; }
-	void    SetSeparation(float separation);
+
+	bool  IsVertical() const { return m_vertical; }
+	float GetSeparation() const { return m_separation; }
+
+	void SetSeparation(float separation);
 
 protected:
 	static void BindMethods() {}
-	void        OnNotification(int notification);
+
+	void OnNotification(int notification);
 
 private:
 	bool  m_vertical   = false;

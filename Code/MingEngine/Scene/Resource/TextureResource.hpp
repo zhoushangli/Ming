@@ -21,8 +21,9 @@ public:
 
 	RID        GetTextureRID() const { return m_textureRID; }
 	Ref<Image> GetImage() const { return m_image; }
-	IntVec2    GetDimensions() const;
-	int        GetChannels() const;
+
+	IntVec2 GetDimensions() const;
+	int     GetChannels() const;
 
 protected:
 	static void BindMethods() {}

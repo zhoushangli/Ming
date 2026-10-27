@@ -59,6 +59,7 @@ Clock::~Clock()
 			child->m_parent = nullptr;
 		}
 	}
+
 	m_children.clear();
 }
 
@@ -70,9 +71,15 @@ void Clock::Reset()
 	m_frameCount              = 0;
 }
 
-bool Clock::IsPaused() const { return m_isPaused; }
+bool Clock::IsPaused() const
+{
+	return m_isPaused;
+}
 
-void Clock::Pause() { m_isPaused = true; }
+void Clock::Pause()
+{
+	m_isPaused = true;
+}
 
 void Clock::Unpause()
 {
@@ -95,13 +102,25 @@ void Clock::StepSingleFrame()
 	m_stepSingleFrame = true;
 }
 
-void Clock::SetTimeScale(double timeScale) { m_timeScale = timeScale; }
+void Clock::SetTimeScale(double timeScale)
+{
+	m_timeScale = timeScale;
+}
 
-double Clock::GetTimeScale() const { return m_timeScale; }
+double Clock::GetTimeScale() const
+{
+	return m_timeScale;
+}
 
-double Clock::GetDeltaSeconds() const { return m_deltaSeconds; }
+double Clock::GetDeltaSeconds() const
+{
+	return m_deltaSeconds;
+}
 
-double Clock::GetTotalSeconds() const { return m_totalSeconds; }
+double Clock::GetTotalSeconds() const
+{
+	return m_totalSeconds;
+}
 
 double Clock::GetFrameRate() const
 {
@@ -109,10 +128,14 @@ double Clock::GetFrameRate() const
 	{
 		return 0.0;
 	}
+
 	return 1.0 / m_deltaSeconds;
 }
 
-int Clock::GetFrameCount() const { return m_frameCount; }
+int Clock::GetFrameCount() const
+{
+	return m_frameCount;
+}
 
 Clock& Clock::GetSystemClock()
 {
@@ -148,6 +171,7 @@ void Clock::Tick()
 	{
 		deltaSeconds = 0.0;
 	}
+
 	if (deltaSeconds > m_maxDeltaSeconds)
 	{
 		deltaSeconds = m_maxDeltaSeconds;

@@ -55,7 +55,7 @@ void ReportMessage(
 	else                                                                                                               \
 		((void)0)
 
-#define ERR_FAIL_MSG(message)                                                                          \
+#define ERR_FAIL_MSG(message)                                                                                          \
 	if (true)                                                                                                          \
 	{                                                                                                                  \
 		ERR_PRINT(message);                                                                                            \

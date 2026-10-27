@@ -19,6 +19,9 @@
 #include "MingEngine/Scene/Core/PackedScene.hpp"
 #include "MingEngine/Scene/Core/RaycastSpace3D.hpp"
 #include "MingEngine/Scene/Core/SceneTree.hpp"
+#include "MingEngine/Scene/GUI/SubViewportContainer.hpp"
+#include "MingEngine/Engine/Application/App.hpp"
+#include "ThirdParty/GLFW/glfw3.h"
 
 #include "ThirdParty/imgui/imgui.h"
 
@@ -34,7 +37,10 @@ std::string FormatObjectID(ObjectID objectID)
 
 EditorNode* EditorNode::s_instance = nullptr;
 
-ObjectID EditorSelection::GetSelected() const { return m_selectedNodeID; }
+ObjectID EditorSelection::GetSelected() const
+{
+	return m_selectedNodeID;
+}
 
 void EditorSelection::SetSelected(ObjectID nodeID)
 {
@@ -75,11 +81,15 @@ void EditorSelection::SetSelected(ObjectID nodeID)
 	}
 }
 
-void EditorSelection::Clear() { SetSelected(ObjectID::Invalid); }
+void EditorSelection::Clear()
+{
+	SetSelected(ObjectID::Invalid);
+}
 
 EditorNode::EditorNode()
 {
 	s_instance = this;
+	SetSerializable(false);
 	m_editorUI = new EditorUI();
 
 	m_editorCamera = MemNew<EditorCamera>();
@@ -89,10 +99,13 @@ EditorNode::EditorNode()
 	m_editorCamera->SetSerializable(false);
 	AddNode(m_editorCamera);
 
-	m_editorGizmos = MemNew<EditorGizmos>();
-	m_editorGizmos->SetName("EditorGizmos");
-	m_editorGizmos->SetSerializable(false);
-	AddNode(m_editorGizmos);
+	if (g_engine->m_imguiSystem != nullptr)
+	{
+		m_editorGizmos = MemNew<EditorGizmos>();
+		m_editorGizmos->SetName("EditorGizmos");
+		m_editorGizmos->SetSerializable(false);
+		AddNode(m_editorGizmos);
+	}
 
 	SetReady(true);
 	SetProcess(true);
@@ -109,11 +122,30 @@ EditorNode::~EditorNode()
 	}
 }
 
-EditorNode* EditorNode::Get() { return s_instance; }
+EditorNode* EditorNode::Get()
+{
+	return s_instance;
+}
 
-EditorSelection& EditorNode::GetSelection() { return m_selection; }
+bool EditorNode::HandleGuiInput(InputEvent const& event)
+{
+	return m_editorUI != nullptr && m_editorUI->HandleInput(event);
+}
 
-EditorSelection const& EditorNode::GetSelection() const { return m_selection; }
+bool EditorNode::IsEditingNativeControl() const
+{
+	return m_editorUI != nullptr && m_editorUI->IsNativeInputActive();
+}
+
+EditorSelection& EditorNode::GetSelection()
+{
+	return m_selection;
+}
+
+EditorSelection const& EditorNode::GetSelection() const
+{
+	return m_selection;
+}
 
 void EditorNode::OnMouseMove(Vector2 screenPos, [[maybe_unused]] Vector2 delta)
 {
@@ -140,7 +172,7 @@ void EditorNode::OnMouseMove(Vector2 screenPos, [[maybe_unused]] Vector2 delta)
 
 void EditorNode::OnMouseDown(int keyCode, Vector2 screenPos)
 {
-	if (!(g_engine->m_imguiSystem->WantCaptureMouse() && m_uiContext.m_isViewportImageHovered))
+	if (g_engine->m_imguiSystem != nullptr && !(g_engine->m_imguiSystem->WantCaptureMouse() && m_uiContext.m_isViewportImageHovered))
 	{
 		return;
 	}
@@ -150,7 +182,7 @@ void EditorNode::OnMouseDown(int keyCode, Vector2 screenPos)
 		return;
 	}
 
-	if (m_editorGizmos == nullptr || m_editorCamera == nullptr)
+	if (m_editorCamera == nullptr)
 	{
 		return;
 	}
@@ -162,7 +194,7 @@ void EditorNode::OnMouseDown(int keyCode, Vector2 screenPos)
 	}
 
 	// 1) Let hovered gizmos capture the click
-	if (m_editorGizmos->IsHovered())
+	if (m_editorGizmos != nullptr && m_editorGizmos->IsHovered())
 	{
 		m_editorGizmos->BeginDragHovered(*camera, screenPos);
 		return;
@@ -210,6 +242,12 @@ void EditorNode::OnReady()
 	m_uiContext.m_selection  = &m_selection;
 	m_uiContext.m_editorUI   = m_editorUI;
 	m_uiContext.m_fileSystem = g_engine->m_fileSystem;
+	if (g_engine->m_imguiSystem == nullptr)
+	{
+		m_editorUI->InitializeNative(this);
+		m_editorCamera->Reparent(m_editorUI->GetSceneView()->GetSubViewport());
+		m_editorCamera->GetCamera()->SetCurrent();
+	}
 }
 
 void EditorNode::OnProcess([[maybe_unused]] float deltaSeconds)
@@ -224,7 +262,10 @@ void EditorNode::OnProcess([[maybe_unused]] float deltaSeconds)
 
 	InputSystem* input       = g_engine->m_inputSystem;
 	bool const   controlDown = input->IsKeyDown(KeyCode::LeftControl) || input->IsKeyDown(KeyCode::RightControl);
-	if (controlDown && input->WasKeyJustPressed(KeyCode::S) && HasScene())
+	bool const   modalOpen   = g_engine->m_imguiSystem == nullptr
+							   && static_cast<Viewport*>(GetSceneTree()->GetRoot())->GetGuiPopup() != nullptr;
+	if (controlDown && input->WasKeyJustPressed(KeyCode::S) && HasScene() && !modalOpen
+		&& (g_engine->m_imguiSystem == nullptr || !IsEditingNativeControl()))
 	{
 		if (!SaveScene() && m_editorUI != nullptr)
 		{
@@ -233,7 +274,8 @@ void EditorNode::OnProcess([[maybe_unused]] float deltaSeconds)
 	}
 
 	// 1) Dispatch mouse events when in Pointer mode
-	if (m_editorCamera != nullptr && m_editorCamera->GetControlState() == EditorCamera::EditorControlState::Pointer)
+	if (g_engine->m_imguiSystem != nullptr && m_editorCamera != nullptr
+		&& m_editorCamera->GetControlState() == EditorCamera::EditorControlState::Pointer)
 	{
 		Vector2 const cursorPos = m_editorCamera->GetCursorClientPos();
 		Vector2 const delta     = m_editorCamera->GetCursorDelta();
@@ -250,16 +292,27 @@ void EditorNode::OnProcess([[maybe_unused]] float deltaSeconds)
 			OnMouseUp(ToKeyCode(KeyCode::LeftMouse), cursorPos);
 		}
 	}
+
+	if (m_editorUI != nullptr)
+	{
+		m_editorUI->FinishInput(m_uiContext);
+	}
 }
 
 void EditorNode::RequestLoadScene(VirtualPath const& virtualPath)
 {
+	if (g_engine->m_imguiSystem == nullptr)
+	{
+		m_editorUI->FinishNativeEditing();
+	}
+
 	if (!m_editorData.m_isSceneDirty)
 	{
 		if (!LoadScene(virtualPath) && m_editorUI != nullptr)
 		{
 			m_editorUI->Warning("Open Scene Failed", virtualPath.GetString());
 		}
+
 		return;
 	}
 
@@ -289,7 +342,7 @@ void EditorNode::RequestCreateScene(VirtualPath const& virtualPath, std::string 
 
 bool EditorNode::LoadScene(VirtualPath const& virtualPath)
 {
-	Ref<Resource> loadedScene = ResourceLoader::Load(virtualPath);
+	Ref<Resource> loadedScene = ResourceLoader::LoadUncached(virtualPath);
 	if (!loadedScene.IsValid())
 	{
 		return false;
@@ -308,6 +361,7 @@ bool EditorNode::LoadScene(VirtualPath const& virtualPath)
 	}
 
 	GetSceneTree()->ChangeScene(newSceneRoot);
+	m_undoRedo.ClearAllHistory();
 	m_editorData.m_currentScenePath = virtualPath;
 	m_editorData.m_isSceneDirty     = false;
 	m_selection.Clear();
@@ -317,12 +371,18 @@ bool EditorNode::LoadScene(VirtualPath const& virtualPath)
 
 bool EditorNode::SaveScene()
 {
+	if (g_engine->m_imguiSystem == nullptr && m_editorUI != nullptr)
+	{
+		m_editorUI->FinishNativeEditing();
+	}
+
 	SceneTree* sceneTree = GetSceneTree();
 	Node*      sceneRoot = sceneTree->GetScene();
 	if (sceneRoot == nullptr || !m_editorData.m_currentScenePath.IsValid())
 	{
 		return false;
 	}
+
 	Ref<PackedScene> packedScene = CreateRef<PackedScene>();
 
 	if (!packedScene->Pack(sceneRoot))
@@ -347,9 +407,15 @@ void EditorNode::MarkSceneDirty()
 	}
 }
 
-bool EditorNode::IsSceneDirty() const { return m_editorData.m_isSceneDirty; }
+bool EditorNode::IsSceneDirty() const
+{
+	return m_editorData.m_isSceneDirty;
+}
 
-bool EditorNode::HasScene() const { return GetSceneTree() != nullptr && GetSceneTree()->GetScene() != nullptr; }
+bool EditorNode::HasScene() const
+{
+	return GetSceneTree() != nullptr && GetSceneTree()->GetScene() != nullptr;
+}
 
 std::string EditorNode::GetCurrentSceneName() const
 {
@@ -368,10 +434,12 @@ bool EditorNode::CreateScene(VirtualPath const& virtualPath, std::string const& 
 		{
 			m_editorUI->Warning("Create Scene Failed", virtualPath.GetString());
 		}
+
 		return false;
 	}
 
 	GetSceneTree()->ChangeScene(sceneRoot);
+	m_undoRedo.ClearAllHistory();
 	m_editorData.m_currentScenePath = virtualPath;
 	m_editorData.m_isSceneDirty     = false;
 	m_selection.Clear();
@@ -379,17 +447,30 @@ bool EditorNode::CreateScene(VirtualPath const& virtualPath, std::string const& 
 	{
 		g_engine->m_fileSystem->ScanResourceTree();
 	}
+
 	return true;
 }
 
 void EditorNode::RenderUnsavedScenePopup()
 {
+	if (g_engine->m_imguiSystem == nullptr)
+	{
+		if (m_openUnsavedScenePopup)
+		{
+			m_openUnsavedScenePopup = false;
+			m_editorUI->ShowUnsavedScene();
+		}
+
+		return;
+	}
+
 	constexpr char const* popupId = "Please Confirm...";
 	if (m_openUnsavedScenePopup)
 	{
 		ImGui::OpenPopup(popupId);
 		m_openUnsavedScenePopup = false;
 	}
+
 	if (!EditorPopupUtils::BeginModal(popupId, ImVec2(560.f, 0.f), ImGuiWindowFlags_AlwaysAutoResize))
 	{
 		return;
@@ -453,4 +534,49 @@ void EditorNode::ExecutePendingSceneAction()
 			action == PendingSceneAction::Load ? "Open Scene Failed" : "Create Scene Failed",
 			path.GetString());
 	}
+}
+
+bool EditorNode::IsSceneNavigationActive() const
+{
+	return m_editorUI != nullptr && m_editorUI->IsSceneNavigationActive();
+}
+
+void EditorNode::ResolvePendingSceneAction(int choice)
+{
+	if (choice == 1)
+	{
+		m_pendingSceneAction = PendingSceneAction::None;
+		m_pendingScenePath   = {};
+		m_pendingSceneRootName.clear();
+		return;
+	}
+
+	if (choice == 0 && !SaveScene())
+	{
+		m_editorUI->Warning("Save failed", "The scene remains open; changes have not been discarded.");
+		m_pendingSceneAction = PendingSceneAction::None;
+		return;
+	}
+
+	if (m_pendingSceneAction == PendingSceneAction::Quit)
+	{
+		m_pendingSceneAction        = PendingSceneAction::None;
+		m_editorData.m_isSceneDirty = false;
+		g_app->Quit();
+		return;
+	}
+
+	ExecutePendingSceneAction();
+}
+
+void EditorNode::RequestQuit()
+{
+	if (m_pendingSceneAction == PendingSceneAction::Quit || m_openUnsavedScenePopup)
+	{
+		return;
+	}
+
+	m_editorUI->FinishNativeEditing();
+	m_pendingSceneAction    = PendingSceneAction::Quit;
+	m_openUnsavedScenePopup = true;
 }

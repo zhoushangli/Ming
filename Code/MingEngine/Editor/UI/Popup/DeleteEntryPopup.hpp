@@ -15,7 +15,7 @@ public:
 
 private:
 	bool        m_openRequested = false;
-	bool        m_isDirectory = false;
+	bool        m_isDirectory   = false;
 	VirtualPath m_parentVirtualPath;
 	VirtualPath m_targetVirtualPath;
 	VirtualPath m_selectedVirtualPath;

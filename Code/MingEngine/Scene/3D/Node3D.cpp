@@ -68,7 +68,10 @@ void Node3D::BindMethods()
 		"GetLocalScale");
 }
 
-Matrix4x4 Node3D::GetLocalTransform() const { return m_transform.GetMatrix(); }
+Matrix4x4 Node3D::GetLocalTransform() const
+{
+	return m_transform.GetMatrix();
+}
 
 Matrix4x4 Node3D::GetWorldTransform() const
 {
@@ -118,7 +121,10 @@ void Node3D::SetWorldTransform(Matrix4x4 const& worldTransform)
 	}
 }
 
-Vector3 Node3D::GetLocalPosition() const { return m_transform.GetPosition(); }
+Vector3 Node3D::GetLocalPosition() const
+{
+	return m_transform.GetPosition();
+}
 
 Vector3 Node3D::GetWorldPosition() const
 {
@@ -147,7 +153,10 @@ void Node3D::SetWorldPosition(Vector3 const& worldPosition)
 	}
 }
 
-Vector3 Node3D::GetLocalScale() const { return m_transform.GetScale(); }
+Vector3 Node3D::GetLocalScale() const
+{
+	return m_transform.GetScale();
+}
 
 void Node3D::SetLocalScale(Vector3 const& scale)
 {
@@ -178,7 +187,10 @@ void Node3D::SetWorldScale(Vector3 const& scale)
 	}
 }
 
-EulerAngles Node3D::GetLocalOrientation() const { return m_transform.GetOrientation(); }
+EulerAngles Node3D::GetLocalOrientation() const
+{
+	return m_transform.GetOrientation();
+}
 
 EulerAngles Node3D::GetWorldOrientation() const
 {
@@ -230,7 +242,9 @@ Vector3 Node3D::GetWorldForward() const
 	return forward;
 }
 
-void Node3D::OnTransformChanged() {}
+void Node3D::OnTransformChanged()
+{
+}
 
 void Node3D::PropagateTransformChanged()
 {

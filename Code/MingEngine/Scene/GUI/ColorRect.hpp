@@ -7,6 +7,8 @@ class ColorRect : public Control
 	MCLASS(ColorRect, Control);
 
 public:
+	ColorRect() { SetMouseFilter(MouseFilter::Ignore); }
+
 	void SetColor(Color const& color);
 
 	Color GetColor() const { return m_color; }

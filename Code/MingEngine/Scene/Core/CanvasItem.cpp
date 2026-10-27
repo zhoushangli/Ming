@@ -5,14 +5,19 @@
 #include "MingEngine/Scene/Core/CanvasLayer.hpp"
 #include "MingEngine/Scene/Core/Viewport.hpp"
 
-CanvasItem::CanvasItem() 
-{ 
-	m_canvasItemRID = g_engine->m_renderServer->CanvasItemCreate(); 
+CanvasItem::CanvasItem()
+{
+	m_canvasItemRID = g_engine->m_renderServer->CanvasItemCreate();
 }
 
-CanvasItem::~CanvasItem() 
-{ 
-	g_engine->m_renderServer->CanvasItemFree(m_canvasItemRID); 
+CanvasItem::~CanvasItem()
+{
+	g_engine->m_renderServer->CanvasItemFree(m_canvasItemRID);
+}
+
+void CanvasItem::SetCanvasClip(bool enabled, Vector2 const& size)
+{
+	g_engine->m_renderServer->CanvasItemSetClip(m_canvasItemRID, enabled, size);
 }
 
 CanvasItem* CanvasItem::GetParentItem() const
@@ -24,15 +29,20 @@ CanvasItem* CanvasItem::GetParentItem() const
 		{
 			return item;
 		}
+
 		if (dynamic_cast<CanvasLayer*>(ancestor) != nullptr)
 		{
 			break;
 		}
 	}
+
 	return nullptr;
 }
 
-Vector2 CanvasItem::GetLocalPosition() const { return Vector2::Zero; }
+Vector2 CanvasItem::GetLocalPosition() const
+{
+	return Vector2::Zero;
+}
 
 Vector2 CanvasItem::GetGlobalPosition() const
 {
@@ -56,10 +66,24 @@ void CanvasItem::SetVisible(bool visible)
 	m_visible = visible;
 	g_engine->m_renderServer->CanvasItemSetVisible(m_canvasItemRID, visible);
 
+	if (!visible && GetViewport() != nullptr)
+	{
+		ObjectID const id = GetObjectID();
+		GetViewport()->CancelGuiInteraction(this);
+
+		if (ObjectDatabase::GetInstance<CanvasItem>(id) == nullptr)
+		{
+			return;
+		}
+	}
+
 	Notification(Notification_VisibilityChanged);
 }
 
-bool CanvasItem::IsVisible() const { return m_visible; }
+bool CanvasItem::IsVisible() const
+{
+	return m_visible;
+}
 
 bool CanvasItem::IsVisibleInHierarchy() const
 {
@@ -109,12 +133,14 @@ void CanvasItem::OnNotification(int notification)
 				m_canvasLayerRID = parentItem->m_canvasLayerRID;
 				break;
 			}
+
 			if (CanvasLayer* layer = dynamic_cast<CanvasLayer*>(ancestor))
 			{
 				m_canvasLayerRID = layer->GetCanvasLayerRID();
 				break;
 			}
 		}
+
 		if (!m_canvasLayerRID.IsValid())
 		{
 			m_canvasLayerRID = m_data.m_viewport->GetCanvasLayerRID();
@@ -129,6 +155,7 @@ void CanvasItem::OnNotification(int notification)
 		{
 			server->CanvasLayerAddChild(m_canvasLayerRID, m_canvasItemRID);
 		}
+
 		server->CanvasItemSetPosition(m_canvasItemRID, GetLocalPosition());
 		server->CanvasItemSetVisible(m_canvasItemRID, m_visible);
 
@@ -136,16 +163,18 @@ void CanvasItem::OnNotification(int notification)
 		{
 			QueueRedraw();
 		}
+
 		break;
 	}
+
 	case Notification_ExitTree:
 		server->CanvasItemSetParent(m_canvasItemRID, RID::Invalid);
 		server->CanvasItemSetViewport(m_canvasItemRID, RID::Invalid);
 
 		if (m_canvasLayerRID.IsValid())
 		{
-			m_canvasLayerRID = RID::Invalid;
 			server->CanvasLayerRemoveChild(m_canvasLayerRID, m_canvasItemRID);
+			m_canvasLayerRID = RID::Invalid;
 		}
 
 		break;
@@ -160,6 +189,16 @@ void CanvasItem::DrawRect(AABB2 const& rect, Color const& color)
 	}
 
 	g_engine->m_renderServer->CanvasItemAddRect(m_canvasItemRID, rect, color);
+}
+
+void CanvasItem::SetChildrenClip(bool enabled, Vector2 const& size)
+{
+	g_engine->m_renderServer->CanvasItemSetChildrenClip(m_canvasItemRID, enabled, size);
+}
+
+void CanvasItem::DrawViewportRect(RID viewport, Rect2 const& rect)
+{
+	g_engine->m_renderServer->CanvasItemAddViewportRect(m_canvasItemRID, viewport, rect);
 }
 
 void CanvasItem::DrawTextureRect(Ref<TextureResource> const& texture, Rect2 const& rect, bool isTiling)

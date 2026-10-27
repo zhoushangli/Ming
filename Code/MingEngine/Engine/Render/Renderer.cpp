@@ -72,11 +72,17 @@ Vector3 GetColorAsRGB(Color const& color)
 
 } // namespace
 
-Renderer::Renderer(RendererServerConfig config) : m_config(config) {}
+Renderer::Renderer(RendererServerConfig config) : m_config(config)
+{
+}
 
-Renderer::~Renderer() {}
+Renderer::~Renderer()
+{
+}
 
-void Renderer::BindMethods() {}
+void Renderer::BindMethods()
+{
+}
 
 void Renderer::Startup()
 {
@@ -141,7 +147,10 @@ void Renderer::EndFrame()
 	DebugGizmos::EndFrame();
 }
 
-void Renderer::CreateRenderingContext() { m_renderBackend->CreateRenderingContext(); }
+void Renderer::CreateRenderingContext()
+{
+	m_renderBackend->CreateRenderingContext();
+}
 
 void Renderer::RenderViewport(ViewportData* viewport, CameraData* camera)
 {
@@ -179,7 +188,10 @@ void Renderer::RenderViewport(ViewportData* viewport, CameraData* camera)
 		std::stable_sort(
 			requests.begin(),
 			requests.end(),
-			[](RenderRequest const& a, RenderRequest const& b) { return a.m_renderPriority < b.m_renderPriority; });
+			[](RenderRequest const& a, RenderRequest const& b)
+			{
+				return a.m_renderPriority < b.m_renderPriority;
+			});
 	};
 	sortPass(viewport->m_renderRequests[static_cast<size_t>(RenderRequestPass::Skybox)]);
 	sortPass(viewport->m_renderRequests[static_cast<size_t>(RenderRequestPass::Opaque)]);
@@ -227,6 +239,7 @@ void Renderer::ExecuteRenderRequest(RenderRequest const& request)
 				m_renderBackend->BindTexture(m_defaultWhiteTexture, textureSlot);
 				break;
 			}
+
 			m_renderBackend->BindSampler(SamplerMode::POINT_CLAMP, textureSlot);
 		}
 		else
@@ -235,6 +248,7 @@ void Renderer::ExecuteRenderRequest(RenderRequest const& request)
 			m_renderBackend->BindSampler(request.m_samplerMode, textureSlot);
 		}
 	}
+
 	m_renderBackend->SetBlendMode(request.m_blendMode);
 	m_renderBackend->SetRasterizerMode(request.m_rasterizerMode);
 	m_renderBackend->SetDepthMode(request.m_depthMode);
@@ -301,7 +315,10 @@ void Renderer::DestroyViewportResources(ViewportData* viewport)
 	}
 }
 
-void Renderer::SetViewport(IntVec2 dimensions, IntVec2 topLeft) { m_renderBackend->SetViewport(dimensions, topLeft); }
+void Renderer::SetViewport(IntVec2 dimensions, IntVec2 topLeft)
+{
+	m_renderBackend->SetViewport(dimensions, topLeft);
+}
 
 void Renderer::ClearSceneTargets(ViewportData* viewport)
 {
@@ -485,10 +502,14 @@ void Renderer::RenderUI(ViewportData const* viewport)
 	m_renderBackend->BindRenderTarget(viewport->m_viewportOutputTexture);
 
 	// 3) Gizmos screen text / messages
-	for (RenderRequest const& request : DebugGizmos::GetRenderRequests(RenderRequestPass::UI))
+	if (viewport->m_presentToScreen || viewport->m_camera.IsValid())
 	{
-		ExecuteRenderRequest(request);
+		for (RenderRequest const& request : DebugGizmos::GetRenderRequests(RenderRequestPass::UI))
+		{
+			ExecuteRenderRequest(request);
+		}
 	}
+
 	m_renderBackend->SetBlendMode(BlendMode::ALPHA);
 	m_renderBackend->SetRasterizerMode(RasterizerMode::SOLID_CULL_NONE);
 	m_renderBackend->SetDepthMode(DepthMode::READ_ONLY_ALWAYS);
@@ -549,15 +570,22 @@ VertexBuffer* Renderer::CreateVertexBuffer(const unsigned int size, unsigned int
 {
 	return m_renderBackend->CreateVertexBuffer(size, stride);
 }
+
 VertexBuffer* Renderer::CreateVertexBuffer(void const* data, const unsigned int byteSize, unsigned int stride)
 {
 	return m_renderBackend->CreateVertexBuffer(data, byteSize, stride);
 }
+
 ConstantBuffer* Renderer::CreateConstantBuffer(const unsigned int size)
 {
 	return m_renderBackend->CreateConstantBuffer(size);
 }
-IndexBuffer* Renderer::CreateIndexBuffer(const unsigned int size) { return m_renderBackend->CreateIndexBuffer(size); }
+
+IndexBuffer* Renderer::CreateIndexBuffer(const unsigned int size)
+{
+	return m_renderBackend->CreateIndexBuffer(size);
+}
+
 IndexBuffer* Renderer::CreateIndexBuffer(void const* data, const unsigned int byteSize, const unsigned int stride)
 {
 	return m_renderBackend->CreateIndexBuffer(data, byteSize, stride);
@@ -578,10 +606,12 @@ void Renderer::CopyCPUToGPU(const void* data, unsigned int size, VertexBuffer* v
 {
 	m_renderBackend->CopyCPUToGPU(data, size, vertexBuffer);
 }
+
 void Renderer::CopyCPUToGPU(const void* data, unsigned int size, ConstantBuffer* constantBuffer)
 {
 	m_renderBackend->CopyCPUToGPU(data, size, constantBuffer);
 }
+
 void Renderer::CopyCPUToGPU(const void* data, unsigned int size, IndexBuffer* indexBuffer)
 {
 	m_renderBackend->CopyCPUToGPU(data, size, indexBuffer);
@@ -592,19 +622,37 @@ void Renderer::BindConstantBuffer(ConstantBuffer* constantBuffer, int slot)
 	m_renderBackend->BindConstantBuffer(constantBuffer, slot);
 }
 
-bool Renderer::InitImGui() { return m_renderBackend->InitImGui(); }
+bool Renderer::InitImGui()
+{
+	return m_renderBackend->InitImGui();
+}
 
-void Renderer::ShutdownImGui() { m_renderBackend->ShutdownImGui(); }
+void Renderer::ShutdownImGui()
+{
+	m_renderBackend->ShutdownImGui();
+}
 
-void Renderer::BeginImGuiFrame() { m_renderBackend->BeginImGuiFrame(); }
+void Renderer::BeginImGuiFrame()
+{
+	m_renderBackend->BeginImGuiFrame();
+}
 
-void Renderer::RenderImGui(ImDrawData* drawData) { m_renderBackend->RenderImGui(drawData); }
+void Renderer::RenderImGui(ImDrawData* drawData)
+{
+	m_renderBackend->RenderImGui(drawData);
+}
 
 ImTextureID Renderer::GetImGuiTextureID(GPUTexture* texture) const
 {
 	return m_renderBackend->GetImGuiTextureID(texture);
 }
 
-void Renderer::BindBackBuffer() { m_renderBackend->BindBackBuffer(); }
+void Renderer::BindBackBuffer()
+{
+	m_renderBackend->BindBackBuffer();
+}
 
-void Renderer::ResizeBackBuffer(IntVec2 newDimensions) { m_renderBackend->ResizeBackBuffer(newDimensions); }
+void Renderer::ResizeBackBuffer(IntVec2 newDimensions)
+{
+	m_renderBackend->ResizeBackBuffer(newDimensions);
+}

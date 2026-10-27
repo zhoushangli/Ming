@@ -133,37 +133,69 @@ public:
 		using CleanType = std::remove_cv_t<std::remove_reference_t<T>>;
 
 		if constexpr (std::is_same_v<CleanType, void>)
+		{
 			return Type::Empty;
+		}
 		else if constexpr (std::is_same_v<CleanType, bool>)
+		{
 			return Type::Bool;
+		}
 		else if constexpr (std::is_same_v<CleanType, int>)
+		{
 			return Type::Int;
+		}
 		else if constexpr (std::is_same_v<CleanType, float>)
+		{
 			return Type::Float;
+		}
 		else if constexpr (std::is_same_v<CleanType, String>)
+		{
 			return Type::String;
+		}
 		else if constexpr (std::is_same_v<CleanType, Vector2>)
+		{
 			return Type::Vector2;
+		}
 		else if constexpr (std::is_same_v<CleanType, Vector3>)
+		{
 			return Type::Vector3;
+		}
 		else if constexpr (std::is_same_v<CleanType, Vector4>)
+		{
 			return Type::Vector4;
+		}
 		else if constexpr (std::is_same_v<CleanType, Color>)
+		{
 			return Type::Color;
+		}
 		else if constexpr (std::is_same_v<CleanType, AABB2>)
+		{
 			return Type::AABB2;
+		}
 		else if constexpr (std::is_same_v<CleanType, OBB2>)
+		{
 			return Type::OBB2;
+		}
 		else if constexpr (std::is_same_v<CleanType, Capsule3>)
+		{
 			return Type::Capsule3;
+		}
 		else if constexpr (std::is_same_v<CleanType, EulerAngles>)
+		{
 			return Type::EulerAngles;
+		}
 		else if constexpr (std::is_same_v<CleanType, Matrix4x4>)
+		{
 			return Type::Matrix4x4;
+		}
 		else if constexpr (std::is_same_v<CleanType, Variant>)
+		{
 			return Type::Any;
+		}
 		else if constexpr (std::is_base_of_v<Object, std::remove_pointer_t<CleanType>>)
+		{
 			return Type::ObjectPtr;
+		}
 		else
 		{
 			static_assert(sizeof(CleanType) == 0, "Missing Variant tag for this type.");
@@ -222,6 +254,7 @@ struct VariantCaster
 		{
 			return value;
 		}
+
 		// Object pointer.
 		// Example: void AddNode(Node* child)
 		else if constexpr (std::is_pointer_v<CleanType> && std::is_base_of_v<Object, PointeeType>)

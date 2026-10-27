@@ -28,6 +28,7 @@ public:
 	virtual ~ResourceLoader();
 
 	static void Startup() {}
+
 	static void Shutdown() { s_loadedResources.clear(); }
 
 	static void AddLoader(Ref<ResourceFormatLoader> loader);

@@ -18,8 +18,9 @@ csharp_space_after_cast = false
 csharp_space_around_binary_operators = before_and_after
 
 # 单行代码
-csharp_preserve_single_line_blocks = true
+csharp_preserve_single_line_blocks = false
 csharp_preserve_single_line_statements = false
+csharp_prefer_braces = true:warning
 
 # using
 dotnet_sort_system_directives_first = true

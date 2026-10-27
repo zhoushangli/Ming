@@ -148,7 +148,9 @@ void AppendUtf8(char32_t codePoint, std::string& outText)
 }
 } // namespace
 
-String::String(char const* data) : String(data == nullptr ? std::string() : std::string(data)) {}
+String::String(char const* data) : String(data == nullptr ? std::string() : std::string(data))
+{
+}
 
 String::String(std::string const& data)
 {
@@ -164,9 +166,14 @@ String::String(std::string const& data)
 	DecodeUtf8(data.data(), data.size(), m_data.Resize(codePointCount));
 }
 
-String::String(char32_t const* data) : String(data, CodePointCount(data == nullptr ? U"" : data)) {}
+String::String(char32_t const* data) : String(data, CodePointCount(data == nullptr ? U"" : data))
+{
+}
 
-String::String(char32_t const* data, uint32_t length) { m_data.SetData(data, length); }
+String::String(char32_t const* data, uint32_t length)
+{
+	m_data.SetData(data, length);
+}
 
 String String::operator+(String const& other) const
 {
@@ -189,9 +196,15 @@ String& String::operator+=(String const& other)
 	return *this;
 }
 
-String String::operator+(char32_t const* other) const { return *this + String(other); }
+String String::operator+(char32_t const* other) const
+{
+	return *this + String(other);
+}
 
-String& String::operator+=(char32_t const* other) { return *this += String(other); }
+String& String::operator+=(char32_t const* other)
+{
+	return *this += String(other);
+}
 
 bool String::operator==(String const& other) const
 {
@@ -274,7 +287,10 @@ String String::Substr(uint32_t start, uint32_t length) const
 	return String(Data() + start, (std::min)(length, ownLength - start));
 }
 
-String String::Substr(uint32_t start) const { return Substr(start, Length()); }
+String String::Substr(uint32_t start) const
+{
+	return Substr(start, Length());
+}
 
 String String::FromInt(int64_t value)
 {

@@ -25,6 +25,7 @@ Vector2 BoxContainer::GetInternalMinimumSize() const
 			minimumSize.x += childMinimumSize.x + separation;
 			minimumSize.y = minimumSize.y < childMinimumSize.y ? childMinimumSize.y : minimumSize.y;
 		}
+
 		hasChild = true;
 	}
 
@@ -103,9 +104,11 @@ void BoxContainer::OnNotification(int notification)
 				rect.SetPosition(Vector2(offset, 0.0f));
 				rect.SetSize(Vector2(length, GetSize().y));
 			}
+
 			UpdateChildRect(control, rect);
 			offset += length + m_separation;
 		}
+
 		break;
 	}
 	}

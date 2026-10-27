@@ -22,6 +22,7 @@ class CSharpInstance : public ScriptInstance
 
 public:
 	CSharpInstance(Ref<CSharpScript> script) : m_script(script) {}
+
 	~CSharpInstance() override;
 
 	Object*     GetOwner() const override { return m_owner; }
@@ -31,7 +32,8 @@ public:
 	void Notification(int notification, bool reverse) override;
 
 	void* GetGCHandle() const { return m_gcHandle.GetValue(); }
-	bool  ReloadGCHandle(void* value) override;
+
+	bool ReloadGCHandle(void* value) override;
 
 private:
 	Ref<CSharpScript> m_script;

@@ -8,7 +8,9 @@ const AABB3 AABB3::Zero          = AABB3(0.f, 0.f, 0.f, 0.f, 0.f, 0.f);
 const AABB3 AABB3::Unit          = AABB3(0.f, 0.f, 0.f, 1.f, 1.f, 1.f);
 const AABB3 AABB3::kCenteredUnit = AABB3(-0.5f, -0.5f, -0.5f, 0.5f, 0.5f, 0.5f);
 
-AABB3::AABB3(const Vector3& mins, const Vector3& maxs) : m_mins(mins), m_maxs(maxs) {}
+AABB3::AABB3(const Vector3& mins, const Vector3& maxs) : m_mins(mins), m_maxs(maxs)
+{
+}
 
 AABB3::AABB3(float minX, float minY, float minZ, float maxX, float maxY, float maxZ)
 	: m_mins(minX, minY, minZ), m_maxs(maxX, maxY, maxZ)
@@ -22,9 +24,15 @@ bool AABB3::IsPointInside(const Vector3& point) const
 		&& point.z <= m_maxs.z);
 }
 
-Vector3 const AABB3::GetCenter() const { return (m_mins + m_maxs) * 0.5f; }
+Vector3 const AABB3::GetCenter() const
+{
+	return (m_mins + m_maxs) * 0.5f;
+}
 
-Vector3 const AABB3::GetDimensions() const { return m_maxs - m_mins; }
+Vector3 const AABB3::GetDimensions() const
+{
+	return m_maxs - m_mins;
+}
 
 Vector3 const AABB3::GetNearestPoint(const Vector3& point) const
 {

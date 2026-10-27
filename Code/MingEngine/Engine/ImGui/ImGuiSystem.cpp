@@ -15,7 +15,10 @@ namespace
 {
 std::string const kImGuiIniFilePath = "res://.ming/Editor/EditorLayout.ini";
 
-ImVec4 RGBA(float r, float g, float b, float a) { return ImVec4(r / 255.f, g / 255.f, b / 255.f, a); }
+ImVec4 RGBA(float r, float g, float b, float a)
+{
+	return ImVec4(r / 255.f, g / 255.f, b / 255.f, a);
+}
 
 void ApplyGodotImGuiTheme()
 {
@@ -119,11 +122,17 @@ void ApplyGodotImGuiTheme()
 }
 } // namespace
 
-ImGuiSystem::ImGuiSystem(ImGuiSystemConfig config) : m_config(config) {}
+ImGuiSystem::ImGuiSystem(ImGuiSystemConfig config) : m_config(config)
+{
+}
 
-ImGuiSystem::~ImGuiSystem() {}
+ImGuiSystem::~ImGuiSystem()
+{
+}
 
-void ImGuiSystem::BindMethods() {}
+void ImGuiSystem::BindMethods()
+{
+}
 
 void ImGuiSystem::Startup()
 {
@@ -142,7 +151,7 @@ void ImGuiSystem::Startup()
 		std::filesystem::create_directories(iniFilePhysicalPath.parent_path(), error);
 		if (!error)
 		{
-			m_iniFilePath = iniFilePhysicalPath.string();
+			m_iniFilePath  = iniFilePhysicalPath.string();
 			io.IniFilename = m_iniFilePath.c_str();
 		}
 
@@ -185,7 +194,10 @@ void ImGuiSystem::EndFrame()
 	g_engine->m_renderServer->RenderImGui(ImGui::GetDrawData());
 }
 
-bool ImGuiSystem::WantCaptureMouse() const { return ImGui::GetIO().WantCaptureMouse; }
+bool ImGuiSystem::WantCaptureMouse() const
+{
+	return ImGui::GetIO().WantCaptureMouse;
+}
 
 bool ImGuiSystem::WantCaptureKeyboard() const
 {

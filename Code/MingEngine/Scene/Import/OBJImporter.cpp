@@ -212,7 +212,9 @@ bool ParseOBJFile(VirtualPath const& sourceVirtualPath, OBJData& outData)
 
 	auto ParseMTLVirtualPath =
 		[](VirtualPath const& objVirtualPath, std::string const& mtlPath, VirtualPath& outMtlVirtualPath) -> bool
-	{ return objVirtualPath.TryResolveRelative(mtlPath, outMtlVirtualPath); };
+	{
+		return objVirtualPath.TryResolveRelative(mtlPath, outMtlVirtualPath);
+	};
 
 	ClearOutput();
 
@@ -616,13 +618,25 @@ bool ParseMTLFile(VirtualPath const& sourceVirtualPath, MTLData& outMaterials)
 }
 } // namespace
 
-std::vector<std::string> OBJImporter::GetSupportedExtensions() const { return { ".obj" }; }
+std::vector<std::string> OBJImporter::GetSupportedExtensions() const
+{
+	return { ".obj" };
+}
 
-std::string OBJImporter::GetVisibleName() const { return "OBJ as Mesh"; }
+std::string OBJImporter::GetVisibleName() const
+{
+	return "OBJ as Mesh";
+}
 
-std::string OBJImporter::GetImportedExtension() const { return "mesh"; }
+std::string OBJImporter::GetImportedExtension() const
+{
+	return "mesh";
+}
 
-std::vector<ImportOptions> const OBJImporter::GetImportOptions() const { return kOBJImportOptions; }
+std::vector<ImportOptions> const OBJImporter::GetImportOptions() const
+{
+	return kOBJImportOptions;
+}
 
 Ref<Resource> OBJImporter::Import(
 	std::unordered_map<std::string, Variant> const& importOptions, VirtualPath const& sourceVirtualPath)
@@ -658,10 +672,12 @@ Ref<Resource> OBJImporter::Import(
 	{
 		surfaceTool.GenerateNormals();
 	}
+
 	if (generateTangents)
 	{
 		surfaceTool.GenerateTangents();
 	}
+
 	surfaceTool.Index();
 	Ref<MeshResource> meshData = surfaceTool.CreateMeshResource();
 

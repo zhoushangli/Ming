@@ -6,7 +6,9 @@ class PlaceHolderScriptInstance : public ScriptInstance
 {
 public:
 	PlaceHolderScriptInstance();
+
 	PlaceHolderScriptInstance(Ref<Script> script, Object* owner) : m_owner(owner), m_script(script) {}
+
 	~PlaceHolderScriptInstance();
 
 	// Inherit from ScriptInstance
@@ -21,6 +23,7 @@ public:
 	{
 		return false;
 	}
+
 	void Notification([[maybe_unused]] int notification, [[maybe_unused]] bool reverse) override { /* Do nothing */ };
 
 private:

@@ -13,6 +13,7 @@ class RaycastQuery3D
 {
 public:
 	RaycastQuery3D() = default;
+
 	RaycastQuery3D(MathRaycastQuery3D const& other) { this->operator=(other); }
 
 	Vector3 GetStart() const;
@@ -35,16 +36,17 @@ public:
 	}
 
 public:
-	Vector3    m_start;
-	Vector3    m_direction;
-	float      m_maxDistance = 10000.f;
-	ObjectID m_exclude = ObjectID::Invalid;
+	Vector3  m_start;
+	Vector3  m_direction;
+	float    m_maxDistance = 10000.f;
+	ObjectID m_exclude     = ObjectID::Invalid;
 };
 
 class RaycastResult3D
 {
 public:
 	RaycastResult3D() = default;
+
 	RaycastResult3D(MathRaycastResult3D const& other) { this->operator=(other); }
 
 	RaycastResult3D& operator=(MathRaycastResult3D const& other)
@@ -67,13 +69,13 @@ public:
 	Vector3 GetRayStartPosition() const;
 	Vector3 GetRayForwardNormal() const;
 	float   GetRayMaxLength() const;
-	void SetDidImpact(bool didImpact);
-	void SetImpactDistance(float impactDistance);
-	void SetImpactPosition(Vector3 const& impactPosition);
-	void SetImpactNormal(Vector3 const& impactNormal);
-	void SetRayStartPosition(Vector3 const& rayStartPosition);
-	void SetRayForwardNormal(Vector3 const& rayForwardNormal);
-	void SetRayMaxLength(float rayMaxLength);
+	void    SetDidImpact(bool didImpact);
+	void    SetImpactDistance(float impactDistance);
+	void    SetImpactPosition(Vector3 const& impactPosition);
+	void    SetImpactNormal(Vector3 const& impactNormal);
+	void    SetRayStartPosition(Vector3 const& rayStartPosition);
+	void    SetRayForwardNormal(Vector3 const& rayForwardNormal);
+	void    SetRayMaxLength(float rayMaxLength);
 
 public:
 	// Basic raycast result information (required)

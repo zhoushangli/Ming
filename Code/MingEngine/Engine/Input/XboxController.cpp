@@ -6,23 +6,48 @@
 
 #pragma comment(lib, "xinput") // Link in the xinput.lib static library
 
-XboxController::XboxController() {}
+XboxController::XboxController()
+{
+}
 
-XboxController::XboxController(int controllerID) : m_id(controllerID) {}
+XboxController::XboxController(int controllerID) : m_id(controllerID)
+{
+}
 
-bool XboxController::IsConnected() const { return m_isConnected; }
+bool XboxController::IsConnected() const
+{
+	return m_isConnected;
+}
 
-int XboxController::GetControllerID() const { return m_id; }
+int XboxController::GetControllerID() const
+{
+	return m_id;
+}
 
-AnalogJoystick const& XboxController::GetLeftStick() const { return m_leftStick; }
+AnalogJoystick const& XboxController::GetLeftStick() const
+{
+	return m_leftStick;
+}
 
-AnalogJoystick const& XboxController::GetRightStick() const { return m_rightStick; }
+AnalogJoystick const& XboxController::GetRightStick() const
+{
+	return m_rightStick;
+}
 
-float XboxController::GetLeftTrigger() const { return m_leftTrigger; }
+float XboxController::GetLeftTrigger() const
+{
+	return m_leftTrigger;
+}
 
-float XboxController::GetRightTrigger() const { return m_rightTrigger; }
+float XboxController::GetRightTrigger() const
+{
+	return m_rightTrigger;
+}
 
-KeyButtonState const& XboxController::GetButton(XboxButtonID buttonID) const { return m_buttons[(int)buttonID]; }
+KeyButtonState const& XboxController::GetButton(XboxButtonID buttonID) const
+{
+	return m_buttons[(int)buttonID];
+}
 
 bool XboxController::IsButtonPressed(XboxButtonID buttonID) const
 {
@@ -50,8 +75,8 @@ bool XboxController::WasButtonJustReleased(XboxButtonID buttonID) const
 
 void XboxController::CollectInputEvents(std::vector<InputEvent>& events) const
 {
-	XINPUT_STATE sample = {};
-	bool const connected = XInputGetState(m_id, &sample) == ERROR_SUCCESS;
+	XINPUT_STATE sample    = {};
+	bool const   connected = XInputGetState(m_id, &sample) == ERROR_SUCCESS;
 
 	// 1) Record connection changes without changing the processed state
 	if (connected != m_isConnected)
@@ -62,19 +87,27 @@ void XboxController::CollectInputEvents(std::vector<InputEvent>& events) const
 		event.m_connected    = connected;
 		events.push_back(event);
 	}
+
 	if (!connected)
 	{
 		return;
 	}
 
 	// 2) Queue changed buttons in XboxButtonID order
-	unsigned short constexpr buttonFlags[] = {
-		XINPUT_GAMEPAD_A, XINPUT_GAMEPAD_B, XINPUT_GAMEPAD_X, XINPUT_GAMEPAD_Y,
-		XINPUT_GAMEPAD_START, XINPUT_GAMEPAD_BACK,
-		XINPUT_GAMEPAD_DPAD_UP, XINPUT_GAMEPAD_DPAD_DOWN, XINPUT_GAMEPAD_DPAD_LEFT, XINPUT_GAMEPAD_DPAD_RIGHT,
-		XINPUT_GAMEPAD_LEFT_THUMB, XINPUT_GAMEPAD_RIGHT_THUMB,
-		XINPUT_GAMEPAD_LEFT_SHOULDER, XINPUT_GAMEPAD_RIGHT_SHOULDER
-	};
+	unsigned short constexpr buttonFlags[] = { XINPUT_GAMEPAD_A,
+											   XINPUT_GAMEPAD_B,
+											   XINPUT_GAMEPAD_X,
+											   XINPUT_GAMEPAD_Y,
+											   XINPUT_GAMEPAD_START,
+											   XINPUT_GAMEPAD_BACK,
+											   XINPUT_GAMEPAD_DPAD_UP,
+											   XINPUT_GAMEPAD_DPAD_DOWN,
+											   XINPUT_GAMEPAD_DPAD_LEFT,
+											   XINPUT_GAMEPAD_DPAD_RIGHT,
+											   XINPUT_GAMEPAD_LEFT_THUMB,
+											   XINPUT_GAMEPAD_RIGHT_THUMB,
+											   XINPUT_GAMEPAD_LEFT_SHOULDER,
+											   XINPUT_GAMEPAD_RIGHT_SHOULDER };
 	static_assert(sizeof(buttonFlags) / sizeof(buttonFlags[0]) == static_cast<int>(XboxButtonID::NUM));
 	for (int button = 0; button < static_cast<int>(XboxButtonID::NUM); ++button)
 	{
@@ -91,15 +124,16 @@ void XboxController::CollectInputEvents(std::vector<InputEvent>& events) const
 	}
 
 	// 3) Queue normalized axes and keep deadzone correction in event processing
-	auto normalizeStick = [](short value) { return value < 0 ? value / 32768.f : value / 32767.f; };
-	float const axes[] = {
-		normalizeStick(sample.Gamepad.sThumbLX), normalizeStick(sample.Gamepad.sThumbLY),
-		normalizeStick(sample.Gamepad.sThumbRX), normalizeStick(sample.Gamepad.sThumbRY),
-		sample.Gamepad.bLeftTrigger / 255.f, sample.Gamepad.bRightTrigger / 255.f
+	auto normalizeStick = [](short value)
+	{
+		return value < 0 ? value / 32768.f : value / 32767.f;
 	};
-	Vector2 const left = m_leftStick.GetRawUncorrectedPosition();
-	Vector2 const right = m_rightStick.GetRawUncorrectedPosition();
-	float const previousAxes[] = { left.x, left.y, right.x, right.y, m_leftTrigger, m_rightTrigger };
+	float const   axes[]         = { normalizeStick(sample.Gamepad.sThumbLX), normalizeStick(sample.Gamepad.sThumbLY),
+									 normalizeStick(sample.Gamepad.sThumbRX), normalizeStick(sample.Gamepad.sThumbRY),
+									 sample.Gamepad.bLeftTrigger / 255.f,     sample.Gamepad.bRightTrigger / 255.f };
+	Vector2 const left           = m_leftStick.GetRawUncorrectedPosition();
+	Vector2 const right          = m_rightStick.GetRawUncorrectedPosition();
+	float const   previousAxes[] = { left.x, left.y, right.x, right.y, m_leftTrigger, m_rightTrigger };
 	static_assert(sizeof(axes) / sizeof(axes[0]) == static_cast<int>(ControllerAxis::COUNT));
 	for (int axis = 0; axis < static_cast<int>(ControllerAxis::COUNT); ++axis)
 	{

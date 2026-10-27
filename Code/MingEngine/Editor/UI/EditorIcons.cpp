@@ -19,9 +19,15 @@ ImTextureID ToImTextureId(GPUTexture* texture)
 	return g_engine->m_renderServer->GetImGuiTextureID(texture);
 }
 
-ImVec2 GetEditorIconUv0() { return ImVec2(0.f, 1.f); }
+ImVec2 GetEditorIconUv0()
+{
+	return ImVec2(0.f, 1.f);
+}
 
-ImVec2 GetEditorIconUv1() { return ImVec2(1.f, 0.f); }
+ImVec2 GetEditorIconUv1()
+{
+	return ImVec2(1.f, 0.f);
+}
 } // namespace
 
 // TODO: Replace with ref-counted storage when available.
@@ -41,6 +47,7 @@ void EditorIcons::Shutdown()
 			g_engine->m_renderServer->DestroyTexture(pair.second);
 		}
 	}
+
 	s_iconTextures.clear();
 }
 

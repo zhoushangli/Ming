@@ -14,10 +14,12 @@ public:
 	~ShaderResource() override;
 
 	bool IsEmpty() const { return m_shader == nullptr; }
+
 	bool CopyFrom(Resource&& other) override;
 
 	Shader* GetShader() const { return m_shader; }
-	void    SetShader(Shader* shader) { m_shader = shader; }
+
+	void SetShader(Shader* shader) { m_shader = shader; }
 
 protected:
 	static void BindMethods() {}

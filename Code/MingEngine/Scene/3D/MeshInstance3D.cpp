@@ -112,6 +112,7 @@ void MeshInstance3D::OnNotification(int notification)
 		SyncMeshBase();
 		break;
 	}
+
 	case Notification_ExitTree:
 	{
 		RaycastSpace3D* raycastSpace = GetSceneTree()->GetRaycastSpace();
@@ -121,6 +122,7 @@ void MeshInstance3D::OnNotification(int notification)
 			delete m_raycastObject;
 			m_raycastObject = nullptr;
 		}
+
 		break;
 	}
 	}
@@ -139,7 +141,10 @@ void MeshInstance3D::SyncMeshBase()
 	server->InstanceSetBase(m_instanceRID, meshRID);
 }
 
-bool MeshInstance3D::IsEmpty() const { return m_meshResource == nullptr || m_meshResource->IsEmpty(); }
+bool MeshInstance3D::IsEmpty() const
+{
+	return m_meshResource == nullptr || m_meshResource->IsEmpty();
+}
 
 void MeshInstance3D::SetMeshResource(Variant meshResource)
 {
@@ -150,4 +155,7 @@ void MeshInstance3D::SetMeshResource(Variant meshResource)
 	SyncMeshBase();
 }
 
-Variant MeshInstance3D::GetMeshResource() const { return m_meshResource; }
+Variant MeshInstance3D::GetMeshResource() const
+{
+	return m_meshResource;
+}
