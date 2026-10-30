@@ -3,6 +3,7 @@
 #include "MingEngine/Core/Render/RID.hpp"
 #include "MingEngine/Engine/Input/InputEvent.hpp"
 #include "MingEngine/Scene/Core/Node.hpp"
+#include "MingEngine/Scene/GUI/GUIDefinitions.hpp"
 
 #include <set>
 
@@ -15,6 +16,41 @@ class Control;
 class Viewport : public Node
 {
 	MCLASS(Viewport, Node);
+
+protected:
+	struct GuiContext
+	{
+		std::vector<ObjectID> m_rootControls;
+
+		ObjectID m_hoveredControl = ObjectID::Invalid;
+
+		// We will have a mouseCaptureControl
+		// which means the mouse is captured by this control
+		// all the mouse events will be sent to this control until the mouse is released
+		ObjectID m_mouseCaptureControl = ObjectID::Invalid;
+		int      m_mouseCaptureButton  = -1;
+
+		ObjectID m_focusedControl = ObjectID::Invalid;
+		uint64_t m_focusVersion   = 0;
+		bool     m_windowFocused  = true;
+
+		ObjectID m_popupControl = ObjectID::Invalid;
+
+		Vector2 m_dragPressPosition = Vector2::Zero;
+		bool    m_dragAttempted     = false;
+
+		Vector2     m_dragPosition = Vector2::Zero;
+		ObjectID    m_dragSource   = ObjectID::Invalid;
+		ObjectID    m_dragTarget   = ObjectID::Invalid;
+		ObjectID    m_dragHover    = ObjectID::Invalid;
+		GuiDragData m_dragData;
+		bool        m_dragStarting = false;
+		bool        m_dragging     = false;
+
+		Vector2  m_dragPreviewSize = Vector2::Zero;
+		ObjectID m_dragPreview     = ObjectID::Invalid;
+	};
+
 
 public:
 	Viewport();
@@ -57,7 +93,15 @@ public:
 	void SetGuiPopup(Control* control);
 	bool HasGuiMouseCapture() const { return ResolveGuiControl(m_gui.m_mouseCaptureControl) != nullptr; }
 
-	void CancelGuiInteraction(Node* subtree, bool clearFocus = true);
+	bool IsGuiDragging() const { return m_gui.m_dragging; }
+	GuiDragData const& GetGuiDragData() const { return m_gui.m_dragData; }
+	Vector2 GetGuiDragPosition() const { return m_gui.m_dragPosition; }
+	Control* GetGuiDragTarget() const { return ResolveGuiControl(m_gui.m_dragTarget); }
+	void SetGuiDragPreview(Control* preview);
+	void UpdateGuiDrag(Vector2 const& position);
+	void CancelGuiDrag();
+
+	void CancelGuiInteraction(Node* subtree, bool clearFocus = true, bool cancelDrag = true);
 
 protected:
 	void OnNotification(int notification);
@@ -71,6 +115,9 @@ protected:
 	void CollectFocusableControls(Node* node, std::vector<ObjectID>& controls) const;
 
 	bool PropagateGuiInput(ObjectID target, InputEvent const& event);
+	void TryStartGuiDrag(Vector2 const& position);
+	ObjectID FindGuiDropTarget(Vector2 const& position) const;
+	void SetGuiDragTarget(ObjectID target);
 
 protected:
 	Camera3D*           m_currentCamera = nullptr;
@@ -81,17 +128,6 @@ protected:
 	RID     m_scenarioRID      = RID::Invalid;
 	IntVec2 m_outputResolution = IntVec2::Zero;
 
-	struct GuiContext
-	{
-		std::vector<ObjectID> m_rootControls;
-		ObjectID              m_hoveredControl      = ObjectID::Invalid;
-		ObjectID              m_mouseCaptureControl = ObjectID::Invalid;
-		ObjectID              m_focusedControl      = ObjectID::Invalid;
-		ObjectID              m_popupControl        = ObjectID::Invalid;
-		uint64_t              m_focusVersion        = 0;
-		int                   m_mouseCaptureButton  = -1;
-		bool                  m_windowFocused       = true;
-	};
 
 	GuiContext m_gui;
 };

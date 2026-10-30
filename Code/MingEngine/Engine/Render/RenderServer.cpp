@@ -384,6 +384,11 @@ void RenderServer::Render()
 {
 	std::vector<RID>         completed;
 	std::vector<RID>         visiting;
+
+	// The reason why we do lamba is because we want something like dfs
+	// If there is no sub viewport, things are easy, we just prepare the data and pass into renderer to render
+	// If there is sub viewport, we need to prepare the sub viewport first(because it might be required by the parent viewport)
+	// then render the parent viewport
 	std::function<void(RID)> render = [&](RID viewportRID)
 	{
 		if (std::find(completed.begin(), completed.end(), viewportRID) != completed.end())

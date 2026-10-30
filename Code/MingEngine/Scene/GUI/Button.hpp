@@ -9,11 +9,11 @@ class Button : public BaseButton
 
 public:
 	Button();
-	Vector2 GetInternalMinimumSize() const override;
 
 	String const&     GetText() const { return m_label->GetText(); }
 	Ref<FontResource> GetFont() const { return m_label->GetFont(); }
 	int               GetFontSize() const { return m_label->GetFontSize(); }
+	Vector2           GetInternalMinimumSize() const override;
 
 	void SetText(String const& text) { m_label->SetText(text); }
 	void SetFont(Ref<FontResource> const& font) { m_label->SetFont(font); }

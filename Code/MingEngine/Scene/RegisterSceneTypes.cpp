@@ -34,6 +34,7 @@
 #include "MingEngine/Scene/GUI/PopupPanel.hpp"
 #include "MingEngine/Scene/GUI/Tree.hpp"
 #include "MingEngine/Scene/GUI/TabContainer.hpp"
+#include "MingEngine/Scene/GUI/SplitContainer.hpp"
 #include "MingEngine/Scene/GUI/SubViewportContainer.hpp"
 #include "MingEngine/Scene/GUI/ScrollContainer.hpp"
 #include "MingEngine/Scene/GUI/MarginContainer.hpp"
@@ -133,6 +134,7 @@ void RegisterSceneTypes()
 	ClassDatabase::RegisterClass<PopupPanel>();
 	ClassDatabase::RegisterClass<Tree>();
 	ClassDatabase::RegisterClass<TabContainer>();
+	ClassDatabase::RegisterClass<SplitContainer>();
 	ClassDatabase::RegisterClass<SubViewportContainer>();
 	ClassDatabase::RegisterClass<ScrollContainer>();
 	ClassDatabase::RegisterClass<Container>();

@@ -33,14 +33,22 @@ bool SubViewportContainer::GuiInput(InputEvent const& event)
 
 void SubViewportContainer::OnNotification(int notification)
 {
-	if (notification == Notification_GuiInputCancelled && m_input)
+	switch (notification)
 	{
-		InputEvent event;
-		event.m_type = InputEventType::WindowFocus;
-		m_input(event);
+	case Notification_GuiInputCancelled:
+	{
+		if (m_input)
+		{
+			InputEvent event;
+			event.m_type = InputEventType::WindowFocus;
+			m_input(event);
+		}
+
+		break;
 	}
 
-	if (notification == Notification_UpdateLayout || notification == Notification_Resized)
+	case Notification_UpdateLayout:
+	case Notification_Resized:
 	{
 		if (SubViewport* viewport = GetSubViewport(); viewport != nullptr && GetSize().x >= 1.f && GetSize().y >= 1.f)
 		{
@@ -48,8 +56,10 @@ void SubViewportContainer::OnNotification(int notification)
 		}
 
 		QueueRedraw();
+		break;
 	}
-	else if (notification == Notification_Draw)
+
+	case Notification_Draw:
 	{
 		if (SubViewport* viewport = GetSubViewport())
 		{
@@ -57,5 +67,8 @@ void SubViewportContainer::OnNotification(int notification)
 			rect.SetSize(GetSize());
 			DrawViewportRect(viewport->GetViewportRID(), rect);
 		}
+
+		break;
+	}
 	}
 }

@@ -9,26 +9,6 @@
 
 class EditorUndoRedo
 {
-public:
-	// Group do/undo operations in the history belonging to the given object.
-	// e.g. CreateAction("Edit Text", lineEdit->GetObjectID()) keeps each field's history separate.
-	bool CreateAction(String const& name, ObjectID historyID, bool backwardUndoOps = false);
-	bool AddDoMethod(Object* target, std::string const& methodName, std::vector<Variant> const& arguments = {});
-	bool AddUndoMethod(Object* target, std::string const& methodName, std::vector<Variant> const& arguments = {});
-	bool AddDoProperty(Object* target, std::string const& propertyName, Variant const& value);
-	bool AddUndoProperty(Object* target, std::string const& propertyName, Variant const& value);
-
-	// Record the pending action and optionally execute its do operations for the first time.
-	// e.g. CommitAction(false) records an edit that has already been applied.
-	bool CommitAction(bool execute = true);
-
-	bool Undo(ObjectID historyID);
-	bool Redo(ObjectID historyID);
-	bool HasUndo(ObjectID historyID) const;
-	bool HasRedo(ObjectID historyID) const;
-	void ClearHistory(ObjectID historyID);
-	void ClearAllHistory();
-
 private:
 	struct Argument
 	{
@@ -59,10 +39,36 @@ private:
 		size_t              m_position = 0;
 	};
 
+public:
+	bool HasUndo(ObjectID historyID) const;
+	bool HasRedo(ObjectID historyID) const;
+
+	// Group do/undo operations in the history belonging to the given object.
+	// e.g. CreateAction("Edit Text", lineEdit->GetObjectID()) keeps each field's history separate.
+	bool CreateAction(String const& name, ObjectID historyID, bool backwardUndoOps = false);
+
+	bool AddDoMethod(Object* target, std::string const& methodName, std::vector<Variant> const& arguments = {});
+	bool AddUndoMethod(Object* target, std::string const& methodName, std::vector<Variant> const& arguments = {});
+	bool AddDoProperty(Object* target, std::string const& propertyName, Variant const& value);
+	bool AddUndoProperty(Object* target, std::string const& propertyName, Variant const& value);
+
+	// Record the pending action and optionally execute its do operations for the first time.
+	// e.g. CommitAction(false) records an edit that has already been applied.
+	bool CommitAction(bool execute = true);
+
+	bool Undo(ObjectID historyID);
+	bool Redo(ObjectID historyID);
+
+	void ClearHistory(ObjectID historyID);
+	void ClearAllHistory();
+
+private:
 	bool AddOperation(
 		Object* target, std::string const& name, std::vector<Variant> const& arguments, bool isProperty, bool undo);
+
 	void ReplayOperations(std::vector<Operation> const& operations, bool backwards = false);
 
+private:
 	std::map<ObjectID, History> m_histories;
 	Action                      m_pendingAction;
 	ObjectID                    m_pendingHistoryID = ObjectID::Invalid;

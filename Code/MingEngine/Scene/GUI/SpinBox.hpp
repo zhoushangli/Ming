@@ -13,15 +13,21 @@ class SpinBox : public VBoxContainer
 
 public:
 	SpinBox();
-	bool      Configure(bool integer, std::string const& range = "");
-	Variant   GetValue() const { return m_value; }
-	void      SetValueNoSignal(Variant const& value);
-	void      SetValueChangedCallback(std::function<void(Variant const&)> callback) { m_changed = std::move(callback); }
-	void      SetValueReader(std::function<Variant()> reader) { m_reader = std::move(reader); }
-	void      EndEditing(LineEdit::EditEndReason reason = LineEdit::EditEndReason::Interrupted);
-	LineEdit* GetLineEdit() const { return m_edit; }
+
+	Variant            GetValue() const { return m_value; }
+	LineEdit*          GetLineEdit() const { return m_edit; }
 	std::string const& GetError() const { return m_error; }
-	void               Step(int direction);
+
+	void SetValueNoSignal(Variant const& value);
+
+	void SetValueChangedCallback(std::function<void(Variant const&)> callback) { m_changed = std::move(callback); }
+	void SetValueReader(std::function<Variant()> reader) { m_reader = std::move(reader); }
+
+	bool Configure(bool integer, std::string const& range = "");
+
+	void EndEditing(LineEdit::EditEndReason reason = LineEdit::EditEndReason::Interrupted);
+	void Step(int direction);
+
 	static bool        ParseValue(std::string const& text, bool integer, Variant& value);
 	static std::string FormatValue(Variant const& value);
 
@@ -30,10 +36,12 @@ protected:
 
 private:
 	void Finish(String const& text, LineEdit::EditEndReason reason);
-	bool Validate(String const& text, Variant& value);
-	void SetError(std::string const& error);
 	void Publish(Variant const& value);
 
+	bool Validate(String const& text, Variant& value);
+	void SetError(std::string const& error);
+
+private:
 	LineEdit*                           m_edit           = nullptr;
 	Label*                              m_errorLabel     = nullptr;
 	Button*                             m_stepButtons[2] = {};

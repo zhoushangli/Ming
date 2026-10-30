@@ -26,6 +26,7 @@
 #include "MingEngine/Editor/UI/JetBrainsMonoFont.hpp"
 #include "MingEngine/Scene/GUI/Tree.hpp"
 #include "MingEngine/Scene/GUI/TabContainer.hpp"
+#include "MingEngine/Scene/GUI/SplitContainer.hpp"
 #include "MingEngine/Scene/GUI/SubViewportContainer.hpp"
 #include "MingEngine/Scene/GUI/PopupPanel.hpp"
 #include "MingEngine/Scene/3D/MeshInstance3D.hpp"
@@ -178,6 +179,119 @@ int main(int argc, char** argv)
 	RegisterAllTypes();
 	ClassDatabase::RegisterClass<FieldProbe>();
 	engine.Startup();
+	{
+		SceneTree tree;
+		auto* viewport = static_cast<Viewport*>(tree.GetRoot());
+		auto* canvas = MemNew<Control>();
+		viewport->AddNode(canvas);
+		auto* source = MemNew<Button>();
+		canvas->AddNode(source);
+		source->SetPosition(Vector2(20.f, 20.f));
+		source->UpdateSize(Vector2(120.f, 50.f));
+		auto* target = MemNew<ColorRect>();
+		target->SetMouseFilter(Control::MouseFilter::Stop);
+		canvas->AddNode(target);
+		target->SetPosition(Vector2(250.f, 20.f));
+		target->UpdateSize(Vector2(160.f, 100.f));
+		auto* child = MemNew<Control>();
+		target->AddNode(child);
+		child->SetMouseFilter(Control::MouseFilter::Pass);
+		child->UpdateSize(Vector2(100.f, 60.f));
+		int drops = 0;
+		int clicks = 0;
+		bool allowSource = true;
+		source->SetPressedCallback([&]() { ++clicks; });
+		source->SetDragCallbacks(
+			[&](Vector2 const&, GuiDragData& data)
+			{
+				data.m_type = "test";
+				data.m_value = "payload";
+				return allowSource;
+			}, {}, {});
+		target->SetDragCallbacks({},
+			[](Vector2 const& position, GuiDragData const& data)
+			{
+				return data.m_type == String("test") && position.x >= 0.f;
+			},
+			[&](Vector2 const&, GuiDragData const& data)
+			{
+				check(!viewport->IsGuiDragging() && !viewport->HasGuiMouseCapture(), "drop ends capture before commit");
+				check(data.m_value == String("payload"), "drop preserves payload after session cleanup");
+				++drops;
+			});
+		auto pointer = [&](InputEventType type, Vector2 position, bool pressed = false)
+		{
+			InputEvent event;
+			event.m_type = type;
+			event.m_position = position;
+			event.m_mouseButton = GLFW_MOUSE_BUTTON_LEFT;
+			event.m_pressed = pressed;
+			viewport->ProcessInputEvent(event);
+		};
+		auto begin = [&]()
+		{
+			pointer(InputEventType::MouseButton, Vector2(40.f, 40.f), true);
+			pointer(InputEventType::MouseMotion, Vector2(49.f, 40.f));
+		};
+		pointer(InputEventType::MouseButton, Vector2(40.f, 40.f), true);
+		pointer(InputEventType::MouseMotion, Vector2(48.f, 40.f));
+		check(!viewport->IsGuiDragging(), "drag threshold preserves an eight-unit click");
+		pointer(InputEventType::MouseMotion, Vector2(49.f, 40.f));
+		check(viewport->IsGuiDragging() && !viewport->HasGuiMouseCapture(), "drag starts beyond threshold and releases ordinary capture");
+		pointer(InputEventType::MouseMotion, Vector2(280.f, 40.f));
+		check(viewport->GetGuiDragTarget() == target, "drop checks parent of pass-through child");
+		auto* preview = dynamic_cast<Control*>(viewport->GetChildren().back());
+		check(preview != nullptr && preview->GetMouseFilter() == Control::MouseFilter::Ignore && !preview->GetSerializable(),
+			"drag preview ignores pointer and scene serialization");
+		pointer(InputEventType::MouseButton, Vector2(280.f, 40.f));
+		pointer(InputEventType::MouseButton, Vector2(280.f, 40.f));
+		check(drops == 1 && clicks == 0, "drag commits once without activating source button");
+		begin();
+		Key(viewport, GLFW_KEY_ESCAPE);
+		pointer(InputEventType::MouseButton, Vector2(280.f, 40.f));
+		check(!viewport->IsGuiDragging() && drops == 1, "escape cancels drag without commit");
+		begin();
+		InputEvent focus;
+		focus.m_type = InputEventType::WindowFocus;
+		focus.m_focused = false;
+		viewport->ProcessInputEvent(focus);
+		check(!viewport->IsGuiDragging(), "window focus loss cancels drag");
+		focus.m_focused = true;
+		viewport->ProcessInputEvent(focus);
+		begin();
+		pointer(InputEventType::MouseButton, Vector2(700.f, 600.f));
+		check(!viewport->IsGuiDragging() && drops == 1, "invalid target release ends drag");
+		begin();
+		child->SetMouseFilter(Control::MouseFilter::Stop);
+		pointer(InputEventType::MouseMotion, Vector2(280.f, 40.f));
+		check(viewport->GetGuiDragTarget() == nullptr, "stop filter prevents parent drop");
+		viewport->CancelGuiDrag();
+		child->SetMouseFilter(Control::MouseFilter::Pass);
+		allowSource = false;
+		begin();
+		pointer(InputEventType::MouseButton, Vector2(49.f, 40.f));
+		check(!viewport->IsGuiDragging() && clicks == 1, "source without drag data retains ordinary button click");
+		allowSource = true;
+		begin();
+		auto* popup = MemNew<PopupPanel>();
+		canvas->AddNode(popup);
+		popup->Open(source);
+		check(!viewport->IsGuiDragging(), "opening a modal cancels active drag");
+		popup->Close();
+		target->SetClipContents(true);
+		child->SetPosition(Vector2(145.f, 0.f));
+		begin();
+		pointer(InputEventType::MouseMotion, Vector2(430.f, 40.f));
+		check(viewport->GetGuiDragTarget() == nullptr, "clipped child outside ancestor cannot receive drop");
+		viewport->CancelGuiDrag();
+		child->SetPosition(Vector2::Zero);
+		begin();
+		source->QueueFree();
+		viewport->UpdateGuiDrag(Vector2(280.f, 40.f));
+		check(!viewport->IsGuiDragging(), "queued source deletion cancels drag safely");
+		tree.FlushPendingNode();
+	}
+
 	{
 		SceneTree  tree;
 		EditorNode editor;
@@ -609,6 +723,9 @@ int main(int argc, char** argv)
 					!resource->CanAssignResource("res://roundtrip.tscn")
 						&& !resource->AssignResource("res://roundtrip.tscn") && vectorValue.As<Object*>() == nullptr,
 					"wrong resource type rejected");
+				GuiDragData const data { "file", ObjectID::Invalid, "res://roundtrip.tscn" };
+				check(!Find<LineEdit>(resource->GetControl())->CanDropData(Vector2::Zero, data),
+					"native resource drop rejects incompatible class");
 			}
 
 			{
@@ -618,6 +735,13 @@ int main(int argc, char** argv)
 					resource->AssignResource("res://roundtrip.tscn")
 						&& dynamic_cast<PackedScene*>(vectorValue.As<Object*>()) != nullptr,
 					"matching resource assigns actual resource");
+				GuiDragData const data { "file", ObjectID::Invalid, "res://roundtrip.tscn" };
+				LineEdit* field = Find<LineEdit>(resource->GetControl());
+				vectorValue = Variant(static_cast<Object*>(nullptr));
+				check(field->CanDropData(Vector2::Zero, data), "native resource field accepts matching class");
+				field->DropData(Vector2::Zero, data);
+				check(dynamic_cast<PackedScene*>(vectorValue.As<Object*>()) != nullptr,
+					"native resource drop follows property value callback");
 			}
 
 			probe->QueueFree();
@@ -744,6 +868,212 @@ int main(int argc, char** argv)
 		}
 	}
 
+	// 1) Verify native editor drag business rules and persistent docking.
+	{
+		std::filesystem::path const fixture = projectPath / "DragDockFixture";
+		std::filesystem::create_directories(fixture / "source" / "child");
+		std::filesystem::create_directories(fixture / "target");
+		std::filesystem::remove(fixture / "target" / "move.txt");
+		std::filesystem::remove(fixture / "target" / "move.txt.import");
+		std::ofstream(fixture / "source" / "move.txt") << "drag fixture";
+		std::ofstream(fixture / "source" / "move.txt.import") << "import fixture";
+		std::ofstream(fixture / "source" / "conflict.txt") << "source";
+		std::ofstream(fixture / "target" / "conflict.txt") << "target";
+		SceneTree tree;
+		auto* editor = MemNew<EditorNode>();
+		tree.GetRoot()->AddNode(editor);
+		auto* root = static_cast<Viewport*>(tree.GetRoot());
+		auto* window = static_cast<Window*>(root);
+		root->UpdateResolution(IntVec2(1200, 760));
+		auto* scene = MemNew<Node3D>();
+		auto* source = MemNew<Node3D>();
+		auto* child = MemNew<Node3D>();
+		auto* target = MemNew<Node3D>();
+		scene->SetName("DragRoot");
+		source->SetName("DragSource");
+		child->SetName("DragChild");
+		target->SetName("DragTarget");
+		scene->AddNode(source);
+		source->AddNode(child);
+		scene->AddNode(target);
+		source->SetLocalPosition(Vector3(2.f, 3.f, 4.f));
+		target->SetLocalPosition(Vector3(10.f, 20.f, 30.f));
+		tree.ChangeScene(scene);
+		tree.FlushPendingNode();
+		auto frame = [&]()
+		{
+			engine.BeginFrame();
+			tree.UpdateScene(0.016f);
+			engine.m_renderServer->Render();
+			engine.EndFrame();
+			tree.FlushPendingNode();
+		};
+		EditorUI* ui = editor->m_editorUI;
+		ui->ResetNativeLayout();
+		frame();
+		check(!ui->GetDockSlot(0)->GetPage(0)->GetSerializable()
+			&& !ui->GetDockSlot(0)->GetPage(1)->GetSerializable() && !ui->GetDockSlot(2)->GetPage(0)->GetSerializable(),
+			"dock panel roots remain explicitly nonserializable");
+		auto pointer = [&](InputEventType type, Vector2 position, bool pressed = false)
+		{
+			InputEvent event;
+			event.m_type = type;
+			event.m_position = position;
+			event.m_mouseButton = GLFW_MOUSE_BUTTON_LEFT;
+			event.m_pressed = pressed;
+			window->OnInputEvent(event);
+		};
+		auto drag = [&](Vector2 from, Vector2 to)
+		{
+			pointer(InputEventType::MouseButton, from, true);
+			pointer(InputEventType::MouseMotion, from + Vector2(12.f, 0.f));
+			pointer(InputEventType::MouseMotion, to);
+			pointer(InputEventType::MouseButton, to);
+			frame();
+		};
+		Tree* nodes = ui->GetSceneTreeControl();
+		GuiDragData nodeData { "node", source->GetObjectID(), "DragSource" };
+		check(!nodes->CanDropData(Vector2(60.f, 42.f), nodeData), "node cannot drop onto itself");
+		check(!nodes->CanDropData(Vector2(60.f, 70.f), nodeData), "node cannot drop into descendant");
+		GuiDragData rootData { "node", scene->GetObjectID(), "DragRoot" };
+		check(!nodes->CanDropData(Vector2(60.f, 98.f), rootData), "scene root cannot be reparented");
+		check(nodes->CanDropData(Vector2(60.f, 98.f), nodeData), "native node target accepts valid reparent");
+		Vector3 const world = source->GetWorldPosition();
+		drag(nodes->GetGlobalPosition() + Vector2(80.f, 42.f), nodes->GetGlobalPosition() + Vector2(80.f, 98.f));
+		check(source->GetParent() == target && source->GetWorldPosition() == world,
+			"real pointer drag reparents node and preserves world transform");
+		check(editor->IsSceneDirty() && editor->GetSelection().GetSelected() == source->GetObjectID(),
+			"node drop preserves selection and marks edited scene dirty");
+		ui->GetTabs()->SetCurrentTab(1);
+		frame();
+		Tree* files = ui->GetFileTreeControl();
+		auto filePosition = [&](char const* path)
+		{
+			for (int row = 0; row < static_cast<int>(files->GetInternalMinimumSize().y / 28.f); ++row)
+			{
+				Vector2 const position(110.f, row * 28.f + 14.f);
+				GuiDragData data;
+				if (files->GetDragData(position, data) && data.m_value == String(path))
+				{
+					return position;
+				}
+			}
+
+			return Vector2(-1.f, -1.f);
+		};
+		Vector2 const targetPosition = filePosition("res://DragDockFixture/target");
+		check(targetPosition.y >= 0.f, "native file rows expose stable paths");
+		GuiDragData fileData { "file", ObjectID::Invalid, "res://DragDockFixture/source/move.txt" };
+		GuiDragData folderData { "file", ObjectID::Invalid, "res://DragDockFixture/source" };
+		check(files->CanDropData(targetPosition, fileData), "native file target accepts valid move");
+		check(!files->CanDropData(filePosition("res://DragDockFixture/source/child"), folderData),
+			"native folder cannot move into descendant");
+		check(!files->CanDropData(filePosition("res://DragDockFixture/source"), folderData), "native folder cannot move into itself");
+		GuiDragData conflict { "file", ObjectID::Invalid, "res://DragDockFixture/source/conflict.txt" };
+		check(!files->CanDropData(targetPosition, conflict), "native file drop rejects name collision");
+		check(!files->CanDropData(filePosition("res://DragDockFixture/source"), fileData), "native file drop rejects existing parent");
+		files->DropData(targetPosition, fileData);
+		check(std::filesystem::exists(fixture / "target" / "move.txt")
+			&& std::filesystem::exists(fixture / "target" / "move.txt.import")
+			&& !std::filesystem::exists(fixture / "source" / "move.txt"), "native file drop moves content and import metadata");
+		Draft(root, Find<LineEdit>(ui->GetTabs()->GetPage(1)), "target");
+		Key(root, GLFW_KEY_ENTER);
+		frame();
+		Vector2 const fromFile = files->GetGlobalPosition() + filePosition("res://DragDockFixture/target");
+		pointer(InputEventType::MouseButton, fromFile, true);
+		pointer(InputEventType::MouseMotion, fromFile + Vector2(12.f, 0.f));
+		Vector2 const sceneTabPosition = ui->GetTabs()->GetTabButton(0)->GetGlobalPosition() + Vector2(20.f, 14.f);
+		pointer(InputEventType::MouseMotion, sceneTabPosition);
+		glfwSetTime(glfwGetTime() + 0.6);
+		frame();
+		check(root->IsGuiDragging() && ui->GetTabs()->GetCurrentTab() == 0 && !files->IsVisibleInHierarchy(),
+			"hover switches tab after half a second while preserving drag from hidden page");
+		Key(root, GLFW_KEY_ESCAPE);
+		Draft(root, Find<LineEdit>(ui->GetTabs()->GetPage(1)), "");
+		Key(root, GLFW_KEY_ENTER);
+		ui->ResetNativeLayout();
+		frame();
+		ObjectID const pageID = ui->GetDockSlot(0)->GetPage(1)->GetObjectID();
+		Button* tab = ui->GetDockSlot(0)->GetTabButton(1);
+		Vector2 const dockTarget = ui->GetDockSlot(2)->GetGlobalPosition() + Vector2(70.f, 180.f);
+		drag(tab->GetGlobalPosition() + Vector2(20.f, 14.f), dockTarget);
+		check(ui->GetDockSlot(2)->GetPageCount() == 2 && ui->GetDockSlot(2)->GetCurrentPage()->GetObjectID() == pageID,
+			"pointer dock transfer preserves panel instance and selects it");
+		ui->MoveNativePanel("FileSystem", 3);
+		frame();
+		check(ui->GetDockSlot(3)->IsVisible() && ui->GetDockSlot(3)->GetPage(0)->GetObjectID() == pageID,
+			"preset lower slot expands without recreating panel");
+		SplitContainer* split = ui->GetDockSplit(3);
+		Vector2 const divider = split->GetGlobalPosition() + Vector2(30.f, split->GetSplitOffset() + 3.f);
+		pointer(InputEventType::MouseButton, divider, true);
+		pointer(InputEventType::MouseMotion, divider + Vector2(0.f, 10000.f));
+		pointer(InputEventType::MouseButton, divider + Vector2(0.f, 10000.f));
+		frame();
+		check(!root->HasGuiMouseCapture() && ui->GetDockSlot(3)->GetSize().y >= 80.f,
+			"split drag clamps panel minimum and releases outside window");
+		ui->GetDockSplit(0)->SetSplitRatio(0.3f);
+		check(ui->SaveNativeLayout(), "native dock layout saves");
+		std::string savedLayout;
+		engine.m_fileSystem->ReadText("res://.ming/Editor/NativeEditorLayout.json", savedLayout);
+		ui->MoveNativePanel("Scene", 2);
+		engine.m_fileSystem->WriteText("res://.ming/Editor/NativeEditorLayout.json", savedLayout);
+		ui->LoadNativeLayout();
+		frame();
+		check(ui->GetDockSlot(3)->GetPageCount() == 1 && ui->GetDockSlot(0)->GetPageTitle(0) == String("Scene"),
+			"layout reload restores panel locations");
+		check(std::abs(ui->GetDockSplit(0)->GetSplitRatio() - 0.3f) < 0.001f, "layout reload restores split ratio");
+		engine.m_fileSystem->WriteText("res://.ming/Editor/NativeEditorLayout.json",
+			R"({"version":1,"slots":[{"panels":["FileSystem","FileSystem","Unknown"],"current":"FileSystem"}],"ratios":[-10,20,"bad"]})");
+		ui->LoadNativeLayout();
+		frame();
+		check(ui->GetDockSlot(0)->GetPageCount() == 2 && ui->GetDockSlot(2)->GetPageCount() == 1,
+			"layout ignores duplicate and unknown panels and restores missing panels");
+		check(ui->GetDockSplit(0)->GetSplitRatio() == 0.f && ui->GetDockSplit(1)->GetSplitRatio() == 1.f,
+			"layout clamps out-of-range ratios");
+		engine.m_fileSystem->WriteText("res://.ming/Editor/NativeEditorLayout.json", "{invalid json");
+		ui->LoadNativeLayout();
+		check(ui->GetDockSlot(0)->GetPageTitle(0) == String("Scene") && !ui->GetDockSlot(3)->IsVisible(),
+			"invalid layout restores default without losing panels");
+		ui->MoveNativePanel("FileSystem", 3);
+		std::filesystem::path const layoutFile = projectPath / ".ming" / "Editor" / "NativeEditorLayout.json";
+		std::filesystem::remove(layoutFile);
+		std::filesystem::create_directory(layoutFile);
+		check(!ui->SaveNativeLayout() && root->GetGuiPopup() != nullptr && ui->GetDockSlot(3)->GetPageCount() == 1,
+			"layout write failure reports error and preserves live layout");
+		Key(root, GLFW_KEY_ESCAPE);
+		std::filesystem::remove(layoutFile);
+		ui->ResetNativeLayout();
+		frame();
+		check(ui->GetDockSlot(0)->GetPageCount() == 2 && ui->GetDockSlot(2)->GetPageCount() == 1
+			&& !ui->GetDockSlot(1)->IsVisible() && !ui->GetDockSlot(3)->IsVisible(), "reset restores default layout and collapses empty slots");
+		for (int i = 0; i < 3; ++i)
+		{
+			ui->GetTabs()->MovePage(0, 1);
+			tree.FlushContainerUpdate();
+			Button* button = ui->GetTabs()->GetTabButton(0);
+			Vector2 const position = button->GetGlobalPosition() + Vector2(15.f, 15.f);
+			pointer(InputEventType::MouseButton, position, true);
+			pointer(InputEventType::MouseButton, position);
+			check(ui->GetTabs()->GetCurrentPage() == ui->GetTabs()->GetPage(0), "reordered tab button resolves current page identity");
+		}
+
+		ui->ResetNativeLayout();
+		ui->MoveNativePanel("FileSystem", 3);
+		ui->GetDockSplit(0)->SetSplitRatio(0.31f);
+		check(ui->SaveNativeLayout(), "restart fixture layout saves");
+	}
+
+	{
+		SceneTree tree;
+		auto* editor = MemNew<EditorNode>();
+		tree.GetRoot()->AddNode(editor);
+		EditorUI* ui = editor->m_editorUI;
+		check(ui->GetDockSlot(3)->GetPageTitle(0) == String("FileSystem")
+			&& ui->GetDockSlot(0)->GetPageCount() == 1 && std::abs(ui->GetDockSplit(0)->GetSplitRatio() - 0.31f) < 0.001f,
+			"new editor instance restores panel identities and split ratio from disk");
+		ui->ResetNativeLayout();
+	}
+
 	// 1) Verify native trees, tabs, scrolling, viewport sampling, and a real mesh editing flow.
 	{
 		SceneTree tree;
@@ -842,6 +1172,7 @@ int main(int argc, char** argv)
 		frame();
 		frame();
 		EditorUI* ui       = editor->m_editorUI;
+		ObjectID const editorPageID = ui->GetTabs()->GetPage(0)->GetObjectID();
 		Tree*     nodes    = ui->GetSceneTreeControl();
 		Button*   sceneTab = Find<Button>(ui->GetTabs());
 		click(sceneTab->GetGlobalPosition() + Vector2(12.f, 12.f));
@@ -956,6 +1287,8 @@ int main(int argc, char** argv)
 		check(
 			scene->GetChildren().size() == 43 && scene->FindChildByName("EditorUI") == nullptr,
 			"scene serialization excludes editor controls and camera");
+		check(ui->GetTabs()->GetPage(0)->GetObjectID() == editorPageID,
+			"scene save and reopen preserve editor dock panel instance");
 		editor->GetSelection().SetSelected(cube->GetObjectID());
 		capture("03-reopened.ppm");
 		root->UpdateResolution(IntVec2(1100, 700));

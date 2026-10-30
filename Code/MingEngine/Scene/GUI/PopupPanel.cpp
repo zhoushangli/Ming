@@ -45,7 +45,10 @@ void PopupPanel::Close(bool restoreFocus)
 
 bool PopupPanel::GuiInput(InputEvent const& event)
 {
-	if (event.m_type == InputEventType::Key || event.m_type == InputEventType::Text)
+	switch (event.m_type)
+	{
+	case InputEventType::Key:
+	case InputEventType::Text:
 	{
 		auto callback = m_keyCallback;
 		if (callback)
@@ -53,12 +56,14 @@ bool PopupPanel::GuiInput(InputEvent const& event)
 			callback(event);
 		}
 
-		return true;
+		break;
 	}
-
-	if (!m_modal && event.m_type == InputEventType::MouseButton && event.m_pressed)
-	{
-		Close();
+	case InputEventType::MouseButton:
+		if (!m_modal && event.m_pressed)
+		{
+			Close();
+		}
+		break;
 	}
 
 	return true;

@@ -342,6 +342,22 @@ void InspectorProperty::BuildText(bool resource)
 	m_root->AddNode(m_text);
 	if (resource)
 	{
+		auto check = [this](Vector2 const&, GuiDragData const& data)
+		{
+			VirtualPath path;
+			return data.m_type == String("file") && VirtualPath::TryParse(data.m_value.ToUtf8(), path)
+				&& CanAssignResource(path);
+		};
+		auto drop = [this](Vector2 const&, GuiDragData const& data)
+		{
+			VirtualPath path;
+			if (data.m_type == String("file") && VirtualPath::TryParse(data.m_value.ToUtf8(), path))
+			{
+				AssignResource(path);
+			}
+		};
+		m_text->SetDragCallbacks({}, check, drop);
+		m_root->SetDragCallbacks({}, check, drop);
 		m_button = MemNew<Button>();
 		m_button->SetText("Clear");
 		m_button->SetPressedCallback(

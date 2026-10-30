@@ -16,24 +16,33 @@ public:
 		int    m_value = 0;
 	};
 
+public:
 	OptionButton();
 	~OptionButton() override;
+
+	int                      GetValue() const { return m_value; }
+	std::vector<Item> const& GetOptions() const { return m_items; }
+
 	bool SetOptions(std::string const& hint);
 	void SetValueNoSignal(int value);
-	int  GetValue() const { return m_value; }
+
 	void SetValueChangedCallback(std::function<void(int)> callback) { m_changed = std::move(callback); }
+
 	void OpenOptions();
 	void CloseOptions(bool restoreFocus = true);
-	std::vector<Item> const& GetOptions() const { return m_items; }
 
 protected:
 	static void BindMethods() {}
-	void        OnNotification(int notification);
+
+	void OnNotification(int notification);
 
 private:
-	void                     Select(int index);
-	void                     UpdateActive();
-	void                     HandleKey(InputEvent const& event);
+	void Select(int index);
+	void UpdateActive();
+
+	void HandleKey(InputEvent const& event);
+
+private:
 	std::vector<Item>        m_items;
 	std::vector<Button*>     m_buttons;
 	ObjectID                 m_popupID = ObjectID::Invalid;

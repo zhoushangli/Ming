@@ -11,6 +11,7 @@
 #include "MingEngine/Editor/UI/ViewportPanel.hpp"
 #include "MingEngine/Scene/Resource/FontResource.hpp"
 #include <map>
+#include <array>
 
 class EditorNode;
 class ColorRect;
@@ -20,6 +21,7 @@ class LineEdit;
 class Button;
 class Tree;
 class TabContainer;
+class SplitContainer;
 class ScrollContainer;
 class SubViewportContainer;
 class PopupPanel;
@@ -28,7 +30,16 @@ struct EditorUIContext;
 
 class EditorUI
 {
+private:
+	struct DockPanel
+	{
+		String m_id;
+		Control* m_root = nullptr;
+	};
+
 public:
+	~EditorUI();
+
 	void Render(EditorUIContext& context);
 	bool HandleInput(InputEvent const& event);
 	bool IsNativeInputActive() const;
@@ -43,6 +54,12 @@ public:
 	Tree* GetSceneTreeControl() const { return m_nativeSceneTree; }
 	Tree* GetFileTreeControl() const { return m_nativeFileTree; }
 	TabContainer* GetTabs() const { return m_tabs; }
+	TabContainer* GetDockSlot(int index) const;
+	SplitContainer* GetDockSplit(int index) const;
+	bool MoveNativePanel(String const& id, int slot, int index = -1);
+	void ResetNativeLayout();
+	bool SaveNativeLayout();
+	void LoadNativeLayout();
 	void FinishNativeEditing();
 
 	void Warning(std::string const& title, std::string const& message);
@@ -62,6 +79,14 @@ private:
 	void ApplyDragDropCursor();
 	void UpdateSceneItems();
 	void UpdateFileItems();
+	void InitializeNativeDragDrop();
+	void SetNativeDragPreview(Control* source, String const& text);
+	bool CanReparentNativeNode(ObjectID source, uint64_t target) const;
+	bool CanMoveNativeFile(VirtualPath const& source, uint64_t target) const;
+	void InitializeNativeDocking();
+	void UpdateNativeDocking();
+	int FindNativePanel(String const& id) const;
+	int GetNativeDockDestination(int slot, Vector2 const& globalPosition, int& index) const;
 	void ShowNativePopup(int mode, String const& message);
 	void AcceptNativePopup(int choice);
 
@@ -108,6 +133,13 @@ private:
 	std::map<uint64_t, VirtualPath> m_fileItems;
 	std::map<std::string, uint64_t> m_fileKeys;
 	uint64_t m_nextFileKey = 1;
+	std::array<DockPanel, 3> m_dockPanels;
+	std::array<TabContainer*, 4> m_dockSlots = {};
+	std::array<SplitContainer*, 4> m_dockSplits = {};
+	std::array<ColorRect*, 4> m_dockHints = {};
+	ColorRect* m_dockInsertMark = nullptr;
+	bool m_loadingLayout = false;
+	bool m_layoutReady = false;
 };
 
 template <>

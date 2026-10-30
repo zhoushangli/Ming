@@ -470,8 +470,14 @@ bool LineEdit::GuiInput(InputEvent const& event)
 		return false;
 	}
 
-	if (event.m_type == InputEventType::MouseButton && event.m_mouseButton == GLFW_MOUSE_BUTTON_LEFT)
+	switch (event.m_type)
 	{
+	case InputEventType::MouseButton:
+		if (event.m_mouseButton != GLFW_MOUSE_BUTTON_LEFT)
+		{
+			break;
+		}
+
 		if (event.m_pressed)
 		{
 			MoveCursor(GetColumnAtPosition(event.m_position.x), (event.m_modifiers & GLFW_MOD_SHIFT) != 0);
@@ -483,21 +489,19 @@ bool LineEdit::GuiInput(InputEvent const& event)
 		}
 
 		return true;
-	}
+	case InputEventType::MouseMotion:
+		if (m_selecting)
+		{
+			MoveCursor(GetColumnAtPosition(event.m_position.x), true);
+			return true;
+		}
+		break;
+	case InputEventType::Text:
+		if (!HasFocus())
+		{
+			break;
+		}
 
-	if (event.m_type == InputEventType::MouseMotion && m_selecting)
-	{
-		MoveCursor(GetColumnAtPosition(event.m_position.x), true);
-		return true;
-	}
-
-	if (!HasFocus())
-	{
-		return false;
-	}
-
-	if (event.m_type == InputEventType::Text)
-	{
 		if (m_editable && IsTextCodepoint(event.m_codepoint))
 		{
 			char32_t const codepoint = static_cast<char32_t>(event.m_codepoint);
@@ -505,119 +509,123 @@ bool LineEdit::GuiInput(InputEvent const& event)
 		}
 
 		return true;
-	}
-
-	if (event.m_type != InputEventType::Key || !event.m_pressed)
+	case InputEventType::Key:
 	{
-		return false;
-	}
-
-	bool const shift   = (event.m_modifiers & GLFW_MOD_SHIFT) != 0;
-	bool const command = (event.m_modifiers & (GLFW_MOD_CONTROL | GLFW_MOD_ALT | GLFW_MOD_SUPER)) != 0;
-	if (!command
-		&& (event.m_keyCode == GLFW_KEY_ENTER || event.m_keyCode == GLFW_KEY_KP_ENTER
-			|| event.m_keyCode == GLFW_KEY_ESCAPE))
-	{
-		if (!event.m_repeat)
+		if (!HasFocus() || !event.m_pressed)
 		{
-			EndEditing(event.m_keyCode == GLFW_KEY_ESCAPE ? EditEndReason::Cancelled : EditEndReason::Submitted);
+			return false;
 		}
 
-		return true;
-	}
-
-	if (event.m_keyCode == GLFW_KEY_A && (event.m_modifiers & GLFW_MOD_CONTROL) != 0
-		&& (event.m_modifiers & (GLFW_MOD_ALT | GLFW_MOD_SUPER)) == 0)
-	{
-		SelectAll();
-		return true;
-	}
-
-	if (command)
-	{
-		if ((event.m_modifiers & GLFW_MOD_CONTROL) != 0 && (event.m_modifiers & (GLFW_MOD_ALT | GLFW_MOD_SUPER)) == 0)
+		bool const shift   = (event.m_modifiers & GLFW_MOD_SHIFT) != 0;
+		bool const command = (event.m_modifiers & (GLFW_MOD_CONTROL | GLFW_MOD_ALT | GLFW_MOD_SUPER)) != 0;
+		if (!command
+			&& (event.m_keyCode == GLFW_KEY_ENTER || event.m_keyCode == GLFW_KEY_KP_ENTER
+				|| event.m_keyCode == GLFW_KEY_ESCAPE))
 		{
-			if (event.m_keyCode == GLFW_KEY_Z)
+			if (!event.m_repeat)
 			{
-				if (shift)
-				{
-					Redo();
-				}
-				else
-				{
-					Undo();
-				}
-
-				return true;
+				EndEditing(event.m_keyCode == GLFW_KEY_ESCAPE ? EditEndReason::Cancelled : EditEndReason::Submitted);
 			}
 
-			if (!shift)
-			{
-				switch (event.m_keyCode)
-				{
-				case GLFW_KEY_C:
-				case GLFW_KEY_INSERT:
-					CopyText();
-					return true;
-				case GLFW_KEY_X:
-					CutText();
-					return true;
-				case GLFW_KEY_V:
-					PasteText();
-					return true;
-				case GLFW_KEY_Y:
-					Redo();
-					return true;
-				}
-			}
+			return true;
 		}
 
-		return false;
-	}
-
-	if (shift && event.m_keyCode == GLFW_KEY_INSERT)
-	{
-		PasteText();
-		return true;
-	}
-
-	if (shift && event.m_keyCode == GLFW_KEY_DELETE)
-	{
-		CutText();
-		return true;
-	}
-
-	switch (event.m_keyCode)
-	{
-	case GLFW_KEY_LEFT:
-		MoveCursor(HasSelection() && !shift ? GetSelectionFromColumn() : m_cursorColumn - 1, shift);
-		return true;
-	case GLFW_KEY_RIGHT:
-		MoveCursor(HasSelection() && !shift ? GetSelectionToColumn() : m_cursorColumn + 1, shift);
-		return true;
-	case GLFW_KEY_HOME:
-		MoveCursor(0, shift);
-		return true;
-	case GLFW_KEY_END:
-		MoveCursor(static_cast<int>(m_text.Length()), shift);
-		return true;
-	case GLFW_KEY_BACKSPACE:
-	case GLFW_KEY_DELETE:
-		if (m_editable)
+		if (event.m_keyCode == GLFW_KEY_A && (event.m_modifiers & GLFW_MOD_CONTROL) != 0
+			&& (event.m_modifiers & (GLFW_MOD_ALT | GLFW_MOD_SUPER)) == 0)
 		{
-			if (!HasSelection())
-			{
-				int const adjacent = event.m_keyCode == GLFW_KEY_BACKSPACE ? m_cursorColumn - 1 : m_cursorColumn + 1;
-				m_selectionAnchor  = std::clamp(adjacent, 0, static_cast<int>(m_text.Length()));
-			}
-
-			ReplaceSelection(String());
+			SelectAll();
+			return true;
 		}
 
-		return true;
-	default:
-		return false;
+		if (command)
+		{
+			if ((event.m_modifiers & GLFW_MOD_CONTROL) != 0 && (event.m_modifiers & (GLFW_MOD_ALT | GLFW_MOD_SUPER)) == 0)
+			{
+				if (event.m_keyCode == GLFW_KEY_Z)
+				{
+					if (shift)
+					{
+						Redo();
+					}
+					else
+					{
+						Undo();
+					}
+
+					return true;
+				}
+
+				if (!shift)
+				{
+					switch (event.m_keyCode)
+					{
+					case GLFW_KEY_C:
+					case GLFW_KEY_INSERT:
+						CopyText();
+						return true;
+					case GLFW_KEY_X:
+						CutText();
+						return true;
+					case GLFW_KEY_V:
+						PasteText();
+						return true;
+					case GLFW_KEY_Y:
+						Redo();
+						return true;
+					}
+				}
+			}
+
+			return false;
+		}
+
+		if (shift && event.m_keyCode == GLFW_KEY_INSERT)
+		{
+			PasteText();
+			return true;
+		}
+
+		if (shift && event.m_keyCode == GLFW_KEY_DELETE)
+		{
+			CutText();
+			return true;
+		}
+
+		switch (event.m_keyCode)
+		{
+		case GLFW_KEY_LEFT:
+			MoveCursor(HasSelection() && !shift ? GetSelectionFromColumn() : m_cursorColumn - 1, shift);
+			return true;
+		case GLFW_KEY_RIGHT:
+			MoveCursor(HasSelection() && !shift ? GetSelectionToColumn() : m_cursorColumn + 1, shift);
+			return true;
+		case GLFW_KEY_HOME:
+			MoveCursor(0, shift);
+			return true;
+		case GLFW_KEY_END:
+			MoveCursor(static_cast<int>(m_text.Length()), shift);
+			return true;
+		case GLFW_KEY_BACKSPACE:
+		case GLFW_KEY_DELETE:
+			if (m_editable)
+			{
+				if (!HasSelection())
+				{
+					int const adjacent = event.m_keyCode == GLFW_KEY_BACKSPACE ? m_cursorColumn - 1 : m_cursorColumn + 1;
+					m_selectionAnchor  = std::clamp(adjacent, 0, static_cast<int>(m_text.Length()));
+				}
+
+				ReplaceSelection(String());
+			}
+
+			return true;
+		default:
+			return false;
+		}
 	}
+	}
+
+	return false;
 }
 
 void LineEdit::DrawContent()

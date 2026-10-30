@@ -9,15 +9,20 @@ class SubViewportContainer : public Container
 
 public:
 	SubViewportContainer();
+
 	SubViewport* GetSubViewport() const;
-	Vector2      ToViewportPosition(Vector2 windowPosition) const;
-	bool         GuiInput(InputEvent const& event) override;
 	Vector2      GetInternalMinimumSize() const override { return Vector2(1.f, 1.f); }
-	void         SetInputCallback(std::function<bool(InputEvent const&)> callback) { m_input = std::move(callback); }
+
+	void SetInputCallback(std::function<bool(InputEvent const&)> callback) { m_input = std::move(callback); }
+
+	Vector2 ToViewportPosition(Vector2 windowPosition) const;
+
+	bool GuiInput(InputEvent const& event) override;
 
 protected:
 	static void BindMethods() {}
-	void        OnNotification(int notification);
+
+	void OnNotification(int notification);
 
 private:
 	ObjectID                               m_viewportID = ObjectID::Invalid;

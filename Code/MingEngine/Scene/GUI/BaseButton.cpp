@@ -14,7 +14,12 @@ bool BaseButton::GuiInput(InputEvent const& event)
 		return false;
 	}
 
-	if (event.m_type == InputEventType::MouseMotion)
+	bool mouse    = false;
+	bool keyboard = false;
+
+	switch (event.m_type)
+	{
+	case InputEventType::MouseMotion:
 	{
 		// If the button is being pressed, it needs update when cursor moving
 		if (m_status.m_pressAttempt && m_status.m_mousePress)
@@ -29,11 +34,18 @@ bool BaseButton::GuiInput(InputEvent const& event)
 
 		return false;
 	}
+	case InputEventType::MouseButton:
+		mouse = event.m_mouseButton == GLFW_MOUSE_BUTTON_LEFT;
+		break;
+	case InputEventType::Key:
+		keyboard = HasFocus()
+			&& (event.m_keyCode == GLFW_KEY_ENTER || event.m_keyCode == GLFW_KEY_KP_ENTER
+				|| event.m_keyCode == GLFW_KEY_SPACE);
+		break;
+	default:
+		return false;
+	}
 
-	bool const mouse    = event.m_type == InputEventType::MouseButton && event.m_mouseButton == GLFW_MOUSE_BUTTON_LEFT;
-	bool const keyboard = event.m_type == InputEventType::Key && HasFocus()
-						  && (event.m_keyCode == GLFW_KEY_ENTER || event.m_keyCode == GLFW_KEY_KP_ENTER
-							  || event.m_keyCode == GLFW_KEY_SPACE);
 	if ((!mouse && !keyboard) || event.m_repeat)
 	{
 		return false;

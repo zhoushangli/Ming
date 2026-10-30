@@ -19,10 +19,9 @@ public:
 		Interrupted
 	};
 
+public:
 	LineEdit();
 	~LineEdit() override;
-	bool    GuiInput(InputEvent const& event) override;
-	Vector2 GetInternalMinimumSize() const override;
 
 	String const& GetText() const { return m_text; }
 	String const& GetPlaceholder() const { return m_placeholder; }
@@ -30,17 +29,13 @@ public:
 	Ref<FontResource> GetFont() const { return m_font; }
 	int               GetFontSize() const { return m_fontSize; }
 	Vector2           GetPadding() const { return m_padding; }
+	Vector2           GetInternalMinimumSize() const override;
 
 	bool IsEditable() const { return m_editable; }
 	bool IsDisabled() const override { return m_disabled; }
 	bool IsEditing() const { return m_editing; }
 
-	// End the active edit before notifying its owner, without changing text or focus.
-	// e.g. EndEditing() interrupts an edit before rebinding this field to another object.
-	void EndEditing(EditEndReason reason = EditEndReason::Interrupted);
-
 	int GetCursorColumn() const { return m_cursorColumn; }
-
 	// Return the nonnegative pixel distance subtracted from text positions when drawing.
 	// e.g. A text position of 200 with an offset of 150 appears 50 pixels into the content area.
 	float GetScrollOffset() const { return m_scrollOffset; }
@@ -49,6 +44,9 @@ public:
 	int    GetSelectionFromColumn() const;
 	int    GetSelectionToColumn() const;
 	String GetSelectedText() const;
+
+	bool   HasUndo() const;
+	bool   HasRedo() const;
 
 	// Set filtered single-line content, reset editing state, and leave the change callback silent.
 	// e.g. SetText(U"Name\n") stores U"Name" with the cursor at column zero.
@@ -65,6 +63,23 @@ public:
 
 	void SetCursorColumn(int column);
 
+	void SetTextChangedCallback(std::function<void(String const&)> callback)
+	{
+		m_textChangedCallback = std::move(callback);
+	}
+	void SetEditingStartedCallback(std::function<void(String const&)> callback)
+	{
+		m_editingStartedCallback = std::move(callback);
+	}
+	void SetEditingEndedCallback(std::function<void(String const&, EditEndReason)> callback)
+	{
+		m_editingEndedCallback = std::move(callback);
+	}
+
+	// End the active edit before notifying its owner, without changing text or focus.
+	// e.g. EndEditing() interrupts an edit before rebinding this field to another object.
+	void EndEditing(EditEndReason reason = EditEndReason::Interrupted);
+
 	// Keep from as the selection anchor and move the cursor to to, clamping both to the text.
 	// e.g. Select(4, 1) selects columns [1, 4) with the cursor at column one.
 	void Select(int from, int to);
@@ -74,25 +89,11 @@ public:
 	void CopyText();
 	void CutText();
 	void PasteText();
+
 	void Undo();
 	void Redo();
-	bool HasUndo() const;
-	bool HasRedo() const;
 
-	void SetTextChangedCallback(std::function<void(String const&)> callback)
-	{
-		m_textChangedCallback = std::move(callback);
-	}
-
-	void SetEditingStartedCallback(std::function<void(String const&)> callback)
-	{
-		m_editingStartedCallback = std::move(callback);
-	}
-
-	void SetEditingEndedCallback(std::function<void(String const&, EditEndReason)> callback)
-	{
-		m_editingEndedCallback = std::move(callback);
-	}
+	bool GuiInput(InputEvent const& event) override;
 
 protected:
 	static void BindMethods();
@@ -100,19 +101,23 @@ protected:
 	void OnNotification(int notification);
 
 private:
+	int   GetColumnAtPosition(float localX) const;
+	float GetColumnPosition(int column) const;
+	AABB2 GetContentRect() const;
+
 	static bool   IsTextCodepoint(char32_t codepoint);
 	static String FilterText(String const& text);
-	bool          BeginEditing();
-	void          UpdateTextLayout();
-	void          EnsureCursorVisible();
-	void          MoveCursor(int column, bool select);
-	void          ReplaceSelection(String const& text);
-	void          RestoreEditState(String const& text, int cursorColumn, float scrollOffset);
-	void          EmitTextChanged();
-	int           GetColumnAtPosition(float localX) const;
-	float         GetColumnPosition(int column) const;
-	AABB2         GetContentRect() const;
-	void          DrawContent();
+
+	bool BeginEditing();
+	void RestoreEditState(String const& text, int cursorColumn, float scrollOffset);
+	void EmitTextChanged();
+
+	void MoveCursor(int column, bool select);
+	void ReplaceSelection(String const& text);
+
+	void UpdateTextLayout();
+	void EnsureCursorVisible();
+	void DrawContent();
 
 private:
 	String                                            m_text;

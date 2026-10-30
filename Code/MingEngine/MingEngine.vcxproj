@@ -537,9 +537,12 @@
     <ClCompile Include="Scene\GUI\Tree.cpp" />
     <ClInclude Include="Scene\GUI\Tree.hpp" />
     <ClCompile Include="Scene\GUI\TabContainer.cpp" />
+    <ClCompile Include="Scene\GUI\SplitContainer.cpp" />
+    <ClInclude Include="Scene\GUI\SplitContainer.hpp" />
     <ClInclude Include="Scene\GUI\TabContainer.hpp" />
     <ClCompile Include="Scene\GUI\SubViewportContainer.cpp" />
     <ClInclude Include="Scene\GUI\SubViewportContainer.hpp" />
     <ClCompile Include="Editor\UI\EditorUINative.cpp" />
+    <ClCompile Include="Editor\UI\EditorUIDocking.cpp" />
   </ItemGroup>
 </Project>

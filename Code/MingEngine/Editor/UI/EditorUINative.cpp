@@ -11,11 +11,13 @@
 #include "MingEngine/Scene/GUI/ScrollContainer.hpp"
 #include "MingEngine/Scene/GUI/SubViewportContainer.hpp"
 #include "MingEngine/Scene/GUI/TabContainer.hpp"
+#include "MingEngine/Scene/GUI/SplitContainer.hpp"
 #include "MingEngine/Scene/GUI/Tree.hpp"
 #include "ThirdParty/GLFW/glfw3.h"
 
 #include <algorithm>
 #include <cctype>
+#include <filesystem>
 
 namespace
 {
@@ -270,6 +272,173 @@ void EditorUI::InitializeNative(EditorNode* owner)
 	JetBrainsMonoFont::ApplyNativeFont(m_nativeRoot, m_nativeFont);
 	owner->GetSceneTree()->SetSceneViewport(m_sceneView->GetSubViewport());
 	g_engine->m_fileSystem->ScanResourceTree();
+	InitializeNativeDragDrop();
+	InitializeNativeDocking();
+}
+
+void EditorUI::SetNativeDragPreview(Control* source, String const& text)
+{
+	auto* background = MemNew<ColorRect>();
+	background->SetColor(Color(45, 58, 76));
+	auto* label = MemNew<Label>();
+	label->SetFont(m_nativeFont);
+	label->SetText(text);
+	label->UpdateSize(label->GetCombinedMinimumSize());
+	background->AddNode(label);
+	label->SetPosition(Vector2(8.f, 6.f));
+	background->UpdateSize(label->GetCombinedMinimumSize() + Vector2(16.f, 12.f));
+	source->SetDragPreview(background);
+}
+
+bool EditorUI::CanReparentNativeNode(ObjectID source, uint64_t target) const
+{
+	auto const it = m_nodeItems.find(target);
+	Node* child = ObjectDatabase::GetInstance<Node>(source);
+	Node* parent = it != m_nodeItems.end() ? ObjectDatabase::GetInstance<Node>(it->second) : nullptr;
+	Node* scene = m_owner->GetSceneTree()->GetScene();
+	auto inScene = [scene](Node* node)
+	{
+		for (; node != nullptr; node = node->GetParent())
+		{
+			if (node->IsQueuedForDeletion())
+			{
+				return false;
+			}
+
+			if (node == scene)
+			{
+				return true;
+			}
+		}
+
+		return false;
+	};
+	if (child == nullptr || parent == nullptr || child == scene || child->GetParent() == parent
+		|| !inScene(child) || !inScene(parent))
+	{
+		return false;
+	}
+
+	for (Node* node = parent; node != nullptr; node = node->GetParent())
+	{
+		if (node == child)
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
+bool EditorUI::CanMoveNativeFile(VirtualPath const& source, uint64_t target) const
+{
+	auto const it = m_fileItems.find(target);
+	if (it == m_fileItems.end() || !source.IsValid() || source.IsRoot() || source == it->second
+		|| source.GetParent() == it->second)
+	{
+		return false;
+	}
+
+	FileSystem* files = g_engine->m_fileSystem;
+	std::filesystem::path sourcePath;
+	std::filesystem::path targetPath;
+	std::error_code error;
+	if (!files->TryGetPhysicalPath(source, sourcePath) || !files->TryGetPhysicalPath(it->second, targetPath)
+		|| !std::filesystem::exists(sourcePath, error) || error
+		|| !std::filesystem::is_directory(targetPath, error) || error)
+	{
+		return false;
+	}
+
+	std::string const prefix = source.GetString() + "/";
+	if (it->second.GetString().compare(0, prefix.size(), prefix) == 0)
+	{
+		return false;
+	}
+
+	return !std::filesystem::exists(targetPath / sourcePath.filename(), error) && !error;
+}
+
+void EditorUI::InitializeNativeDragDrop()
+{
+	m_nativeSceneTree->SetDragCallbacks(
+		[this](Vector2 const& position, GuiDragData& data)
+		{
+			auto const it = m_nodeItems.find(m_nativeSceneTree->GetItemAtPosition(position));
+			Node* node = it != m_nodeItems.end() ? ObjectDatabase::GetInstance<Node>(it->second) : nullptr;
+			if (node == nullptr || node->IsQueuedForDeletion() || node == m_owner->GetSceneTree()->GetScene())
+			{
+				return false;
+			}
+
+			data = { "node", node->GetObjectID(), node->GetName() };
+			SetNativeDragPreview(m_nativeSceneTree, node->GetName());
+			return true;
+		},
+		[this](Vector2 const& position, GuiDragData const& data)
+		{
+			return data.m_type == String("node")
+				&& CanReparentNativeNode(data.m_objectID, m_nativeSceneTree->GetItemAtPosition(position));
+		},
+		[this](Vector2 const& position, GuiDragData const& data)
+		{
+			uint64_t const target = m_nativeSceneTree->GetItemAtPosition(position);
+			if (!CanReparentNativeNode(data.m_objectID, target))
+			{
+				return;
+			}
+
+			Node* child = ObjectDatabase::GetInstance<Node>(data.m_objectID);
+			Node* parent = ObjectDatabase::GetInstance<Node>(m_nodeItems.at(target));
+			child->Reparent(parent, true);
+			m_owner->GetSelection().SetSelected(data.m_objectID);
+			m_owner->MarkSceneDirty();
+			UpdateSceneItems();
+		});
+	m_nativeFileTree->SetDragCallbacks(
+		[this](Vector2 const& position, GuiDragData& data)
+		{
+			auto const it = m_fileItems.find(m_nativeFileTree->GetItemAtPosition(position));
+			if (it == m_fileItems.end() || it->second.IsRoot())
+			{
+				return false;
+			}
+
+			data = { "file", ObjectID::Invalid, it->second.GetString() };
+			SetNativeDragPreview(m_nativeFileTree, data.m_value);
+			return true;
+		},
+		[this](Vector2 const& position, GuiDragData const& data)
+		{
+			VirtualPath source;
+			return data.m_type == String("file") && VirtualPath::TryParse(data.m_value.ToUtf8(), source)
+				&& CanMoveNativeFile(source, m_nativeFileTree->GetItemAtPosition(position));
+		},
+		[this](Vector2 const& position, GuiDragData const& data)
+		{
+			VirtualPath source;
+			uint64_t const target = m_nativeFileTree->GetItemAtPosition(position);
+			if (!VirtualPath::TryParse(data.m_value.ToUtf8(), source) || !CanMoveNativeFile(source, target))
+			{
+				return;
+			}
+
+			VirtualPath moved;
+			std::string error;
+			bool const success = g_engine->m_fileSystem->Move(source, m_fileItems.at(target), moved, error);
+			g_engine->m_fileSystem->ScanResourceTree();
+			m_filesDirty = true;
+			UpdateFileItems();
+			if (success)
+			{
+				auto const it = m_fileKeys.find(moved.GetString());
+				m_nativeFileTree->Select(it != m_fileKeys.end() ? it->second : 0);
+			}
+			else
+			{
+				Warning("Move failed", error);
+			}
+		});
 }
 
 void EditorUI::UpdateSceneItems()
@@ -355,12 +524,11 @@ void EditorUI::RenderNative(EditorUIContext& context)
 	InitializeNative(EditorNode::Get());
 	context.m_editorUI       = this;
 	Vector2 const size       = Vector2(static_cast<Viewport*>(context.m_sceneTree->GetRoot())->GetOutputResolution());
-	float const   left       = std::min(260.f, size.x * 0.27f);
-	float const   right      = std::min(360.f, size.x * 0.32f);
 	float const   bodyHeight = std::max(1.f, size.y - 64.f);
 	Place(m_nativeRoot, 0.f, 0.f, size.x, size.y);
 	Place(m_toolbar, 12.f, 8.f, std::max(1.f, size.x - 24.f), 40.f);
-	Place(m_tabs, 10.f, 58.f, left - 10.f, bodyHeight);
+	Place(m_dockSplits[0], 10.f, 58.f, std::max(1.f, size.x - 20.f), bodyHeight);
+	UpdateNativeDocking();
 	context.m_sceneTree->FlushContainerUpdate();
 	for (Control* page : { m_scenePage, m_filePage })
 	{
@@ -379,10 +547,9 @@ void EditorUI::RenderNative(EditorUIContext& context)
 		}
 	}
 
-	Place(m_sceneView, left + 10.f, 58.f, size.x - left - right - 30.f, bodyHeight);
-	Place(m_inspectorBackground, size.x - right - 10.f, 58.f, right, bodyHeight);
-	Place(m_inspectorTitle, size.x - right + 2.f, 68.f, right - 24.f, 24.f);
-	Place(m_emptyInspector, size.x - right + 2.f, 102.f, right - 24.f, 24.f);
+	Vector2 const inspectorSize = m_inspectorBackground->GetSize();
+	Place(m_inspectorTitle, 12.f, 8.f, inspectorSize.x - 24.f, 24.f);
+	Place(m_emptyInspector, 12.f, 42.f, inspectorSize.x - 24.f, 24.f);
 	m_emptyInspector->SetVisible(!m_owner->GetSelection().GetSelected().IsValid());
 	m_sceneTitle->SetText(m_owner->GetCurrentSceneName() + (m_owner->IsSceneDirty() ? " *" : ""));
 	SetViewportRect(m_sceneView->GetGlobalPosition(), m_sceneView->GetSize());
@@ -392,11 +559,14 @@ void EditorUI::RenderNative(EditorUIContext& context)
 	m_inspectorPanel.GetHost().BeginFrame();
 	m_inspectorPanel.RenderNative(
 		context,
-		Vector2(size.x - right + 2.f, 104.f),
-		Vector2(right - 24.f, bodyHeight - 48.f));
+		m_inspectorBackground->GetGlobalPosition() + Vector2(12.f, 46.f),
+		Vector2(std::max(1.f, inspectorSize.x - 24.f), std::max(1.f, inspectorSize.y - 48.f)));
 	m_inspectorPanel.GetHost().EndFrame();
 	JetBrainsMonoFont::ApplyNativeFont(m_nativeRoot, m_nativeFont);
 	context.m_sceneTree->FlushContainerUpdate();
+	UpdateNativeDocking();
+	Viewport* root = static_cast<Viewport*>(context.m_sceneTree->GetRoot());
+	root->UpdateGuiDrag(root->GetGuiDragPosition());
 	if (m_nativePopup->IsVisible())
 	{
 		m_nativePopup->UpdateSize(size);
@@ -411,7 +581,8 @@ void EditorUI::RenderNative(EditorUIContext& context)
 
 bool EditorUI::IsSceneHovered() const
 {
-	if (m_sceneView == nullptr || m_sceneView->GetViewport()->GetGuiPopup() != nullptr)
+	if (m_sceneView == nullptr || m_sceneView->GetViewport()->GetGuiPopup() != nullptr
+		|| m_sceneView->GetViewport()->IsGuiDragging())
 	{
 		return false;
 	}
@@ -423,6 +594,7 @@ bool EditorUI::IsSceneHovered() const
 bool EditorUI::IsSceneNavigationActive() const
 {
 	return m_navigating && m_sceneView != nullptr && m_sceneView->GetViewport()->IsWindowFocused()
+		   && !m_sceneView->GetViewport()->IsGuiDragging()
 		   && m_sceneView->HasFocus() && m_sceneView->GetViewport()->GetGuiPopup() == nullptr;
 }
 

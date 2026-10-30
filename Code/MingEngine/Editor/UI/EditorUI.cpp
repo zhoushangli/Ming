@@ -77,7 +77,12 @@ bool EditorUI::HandleInput(InputEvent const& event)
 			m_navigating = false;
 		}
 
-		static_cast<Viewport*>(m_owner->GetSceneTree()->GetRoot())->ProcessInputEvent(event);
+		UpdateNativeDocking();
+		m_owner->GetSceneTree()->FlushContainerUpdate();
+		Viewport* root = static_cast<Viewport*>(m_owner->GetSceneTree()->GetRoot());
+		root->ProcessInputEvent(event);
+		UpdateNativeDocking();
+		root->UpdateGuiDrag(root->GetGuiDragPosition());
 		return true;
 	}
 

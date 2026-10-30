@@ -10,16 +10,22 @@ class PopupPanel : public Control
 
 public:
 	PopupPanel();
+
+	Control* GetOwner() const { return ObjectDatabase::GetInstance<Control>(m_owner); }
+
+	void SetModal(bool modal) { m_modal = modal; }
+
+	void SetKeyCallback(std::function<void(InputEvent const&)> callback) { m_keyCallback = std::move(callback); }
+
 	void Open(Control* owner);
 	void Close(bool restoreFocus = true);
+
 	bool GuiInput(InputEvent const& event) override;
-	void SetKeyCallback(std::function<void(InputEvent const&)> callback) { m_keyCallback = std::move(callback); }
-	void SetModal(bool modal) { m_modal = modal; }
-	Control* GetOwner() const { return ObjectDatabase::GetInstance<Control>(m_owner); }
 
 protected:
 	static void BindMethods() {}
-	void        OnNotification(int notification);
+
+	void OnNotification(int notification);
 
 private:
 	ObjectID                               m_owner = ObjectID::Invalid;

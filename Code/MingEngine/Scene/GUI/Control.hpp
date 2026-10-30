@@ -2,6 +2,9 @@
 
 #include "MingEngine/Scene/Core/CanvasItem.hpp"
 #include "MingEngine/Engine/Input/InputEvent.hpp"
+#include "MingEngine/Scene/GUI/GUIDefinitions.hpp"
+
+#include <functional>
 
 // Control inherits from CanvasItem, which means Control can call all these render functions
 // but Control has its own unique features, like size, position, minimum size, etc.
@@ -20,7 +23,9 @@ public:
 		Notification_MouseExit          = 36,
 		Notification_FocusEnter         = 37,
 		Notification_FocusExit          = 38,
-		Notification_GuiInputCancelled  = 39
+		Notification_GuiInputCancelled  = 39,
+		Notification_DragHoverExit      = 70,
+		Notification_DragEnd            = 71
 	};
 
 	enum class MouseFilter
@@ -52,11 +57,29 @@ public:
 public:
 	static void BindMethods() {}
 
+	// We use Update Size instead of SetSize here, because we have a custom minimum size
+	// which is user defined size data
+	// and update size is used by container to update the size
+	// in this case, we do not want to change the custom minimum size
+	// and actually, we event want the minimum size to limit the size
+	// so here has some judge logic instead of just set the size directly
 	void         UpdateSize(Vector2 const& newSize);
 	virtual bool IsPointInside(Vector2 const& localPosition) const;
 	// If GuiInput returns true
 	// it means the event is consumed and should not propagate to other controls.
 	virtual bool GuiInput(InputEvent const& event);
+
+	virtual bool GetDragData(Vector2 const& position, GuiDragData& data);
+	virtual bool CanDropData(Vector2 const& position, GuiDragData const& data) const;
+	virtual void DropData(Vector2 const& position, GuiDragData const& data);
+	virtual void DragHover(Vector2 const& position, GuiDragData const& data, bool accepted);
+
+	void SetDragPreview(Control* preview);
+	void SetDragCallbacks(
+		std::function<bool(Vector2 const&, GuiDragData&)> source,
+		std::function<bool(Vector2 const&, GuiDragData const&)> check,
+		std::function<void(Vector2 const&, GuiDragData const&)> drop);
+	void SetDragHoverCallback(std::function<void(Vector2 const&, GuiDragData const&, bool)> callback);
 
 	virtual bool IsDisabled() const { return false; }
 	MouseFilter  GetMouseFilter() const { return m_mouseFilter; }
@@ -108,4 +131,8 @@ private:
 	MouseFilter m_mouseFilter         = MouseFilter::Stop;
 	FocusMode   m_focusMode           = FocusMode::None;
 	bool        m_clipContents        = false;
+	std::function<bool(Vector2 const&, GuiDragData&)> m_dragSource;
+	std::function<bool(Vector2 const&, GuiDragData const&)> m_dropCheck;
+	std::function<void(Vector2 const&, GuiDragData const&)> m_drop;
+	std::function<void(Vector2 const&, GuiDragData const&, bool)> m_dragHover;
 };

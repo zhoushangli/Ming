@@ -14,6 +14,59 @@ bool Control::GuiInput([[maybe_unused]] InputEvent const& event)
 	return false;
 }
 
+bool Control::GetDragData(Vector2 const& position, GuiDragData& data)
+{
+	auto callback = m_dragSource;
+	return callback && callback(position, data);
+}
+
+bool Control::CanDropData(Vector2 const& position, GuiDragData const& data) const
+{
+	auto callback = m_dropCheck;
+	return callback && callback(position, data);
+}
+
+void Control::DropData(Vector2 const& position, GuiDragData const& data)
+{
+	auto callback = m_drop;
+	if (callback)
+	{
+		callback(position, data);
+	}
+}
+
+void Control::DragHover(Vector2 const& position, GuiDragData const& data, bool accepted)
+{
+	auto callback = m_dragHover;
+	if (callback)
+	{
+		callback(position, data, accepted);
+	}
+}
+
+void Control::SetDragPreview(Control* preview)
+{
+	if (GetViewport() != nullptr)
+	{
+		GetViewport()->SetGuiDragPreview(preview);
+	}
+}
+
+void Control::SetDragCallbacks(
+	std::function<bool(Vector2 const&, GuiDragData&)> source,
+	std::function<bool(Vector2 const&, GuiDragData const&)> check,
+	std::function<void(Vector2 const&, GuiDragData const&)> drop)
+{
+	m_dragSource = std::move(source);
+	m_dropCheck = std::move(check);
+	m_drop = std::move(drop);
+}
+
+void Control::SetDragHoverCallback(std::function<void(Vector2 const&, GuiDragData const&, bool)> callback)
+{
+	m_dragHover = std::move(callback);
+}
+
 void Control::SetMouseFilter(MouseFilter filter)
 {
 	if (m_mouseFilter == filter)
@@ -169,6 +222,10 @@ void Control::OnNotification(int notification)
 {
 	switch (notification)
 	{
+	case Notification_DragHoverExit:
+	case Notification_DragEnd:
+		DragHover(Vector2(-1.f, -1.f), {}, false);
+		break;
 	case Notification_EnterTree:
 	{
 		if (m_data.m_viewport != nullptr && GetParentItem() == nullptr)

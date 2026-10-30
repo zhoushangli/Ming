@@ -83,7 +83,9 @@ static void MouseButtonCallback(GLFWwindow* window, int button, int action, int 
 
 	InputEvent event;
 	event.m_type        = InputEventType::MouseButton;
-	event.m_position    = GetMousePosition(window);
+	// Use the last dispatched motion position when queued button events are processed.
+	// e.g. A quick drag keeps its press position even if the OS cursor has already reached the drop target.
+	event.m_position    = s_hasPreviousMousePosition ? s_previousMousePosition : GetMousePosition(window);
 	event.m_mouseButton = button;
 	event.m_modifiers   = mods;
 	event.m_pressed     = action == GLFW_PRESS;

@@ -15,26 +15,34 @@ class EditorControlHost
 {
 public:
 	~EditorControlHost();
-	void           Initialize(SceneTree* tree, bool scrolling = true);
+
 	VBoxContainer* GetContent() const { return m_content; }
 	Viewport*      GetViewport() const;
-	void           DrawNative(Vector2 origin, Vector2 size);
 	Control*       GetRootControl() const { return m_root; }
-	void           SetFont(Ref<FontResource> const& font) { m_font = font; }
-	void           BeginFrame() { m_drawn = false; }
-	void           EndFrame();
-	void           Draw(Vector2 size);
-	bool           HandleInput(InputEvent const& event);
-	void           FinishOutsideClick();
-	void           Interrupt();
+	Vector2        GetOrigin() const { return m_origin; }
 	bool           HasKeyboardFocus() const;
 	bool           HasMouseCapture() const;
-	bool           Contains(Vector2 position) const;
-	Vector2        ToLocal(Vector2 position) const;
-	Vector2        GetOrigin() const { return m_origin; }
+
+	void SetFont(Ref<FontResource> const& font) { m_font = font; }
+
+	void Initialize(SceneTree* tree, bool scrolling = true);
+
+	void BeginFrame() { m_drawn = false; }
+	void EndFrame();
+	void Draw(Vector2 size);
+	void DrawNative(Vector2 origin, Vector2 size);
+
+	bool HandleInput(InputEvent const& event);
+	void FinishOutsideClick();
+	void Interrupt();
+
+	bool    Contains(Vector2 position) const;
+	Vector2 ToLocal(Vector2 position) const;
 
 private:
-	void              ApplyFont(Node* node);
+	void ApplyFont(Node* node);
+
+private:
 	ObjectID          m_viewportID = ObjectID::Invalid;
 	VBoxContainer*    m_content    = nullptr;
 	Control*          m_root       = nullptr;

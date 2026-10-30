@@ -29,7 +29,7 @@ public:
 	virtual Vector2 GetLocalPosition() const;
 	Vector2         GetGlobalPosition() const;
 
-	void SetVisible(bool visible);
+	void SetVisible(bool visible, bool cancelDrag = true);
 	bool IsVisible() const;
 	bool IsVisibleInHierarchy() const;
 

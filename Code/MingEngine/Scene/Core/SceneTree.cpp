@@ -198,6 +198,7 @@ Node* SceneTree::GetScene() const
 
 void SceneTree::ClearScene()
 {
+	m_root->CancelGuiDrag();
 	Node* sceneRoot = GetScene();
 	if (sceneRoot == nullptr)
 	{

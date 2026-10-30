@@ -50,7 +50,7 @@ void Tree::SetItems(std::vector<Item> items, bool filtering)
 	bool same = m_filtering == filtering && items.size() == m_items.size();
 	for (size_t i = 0; same && i < items.size(); ++i)
 	{
-		same = items[i].m_id == m_items[i].m_id && items[i].m_parent == m_items[i].m_parent
+		same = items[i].m_ID == m_items[i].m_ID && items[i].m_parentID == m_items[i].m_parentID
 			   && items[i].m_text == m_items[i].m_text && items[i].m_visible == m_items[i].m_visible
 			   && items[i].m_editable == m_items[i].m_editable;
 	}
@@ -66,7 +66,7 @@ void Tree::SetItems(std::vector<Item> items, bool filtering)
 	std::unordered_set<uint64_t> existing;
 	for (Item const& item : m_items)
 	{
-		existing.insert(item.m_id);
+		existing.insert(item.m_ID);
 	}
 
 	for (auto it = m_collapsed.begin(); it != m_collapsed.end();)
@@ -96,7 +96,7 @@ bool Tree::HasChildren(uint64_t id) const
 		m_items.end(),
 		[id](Item const& item)
 		{
-			return item.m_parent == id && item.m_visible;
+			return item.m_parentID == id && item.m_visible;
 		});
 }
 
@@ -117,12 +117,12 @@ void Tree::RebuildRows()
 	for (size_t i = 0; i < m_items.size(); ++i)
 	{
 		Item const& item  = m_items[i];
-		int const   depth = item.m_parent == 0 ? 0 : depths[item.m_parent] + 1;
-		depths[item.m_id] = depth;
+		int const   depth = item.m_parentID == 0 ? 0 : depths[item.m_parentID] + 1;
+		depths[item.m_ID] = depth;
 		bool const visible =
 			item.m_visible
-			&& (item.m_parent == 0 || (shown[item.m_parent] && (m_filtering || !IsCollapsed(item.m_parent))));
-		shown[item.m_id] = visible;
+			&& (item.m_parentID == 0 || (shown[item.m_parentID] && (m_filtering || !IsCollapsed(item.m_parentID))));
+		shown[item.m_ID] = visible;
 		if (!visible)
 		{
 			continue;
@@ -132,7 +132,7 @@ void Tree::RebuildRows()
 		label->SetFont(m_font);
 		label->SetFontSize(16);
 		label->SetText(
-			String(HasChildren(item.m_id) ? (IsCollapsed(item.m_id) && !m_filtering ? "> " : "v ") : "  ")
+			String(HasChildren(item.m_ID) ? (IsCollapsed(item.m_ID) && !m_filtering ? "> " : "v ") : "  ")
 			+ item.m_text);
 		label->SetPosition(Vector2(depth * 18.f + 4.f, static_cast<float>(m_rows.size()) * 28.f + 4.f));
 		label->UpdateSize(label->GetCombinedMinimumSize());
@@ -185,9 +185,9 @@ void Tree::Select(uint64_t id, bool notify)
 				m_items.end(),
 				[parent](Item const& item)
 				{
-					return item.m_id == parent;
+					return item.m_ID == parent;
 				});
-			parent = it != m_items.end() ? it->m_parent : 0;
+			parent = it != m_items.end() ? it->m_parentID : 0;
 			m_collapsed.erase(parent);
 		}
 
@@ -206,7 +206,7 @@ void Tree::EnsureSelectedVisible()
 {
 	for (size_t row = 0; row < m_rows.size(); ++row)
 	{
-		if (m_items[m_rows[row]].m_id == m_selected)
+		if (m_items[m_rows[row]].m_ID == m_selected)
 		{
 			if (auto* scroll = dynamic_cast<ScrollContainer*>(GetParent()))
 			{
@@ -223,9 +223,9 @@ void Tree::EditSelected()
 	for (size_t row = 0; row < m_rows.size(); ++row)
 	{
 		Item const& item = m_items[m_rows[row]];
-		if (item.m_id == m_selected && item.m_editable)
+		if (item.m_ID == m_selected && item.m_editable)
 		{
-			m_editing = item.m_id;
+			m_editing = item.m_ID;
 			m_labels[row]->SetVisible(false);
 			m_edit->SetText(item.m_text);
 			m_edit->SetPosition(Vector2(m_depths[row] * 18.f + 24.f, row * 28.f));
@@ -240,8 +240,15 @@ void Tree::EditSelected()
 
 bool Tree::GuiInput(InputEvent const& event)
 {
-	if (event.m_type == InputEventType::MouseButton && event.m_mouseButton == 0 && event.m_pressed)
+	switch (event.m_type)
 	{
+	case InputEventType::MouseButton:
+	{
+		if (event.m_mouseButton != 0 || !event.m_pressed)
+		{
+			break;
+		}
+
 		int const row = static_cast<int>(event.m_position.y / 28.f);
 		if (event.m_position.y < 0.f || row >= static_cast<int>(m_rows.size()))
 		{
@@ -249,7 +256,7 @@ bool Tree::GuiInput(InputEvent const& event)
 			return true;
 		}
 
-		uint64_t const id = m_items[m_rows[row]].m_id;
+		uint64_t const id = m_items[m_rows[row]].m_ID;
 		Select(id, true);
 		if (event.m_position.x < m_depths[row] * 18.f + 24.f && HasChildren(id))
 		{
@@ -269,84 +276,137 @@ bool Tree::GuiInput(InputEvent const& event)
 
 		return true;
 	}
-
-	if (event.m_type != InputEventType::Key || !event.m_pressed)
+	case InputEventType::Key:
 	{
-		return false;
-	}
-
-	auto it = std::find_if(
-		m_rows.begin(),
-		m_rows.end(),
-		[this](size_t index)
+		if (!event.m_pressed)
 		{
-			return m_items[index].m_id == m_selected;
-		});
-	int row = it == m_rows.end() ? -1 : static_cast<int>(it - m_rows.begin());
-	if ((event.m_keyCode == GLFW_KEY_UP || event.m_keyCode == GLFW_KEY_DOWN) && !m_rows.empty())
-	{
-		row = std::clamp(row + (event.m_keyCode == GLFW_KEY_UP ? -1 : 1), 0, static_cast<int>(m_rows.size()) - 1);
-		Select(m_items[m_rows[row]].m_id, true);
+			return false;
+		}
+
+		auto it = std::find_if(
+			m_rows.begin(),
+			m_rows.end(),
+			[this](size_t index)
+			{
+				return m_items[index].m_ID == m_selected;
+			});
+		int row = it == m_rows.end() ? -1 : static_cast<int>(it - m_rows.begin());
+		if ((event.m_keyCode == GLFW_KEY_UP || event.m_keyCode == GLFW_KEY_DOWN) && !m_rows.empty())
+		{
+			row = std::clamp(row + (event.m_keyCode == GLFW_KEY_UP ? -1 : 1), 0, static_cast<int>(m_rows.size()) - 1);
+			Select(m_items[m_rows[row]].m_ID, true);
+			return true;
+		}
+
+		if (row < 0)
+		{
+			return false;
+		}
+
+		Item const item = m_items[m_rows[row]];
+		if (event.m_keyCode == GLFW_KEY_LEFT)
+		{
+			if (HasChildren(item.m_ID) && !IsCollapsed(item.m_ID))
+			{
+				SetCollapsed(item.m_ID, true);
+			}
+			else if (item.m_parentID != 0)
+			{
+				Select(item.m_parentID, true);
+			}
+		}
+		else if (event.m_keyCode == GLFW_KEY_RIGHT)
+		{
+			if (HasChildren(item.m_ID))
+			{
+				if (IsCollapsed(item.m_ID))
+				{
+					SetCollapsed(item.m_ID, false);
+				}
+				else if (row + 1 < static_cast<int>(m_rows.size()))
+				{
+					Select(m_items[m_rows[row + 1]].m_ID, true);
+				}
+			}
+		}
+		else if (event.m_keyCode == GLFW_KEY_F2)
+		{
+			EditSelected();
+		}
+		else if (event.m_keyCode == GLFW_KEY_ENTER && m_activatedCallback)
+		{
+			m_activatedCallback(item.m_ID);
+		}
+		else
+		{
+			return false;
+		}
+
 		return true;
 	}
+	}
 
-	if (row < 0)
+	return false;
+}
+
+uint64_t Tree::GetItemAtPosition(Vector2 const& position) const
+{
+	if (!IsPointInside(position))
+	{
+		return 0;
+	}
+
+	size_t const row = static_cast<size_t>(position.y / 28.f);
+	return row < m_rows.size() ? m_items[m_rows[row]].m_ID : 0;
+}
+
+bool Tree::GetDragData(Vector2 const& position, GuiDragData& data)
+{
+	uint64_t const id = GetItemAtPosition(position);
+	if (id == 0 || m_editing != 0)
 	{
 		return false;
 	}
 
-	Item const item = m_items[m_rows[row]];
-	if (event.m_keyCode == GLFW_KEY_LEFT)
-	{
-		if (HasChildren(item.m_id) && !IsCollapsed(item.m_id))
-		{
-			SetCollapsed(item.m_id, true);
-		}
-		else if (item.m_parent != 0)
-		{
-			Select(item.m_parent, true);
-		}
-	}
-	else if (event.m_keyCode == GLFW_KEY_RIGHT)
-	{
-		if (HasChildren(item.m_id))
-		{
-			if (IsCollapsed(item.m_id))
-			{
-				SetCollapsed(item.m_id, false);
-			}
-			else if (row + 1 < static_cast<int>(m_rows.size()))
-			{
-				Select(m_items[m_rows[row + 1]].m_id, true);
-			}
-		}
-	}
-	else if (event.m_keyCode == GLFW_KEY_F2)
-	{
-		EditSelected();
-	}
-	else if (event.m_keyCode == GLFW_KEY_ENTER && m_activatedCallback)
-	{
-		m_activatedCallback(item.m_id);
-	}
-	else
+	size_t const row = static_cast<size_t>(position.y / 28.f);
+	if (HasChildren(id) && position.x < m_depths[row] * 18.f + 24.f)
 	{
 		return false;
 	}
 
-	return true;
+	return Control::GetDragData(position, data);
+}
+
+void Tree::DragHover(Vector2 const& position, GuiDragData const& data, bool accepted)
+{
+	uint64_t const item = accepted ? GetItemAtPosition(position) : 0;
+	if (item != m_dropItem)
+	{
+		m_dropItem = item;
+		QueueRedraw();
+	}
+
+	Control::DragHover(position, data, accepted);
 }
 
 void Tree::OnNotification(int notification)
 {
-	if (notification == Notification_Draw)
+	switch (notification)
 	{
+	case Notification_Draw:
 		for (size_t row = 0; row < m_rows.size(); ++row)
 		{
-			if (m_items[m_rows[row]].m_id == m_selected)
+			if (m_items[m_rows[row]].m_ID == m_selected)
 			{
 				DrawRect(AABB2(Vector2(0.f, row * 28.f), Vector2(GetSize().x, (row + 1) * 28.f)), Color(52, 82, 119));
 			}
+
+			if (m_items[m_rows[row]].m_ID == m_dropItem)
+			{
+				DrawRect(AABB2(Vector2(0.f, row * 28.f), Vector2(GetSize().x, row * 28.f + 2.f)), Color(92, 180, 240));
+				DrawRect(AABB2(Vector2(0.f, (row + 1) * 28.f - 2.f), Vector2(GetSize().x, (row + 1) * 28.f)), Color(92, 180, 240));
+			}
 		}
+		break;
 	}
 }

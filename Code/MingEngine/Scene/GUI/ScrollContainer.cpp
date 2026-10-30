@@ -104,7 +104,9 @@ void ScrollContainer::EnsureControlVisible(Control* control)
 
 bool ScrollContainer::GuiInput(InputEvent const& event)
 {
-	if (event.m_type == InputEventType::MouseWheel)
+	switch (event.m_type)
+	{
+	case InputEventType::MouseWheel:
 	{
 		if ((event.m_modifiers & GLFW_MOD_SHIFT) != 0)
 		{
@@ -118,39 +120,46 @@ bool ScrollContainer::GuiInput(InputEvent const& event)
 
 		return true;
 	}
-
-	if (event.m_type == InputEventType::MouseButton && event.m_mouseButton == 0)
+	case InputEventType::MouseButton:
 	{
-		if (!event.m_pressed)
+		if (event.m_mouseButton == 0)
 		{
-			m_dragAxis = -1;
-			return true;
-		}
+			if (!event.m_pressed)
+			{
+				m_dragAxis = -1;
+				return true;
+			}
 
-		if (event.m_position.x >= m_pageSize.x && GetMaximumScroll() > 0.f)
-		{
-			m_dragAxis = 1;
-		}
-		else if (event.m_position.y >= m_pageSize.y && m_contentSize.x > m_pageSize.x)
-		{
-			m_dragAxis = 0;
-		}
-		else
-		{
-			return false;
-		}
+			if (event.m_position.x >= m_pageSize.x && GetMaximumScroll() > 0.f)
+			{
+				m_dragAxis = 1;
+			}
+			else if (event.m_position.y >= m_pageSize.y && m_contentSize.x > m_pageSize.x)
+			{
+				m_dragAxis = 0;
+			}
+			else
+			{
+				return false;
+			}
 
-		float const length   = m_dragAxis == 0 ? m_pageSize.x : m_pageSize.y;
-		float const extent   = m_dragAxis == 0 ? m_contentSize.x : m_contentSize.y;
-		float const scroll   = m_dragAxis == 0 ? m_horizontalScroll : m_scroll;
-		float const position = m_dragAxis == 0 ? event.m_position.x : event.m_position.y;
-		float const thumb    = std::min(length, std::max(20.f, length * length / std::max(1.f, extent)));
-		float const top      = scroll / std::max(1.f, extent - length) * (length - thumb);
-		m_dragOffset         = position >= top && position <= top + thumb ? position - top : thumb * 0.5f;
+			float const length   = m_dragAxis == 0 ? m_pageSize.x : m_pageSize.y;
+			float const extent   = m_dragAxis == 0 ? m_contentSize.x : m_contentSize.y;
+			float const scroll   = m_dragAxis == 0 ? m_horizontalScroll : m_scroll;
+			float const position = m_dragAxis == 0 ? event.m_position.x : event.m_position.y;
+			float const thumb    = std::min(length, std::max(20.f, length * length / std::max(1.f, extent)));
+			float const top      = scroll / std::max(1.f, extent - length) * (length - thumb);
+			m_dragOffset         = position >= top && position <= top + thumb ? position - top : thumb * 0.5f;
+		}
 	}
-
-	if (m_dragAxis >= 0 && (event.m_type == InputEventType::MouseMotion || event.m_type == InputEventType::MouseButton))
+		[[fallthrough]];
+	case InputEventType::MouseMotion:
 	{
+		if (m_dragAxis < 0)
+		{
+			break;
+		}
+
 		float const length   = m_dragAxis == 0 ? m_pageSize.x : m_pageSize.y;
 		float const extent   = m_dragAxis == 0 ? m_contentSize.x : m_contentSize.y;
 		float const position = m_dragAxis == 0 ? event.m_position.x : event.m_position.y;
@@ -166,6 +175,7 @@ bool ScrollContainer::GuiInput(InputEvent const& event)
 		}
 
 		return true;
+	}
 	}
 
 	return false;

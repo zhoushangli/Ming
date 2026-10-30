@@ -56,7 +56,7 @@ Vector2 CanvasItem::GetGlobalPosition() const
 	return GetLocalPosition();
 }
 
-void CanvasItem::SetVisible(bool visible)
+void CanvasItem::SetVisible(bool visible, bool cancelDrag)
 {
 	if (m_visible == visible)
 	{
@@ -69,7 +69,7 @@ void CanvasItem::SetVisible(bool visible)
 	if (!visible && GetViewport() != nullptr)
 	{
 		ObjectID const id = GetObjectID();
-		GetViewport()->CancelGuiInteraction(this);
+		GetViewport()->CancelGuiInteraction(this, true, cancelDrag);
 
 		if (ObjectDatabase::GetInstance<CanvasItem>(id) == nullptr)
 		{
