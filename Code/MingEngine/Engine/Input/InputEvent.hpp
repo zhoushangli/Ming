@@ -4,6 +4,13 @@
 
 #include <cstdint>
 
+enum class CursorShape
+{
+	Arrow,
+	ResizeHorizontal,
+	ResizeVertical
+};
+
 enum class InputEventType
 {
 	None,

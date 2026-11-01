@@ -1,84 +1,83 @@
 #include "MingEngine/Editor/UI/ViewportPanel.hpp"
-
 #include "MingEngine/Editor/EditorNode.hpp"
 #include "MingEngine/Editor/UI/EditorUI.hpp"
-#include "MingEngine/Editor/UI/EditorUIContext.hpp"
-#include "MingEngine/Engine/Render/RenderServer.hpp"
-#include "MingEngine/Scene/Core/SceneTree.hpp"
-#include "MingEngine/Scene/Core/Viewport.hpp"
-
-#include "MingEngine/Core/Math/MathUtils.hpp"
-#include "MingEngine/Engine/Application/Engine.hpp"
-#include "MingEngine/Engine/Event/EventSystem.hpp"
-#include "MingEngine/Engine/Render/GPUTexture.hpp"
-
-#include "ThirdParty/imgui/imgui.h"
-
-using namespace Math;
+#include "MingEngine/Editor/UI/Popup/EditorPopupUtils.hpp"
+#include "ThirdParty/GLFW/glfw3.h"
 
 ViewportPanel::ViewportPanel() : EditorPanel("Viewport")
 {
+	SetCustomMinimumSize(Vector2(400.f, 250.f));
+}
+
+void ViewportPanel::OnInitialize()
+{
+	auto* layout = MemNew<VBoxContainer>();
+	AddNode(layout);
+	layout->UpdateSize(GetSize());
+	m_sceneTitle = EditorPopupUtils::AddLabel(layout, "");
+	m_sceneTitle->SetClipText(true);
+	m_sceneTitle->SetCustomMinimumSize(Vector2(0.f, 32.5f));
+	m_sceneTitle->SetVerticalAlignment(VerticalAlignment::Center);
+	auto* toolbar = MemNew<HBoxContainer>();
+	toolbar->SetCustomMinimumSize(Vector2(0.f, 37.5f));
+	layout->AddNode(toolbar);
+	for (char const* icon : { "ToolSelect", "ToolMove", "ToolRotate", "ToolScale", "Snap" })
+	{
+		Button* button = EditorPopupUtils::AddButton(toolbar, "", {});
+		button->SetName(icon);
+		button->SetIcon(GetThemeIcon(icon, "EditorIcons"));
+		button->SetThemeTypeVariation("EditorToolbarButton");
+		button->SetDisabled(true);
+	}
+
+	m_view = MemNew<SubViewportContainer>();
+	m_view->SetVerticalSizeFlags(Size_ExpandFill);
+	m_view->SetInputCallback([this](InputEvent const& event) { return HandleSceneInput(event); });
+	layout->AddNode(m_view);
 }
 
 void ViewportPanel::OnRender(EditorUIContext& context)
 {
-	EditorNode const* editorNode = EditorNode::Get();
-	std::string       sceneName  = editorNode != nullptr ? editorNode->GetCurrentSceneName() : std::string();
-	std::string       title      = sceneName.empty() ? "[empty]" : sceneName;
-	if (editorNode != nullptr && editorNode->IsSceneDirty())
+	m_sceneTitle->SetText(EditorNode::Get()->GetCurrentSceneName() + (EditorNode::Get()->IsSceneDirty() ? " *" : ""));
+	context.m_editorUI->SetViewportRect(m_view->GetGlobalPosition(), m_view->GetSize());
+}
+
+bool ViewportPanel::HandleSceneInput(InputEvent const& event)
+{
+	EditorNode* owner = EditorNode::Get();
+	switch (event.m_type)
 	{
-		title += "(*)";
-	}
-
-	title += "###Viewport";
-	ImGui::Begin(title.c_str(), GetOpenState());
-	ImGui::Button("Select");
-	ImGui::SameLine();
-	ImGui::Button("Move");
-	ImGui::SameLine();
-	ImGui::Button("Rotate");
-	ImGui::SameLine();
-	ImGui::Button("Scale");
-	ImGui::SameLine();
-	ImGui::Checkbox("Snap", &m_snap);
-	ImGui::Separator();
-
-	// Resize before reading the output texture so this frame uses the current viewport dimensions.
-	ImVec2 const  availableSize = ImGui::GetContentRegionAvail();
-	int           width         = Max(static_cast<int>(availableSize.x), 1);
-	int           height        = Max(static_cast<int>(availableSize.y), 1);
-	IntVec2 const panelDimensions(width, height);
-
-	Viewport* viewport =
-		context.m_sceneTree != nullptr ? dynamic_cast<Viewport*>(context.m_sceneTree->GetRoot()) : nullptr;
-	if (viewport != nullptr && viewport->GetOutputResolution() != panelDimensions)
-	{
-		// The Viewport keeps its own output resolution, the panel only requests the size.
-		viewport->UpdateResolution(panelDimensions);
-	}
-
-	if (viewport != nullptr)
-	{
-		GPUTexture* viewportTexture = g_engine->m_renderServer->ViewportGetTexture(viewport->GetViewportRID());
-		if (viewportTexture != nullptr)
+	case InputEventType::WindowFocus:
+		if (!event.m_focused)
 		{
-			ImTextureID  textureId  = g_engine->m_renderServer->GetImGuiTextureID(viewportTexture);
-			ImTextureRef textureRef = ImTextureRef(textureId);
-			ImGui::Image(textureRef, availableSize);
-
-			// 1) Record viewport rect for mouse-to-world ray mapping
-			// 2) Updated every frame to reflect dock/resize changes
-			ImVec2 const imgMin = ImGui::GetItemRectMin();
-			if (context.m_editorUI != nullptr)
+			m_navigating = false;
+		}
+		break;
+	case InputEventType::MouseMotion:
+		owner->OnMouseMove(event.m_position + m_view->GetGlobalPosition(), event.m_relative);
+		break;
+	case InputEventType::MouseButton:
+		if (event.m_mouseButton == GLFW_MOUSE_BUTTON_RIGHT)
+		{
+			m_navigating = event.m_pressed && m_view->IsPointInside(event.m_position);
+			if (m_navigating)
 			{
-				context.m_editorUI->SetViewportRect(
-					Vector2(imgMin.x, imgMin.y),
-					Vector2(availableSize.x, availableSize.y));
+				m_view->GrabFocus();
 			}
 		}
+		else if (event.m_mouseButton == GLFW_MOUSE_BUTTON_LEFT)
+		{
+			if (event.m_pressed)
+			{
+				owner->OnMouseDown(ToKeyCode(KeyCode::LeftMouse), event.m_position + m_view->GetGlobalPosition());
+			}
+			else
+			{
+				owner->OnMouseUp(ToKeyCode(KeyCode::LeftMouse), event.m_position + m_view->GetGlobalPosition());
+			}
+		}
+		break;
 	}
 
-	context.m_isViewportImageHovered = ImGui::IsItemHovered();
-
-	ImGui::End();
+	return event.m_type != InputEventType::Key;
 }

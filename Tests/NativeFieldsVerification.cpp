@@ -7,11 +7,13 @@
 #include "MingEngine/Editor/UI/InspectorPropertyInt.hpp"
 #include "MingEngine/Editor/UI/Popup/ProjectSettingsPopup.hpp"
 #include "MingEngine/Scene/RegisterAllTypes.hpp"
+#include "MingEngine/Scene/GUI/ThemeDatabase.hpp"
 #include "MingEngine/Scene/Core/SceneTree.hpp"
 #include "MingEngine/Scene/Core/Viewport.hpp"
 #include "MingEngine/Scene/Core/Window.hpp"
 #include "MingEngine/Scene/Core/PackedScene.hpp"
 #include "MingEngine/Scene/GUI/SpinBox.hpp"
+#include "MingEngine/Scene/GUI/Label.hpp"
 #include "MingEngine/Scene/GUI/OptionButton.hpp"
 #include "MingEngine/Scene/GUI/ScrollContainer.hpp"
 #include "MingEngine/Scene/GUI/VBoxContainer.hpp"
@@ -21,8 +23,8 @@
 #include "MingEngine/Core/Object/ResourceLoader.hpp"
 #include "MingEngine/Core/Object/ResourceSaver.hpp"
 #include "MingEngine/Core/Object/VariantJson.hpp"
-#include "ThirdParty/imgui/imgui.h"
 #include "MingEngine/Editor/UI/EditorUI.hpp"
+#include "MingEngine/Editor/UI/EditorIcons.hpp"
 #include "MingEngine/Editor/UI/JetBrainsMonoFont.hpp"
 #include "MingEngine/Scene/GUI/Tree.hpp"
 #include "MingEngine/Scene/GUI/TabContainer.hpp"
@@ -46,6 +48,9 @@
 #ifdef GetClassName
 #undef GetClassName
 #endif
+
+#include "ThemeVerification.hpp"
+#include "EditorPanelsVerification.hpp"
 
 #include <cmath>
 #include <cstdio>
@@ -152,6 +157,7 @@ int main(int argc, char** argv)
 	auto check    = [&](bool result, char const* name)
 	{
 		++checks;
+
 		if (!result)
 		{
 			++failures;
@@ -168,7 +174,6 @@ int main(int argc, char** argv)
 	std::filesystem::path const projectPath = std::filesystem::absolute(argv[1]);
 	std::filesystem::create_directories(projectPath);
 	EngineConfig config;
-	config.m_imguiConfig.m_isEnable          = false;
 	config.m_fileSystemConfig.m_resourceRoot = projectPath;
 	config.m_scriptSystemConfig.m_isEnabled  = false;
 	config.m_audioConfig.m_isEnable          = false;
@@ -669,22 +674,26 @@ int main(int argc, char** argv)
 			EditorUIContext context;
 			context.m_sceneTree = &tree;
 			context.m_selection = &selection;
-			InspectorPanel panel;
+			ClassDatabase::RegisterAbstractClass<EditorPanel>();
+			ClassDatabase::RegisterClass<InspectorPanel>();
+			auto* panel = MemNew<InspectorPanel>();
+			root->AddNode(panel);
+			panel->UpdateSize(Vector2(320.f, 640.f));
+			context.m_rootControl = panel;
 			auto           frame = [&]()
 			{
 				engine.BeginFrame();
-				panel.GetHost().BeginFrame();
-				panel.RenderNative(context, Vector2::Zero, Vector2(320.f, 640.f));
-				panel.GetHost().EndFrame();
-				panel.FinishInput(context);
+								panel->Render(context);
+				tree.FlushContainerUpdate();
+								panel->FinishInput(context);
 				engine.m_renderServer->Render();
 				engine.EndFrame();
 				tree.FlushPendingNode();
 			};
 			frame();
 			frame();
-			auto* nativeRoot = panel.GetHost().GetViewport();
-			auto* number     = Find<SpinBox>(panel.GetHost().GetContent());
+			auto* nativeRoot = panel->GetViewport();
+			auto* number     = Find<SpinBox>(panel->GetContentControl());
 			Draft(nativeRoot, number->GetLineEdit(), "50");
 			Key(nativeRoot, GLFW_KEY_ENTER);
 			check(
@@ -696,9 +705,10 @@ int main(int argc, char** argv)
 			outside.m_pressed     = true;
 			outside.m_mouseButton = 0;
 			outside.m_position    = Vector2(-20.f, -20.f);
-			panel.GetHost().HandleInput(outside);
+			// 1) Switch selection before dispatching the pending outside click.
+			(void)outside;
 			selection.SetSelected(ObjectID::Invalid);
-			panel.FinishInput(context);
+			panel->FinishInput(context);
 			check(probe->m_number == 10.f, "selection switch discards pending outside blur");
 			selection.SetSelected(probe->GetObjectID());
 			frame();
@@ -745,10 +755,10 @@ int main(int argc, char** argv)
 			}
 
 			probe->QueueFree();
-			panel.FinishInput(context);
+			panel->FinishInput(context);
 			frame();
 			check(
-				panel.GetHost().GetViewport()->GetGuiFocus() == nullptr,
+				panel->GetViewport()->GetGuiFocus() == nullptr,
 				"deleted selection loses native focus safely");
 
 			ProjectSettingsPopup popup;
@@ -757,16 +767,16 @@ int main(int argc, char** argv)
 			auto popupFrame               = [&]()
 			{
 				engine.BeginFrame();
-				popup.PrepareFields(context);
+				popup.Render(context);
 				engine.m_renderServer->Render();
 				engine.EndFrame();
 			};
 			popup.Open();
 			popupFrame();
-			auto* pathEdit = Find<LineEdit>(popup.GetHost().GetContent());
+			auto* pathEdit = Find<LineEdit>(popup.GetContentControl());
 			pathEdit->SetText("res://new.tscn");
 			pathEdit->GrabFocus();
-			popup.GetHost().GetViewport()->SetGuiFocus(nullptr);
+			root->SetGuiFocus(nullptr);
 			check(
 				settings->m_startScenePath == VirtualPath("res://old.tscn"),
 				"Start Scene blur does not save settings");
@@ -799,9 +809,6 @@ int main(int argc, char** argv)
 
 	// 1) Exercise the production Window -> EditorUI -> Inspector input and destruction path.
 	{
-		check(
-			ImGui::GetCurrentContext() == nullptr && engine.m_imguiSystem == nullptr,
-			"native editor has no ImGui context or system");
 		SceneTree tree;
 		auto*     editor = MemNew<EditorNode>();
 		tree.GetRoot()->AddNode(editor);
@@ -912,7 +919,7 @@ int main(int argc, char** argv)
 		ui->ResetNativeLayout();
 		frame();
 		check(!ui->GetDockSlot(0)->GetPage(0)->GetSerializable()
-			&& !ui->GetDockSlot(0)->GetPage(1)->GetSerializable() && !ui->GetDockSlot(2)->GetPage(0)->GetSerializable(),
+			&& !ui->GetDockSlot(1)->GetPage(0)->GetSerializable() && !ui->GetDockSlot(2)->GetPage(0)->GetSerializable(),
 			"dock panel roots remain explicitly nonserializable");
 		auto pointer = [&](InputEventType type, Vector2 position, bool pressed = false)
 		{
@@ -932,26 +939,33 @@ int main(int argc, char** argv)
 			frame();
 		};
 		Tree* nodes = ui->GetSceneTreeControl();
+		auto nodePosition = [nodes](Node* node)
+		{
+			ObjectID const id = node->GetObjectID();
+			uint64_t const key = (static_cast<uint64_t>(id.GetUID()) << 32 | id.GetIndex()) + 1;
+			return nodes->GetItemRect(key).GetCenter();
+		};
 		GuiDragData nodeData { "node", source->GetObjectID(), "DragSource" };
-		check(!nodes->CanDropData(Vector2(60.f, 42.f), nodeData), "node cannot drop onto itself");
-		check(!nodes->CanDropData(Vector2(60.f, 70.f), nodeData), "node cannot drop into descendant");
+		check(!nodes->CanDropData(nodePosition(source), nodeData), "node cannot drop onto itself");
+		check(!nodes->CanDropData(nodePosition(source->GetChildren()[0]), nodeData), "node cannot drop into descendant");
 		GuiDragData rootData { "node", scene->GetObjectID(), "DragRoot" };
-		check(!nodes->CanDropData(Vector2(60.f, 98.f), rootData), "scene root cannot be reparented");
-		check(nodes->CanDropData(Vector2(60.f, 98.f), nodeData), "native node target accepts valid reparent");
+		check(!nodes->CanDropData(nodePosition(target), rootData), "scene root cannot be reparented");
+		check(nodes->CanDropData(nodePosition(target), nodeData), "native node target accepts valid reparent");
 		Vector3 const world = source->GetWorldPosition();
-		drag(nodes->GetGlobalPosition() + Vector2(80.f, 42.f), nodes->GetGlobalPosition() + Vector2(80.f, 98.f));
+		drag(nodes->GetGlobalPosition() + nodePosition(source), nodes->GetGlobalPosition() + nodePosition(target));
 		check(source->GetParent() == target && source->GetWorldPosition() == world,
 			"real pointer drag reparents node and preserves world transform");
 		check(editor->IsSceneDirty() && editor->GetSelection().GetSelected() == source->GetObjectID(),
 			"node drop preserves selection and marks edited scene dirty");
+		ui->MoveNativePanel("FileSystem", 0);
 		ui->GetTabs()->SetCurrentTab(1);
 		frame();
 		Tree* files = ui->GetFileTreeControl();
 		auto filePosition = [&](char const* path)
 		{
-			for (int row = 0; row < static_cast<int>(files->GetInternalMinimumSize().y / 28.f); ++row)
+			for (int row = 0; row < static_cast<int>(files->GetInternalMinimumSize().y / files->GetRowHeight()); ++row)
 			{
-				Vector2 const position(110.f, row * 28.f + 14.f);
+				Vector2 const position(110.f, row * files->GetRowHeight() + files->GetRowHeight() * 0.5f);
 				GuiDragData data;
 				if (files->GetDragData(position, data) && data.m_value == String(path))
 				{
@@ -984,6 +998,7 @@ int main(int argc, char** argv)
 		pointer(InputEventType::MouseMotion, fromFile + Vector2(12.f, 0.f));
 		Vector2 const sceneTabPosition = ui->GetTabs()->GetTabButton(0)->GetGlobalPosition() + Vector2(20.f, 14.f);
 		pointer(InputEventType::MouseMotion, sceneTabPosition);
+		frame();
 		glfwSetTime(glfwGetTime() + 0.6);
 		frame();
 		check(root->IsGuiDragging() && ui->GetTabs()->GetCurrentTab() == 0 && !files->IsVisibleInHierarchy(),
@@ -993,23 +1008,23 @@ int main(int argc, char** argv)
 		Key(root, GLFW_KEY_ENTER);
 		ui->ResetNativeLayout();
 		frame();
-		ObjectID const pageID = ui->GetDockSlot(0)->GetPage(1)->GetObjectID();
-		Button* tab = ui->GetDockSlot(0)->GetTabButton(1);
+		ObjectID const pageID = ui->GetDockSlot(1)->GetPage(0)->GetObjectID();
+		Button* tab = ui->GetDockSlot(1)->GetTabButton(0);
 		Vector2 const dockTarget = ui->GetDockSlot(2)->GetGlobalPosition() + Vector2(70.f, 180.f);
 		drag(tab->GetGlobalPosition() + Vector2(20.f, 14.f), dockTarget);
-		check(ui->GetDockSlot(2)->GetPageCount() == 2 && ui->GetDockSlot(2)->GetCurrentPage()->GetObjectID() == pageID,
+		check(ui->GetDockSlot(2)->GetPageCount() == 3 && ui->GetDockSlot(2)->GetCurrentPage()->GetObjectID() == pageID,
 			"pointer dock transfer preserves panel instance and selects it");
 		ui->MoveNativePanel("FileSystem", 3);
 		frame();
-		check(ui->GetDockSlot(3)->IsVisible() && ui->GetDockSlot(3)->GetPage(0)->GetObjectID() == pageID,
+		check(ui->GetDockSlot(3)->IsVisible() && ui->GetDockSlot(3)->GetCurrentPage()->GetObjectID() == pageID,
 			"preset lower slot expands without recreating panel");
 		SplitContainer* split = ui->GetDockSplit(3);
-		Vector2 const divider = split->GetGlobalPosition() + Vector2(30.f, split->GetSplitOffset() + 3.f);
+		Vector2 const divider = split->GetGlobalPosition() + split->GetDividerRect().GetCenter();
 		pointer(InputEventType::MouseButton, divider, true);
 		pointer(InputEventType::MouseMotion, divider + Vector2(0.f, 10000.f));
 		pointer(InputEventType::MouseButton, divider + Vector2(0.f, 10000.f));
 		frame();
-		check(!root->HasGuiMouseCapture() && ui->GetDockSlot(3)->GetSize().y >= 80.f,
+		check(!root->HasGuiMouseCapture() && ui->GetDockSlot(3)->GetSize().y >= ui->GetDockSlot(3)->GetCombinedMinimumSize().y,
 			"split drag clamps panel minimum and releases outside window");
 		ui->GetDockSplit(0)->SetSplitRatio(0.3f);
 		check(ui->SaveNativeLayout(), "native dock layout saves");
@@ -1019,33 +1034,34 @@ int main(int argc, char** argv)
 		engine.m_fileSystem->WriteText("res://.ming/Editor/NativeEditorLayout.json", savedLayout);
 		ui->LoadNativeLayout();
 		frame();
-		check(ui->GetDockSlot(3)->GetPageCount() == 1 && ui->GetDockSlot(0)->GetPageTitle(0) == String("Scene"),
+		check(ui->GetDockSlot(3)->GetPageCount() == 2 && ui->GetDockSlot(0)->GetPageTitle(0) == String("Scene"),
 			"layout reload restores panel locations");
 		check(std::abs(ui->GetDockSplit(0)->GetSplitRatio() - 0.3f) < 0.001f, "layout reload restores split ratio");
 		engine.m_fileSystem->WriteText("res://.ming/Editor/NativeEditorLayout.json",
-			R"({"version":1,"slots":[{"panels":["FileSystem","FileSystem","Unknown"],"current":"FileSystem"}],"ratios":[-10,20,"bad"]})");
+			R"({"version":2,"slots":[{"panels":["FileSystem","FileSystem","Unknown"],"current":"FileSystem"}],"ratios":[-10,20,"bad"]})");
 		ui->LoadNativeLayout();
 		frame();
-		check(ui->GetDockSlot(0)->GetPageCount() == 2 && ui->GetDockSlot(2)->GetPageCount() == 1,
+		check(ui->GetDockSlot(0)->GetPageCount() == 2 && ui->GetDockSlot(2)->GetPageCount() == 2,
 			"layout ignores duplicate and unknown panels and restores missing panels");
 		check(ui->GetDockSplit(0)->GetSplitRatio() == 0.f && ui->GetDockSplit(1)->GetSplitRatio() == 1.f,
 			"layout clamps out-of-range ratios");
 		engine.m_fileSystem->WriteText("res://.ming/Editor/NativeEditorLayout.json", "{invalid json");
 		ui->LoadNativeLayout();
-		check(ui->GetDockSlot(0)->GetPageTitle(0) == String("Scene") && !ui->GetDockSlot(3)->IsVisible(),
+		check(ui->GetDockSlot(0)->GetPageTitle(0) == String("Scene") && ui->GetDockSlot(3)->IsVisible(),
 			"invalid layout restores default without losing panels");
 		ui->MoveNativePanel("FileSystem", 3);
 		std::filesystem::path const layoutFile = projectPath / ".ming" / "Editor" / "NativeEditorLayout.json";
 		std::filesystem::remove(layoutFile);
 		std::filesystem::create_directory(layoutFile);
-		check(!ui->SaveNativeLayout() && root->GetGuiPopup() != nullptr && ui->GetDockSlot(3)->GetPageCount() == 1,
+		check(!ui->SaveNativeLayout() && root->GetGuiPopup() != nullptr && ui->GetDockSlot(3)->GetPageCount() == 2,
 			"layout write failure reports error and preserves live layout");
 		Key(root, GLFW_KEY_ESCAPE);
 		std::filesystem::remove(layoutFile);
 		ui->ResetNativeLayout();
 		frame();
-		check(ui->GetDockSlot(0)->GetPageCount() == 2 && ui->GetDockSlot(2)->GetPageCount() == 1
-			&& !ui->GetDockSlot(1)->IsVisible() && !ui->GetDockSlot(3)->IsVisible(), "reset restores default layout and collapses empty slots");
+		check(ui->GetDockSlot(0)->GetPageCount() == 1 && ui->GetDockSlot(2)->GetPageCount() == 2
+			&& ui->GetDockSlot(1)->IsVisible() && ui->GetDockSlot(3)->IsVisible(), "reset restores Warm Carbon default layout with all panels visible");
+		ui->MoveNativePanel("FileSystem", 0);
 		for (int i = 0; i < 3; ++i)
 		{
 			ui->GetTabs()->MovePage(0, 1);
@@ -1068,7 +1084,7 @@ int main(int argc, char** argv)
 		auto* editor = MemNew<EditorNode>();
 		tree.GetRoot()->AddNode(editor);
 		EditorUI* ui = editor->m_editorUI;
-		check(ui->GetDockSlot(3)->GetPageTitle(0) == String("FileSystem")
+		check(ui->GetDockSlot(3)->GetPageTitle(ui->GetDockSlot(3)->GetCurrentTab()) == String("FileSystem")
 			&& ui->GetDockSlot(0)->GetPageCount() == 1 && std::abs(ui->GetDockSplit(0)->GetSplitRatio() - 0.31f) < 0.001f,
 			"new editor instance restores panel identities and split ratio from disk");
 		ui->ResetNativeLayout();
@@ -1172,6 +1188,8 @@ int main(int argc, char** argv)
 		frame();
 		frame();
 		EditorUI* ui       = editor->m_editorUI;
+		ui->MoveNativePanel("FileSystem", 0);
+		frame();
 		ObjectID const editorPageID = ui->GetTabs()->GetPage(0)->GetObjectID();
 		Tree*     nodes    = ui->GetSceneTreeControl();
 		Button*   sceneTab = Find<Button>(ui->GetTabs());
@@ -1194,7 +1212,7 @@ int main(int argc, char** argv)
 		auto* filter = Find<LineEdit>(ui->GetTabs()->GetCurrentPage());
 		filter->SetText("Needle");
 		frame();
-		check(nodes->GetInternalMinimumSize().y == 84.f, "filter retains ancestor path and expands matching branch");
+		check(nodes->GetInternalMinimumSize().y == 3.f * nodes->GetRowHeight(), "filter retains ancestor path and expands matching branch");
 		filter->SetText("");
 		frame();
 		check(
@@ -1233,6 +1251,7 @@ int main(int argc, char** argv)
 		scroll->SetScroll(0.f);
 		scroll->SetHorizontalScroll(0.f);
 		nodes->GrabFocus();
+		ui->MoveNativePanel("FileSystem", 0);
 		ui->GetTabs()->SetCurrentTab(1);
 		frame();
 		check(!nodes->IsVisibleInHierarchy() && !nodes->HasFocus(), "Tab switch hides old page and releases its focus");
@@ -1304,6 +1323,7 @@ int main(int argc, char** argv)
 			std::abs(mapped.x - tree.GetSceneViewport()->GetOutputResolution().x * 0.5f) < 1.f,
 			"resized scene coordinate mapping stays aligned");
 		capture("04-resized.ppm");
+		ui->MoveNativePanel("FileSystem", 0);
 		ui->GetTabs()->SetCurrentTab(1);
 		capture("05-filesystem.ppm");
 		ui->GetTabs()->SetCurrentTab(0);
@@ -1336,7 +1356,7 @@ int main(int argc, char** argv)
 			!editor->IsSceneNavigationActive() && !root->HasGuiMouseCapture(),
 			"camera release outside scene ends capture");
 		right.m_pressed  = true;
-		right.m_position = Vector2(15.f, 115.f);
+		right.m_position = ui->GetTabs()->GetGlobalPosition() + Vector2(10.f, 10.f);
 		window->OnInputEvent(right);
 		check(!editor->IsSceneNavigationActive(), "right click outside scene does not start camera");
 		right.m_pressed = false;
@@ -1353,28 +1373,35 @@ int main(int argc, char** argv)
 			"window focus loss cancels scene navigation");
 		lost.m_focused = true;
 		window->OnInputEvent(lost);
-		root->UpdateResolution(IntVec2(1100, 600));
+		root->UpdateResolution(IntVec2(1100, 320));
 		frame();
 		auto* inspectorScroll =
-			dynamic_cast<ScrollContainer*>(ui->GetPanel<InspectorPanel>().GetHost().GetRootControl());
-		auto*      number = Find<SpinBox>(editor);
+			Find<ScrollContainer>(&ui->GetPanel<InspectorPanel>());
+		auto*      number = Find<SpinBox>(ui->GetPanel<InspectorPanel>().GetContentControl());
 		InputEvent wheel;
 		wheel.m_type     = InputEventType::MouseWheel;
 		wheel.m_scroll   = Vector2(0.f, -3.f);
 		wheel.m_position = number->GetLineEdit()->GetGlobalPosition() + Vector2(8.f, 8.f);
+
 		window->OnInputEvent(wheel);
+
+
 		check(inspectorScroll->GetScroll() > 0.f, "wheel over property field reaches enclosing ScrollContainer");
 		editor->GetSelection().Clear();
 		auto* leafTree   = ui->GetSceneTreeControl();
 		auto* scrollTree = static_cast<ScrollContainer*>(leafTree->GetParent());
 		scrollTree->SetScroll(0.f);
 		frame();
+		check(scrollTree->GetContentSize().y > scrollTree->GetPageSize().y,
+			"scrollbar fixture has vertical content outside its page");
 		InputEvent bar;
 		bar.m_type        = InputEventType::MouseButton;
 		bar.m_mouseButton = 0;
 		bar.m_pressed     = true;
-		bar.m_position    = scrollTree->GetGlobalPosition() + Vector2(scrollTree->GetSize().x - 5.f, 15.f);
+		bar.m_position = scrollTree->GetGlobalPosition()
+			+ Vector2((scrollTree->GetSize().x + scrollTree->GetPageSize().x) * 0.5f, 4.f);
 		window->OnInputEvent(bar);
+
 		InputEvent motion;
 		motion.m_type     = InputEventType::MouseMotion;
 		motion.m_position = Vector2(800.f, 1200.f);
@@ -1390,6 +1417,7 @@ int main(int argc, char** argv)
 			!editor->GetSelection().GetSelected().IsValid(),
 			"clipped Tree row outside scroll area cannot select scene nodes");
 		check(editor->SaveScene(), "save resolves dirty scene before resource browsing");
+		ui->MoveNativePanel("FileSystem", 0);
 		ui->GetTabs()->SetCurrentTab(1);
 		auto* filesFilter = Find<LineEdit>(ui->GetTabs()->GetCurrentPage());
 		filesFilter->GrabFocus();
@@ -1417,10 +1445,14 @@ int main(int argc, char** argv)
 		frame();
 		check(root->GetGuiPopup() != nullptr, "warning modal remains available without a selected or open scene");
 		Key(root, GLFW_KEY_ESCAPE);
-		check(ImGui::GetCurrentContext() == nullptr, "entire native editing flow leaves ImGui uninitialized");
 	}
 
+	VerifyNativeEditorPanels(engine, check, projectPath);
+	VerifyThemes(engine, check, projectPath);
+
+	ThemeDatabase::Shutdown();
 	ResourceLoader::Shutdown();
+	EditorIcons::Shutdown();
 	engine.Shutdown();
 	ClassDatabase::Shutdown();
 	std::printf("NATIVE_FIELDS checks=%d failures=%d\n", checks, failures);

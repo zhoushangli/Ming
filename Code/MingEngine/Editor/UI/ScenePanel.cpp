@@ -1,356 +1,197 @@
 #include "MingEngine/Editor/UI/ScenePanel.hpp"
-
 #include "MingEngine/Editor/EditorNode.hpp"
+#include "MingEngine/Editor/UI/EditorIcons.hpp"
 #include "MingEngine/Editor/UI/EditorUI.hpp"
-#include "MingEngine/Editor/UI/EditorUIContext.hpp"
-#include "MingEngine/Editor/UI/EditorUIStyle.hpp"
-#include "MingEngine/Editor/UI/EditorUIWidgets.hpp"
-#include "MingEngine/Scene/Core/Node.hpp"
+#include "MingEngine/Editor/UI/Popup/EditorPopupUtils.hpp"
 #include "MingEngine/Scene/Core/SceneTree.hpp"
-
-#include "ThirdParty/imgui/imgui.h"
+#include "MingEngine/Scene/GUI/ScrollContainer.hpp"
+#include "ThirdParty/GLFW/glfw3.h"
 
 #include <algorithm>
 #include <cctype>
-#include <cstring>
-
-namespace
-{
-std::string ToLower(std::string const& text)
-{
-	std::string lowerText = text;
-	std::transform(
-		lowerText.begin(),
-		lowerText.end(),
-		lowerText.begin(),
-		[](unsigned char character)
-		{
-			return static_cast<char>(std::tolower(character));
-		});
-	return lowerText;
-}
-
-bool ContainsCaseInsensitive(std::string const& text, std::string const& filterText)
-{
-	return filterText.empty() || ToLower(text).find(ToLower(filterText)) != std::string::npos;
-}
-} // namespace
 
 ScenePanel::ScenePanel() : EditorPanel("Scene")
 {
 }
 
-void ScenePanel::OnRender(EditorUIContext& context)
+void ScenePanel::OnInitialize()
 {
-	m_pendingReparent.Clear();
-
-	ImGui::Begin(GetTitle(), GetOpenState());
-	if (context.m_sceneTree == nullptr)
+	auto* layout = MemNew<VBoxContainer>();
+	layout->SetSeparation(5.f);
+	AddNode(layout);
+	layout->UpdateSize(GetSize());
+	m_filter = MemNew<LineEdit>();
+	m_filter->SetPlaceholder("Filter nodes");
+	auto* tools = MemNew<HBoxContainer>();
+	tools->SetSeparation(2.5f);
+	layout->AddNode(tools);
+	Button* add = EditorPopupUtils::AddButton(tools, "", [this]() { OpenCreateNode(); });
+	add->SetIcon(GetThemeIcon("Add", "EditorIcons"));
+	add->SetThemeTypeVariation("EditorToolbarButton");
+	m_filter->SetHorizontalSizeFlags(Size_ExpandFill);
+	tools->AddNode(m_filter);
+	auto* scroll = MemNew<ScrollContainer>();
+	scroll->SetVerticalSizeFlags(Size_ExpandFill);
+	layout->AddNode(scroll);
+	m_tree = MemNew<Tree>();
+	scroll->AddNode(m_tree);
+	m_tree->SetSelectedCallback([this](uint64_t key)
 	{
-		ClearRename();
-	}
-	else if (m_renamingNodeID.IsValid())
+		auto found = m_nodeItems.find(key);
+		m_context.m_selection->SetSelected(found != m_nodeItems.end() ? found->second : ObjectID::Invalid);
+	});
+	m_tree->SetRenamedCallback([this](uint64_t key, String const& name)
 	{
-		Node* renamingNode = ObjectDatabase::GetInstance<Node>(m_renamingNodeID);
-		if (renamingNode == nullptr || renamingNode->GetSceneTree() != context.m_sceneTree)
+		auto found = m_nodeItems.find(key);
+		Node* node = found != m_nodeItems.end() ? ObjectDatabase::GetInstance<Node>(found->second) : nullptr;
+		if (node != nullptr && !node->IsQueuedForDeletion() && node->GetName() != name)
 		{
-			ClearRename();
+			node->SetName(name);
+			EditorNode::Get()->MarkSceneDirty();
 		}
-	}
-
-	ImGui::InputTextWithHint("##FilterNodes", "Filter Nodes", m_filter, sizeof(m_filter));
-	ImGui::Separator();
-
-	Node* sceneRoot = context.m_sceneTree != nullptr ? context.m_sceneTree->GetScene() : nullptr;
-	if (sceneRoot != nullptr)
-	{
-		RenderNode(sceneRoot, m_filter, context);
-	}
-
-	// If the user right-clicks on the window, show the context menu
-	if (ImGui::BeginPopupContextWindow(
-			"ScenePanelContext",
-			ImGuiPopupFlags_MouseButtonRight | ImGuiPopupFlags_NoOpenOverItems))
-	{
-		if (ImGui::MenuItem("Add Child Node..."))
+	});
+	m_tree->SetInputCallback([this](InputEvent const& event) { return HandleTreeInput(event); });
+	m_tree->SetDragCallbacks(
+		[this](Vector2 const& position, GuiDragData& data)
 		{
-			m_createNodePopup.Open(ObjectID::Invalid);
-		}
-
-		ImGui::EndPopup();
-	}
-
-	// If the user clicks on the window without hovering over any item, clear the selection
-	if (ImGui::IsWindowHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !ImGui::IsAnyItemHovered()
-		&& context.m_selection != nullptr)
-	{
-		context.m_selection->SetSelected(ObjectID::Invalid);
-	}
-
-	// If we want to delete the selected node
-	if (ImGui::IsWindowFocused() && ImGui::IsKeyPressed(ImGuiKey_Delete) && context.m_selection != nullptr)
-	{
-		ObjectID const selectedNodeID = context.m_selection->GetSelected();
-		Node*          selectedNode   = ObjectDatabase::GetInstance<Node>(selectedNodeID);
-		if (selectedNode != nullptr && selectedNode->GetSceneTree() != context.m_sceneTree)
-		{
-			selectedNode = nullptr;
-		}
-
-		if (selectedNode)
-		{
-			if (selectedNodeID == m_renamingNodeID)
+			auto found = m_nodeItems.find(m_tree->GetItemAtPosition(position));
+			Node* node = found != m_nodeItems.end() ? ObjectDatabase::GetInstance<Node>(found->second) : nullptr;
+			if (node == nullptr || node->IsQueuedForDeletion() || node == m_context.m_sceneTree->GetScene())
 			{
-				ClearRename();
+				return false;
 			}
 
-			EditorNode::Get()->MarkSceneDirty();
-			selectedNode->QueueFree();
-		}
-	}
-
-	// If we want to reparent a node
-	if (m_pendingReparent.m_childID != ObjectID::Invalid && m_pendingReparent.m_parentID != ObjectID::Invalid)
-	{
-		Node* childNode  = ObjectDatabase::GetInstance<Node>(m_pendingReparent.m_childID);
-		Node* parentNode = ObjectDatabase::GetInstance<Node>(m_pendingReparent.m_parentID);
-		if (childNode != nullptr && childNode->GetSceneTree() != context.m_sceneTree)
+			data = { "node", node->GetObjectID(), node->GetName() };
+			m_context.m_editorUI->SetNativeDragPreview(m_tree, node->GetName());
+			return true;
+		},
+		[this](Vector2 const& position, GuiDragData const& data)
 		{
-			childNode = nullptr;
-		}
-
-		if (parentNode != nullptr && parentNode->GetSceneTree() != context.m_sceneTree)
+			return data.m_type == String("node") && CanReparent(data.m_objectID, m_tree->GetItemAtPosition(position));
+		},
+		[this](Vector2 const& position, GuiDragData const& data)
 		{
-			parentNode = nullptr;
-		}
+			uint64_t const key = m_tree->GetItemAtPosition(position);
+			if (CanReparent(data.m_objectID, key))
+			{
+				Node* child = ObjectDatabase::GetInstance<Node>(data.m_objectID);
+				child->Reparent(ObjectDatabase::GetInstance<Node>(m_nodeItems.at(key)), true);
+				EditorNode::Get()->MarkSceneDirty();
+			}
+		});
+}
 
-		if (childNode && parentNode)
-		{
-			childNode->Reparent(parentNode, true);
-		}
-
-		m_pendingReparent.Clear();
-	}
-
-	ImGui::End();
+void ScenePanel::OnRender(EditorUIContext& context)
+{
+	UpdateItems();
 	m_createNodePopup.Render(context);
 }
 
-void ScenePanel::RenderNode(Node* node, std::string const& filterText, EditorUIContext& context)
+void ScenePanel::OpenCreateNode()
 {
-	if (node == nullptr || !DoesNodeMatchFilter(node, filterText))
-	{
-		return;
-	}
-
-	bool hasVisibleChildren = false;
-	for (Node const* child : node->GetChildren())
-	{
-		if (child != nullptr && DoesNodeMatchFilter(child, filterText))
-		{
-			hasVisibleChildren = true;
-			break;
-		}
-	}
-
-	ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth;
-	if (!hasVisibleChildren)
-	{
-		flags |= ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
-	}
-
-	if (!filterText.empty())
-	{
-		flags |= ImGuiTreeNodeFlags_DefaultOpen;
-	}
-
-	if (context.m_selection != nullptr && context.m_selection->GetSelected() == node->GetObjectID())
-	{
-		flags |= ImGuiTreeNodeFlags_Selected;
-	}
-
-	ObjectID const nodeID = node->GetObjectID();
-	ImGui::PushID(static_cast<int>(nodeID.GetUID()));
-	ImGui::PushID(static_cast<int>(nodeID.GetIndex()));
-
-	std::string const displayName       = node->GetName().IsEmpty() ? node->GetClassName() : node->GetName().ToUtf8();
-	bool const        isRenaming        = m_renamingNodeID == nodeID;
-	bool const        isOpen            = ImGui::TreeNodeEx("##SceneNodeTree", flags);
-	ImVec2 const      treeItemMin       = ImGui::GetItemRectMin();
-	ImVec2 const      treeItemMax       = ImGui::GetItemRectMax();
-	bool const        rowHovered        = ImGui::IsMouseHoveringRect(treeItemMin, treeItemMax);
-	bool              treeClicked       = rowHovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left);
-	bool              treeDoubleClicked = rowHovered && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left);
-
-	if (ImGui::BeginPopupContextItem("SceneNodeContext"))
-	{
-		if (context.m_selection != nullptr)
-		{
-			context.m_selection->SetSelected(nodeID);
-		}
-
-		if (ImGui::MenuItem("Add Child Node..."))
-		{
-			m_createNodePopup.Open(nodeID);
-		}
-
-		ImGui::EndPopup();
-	}
-
-	// Drag/drop must stay attached to the tree item, which has a stable ImGui ID.
-	if (!isRenaming && ImGui::BeginDragDropSource())
-	{
-		EditorDragDrop& dragDrop = EditorNode::Get()->m_dragDrop;
-		dragDrop.SetDragData(nodeID);
-		ImGui::SetDragDropPayload(EditorDragDrop::PayloadType, nullptr, 0);
-
-		std::string const dragName = node->GetName().ToUtf8();
-		ImGui::TextUnformatted(dragName.c_str());
-
-		ImGui::EndDragDropSource();
-	}
-
-	if (!isRenaming && ImGui::BeginDragDropTarget())
-	{
-		EditorDragDrop& dragDrop = EditorNode::Get()->m_dragDrop;
-		ObjectID        draggedNodeID;
-		if (dragDrop.TryGetData(draggedNodeID) && draggedNodeID != nodeID)
-		{
-			dragDrop.AllowDrop();
-			if (ImGui::AcceptDragDropPayload(EditorDragDrop::PayloadType) != nullptr)
-			{
-				m_pendingReparent.m_childID  = draggedNodeID;
-				m_pendingReparent.m_parentID = nodeID;
-			}
-		}
-
-		ImGui::EndDragDropTarget();
-	}
-
-	ImVec2 const iconSize = EditorUIStyle::SceneTreeIconSize();
-
-	// If the item is clicked, select the node
-	if (isRenaming)
-	{
-		ImGui::SameLine();
-		float const iconY = treeItemMin.y + (treeItemMax.y - treeItemMin.y - iconSize.y) * 0.5f;
-		ImGui::SetCursorScreenPos(ImVec2(ImGui::GetCursorScreenPos().x, iconY));
-		EditorUIWidgets::RenderIcon(node->GetClassName(), Node::GetStaticClassName(), iconSize);
-
-		ImGui::SameLine();
-		ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
-		if (m_focusRenameInput)
-		{
-			ImGui::SetKeyboardFocusHere();
-			m_focusRenameInput = false;
-		}
-
-		bool const submitted = ImGui::InputText(
-			"##NodeName",
-			m_renameBuffer,
-			sizeof(m_renameBuffer),
-			ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll);
-		bool const cancelled   = ImGui::IsItemActive() && ImGui::IsKeyPressed(ImGuiKey_Escape);
-		bool const deactivated = ImGui::IsItemDeactivated();
-		if (cancelled)
-		{
-			FinishRename(node, false);
-		}
-		else if (submitted || deactivated)
-		{
-			FinishRename(node, true);
-		}
-	}
-	else
-	{
-		EditorUIWidgets::RenderTreeRowContent(
-			node->GetClassName(),
-			Node::GetStaticClassName(),
-			displayName,
-			treeItemMin,
-			treeItemMax,
-			iconSize);
-	}
-
-	if (treeClicked && context.m_selection != nullptr)
-	{
-		context.m_selection->SetSelected(nodeID);
-	}
-
-	if (treeDoubleClicked && !isRenaming)
-	{
-		BeginRename(node);
-		if (context.m_selection != nullptr)
-		{
-			context.m_selection->SetSelected(nodeID);
-		}
-	}
-
-	if (isOpen && hasVisibleChildren)
-	{
-		for (Node* child : node->GetChildren())
-		{
-			RenderNode(child, filterText, context);
-		}
-
-		ImGui::TreePop();
-	}
-
-	ImGui::PopID();
-	ImGui::PopID();
+	m_createNodePopup.Open(m_context.m_selection->GetSelected());
 }
 
-bool ScenePanel::DoesNodeMatchFilter(Node const* node, std::string const& filterText) const
+void ScenePanel::DeleteSelected()
 {
-	if (node == nullptr)
+	Node* node = ObjectDatabase::GetInstance<Node>(m_context.m_selection->GetSelected());
+	if (node != nullptr && node->GetSceneTree() == m_context.m_sceneTree && !node->IsQueuedForDeletion())
 	{
-		return false;
+		EditorNode::Get()->MarkSceneDirty();
+		m_context.m_selection->Clear();
+		node->QueueFree();
 	}
+}
 
-	std::string const displayName = node->GetName().IsEmpty() ? node->GetClassName() : node->GetName().ToUtf8();
-	if (ContainsCaseInsensitive(displayName, filterText))
+bool ScenePanel::HandleTreeInput(InputEvent const& event)
+{
+	switch (event.m_type)
 	{
-		return true;
-	}
-
-	for (Node const* child : node->GetChildren())
-	{
-		if (DoesNodeMatchFilter(child, filterText))
+	case InputEventType::Key:
+		if (event.m_pressed && event.m_keyCode == GLFW_KEY_DELETE)
 		{
+			DeleteSelected();
 			return true;
 		}
+		break;
+	case InputEventType::MouseButton:
+		if (event.m_pressed && event.m_mouseButton == GLFW_MOUSE_BUTTON_RIGHT)
+		{
+			m_tree->Select(m_tree->GetItemAtPosition(event.m_position), true);
+			m_context.m_editorUI->ShowMenu(m_tree, event.m_position + m_tree->GetGlobalPosition(), {
+				{ "Add Child Node...", [this]() { OpenCreateNode(); } },
+				{ "Rename", [this]() { m_tree->EditSelected(); } },
+				{ "Delete", [this]() { DeleteSelected(); } }
+			});
+			return true;
+		}
+		break;
 	}
 
 	return false;
 }
 
-void ScenePanel::BeginRename(Node* node)
+bool ScenePanel::CanReparent(ObjectID source, uint64_t target) const
 {
-	if (node == nullptr)
+	auto found = m_nodeItems.find(target);
+	Node* child = ObjectDatabase::GetInstance<Node>(source);
+	Node* parent = found != m_nodeItems.end() ? ObjectDatabase::GetInstance<Node>(found->second) : nullptr;
+	if (child == nullptr || parent == nullptr || child == m_context.m_sceneTree->GetScene()
+		|| child->GetParent() == parent || child->IsQueuedForDeletion() || parent->IsQueuedForDeletion())
 	{
-		return;
+		return false;
 	}
 
-	m_renamingNodeID   = node->GetObjectID();
-	m_originalName     = node->GetName().ToUtf8();
-	m_focusRenameInput = true;
-	strncpy_s(m_renameBuffer, m_originalName.c_str(), sizeof(m_renameBuffer) - 1);
-}
-
-void ScenePanel::FinishRename(Node* node, bool apply)
-{
-	if (node != nullptr)
+	for (Node* current = parent; current != nullptr; current = current->GetParent())
 	{
-		node->SetName(apply ? m_renameBuffer : m_originalName);
+		if (current == child)
+		{
+			return false;
+		}
 	}
 
-	ClearRename();
+	return child->GetSceneTree() == m_context.m_sceneTree && parent->GetSceneTree() == m_context.m_sceneTree;
 }
 
-void ScenePanel::ClearRename()
+void ScenePanel::UpdateItems()
 {
-	m_renamingNodeID = ObjectID::Invalid;
-	m_originalName.clear();
-	m_renameBuffer[0]  = '\0';
-	m_focusRenameInput = false;
+	std::string filter = m_filter->GetText().ToUtf8();
+	std::transform(filter.begin(), filter.end(), filter.begin(), [](unsigned char ch) { return static_cast<char>(std::tolower(ch)); });
+	std::vector<Tree::Item> items;
+	m_nodeItems.clear();
+	std::function<bool(Node*, uint64_t)> append = [&](Node* node, uint64_t parent)
+	{
+		if (node == nullptr || node->IsQueuedForDeletion())
+		{
+			return false;
+		}
+
+		uint64_t const key = ((static_cast<uint64_t>(node->GetObjectID().GetUID()) << 32) | node->GetObjectID().GetIndex()) + 1;
+		m_nodeItems[key] = node->GetObjectID();
+		size_t const index = items.size();
+		items.push_back({ key, parent, node->GetName(), true, true, GetThemeIcon(node->GetClassName(), "EditorIcons"), EditorIcons::GetIconColor(node->GetClassName(), this) });
+		std::string lower = node->GetName().ToUtf8();
+		std::transform(lower.begin(), lower.end(), lower.begin(), [](unsigned char ch) { return static_cast<char>(std::tolower(ch)); });
+		bool visible = filter.empty() || lower.find(filter) != std::string::npos;
+		for (Node* child : node->GetChildren())
+		{
+			visible = append(child, key) || visible;
+		}
+
+		items[index].m_visible = visible;
+		return visible;
+	};
+	append(m_context.m_sceneTree->GetScene(), 0);
+	m_tree->SetItems(std::move(items), !filter.empty());
+	uint64_t selected = 0;
+	for (auto const& item : m_nodeItems)
+	{
+		if (item.second == m_context.m_selection->GetSelected())
+		{
+			selected = item.first;
+			break;
+		}
+	}
+
+	m_tree->Select(selected);
 }

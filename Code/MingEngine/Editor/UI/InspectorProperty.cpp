@@ -1,5 +1,4 @@
 #include "MingEngine/Editor/UI/InspectorProperty.hpp"
-#include "MingEngine/Editor/UI/EditorUIWidgets.hpp"
 
 #include "MingEngine/Editor/UI/InspectorPropertyBool.hpp"
 #include "MingEngine/Editor/UI/InspectorPropertyColor.hpp"
@@ -28,13 +27,23 @@ InspectorProperty::InspectorProperty(PropertyInfo info, std::string labelId, Val
 	m_root   = MemNew<VBoxContainer>();
 	m_rootID = m_root->GetObjectID();
 	m_root->SetSerializable(false);
-	m_root->SetSeparation(3.f);
+	m_root->SetSeparation(3.75f);
 	auto* title = MemNew<Label>();
 	title->SetText(GetDisplayName());
-	title->SetFontSize(14);
-	m_root->AddNode(title);
+	title->SetThemeTypeVariation("EditorPropertyTitle");
+	auto* row = MemNew<HBoxContainer>();
+	row->SetSeparation(7.5f);
+	m_root->AddNode(row);
+	title->SetCustomMinimumSize(Vector2(112.5f, 0.f));
+	title->SetClipText(true);
+	title->SetVerticalAlignment(VerticalAlignment::Center);
+	row->AddNode(title);
+	m_fields = MemNew<VBoxContainer>();
+	m_fields->SetHorizontalSizeFlags(Control::Size_ExpandFill);
+	m_fields->SetSeparation(2.5f);
+	row->AddNode(m_fields);
 	m_error = MemNew<Label>();
-	m_error->SetFontSize(11);
+	m_error->SetThemeTypeVariation("EditorErrorLabel");
 	m_error->SetVisible(false);
 	m_root->AddNode(m_error);
 }
@@ -81,71 +90,6 @@ Control* InspectorProperty::GetControl() const
 	return ObjectDatabase::GetInstance<Control>(m_rootID);
 }
 
-// Preserve immediate-mode import option editing until the Import panel is migrated.
-// e.g. ImportPanel still calls Render(context, optionValue) for its existing fields.
-void InspectorProperty::Render(EditorUIContext&, Variant const& value)
-{
-	Variant           next   = value;
-	bool              edited = false;
-	std::string const label  = GetDisplayName();
-	char const*       id     = m_labelId.c_str();
-	switch (value.GetType())
-	{
-	case Variant::Type::Bool:
-		edited = EditorUIWidgets::PropertyBool(label, id, next.As<bool>());
-		break;
-	case Variant::Type::Int:
-		edited = EditorUIWidgets::PropertyInt(label, id, next.As<int>());
-		break;
-	case Variant::Type::Float:
-		edited = EditorUIWidgets::PropertyFloat(label, id, next.As<float>());
-		break;
-	case Variant::Type::String:
-	{
-		std::string text = value.As<String>().ToUtf8();
-		edited           = EditorUIWidgets::PropertyString(label, id, text);
-		next             = Variant(text);
-		break;
-	}
-	case Variant::Type::Vector3:
-		edited = EditorUIWidgets::PropertyVec3(label, id, next.As<Vector3>());
-		break;
-	case Variant::Type::EulerAngles:
-		edited = EditorUIWidgets::PropertyEuler(label, id, next.As<EulerAngles>());
-		break;
-	case Variant::Type::Color:
-		edited = EditorUIWidgets::PropertyColor(label, id, next.As<Color>());
-		break;
-	default:
-		break;
-	}
-
-	if (edited)
-	{
-		EmitValueChanged(next);
-	}
-}
-
-std::string InspectorProperty::GetDisplayName() const
-{
-	std::string result     = m_info.m_name;
-	bool        capitalize = true;
-	for (char& ch : result)
-	{
-		if (ch == '_')
-		{
-			ch         = ' ';
-			capitalize = true;
-		}
-		else if (capitalize)
-		{
-			ch         = static_cast<char>(std::toupper(static_cast<unsigned char>(ch)));
-			capitalize = false;
-		}
-	}
-
-	return result;
-}
 
 void InspectorProperty::SetError(std::string const& message)
 {
@@ -183,7 +127,7 @@ void InspectorProperty::BuildNumeric()
 		{
 			EmitValueChanged(value);
 		});
-	m_root->AddNode(spin);
+	m_fields->AddNode(spin);
 	m_spins.push_back(spin);
 }
 
@@ -193,8 +137,8 @@ void InspectorProperty::BuildComponents()
 	if (m_info.m_type == Variant::Type::Color)
 	{
 		m_color = MemNew<ColorRect>();
-		m_color->SetCustomMinimumSize(Vector2(0.f, 22.f));
-		m_root->AddNode(m_color);
+		m_color->SetCustomMinimumSize(Vector2(0.f, 27.5f));
+		m_fields->AddNode(m_color);
 	}
 
 	char const* names[]  = { "X", "Y", "Z", "W" };
@@ -208,7 +152,7 @@ void InspectorProperty::BuildComponents()
 			m_info.m_type == Variant::Type::EulerAngles
 				? angles[i]
 				: (m_info.m_type == Variant::Type::Color ? colors[i] : names[i]));
-		label->SetCustomMinimumSize(Vector2(m_info.m_type == Variant::Type::EulerAngles ? 98.f : 20.f, 0.f));
+		label->SetCustomMinimumSize(Vector2(m_info.m_type == Variant::Type::EulerAngles ? 122.5f : 25.f, 0.f));
 		row->AddNode(label);
 		auto* spin = MemNew<SpinBox>();
 		spin->SetHorizontalSizeFlags(Control::Size_ExpandFill);
@@ -229,7 +173,7 @@ void InspectorProperty::BuildComponents()
 				SetComponent(i, value);
 			});
 		row->AddNode(spin);
-		m_root->AddNode(row);
+		m_fields->AddNode(row);
 		m_spins.push_back(spin);
 	}
 }
@@ -315,7 +259,7 @@ void InspectorProperty::BuildBool()
 		{
 			EmitValueChanged(Variant(pressed));
 		});
-	m_root->AddNode(m_button);
+	m_fields->AddNode(m_button);
 }
 
 void InspectorProperty::BuildEnum()
@@ -331,7 +275,7 @@ void InspectorProperty::BuildEnum()
 		{
 			EmitValueChanged(Variant(value));
 		});
-	m_root->AddNode(m_options);
+	m_fields->AddNode(m_options);
 }
 
 void InspectorProperty::BuildText(bool resource)
@@ -339,7 +283,7 @@ void InspectorProperty::BuildText(bool resource)
 	m_text = MemNew<LineEdit>();
 	m_text->SetMinimumCharacterWidth(1);
 	m_text->SetEditable(!resource);
-	m_root->AddNode(m_text);
+	m_fields->AddNode(m_text);
 	if (resource)
 	{
 		auto check = [this](Vector2 const&, GuiDragData const& data)
@@ -365,7 +309,7 @@ void InspectorProperty::BuildText(bool resource)
 			{
 				EmitValueChanged(Variant(static_cast<Object*>(nullptr)));
 			});
-		m_root->AddNode(m_button);
+		m_fields->AddNode(m_button);
 		return;
 	}
 
@@ -536,4 +480,25 @@ InspectorProperty* InspectorProperty::Create(PropertyInfo info, std::string labe
 	default:
 		return nullptr;
 	}
+}
+
+std::string InspectorProperty::GetDisplayName() const
+{
+	std::string result     = m_info.m_name;
+	bool        capitalize = true;
+	for (char& ch : result)
+	{
+		if (ch == '_')
+		{
+			ch         = ' ';
+			capitalize = true;
+		}
+		else if (capitalize)
+		{
+			ch         = static_cast<char>(std::toupper(static_cast<unsigned char>(ch)));
+			capitalize = false;
+		}
+	}
+
+	return result;
 }

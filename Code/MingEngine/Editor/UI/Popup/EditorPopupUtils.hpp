@@ -1,15 +1,18 @@
 #pragma once
 
-#include "ThirdParty/imgui/imgui.h"
-
-#include <string>
+#include "MingEngine/Scene/GUI/PopupPanel.hpp"
+#include "MingEngine/Scene/GUI/VBoxContainer.hpp"
+#include "MingEngine/Scene/GUI/HBoxContainer.hpp"
+#include "MingEngine/Scene/GUI/Button.hpp"
+#include "MingEngine/Scene/GUI/Label.hpp"
+#include "MingEngine/Scene/GUI/LineEdit.hpp"
 
 namespace EditorPopupUtils
 {
-bool BeginModal(char const* title, ImVec2 initialSize, ImGuiWindowFlags flags = ImGuiWindowFlags_None);
-void EndModal();
-void BeginButtonRow(int buttonCount, float buttonWidth = 120.f, float buttonGap = 64.f);
-bool ConfirmButton(char const* label = "OK", float buttonWidth = 120.f, bool acceptEnter = true);
-bool CancelButton(char const* label = "Cancel", float buttonWidth = 120.f);
-void ErrorText(std::string const& error);
-} // namespace EditorPopupUtils
+PopupPanel* Create(Control* owner, String const& title, VBoxContainer*& content);
+void Layout(PopupPanel* popup, Vector2 preferredSize);
+void Open(PopupPanel* popup, Control* owner, Vector2 preferredSize);
+Button* AddButton(Control* parent, String const& text, std::function<void()> callback);
+Label* AddLabel(Control* parent, String const& text, std::string const& variation = {});
+void ClearContent(Control* content);
+}

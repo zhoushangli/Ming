@@ -1,5 +1,7 @@
 #include "MingEngine/Scene/GUI/TabContainer.hpp"
 
+#include "MingEngine/Scene/GUI/ThemeDatabase.hpp"
+
 #include "MingEngine/Scene/Core/Viewport.hpp"
 #include "MingEngine/Scene/GUI/LineEdit.hpp"
 #include "MingEngine/Scene/GUI/PopupPanel.hpp"
@@ -26,6 +28,112 @@ void FinishPageEditing(Node* node)
 TabContainer::TabContainer()
 {
 	SetClipContents(true);
+}
+
+void TabContainer::BindMethods()
+{
+	BIND_THEME_ITEM(Theme::DataType::Font, TabContainer, font);
+	BIND_THEME_ITEM(Theme::DataType::FontSize, TabContainer, font_size);
+	BIND_THEME_ITEM(Theme::DataType::Constant, TabContainer, tab_height);
+	BIND_THEME_ITEM(Theme::DataType::Constant, TabContainer, tab_minimum_width);
+	BIND_THEME_ITEM(Theme::DataType::Constant, TabContainer, tab_separation);
+	BIND_THEME_ITEM(Theme::DataType::Constant, TabContainer, page_separation);
+	BIND_THEME_ITEM(Theme::DataType::Constant, TabContainer, drop_mark_width);
+	BIND_THEME_ITEM(Theme::DataType::Color, TabContainer, font_color);
+	BIND_THEME_ITEM(Theme::DataType::Color, TabContainer, font_hover_color);
+	BIND_THEME_ITEM(Theme::DataType::Color, TabContainer, font_selected_color);
+	BIND_THEME_ITEM(Theme::DataType::Color, TabContainer, font_selected_hover_color);
+	BIND_THEME_ITEM(Theme::DataType::Color, TabContainer, font_disabled_color);
+	BIND_THEME_ITEM(Theme::DataType::Color, TabContainer, drop_mark_color);
+	BIND_THEME_ITEM(Theme::DataType::StyleBox, TabContainer, panel);
+	BIND_THEME_ITEM(Theme::DataType::StyleBox, TabContainer, tab_normal);
+	BIND_THEME_ITEM(Theme::DataType::StyleBox, TabContainer, tab_hover);
+	BIND_THEME_ITEM(Theme::DataType::StyleBox, TabContainer, tab_selected);
+	BIND_THEME_ITEM(Theme::DataType::StyleBox, TabContainer, tab_selected_hover);
+	BIND_THEME_ITEM(Theme::DataType::StyleBox, TabContainer, tab_disabled);
+	BIND_THEME_ITEM(Theme::DataType::StyleBox, TabContainer, tab_focus);
+}
+
+void TabContainer::ApplyTabTheme(Button* button)
+{
+	button->SetFont(m_themeCache.font);
+	button->SetFontSize(m_themeCache.font_size);
+	button->AddThemeConstantOverride("minimum_height", std::max(0, m_themeCache.tab_height));
+	button->AddThemeStyleBoxOverride("normal", m_themeCache.tab_normal);
+	button->AddThemeStyleBoxOverride("hover", m_themeCache.tab_hover);
+	button->AddThemeStyleBoxOverride("pressed", m_themeCache.tab_selected);
+	button->AddThemeStyleBoxOverride("hover_pressed", m_themeCache.tab_selected_hover);
+	button->AddThemeStyleBoxOverride("disabled", m_themeCache.tab_disabled);
+	button->AddThemeStyleBoxOverride("focus", m_themeCache.tab_focus);
+	button->AddThemeColorOverride("font_color", m_themeCache.font_color);
+	button->AddThemeColorOverride("font_hover_color", m_themeCache.font_hover_color);
+	button->AddThemeColorOverride("font_pressed_color", m_themeCache.font_selected_color);
+	button->AddThemeColorOverride("font_hover_pressed_color", m_themeCache.font_selected_hover_color);
+	button->AddThemeColorOverride("font_disabled_color", m_themeCache.font_disabled_color);
+}
+
+void TabContainer::OnThemeChanged()
+{
+	for (Button* button : m_buttons)
+	{
+		ApplyTabTheme(button);
+	}
+
+	MarkDirty();
+}
+
+AABB2 TabContainer::GetTabBarRect() const
+{
+	float height = static_cast<float>(std::max(0, m_themeCache.tab_height));
+	for (Button* button : m_buttons)
+	{
+		height = std::max(height, button->GetCombinedMinimumSize().y);
+	}
+
+	return AABB2(0.f, 0.f, GetSize().x, height);
+}
+
+AABB2 TabContainer::GetPageRect() const
+{
+	float const top = std::min(GetSize().y, GetTabBarRect().m_maxs.y + static_cast<float>(std::max(0, m_themeCache.page_separation)));
+	AABB2 const area(0.f, top, GetSize().x, GetSize().y);
+	return m_themeCache.panel.IsValid() ? m_themeCache.panel->GetContentRect(area) : area;
+}
+
+AABB2 TabContainer::GetTabInsertRect(int index) const
+{
+	if (index < 0 || index > GetPageCount())
+	{
+		return AABB2::Zero;
+	}
+
+	float const width = std::min(GetSize().x, static_cast<float>(std::max(1, m_themeCache.drop_mark_width)));
+	float const edge = index < GetPageCount() ? m_buttons[index]->GetLocalPosition().x
+		: (m_buttons.empty() ? 0.f : m_buttons.back()->GetLocalPosition().x + m_buttons.back()->GetSize().x);
+	float const x = std::clamp(edge, 0.f, std::max(0.f, GetSize().x - width));
+	return AABB2(x, 0.f, x + width, GetTabBarRect().GetHeight());
+}
+
+Vector2 TabContainer::GetInternalMinimumSize() const
+{
+	Vector2 minimum = m_themeCache.panel.IsValid() ? m_themeCache.panel->GetMinimumSize() : Vector2::Zero;
+	Vector2 pageMinimum;
+	for (Control* page : m_pages)
+	{
+		Vector2 const size = page->GetCombinedMinimumSize();
+		pageMinimum.x = std::max(pageMinimum.x, size.x);
+		pageMinimum.y = std::max(pageMinimum.y, size.y);
+	}
+
+	minimum = minimum + pageMinimum;
+	for (Button* button : m_buttons)
+	{
+		minimum.x = std::max({ minimum.x, button->GetCombinedMinimumSize().x,
+			static_cast<float>(std::max(0, m_themeCache.tab_minimum_width)) });
+	}
+
+	minimum.y += GetTabBarRect().GetHeight() + static_cast<float>(std::max(0, m_themeCache.page_separation));
+	return minimum;
 }
 
 void TabContainer::AddPage(String const& title, Control* page)
@@ -88,6 +196,7 @@ void TabContainer::InsertPage(String const& title, Control* page, int index)
 	AddNode(page);
 	m_buttons.insert(m_buttons.begin() + index, button);
 	m_pages.insert(m_pages.begin() + index, page);
+	ApplyTabTheme(button);
 	m_current = GetPageIndex(current);
 	page->SetVisible(false);
 	if (m_current < 0)
@@ -211,7 +320,7 @@ void TabContainer::DropData(Vector2 const& position, GuiDragData const& data)
 	Control* page = ObjectDatabase::GetInstance<Control>(data.m_objectID);
 	auto* from = dynamic_cast<TabContainer*>(page->GetParent());
 	int const old = from->GetPageIndex(page);
-	int index = position.y < 40.f ? GetTabInsertIndex(position) : GetPageCount();
+	int index = position.y < GetTabBarRect().m_maxs.y ? GetTabInsertIndex(position) : GetPageCount();
 	if (from == this)
 	{
 		MovePage(old, index > old ? index - 1 : index);
@@ -235,7 +344,7 @@ void TabContainer::SetDropInsertIndex(int index)
 
 void TabContainer::DragHover(Vector2 const& position, GuiDragData const& data, bool accepted)
 {
-	SetDropInsertIndex(accepted && position.y >= 0.f && position.y < 40.f ? GetTabInsertIndex(position) : -1);
+	SetDropInsertIndex(accepted && position.y >= 0.f && position.y < GetTabBarRect().m_maxs.y ? GetTabInsertIndex(position) : -1);
 	Control::DragHover(position, data, accepted);
 }
 
@@ -315,26 +424,30 @@ void TabContainer::OnNotification(int notification)
 		float x = 0.f;
 		for (Button* button : m_buttons)
 		{
-			float const width = std::max(72.f, button->GetCombinedMinimumSize().x);
+			float const width = std::max(static_cast<float>(std::max(0, m_themeCache.tab_minimum_width)), button->GetCombinedMinimumSize().x);
 			button->SetPosition(Vector2(x, 0.f));
-			button->UpdateSize(Vector2(width, 36.f));
-			x += width + 4.f;
+			button->UpdateSize(Vector2(width, GetTabBarRect().GetHeight()));
+			x += width + static_cast<float>(std::max(0, m_themeCache.tab_separation));
 		}
 
 		if (Control* page = GetCurrentPage())
 		{
-			page->SetPosition(Vector2(0.f, 40.f));
-			page->UpdateSize(Vector2(GetSize().x, std::max(0.f, GetSize().y - 40.f)));
+			AABB2 const rect = GetPageRect();
+			page->SetPosition(rect.m_mins);
+			page->UpdateSize(rect.GetDimensions());
 		}
 		break;
 	}
 	case Notification_Draw:
+	{
+		DrawThemeStyleBox(m_themeCache.tab_normal, GetTabBarRect());
+		float const top = std::min(GetSize().y, GetTabBarRect().GetHeight());
+		DrawThemeStyleBox(m_themeCache.panel, AABB2(0.f, top, GetSize().x, GetSize().y));
 		if (m_dropIndex >= 0)
 		{
-			float const x = m_dropIndex < GetPageCount() ? m_buttons[m_dropIndex]->GetLocalPosition().x
-				: (m_buttons.empty() ? 0.f : m_buttons.back()->GetLocalPosition().x + m_buttons.back()->GetSize().x);
-			DrawRect(AABB2(Vector2(x, 0.f), Vector2(x + 3.f, 36.f)), Color(110, 195, 245));
+			DrawRect(GetTabInsertRect(m_dropIndex), m_themeCache.drop_mark_color);
 		}
 		break;
+	}
 	}
 }

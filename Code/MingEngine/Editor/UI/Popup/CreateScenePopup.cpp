@@ -3,6 +3,7 @@
 #include "MingEngine/Core/Object/ResourceSaver.hpp"
 #include "MingEngine/Editor/EditorNode.hpp"
 #include "MingEngine/Editor/UI/EditorUIContext.hpp"
+#include "MingEngine/Editor/UI/EditorUI.hpp"
 #include "MingEngine/Editor/UI/Popup/EditorPopupUtils.hpp"
 #include "MingEngine/Engine/File/FileSystem.hpp"
 #include "MingEngine/Scene/3D/Node3D.hpp"
@@ -57,114 +58,58 @@ void CreateScenePopup::Open(VirtualPath const& parentVirtualPath)
 
 void CreateScenePopup::Render(EditorUIContext& context)
 {
-	constexpr char const* popupId = "Create New Scene";
-	if (m_openRequested)
-	{
-		ImGui::OpenPopup(popupId);
-		m_openRequested = false;
-	}
-
-	if (!EditorPopupUtils::BeginModal(
-			popupId,
-			ImVec2(520.f, 0.f),
-			ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize))
+	m_context = context;
+	if (m_popup == nullptr && !m_openRequested)
 	{
 		return;
 	}
 
-	ImGui::Text("Base path: %s", m_parentVirtualPath.CStr());
-	ImGui::TextUnformatted("Root Type: 3D Scene");
-	ImGui::TextUnformatted("Scene Name (.tscn):");
-	if (m_focusNameInput)
+	if (m_popup == nullptr)
 	{
-		ImGui::SetKeyboardFocusHere();
-		m_focusNameInput = false;
-	}
-
-	ImGui::SetNextItemWidth(-FLT_MIN);
-	bool const sceneSubmitted = ImGui::InputText(
-		"##CreateSceneName",
-		m_sceneName,
-		sizeof(m_sceneName),
-		ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll);
-
-	ImGui::TextUnformatted("Root Name:");
-	ImGui::SetNextItemWidth(-FLT_MIN);
-	bool const rootSubmitted = ImGui::InputTextWithHint(
-		"##CreateSceneRootName",
-		"Leave empty to use scene name",
-		m_rootName,
-		sizeof(m_rootName),
-		ImGuiInputTextFlags_EnterReturnsTrue);
-
-	std::string       sceneError;
-	std::string       rootError;
-	std::string const sceneName  = m_sceneName;
-	bool              sceneValid = ValidateEntryName(m_sceneName, sceneError);
-	if (sceneValid && std::filesystem::path(sceneName).has_extension())
-	{
-		sceneValid = false;
-		sceneError = "Scene name must not include an extension.";
-	}
-
-	VirtualPath const sceneVirtualPath = m_parentVirtualPath.Join(sceneName + ".tscn");
-	if (sceneValid && context.m_fileSystem != nullptr && context.m_fileSystem->Exists(sceneVirtualPath))
-	{
-		sceneValid = false;
-		sceneError = "A scene with this name already exists.";
-	}
-
-	if (context.m_fileSystem == nullptr)
-	{
-		sceneValid = false;
-		sceneError = "FileSystem is not available.";
-	}
-
-	std::string const rootName  = m_rootName[0] != '\0' ? m_rootName : m_sceneName;
-	bool const        rootValid = ValidateEntryName(rootName.c_str(), rootError);
-	bool const        isValid   = sceneValid && rootValid;
-
-	ImGui::PushStyleColor(ImGuiCol_ChildBg, ImGui::GetStyleColorVec4(ImGuiCol_FrameBg));
-	ImGui::BeginChild(
-		"##CreateSceneValidation",
-		ImVec2(0.f, 0.f),
-		ImGuiChildFlags_Borders | ImGuiChildFlags_AutoResizeY | ImGuiChildFlags_AlwaysAutoResize);
-	ImGui::TextColored(
-		sceneValid ? ImVec4(0.25f, 0.85f, 0.35f, 1.f) : ImVec4(0.9f, 0.35f, 0.3f, 1.f),
-		"%s",
-		sceneValid ? "Scene name is valid." : sceneError.c_str());
-	ImGui::TextColored(
-		rootValid ? ImVec4(0.25f, 0.85f, 0.35f, 1.f) : ImVec4(0.9f, 0.35f, 0.3f, 1.f),
-		"%s",
-		rootValid ? "Root node name is valid." : rootError.c_str());
-	ImGui::EndChild();
-	ImGui::PopStyleColor();
-	EditorPopupUtils::ErrorText(m_error);
-
-	EditorPopupUtils::BeginButtonRow(2);
-	bool const confirm = (EditorPopupUtils::ConfirmButton() || sceneSubmitted || rootSubmitted) && isValid;
-	ImGui::SameLine(0.f, 64.f);
-	bool const cancel = EditorPopupUtils::CancelButton();
-	if (confirm)
-	{
-		m_error.clear();
-		if (EditorNode::Get() == nullptr)
+		VBoxContainer* content = nullptr;
+		m_popup = EditorPopupUtils::Create(context.m_rootControl, "Create Scene", content);
+		EditorPopupUtils::AddLabel(content, "Name:");
+		m_nameEdit = MemNew<LineEdit>();
+		content->AddNode(m_nameEdit);
+		m_nameEdit->SetEditingEndedCallback([this](String const&, LineEdit::EditEndReason reason)
 		{
-			m_error = "EditorNode is not available.";
-		}
-		else
+			if (reason == LineEdit::EditEndReason::Submitted)
+			{
+				Confirm();
+			}
+		});
+		EditorPopupUtils::AddLabel(content, "Root name (empty uses scene name):");
+		m_rootEdit = MemNew<LineEdit>();
+		content->AddNode(m_rootEdit);
+		m_rootEdit->SetEditingEndedCallback([this](String const&, LineEdit::EditEndReason reason)
 		{
-			EditorNode::Get()->RequestCreateScene(sceneVirtualPath, rootName);
-			m_selectedVirtualPath = sceneVirtualPath;
-			ImGui::CloseCurrentPopup();
-		}
-	}
-	else if (cancel)
-	{
-		ImGui::CloseCurrentPopup();
+			if (reason == LineEdit::EditEndReason::Submitted)
+			{
+				Confirm();
+			}
+		});
+		m_errorLabel = EditorPopupUtils::AddLabel(content, "", "EditorErrorLabel");
+		auto* buttons = MemNew<HBoxContainer>();
+		content->AddNode(buttons);
+		EditorPopupUtils::AddButton(buttons, "Create", [this]() { Confirm(); });
+		EditorPopupUtils::AddButton(buttons, "Cancel", [this]() { m_popup->Close(); });
 	}
 
-	EditorPopupUtils::EndModal();
+	if (m_openRequested)
+	{
+		m_openRequested = false;
+		m_nameEdit->SetText(m_sceneName);
+		m_rootEdit->SetText(m_rootName);
+		m_errorLabel->SetText("");
+		EditorPopupUtils::Open(m_popup, context.m_rootControl, Vector2(650.f, 300.f));
+		m_nameEdit->GrabFocus();
+		m_nameEdit->SelectAll();
+	}
+
+	if (m_popup->IsVisible())
+	{
+		EditorPopupUtils::Layout(m_popup, Vector2(650.f, 300.f));
+	}
 }
 
 bool CreateScenePopup::ConsumeSelectedVirtualPath(VirtualPath& outVirtualPath)
@@ -202,4 +147,34 @@ bool CreateScenePopup::ValidateEntryName(char const* name, std::string& outError
 
 	outError.clear();
 	return true;
+}
+
+void CreateScenePopup::Confirm()
+{
+	std::string const sceneName = m_nameEdit->GetText().ToUtf8();
+	std::string const rootName = m_rootEdit->GetText().IsEmpty() ? sceneName : m_rootEdit->GetText().ToUtf8();
+	if (!ValidateEntryName(sceneName.c_str(), m_error) || !ValidateEntryName(rootName.c_str(), m_error))
+	{
+		m_errorLabel->SetText(m_error);
+		return;
+	}
+
+	VirtualPath const path = m_parentVirtualPath.Join(sceneName + ".tscn");
+	if (std::filesystem::path(sceneName).has_extension())
+	{
+		m_error = "Scene name must not include an extension.";
+	}
+	else if (m_context.m_fileSystem == nullptr || m_context.m_fileSystem->Exists(path))
+	{
+		m_error = "FileSystem unavailable or a scene with this name already exists.";
+	}
+	else if (EditorNode::Get() != nullptr)
+	{
+		m_popup->Close();
+		EditorNode::Get()->RequestCreateScene(path, rootName);
+		m_selectedVirtualPath = path;
+		return;
+	}
+
+	m_errorLabel->SetText(m_error);
 }

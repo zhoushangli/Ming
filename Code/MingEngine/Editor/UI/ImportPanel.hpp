@@ -8,14 +8,21 @@
 #include <unordered_map>
 #include <vector>
 
+class VBoxContainer;
+class Label;
+
 class ImportPanel final : public EditorPanel
 {
+	MCLASS(ImportPanel, EditorPanel);
+
 public:
 	ImportPanel();
 	~ImportPanel() override;
 
 private:
+	void OnInitialize() override;
 	void OnRender(EditorUIContext& context) override;
+	void Reimport();
 
 	void                        RefreshSelection(VirtualPath const& selectedPath);
 	void                        RefreshImportConfigCache(VirtualPath const& selectedPath);
@@ -28,6 +35,10 @@ private:
 	bool                        IsImportOptionModified() const;
 
 private:
+	VBoxContainer* m_optionsContent = nullptr;
+	Label* m_header = nullptr;
+	OptionButton* m_importerChoice = nullptr;
+	Button* m_reimport = nullptr;
 	VirtualPath                              m_cachedSelectedPath;
 	std::vector<Ref<ResourceFormatImporter>> m_matchedImporters;
 	int                                      m_selectedImporterIndex = 0;

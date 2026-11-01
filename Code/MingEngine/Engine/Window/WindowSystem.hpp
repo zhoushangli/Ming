@@ -4,8 +4,10 @@
 
 #include "MingEngine/Core/Math/Vector2.hpp"
 #include "MingEngine/Core/String.hpp"
+#include "MingEngine/Engine/Input/InputEvent.hpp"
 
 struct GLFWwindow;
+struct GLFWcursor;
 enum class CursorMode;
 
 #include <string>
@@ -38,6 +40,8 @@ public:
 	void*       GetHwnd() const;
 	IntVec2     GetClientDimensions() const;
 	void        SetCursorMode(CursorMode mode);
+	void        SetCursorShape(CursorShape shape);
+	CursorShape GetCursorShape() const { return m_cursorShape; }
 	String      GetClipboardText() const;
 	bool        SetClipboardText(String const& text);
 
@@ -54,4 +58,7 @@ public:
 
 private:
 	WindowSystemConfig m_config;
+	GLFWcursor* m_resizeHorizontalCursor = nullptr;
+	GLFWcursor* m_resizeVerticalCursor = nullptr;
+	CursorShape m_cursorShape = CursorShape::Arrow;
 };

@@ -6,7 +6,10 @@
 #include "MingEngine/Scene/Core/Viewport.hpp"
 #include "MingEngine/Scene/GUI/VBoxContainer.hpp"
 #include "MingEngine/Scene/GUI/Label.hpp"
-#include "ThirdParty/imgui/imgui.h"
+#include "MingEngine/Scene/GUI/ScrollContainer.hpp"
+#include "MingEngine/Editor/UI/Popup/EditorPopupUtils.hpp"
+#include <algorithm>
+#include <cctype>
 
 InspectorPanel::InspectorPanel() : EditorPanel("Inspector")
 {
@@ -19,7 +22,10 @@ InspectorPanel::~InspectorPanel()
 
 void InspectorPanel::ClearProperties()
 {
-	m_host.Interrupt();
+	if (GetViewport() != nullptr)
+	{
+		GetViewport()->CancelGuiInteraction(this);
+	}
 	for (PropertyGroup& group : m_propertyGroups)
 	{
 		for (PropertyEntry& entry : group.m_properties)
@@ -29,22 +35,7 @@ void InspectorPanel::ClearProperties()
 	}
 
 	m_propertyGroups.clear();
-	if (VBoxContainer* content = m_host.GetContent(); content != nullptr && m_host.GetViewport() != nullptr)
-	{
-		std::vector<Node*> const children = content->GetChildren();
-		for (Node* child : children)
-		{
-			if (!child->IsQueuedForDeletion())
-			{
-				if (auto* control = dynamic_cast<Control*>(child))
-				{
-					control->SetVisible(false);
-				}
-
-				child->QueueFree();
-			}
-		}
-	}
+	EditorPopupUtils::ClearContent(m_content);
 }
 
 void InspectorPanel::BuildInheritanceChain(std::string const& className)
@@ -136,8 +127,9 @@ void InspectorPanel::RebuildProperties(EditorUIContext& context)
 		group.m_className = className;
 		auto* header      = MemNew<Label>();
 		header->SetText(className);
-		header->SetFontSize(18);
-		m_host.GetContent()->AddNode(header);
+		header->SetThemeTypeVariation("EditorInspectorTitle");
+		m_content->AddNode(header);
+		group.m_header = header;
 		for (PropertyInfo const& prop : ClassDatabase::GetProperties(className))
 		{
 			if (!prop.HasUsage(PropertyInfo::UsageFlags::Inspector))
@@ -171,7 +163,7 @@ void InspectorPanel::RebuildProperties(EditorUIContext& context)
 
 					return getter->Invoke(target, {});
 				});
-			m_host.GetContent()->AddNode(field->GetControl());
+			m_content->AddNode(field->GetControl());
 			group.m_properties.push_back({ field, getter });
 		}
 
@@ -179,21 +171,60 @@ void InspectorPanel::RebuildProperties(EditorUIContext& context)
 	}
 
 	RefreshValues();
+	FilterProperties();
+}
+
+void InspectorPanel::OnInitialize()
+{
+	auto* layout = MemNew<VBoxContainer>();
+	AddNode(layout);
+	layout->UpdateSize(GetSize());
+	m_filter = MemNew<LineEdit>();
+	m_filter->SetPlaceholder("Filter properties");
+	m_filter->SetTextChangedCallback([this](String const&) { FilterProperties(); });
+	layout->AddNode(m_filter);
+	m_empty = EditorPopupUtils::AddLabel(layout, "No object selected");
+	auto* scroll = MemNew<ScrollContainer>();
+	scroll->SetVerticalSizeFlags(Size_ExpandFill);
+	layout->AddNode(scroll);
+	m_content = MemNew<VBoxContainer>();
+	m_content->SetSeparation(5.f);
+	scroll->AddNode(m_content);
+}
+
+void InspectorPanel::FilterProperties()
+{
+	if (m_filter == nullptr)
+	{
+		return;
+	}
+
+	auto lower = [](std::string text)
+	{
+		std::transform(text.begin(), text.end(), text.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+		return text;
+	};
+	std::string const query = lower(m_filter->GetText().ToUtf8());
+	for (PropertyGroup& group : m_propertyGroups)
+	{
+		bool any = false;
+		for (PropertyEntry& entry : group.m_properties)
+		{
+			bool const visible = query.empty() || lower(entry.m_property->GetDisplayName()).find(query) != std::string::npos;
+			entry.m_property->GetControl()->SetVisible(visible);
+			any = any || visible;
+		}
+
+		group.m_header->SetVisible(any);
+	}
 }
 
 void InspectorPanel::OnRender(EditorUIContext& context)
 {
-	if (!ImGui::Begin(GetTitle(), GetOpenState(), ImGuiWindowFlags_NoNavInputs))
-	{
-		ImGui::End();
-		return;
-	}
-
 	m_sceneTree = context.m_sceneTree;
-	m_host.Initialize(context.m_sceneTree);
-	ObjectID const id   = context.m_selection != nullptr ? context.m_selection->GetSelected() : ObjectID::Invalid;
-	Node*          node = ObjectDatabase::GetInstance<Node>(id);
-	bool const valid = node != nullptr && !node->IsQueuedForDeletion() && node->GetSceneTree() == context.m_sceneTree;
+	ObjectID const id = context.m_selection != nullptr ? context.m_selection->GetSelected() : ObjectID::Invalid;
+	Node* node = ObjectDatabase::GetInstance<Node>(id);
+	bool const valid = node != nullptr && !node->IsQueuedForDeletion() && node->GetSceneTree() == m_sceneTree;
 	if (!valid || id != m_cachedObjectID)
 	{
 		ClearProperties();
@@ -205,81 +236,47 @@ void InspectorPanel::OnRender(EditorUIContext& context)
 		}
 	}
 
-	if (!valid)
-	{
-		ImGui::TextUnformatted("No object selected");
-		ImGui::End();
-		return;
-	}
-
+	m_empty->SetVisible(!valid);
 	RefreshValues();
-	ImVec2 const available = ImGui::GetContentRegionAvail();
-	m_host.Draw(Vector2(available.x, available.y));
-
-	// 1) Translate the existing editor drag payload into a native resource field assignment.
-	if (ImGui::BeginDragDropTarget())
-	{
-		EditorNode* editor = EditorNode::Get();
-		VirtualPath path;
-		if (editor != nullptr && m_host.GetViewport()->GetGuiPopup() == nullptr && editor->m_dragDrop.TryGetData(path))
-		{
-			ImVec2 const  mouse    = ImGui::GetMousePos();
-			Vector2 const position = m_host.ToLocal(Vector2(mouse.x, mouse.y));
-			for (PropertyGroup& group : m_propertyGroups)
-			{
-				for (PropertyEntry& entry : group.m_properties)
-				{
-					if (entry.m_property->Contains(position) && entry.m_property->CanAssignResource(path))
-					{
-						editor->m_dragDrop.AllowDrop();
-						if (ImGui::AcceptDragDropPayload(EditorDragDrop::PayloadType) != nullptr)
-						{
-							entry.m_property->AssignResource(path);
-						}
-					}
-				}
-			}
-		}
-
-		ImGui::EndDragDropTarget();
-	}
-
-	ImGui::End();
+	FilterProperties();
 }
 
 void InspectorPanel::FinishInput(EditorUIContext& context)
 {
 	ObjectID const selected = context.m_selection != nullptr ? context.m_selection->GetSelected() : ObjectID::Invalid;
-	Node*          node     = ObjectDatabase::GetInstance<Node>(m_cachedObjectID);
+	Node* node = ObjectDatabase::GetInstance<Node>(m_cachedObjectID);
 	if (selected != m_cachedObjectID || node == nullptr || node->IsQueuedForDeletion())
 	{
 		ClearProperties();
 		m_cachedObjectID = ObjectID::Invalid;
-		return;
 	}
-
-	m_host.FinishOutsideClick();
 }
 
-void InspectorPanel::RenderNative(EditorUIContext& context, Vector2 origin, Vector2 size)
+void InspectorPanel::FinishEditing()
 {
-	m_sceneTree = context.m_sceneTree;
-	m_host.Initialize(context.m_sceneTree);
-	ObjectID const id   = context.m_selection != nullptr ? context.m_selection->GetSelected() : ObjectID::Invalid;
-	Node*          node = ObjectDatabase::GetInstance<Node>(id);
-	bool const valid = node != nullptr && !node->IsQueuedForDeletion() && node->GetSceneTree() == context.m_sceneTree;
-	if (!valid || id != m_cachedObjectID)
+	for (PropertyGroup& group : m_propertyGroups)
 	{
-		ClearProperties();
-		m_cachedObjectID = valid ? id : ObjectID::Invalid;
-		if (valid)
+		for (PropertyEntry& entry : group.m_properties)
 		{
-			BuildInheritanceChain(node->GetClassName());
-			RebuildProperties(context);
+			entry.m_property->EndEditing(LineEdit::EditEndReason::FocusLost);
 		}
 	}
 
-	RefreshValues();
-	m_host.DrawNative(origin, size);
-	m_host.GetRootControl()->SetVisible(valid);
+	if (GetViewport() != nullptr)
+	{
+		GetViewport()->CancelGuiInteraction(this);
+	}
+}
+
+void InspectorPanel::OnClose()
+{
+	if (GetViewport() != nullptr)
+	{
+		GetViewport()->CancelGuiInteraction(this);
+	}
+}
+
+Control* InspectorPanel::GetContentControl() const
+{
+	return m_content;
 }

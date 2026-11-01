@@ -59,13 +59,6 @@ public:
 	void CopyCPUToGPU(const void* data, unsigned int size, IndexBuffer* indexBuffer);
 	void BindConstantBuffer(ConstantBuffer* constantBuffer, int slot);
 
-	// Drive the ImGui renderer backend owned by the active RenderBackend.
-	// e.g. g_engine->m_renderServer->RenderImGui(ImGui::GetDrawData())
-	bool        InitImGui();
-	void        ShutdownImGui();
-	void        BeginImGuiFrame();
-	void        RenderImGui(ImDrawData* drawData);
-	ImTextureID GetImGuiTextureID(GPUTexture* texture) const;
 
 	void BindBackBuffer();
 	void ResizeBackBuffer(IntVec2 newDimensions);

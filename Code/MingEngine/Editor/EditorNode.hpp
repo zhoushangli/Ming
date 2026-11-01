@@ -6,6 +6,7 @@
 #include "MingEngine/Editor/EditorUndoRedo.hpp"
 #include "MingEngine/Editor/UI/EditorUIContext.hpp"
 #include "MingEngine/Scene/Core/Node.hpp"
+#include "MingEngine/Scene/Resource/Theme.hpp"
 
 class Camera3D;
 class EditorCamera;
@@ -23,89 +24,25 @@ private:
 	ObjectID m_selectedNodeID = ObjectID::Invalid;
 };
 
-class EditorDragDrop
-{
-public:
-	enum class Type
-	{
-		None,
-		Node,
-		FileSystemEntry
-	};
-
-	static constexpr char const* PayloadType = "EDITOR_DRAG";
-
-	void BeginFrame() { m_dropAllowed = false; }
-
-	void EndFrame(bool isDragging)
-	{
-		if (!isDragging)
-		{
-			Clear();
-		}
-	}
-
-	void SetDragData(ObjectID nodeID)
-	{
-		m_type        = Type::Node;
-		m_virtualPath = {};
-		m_nodeID      = nodeID;
-	}
-
-	void SetDragData(VirtualPath const& virtualPath)
-	{
-		m_type        = Type::FileSystemEntry;
-		m_virtualPath = virtualPath;
-		m_nodeID      = ObjectID::Invalid;
-	}
-
-	bool TryGetData(ObjectID& outNodeID) const
-	{
-		if (m_type != Type::Node || m_nodeID == ObjectID::Invalid)
-		{
-			return false;
-		}
-
-		outNodeID = m_nodeID;
-		return true;
-	}
-
-	bool TryGetData(VirtualPath& outVirtualPath) const
-	{
-		if (m_type != Type::FileSystemEntry || !m_virtualPath.IsValid())
-		{
-			return false;
-		}
-
-		outVirtualPath = m_virtualPath;
-		return true;
-	}
-
-	void AllowDrop() { m_dropAllowed = true; }
-
-	bool IsDropAllowed() const { return m_dropAllowed; }
-
-	void Clear()
-	{
-		m_type        = Type::None;
-		m_virtualPath = {};
-		m_nodeID      = ObjectID::Invalid;
-	}
-
-private:
-	Type        m_type = Type::None;
-	VirtualPath m_virtualPath;
-	ObjectID    m_nodeID      = ObjectID::Invalid;
-	bool        m_dropAllowed = false;
-};
-
 class EditorNode : public Node
 {
 	MCLASS(EditorNode, Node);
 
+private:
+	enum class PendingSceneAction
+	{
+		None,
+		Load,
+		Create,
+		Quit
+	};
+
+
 public:
 	EditorNode();
 	~EditorNode() override;
+
+	Ref<Theme> GetEditorTheme() const { return m_editorTheme; }
 
 	static EditorNode* Get();
 	bool HandleGuiInput(InputEvent const& event);
@@ -145,7 +82,6 @@ private:
 
 public:
 	EditorSelection m_selection;
-	EditorDragDrop  m_dragDrop;
 	EditorGizmos*   m_editorGizmos = nullptr;
 	EditorCamera*   m_editorCamera = nullptr;
 	EditorUI*       m_editorUI     = nullptr;
@@ -153,17 +89,11 @@ public:
 private:
 	static EditorNode* s_instance;
 
+	Ref<Theme> m_editorTheme;
 	EditorData      m_editorData;
 	EditorUndoRedo  m_undoRedo;
 	EditorUIContext m_uiContext;
 
-	enum class PendingSceneAction
-	{
-		None,
-		Load,
-		Create,
-		Quit
-	};
 
 	PendingSceneAction m_pendingSceneAction = PendingSceneAction::None;
 	VirtualPath        m_pendingScenePath;

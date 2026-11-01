@@ -302,6 +302,31 @@ void Viewport::SetGuiHovered(Control* control)
 	}
 }
 
+void Viewport::UpdateGuiCursor()
+{
+	if (GetParent() != nullptr || g_engine == nullptr || g_engine->m_windowSystem == nullptr)
+	{
+		return;
+	}
+
+	CursorShape shape = CursorShape::Arrow;
+	if (m_gui.m_mouseInside && m_gui.m_windowFocused && !m_gui.m_dragging)
+	{
+		Control* control = ResolveGuiControl(m_gui.m_mouseCaptureControl);
+		if (control == nullptr)
+		{
+			control = ResolveGuiControl(m_gui.m_hoveredControl);
+		}
+
+		if (control != nullptr && !control->IsDisabled())
+		{
+			shape = control->GetCursorShape(m_gui.m_mousePosition - control->GetGlobalPosition());
+		}
+	}
+
+	g_engine->m_windowSystem->SetCursorShape(shape);
+}
+
 void Viewport::SetGuiFocus(Control* control)
 {
 	if (control != nullptr
@@ -451,6 +476,11 @@ void Viewport::CancelGuiInteraction(Node* subtree, bool clearFocus, bool cancelD
 	{
 		target->Notification(Control::Notification_MouseExit);
 	}
+
+	if (auto* current = ObjectDatabase::GetInstance<Viewport>(viewportID))
+	{
+		current->UpdateGuiCursor();
+	}
 }
 
 bool Viewport::PropagateGuiInput(ObjectID target, InputEvent const& event)
@@ -534,6 +564,10 @@ bool Viewport::ProcessInputEvent(InputEvent const& event)
 		if (!event.m_focused)
 		{
 			CancelGuiInteraction(this, false);
+			if (Control* popup = GetGuiPopup())
+			{
+				popup->Notification(Control::Notification_GuiInputCancelled);
+			}
 		}
 
 		if (Control* focus = ResolveGuiControl(m_gui.m_focusedControl))
@@ -541,10 +575,14 @@ bool Viewport::ProcessInputEvent(InputEvent const& event)
 			focus->QueueRedraw();
 		}
 
+		UpdateGuiCursor();
 		return false;
 	}
 	case InputEventType::CursorEnter:
+		m_gui.m_mousePosition = event.m_position;
+		m_gui.m_mouseInside = event.m_entered;
 		SetGuiHovered(event.m_entered && m_gui.m_windowFocused ? FindControlAtPosition(event.m_position) : nullptr);
+		UpdateGuiCursor();
 		return false;
 	}
 
@@ -570,6 +608,10 @@ bool Viewport::ProcessGuiInputEvent(InputEvent const& event)
 	case InputEventType::MouseMotion:
 	case InputEventType::MouseWheel:
 	{
+		m_gui.m_mousePosition = event.m_position;
+		m_gui.m_mouseInside = event.m_position.x >= 0.f && event.m_position.y >= 0.f
+			&& event.m_position.x < m_outputResolution.x && event.m_position.y < m_outputResolution.y;
+
 		if (event.m_type == InputEventType::MouseMotion && !m_gui.m_dragging)
 		{
 			TryStartGuiDrag(event.m_position);
@@ -595,6 +637,7 @@ bool Viewport::ProcessGuiInputEvent(InputEvent const& event)
 				}
 			}
 
+			UpdateGuiCursor();
 			return true;
 		}
 
@@ -649,6 +692,7 @@ bool Viewport::ProcessGuiInputEvent(InputEvent const& event)
 		}
 
 		bool result = PropagateGuiInput(targetID, event);
+		UpdateGuiCursor();
 		return result;
 	}
 	case InputEventType::Key:
@@ -661,7 +705,9 @@ bool Viewport::ProcessGuiInputEvent(InputEvent const& event)
 			return true;
 		}
 
-		if (GetGuiPopup() != nullptr)
+		bool const tabNavigation = event.m_type == InputEventType::Key && event.m_keyCode == GLFW_KEY_TAB
+			&& event.m_pressed && !event.m_repeat;
+		if (GetGuiPopup() != nullptr && !tabNavigation)
 		{
 			return GetGuiPopup()->GuiInput(event);
 		}
@@ -669,11 +715,18 @@ bool Viewport::ProcessGuiInputEvent(InputEvent const& event)
 		if (event.m_type == InputEventType::Key && event.m_keyCode == GLFW_KEY_TAB && event.m_pressed && !event.m_repeat)
 		{
 			std::vector<ObjectID> controls;
-			for (ObjectID id : m_gui.m_rootControls)
+			if (Control* popup = GetGuiPopup())
 			{
-				if (Control* root = ResolveGuiControl(id))
+				CollectFocusableControls(popup, controls);
+			}
+			else
+			{
+				for (ObjectID id : m_gui.m_rootControls)
 				{
-					CollectFocusableControls(root, controls);
+					if (Control* root = ResolveGuiControl(id))
+					{
+						CollectFocusableControls(root, controls);
+					}
 				}
 			}
 

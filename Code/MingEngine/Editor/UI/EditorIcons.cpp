@@ -1,142 +1,94 @@
 #include "MingEngine/Editor/UI/EditorIcons.hpp"
-
 #include "MingEngine/Editor/BuiltinIcons.hpp"
-#include "MingEngine/Engine/Application/Engine.hpp"
-#include "MingEngine/Engine/Render/GPUTexture.hpp"
-#include "MingEngine/Engine/Render/RenderServer.hpp"
+#include "MingEngine/Editor/BuiltinBrand.hpp"
+#include "MingEngine/Core/Object/ClassDatabase.hpp"
+#include "MingEngine/Scene/GUI/Control.hpp"
 
-#include "ThirdParty/stb/stb_image.h"
+std::map<std::string, Ref<TextureResource>> EditorIcons::m_icons;
 
-namespace
+Ref<TextureResource> EditorIcons::GetIconTexture(std::string const& name, std::string const& fallback)
 {
-ImTextureID ToImTextureId(GPUTexture* texture)
-{
-	if (texture == nullptr)
-	{
-		return {};
-	}
-
-	return g_engine->m_renderServer->GetImGuiTextureID(texture);
-}
-
-ImVec2 GetEditorIconUv0()
-{
-	return ImVec2(0.f, 1.f);
-}
-
-ImVec2 GetEditorIconUv1()
-{
-	return ImVec2(1.f, 0.f);
-}
-} // namespace
-
-// TODO: Replace with ref-counted storage when available.
-std::unordered_map<std::string, GPUTexture*> EditorIcons::s_iconTextures;
-
-void EditorIcons::Startup()
-{
-	// Reserved for future initialization.
-}
-
-void EditorIcons::Shutdown()
-{
-	for (auto& pair : s_iconTextures)
-	{
-		if (g_engine != nullptr && g_engine->m_renderServer != nullptr)
-		{
-			g_engine->m_renderServer->DestroyTexture(pair.second);
-		}
-	}
-
-	s_iconTextures.clear();
-}
-
-GPUTexture* EditorIcons::GetOrCreateIconTexture(std::string const& iconName)
-{
-	if (iconName.empty())
-	{
-		return nullptr;
-	}
-
-	auto const found = s_iconTextures.find(iconName);
-	if (found != s_iconTextures.end())
+	auto found = m_icons.find(name);
+	if (found != m_icons.end())
 	{
 		return found->second;
 	}
 
-	BuiltinIcons::IconData const iconData = BuiltinIcons::Find(iconName);
-	if (!iconData)
+	BuiltinIcons::IconData const bytes = BuiltinIcons::Find(name);
+	if (!bytes)
 	{
-		s_iconTextures[iconName] = nullptr;
-		return nullptr;
+		ClassInfo const* info = ClassDatabase::GetClassInfo(name);
+		if (info != nullptr && !info->m_parentClassName.empty())
+		{
+			return GetIconTexture(info->m_parentClassName, fallback);
+		}
+
+		return fallback.empty() ? Ref<TextureResource>() : GetIconTexture(fallback);
 	}
 
-	int width    = 0;
-	int height   = 0;
-	int channels = 0;
-	stbi_set_flip_vertically_on_load(true);
-	unsigned char* pixels = stbi_load_from_memory(
-		iconData.m_data,
-		static_cast<int>(iconData.m_size),
-		&width,
-		&height,
-		&channels,
-		STBI_rgb_alpha);
-	stbi_set_flip_vertically_on_load(false);
-	if (pixels == nullptr)
+	auto image = CreateRef<Image>();
+	if (!image->LoadFromMemory(std::vector<uint8_t>(bytes.m_data, bytes.m_data + bytes.m_size)))
 	{
-		s_iconTextures[iconName] = nullptr;
-		return nullptr;
+		return {};
 	}
 
-	GPUTexture* texture =
-		g_engine->m_renderServer->CreateGPUTexture(iconName.c_str(), IntVec2(width, height), STBI_rgb_alpha, pixels);
+	auto texture = CreateRef<TextureResource>();
+	texture->m_image = image;
+	if (!texture->InitGPUResources())
+	{
+		return {};
+	}
 
-	stbi_image_free(pixels);
-
-	s_iconTextures[iconName] = texture;
+	m_icons[name] = texture;
 	return texture;
 }
 
-GPUTexture* EditorIcons::GetIconTexture(std::string const& iconName, std::string const& fallbackIconName)
+Color EditorIcons::GetIconColor(std::string const& name, Control const* source)
 {
-	GPUTexture* texture = GetOrCreateIconTexture(iconName);
-	if (texture != nullptr)
+	std::string resolved = name;
+	while (!BuiltinIcons::Find(resolved))
 	{
-		return texture;
+		ClassInfo const* info = ClassDatabase::GetClassInfo(resolved);
+		if (info == nullptr || info->m_parentClassName.empty())
+		{
+			break;
+		}
+
+		resolved = info->m_parentClassName;
 	}
 
-	if (!fallbackIconName.empty())
-	{
-		return GetOrCreateIconTexture(fallbackIconName);
-	}
-
-	return nullptr;
+	return source->GetThemeColor(std::string(BuiltinIcons::GetTone(resolved)), "EditorIcons");
 }
 
-ImTextureID EditorIcons::GetIconId(std::string const& iconName, std::string const& fallbackIconName)
+Ref<TextureResource> EditorIcons::GetBrandTexture(bool beam)
 {
-	return ToImTextureId(GetIconTexture(iconName, fallbackIconName));
-}
-
-bool EditorIcons::RenderIcon(std::string const& iconName, ImVec2 size, std::string const& fallbackIconName)
-{
-	ImTextureID textureId = GetIconId(iconName, fallbackIconName);
-	if (textureId == ImTextureID{})
+	std::string const name = beam ? "@brand-beam" : "@brand-glyph";
+	auto found = m_icons.find(name);
+	if (found != m_icons.end())
 	{
-		return false;
+		return found->second;
 	}
 
-	ImGui::Image(textureId, size, GetEditorIconUv0(), GetEditorIconUv1());
-	return true;
-}
-
-void EditorIcons::AddImage(ImDrawList* drawList, ImTextureID textureId, ImVec2 min, ImVec2 max)
-{
-	if (drawList == nullptr || textureId == ImTextureID{})
+	auto image = CreateRef<Image>();
+	uint8_t const* bytes = beam ? BuiltinBrand::Beam : BuiltinBrand::Glyph;
+	size_t const size = beam ? sizeof(BuiltinBrand::Beam) : sizeof(BuiltinBrand::Glyph);
+	if (!image->LoadFromMemory(std::vector<uint8_t>(bytes, bytes + size)))
 	{
-		return;
+		return {};
 	}
 
-	drawList->AddImage(textureId, min, max, GetEditorIconUv0(), GetEditorIconUv1());
+	auto texture = CreateRef<TextureResource>();
+	texture->m_image = image;
+	if (!texture->InitGPUResources())
+	{
+		return {};
+	}
+
+	m_icons[name] = texture;
+	return texture;
+}
+
+void EditorIcons::Shutdown()
+{
+	m_icons.clear();
 }

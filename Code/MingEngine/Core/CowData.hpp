@@ -27,6 +27,7 @@ private:
 		uint32_t m_refCount = 1;
 		uint32_t m_size     = 0;
 		uint32_t m_capacity = 0;
+		uint32_t m_padding  = 0; // pad to 16 bytes for alignment of T[]
 	};
 
 	// trivially copyable this type shouldn't manage memory itself

@@ -3,7 +3,6 @@
 #include "MingEngine/Engine/Audio/AudioSystem.hpp"
 #include "MingEngine/Engine/Event/EventSystem.hpp"
 #include "MingEngine/Engine/File/FileSystem.hpp"
-#include "MingEngine/Engine/ImGui/ImGuiSystem.hpp"
 #include "MingEngine/Engine/Input/InputSystem.hpp"
 #include "MingEngine/Engine/Network/NetworkSystem.hpp"
 #include "MingEngine/Engine/Render/RenderServer.hpp"
@@ -20,7 +19,6 @@ struct EngineConfig
 	RendererServerConfig m_rendererServerConfig;
 	AudioSystemConfig    m_audioConfig;
 	InputSystemConfig    m_inputConfig;
-	ImGuiSystemConfig    m_imguiConfig;
 	NetworkSystemConfig  m_networkConfig;
 };
 
@@ -48,7 +46,6 @@ public:
 	ScriptSystem*  m_scriptSystem  = nullptr;
 	InputSystem*   m_inputSystem   = nullptr;
 	AudioSystem*   m_audioSystem   = nullptr;
-	ImGuiSystem*   m_imguiSystem   = nullptr;
 	NetworkSystem* m_networkSystem = nullptr;
 
 	RenderServer* m_renderServer = nullptr;

@@ -13,10 +13,9 @@
 #include "MingEngine/Editor/Gizmos/EditorGizmos.hpp"
 #include "MingEngine/Editor/UI/EditorIcons.hpp"
 #include "MingEngine/Editor/UI/EditorUI.hpp"
-#include "MingEngine/Editor/UI/JetBrainsMonoFont.hpp"
+#include "MingEngine/Editor/EditorThemeManager.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Engine/Application/ProjectSettings.hpp"
-#include "MingEngine/Engine/ImGui/ImGuiSystem.hpp"
 #include "MingEngine/Engine/Input/InputSystem.hpp"
 #include "MingEngine/Engine/Render/RenderServer.hpp"
 #include "MingEngine/Engine/Script/CSharpScript.hpp"
@@ -38,10 +37,10 @@
 #include "MingEngine/Scene/GUI/TextureRect.hpp"
 #include "MingEngine/Scene/GUI/VBoxContainer.hpp"
 #include "MingEngine/Scene/RegisterAllTypes.hpp"
+#include "MingEngine/Scene/GUI/ThemeDatabase.hpp"
 #include "MingEngine/Scene/Resource/FontResource.hpp"
 
 #include "ThirdParty/GLFW/glfw3.h"
-#include "ThirdParty/imgui/imgui.h"
 
 #ifndef NOMINMAX
 #define NOMINMAX
@@ -63,7 +62,6 @@ App* g_app = nullptr;
 App::App(MingRunConfig const& config) : m_runConfig(config)
 {
 	EngineConfig engineConfig;
-	engineConfig.m_imguiConfig.m_isEnable = false;
 	engineConfig.m_windowConfig.m_clientAspect     = 16.f / 9.f;
 	engineConfig.m_windowConfig.m_appName          = "MingEngine";
 	engineConfig.m_fileSystemConfig.m_resourceRoot = config.projectPath;
@@ -94,10 +92,6 @@ void App::Startup()
 
 	if (m_runConfig.mode == MingRunMode::Editor)
 	{
-        if (g_engine->m_imguiSystem != nullptr)
-        {
-            EditorIcons::Startup();
-        }
 		StartupEditor();
 	}
 	else if (m_runConfig.mode == MingRunMode::Game)
@@ -123,6 +117,8 @@ void App::Shutdown()
 		UnregisterEvent("Quit", m_quitEventID);
 		m_quitEventID = 0;
 	}
+
+	ThemeDatabase::Shutdown();
 
 	ResourceLoader::Shutdown();
 
@@ -223,13 +219,13 @@ void App::Restart()
 
 void App::Quit()
 {
-	if (EditorNode* editor = EditorNode::Get(); editor != nullptr && g_engine->m_imguiSystem == nullptr)
+	if (EditorNode* editor = EditorNode::Get(); editor != nullptr)
 	{
 		editor->m_editorUI->FinishNativeEditing();
 	}
 
 	if (EditorNode* editor = EditorNode::Get();
-		editor != nullptr && g_engine->m_imguiSystem == nullptr && editor->IsSceneDirty())
+		editor != nullptr && editor->IsSceneDirty())
 	{
 		glfwSetWindowShouldClose(g_engine->m_windowSystem->GetGLFWWindow(), GLFW_FALSE);
 		editor->RequestQuit();
@@ -332,77 +328,44 @@ void App::RestartImmediately()
 
 void App::DrawProjectManager()
 {
-	if (g_engine->m_imguiSystem == nullptr)
+	if (m_sceneTree == nullptr)
 	{
-		if (m_sceneTree == nullptr)
-		{
-			m_sceneTree      = MemNew<SceneTree>();
-			auto  font       = JetBrainsMonoFont::CreateNativeFont();
-			auto* background = MemNew<ColorRect>();
-			background->SetName("ProjectManager");
-			background->SetColor(Color(25, 29, 37));
-			background->SetClipContents(true);
-			m_sceneTree->GetRoot()->AddNode(background);
-			auto* content = MemNew<VBoxContainer>();
-			content->SetPosition(Vector2(28.f, 28.f));
-			content->SetSeparation(20.f);
-			background->AddNode(content);
-			auto* title = MemNew<Label>();
-			title->SetText("MingEngine - Project Manager");
-			title->SetFontSize(24);
-			content->AddNode(title);
-			auto* hint = MemNew<Label>();
-			hint->SetText("Select project.ming to open a project.");
-			content->AddNode(hint);
-			auto* open = MemNew<Button>();
-			open->SetText("Open Project...");
-			open->SetPressedCallback(
-				[this]()
-				{
-					OpenProject();
-				});
-			content->AddNode(open);
-			m_projectManagerErrorLabel = MemNew<Label>();
-			content->AddNode(m_projectManagerErrorLabel);
-			JetBrainsMonoFont::ApplyNativeFont(background, font);
-		}
-
-		auto*         background = static_cast<Control*>(m_sceneTree->GetRoot()->GetChildren()[0]);
-		Vector2 const size(static_cast<Viewport*>(m_sceneTree->GetRoot())->GetOutputResolution());
-		background->UpdateSize(size);
-		static_cast<Control*>(background->GetChildren()[0])
-			->UpdateSize(Vector2(std::max(1.f, size.x - 56.f), std::max(1.f, size.y - 56.f)));
-		m_projectManagerErrorLabel->SetText(m_projectManagerError);
-		return;
+		m_sceneTree      = MemNew<SceneTree>();
+		auto* background = MemNew<ColorRect>();
+		background->SetName("ProjectManager");
+		background->SetColor(Color(25, 29, 37));
+		background->SetClipContents(true);
+		m_sceneTree->GetRoot()->AddNode(background);
+		auto* content = MemNew<VBoxContainer>();
+		content->SetPosition(Vector2(28.f, 28.f));
+		content->SetSeparation(20.f);
+		background->AddNode(content);
+		auto* title = MemNew<Label>();
+		title->SetText("MingEngine - Project Manager");
+		title->SetFontSize(24);
+		content->AddNode(title);
+		auto* hint = MemNew<Label>();
+		hint->SetText("Select project.ming to open a project.");
+		content->AddNode(hint);
+		auto* open = MemNew<Button>();
+		open->SetText("Open Project...");
+		open->SetPressedCallback(
+			[this]()
+			{
+				OpenProject();
+			});
+		content->AddNode(open);
+		m_projectManagerErrorLabel = MemNew<Label>();
+		content->AddNode(m_projectManagerErrorLabel);
+		ThemeDatabase::SetThemeContext(background, { EditorThemeManager::CreateTheme() });
 	}
 
-	ImGuiViewport const* viewport = ImGui::GetMainViewport();
-	ImGui::SetNextWindowPos(viewport->WorkPos);
-	ImGui::SetNextWindowSize(viewport->WorkSize);
-	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(24.f, 24.f));
-	if (ImGui::Begin(
-			"Project Manager",
-			nullptr,
-			ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings))
-	{
-		ImGui::TextUnformatted("MingEngine");
-		ImGui::Spacing();
-		ImGui::TextWrapped("Select project.ming to open a project.");
-		ImGui::Spacing();
-		if (ImGui::Button("Open Project...", ImVec2(240.f, 42.f)))
-		{
-			OpenProject();
-		}
-
-		if (!m_projectManagerError.empty())
-		{
-			ImGui::Spacing();
-			ImGui::TextWrapped("%s", m_projectManagerError.c_str());
-		}
-	}
-
-	ImGui::End();
-	ImGui::PopStyleVar();
+	auto*         background = static_cast<Control*>(m_sceneTree->GetRoot()->GetChildren()[0]);
+	Vector2 const size(static_cast<Viewport*>(m_sceneTree->GetRoot())->GetOutputResolution());
+	background->UpdateSize(size);
+	static_cast<Control*>(background->GetChildren()[0])
+		->UpdateSize(Vector2(std::max(1.f, size.x - 56.f), std::max(1.f, size.y - 56.f)));
+	m_projectManagerErrorLabel->SetText(m_projectManagerError);
 }
 
 void App::OpenProject()
@@ -502,7 +465,7 @@ void App::StartupGame()
 	Ref<FontResource> font = ResourceLoader::Load("res://fusion-pixel-12px-proportional-zh_hans.ttf");
 	if (!font.IsValid())
 	{
-		font = JetBrainsMonoFont::CreateNativeFont();
+		font = FontResource::CreateDefault();
 		WARN_PRINT("UI layout test is using the embedded fallback font.");
 	}
 
@@ -968,6 +931,7 @@ int MingEngine::Run(MingRunConfig const& config)
 		bool const            success = csharpGenerator.GenerateCSharpBindings(config.csharpBindingsOutputDirectory);
 		GUARANTEE_OR_DIE(success, "Failed to generate C# bindings.");
 
+		ThemeDatabase::Shutdown();
 		ClassDatabase::Shutdown();
 		return 0;
 	}

@@ -28,6 +28,7 @@ bool BaseButton::GuiInput(InputEvent const& event)
 			if (inside != m_status.m_pressingInside)
 			{
 				m_status.m_pressingInside = inside;
+				OnDrawModeChanged();
 				QueueRedraw();
 			}
 		}
@@ -60,6 +61,7 @@ bool BaseButton::GuiInput(InputEvent const& event)
 			m_status.m_pressingInside = true;
 			m_status.m_mousePress     = mouse;
 			m_status.m_activationKey  = keyboard ? event.m_keyCode : -1;
+			OnDrawModeChanged();
 			QueueRedraw();
 			auto callback = m_buttonDownCallback;
 			if (callback)
@@ -100,6 +102,7 @@ void BaseButton::CompletePress(bool activate)
 
 	bool const     pressed = m_status.m_pressed;
 	ObjectID const id      = GetObjectID();
+	OnDrawModeChanged();
 	QueueRedraw();
 	if (toggled)
 	{
@@ -141,6 +144,7 @@ void BaseButton::SetDisabled(bool disabled)
 	}
 
 	m_status.m_disabled = disabled;
+	OnDrawModeChanged();
 	QueueRedraw();
 	if (disabled)
 	{
@@ -166,6 +170,7 @@ void BaseButton::SetToggleMode(bool toggleMode)
 	if (!toggleMode && m_status.m_pressed)
 	{
 		m_status.m_pressed = false;
+		OnDrawModeChanged();
 		QueueRedraw();
 		auto callback = m_toggledCallback;
 		if (callback)
@@ -176,6 +181,7 @@ void BaseButton::SetToggleMode(bool toggleMode)
 		return;
 	}
 
+	OnDrawModeChanged();
 	QueueRedraw();
 }
 
@@ -187,6 +193,7 @@ void BaseButton::SetPressed(bool pressed)
 	}
 
 	m_status.m_pressed = pressed;
+	OnDrawModeChanged();
 	QueueRedraw();
 	auto callback = m_toggledCallback;
 	if (callback)
@@ -221,6 +228,7 @@ void BaseButton::SetPressedNoSignal(bool pressed)
 	if (m_toggleMode && m_status.m_pressed != pressed)
 	{
 		m_status.m_pressed = pressed;
+		OnDrawModeChanged();
 		QueueRedraw();
 	}
 }
@@ -231,18 +239,22 @@ void BaseButton::OnNotification(int notification)
 	{
 	case Notification_MouseEnter:
 		m_status.m_hovering = true;
+		OnDrawModeChanged();
 		QueueRedraw();
 		break;
 	case Notification_MouseExit:
 		m_status.m_hovering = false;
+		OnDrawModeChanged();
 		QueueRedraw();
 		break;
 	case Notification_FocusEnter:
+		OnDrawModeChanged();
 		QueueRedraw();
 		break;
 	case Notification_FocusExit:
 	case Notification_GuiInputCancelled:
 	case Notification_ExitTree:
+		OnDrawModeChanged();
 		QueueRedraw();
 		CompletePress(false);
 		break;

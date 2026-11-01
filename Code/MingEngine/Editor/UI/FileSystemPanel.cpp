@@ -2,13 +2,15 @@
 
 #include "MingEngine/Core/Object/ResourceLoader.hpp"
 #include "MingEngine/Editor/EditorNode.hpp"
+#include "MingEngine/Editor/UI/EditorIcons.hpp"
 #include "MingEngine/Editor/UI/EditorUI.hpp"
 #include "MingEngine/Editor/UI/EditorUIContext.hpp"
-#include "MingEngine/Editor/UI/EditorUIStyle.hpp"
-#include "MingEngine/Editor/UI/EditorUIWidgets.hpp"
 #include "MingEngine/Engine/File/FileSystem.hpp"
 
-#include "ThirdParty/imgui/imgui.h"
+#include "MingEngine/Scene/GUI/ScrollContainer.hpp"
+#include "MingEngine/Engine/Window/WindowSystem.hpp"
+#include "MingEngine/Engine/Application/Engine.hpp"
+#include "ThirdParty/GLFW/glfw3.h"
 
 #include <Windows.h>
 #include <shellapi.h>
@@ -70,473 +72,284 @@ FileSystemPanel::FileSystemPanel() : EditorPanel("FileSystem")
 {
 }
 
-VirtualPath const& FileSystemPanel::GetSelectedVirtualPath() const
+void FileSystemPanel::OnInitialize()
 {
-	return m_selectedVirtualPath;
+	auto* layout = MemNew<VBoxContainer>();
+	layout->SetSeparation(5.f);
+	AddNode(layout);
+	layout->UpdateSize(GetSize());
+	m_filter = MemNew<LineEdit>();
+	m_filter->SetPlaceholder("Filter files");
+	auto* tools = MemNew<HBoxContainer>();
+	tools->SetSeparation(2.5f);
+	layout->AddNode(tools);
+	m_filter->SetHorizontalSizeFlags(Size_ExpandFill);
+	tools->AddNode(m_filter);
+	Button* refresh = EditorPopupUtils::AddButton(tools, "", [this]() { m_context.m_fileSystem->ScanResourceTree(); });
+	refresh->SetIcon(GetThemeIcon("Reload", "EditorIcons"));
+	refresh->SetThemeTypeVariation("EditorToolbarButton");
+	auto* scroll = MemNew<ScrollContainer>();
+	scroll->SetVerticalSizeFlags(Size_ExpandFill);
+	layout->AddNode(scroll);
+	m_tree = MemNew<Tree>();
+	scroll->AddNode(m_tree);
+	m_tree->SetSelectedCallback([this](uint64_t key)
+	{
+		auto found = m_fileItems.find(key);
+		m_selectedVirtualPath = found != m_fileItems.end() ? found->second : VirtualPath();
+	});
+	m_tree->SetActivatedCallback([this](uint64_t) { OpenSelected(); });
+	m_tree->SetRenamedCallback([this](uint64_t key, String const& name)
+	{
+		auto found = m_fileItems.find(key);
+		if (found == m_fileItems.end() || found->second.IsRoot())
+		{
+			return;
+		}
+
+		std::string error;
+		if (!ValidateName(*m_context.m_fileSystem, found->second.GetParent(), name.ToUtf8().c_str(), error, found->second))
+		{
+			ShowError(error);
+			return;
+		}
+
+		VirtualPath renamed;
+		if (m_context.m_fileSystem->Rename(found->second, name.ToUtf8(), renamed, error))
+		{
+			m_selectedVirtualPath = renamed;
+			m_context.m_fileSystem->ScanResourceTree();
+		}
+		else
+		{
+			ShowError(error);
+		}
+	});
+	m_tree->SetInputCallback([this](InputEvent const& event) { return HandleTreeInput(event); });
+	m_tree->SetDragCallbacks(
+		[this](Vector2 const& position, GuiDragData& data)
+		{
+			auto found = m_fileItems.find(m_tree->GetItemAtPosition(position));
+			if (found == m_fileItems.end() || found->second.IsRoot())
+			{
+				return false;
+			}
+
+			data = { "file", ObjectID::Invalid, found->second.GetString() };
+			m_context.m_editorUI->SetNativeDragPreview(m_tree, data.m_value);
+			return true;
+		},
+		[this](Vector2 const& position, GuiDragData const& data)
+		{
+			VirtualPath source;
+			return data.m_type == String("file") && VirtualPath::TryParse(data.m_value.ToUtf8(), source)
+				&& CanMove(source, m_tree->GetItemAtPosition(position));
+		},
+		[this](Vector2 const& position, GuiDragData const& data)
+		{
+			VirtualPath source;
+			uint64_t const target = m_tree->GetItemAtPosition(position);
+			if (!VirtualPath::TryParse(data.m_value.ToUtf8(), source) || !CanMove(source, target))
+			{
+				return;
+			}
+
+			VirtualPath moved;
+			std::string error;
+			if (m_context.m_fileSystem->Move(source, m_fileItems.at(target), moved, error))
+			{
+				m_selectedVirtualPath = moved;
+				m_context.m_fileSystem->ScanResourceTree();
+			}
+			else
+			{
+				ShowError(error);
+			}
+		});
 }
 
 void FileSystemPanel::OnRender(EditorUIContext& context)
 {
-	ImGui::Begin(GetTitle(), GetOpenState());
-	bool const isFocused = ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows);
-
-	ImGui::InputTextWithHint("##FilterFiles", "Filter Files", m_filter, sizeof(m_filter));
-	ImGui::SameLine();
-	ImGui::BeginDisabled(!m_selectedVirtualPath.IsValid());
-	bool const openSelected = ImGui::Button("Open");
-	ImGui::EndDisabled();
-	ImGui::Separator();
-
-	if (context.m_fileSystem == nullptr)
-	{
-		ImGui::TextDisabled("FileSystem is not available.");
-		m_wasFocused = isFocused;
-		ImGui::End();
-		return;
-	}
-
-	if (!context.m_fileSystem->HasResourceTree() || (isFocused && !m_wasFocused))
-	{
-		context.m_fileSystem->ScanResourceTree();
-	}
-
-	FileEntry const* rootEntry = context.m_fileSystem->GetResourceRootEntry();
-	if (rootEntry == nullptr)
-	{
-		ImGui::TextUnformatted("res://");
-		ImGui::TextDisabled("Resource root not found.");
-		m_wasFocused = isFocused;
-		ImGui::End();
-		return;
-	}
-
-	if (openSelected)
-	{
-		if (FileEntry const* selectedEntry = FindEntry(*rootEntry, m_selectedVirtualPath))
-		{
-			OpenFile(*selectedEntry, context);
-		}
-	}
-
-	ImGui::BeginChild("##FileSystemTreeScrollRegion", ImVec2(0.f, 0.f), false);
-
-	std::string const lowerFilterText = ToLower(m_filter);
-	RenderEntry(*rootEntry, lowerFilterText, context);
-	if (isFocused && !ImGui::IsAnyItemActive() && ImGui::IsKeyPressed(ImGuiKey_Delete)
-		&& m_selectedVirtualPath.IsValid() && !m_selectedVirtualPath.IsRoot())
-	{
-		if (FileEntry const* selectedEntry = FindEntry(*rootEntry, m_selectedVirtualPath))
-		{
-			BeginDelete(*selectedEntry);
-		}
-	}
-
-	if (isFocused && !ImGui::IsAnyItemActive() && ImGui::IsKeyPressed(ImGuiKey_F2) && !m_renamingVirtualPath.IsValid()
-		&& m_selectedVirtualPath.IsValid() && !m_selectedVirtualPath.IsRoot())
-	{
-		if (FileEntry const* selectedEntry = FindEntry(*rootEntry, m_selectedVirtualPath))
-		{
-			BeginRename(*selectedEntry);
-		}
-	}
-
-	RenderBackgroundContextMenu(context);
-
-	ImGui::EndChild();
-
-	// Handle pending operations that need to be executed after the UI rendering.
-	if (m_pendingRenameVirtualPath.IsValid())
-	{
-		VirtualPath newVirtualPath;
-		std::string error;
-		if (context.m_fileSystem->Rename(m_pendingRenameVirtualPath, m_pendingRenameName, newVirtualPath, error))
-		{
-			context.m_fileSystem->ScanResourceTree();
-			m_selectedVirtualPath = newVirtualPath;
-		}
-		else
-		{
-			ShowError(std::move(error));
-		}
-
-		m_pendingRenameVirtualPath = {};
-		m_pendingRenameName.clear();
-	}
-
-	if (m_pendingMoveSourceVirtualPath.IsValid() && m_pendingMoveTargetVirtualPath.IsValid())
-	{
-		VirtualPath newVirtualPath;
-		std::string error;
-		if (context.m_fileSystem
-				->Move(m_pendingMoveSourceVirtualPath, m_pendingMoveTargetVirtualPath, newVirtualPath, error))
-		{
-			context.m_fileSystem->ScanResourceTree();
-			m_selectedVirtualPath = newVirtualPath;
-		}
-		else
-		{
-			ShowError(std::move(error));
-		}
-
-		m_pendingMoveSourceVirtualPath = {};
-		m_pendingMoveTargetVirtualPath = {};
-	}
-
-	if (m_refreshResourceTree)
-	{
-		context.m_fileSystem->ScanResourceTree();
-		m_refreshResourceTree = false;
-	}
-
-	m_wasFocused = isFocused;
-	ImGui::End();
-
 	m_createFolderPopup.Render(context);
 	m_createScenePopup.Render(context);
 	m_deleteEntryPopup.Render(context);
-	m_createFolderPopup.ConsumeSelectedVirtualPath(m_selectedVirtualPath);
-	m_createScenePopup.ConsumeSelectedVirtualPath(m_selectedVirtualPath);
-	m_deleteEntryPopup.ConsumeSelectedVirtualPath(m_selectedVirtualPath);
+	VirtualPath selected;
+	if (m_createFolderPopup.ConsumeSelectedVirtualPath(selected)
+		|| m_createScenePopup.ConsumeSelectedVirtualPath(selected)
+		|| m_deleteEntryPopup.ConsumeSelectedVirtualPath(selected))
+	{
+		m_selectedVirtualPath = selected;
+	}
+
+	UpdateItems();
 }
 
-void FileSystemPanel::RenderEntry(FileEntry const& entry, std::string const& lowerFilterText, EditorUIContext& context)
+FileEntry const* FileSystemPanel::GetSelectedEntry() const
 {
-	bool const hasVisibleChildren = std::any_of(
-		entry.GetChildren().begin(),
-		entry.GetChildren().end(),
-		[this, &lowerFilterText](std::unique_ptr<FileEntry> const& child)
+	FileEntry const* root = m_context.m_fileSystem->GetResourceRootEntry();
+	return root != nullptr ? FindEntry(*root, m_selectedVirtualPath) : nullptr;
+}
+
+void FileSystemPanel::OpenSelected()
+{
+	if (FileEntry const* entry = GetSelectedEntry())
+	{
+		if (entry->IsDirectory())
 		{
-			return DoesEntryMatchFilter(*child, lowerFilterText);
-		});
-
-	ImGuiTreeNodeFlags flags =
-		ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick | ImGuiTreeNodeFlags_SpanAvailWidth;
-	if (entry.GetParent() == nullptr)
-	{
-		flags |= ImGuiTreeNodeFlags_DefaultOpen;
-	}
-
-	if (!entry.IsDirectory() || !hasVisibleChildren)
-	{
-		flags |= ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
-	}
-
-	if (!lowerFilterText.empty())
-	{
-		flags |= ImGuiTreeNodeFlags_DefaultOpen;
-	}
-
-	if (m_selectedVirtualPath == entry.GetVirtualPath())
-	{
-		flags |= ImGuiTreeNodeFlags_Selected;
-	}
-
-	ImGui::PushID(entry.GetVirtualPath().CStr());
-	if (m_directoryToOpen == entry.GetVirtualPath())
-	{
-		ImGui::SetNextItemOpen(true, ImGuiCond_Always);
-		m_directoryToOpen = {};
-	}
-
-	bool const   isOpen = ImGui::TreeNodeEx(entry.IsDirectory() ? "##Directory" : "##File", flags);
-	ImVec2 const rowMin = ImGui::GetItemRectMin();
-	ImVec2 const rowMax = ImGui::GetItemRectMax();
-	if (ImGui::IsItemClicked(ImGuiMouseButton_Left))
-	{
-		m_selectedVirtualPath = entry.GetVirtualPath();
-	}
-
-	if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
-	{
-		OpenFile(entry, context);
-	}
-
-	RenderItemContextMenu(entry, context);
-	bool const isRenaming = m_renamingVirtualPath == entry.GetVirtualPath();
-
-	if (isRenaming)
-	{
-		ImVec2 const iconSize = EditorUIStyle::FileTreeIconSize();
-		ImGui::SameLine();
-		float const iconY = rowMin.y + (rowMax.y - rowMin.y - iconSize.y) * 0.5f;
-		ImGui::SetCursorScreenPos(ImVec2(ImGui::GetCursorScreenPos().x, iconY));
-		EditorUIWidgets::RenderIcon(
-			GetIconNameForPath(entry.GetPhysicalPath(), entry.IsDirectory()),
-			entry.IsDirectory() ? "Folder" : "File",
-			iconSize);
-
-		ImGui::SameLine();
-		ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
-		if (m_focusRenameInput)
-		{
-			ImGui::SetKeyboardFocusHere();
-			m_focusRenameInput = false;
+			m_tree->SetCollapsed(m_tree->GetSelected(), false);
 		}
-
-		bool const submitted = ImGui::InputText(
-			"##FileName",
-			m_renameBuffer,
-			sizeof(m_renameBuffer),
-			ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll);
-		bool const cancelled   = ImGui::IsItemActive() && ImGui::IsKeyPressed(ImGuiKey_Escape);
-		bool const deactivated = ImGui::IsItemDeactivated();
-		if (cancelled)
+		else if (entry->GetVirtualPath().HasExtension(".tscn"))
 		{
-			FinishRename(*context.m_fileSystem, false);
-		}
-		else if (submitted || deactivated)
-		{
-			FinishRename(*context.m_fileSystem, true);
+			m_context.m_editorUI->FinishNativeEditing();
+			EditorNode::Get()->RequestLoadScene(entry->GetVirtualPath());
 		}
 	}
-	else
+}
+
+void FileSystemPanel::DeleteSelected()
+{
+	if (FileEntry const* entry = GetSelectedEntry(); entry != nullptr && !entry->GetVirtualPath().IsRoot())
 	{
-		if (ImGui::BeginDragDropSource())
-		{
-			// Submit a marker payload so ImGui keeps the drag source active.
-			// e.g. The actual virtual path remains in EditorDragDrop.
-			EditorNode::Get()->m_dragDrop.SetDragData(entry.GetVirtualPath());
-			ImGui::SetDragDropPayload(EditorDragDrop::PayloadType, nullptr, 0);
-			ImGui::TextUnformatted(entry.GetName().c_str());
+		m_deleteEntryPopup.Open(entry->GetVirtualPath(), entry->IsDirectory());
+	}
+}
 
-			ImGui::EndDragDropSource();
+bool FileSystemPanel::HandleTreeInput(InputEvent const& event)
+{
+	switch (event.m_type)
+	{
+	case InputEventType::Key:
+		if (event.m_pressed && event.m_keyCode == GLFW_KEY_DELETE)
+		{
+			DeleteSelected();
+			return true;
 		}
-
-		if (entry.IsDirectory() && ImGui::BeginDragDropTarget())
+		break;
+	case InputEventType::MouseButton:
+		if (event.m_pressed && event.m_mouseButton == GLFW_MOUSE_BUTTON_RIGHT)
 		{
-			EditorDragDrop& dragDrop = EditorNode::Get()->m_dragDrop;
-			VirtualPath     draggedVirtualPath;
-			bool const      canMove = dragDrop.TryGetData(draggedVirtualPath) && !draggedVirtualPath.IsRoot()
-									  && draggedVirtualPath != entry.GetVirtualPath()
-									  && draggedVirtualPath.GetParent() != entry.GetVirtualPath();
-			if (canMove)
+			m_tree->Select(m_tree->GetItemAtPosition(event.m_position), true);
+			ShowContextMenu(event.m_position + m_tree->GetGlobalPosition());
+			return true;
+		}
+		break;
+	}
+
+	return false;
+}
+
+void FileSystemPanel::ShowContextMenu(Vector2 position)
+{
+	FileEntry const* entry = GetSelectedEntry();
+	VirtualPath const directory = entry == nullptr ? VirtualPath("res://")
+		: entry->IsDirectory() ? entry->GetVirtualPath() : entry->GetVirtualPath().GetParent();
+	std::vector<EditorUI::MenuItem> actions = {
+		{ "Open", [this]() { OpenSelected(); } },
+		{ "New Folder...", [this, directory]() { m_createFolderPopup.Open(directory); } },
+		{ "New Scene...", [this, directory]() { m_createScenePopup.Open(directory); } }
+	};
+	if (entry != nullptr)
+	{
+		VirtualPath const path = entry->GetVirtualPath();
+		std::filesystem::path const physical = entry->GetPhysicalPath();
+		actions.push_back({ "Copy Path", [path]() { g_engine->m_windowSystem->SetClipboardText(path.GetString()); } });
+		actions.push_back({ "Copy Absolute Path", [physical]() { g_engine->m_windowSystem->SetClipboardText(physical.string()); } });
+		if (!path.IsRoot())
+		{
+			actions.push_back({ "Rename", [this]() { m_tree->EditSelected(); } });
+			actions.push_back({ "Duplicate", [this, path]()
 			{
-				dragDrop.AllowDrop();
-				if (ImGui::AcceptDragDropPayload(EditorDragDrop::PayloadType) != nullptr)
+				VirtualPath duplicate;
+				std::string error;
+				if (m_context.m_fileSystem->Duplicate(path, duplicate, error))
 				{
-					MoveEntry(draggedVirtualPath, entry.GetVirtualPath());
+					m_selectedVirtualPath = duplicate;
+					m_context.m_fileSystem->ScanResourceTree();
 				}
-			}
-
-			ImGui::EndDragDropTarget();
+				else
+				{
+					ShowError(error);
+				}
+			} });
+			actions.push_back({ "Delete...", [this]() { DeleteSelected(); } });
 		}
 
-		EditorUIWidgets::RenderTreeRowContent(
-			GetIconNameForPath(entry.GetPhysicalPath(), entry.IsDirectory()),
-			entry.IsDirectory() ? "Folder" : "File",
-			entry.GetName(),
-			rowMin,
-			rowMax,
-			EditorUIStyle::FileTreeIconSize());
-	}
-
-	if (isOpen && entry.IsDirectory() && hasVisibleChildren)
-	{
-		for (std::unique_ptr<FileEntry> const& child : entry.GetChildren())
+		if (entry->IsDirectory())
 		{
-			if (!DoesEntryMatchFilter(*child, lowerFilterText))
-			{
-				continue;
-			}
-
-			RenderEntry(*child, lowerFilterText, context);
+			actions.push_back({ "Open in Terminal", [this, physical]() { OpenInTerminal(physical); } });
 		}
-
-		ImGui::TreePop();
-	}
-
-	ImGui::PopID();
-}
-
-void FileSystemPanel::RenderItemContextMenu(FileEntry const& entry, EditorUIContext& context)
-{
-	if (!ImGui::BeginPopupContextItem("FileSystemItemContext"))
-	{
-		return;
-	}
-
-	m_selectedVirtualPath        = entry.GetVirtualPath();
-	bool const        isRoot     = entry.GetParent() == nullptr;
-	VirtualPath const createBase = entry.IsDirectory() ? entry.GetVirtualPath() : entry.GetVirtualPath().GetParent();
-	if (ImGui::MenuItem("Open"))
-	{
-		OpenFile(entry, context);
-	}
-
-	ImGui::Separator();
-	if (ImGui::BeginMenu("Create New"))
-	{
-		if (ImGui::MenuItem("Folder..."))
+		actions.push_back({ "Open in File Manager", [this, physical, directory = entry->IsDirectory()]()
 		{
-			BeginCreateFolder(createBase);
-		}
+			OpenInFileManager(physical, !directory);
+		} });
+	}
 
-		if (ImGui::MenuItem("Scene..."))
+	m_context.m_editorUI->ShowMenu(m_tree, position, actions);
+}
+
+bool FileSystemPanel::CanMove(VirtualPath const& source, uint64_t target) const
+{
+	auto found = m_fileItems.find(target);
+	if (found == m_fileItems.end() || !source.IsValid() || source.IsRoot() || source == found->second
+		|| source.GetParent() == found->second)
+	{
+		return false;
+	}
+
+	std::filesystem::path from;
+	std::filesystem::path to;
+	std::error_code error;
+	if (!m_context.m_fileSystem->TryGetPhysicalPath(source, from)
+		|| !m_context.m_fileSystem->TryGetPhysicalPath(found->second, to)
+		|| !std::filesystem::exists(from, error) || error || !std::filesystem::is_directory(to, error) || error)
+	{
+		return false;
+	}
+
+	std::string const prefix = source.GetString() + "/";
+	return found->second.GetString().compare(0, prefix.size(), prefix) != 0
+		&& !std::filesystem::exists(to / from.filename(), error) && !error;
+}
+
+void FileSystemPanel::UpdateItems()
+{
+	std::string const filter = ToLower(m_filter->GetText().ToUtf8());
+	std::vector<Tree::Item> items;
+	m_fileItems.clear();
+	std::function<bool(FileEntry const*, uint64_t)> append = [&](FileEntry const* entry, uint64_t parent)
+	{
+		auto result = m_fileKeys.emplace(entry->GetVirtualPath().GetString(), m_nextFileKey);
+		if (result.second)
 		{
-			BeginCreateScene(createBase);
+			++m_nextFileKey;
 		}
 
-		ImGui::EndMenu();
-	}
+		uint64_t const key = result.first->second;
+		m_fileItems[key] = entry->GetVirtualPath();
+		size_t const index = items.size();
+		std::string const extension = ToLower(entry->GetPhysicalPath().extension().string());
+		char const* icon = entry->IsDirectory() ? "Folder" : extension == ".tscn" ? "PackedScene"
+			: extension == ".cs" ? "CSharpScript" : extension == ".png" || extension == ".jpg" ? "Texture2D"
+			: extension == ".obj" || extension == ".glb" ? "Mesh" : "File";
+		items.push_back({ key, parent, entry->GetName(), true, !entry->GetVirtualPath().IsRoot(),
+			GetThemeIcon(icon, "EditorIcons"), EditorIcons::GetIconColor(icon, this) });
+		bool visible = filter.empty() || entry->GetLowerName().find(filter) != std::string::npos;
+		for (auto const& child : entry->GetChildren())
+		{
+			visible = append(child.get(), key) || visible;
+		}
 
-	ImGui::Separator();
-	if (ImGui::MenuItem("Copy Path"))
+		items[index].m_visible = visible;
+		return visible;
+	};
+	if (FileEntry const* root = m_context.m_fileSystem->GetResourceRootEntry())
 	{
-		ImGui::SetClipboardText(entry.GetVirtualPath().CStr());
+		append(root, 0);
 	}
 
-	if (ImGui::MenuItem("Copy Absolute Path"))
-	{
-		ImGui::SetClipboardText(entry.GetPhysicalPath().lexically_normal().string().c_str());
-	}
-
-	if (ImGui::MenuItem("Rename...", nullptr, false, !isRoot))
-	{
-		BeginRename(entry);
-	}
-
-	if (ImGui::MenuItem("Duplicate...", nullptr, false, !isRoot) && context.m_fileSystem != nullptr)
-	{
-		DuplicateEntry(entry, *context.m_fileSystem);
-	}
-
-	if (ImGui::MenuItem("Delete", nullptr, false, !isRoot))
-	{
-		BeginDelete(entry);
-	}
-
-	ImGui::Separator();
-	if (entry.IsDirectory() && ImGui::MenuItem("Open in Terminal"))
-	{
-		OpenInTerminal(entry.GetPhysicalPath());
-	}
-
-	if (ImGui::MenuItem("Open in File Manager"))
-	{
-		OpenInFileManager(entry.GetPhysicalPath(), !entry.IsDirectory());
-	}
-
-	ImGui::EndPopup();
-}
-
-void FileSystemPanel::RenderBackgroundContextMenu(EditorUIContext& context)
-{
-	if (!ImGui::BeginPopupContextWindow(
-			"FileSystemBackgroundContext",
-			ImGuiPopupFlags_MouseButtonRight | ImGuiPopupFlags_NoOpenOverItems))
-	{
-		return;
-	}
-
-	if (ImGui::MenuItem("New Folder..."))
-	{
-		BeginCreateFolder("res://");
-	}
-
-	if (ImGui::MenuItem("New Scene..."))
-	{
-		BeginCreateScene("res://");
-	}
-
-	ImGui::Separator();
-	if (ImGui::MenuItem("Open in Terminal"))
-	{
-		OpenInTerminal(context.m_fileSystem->GetResourceRoot());
-	}
-
-	if (ImGui::MenuItem("Open in File Manager"))
-	{
-		OpenInFileManager(context.m_fileSystem->GetResourceRoot(), false);
-	}
-
-	ImGui::EndPopup();
-}
-
-void FileSystemPanel::BeginCreateFolder(VirtualPath const& parentVirtualPath)
-{
-	m_createFolderPopup.Open(parentVirtualPath);
-}
-
-void FileSystemPanel::OpenFile(FileEntry const& entry, [[maybe_unused]] EditorUIContext& context)
-{
-	if (entry.IsDirectory())
-	{
-		m_directoryToOpen = entry.GetVirtualPath();
-		return;
-	}
-
-	std::string extension = ToLower(entry.GetPhysicalPath().extension().string());
-	if (extension == ".tscn" && EditorNode::Get() != nullptr)
-	{
-		EditorNode::Get()->RequestLoadScene(entry.GetVirtualPath());
-	}
-}
-
-void FileSystemPanel::BeginCreateScene(VirtualPath const& parentVirtualPath)
-{
-	m_createScenePopup.Open(parentVirtualPath);
-}
-
-void FileSystemPanel::BeginRename(FileEntry const& entry)
-{
-	m_selectedVirtualPath = entry.GetVirtualPath();
-	m_renamingVirtualPath = entry.GetVirtualPath();
-	strncpy_s(m_renameBuffer, entry.GetName().c_str(), sizeof(m_renameBuffer) - 1);
-	m_focusRenameInput = true;
-}
-
-void FileSystemPanel::FinishRename(FileSystem const& fileSystem, bool apply)
-{
-	if (!apply)
-	{
-		ClearRename();
-		return;
-	}
-
-	VirtualPath const parentVirtualPath = m_renamingVirtualPath.GetParent();
-	if (parentVirtualPath.Join(m_renameBuffer) == m_renamingVirtualPath)
-	{
-		ClearRename();
-		return;
-	}
-
-	std::string error;
-	if (!ValidateName(fileSystem, parentVirtualPath, m_renameBuffer, error, m_renamingVirtualPath))
-	{
-		ShowError(std::move(error));
-		ClearRename();
-		return;
-	}
-
-	m_pendingRenameVirtualPath = m_renamingVirtualPath;
-	m_pendingRenameName        = m_renameBuffer;
-	ClearRename();
-}
-
-void FileSystemPanel::ClearRename()
-{
-	m_renamingVirtualPath = {};
-	m_renameBuffer[0]     = '\0';
-	m_focusRenameInput    = false;
-}
-
-void FileSystemPanel::BeginDelete(FileEntry const& entry)
-{
-	m_deleteEntryPopup.Open(entry.GetVirtualPath(), entry.IsDirectory());
-}
-
-void FileSystemPanel::DuplicateEntry(FileEntry const& entry, FileSystem& fileSystem)
-{
-	VirtualPath duplicateVirtualPath;
-	std::string error;
-	if (!fileSystem.Duplicate(entry.GetVirtualPath(), duplicateVirtualPath, error))
-	{
-		ShowError(std::move(error));
-		return;
-	}
-
-	m_selectedVirtualPath = duplicateVirtualPath;
-	m_refreshResourceTree = true;
+	m_tree->SetItems(std::move(items), !filter.empty());
+	auto selected = m_fileKeys.find(m_selectedVirtualPath.GetString());
+	m_tree->Select(selected != m_fileKeys.end() ? selected->second : 0);
 }
 
 void FileSystemPanel::OpenInTerminal(std::filesystem::path const& path)
@@ -632,74 +445,4 @@ bool FileSystemPanel::ValidateName(
 
 	outError.clear();
 	return true;
-}
-
-bool FileSystemPanel::DoesEntryMatchFilter(FileEntry const& entry, std::string const& lowerFilterText) const
-{
-	if (lowerFilterText.empty())
-	{
-		return true;
-	}
-
-	if (entry.GetLowerName().find(lowerFilterText) != std::string::npos)
-	{
-		return true;
-	}
-
-	for (std::unique_ptr<FileEntry> const& child : entry.GetChildren())
-	{
-		if (DoesEntryMatchFilter(*child, lowerFilterText))
-		{
-			return true;
-		}
-	}
-
-	return false;
-}
-
-char const* FileSystemPanel::GetIconNameForPath(std::filesystem::path const& path, bool isDirectory) const
-{
-	if (isDirectory)
-	{
-		return "Folder";
-	}
-
-	std::string const extension = ToLower(path.extension().string());
-	if (extension == ".tscn" || extension == ".json")
-	{
-		return "PackedScene";
-	}
-
-	if (extension == ".cs")
-	{
-		return "CSharpScript";
-	}
-
-	if (extension == ".png" || extension == ".jpg" || extension == ".jpeg" || extension == ".svg")
-	{
-		return "Texture2D";
-	}
-
-	if (extension == ".fbx" || extension == ".obj" || extension == ".glb" || extension == ".gltf")
-	{
-		return "Mesh";
-	}
-
-	if (extension == ".wav" || extension == ".mp3" || extension == ".ogg")
-	{
-		return "AudioStream";
-	}
-
-	if (extension == ".shader" || extension == ".hlsl")
-	{
-		return "Shader";
-	}
-
-	return "File";
-}
-
-void FileSystemPanel::MoveEntry(VirtualPath const& sourceVirtualPath, VirtualPath const& targetVirtualPath)
-{
-	m_pendingMoveSourceVirtualPath = sourceVirtualPath;
-	m_pendingMoveTargetVirtualPath = targetVirtualPath;
 }

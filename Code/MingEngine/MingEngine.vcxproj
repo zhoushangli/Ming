@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|x64">
@@ -94,6 +94,18 @@
   </ItemGroup>
   <ItemGroup>
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Scene\Resource\Theme.hpp" />
+    <ClCompile Include="Scene\Resource\Theme.cpp" />
+    <ClInclude Include="Scene\Resource\ThemeStyleBox.hpp" />
+    <ClCompile Include="Scene\Resource\ThemeStyleBox.cpp" />
+    <ClInclude Include="Editor\EditorThemeManager.hpp" />
+    <ClInclude Include="Scene\GUI\DefaultTheme.hpp" />
+    <ClInclude Include="Scene\GUI\ThemeDatabase.hpp" />
+    <ClCompile Include="Editor\EditorThemeManager.cpp" />
+    <ClCompile Include="Scene\GUI\DefaultTheme.cpp" />
+    <ClCompile Include="Scene\GUI\ThemeDatabase.cpp" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ItemGroup>
   </ItemGroup>
@@ -162,7 +174,6 @@
     <ClCompile Include="Editor\UI\JetBrainsMonoFontData.cpp" />
     <ClCompile Include="Editor\UI\EditorPanel.cpp" />
     <ClCompile Include="Editor\UI\EditorUI.cpp" />
-    <ClCompile Include="Editor\UI\EditorUIWidgets.cpp" />
     <ClCompile Include="Editor\UI\FileSystemPanel.cpp" />
     <ClCompile Include="Editor\UI\ImportPanel.cpp" />
     <ClCompile Include="Editor\UI\InspectorPanel.cpp" />
@@ -172,8 +183,6 @@
     <ClCompile Include="Editor\UI\ViewportPanel.cpp" />
     <ClCompile Include="Editor\Gizmos\GizmoComponent.cpp" />
     <ClCompile Include="Editor\Gizmos\TransformGizmo3D.cpp" />
-    <ClCompile Include="Engine\ImGui\ImGuiSystem.cpp" />
-    <ClCompile Include="Engine\ImGui\DefaultImGuiLayout.cpp" />
     <ClCompile Include="Core\Math\AABB2.cpp" />
     <ClCompile Include="Core\Math\AABB3.cpp" />
     <ClCompile Include="Core\Math\Capsule2.cpp" />
@@ -246,6 +255,7 @@
     <ClCompile Include="Scene\GUI\BaseButton.cpp" />
     <ClCompile Include="Scene\GUI\Button.cpp" />
     <ClCompile Include="Scene\GUI\GUIDefinitions.cpp" />
+    <ClCompile Include="Scene\GUI\MenuBar.cpp" />
     <ClCompile Include="Scene\GUI\HBoxContainer.cpp" />
     <ClCompile Include="Scene\GUI\Label.cpp" />
     <ClCompile Include="Scene\GUI\LineEdit.cpp" />
@@ -280,13 +290,6 @@
     <ClCompile Include="Scene\Resource\MaterialResource.cpp" />
     <ClCompile Include="Scene\Resource\MeshResource.cpp" />
     <ClCompile Include="Scene\Resource\MeshResourceFormat.cpp" />
-    <ClCompile Include="..\ThirdParty\imgui\backends\imgui_impl_dx11.cpp" />
-    <ClCompile Include="..\ThirdParty\imgui\backends\imgui_impl_glfw.cpp" />
-    <ClCompile Include="..\ThirdParty\imgui\imgui.cpp" />
-    <ClCompile Include="..\ThirdParty\imgui\imgui_draw.cpp" />
-    <ClCompile Include="..\ThirdParty\imgui\imgui_tables.cpp" />
-    <ClCompile Include="..\ThirdParty\imgui\imgui_widgets.cpp" />
-    <ClCompile Include="..\ThirdParty\imgui\misc\cpp\imgui_stdlib.cpp" />
     <ClCompile Include="..\ThirdParty\tinyxml2\tinyxml2.cpp" />
     <ClCompile Include="Scene\Resource\ShaderResource.cpp" />
     <ClCompile Include="Scene\Resource\ShaderResourceFormat.cpp" />
@@ -317,7 +320,6 @@
     <ClInclude Include="Core\String.hpp" />
     <ClInclude Include="Editor\EditorData.hpp" />
     <ClInclude Include="Editor\EditorUndoRedo.hpp" />
-    <ClInclude Include="Editor\Icons\BuiltinIcons.hpp" />
     <ClInclude Include="Engine\Application\App.hpp" />
     <ClInclude Include="Core\Clock.hpp" />
     <ClInclude Include="Engine\Application\Engine.hpp" />
@@ -364,8 +366,6 @@
     <ClInclude Include="Editor\UI\EditorPanel.hpp" />
     <ClInclude Include="Editor\UI\EditorUI.hpp" />
     <ClInclude Include="Editor\UI\EditorUIContext.hpp" />
-    <ClInclude Include="Editor\UI\EditorUIStyle.hpp" />
-    <ClInclude Include="Editor\UI\EditorUIWidgets.hpp" />
     <ClInclude Include="Editor\UI\FileSystemPanel.hpp" />
     <ClInclude Include="Editor\UI\ImportPanel.hpp" />
     <ClInclude Include="Editor\UI\InspectorPanel.hpp" />
@@ -383,8 +383,6 @@
     <ClInclude Include="Editor\UI\ViewportPanel.hpp" />
     <ClInclude Include="Editor\Gizmos\GizmoComponent.hpp" />
     <ClInclude Include="Editor\Gizmos\TransformGizmo3D.hpp" />
-    <ClInclude Include="Engine\ImGui\ImGuiSystem.hpp" />
-    <ClInclude Include="Engine\ImGui\DefaultImGuiLayout.hpp" />
     <ClInclude Include="Core\Math\AABB2.hpp" />
     <ClInclude Include="Core\Math\AABB3.hpp" />
     <ClInclude Include="Core\Math\Capsule2.hpp" />
@@ -460,6 +458,7 @@
     <ClInclude Include="Scene\GUI\BaseButton.hpp" />
     <ClInclude Include="Scene\GUI\Button.hpp" />
     <ClInclude Include="Scene\GUI\GUIDefinitions.hpp" />
+    <ClInclude Include="Scene\GUI\MenuBar.hpp" />
     <ClInclude Include="Scene\GUI\HBoxContainer.hpp" />
     <ClInclude Include="Scene\GUI\Label.hpp" />
     <ClInclude Include="Scene\GUI\LineEdit.hpp" />
@@ -495,17 +494,6 @@
     <ClInclude Include="..\ThirdParty\FastNoiseLite\FastNoiseLite.h" />
     <ClInclude Include="..\ThirdParty\GLFW\glfw3.h" />
     <ClInclude Include="..\ThirdParty\GLFW\glfw3native.h" />
-    <ClInclude Include="..\ThirdParty\imgui\backends\imgui_impl_dx11.h" />
-    <ClInclude Include="..\ThirdParty\imgui\backends\imgui_impl_glfw.h" />
-    <ClInclude Include="..\ThirdParty\imgui\imconfig.h" />
-    <ClInclude Include="..\ThirdParty\imgui\imgui.h" />
-    <ClInclude Include="..\ThirdParty\imgui\imgui_internal.h" />
-    <ClInclude Include="..\ThirdParty\imgui\imstb_rectpack.h" />
-    <ClInclude Include="..\ThirdParty\imgui\imstb_textedit.h" />
-    <ClInclude Include="..\ThirdParty\imgui\imstb_truetype.h" />
-    <ClInclude Include="..\ThirdParty\imgui\misc\cpp\imgui_stdlib.h" />
-    <ClInclude Include="..\ThirdParty\imgui\misc\freetype\imgui_freetype.h" />
-    <ClInclude Include="..\ThirdParty\imgui\misc\single_file\imgui_single_file.h" />
     <ClInclude Include="..\ThirdParty\nlohmann\json.hpp" />
     <ClInclude Include="..\ThirdParty\stb\stb_image.h" />
     <ClInclude Include="..\ThirdParty\tinygltf\tiny_gltf_v3.h" />
@@ -528,8 +516,6 @@
     <ClInclude Include="Scene\GUI\PopupPanel.hpp" />
     <ClCompile Include="Scene\GUI\ScrollContainer.cpp" />
     <ClInclude Include="Scene\GUI\ScrollContainer.hpp" />
-    <ClCompile Include="Editor\UI\EditorControlHost.cpp" />
-    <ClInclude Include="Editor\UI\EditorControlHost.hpp" />
     <ClInclude Include="Editor\UI\InspectorPropertyVec2.hpp" />
     <ClInclude Include="Editor\UI\InspectorPropertyEnum.hpp" />
   </ItemGroup>
@@ -544,5 +530,12 @@
     <ClInclude Include="Scene\GUI\SubViewportContainer.hpp" />
     <ClCompile Include="Editor\UI\EditorUINative.cpp" />
     <ClCompile Include="Editor\UI\EditorUIDocking.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Scene\Resource\DefaultFontData.inc" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Editor\BuiltinIcons.hpp" />
+    <ClInclude Include="Editor\BuiltinBrand.hpp" />
   </ItemGroup>
 </Project>

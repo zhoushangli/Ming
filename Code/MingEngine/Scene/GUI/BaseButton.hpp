@@ -54,6 +54,7 @@ public:
 
 protected:
 	static void BindMethods() {}
+	virtual void OnDrawModeChanged() {}
 
 	void OnNotification(int notification);
 

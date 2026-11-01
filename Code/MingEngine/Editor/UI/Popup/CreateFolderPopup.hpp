@@ -3,6 +3,8 @@
 #include "MingEngine/Engine/File/VirtualPath.hpp"
 
 #include <string>
+#include "MingEngine/Editor/UI/EditorUIContext.hpp"
+#include "MingEngine/Editor/UI/Popup/EditorPopupUtils.hpp"
 
 struct EditorUIContext;
 
@@ -14,9 +16,15 @@ public:
 	bool ConsumeSelectedVirtualPath(VirtualPath& outVirtualPath);
 
 private:
+	void Confirm();
 	bool ValidateName(EditorUIContext const& context, std::string& outError) const;
 
 private:
+	EditorUIContext m_context;
+	PopupPanel* m_popup = nullptr;
+	LineEdit* m_nameEdit = nullptr;
+	LineEdit* m_rootEdit = nullptr;
+	Label* m_errorLabel = nullptr;
 	char        m_name[256]      = {};
 	bool        m_openRequested  = false;
 	bool        m_focusNameInput = false;

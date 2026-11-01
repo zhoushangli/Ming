@@ -1,6 +1,10 @@
-param([switch]$SkipBuild, [ValidateSet("NativeFieldsVerification", "NativeEditorStartupVerification")][string]$Suite = "NativeFieldsVerification")
+param([switch]$SkipBuild, [ValidateSet("NativeFieldsVerification", "NativeEditorStartupVerification", "TextLayoutVerification", "EditorUIVerification")][string]$Suite = "NativeFieldsVerification", [switch]$Preview)
 
 $ErrorActionPreference = 'Stop'
+if ($Preview -and $Suite -ne 'TextLayoutVerification')
+{
+	throw '-Preview requires -Suite TextLayoutVerification.'
+}
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $outputDirectory = Join-Path $repoRoot ('Temporary\' + $Suite)
 $msbuild = 'C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\MSBuild.exe'
@@ -54,12 +58,16 @@ try
         Copy-Item -Path (Join-Path $repoRoot 'Run\MingSharp\*') -Destination (Join-Path $outputDirectory 'MingSharp') -Recurse -Force
         foreach ($mode in @('manager', 'editor', 'game'))
         {
-            & (Join-Path $outputDirectory ($Suite + '.exe')) (Join-Path $repoRoot 'Temporary\NativeFieldsVerification\Project') $mode
+            & (Join-Path $outputDirectory ($Suite + '.exe')) (Join-Path $outputDirectory 'Project') $mode
             if ($LASTEXITCODE -ne 0)
             {
                 throw ('Native startup verification failed: ' + $mode)
             }
         }
+    }
+    elseif ($Preview)
+    {
+        & (Join-Path $outputDirectory ($Suite + '.exe')) (Join-Path $outputDirectory 'Project') --preview
     }
     else
     {

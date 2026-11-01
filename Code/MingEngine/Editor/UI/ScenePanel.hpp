@@ -1,46 +1,33 @@
 #pragma once
 
-#include "MingEngine/Core/Object/ObjectID.hpp"
 #include "MingEngine/Editor/UI/EditorPanel.hpp"
 #include "MingEngine/Editor/UI/Popup/CreateNodePopup.hpp"
-
-#include <string>
-
-struct EditorUIContext;
-class Node;
+#include "MingEngine/Scene/GUI/Tree.hpp"
+#include "MingEngine/Scene/GUI/LineEdit.hpp"
+#include <map>
 
 class ScenePanel final : public EditorPanel
 {
+	MCLASS(ScenePanel, EditorPanel);
+
 public:
 	ScenePanel();
+	Tree* GetTree() const { return m_tree; }
+	void OpenCreateNode();
 
-private:
+protected:
+	void OnInitialize() override;
 	void OnRender(EditorUIContext& context) override;
-	void RenderNode(Node* node, std::string const& filterText, EditorUIContext& context);
-	bool DoesNodeMatchFilter(Node const* node, std::string const& filterText) const;
-	void BeginRename(Node* node);
-	void FinishRename(Node* node, bool apply);
-	void ClearRename();
 
 private:
-	char            m_filter[64]        = {};
-	char            m_renameBuffer[256] = {};
-	ObjectID        m_renamingNodeID    = ObjectID::Invalid;
-	std::string     m_originalName;
-	bool            m_focusRenameInput = false;
+	void UpdateItems();
+	void DeleteSelected();
+	bool HandleTreeInput(InputEvent const& event);
+	bool CanReparent(ObjectID source, uint64_t target) const;
+
+private:
+	Tree* m_tree = nullptr;
+	LineEdit* m_filter = nullptr;
+	std::map<uint64_t, ObjectID> m_nodeItems;
 	CreateNodePopup m_createNodePopup;
-
-	struct PendingReparent
-	{
-		void Clear()
-		{
-			m_childID  = ObjectID::Invalid;
-			m_parentID = ObjectID::Invalid;
-		}
-
-		ObjectID m_childID;
-		ObjectID m_parentID;
-	};
-
-	PendingReparent m_pendingReparent;
 };

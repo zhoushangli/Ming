@@ -1,7 +1,29 @@
 #include "MingEngine/Editor/UI/EditorPanel.hpp"
+#include "MingEngine/Scene/Core/Viewport.hpp"
+#include "MingEngine/Scene/GUI/ThemeDatabase.hpp"
+#include <algorithm>
+
+void EditorPanel::BindMethods()
+{
+	BIND_THEME_ITEM(Theme::DataType::StyleBox, EditorPanel, panel);
+}
 
 EditorPanel::EditorPanel(char const* title, bool isOpen) : m_title(title), m_isOpen(isOpen)
 {
+	SetName(title);
+	SetSerializable(false);
+	SetClipContents(true);
+	SetVisible(isOpen);
+}
+
+void EditorPanel::Initialize(EditorUIContext const& context)
+{
+	m_context = context;
+	if (!m_initialized)
+	{
+		m_initialized = true;
+		OnInitialize();
+	}
 }
 
 void EditorPanel::Open()
@@ -12,49 +34,49 @@ void EditorPanel::Open()
 
 void EditorPanel::Open(UIData const& data)
 {
-	if (m_closePending)
-	{
-		ApplyClose();
-	}
-
 	m_isOpen = true;
+	SetVisible(true);
 	OnOpen(data);
 }
 
 void EditorPanel::Close()
 {
-	if (!m_isOpen || m_closePending)
+	if (m_isOpen)
 	{
-		return;
-	}
+		m_isOpen = false;
+		if (GetViewport() != nullptr)
+		{
+			GetViewport()->CancelGuiInteraction(this);
+		}
 
-	m_isOpen       = false;
-	m_closePending = true;
+		OnClose();
+		SetVisible(false);
+	}
 }
 
 void EditorPanel::Render(EditorUIContext& context)
 {
-	if (m_closePending)
+	Initialize(context);
+	if (m_isOpen)
 	{
-		ApplyClose();
-		return;
+		OnRender(context);
+	}
+}
+
+Vector2 EditorPanel::GetInternalMinimumSize() const
+{
+	Vector2 minimum;
+	for (Node* child : GetChildren())
+	{
+		if (auto* control = dynamic_cast<Control*>(child); control != nullptr && control->IsVisible() && !control->IsQueuedForDeletion())
+		{
+			Vector2 const size = control->GetCombinedMinimumSize();
+			minimum.x = std::max(minimum.x, size.x);
+			minimum.y = std::max(minimum.y, size.y);
+		}
 	}
 
-	if (!m_isOpen)
-	{
-		return;
-	}
-
-	OnRender(context);
-	if (!m_isOpen && !m_closePending)
-	{
-		m_closePending = true;
-	}
-
-	if (m_closePending)
-	{
-		ApplyClose();
-	}
+	return minimum;
 }
 
 void EditorPanel::OnOpen([[maybe_unused]] UIData const& data)
@@ -65,24 +87,22 @@ void EditorPanel::OnClose()
 {
 }
 
-void EditorPanel::ApplyClose()
+void EditorPanel::OnNotification(int notification)
 {
-	m_isOpen       = false;
-	m_closePending = false;
-	OnClose();
-}
-
-bool EditorPanel::IsOpen() const
-{
-	return m_isOpen;
-}
-
-bool* EditorPanel::GetOpenState()
-{
-	return &m_isOpen;
-}
-
-char const* EditorPanel::GetTitle() const
-{
-	return m_title.c_str();
+	switch (notification)
+	{
+	case Notification_Draw:
+		DrawThemeStyleBox(m_themeCache.panel, GetLocalRect());
+		break;
+	case Notification_Resized:
+		for (Node* child : GetChildren())
+		{
+			if (auto* control = dynamic_cast<Control*>(child))
+			{
+				control->SetPosition(Vector2::Zero);
+				control->UpdateSize(GetSize());
+			}
+		}
+		break;
+	}
 }

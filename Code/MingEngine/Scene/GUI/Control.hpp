@@ -4,6 +4,8 @@
 #include "MingEngine/Engine/Input/InputEvent.hpp"
 #include "MingEngine/Scene/GUI/GUIDefinitions.hpp"
 
+#include "MingEngine/Scene/Resource/Theme.hpp"
+
 #include <functional>
 
 // Control inherits from CanvasItem, which means Control can call all these render functions
@@ -24,6 +26,7 @@ public:
 		Notification_FocusEnter         = 37,
 		Notification_FocusExit          = 38,
 		Notification_GuiInputCancelled  = 39,
+		Notification_ThemeChanged       = 41,
 		Notification_DragHoverExit      = 70,
 		Notification_DragEnd            = 71
 	};
@@ -55,6 +58,8 @@ public:
 	};
 
 public:
+	~Control() override;
+
 	static void BindMethods() {}
 
 	// We use Update Size instead of SetSize here, because we have a custom minimum size
@@ -68,6 +73,7 @@ public:
 	// If GuiInput returns true
 	// it means the event is consumed and should not propagate to other controls.
 	virtual bool GuiInput(InputEvent const& event);
+	virtual CursorShape GetCursorShape(Vector2 const& localPosition) const;
 
 	virtual bool GetDragData(Vector2 const& position, GuiDragData& data);
 	virtual bool CanDropData(Vector2 const& position, GuiDragData const& data) const;
@@ -80,6 +86,79 @@ public:
 		std::function<bool(Vector2 const&, GuiDragData const&)> check,
 		std::function<void(Vector2 const&, GuiDragData const&)> drop);
 	void SetDragHoverCallback(std::function<void(Vector2 const&, GuiDragData const&, bool)> callback);
+
+	Ref<Theme> GetTheme() const { return m_theme; }
+	std::string const& GetThemeTypeVariation() const { return m_themeTypeVariation; }
+	void               SetTheme(Ref<Theme> const& theme);
+	void               SetThemeTypeVariation(std::string const& variation);
+
+	// Borrow a detached control's theme ancestry without inheriting its overrides or variation.
+	// e.g. A viewport popup uses its triggering OptionButton as its theme source.
+	Control* GetThemeSource() const;
+	bool SetThemeSource(Control* source);
+
+	// Refresh parsed values, not the source Theme; setters and subscriptions call this automatically.
+	// e.g. Editing a shared ThemeStyleBox updates cache, minimum size and drawing on its subscribed controls.
+	void RefreshTheme();
+
+	Color GetThemeColor(std::string const& name, std::string const& type = {}) const;
+	void  AddThemeColorOverride(std::string const& name, Color const& value);
+	void  RemoveThemeColorOverride(std::string const& name);
+	bool  HasThemeColorOverride(std::string const& name) const;
+
+	int  GetThemeConstant(std::string const& name, std::string const& type = {}) const;
+	void AddThemeConstantOverride(std::string const& name, int value);
+	void RemoveThemeConstantOverride(std::string const& name);
+	bool HasThemeConstantOverride(std::string const& name) const;
+
+	Ref<FontResource> GetThemeFont(std::string const& name, std::string const& type = {}) const;
+	void              AddThemeFontOverride(std::string const& name, Ref<FontResource> const& value);
+	void              RemoveThemeFontOverride(std::string const& name);
+	bool              HasThemeFontOverride(std::string const& name) const;
+
+	int  GetThemeFontSize(std::string const& name, std::string const& type = {}) const;
+	void AddThemeFontSizeOverride(std::string const& name, int value);
+	void RemoveThemeFontSizeOverride(std::string const& name);
+	bool HasThemeFontSizeOverride(std::string const& name) const;
+
+	Ref<TextureResource> GetThemeIcon(std::string const& name, std::string const& type = {}) const;
+	void                 AddThemeIconOverride(std::string const& name, Ref<TextureResource> const& value);
+	void                 RemoveThemeIconOverride(std::string const& name);
+	bool                 HasThemeIconOverride(std::string const& name) const;
+
+	Ref<ThemeStyleBox> GetThemeStyleBox(std::string const& name, std::string const& type = {}) const;
+	void               AddThemeStyleBoxOverride(std::string const& name, Ref<ThemeStyleBox> const& value);
+	void               RemoveThemeStyleBoxOverride(std::string const& name);
+	bool               HasThemeStyleBoxOverride(std::string const& name) const;
+
+	template <Theme::DataType Type>
+	auto GetThemeItem(std::string const& name) const
+	{
+		if constexpr (Type == Theme::DataType::Color)
+		{
+			return GetThemeColor(name);
+		}
+		else if constexpr (Type == Theme::DataType::Constant)
+		{
+			return GetThemeConstant(name);
+		}
+		else if constexpr (Type == Theme::DataType::Font)
+		{
+			return GetThemeFont(name);
+		}
+		else if constexpr (Type == Theme::DataType::FontSize)
+		{
+			return GetThemeFontSize(name);
+		}
+		else if constexpr (Type == Theme::DataType::Icon)
+		{
+			return GetThemeIcon(name);
+		}
+		else if constexpr (Type == Theme::DataType::StyleBox)
+		{
+			return GetThemeStyleBox(name);
+		}
+	}
 
 	virtual bool IsDisabled() const { return false; }
 	MouseFilter  GetMouseFilter() const { return m_mouseFilter; }
@@ -116,12 +195,38 @@ public:
 	void PropagateMinimumSizeChanged();
 
 protected:
+	virtual void OnThemeChanged() {}
+	virtual void OnThemeSourceLost() {}
+	void DrawThemeStyleBox(Ref<ThemeStyleBox> const& box, AABB2 const& rect);
+
 	void OnNotification(int notification);
 
 private:
+	void RefreshThemeBranch();
+	void ReleaseThemeDependents();
+	Control const* GetThemeParent() const;
+	void ReleaseThemeSubscriptions();
+	void RebuildThemeSubscriptions();
+	std::vector<std::string> GetThemeTypes(std::string const& type) const;
 	void SetSize(Vector2 const& size);
 
 private:
+	ObjectID m_themeSource = ObjectID::Invalid;
+	std::set<ObjectID> m_themeDependents;
+	Ref<Theme>              m_theme;
+	std::string             m_themeTypeVariation;
+	std::vector<Ref<Theme>> m_themeSubscriptions;
+	bool                    m_themeInitialized    = false;
+	bool                    m_refreshingTheme     = false;
+	bool                    m_pendingThemeRefresh = false;
+
+	std::map<std::string, Color>                m_colorOverrides;
+	std::map<std::string, int>                  m_constantOverrides;
+	std::map<std::string, Ref<FontResource>>    m_fontOverrides;
+	std::map<std::string, int>                  m_fontSizeOverrides;
+	std::map<std::string, Ref<TextureResource>> m_iconOverrides;
+	std::map<std::string, Ref<ThemeStyleBox>>   m_styleBoxOverrides;
+
 	Vector2 m_position          = Vector2::Zero;
 	Vector2 m_size              = Vector2::Zero;
 	Vector2 m_customMinimumSize = Vector2::Zero;
@@ -131,8 +236,9 @@ private:
 	MouseFilter m_mouseFilter         = MouseFilter::Stop;
 	FocusMode   m_focusMode           = FocusMode::None;
 	bool        m_clipContents        = false;
-	std::function<bool(Vector2 const&, GuiDragData&)> m_dragSource;
-	std::function<bool(Vector2 const&, GuiDragData const&)> m_dropCheck;
-	std::function<void(Vector2 const&, GuiDragData const&)> m_drop;
+
+	std::function<bool(Vector2 const&, GuiDragData&)>             m_dragSource;
+	std::function<bool(Vector2 const&, GuiDragData const&)>       m_dropCheck;
+	std::function<void(Vector2 const&, GuiDragData const&)>       m_drop;
 	std::function<void(Vector2 const&, GuiDragData const&, bool)> m_dragHover;
 };

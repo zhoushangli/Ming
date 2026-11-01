@@ -4,6 +4,8 @@
 
 class OutputPanel final : public EditorPanel
 {
+	MCLASS(OutputPanel, EditorPanel);
+
 public:
 	OutputPanel();
 

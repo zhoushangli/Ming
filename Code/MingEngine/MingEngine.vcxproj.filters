@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Filter Include="Editor">
@@ -34,9 +34,6 @@
     <Filter Include="Engine\Event">
       <UniqueIdentifier>{A40215AC-BB45-4374-B795-20BBC53ACBDF}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Engine\ImGui">
-      <UniqueIdentifier>{F5A6429A-96DA-4C13-96AD-ADDCE59A52F8}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Engine\Input">
       <UniqueIdentifier>{BDF5B220-91C8-4225-A7FB-97025589FB92}</UniqueIdentifier>
     </Filter>
@@ -69,24 +66,6 @@
     </Filter>
     <Filter Include="ThirdParty\GLFW">
       <UniqueIdentifier>{36662DE9-B2E1-4A65-B47B-3920E5C99886}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ThirdParty\imgui">
-      <UniqueIdentifier>{CBE94843-C844-4E1C-9A54-AF578EDCCAEA}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ThirdParty\imgui\backends">
-      <UniqueIdentifier>{A9416A4B-41DD-4FA0-9197-E48D957D7E4E}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ThirdParty\imgui\misc">
-      <UniqueIdentifier>{39050CF9-A102-4BE3-B54D-164A0DB17B23}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ThirdParty\imgui\misc\cpp">
-      <UniqueIdentifier>{FE9F3117-945C-467C-B4FB-53D3B457E76C}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ThirdParty\imgui\misc\freetype">
-      <UniqueIdentifier>{A938F49C-D1BD-465C-BADE-EE9976797937}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ThirdParty\imgui\misc\single_file">
-      <UniqueIdentifier>{EFFF3233-1DF7-4298-88EE-8C2B0E9BB2ED}</UniqueIdentifier>
     </Filter>
     <Filter Include="ThirdParty\nlohmann">
       <UniqueIdentifier>{098CD665-9AB9-48AE-8B65-7E7A417915C9}</UniqueIdentifier>
@@ -225,9 +204,6 @@
     <ClCompile Include="Editor\UI\EditorUI.cpp">
       <Filter>Editor\UI</Filter>
     </ClCompile>
-    <ClCompile Include="Editor\UI\EditorUIWidgets.cpp">
-      <Filter>Editor\UI</Filter>
-    </ClCompile>
     <ClCompile Include="Editor\UI\FileSystemPanel.cpp">
       <Filter>Editor\UI</Filter>
     </ClCompile>
@@ -254,12 +230,6 @@
     </ClCompile>
     <ClCompile Include="Editor\Gizmos\TransformGizmo3D.cpp">
       <Filter>Editor\Gizmos</Filter>
-    </ClCompile>
-    <ClCompile Include="Engine\ImGui\ImGuiSystem.cpp">
-      <Filter>Engine\ImGui</Filter>
-    </ClCompile>
-    <ClCompile Include="Engine\ImGui\DefaultImGuiLayout.cpp">
-      <Filter>Engine\ImGui</Filter>
     </ClCompile>
     <ClCompile Include="Core\Math\AABB2.cpp">
       <Filter>Core\Math</Filter>
@@ -468,27 +438,6 @@
     <ClCompile Include="Scene\Resource\MeshResourceFormat.cpp">
       <Filter>Scene\Resource</Filter>
     </ClCompile>
-    <ClCompile Include="..\ThirdParty\imgui\backends\imgui_impl_dx11.cpp">
-      <Filter>ThirdParty\imgui\backends</Filter>
-    </ClCompile>
-    <ClCompile Include="..\ThirdParty\imgui\backends\imgui_impl_glfw.cpp">
-      <Filter>ThirdParty\imgui\backends</Filter>
-    </ClCompile>
-    <ClCompile Include="..\ThirdParty\imgui\imgui.cpp">
-      <Filter>ThirdParty\imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="..\ThirdParty\imgui\imgui_draw.cpp">
-      <Filter>ThirdParty\imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="..\ThirdParty\imgui\imgui_tables.cpp">
-      <Filter>ThirdParty\imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="..\ThirdParty\imgui\imgui_widgets.cpp">
-      <Filter>ThirdParty\imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="..\ThirdParty\imgui\misc\cpp\imgui_stdlib.cpp">
-      <Filter>ThirdParty\imgui\misc\cpp</Filter>
-    </ClCompile>
     <ClCompile Include="..\ThirdParty\tinyxml2\tinyxml2.cpp">
       <Filter>ThirdParty\tinyxml2</Filter>
     </ClCompile>
@@ -664,6 +613,9 @@
     <ClCompile Include="Scene\GUI\MarginContainer.cpp">
       <Filter>Scene\GUI</Filter>
     </ClCompile>
+    <ClCompile Include="Scene\GUI\MenuBar.cpp">
+      <Filter>Scene\GUI</Filter>
+    </ClCompile>
     <ClCompile Include="Scene\GUI\HBoxContainer.cpp">
       <Filter>Scene\GUI</Filter>
     </ClCompile>
@@ -807,12 +759,6 @@
     <ClInclude Include="Editor\UI\EditorUIContext.hpp">
       <Filter>Editor\UI</Filter>
     </ClInclude>
-    <ClInclude Include="Editor\UI\EditorUIStyle.hpp">
-      <Filter>Editor\UI</Filter>
-    </ClInclude>
-    <ClInclude Include="Editor\UI\EditorUIWidgets.hpp">
-      <Filter>Editor\UI</Filter>
-    </ClInclude>
     <ClInclude Include="Editor\UI\FileSystemPanel.hpp">
       <Filter>Editor\UI</Filter>
     </ClInclude>
@@ -836,12 +782,6 @@
     </ClInclude>
     <ClInclude Include="Editor\Gizmos\TransformGizmo3D.hpp">
       <Filter>Editor\Gizmos</Filter>
-    </ClInclude>
-    <ClInclude Include="Engine\ImGui\ImGuiSystem.hpp">
-      <Filter>Engine\ImGui</Filter>
-    </ClInclude>
-    <ClInclude Include="Engine\ImGui\DefaultImGuiLayout.hpp">
-      <Filter>Engine\ImGui</Filter>
     </ClInclude>
     <ClInclude Include="Core\Math\AABB2.hpp">
       <Filter>Core\Math</Filter>
@@ -1074,39 +1014,6 @@
     <ClInclude Include="..\ThirdParty\GLFW\glfw3native.h">
       <Filter>ThirdParty\GLFW</Filter>
     </ClInclude>
-    <ClInclude Include="..\ThirdParty\imgui\backends\imgui_impl_dx11.h">
-      <Filter>ThirdParty\imgui\backends</Filter>
-    </ClInclude>
-    <ClInclude Include="..\ThirdParty\imgui\backends\imgui_impl_glfw.h">
-      <Filter>ThirdParty\imgui\backends</Filter>
-    </ClInclude>
-    <ClInclude Include="..\ThirdParty\imgui\imconfig.h">
-      <Filter>ThirdParty\imgui</Filter>
-    </ClInclude>
-    <ClInclude Include="..\ThirdParty\imgui\imgui.h">
-      <Filter>ThirdParty\imgui</Filter>
-    </ClInclude>
-    <ClInclude Include="..\ThirdParty\imgui\imgui_internal.h">
-      <Filter>ThirdParty\imgui</Filter>
-    </ClInclude>
-    <ClInclude Include="..\ThirdParty\imgui\imstb_rectpack.h">
-      <Filter>ThirdParty\imgui</Filter>
-    </ClInclude>
-    <ClInclude Include="..\ThirdParty\imgui\imstb_textedit.h">
-      <Filter>ThirdParty\imgui</Filter>
-    </ClInclude>
-    <ClInclude Include="..\ThirdParty\imgui\imstb_truetype.h">
-      <Filter>ThirdParty\imgui</Filter>
-    </ClInclude>
-    <ClInclude Include="..\ThirdParty\imgui\misc\cpp\imgui_stdlib.h">
-      <Filter>ThirdParty\imgui\misc\cpp</Filter>
-    </ClInclude>
-    <ClInclude Include="..\ThirdParty\imgui\misc\freetype\imgui_freetype.h">
-      <Filter>ThirdParty\imgui\misc\freetype</Filter>
-    </ClInclude>
-    <ClInclude Include="..\ThirdParty\imgui\misc\single_file\imgui_single_file.h">
-      <Filter>ThirdParty\imgui\misc\single_file</Filter>
-    </ClInclude>
     <ClInclude Include="..\ThirdParty\nlohmann\json.hpp">
       <Filter>ThirdParty\nlohmann</Filter>
     </ClInclude>
@@ -1260,9 +1167,6 @@
     <ClInclude Include="..\ThirdParty\miniaudio\miniaudio.h">
       <Filter>ThirdParty\miniaudio</Filter>
     </ClInclude>
-    <ClInclude Include="Editor\Icons\BuiltinIcons.hpp">
-      <Filter>Editor\Icons</Filter>
-    </ClInclude>
     <ClInclude Include="Engine\Script\CSharpScriptGenerator.hpp">
       <Filter>Engine\Script</Filter>
     </ClInclude>
@@ -1322,6 +1226,9 @@
       <Filter>Scene\Core</Filter>
     </ClInclude>
     <ClInclude Include="Scene\GUI\MarginContainer.hpp">
+      <Filter>Scene\GUI</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\GUI\MenuBar.hpp">
       <Filter>Scene\GUI</Filter>
     </ClInclude>
     <ClInclude Include="Scene\GUI\HBoxContainer.hpp">
@@ -1385,8 +1292,6 @@
     <ClInclude Include="Scene\GUI\PopupPanel.hpp"><Filter>Scene\GUI</Filter></ClInclude>
     <ClCompile Include="Scene\GUI\ScrollContainer.cpp"><Filter>Scene\GUI</Filter></ClCompile>
     <ClInclude Include="Scene\GUI\ScrollContainer.hpp"><Filter>Scene\GUI</Filter></ClInclude>
-    <ClCompile Include="Editor\UI\EditorControlHost.cpp"><Filter>Editor\UI</Filter></ClCompile>
-    <ClInclude Include="Editor\UI\EditorControlHost.hpp"><Filter>Editor\UI</Filter></ClInclude>
     <ClInclude Include="Editor\UI\InspectorPropertyVec2.hpp"><Filter>Editor\UI</Filter></ClInclude>
     <ClInclude Include="Editor\UI\InspectorPropertyEnum.hpp"><Filter>Editor\UI</Filter></ClInclude>
   </ItemGroup>
@@ -1398,5 +1303,38 @@
     <ClCompile Include="Scene\GUI\SubViewportContainer.cpp"><Filter>Scene\GUI</Filter></ClCompile>
     <ClInclude Include="Scene\GUI\SubViewportContainer.hpp"><Filter>Scene\GUI</Filter></ClInclude>
     <ClCompile Include="Editor\UI\EditorUINative.cpp"><Filter>Editor\UI</Filter></ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Scene\Resource\Theme.hpp"><Filter>Scene\Resource</Filter></ClInclude>
+    <ClCompile Include="Scene\Resource\Theme.cpp"><Filter>Scene\Resource</Filter></ClCompile>
+    <ClInclude Include="Scene\Resource\ThemeStyleBox.hpp"><Filter>Scene\Resource</Filter></ClInclude>
+    <ClCompile Include="Scene\Resource\ThemeStyleBox.cpp"><Filter>Scene\Resource</Filter></ClCompile>
+    <ClInclude Include="Scene\GUI\ThemeDatabase.hpp"><Filter>Scene\GUI</Filter></ClInclude>
+    <ClCompile Include="Scene\GUI\ThemeDatabase.cpp"><Filter>Scene\GUI</Filter></ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Editor\EditorThemeManager.cpp">
+      <Filter>Editor</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Scene\GUI\DefaultTheme.cpp">
+      <Filter>Scene\GUI</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Editor\EditorThemeManager.hpp">
+      <Filter>Editor</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Scene\GUI\DefaultTheme.hpp">
+      <Filter>Scene\GUI</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Scene\Resource\DefaultFontData.inc">
+      <Filter>Scene\Resource</Filter>
+    </None>
   </ItemGroup>
 </Project>

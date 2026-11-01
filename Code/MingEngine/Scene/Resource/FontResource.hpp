@@ -10,6 +10,8 @@ class FontResource : public Resource
 public:
 	~FontResource() override;
 
+	static Ref<FontResource> CreateDefault(bool sizeInEm = false);
+
 	RID GetFontRID() const { return m_fontRID; }
 
 	void SetFontRID(RID rid);

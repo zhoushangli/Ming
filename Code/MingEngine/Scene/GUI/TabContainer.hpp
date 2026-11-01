@@ -7,6 +7,31 @@ class TabContainer : public Container
 {
 	MCLASS(TabContainer, Container);
 
+private:
+	struct ThemeCache
+	{
+		Ref<FontResource>  font;
+		int                font_size = 0;
+		int                tab_height = 0;
+		int                tab_minimum_width = 0;
+		int                tab_separation = 0;
+		int                page_separation = 0;
+		int                drop_mark_width = 0;
+		Color              font_color;
+		Color              font_hover_color;
+		Color              font_selected_color;
+		Color              font_selected_hover_color;
+		Color              font_disabled_color;
+		Color              drop_mark_color;
+		Ref<ThemeStyleBox> panel;
+		Ref<ThemeStyleBox> tab_normal;
+		Ref<ThemeStyleBox> tab_hover;
+		Ref<ThemeStyleBox> tab_selected;
+		Ref<ThemeStyleBox> tab_selected_hover;
+		Ref<ThemeStyleBox> tab_disabled;
+		Ref<ThemeStyleBox> tab_focus;
+	};
+
 public:
 	TabContainer();
 
@@ -18,7 +43,10 @@ public:
 	int GetPageIndex(Control const* page) const;
 	int GetTabInsertIndex(Vector2 const& position) const;
 	String GetPageTitle(int index) const;
-	Vector2  GetInternalMinimumSize() const override { return Vector2(160.f, 80.f); }
+	Vector2  GetInternalMinimumSize() const override;
+	AABB2 GetTabBarRect() const;
+	AABB2 GetPageRect() const;
+	AABB2 GetTabInsertRect(int index) const;
 
 	void SetCurrentTab(int index);
 
@@ -37,14 +65,18 @@ public:
 	void DragHover(Vector2 const& position, GuiDragData const& data, bool accepted) override;
 
 protected:
-	static void BindMethods() {}
+	static void BindMethods();
+
+	void OnThemeChanged() override;
 
 	void OnNotification(int notification);
 
 private:
+	void ApplyTabTheme(Button* button);
 	void HoverTab(Control* page, Vector2 const& position, GuiDragData const& data);
 
 private:
+	ThemeCache m_themeCache;
 	std::vector<Control*>    m_pages;
 	std::vector<Button*>     m_buttons;
 	int                      m_current = -1;

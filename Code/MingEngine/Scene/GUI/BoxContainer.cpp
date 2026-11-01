@@ -1,4 +1,17 @@
 #include "MingEngine/Scene/GUI/BoxContainer.hpp"
+#include "MingEngine/Scene/GUI/ThemeDatabase.hpp"
+
+#include <algorithm>
+
+void BoxContainer::BindMethods()
+{
+	BIND_THEME_ITEM(Theme::DataType::Constant, BoxContainer, separation);
+}
+
+float BoxContainer::GetSeparation() const
+{
+	return m_separationOverride.value_or(static_cast<float>(std::max(0, m_themeCache.separation)));
+}
 
 Vector2 BoxContainer::GetInternalMinimumSize() const
 {
@@ -14,7 +27,7 @@ Vector2 BoxContainer::GetInternalMinimumSize() const
 		}
 
 		Vector2 const childMinimumSize = control->GetCombinedMinimumSize();
-		float const   separation       = hasChild ? m_separation : 0.0f;
+		float const   separation       = hasChild ? GetSeparation() : 0.0f;
 		if (m_vertical)
 		{
 			minimumSize.y += childMinimumSize.y + separation;
@@ -35,12 +48,23 @@ Vector2 BoxContainer::GetInternalMinimumSize() const
 void BoxContainer::SetSeparation(float separation)
 {
 	separation = separation < 0.0f ? 0.0f : separation;
-	if (m_separation == separation)
+	if (m_separationOverride == separation)
 	{
 		return;
 	}
 
-	m_separation = separation;
+	m_separationOverride = separation;
+	PropagateMinimumSizeChanged();
+}
+
+void BoxContainer::RemoveSeparationOverride()
+{
+	if (!m_separationOverride.has_value())
+	{
+		return;
+	}
+
+	m_separationOverride.reset();
 	PropagateMinimumSizeChanged();
 }
 
@@ -106,7 +130,7 @@ void BoxContainer::OnNotification(int notification)
 			}
 
 			UpdateChildRect(control, rect);
-			offset += length + m_separation;
+			offset += length + GetSeparation();
 		}
 
 		break;

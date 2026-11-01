@@ -1,44 +1,40 @@
 #include "MingEngine/Editor/UI/Popup/WarningPopup.hpp"
-
-#include "MingEngine/Editor/UI/Popup/EditorPopupUtils.hpp"
+#include "MingEngine/Editor/UI/EditorUI.hpp"
+#include "MingEngine/Editor/UI/EditorUIContext.hpp"
 
 void WarningPopup::Open(std::string const& title, std::string const& message)
 {
-	m_title         = title;
-	m_message       = message;
+	m_title = title;
+	m_message = message;
 	m_openRequested = true;
 }
 
-void WarningPopup::Render([[maybe_unused]] EditorUIContext& context)
+void WarningPopup::Render(EditorUIContext& context)
 {
-	constexpr char const* popupId = "Warning";
-	if (m_openRequested)
-	{
-		ImGui::OpenPopup(popupId);
-		m_openRequested = false;
-	}
-
-	if (!EditorPopupUtils::BeginModal(
-			popupId,
-			ImVec2(420.f, 0.f),
-			ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize))
+	if (m_popup == nullptr && !m_openRequested)
 	{
 		return;
 	}
 
-	ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.f, 0.72f, 0.24f, 1.f));
-	ImGui::TextWrapped("WARNING: %s", m_title.c_str());
-	ImGui::PopStyleColor();
-	ImGui::Separator();
-	ImGui::TextWrapped("%s", m_message.c_str());
-
-	EditorPopupUtils::BeginButtonRow(1);
-	if (EditorPopupUtils::ConfirmButton() || ImGui::IsKeyPressed(ImGuiKey_Escape, false))
+	if (m_popup == nullptr)
 	{
-		ImGui::CloseCurrentPopup();
-		m_title.clear();
-		m_message.clear();
+		VBoxContainer* content = nullptr;
+		m_popup = EditorPopupUtils::Create(context.m_rootControl, "", content);
+		m_heading = EditorPopupUtils::AddLabel(content, "", "EditorInspectorTitle");
+		m_text = EditorPopupUtils::AddLabel(content, "");
+		EditorPopupUtils::AddButton(content, "OK", [this]() { m_popup->Close(); });
 	}
 
-	EditorPopupUtils::EndModal();
+	if (m_openRequested)
+	{
+		m_openRequested = false;
+		m_heading->SetText(m_title);
+		m_text->SetText(m_message);
+		EditorPopupUtils::Open(m_popup, context.m_rootControl, Vector2(700.f, 225.f));
+	}
+
+	if (m_popup->IsVisible())
+	{
+		EditorPopupUtils::Layout(m_popup, Vector2(700.f, 225.f));
+	}
 }

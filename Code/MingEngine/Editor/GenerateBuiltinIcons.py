@@ -1,8 +1,13 @@
 from __future__ import annotations
 
 import json
+import io
+import hashlib
+import stat
 from dataclasses import dataclass
 from pathlib import Path
+from PIL import Image
+from playwright.sync_api import sync_playwright
 
 
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
@@ -49,7 +54,7 @@ def collect_icons(input_directory: Path) -> list[Icon]:
     return icons
 
 
-def generate_header(icons: list[Icon]) -> bytes:
+def generate_header(icons: list[Icon], manifest: dict) -> bytes:
     lines = [
         "#pragma once",
         "",
@@ -78,6 +83,7 @@ def generate_header(icons: list[Icon]) -> bytes:
         "\tstd::string_view m_name;",
         "\tuint32_t         m_offset;",
         "\tuint32_t         m_size;",
+        "\tstd::string_view m_tone;",
         "};",
         "",
         "inline constexpr uint8_t kData[] =",
@@ -100,7 +106,8 @@ def generate_header(icons: list[Icon]) -> bytes:
 
     for icon in icons:
         name_literal = json.dumps(icon.name, ensure_ascii=True)
-        lines.append(f"\t{{ {name_literal}, {icon.offset}u, {len(icon.data)}u }},")
+        tone_literal = json.dumps(manifest[icon.name]["tone"])
+        lines.append(f"\t{{ {name_literal}, {icon.offset}u, {len(icon.data)}u, {tone_literal} }},")
 
     lines.extend(
         [
@@ -136,6 +143,8 @@ def write_if_changed(output_path: Path, content: bytes) -> bool:
     if output_path.exists() and output_path.read_bytes() == content:
         return False
 
+    if output_path.exists():
+        output_path.chmod(stat.S_IWRITE | stat.S_IREAD)
     output_path.write_bytes(content)
     return True
 
@@ -143,17 +152,58 @@ def write_if_changed(output_path: Path, content: bytes) -> bool:
 def main() -> None:
     icon_directory = Path(__file__).resolve().parent / "Icons"
     output_path = icon_directory.parent / "BuiltinIcons.hpp"
+    source_directory = Path(__file__).resolve().parents[3] / "EditorStyleTest" / "warm-carbon"
+    manifest = json.loads((source_directory / "icons" / "manifest.json").read_text(encoding="utf-8"))
+    sources = sorted((source_directory / "icons").glob("*.svg"))
+    if {p.stem for p in sources} != set(manifest):
+        raise SystemExit("SVG files and manifest must contain the same icon names.")
+
+    icon_directory.mkdir(exist_ok=True)
+    with sync_playwright() as playwright:
+        browser = playwright.chromium.launch()
+        page = browser.new_page(viewport={"width": 32, "height": 32}, device_scale_factor=1)
+        for source in sources:
+            svg = source.read_text(encoding="utf-8").replace('width="16" height="16"', 'width="32" height="32"', 1)
+            page.set_content('<style>html,body{margin:0;background:transparent;color:white}svg{display:block}</style>' + svg)
+            screenshot = page.screenshot(omit_background=True, animations="disabled")
+            image = Image.open(io.BytesIO(screenshot)).convert("RGBA")
+            alpha = image.getchannel("A")
+            image = Image.new("RGBA", image.size, "white")
+            image.putalpha(alpha)
+            buffer = io.BytesIO()
+            image.save(buffer, format="PNG", optimize=False)
+            write_if_changed(icon_directory / (source.stem + ".png"), buffer.getvalue())
+        browser.close()
+
+    for path in icon_directory.glob("*.png"):
+        if path.stem not in manifest:
+            path.unlink()
 
     try:
         icons = collect_icons(icon_directory)
-        content = generate_header(icons)
+        content = generate_header(icons, manifest)
+        metadata = ["", "inline constexpr size_t IconCount = " + str(len(icons)) + ";", "", "inline std::string_view GetTone(std::string_view name)", "{",
+                    "\tauto const begin = std::begin(Detail::kEntries);", "\tauto const end = std::end(Detail::kEntries);",
+                    "\tauto const found = std::lower_bound(begin, end, name, [](Detail::IconEntry const& entry, std::string_view value)",
+                    "\t{", "\t\treturn entry.m_name < value;", "\t});",
+                    '\treturn found != end && found->m_name == name ? found->m_tone : "tn";', "}", ""]
+        content = content.replace(b"} // namespace BuiltinIcons", "\r\n".join(metadata).encode() + b"} // namespace BuiltinIcons")
         changed = write_if_changed(output_path, content)
+        brand = []
+        for name, filename in [("Glyph", "ming-glyph.png"), ("Beam", "ming-beam.png")]:
+            data = (source_directory / "assets" / filename).read_bytes()
+            brand.extend([f"inline constexpr uint8_t {name}[] =", "{"])
+            for offset in range(0, len(data), BYTES_PER_LINE):
+                brand.append("\t" + ", ".join(f"0x{value:02x}" for value in data[offset:offset + BYTES_PER_LINE]) + ",")
+            brand.extend(["};", ""])
+        write_if_changed(icon_directory.parent / "BuiltinBrand.hpp", ("#pragma once\r\n#include <cstdint>\r\nnamespace BuiltinBrand\r\n{\r\n" + "\r\n".join(brand) + "}\r\n").encode())
     except (OSError, ValueError) as error:
         raise SystemExit(f"error: {error}") from error
 
     total_bytes = sum(len(icon.data) for icon in icons)
     action = "Generated" if changed else "Unchanged"
     print(f"{action} {output_path.name}: {len(icons)} icons, {total_bytes} bytes.")
+    print("SHA256 " + hashlib.sha256(content).hexdigest())
 
 
 if __name__ == "__main__":

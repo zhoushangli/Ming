@@ -86,25 +86,9 @@ void EditorCamera::OnNotification(int notification)
 
 void EditorCamera::UpdateControlState()
 {
-	if (g_engine->m_imguiSystem == nullptr && EditorNode::Get() != nullptr)
-	{
-		EnterControlState(
-			EditorNode::Get()->IsSceneNavigationActive() ? EditorControlState::FlyThrough
-														 : EditorControlState::Pointer);
-		return;
-	}
-
-	if (EditorNode::Get() != nullptr && EditorNode::Get()->IsEditingNativeControl())
-	{
-		EnterControlState(EditorControlState::Pointer);
-		return;
-	}
-
-	InputSystem*             input = g_engine->m_inputSystem;
-	EditorControlState const desiredState =
-		input->IsKeyDown(KeyCode::RightMouse) ? EditorControlState::FlyThrough : EditorControlState::Pointer;
-
-	EnterControlState(desiredState);
+	EditorNode* editor = EditorNode::Get();
+	EnterControlState(editor != nullptr && editor->IsSceneNavigationActive()
+		? EditorControlState::FlyThrough : EditorControlState::Pointer);
 }
 
 void EditorCamera::EnterControlState(EditorControlState nextState)

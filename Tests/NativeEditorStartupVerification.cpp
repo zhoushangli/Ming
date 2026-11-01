@@ -4,6 +4,8 @@
 #include "MingEngine/Scene/Core/SceneTree.hpp"
 #include "MingEngine/Scene/Core/Viewport.hpp"
 #include "MingEngine/Scene/GUI/Button.hpp"
+#include "MingEngine/Editor/UI/EditorUI.hpp"
+#include "MingEngine/Scene/GUI/TabContainer.hpp"
 #include "RenderReadback.hpp"
 
 #include <cstdio>
@@ -24,13 +26,9 @@ int main(int argc, char** argv)
 	{
 		config.projectPath = std::filesystem::absolute(argv[1]) / "Startup";
 		std::filesystem::create_directories(config.projectPath);
-		for (char const* file : { "demo.mesh", "native-demo.tscn" })
-		{
-			std::filesystem::copy_file(
-				std::filesystem::absolute(argv[1]) / file,
-				config.projectPath / file,
-				std::filesystem::copy_options::overwrite_existing);
-		}
+		std::ofstream scene(config.projectPath / "native-demo.tscn");
+		scene << R"({"nodes":[{"name":"StartupScene","type":"Node3D","parent":""}]})";
+		scene.close();
 
 		std::ofstream settings(config.projectPath / "project.ming");
 		settings << R"({"type":"ProjectSettings","version":1,"start_scene_path":"res://native-demo.tscn"})";
@@ -43,7 +41,6 @@ int main(int argc, char** argv)
 		app.RunFrame();
 	}
 
-	bool const                  native   = g_engine->m_imguiSystem == nullptr && ImGui::GetCurrentContext() == nullptr;
 	bool const                  scene    = app.GetSceneTree() != nullptr;
 	std::filesystem::path const captures = std::filesystem::absolute(argv[1]).parent_path() / "Captures";
 	std::filesystem::create_directories(captures);
@@ -53,6 +50,22 @@ int main(int argc, char** argv)
 		SaveRenderedFrame(
 			g_engine->m_renderServer->ViewportGetTexture(root->GetViewportRID()),
 			captures / ("startup-" + mode + ".ppm"));
+		if (config.mode == MingRunMode::Editor)
+		{
+			for (IntVec2 size : { IntVec2(1440, 900), IntVec2(960, 600) })
+			{
+				root->UpdateResolution(size);
+				EditorNode::Get()->m_editorUI->ResetNativeLayout();
+				EditorNode::Get()->GetSelection().SetSelected(app.GetSceneTree()->GetScene()->GetObjectID());
+				for (int frame = 0; frame < 3; ++frame)
+				{
+					app.RunFrame();
+				}
+
+				SaveRenderedFrame(g_engine->m_renderServer->ViewportGetTexture(root->GetViewportRID()),
+					captures / ("warm-carbon-" + std::to_string(size.x) + "x" + std::to_string(size.y) + ".ppm"));
+			}
+		}
 	}
 
 	bool const editor = config.mode != MingRunMode::Editor || EditorNode::Get() != nullptr;
@@ -60,11 +73,10 @@ int main(int argc, char** argv)
 	bool const shutdown = app.IsQuitting();
 	app.Shutdown();
 	std::printf(
-		"NATIVE_STARTUP mode=%s no_imgui=%d scene_tree=%d editor=%d quit=%d\n",
+		"NATIVE_STARTUP mode=%s scene_tree=%d editor=%d quit=%d\n",
 		mode.c_str(),
-		native,
 		scene,
 		editor,
 		shutdown);
-	return native && scene && editor && shutdown ? 0 : 1;
+	return scene && editor && shutdown ? 0 : 1;
 }

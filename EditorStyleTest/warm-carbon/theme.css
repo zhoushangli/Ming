@@ -1,0 +1,40 @@
+/* Warm Carbon Ink tokens. Values mirror tokens.json. */
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("assets/JetBrainsMono-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+}
+
+:root {
+  color-scheme: dark;
+
+  --bg: #191817;
+  --panel: #242321;
+  --elevated: #2c2a27;
+  --field: #1d1c1a;
+  --border: #393631;
+  --strong: #514a40;
+  --text: #ded9d0;
+  --muted: #a49e93;
+  --dim: #7f796e;
+  --accent: #d3ad72;
+  --tint: #3c3326;
+
+  --success: #91b99b;
+  --warning: #e2ba72;
+  --error: #e39898;
+  --node2d: #93d0dd;
+  --node3d: #a68bd4;
+  --control: #9fbea0;
+  --scene-background: #202020;
+  --grid: #292929;
+  --axis-x: #795151;
+  --axis-y: #527062;
+
+  --bar-height: 48px;
+  --panel-header: 26px;
+  --control-height: 24px;
+  --seam: 6px;
+  --ruler: 18px;
+}

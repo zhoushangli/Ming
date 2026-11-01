@@ -622,31 +622,6 @@ void Renderer::BindConstantBuffer(ConstantBuffer* constantBuffer, int slot)
 	m_renderBackend->BindConstantBuffer(constantBuffer, slot);
 }
 
-bool Renderer::InitImGui()
-{
-	return m_renderBackend->InitImGui();
-}
-
-void Renderer::ShutdownImGui()
-{
-	m_renderBackend->ShutdownImGui();
-}
-
-void Renderer::BeginImGuiFrame()
-{
-	m_renderBackend->BeginImGuiFrame();
-}
-
-void Renderer::RenderImGui(ImDrawData* drawData)
-{
-	m_renderBackend->RenderImGui(drawData);
-}
-
-ImTextureID Renderer::GetImGuiTextureID(GPUTexture* texture) const
-{
-	return m_renderBackend->GetImGuiTextureID(texture);
-}
-
 void Renderer::BindBackBuffer()
 {
 	m_renderBackend->BindBackBuffer();

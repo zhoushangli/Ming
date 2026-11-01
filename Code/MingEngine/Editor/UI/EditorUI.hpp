@@ -1,35 +1,28 @@
 #pragma once
 
-#include "MingEngine/Core/Math/Vector2.hpp"
 #include "MingEngine/Editor/UI/FileSystemPanel.hpp"
 #include "MingEngine/Editor/UI/ImportPanel.hpp"
 #include "MingEngine/Editor/UI/InspectorPanel.hpp"
 #include "MingEngine/Editor/UI/OutputPanel.hpp"
-#include "MingEngine/Editor/UI/Popup/ProjectSettingsPopup.hpp"
-#include "MingEngine/Editor/UI/Popup/WarningPopup.hpp"
 #include "MingEngine/Editor/UI/ScenePanel.hpp"
 #include "MingEngine/Editor/UI/ViewportPanel.hpp"
-#include "MingEngine/Scene/Resource/FontResource.hpp"
-#include <map>
+#include "MingEngine/Editor/UI/Popup/ProjectSettingsPopup.hpp"
+#include "MingEngine/Editor/UI/Popup/WarningPopup.hpp"
+
 #include <array>
 
 class EditorNode;
 class ColorRect;
-class Control;
-class Label;
-class LineEdit;
-class Button;
-class Tree;
 class TabContainer;
 class SplitContainer;
-class ScrollContainer;
-class SubViewportContainer;
-class PopupPanel;
-
-struct EditorUIContext;
+class TextureRect;
+class MenuBar;
 
 class EditorUI
 {
+public:
+	using MenuItem = std::pair<String, std::function<void()>>;
+
 private:
 	struct DockPanel
 	{
@@ -37,22 +30,32 @@ private:
 		Control* m_root = nullptr;
 	};
 
+	struct ToolbarAction
+	{
+		Button* m_button = nullptr;
+		std::string m_icon;
+		String m_text;
+	};
+
 public:
 	~EditorUI();
-
+	void InitializeNative(EditorNode* owner);
 	void Render(EditorUIContext& context);
 	bool HandleInput(InputEvent const& event);
 	bool IsNativeInputActive() const;
 	void FinishInput(EditorUIContext& context);
-	void InitializeNative(EditorNode* owner);
-	void RenderNative(EditorUIContext& context);
-	void RenderLegacy(EditorUIContext& context);
+	void FinishNativeEditing();
 	void ShowUnsavedScene();
+	void Warning(std::string const& title, std::string const& message);
+	void ShowMenu(Control* source, Vector2 position, std::vector<MenuItem> const& items);
+	void SetNativeDragPreview(Control* source, String const& text);
+
+	Control* GetRootControl() const;
 	bool IsSceneNavigationActive() const;
 	bool IsSceneHovered() const;
 	SubViewportContainer* GetSceneView() const { return m_sceneView; }
-	Tree* GetSceneTreeControl() const { return m_nativeSceneTree; }
-	Tree* GetFileTreeControl() const { return m_nativeFileTree; }
+	Tree* GetSceneTreeControl() const { return m_scenePanel->GetTree(); }
+	Tree* GetFileTreeControl() const { return m_fileSystemPanel->GetTree(); }
 	TabContainer* GetTabs() const { return m_tabs; }
 	TabContainer* GetDockSlot(int index) const;
 	SplitContainer* GetDockSplit(int index) const;
@@ -60,80 +63,59 @@ public:
 	void ResetNativeLayout();
 	bool SaveNativeLayout();
 	void LoadNativeLayout();
-	void FinishNativeEditing();
 
-	void Warning(std::string const& title, std::string const& message);
-
-	// Viewport rect — set every frame by ViewportPanel, consumed by EditorCamera / GizmoContext
-	void    SetViewportRect(Vector2 origin, Vector2 dims);
-	Vector2 GetViewportOrigin() const;
-	Vector2 GetViewportDimensions() const;
-	Vector2 ToViewportPos(Vector2 windowPos) const;
+	void SetViewportRect(Vector2 origin, Vector2 dims);
+	Vector2 GetViewportOrigin() const { return m_viewportOrigin; }
+	Vector2 GetViewportDimensions() const { return m_viewportDims; }
+	Vector2 ToViewportPos(Vector2 position) const;
 
 	template <typename TPanel>
 	TPanel& GetPanel();
 
 private:
-	void RenderMainMenuBar();
-	void RenderDockSpace();
-	void ApplyDragDropCursor();
-	void UpdateSceneItems();
-	void UpdateFileItems();
-	void InitializeNativeDragDrop();
-	void SetNativeDragPreview(Control* source, String const& text);
-	bool CanReparentNativeNode(ObjectID source, uint64_t target) const;
-	bool CanMoveNativeFile(VirtualPath const& source, uint64_t target) const;
+	void CreateToolbar();
+	void ShowNativePopup(int mode, String const& message);
+	void AcceptNativePopup(int choice);
 	void InitializeNativeDocking();
 	void UpdateNativeDocking();
 	int FindNativePanel(String const& id) const;
-	int GetNativeDockDestination(int slot, Vector2 const& globalPosition, int& index) const;
-	void ShowNativePopup(int mode, String const& message);
-	void AcceptNativePopup(int choice);
+	int GetNativeDockDestination(int slot, Vector2 const& position, int& index) const;
+	void TogglePanel(EditorPanel* panel);
 
 private:
-	ScenePanel      m_scenePanel;
-	FileSystemPanel m_fileSystemPanel;
-	ImportPanel     m_importPanel;
-	ViewportPanel   m_viewportPanel;
-	InspectorPanel  m_inspectorPanel;
-	OutputPanel     m_outputPanel;
-
+	ScenePanel* m_scenePanel = nullptr;
+	FileSystemPanel* m_fileSystemPanel = nullptr;
+	ImportPanel* m_importPanel = nullptr;
+	ViewportPanel* m_viewportPanel = nullptr;
+	InspectorPanel* m_inspectorPanel = nullptr;
+	OutputPanel* m_outputPanel = nullptr;
 	ProjectSettingsPopup m_projectSettingsPopup;
-	WarningPopup         m_warningPopup;
-
-	Vector2 m_viewportOrigin = Vector2::Zero;
-	Vector2 m_viewportDims   = Vector2::Zero;
+	WarningPopup m_warningPopup;
 	EditorNode* m_owner = nullptr;
 	ColorRect* m_nativeRoot = nullptr;
-	Control* m_toolbar = nullptr;
-	Label* m_sceneTitle = nullptr;
-	ColorRect* m_inspectorBackground = nullptr;
-	Label* m_inspectorTitle = nullptr;
-	Label* m_emptyInspector = nullptr;
+	MenuBar* m_menuBar = nullptr;
+	Control* m_actions = nullptr;
+	Control* m_workspaces = nullptr;
+	TextureRect* m_brand = nullptr;
+	TextureRect* m_beam = nullptr;
+	Label* m_status = nullptr;
+	std::vector<ToolbarAction> m_toolbarActions;
 	TabContainer* m_tabs = nullptr;
 	Control* m_scenePage = nullptr;
 	Control* m_filePage = nullptr;
-	LineEdit* m_sceneFilter = nullptr;
-	LineEdit* m_fileFilter = nullptr;
-	Tree* m_nativeSceneTree = nullptr;
-	Tree* m_nativeFileTree = nullptr;
-	ScrollContainer* m_sceneScroll = nullptr;
-	ScrollContainer* m_fileScroll = nullptr;
+	Control* m_inspectorBackground = nullptr;
 	SubViewportContainer* m_sceneView = nullptr;
 	PopupPanel* m_nativePopup = nullptr;
-	ColorRect* m_popupPanel = nullptr;
+	VBoxContainer* m_popupContent = nullptr;
 	Label* m_popupMessage = nullptr;
 	LineEdit* m_popupPath = nullptr;
 	Button* m_popupButtons[3] = {};
 	int m_popupMode = 0;
-	bool m_navigating = false;
-	bool m_filesDirty = true;
-	Ref<FontResource> m_nativeFont;
-	std::map<uint64_t, ObjectID> m_nodeItems;
-	std::map<uint64_t, VirtualPath> m_fileItems;
-	std::map<std::string, uint64_t> m_fileKeys;
-	uint64_t m_nextFileKey = 1;
-	std::array<DockPanel, 3> m_dockPanels;
+	PopupPanel* m_menu = nullptr;
+	VBoxContainer* m_menuContent = nullptr;
+	Vector2 m_viewportOrigin;
+	Vector2 m_viewportDims;
+	std::array<DockPanel, 5> m_dockPanels;
 	std::array<TabContainer*, 4> m_dockSlots = {};
 	std::array<SplitContainer*, 4> m_dockSplits = {};
 	std::array<ColorRect*, 4> m_dockHints = {};
@@ -145,35 +127,35 @@ private:
 template <>
 inline ScenePanel& EditorUI::GetPanel<ScenePanel>()
 {
-	return m_scenePanel;
+	return *m_scenePanel;
 }
 
 template <>
 inline FileSystemPanel& EditorUI::GetPanel<FileSystemPanel>()
 {
-	return m_fileSystemPanel;
+	return *m_fileSystemPanel;
 }
 
 template <>
 inline ImportPanel& EditorUI::GetPanel<ImportPanel>()
 {
-	return m_importPanel;
+	return *m_importPanel;
 }
 
 template <>
 inline ViewportPanel& EditorUI::GetPanel<ViewportPanel>()
 {
-	return m_viewportPanel;
+	return *m_viewportPanel;
 }
 
 template <>
 inline InspectorPanel& EditorUI::GetPanel<InspectorPanel>()
 {
-	return m_inspectorPanel;
+	return *m_inspectorPanel;
 }
 
 template <>
 inline OutputPanel& EditorUI::GetPanel<OutputPanel>()
 {
-	return m_outputPanel;
+	return *m_outputPanel;
 }

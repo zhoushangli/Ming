@@ -33,6 +33,8 @@ protected:
 		ObjectID m_focusedControl = ObjectID::Invalid;
 		uint64_t m_focusVersion   = 0;
 		bool     m_windowFocused  = true;
+		Vector2 m_mousePosition = Vector2::Zero;
+		bool m_mouseInside = false;
 
 		ObjectID m_popupControl = ObjectID::Invalid;
 
@@ -118,6 +120,7 @@ protected:
 	void TryStartGuiDrag(Vector2 const& position);
 	ObjectID FindGuiDropTarget(Vector2 const& position) const;
 	void SetGuiDragTarget(ObjectID target);
+	void UpdateGuiCursor();
 
 protected:
 	Camera3D*           m_currentCamera = nullptr;

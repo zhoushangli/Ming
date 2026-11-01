@@ -20,6 +20,11 @@ void PopupPanel::Open(Control* owner)
 		previous->Close(false);
 	}
 
+	if (!SetThemeSource(owner))
+	{
+		return;
+	}
+
 	m_owner = owner->GetObjectID();
 	GetViewport()->CancelGuiInteraction(GetViewport());
 	UpdateSize(Vector2(GetViewport()->GetOutputResolution()));
@@ -30,6 +35,7 @@ void PopupPanel::Open(Control* owner)
 
 void PopupPanel::Close(bool restoreFocus)
 {
+	bool const wasVisible = IsVisible();
 	if (GetViewport() != nullptr && GetViewport()->GetGuiPopup() == this)
 	{
 		GetViewport()->SetGuiPopup(nullptr);
@@ -41,10 +47,25 @@ void PopupPanel::Close(bool restoreFocus)
 	{
 		owner->GrabFocus();
 	}
+
+	auto callback = m_closedCallback;
+	if (wasVisible && callback)
+	{
+		callback();
+	}
 }
 
 bool PopupPanel::GuiInput(InputEvent const& event)
 {
+	if (event.m_type == InputEventType::MouseMotion || event.m_type == InputEventType::MouseButton)
+	{
+		auto callback = m_pointerCallback;
+		if (callback && callback(event))
+		{
+			return true;
+		}
+	}
+
 	switch (event.m_type)
 	{
 	case InputEventType::Key:
@@ -71,16 +92,17 @@ bool PopupPanel::GuiInput(InputEvent const& event)
 
 void PopupPanel::OnNotification(int notification)
 {
-	if (notification == Notification_GuiInputCancelled || notification == Notification_ExitTree)
+	switch (notification)
 	{
-		if (GetViewport() != nullptr && GetViewport()->GetGuiPopup() == this)
-		{
-			GetViewport()->SetGuiPopup(nullptr);
-		}
-
-		if (IsVisible())
-		{
-			SetVisible(false);
-		}
+	case Notification_GuiInputCancelled:
+	case Notification_ExitTree:
+		Close(false);
+		break;
 	}
+}
+
+void PopupPanel::OnThemeSourceLost()
+{
+	Close(false);
+	m_owner = ObjectID::Invalid;
 }

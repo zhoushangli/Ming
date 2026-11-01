@@ -7,6 +7,19 @@
 #include <cstdint>
 #include <vector>
 
+enum class TextOverrunBehavior
+{
+	TrimNothing,
+	TrimCharacters,
+	EllipsisAlways
+};
+
+enum class AutowrapMode
+{
+	Off,
+	WordSmart
+};
+
 struct TextLineConfig
 {
 	float m_ascent  = 0.0f;
@@ -59,13 +72,16 @@ public:
 	// e.g. GetCachedGlyph(fontRID, glyphIndex, 16)
 	GlyphTexture const* GetOrCreateGlyphTexture(RID font, int glyphIndex, int fontSize);
 
-	// This function accepts a binary data of .tff file
-	RID  CreateFont(std::vector<uint8_t> bytes);
+	// Load TTF bytes with either total glyph height or CSS-compatible em pixel sizing.
+	// e.g. CreateFont(bytes, true) makes size 12 use a 12-pixel em square.
+	RID  CreateFont(std::vector<uint8_t> bytes, bool sizeInEm = false);
 	void FreeFont(RID font);
 
 	int            GetGlyphIndex(RID font, char32_t codePoint) const;
 	TextLineConfig GetFontMetrics(RID font, float pixelHeight) const;
 	TextLine       GetTextLine(RID font, String const& text, float pixelHeight) const;
+	std::vector<TextLine> GetTextLines(RID font, String const& text, float pixelHeight, float width, AutowrapMode wrap) const;
+	TextLine TrimTextLine(RID font, TextLine const& line, float pixelHeight, float width, TextOverrunBehavior behavior) const;
 	GlyphImage     RasterizeGlyph(RID font, int glyphIndex, float pixelHeight) const;
 
 private:

@@ -162,6 +162,14 @@ void RenderServer::ViewportSetActive(RID viewport, bool active)
 	}
 }
 
+void RenderServer::ViewportSetClearColor(RID viewport, Color color)
+{
+	if (ViewportData* data = m_viewportOwner.GetOrNull(viewport))
+	{
+		data->m_clearColor = color;
+	}
+}
+
 void RenderServer::ViewportSetResolution(RID viewport, IntVec2 size)
 {
 	ViewportData* viewportData = m_viewportOwner.GetOrNull(viewport);
@@ -722,32 +730,6 @@ void RenderServer::UpdateVertexBuffer(VertexBuffer* buffer, void const* data, un
 void RenderServer::CopyCPUToGPU(void const* data, unsigned int size, VertexBuffer* buffer)
 {
 	m_renderer->CopyCPUToGPU(data, size, buffer);
-}
-
-bool RenderServer::InitImGui()
-{
-	return m_renderer->InitImGui();
-}
-
-void RenderServer::ShutdownImGui()
-{
-	m_renderer->ShutdownImGui();
-}
-
-void RenderServer::BeginImGuiFrame()
-{
-	m_renderer->BeginImGuiFrame();
-}
-
-void RenderServer::RenderImGui(ImDrawData* drawData)
-{
-	m_renderer->BindBackBuffer();
-	m_renderer->RenderImGui(drawData);
-}
-
-ImTextureID RenderServer::GetImGuiTextureID(GPUTexture* texture) const
-{
-	return m_renderer->GetImGuiTextureID(texture);
 }
 
 RID RenderServer::CanvasItemCreate()

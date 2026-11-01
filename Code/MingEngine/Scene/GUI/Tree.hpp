@@ -21,6 +21,31 @@ public:
 		String   m_text;
 		bool     m_visible  = true;
 		bool     m_editable = false;
+		Ref<TextureResource> m_icon;
+		Color m_iconColor = Color::White;
+	};
+
+private:
+	struct ThemeCache
+	{
+		Ref<FontResource>  font;
+		int                font_size = 16;
+		int                row_height = 1;
+		int                indent = 0;
+		int icon_size = 16;
+		int fold_size = 12;
+		int icon_separation = 4;
+		Color              font_color;
+		Color              font_selected_color;
+		Color guide_color;
+		int guide_width = 0;
+		Ref<TextureResource> arrow_collapsed;
+		Ref<TextureResource> arrow_expanded;
+		Ref<ThemeStyleBox> panel;
+		Ref<ThemeStyleBox> hover;
+		Ref<ThemeStyleBox> selected;
+		Ref<ThemeStyleBox> focus;
+		Ref<ThemeStyleBox> drop_mark;
 	};
 
 public:
@@ -30,6 +55,8 @@ public:
 	uint64_t GetItemAtPosition(Vector2 const& position) const;
 	bool     IsCollapsed(uint64_t id) const { return m_collapsed.count(id) != 0; }
 	Vector2  GetInternalMinimumSize() const override;
+	float    GetRowHeight() const;
+	AABB2    GetItemRect(uint64_t id) const;
 
 	void SetItems(std::vector<Item> items, bool filtering = false);
 	void SetFont(Ref<FontResource> const& font);
@@ -42,6 +69,8 @@ public:
 		m_renamedCallback = std::move(callback);
 	}
 
+	void SetInputCallback(std::function<bool(InputEvent const&)> callback) { m_inputCallback = std::move(callback); }
+
 	void Select(uint64_t id, bool notify = false);
 	void EditSelected();
 	void EnsureSelectedVisible();
@@ -51,14 +80,20 @@ public:
 	void DragHover(Vector2 const& position, GuiDragData const& data, bool accepted) override;
 
 protected:
-	static void BindMethods() {}
+	static void BindMethods();
 
+	void OnThemeChanged() override;
 	void OnNotification(int notification);
 
 private:
 	bool HasChildren(uint64_t id) const;
+	int GetRowAtPosition(Vector2 const& position) const;
+	AABB2 GetRowRect(size_t row) const;
+	float GetFoldWidth(size_t row) const;
+	float GetRowTextX(size_t row) const;
 
 	void RebuildRows();
+	void UpdateRowLayout();
 
 private:
 	std::vector<Item>                            m_items;
@@ -66,15 +101,18 @@ private:
 	std::vector<int>                             m_depths;
 	std::vector<Label*>                          m_labels;
 	std::unordered_set<uint64_t>                 m_collapsed;
-	Ref<FontResource>                            m_font;
+	ThemeCache                                   m_themeCache;
 	LineEdit*                                    m_edit          = nullptr;
 	uint64_t                                     m_selected      = 0;
 	uint64_t                                     m_editing       = 0;
 	uint64_t                                     m_lastClicked   = 0;
 	uint64_t                                     m_dropItem = 0;
+	uint64_t                                     m_hoveredItem = 0;
 	double                                       m_lastClickTime = 0.0;
 	float                                        m_contentWidth  = 32.f;
 	bool                                         m_filtering     = false;
+	bool                                         m_updatingRowLayout = false;
+	std::function<bool(InputEvent const&)> m_inputCallback;
 	std::function<void(uint64_t)>                m_selectedCallback;
 	std::function<void(uint64_t)>                m_activatedCallback;
 	std::function<void(uint64_t, String const&)> m_renamedCallback;

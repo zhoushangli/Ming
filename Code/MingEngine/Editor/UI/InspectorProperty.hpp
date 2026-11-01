@@ -26,7 +26,6 @@ public:
 	std::string               GetDisplayName() const;
 	void                      SetValueReader(std::function<Variant()> reader) { m_reader = std::move(reader); }
 	void                      UpdateValue(Variant const& value);
-	void                      Render(EditorUIContext& context, Variant const& value);
 	void                      EndEditing(LineEdit::EditEndReason reason = LineEdit::EditEndReason::Interrupted);
 	bool                      CanAssignResource(VirtualPath const& path) const;
 	bool                      AssignResource(VirtualPath const& path);
@@ -55,6 +54,7 @@ protected:
 	String                   m_editStartText;
 	ObjectID                 m_rootID  = ObjectID::Invalid;
 	VBoxContainer*           m_root    = nullptr;
+	VBoxContainer*           m_fields  = nullptr;
 	Label*                   m_error   = nullptr;
 	LineEdit*                m_text    = nullptr;
 	Button*                  m_button  = nullptr;

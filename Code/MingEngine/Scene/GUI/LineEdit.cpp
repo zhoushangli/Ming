@@ -1,5 +1,7 @@
 #include "MingEngine/Scene/GUI/LineEdit.hpp"
 
+#include "MingEngine/Scene/GUI/ThemeDatabase.hpp"
+
 #include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Editor/EditorNode.hpp"
 #include "MingEngine/Scene/Core/Viewport.hpp"
@@ -24,6 +26,22 @@ LineEdit::~LineEdit()
 
 void LineEdit::BindMethods()
 {
+	BIND_THEME_ITEM(Theme::DataType::Font, LineEdit, font);
+	BIND_THEME_ITEM(Theme::DataType::FontSize, LineEdit, font_size);
+	BIND_THEME_ITEM(Theme::DataType::Constant, LineEdit, minimum_height);
+	BIND_THEME_ITEM(Theme::DataType::Constant, LineEdit, caret_width);
+	BIND_THEME_ITEM(Theme::DataType::Color, LineEdit, font_color);
+	BIND_THEME_ITEM(Theme::DataType::Color, LineEdit, font_read_only_color);
+	BIND_THEME_ITEM(Theme::DataType::Color, LineEdit, font_disabled_color);
+	BIND_THEME_ITEM(Theme::DataType::Color, LineEdit, font_placeholder_color);
+	BIND_THEME_ITEM(Theme::DataType::Color, LineEdit, selection_color);
+	BIND_THEME_ITEM(Theme::DataType::Color, LineEdit, caret_color);
+	BIND_THEME_ITEM(Theme::DataType::StyleBox, LineEdit, normal);
+	BIND_THEME_ITEM(Theme::DataType::StyleBox, LineEdit, hover);
+	BIND_THEME_ITEM(Theme::DataType::StyleBox, LineEdit, read_only);
+	BIND_THEME_ITEM(Theme::DataType::StyleBox, LineEdit, disabled);
+	BIND_THEME_ITEM(Theme::DataType::StyleBox, LineEdit, focus);
+
 	ClassDatabase::BindMethod(
 		"RestoreEditState",
 		&LineEdit::RestoreEditState,
@@ -84,34 +102,66 @@ void LineEdit::SetPlaceholder(String const& text)
 
 void LineEdit::SetFont(Ref<FontResource> const& font)
 {
-	if (m_font == font)
-	{
-		return;
-	}
-
-	m_font = font;
-	UpdateTextLayout();
-	PropagateMinimumSizeChanged();
+	AddThemeFontOverride("font", font);
 }
 
 void LineEdit::SetFontSize(int fontSize)
 {
-	if (fontSize <= 0 || m_fontSize == fontSize)
-	{
-		return;
-	}
-
-	m_fontSize = fontSize;
-	UpdateTextLayout();
-	PropagateMinimumSizeChanged();
+	AddThemeFontSizeOverride("font_size", fontSize);
 }
 
 void LineEdit::SetPadding(Vector2 const& padding)
 {
+	if (!std::isfinite(padding.x) || !std::isfinite(padding.y))
+	{
+		return;
+	}
+
 	m_padding = Vector2(std::max(0.f, padding.x), std::max(0.f, padding.y));
-	EnsureCursorVisible();
+	m_hasPaddingOverride = true;
+	OnThemeChanged();
 	PropagateMinimumSizeChanged();
-	QueueRedraw();
+}
+
+void LineEdit::RemovePaddingOverride()
+{
+	if (m_hasPaddingOverride)
+	{
+		m_hasPaddingOverride = false;
+		OnThemeChanged();
+		PropagateMinimumSizeChanged();
+	}
+}
+
+float LineEdit::GetContentMargin(ThemeStyleBox::Side side) const
+{
+	if (m_hasPaddingOverride)
+	{
+		return side == ThemeStyleBox::Side::Left || side == ThemeStyleBox::Side::Right ? m_padding.x : m_padding.y;
+	}
+
+	float margin = 0.f;
+	for (auto const& style : { m_themeCache.normal, m_themeCache.hover, m_themeCache.read_only, m_themeCache.disabled })
+	{
+		if (style.IsValid())
+		{
+			margin = std::max(margin, style->GetContentMargin(side));
+		}
+	}
+
+	return margin;
+}
+
+Vector2 LineEdit::GetPadding() const
+{
+	return Vector2(
+		std::max(GetContentMargin(ThemeStyleBox::Side::Left), GetContentMargin(ThemeStyleBox::Side::Right)),
+		std::max(GetContentMargin(ThemeStyleBox::Side::Top), GetContentMargin(ThemeStyleBox::Side::Bottom)));
+}
+
+void LineEdit::OnThemeChanged()
+{
+	UpdateTextLayout();
 }
 
 void LineEdit::SetEditable(bool editable)
@@ -203,16 +253,20 @@ void LineEdit::EndEditing(EditEndReason reason)
 Vector2 LineEdit::GetInternalMinimumSize() const
 {
 	float width  = 0.f;
-	float height = static_cast<float>(m_fontSize);
-	if (m_font.IsValid() && m_font->GetFontRID().IsValid() && g_engine != nullptr && g_engine->m_textServer != nullptr)
+	float height = static_cast<float>(m_themeCache.font_size);
+	if (m_themeCache.font.IsValid() && m_themeCache.font->GetFontRID().IsValid() && g_engine != nullptr && g_engine->m_textServer != nullptr)
 	{
 		TextLine const minimum =
-			g_engine->m_textServer->GetTextLine(m_font->GetFontRID(), std::string(m_minimumCharacterWidth, 'W'), static_cast<float>(m_fontSize));
+			g_engine->m_textServer->GetTextLine(m_themeCache.font->GetFontRID(), std::string(m_minimumCharacterWidth, 'W'), static_cast<float>(m_themeCache.font_size));
 		width  = minimum.m_width;
 		height = std::abs(minimum.m_config.m_ascent) + std::abs(minimum.m_config.m_descent);
 	}
 
-	return Vector2(std::max(1.f, width), height) + m_padding * 2.f;
+	Vector2 const margins(
+		GetContentMargin(ThemeStyleBox::Side::Left) + GetContentMargin(ThemeStyleBox::Side::Right),
+		GetContentMargin(ThemeStyleBox::Side::Top) + GetContentMargin(ThemeStyleBox::Side::Bottom));
+	return Vector2(std::max(1.f, width) + margins.x,
+		std::max(height + margins.y, static_cast<float>(std::max(0, m_themeCache.minimum_height))));
 }
 
 void LineEdit::SetMinimumCharacterWidth(int width)
@@ -225,11 +279,11 @@ void LineEdit::UpdateTextLayout()
 {
 	m_line            = {};
 	m_placeholderLine = {};
-	if (m_font.IsValid() && m_font->GetFontRID().IsValid() && g_engine != nullptr && g_engine->m_textServer != nullptr)
+	if (m_themeCache.font.IsValid() && m_themeCache.font->GetFontRID().IsValid() && g_engine != nullptr && g_engine->m_textServer != nullptr)
 	{
 		TextServer* server = g_engine->m_textServer;
-		m_line             = server->GetTextLine(m_font->GetFontRID(), m_text, static_cast<float>(m_fontSize));
-		m_placeholderLine  = server->GetTextLine(m_font->GetFontRID(), m_placeholder, static_cast<float>(m_fontSize));
+		m_line             = server->GetTextLine(m_themeCache.font->GetFontRID(), m_text, static_cast<float>(m_themeCache.font_size));
+		m_placeholderLine  = server->GetTextLine(m_themeCache.font->GetFontRID(), m_placeholder, static_cast<float>(m_themeCache.font_size));
 	}
 
 	EnsureCursorVisible();
@@ -239,8 +293,12 @@ void LineEdit::UpdateTextLayout()
 AABB2 LineEdit::GetContentRect() const
 {
 	Vector2 const size = GetSize();
-	Vector2 const inset(std::min(size.x * 0.5f, m_padding.x), std::min(size.y * 0.5f, m_padding.y));
-	return AABB2(inset, size - inset);
+	Vector2 const start(
+		std::min(size.x, GetContentMargin(ThemeStyleBox::Side::Left)),
+		std::min(size.y, GetContentMargin(ThemeStyleBox::Side::Top)));
+	return AABB2(start, Vector2(
+		std::max(start.x, size.x - GetContentMargin(ThemeStyleBox::Side::Right)),
+		std::max(start.y, size.y - GetContentMargin(ThemeStyleBox::Side::Bottom))));
 }
 
 float LineEdit::GetColumnPosition(int column) const
@@ -255,7 +313,7 @@ float LineEdit::GetColumnPosition(int column) const
 
 void LineEdit::EnsureCursorVisible()
 {
-	float const width    = std::max(0.f, GetContentRect().GetWidth() - 1.f);
+	float const width    = std::max(0.f, GetContentRect().GetWidth() - static_cast<float>(std::max(1, m_themeCache.caret_width)));
 	float const position = GetColumnPosition(m_cursorColumn);
 	if (position < m_scrollOffset)
 	{
@@ -660,20 +718,22 @@ void LineEdit::DrawContent()
 				top,
 				originX + GetColumnPosition(GetSelectionToColumn()),
 				top + height),
-			Color(45, 100, 165));
+			m_themeCache.selection_color);
 	}
 
 	bool const      placeholder = m_text.IsEmpty();
 	TextLine const& line        = placeholder ? m_placeholderLine : m_line;
-	Color const     textColor = placeholder || !m_editable || m_disabled ? Color(145, 155, 170) : Color(235, 240, 245);
-	if (m_font.IsValid() && m_font->GetFontRID().IsValid() && g_engine != nullptr && g_engine->m_textServer != nullptr)
+	Color const textColor = m_disabled ? m_themeCache.font_disabled_color
+		: (placeholder ? m_themeCache.font_placeholder_color
+			: (!m_editable ? m_themeCache.font_read_only_color : m_themeCache.font_color));
+	if (m_themeCache.font.IsValid() && m_themeCache.font->GetFontRID().IsValid() && g_engine != nullptr && g_engine->m_textServer != nullptr)
 	{
 		float const lineHeight = std::abs(line.m_config.m_ascent) + std::abs(line.m_config.m_descent);
 		float const baseline   = content.m_mins.y + (content.GetHeight() - lineHeight) * 0.5f + line.m_config.m_ascent;
 		for (TextLineGlyph const& glyph : line.m_glyphs)
 		{
 			GlyphTexture const* texture =
-				g_engine->m_textServer->GetOrCreateGlyphTexture(m_font->GetFontRID(), glyph.m_glyphIndex, m_fontSize);
+				g_engine->m_textServer->GetOrCreateGlyphTexture(m_themeCache.font->GetFontRID(), glyph.m_glyphIndex, m_themeCache.font_size);
 			if (texture == nullptr || !texture->m_texture.IsValid())
 			{
 				continue;
@@ -706,10 +766,10 @@ void LineEdit::DrawContent()
 
 	if (m_editable && !m_disabled && HasFocus() && GetViewport()->IsWindowFocused())
 	{
-		float const cursorHeight = height > 0.f ? height : static_cast<float>(m_fontSize);
+		float const cursorHeight = height > 0.f ? height : static_cast<float>(m_themeCache.font_size);
 		float const cursorTop    = content.m_mins.y + (content.GetHeight() - cursorHeight) * 0.5f;
 		float const x            = originX + GetColumnPosition(m_cursorColumn);
-		drawClippedRect(AABB2(x, cursorTop, x + 1.f, cursorTop + cursorHeight), Color(245, 210, 90));
+		drawClippedRect(AABB2(x, cursorTop, x + static_cast<float>(std::max(1, m_themeCache.caret_width)), cursorTop + cursorHeight), m_themeCache.caret_color);
 	}
 }
 
@@ -717,6 +777,14 @@ void LineEdit::OnNotification(int notification)
 {
 	switch (notification)
 	{
+	case Notification_MouseEnter:
+		m_hovering = true;
+		QueueRedraw();
+		break;
+	case Notification_MouseExit:
+		m_hovering = false;
+		QueueRedraw();
+		break;
 	case Notification_EnterTree:
 		UpdateTextLayout();
 		break;
@@ -750,12 +818,12 @@ void LineEdit::OnNotification(int notification)
 		break;
 	case Notification_Draw:
 	{
-		DrawRect(GetLocalRect(), HasFocus() ? Color(245, 210, 90) : Color(115, 130, 150));
-		AABB2 inner = GetLocalRect();
-		inner.Shrink(1.f);
-		if (inner.GetWidth() > 0.f && inner.GetHeight() > 0.f)
+		Ref<ThemeStyleBox> style = m_disabled ? m_themeCache.disabled
+			: (!m_editable ? m_themeCache.read_only : (m_hovering ? m_themeCache.hover : m_themeCache.normal));
+		DrawThemeStyleBox(style, GetLocalRect());
+		if (HasFocus())
 		{
-			DrawRect(inner, m_disabled ? Color(38, 40, 46) : Color(28, 34, 45));
+			DrawThemeStyleBox(m_themeCache.focus, GetLocalRect());
 		}
 
 		DrawContent();

@@ -8,7 +8,6 @@
 #define GLFW_EXPOSE_NATIVE_WIN32
 #include "ThirdParty/GLFW/glfw3.h"
 #include "ThirdParty/GLFW/glfw3native.h"
-// #include "ThirdParty/imgui/backends/imgui_impl_glfw.h"
 
 #pragma comment(lib, "ThirdParty/GLFW/glfw3.lib")
 
@@ -63,7 +62,6 @@ static int GetMouseModifiers(GLFWwindow* window)
 
 static void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
-	// ImGui_ImplGlfw_KeyCallback(window, key, scancode, action, mods);
 
 	(void)window;
 
@@ -79,7 +77,6 @@ static void KeyCallback(GLFWwindow* window, int key, int scancode, int action, i
 
 static void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
 {
-	// ImGui_ImplGlfw_MouseButtonCallback(window, button, action, mods);
 
 	InputEvent event;
 	event.m_type        = InputEventType::MouseButton;
@@ -114,7 +111,6 @@ static void CursorPosCallback(GLFWwindow* window, double x, double y)
 
 static void CharCallback(GLFWwindow* window, unsigned int codepoint)
 {
-	// ImGui_ImplGlfw_CharCallback(window, codepoint);
 
 	(void)window;
 
@@ -126,7 +122,6 @@ static void CharCallback(GLFWwindow* window, unsigned int codepoint)
 
 static void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset)
 {
-	// ImGui_ImplGlfw_ScrollCallback(window, xoffset, yoffset);
 
 	InputEvent event;
 	event.m_type      = InputEventType::MouseWheel;
@@ -191,6 +186,12 @@ void WindowSystem::Startup()
 
 void WindowSystem::Shutdown()
 {
+	SetCursorShape(CursorShape::Arrow);
+	glfwDestroyCursor(m_resizeHorizontalCursor);
+	glfwDestroyCursor(m_resizeVerticalCursor);
+	m_resizeHorizontalCursor = nullptr;
+	m_resizeVerticalCursor = nullptr;
+
 	if (m_glfwWindow != nullptr)
 	{
 		glfwDestroyWindow(m_glfwWindow);
@@ -225,6 +226,33 @@ void WindowSystem::SetCursorMode(CursorMode mode)
 	s_hasPreviousMousePosition = false;
 	s_previousCursorMode       = nativeMode;
 	glfwSetInputMode(m_glfwWindow, GLFW_CURSOR, nativeMode);
+}
+
+void WindowSystem::SetCursorShape(CursorShape shape)
+{
+	if (m_glfwWindow == nullptr || m_cursorShape == shape)
+	{
+		return;
+	}
+
+	GLFWcursor* cursor = nullptr;
+	if (shape != CursorShape::Arrow)
+	{
+		GLFWcursor*& cached = shape == CursorShape::ResizeHorizontal ? m_resizeHorizontalCursor : m_resizeVerticalCursor;
+		if (cached == nullptr)
+		{
+			cached = glfwCreateStandardCursor(shape == CursorShape::ResizeHorizontal ? GLFW_HRESIZE_CURSOR : GLFW_VRESIZE_CURSOR);
+		}
+
+		cursor = cached;
+		if (cursor == nullptr)
+		{
+			shape = CursorShape::Arrow;
+		}
+	}
+
+	glfwSetCursor(m_glfwWindow, cursor);
+	m_cursorShape = shape;
 }
 
 String WindowSystem::GetClipboardText() const

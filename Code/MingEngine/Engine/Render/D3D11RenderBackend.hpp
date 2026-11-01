@@ -124,13 +124,6 @@ public:
 	void                 UnbindAllShaderResourceViews();
 	void                 BindBackBuffer();
 
-	// Drive the ImGui renderer backend with this backend's D3D11 device.
-	// e.g. RenderImGui(ImGui::GetDrawData())
-	bool        InitImGui() override;
-	void        ShutdownImGui() override;
-	void        BeginImGuiFrame() override;
-	void        RenderImGui(ImDrawData* drawData) override;
-	ImTextureID GetImGuiTextureID(GPUTexture* texture) const override;
 
 	template <typename T>
 	void UpdateConstantBuffer(ConstantBuffer* constantBuffer, const T& data)

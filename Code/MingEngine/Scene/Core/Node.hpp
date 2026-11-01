@@ -31,7 +31,9 @@ public:
 		Notification_ExitTree        = 4,
 		Notification_Ready           = 5,
 		Notification_Process         = 6,
-		Notification_ChildrenChanged = 7
+		Notification_ChildrenChanged = 7,
+		Notification_Parented        = 8,
+		Notification_Unparented      = 9
 	};
 
 public:

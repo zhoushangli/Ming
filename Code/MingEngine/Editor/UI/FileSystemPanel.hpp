@@ -4,65 +4,51 @@
 #include "MingEngine/Editor/UI/Popup/CreateFolderPopup.hpp"
 #include "MingEngine/Editor/UI/Popup/CreateScenePopup.hpp"
 #include "MingEngine/Editor/UI/Popup/DeleteEntryPopup.hpp"
-#include "MingEngine/Engine/File/VirtualPath.hpp"
+#include "MingEngine/Scene/GUI/Tree.hpp"
+#include "MingEngine/Scene/GUI/LineEdit.hpp"
 
 #include <filesystem>
-#include <string>
+#include <map>
 
 class FileEntry;
 class FileSystem;
 
 class FileSystemPanel final : public EditorPanel
 {
+	MCLASS(FileSystemPanel, EditorPanel);
+
 public:
 	FileSystemPanel();
+	VirtualPath const& GetSelectedVirtualPath() const { return m_selectedVirtualPath; }
+	Tree* GetTree() const { return m_tree; }
 
-	VirtualPath const& GetSelectedVirtualPath() const;
-
-private:
+protected:
+	void OnInitialize() override;
 	void OnRender(EditorUIContext& context) override;
 
-	void RenderEntry(FileEntry const& entry, std::string const& lowerFilterText, EditorUIContext& context);
-	void RenderItemContextMenu(FileEntry const& entry, EditorUIContext& context);
-	void RenderBackgroundContextMenu(EditorUIContext& context);
-	void OpenFile(FileEntry const& entry, EditorUIContext& context);
-	void BeginCreateFolder(VirtualPath const& parentVirtualPath);
-	void BeginCreateScene(VirtualPath const& parentVirtualPath);
-	void BeginRename(FileEntry const& entry);
-	void FinishRename(FileSystem const& fileSystem, bool apply);
-	void ClearRename();
-	void BeginDelete(FileEntry const& entry);
-	void DuplicateEntry(FileEntry const& entry, FileSystem& fileSystem);
+private:
+	void UpdateItems();
+	FileEntry const* GetSelectedEntry() const;
+	void OpenSelected();
+	void ShowContextMenu(Vector2 position);
+	void DeleteSelected();
+	bool HandleTreeInput(InputEvent const& event);
+	bool CanMove(VirtualPath const& source, uint64_t target) const;
 	void OpenInTerminal(std::filesystem::path const& path);
 	void OpenInFileManager(std::filesystem::path const& path, bool selectFile);
 	void ShowError(std::string error);
 	bool ValidateEntryName(char const* name, std::string& outError) const;
-	bool ValidateName(
-		FileSystem const&  fileSystem,
-		VirtualPath const& parentVirtualPath,
-		char const*        name,
-		std::string&       outError,
-		VirtualPath const& ignoredVirtualPath = {}) const;
-
-	bool        DoesEntryMatchFilter(FileEntry const& entry, std::string const& lowerFilterText) const;
-	char const* GetIconNameForPath(std::filesystem::path const& path, bool isDirectory) const;
-
-	void MoveEntry(VirtualPath const& sourceVirtualPath, VirtualPath const& targetVirtualPath);
+	bool ValidateName(FileSystem const& fileSystem, VirtualPath const& parent, char const* name,
+		std::string& error, VirtualPath const& ignored = {}) const;
 
 private:
-	char              m_filter[64]          = {};
-	char              m_renameBuffer[256]   = {};
-	bool              m_wasFocused          = false;
-	bool              m_focusRenameInput    = false;
-	bool              m_refreshResourceTree = false;
-	VirtualPath       m_selectedVirtualPath;
-	VirtualPath       m_renamingVirtualPath;
-	VirtualPath       m_pendingRenameVirtualPath;
-	std::string       m_pendingRenameName;
-	VirtualPath       m_directoryToOpen;
-	VirtualPath       m_pendingMoveSourceVirtualPath;
-	VirtualPath       m_pendingMoveTargetVirtualPath;
+	Tree* m_tree = nullptr;
+	LineEdit* m_filter = nullptr;
+	VirtualPath m_selectedVirtualPath;
+	std::map<uint64_t, VirtualPath> m_fileItems;
+	std::map<std::string, uint64_t> m_fileKeys;
+	uint64_t m_nextFileKey = 1;
 	CreateFolderPopup m_createFolderPopup;
-	CreateScenePopup  m_createScenePopup;
-	DeleteEntryPopup  m_deleteEntryPopup;
+	CreateScenePopup m_createScenePopup;
+	DeleteEntryPopup m_deleteEntryPopup;
 };

@@ -115,8 +115,6 @@ void OptionButton::OpenOptions()
 		for (int i = 0; i < static_cast<int>(m_items.size()); ++i)
 		{
 			auto* button = MemNew<Button>();
-			button->SetFont(GetFont());
-			button->SetFontSize(GetFontSize());
 			button->SetToggleMode(true);
 			button->SetFocusMode(FocusMode::None);
 			button->SetText(m_items[i].m_name);

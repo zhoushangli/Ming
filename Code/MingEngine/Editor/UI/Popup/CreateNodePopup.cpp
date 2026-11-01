@@ -1,45 +1,20 @@
+#include "MingEngine/Editor/UI/EditorIcons.hpp"
 #include "MingEngine/Editor/UI/Popup/CreateNodePopup.hpp"
-
 #include "MingEngine/Editor/EditorNode.hpp"
 #include "MingEngine/Editor/UI/EditorUI.hpp"
-#include "MingEngine/Editor/UI/EditorUIContext.hpp"
-#include "MingEngine/Editor/UI/EditorUIStyle.hpp"
-#include "MingEngine/Editor/UI/EditorUIWidgets.hpp"
-#include "MingEngine/Editor/UI/Popup/EditorPopupUtils.hpp"
-#include "MingEngine/Scene/Core/Node.hpp"
 #include "MingEngine/Scene/Core/SceneTree.hpp"
-
-#include "ThirdParty/imgui/imgui.h"
+#include "MingEngine/Scene/GUI/ScrollContainer.hpp"
 
 #include <algorithm>
 #include <cctype>
 
 namespace
 {
-std::string ToLower(std::string const& text)
+bool CanCreateClass(ClassInfo const* info)
 {
-	std::string lowerText = text;
-	std::transform(
-		lowerText.begin(),
-		lowerText.end(),
-		lowerText.begin(),
-		[](unsigned char character)
-		{
-			return static_cast<char>(std::tolower(character));
-		});
-	return lowerText;
+	return info != nullptr && info->m_apiType == ApiType::Runtime && !info->m_isVirtual && info->m_creator;
 }
-
-bool ContainsCaseInsensitive(std::string const& text, std::string const& filterText)
-{
-	return filterText.empty() || ToLower(text).find(ToLower(filterText)) != std::string::npos;
 }
-
-bool CanCreateClass(ClassInfo const* classInfo)
-{
-	return classInfo != nullptr && !classInfo->m_isVirtual && classInfo->m_creator;
-}
-} // namespace
 
 void CreateNodePopup::Open(ObjectID parentID)
 {
@@ -50,220 +25,120 @@ void CreateNodePopup::Open(ObjectID parentID)
 
 void CreateNodePopup::Render(EditorUIContext& context)
 {
-	constexpr char const* popupId = "Create New Node";
-	if (m_openRequested)
-	{
-		ImGui::OpenPopup(popupId);
-		m_openRequested = false;
-	}
-
-	if (!EditorPopupUtils::BeginModal(popupId, ImVec2(620.f, 540.f)))
+	m_context = context;
+	if (m_popup == nullptr && !m_openRequested)
 	{
 		return;
 	}
 
-	ImGui::TextUnformatted("Search:");
-	ImGui::SameLine();
-	ImGui::SetNextItemWidth(-1.f);
-	ImGui::InputTextWithHint("##CreateNodeSearch", "Search node types", m_filter, sizeof(m_filter));
-	ImGui::Separator();
-
-	std::vector<ClassInfo const*> classes = ClassDatabase::GetRegisteredClasses(true);
-
-	std::map<std::string, std::vector<ClassInfo const*>> childrenByClass;
-	ClassInfo const*                                     nodeClass = nullptr;
-	for (ClassInfo const* classInfo : classes)
+	if (m_popup == nullptr)
 	{
-		if (classInfo == nullptr)
+		VBoxContainer* content = nullptr;
+		m_popup = EditorPopupUtils::Create(context.m_rootControl, "Create Node", content);
+		m_search = MemNew<LineEdit>();
+		m_search->SetPlaceholder("Search node types");
+		content->AddNode(m_search);
+		m_search->SetTextChangedCallback([this](String const&) { RebuildTypes(); });
+		auto* scroll = MemNew<ScrollContainer>();
+		scroll->SetVerticalSizeFlags(Control::Size_ExpandFill);
+		scroll->SetCustomMinimumSize(Vector2(0.f, 250.f));
+		content->AddNode(scroll);
+		m_types = MemNew<Tree>();
+		scroll->AddNode(m_types);
+		m_types->SetSelectedCallback([this](uint64_t id)
 		{
-			continue;
-		}
-
-		if (classInfo->m_className == Node::GetStaticClassName())
+			auto found = m_typeNames.find(id);
+			m_selectedClass = found != m_typeNames.end() ? found->second : "";
+			if (m_createButton != nullptr)
+			{
+				m_createButton->SetDisabled(!CanCreateClass(ClassDatabase::GetClassInfo(m_selectedClass)));
+			}
+		});
+		m_types->SetActivatedCallback([this](uint64_t)
 		{
-			nodeClass = classInfo;
-			continue;
-		}
-
-		if (!ClassDatabase::IsSubclassOf(classInfo->m_className, Node::GetStaticClassName()))
+			if (CreateSelectedNode(m_context))
+			{
+				m_popup->Close();
+			}
+		});
+		auto* buttons = MemNew<HBoxContainer>();
+		content->AddNode(buttons);
+		m_createButton = EditorPopupUtils::AddButton(buttons, "Create", [this]()
 		{
-			continue;
-		}
-
-		childrenByClass[classInfo->m_parentClassName].push_back(classInfo);
+			if (CreateSelectedNode(m_context))
+			{
+				m_popup->Close();
+			}
+		});
+		EditorPopupUtils::AddButton(buttons, "Cancel", [this]() { m_popup->Close(); });
 	}
 
-	ImVec2 const footerSize(0.f, ImGui::GetFrameHeightWithSpacing() + ImGui::GetStyle().ItemSpacing.y);
-	ImGui::PushStyleColor(ImGuiCol_ChildBg, ImGui::GetStyleColorVec4(ImGuiCol_FrameBg));
-	if (ImGui::BeginChild("CreateNodeTypeTree", ImVec2(0.f, -footerSize.y), true))
+	if (m_openRequested)
 	{
-		if (nodeClass != nullptr)
-		{
-			RenderClassNode(nodeClass, childrenByClass, m_filter, context);
-		}
+		m_openRequested = false;
+		m_search->SetText("");
+		RebuildTypes();
+		EditorPopupUtils::Open(m_popup, context.m_rootControl, Vector2(700.f, 600.f));
+		m_search->GrabFocus();
 	}
 
-	ImGui::EndChild();
-	ImGui::PopStyleColor();
+	m_createButton->SetDisabled(!CanCreateClass(ClassDatabase::GetClassInfo(m_selectedClass)));
 
-	ClassInfo const* selectedInfo = ClassDatabase::GetClassInfo(m_selectedClass);
-	bool const       canCreate    = CanCreateClass(selectedInfo);
-	EditorPopupUtils::BeginButtonRow(2);
-	ImGui::BeginDisabled(!canCreate);
-	bool const createPressed = EditorPopupUtils::ConfirmButton();
-	ImGui::EndDisabled();
-	ImGui::SameLine(0.f, 64.f);
-	bool const cancelPressed = EditorPopupUtils::CancelButton();
-	if (cancelPressed)
+	if (m_popup->IsVisible())
 	{
-		ImGui::CloseCurrentPopup();
-		Reset();
+		EditorPopupUtils::Layout(m_popup, Vector2(700.f, 600.f));
 	}
-	else if (createPressed && CreateSelectedNode(context))
-	{
-		ImGui::CloseCurrentPopup();
-		Reset();
-	}
-
-	EditorPopupUtils::EndModal();
 }
 
-bool CreateNodePopup::RenderClassNode(
-	ClassInfo const*                                            classInfo,
-	std::map<std::string, std::vector<ClassInfo const*>> const& childrenByClass,
-	std::string const&                                          filterText,
-	EditorUIContext&                                            context)
+void CreateNodePopup::RebuildTypes()
 {
-	if (classInfo == nullptr || !DoesClassBranchMatch(classInfo, childrenByClass, filterText))
+	std::string filter = m_search->GetText().ToUtf8();
+	std::transform(filter.begin(), filter.end(), filter.begin(), [](unsigned char ch) { return static_cast<char>(std::tolower(ch)); });
+	auto classes = ClassDatabase::GetRegisteredClasses(true);
+	m_typeNames.clear();
+	std::map<std::string, uint64_t> keys;
+	uint64_t next = 1;
+	for (ClassInfo const* info : classes)
 	{
-		return false;
-	}
-
-	auto const childrenIter       = childrenByClass.find(classInfo->m_className);
-	bool const hasVisibleChildren = childrenIter != childrenByClass.end()
-									&& std::any_of(
-										childrenIter->second.begin(),
-										childrenIter->second.end(),
-										[this, &childrenByClass, &filterText](ClassInfo const* child)
-										{
-											return DoesClassBranchMatch(child, childrenByClass, filterText);
-										});
-
-	ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth;
-	if (!hasVisibleChildren)
-	{
-		flags |= ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
-	}
-
-	if (!filterText.empty())
-	{
-		flags |= ImGuiTreeNodeFlags_DefaultOpen;
-	}
-
-	if (m_selectedClass == classInfo->m_className)
-	{
-		flags |= ImGuiTreeNodeFlags_Selected;
-	}
-
-	bool const canCreate = CanCreateClass(classInfo);
-	ImGui::PushID(classInfo->m_className.c_str());
-	bool const   isOpen             = ImGui::TreeNodeEx("##CreateNodeClass", flags);
-	ImVec2 const rowMin             = ImGui::GetItemRectMin();
-	ImVec2 const rowMax             = ImGui::GetItemRectMax();
-	bool const   rowHovered         = ImGui::IsMouseHoveringRect(rowMin, rowMax);
-	bool const   classClicked       = rowHovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left);
-	bool const   classDoubleClicked = rowHovered && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left);
-
-	if (!canCreate)
-	{
-		ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled));
-	}
-
-	EditorUIWidgets::RenderTreeRowContent(
-		classInfo->m_className,
-		Node::GetStaticClassName(),
-		classInfo->m_className,
-		rowMin,
-		rowMax,
-		EditorUIStyle::SceneTreeIconSize());
-	if (!canCreate)
-	{
-		ImGui::PopStyleColor();
-	}
-
-	if (classClicked)
-	{
-		if (canCreate)
+		if (info != nullptr && info->m_apiType == ApiType::Runtime && ClassDatabase::IsSubclassOf(info->m_className, "Node"))
 		{
-			m_selectedClass = classInfo->m_className;
-			if (classDoubleClicked && CreateSelectedNode(context))
-			{
-				ImGui::CloseCurrentPopup();
-				Reset();
-				if (isOpen && hasVisibleChildren)
-				{
-					ImGui::TreePop();
-				}
-
-				ImGui::PopID();
-				return true;
-			}
-		}
-		else
-		{
-			m_selectedClass.clear();
+			keys[info->m_className] = next++;
 		}
 	}
 
-	if (isOpen && hasVisibleChildren)
+	std::vector<Tree::Item> items;
+	for (ClassInfo const* info : classes)
 	{
-		for (ClassInfo const* child : childrenIter->second)
+		if (info == nullptr || keys.count(info->m_className) == 0)
 		{
-			if (RenderClassNode(child, childrenByClass, filterText, context))
-			{
-				ImGui::TreePop();
-				ImGui::PopID();
-				return true;
-			}
+			continue;
 		}
 
-		ImGui::TreePop();
-	}
-
-	ImGui::PopID();
-	return false;
-}
-
-bool CreateNodePopup::DoesClassBranchMatch(
-	ClassInfo const*                                            classInfo,
-	std::map<std::string, std::vector<ClassInfo const*>> const& childrenByClass,
-	std::string const&                                          filterText) const
-{
-	if (classInfo == nullptr)
-	{
-		return false;
-	}
-
-	if (ContainsCaseInsensitive(classInfo->m_className, filterText))
-	{
-		return true;
-	}
-
-	auto const childrenIter = childrenByClass.find(classInfo->m_className);
-	if (childrenIter == childrenByClass.end())
-	{
-		return false;
-	}
-
-	for (ClassInfo const* child : childrenIter->second)
-	{
-		if (DoesClassBranchMatch(child, childrenByClass, filterText))
+		std::string lower = info->m_className;
+		std::transform(lower.begin(), lower.end(), lower.begin(), [](unsigned char ch) { return static_cast<char>(std::tolower(ch)); });
+		if (!filter.empty() && lower.find(filter) == std::string::npos)
 		{
-			return true;
+			continue;
 		}
+
+		uint64_t const key = keys[info->m_className];
+		items.push_back({ key, filter.empty() && keys.count(info->m_parentClassName) != 0
+			? keys[info->m_parentClassName] : 0, info->m_className, true, false,
+			m_types->GetThemeIcon(info->m_className, "EditorIcons"), EditorIcons::GetIconColor(info->m_className, m_types) });
+		m_typeNames[key] = info->m_className;
 	}
 
-	return false;
+	m_types->SetItems(std::move(items), !filter.empty());
+	bool selectedExists = false;
+	for (auto const& entry : m_typeNames)
+	{
+		selectedExists = selectedExists || entry.second == m_selectedClass;
+	}
+
+	if (!selectedExists)
+	{
+		m_selectedClass.clear();
+	}
 }
 
 bool CreateNodePopup::CreateSelectedNode(EditorUIContext& context)
@@ -349,7 +224,6 @@ Node* CreateNodePopup::ResolveCreateParent(EditorUIContext const& context) const
 void CreateNodePopup::Reset()
 {
 	m_selectedClass.clear();
-	m_filter[0]     = '\0';
 	m_parentID      = ObjectID::Invalid;
 	m_openRequested = false;
 }

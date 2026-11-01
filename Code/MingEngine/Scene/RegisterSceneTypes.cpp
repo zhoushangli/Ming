@@ -26,7 +26,9 @@
 #include "MingEngine/Scene/GUI/Control.hpp"
 #include "MingEngine/Scene/GUI/BaseButton.hpp"
 #include "MingEngine/Scene/GUI/Button.hpp"
+#include "MingEngine/Scene/GUI/PanelContainer.hpp"
 #include "MingEngine/Scene/GUI/HBoxContainer.hpp"
+#include "MingEngine/Scene/GUI/MenuBar.hpp"
 #include "MingEngine/Scene/GUI/Label.hpp"
 #include "MingEngine/Scene/GUI/LineEdit.hpp"
 #include "MingEngine/Scene/GUI/SpinBox.hpp"
@@ -54,6 +56,8 @@
 #include "MingEngine/Scene/Resource/TextureResource.hpp"
 #include "MingEngine/Scene/Resource/TextureResourceFormat.hpp"
 
+#include "MingEngine/Scene/Resource/Theme.hpp"
+
 #pragma region Scene
 
 void RegisterSceneTypes()
@@ -61,6 +65,8 @@ void RegisterSceneTypes()
 	ClassDatabase::SetApiType(ApiType::Runtime);
 
 	// Resource types
+	ClassDatabase::RegisterClass<ThemeStyleBox>();
+	ClassDatabase::RegisterClass<Theme>();
 	ClassDatabase::RegisterClass<MeshResource>();
 	ClassDatabase::RegisterClass<FontResource>();
 	ClassDatabase::RegisterClass<TextureResource>();
@@ -126,6 +132,7 @@ void RegisterSceneTypes()
 	ClassDatabase::RegisterClass<Control>();
 	ClassDatabase::RegisterAbstractClass<BaseButton>();
 	ClassDatabase::RegisterClass<Button>();
+	ClassDatabase::RegisterClass<PanelContainer>();
 	ClassDatabase::RegisterClass<ColorRect>();
 	ClassDatabase::RegisterClass<Label>();
 	ClassDatabase::RegisterClass<LineEdit>();
@@ -141,6 +148,7 @@ void RegisterSceneTypes()
 	ClassDatabase::RegisterClass<MarginContainer>();
 	ClassDatabase::RegisterClass<BoxContainer>();
 	ClassDatabase::RegisterClass<HBoxContainer>();
+	ClassDatabase::RegisterClass<MenuBar>();
 	ClassDatabase::RegisterClass<VBoxContainer>();
 
 	// Editor types

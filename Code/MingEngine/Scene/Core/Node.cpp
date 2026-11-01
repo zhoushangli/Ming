@@ -6,6 +6,7 @@
 #include "MingEngine/Core/Object/Script.hpp"
 #include "MingEngine/Scene/Core/SceneTree.hpp"
 #include "MingEngine/Scene/Core/Viewport.hpp"
+#include "MingEngine/Scene/GUI/ThemeDatabase.hpp"
 
 #include <cctype>
 #include <charconv>
@@ -24,6 +25,7 @@ bool IsAsciiDigit(char32_t codePoint)
 
 Node::~Node()
 {
+	ThemeDatabase::ClearThemeContext(this);
 	for (Node* child : m_data.m_children)
 	{
 		MemDelete(child);
@@ -284,6 +286,7 @@ void Node::AttachChildImmediately(Node* child)
 	m_data.m_children.push_back(child);
 	child->m_data.m_name = child->EnsureUniqueName(child->m_data.m_name);
 
+	child->Notification(Notification_Parented);
 	Notification(Notification_ChildrenChanged);
 }
 
@@ -303,6 +306,7 @@ void Node::DetachChildImmediately(Node* child)
 	(*foundChild)->m_data.m_parent = nullptr;
 	m_data.m_children.erase(foundChild);
 
+	child->Notification(Notification_Unparented);
 	Notification(Notification_ChildrenChanged);
 }
 
@@ -341,6 +345,13 @@ void Node::OnNotification(int notification)
 
 	switch (notification)
 	{
+	case Notification_PreDelete:
+		ThemeDatabase::ClearThemeContext(this);
+		break;
+	case Notification_Parented:
+	case Notification_Unparented:
+		ThemeDatabase::RefreshThemeContexts(this);
+		break;
 	case Notification_EnterTree:
 	{
 		OnEnterTree();

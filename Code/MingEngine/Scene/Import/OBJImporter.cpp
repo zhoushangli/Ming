@@ -24,7 +24,7 @@ Matrix4x4 OBJImportMatrix = Matrix4x4(
 
 std::vector<ImportOptions> const kOBJImportOptions = {
 	{ PropertyInfo(Variant::Type::Bool, "Generate Tangents", PropertyInfo::Hint::None, "", PropertyInfo::UsageFlags::Default), Variant(true) },
-	{ PropertyInfo(Variant::Type::Vector3, "Scale Mesh", 		 PropertyInfo::Hint::None, "", PropertyInfo::UsageFlags::Default), Variant(Vector3::One) },
+	{ PropertyInfo(Variant::Type::Vector3, "Scale Mesh", 		 PropertyInfo::Hint::None, "", PropertyInfo::UsageFlags::Default), Variant(Vector3(1.f, 1.f, 1.f)) },
 };
 
 // clang-format on

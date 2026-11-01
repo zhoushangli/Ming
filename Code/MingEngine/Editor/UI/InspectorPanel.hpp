@@ -3,20 +3,16 @@
 #include "MingEngine/Core/Object/ObjectID.hpp"
 #include "MingEngine/Editor/UI/EditorPanel.hpp"
 #include "MingEngine/Editor/UI/InspectorProperty.hpp"
-#include "MingEngine/Editor/UI/EditorControlHost.hpp"
 
 #include <string>
 #include <vector>
 
+class VBoxContainer;
+class Label;
+
 class InspectorPanel final : public EditorPanel
 {
-public:
-	InspectorPanel();
-	~InspectorPanel() override;
-	EditorControlHost&       GetHost() { return m_host; }
-	EditorControlHost const& GetHost() const { return m_host; }
-	void                     FinishInput(EditorUIContext& context);
-	void RenderNative(EditorUIContext& context, Vector2 origin, Vector2 size);
+	MCLASS(InspectorPanel, EditorPanel);
 
 private:
 	struct PropertyEntry
@@ -28,20 +24,36 @@ private:
 	struct PropertyGroup
 	{
 		std::string                m_className;
+		Label* m_header = nullptr;
 		std::vector<PropertyEntry> m_properties;
 	};
 
+
+public:
+	InspectorPanel();
+	~InspectorPanel() override;
+	void FinishInput(EditorUIContext& context);
+	void FinishEditing();
+	Control* GetContentControl() const;
+
+private:
+
+	void OnInitialize() override;
+	void OnClose() override;
 	void OnRender(EditorUIContext& context) override;
 
 	void BuildInheritanceChain(std::string const& className);
 	void RebuildProperties(EditorUIContext& context);
 	void ClearProperties();
 	void RefreshValues();
+	void FilterProperties();
 	void CommitValue(ObjectID objectID, MethodBind const* setter, MethodBind const* getter, Variant const& value);
 
 private:
 	ObjectID                   m_cachedObjectID;
-	EditorControlHost          m_host;
+	VBoxContainer* m_content = nullptr;
+	Label* m_empty = nullptr;
+	LineEdit* m_filter = nullptr;
 	SceneTree*                 m_sceneTree = nullptr;
 	std::vector<std::string>   m_inheritanceChain;
 	std::vector<PropertyGroup> m_propertyGroups;

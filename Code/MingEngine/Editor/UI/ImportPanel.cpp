@@ -5,34 +5,12 @@
 #include "MingEngine/Editor/UI/FileSystemPanel.hpp"
 #include "MingEngine/Core/Object/ResourceLoader.hpp"
 
-#include "ThirdParty/imgui/imgui.h"
+#include "MingEngine/Editor/UI/Popup/EditorPopupUtils.hpp"
+#include "MingEngine/Scene/GUI/ScrollContainer.hpp"
+#include "MingEngine/Scene/GUI/OptionButton.hpp"
 
 #include <algorithm>
 #include <filesystem>
-
-namespace
-{
-char const* const kSelectImportableFileText = "Select an importable file";
-
-void DrawImportHeader(char const* text, bool disabled)
-{
-	ImGuiStyle const& style       = ImGui::GetStyle();
-	ImVec2 const      framePos    = ImGui::GetCursorScreenPos();
-	float const       frameWidth  = ImGui::GetContentRegionAvail().x;
-	float const       frameHeight = ImGui::GetFrameHeight();
-	ImVec2 const      frameMax(framePos.x + frameWidth, framePos.y + frameHeight);
-
-	ImDrawList* drawList = ImGui::GetWindowDrawList();
-	drawList->AddRectFilled(framePos, frameMax, IM_COL32(0x21, 0x25, 0x2B, 0xFF), style.FrameRounding);
-
-	ImGui::Dummy(ImVec2(frameWidth, frameHeight));
-
-	ImVec2 const textSize = ImGui::CalcTextSize(text);
-	ImVec2 const textPos(framePos.x + style.FramePadding.x, framePos.y + (frameHeight - textSize.y) * 0.5f);
-	ImU32 const  textColor = ImGui::GetColorU32(disabled ? ImGuiCol_TextDisabled : ImGuiCol_Text);
-	drawList->AddText(textPos, textColor, text);
-}
-} // namespace
 
 ImportPanel::ImportPanel() : EditorPanel("Import")
 {
@@ -135,7 +113,11 @@ void ImportPanel::RebuildImportOptionProperties()
 
 		InspectorProperty* property =
 			InspectorProperty::Create(option.m_propertyInfo, std::move(labelId), std::move(onChanged));
-		m_importOptionProperties.push_back(property);
+		if (property != nullptr)
+		{
+			m_optionsContent->AddNode(property->GetControl());
+			m_importOptionProperties.push_back(property);
+		}
 	}
 }
 
@@ -208,136 +190,75 @@ bool ImportPanel::IsImportOptionModified() const
 	return false;
 }
 
+void ImportPanel::OnInitialize()
+{
+	auto* layout = MemNew<VBoxContainer>();
+	layout->SetSeparation(10.f);
+	AddNode(layout);
+	layout->UpdateSize(GetSize());
+	m_header = EditorPopupUtils::AddLabel(layout, "Select an importable file");
+	m_header->SetClipText(true);
+	m_importerChoice = MemNew<OptionButton>();
+	layout->AddNode(m_importerChoice);
+	m_importerChoice->SetValueChangedCallback([this](int index)
+	{
+		m_selectedImporterIndex = index;
+		RebuildImportOptionProperties();
+		ApplyCachedImportOptions();
+	});
+	auto* scroll = MemNew<ScrollContainer>();
+	scroll->SetVerticalSizeFlags(Size_ExpandFill);
+	layout->AddNode(scroll);
+	m_optionsContent = MemNew<VBoxContainer>();
+	scroll->AddNode(m_optionsContent);
+	m_reimport = EditorPopupUtils::AddButton(layout, "Reimport", [this]() { Reimport(); });
+	m_reimport->SetThemeTypeVariation("EditorPrimaryButton");
+}
+
 void ImportPanel::OnRender(EditorUIContext& context)
 {
-	ImGui::Begin(GetTitle(), GetOpenState());
-
-	if (context.m_editorUI == nullptr)
+	VirtualPath const selected = context.m_editorUI->GetPanel<FileSystemPanel>().GetSelectedVirtualPath();
+	bool const changed = selected != m_cachedSelectedPath;
+	RefreshSelection(selected);
+	bool const valid = GetSelectedImporter().IsValid();
+	m_header->SetText(valid ? selected.GetFileName() : "Select an importable file");
+	if (changed)
 	{
-		ImGui::TextDisabled("No editor context");
-		ImGui::End();
-		return;
-	}
-
-	VirtualPath const& selectedPath = context.m_editorUI->GetPanel<FileSystemPanel>().GetSelectedVirtualPath();
-	RefreshSelection(selectedPath);
-
-	if (!selectedPath.IsValid())
-	{
-		DrawImportHeader(kSelectImportableFileText, true);
-		ImGui::End();
-		return;
-	}
-
-	if (m_matchedImporters.empty())
-	{
-		DrawImportHeader(kSelectImportableFileText, true);
-		ImGui::End();
-		return;
-	}
-
-	m_selectedImporterIndex = std::clamp(m_selectedImporterIndex, 0, static_cast<int>(m_matchedImporters.size()) - 1);
-
-	Ref<ResourceFormatImporter> selectedImporter = GetSelectedImporter();
-	if (!selectedImporter.IsValid())
-	{
-		DrawImportHeader(kSelectImportableFileText, true);
-		ImGui::End();
-		return;
-	}
-
-	std::string const filename = selectedPath.GetFileName();
-	DrawImportHeader(filename.c_str(), false);
-	ImGui::Spacing();
-
-	std::string preview = selectedImporter.IsValid() ? selectedImporter->GetVisibleName() : "";
-
-	ImGui::TextUnformatted("Import As:");
-	ImGui::PushStyleColor(ImGuiCol_FrameBg, IM_COL32(0x50, 0x59, 0x68, 0xFF));
-	ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, IM_COL32(0x50, 0x59, 0x68, 0xFF));
-	ImGui::PushStyleColor(ImGuiCol_FrameBgActive, IM_COL32(0x56, 0x9E, 0xFF, 0xFF));
-	if (ImGui::BeginCombo("##ImportAs", preview.c_str()))
-	{
+		std::string hint;
 		for (int i = 0; i < static_cast<int>(m_matchedImporters.size()); ++i)
 		{
-			Ref<ResourceFormatImporter> importer = m_matchedImporters[i];
-			if (!importer.IsValid())
+			if (!hint.empty())
 			{
-				continue;
+				hint += ',';
 			}
-
-			bool const isSelected = i == m_selectedImporterIndex;
-			if (ImGui::Selectable(importer->GetVisibleName().c_str(), isSelected))
-			{
-				if (m_selectedImporterIndex != i)
-				{
-					m_selectedImporterIndex = i;
-					RebuildImportOptionProperties();
-					ApplyCachedImportOptions();
-				}
-			}
-
-			if (isSelected)
-			{
-				ImGui::SetItemDefaultFocus();
-			}
+			hint += m_matchedImporters[i]->GetVisibleName() + ":" + std::to_string(i);
 		}
-
-		ImGui::EndCombo();
+		m_importerChoice->SetOptions(hint);
 	}
 
-	ImGui::PopStyleColor(3);
-
-	selectedImporter = GetSelectedImporter();
-	if (selectedImporter.IsValid())
+	m_importerChoice->SetValueNoSignal(m_selectedImporterIndex);
+	m_importerChoice->SetVisible(valid);
+	m_reimport->SetDisabled(!valid);
+	m_reimport->SetText(IsImportOptionModified() ? "Reimport (*)" : "Reimport");
+	if (valid)
 	{
-		std::vector<ImportOptions> const options = selectedImporter->GetImportOptions();
-		for (int i = 0; i < static_cast<int>(options.size()) && i < static_cast<int>(m_importOptionProperties.size());
-			 ++i)
+		auto const options = GetSelectedImporter()->GetImportOptions();
+		for (size_t i = 0; i < options.size() && i < m_importOptionProperties.size(); ++i)
 		{
-			InspectorProperty* property = m_importOptionProperties[i];
-			if (property != nullptr)
-			{
-				property->Render(context, GetOptionDisplayValue(options[i]));
-			}
+			m_importOptionProperties[i]->UpdateValue(GetOptionDisplayValue(options[i]));
 		}
 	}
+}
 
-	bool const        modified    = IsImportOptionModified();
-	std::string const buttonLabel = modified ? "Reimport (*)" : "Reimport";
-
-	float const textWidth       = ImGui::CalcTextSize(buttonLabel.c_str()).x;
-	float const buttonWidth     = textWidth + ImGui::GetStyle().FramePadding.x * 2.f;
-	float const availableHeight = ImGui::GetContentRegionAvail().y;
-	if (availableHeight > ImGui::GetFrameHeightWithSpacing())
+void ImportPanel::Reimport()
+{
+	if (!ResourceImporter::Import(m_cachedSelectedPath, GetSelectedImporter(), m_importOptions))
 	{
-		ImGui::Dummy(ImVec2(0.f, availableHeight - ImGui::GetFrameHeightWithSpacing()));
+		m_context.m_editorUI->Warning("Import Failed", m_cachedSelectedPath.GetString());
+		return;
 	}
 
-	float const availableWidth = ImGui::GetContentRegionAvail().x;
-	float const buttonX        = ImGui::GetCursorPosX() + (availableWidth - buttonWidth) * 0.5f;
-
-	if (buttonX > ImGui::GetCursorPosX())
-	{
-		ImGui::SetCursorPosX(buttonX);
-	}
-
-	if (ImGui::Button(buttonLabel.c_str(), ImVec2(buttonWidth, 0.f)))
-	{
-		if (!ResourceImporter::Import(selectedPath, GetSelectedImporter(), m_importOptions))
-		{
-			context.m_editorUI->Warning("Import Failed", selectedPath.GetString());
-		}
-		else
-		{
-			// Read .import config again to refresh the cache
-			RefreshImportConfigCache(selectedPath);
-			// Refresh panel ui
-			ApplyCachedImportOptions();
-			// Update the resource
-			ResourceLoader::Reload(selectedPath);
-		}
-	}
-
-	ImGui::End();
+	RefreshImportConfigCache(m_cachedSelectedPath);
+	ApplyCachedImportOptions();
+	ResourceLoader::Reload(m_cachedSelectedPath);
 }

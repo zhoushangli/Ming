@@ -7,9 +7,7 @@ class Node;
 namespace JetBrainsMonoFont
 {
 // Return the embedded compressed JetBrains Mono font bytes.
-// e.g. ImGui::GetIO().Fonts->AddFontFromMemoryCompressedTTF(GetData(), GetSize(), 24.f)
+// e.g. GetData() and GetSize() expose the embedded byte buffer.
 unsigned char const* GetData();
 unsigned int         GetSize();
-Ref<FontResource>    CreateNativeFont();
-void                 ApplyNativeFont(Node* root, Ref<FontResource> const& font);
 } // namespace JetBrainsMonoFont

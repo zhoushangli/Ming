@@ -1,6 +1,7 @@
 #include "MingEngine/Editor/UI/Popup/CreateFolderPopup.hpp"
 
 #include "MingEngine/Editor/UI/EditorUIContext.hpp"
+#include "MingEngine/Editor/UI/EditorUI.hpp"
 #include "MingEngine/Editor/UI/Popup/EditorPopupUtils.hpp"
 #include "MingEngine/Engine/File/FileSystem.hpp"
 
@@ -52,67 +53,47 @@ void CreateFolderPopup::Open(VirtualPath const& parentVirtualPath)
 
 void CreateFolderPopup::Render(EditorUIContext& context)
 {
-	constexpr char const* popupId = "Create Folder";
-	if (m_openRequested)
-	{
-		ImGui::OpenPopup(popupId);
-		m_openRequested = false;
-	}
-
-	if (!EditorPopupUtils::BeginModal(
-			popupId,
-			ImVec2(520.f, 0.f),
-			ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize))
+	m_context = context;
+	if (m_popup == nullptr && !m_openRequested)
 	{
 		return;
 	}
 
-	ImGui::Text("Base path: %s", m_parentVirtualPath.CStr());
-	ImGui::TextUnformatted("Name:");
-	if (m_focusNameInput)
+	if (m_popup == nullptr)
 	{
-		ImGui::SetKeyboardFocusHere();
-		m_focusNameInput = false;
-	}
-
-	ImGui::SetNextItemWidth(-FLT_MIN);
-	bool const submitted = ImGui::InputText(
-		"##CreateFolderName",
-		m_name,
-		sizeof(m_name),
-		ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll);
-
-	std::string validationError;
-	bool const  isValid = ValidateName(context, validationError);
-	ImGui::PushStyleColor(ImGuiCol_ChildBg, ImGui::GetStyleColorVec4(ImGuiCol_FrameBg));
-	ImGui::BeginChild("##CreateFolderValidation", ImVec2(0.f, 42.f), true);
-	ImGui::TextColored(
-		isValid ? ImVec4(0.25f, 0.85f, 0.35f, 1.f) : ImVec4(0.9f, 0.35f, 0.3f, 1.f),
-		"%s",
-		isValid ? "Folder name is valid." : validationError.c_str());
-	ImGui::EndChild();
-	ImGui::PopStyleColor();
-	EditorPopupUtils::ErrorText(m_error);
-
-	EditorPopupUtils::BeginButtonRow(2);
-	bool const confirm = (EditorPopupUtils::ConfirmButton() || submitted) && isValid;
-	ImGui::SameLine(0.f, 64.f);
-	bool const cancel = EditorPopupUtils::CancelButton();
-	if (confirm && context.m_fileSystem != nullptr)
-	{
-		m_error.clear();
-		if (context.m_fileSystem->CreateFolder(m_parentVirtualPath, m_name, m_selectedVirtualPath, m_error))
+		VBoxContainer* content = nullptr;
+		m_popup = EditorPopupUtils::Create(context.m_rootControl, "Create Folder", content);
+		EditorPopupUtils::AddLabel(content, "Name:");
+		m_nameEdit = MemNew<LineEdit>();
+		content->AddNode(m_nameEdit);
+		m_nameEdit->SetEditingEndedCallback([this](String const&, LineEdit::EditEndReason reason)
 		{
-			context.m_fileSystem->ScanResourceTree();
-			ImGui::CloseCurrentPopup();
-		}
-	}
-	else if (cancel)
-	{
-		ImGui::CloseCurrentPopup();
+			if (reason == LineEdit::EditEndReason::Submitted)
+			{
+				Confirm();
+			}
+		});
+		m_errorLabel = EditorPopupUtils::AddLabel(content, "", "EditorErrorLabel");
+		auto* buttons = MemNew<HBoxContainer>();
+		content->AddNode(buttons);
+		EditorPopupUtils::AddButton(buttons, "Create", [this]() { Confirm(); });
+		EditorPopupUtils::AddButton(buttons, "Cancel", [this]() { m_popup->Close(); });
 	}
 
-	EditorPopupUtils::EndModal();
+	if (m_openRequested)
+	{
+		m_openRequested = false;
+		m_nameEdit->SetText(m_name);
+		m_errorLabel->SetText("");
+		EditorPopupUtils::Open(m_popup, context.m_rootControl, Vector2(650.f, 300.f));
+		m_nameEdit->GrabFocus();
+		m_nameEdit->SelectAll();
+	}
+
+	if (m_popup->IsVisible())
+	{
+		EditorPopupUtils::Layout(m_popup, Vector2(650.f, 300.f));
+	}
 }
 
 bool CreateFolderPopup::ConsumeSelectedVirtualPath(VirtualPath& outVirtualPath)
@@ -162,4 +143,22 @@ bool CreateFolderPopup::ValidateName(EditorUIContext const& context, std::string
 
 	outError.clear();
 	return true;
+}
+
+void CreateFolderPopup::Confirm()
+{
+	strncpy_s(m_name, m_nameEdit->GetText().ToUtf8().c_str(), sizeof(m_name) - 1);
+	if (!ValidateName(m_context, m_error))
+	{
+		m_errorLabel->SetText(m_error);
+		return;
+	}
+
+	if (m_context.m_fileSystem->CreateFolder(m_parentVirtualPath, m_name, m_selectedVirtualPath, m_error))
+	{
+		m_context.m_fileSystem->ScanResourceTree();
+		m_popup->Close();
+	}
+
+	m_errorLabel->SetText(m_error);
 }

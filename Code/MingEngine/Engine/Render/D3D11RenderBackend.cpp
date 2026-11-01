@@ -13,7 +13,6 @@
 #include "MingEngine/Engine/Render/VertexBuffer.hpp"
 #include "MingEngine/Scene/Resource/TextureResource.hpp"
 
-#include "ThirdParty/imgui/backends/imgui_impl_dx11.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "ThirdParty/stb/stb_image.h"
@@ -1145,38 +1144,6 @@ void D3D11RenderBackend::UnbindAllShaderResourceViews()
 void D3D11RenderBackend::BindBackBuffer()
 {
 	m_d3dDeviceContext->OMSetRenderTargets(1, &m_d3dRenderTargetView, nullptr);
-}
-
-bool D3D11RenderBackend::InitImGui()
-{
-	return ImGui_ImplDX11_Init(m_d3dDevice, m_d3dDeviceContext);
-}
-
-void D3D11RenderBackend::ShutdownImGui()
-{
-	ImGui_ImplDX11_Shutdown();
-}
-
-void D3D11RenderBackend::BeginImGuiFrame()
-{
-	ImGui_ImplDX11_NewFrame();
-}
-
-void D3D11RenderBackend::RenderImGui(ImDrawData* drawData)
-{
-	ImGui_ImplDX11_RenderDrawData(drawData);
-}
-
-ImTextureID D3D11RenderBackend::GetImGuiTextureID(GPUTexture* texture) const
-{
-	if (texture == nullptr)
-	{
-		return ImTextureID{};
-	}
-
-	// D3D11 ImGui backend treats the shader resource view as the texture identifier.
-	// e.g. ImGui::Image(GetImGuiTextureID(gpuTexture), size)
-	return (ImTextureID)(intptr_t)texture->GetShaderResourceView();
 }
 
 GPUTexture* D3D11RenderBackend::CreateTextureInternal(

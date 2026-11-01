@@ -6,11 +6,11 @@
 #include "MingEngine/Editor/EditorCamera.hpp"
 #include "MingEngine/Editor/Gizmos/EditorGizmos.hpp"
 #include "MingEngine/Editor/UI/EditorUI.hpp"
+#include "MingEngine/Editor/EditorThemeManager.hpp"
 #include "MingEngine/Editor/UI/EditorUIContext.hpp"
 #include "MingEngine/Editor/UI/Popup/EditorPopupUtils.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Engine/File/FileSystem.hpp"
-#include "MingEngine/Engine/ImGui/ImGuiSystem.hpp"
 #include "MingEngine/Engine/Input/InputSystem.hpp"
 #include "MingEngine/Engine/Render/DebugGizmos.hpp"
 #include "MingEngine/Engine/Window/WindowSystem.hpp"
@@ -23,7 +23,6 @@
 #include "MingEngine/Engine/Application/App.hpp"
 #include "ThirdParty/GLFW/glfw3.h"
 
-#include "ThirdParty/imgui/imgui.h"
 
 #include <filesystem>
 
@@ -99,13 +98,10 @@ EditorNode::EditorNode()
 	m_editorCamera->SetSerializable(false);
 	AddNode(m_editorCamera);
 
-	if (g_engine->m_imguiSystem != nullptr)
-	{
-		m_editorGizmos = MemNew<EditorGizmos>();
-		m_editorGizmos->SetName("EditorGizmos");
-		m_editorGizmos->SetSerializable(false);
-		AddNode(m_editorGizmos);
-	}
+	m_editorGizmos = MemNew<EditorGizmos>();
+	m_editorGizmos->SetName("EditorGizmos");
+	m_editorGizmos->SetSerializable(false);
+	AddNode(m_editorGizmos);
 
 	SetReady(true);
 	SetProcess(true);
@@ -172,10 +168,6 @@ void EditorNode::OnMouseMove(Vector2 screenPos, [[maybe_unused]] Vector2 delta)
 
 void EditorNode::OnMouseDown(int keyCode, Vector2 screenPos)
 {
-	if (g_engine->m_imguiSystem != nullptr && !(g_engine->m_imguiSystem->WantCaptureMouse() && m_uiContext.m_isViewportImageHovered))
-	{
-		return;
-	}
 
 	if (keyCode != ToKeyCode(KeyCode::LeftMouse))
 	{
@@ -238,73 +230,39 @@ void EditorNode::OnMouseUp(int keyCode, [[maybe_unused]] Vector2 screenPos)
 
 void EditorNode::OnReady()
 {
-	m_uiContext.m_sceneTree  = GetSceneTree();
-	m_uiContext.m_selection  = &m_selection;
-	m_uiContext.m_editorUI   = m_editorUI;
+	m_uiContext.m_sceneTree = GetSceneTree();
+	m_uiContext.m_selection = &m_selection;
+	m_uiContext.m_editorUI = m_editorUI;
 	m_uiContext.m_fileSystem = g_engine->m_fileSystem;
-	if (g_engine->m_imguiSystem == nullptr)
-	{
-		m_editorUI->InitializeNative(this);
-		m_editorCamera->Reparent(m_editorUI->GetSceneView()->GetSubViewport());
-		m_editorCamera->GetCamera()->SetCurrent();
-	}
+	m_editorTheme = EditorThemeManager::CreateTheme();
+	m_editorUI->InitializeNative(this);
+	SubViewport* sceneViewport = m_editorUI->GetSceneView()->GetSubViewport();
+	m_editorCamera->Reparent(sceneViewport);
+	m_editorGizmos->Reparent(sceneViewport);
+	m_editorCamera->GetCamera()->SetCurrent();
 }
 
 void EditorNode::OnProcess([[maybe_unused]] float deltaSeconds)
 {
-	if (m_editorUI != nullptr)
+	m_editorUI->Render(m_uiContext);
+	RenderUnsavedScenePopup();
+	InputSystem* input = g_engine->m_inputSystem;
+	bool const controlDown = input->IsKeyDown(KeyCode::LeftControl) || input->IsKeyDown(KeyCode::RightControl);
+	bool const modalOpen = static_cast<Viewport*>(GetSceneTree()->GetRoot())->GetGuiPopup() != nullptr;
+	if (controlDown && input->WasKeyJustPressed(KeyCode::S) && HasScene() && !modalOpen)
 	{
-		m_uiContext.m_isViewportImageHovered = false;
-
-		m_editorUI->Render(m_uiContext);
-		RenderUnsavedScenePopup();
-	}
-
-	InputSystem* input       = g_engine->m_inputSystem;
-	bool const   controlDown = input->IsKeyDown(KeyCode::LeftControl) || input->IsKeyDown(KeyCode::RightControl);
-	bool const   modalOpen   = g_engine->m_imguiSystem == nullptr
-							   && static_cast<Viewport*>(GetSceneTree()->GetRoot())->GetGuiPopup() != nullptr;
-	if (controlDown && input->WasKeyJustPressed(KeyCode::S) && HasScene() && !modalOpen
-		&& (g_engine->m_imguiSystem == nullptr || !IsEditingNativeControl()))
-	{
-		if (!SaveScene() && m_editorUI != nullptr)
+		if (!SaveScene())
 		{
 			m_editorUI->Warning("Save Scene Failed", m_editorData.m_currentScenePath.GetString());
 		}
 	}
 
-	// 1) Dispatch mouse events when in Pointer mode
-	if (g_engine->m_imguiSystem != nullptr && m_editorCamera != nullptr
-		&& m_editorCamera->GetControlState() == EditorCamera::EditorControlState::Pointer)
-	{
-		Vector2 const cursorPos = m_editorCamera->GetCursorClientPos();
-		Vector2 const delta     = m_editorCamera->GetCursorDelta();
-
-		OnMouseMove(cursorPos, delta);
-
-		if (input->WasKeyJustPressed(KeyCode::LeftMouse))
-		{
-			OnMouseDown(ToKeyCode(KeyCode::LeftMouse), cursorPos);
-		}
-
-		if (input->WasKeyJustReleased(KeyCode::LeftMouse))
-		{
-			OnMouseUp(ToKeyCode(KeyCode::LeftMouse), cursorPos);
-		}
-	}
-
-	if (m_editorUI != nullptr)
-	{
-		m_editorUI->FinishInput(m_uiContext);
-	}
+	m_editorUI->FinishInput(m_uiContext);
 }
 
 void EditorNode::RequestLoadScene(VirtualPath const& virtualPath)
 {
-	if (g_engine->m_imguiSystem == nullptr)
-	{
-		m_editorUI->FinishNativeEditing();
-	}
+	m_editorUI->FinishNativeEditing();
 
 	if (!m_editorData.m_isSceneDirty)
 	{
@@ -371,7 +329,7 @@ bool EditorNode::LoadScene(VirtualPath const& virtualPath)
 
 bool EditorNode::SaveScene()
 {
-	if (g_engine->m_imguiSystem == nullptr && m_editorUI != nullptr)
+	if (m_editorUI != nullptr)
 	{
 		m_editorUI->FinishNativeEditing();
 	}
@@ -453,67 +411,11 @@ bool EditorNode::CreateScene(VirtualPath const& virtualPath, std::string const& 
 
 void EditorNode::RenderUnsavedScenePopup()
 {
-	if (g_engine->m_imguiSystem == nullptr)
-	{
-		if (m_openUnsavedScenePopup)
-		{
-			m_openUnsavedScenePopup = false;
-			m_editorUI->ShowUnsavedScene();
-		}
-
-		return;
-	}
-
-	constexpr char const* popupId = "Please Confirm...";
 	if (m_openUnsavedScenePopup)
 	{
-		ImGui::OpenPopup(popupId);
 		m_openUnsavedScenePopup = false;
+		m_editorUI->ShowUnsavedScene();
 	}
-
-	if (!EditorPopupUtils::BeginModal(popupId, ImVec2(560.f, 0.f), ImGuiWindowFlags_AlwaysAutoResize))
-	{
-		return;
-	}
-
-	ImGui::TextUnformatted(
-		!m_editorData.m_currentScenePath.IsValid() ? "This scene was never saved." : "This scene has unsaved changes.");
-	ImGui::Dummy(ImVec2(0.f, 12.f));
-	ImGui::TextUnformatted("Save before closing?");
-	ImGui::Dummy(ImVec2(0.f, 12.f));
-
-	bool const saveAndClose = ImGui::Button("Save & Close", ImVec2(130.f, 0.f));
-	ImGui::SameLine(0.f, 40.f);
-	bool const cancel = ImGui::Button("Cancel", ImVec2(130.f, 0.f));
-	ImGui::SameLine(0.f, 40.f);
-	bool const dontSave = ImGui::Button("Don't Save", ImVec2(130.f, 0.f));
-
-	if (saveAndClose)
-	{
-		if (SaveScene())
-		{
-			ImGui::CloseCurrentPopup();
-			ExecutePendingSceneAction();
-		}
-		else if (m_editorUI != nullptr)
-		{
-			m_editorUI->Warning("Save Scene Failed", m_editorData.m_currentScenePath.GetString());
-		}
-	}
-	else if (cancel)
-	{
-		m_pendingSceneAction = PendingSceneAction::None;
-		m_pendingScenePath   = {};
-		m_pendingSceneRootName.clear();
-		ImGui::CloseCurrentPopup();
-	}
-	else if (dontSave)
-	{
-		ImGui::CloseCurrentPopup();
-		ExecutePendingSceneAction();
-	}
-
-	EditorPopupUtils::EndModal();
 }
 
 void EditorNode::ExecutePendingSceneAction()

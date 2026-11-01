@@ -1,10 +1,17 @@
 #pragma once
 
 #include "MingEngine/Scene/GUI/Container.hpp"
+#include <optional>
 
 class BoxContainer : public Container
 {
 	MCLASS(BoxContainer, Container);
+
+private:
+	struct ThemeCache
+	{
+		int separation = 0;
+	};
 
 public:
 	explicit BoxContainer(bool vertical = false) : m_vertical(vertical) {}
@@ -12,16 +19,18 @@ public:
 	Vector2 GetInternalMinimumSize() const override;
 
 	bool  IsVertical() const { return m_vertical; }
-	float GetSeparation() const { return m_separation; }
+	float GetSeparation() const;
 
 	void SetSeparation(float separation);
+	void RemoveSeparationOverride();
 
 protected:
-	static void BindMethods() {}
+	static void BindMethods();
 
 	void OnNotification(int notification);
 
 private:
 	bool  m_vertical   = false;
-	float m_separation = 0.0f;
+	std::optional<float> m_separationOverride;
+	ThemeCache m_themeCache;
 };

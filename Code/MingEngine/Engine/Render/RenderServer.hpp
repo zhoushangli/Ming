@@ -7,7 +7,6 @@
 #include "MingEngine/Scene/Resource/MeshResource.hpp"
 #include "MingEngine/Scene/Resource/ShaderResource.hpp"
 
-#include "ThirdParty/imgui/imgui.h"
 
 #include <string>
 #include <string_view>
@@ -83,6 +82,7 @@ public:
 	void ViewportFree(RID viewport);
 	void ViewportSetActive(RID viewport, bool active);
 	void ViewportSetResolution(RID viewport, IntVec2 size);
+	void ViewportSetClearColor(RID viewport, Color color);
 	void ViewportBeginFrame(RID viewport);
 
 	// Camera binding:
@@ -177,11 +177,6 @@ public:
 
 	void CopyCPUToGPU(void const* data, unsigned int size, VertexBuffer* buffer);
 
-	bool        InitImGui();
-	void        ShutdownImGui();
-	void        BeginImGuiFrame();
-	void        RenderImGui(ImDrawData* drawData);
-	ImTextureID GetImGuiTextureID(GPUTexture* texture) const;
 
 private:
 	static bool OnWindowResized(EventArgs& args);

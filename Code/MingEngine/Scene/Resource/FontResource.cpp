@@ -4,6 +4,7 @@
 #include "MingEngine/Engine/Render/TextServer.hpp"
 
 #include <utility>
+#include "MingEngine/Scene/Resource/DefaultFontData.inc"
 
 FontResource::~FontResource()
 {
@@ -37,4 +38,15 @@ bool FontResource::CopyFrom(Resource&& other)
 	SetFontRID(source->m_fontRID);
 	source->m_fontRID = RID::Invalid;
 	return true;
+}
+Ref<FontResource> FontResource::CreateDefault(bool sizeInEm)
+{
+	auto font = CreateRef<FontResource>();
+	if (g_engine != nullptr && g_engine->m_textServer != nullptr)
+	{
+		font->SetFontRID(g_engine->m_textServer->CreateFont(
+			std::vector<uint8_t>(std::begin(kNativeFontData), std::end(kNativeFontData)), sizeInEm));
+	}
+
+	return font;
 }

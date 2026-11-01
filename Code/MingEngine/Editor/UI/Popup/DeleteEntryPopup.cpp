@@ -1,6 +1,7 @@
 #include "MingEngine/Editor/UI/Popup/DeleteEntryPopup.hpp"
 
 #include "MingEngine/Editor/UI/EditorUIContext.hpp"
+#include "MingEngine/Editor/UI/EditorUI.hpp"
 #include "MingEngine/Editor/UI/Popup/EditorPopupUtils.hpp"
 #include "MingEngine/Engine/File/FileSystem.hpp"
 
@@ -18,55 +19,38 @@ void DeleteEntryPopup::Open(VirtualPath const& targetVirtualPath, bool isDirecto
 
 void DeleteEntryPopup::Render(EditorUIContext& context)
 {
-	constexpr char const* popupId = "Delete Entry";
-	if (m_openRequested)
-	{
-		ImGui::OpenPopup(popupId);
-		m_openRequested = false;
-	}
-
-	if (!EditorPopupUtils::BeginModal(
-			popupId,
-			ImVec2(520.f, 0.f),
-			ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize))
+	m_context = context;
+	if (m_popup == nullptr && !m_openRequested)
 	{
 		return;
 	}
 
-	ImGui::Text("Delete %s?", m_targetVirtualPath.CStr());
-	ImGui::PushStyleColor(ImGuiCol_ChildBg, ImGui::GetStyleColorVec4(ImGuiCol_FrameBg));
-	ImGui::BeginChild(
-		"##DeleteWarning",
-		ImVec2(0.f, 0.f),
-		ImGuiChildFlags_Borders | ImGuiChildFlags_AutoResizeY | ImGuiChildFlags_AlwaysAutoResize);
-	ImGui::TextWrapped(
-		m_isDirectory ? "The folder and all of its contents will be permanently deleted."
-					  : "The file will be permanently deleted.");
-	ImGui::TextColored(ImVec4(0.9f, 0.55f, 0.2f, 1.f), "This action does not use the Recycle Bin.");
-	ImGui::EndChild();
-	ImGui::PopStyleColor();
-	EditorPopupUtils::ErrorText(m_error);
-
-	EditorPopupUtils::BeginButtonRow(2);
-	bool const confirm = EditorPopupUtils::ConfirmButton();
-	ImGui::SameLine(0.f, 64.f);
-	bool const cancel = EditorPopupUtils::CancelButton();
-	if (confirm && context.m_fileSystem != nullptr)
+	if (m_popup == nullptr)
 	{
-		m_error.clear();
-		if (context.m_fileSystem->Remove(m_targetVirtualPath, m_error))
-		{
-			context.m_fileSystem->ScanResourceTree();
-			m_selectedVirtualPath = m_parentVirtualPath;
-			ImGui::CloseCurrentPopup();
-		}
-	}
-	else if (cancel)
-	{
-		ImGui::CloseCurrentPopup();
+		VBoxContainer* content = nullptr;
+		m_popup = EditorPopupUtils::Create(context.m_rootControl, "Delete Entry", content);
+		m_nameEdit = MemNew<LineEdit>();
+		m_nameEdit->SetEditable(false);
+		content->AddNode(m_nameEdit);
+		m_errorLabel = EditorPopupUtils::AddLabel(content, "", "EditorErrorLabel");
+		auto* buttons = MemNew<HBoxContainer>();
+		content->AddNode(buttons);
+		EditorPopupUtils::AddButton(buttons, "Delete", [this]() { Confirm(); });
+		EditorPopupUtils::AddButton(buttons, "Cancel", [this]() { m_popup->Close(); });
 	}
 
-	EditorPopupUtils::EndModal();
+	if (m_openRequested)
+	{
+		m_openRequested = false;
+		m_nameEdit->SetText("Delete " + m_targetVirtualPath.GetString() + "? This cannot be undone.");
+		m_errorLabel->SetText("");
+		EditorPopupUtils::Open(m_popup, context.m_rootControl, Vector2(650.f, 300.f));
+	}
+
+	if (m_popup->IsVisible())
+	{
+		EditorPopupUtils::Layout(m_popup, Vector2(650.f, 300.f));
+	}
 }
 
 bool DeleteEntryPopup::ConsumeSelectedVirtualPath(VirtualPath& outVirtualPath)
@@ -79,4 +63,16 @@ bool DeleteEntryPopup::ConsumeSelectedVirtualPath(VirtualPath& outVirtualPath)
 	outVirtualPath        = std::move(m_selectedVirtualPath);
 	m_selectedVirtualPath = {};
 	return true;
+}
+
+void DeleteEntryPopup::Confirm()
+{
+	if (m_context.m_fileSystem != nullptr && m_context.m_fileSystem->Remove(m_targetVirtualPath, m_error))
+	{
+		m_context.m_fileSystem->ScanResourceTree();
+		m_selectedVirtualPath = m_parentVirtualPath;
+		m_popup->Close();
+	}
+
+	m_errorLabel->SetText(m_error);
 }

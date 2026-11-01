@@ -1,29 +1,20 @@
 #pragma once
 
-#include "ThirdParty/imgui/imgui.h"
-
+#include "MingEngine/Scene/Resource/TextureResource.hpp"
+#include "MingEngine/Core/Render/Color.hpp"
 #include <string>
-#include <unordered_map>
+#include <map>
 
-class GPUTexture;
+class Control;
 
 class EditorIcons
 {
 public:
-	// TODO: EditorIcons manages raw GPUTexture* in a static map loaded via stb_image.
-	// Startup/Shutdown is a temporary measure; when the engine supports Ref<GPUTexture> or
-	// a resource handle, remove explicit lifecycle and rely on ref-counted lifetime.
-	static void Startup();
+	static Ref<TextureResource> GetIconTexture(std::string const& name, std::string const& fallback = {});
+	static Color GetIconColor(std::string const& name, Control const* source);
+	static Ref<TextureResource> GetBrandTexture(bool beam);
 	static void Shutdown();
 
-	static GPUTexture* GetIconTexture(std::string const& iconName, std::string const& fallbackIconName = "");
-	static ImTextureID GetIconId(std::string const& iconName, std::string const& fallbackIconName = "");
-	static bool        RenderIcon(std::string const& iconName, ImVec2 size, std::string const& fallbackIconName = "");
-	static void        AddImage(ImDrawList* drawList, ImTextureID textureId, ImVec2 min, ImVec2 max);
-
 private:
-	static GPUTexture* GetOrCreateIconTexture(std::string const& iconName);
-
-	// TODO: Replace with ref-counted storage when available.
-	static std::unordered_map<std::string, GPUTexture*> s_iconTextures;
+	static std::map<std::string, Ref<TextureResource>> m_icons;
 };

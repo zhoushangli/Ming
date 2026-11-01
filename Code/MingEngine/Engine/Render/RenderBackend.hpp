@@ -3,7 +3,6 @@
 #include "MingEngine/Core/Math/IntVec2.hpp"
 #include "MingEngine/Engine/Render/RenderTypes.hpp"
 
-#include "ThirdParty/imgui/imgui.h"
 
 #include <string>
 
@@ -78,11 +77,6 @@ public:
 	virtual void UnbindAllShaderResourceViews()                                                  = 0;
 	virtual void BindBackBuffer()                                                                = 0;
 
-	virtual bool        InitImGui()                                  = 0;
-	virtual void        ShutdownImGui()                              = 0;
-	virtual void        BeginImGuiFrame()                            = 0;
-	virtual void        RenderImGui(ImDrawData* drawData)            = 0;
-	virtual ImTextureID GetImGuiTextureID(GPUTexture* texture) const = 0;
 
 	template <typename T>
 	void UpdateConstantBuffer(ConstantBuffer* buffer, T const& data)

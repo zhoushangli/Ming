@@ -19,6 +19,26 @@ public:
 		Interrupted
 	};
 
+private:
+	struct ThemeCache
+	{
+		Ref<FontResource>  font;
+		int                font_size = 16;
+		int                minimum_height = 0;
+		int                caret_width = 1;
+		Color              font_color;
+		Color              font_read_only_color;
+		Color              font_disabled_color;
+		Color              font_placeholder_color;
+		Color              selection_color;
+		Color              caret_color;
+		Ref<ThemeStyleBox> normal;
+		Ref<ThemeStyleBox> hover;
+		Ref<ThemeStyleBox> read_only;
+		Ref<ThemeStyleBox> disabled;
+		Ref<ThemeStyleBox> focus;
+	};
+
 public:
 	LineEdit();
 	~LineEdit() override;
@@ -26,10 +46,11 @@ public:
 	String const& GetText() const { return m_text; }
 	String const& GetPlaceholder() const { return m_placeholder; }
 
-	Ref<FontResource> GetFont() const { return m_font; }
-	int               GetFontSize() const { return m_fontSize; }
-	Vector2           GetPadding() const { return m_padding; }
+	Ref<FontResource> GetFont() const { return m_themeCache.font; }
+	int               GetFontSize() const { return m_themeCache.font_size; }
+	Vector2           GetPadding() const;
 	Vector2           GetInternalMinimumSize() const override;
+	AABB2             GetContentRect() const;
 
 	bool IsEditable() const { return m_editable; }
 	bool IsDisabled() const override { return m_disabled; }
@@ -56,6 +77,7 @@ public:
 	void SetFont(Ref<FontResource> const& font);
 	void SetFontSize(int fontSize);
 	void SetPadding(Vector2 const& padding);
+	void RemovePaddingOverride();
 	void SetMinimumCharacterWidth(int width);
 
 	void SetEditable(bool editable);
@@ -98,12 +120,13 @@ public:
 protected:
 	static void BindMethods();
 
+	void OnThemeChanged() override;
 	void OnNotification(int notification);
 
 private:
 	int   GetColumnAtPosition(float localX) const;
 	float GetColumnPosition(int column) const;
-	AABB2 GetContentRect() const;
+	float GetContentMargin(ThemeStyleBox::Side side) const;
 
 	static bool   IsTextCodepoint(char32_t codepoint);
 	static String FilterText(String const& text);
@@ -122,11 +145,12 @@ private:
 private:
 	String                                            m_text;
 	String                                            m_placeholder;
-	Ref<FontResource>                                 m_font;
+	ThemeCache                                        m_themeCache;
 	TextLine                                          m_line;
 	TextLine                                          m_placeholderLine;
-	Vector2                                           m_padding         = Vector2(8.f, 6.f);
-	int                                               m_fontSize        = 16;
+	Vector2                                           m_padding         = Vector2::Zero;
+	bool                                              m_hasPaddingOverride = false;
+	bool                                              m_hovering = false;
 	int                                               m_minimumCharacterWidth = 8;
 	int                                               m_cursorColumn    = 0;
 	int                                               m_selectionAnchor = 0;
