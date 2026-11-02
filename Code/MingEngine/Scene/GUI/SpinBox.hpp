@@ -19,6 +19,7 @@ public:
 	std::string const& GetError() const { return m_error; }
 
 	void SetValueNoSignal(Variant const& value);
+	void SetStepButtonsVisible(bool visible);
 
 	void SetValueChangedCallback(std::function<void(Variant const&)> callback) { m_changed = std::move(callback); }
 	void SetValueReader(std::function<Variant()> reader) { m_reader = std::move(reader); }

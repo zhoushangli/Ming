@@ -35,6 +35,10 @@ private:
 public:
 	~Theme() override;
 
+	Ref<Theme> Duplicate() const;
+	std::vector<std::string> GetTypeList(DataType dataType) const;
+	std::vector<std::string> GetItemList(DataType dataType, std::string const& type) const;
+
 	Ref<FontResource> GetDefaultFont() const { return m_defaultFont; }
 	int GetDefaultFontSize() const { return m_defaultFontSize; }
 	bool HasDefaultFont() const { return m_defaultFont.IsValid(); }

@@ -2,6 +2,7 @@
 
 #include "MingEngine/Scene/GUI/Container.hpp"
 #include "MingEngine/Scene/GUI/Button.hpp"
+#include "MingEngine/Scene/GUI/HBoxContainer.hpp"
 
 class TabContainer : public Container
 {
@@ -45,10 +46,13 @@ public:
 	String GetPageTitle(int index) const;
 	Vector2  GetInternalMinimumSize() const override;
 	AABB2 GetTabBarRect() const;
+	HBoxContainer* GetTitleActions() const { return m_titleActions; }
+	HBoxContainer* GetTabExtras() const { return m_tabExtras; }
 	AABB2 GetPageRect() const;
 	AABB2 GetTabInsertRect(int index) const;
 
 	void SetCurrentTab(int index);
+	void SetTabsAtBottom(bool enabled);
 
 	void SetTabChangedCallback(std::function<void(int)> callback) { m_changed = std::move(callback); }
 	void SetTabDragCallback(std::function<bool(Control*, GuiDragData&)> callback) { m_drag = std::move(callback); }
@@ -73,13 +77,17 @@ protected:
 
 private:
 	void ApplyTabTheme(Button* button);
+	float GetTabWidth(Button const* button) const;
 	void HoverTab(Control* page, Vector2 const& position, GuiDragData const& data);
 
 private:
 	ThemeCache m_themeCache;
+	HBoxContainer* m_titleActions = nullptr;
+	HBoxContainer* m_tabExtras = nullptr;
 	std::vector<Control*>    m_pages;
 	std::vector<Button*>     m_buttons;
 	int                      m_current = -1;
+	bool m_tabsAtBottom = false;
 	std::function<void(int)> m_changed;
 	std::function<bool(Control*, GuiDragData&)> m_drag;
 	int m_rearrangeGroup = -1;

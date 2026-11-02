@@ -30,11 +30,11 @@ void WarningPopup::Render(EditorUIContext& context)
 		m_openRequested = false;
 		m_heading->SetText(m_title);
 		m_text->SetText(m_message);
-		EditorPopupUtils::Open(m_popup, context.m_rootControl, Vector2(700.f, 225.f));
+		EditorPopupUtils::Open(m_popup, context.m_rootControl, Vector2(static_cast<float>(context.m_rootControl->GetThemeConstant("warning_popup_width", "Editor")), static_cast<float>(context.m_rootControl->GetThemeConstant("warning_popup_height", "Editor"))));
 	}
 
 	if (m_popup->IsVisible())
 	{
-		EditorPopupUtils::Layout(m_popup, Vector2(700.f, 225.f));
+		EditorPopupUtils::Layout(m_popup, Vector2(static_cast<float>(context.m_rootControl->GetThemeConstant("warning_popup_width", "Editor")), static_cast<float>(context.m_rootControl->GetThemeConstant("warning_popup_height", "Editor"))));
 	}
 }

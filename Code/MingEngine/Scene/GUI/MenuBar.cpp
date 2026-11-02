@@ -6,6 +6,9 @@
 #include "MingEngine/Scene/GUI/PopupPanel.hpp"
 #include "MingEngine/Scene/GUI/ThemeDatabase.hpp"
 #include "MingEngine/Scene/GUI/VBoxContainer.hpp"
+#include "MingEngine/Scene/GUI/Label.hpp"
+#include "MingEngine/Scene/GUI/ColorRect.hpp"
+#include "MingEngine/Scene/GUI/TextureRect.hpp"
 #include "ThirdParty/GLFW/glfw3.h"
 
 #include <algorithm>
@@ -112,6 +115,7 @@ void MenuBar::OpenMenu(int index)
 		m_popupID = popup->GetObjectID();
 		GetViewport()->AddNode(popup);
 		m_popupPanel = MemNew<PanelContainer>();
+		m_popupPanel->SetThemeTypeVariation("EditorMenuPopup");
 		popup->AddNode(m_popupPanel);
 		m_popupContent = MemNew<VBoxContainer>();
 		m_popupPanel->AddNode(m_popupContent);
@@ -120,31 +124,15 @@ void MenuBar::OpenMenu(int index)
 		popup->SetClosedCallback([this]() { ResetActiveMenu(); });
 	}
 
-	for (Button* item : m_items)
+	for (Node* item : m_popupContent->GetChildren())
 	{
-		item->SetVisible(false);
-		item->SetPressedCallback({});
+		static_cast<Control*>(item)->SetVisible(false);
 		item->QueueFree();
 	}
 
 	m_items.clear();
 	auto provider = m_menus[index].m_provider;
-	for (MenuItem const& item : provider ? provider() : std::vector<MenuItem>())
-	{
-		auto* button = MemNew<Button>();
-		button->SetText(item.first);
-		button->SetDisabled(!item.second);
-		button->SetPressedCallback([this, action = item.second]()
-		{
-			CloseMenu(false);
-			if (action)
-			{
-				action();
-			}
-		});
-		m_popupContent->AddNode(button);
-		m_items.push_back(button);
-	}
+	m_items = CreatePopupItems(m_popupContent, this, provider ? provider() : std::vector<MenuItem>(), [this]() { CloseMenu(false); });
 
 	popup->Open(this);
 	m_active = index;
@@ -170,6 +158,83 @@ void MenuBar::LayoutPopup()
 	m_popupPanel->SetPosition(Vector2(std::clamp(origin.x, 0.f, std::max(0.f, bounds.x - size.x)),
 		std::clamp(origin.y, 0.f, std::max(0.f, bounds.y - size.y))));
 	GetSceneTree()->FlushContainerUpdate();
+	LayoutPopupItems(m_items);
+}
+
+std::vector<Button*> MenuBar::CreatePopupItems(VBoxContainer* content, Control* source, std::vector<MenuItem> const& items, std::function<void()> close)
+{
+	std::vector<Button*> buttons;
+	for (MenuItem const& item : items)
+	{
+		if (item.m_separator)
+		{
+			auto* line = MemNew<ColorRect>();
+			line->SetColor(source->GetThemeColor("separator_color", "MenuBar"));
+			line->SetCustomMinimumSize(Vector2(0.f, source->GetThemeConstant("separator_width", "MenuBar")));
+			line->SetMouseFilter(MouseFilter::Ignore);
+			content->AddNode(line);
+			continue;
+		}
+
+		auto* button = MemNew<Button>();
+		button->SetThemeSource(source);
+		button->SetThemeTypeVariation("EditorMenuItem");
+		button->SetHorizontalAlignment(HorizontalAlignment::Left);
+		button->SetText(item.m_text);
+		button->SetDisabled(!item.m_enabled || !item.m_action);
+		button->SetPressedCallback([close, action = item.m_action]()
+		{
+			close();
+			if (action)
+			{
+				action();
+			}
+		});
+		content->AddNode(button);
+		if (item.m_checkable && item.m_checked)
+		{
+			auto* check = MemNew<TextureRect>();
+			check->SetName("Check");
+			check->SetTexture(source->GetThemeIcon("Check", "EditorIcons"));
+			check->SetTint(source->GetThemeColor("font_color", "Control"));
+			check->SetExpandMode(TextureRect::ExpandMode::IgnoreSize);
+			check->SetStretchMode(TextureRect::StretchMode::KeepAspectCentered);
+			check->SetCustomMinimumSize(Vector2(source->GetThemeConstant("check_size", "MenuBar"), source->GetThemeConstant("check_size", "MenuBar")));
+			button->AddNode(check);
+		}
+
+		if (!item.m_shortcut.IsEmpty())
+		{
+			auto* shortcut = MemNew<Label>();
+			shortcut->SetName("Shortcut");
+			shortcut->SetText(item.m_shortcut);
+			shortcut->SetThemeTypeVariation("EditorStatusLabel");
+			shortcut->SetHorizontalAlignment(HorizontalAlignment::Right);
+			shortcut->SetVerticalAlignment(VerticalAlignment::Center);
+			button->AddNode(shortcut);
+			button->SetCustomMinimumSize(Vector2(button->GetCombinedMinimumSize().x + shortcut->GetCombinedMinimumSize().x + source->GetThemeConstant("shortcut_separation", "MenuBar"), 0.f));
+		}
+
+		buttons.push_back(button);
+	}
+
+	return buttons;
+}
+
+void MenuBar::LayoutPopupItems(std::vector<Button*> const& items)
+{
+	for (Button* item : items)
+	{
+		for (Node* child : item->GetChildren())
+		{
+			auto* control = static_cast<Control*>(child);
+			bool const check = control->GetName() == String("Check");
+			Vector2 const size = control->GetCombinedMinimumSize();
+			control->SetPosition(Vector2(check ? item->GetThemeConstant("item_padding", "MenuBar") : item->GetSize().x - size.x - item->GetThemeConstant("item_padding", "MenuBar"),
+				check ? (item->GetSize().y - size.y) * 0.5f : 0.f));
+			control->UpdateSize(Vector2(size.x, check ? size.y : item->GetSize().y));
+		}
+	}
 }
 
 void MenuBar::MoveItemFocus(int direction)

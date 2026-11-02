@@ -201,14 +201,14 @@ void CanvasItem::DrawViewportRect(RID viewport, Rect2 const& rect)
 	g_engine->m_renderServer->CanvasItemAddViewportRect(m_canvasItemRID, viewport, rect);
 }
 
-void CanvasItem::DrawTextureRect(Ref<TextureResource> const& texture, Rect2 const& rect, bool isTiling)
+void CanvasItem::DrawTextureRect(Ref<TextureResource> const& texture, Rect2 const& rect, bool isTiling, Color const& color)
 {
 	if (!texture.IsValid())
 	{
 		return;
 	}
 
-	g_engine->m_renderServer->CanvasItemAddTextureRect(m_canvasItemRID, texture, rect, isTiling);
+	g_engine->m_renderServer->CanvasItemAddTextureRect(m_canvasItemRID, texture, rect, isTiling, color);
 }
 
 void CanvasItem::DrawTextureRectRegion(

@@ -21,6 +21,8 @@ public:
 	FileSystemPanel();
 	VirtualPath const& GetSelectedVirtualPath() const { return m_selectedVirtualPath; }
 	Tree* GetTree() const { return m_tree; }
+	VirtualPath const& GetDirectory() const { return m_directory; }
+	void NavigateTo(VirtualPath const& directory, bool addHistory = true);
 
 protected:
 	void OnInitialize() override;
@@ -44,6 +46,13 @@ private:
 private:
 	Tree* m_tree = nullptr;
 	LineEdit* m_filter = nullptr;
+	LineEdit* m_path = nullptr;
+	Button* m_back = nullptr;
+	Button* m_forward = nullptr;
+	Label* m_empty = nullptr;
+	VirtualPath m_directory = VirtualPath("res://");
+	std::vector<VirtualPath> m_history = { VirtualPath("res://") };
+	size_t m_historyIndex = 0;
 	VirtualPath m_selectedVirtualPath;
 	std::map<uint64_t, VirtualPath> m_fileItems;
 	std::map<std::string, uint64_t> m_fileKeys;

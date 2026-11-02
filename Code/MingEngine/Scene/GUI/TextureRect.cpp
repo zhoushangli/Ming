@@ -2,6 +2,15 @@
 
 #include "MingEngine/Core/Math/Rect2.hpp"
 
+void TextureRect::SetTint(Color const& tint)
+{
+	if (m_tint != tint)
+	{
+		m_tint = tint;
+		QueueRedraw();
+	}
+}
+
 void TextureRect::SetTexture(Ref<TextureResource> const& texture)
 {
 	if (m_texture == texture)
@@ -184,7 +193,7 @@ void TextureRect::OnNotification(int notification)
 
 		rect.m_position = offset;
 		rect.m_size     = size;
-		DrawTextureRect(m_texture, rect, isTiling);
+		DrawTextureRect(m_texture, rect, isTiling, m_tint);
 	}
 	}
 }

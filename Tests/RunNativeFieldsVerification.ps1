@@ -1,9 +1,9 @@
 param([switch]$SkipBuild, [ValidateSet("NativeFieldsVerification", "NativeEditorStartupVerification", "TextLayoutVerification", "EditorUIVerification")][string]$Suite = "NativeFieldsVerification", [switch]$Preview)
 
 $ErrorActionPreference = 'Stop'
-if ($Preview -and $Suite -ne 'TextLayoutVerification')
+if ($Preview -and $Suite -notin @('TextLayoutVerification', 'EditorUIVerification'))
 {
-	throw '-Preview requires -Suite TextLayoutVerification.'
+	throw '-Preview requires -Suite TextLayoutVerification or EditorUIVerification.'
 }
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $outputDirectory = Join-Path $repoRoot ('Temporary\' + $Suite)

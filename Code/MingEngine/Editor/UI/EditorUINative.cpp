@@ -94,15 +94,16 @@ void EditorUI::CreateToolbar()
 	m_menuBar = MemNew<MenuBar>();
 	m_nativeRoot->AddNode(m_menuBar);
 	m_menuBar->SetAboutToOpenCallback([this]() { FinishNativeEditing(); });
-	for (char const* name : { "Scene", "Project", "Editor", "Window", "Help" })
+	for (char const* name : { "Scene", "Project", "Editor", "View", "Help" })
 	{
 		m_menuBar->AddMenu(name, [this, menu = std::string(name)]()
 		{
 			std::vector<MenuItem> items;
 			if (menu == "Scene")
 			{
-				items = { { "New Scene", {} },
-					{ "Open Scene...", [this]() { ShowNativePopup(2, "Open scene using a res:// path"); } },
+				items = { { "New Scene", {}, "Ctrl+N" },
+					{ "Open Scene...", [this]() { ShowNativePopup(2, "Open scene using a res:// path"); }, "Ctrl+O" },
+					{ "", {}, "", true },
 					{ "Save Scene", [this]()
 					{
 						FinishNativeEditing();
@@ -110,27 +111,31 @@ void EditorUI::CreateToolbar()
 						{
 							Warning("Save failed", "Open an existing scene before saving.");
 						}
-					} }, { "Save Scene As...", {} } };
+					}, "Ctrl+S" }, { "Save Scene As...", {} }, { "Close Scene", {} } };
 			}
 			else if (menu == "Project")
 			{
-				items = { { "Project Settings...", [this]() { m_projectSettingsPopup.Open(); } }, { "Reload Project", {} } };
+				items = { { "Project Settings...", [this]() { m_projectSettingsPopup.Open(); } },
+					{ "", {}, "", true }, { "Export...", {} } };
 			}
 			else if (menu == "Editor")
 			{
-				items = { { "Editor Settings...", {} }, { "Reset Layout", [this]() { ResetNativeLayout(); } } };
+				items = { { "Editor Settings...", {} }, { "Restore Default Layout", [this]() { ResetNativeLayout(); } } };
 			}
-			else if (menu == "Window")
+			else if (menu == "View")
 			{
 				for (EditorPanel* panel : std::initializer_list<EditorPanel*>{ m_scenePanel, m_fileSystemPanel,
 					m_inspectorPanel, m_importPanel, m_outputPanel })
 				{
-					items.push_back({ panel->GetTitle(), [this, panel]() { TogglePanel(panel); } });
+					items.push_back({ panel->GetTitle(), [this, panel]() { TogglePanel(panel); }, "", false, true, panel->IsOpen() });
 				}
+
+				items.push_back({ "", {}, "", true });
+				items.push_back({ "Restore Default Layout", [this]() { ResetNativeLayout(); } });
 			}
 			else
 			{
-				items = { { "About Ming", {} } };
+				items = { { "About Ming", [this]() { Warning("Ming", "Ming Engine - Warm Carbon"); } } };
 			}
 
 			return items;
@@ -138,11 +143,11 @@ void EditorUI::CreateToolbar()
 	}
 
 	auto* actions = MemNew<HBoxContainer>();
-	actions->SetSeparation(2.5f);
+	actions->SetSeparation(static_cast<float>(m_nativeRoot->GetThemeConstant("panel_margin", "Editor")) * 0.5f);
 	m_actions = actions;
 	m_nativeRoot->AddNode(actions);
 	auto* workspaces = MemNew<HBoxContainer>();
-	workspaces->SetSeparation(2.5f);
+	workspaces->SetSeparation(static_cast<float>(m_nativeRoot->GetThemeConstant("panel_margin", "Editor")) * 0.5f);
 	m_workspaces = workspaces;
 	m_nativeRoot->AddNode(workspaces);
 	Button* twoD = EditorPopupUtils::AddButton(workspaces, "2D", {});
@@ -155,36 +160,30 @@ void EditorUI::CreateToolbar()
 	auto addAction = [this, actions](char const* text, char const* icon, std::function<void()> action)
 	{
 		Button* button = EditorPopupUtils::AddButton(actions, text, std::move(action));
+		button->SetName(icon);
 		button->SetThemeTypeVariation("EditorToolbarButton");
 		button->SetVerticalSizeFlags(Control::Size_ShrinkCenter);
 		button->SetIcon(m_nativeRoot->GetThemeIcon(icon, "EditorIcons"));
 		m_toolbarActions.push_back({ button, icon, text });
 		return button;
 	};
-	addAction("Open", "Folder", [this]() { ShowNativePopup(2, "Open scene using a res:// path"); });
-	addAction("Save", "Save", [this]()
-	{
-		FinishNativeEditing();
-		if (!m_owner->SaveScene())
-		{
-			Warning("Save failed", "Open an existing scene before saving.");
-		}
-	});
-	addAction("Build", "CSharpScript", []()
-	{
-		ScriptSystem* scripts = g_engine->m_scriptSystem;
-		if (scripts != nullptr && scripts->EnsureProjectSolution() && scripts->BuildProjectSolution())
-		{
-			scripts->ReloadProjectAssembly();
-		}
-	});
-	addAction("Run", "Play", []() { g_app->LaunchGame(); });
-	Button* stop = addAction("", "Stop", {});
-	stop->SetDisabled(true);
-	m_status = EditorPopupUtils::AddLabel(m_nativeRoot, "");
-	m_status->SetFontSize(18);
+	addAction("", "Play", []() { g_app->LaunchGame(); })->SetName("Play");
+	addAction("", "Pause", {})->SetDisabled(true);
+	addAction("", "Stop", {})->SetDisabled(true);
+	m_statusBar = MemNew<HBoxContainer>();
+	m_statusBar->SetSeparation(static_cast<float>(m_nativeRoot->GetThemeConstant("status_spacing", "Editor")));
+	m_nativeRoot->AddNode(m_statusBar);
+	m_status = EditorPopupUtils::AddLabel(m_statusBar, "", "EditorStatusLabel");
+	m_status->SetHorizontalSizeFlags(Control::Size_ExpandFill);
+	m_status->SetThemeTypeVariation("EditorStatusLabel");
 	m_status->SetClipText(true);
 	m_status->SetVerticalAlignment(VerticalAlignment::Center);
+	m_statusMessage = EditorPopupUtils::AddLabel(m_statusBar, "", "EditorStatusLabel");
+	m_statusMessage->SetClipText(true);
+	m_statusMessage->SetHorizontalSizeFlags(Control::Size_ExpandFill);
+	m_statusMessage->SetVerticalAlignment(VerticalAlignment::Center);
+	m_statusInfo = EditorPopupUtils::AddLabel(m_statusBar, "", "EditorStatusLabel");
+	m_statusInfo->SetVerticalAlignment(VerticalAlignment::Center);
 }
 
 void EditorUI::Render(EditorUIContext& context)
@@ -196,26 +195,31 @@ void EditorUI::Render(EditorUIContext& context)
 	m_nativeRoot->SetColor(m_nativeRoot->GetThemeColor("background", "Editor"));
 	g_engine->m_renderServer->ViewportSetClearColor(m_sceneView->GetSubViewport()->GetViewportRID(),
 		m_nativeRoot->GetThemeColor("scene_background", "Editor"));
+	float fullActionWidth = 0.f;
 	for (auto const& item : m_toolbarActions)
 	{
-		item.m_button->SetIcon(m_nativeRoot->GetThemeIcon(item.m_icon, "EditorIcons"));
-		item.m_button->SetText(item.m_text);
+		Button* button = item.m_button;
+		button->SetIcon(m_nativeRoot->GetThemeIcon(item.m_icon, "EditorIcons"));
+		float const textWidth = g_engine->m_textServer->GetTextLine(button->GetFont()->GetFontRID(), item.m_text,
+			static_cast<float>(button->GetFontSize())).m_width;
+		fullActionWidth += static_cast<float>(button->GetThemeConstant("icon_size")) + textWidth
+			+ button->GetThemeConstant("icon_separation") + button->GetThemeStyleBox("normal")->GetMinimumSize().x;
 	}
+	fullActionWidth += std::max(0, static_cast<int>(m_toolbarActions.size()) - 1)
+		* static_cast<HBoxContainer*>(m_actions)->GetSeparation();
 	Place(m_nativeRoot, 0.f, 0.f, size.x, size.y);
 	float const headerHeight = static_cast<float>(m_nativeRoot->GetThemeConstant("top_bar_height", "Editor"));
 	float const statusHeight = static_cast<float>(m_nativeRoot->GetThemeConstant("status_bar_height", "Editor"));
-	float const brandWidth = 130.f;
-	float const margin = 5.f;
-	Place(m_beam, 0.f, 0.f, std::min(900.f,
-		std::max(1.f, size.x * 0.5f - 50.f)), headerHeight);
+	float const brandWidth = static_cast<float>(m_nativeRoot->GetThemeConstant("brand_width", "Editor"));
+	float const margin = static_cast<float>(m_nativeRoot->GetThemeConstant("panel_margin", "Editor"));
+	Place(m_beam, 0.f, 0.f, std::min(static_cast<float>(m_nativeRoot->GetThemeConstant("beam_max_width", "Editor")),
+		std::max(1.f, size.x * 0.5f - static_cast<float>(m_nativeRoot->GetThemeConstant("beam_center_gap", "Editor")))), headerHeight);
 	Place(m_brand, 0.f, 0.f, brandWidth, headerHeight);
 	Vector2 const menuSize = m_menuBar->GetCombinedMinimumSize();
-	if (brandWidth + menuSize.x + margin * 3.f + m_actions->GetCombinedMinimumSize().x > size.x)
+	bool const showActionText = brandWidth + menuSize.x + margin * 3.f + fullActionWidth <= size.x;
+	for (ToolbarAction const& action : m_toolbarActions)
 	{
-		for (ToolbarAction const& action : m_toolbarActions)
-		{
-			action.m_button->SetText("");
-		}
+		action.m_button->SetText(showActionText ? action.m_text : String());
 	}
 
 	Vector2 const actionSize = m_actions->GetCombinedMinimumSize();
@@ -228,7 +232,7 @@ void EditorUI::Render(EditorUIContext& context)
 		&& workspaceLeft + workspaceSize.x + margin < actionLeft);
 	Place(m_workspaces, workspaceLeft, (headerHeight - workspaceSize.y) * 0.5f, workspaceSize.x, workspaceSize.y);
 	Place(m_dockSplits[0], margin, headerHeight, size.x - margin * 2.f, size.y - headerHeight - statusHeight);
-	Place(m_status, margin * 2.f, size.y - statusHeight, size.x - margin * 4.f, statusHeight);
+	Place(m_statusBar, margin * 2.f, size.y - statusHeight, size.x - margin * 4.f, statusHeight);
 	UpdateNativeDocking();
 	context.m_sceneTree->FlushContainerUpdate();
 	for (EditorPanel* panel : std::initializer_list<EditorPanel*>{ m_scenePanel, m_fileSystemPanel, m_inspectorPanel,
@@ -240,8 +244,8 @@ void EditorUI::Render(EditorUIContext& context)
 	std::string const project = g_engine->m_fileSystem->GetResourceRoot().filename().u8string();
 	std::string const scene = m_owner->GetCurrentSceneName();
 	IntVec2 const resolution = m_sceneView->GetSubViewport()->GetOutputResolution();
-	m_status->SetText(project + " / " + scene + (m_owner->IsSceneDirty() ? " *" : "")
-		+ "    " + std::to_string(resolution.x) + " x " + std::to_string(resolution.y));
+	m_status->SetText(project + " / " + scene + (m_owner->IsSceneDirty() ? " *" : ""));
+	m_statusInfo->SetText("D3D11    " + std::to_string(resolution.x) + " x " + std::to_string(resolution.y));
 	m_projectSettingsPopup.Render(context);
 	m_warningPopup.Render(context);
 	if (m_nativePopup != nullptr && m_nativePopup->IsVisible())
@@ -261,7 +265,7 @@ void EditorUI::SetNativeDragPreview(Control* source, String const& text)
 	auto* panel = MemNew<PanelContainer>();
 	panel->SetThemeSource(source);
 	auto* label = EditorPopupUtils::AddLabel(panel, text);
-	panel->UpdateSize(label->GetCombinedMinimumSize() + Vector2(16.f, 16.f));
+	panel->UpdateSize(label->GetCombinedMinimumSize() + Vector2(static_cast<float>(source->GetThemeConstant("spacing", "Editor")) * 2.f, static_cast<float>(source->GetThemeConstant("spacing", "Editor")) * 2.f));
 	source->SetDragPreview(panel);
 }
 
@@ -272,27 +276,24 @@ void EditorUI::ShowMenu(Control* source, Vector2 position, std::vector<MenuItem>
 	{
 		m_menu = EditorPopupUtils::Create(GetRootControl(), "", m_menuContent);
 		m_menu->SetModal(false);
+		static_cast<Control*>(m_menuContent->GetParent())->SetThemeTypeVariation("EditorMenuPopup");
 	}
 
 	EditorPopupUtils::ClearContent(m_menuContent);
-	for (auto const& item : items)
-	{
-		Button* button = EditorPopupUtils::AddButton(m_menuContent, item.first, [this, action = item.second]()
-		{
-			m_menu->Close(false);
-			if (action)
-			{
-				action();
-			}
-		});
-		button->SetDisabled(!item.second);
-	}
+	m_menuContent->SetSeparation(0.f);
+	auto buttons = MenuBar::CreatePopupItems(m_menuContent, source, items, [this]() { m_menu->Close(false); });
 
-	EditorPopupUtils::Open(m_menu, source, Vector2(250.f, 0.f));
+	EditorPopupUtils::Open(m_menu, source, Vector2(static_cast<float>(source->GetThemeConstant("popup_minimum_width", "MenuBar")), 0.f));
+	MenuBar::LayoutPopupItems(buttons);
 	auto* panel = static_cast<Control*>(m_menu->GetChildren().front());
 	Vector2 const bounds(m_menu->GetViewport()->GetOutputResolution());
 	panel->SetPosition(Vector2(std::clamp(position.x, 0.f, std::max(0.f, bounds.x - panel->GetSize().x)),
 		std::clamp(position.y, 0.f, std::max(0.f, bounds.y - panel->GetSize().y))));
+}
+
+void EditorUI::SetStatusMessage(String const& message)
+{
+	m_statusMessage->SetText(message);
 }
 
 void EditorUI::FinishNativeEditing()

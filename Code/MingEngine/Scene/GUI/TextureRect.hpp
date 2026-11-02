@@ -33,12 +33,14 @@ public:
 	TextureRect() { SetMouseFilter(MouseFilter::Ignore); }
 
 	Ref<TextureResource> GetTexture() const { return m_texture; }
+	Color GetTint() const { return m_tint; }
 	bool                 GetHorizontalFlip() const { return m_horizontalFlip; }
 	bool                 GetVerticalFlip() const { return m_verticalFlip; }
 	ExpandMode           GetExpandMode() const { return m_expandMode; }
 	StretchMode          GetStretchMode() const { return m_stretchMode; }
 
 	void SetTexture(Ref<TextureResource> const& texture);
+	void SetTint(Color const& tint);
 	void SetHorizontalFlip(bool horizontalFlip);
 	void SetVerticalFlip(bool verticalFlip);
 	void SetExpandMode(ExpandMode expandMode);
@@ -53,6 +55,7 @@ private:
 	bool                 m_horizontalFlip = false;
 	bool                 m_verticalFlip   = false;
 	Ref<TextureResource> m_texture;
+	Color m_tint = Color::White;
 	ExpandMode           m_expandMode  = ExpandMode::KeepSize;
 	StretchMode          m_stretchMode = StretchMode::Scale;
 };

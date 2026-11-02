@@ -5,6 +5,8 @@
 #include "MingEngine/Editor/UI/Popup/EditorPopupUtils.hpp"
 #include "MingEngine/Scene/Core/SceneTree.hpp"
 #include "MingEngine/Scene/GUI/ScrollContainer.hpp"
+#include "MingEngine/Scene/GUI/MarginContainer.hpp"
+#include "MingEngine/Scene/Core/CanvasItem.hpp"
 #include "ThirdParty/GLFW/glfw3.h"
 
 #include <algorithm>
@@ -17,24 +19,42 @@ ScenePanel::ScenePanel() : EditorPanel("Scene")
 void ScenePanel::OnInitialize()
 {
 	auto* layout = MemNew<VBoxContainer>();
-	layout->SetSeparation(5.f);
-	AddNode(layout);
+	layout->SetSeparation(static_cast<float>(GetThemeConstant("panel_margin", "Editor")));
+	auto* margin = MemNew<MarginContainer>();
+	margin->SetMargins(static_cast<float>(GetThemeConstant("panel_margin", "Editor")), static_cast<float>(GetThemeConstant("panel_margin", "Editor")), static_cast<float>(GetThemeConstant("panel_margin", "Editor")), static_cast<float>(GetThemeConstant("panel_margin", "Editor")));
+	AddNode(margin);
+	margin->AddNode(layout);
 	layout->UpdateSize(GetSize());
 	m_filter = MemNew<LineEdit>();
 	m_filter->SetPlaceholder("Filter nodes");
+	m_filter->SetIcon(GetThemeIcon("Search", "EditorIcons"));
+	m_filter->SetMinimumCharacterWidth(1);
 	auto* tools = MemNew<HBoxContainer>();
-	tools->SetSeparation(2.5f);
+	tools->SetSeparation(static_cast<float>(GetThemeConstant("panel_margin", "Editor")) * 0.5f);
 	layout->AddNode(tools);
 	Button* add = EditorPopupUtils::AddButton(tools, "", [this]() { OpenCreateNode(); });
 	add->SetIcon(GetThemeIcon("Add", "EditorIcons"));
 	add->SetThemeTypeVariation("EditorToolbarButton");
 	m_filter->SetHorizontalSizeFlags(Size_ExpandFill);
 	tools->AddNode(m_filter);
+	m_empty = EditorPopupUtils::AddLabel(layout, "No scene open", "EditorStatusLabel");
 	auto* scroll = MemNew<ScrollContainer>();
 	scroll->SetVerticalSizeFlags(Size_ExpandFill);
 	layout->AddNode(scroll);
 	m_tree = MemNew<Tree>();
+	m_tree->SetClipText(true);
 	scroll->AddNode(m_tree);
+	m_tree->SetItemActionCallback([this](uint64_t key, int action)
+	{
+		auto found = m_nodeItems.find(key);
+		auto* item = found != m_nodeItems.end() ? ObjectDatabase::GetInstance<CanvasItem>(found->second) : nullptr;
+		if (item != nullptr && !item->IsQueuedForDeletion()
+			&& action == (item->GetScriptInstance() != nullptr ? 1 : 0))
+		{
+			item->SetVisible(!item->IsVisible());
+			EditorNode::Get()->MarkSceneDirty();
+		}
+	});
 	m_tree->SetSelectedCallback([this](uint64_t key)
 	{
 		auto found = m_nodeItems.find(key);
@@ -170,6 +190,22 @@ void ScenePanel::UpdateItems()
 		m_nodeItems[key] = node->GetObjectID();
 		size_t const index = items.size();
 		items.push_back({ key, parent, node->GetName(), true, true, GetThemeIcon(node->GetClassName(), "EditorIcons"), EditorIcons::GetIconColor(node->GetClassName(), this) });
+		if (node->GetScriptInstance() != nullptr)
+		{
+			items[index].m_actions.push_back({ GetThemeIcon("CSharpScript", "EditorIcons"), GetThemeColor("tn", "EditorIcons"), false });
+		}
+
+		if (auto* canvas = dynamic_cast<CanvasItem*>(node))
+		{
+			items[index].m_actions.push_back({ GetThemeIcon(canvas->IsVisible() ? "Visible" : "Hidden", "EditorIcons"),
+				GetThemeColor("tn", "EditorIcons"), true });
+			items[index].m_dimmed = !canvas->IsVisibleInHierarchy();
+		}
+		else
+		{
+			items[index].m_actions.push_back({ GetThemeIcon("Visible", "EditorIcons"),
+				GetThemeColor("font_color", "EditorStatusLabel"), false });
+		}
 		std::string lower = node->GetName().ToUtf8();
 		std::transform(lower.begin(), lower.end(), lower.begin(), [](unsigned char ch) { return static_cast<char>(std::tolower(ch)); });
 		bool visible = filter.empty() || lower.find(filter) != std::string::npos;
@@ -182,6 +218,9 @@ void ScenePanel::UpdateItems()
 		return visible;
 	};
 	append(m_context.m_sceneTree->GetScene(), 0);
+	bool const any = std::any_of(items.begin(), items.end(), [](Tree::Item const& item) { return item.m_visible; });
+	m_empty->SetText(filter.empty() ? "No scene open" : "No matching nodes");
+	m_empty->SetVisible(!any);
 	m_tree->SetItems(std::move(items), !filter.empty());
 	uint64_t selected = 0;
 	for (auto const& item : m_nodeItems)

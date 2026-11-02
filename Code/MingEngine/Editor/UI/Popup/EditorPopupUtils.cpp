@@ -16,7 +16,7 @@ PopupPanel* EditorPopupUtils::Create(Control* owner, String const& title, VBoxCo
 	panel->SetClipContents(true);
 	popup->AddNode(panel);
 	content = MemNew<VBoxContainer>();
-	content->SetSeparation(10.f);
+	content->SetSeparation(static_cast<float>(owner->GetThemeConstant("content_padding", "Editor")));
 	panel->AddNode(content);
 	if (!title.IsEmpty())
 	{
@@ -55,8 +55,9 @@ void EditorPopupUtils::Layout(PopupPanel* popup, Vector2 preferredSize)
 	auto* panel = static_cast<Control*>(popup->GetChildren().front());
 	Vector2 const bounds(popup->GetViewport()->GetOutputResolution());
 	Vector2 const minimum = panel->GetCombinedMinimumSize();
-	Vector2 size(std::min(std::max(preferredSize.x, minimum.x), std::max(1.f, bounds.x - 40.f)),
-		std::min(std::max(preferredSize.y, minimum.y), std::max(1.f, bounds.y - 40.f)));
+	float const screenMargin = static_cast<float>(popup->GetThemeConstant("popup_screen_margin", "Editor"));
+	Vector2 size(std::min(std::max(preferredSize.x, minimum.x), std::max(1.f, bounds.x - screenMargin)),
+		std::min(std::max(preferredSize.y, minimum.y), std::max(1.f, bounds.y - screenMargin)));
 	panel->SetPosition((bounds - size) * 0.5f);
 	panel->UpdateSize(size);
 }

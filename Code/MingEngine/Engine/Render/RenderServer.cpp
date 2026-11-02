@@ -870,7 +870,7 @@ void RenderServer::CanvasItemAddRect(RID rid, AABB2 const& rect, Color const& co
 }
 
 void RenderServer::CanvasItemAddTextureRect(
-	RID rid, Ref<TextureResource> const& texture, Rect2 const& rect, bool isTiling)
+	RID rid, Ref<TextureResource> const& texture, Rect2 const& rect, bool isTiling, Color const& color)
 {
 	CanvasItemData* item = m_canvasItemOwner.GetOrNull(rid);
 	if (item == nullptr || !texture.IsValid() || rect.GetSize().x == 0.0f || rect.GetSize().y == 0.0f)
@@ -882,6 +882,7 @@ void RenderServer::CanvasItemAddTextureRect(
 	command->texture                     = texture;
 	command->rect                        = rect;
 	command->isTiling                    = isTiling;
+	command->color                       = color;
 	item->m_commands.push_back(command);
 }
 

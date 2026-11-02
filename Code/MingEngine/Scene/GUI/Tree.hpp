@@ -14,6 +14,13 @@ class Tree : public Control
 	MCLASS(Tree, Control);
 
 public:
+	struct ItemAction
+	{
+		Ref<TextureResource> m_icon;
+		Color m_color = Color::White;
+		bool m_enabled = false;
+	};
+
 	struct Item
 	{
 		uint64_t m_ID       = 0;
@@ -23,6 +30,8 @@ public:
 		bool     m_editable = false;
 		Ref<TextureResource> m_icon;
 		Color m_iconColor = Color::White;
+		std::vector<ItemAction> m_actions;
+		bool m_dimmed = false;
 	};
 
 private:
@@ -39,6 +48,8 @@ private:
 		Color              font_selected_color;
 		Color guide_color;
 		int guide_width = 0;
+		int children_guide_width = 0;
+		Color children_guide_color;
 		Ref<TextureResource> arrow_collapsed;
 		Ref<TextureResource> arrow_expanded;
 		Ref<ThemeStyleBox> panel;
@@ -57,9 +68,12 @@ public:
 	Vector2  GetInternalMinimumSize() const override;
 	float    GetRowHeight() const;
 	AABB2    GetItemRect(uint64_t id) const;
+	AABB2 GetItemActionRect(uint64_t id, int action) const;
 
 	void SetItems(std::vector<Item> items, bool filtering = false);
 	void SetFont(Ref<FontResource> const& font);
+	void SetClipText(bool enabled) { m_clipText = enabled; UpdateRowLayout(); }
+	void SetItemActionCallback(std::function<void(uint64_t, int)> callback) { m_itemActionCallback = std::move(callback); }
 	void SetCollapsed(uint64_t id, bool collapsed);
 
 	void     SetSelectedCallback(std::function<void(uint64_t)> callback) { m_selectedCallback = std::move(callback); }
@@ -91,6 +105,7 @@ private:
 	AABB2 GetRowRect(size_t row) const;
 	float GetFoldWidth(size_t row) const;
 	float GetRowTextX(size_t row) const;
+	float GetRowTextEnd(size_t row) const;
 
 	void RebuildRows();
 	void UpdateRowLayout();
@@ -112,6 +127,8 @@ private:
 	float                                        m_contentWidth  = 32.f;
 	bool                                         m_filtering     = false;
 	bool                                         m_updatingRowLayout = false;
+	bool m_clipText = false;
+	std::function<void(uint64_t, int)> m_itemActionCallback;
 	std::function<bool(InputEvent const&)> m_inputCallback;
 	std::function<void(uint64_t)>                m_selectedCallback;
 	std::function<void(uint64_t)>                m_activatedCallback;

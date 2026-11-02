@@ -17,6 +17,9 @@
 #include "MingEngine/Scene/GUI/HBoxContainer.hpp"
 #include "MingEngine/Scene/GUI/VBoxContainer.hpp"
 #include "MingEngine/Scene/GUI/Label.hpp"
+#include "MingEngine/Editor/UI/EditorIcons.hpp"
+#include "MingEngine/Editor/EditorNode.hpp"
+#include "MingEngine/Editor/UI/EditorUI.hpp"
 
 #include <cctype>
 #include <cmath>
@@ -26,22 +29,38 @@ InspectorProperty::InspectorProperty(PropertyInfo info, std::string labelId, Val
 {
 	m_root   = MemNew<VBoxContainer>();
 	m_rootID = m_root->GetObjectID();
+	if (EditorNode::Get() != nullptr && EditorNode::Get()->m_editorUI->GetRootControl() != nullptr)
+	{
+		m_root->SetThemeSource(EditorNode::Get()->m_editorUI->GetRootControl());
+	}
 	m_root->SetSerializable(false);
-	m_root->SetSeparation(3.75f);
+	m_root->SetSeparation(GetEditorDimension("status_spacing", 15.f) * 0.25f);
 	auto* title = MemNew<Label>();
+	m_title = title;
 	title->SetText(GetDisplayName());
 	title->SetThemeTypeVariation("EditorPropertyTitle");
 	auto* row = MemNew<HBoxContainer>();
-	row->SetSeparation(7.5f);
+	row->SetSeparation(GetEditorDimension("status_spacing", 15.f) * 0.5f);
 	m_root->AddNode(row);
-	title->SetCustomMinimumSize(Vector2(112.5f, 0.f));
+	title->SetCustomMinimumSize(Vector2(GetEditorDimension("property_label_width", 112.5f), 0.f));
 	title->SetClipText(true);
 	title->SetVerticalAlignment(VerticalAlignment::Center);
 	row->AddNode(title);
 	m_fields = MemNew<VBoxContainer>();
 	m_fields->SetHorizontalSizeFlags(Control::Size_ExpandFill);
-	m_fields->SetSeparation(2.5f);
+	m_fields->SetSeparation(GetEditorDimension("panel_margin", 5.f) * 0.5f);
 	row->AddNode(m_fields);
+	m_revert = MemNew<Button>();
+	m_revert->SetThemeTypeVariation("EditorPanelAction");
+	m_revert->SetIcon(EditorIcons::GetIconTexture("Undo"));
+	m_revert->SetCustomMinimumSize(Vector2(GetEditorDimension("action_slot", 22.5f), GetEditorDimension("action_slot", 22.5f)));
+	m_revert->SetDisabled(true);
+	m_revert->SetVisible(false);
+	m_revert->SetPressedCallback([this]() { EmitValueChanged(m_revertValue); });
+	auto* revertSlot = MemNew<HBoxContainer>();
+	revertSlot->SetCustomMinimumSize(Vector2(GetEditorDimension("action_slot", 22.5f), 0.f));
+	row->AddNode(revertSlot);
+	revertSlot->AddNode(m_revert);
 	m_error = MemNew<Label>();
 	m_error->SetThemeTypeVariation("EditorErrorLabel");
 	m_error->SetVisible(false);
@@ -114,6 +133,7 @@ void InspectorProperty::EmitValueChanged(Variant const& value)
 void InspectorProperty::BuildNumeric()
 {
 	auto* spin = MemNew<SpinBox>();
+	spin->SetStepButtonsVisible(false);
 	spin->Configure(
 		m_info.m_type == Variant::Type::Int,
 		m_info.m_hint == PropertyInfo::Hint::Range ? (m_info.m_hintData.empty() ? "," : m_info.m_hintData) : "");
@@ -133,28 +153,34 @@ void InspectorProperty::BuildNumeric()
 
 void InspectorProperty::BuildComponents()
 {
+	m_title->SetVisible(false);
 	int const count = m_info.m_type == Variant::Type::Vector2 ? 2 : (m_info.m_type == Variant::Type::Color ? 4 : 3);
 	if (m_info.m_type == Variant::Type::Color)
 	{
 		m_color = MemNew<ColorRect>();
-		m_color->SetCustomMinimumSize(Vector2(0.f, 27.5f));
+		m_color->SetCustomMinimumSize(Vector2(0.f, GetEditorDimension("color_height", 27.5f)));
 		m_fields->AddNode(m_color);
 	}
 
 	char const* names[]  = { "X", "Y", "Z", "W" };
-	char const* angles[] = { "Roll (deg)", "Pitch (deg)", "Yaw (deg)" };
+	char const* angles[] = { "X", "Y", "Z" };
 	char const* colors[] = { "R", "G", "B", "A" };
 	for (int i = 0; i < count; ++i)
 	{
 		auto* row   = MemNew<HBoxContainer>();
 		auto* label = MemNew<Label>();
-		label->SetText(
+		label->SetText(String(GetDisplayName() + " ") + String(
 			m_info.m_type == Variant::Type::EulerAngles
 				? angles[i]
-				: (m_info.m_type == Variant::Type::Color ? colors[i] : names[i]));
-		label->SetCustomMinimumSize(Vector2(m_info.m_type == Variant::Type::EulerAngles ? 122.5f : 25.f, 0.f));
+				: (m_info.m_type == Variant::Type::Color ? colors[i] : names[i])));
+		label->SetThemeTypeVariation("EditorPropertyLabel");
+		label->SetCustomMinimumSize(Vector2(GetEditorDimension("property_label_width", 112.5f), 0.f));
+		label->SetClipText(true);
+		label->SetVerticalAlignment(VerticalAlignment::Center);
+		row->SetSeparation(GetEditorDimension("status_spacing", 15.f) * 0.5f);
 		row->AddNode(label);
 		auto* spin = MemNew<SpinBox>();
+		spin->SetStepButtonsVisible(false);
 		spin->SetHorizontalSizeFlags(Control::Size_ExpandFill);
 		spin->Configure(
 			m_info.m_type == Variant::Type::Color,
@@ -173,6 +199,15 @@ void InspectorProperty::BuildComponents()
 				SetComponent(i, value);
 			});
 		row->AddNode(spin);
+		if (m_info.m_type == Variant::Type::EulerAngles)
+		{
+			auto* unit = MemNew<Label>();
+			unit->SetText("deg");
+			unit->SetThemeTypeVariation("EditorStatusLabel");
+			unit->SetVerticalAlignment(VerticalAlignment::Center);
+			row->AddNode(unit);
+		}
+
 		m_fields->AddNode(row);
 		m_spins.push_back(spin);
 	}
@@ -341,6 +376,13 @@ void InspectorProperty::BuildText(bool resource)
 		});
 }
 
+void InspectorProperty::SetRevertValue(Variant const& value)
+{
+	m_revertValue = value;
+	m_revert->SetDisabled(value.GetType() != m_info.m_type);
+	UpdateValue(m_value);
+}
+
 void InspectorProperty::UpdateValue(Variant const& value)
 {
 	if (value.GetType() != m_info.m_type || GetControl() == nullptr)
@@ -349,6 +391,7 @@ void InspectorProperty::UpdateValue(Variant const& value)
 	}
 
 	m_value = value;
+	m_revert->SetVisible(m_revertValue.GetType() == value.GetType() && value != m_revertValue);
 	for (int i = 0; i < static_cast<int>(m_spins.size()); ++i)
 	{
 		m_spins[i]->SetValueNoSignal(
@@ -501,4 +544,10 @@ std::string InspectorProperty::GetDisplayName() const
 	}
 
 	return result;
+}
+
+float InspectorProperty::GetEditorDimension(char const* name, float fallback) const
+{
+	int const value = m_root->GetThemeConstant(name, "Editor");
+	return value > 0 ? static_cast<float>(value) : fallback;
 }

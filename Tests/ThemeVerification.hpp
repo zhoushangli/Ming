@@ -2,6 +2,9 @@
 
 #include "MingEngine/Scene/GUI/ThemeDatabase.hpp"
 #include "MingEngine/Scene/GUI/OptionButton.hpp"
+#include "MingEngine/Editor/EditorThemeManager.hpp"
+#include <limits>
+#include <cmath>
 
 #include <functional>
 #include <cstdlib>
@@ -163,6 +166,57 @@ inline void VerifyThemes(
 {
 	ClassDatabase::RegisterClass<ThemeProbe>();
 	VerifyThemeContexts(check);
+
+	{
+		auto base = EditorThemeManager::CreateTheme();
+		base->SetConstant("mode", "Button", 7);
+		base->SetFontSize("font_size", "CustomTitle", 17);
+		base->SetTypeVariation("CustomTitle", "Label");
+		auto original = base->GetStyleBox("normal", "EditorMenuItem");
+		float const originalMargin = original->GetContentMargin(ThemeStyleBox::Side::Left);
+		for (float scale : { 1.f, 1.25f, 1.5f, 1.75f, 2.f, 1.25f, 1.f })
+		{
+			auto generated = EditorThemeManager::CreateScaledTheme(base, scale);
+			auto box = generated->GetStyleBox("normal", "EditorMenuItem");
+			check(generated != base && box != original
+				&& box == generated->GetStyleBox("disabled", "EditorMenuItem"),
+				"Theme duplicate isolates mutable boxes and preserves internal sharing");
+			check(std::abs(box->GetContentMargin(ThemeStyleBox::Side::Left) - originalMargin * scale) < 0.001f
+				&& original->GetContentMargin(ThemeStyleBox::Side::Left) == originalMargin,
+				"each generated Theme scales shared margins once from the unchanged base");
+			check(generated->GetConstant("mode", "Button") == 7
+				&& generated->GetColor("font_color", "Control") == base->GetColor("font_color", "Control")
+				&& generated->GetDefaultFont() == base->GetDefaultFont()
+				&& generated->GetIcon("Node", "EditorIcons") == base->GetIcon("Node", "EditorIcons"),
+				"Theme scaling preserves non-dimensional data and shares immutable resources");
+			check(generated->GetFontSize("font_size", "CustomTitle") == static_cast<int>(std::round(17.f * scale))
+				&& generated->GetTypeVariationBase("CustomTitle") == "Label",
+				"Theme scaling enumerates custom font sizes and preserves variations");
+			box->SetContentMargin(ThemeStyleBox::Side::Left, 123.f);
+			check(original->GetContentMargin(ThemeStyleBox::Side::Left) == originalMargin,
+				"editing a generated StyleBox leaves the base unchanged");
+		}
+
+		auto generated = EditorThemeManager::CreateScaledTheme(base);
+		check(generated->GetDefaultFontSize() == 19
+			&& generated->GetConstant("icon_size", "Button") == 25
+			&& generated->GetConstant("minimum_height", "Button") == 38
+			&& generated->GetConstant("top_bar_height", "Editor") == 75
+			&& generated->GetConstant("guide_width", "Tree") == 2
+			&& generated->GetConstant("children_guide_width", "Tree") == 1,
+			"125 percent Theme uses the agreed representative dimensions and line widths");
+		check(base->GetDefaultFontSize() == 15 && base->GetConstant("icon_size", "Button") == 20,
+			"base Theme remains the original 100 percent data");
+		for (float invalid : { 0.f, -1.f, std::numeric_limits<float>::infinity(), std::numeric_limits<float>::quiet_NaN() })
+		{
+			check(EditorThemeManager::CreateScaledTheme(base, invalid)->GetDefaultFontSize() == 19,
+				"invalid scale uses the default 125 percent");
+		}
+
+		check(EditorThemeManager::CreateScaledTheme(base, 0.001f)->GetDefaultFontSize() == 1,
+			"positive tiny scale keeps fonts drawable");
+		check(!EditorThemeManager::CreateScaledTheme({}).IsValid(), "missing base does not create a partial Theme");
+	}
 	auto font            = FontResource::CreateDefault();
 	auto originalDefault = ThemeDatabase::GetDefaultTheme();
 	int const defaultFontSize = originalDefault->GetDefaultFontSize();
@@ -338,9 +392,10 @@ inline void VerifyThemes(
 		split->AddNode(second);
 		split->UpdateSize(Vector2(300.f, 160.f));
 		splitTree.FlushContainerUpdate();
-		check(split->GetInternalMinimumSize() == Vector2(126.f, 40.f)
-			&& split->GetDividerRect().GetWidth() == 6.f
-			&& second->GetLocalPosition().x == first->GetSize().x + 6.f,
+		float const defaultGap = static_cast<float>(split->GetThemeConstant("separation"));
+		check(split->GetInternalMinimumSize() == Vector2(120.f + defaultGap, 40.f)
+			&& split->GetDividerRect().GetWidth() == defaultGap
+			&& second->GetLocalPosition().x == first->GetSize().x + defaultGap,
 			"Split compact gap is shared by minimum size, divider and panel layout");
 		int finished = 0;
 		split->SetDragFinishedCallback([&]() { ++finished; });
@@ -884,6 +939,7 @@ inline void VerifyThemes(
 			dividerStyle->SetBackgroundColor(large ? Color(60, 51, 38) : Color(25, 24, 23));
 		};
 		std::filesystem::path const captures = projectPath.parent_path() / "Captures";
+		apply(false);
 		frame();
 		frame();
 		rows->Select(2);

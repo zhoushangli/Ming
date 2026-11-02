@@ -39,7 +39,7 @@ private:
 
 
 public:
-	EditorNode();
+	explicit EditorNode(float editorScale = 1.25f);
 	~EditorNode() override;
 
 	Ref<Theme> GetEditorTheme() const { return m_editorTheme; }
@@ -89,7 +89,9 @@ public:
 private:
 	static EditorNode* s_instance;
 
+	Ref<Theme> m_baseEditorTheme;
 	Ref<Theme> m_editorTheme;
+	float m_editorScale = 1.25f;
 	EditorData      m_editorData;
 	EditorUndoRedo  m_undoRedo;
 	EditorUIContext m_uiContext;

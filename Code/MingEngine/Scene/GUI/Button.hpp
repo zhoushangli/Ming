@@ -47,6 +47,7 @@ public:
 	void SetFontSize(int fontSize) { AddThemeFontSizeOverride("font_size", fontSize); }
 	void SetClipText(bool enabled);
 	void SetTextOverrunBehavior(TextOverrunBehavior behavior);
+	void SetHorizontalAlignment(HorizontalAlignment alignment) { m_alignment = alignment; QueueRedraw(); }
 
 protected:
 	static void BindMethods();
@@ -64,6 +65,7 @@ private:
 
 private:
 	String m_text;
+	HorizontalAlignment m_alignment = HorizontalAlignment::Center;
 	Ref<TextureResource> m_icon;
 	bool m_clipText = false;
 	TextOverrunBehavior m_overrun = TextOverrunBehavior::TrimNothing;

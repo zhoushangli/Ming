@@ -23,6 +23,39 @@ T* FindControl(Node* node)
 	return nullptr;
 }
 
+inline LineEdit* FindFilter(Node* node, String const& placeholder)
+{
+	if (auto* edit = dynamic_cast<LineEdit*>(node); edit != nullptr && edit->GetPlaceholder() == placeholder)
+	{
+		return edit;
+	}
+
+	for (Node* child : node->GetChildren())
+	{
+		if (LineEdit* edit = FindFilter(child, placeholder))
+		{
+			return edit;
+		}
+	}
+
+	return nullptr;
+}
+
+inline uint64_t FileItem(Tree* tree, String const& path)
+{
+	for (int row = 0; row < static_cast<int>(tree->GetInternalMinimumSize().y / tree->GetRowHeight()); ++row)
+	{
+		Vector2 const point(80.f, (row + 0.5f) * tree->GetRowHeight());
+		GuiDragData data;
+		if (tree->GetDragData(point, data) && data.m_value == path)
+		{
+			return tree->GetItemAtPosition(point);
+		}
+	}
+
+	return 0;
+}
+
 inline Button* FindButton(Node* node, String const& text)
 {
 	if (auto* button = dynamic_cast<Button*>(node); button != nullptr && button->IsVisibleInHierarchy()
@@ -164,10 +197,17 @@ inline void VerifyNativeEditorPanels(Engine& engine, std::function<void(bool, ch
 	auto rightClickSelected = [&]()
 	{
 		Tree* files = ui->GetFileTreeControl();
+		files->EnsureSelectedVisible();
+		frame();
 		InputEvent event;
 		event.m_type = InputEventType::MouseButton;
 		event.m_mouseButton = GLFW_MOUSE_BUTTON_RIGHT;
-		event.m_position = files->GetGlobalPosition() + files->GetItemRect(files->GetSelected()).m_mins + Vector2(70.f, 12.f);
+		AABB2 const row = files->GetItemRect(files->GetSelected());
+		auto* scroll = static_cast<ScrollContainer*>(files->GetParent());
+		Vector2 const top = files->GetGlobalPosition() + row.m_mins;
+		float const visibleTop = std::max(top.y, scroll->GetGlobalPosition().y);
+		float const visibleBottom = std::min(top.y + row.GetHeight(), scroll->GetGlobalPosition().y + scroll->GetPageSize().y);
+		event.m_position = Vector2(top.x + std::min(70.f, row.GetWidth() * 0.5f), (visibleTop + visibleBottom) * 0.5f);
 		event.m_pressed = true;
 		root->ProcessInputEvent(event);
 		event.m_pressed = false;
@@ -179,7 +219,7 @@ inline void VerifyNativeEditorPanels(Engine& engine, std::function<void(bool, ch
 	tree.GetScene()->AddNode(gameLabel);
 	gameLabel->SetText("Game UI");
 	Label* editorLabel = FindControl<Label>(&ui->GetPanel<InspectorPanel>());
-	int const editorFontSize = 15;
+	int const editorFontSize = editor->GetEditorTheme()->GetDefaultFontSize();
 	check(editorLabel != nullptr && editorLabel->GetFontSize() == editorFontSize
 		&& gameLabel->GetFontSize() == ThemeDatabase::GetDefaultTheme()->GetDefaultFontSize(),
 		"production editor and game UI use isolated default fonts and sizes");
@@ -216,11 +256,11 @@ inline void VerifyNativeEditorPanels(Engine& engine, std::function<void(bool, ch
 	check(ProjectSettings::Get()->m_startScenePath == previousStart, "native settings Cancel discards draft");
 
 	ui->GetTabs()->SetCurrentTab(ui->GetTabs()->GetPageIndex(&ui->GetPanel<FileSystemPanel>()));
-	LineEdit* filter = FindControl<LineEdit>(&ui->GetPanel<FileSystemPanel>());
+	LineEdit* filter = FindFilter(&ui->GetPanel<FileSystemPanel>(), "Filter files");
 	filter->SetText("PanelMigration");
 	frame();
 	Tree* files = ui->GetFileTreeControl();
-	files->Select(files->GetItemAtPosition(Vector2(80.f, files->GetRowHeight() * 1.5f)), true);
+	files->Select(FileItem(files, "res://PanelMigration"), true);
 	rightClickSelected();
 	if (!click("New Folder..."))
 	{
@@ -274,7 +314,7 @@ inline void VerifyNativeEditorPanels(Engine& engine, std::function<void(bool, ch
 
 	filter->SetText("PanelMigration");
 	frame();
-	files->Select(files->GetItemAtPosition(Vector2(80.f, files->GetRowHeight() * 1.5f)), true);
+	files->Select(FileItem(files, "res://PanelMigration"), true);
 	rightClickSelected();
 	if (!click("New Scene..."))
 	{
@@ -327,7 +367,7 @@ inline void VerifyNativeEditorPanels(Engine& engine, std::function<void(bool, ch
 	ui->GetTabs()->SetCurrentTab(ui->GetTabs()->GetPageIndex(&ui->GetPanel<FileSystemPanel>()));
 	filter->SetText("editor-panel-triangle");
 	frame();
-	files->Select(files->GetItemAtPosition(Vector2(80.f, files->GetRowHeight() * 2.5f)), true);
+	files->Select(FileItem(files, "res://PanelMigration/editor-panel-triangle.obj"), true);
 	frame();
 	ui->GetDockSlot(2)->SetCurrentTab(ui->GetDockSlot(2)->GetPageIndex(&ui->GetPanel<ImportPanel>()));
 	frame();
@@ -345,14 +385,14 @@ inline void VerifyNativeEditorPanels(Engine& engine, std::function<void(bool, ch
 		"native import options are saved by Reimport");
 	SaveRenderedFrame(engine.m_renderServer->ViewportGetTexture(root->GetViewportRID()),
 		projectPath.parent_path() / "Captures" / "editor-native-panels.ppm");
-	if (!click("Window") || !click("Import"))
+	if (!click("View") || !click("Import"))
 	{
 		return;
 	}
-	check(!ui->GetPanel<ImportPanel>().IsOpen(), "Window menu closes a native panel");
-	if (!click("Window") || !click("Import"))
+	check(!ui->GetPanel<ImportPanel>().IsOpen(), "View menu closes a native panel");
+	if (!click("View") || !click("Import"))
 	{
 		return;
 	}
-	check(ui->GetPanel<ImportPanel>().IsOpen(), "Window menu reopens the existing native panel");
+	check(ui->GetPanel<ImportPanel>().IsOpen(), "View menu reopens the existing native panel");
 }

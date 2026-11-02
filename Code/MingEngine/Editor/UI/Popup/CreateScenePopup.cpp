@@ -101,14 +101,14 @@ void CreateScenePopup::Render(EditorUIContext& context)
 		m_nameEdit->SetText(m_sceneName);
 		m_rootEdit->SetText(m_rootName);
 		m_errorLabel->SetText("");
-		EditorPopupUtils::Open(m_popup, context.m_rootControl, Vector2(650.f, 300.f));
+		EditorPopupUtils::Open(m_popup, context.m_rootControl, Vector2(static_cast<float>(context.m_rootControl->GetThemeConstant("project_popup_width", "Editor")), static_cast<float>(context.m_rootControl->GetThemeConstant("create_popup_height", "Editor"))));
 		m_nameEdit->GrabFocus();
 		m_nameEdit->SelectAll();
 	}
 
 	if (m_popup->IsVisible())
 	{
-		EditorPopupUtils::Layout(m_popup, Vector2(650.f, 300.f));
+		EditorPopupUtils::Layout(m_popup, Vector2(static_cast<float>(context.m_rootControl->GetThemeConstant("project_popup_width", "Editor")), static_cast<float>(context.m_rootControl->GetThemeConstant("create_popup_height", "Editor"))));
 	}
 }
 

@@ -10,6 +10,9 @@
 
 class VBoxContainer;
 class Label;
+class TextureRect;
+class PanelContainer;
+class ScrollContainer;
 
 class ImportPanel final : public EditorPanel
 {
@@ -37,6 +40,12 @@ private:
 private:
 	VBoxContainer* m_optionsContent = nullptr;
 	Label* m_header = nullptr;
+	LineEdit* m_filter = nullptr;
+	PanelContainer* m_objectBar = nullptr;
+	TextureRect* m_icon = nullptr;
+	Label* m_empty = nullptr;
+	Label* m_type = nullptr;
+	ScrollContainer* m_scroll = nullptr;
 	OptionButton* m_importerChoice = nullptr;
 	Button* m_reimport = nullptr;
 	VirtualPath                              m_cachedSelectedPath;

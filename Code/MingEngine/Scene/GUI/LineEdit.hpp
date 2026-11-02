@@ -26,6 +26,7 @@ private:
 		int                font_size = 16;
 		int                minimum_height = 0;
 		int                caret_width = 1;
+		int icon_separation = 8;
 		Color              font_color;
 		Color              font_read_only_color;
 		Color              font_disabled_color;
@@ -73,6 +74,7 @@ public:
 	// e.g. SetText(U"Name\n") stores U"Name" with the cursor at column zero.
 	void SetText(String const& text);
 	void SetPlaceholder(String const& text);
+	void SetIcon(Ref<TextureResource> const& icon);
 
 	void SetFont(Ref<FontResource> const& font);
 	void SetFontSize(int fontSize);
@@ -145,6 +147,7 @@ private:
 private:
 	String                                            m_text;
 	String                                            m_placeholder;
+	Ref<TextureResource>                              m_icon;
 	ThemeCache                                        m_themeCache;
 	TextLine                                          m_line;
 	TextLine                                          m_placeholderLine;

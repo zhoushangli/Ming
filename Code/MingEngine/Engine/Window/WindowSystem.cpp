@@ -8,8 +8,10 @@
 #define GLFW_EXPOSE_NATIVE_WIN32
 #include "ThirdParty/GLFW/glfw3.h"
 #include "ThirdParty/GLFW/glfw3native.h"
+#include <dwmapi.h>
 
 #pragma comment(lib, "ThirdParty/GLFW/glfw3.lib")
+#pragma comment(lib, "dwmapi.lib")
 
 namespace
 {
@@ -334,6 +336,24 @@ void WindowSystem::RunMessagePump()
 void* WindowSystem::GetHwnd() const
 {
 	return m_windowHandle;
+}
+
+void WindowSystem::SetTitleBarColors(Color const& background, Color const& text)
+{
+	if (m_windowHandle == nullptr)
+	{
+		return;
+	}
+
+	HWND const window = static_cast<HWND>(m_windowHandle);
+	BOOL const dark = TRUE;
+	COLORREF const caption = RGB(background.r, background.g, background.b);
+	COLORREF const foreground = RGB(text.r, text.g, text.b);
+	// Unsupported DWM attributes leave the operating system's default decoration intact.
+	// e.g. Older Windows versions can accept dark mode without supporting custom caption colors.
+	DwmSetWindowAttribute(window, 20, &dark, sizeof(dark));
+	DwmSetWindowAttribute(window, 35, &caption, sizeof(caption));
+	DwmSetWindowAttribute(window, 36, &foreground, sizeof(foreground));
 }
 
 GLFWwindow* WindowSystem::GetGLFWWindow() const

@@ -26,6 +26,7 @@ public:
 	std::string               GetDisplayName() const;
 	void                      SetValueReader(std::function<Variant()> reader) { m_reader = std::move(reader); }
 	void                      UpdateValue(Variant const& value);
+	void SetRevertValue(Variant const& value);
 	void                      EndEditing(LineEdit::EditEndReason reason = LineEdit::EditEndReason::Interrupted);
 	bool                      CanAssignResource(VirtualPath const& path) const;
 	bool                      AssignResource(VirtualPath const& path);
@@ -34,6 +35,7 @@ public:
 
 protected:
 	InspectorProperty(PropertyInfo info, std::string labelId, ValueChangedCallback onValueChanged);
+	float GetEditorDimension(char const* name, float fallback) const;
 	void           BuildNumeric();
 	void           BuildComponents();
 	void           BuildText(bool resource = false);
@@ -46,6 +48,7 @@ protected:
 	static Variant GetComponentValue(Variant const& value, int index);
 	void           SetComponent(int index, Variant const& value);
 
+protected:
 	PropertyInfo             m_info;
 	std::string              m_labelId;
 	ValueChangedCallback     m_onValueChanged;
@@ -56,6 +59,9 @@ protected:
 	VBoxContainer*           m_root    = nullptr;
 	VBoxContainer*           m_fields  = nullptr;
 	Label*                   m_error   = nullptr;
+	Label* m_title = nullptr;
+	Button* m_revert = nullptr;
+	Variant m_revertValue;
 	LineEdit*                m_text    = nullptr;
 	Button*                  m_button  = nullptr;
 	OptionButton*            m_options = nullptr;

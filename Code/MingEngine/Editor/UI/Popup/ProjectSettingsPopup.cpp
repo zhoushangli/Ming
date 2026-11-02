@@ -31,13 +31,13 @@ void ProjectSettingsPopup::Render(EditorUIContext& context)
 		m_openRequested = false;
 		ObjectDatabase::GetInstance<LineEdit>(m_editID)->SetText(m_startScenePath);
 		m_errorLabel->SetText("");
-		EditorPopupUtils::Open(m_popup, context.m_rootControl, Vector2(650.f, 275.f));
+		EditorPopupUtils::Open(m_popup, context.m_rootControl, Vector2(static_cast<float>(context.m_rootControl->GetThemeConstant("project_popup_width", "Editor")), static_cast<float>(context.m_rootControl->GetThemeConstant("project_popup_height", "Editor"))));
 		ObjectDatabase::GetInstance<LineEdit>(m_editID)->GrabFocus();
 	}
 
 	if (m_popup != nullptr && m_popup->IsVisible())
 	{
-		EditorPopupUtils::Layout(m_popup, Vector2(650.f, 275.f));
+		EditorPopupUtils::Layout(m_popup, Vector2(static_cast<float>(context.m_rootControl->GetThemeConstant("project_popup_width", "Editor")), static_cast<float>(context.m_rootControl->GetThemeConstant("project_popup_height", "Editor"))));
 	}
 }
 

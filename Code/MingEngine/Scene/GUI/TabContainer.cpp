@@ -5,6 +5,7 @@
 #include "MingEngine/Scene/Core/Viewport.hpp"
 #include "MingEngine/Scene/GUI/LineEdit.hpp"
 #include "MingEngine/Scene/GUI/PopupPanel.hpp"
+#include "MingEngine/Engine/Application/Engine.hpp"
 
 #include <algorithm>
 #include "ThirdParty/GLFW/glfw3.h"
@@ -28,6 +29,10 @@ void FinishPageEditing(Node* node)
 TabContainer::TabContainer()
 {
 	SetClipContents(true);
+	m_titleActions = MemNew<HBoxContainer>();
+	m_tabExtras = MemNew<HBoxContainer>();
+	AddNode(m_titleActions);
+	AddNode(m_tabExtras);
 }
 
 void TabContainer::BindMethods()
@@ -72,6 +77,19 @@ void TabContainer::ApplyTabTheme(Button* button)
 	button->AddThemeColorOverride("font_disabled_color", m_themeCache.font_disabled_color);
 }
 
+float TabContainer::GetTabWidth(Button const* button) const
+{
+	float textWidth = 0.f;
+	if (m_themeCache.font.IsValid() && g_engine != nullptr && g_engine->m_textServer != nullptr)
+	{
+		textWidth = g_engine->m_textServer->GetTextLine(m_themeCache.font->GetFontRID(), button->GetText(),
+			static_cast<float>(m_themeCache.font_size)).m_width;
+	}
+
+	float const padding = m_themeCache.tab_normal.IsValid() ? m_themeCache.tab_normal->GetMinimumSize().x : 0.f;
+	return std::max(static_cast<float>(std::max(0, m_themeCache.tab_minimum_width)), textWidth + padding);
+}
+
 void TabContainer::OnThemeChanged()
 {
 	for (Button* button : m_buttons)
@@ -90,13 +108,15 @@ AABB2 TabContainer::GetTabBarRect() const
 		height = std::max(height, button->GetCombinedMinimumSize().y);
 	}
 
-	return AABB2(0.f, 0.f, GetSize().x, height);
+	float const top = m_tabsAtBottom ? std::max(0.f, GetSize().y - height) : 0.f;
+	return AABB2(0.f, top, std::max(0.f, GetSize().x - m_titleActions->GetCombinedMinimumSize().x - m_tabExtras->GetCombinedMinimumSize().x), top + height);
 }
 
 AABB2 TabContainer::GetPageRect() const
 {
 	float const top = std::min(GetSize().y, GetTabBarRect().m_maxs.y + static_cast<float>(std::max(0, m_themeCache.page_separation)));
-	AABB2 const area(0.f, top, GetSize().x, GetSize().y);
+	float const bottom = std::max(0.f, GetTabBarRect().m_mins.y - static_cast<float>(std::max(0, m_themeCache.page_separation)));
+	AABB2 const area(0.f, m_tabsAtBottom ? 0.f : top, GetSize().x, m_tabsAtBottom ? bottom : GetSize().y);
 	return m_themeCache.panel.IsValid() ? m_themeCache.panel->GetContentRect(area) : area;
 }
 
@@ -107,11 +127,12 @@ AABB2 TabContainer::GetTabInsertRect(int index) const
 		return AABB2::Zero;
 	}
 
-	float const width = std::min(GetSize().x, static_cast<float>(std::max(1, m_themeCache.drop_mark_width)));
+	float const available = GetTabBarRect().GetWidth();
+	float const width = std::min(available, static_cast<float>(std::max(1, m_themeCache.drop_mark_width)));
 	float const edge = index < GetPageCount() ? m_buttons[index]->GetLocalPosition().x
 		: (m_buttons.empty() ? 0.f : m_buttons.back()->GetLocalPosition().x + m_buttons.back()->GetSize().x);
-	float const x = std::clamp(edge, 0.f, std::max(0.f, GetSize().x - width));
-	return AABB2(x, 0.f, x + width, GetTabBarRect().GetHeight());
+	float const x = std::clamp(edge, 0.f, std::max(0.f, available - width));
+	return AABB2(x, GetTabBarRect().m_mins.y, x + width, GetTabBarRect().m_maxs.y);
 }
 
 Vector2 TabContainer::GetInternalMinimumSize() const
@@ -132,6 +153,7 @@ Vector2 TabContainer::GetInternalMinimumSize() const
 			static_cast<float>(std::max(0, m_themeCache.tab_minimum_width)) });
 	}
 
+	minimum.x = std::max(minimum.x, m_titleActions->GetCombinedMinimumSize().x + 60.f);
 	minimum.y += GetTabBarRect().GetHeight() + static_cast<float>(std::max(0, m_themeCache.page_separation));
 	return minimum;
 }
@@ -161,6 +183,7 @@ void TabContainer::InsertPage(String const& title, Control* page, int index)
 	Control* const current = GetCurrentPage();
 	auto*     button = MemNew<Button>();
 	button->SetText(title);
+	button->SetClipText(true);
 	button->SetToggleMode(true);
 	button->SetPressedCallback(
 		[this, page]()
@@ -230,6 +253,11 @@ String TabContainer::GetPageTitle(int index) const
 
 int TabContainer::GetTabInsertIndex(Vector2 const& position) const
 {
+	if (position.x < 0.f || position.x >= GetTabBarRect().m_maxs.x)
+	{
+		return -1;
+	}
+
 	for (int i = 0; i < GetPageCount(); ++i)
 	{
 		if (position.x < m_buttons[i]->GetLocalPosition().x + m_buttons[i]->GetSize().x * 0.5f)
@@ -293,6 +321,12 @@ void TabContainer::MovePage(int from, int to)
 
 bool TabContainer::CanDropData(Vector2 const& position, GuiDragData const& data) const
 {
+	if (position.y >= GetTabBarRect().m_mins.y && position.y < GetTabBarRect().m_maxs.y
+		&& GetTabInsertIndex(position) < 0)
+	{
+		return false;
+	}
+
 	if (Control::CanDropData(position, data))
 	{
 		return true;
@@ -320,7 +354,7 @@ void TabContainer::DropData(Vector2 const& position, GuiDragData const& data)
 	Control* page = ObjectDatabase::GetInstance<Control>(data.m_objectID);
 	auto* from = dynamic_cast<TabContainer*>(page->GetParent());
 	int const old = from->GetPageIndex(page);
-	int index = position.y < GetTabBarRect().m_maxs.y ? GetTabInsertIndex(position) : GetPageCount();
+	int index = GetTabBarRect().IsPointInside(position) ? GetTabInsertIndex(position) : GetPageCount();
 	if (from == this)
 	{
 		MovePage(old, index > old ? index - 1 : index);
@@ -344,7 +378,7 @@ void TabContainer::SetDropInsertIndex(int index)
 
 void TabContainer::DragHover(Vector2 const& position, GuiDragData const& data, bool accepted)
 {
-	SetDropInsertIndex(accepted && position.y >= 0.f && position.y < GetTabBarRect().m_maxs.y ? GetTabInsertIndex(position) : -1);
+	SetDropInsertIndex(accepted && position.y >= 0.f && GetTabBarRect().IsPointInside(position) ? GetTabInsertIndex(position) : -1);
 	Control::DragHover(position, data, accepted);
 }
 
@@ -421,13 +455,25 @@ void TabContainer::OnNotification(int notification)
 	{
 	case Notification_UpdateLayout:
 	{
+		float const available = GetTabBarRect().GetWidth();
+		float const actionWidth = m_titleActions->GetCombinedMinimumSize().x;
+		m_titleActions->SetPosition(Vector2(GetSize().x - actionWidth, GetTabBarRect().m_mins.y));
+		m_titleActions->UpdateSize(Vector2(actionWidth, GetTabBarRect().GetHeight()));
+		float total = 0.f;
+		for (Button* button : m_buttons)
+		{
+			total += GetTabWidth(button)
+				+ static_cast<float>(std::max(0, m_themeCache.tab_separation));
+		}
+
+		float const ratio = total > 0.f ? std::min(1.f, available / total) : 1.f;
 		float x = 0.f;
 		for (Button* button : m_buttons)
 		{
-			float const width = std::max(static_cast<float>(std::max(0, m_themeCache.tab_minimum_width)), button->GetCombinedMinimumSize().x);
-			button->SetPosition(Vector2(x, 0.f));
+			float const width = GetTabWidth(button) * ratio;
+			button->SetPosition(Vector2(x, GetTabBarRect().m_mins.y));
 			button->UpdateSize(Vector2(width, GetTabBarRect().GetHeight()));
-			x += width + static_cast<float>(std::max(0, m_themeCache.tab_separation));
+			x += width + static_cast<float>(std::max(0, m_themeCache.tab_separation)) * ratio;
 		}
 
 		if (Control* page = GetCurrentPage())
@@ -436,18 +482,32 @@ void TabContainer::OnNotification(int notification)
 			page->SetPosition(rect.m_mins);
 			page->UpdateSize(rect.GetDimensions());
 		}
+
+		m_tabExtras->SetPosition(Vector2(x, GetTabBarRect().m_mins.y));
+		m_tabExtras->UpdateSize(Vector2(m_tabExtras->GetCombinedMinimumSize().x, GetTabBarRect().GetHeight()));
 		break;
 	}
 	case Notification_Draw:
 	{
-		DrawThemeStyleBox(m_themeCache.tab_normal, GetTabBarRect());
-		float const top = std::min(GetSize().y, GetTabBarRect().GetHeight());
-		DrawThemeStyleBox(m_themeCache.panel, AABB2(0.f, top, GetSize().x, GetSize().y));
+		DrawThemeStyleBox(m_themeCache.tab_normal, AABB2(0.f, GetTabBarRect().m_mins.y, GetSize().x, GetTabBarRect().m_maxs.y));
+		DrawThemeStyleBox(m_themeCache.panel, m_tabsAtBottom
+			? AABB2(0.f, 0.f, GetSize().x, GetTabBarRect().m_mins.y)
+			: AABB2(0.f, GetTabBarRect().m_maxs.y, GetSize().x, GetSize().y));
 		if (m_dropIndex >= 0)
 		{
 			DrawRect(GetTabInsertRect(m_dropIndex), m_themeCache.drop_mark_color);
 		}
 		break;
 	}
+	}
+}
+
+void TabContainer::SetTabsAtBottom(bool enabled)
+{
+	if (m_tabsAtBottom != enabled)
+	{
+		m_tabsAtBottom = enabled;
+		MarkDirty();
+		QueueRedraw();
 	}
 }

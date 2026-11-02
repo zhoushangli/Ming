@@ -8,6 +8,7 @@
 #include "MingEngine/Editor/UI/ViewportPanel.hpp"
 #include "MingEngine/Editor/UI/Popup/ProjectSettingsPopup.hpp"
 #include "MingEngine/Editor/UI/Popup/WarningPopup.hpp"
+#include "MingEngine/Scene/GUI/MenuBar.hpp"
 
 #include <array>
 
@@ -21,7 +22,7 @@ class MenuBar;
 class EditorUI
 {
 public:
-	using MenuItem = std::pair<String, std::function<void()>>;
+	using MenuItem = MenuBar::MenuItem;
 
 private:
 	struct DockPanel
@@ -63,6 +64,8 @@ public:
 	void ResetNativeLayout();
 	bool SaveNativeLayout();
 	void LoadNativeLayout();
+	void SetStatusMessage(String const& message);
+	void ToggleOutputCollapsed();
 
 	void SetViewportRect(Vector2 origin, Vector2 dims);
 	Vector2 GetViewportOrigin() const { return m_viewportOrigin; }
@@ -99,6 +102,9 @@ private:
 	TextureRect* m_brand = nullptr;
 	TextureRect* m_beam = nullptr;
 	Label* m_status = nullptr;
+	HBoxContainer* m_statusBar = nullptr;
+	Label* m_statusMessage = nullptr;
+	Label* m_statusInfo = nullptr;
 	std::vector<ToolbarAction> m_toolbarActions;
 	TabContainer* m_tabs = nullptr;
 	Control* m_scenePage = nullptr;
@@ -122,6 +128,7 @@ private:
 	ColorRect* m_dockInsertMark = nullptr;
 	bool m_loadingLayout = false;
 	bool m_layoutReady = false;
+	float m_outputSplitRatio = 0.8f;
 };
 
 template <>

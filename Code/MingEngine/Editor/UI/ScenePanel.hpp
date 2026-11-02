@@ -28,6 +28,7 @@ private:
 private:
 	Tree* m_tree = nullptr;
 	LineEdit* m_filter = nullptr;
+	Label* m_empty = nullptr;
 	std::map<uint64_t, ObjectID> m_nodeItems;
 	CreateNodePopup m_createNodePopup;
 };

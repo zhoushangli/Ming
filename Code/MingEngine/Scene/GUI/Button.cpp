@@ -195,6 +195,14 @@ void Button::DrawContent(Color const& color)
 	float const displayedWidth = m_clipText ? std::min(available, line.m_width) : line.m_width;
 	Vector2 const contentSize(iconSize.x + separation + displayedWidth, std::max(iconSize.y, height));
 	Vector2 offset = rect.m_mins + (rect.GetDimensions() - contentSize) * 0.5f;
+	if (m_alignment == HorizontalAlignment::Left)
+	{
+		offset.x = rect.m_mins.x;
+	}
+	else if (m_alignment == HorizontalAlignment::Right)
+	{
+		offset.x = rect.m_maxs.x - contentSize.x;
+	}
 	if (iconSize.x > 0.f)
 	{
 		Rect2 iconRect;
@@ -225,6 +233,9 @@ void Button::DrawContent(Color const& color)
 		GlyphImage const& bitmap = texture->m_bitmap;
 		Rect2 target;
 		target.m_position = offset + Vector2(glyph.m_posX + bitmap.m_offsetX, static_cast<float>(bitmap.m_offsetY));
+		Vector2 const global = GetGlobalPosition();
+		target.m_position = Vector2(std::round(target.m_position.x + global.x) - global.x,
+			std::round(target.m_position.y + global.y) - global.y);
 		target.m_size = Vector2(static_cast<float>(bitmap.m_width), static_cast<float>(bitmap.m_height));
 		Rect2 source;
 		source.m_position = Vector2::Zero;

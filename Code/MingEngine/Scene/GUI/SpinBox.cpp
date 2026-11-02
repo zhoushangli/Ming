@@ -110,10 +110,17 @@ std::string SpinBox::FormatValue(Variant const& value)
 		return std::to_string(value.As<int>());
 	}
 
-	std::ostringstream stream;
-	stream.imbue(std::locale::classic());
-	stream << std::setprecision(std::numeric_limits<float>::max_digits10) << value.As<float>();
-	return stream.str();
+	char buffer[64];
+	auto const result = std::to_chars(std::begin(buffer), std::end(buffer), value.As<float>(), std::chars_format::general);
+	return result.ec == std::errc() ? std::string(buffer, result.ptr) : std::string();
+}
+
+void SpinBox::SetStepButtonsVisible(bool visible)
+{
+	for (Button* button : m_stepButtons)
+	{
+		button->SetVisible(visible);
+	}
 }
 
 SpinBox::SpinBox()
@@ -131,7 +138,7 @@ SpinBox::SpinBox()
 	{
 		auto* button = MemNew<Button>();
 		button->SetText(direction < 0 ? "-" : "+");
-		button->SetFontSize(12);
+		button->SetThemeTypeVariation("SpinBoxStep");
 		button->SetFocusMode(FocusMode::None);
 		button->SetPressedCallback(
 			[this, direction]()
@@ -143,7 +150,7 @@ SpinBox::SpinBox()
 	}
 
 	m_errorLabel = MemNew<Label>();
-	m_errorLabel->SetFontSize(11);
+	m_errorLabel->SetThemeTypeVariation("SpinBoxError");
 	m_errorLabel->SetVisible(false);
 	AddNode(m_errorLabel);
 	m_edit->SetEditingEndedCallback(

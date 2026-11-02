@@ -8,6 +8,10 @@
 #include "MingEngine/Editor/UI/Popup/EditorPopupUtils.hpp"
 #include "MingEngine/Scene/GUI/ScrollContainer.hpp"
 #include "MingEngine/Scene/GUI/OptionButton.hpp"
+#include "MingEngine/Scene/GUI/MarginContainer.hpp"
+#include "MingEngine/Scene/GUI/PanelContainer.hpp"
+#include "MingEngine/Scene/GUI/TextureRect.hpp"
+#include "MingEngine/Editor/UI/EditorIcons.hpp"
 
 #include <algorithm>
 #include <filesystem>
@@ -193,11 +197,35 @@ bool ImportPanel::IsImportOptionModified() const
 void ImportPanel::OnInitialize()
 {
 	auto* layout = MemNew<VBoxContainer>();
-	layout->SetSeparation(10.f);
-	AddNode(layout);
+	layout->SetSeparation(static_cast<float>(GetThemeConstant("panel_margin", "Editor")));
+	auto* margin = MemNew<MarginContainer>();
+	margin->SetMargins(static_cast<float>(GetThemeConstant("panel_margin", "Editor")), static_cast<float>(GetThemeConstant("panel_margin", "Editor")), static_cast<float>(GetThemeConstant("panel_margin", "Editor")), static_cast<float>(GetThemeConstant("panel_margin", "Editor")));
+	AddNode(margin);
+	margin->AddNode(layout);
 	layout->UpdateSize(GetSize());
-	m_header = EditorPopupUtils::AddLabel(layout, "Select an importable file");
+	m_filter = MemNew<LineEdit>();
+	m_filter->SetPlaceholder("Filter properties");
+	m_filter->SetMinimumCharacterWidth(1);
+	m_filter->SetIcon(GetThemeIcon("Search", "EditorIcons"));
+	layout->AddNode(m_filter);
+	m_empty = EditorPopupUtils::AddLabel(layout, "Select a source file in FileSystem.", "EditorStatusLabel");
+	m_empty->SetAutowrapMode(AutowrapMode::WordSmart);
+	m_objectBar = MemNew<PanelContainer>();
+	m_objectBar->SetThemeTypeVariation("EditorObjectBar");
+	layout->AddNode(m_objectBar);
+	auto* row = MemNew<HBoxContainer>();
+	row->SetSeparation(static_cast<float>(GetThemeConstant("status_spacing", "Editor")) * 0.5f);
+	m_objectBar->AddNode(row);
+	m_icon = MemNew<TextureRect>();
+	m_icon->SetExpandMode(TextureRect::ExpandMode::IgnoreSize);
+	m_icon->SetStretchMode(TextureRect::StretchMode::KeepAspectCentered);
+	m_icon->SetCustomMinimumSize(Vector2(static_cast<float>(GetThemeConstant("icon_size", "Button")), static_cast<float>(GetThemeConstant("icon_size", "Button"))));
+	row->AddNode(m_icon);
+	m_header = EditorPopupUtils::AddLabel(row, "");
+	m_header->SetHorizontalSizeFlags(Size_ExpandFill);
 	m_header->SetClipText(true);
+	m_header->SetVerticalAlignment(VerticalAlignment::Center);
+	m_type = EditorPopupUtils::AddLabel(layout, "IMPORT", "EditorPropertyLabel");
 	m_importerChoice = MemNew<OptionButton>();
 	layout->AddNode(m_importerChoice);
 	m_importerChoice->SetValueChangedCallback([this](int index)
@@ -207,12 +235,13 @@ void ImportPanel::OnInitialize()
 		ApplyCachedImportOptions();
 	});
 	auto* scroll = MemNew<ScrollContainer>();
+	m_scroll = scroll;
 	scroll->SetVerticalSizeFlags(Size_ExpandFill);
 	layout->AddNode(scroll);
 	m_optionsContent = MemNew<VBoxContainer>();
 	scroll->AddNode(m_optionsContent);
 	m_reimport = EditorPopupUtils::AddButton(layout, "Reimport", [this]() { Reimport(); });
-	m_reimport->SetThemeTypeVariation("EditorPrimaryButton");
+	m_reimport->SetHorizontalSizeFlags(Size_ShrinkEnd);
 }
 
 void ImportPanel::OnRender(EditorUIContext& context)
@@ -221,7 +250,20 @@ void ImportPanel::OnRender(EditorUIContext& context)
 	bool const changed = selected != m_cachedSelectedPath;
 	RefreshSelection(selected);
 	bool const valid = GetSelectedImporter().IsValid();
-	m_header->SetText(valid ? selected.GetFileName() : "Select an importable file");
+	m_header->SetText(valid ? selected.GetFileName() : "");
+	m_objectBar->SetVisible(valid);
+	m_empty->SetVisible(!valid);
+	m_type->SetVisible(valid);
+	m_scroll->SetVisible(valid);
+	m_reimport->SetVisible(valid);
+	if (valid)
+	{
+		std::string const extension = selected.GetExtension();
+		char const* icon = extension == ".png" || extension == ".jpg" ? "Texture2D" : "Resource";
+		m_icon->SetTexture(GetThemeIcon(icon, "EditorIcons"));
+		m_icon->SetTint(EditorIcons::GetIconColor(icon, this));
+		m_type->SetText("IMPORT AS " + GetSelectedImporter()->GetVisibleName());
+	}
 	if (changed)
 	{
 		std::string hint;
@@ -246,6 +288,11 @@ void ImportPanel::OnRender(EditorUIContext& context)
 		for (size_t i = 0; i < options.size() && i < m_importOptionProperties.size(); ++i)
 		{
 			m_importOptionProperties[i]->UpdateValue(GetOptionDisplayValue(options[i]));
+			std::string name = m_importOptionProperties[i]->GetDisplayName();
+			std::string query = m_filter->GetText().ToUtf8();
+			std::transform(name.begin(), name.end(), name.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+			std::transform(query.begin(), query.end(), query.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+			m_importOptionProperties[i]->GetControl()->SetVisible(query.empty() || name.find(query) != std::string::npos);
 		}
 	}
 }

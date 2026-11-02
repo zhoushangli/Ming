@@ -1,5 +1,7 @@
 #include "MingEngine/Scene/GUI/Label.hpp"
 #include "MingEngine/Editor/UI/EditorUI.hpp"
+#include "MingEngine/Editor/UI/EditorIcons.hpp"
+#include "MingEngine/Editor/UI/Popup/EditorPopupUtils.hpp"
 
 #include "MingEngine/Editor/EditorNode.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
@@ -62,7 +64,7 @@ void EditorUI::InitializeNativeDocking()
 		panel.m_root->SetSerializable(false);
 	}
 
-	m_viewportPanel->SetCustomMinimumSize(Vector2(400.f, 250.f));
+	m_viewportPanel->SetCustomMinimumSize(Vector2(static_cast<float>(m_nativeRoot->GetThemeConstant("viewport_min_width", "Editor")), static_cast<float>(m_nativeRoot->GetThemeConstant("viewport_min_height", "Editor"))));
 	for (int i = 0; i < 4; ++i)
 	{
 		m_dockSplits[i] = MemNew<SplitContainer>();
@@ -77,6 +79,42 @@ void EditorUI::InitializeNativeDocking()
 		m_dockSlots[i]->SetSerializable(false);
 		m_dockSlots[i]->SetTabsRearrangeGroup(1);
 		m_dockSlots[i]->SetThemeTypeVariation("EditorDockTabs");
+		auto* actions = m_dockSlots[i]->GetTitleActions();
+		Button* collapse = EditorPopupUtils::AddButton(actions, "", [this]() { ToggleOutputCollapsed(); });
+		collapse->SetName("Collapse");
+		collapse->SetThemeTypeVariation("EditorPanelAction");
+		collapse->SetIcon(EditorIcons::GetIconTexture("ChevronDown"));
+		collapse->SetVisible(false);
+		Button* more = EditorPopupUtils::AddButton(actions, "", [this, i, actions]()
+		{
+			std::vector<MenuItem> items;
+			if (m_dockSlots[i]->GetCurrentPage() == m_fileSystemPanel)
+			{
+				items.push_back({ "Refresh", [this]() { g_engine->m_fileSystem->ScanResourceTree(); } });
+				items.push_back({ "", {}, "", true });
+			}
+
+			for (DockPanel const& dock : m_dockPanels)
+			{
+				auto* panel = static_cast<EditorPanel*>(dock.m_root);
+				items.push_back({ dock.m_id, [this, panel]() { TogglePanel(panel); }, "", false, true, panel->IsOpen() });
+			}
+
+			items.push_back({ "", {}, "", true });
+			items.push_back({ "Restore Default Layout", [this]() { ResetNativeLayout(); } });
+			ShowMenu(actions, actions->GetGlobalPosition() + Vector2(0.f, actions->GetSize().y), items);
+		});
+		more->SetThemeTypeVariation("EditorPanelAction");
+		more->SetIcon(EditorIcons::GetIconTexture("More"));
+		Button* close = EditorPopupUtils::AddButton(actions, "", [this, i]()
+		{
+			if (auto* panel = dynamic_cast<EditorPanel*>(m_dockSlots[i]->GetCurrentPage()))
+			{
+				TogglePanel(panel);
+			}
+		});
+		close->SetThemeTypeVariation("EditorPanelAction");
+		close->SetIcon(EditorIcons::GetIconTexture("Close"));
 		m_dockSlots[i]->SetTabChangedCallback(
 			[this](int)
 			{
@@ -125,9 +163,11 @@ void EditorUI::InitializeNativeDocking()
 		m_dockHints[i] = hint;
 		hint->SetDragCallbacks(
 			{},
-			[this](Vector2 const&, GuiDragData const& data)
+			[this, i, hint](Vector2 const& position, GuiDragData const& data)
 			{
-				return data.m_type == String("dock") && FindNativePanel(data.m_value) >= 0;
+				int index = -1;
+				return data.m_type == String("dock") && FindNativePanel(data.m_value) >= 0
+					&& GetNativeDockDestination(i, position + hint->GetGlobalPosition(), index) >= 0;
 			},
 			[this, i, hint](Vector2 const& position, GuiDragData const& data)
 			{
@@ -153,6 +193,11 @@ void EditorUI::InitializeNativeDocking()
 				Vector2 const global = position + hint->GetGlobalPosition();
 				int           index  = -1;
 				int const     target = GetNativeDockDestination(i, global, index);
+				if (target < 0)
+				{
+					return;
+				}
+
 				TabContainer* slot   = m_dockSlots[target];
 				if (index >= 0)
 				{
@@ -236,10 +281,10 @@ int EditorUI::GetNativeDockDestination(int slot, Vector2 const& globalPosition, 
 	}
 
 	Vector2 const local = globalPosition - tabs->GetGlobalPosition();
-	if (local.y >= 0.f && local.y < tabs->GetTabBarRect().m_maxs.y)
+	if (local.y >= tabs->GetTabBarRect().m_mins.y && local.y < tabs->GetTabBarRect().m_maxs.y)
 	{
 		index = tabs->GetTabInsertIndex(local);
-		return slot;
+		return index >= 0 ? slot : -1;
 	}
 
 	if (local.y < tabs->GetSize().y * 0.2f)
@@ -265,6 +310,16 @@ void EditorUI::UpdateNativeDocking()
 	for (TabContainer* slot : m_dockSlots)
 	{
 		slot->SetVisible(slot->GetPageCount() != 0);
+		slot->SetTabsAtBottom(slot->GetCurrentPage() == m_outputPanel);
+		for (Node* child : slot->GetTitleActions()->GetChildren())
+		{
+			if (child->GetName() == String("Collapse"))
+			{
+				auto* button = static_cast<Button*>(child);
+				button->SetVisible(slot->GetCurrentPage() == m_outputPanel);
+				button->SetIcon(EditorIcons::GetIconTexture(m_outputPanel->IsCollapsed() ? "ChevronUp" : "ChevronDown"));
+			}
+		}
 	}
 
 	m_dockSplits[2]->SetVisible(m_dockSlots[0]->IsVisible() || m_dockSlots[1]->IsVisible());
@@ -367,6 +422,7 @@ void EditorUI::ResetNativeLayout()
 	MoveNativePanel("Import", 2);
 	MoveNativePanel("Output", 3);
 	m_dockSlots[0]->SetCurrentTab(0);
+	m_outputPanel->SetCollapsed(false);
 	m_dockSlots[2]->SetCurrentTab(0);
 	Vector2 const bounds(m_nativeRoot->GetViewport()->GetOutputResolution());
 	float const width = std::max(1.f, bounds.x - 10.f);
@@ -382,6 +438,24 @@ void EditorUI::ResetNativeLayout()
 	{
 		SaveNativeLayout();
 	}
+}
+
+void EditorUI::ToggleOutputCollapsed()
+{
+	bool const collapsed = !m_outputPanel->IsCollapsed();
+	m_outputPanel->SetCollapsed(collapsed);
+	auto* slot = dynamic_cast<TabContainer*>(m_outputPanel->GetParent());
+	if (slot == m_dockSlots[3])
+	{
+		if (collapsed)
+		{
+			m_outputSplitRatio = m_dockSplits[3]->GetSplitRatio();
+		}
+
+		m_dockSplits[3]->SetSplitRatio(collapsed ? 1.f : m_outputSplitRatio);
+	}
+
+	UpdateNativeDocking();
 }
 
 bool EditorUI::SaveNativeLayout()

@@ -51,6 +51,8 @@ void Tree::BindMethods()
 	BIND_THEME_ITEM(Theme::DataType::Color, Tree, font_selected_color);
 	BIND_THEME_ITEM(Theme::DataType::Color, Tree, guide_color);
 	BIND_THEME_ITEM(Theme::DataType::Constant, Tree, guide_width);
+	BIND_THEME_ITEM(Theme::DataType::Constant, Tree, children_guide_width);
+	BIND_THEME_ITEM(Theme::DataType::Color, Tree, children_guide_color);
 	BIND_THEME_ITEM(Theme::DataType::Icon, Tree, arrow_collapsed);
 	BIND_THEME_ITEM(Theme::DataType::Icon, Tree, arrow_expanded);
 	BIND_THEME_ITEM(Theme::DataType::StyleBox, Tree, panel);
@@ -147,6 +149,31 @@ float Tree::GetRowTextX(size_t row) const
 	return left + m_depths[row] * static_cast<float>(std::max(0, m_themeCache.indent)) + GetFoldWidth(row) + iconWidth;
 }
 
+float Tree::GetRowTextEnd(size_t row) const
+{
+	float const right = m_themeCache.panel.IsValid() ? m_themeCache.panel->GetContentMargin(ThemeStyleBox::Side::Right) : 0.f;
+	return GetSize().x - right - m_items[m_rows[row]].m_actions.size() * (m_themeCache.icon_size + m_themeCache.icon_separation);
+}
+
+AABB2 Tree::GetItemActionRect(uint64_t id, int action) const
+{
+	for (size_t row = 0; row < m_rows.size(); ++row)
+	{
+		auto const& actions = m_items[m_rows[row]].m_actions;
+		if (m_items[m_rows[row]].m_ID == id && action >= 0 && action < static_cast<int>(actions.size()))
+		{
+			float const side = static_cast<float>(m_themeCache.icon_size);
+			float const right = m_themeCache.panel.IsValid() ? m_themeCache.panel->GetContentMargin(ThemeStyleBox::Side::Right) : 0.f;
+			float const x = GetSize().x - right - side
+				- (static_cast<int>(actions.size()) - action - 1) * (side + m_themeCache.icon_separation);
+			float const y = GetRowRect(row).GetCenter().y - side * 0.5f;
+			return AABB2(x, y, x + side, y + side);
+		}
+	}
+
+	return AABB2::Zero;
+}
+
 void Tree::UpdateRowLayout()
 {
 	if (m_edit == nullptr || m_updatingRowLayout)
@@ -171,17 +198,18 @@ void Tree::UpdateRowLayout()
 			? (IsCollapsed(item.m_ID) && !m_filtering ? "> " : "v ") : "  ") + item.m_text);
 		label->SetFont(m_themeCache.font);
 		label->SetFontSize(m_themeCache.font_size);
-		label->SetFontColor(item.m_ID == m_selected ? m_themeCache.font_selected_color : m_themeCache.font_color);
+		label->SetFontColor(item.m_dimmed ? m_themeCache.guide_color : (item.m_ID == m_selected ? m_themeCache.font_selected_color : m_themeCache.font_color));
+		label->SetClipText(m_clipText);
 		AABB2 const rect = GetRowRect(row);
 		label->SetPosition(Vector2(GetRowTextX(row) - (texturedFold ? 0.f : GetFoldWidth(row)), rect.m_mins.y));
-		label->UpdateSize(Vector2(label->GetCombinedMinimumSize().x, rect.GetHeight()));
-		width = std::max(width, label->GetLocalPosition().x + label->GetSize().x + right);
+		label->UpdateSize(Vector2(m_clipText ? std::max(0.f, GetRowTextEnd(row) - label->GetLocalPosition().x) : label->GetCombinedMinimumSize().x, rect.GetHeight()));
+		width = std::max(width, m_clipText ? 60.f : label->GetLocalPosition().x + label->GetSize().x + right
+			+ item.m_actions.size() * (m_themeCache.icon_size + m_themeCache.icon_separation));
 		if (item.m_ID == m_editing)
 		{
-			m_edit->UpdateSize(Vector2(std::max(m_edit->GetCombinedMinimumSize().x, GetSize().x - GetRowTextX(row)), rect.GetHeight()));
 			float const x = GetRowTextX(row) - m_edit->GetContentRect().m_mins.x;
 			m_edit->SetPosition(Vector2(x, rect.m_mins.y));
-			m_edit->UpdateSize(Vector2(std::max(m_edit->GetCombinedMinimumSize().x, GetSize().x - x - right), rect.GetHeight()));
+			m_edit->UpdateSize(Vector2(std::max(1.f, GetRowTextEnd(row) - x), rect.GetHeight()));
 		}
 	}
 
@@ -204,7 +232,14 @@ void Tree::SetItems(std::vector<Item> items, bool filtering)
 		same = items[i].m_ID == m_items[i].m_ID && items[i].m_parentID == m_items[i].m_parentID
 			   && items[i].m_text == m_items[i].m_text && items[i].m_visible == m_items[i].m_visible
 			   && items[i].m_editable == m_items[i].m_editable && items[i].m_icon == m_items[i].m_icon
-			   && items[i].m_iconColor == m_items[i].m_iconColor;
+			   && items[i].m_iconColor == m_items[i].m_iconColor && items[i].m_dimmed == m_items[i].m_dimmed
+			   && items[i].m_actions.size() == m_items[i].m_actions.size();
+		for (size_t action = 0; same && action < items[i].m_actions.size(); ++action)
+		{
+			auto const& a = items[i].m_actions[action];
+			auto const& b = m_items[i].m_actions[action];
+			same = a.m_icon == b.m_icon && a.m_color == b.m_color && a.m_enabled == b.m_enabled;
+		}
 	}
 
 	if (same)
@@ -415,6 +450,18 @@ bool Tree::GuiInput(InputEvent const& event)
 		}
 
 		uint64_t const id = m_items[m_rows[row]].m_ID;
+		for (int action = 0; action < static_cast<int>(m_items[m_rows[row]].m_actions.size()); ++action)
+		{
+			if (GetItemActionRect(id, action).IsPointInside(event.m_position))
+			{
+				if (m_items[m_rows[row]].m_actions[action].m_enabled && m_itemActionCallback)
+				{
+					m_itemActionCallback(id, action);
+				}
+				return true;
+			}
+		}
+
 		Select(id, true);
 		float const foldEnd = GetRowTextX(row) - (m_items[m_rows[row]].m_icon.IsValid()
 			? m_themeCache.icon_size + m_themeCache.icon_separation : 0);
@@ -535,6 +582,11 @@ bool Tree::GetDragData(Vector2 const& position, GuiDragData& data)
 	}
 
 	int const row = GetRowAtPosition(position);
+	if (position.x >= GetRowTextEnd(row))
+	{
+		return false;
+	}
+
 	float const foldEnd = GetRowTextX(row) - (m_items[m_rows[row]].m_icon.IsValid()
 		? m_themeCache.icon_size + m_themeCache.icon_separation : 0);
 	if (HasChildren(id) && position.x < foldEnd)
@@ -600,6 +652,32 @@ void Tree::OnNotification(int notification)
 				}
 			}
 
+			if (selectedRow >= 0 && m_themeCache.children_guide_width > 0)
+			{
+				int lastChild = -1;
+				float const left = m_themeCache.panel.IsValid() ? m_themeCache.panel->GetContentMargin(ThemeStyleBox::Side::Left) : 0.f;
+				float const x = left + m_depths[selectedRow] * m_themeCache.indent + GetFoldWidth(selectedRow) * 0.5f;
+				float const width = static_cast<float>(m_themeCache.children_guide_width);
+				for (int row = selectedRow + 1; row < static_cast<int>(m_rows.size()) && m_depths[row] > m_depths[selectedRow]; ++row)
+				{
+					if (m_items[m_rows[row]].m_parentID != m_selected)
+					{
+						continue;
+					}
+
+					float const y = GetRowRect(row).GetCenter().y;
+					float const end = left + m_depths[row] * m_themeCache.indent;
+					DrawRect(AABB2(x, y, std::max(x, end), y + width), m_themeCache.children_guide_color);
+					lastChild = row;
+				}
+
+				if (lastChild >= 0)
+				{
+					DrawRect(AABB2(x, GetRowRect(selectedRow).GetCenter().y + GetFoldWidth(selectedRow) * 0.5f,
+						x + width, GetRowRect(lastChild).GetCenter().y + width), m_themeCache.children_guide_color);
+				}
+			}
+
 			for (int child = selectedRow; child > 0;)
 			{
 				int parent = child - 1;
@@ -615,9 +693,9 @@ void Tree::OnNotification(int notification)
 
 				float const left = m_themeCache.panel.IsValid() ? m_themeCache.panel->GetContentMargin(ThemeStyleBox::Side::Left) : 0.f;
 				float const x = left + m_depths[parent] * m_themeCache.indent + GetFoldWidth(parent) * 0.5f;
-				float const top = GetRowRect(parent).GetCenter().y + 7.f;
+				float const top = GetRowRect(parent).GetCenter().y + GetFoldWidth(parent) * 0.5f;
 				float const bottom = GetRowRect(child).GetCenter().y;
-				float const end = left + m_depths[child] * m_themeCache.indent - 5.f;
+				float const end = left + m_depths[child] * m_themeCache.indent - m_themeCache.icon_separation;
 				DrawRect(AABB2(x, top, x + m_themeCache.guide_width, bottom), m_themeCache.guide_color);
 				DrawRect(AABB2(x, bottom, std::max(x, end), bottom + m_themeCache.guide_width), m_themeCache.guide_color);
 				child = parent;
@@ -639,7 +717,7 @@ void Tree::OnNotification(int notification)
 				target.m_size = Vector2(foldSize, foldSize);
 				Rect2 source;
 				source.m_size = Vector2(arrow->GetDimensions());
-				DrawTextureRectRegion(arrow, target, source, m_themeCache.font_color);
+				DrawTextureRectRegion(arrow, target, source, m_themeCache.guide_color);
 			}
 
 			if (auto icon = m_items[m_rows[row]].m_icon; icon.IsValid())
@@ -653,6 +731,21 @@ void Tree::OnNotification(int notification)
 				Rect2 source;
 				source.m_size = Vector2(icon->GetDimensions());
 				DrawTextureRectRegion(icon, target, source, m_items[m_rows[row]].m_iconColor);
+			}
+
+			for (int action = 0; action < static_cast<int>(m_items[m_rows[row]].m_actions.size()); ++action)
+			{
+				auto const& entry = m_items[m_rows[row]].m_actions[action];
+				if (entry.m_icon.IsValid())
+				{
+					AABB2 const bounds = GetItemActionRect(id, action);
+					Rect2 target;
+					target.m_position = bounds.m_mins;
+					target.m_size = bounds.GetDimensions();
+					Rect2 source;
+					source.m_size = Vector2(entry.m_icon->GetDimensions());
+					DrawTextureRectRegion(entry.m_icon, target, source, entry.m_color);
+				}
 			}
 
 			if (id == m_dropItem)

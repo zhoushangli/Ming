@@ -4,6 +4,7 @@
 
 #include "MingEngine/Core/Math/Vector2.hpp"
 #include "MingEngine/Core/String.hpp"
+#include "MingEngine/Core/Render/Color.hpp"
 #include "MingEngine/Engine/Input/InputEvent.hpp"
 
 struct GLFWwindow;
@@ -44,6 +45,7 @@ public:
 	CursorShape GetCursorShape() const { return m_cursorShape; }
 	String      GetClipboardText() const;
 	bool        SetClipboardText(String const& text);
+	void        SetTitleBarColors(Color const& background, Color const& text);
 
 protected:
 	static void BindMethods();

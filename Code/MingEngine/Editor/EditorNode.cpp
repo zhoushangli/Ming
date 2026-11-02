@@ -85,7 +85,7 @@ void EditorSelection::Clear()
 	SetSelected(ObjectID::Invalid);
 }
 
-EditorNode::EditorNode()
+EditorNode::EditorNode(float editorScale) : m_editorScale(editorScale)
 {
 	s_instance = this;
 	SetSerializable(false);
@@ -234,7 +234,9 @@ void EditorNode::OnReady()
 	m_uiContext.m_selection = &m_selection;
 	m_uiContext.m_editorUI = m_editorUI;
 	m_uiContext.m_fileSystem = g_engine->m_fileSystem;
-	m_editorTheme = EditorThemeManager::CreateTheme();
+	m_baseEditorTheme = EditorThemeManager::CreateTheme();
+	m_editorTheme = EditorThemeManager::CreateScaledTheme(m_baseEditorTheme, m_editorScale);
+	g_engine->m_windowSystem->SetTitleBarColors(m_editorTheme->GetColor("background", "Editor"), m_editorTheme->GetColor("font_color", "Control"));
 	m_editorUI->InitializeNative(this);
 	SubViewport* sceneViewport = m_editorUI->GetSceneView()->GetSubViewport();
 	m_editorCamera->Reparent(sceneViewport);

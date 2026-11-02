@@ -30,6 +30,7 @@ void LineEdit::BindMethods()
 	BIND_THEME_ITEM(Theme::DataType::FontSize, LineEdit, font_size);
 	BIND_THEME_ITEM(Theme::DataType::Constant, LineEdit, minimum_height);
 	BIND_THEME_ITEM(Theme::DataType::Constant, LineEdit, caret_width);
+	BIND_THEME_ITEM(Theme::DataType::Constant, LineEdit, icon_separation);
 	BIND_THEME_ITEM(Theme::DataType::Color, LineEdit, font_color);
 	BIND_THEME_ITEM(Theme::DataType::Color, LineEdit, font_read_only_color);
 	BIND_THEME_ITEM(Theme::DataType::Color, LineEdit, font_disabled_color);
@@ -265,8 +266,16 @@ Vector2 LineEdit::GetInternalMinimumSize() const
 	Vector2 const margins(
 		GetContentMargin(ThemeStyleBox::Side::Left) + GetContentMargin(ThemeStyleBox::Side::Right),
 		GetContentMargin(ThemeStyleBox::Side::Top) + GetContentMargin(ThemeStyleBox::Side::Bottom));
-	return Vector2(std::max(1.f, width) + margins.x,
+	return Vector2(std::max(1.f, width) + margins.x + (m_icon.IsValid() ? m_themeCache.font_size + static_cast<float>(m_themeCache.icon_separation) : 0.f),
 		std::max(height + margins.y, static_cast<float>(std::max(0, m_themeCache.minimum_height))));
+}
+
+void LineEdit::SetIcon(Ref<TextureResource> const& icon)
+{
+	m_icon = icon;
+	PropagateMinimumSizeChanged();
+	EnsureCursorVisible();
+	QueueRedraw();
 }
 
 void LineEdit::SetMinimumCharacterWidth(int width)
@@ -294,7 +303,7 @@ AABB2 LineEdit::GetContentRect() const
 {
 	Vector2 const size = GetSize();
 	Vector2 const start(
-		std::min(size.x, GetContentMargin(ThemeStyleBox::Side::Left)),
+		std::min(size.x, GetContentMargin(ThemeStyleBox::Side::Left) + (m_icon.IsValid() ? m_themeCache.font_size + static_cast<float>(m_themeCache.icon_separation) : 0.f)),
 		std::min(size.y, GetContentMargin(ThemeStyleBox::Side::Top)));
 	return AABB2(start, Vector2(
 		std::max(start.x, size.x - GetContentMargin(ThemeStyleBox::Side::Right)),
@@ -824,6 +833,17 @@ void LineEdit::OnNotification(int notification)
 		if (HasFocus())
 		{
 			DrawThemeStyleBox(m_themeCache.focus, GetLocalRect());
+		}
+
+		if (m_icon.IsValid())
+		{
+			float const side = static_cast<float>(m_themeCache.font_size);
+			Rect2 target;
+			target.m_position = Vector2(GetContentMargin(ThemeStyleBox::Side::Left), (GetSize().y - side) * 0.5f);
+			target.m_size = Vector2(side, side);
+			Rect2 source;
+			source.m_size = Vector2(m_icon->GetDimensions());
+			DrawTextureRectRegion(m_icon, target, source, m_themeCache.font_placeholder_color);
 		}
 
 		DrawContent();

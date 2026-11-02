@@ -990,7 +990,7 @@ int main(int argc, char** argv)
 		check(std::filesystem::exists(fixture / "target" / "move.txt")
 			&& std::filesystem::exists(fixture / "target" / "move.txt.import")
 			&& !std::filesystem::exists(fixture / "source" / "move.txt"), "native file drop moves content and import metadata");
-		Draft(root, Find<LineEdit>(ui->GetTabs()->GetPage(1)), "target");
+		Draft(root, NativePanelVerification::FindFilter(ui->GetTabs()->GetPage(1), "Filter files"), "target");
 		Key(root, GLFW_KEY_ENTER);
 		frame();
 		Vector2 const fromFile = files->GetGlobalPosition() + filePosition("res://DragDockFixture/target");
@@ -1004,7 +1004,7 @@ int main(int argc, char** argv)
 		check(root->IsGuiDragging() && ui->GetTabs()->GetCurrentTab() == 0 && !files->IsVisibleInHierarchy(),
 			"hover switches tab after half a second while preserving drag from hidden page");
 		Key(root, GLFW_KEY_ESCAPE);
-		Draft(root, Find<LineEdit>(ui->GetTabs()->GetPage(1)), "");
+		Draft(root, NativePanelVerification::FindFilter(ui->GetTabs()->GetPage(1), "Filter files"), "");
 		Key(root, GLFW_KEY_ENTER);
 		ui->ResetNativeLayout();
 		frame();
@@ -1192,7 +1192,7 @@ int main(int argc, char** argv)
 		frame();
 		ObjectID const editorPageID = ui->GetTabs()->GetPage(0)->GetObjectID();
 		Tree*     nodes    = ui->GetSceneTreeControl();
-		Button*   sceneTab = Find<Button>(ui->GetTabs());
+		Button*   sceneTab = ui->GetTabs()->GetTabButton(0);
 		click(sceneTab->GetGlobalPosition() + Vector2(12.f, 12.f));
 		check(
 			sceneTab->IsPressed() && ui->GetTabs()->GetCurrentTab() == 0,
@@ -1247,7 +1247,7 @@ int main(int argc, char** argv)
 		tree.FlushContainerUpdate();
 		scroll->SetHorizontalScroll(500.f);
 		scroll->SetScroll(500.f);
-		check(scroll->GetHorizontalScroll() > 0.f && scroll->GetScroll() > 0.f, "Tree content scrolls in both axes");
+		check(scroll->GetHorizontalScroll() == 0.f && scroll->GetScroll() > 0.f, "editor Tree clips long names and scrolls vertically");
 		scroll->SetScroll(0.f);
 		scroll->SetHorizontalScroll(0.f);
 		nodes->GrabFocus();
@@ -1373,20 +1373,27 @@ int main(int argc, char** argv)
 			"window focus loss cancels scene navigation");
 		lost.m_focused = true;
 		window->OnInputEvent(lost);
-		root->UpdateResolution(IntVec2(1100, 320));
+		root->UpdateResolution(IntVec2(1100, 600));
 		frame();
 		auto* inspectorScroll =
 			Find<ScrollContainer>(&ui->GetPanel<InspectorPanel>());
 		auto*      number = Find<SpinBox>(ui->GetPanel<InspectorPanel>().GetContentControl());
+		inspectorScroll->EnsureControlVisible(number->GetLineEdit());
+		frame();
+		float const scrollBeforeWheel = inspectorScroll->GetScroll();
 		InputEvent wheel;
-		wheel.m_type     = InputEventType::MouseWheel;
-		wheel.m_scroll   = Vector2(0.f, -3.f);
-		wheel.m_position = number->GetLineEdit()->GetGlobalPosition() + Vector2(8.f, 8.f);
-
+		wheel.m_type = InputEventType::MouseWheel;
+		wheel.m_scroll = Vector2(0.f, -3.f);
+		Vector2 const fieldStart = number->GetLineEdit()->GetGlobalPosition();
+		Vector2 const fieldEnd = fieldStart + number->GetLineEdit()->GetSize();
+		Vector2 const pageStart = inspectorScroll->GetGlobalPosition();
+		Vector2 const pageEnd = pageStart + inspectorScroll->GetPageSize();
+		wheel.m_position = Vector2((std::max(fieldStart.x, pageStart.x) + std::min(fieldEnd.x, pageEnd.x)) * 0.5f,
+			(std::max(fieldStart.y, pageStart.y) + std::min(fieldEnd.y, pageEnd.y)) * 0.5f);
 		window->OnInputEvent(wheel);
 
+		check(inspectorScroll->GetScroll() > scrollBeforeWheel, "wheel over visible property field reaches enclosing ScrollContainer");
 
-		check(inspectorScroll->GetScroll() > 0.f, "wheel over property field reaches enclosing ScrollContainer");
 		editor->GetSelection().Clear();
 		auto* leafTree   = ui->GetSceneTreeControl();
 		auto* scrollTree = static_cast<ScrollContainer*>(leafTree->GetParent());
@@ -1419,7 +1426,7 @@ int main(int argc, char** argv)
 		check(editor->SaveScene(), "save resolves dirty scene before resource browsing");
 		ui->MoveNativePanel("FileSystem", 0);
 		ui->GetTabs()->SetCurrentTab(1);
-		auto* filesFilter = Find<LineEdit>(ui->GetTabs()->GetCurrentPage());
+		auto* filesFilter = NativePanelVerification::FindFilter(ui->GetTabs()->GetCurrentPage(), "Filter files");
 		filesFilter->GrabFocus();
 		text("roundtrip");
 		frame();

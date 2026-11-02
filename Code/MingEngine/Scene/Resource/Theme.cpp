@@ -7,6 +7,125 @@ Theme::~Theme()
 	ReleaseStyleBoxes();
 }
 
+Ref<Theme> Theme::Duplicate() const
+{
+	auto result = CreateRef<Theme>();
+	result->m_defaultFont = m_defaultFont;
+	result->m_defaultFontSize = m_defaultFontSize;
+	result->m_colorItems = m_colorItems;
+	result->m_constantItems = m_constantItems;
+	result->m_fontItems = m_fontItems;
+	result->m_fontSizeItems = m_fontSizeItems;
+	result->m_iconItems = m_iconItems;
+	result->m_variations = m_variations;
+
+	// Copy each mutable box once while preserving aliases inside the new Theme.
+	// e.g. Shared normal/disabled boxes remain shared without modifying the base Theme.
+	std::map<ThemeStyleBox const*, Ref<ThemeStyleBox>> copies;
+	for (auto const& group : m_styleBoxItems)
+	{
+		for (auto const& item : group.second)
+		{
+			auto& copy = copies[item.second.Get()];
+			if (!copy.IsValid())
+			{
+				copy = CreateRef<ThemeStyleBox>();
+				copy->SetBackgroundColor(item.second->GetBackgroundColor());
+				copy->SetBorderColor(item.second->GetBorderColor());
+				for (int i = 0; i < 4; ++i)
+				{
+					auto const side = static_cast<ThemeStyleBox::Side>(i);
+					copy->SetBorderWidth(side, item.second->GetBorderWidth(side));
+					copy->SetContentMargin(side, item.second->GetContentMargin(side));
+				}
+			}
+
+			result->SetStyleBox(item.first, group.first, copy);
+		}
+	}
+
+	return result;
+}
+
+std::vector<std::string> Theme::GetTypeList(DataType dataType) const
+{
+	std::vector<std::string> result;
+	auto append = [&result](auto const& groups)
+	{
+		for (auto const& group : groups)
+		{
+			if (!group.second.empty())
+			{
+				result.push_back(group.first);
+			}
+		}
+	};
+
+	switch (dataType)
+	{
+	case DataType::Color:
+		append(m_colorItems);
+		break;
+	case DataType::Constant:
+		append(m_constantItems);
+		break;
+	case DataType::Font:
+		append(m_fontItems);
+		break;
+	case DataType::FontSize:
+		append(m_fontSizeItems);
+		break;
+	case DataType::Icon:
+		append(m_iconItems);
+		break;
+	case DataType::StyleBox:
+		append(m_styleBoxItems);
+		break;
+	}
+
+	return result;
+}
+
+std::vector<std::string> Theme::GetItemList(DataType dataType, std::string const& type) const
+{
+	std::vector<std::string> result;
+	auto append = [&result, &type](auto const& groups)
+	{
+		auto group = groups.find(type);
+		if (group != groups.end())
+		{
+			for (auto const& item : group->second)
+			{
+				result.push_back(item.first);
+			}
+		}
+	};
+
+	switch (dataType)
+	{
+	case DataType::Color:
+		append(m_colorItems);
+		break;
+	case DataType::Constant:
+		append(m_constantItems);
+		break;
+	case DataType::Font:
+		append(m_fontItems);
+		break;
+	case DataType::FontSize:
+		append(m_fontSizeItems);
+		break;
+	case DataType::Icon:
+		append(m_iconItems);
+		break;
+	case DataType::StyleBox:
+		append(m_styleBoxItems);
+		break;
+	}
+
+	return result;
+}
+
 Color Theme::GetColor(std::string const& name, std::string const& type) const
 {
 	auto group = m_colorItems.find(type);

@@ -44,7 +44,7 @@ public:
 
 	void CanvasItemAddRect(RID item, AABB2 const& rect, Color const& color);
 	void CanvasItemAddTextureRect(
-		RID item, Ref<TextureResource> const& texture, Rect2 const& rect, bool isTiling = false);
+		RID item, Ref<TextureResource> const& texture, Rect2 const& rect, bool isTiling = false, Color const& color = Color::White);
 	void CanvasItemAddTextureRectRegion(
 		RID item, Ref<TextureResource> const& texture, Rect2 const& rect, Rect2 const& sourceRect, Color const& color);
 

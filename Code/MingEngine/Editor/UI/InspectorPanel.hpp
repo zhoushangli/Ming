@@ -9,6 +9,9 @@
 
 class VBoxContainer;
 class Label;
+class PanelContainer;
+class ScrollContainer;
+class TextureRect;
 
 class InspectorPanel final : public EditorPanel
 {
@@ -19,13 +22,25 @@ private:
 	{
 		InspectorProperty* m_property = nullptr;
 		MethodBind const*  m_getter   = nullptr;
+		int m_section = -1;
+	};
+
+	struct PropertySection
+	{
+		std::string m_name;
+		Button* m_heading = nullptr;
+		bool m_collapsed = false;
 	};
 
 	struct PropertyGroup
 	{
 		std::string                m_className;
-		Label* m_header = nullptr;
+		Control* m_header = nullptr;
+		PanelContainer* m_bar = nullptr;
+		Label* m_title = nullptr;
+		TextureRect* m_icon = nullptr;
 		std::vector<PropertyEntry> m_properties;
+		std::vector<PropertySection> m_sections;
 	};
 
 
@@ -54,6 +69,10 @@ private:
 	VBoxContainer* m_content = nullptr;
 	Label* m_empty = nullptr;
 	LineEdit* m_filter = nullptr;
+	ScrollContainer* m_scroll = nullptr;
+	PanelContainer* m_objectBar = nullptr;
+	Label* m_objectName = nullptr;
+	TextureRect* m_objectIcon = nullptr;
 	SceneTree*                 m_sceneTree = nullptr;
 	std::vector<std::string>   m_inheritanceChain;
 	std::vector<PropertyGroup> m_propertyGroups;

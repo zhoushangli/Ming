@@ -41,7 +41,7 @@ void CreateNodePopup::Render(EditorUIContext& context)
 		m_search->SetTextChangedCallback([this](String const&) { RebuildTypes(); });
 		auto* scroll = MemNew<ScrollContainer>();
 		scroll->SetVerticalSizeFlags(Control::Size_ExpandFill);
-		scroll->SetCustomMinimumSize(Vector2(0.f, 250.f));
+		scroll->SetCustomMinimumSize(Vector2(0.f, static_cast<float>(context.m_rootControl->GetThemeConstant("popup_height", "Editor"))));
 		content->AddNode(scroll);
 		m_types = MemNew<Tree>();
 		scroll->AddNode(m_types);
@@ -78,7 +78,7 @@ void CreateNodePopup::Render(EditorUIContext& context)
 		m_openRequested = false;
 		m_search->SetText("");
 		RebuildTypes();
-		EditorPopupUtils::Open(m_popup, context.m_rootControl, Vector2(700.f, 600.f));
+		EditorPopupUtils::Open(m_popup, context.m_rootControl, Vector2(static_cast<float>(context.m_rootControl->GetThemeConstant("node_popup_width", "Editor")), static_cast<float>(context.m_rootControl->GetThemeConstant("node_popup_height", "Editor"))));
 		m_search->GrabFocus();
 	}
 
@@ -86,7 +86,7 @@ void CreateNodePopup::Render(EditorUIContext& context)
 
 	if (m_popup->IsVisible())
 	{
-		EditorPopupUtils::Layout(m_popup, Vector2(700.f, 600.f));
+		EditorPopupUtils::Layout(m_popup, Vector2(static_cast<float>(context.m_rootControl->GetThemeConstant("node_popup_width", "Editor")), static_cast<float>(context.m_rootControl->GetThemeConstant("node_popup_height", "Editor"))));
 	}
 }
 

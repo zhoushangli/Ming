@@ -7,6 +7,12 @@
 #include "MingEngine/Scene/GUI/VBoxContainer.hpp"
 #include "MingEngine/Scene/GUI/Label.hpp"
 #include "MingEngine/Scene/GUI/ScrollContainer.hpp"
+#include "MingEngine/Scene/GUI/HBoxContainer.hpp"
+#include "MingEngine/Scene/GUI/MarginContainer.hpp"
+#include "MingEngine/Scene/GUI/PanelContainer.hpp"
+#include "MingEngine/Scene/GUI/TextureRect.hpp"
+#include "MingEngine/Editor/UI/EditorIcons.hpp"
+#include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Editor/UI/Popup/EditorPopupUtils.hpp"
 #include <algorithm>
 #include <cctype>
@@ -125,16 +131,86 @@ void InspectorPanel::RebuildProperties(EditorUIContext& context)
 	{
 		PropertyGroup group;
 		group.m_className = className;
-		auto* header      = MemNew<Label>();
-		header->SetText(className);
-		header->SetThemeTypeVariation("EditorInspectorTitle");
-		m_content->AddNode(header);
-		group.m_header = header;
+		auto* section = MemNew<Control>();
+		section->SetCustomMinimumSize(Vector2(0.f, static_cast<float>(GetThemeConstant("section_height", "Editor"))));
+		m_content->AddNode(section);
+		group.m_header = section;
+
+		auto* header      = MemNew<PanelContainer>();
+		header->SetThemeTypeVariation("EditorInspectorClassHeader");
+		header->SetCustomMinimumSize(Vector2(0.f, static_cast<float>(GetThemeConstant("section_height", "Editor"))));
+		header->SetClipContents(true);
+		section->AddNode(header);
+		group.m_bar = header;
+
+		auto* heading = MemNew<HBoxContainer>();
+		heading->SetSeparation(static_cast<float>(GetThemeConstant("spacing", "Editor")));
+		heading->SetHorizontalSizeFlags(Size_ShrinkCenter);
+		heading->SetVerticalSizeFlags(Size_ShrinkCenter);
+		header->AddNode(heading);
+
+		auto* icon = MemNew<TextureRect>();
+		icon->SetTexture(GetThemeIcon(className, "EditorIcons"));
+		icon->SetTint(EditorIcons::GetIconColor(className, this));
+		group.m_icon = icon;
+		icon->SetExpandMode(TextureRect::ExpandMode::IgnoreSize);
+		icon->SetStretchMode(TextureRect::StretchMode::KeepAspectCentered);
+		icon->SetCustomMinimumSize(Vector2(static_cast<float>(GetThemeConstant("icon_size", "Button")), static_cast<float>(GetThemeConstant("icon_size", "Button"))));
+		heading->AddNode(icon);
+
+		auto* title = MemNew<Label>();
+		title->SetText(className);
+		title->SetThemeTypeVariation("EditorInspectorClassLabel");
+		title->SetTextOverrunBehavior(TextOverrunBehavior::TrimCharacters);
+		title->SetVerticalAlignment(VerticalAlignment::Center);
+		heading->AddNode(title);
+		group.m_title = title;
+
+		std::string sectionName;
+		int sectionIndex = -1;
 		for (PropertyInfo const& prop : ClassDatabase::GetProperties(className))
 		{
+			if (prop.HasUsage(PropertyInfo::UsageFlags::Group))
+			{
+				sectionName = prop.m_name;
+				sectionIndex = -1;
+				continue;
+			}
+
 			if (!prop.HasUsage(PropertyInfo::UsageFlags::Inspector))
 			{
 				continue;
+			}
+
+			std::string const desiredSection = className == "Node3D"
+				&& (prop.m_name == "position" || prop.m_name == "rotation" || prop.m_name == "scale")
+				? "Transform" : sectionName;
+			if (!desiredSection.empty() && (sectionIndex < 0 || group.m_sections[sectionIndex].m_name != desiredSection))
+			{
+				Button* sectionHeading = EditorPopupUtils::AddButton(m_content, desiredSection, [this, className, desiredSection]()
+				{
+					for (PropertyGroup& current : m_propertyGroups)
+					{
+						if (current.m_className != className)
+						{
+							continue;
+						}
+
+						for (PropertySection& section : current.m_sections)
+						{
+							if (section.m_name == desiredSection)
+							{
+								section.m_collapsed = !section.m_collapsed;
+							}
+						}
+					}
+
+					FilterProperties();
+				});
+				sectionHeading->SetThemeTypeVariation("EditorGroupButton");
+				sectionHeading->SetHorizontalAlignment(HorizontalAlignment::Left);
+				group.m_sections.push_back({ desiredSection, sectionHeading, false });
+				sectionIndex = static_cast<int>(group.m_sections.size()) - 1;
 			}
 
 			ObjectID const    id     = m_cachedObjectID;
@@ -164,7 +240,7 @@ void InspectorPanel::RebuildProperties(EditorUIContext& context)
 					return getter->Invoke(target, {});
 				});
 			m_content->AddNode(field->GetControl());
-			group.m_properties.push_back({ field, getter });
+			group.m_properties.push_back({ field, getter, desiredSection.empty() ? -1 : sectionIndex });
 		}
 
 		m_propertyGroups.push_back(std::move(group));
@@ -179,17 +255,51 @@ void InspectorPanel::OnInitialize()
 	auto* layout = MemNew<VBoxContainer>();
 	AddNode(layout);
 	layout->UpdateSize(GetSize());
+
+	auto* toolsMargin = MemNew<MarginContainer>();
+	toolsMargin->SetMargins(static_cast<float>(GetThemeConstant("panel_margin", "Editor")), static_cast<float>(GetThemeConstant("panel_margin", "Editor")), static_cast<float>(GetThemeConstant("panel_margin", "Editor")), static_cast<float>(GetThemeConstant("panel_margin", "Editor")));
+	layout->AddNode(toolsMargin);
+
+	auto* tools = MemNew<HBoxContainer>();
+	tools->SetSeparation(static_cast<float>(GetThemeConstant("panel_margin", "Editor")));
+	toolsMargin->AddNode(tools);
+
 	m_filter = MemNew<LineEdit>();
+	m_filter->SetHorizontalSizeFlags(Size_ExpandFill);
 	m_filter->SetPlaceholder("Filter properties");
+	m_filter->SetIcon(GetThemeIcon("Search", "EditorIcons"));
+	m_filter->SetMinimumCharacterWidth(1);
 	m_filter->SetTextChangedCallback([this](String const&) { FilterProperties(); });
-	layout->AddNode(m_filter);
-	m_empty = EditorPopupUtils::AddLabel(layout, "No object selected");
+	tools->AddNode(m_filter);
+
+	m_objectBar = MemNew<PanelContainer>();
+	m_objectBar->SetThemeTypeVariation("EditorObjectBar");
+	layout->AddNode(m_objectBar);
+	auto* objectRow = MemNew<HBoxContainer>();
+	objectRow->SetSeparation(static_cast<float>(GetThemeConstant("status_spacing", "Editor")) * 0.5f);
+	m_objectBar->AddNode(objectRow);
+	m_objectIcon = MemNew<TextureRect>();
+	m_objectIcon->SetExpandMode(TextureRect::ExpandMode::IgnoreSize);
+	m_objectIcon->SetStretchMode(TextureRect::StretchMode::KeepAspectCentered);
+	m_objectIcon->SetCustomMinimumSize(Vector2(static_cast<float>(GetThemeConstant("icon_size", "Button")), static_cast<float>(GetThemeConstant("icon_size", "Button"))));
+	objectRow->AddNode(m_objectIcon);
+	m_objectName = EditorPopupUtils::AddLabel(objectRow, "");
+	m_objectName->SetHorizontalSizeFlags(Size_ExpandFill);
+	m_objectName->SetClipText(true);
+	m_objectName->SetVerticalAlignment(VerticalAlignment::Center);
+	m_empty = EditorPopupUtils::AddLabel(layout, "No object selected", "EditorStatusLabel");
 	auto* scroll = MemNew<ScrollContainer>();
+	m_scroll = scroll;
 	scroll->SetVerticalSizeFlags(Size_ExpandFill);
 	layout->AddNode(scroll);
+
+	auto* contentMargin = MemNew<MarginContainer>();
+	contentMargin->SetMargins(static_cast<float>(GetThemeConstant("panel_margin", "Editor")), 0.f, static_cast<float>(GetThemeConstant("panel_margin", "Editor")), static_cast<float>(GetThemeConstant("panel_margin", "Editor")));
+	scroll->AddNode(contentMargin);
+
 	m_content = MemNew<VBoxContainer>();
-	m_content->SetSeparation(5.f);
-	scroll->AddNode(m_content);
+	m_content->SetSeparation(static_cast<float>(GetThemeConstant("panel_margin", "Editor")));
+	contentMargin->AddNode(m_content);
 }
 
 void InspectorPanel::FilterProperties()
@@ -208,11 +318,26 @@ void InspectorPanel::FilterProperties()
 	for (PropertyGroup& group : m_propertyGroups)
 	{
 		bool any = false;
+		std::vector<bool> sectionMatches(group.m_sections.size(), false);
 		for (PropertyEntry& entry : group.m_properties)
 		{
-			bool const visible = query.empty() || lower(entry.m_property->GetDisplayName()).find(query) != std::string::npos;
-			entry.m_property->GetControl()->SetVisible(visible);
-			any = any || visible;
+			PropertySection* section = entry.m_section >= 0 ? &group.m_sections[entry.m_section] : nullptr;
+			bool const matches = query.empty() || lower(entry.m_property->GetDisplayName()).find(query) != std::string::npos
+				|| (section != nullptr && lower(section->m_name).find(query) != std::string::npos);
+			entry.m_property->GetControl()->SetVisible(matches && (section == nullptr || !section->m_collapsed || !query.empty()));
+			if (section != nullptr)
+			{
+				sectionMatches[entry.m_section] = sectionMatches[entry.m_section] || matches;
+			}
+
+			any = any || matches;
+		}
+
+		for (size_t i = 0; i < group.m_sections.size(); ++i)
+		{
+			PropertySection& section = group.m_sections[i];
+			section.m_heading->SetVisible(sectionMatches[i]);
+			section.m_heading->SetIcon(GetThemeIcon(section.m_collapsed && query.empty() ? "ChevronRight" : "ChevronDown", "EditorIcons"));
 		}
 
 		group.m_header->SetVisible(any);
@@ -237,6 +362,30 @@ void InspectorPanel::OnRender(EditorUIContext& context)
 	}
 
 	m_empty->SetVisible(!valid);
+	m_objectBar->SetVisible(valid);
+	if (valid)
+	{
+		m_objectName->SetText(node->GetName());
+		m_objectIcon->SetTexture(GetThemeIcon(node->GetClassName(), "EditorIcons"));
+		m_objectIcon->SetTint(EditorIcons::GetIconColor(node->GetClassName(), this));
+	}
+	for (PropertyGroup& group : m_propertyGroups)
+	{
+		group.m_icon->SetTexture(GetThemeIcon(group.m_className, "EditorIcons"));
+		group.m_icon->SetTint(EditorIcons::GetIconColor(group.m_className, this));
+		Label* title = group.m_title;
+		Ref<FontResource> font = title->GetFont();
+		float const textWidth = font.IsValid() ? g_engine->m_textServer->GetTextLine(
+			font->GetFontRID(), title->GetText(), static_cast<float>(title->GetFontSize())).m_width : 0.f;
+		float const padding = static_cast<float>(GetThemeConstant("content_padding", "Editor"));
+		float const inset = GetThemeConstant("icon_size", "Button") + GetThemeConstant("spacing", "Editor") + padding;
+		float const width = std::max(inset + 1.f, m_scroll->GetPageSize().x - padding);
+		float const available = width - inset;
+		title->SetCustomMinimumSize(Vector2(std::min(textWidth, available), 0.f));
+		group.m_bar->SetPosition(Vector2(m_scroll->GetHorizontalScroll(), 0.f));
+		group.m_bar->UpdateSize(Vector2(width, static_cast<float>(GetThemeConstant("section_height", "Editor"))));
+	}
+
 	RefreshValues();
 	FilterProperties();
 }

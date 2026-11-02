@@ -141,5 +141,14 @@ Ref<Theme> CreateDefaultTheme()
 	theme->SetConstant("icon_size", "Button", iconSize);
 	theme->SetConstant("icon_separation", "Button", iconSeparation);
 	theme->SetStyleBox("panel", "PanelContainer", box(panel, border, 1.f, contentPadding, contentPadding));
+	theme->SetConstant("check_size", "MenuBar", 15);
+	theme->SetConstant("item_padding", "MenuBar", 10);
+	theme->SetConstant("shortcut_separation", "MenuBar", 25);
+	theme->SetConstant("separator_width", "MenuBar", 1);
+	theme->SetConstant("icon_separation", "LineEdit", 8);
+	theme->SetTypeVariation("SpinBoxStep", "Button");
+	theme->SetFontSize("font_size", "SpinBoxStep", 12);
+	theme->SetTypeVariation("SpinBoxError", "Label");
+	theme->SetFontSize("font_size", "SpinBoxError", 11);
 	return theme;
 }
