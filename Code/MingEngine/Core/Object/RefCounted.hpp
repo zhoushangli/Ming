@@ -27,6 +27,7 @@ private:
 template <typename T>
 class Ref
 {
+private:
 	static_assert(std::is_base_of_v<RefCounted, T>, "Ref<T> can only be used with classes derived from RefCounted.");
 
 public:
@@ -44,13 +45,13 @@ public:
 
 	Ref(Variant const& variant) { this->operator=(variant); }
 
+	~Ref() { RefPointer(nullptr); }
+
 	template <typename T_Other>
 	Ref(Ref<T_Other> const& other)
 	{
 		this->operator=(other);
 	}
-
-	~Ref() { RefPointer(nullptr); }
 
 	Ref& operator=(T* ptr)
 	{

@@ -68,11 +68,12 @@ Vector2 EditorPanel::GetInternalMinimumSize() const
 	Vector2 minimum;
 	for (Node* child : GetChildren())
 	{
-		if (auto* control = dynamic_cast<Control*>(child); control != nullptr && control->IsVisible() && !control->IsQueuedForDeletion())
+		if (auto* control = dynamic_cast<Control*>(child);
+			control != nullptr && control->IsVisible() && !control->IsQueuedForDeletion())
 		{
 			Vector2 const size = control->GetCombinedMinimumSize();
-			minimum.x = std::max(minimum.x, size.x);
-			minimum.y = std::max(minimum.y, size.y);
+			minimum.x          = std::max(minimum.x, size.x);
+			minimum.y          = std::max(minimum.y, size.y);
 		}
 	}
 

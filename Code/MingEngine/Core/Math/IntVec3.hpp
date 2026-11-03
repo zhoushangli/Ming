@@ -5,10 +5,11 @@ struct Vector3;
 struct IntVec3
 {
 public:
-	IntVec3()                        = default;
-	IntVec3(IntVec3 const& copyFrom) = default;
+	IntVec3() = default;
 	explicit IntVec3(Vector3 const& copyFrom);
 	explicit IntVec3(int initialX, int initialY, int initialZ);
+
+	IntVec3(IntVec3 const& copyFrom) = default;
 
 	void SetFromText(char const* text);
 

@@ -39,7 +39,7 @@ std::string ToLower(std::string text)
 
 bool IsReservedWindowsName(std::string const& name)
 {
-	std::string const stem = ToLower(std::filesystem::path(name).stem().string());
+	std::string const stem = ToLower(std::filesystem::u8path(name).stem().u8string());
 	if (stem == "con" || stem == "prn" || stem == "aux" || stem == "nul")
 	{
 		return true;
@@ -76,29 +76,51 @@ FileSystemPanel::FileSystemPanel() : EditorPanel("FileSystem")
 void FileSystemPanel::OnInitialize()
 {
 	auto* layout = MemNew<VBoxContainer>();
-	layout->SetSeparation(static_cast<float>(GetThemeConstant("panel_margin", "Editor")));
+	layout->AddThemeChangedCallback(
+		[control = layout]()
+		{
+			control->SetSeparation(static_cast<float>(control->GetThemeConstant("panel_margin", "Editor")));
+		});
 	auto* margin = MemNew<MarginContainer>();
-	margin->SetMargins(static_cast<float>(GetThemeConstant("panel_margin", "Editor")), static_cast<float>(GetThemeConstant("panel_margin", "Editor")), static_cast<float>(GetThemeConstant("panel_margin", "Editor")), static_cast<float>(GetThemeConstant("panel_margin", "Editor")));
+	margin->AddThemeChangedCallback(
+		[control = margin]()
+		{
+			control->SetMargins(
+				static_cast<float>(control->GetThemeConstant("panel_margin", "Editor")),
+				static_cast<float>(control->GetThemeConstant("panel_margin", "Editor")),
+				static_cast<float>(control->GetThemeConstant("panel_margin", "Editor")),
+				static_cast<float>(control->GetThemeConstant("panel_margin", "Editor")));
+		});
 	AddNode(margin);
 	margin->AddNode(layout);
 	layout->UpdateSize(GetSize());
 	auto* navigation = MemNew<HBoxContainer>();
-	navigation->SetSeparation(static_cast<float>(GetThemeConstant("panel_margin", "Editor")) * 0.5f);
+	navigation->AddThemeChangedCallback(
+		[control = navigation]()
+		{
+			control->SetSeparation(static_cast<float>(control->GetThemeConstant("panel_margin", "Editor")) * 0.5f);
+		});
 	layout->AddNode(navigation);
-	m_back = EditorPopupUtils::AddButton(navigation, "", [this]()
-	{
-		if (m_historyIndex > 0)
+	m_back = EditorPopupUtils::AddButton(
+		navigation,
+		"",
+		[this]()
 		{
-			NavigateTo(m_history[--m_historyIndex], false);
-		}
-	});
-	m_forward = EditorPopupUtils::AddButton(navigation, "", [this]()
-	{
-		if (m_historyIndex + 1 < m_history.size())
+			if (m_historyIndex > 0)
+			{
+				NavigateTo(m_history[--m_historyIndex], false);
+			}
+		});
+	m_forward = EditorPopupUtils::AddButton(
+		navigation,
+		"",
+		[this]()
 		{
-			NavigateTo(m_history[++m_historyIndex], false);
-		}
-	});
+			if (m_historyIndex + 1 < m_history.size())
+			{
+				NavigateTo(m_history[++m_historyIndex], false);
+			}
+		});
 	m_back->SetIcon(GetThemeIcon("ChevronLeft", "EditorIcons"));
 	m_forward->SetIcon(GetThemeIcon("ChevronRight", "EditorIcons"));
 	m_back->SetThemeTypeVariation("EditorPanelAction");
@@ -109,64 +131,85 @@ void FileSystemPanel::OnInitialize()
 	m_path->SetMinimumCharacterWidth(1);
 	m_path->SetHorizontalSizeFlags(Size_ExpandFill);
 	navigation->AddNode(m_path);
-	m_path->SetEditingEndedCallback([this](String const& text, LineEdit::EditEndReason reason)
-	{
-		VirtualPath path;
-		if (reason == LineEdit::EditEndReason::Submitted && VirtualPath::TryParse(text.ToUtf8(), path))
+	m_path->SetEditingEndedCallback(
+		[this](String const& text, LineEdit::EditEndReason reason)
 		{
-			NavigateTo(path);
-		}
-	});
+			VirtualPath path;
+			if (reason == LineEdit::EditEndReason::Submitted && VirtualPath::TryParse(text.ToUtf8(), path))
+			{
+				NavigateTo(path);
+			}
+		});
 	m_filter = MemNew<LineEdit>();
 	m_filter->SetPlaceholder("Filter files");
 	m_filter->SetIcon(GetThemeIcon("Search", "EditorIcons"));
 	m_filter->SetMinimumCharacterWidth(1);
 	auto* tools = MemNew<HBoxContainer>();
-	tools->SetSeparation(static_cast<float>(GetThemeConstant("panel_margin", "Editor")) * 0.5f);
+	tools->AddThemeChangedCallback(
+		[control = tools]()
+		{
+			control->SetSeparation(static_cast<float>(control->GetThemeConstant("panel_margin", "Editor")) * 0.5f);
+		});
 	layout->AddNode(tools);
 	m_filter->SetHorizontalSizeFlags(Size_ExpandFill);
 	tools->AddNode(m_filter);
 
-	m_empty = EditorPopupUtils::AddLabel(layout, "Empty directory", "EditorStatusLabel");
+	m_empty      = EditorPopupUtils::AddLabel(layout, "Empty directory", "EditorStatusLabel");
 	auto* scroll = MemNew<ScrollContainer>();
 	scroll->SetVerticalSizeFlags(Size_ExpandFill);
 	layout->AddNode(scroll);
 	m_tree = MemNew<Tree>();
 	m_tree->SetClipText(true);
 	scroll->AddNode(m_tree);
-	m_tree->SetSelectedCallback([this](uint64_t key)
-	{
-		auto found = m_fileItems.find(key);
-		m_selectedVirtualPath = found != m_fileItems.end() ? found->second : VirtualPath();
-	});
-	m_tree->SetActivatedCallback([this](uint64_t) { OpenSelected(); });
-	m_tree->SetRenamedCallback([this](uint64_t key, String const& name)
-	{
-		auto found = m_fileItems.find(key);
-		if (found == m_fileItems.end() || found->second.IsRoot())
+	m_tree->SetSelectedCallback(
+		[this](uint64_t key)
 		{
-			return;
-		}
+			auto found            = m_fileItems.find(key);
+			m_selectedVirtualPath = found != m_fileItems.end() ? found->second : VirtualPath();
+		});
+	m_tree->SetActivatedCallback(
+		[this](uint64_t)
+		{
+			OpenSelected();
+		});
+	m_tree->SetRenamedCallback(
+		[this](uint64_t key, String const& name)
+		{
+			auto found = m_fileItems.find(key);
+			if (found == m_fileItems.end() || found->second.IsRoot())
+			{
+				return;
+			}
 
-		std::string error;
-		if (!ValidateName(*m_context.m_fileSystem, found->second.GetParent(), name.ToUtf8().c_str(), error, found->second))
-		{
-			ShowError(error);
-			return;
-		}
+			std::string error;
+			if (!ValidateName(
+					*m_context.m_fileSystem,
+					found->second.GetParent(),
+					name.ToUtf8().c_str(),
+					error,
+					found->second))
+			{
+				ShowError(error);
+				return;
+			}
 
-		VirtualPath renamed;
-		if (m_context.m_fileSystem->Rename(found->second, name.ToUtf8(), renamed, error))
+			VirtualPath renamed;
+			if (m_context.m_fileSystem->Rename(found->second, name.ToUtf8(), renamed, error))
+			{
+				EditorNode::Get()->FilesMoved(found->second, renamed);
+				m_selectedVirtualPath = renamed;
+				m_context.m_fileSystem->ScanResourceTree();
+			}
+			else
+			{
+				ShowError(error);
+			}
+		});
+	m_tree->SetInputCallback(
+		[this](InputEvent const& event)
 		{
-			m_selectedVirtualPath = renamed;
-			m_context.m_fileSystem->ScanResourceTree();
-		}
-		else
-		{
-			ShowError(error);
-		}
-	});
-	m_tree->SetInputCallback([this](InputEvent const& event) { return HandleTreeInput(event); });
+			return HandleTreeInput(event);
+		});
 	m_tree->SetDragCallbacks(
 		[this](Vector2 const& position, GuiDragData& data)
 		{
@@ -184,11 +227,11 @@ void FileSystemPanel::OnInitialize()
 		{
 			VirtualPath source;
 			return data.m_type == String("file") && VirtualPath::TryParse(data.m_value.ToUtf8(), source)
-				&& CanMove(source, m_tree->GetItemAtPosition(position));
+				   && CanMove(source, m_tree->GetItemAtPosition(position));
 		},
 		[this](Vector2 const& position, GuiDragData const& data)
 		{
-			VirtualPath source;
+			VirtualPath    source;
 			uint64_t const target = m_tree->GetItemAtPosition(position);
 			if (!VirtualPath::TryParse(data.m_value.ToUtf8(), source) || !CanMove(source, target))
 			{
@@ -199,6 +242,7 @@ void FileSystemPanel::OnInitialize()
 			std::string error;
 			if (m_context.m_fileSystem->Move(source, m_fileItems.at(target), moved, error))
 			{
+				EditorNode::Get()->FilesMoved(source, moved);
 				m_selectedVirtualPath = moved;
 				m_context.m_fileSystem->ScanResourceTree();
 			}
@@ -239,6 +283,15 @@ void FileSystemPanel::OpenSelected()
 		{
 			NavigateTo(entry->GetVirtualPath());
 		}
+		else if (entry->GetVirtualPath().HasExtension(".cs"))
+		{
+			HINSTANCE result =
+				ShellExecuteW(nullptr, L"open", entry->GetPhysicalPath().c_str(), nullptr, nullptr, SW_SHOWNORMAL);
+			if (reinterpret_cast<intptr_t>(result) <= 32)
+			{
+				ShowError("Could not open the script in the system editor.");
+			}
+		}
 		else if (entry->GetVirtualPath().HasExtension(".tscn"))
 		{
 			m_context.m_editorUI->FinishNativeEditing();
@@ -251,7 +304,20 @@ void FileSystemPanel::DeleteSelected()
 {
 	if (FileEntry const* entry = GetSelectedEntry(); entry != nullptr && !entry->GetVirtualPath().IsRoot())
 	{
-		m_deleteEntryPopup.Open(entry->GetVirtualPath(), entry->IsDirectory());
+		VirtualPath const path      = entry->GetVirtualPath();
+		bool const        directory = entry->IsDirectory();
+		if (EditorNode::Get()->ContainsCurrentScene(path))
+		{
+			EditorNode::Get()->RequestCloseScene(
+				[this, path, directory]()
+				{
+					m_deleteEntryPopup.Open(path, directory);
+				});
+		}
+		else
+		{
+			m_deleteEntryPopup.Open(path, directory);
+		}
 	}
 }
 
@@ -281,48 +347,100 @@ bool FileSystemPanel::HandleTreeInput(InputEvent const& event)
 
 void FileSystemPanel::ShowContextMenu(Vector2 position)
 {
-	FileEntry const* entry = GetSelectedEntry();
-	VirtualPath const directory = entry == nullptr ? m_directory
-		: entry->IsDirectory() ? entry->GetVirtualPath() : entry->GetVirtualPath().GetParent();
-	std::vector<EditorUI::MenuItem> actions = {
-		{ "Open", [this]() { OpenSelected(); } },
-		{ "New Folder...", [this, directory]() { m_createFolderPopup.Open(directory); } },
-		{ "New Scene...", [this, directory]() { m_createScenePopup.Open(directory); } }
-	};
+	FileEntry const*                entry     = GetSelectedEntry();
+	VirtualPath const               directory = entry == nullptr       ? m_directory
+												: entry->IsDirectory() ? entry->GetVirtualPath()
+																	   : entry->GetVirtualPath().GetParent();
+	std::vector<EditorUI::MenuItem> actions   = { { "Open",
+													[this]()
+													{
+													  OpenSelected();
+												  } },
+												{ "New Folder...",
+												  [this, directory]()
+												  {
+													  m_createFolderPopup.Open(directory);
+												  } },
+												{ "New Scene...",
+												  [this, directory]()
+												  {
+													  m_createScenePopup.Open(directory);
+												  } } };
 	if (entry != nullptr)
 	{
 		VirtualPath const path = entry->GetVirtualPath();
+		if (path.HasExtension(".tscn"))
+		{
+			actions.push_back(
+				{ "Set as Main Scene",
+				  [this, path]()
+				  {
+					  if (!EditorNode::Get()->SetMainScene(path))
+					  {
+						  ShowError("Could not set the main scene.");
+					  }
+				  } });
+		}
 		std::filesystem::path const physical = entry->GetPhysicalPath();
-		actions.push_back({ "Copy Path", [path]() { g_engine->m_windowSystem->SetClipboardText(path.GetString()); } });
-		actions.push_back({ "Copy Absolute Path", [physical]() { g_engine->m_windowSystem->SetClipboardText(physical.string()); } });
+		actions.push_back(
+			{ "Copy Path",
+			  [path]()
+			  {
+				  g_engine->m_windowSystem->SetClipboardText(path.GetString());
+			  } });
+		actions.push_back(
+			{ "Copy Absolute Path",
+			  [physical]()
+			  {
+				  g_engine->m_windowSystem->SetClipboardText(physical.string());
+			  } });
 		if (!path.IsRoot())
 		{
-			actions.push_back({ "Rename", [this]() { m_tree->EditSelected(); } });
-			actions.push_back({ "Duplicate", [this, path]()
-			{
-				VirtualPath duplicate;
-				std::string error;
-				if (m_context.m_fileSystem->Duplicate(path, duplicate, error))
-				{
-					m_selectedVirtualPath = duplicate;
-					m_context.m_fileSystem->ScanResourceTree();
-				}
-				else
-				{
-					ShowError(error);
-				}
-			} });
-			actions.push_back({ "Delete...", [this]() { DeleteSelected(); } });
+			actions.push_back(
+				{ "Rename",
+				  [this]()
+				  {
+					  m_tree->EditSelected();
+				  } });
+			actions.push_back(
+				{ "Duplicate",
+				  [this, path]()
+				  {
+					  VirtualPath duplicate;
+					  std::string error;
+					  if (m_context.m_fileSystem->Duplicate(path, duplicate, error))
+					  {
+						  m_selectedVirtualPath = duplicate;
+						  m_context.m_fileSystem->ScanResourceTree();
+					  }
+					  else
+					  {
+						  ShowError(error);
+					  }
+				  } });
+			actions.push_back(
+				{ "Delete...",
+				  [this]()
+				  {
+					  DeleteSelected();
+				  } });
 		}
 
 		if (entry->IsDirectory())
 		{
-			actions.push_back({ "Open in Terminal", [this, physical]() { OpenInTerminal(physical); } });
+			actions.push_back(
+				{ "Open in Terminal",
+				  [this, physical]()
+				  {
+					  OpenInTerminal(physical);
+				  } });
 		}
-		actions.push_back({ "Open in File Manager", [this, physical, directory = entry->IsDirectory()]()
-		{
-			OpenInFileManager(physical, !directory);
-		} });
+		actions.push_back(
+			{ "Open in File Manager",
+			  [this, physical, directory = entry->IsDirectory()]()
+			  {
+				  OpenInFileManager(physical, !directory);
+			  } });
 	}
 
 	m_context.m_editorUI->ShowMenu(m_tree, position, actions);
@@ -339,22 +457,41 @@ bool FileSystemPanel::CanMove(VirtualPath const& source, uint64_t target) const
 
 	std::filesystem::path from;
 	std::filesystem::path to;
-	std::error_code error;
+	std::error_code       error;
 	if (!m_context.m_fileSystem->TryGetPhysicalPath(source, from)
-		|| !m_context.m_fileSystem->TryGetPhysicalPath(found->second, to)
-		|| !std::filesystem::exists(from, error) || error || !std::filesystem::is_directory(to, error) || error)
+		|| !m_context.m_fileSystem->TryGetPhysicalPath(found->second, to) || !std::filesystem::exists(from, error)
+		|| error || !std::filesystem::is_directory(to, error) || error)
 	{
 		return false;
 	}
 
 	std::string const prefix = source.GetString() + "/";
 	return found->second.GetString().compare(0, prefix.size(), prefix) != 0
-		&& !std::filesystem::exists(to / from.filename(), error) && !error;
+		   && !std::filesystem::exists(to / from.filename(), error) && !error;
+}
+
+void FileSystemPanel::FilesMoved(VirtualPath const& before, VirtualPath const& after)
+{
+	auto update = [&](VirtualPath& path)
+	{
+		std::string const value  = path.GetString();
+		std::string const prefix = before.GetString();
+		if (path == before || value.compare(0, prefix.size() + 1, prefix + "/") == 0)
+		{
+			path = VirtualPath(after.GetString() + value.substr(prefix.size()));
+		}
+	};
+	update(m_directory);
+	update(m_selectedVirtualPath);
+	for (VirtualPath& path : m_history)
+	{
+		update(path);
+	}
 }
 
 void FileSystemPanel::NavigateTo(VirtualPath const& directory, bool addHistory)
 {
-	FileEntry const* root = m_context.m_fileSystem->GetResourceRootEntry();
+	FileEntry const* root  = m_context.m_fileSystem->GetResourceRootEntry();
 	FileEntry const* entry = root != nullptr ? FindEntry(*root, directory) : nullptr;
 	if (entry == nullptr || !entry->IsDirectory())
 	{
@@ -368,7 +505,7 @@ void FileSystemPanel::NavigateTo(VirtualPath const& directory, bool addHistory)
 		m_historyIndex = m_history.size() - 1;
 	}
 
-	m_directory = directory;
+	m_directory           = directory;
 	m_selectedVirtualPath = {};
 	m_filter->SetText("");
 	UpdateItems();
@@ -376,7 +513,7 @@ void FileSystemPanel::NavigateTo(VirtualPath const& directory, bool addHistory)
 
 void FileSystemPanel::UpdateItems()
 {
-	std::string const filter = ToLower(m_filter->GetText().ToUtf8());
+	std::string const       filter = ToLower(m_filter->GetText().ToUtf8());
 	std::vector<Tree::Item> items;
 	m_fileItems.clear();
 	std::function<bool(FileEntry const*, uint64_t)> append = [&](FileEntry const* entry, uint64_t parent)
@@ -387,15 +524,24 @@ void FileSystemPanel::UpdateItems()
 			++m_nextFileKey;
 		}
 
-		uint64_t const key = result.first->second;
-		m_fileItems[key] = entry->GetVirtualPath();
-		size_t const index = items.size();
+		uint64_t const key          = result.first->second;
+		m_fileItems[key]            = entry->GetVirtualPath();
+		size_t const      index     = items.size();
 		std::string const extension = ToLower(entry->GetPhysicalPath().extension().string());
-		char const* icon = entry->IsDirectory() ? "Folder" : extension == ".tscn" ? "PackedScene"
-			: extension == ".cs" ? "CSharpScript" : extension == ".png" || extension == ".jpg" ? "Texture2D"
-			: extension == ".obj" || extension == ".glb" ? "Mesh" : "File";
-		items.push_back({ key, parent, entry->GetName(), true, !entry->GetVirtualPath().IsRoot(),
-			GetThemeIcon(icon, "EditorIcons"), EditorIcons::GetIconColor(icon, this) });
+		char const*       icon      = entry->IsDirectory()                         ? "Folder"
+									  : extension == ".tscn"                       ? "PackedScene"
+									  : extension == ".cs"                         ? "CSharpScript"
+									  : extension == ".png" || extension == ".jpg" ? "Texture2D"
+									  : extension == ".obj" || extension == ".glb" ? "Mesh"
+																				   : "File";
+		items.push_back(
+			{ key,
+			  parent,
+			  entry->GetName(),
+			  true,
+			  !entry->GetVirtualPath().IsRoot(),
+			  GetThemeIcon(icon, "EditorIcons"),
+			  EditorIcons::GetIconColor(icon, this) });
 		bool visible = filter.empty() || entry->GetLowerName().find(filter) != std::string::npos;
 		for (auto const& child : entry->GetChildren())
 		{
@@ -411,7 +557,7 @@ void FileSystemPanel::UpdateItems()
 		if (directory == nullptr || !directory->IsDirectory())
 		{
 			m_directory = VirtualPath("res://");
-			directory = root;
+			directory   = root;
 		}
 
 		for (auto const& child : directory->GetChildren())
@@ -420,7 +566,13 @@ void FileSystemPanel::UpdateItems()
 		}
 	}
 
-	bool const any = std::any_of(items.begin(), items.end(), [](Tree::Item const& item) { return item.m_visible; });
+	bool const any = std::any_of(
+		items.begin(),
+		items.end(),
+		[](Tree::Item const& item)
+		{
+			return item.m_visible;
+		});
 	m_empty->SetText(filter.empty() ? "Empty directory" : "No matching files");
 	m_empty->SetVisible(!any);
 	m_back->SetDisabled(m_historyIndex == 0);

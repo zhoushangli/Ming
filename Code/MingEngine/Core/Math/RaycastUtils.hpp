@@ -22,6 +22,7 @@ struct MathRaycastQuery3D
 
 struct MathRaycastResult2D
 {
+public:
 	MathRaycastResult2D() = default;
 
 	MathRaycastResult2D(Vector2 rayStartPos, Vector2 rayFwdNormal, float rayMaxLength)
@@ -29,6 +30,7 @@ struct MathRaycastResult2D
 	{
 	}
 
+public:
 	// Basic raycast result information (required)
 	bool    m_didImpact  = false;
 	float   m_impactDist = 0.f;
@@ -43,6 +45,7 @@ struct MathRaycastResult2D
 
 struct MathRaycastResult3D
 {
+public:
 	MathRaycastResult3D() = default;
 
 	MathRaycastResult3D(Vector3 rayStartPos, Vector3 rayFwdNormal, float rayMaxLength)
@@ -50,6 +53,7 @@ struct MathRaycastResult3D
 	{
 	}
 
+public:
 	// Basic raycast result information (required)
 	bool    m_didImpact  = false;
 	float   m_impactDist = 0.f;

@@ -33,11 +33,11 @@ private:
 public:
 	BaseButton();
 
-	bool IsDisabled() const override { return m_status.m_disabled; }
-	bool IsToggleMode() const { return m_toggleMode; }
-	bool IsPressed() const { return m_toggleMode ? m_status.m_pressed : m_status.m_pressAttempt; }
-	bool IsPressing() const { return m_status.m_pressAttempt; }
-	bool IsHovered() const { return m_status.m_hovering; }
+	bool     IsDisabled() const override { return m_status.m_disabled; }
+	bool     IsToggleMode() const { return m_toggleMode; }
+	bool     IsPressed() const { return m_toggleMode ? m_status.m_pressed : m_status.m_pressAttempt; }
+	bool     IsPressing() const { return m_status.m_pressAttempt; }
+	bool     IsHovered() const { return m_status.m_hovering; }
 	DrawMode GetDrawMode() const;
 
 	void SetDisabled(bool disabled);
@@ -53,7 +53,7 @@ public:
 	bool GuiInput(InputEvent const& event) override;
 
 protected:
-	static void BindMethods() {}
+	static void  BindMethods() {}
 	virtual void OnDrawModeChanged() {}
 
 	void OnNotification(int notification);

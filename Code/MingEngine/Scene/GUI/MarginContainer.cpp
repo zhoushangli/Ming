@@ -31,20 +31,20 @@ float MarginContainer::GetMarginBottom() const
 	return m_marginOverrides[3].value_or(static_cast<float>(std::max(0, m_themeCache.margin_bottom)));
 }
 
-
 Vector2 MarginContainer::GetInternalMinimumSize() const
 {
-	return Container::GetInternalMinimumSize() + Vector2(GetMarginLeft() + GetMarginRight(), GetMarginTop() + GetMarginBottom());
+	return Container::GetInternalMinimumSize()
+		   + Vector2(GetMarginLeft() + GetMarginRight(), GetMarginTop() + GetMarginBottom());
 }
 
 void MarginContainer::SetMargins(float left, float top, float right, float bottom)
 {
 	float const margins[] = { left, top, right, bottom };
-	bool changed = false;
+	bool        changed   = false;
 	for (int side = 0; side < 4; ++side)
 	{
-		float const value = std::max(0.f, margins[side]);
-		changed = changed || m_marginOverrides[side] != value;
+		float const value       = std::max(0.f, margins[side]);
+		changed                 = changed || m_marginOverrides[side] != value;
 		m_marginOverrides[side] = value;
 	}
 

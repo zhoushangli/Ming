@@ -31,10 +31,9 @@ public:
 	bool        operator==(EulerAngles const& compare) const;
 	bool        operator!=(EulerAngles const& compare) const;
 
-	static const EulerAngles Zero;
-
 public:
-	float m_yawDegrees   = 0.f;
-	float m_pitchDegrees = 0.f;
-	float m_rollDegrees  = 0.f;
+	static const EulerAngles Zero;
+	float                    m_yawDegrees   = 0.f;
+	float                    m_pitchDegrees = 0.f;
+	float                    m_rollDegrees  = 0.f;
 };

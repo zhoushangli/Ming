@@ -9,10 +9,11 @@
 
 namespace EditorPopupUtils
 {
-PopupPanel* Create(Control* owner, String const& title, VBoxContainer*& content);
-void Layout(PopupPanel* popup, Vector2 preferredSize);
-void Open(PopupPanel* popup, Control* owner, Vector2 preferredSize);
-Button* AddButton(Control* parent, String const& text, std::function<void()> callback);
-Label* AddLabel(Control* parent, String const& text, std::string const& variation = {});
-void ClearContent(Control* content);
+PopupPanel*    Create(Control* owner, String const& title, VBoxContainer*& content);
+void           Layout(PopupPanel* popup, Vector2 preferredSize);
+void           Open(PopupPanel* popup, Control* owner, Vector2 preferredSize);
+Button*        AddButton(Control* parent, String const& text, std::function<void()> callback);
+HBoxContainer* AddActions(Control* parent);
+Label*         AddLabel(Control* parent, String const& text, std::string const& variation = {});
+void           ClearContent(Control* content);
 }

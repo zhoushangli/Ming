@@ -30,7 +30,7 @@ TabContainer::TabContainer()
 {
 	SetClipContents(true);
 	m_titleActions = MemNew<HBoxContainer>();
-	m_tabExtras = MemNew<HBoxContainer>();
+	m_tabExtras    = MemNew<HBoxContainer>();
 	AddNode(m_titleActions);
 	AddNode(m_tabExtras);
 }
@@ -82,8 +82,12 @@ float TabContainer::GetTabWidth(Button const* button) const
 	float textWidth = 0.f;
 	if (m_themeCache.font.IsValid() && g_engine != nullptr && g_engine->m_textServer != nullptr)
 	{
-		textWidth = g_engine->m_textServer->GetTextLine(m_themeCache.font->GetFontRID(), button->GetText(),
-			static_cast<float>(m_themeCache.font_size)).m_width;
+		textWidth = g_engine->m_textServer
+						->GetTextLine(
+							m_themeCache.font->GetFontRID(),
+							button->GetText(),
+							static_cast<float>(m_themeCache.font_size))
+						.m_width;
 	}
 
 	float const padding = m_themeCache.tab_normal.IsValid() ? m_themeCache.tab_normal->GetMinimumSize().x : 0.f;
@@ -109,13 +113,21 @@ AABB2 TabContainer::GetTabBarRect() const
 	}
 
 	float const top = m_tabsAtBottom ? std::max(0.f, GetSize().y - height) : 0.f;
-	return AABB2(0.f, top, std::max(0.f, GetSize().x - m_titleActions->GetCombinedMinimumSize().x - m_tabExtras->GetCombinedMinimumSize().x), top + height);
+	return AABB2(
+		0.f,
+		top,
+		std::max(
+			0.f,
+			GetSize().x - m_titleActions->GetCombinedMinimumSize().x - m_tabExtras->GetCombinedMinimumSize().x),
+		top + height);
 }
 
 AABB2 TabContainer::GetPageRect() const
 {
-	float const top = std::min(GetSize().y, GetTabBarRect().m_maxs.y + static_cast<float>(std::max(0, m_themeCache.page_separation)));
-	float const bottom = std::max(0.f, GetTabBarRect().m_mins.y - static_cast<float>(std::max(0, m_themeCache.page_separation)));
+	float const top =
+		std::min(GetSize().y, GetTabBarRect().m_maxs.y + static_cast<float>(std::max(0, m_themeCache.page_separation)));
+	float const bottom =
+		std::max(0.f, GetTabBarRect().m_mins.y - static_cast<float>(std::max(0, m_themeCache.page_separation)));
 	AABB2 const area(0.f, m_tabsAtBottom ? 0.f : top, GetSize().x, m_tabsAtBottom ? bottom : GetSize().y);
 	return m_themeCache.panel.IsValid() ? m_themeCache.panel->GetContentRect(area) : area;
 }
@@ -128,9 +140,11 @@ AABB2 TabContainer::GetTabInsertRect(int index) const
 	}
 
 	float const available = GetTabBarRect().GetWidth();
-	float const width = std::min(available, static_cast<float>(std::max(1, m_themeCache.drop_mark_width)));
-	float const edge = index < GetPageCount() ? m_buttons[index]->GetLocalPosition().x
-		: (m_buttons.empty() ? 0.f : m_buttons.back()->GetLocalPosition().x + m_buttons.back()->GetSize().x);
+	float const width     = std::min(available, static_cast<float>(std::max(1, m_themeCache.drop_mark_width)));
+	float const edge =
+		index < GetPageCount()
+			? m_buttons[index]->GetLocalPosition().x
+			: (m_buttons.empty() ? 0.f : m_buttons.back()->GetLocalPosition().x + m_buttons.back()->GetSize().x);
 	float const x = std::clamp(edge, 0.f, std::max(0.f, available - width));
 	return AABB2(x, GetTabBarRect().m_mins.y, x + width, GetTabBarRect().m_maxs.y);
 }
@@ -142,15 +156,17 @@ Vector2 TabContainer::GetInternalMinimumSize() const
 	for (Control* page : m_pages)
 	{
 		Vector2 const size = page->GetCombinedMinimumSize();
-		pageMinimum.x = std::max(pageMinimum.x, size.x);
-		pageMinimum.y = std::max(pageMinimum.y, size.y);
+		pageMinimum.x      = std::max(pageMinimum.x, size.x);
+		pageMinimum.y      = std::max(pageMinimum.y, size.y);
 	}
 
 	minimum = minimum + pageMinimum;
 	for (Button* button : m_buttons)
 	{
-		minimum.x = std::max({ minimum.x, button->GetCombinedMinimumSize().x,
-			static_cast<float>(std::max(0, m_themeCache.tab_minimum_width)) });
+		minimum.x = std::max(
+			{ minimum.x,
+			  button->GetCombinedMinimumSize().x,
+			  static_cast<float>(std::max(0, m_themeCache.tab_minimum_width)) });
 	}
 
 	minimum.x = std::max(minimum.x, m_titleActions->GetCombinedMinimumSize().x + 60.f);
@@ -179,9 +195,9 @@ void TabContainer::InsertPage(String const& title, Control* page, int index)
 		}
 	}
 
-	index = std::clamp(index, 0, GetPageCount());
+	index                  = std::clamp(index, 0, GetPageCount());
 	Control* const current = GetCurrentPage();
-	auto*     button = MemNew<Button>();
+	auto*          button  = MemNew<Button>();
 	button->SetText(title);
 	button->SetClipText(true);
 	button->SetToggleMode(true);
@@ -307,10 +323,10 @@ void TabContainer::MovePage(int from, int to)
 		return;
 	}
 
-	to = std::clamp(to, 0, GetPageCount() - 1);
+	to                     = std::clamp(to, 0, GetPageCount() - 1);
 	Control* const current = GetCurrentPage();
-	Control* const page = m_pages[from];
-	Button* const button = m_buttons[from];
+	Control* const page    = m_pages[from];
+	Button* const  button  = m_buttons[from];
 	m_pages.erase(m_pages.begin() + from);
 	m_buttons.erase(m_buttons.begin() + from);
 	m_pages.insert(m_pages.begin() + to, page);
@@ -333,9 +349,9 @@ bool TabContainer::CanDropData(Vector2 const& position, GuiDragData const& data)
 	}
 
 	Control* page = ObjectDatabase::GetInstance<Control>(data.m_objectID);
-	auto* from = page != nullptr ? dynamic_cast<TabContainer*>(page->GetParent()) : nullptr;
-	return data.m_type == String("tab") && from != nullptr && from->GetPageIndex(page) >= 0
-		&& m_rearrangeGroup >= 0 && from->m_rearrangeGroup == m_rearrangeGroup;
+	auto*    from = page != nullptr ? dynamic_cast<TabContainer*>(page->GetParent()) : nullptr;
+	return data.m_type == String("tab") && from != nullptr && from->GetPageIndex(page) >= 0 && m_rearrangeGroup >= 0
+		   && from->m_rearrangeGroup == m_rearrangeGroup;
 }
 
 void TabContainer::DropData(Vector2 const& position, GuiDragData const& data)
@@ -351,10 +367,10 @@ void TabContainer::DropData(Vector2 const& position, GuiDragData const& data)
 		return;
 	}
 
-	Control* page = ObjectDatabase::GetInstance<Control>(data.m_objectID);
-	auto* from = dynamic_cast<TabContainer*>(page->GetParent());
-	int const old = from->GetPageIndex(page);
-	int index = GetTabBarRect().IsPointInside(position) ? GetTabInsertIndex(position) : GetPageCount();
+	Control*  page  = ObjectDatabase::GetInstance<Control>(data.m_objectID);
+	auto*     from  = dynamic_cast<TabContainer*>(page->GetParent());
+	int const old   = from->GetPageIndex(page);
+	int       index = GetTabBarRect().IsPointInside(position) ? GetTabInsertIndex(position) : GetPageCount();
 	if (from == this)
 	{
 		MovePage(old, index > old ? index - 1 : index);
@@ -378,7 +394,8 @@ void TabContainer::SetDropInsertIndex(int index)
 
 void TabContainer::DragHover(Vector2 const& position, GuiDragData const& data, bool accepted)
 {
-	SetDropInsertIndex(accepted && position.y >= 0.f && GetTabBarRect().IsPointInside(position) ? GetTabInsertIndex(position) : -1);
+	SetDropInsertIndex(
+		accepted && position.y >= 0.f && GetTabBarRect().IsPointInside(position) ? GetTabInsertIndex(position) : -1);
 	Control::DragHover(position, data, accepted);
 }
 
@@ -392,7 +409,7 @@ void TabContainer::HoverTab(Control* page, Vector2 const& position, GuiDragData 
 
 	if (m_hoverPage != page->GetObjectID())
 	{
-		m_hoverPage = page->GetObjectID();
+		m_hoverPage    = page->GetObjectID();
 		m_hoverStarted = glfwGetTime();
 	}
 	else if (glfwGetTime() - m_hoverStarted >= 0.5)
@@ -455,19 +472,18 @@ void TabContainer::OnNotification(int notification)
 	{
 	case Notification_UpdateLayout:
 	{
-		float const available = GetTabBarRect().GetWidth();
+		float const available   = GetTabBarRect().GetWidth();
 		float const actionWidth = m_titleActions->GetCombinedMinimumSize().x;
 		m_titleActions->SetPosition(Vector2(GetSize().x - actionWidth, GetTabBarRect().m_mins.y));
 		m_titleActions->UpdateSize(Vector2(actionWidth, GetTabBarRect().GetHeight()));
 		float total = 0.f;
 		for (Button* button : m_buttons)
 		{
-			total += GetTabWidth(button)
-				+ static_cast<float>(std::max(0, m_themeCache.tab_separation));
+			total += GetTabWidth(button) + static_cast<float>(std::max(0, m_themeCache.tab_separation));
 		}
 
 		float const ratio = total > 0.f ? std::min(1.f, available / total) : 1.f;
-		float x = 0.f;
+		float       x     = 0.f;
 		for (Button* button : m_buttons)
 		{
 			float const width = GetTabWidth(button) * ratio;
@@ -489,10 +505,13 @@ void TabContainer::OnNotification(int notification)
 	}
 	case Notification_Draw:
 	{
-		DrawThemeStyleBox(m_themeCache.tab_normal, AABB2(0.f, GetTabBarRect().m_mins.y, GetSize().x, GetTabBarRect().m_maxs.y));
-		DrawThemeStyleBox(m_themeCache.panel, m_tabsAtBottom
-			? AABB2(0.f, 0.f, GetSize().x, GetTabBarRect().m_mins.y)
-			: AABB2(0.f, GetTabBarRect().m_maxs.y, GetSize().x, GetSize().y));
+		DrawThemeStyleBox(
+			m_themeCache.tab_normal,
+			AABB2(0.f, GetTabBarRect().m_mins.y, GetSize().x, GetTabBarRect().m_maxs.y));
+		DrawThemeStyleBox(
+			m_themeCache.panel,
+			m_tabsAtBottom ? AABB2(0.f, 0.f, GetSize().x, GetTabBarRect().m_mins.y)
+						   : AABB2(0.f, GetTabBarRect().m_maxs.y, GetSize().x, GetSize().y));
 		if (m_dropIndex >= 0)
 		{
 			DrawRect(GetTabInsertRect(m_dropIndex), m_themeCache.drop_mark_color);

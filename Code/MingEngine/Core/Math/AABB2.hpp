@@ -5,11 +5,13 @@
 class AABB2
 {
 public:
-	AABB2()                  = default;
-	AABB2(const AABB2& copy) = default;
-	~AABB2()                 = default;
+	AABB2()  = default;
+	~AABB2() = default;
 	explicit AABB2(const Vector2& mins, const Vector2& maxs);
 	explicit AABB2(float minX, float minY, float maxX, float maxY);
+
+	AABB2(const AABB2& copy) = default;
+	AABB2& operator=(const AABB2& other);
 
 	// Methods to implement
 	bool          IsPointInside(const Vector2& point) const;
@@ -28,8 +30,7 @@ public:
 	void Shrink(float amountX, float amountY);
 	void StretchToIncludePoint(const Vector2& point);
 
-	bool   operator==(const AABB2& other) const;
-	AABB2& operator=(const AABB2& other);
+	bool operator==(const AABB2& other) const;
 
 public:
 	Vector2 m_mins;

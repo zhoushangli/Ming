@@ -12,36 +12,70 @@ PopupPanel* EditorPopupUtils::Create(Control* owner, String const& title, VBoxCo
 	popup->SetSerializable(false);
 	popup->SetModal(true);
 	owner->GetViewport()->AddNode(popup);
+	popup->SetThemeSource(owner);
 	auto* panel = MemNew<PanelContainer>();
 	panel->SetClipContents(true);
+	panel->SetThemeTypeVariation(title.IsEmpty() ? "EditorMenuPopup" : "EditorDialog");
 	popup->AddNode(panel);
-	content = MemNew<VBoxContainer>();
-	content->SetSeparation(static_cast<float>(owner->GetThemeConstant("content_padding", "Editor")));
-	panel->AddNode(content);
+	Control* body = panel;
 	if (!title.IsEmpty())
 	{
-		AddLabel(content, title, "EditorInspectorTitle");
+		auto* shell = MemNew<VBoxContainer>();
+		shell->SetSeparation(0.f);
+		panel->AddNode(shell);
+		auto* header = MemNew<PanelContainer>();
+		header->SetThemeTypeVariation("EditorDialogHeader");
+		shell->AddNode(header);
+		auto* row = MemNew<HBoxContainer>();
+		header->AddNode(row);
+		Label* heading = AddLabel(row, title, "EditorInspectorTitle");
+		heading->SetVerticalAlignment(VerticalAlignment::Center);
+		heading->SetHorizontalSizeFlags(Control::Size_ExpandFill);
+		Button* close = AddButton(
+			row,
+			"",
+			[popup]()
+			{
+				popup->Close();
+			});
+		close->SetName("CloseDialog");
+		close->SetIcon(owner->GetThemeIcon("Close", "EditorIcons"));
+		close->SetThemeTypeVariation("EditorPanelAction");
+		auto* area = MemNew<PanelContainer>();
+		area->SetThemeTypeVariation("EditorDialogBody");
+		area->SetVerticalSizeFlags(Control::Size_ExpandFill);
+		shell->AddNode(area);
+		body = area;
 	}
 
+	content = MemNew<VBoxContainer>();
+	content->AddThemeChangedCallback(
+		[control = content]()
+		{
+			control->SetSeparation(static_cast<float>(control->GetThemeConstant("content_padding", "Editor")));
+		});
+	body->AddNode(content);
+
 	ObjectID const id = popup->GetObjectID();
-	popup->SetKeyCallback([id](InputEvent const& event)
-	{
-		if (event.m_type == InputEventType::Key && event.m_pressed && event.m_keyCode == GLFW_KEY_ESCAPE)
+	popup->SetKeyCallback(
+		[id](InputEvent const& event)
 		{
-			if (auto* current = ObjectDatabase::GetInstance<PopupPanel>(id))
+			if (event.m_type == InputEventType::Key && event.m_pressed && event.m_keyCode == GLFW_KEY_ESCAPE)
 			{
-				current->Close();
+				if (auto* current = ObjectDatabase::GetInstance<PopupPanel>(id))
+				{
+					current->Close();
+				}
 			}
-		}
-		else if (auto* current = ObjectDatabase::GetInstance<PopupPanel>(id))
-		{
-			Control* focus = current->GetViewport()->GetGuiFocus();
-			if (focus != nullptr && focus != current)
+			else if (auto* current = ObjectDatabase::GetInstance<PopupPanel>(id))
 			{
-				focus->GuiInput(event);
+				Control* focus = current->GetViewport()->GetGuiFocus();
+				if (focus != nullptr && focus != current)
+				{
+					focus->GuiInput(event);
+				}
 			}
-		}
-	});
+		});
 	return popup;
 }
 
@@ -52,11 +86,12 @@ void EditorPopupUtils::Layout(PopupPanel* popup, Vector2 preferredSize)
 		return;
 	}
 
-	auto* panel = static_cast<Control*>(popup->GetChildren().front());
+	auto*         panel = static_cast<Control*>(popup->GetChildren().front());
 	Vector2 const bounds(popup->GetViewport()->GetOutputResolution());
-	Vector2 const minimum = panel->GetCombinedMinimumSize();
-	float const screenMargin = static_cast<float>(popup->GetThemeConstant("popup_screen_margin", "Editor"));
-	Vector2 size(std::min(std::max(preferredSize.x, minimum.x), std::max(1.f, bounds.x - screenMargin)),
+	Vector2 const minimum      = panel->GetCombinedMinimumSize();
+	float const   screenMargin = static_cast<float>(popup->GetThemeConstant("popup_screen_margin", "Editor"));
+	Vector2       size(
+		std::min(std::max(preferredSize.x, minimum.x), std::max(1.f, bounds.x - screenMargin)),
 		std::min(std::max(preferredSize.y, minimum.y), std::max(1.f, bounds.y - screenMargin)));
 	panel->SetPosition((bounds - size) * 0.5f);
 	panel->UpdateSize(size);
@@ -69,7 +104,9 @@ void EditorPopupUtils::Open(PopupPanel* popup, Control* owner, Vector2 preferred
 	owner->GetSceneTree()->FlushContainerUpdate();
 	std::function<Button*(Node*)> findButton = [&](Node* node) -> Button*
 	{
-		if (auto* button = dynamic_cast<Button*>(node); button != nullptr && button->IsVisibleInHierarchy() && !button->IsDisabled())
+		if (auto* button = dynamic_cast<Button*>(node); button != nullptr && button->IsVisibleInHierarchy()
+														&& !button->IsDisabled()
+														&& button->GetName() != String("CloseDialog"))
 		{
 			return button;
 		}
@@ -97,6 +134,16 @@ Button* EditorPopupUtils::AddButton(Control* parent, String const& text, std::fu
 	button->SetPressedCallback(std::move(callback));
 	parent->AddNode(button);
 	return button;
+}
+
+HBoxContainer* EditorPopupUtils::AddActions(Control* parent)
+{
+	auto* row = MemNew<HBoxContainer>();
+	parent->AddNode(row);
+	auto* spacer = MemNew<Control>();
+	spacer->SetHorizontalSizeFlags(Control::Size_ExpandFill);
+	row->AddNode(spacer);
+	return row;
 }
 
 Label* EditorPopupUtils::AddLabel(Control* parent, String const& text, std::string const& variation)

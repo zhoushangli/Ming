@@ -1,16 +1,65 @@
 #include "MingEngine/Editor/Gizmos/GizmosShapes.hpp"
 
-#include "GizmosShapes.hpp"
+#include "MingEngine/Engine/Render/BuiltinShaders.hpp"
 #include "MingEngine/Core/Math/AABB3.hpp"
 #include "MingEngine/Core/Render/VertexUtils.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Engine/Render/RenderServer.hpp"
-#include "MingEngine/Engine/Render/VertexBuffer.hpp"
+#include <cstring>
 
-EditorGizmoVisual3D::~EditorGizmoVisual3D()
+void EditorGizmoVisual3D::UploadGeometry(
+	char const* shaderName, std::string_view shaderSource, RenderRequestPass pass, DepthMode depth)
 {
-	delete m_vertexBuffer;
-	m_vertexBuffer = nullptr;
+	RenderServer* server = g_engine != nullptr ? g_engine->m_renderServer : nullptr;
+	if (server == nullptr || m_verts.empty())
+	{
+		return;
+	}
+
+	if (!m_mesh.IsValid())
+	{
+		m_mesh                     = CreateRef<MeshResource>();
+		m_mesh->m_materialResource = CreateRef<MaterialResource>();
+	}
+
+	auto& material             = m_mesh->m_materialResource;
+	material->m_shaderResource = server->GetBuiltinShaderResource(shaderName, shaderSource);
+	material->m_depthMode      = depth;
+	material->m_blendMode      = BlendMode::ALPHA;
+	material->m_rasterizerMode = RasterizerMode::SOLID_CULL_NONE;
+	m_mesh->m_vertexStride     = sizeof(Vertex);
+	m_mesh->m_vertexCount      = static_cast<uint32_t>(m_verts.size());
+	m_mesh->m_vertices.resize(m_verts.size() * sizeof(Vertex));
+	std::memcpy(m_mesh->m_vertices.data(), m_verts.data(), m_mesh->m_vertices.size());
+	std::vector<unsigned int> indices = m_indices;
+	if (indices.empty())
+	{
+		indices.resize(m_verts.size());
+		for (size_t i = 0; i < indices.size(); ++i)
+		{
+			indices[i] = static_cast<unsigned int>(i);
+		}
+	}
+
+	m_mesh->m_indexCount = static_cast<uint32_t>(indices.size());
+	m_mesh->m_indices.resize(indices.size() * sizeof(unsigned int));
+	std::memcpy(m_mesh->m_indices.data(), indices.data(), m_mesh->m_indices.size());
+	m_mesh->InitGPUResources();
+	server->InstanceSetBase(m_instanceRID, m_mesh->GetMeshRID());
+	server->InstanceSetRenderPass(m_instanceRID, pass);
+}
+
+void EditorGizmoVisual3D::SetRenderPriority(int priority)
+{
+	g_engine->m_renderServer->InstanceSetRenderPriority(m_instanceRID, priority);
+}
+
+void EditorGizmoVisual3D::SetGizmoColor(Color const& color)
+{
+	if (m_mesh.IsValid())
+	{
+		m_mesh->m_materialResource->m_tint = color;
+	}
 }
 
 EditorWorldGrid3D::EditorWorldGrid3D()
@@ -37,13 +86,11 @@ EditorWorldGrid3D::EditorWorldGrid3D()
 		AddVertsForAABB3D(m_verts, AABB3(aRow - thickness, bRow + thickness), Color::Gray);
 	}
 
-	if (!m_verts.empty() && g_engine != nullptr && g_engine->m_renderServer != nullptr)
-	{
-		m_vertexBuffer = g_engine->m_renderServer->CreateVertexBuffer(
-			m_verts.data(),
-			(unsigned int)(m_verts.size() * sizeof(Vertex)),
-			sizeof(Vertex));
-	}
+	UploadGeometry(
+		"GizmosGrid",
+		BuiltinShaders::GizmosGrid,
+		RenderRequestPass::Opaque,
+		DepthMode::READ_WRITE_LESS_EQUAL);
 }
 
 EditorWorldAxis3D::EditorWorldAxis3D(Vector3 const& axisStart, Vector3 const& axisEnd, Color const& color)
@@ -65,12 +112,9 @@ EditorWorldAxis3D::EditorWorldAxis3D(Vector3 const& axisStart, Vector3 const& ax
 	// e.g. SetWorldScale(Vec3(1000.f, 0.f, 0.f))
 	SetWorldScale(axisEnd);
 
-	// 4) Create the static vertex buffer
-	if (!m_verts.empty() && g_engine != nullptr && g_engine->m_renderServer != nullptr)
-	{
-		m_vertexBuffer = g_engine->m_renderServer->CreateVertexBuffer(
-			m_verts.data(),
-			(unsigned int)(m_verts.size() * sizeof(Vertex)),
-			sizeof(Vertex));
-	}
+	UploadGeometry(
+		"GizmosAxis",
+		BuiltinShaders::GizmosAxis,
+		RenderRequestPass::Opaque,
+		DepthMode::READ_WRITE_LESS_EQUAL);
 }

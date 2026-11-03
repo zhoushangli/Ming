@@ -40,8 +40,8 @@ bool BaseButton::GuiInput(InputEvent const& event)
 		break;
 	case InputEventType::Key:
 		keyboard = HasFocus()
-			&& (event.m_keyCode == GLFW_KEY_ENTER || event.m_keyCode == GLFW_KEY_KP_ENTER
-				|| event.m_keyCode == GLFW_KEY_SPACE);
+				   && (event.m_keyCode == GLFW_KEY_ENTER || event.m_keyCode == GLFW_KEY_KP_ENTER
+					   || event.m_keyCode == GLFW_KEY_SPACE);
 		break;
 	default:
 		return false;

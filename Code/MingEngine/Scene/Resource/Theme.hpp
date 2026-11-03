@@ -28,23 +28,23 @@ private:
 	// ItemMap is a map in map
 	// The first key is the type of the item, e.g. "Button", "Label", "Panel"
 	// The second key is the name of the item, e.g. "hover", "normal", "pressed"
-	// e.g. m_colorItems["Button"]["hover"] = Color::Red 
+	// e.g. m_colorItems["Button"]["hover"] = Color::Red
 	template <typename T>
 	using ItemMap = std::map<std::string, std::map<std::string, T>>;
 
 public:
 	~Theme() override;
 
-	Ref<Theme> Duplicate() const;
+	Ref<Theme>               Duplicate() const;
 	std::vector<std::string> GetTypeList(DataType dataType) const;
 	std::vector<std::string> GetItemList(DataType dataType, std::string const& type) const;
 
 	Ref<FontResource> GetDefaultFont() const { return m_defaultFont; }
-	int GetDefaultFontSize() const { return m_defaultFontSize; }
-	bool HasDefaultFont() const { return m_defaultFont.IsValid(); }
-	bool HasDefaultFontSize() const { return m_defaultFontSize > 0; }
-	void SetDefaultFont(Ref<FontResource> const& font);
-	void SetDefaultFontSize(int size);
+	int               GetDefaultFontSize() const { return m_defaultFontSize; }
+	bool              HasDefaultFont() const { return m_defaultFont.IsValid(); }
+	bool              HasDefaultFontSize() const { return m_defaultFontSize > 0; }
+	void              SetDefaultFont(Ref<FontResource> const& font);
+	void              SetDefaultFontSize(int size);
 
 	Color GetColor(std::string const& name, std::string const& type) const;
 	bool  HasColor(std::string const& name, std::string const& type) const;
@@ -92,8 +92,8 @@ private:
 	void ReleaseStyleBoxes();
 
 private:
-	Ref<FontResource> m_defaultFont;
-	int m_defaultFontSize = -1;
+	Ref<FontResource>                  m_defaultFont;
+	int                                m_defaultFontSize = -1;
 	ItemMap<Color>                     m_colorItems;
 	ItemMap<int>                       m_constantItems;
 	ItemMap<Ref<FontResource>>         m_fontItems;

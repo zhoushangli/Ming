@@ -12,8 +12,8 @@
 struct FontData
 {
 	std::vector<uint8_t> m_bytes;
-	stbtt_fontinfo       m_info = {};
-	bool m_sizeInEm = false;
+	stbtt_fontinfo       m_info     = {};
+	bool                 m_sizeInEm = false;
 
 	// map<pair<fontSize, glyphIndex>, CachedGlyph>
 	std::map<std::pair<int, int>, GlyphTexture> m_glyphCache;
@@ -24,7 +24,7 @@ namespace
 float GetFontScale(FontData const& font, float size)
 {
 	return font.m_sizeInEm ? stbtt_ScaleForMappingEmToPixels(&font.m_info, size)
-		: stbtt_ScaleForPixelHeight(&font.m_info, size);
+						   : stbtt_ScaleForPixelHeight(&font.m_info, size);
 }
 
 void AppendGlyph(FontData const& data, float scale, char32_t codePoint, TextLine& line)
@@ -32,7 +32,8 @@ void AppendGlyph(FontData const& data, float scale, char32_t codePoint, TextLine
 	int const glyphIndex = stbtt_FindGlyphIndex(&data.m_info, static_cast<int>(codePoint));
 	if (!line.m_glyphs.empty())
 	{
-		float const kern = stbtt_GetGlyphKernAdvance(&data.m_info, line.m_glyphs.back().m_glyphIndex, glyphIndex) * scale;
+		float const kern =
+			stbtt_GetGlyphKernAdvance(&data.m_info, line.m_glyphs.back().m_glyphIndex, glyphIndex) * scale;
 		line.m_glyphs.back().m_advance += kern;
 		line.m_width += kern;
 	}
@@ -51,9 +52,8 @@ bool IsWrapSpace(char32_t codePoint)
 
 bool IsCJK(char32_t codePoint)
 {
-	return (codePoint >= 0x2e80 && codePoint <= 0x9fff)
-		|| (codePoint >= 0xf900 && codePoint <= 0xfaff)
-		|| (codePoint >= 0x20000 && codePoint <= 0x323af);
+	return (codePoint >= 0x2e80 && codePoint <= 0x9fff) || (codePoint >= 0xf900 && codePoint <= 0xfaff)
+		   || (codePoint >= 0x20000 && codePoint <= 0x323af);
 }
 }
 
@@ -115,9 +115,9 @@ RID TextServer::CreateFont(std::vector<uint8_t> bytes, bool sizeInEm)
 		return RID::Invalid;
 	}
 
-	RID       rid  = m_fontOwner.CreateRID();
-	FontData* font = m_fontOwner.GetOrNull(rid);
-	font->m_bytes  = std::move(bytes);
+	RID       rid    = m_fontOwner.CreateRID();
+	FontData* font   = m_fontOwner.GetOrNull(rid);
+	font->m_bytes    = std::move(bytes);
 	font->m_sizeInEm = sizeInEm;
 
 	int const offset = stbtt_GetFontOffsetForIndex(font->m_bytes.data(), 0);
@@ -193,14 +193,14 @@ std::vector<TextLine> TextServer::GetTextLines(
 	RID font, String const& text, float pixelHeight, float width, AutowrapMode wrap) const
 {
 	std::vector<TextLine> lines;
-	FontData const* data = m_fontOwner.GetOrNull(font);
+	FontData const*       data = m_fontOwner.GetOrNull(font);
 	if (data == nullptr || pixelHeight <= 0.f)
 	{
 		return lines;
 	}
 
-	float const scale = GetFontScale(*data, pixelHeight);
-	uint32_t paragraphStart = 0;
+	float const scale          = GetFontScale(*data, pixelHeight);
+	uint32_t    paragraphStart = 0;
 	while (paragraphStart <= text.Length())
 	{
 		uint32_t paragraphEnd = paragraphStart;
@@ -219,9 +219,9 @@ std::vector<TextLine> TextServer::GetTextLines(
 			while (start < paragraphEnd)
 			{
 				TextLine candidate;
-				uint32_t end = start;
+				uint32_t end      = start;
 				uint32_t breakEnd = start;
-				bool hasText = false;
+				bool     hasText  = false;
 				while (end < paragraphEnd)
 				{
 					char32_t const cp = text[end];
@@ -286,15 +286,16 @@ TextLine TextServer::TrimTextLine(
 	}
 
 	TextLine result;
-	result.m_config = line.m_config;
+	result.m_config      = line.m_config;
 	FontData const* data = m_fontOwner.GetOrNull(font);
 	if (data == nullptr || pixelHeight <= 0.f || width <= 0.f)
 	{
 		return result;
 	}
 
-	String const suffix = behavior == TextOverrunBehavior::EllipsisAlways
-		? (GetGlyphIndex(font, U'\u2026') != 0 ? String(U"\u2026") : String("...")) : String();
+	String const   suffix   = behavior == TextOverrunBehavior::EllipsisAlways
+								  ? (GetGlyphIndex(font, U'\u2026') != 0 ? String(U"\u2026") : String("..."))
+								  : String();
 	TextLine const ellipsis = GetTextLine(font, suffix, pixelHeight);
 	if (ellipsis.m_width > width)
 	{
@@ -303,14 +304,17 @@ TextLine TextServer::TrimTextLine(
 
 	// 1) Find the longest prefix, including its kerning against the ellipsis.
 	float const scale = GetFontScale(*data, pixelHeight);
-	TextLine prefix;
-	size_t keep = 0;
+	TextLine    prefix;
+	size_t      keep = 0;
 	for (size_t i = 0; i < line.m_glyphs.size(); ++i)
 	{
 		AppendGlyph(*data, scale, line.m_glyphs[i].m_codePoint, prefix);
 		float const kern = ellipsis.m_glyphs.empty() ? 0.f
-			: stbtt_GetGlyphKernAdvance(&data->m_info, prefix.m_glyphs.back().m_glyphIndex,
-				ellipsis.m_glyphs.front().m_glyphIndex) * scale;
+													 : stbtt_GetGlyphKernAdvance(
+														   &data->m_info,
+														   prefix.m_glyphs.back().m_glyphIndex,
+														   ellipsis.m_glyphs.front().m_glyphIndex)
+														   * scale;
 		if (prefix.m_width + kern + ellipsis.m_width <= width)
 		{
 			keep = i + 1;

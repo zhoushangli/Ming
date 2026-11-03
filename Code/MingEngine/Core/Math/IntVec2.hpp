@@ -9,11 +9,12 @@ struct IntVec2
 public:
 	IntVec2()  = default;
 	~IntVec2() = default;
-
-	IntVec2(const IntVec2& copyFrom) = default;
 	IntVec2(const Vector2& copyFrom);
 
 	explicit IntVec2(int initialX, int initialY);
+
+	IntVec2(const IntVec2& copyFrom) = default;
+	void operator=(IntVec2 const& copyFrom);
 
 	float   GetLength() const;
 	int     GetLengthSquared() const;
@@ -40,13 +41,11 @@ public:
 	void operator-=(IntVec2 const& vecToSubtract);
 	void operator*=(const float uniformScale);
 	void operator/=(const float uniformDivisor);
-	void operator=(IntVec2 const& copyFrom);
-
-	operator Vector2() const;
 
 	void SetFromText(char const* text);
 
 public:
+		operator Vector2() const;
 	int x = 0;
 	int y = 0;
 

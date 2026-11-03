@@ -30,24 +30,24 @@ public:
 	void Close();
 	void Render(EditorUIContext& context);
 
-	bool IsOpen() const { return m_isOpen; }
+	bool        IsOpen() const { return m_isOpen; }
 	char const* GetTitle() const { return m_title.c_str(); }
-	Vector2 GetInternalMinimumSize() const override;
+	Vector2     GetInternalMinimumSize() const override;
 
 protected:
-	static void BindMethods();
+	static void  BindMethods();
 	virtual void OnInitialize() {}
 	virtual void OnOpen(UIData const& data);
 	virtual void OnClose();
 	virtual void OnRender(EditorUIContext& context) = 0;
-	void OnNotification(int notification);
+	void         OnNotification(int notification);
 
 protected:
 	EditorUIContext m_context;
 
 private:
-	ThemeCache m_themeCache;
+	ThemeCache  m_themeCache;
 	std::string m_title;
-	bool m_isOpen = true;
-	bool m_initialized = false;
+	bool        m_isOpen      = true;
+	bool        m_initialized = false;
 };

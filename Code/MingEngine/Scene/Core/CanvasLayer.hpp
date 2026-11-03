@@ -15,5 +15,6 @@ public:
 private:
 	void OnNotification(int notification);
 
+private:
 	RID m_canvasLayerRID = RID::Invalid;
 };

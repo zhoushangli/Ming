@@ -390,8 +390,8 @@ void RenderServer::CameraSetOrthographic(RID camera, float size, float nearZ, fl
 
 void RenderServer::Render()
 {
-	std::vector<RID>         completed;
-	std::vector<RID>         visiting;
+	std::vector<RID> completed;
+	std::vector<RID> visiting;
 
 	// The reason why we do lamba is because we want something like dfs
 	// If there is no sub viewport, things are easy, we just prepare the data and pass into renderer to render
@@ -537,7 +537,8 @@ void RenderServer::PrepareCanvasItemRequests(
 					continue;
 				}
 
-				texture = textureData->m_texture;
+				texture     = textureData->m_texture;
+				samplerMode = rectCommand->texture->m_samplerMode;
 
 				if (rectCommand->hasRegion)
 				{
@@ -563,7 +564,10 @@ void RenderServer::PrepareCanvasItemRequests(
 					}
 
 					uvMax = Vector2(std::abs(rect.m_size.x) / dimensions.x, std::abs(rect.m_size.y) / dimensions.y);
-					samplerMode = SamplerMode::POINT_WRAP;
+					samplerMode =
+						samplerMode == SamplerMode::BILINEAR_CLAMP || samplerMode == SamplerMode::BILINEAR_WRAP
+							? SamplerMode::BILINEAR_WRAP
+							: SamplerMode::POINT_WRAP;
 				}
 			}
 
@@ -832,7 +836,7 @@ void RenderServer::CanvasItemSetClip(RID rid, bool enabled, Vector2 const& size)
 	if (CanvasItemData* item = m_canvasItemOwner.GetOrNull(rid))
 	{
 		item->m_clipContents = enabled;
-		item->m_clipSize = size;
+		item->m_clipSize     = size;
 	}
 }
 
@@ -1027,6 +1031,22 @@ void RenderServer::InstanceSetVisible(RID instance, bool visible)
 	}
 }
 
+void RenderServer::InstanceSetRenderPass(RID instance, RenderRequestPass pass)
+{
+	if (Instance* data = m_instanceOwner.GetOrNull(instance))
+	{
+		data->m_renderPass = pass;
+	}
+}
+
+void RenderServer::InstanceSetRenderPriority(RID instance, int priority)
+{
+	if (Instance* data = m_instanceOwner.GetOrNull(instance))
+	{
+		data->m_renderPriority = priority;
+	}
+}
+
 void RenderServer::PrepareViewportData(ViewportData* viewportData)
 {
 	if (viewportData == nullptr)
@@ -1169,7 +1189,9 @@ RenderRequest RenderServer::BuildInstanceRenderRequest(Instance const* instance)
 		break;
 	}
 
-	request.m_modelToWorld = instance->m_transform;
+	request.m_modelToWorld   = instance->m_transform;
+	request.m_pass           = instance->m_renderPass;
+	request.m_renderPriority = instance->m_renderPriority;
 
 	return request;
 }

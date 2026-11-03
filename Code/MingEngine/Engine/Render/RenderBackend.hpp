@@ -3,7 +3,6 @@
 #include "MingEngine/Core/Math/IntVec2.hpp"
 #include "MingEngine/Engine/Render/RenderTypes.hpp"
 
-
 #include <string>
 
 class Projection;
@@ -76,7 +75,6 @@ public:
 	virtual void DrawFullscreenTriangle(Shader* shader, wchar_t const* eventName)                = 0;
 	virtual void UnbindAllShaderResourceViews()                                                  = 0;
 	virtual void BindBackBuffer()                                                                = 0;
-
 
 	template <typename T>
 	void UpdateConstantBuffer(ConstantBuffer* buffer, T const& data)

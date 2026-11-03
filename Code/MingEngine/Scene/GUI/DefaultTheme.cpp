@@ -2,15 +2,15 @@
 
 Ref<Theme> CreateDefaultTheme()
 {
-	constexpr int controlHeight = 24;
-	constexpr int iconSize = 16;
-	constexpr int compactSpacing = 4;
-	constexpr int iconSeparation = 6;
-	constexpr float contentPadding = 8.f;
-	constexpr float fieldPadding = 6.f;
+	constexpr int   controlHeight        = 24;
+	constexpr int   iconSize             = 16;
+	constexpr int   compactSpacing       = 4;
+	constexpr int   iconSeparation       = 6;
+	constexpr float contentPadding       = 8.f;
+	constexpr float fieldPadding         = 6.f;
 	constexpr float fieldVerticalPadding = 3.f;
 
-	auto theme = CreateRef<Theme>();
+	auto        theme = CreateRef<Theme>();
 	Color const background(30, 30, 30);
 	Color const panel(40, 40, 40);
 	Color const elevated(48, 48, 48);
@@ -54,12 +54,24 @@ Ref<Theme> CreateDefaultTheme()
 	theme->SetTypeVariation("MenuBarButton", "Button");
 	theme->SetConstant("minimum_height", "MenuBar", 24);
 	theme->SetConstant("popup_minimum_width", "MenuBar", 200);
-	theme->SetStyleBox("normal", "MenuBarButton", box(Color::Transparent, Color::Transparent, 0.f, fieldPadding, fieldVerticalPadding));
-	theme->SetStyleBox("normal", "Button", box(elevated, border, 1.f, contentPadding, static_cast<float>(compactSpacing)));
+	theme->SetStyleBox(
+		"normal",
+		"MenuBarButton",
+		box(Color::Transparent, Color::Transparent, 0.f, fieldPadding, fieldVerticalPadding));
+	theme->SetStyleBox(
+		"normal",
+		"Button",
+		box(elevated, border, 1.f, contentPadding, static_cast<float>(compactSpacing)));
 	theme->SetStyleBox("hover", "Button", box(strong, strong, 1.f, contentPadding, static_cast<float>(compactSpacing)));
 	theme->SetStyleBox("pressed", "Button", box(tint, strong, 1.f, contentPadding, static_cast<float>(compactSpacing)));
-	theme->SetStyleBox("hover_pressed", "Button", box(tint, accent, 1.f, contentPadding, static_cast<float>(compactSpacing)));
-	theme->SetStyleBox("disabled", "Button", box(Color::Transparent, Color::Transparent, 0.f, contentPadding, static_cast<float>(compactSpacing)));
+	theme->SetStyleBox(
+		"hover_pressed",
+		"Button",
+		box(tint, accent, 1.f, contentPadding, static_cast<float>(compactSpacing)));
+	theme->SetStyleBox(
+		"disabled",
+		"Button",
+		box(Color::Transparent, Color::Transparent, 0.f, contentPadding, static_cast<float>(compactSpacing)));
 	theme->SetStyleBox("focus", "Button", box(Color::Transparent, accent, 1.f, 0.f, 0.f));
 	theme->SetColor("font_hover_color", "Button", text);
 	theme->SetColor("font_pressed_color", "Button", accent);

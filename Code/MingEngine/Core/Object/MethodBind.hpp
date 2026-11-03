@@ -11,9 +11,11 @@
 template <typename T>
 struct PtrToArg
 {
+public:
 	using ReferenceType = std::remove_reference_t<T>;
 	using ValueType     = std::remove_cv_t<ReferenceType>;
 
+public:
 	// The Decode here reference to we want to get the actual value
 	// form an unknown pointer
 	static decltype(auto) Decode(void* ptr)

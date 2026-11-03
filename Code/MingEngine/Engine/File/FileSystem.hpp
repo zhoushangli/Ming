@@ -20,11 +20,12 @@ class FileEntry
 	friend class FileSystem;
 
 public:
+	~FileEntry() = default;
+
 	FileEntry(FileEntry const&)            = delete;
 	FileEntry& operator=(FileEntry const&) = delete;
 	FileEntry(FileEntry&&)                 = delete;
 	FileEntry& operator=(FileEntry&&)      = delete;
-	~FileEntry()                           = default;
 
 	std::filesystem::path const&                   GetPhysicalPath() const;
 	VirtualPath const&                             GetVirtualPath() const;

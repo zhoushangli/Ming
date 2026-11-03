@@ -3,16 +3,18 @@
 #include "MingEngine/Core/Image.hpp"
 #include "MingEngine/Core/Object/Resource.hpp"
 #include "MingEngine/Core/Render/RID.hpp"
+#include "MingEngine/Engine/Render/RenderTypes.hpp"
 
 class TextureResource : public Resource
 {
 	MCLASS(TextureResource, Resource)
 
 public:
-	TextureResource()                                       = default;
+	TextureResource() = default;
+	~TextureResource();
+
 	TextureResource(TextureResource const& copy)            = delete;
 	TextureResource& operator=(TextureResource const& copy) = delete;
-	~TextureResource();
 
 	bool IsEmpty() const;
 	bool CopyFrom(Resource&& other) override;
@@ -29,7 +31,8 @@ protected:
 	static void BindMethods() {}
 
 public:
-	Ref<Image> m_image;
+	Ref<Image>  m_image;
+	SamplerMode m_samplerMode = SamplerMode::POINT_CLAMP;
 
 private:
 	// Texture RID on the RenderServer; RID::Invalid means the image has no GPU data yet.

@@ -9,8 +9,10 @@ class Collider3D;
 
 struct CollideInfo
 {
+public:
 	CollideInfo(Collider3D const* collider) : m_collider(collider) {}
 
+public:
 	Collider3D const* m_collider = nullptr;
 };
 
@@ -18,6 +20,7 @@ class Collider3D : public Node3D
 {
 	MCLASS(Collider3D, Node3D);
 
+private:
 	using CollideCallbackFunction = std::function<void(CollideInfo const&)>;
 
 public:

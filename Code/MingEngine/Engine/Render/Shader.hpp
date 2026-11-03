@@ -19,8 +19,9 @@ class Shader
 
 public:
 	Shader(const ShaderConfig& config);
-	Shader(const Shader& copy) = delete;
 	~Shader();
+
+	Shader(const Shader& copy) = delete;
 
 	const std::string& GetName() const;
 

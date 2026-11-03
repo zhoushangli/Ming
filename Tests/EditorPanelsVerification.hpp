@@ -46,7 +46,7 @@ inline uint64_t FileItem(Tree* tree, String const& path)
 	for (int row = 0; row < static_cast<int>(tree->GetInternalMinimumSize().y / tree->GetRowHeight()); ++row)
 	{
 		Vector2 const point(80.f, (row + 0.5f) * tree->GetRowHeight());
-		GuiDragData data;
+		GuiDragData   data;
 		if (tree->GetDragData(point, data) && data.m_value == path)
 		{
 			return tree->GetItemAtPosition(point);
@@ -59,7 +59,7 @@ inline uint64_t FileItem(Tree* tree, String const& path)
 inline Button* FindButton(Node* node, String const& text)
 {
 	if (auto* button = dynamic_cast<Button*>(node); button != nullptr && button->IsVisibleInHierarchy()
-		&& !button->IsQueuedForDeletion() && button->GetText() == text)
+													&& !button->IsQueuedForDeletion() && button->GetText() == text)
 	{
 		return button;
 	}
@@ -76,8 +76,8 @@ inline Button* FindButton(Node* node, String const& text)
 }
 }
 
-inline void VerifyNativeEditorPanels(Engine& engine, std::function<void(bool, char const*)> const& check,
-	std::filesystem::path const& projectPath)
+inline void VerifyNativeEditorPanels(
+	Engine& engine, std::function<void(bool, char const*)> const& check, std::filesystem::path const& projectPath)
 {
 	using namespace NativePanelVerification;
 	std::filesystem::path const fixture = std::filesystem::weakly_canonical(projectPath / "PanelMigration");
@@ -97,7 +97,7 @@ inline void VerifyNativeEditorPanels(Engine& engine, std::function<void(bool, ch
 	}
 
 	SceneTree tree;
-	auto* root = static_cast<Viewport*>(tree.GetRoot());
+	auto*     root = static_cast<Viewport*>(tree.GetRoot());
 	root->UpdateResolution(IntVec2(1100, 700));
 	auto* editor = MemNew<EditorNode>();
 	root->AddNode(editor);
@@ -114,53 +114,57 @@ inline void VerifyNativeEditorPanels(Engine& engine, std::function<void(bool, ch
 	};
 	frame();
 	frame();
-	check(ui->GetDockSlot(0)->GetCurrentPage() == &ui->GetPanel<ScenePanel>()
-		&& ui->GetDockSlot(1)->GetCurrentPage() == &ui->GetPanel<FileSystemPanel>()
-		&& ui->GetDockSlot(2)->GetCurrentPage() == &ui->GetPanel<InspectorPanel>()
-		&& ui->GetDockSlot(3)->GetCurrentPage() == &ui->GetPanel<OutputPanel>(),
+	check(
+		ui->GetDockSlot(0)->GetCurrentPage() == &ui->GetPanel<ScenePanel>()
+			&& ui->GetDockSlot(1)->GetCurrentPage() == &ui->GetPanel<FileSystemPanel>()
+			&& ui->GetDockSlot(2)->GetCurrentPage() == &ui->GetPanel<InspectorPanel>()
+			&& ui->GetDockSlot(3)->GetCurrentPage() == &ui->GetPanel<OutputPanel>(),
 		"Warm Carbon opens Scene, FileSystem, Inspector and Output in their default regions");
 	bool iconsValid = BuiltinIcons::IconCount == 254;
 	for (auto const& icon : BuiltinIcons::Detail::kEntries)
 	{
 		auto texture = EditorIcons::GetIconTexture(std::string(icon.m_name));
-		iconsValid = iconsValid && texture.IsValid() && texture->GetDimensions() == IntVec2(32, 32);
+		iconsValid   = iconsValid && texture.IsValid() && texture->GetDimensions() == IntVec2(32, 32);
 	}
 
 	check(iconsValid, "all Warm Carbon icons load as embedded 32 pixel textures");
-	check(EditorIcons::GetIconColor("Node3D", ui->GetRootControl()) == Color(166, 139, 212),
+	check(
+		EditorIcons::GetIconColor("Node3D", ui->GetRootControl()) == Color(166, 139, 212),
 		"node type icons retain the theme category color");
 	engine.m_fileSystem->WriteText("res://.ming/Editor/NativeEditorLayout.json", R"({"version":1,"slots":[]})");
 	ui->LoadNativeLayout();
 	std::string layout;
 	engine.m_fileSystem->ReadText("res://.ming/Editor/NativeEditorLayout.json", layout);
-	check(nlohmann::json::parse(layout).value("version", 0) == 2
-		&& ui->GetDockSlot(1)->GetCurrentPage() == &ui->GetPanel<FileSystemPanel>(),
+	check(
+		nlohmann::json::parse(layout).value("version", 0) == 2
+			&& ui->GetDockSlot(1)->GetCurrentPage() == &ui->GetPanel<FileSystemPanel>(),
 		"old layout cache is replaced by the new default without migration");
 	editor->GetSelection().SetSelected(tree.GetScene()->GetObjectID());
 	frame();
-	InspectorPanel& inspector = ui->GetPanel<InspectorPanel>();
-	LineEdit* propertyFilter = FindControl<LineEdit>(&inspector);
-	bool const dirtyBeforeFilter = editor->IsSceneDirty();
+	InspectorPanel& inspector         = ui->GetPanel<InspectorPanel>();
+	LineEdit*       propertyFilter    = FindControl<LineEdit>(&inspector);
+	bool const      dirtyBeforeFilter = editor->IsSceneDirty();
 	propertyFilter->SetText("position");
 	frame();
 	bool visibleField = false;
-	bool hiddenField = false;
+	bool hiddenField  = false;
 	for (Node* child : inspector.GetContentControl()->GetChildren())
 	{
 		if (auto* field = dynamic_cast<VBoxContainer*>(child))
 		{
 			visibleField = visibleField || field->IsVisible();
-			hiddenField = hiddenField || !field->IsVisible();
+			hiddenField  = hiddenField || !field->IsVisible();
 		}
 	}
 
-	check(visibleField && hiddenField && editor->IsSceneDirty() == dirtyBeforeFilter,
+	check(
+		visibleField && hiddenField && editor->IsSceneDirty() == dirtyBeforeFilter,
 		"Inspector property filtering hides unrelated fields without dirtying the scene");
 	propertyFilter->SetText("");
 	frame();
 	auto click = [&](char const* text)
 	{
-		Node* search = root->GetGuiPopup() != nullptr ? static_cast<Node*>(root->GetGuiPopup()) : root;
+		Node*   search = root->GetGuiPopup() != nullptr ? static_cast<Node*>(root->GetGuiPopup()) : root;
 		Button* button = FindButton(search, text);
 		if (button == nullptr || button->IsDisabled())
 		{
@@ -173,10 +177,10 @@ inline void VerifyNativeEditorPanels(Engine& engine, std::function<void(bool, ch
 		}
 
 		InputEvent event;
-		event.m_type = InputEventType::MouseButton;
+		event.m_type        = InputEventType::MouseButton;
 		event.m_mouseButton = GLFW_MOUSE_BUTTON_LEFT;
-		event.m_position = button->GetGlobalPosition() + button->GetSize() * 0.5f;
-		event.m_pressed = true;
+		event.m_position    = button->GetGlobalPosition() + button->GetSize() * 0.5f;
+		event.m_pressed     = true;
 		root->ProcessInputEvent(event);
 		event.m_pressed = false;
 		root->ProcessInputEvent(event);
@@ -186,10 +190,10 @@ inline void VerifyNativeEditorPanels(Engine& engine, std::function<void(bool, ch
 	auto key = [&](int code, int modifiers = 0)
 	{
 		InputEvent event;
-		event.m_type = InputEventType::Key;
-		event.m_keyCode = code;
+		event.m_type      = InputEventType::Key;
+		event.m_keyCode   = code;
 		event.m_modifiers = modifiers;
-		event.m_pressed = true;
+		event.m_pressed   = true;
 		root->ProcessInputEvent(event);
 		event.m_pressed = false;
 		root->ProcessInputEvent(event);
@@ -200,15 +204,16 @@ inline void VerifyNativeEditorPanels(Engine& engine, std::function<void(bool, ch
 		files->EnsureSelectedVisible();
 		frame();
 		InputEvent event;
-		event.m_type = InputEventType::MouseButton;
-		event.m_mouseButton = GLFW_MOUSE_BUTTON_RIGHT;
-		AABB2 const row = files->GetItemRect(files->GetSelected());
-		auto* scroll = static_cast<ScrollContainer*>(files->GetParent());
-		Vector2 const top = files->GetGlobalPosition() + row.m_mins;
-		float const visibleTop = std::max(top.y, scroll->GetGlobalPosition().y);
-		float const visibleBottom = std::min(top.y + row.GetHeight(), scroll->GetGlobalPosition().y + scroll->GetPageSize().y);
+		event.m_type             = InputEventType::MouseButton;
+		event.m_mouseButton      = GLFW_MOUSE_BUTTON_RIGHT;
+		AABB2 const   row        = files->GetItemRect(files->GetSelected());
+		auto*         scroll     = static_cast<ScrollContainer*>(files->GetParent());
+		Vector2 const top        = files->GetGlobalPosition() + row.m_mins;
+		float const   visibleTop = std::max(top.y, scroll->GetGlobalPosition().y);
+		float const   visibleBottom =
+			std::min(top.y + row.GetHeight(), scroll->GetGlobalPosition().y + scroll->GetPageSize().y);
 		event.m_position = Vector2(top.x + std::min(70.f, row.GetWidth() * 0.5f), (visibleTop + visibleBottom) * 0.5f);
-		event.m_pressed = true;
+		event.m_pressed  = true;
 		root->ProcessInputEvent(event);
 		event.m_pressed = false;
 		root->ProcessInputEvent(event);
@@ -218,14 +223,16 @@ inline void VerifyNativeEditorPanels(Engine& engine, std::function<void(bool, ch
 	auto* gameLabel = MemNew<Label>();
 	tree.GetScene()->AddNode(gameLabel);
 	gameLabel->SetText("Game UI");
-	Label* editorLabel = FindControl<Label>(&ui->GetPanel<InspectorPanel>());
+	Label*    editorLabel    = FindControl<Label>(&ui->GetPanel<InspectorPanel>());
 	int const editorFontSize = editor->GetEditorTheme()->GetDefaultFontSize();
-	check(editorLabel != nullptr && editorLabel->GetFontSize() == editorFontSize
-		&& gameLabel->GetFontSize() == ThemeDatabase::GetDefaultTheme()->GetDefaultFontSize(),
+	check(
+		editorLabel != nullptr && editorLabel->GetFontSize() == editorFontSize
+			&& gameLabel->GetFontSize() == ThemeDatabase::GetDefaultTheme()->GetDefaultFontSize(),
 		"production editor and game UI use isolated default fonts and sizes");
 	editor->GetEditorTheme()->SetDefaultFontSize(14);
-	check(editorLabel->GetFontSize() == 14
-		&& gameLabel->GetFontSize() == ThemeDatabase::GetDefaultTheme()->GetDefaultFontSize(),
+	check(
+		editorLabel->GetFontSize() == 14
+			&& gameLabel->GetFontSize() == ThemeDatabase::GetDefaultTheme()->GetDefaultFontSize(),
 		"live editor font change leaves game UI unchanged");
 	editor->GetEditorTheme()->SetDefaultFontSize(editorFontSize);
 	gameLabel->QueueFree();
@@ -236,14 +243,15 @@ inline void VerifyNativeEditorPanels(Engine& engine, std::function<void(bool, ch
 		return;
 	}
 
-	check(root->GetGuiPopup() != nullptr && root->GetGuiPopup()->GetThemeFontSize("font_size") == editorFontSize,
+	check(
+		root->GetGuiPopup() != nullptr && root->GetGuiPopup()->GetThemeFontSize("font_size") == editorFontSize,
 		"native project settings popup uses editor Context");
 	VirtualPath const previousStart = ProjectSettings::Get()->m_startScenePath;
-	LineEdit* settingsField = FindControl<LineEdit>(root->GetGuiPopup());
+	LineEdit*         settingsField = FindControl<LineEdit>(root->GetGuiPopup());
 	settingsField->SetText("res://discarded.tscn");
 	key(GLFW_KEY_TAB);
-	Control* focus = root->GetGuiFocus();
-	bool withinPopup = false;
+	Control* focus       = root->GetGuiFocus();
+	bool     withinPopup = false;
 	for (Node* node = focus; node != nullptr; node = node->GetParent())
 	{
 		withinPopup = withinPopup || node == root->GetGuiPopup();
@@ -255,7 +263,10 @@ inline void VerifyNativeEditorPanels(Engine& engine, std::function<void(bool, ch
 	}
 	check(ProjectSettings::Get()->m_startScenePath == previousStart, "native settings Cancel discards draft");
 
-	ui->GetTabs()->SetCurrentTab(ui->GetTabs()->GetPageIndex(&ui->GetPanel<FileSystemPanel>()));
+	{
+		auto* fileTabs = dynamic_cast<TabContainer*>(ui->GetPanel<FileSystemPanel>().GetParent());
+		fileTabs->SetCurrentTab(fileTabs->GetPageIndex(&ui->GetPanel<FileSystemPanel>()));
+	}
 	LineEdit* filter = FindFilter(&ui->GetPanel<FileSystemPanel>(), "Filter files");
 	filter->SetText("PanelMigration");
 	frame();
@@ -279,7 +290,7 @@ inline void VerifyNativeEditorPanels(Engine& engine, std::function<void(bool, ch
 	for (char character : std::string("RenamedFolder"))
 	{
 		InputEvent event;
-		event.m_type = InputEventType::Text;
+		event.m_type      = InputEventType::Text;
 		event.m_codepoint = static_cast<uint32_t>(character);
 		root->ProcessInputEvent(event);
 	}
@@ -287,8 +298,10 @@ inline void VerifyNativeEditorPanels(Engine& engine, std::function<void(bool, ch
 	key(GLFW_KEY_ENTER);
 	frame();
 
-	check(engine.m_fileSystem->Exists("res://PanelMigration/RenamedFolder")
-		&& !engine.m_fileSystem->Exists("res://PanelMigration/CreatedFolder"), "native file rename uses existing validation and filesystem operation");
+	check(
+		engine.m_fileSystem->Exists("res://PanelMigration/RenamedFolder")
+			&& !engine.m_fileSystem->Exists("res://PanelMigration/CreatedFolder"),
+		"native file rename uses existing validation and filesystem operation");
 	filter->SetText("RenamedFolder");
 	frame();
 	rightClickSelected();
@@ -297,7 +310,8 @@ inline void VerifyNativeEditorPanels(Engine& engine, std::function<void(bool, ch
 		return;
 	}
 	VirtualPath const duplicate = ui->GetPanel<FileSystemPanel>().GetSelectedVirtualPath();
-	check(duplicate != VirtualPath("res://PanelMigration/RenamedFolder") && engine.m_fileSystem->Exists(duplicate),
+	check(
+		duplicate != VirtualPath("res://PanelMigration/RenamedFolder") && engine.m_fileSystem->Exists(duplicate),
 		"native Duplicate selects the newly created entry");
 	rightClickSelected();
 	if (!click("Delete...") || !click("Cancel"))
@@ -333,8 +347,10 @@ inline void VerifyNativeEditorPanels(Engine& engine, std::function<void(bool, ch
 	{
 		return;
 	}
-	check(engine.m_fileSystem->Exists("res://PanelMigration/Generated.tscn")
-		&& tree.GetScene()->GetName() == String("RootCreated"), "native scene dialog creates and opens the scene");
+	check(
+		engine.m_fileSystem->Exists("res://PanelMigration/Generated.tscn")
+			&& tree.GetScene()->GetName() == String("RootCreated"),
+		"native scene dialog creates and opens the scene");
 	ui->GetPanel<ScenePanel>().OpenCreateNode();
 	frame();
 	FindControl<LineEdit>(root->GetGuiPopup())->SetText("Node3D");
@@ -344,14 +360,18 @@ inline void VerifyNativeEditorPanels(Engine& engine, std::function<void(bool, ch
 	{
 		return;
 	}
-	check(!tree.GetScene()->GetChildren().empty() && editor->IsSceneDirty(), "native node dialog creates a child and marks scene dirty");
+	check(
+		!tree.GetScene()->GetChildren().empty() && editor->IsSceneDirty(),
+		"native node dialog creates a child and marks scene dirty");
 	editor->RequestLoadScene("res://PanelMigration/scene.tscn");
 	frame();
-	check(root->GetGuiPopup() != nullptr && tree.GetScene()->GetName() == String("RootCreated"),
+	check(
+		root->GetGuiPopup() != nullptr && tree.GetScene()->GetName() == String("RootCreated"),
 		"native unsaved-scene modal blocks replacement");
 	key(GLFW_KEY_ESCAPE);
 	frame();
-	check(root->GetGuiPopup() == nullptr && tree.GetScene()->GetName() == String("RootCreated"),
+	check(
+		root->GetGuiPopup() == nullptr && tree.GetScene()->GetName() == String("RootCreated"),
 		"Escape cancels the pending scene operation");
 	editor->RequestQuit();
 	frame();
@@ -364,26 +384,32 @@ inline void VerifyNativeEditorPanels(Engine& engine, std::function<void(bool, ch
 	frame();
 	check(editor->SaveScene(), "native editor saves the newly created node");
 
-	ui->GetTabs()->SetCurrentTab(ui->GetTabs()->GetPageIndex(&ui->GetPanel<FileSystemPanel>()));
+	{
+		auto* fileTabs = dynamic_cast<TabContainer*>(ui->GetPanel<FileSystemPanel>().GetParent());
+		fileTabs->SetCurrentTab(fileTabs->GetPageIndex(&ui->GetPanel<FileSystemPanel>()));
+	}
 	filter->SetText("editor-panel-triangle");
 	frame();
 	files->Select(FileItem(files, "res://PanelMigration/editor-panel-triangle.obj"), true);
 	frame();
-	ui->GetDockSlot(2)->SetCurrentTab(ui->GetDockSlot(2)->GetPageIndex(&ui->GetPanel<ImportPanel>()));
+	ui->GetDockSlot(0)->SetCurrentTab(ui->GetDockSlot(0)->GetPageIndex(&ui->GetPanel<ImportPanel>()));
 	frame();
 	SpinBox* scale = FindControl<SpinBox>(&ui->GetPanel<ImportPanel>());
-	check(scale != nullptr && scale->GetValue().As<float>() == 1.f,
+	check(
+		scale != nullptr && scale->GetValue().As<float>() == 1.f,
 		"native import panel preserves unit scale defaults without static initialization dependencies");
 	if (!click("On") || !click("Reimport (*)"))
 	{
 		return;
 	}
-	std::string importer;
+	std::string                              importer;
 	std::unordered_map<std::string, Variant> options;
-	check(ResourceImporter::TryReadImportConfig("res://PanelMigration/editor-panel-triangle.obj", importer, options)
-		&& options.count("Generate Tangents") != 0 && !options.at("Generate Tangents").As<bool>(),
+	check(
+		ResourceImporter::TryReadImportConfig("res://PanelMigration/editor-panel-triangle.obj", importer, options)
+			&& options.count("Generate Tangents") != 0 && !options.at("Generate Tangents").As<bool>(),
 		"native import options are saved by Reimport");
-	SaveRenderedFrame(engine.m_renderServer->ViewportGetTexture(root->GetViewportRID()),
+	SaveRenderedFrame(
+		engine.m_renderServer->ViewportGetTexture(root->GetViewportRID()),
 		projectPath.parent_path() / "Captures" / "editor-native-panels.ppm");
 	if (!click("View") || !click("Import"))
 	{

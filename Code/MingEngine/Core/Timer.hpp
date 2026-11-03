@@ -37,6 +37,7 @@ public:
 	// returns false so the caller can process each elapsed period.
 	bool DecrementPeriodIfElapsed();
 
+public:
 	// The clock to use for getting the current time.
 	const Clock* m_clock = nullptr;
 

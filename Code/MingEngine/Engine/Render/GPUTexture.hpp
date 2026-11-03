@@ -15,17 +15,18 @@ class GPUTexture
 {
 	friend class D3D11RenderBackend; // Only the Renderer can create new GPUTexture objects!
 
-private:
-	GPUTexture();                                // can't instantiate directly; must ask Renderer to do it for you
-	GPUTexture(GPUTexture const& copy) = delete; // No copying allowed!  This represents GPU memory.
-	~GPUTexture();
-
 public:
 	IntVec2                   GetDimensions() const { return m_dimensions; }
 	std::string const&        GetImageFilePath() const { return m_name; }
 	ID3D11ShaderResourceView* GetShaderResourceView() const { return m_shaderResourceView; }
 	ID3D11RenderTargetView*   GetRenderTargetView() const { return m_renderTargetView; }
 	ID3D11DepthStencilView*   GetDepthStencilView() const { return m_depthStencilView; }
+
+private:
+	GPUTexture(); // can't instantiate directly; must ask Renderer to do it for you
+	~GPUTexture();
+
+	GPUTexture(GPUTexture const& copy) = delete; // No copying allowed!  This represents GPU memory.
 
 protected:
 	std::string m_name; // Can't be char const* -- store a copy, in case it was temporary

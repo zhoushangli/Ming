@@ -105,6 +105,7 @@ bool EditorUndoRedo::AddOperation(
 		{
 			Object* object      = value.As<Object*>();
 			argument.m_objectID = object != nullptr ? object->GetObjectID() : ObjectID::Invalid;
+			argument.m_resource = Ref<Resource>(dynamic_cast<Resource*>(object));
 		}
 		else
 		{

@@ -220,7 +220,7 @@ Control* Viewport::FindControlInSubtree(Node* node, Vector2 const& position) con
 	if (auto* scroll = dynamic_cast<ScrollContainer*>(node))
 	{
 		Vector2 const local = position - scroll->GetGlobalPosition();
-		Vector2 const page = scroll->GetPageSize();
+		Vector2 const page  = scroll->GetPageSize();
 		if (scroll->IsPointInside(local) && (local.x >= page.x || local.y >= page.y))
 		{
 			return scroll;
@@ -580,7 +580,7 @@ bool Viewport::ProcessInputEvent(InputEvent const& event)
 	}
 	case InputEventType::CursorEnter:
 		m_gui.m_mousePosition = event.m_position;
-		m_gui.m_mouseInside = event.m_entered;
+		m_gui.m_mouseInside   = event.m_entered;
 		SetGuiHovered(event.m_entered && m_gui.m_windowFocused ? FindControlAtPosition(event.m_position) : nullptr);
 		UpdateGuiCursor();
 		return false;
@@ -610,7 +610,7 @@ bool Viewport::ProcessGuiInputEvent(InputEvent const& event)
 	{
 		m_gui.m_mousePosition = event.m_position;
 		m_gui.m_mouseInside = event.m_position.x >= 0.f && event.m_position.y >= 0.f
-			&& event.m_position.x < m_outputResolution.x && event.m_position.y < m_outputResolution.y;
+							  && event.m_position.x < m_outputResolution.x && event.m_position.y < m_outputResolution.y;
 
 		if (event.m_type == InputEventType::MouseMotion && !m_gui.m_dragging)
 		{
@@ -623,8 +623,8 @@ bool Viewport::ProcessGuiInputEvent(InputEvent const& event)
 			if (event.m_type == InputEventType::MouseButton && !event.m_pressed
 				&& event.m_mouseButton == GLFW_MOUSE_BUTTON_LEFT)
 			{
-				ObjectID const target = m_gui.m_dragTarget;
-				GuiDragData const data = m_gui.m_dragData;
+				ObjectID const    target = m_gui.m_dragTarget;
+				GuiDragData const data   = m_gui.m_dragData;
 				CancelGuiDrag();
 				if (Control* control = ResolveGuiControl(target);
 					control != nullptr && control->CanDropData(event.m_position - control->GetGlobalPosition(), data))
@@ -666,8 +666,8 @@ bool Viewport::ProcessGuiInputEvent(InputEvent const& event)
 				{
 					m_gui.m_mouseCaptureControl = targetID;
 					m_gui.m_mouseCaptureButton  = targetID.IsValid() ? event.m_mouseButton : -1;
-					m_gui.m_dragPressPosition = event.m_position;
-					m_gui.m_dragAttempted = false;
+					m_gui.m_dragPressPosition   = event.m_position;
+					m_gui.m_dragAttempted       = false;
 				}
 
 				if (event.m_mouseButton == GLFW_MOUSE_BUTTON_LEFT)
@@ -706,13 +706,14 @@ bool Viewport::ProcessGuiInputEvent(InputEvent const& event)
 		}
 
 		bool const tabNavigation = event.m_type == InputEventType::Key && event.m_keyCode == GLFW_KEY_TAB
-			&& event.m_pressed && !event.m_repeat;
+								   && event.m_pressed && !event.m_repeat;
 		if (GetGuiPopup() != nullptr && !tabNavigation)
 		{
 			return GetGuiPopup()->GuiInput(event);
 		}
 
-		if (event.m_type == InputEventType::Key && event.m_keyCode == GLFW_KEY_TAB && event.m_pressed && !event.m_repeat)
+		if (event.m_type == InputEventType::Key && event.m_keyCode == GLFW_KEY_TAB && event.m_pressed
+			&& !event.m_repeat)
 		{
 			std::vector<ObjectID> controls;
 			if (Control* popup = GetGuiPopup())
@@ -789,7 +790,7 @@ void Viewport::SetGuiDragPreview(Control* preview)
 	};
 	ignore(preview);
 	m_gui.m_dragPreviewSize = preview->GetSize();
-	m_gui.m_dragPreview = preview->GetObjectID();
+	m_gui.m_dragPreview     = preview->GetObjectID();
 	AddNode(preview);
 	preview->UpdateSize(m_gui.m_dragPreviewSize);
 }
@@ -811,25 +812,26 @@ void Viewport::TryStartGuiDrag(Vector2 const& position)
 	}
 
 	m_gui.m_dragAttempted = true;
-	ObjectID candidate = m_gui.m_mouseCaptureControl;
+	ObjectID candidate    = m_gui.m_mouseCaptureControl;
 	while (Control* control = ResolveGuiControl(candidate))
 	{
 		ObjectID const parent = dynamic_cast<Control*>(control->GetParent()) != nullptr
-			? control->GetParent()->GetObjectID() : ObjectID::Invalid;
-		bool const stop = control->GetMouseFilter() == Control::MouseFilter::Stop;
-		GuiDragData data;
+									? control->GetParent()->GetObjectID()
+									: ObjectID::Invalid;
+		bool const     stop   = control->GetMouseFilter() == Control::MouseFilter::Stop;
+		GuiDragData    data;
 		m_gui.m_dragStarting = true;
-		bool const started = !control->IsDisabled() && control->GetMouseFilter() != Control::MouseFilter::Ignore
-			&& control->GetDragData(m_gui.m_dragPressPosition - control->GetGlobalPosition(), data);
+		bool const started   = !control->IsDisabled() && control->GetMouseFilter() != Control::MouseFilter::Ignore
+							   && control->GetDragData(m_gui.m_dragPressPosition - control->GetGlobalPosition(), data);
 		m_gui.m_dragStarting = false;
 		if (started && !data.m_type.IsEmpty() && ResolveGuiControl(candidate) != nullptr && GetGuiPopup() == nullptr)
 		{
-			ObjectID const capture = m_gui.m_mouseCaptureControl;
+			ObjectID const capture      = m_gui.m_mouseCaptureControl;
 			m_gui.m_mouseCaptureControl = ObjectID::Invalid;
-			m_gui.m_mouseCaptureButton = -1;
-			m_gui.m_dragSource = candidate;
-			m_gui.m_dragData = data;
-			m_gui.m_dragging = true;
+			m_gui.m_mouseCaptureButton  = -1;
+			m_gui.m_dragSource          = candidate;
+			m_gui.m_dragData            = data;
+			m_gui.m_dragging            = true;
 			if (Control* pressed = ResolveGuiControl(capture, false))
 			{
 				pressed->Notification(Control::Notification_GuiInputCancelled);
@@ -864,13 +866,14 @@ void Viewport::TryStartGuiDrag(Vector2 const& position)
 
 ObjectID Viewport::FindGuiDropTarget(Vector2 const& position) const
 {
-	Control* hit = FindControlAtPosition(position);
+	Control* hit       = FindControlAtPosition(position);
 	ObjectID candidate = hit != nullptr ? hit->GetObjectID() : ObjectID::Invalid;
 	while (Control* control = ResolveGuiControl(candidate))
 	{
 		ObjectID const parent = dynamic_cast<Control*>(control->GetParent()) != nullptr
-			? control->GetParent()->GetObjectID() : ObjectID::Invalid;
-		bool const stop = control->GetMouseFilter() == Control::MouseFilter::Stop;
+									? control->GetParent()->GetObjectID()
+									: ObjectID::Invalid;
+		bool const     stop   = control->GetMouseFilter() == Control::MouseFilter::Stop;
 		if (!control->IsDisabled() && control->GetMouseFilter() != Control::MouseFilter::Ignore
 			&& control->CanDropData(position - control->GetGlobalPosition(), m_gui.m_dragData))
 		{
@@ -896,7 +899,7 @@ void Viewport::SetGuiDragTarget(ObjectID target)
 	}
 
 	ObjectID const previous = m_gui.m_dragTarget;
-	m_gui.m_dragTarget = target;
+	m_gui.m_dragTarget      = target;
 	if (Control* control = ResolveGuiControl(previous, false))
 	{
 		control->Notification(Control::Notification_DragHoverExit);
@@ -911,21 +914,22 @@ void Viewport::UpdateGuiDrag(Vector2 const& position)
 	}
 
 	Object* object = ObjectDatabase::GetInstance<Object>(m_gui.m_dragData.m_objectID);
-	Node* node = dynamic_cast<Node*>(object);
+	Node*   node   = dynamic_cast<Node*>(object);
 	if (ResolveGuiControl(m_gui.m_dragSource, false) == nullptr || GetGuiPopup() != nullptr
-		|| (m_gui.m_dragData.m_objectID.IsValid() && (object == nullptr || (node != nullptr && node->IsQueuedForDeletion()))))
+		|| (m_gui.m_dragData.m_objectID.IsValid()
+			&& (object == nullptr || (node != nullptr && node->IsQueuedForDeletion()))))
 	{
 		CancelGuiDrag();
 		return;
 	}
 
 	m_gui.m_dragPosition = position;
-	Control* hit = FindControlAtPosition(position);
+	Control*       hit   = FindControlAtPosition(position);
 	ObjectID const hover = hit != nullptr ? hit->GetObjectID() : ObjectID::Invalid;
 	if (hover != m_gui.m_dragHover)
 	{
 		ObjectID const previous = m_gui.m_dragHover;
-		m_gui.m_dragHover = hover;
+		m_gui.m_dragHover       = hover;
 		if (Control* control = ResolveGuiControl(previous, false))
 		{
 			control->Notification(Control::Notification_DragHoverExit);
@@ -959,18 +963,18 @@ void Viewport::UpdateGuiDrag(Vector2 const& position)
 
 void Viewport::CancelGuiDrag()
 {
-	ObjectID const source = m_gui.m_dragSource;
-	ObjectID const target = m_gui.m_dragTarget;
-	ObjectID const hover = m_gui.m_dragHover;
+	ObjectID const source  = m_gui.m_dragSource;
+	ObjectID const target  = m_gui.m_dragTarget;
+	ObjectID const hover   = m_gui.m_dragHover;
 	ObjectID const preview = m_gui.m_dragPreview;
-	m_gui.m_dragging = false;
-	m_gui.m_dragStarting = false;
-	m_gui.m_dragSource = ObjectID::Invalid;
-	m_gui.m_dragTarget = ObjectID::Invalid;
-	m_gui.m_dragHover = ObjectID::Invalid;
-	m_gui.m_dragPreview = ObjectID::Invalid;
-	m_gui.m_dragData = {};
-	m_gui.m_dragAttempted = true;
+	m_gui.m_dragging       = false;
+	m_gui.m_dragStarting   = false;
+	m_gui.m_dragSource     = ObjectID::Invalid;
+	m_gui.m_dragTarget     = ObjectID::Invalid;
+	m_gui.m_dragHover      = ObjectID::Invalid;
+	m_gui.m_dragPreview    = ObjectID::Invalid;
+	m_gui.m_dragData       = {};
+	m_gui.m_dragAttempted  = true;
 	if (Control* control = ObjectDatabase::GetInstance<Control>(preview))
 	{
 		control->SetVisible(false);

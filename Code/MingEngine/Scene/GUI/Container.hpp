@@ -11,7 +11,6 @@
 class Container : public Control
 {
 	MCLASS(Container, Control);
-
 	friend class SceneTree;
 
 public:
@@ -21,9 +20,9 @@ public:
 	};
 
 public:
-	static void BindMethods() {}
-
 	Container() { SetMouseFilter(MouseFilter::Pass); }
+
+	static void BindMethods() {}
 
 	Vector2 GetInternalMinimumSize() const override;
 
@@ -38,6 +37,7 @@ protected:
 private:
 	void UpdateLayout();
 
+private:
 	// Weather it is waiting for the SceneTree to call UpdateLayout
 	// if it is true, then we do not need to call UpdateLayout again
 	bool m_updatePending = false;

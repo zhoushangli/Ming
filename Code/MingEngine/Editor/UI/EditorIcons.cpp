@@ -32,8 +32,9 @@ Ref<TextureResource> EditorIcons::GetIconTexture(std::string const& name, std::s
 		return {};
 	}
 
-	auto texture = CreateRef<TextureResource>();
-	texture->m_image = image;
+	auto texture           = CreateRef<TextureResource>();
+	texture->m_image       = image;
+	texture->m_samplerMode = SamplerMode::BILINEAR_CLAMP;
 	if (!texture->InitGPUResources())
 	{
 		return {};
@@ -62,22 +63,22 @@ Color EditorIcons::GetIconColor(std::string const& name, Control const* source)
 
 Ref<TextureResource> EditorIcons::GetBrandTexture(bool beam)
 {
-	std::string const name = beam ? "@brand-beam" : "@brand-glyph";
-	auto found = m_icons.find(name);
+	std::string const name  = beam ? "@brand-beam" : "@brand-glyph";
+	auto              found = m_icons.find(name);
 	if (found != m_icons.end())
 	{
 		return found->second;
 	}
 
-	auto image = CreateRef<Image>();
+	auto           image = CreateRef<Image>();
 	uint8_t const* bytes = beam ? BuiltinBrand::Beam : BuiltinBrand::Glyph;
-	size_t const size = beam ? sizeof(BuiltinBrand::Beam) : sizeof(BuiltinBrand::Glyph);
+	size_t const   size  = beam ? sizeof(BuiltinBrand::Beam) : sizeof(BuiltinBrand::Glyph);
 	if (!image->LoadFromMemory(std::vector<uint8_t>(bytes, bytes + size)))
 	{
 		return {};
 	}
 
-	auto texture = CreateRef<TextureResource>();
+	auto texture     = CreateRef<TextureResource>();
 	texture->m_image = image;
 	if (!texture->InitGPUResources())
 	{

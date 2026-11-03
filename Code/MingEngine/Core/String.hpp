@@ -19,6 +19,7 @@ public:
 	String(std::string const& data);
 	String(char32_t const* data);
 	String(char32_t const* data, uint32_t length);
+	~String() = default;
 
 	// Copying shares the block and moving takes it over, so both stay allocation free.
 	// e.g. String copy = String("Ming") keeps one block with a reference count of 2.
@@ -26,36 +27,35 @@ public:
 	String(String&& other) noexcept            = default;
 	String& operator=(String const& other)     = default;
 	String& operator=(String&& other) noexcept = default;
-	~String()                                  = default;
 
 	String  operator+(String const& other) const;
 	String& operator+=(String const& other);
 	String  operator+(char32_t const* other) const;
 	String& operator+=(char32_t const* other);
 
-	uint32_t Length() const { return m_data.Size(); };
+	uint32_t Length() const { return m_data.Size(); }
 
-	bool IsEmpty() const { return m_data.IsEmpty(); };
+	bool IsEmpty() const { return m_data.IsEmpty(); }
 
-	char32_t const* Data() const { return m_data.Data(); };
+	char32_t const* Data() const { return m_data.Data(); }
 
 	// Read one code point without a bounds check.
 	// e.g. String("Ming")[1] returns U'i'.
-	char32_t operator[](uint32_t index) const { return m_data.Data()[index]; };
+	char32_t operator[](uint32_t index) const { return m_data.Data()[index]; }
 
 	bool operator==(String const& other) const;
 
-	bool operator!=(String const& other) const { return !(*this == other); };
+	bool operator!=(String const& other) const { return !(*this == other); }
 
 	// Compare against UTF-8 text directly, so literals need no temporary String.
 	// e.g. node.GetName() == "Camera" walks both sides once without allocating.
 	bool operator==(char const* other) const;
 
-	bool operator!=(char const* other) const { return !(*this == other); };
+	bool operator!=(char const* other) const { return !(*this == other); }
 
 	bool operator==(std::string const& other) const;
 
-	bool operator!=(std::string const& other) const { return !(*this == other); };
+	bool operator!=(std::string const& other) const { return !(*this == other); }
 
 	// Report whether the given code point occurs in this string.
 	// e.g. String("res://A.png").Contains(U'/') returns true.

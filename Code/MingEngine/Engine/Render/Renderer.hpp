@@ -59,7 +59,6 @@ public:
 	void CopyCPUToGPU(const void* data, unsigned int size, IndexBuffer* indexBuffer);
 	void BindConstantBuffer(ConstantBuffer* constantBuffer, int slot);
 
-
 	void BindBackBuffer();
 	void ResizeBackBuffer(IntVec2 newDimensions);
 

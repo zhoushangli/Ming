@@ -20,13 +20,15 @@ class InspectorProperty
 {
 public:
 	using ValueChangedCallback = std::function<void(Variant const&)>;
+
+public:
 	virtual ~InspectorProperty();
 	Control*                  GetControl() const;
 	Variant::Type             GetType() const { return m_info.m_type; }
 	std::string               GetDisplayName() const;
 	void                      SetValueReader(std::function<Variant()> reader) { m_reader = std::move(reader); }
 	void                      UpdateValue(Variant const& value);
-	void SetRevertValue(Variant const& value);
+	void                      SetRevertValue(Variant const& value);
 	void                      EndEditing(LineEdit::EditEndReason reason = LineEdit::EditEndReason::Interrupted);
 	bool                      CanAssignResource(VirtualPath const& path) const;
 	bool                      AssignResource(VirtualPath const& path);
@@ -35,7 +37,7 @@ public:
 
 protected:
 	InspectorProperty(PropertyInfo info, std::string labelId, ValueChangedCallback onValueChanged);
-	float GetEditorDimension(char const* name, float fallback) const;
+	float          GetEditorDimension(char const* name, float fallback) const;
 	void           BuildNumeric();
 	void           BuildComponents();
 	void           BuildText(bool resource = false);
@@ -55,13 +57,13 @@ protected:
 	std::function<Variant()> m_reader;
 	Variant                  m_value;
 	String                   m_editStartText;
-	ObjectID                 m_rootID  = ObjectID::Invalid;
-	VBoxContainer*           m_root    = nullptr;
-	VBoxContainer*           m_fields  = nullptr;
-	Label*                   m_error   = nullptr;
-	Label* m_title = nullptr;
-	Button* m_revert = nullptr;
-	Variant m_revertValue;
+	ObjectID                 m_rootID = ObjectID::Invalid;
+	VBoxContainer*           m_root   = nullptr;
+	VBoxContainer*           m_fields = nullptr;
+	Label*                   m_error  = nullptr;
+	Label*                   m_title  = nullptr;
+	Button*                  m_revert = nullptr;
+	Variant                  m_revertValue;
 	LineEdit*                m_text    = nullptr;
 	Button*                  m_button  = nullptr;
 	OptionButton*            m_options = nullptr;

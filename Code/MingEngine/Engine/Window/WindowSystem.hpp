@@ -60,7 +60,8 @@ public:
 
 private:
 	WindowSystemConfig m_config;
-	GLFWcursor* m_resizeHorizontalCursor = nullptr;
-	GLFWcursor* m_resizeVerticalCursor = nullptr;
-	CursorShape m_cursorShape = CursorShape::Arrow;
+	GLFWcursor*        m_resizeHorizontalCursor = nullptr;
+	GLFWcursor*        m_resizeVerticalCursor   = nullptr;
+	GLFWcursor*        m_textCursor             = nullptr;
+	CursorShape        m_cursorShape            = CursorShape::Arrow;
 };

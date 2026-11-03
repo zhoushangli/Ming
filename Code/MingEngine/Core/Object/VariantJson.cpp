@@ -59,7 +59,7 @@ bool TrySerialize(Variant const& value, Json& outJson)
 	case Variant::Type::Vector2:
 	{
 		Vector2 const& vector = value.As<Vector2>();
-		outJson = Json::array({ vector.x, vector.y });
+		outJson               = Json::array({ vector.x, vector.y });
 		return true;
 	}
 

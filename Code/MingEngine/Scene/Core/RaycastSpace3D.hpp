@@ -16,6 +16,15 @@ public:
 
 	RaycastQuery3D(MathRaycastQuery3D const& other) { this->operator=(other); }
 
+	RaycastQuery3D& operator=(MathRaycastQuery3D const& other)
+	{
+		m_start       = other.m_startPos;
+		m_direction   = other.m_forwardNormal;
+		m_maxDistance = other.m_maxLength;
+
+		return *this;
+	}
+
 	Vector3 GetStart() const;
 	Vector3 GetDirection() const;
 	float   GetMaxDistance() const;
@@ -25,15 +34,6 @@ public:
 	void SetDirection(Vector3 const& direction);
 	void SetMaxDistance(float maxDistance);
 	void SetExclude(Node* exclude);
-
-	RaycastQuery3D& operator=(MathRaycastQuery3D const& other)
-	{
-		m_start       = other.m_startPos;
-		m_direction   = other.m_forwardNormal;
-		m_maxDistance = other.m_maxLength;
-
-		return *this;
-	}
 
 public:
 	Vector3  m_start;

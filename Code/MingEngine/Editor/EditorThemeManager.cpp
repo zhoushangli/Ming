@@ -8,6 +8,9 @@
 #include <cmath>
 #include <limits>
 #include <set>
+#include <fstream>
+#include <cstdlib>
+#include "ThirdParty/nlohmann/json.hpp"
 
 Ref<Theme> EditorThemeManager::CreateTheme()
 {
@@ -41,9 +44,7 @@ Ref<Theme> EditorThemeManager::CreateTheme()
 		for (int side = 0; side < 4; ++side)
 		{
 			style->SetBorderWidth(static_cast<ThemeStyleBox::Side>(side), width);
-			style->SetContentMargin(
-				static_cast<ThemeStyleBox::Side>(side),
-				side % 2 == 0 ? horizontal : vertical);
+			style->SetContentMargin(static_cast<ThemeStyleBox::Side>(side), side % 2 == 0 ? horizontal : vertical);
 		}
 
 		return style;
@@ -174,12 +175,6 @@ Ref<Theme> EditorThemeManager::CreateTheme()
 	theme->SetFontSize("font_size", "EditorStatusLabel", 13);
 	theme->SetColor("font_color", "EditorStatusLabel", dim);
 	theme->SetColor("font_color", "EditorPropertyTitle", muted);
-	theme->SetFont("ruler_font", "ViewportPanel", theme->GetDefaultFont());
-	theme->SetFontSize("ruler_font_size", "ViewportPanel", 13);
-	theme->SetColor("ruler_background", "ViewportPanel", field);
-	theme->SetColor("ruler_tick_color", "ViewportPanel", border);
-	theme->SetColor("ruler_major_color", "ViewportPanel", strong);
-	theme->SetColor("ruler_font_color", "ViewportPanel", dim);
 	theme->SetFontSize("font_size", "EditorInspectorTitle", 15);
 	theme->SetFontSize("font_size", "EditorPropertyTitle", 14);
 	theme->SetFontSize("font_size", "EditorErrorLabel", 13);
@@ -197,7 +192,10 @@ Ref<Theme> EditorThemeManager::CreateTheme()
 	theme->SetStyleBox("hover", "EditorWorkspaceButton", box(tint, strong, 1.f, 12.5f, 3.75f));
 	theme->SetColor("font_color", "EditorWorkspaceButton", accent);
 	theme->SetStyleBox("normal", "EditorPrimaryButton", box(accent, accent, 1.f, 12.5f, 5.f));
-	theme->SetStyleBox("hover", "EditorPrimaryButton", box(Color(226, 186, 114), Color(226, 186, 114), 1.f, 12.5f, 5.f));
+	theme->SetStyleBox(
+		"hover",
+		"EditorPrimaryButton",
+		box(Color(226, 186, 114), Color(226, 186, 114), 1.f, 12.5f, 5.f));
 	theme->SetStyleBox("pressed", "EditorPrimaryButton", box(accent, background, 1.f, 12.5f, 5.f));
 	theme->SetStyleBox("hover_pressed", "EditorPrimaryButton", box(accent, background, 1.f, 12.5f, 5.f));
 	theme->SetColor("font_color", "EditorPrimaryButton", background);
@@ -302,8 +300,7 @@ Ref<Theme> EditorThemeManager::CreateTheme()
 	theme->SetConstant("viewport_min_height", "Editor", 200);
 	theme->SetConstant("viewport_header_height", "Editor", 33);
 	theme->SetConstant("viewport_toolbar_height", "Editor", 38);
-	theme->SetConstant("scene_title_width", "Editor", 60);
-	theme->SetConstant("ruler_width", "ViewportPanel", 23);
+	theme->SetConstant("scene_title_width", "Editor", 120);
 	theme->SetConstant("brand_width", "Editor", 130);
 	theme->SetConstant("beam_max_width", "Editor", 900);
 	theme->SetConstant("beam_center_gap", "Editor", 50);
@@ -346,6 +343,18 @@ Ref<Theme> EditorThemeManager::CreateTheme()
 	theme->SetFontSize("font_size", "SpinBoxStep", 12);
 	theme->SetTypeVariation("SpinBoxError", "Label");
 	theme->SetFontSize("font_size", "SpinBoxError", 11);
+	theme->SetColor("modal_color", "PopupPanel", Color(0, 0, 0, 145));
+	theme->SetTypeVariation("EditorDialog", "PanelContainer");
+	theme->SetStyleBox("panel", "EditorDialog", box(panel, strong, 1.f, 0.f, 0.f));
+	theme->SetTypeVariation("EditorDialogHeader", "PanelContainer");
+	theme->SetStyleBox("panel", "EditorDialogHeader", box(field, border, 1.f, 8.f, 4.f));
+	theme->SetTypeVariation("EditorDialogBody", "PanelContainer");
+	theme->SetStyleBox("panel", "EditorDialogBody", box(panel, Color::Transparent, 0.f, 10.f, 10.f));
+	theme->SetTypeVariation("EditorDialogSidebar", "PanelContainer");
+	theme->SetStyleBox("panel", "EditorDialogSidebar", box(field, Color::Transparent, 0.f, 6.f, 6.f));
+	theme->SetConstant("node_sidebar_width", "Editor", 170);
+	theme->SetConstant("node_description_height", "Editor", 80);
+	theme->SetConstant("gizmo_size", "Editor", 80);
 	return theme;
 }
 
@@ -361,13 +370,14 @@ Ref<Theme> EditorThemeManager::CreateScaledTheme(Ref<Theme> const& baseTheme, fl
 		scale = 1.25f;
 	}
 
-	auto result = baseTheme->Duplicate();
+	auto result    = baseTheme->Duplicate();
 	auto dimension = [scale](int value, bool thin = false)
 	{
-		double const scaled = static_cast<double>(value) * scale;
+		double const scaled  = static_cast<double>(value) * scale;
 		double const rounded = thin ? std::floor(scaled) : std::round(scaled);
-		int const minimum = thin && value > 0 ? 1 : 0;
-		return static_cast<int>(std::clamp(rounded, static_cast<double>(minimum), static_cast<double>(std::numeric_limits<int>::max())));
+		int const    minimum = thin && value > 0 ? 1 : 0;
+		return static_cast<int>(
+			std::clamp(rounded, static_cast<double>(minimum), static_cast<double>(std::numeric_limits<int>::max())));
 	};
 
 	if (baseTheme->HasDefaultFontSize())
@@ -386,6 +396,9 @@ Ref<Theme> EditorThemeManager::CreateScaledTheme(Ref<Theme> const& baseTheme, fl
 	// Only these constants represent editor dimensions; switches and counts retain their values.
 	// e.g. A user-defined mode constant is copied even when its value happens to be 20.
 	static std::pair<char const*, char const*> const dimensions[] = {
+		{ "Editor", "node_sidebar_width" },
+		{ "Editor", "node_description_height" },
+		{ "Editor", "gizmo_size" },
 		{ "Editor", "node_popup_height" },
 		{ "Editor", "node_popup_width" },
 		{ "Editor", "create_popup_height" },
@@ -407,7 +420,6 @@ Ref<Theme> EditorThemeManager::CreateScaledTheme(Ref<Theme> const& baseTheme, fl
 		{ "Editor", "popup_height" },
 		{ "Editor", "popup_screen_margin" },
 		{ "Editor", "property_label_width" },
-		{ "ViewportPanel", "ruler_width" },
 		{ "Editor", "scene_title_width" },
 		{ "Editor", "section_height" },
 		{ "Editor", "separator_height" },
@@ -461,13 +473,17 @@ Ref<Theme> EditorThemeManager::CreateScaledTheme(Ref<Theme> const& baseTheme, fl
 	{
 		if (baseTheme->HasConstant(item.second, item.first))
 		{
-			bool const thin = (std::string(item.first) == "LineEdit" && std::string(item.second) == "caret_width")
+			bool const thin =
+				(std::string(item.first) == "LineEdit" && std::string(item.second) == "caret_width")
 				|| (std::string(item.first) == "MenuBar" && std::string(item.second) == "separator_width")
 				|| (std::string(item.first) == "SplitContainer" && std::string(item.second) == "grabber_width")
 				|| (std::string(item.first) == "TabContainer" && std::string(item.second) == "drop_mark_width")
 				|| (std::string(item.first) == "Tree" && std::string(item.second) == "children_guide_width")
 				|| (std::string(item.first) == "Tree" && std::string(item.second) == "guide_width");
-			result->SetConstant(item.second, item.first, dimension(baseTheme->GetConstant(item.second, item.first), thin));
+			result->SetConstant(
+				item.second,
+				item.first,
+				dimension(baseTheme->GetConstant(item.second, item.first), thin));
 		}
 	}
 
@@ -484,7 +500,7 @@ Ref<Theme> EditorThemeManager::CreateScaledTheme(Ref<Theme> const& baseTheme, fl
 
 			for (int i = 0; i < 4; ++i)
 			{
-				auto const side = static_cast<ThemeStyleBox::Side>(i);
+				auto const  side   = static_cast<ThemeStyleBox::Side>(i);
 				float const border = box->GetBorderWidth(side);
 				box->SetContentMargin(side, box->GetContentMargin(side) * scale);
 				box->SetBorderWidth(side, border > 0.f ? std::max(1.f, std::floor(border * scale)) : 0.f);
@@ -493,4 +509,52 @@ Ref<Theme> EditorThemeManager::CreateScaledTheme(Ref<Theme> const& baseTheme, fl
 	}
 
 	return result;
+}
+
+std::filesystem::path EditorThemeManager::GetSettingsDirectory()
+{
+	wchar_t* local  = nullptr;
+	size_t   length = 0;
+	_wdupenv_s(&local, &length, L"LOCALAPPDATA");
+	auto directory =
+		(local != nullptr ? std::filesystem::path(local) : std::filesystem::temp_directory_path()) / L"MingEngine";
+	free(local);
+	return directory;
+}
+
+float EditorThemeManager::LoadScale()
+{
+	std::ifstream input(GetSettingsDirectory() / L"EditorSettings.json");
+	if (!input)
+	{
+		return 1.25f;
+	}
+	auto settings = nlohmann::json::parse(input, nullptr, false);
+	if (settings.is_object() && settings.contains("scale") && settings["scale"].is_number())
+	{
+		float const scale = settings["scale"].get<float>();
+		if (scale == 1.f || scale == 1.25f || scale == 1.5f || scale == 2.f)
+		{
+			return scale;
+		}
+	}
+	return 1.25f;
+}
+
+bool EditorThemeManager::SaveScale(float scale)
+{
+	if (scale != 1.f && scale != 1.25f && scale != 1.5f && scale != 2.f)
+	{
+		return false;
+	}
+	std::error_code error;
+	std::filesystem::create_directories(GetSettingsDirectory(), error);
+	if (error)
+	{
+		return false;
+	}
+	std::ofstream output(GetSettingsDirectory() / L"EditorSettings.json");
+	output << nlohmann::json({ { "scale", scale } }).dump(2);
+	output.flush();
+	return output.good();
 }

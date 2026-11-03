@@ -16,6 +16,7 @@ public:
 	bool     operator!=(RID const& other) const;
 	bool     operator<(RID const& other) const;
 
+public:
 	static const RID          Invalid;
 	static constexpr uint32_t kMaxUID   = 0xfffffffeu;
 	static constexpr uint32_t kMaxIndex = 0xffffffffu;

@@ -14,7 +14,7 @@ Vector2 Label::GetInternalMinimumSize() const
 
 void Label::EnsureTextLayout() const
 {
-	RID const font = m_themeCache.font.IsValid() ? m_themeCache.font->GetFontRID() : RID::Invalid;
+	RID const   font  = m_themeCache.font.IsValid() ? m_themeCache.font->GetFontRID() : RID::Invalid;
 	float const width = GetSize().x;
 	if (!m_layoutDirty && m_layoutFont == font && m_layoutFontSize == m_themeCache.font_size
 		&& m_layoutLineSpacing == m_themeCache.line_spacing && m_layoutWidth == width)
@@ -22,13 +22,13 @@ void Label::EnsureTextLayout() const
 		return;
 	}
 
-	m_layoutDirty = false;
-	m_layoutFont = font;
-	m_layoutFontSize = m_themeCache.font_size;
+	m_layoutDirty       = false;
+	m_layoutFont        = font;
+	m_layoutFontSize    = m_themeCache.font_size;
 	m_layoutLineSpacing = m_themeCache.line_spacing;
-	m_layoutWidth = width;
-	m_minimum = Vector2::Zero;
-	m_textHeight = 0.f;
+	m_layoutWidth       = width;
+	m_minimum           = Vector2::Zero;
+	m_textHeight        = 0.f;
 	m_lines.clear();
 	if (!font.IsValid() || g_engine == nullptr || g_engine->m_textServer == nullptr)
 	{
@@ -36,10 +36,10 @@ void Label::EnsureTextLayout() const
 	}
 
 	TextServer* server = g_engine->m_textServer;
-	m_lines = server->GetTextLines(font, m_text, static_cast<float>(m_layoutFontSize), width, m_wrap);
+	m_lines            = server->GetTextLines(font, m_text, static_cast<float>(m_layoutFontSize), width, m_wrap);
 	for (TextLine& line : m_lines)
 	{
-		m_minimum.x = std::max(m_minimum.x, line.m_width);
+		m_minimum.x        = std::max(m_minimum.x, line.m_width);
 		float const height = std::abs(line.m_config.m_ascent) + std::abs(line.m_config.m_descent);
 		if (m_textHeight > 0.f)
 		{
@@ -65,7 +65,7 @@ void Label::UpdateTextLayout()
 		return;
 	}
 
-	m_updatingLayout = true;
+	m_updatingLayout       = true;
 	Vector2 const previous = m_minimum;
 	EnsureTextLayout();
 	if (previous != m_minimum)
@@ -84,7 +84,7 @@ void Label::SetText(String const& text)
 		return;
 	}
 
-	m_text = text;
+	m_text        = text;
 	m_layoutDirty = true;
 	UpdateTextLayout();
 }
@@ -96,7 +96,7 @@ void Label::SetClipText(bool enabled)
 		return;
 	}
 
-	m_clipText = enabled;
+	m_clipText    = enabled;
 	m_layoutDirty = true;
 	UpdateTextLayout();
 }
@@ -108,7 +108,7 @@ void Label::SetTextOverrunBehavior(TextOverrunBehavior behavior)
 		return;
 	}
 
-	m_overrun = behavior;
+	m_overrun     = behavior;
 	m_layoutDirty = true;
 	UpdateTextLayout();
 }
@@ -120,7 +120,7 @@ void Label::SetAutowrapMode(AutowrapMode mode)
 		return;
 	}
 
-	m_wrap = mode;
+	m_wrap        = mode;
 	m_layoutDirty = true;
 	UpdateTextLayout();
 }
@@ -184,7 +184,7 @@ void Label::DrawText()
 	}
 
 	Vector2 const size = GetSize();
-	float y = 0.f;
+	float         y    = 0.f;
 	switch (m_verticalAlignment)
 	{
 	case VerticalAlignment::Center:
@@ -214,8 +214,8 @@ void Label::DrawText()
 
 		for (TextLineGlyph const& glyph : line.m_glyphs)
 		{
-			GlyphTexture const* texture = g_engine->m_textServer->GetOrCreateGlyphTexture(
-				m_layoutFont, glyph.m_glyphIndex, m_layoutFontSize);
+			GlyphTexture const* texture =
+				g_engine->m_textServer->GetOrCreateGlyphTexture(m_layoutFont, glyph.m_glyphIndex, m_layoutFontSize);
 			if (texture == nullptr || !texture->m_texture.IsValid())
 			{
 				continue;
@@ -225,8 +225,10 @@ void Label::DrawText()
 			Vector2 const position(x + glyph.m_posX + bitmap.m_offsetX, y + line.m_config.m_ascent + bitmap.m_offsetY);
 			Vector2 const glyphSize(static_cast<float>(bitmap.m_width), static_cast<float>(bitmap.m_height));
 			Vector2 const start = m_clipText ? Vector2(std::max(0.f, position.x), std::max(0.f, position.y)) : position;
-			Vector2 const end = m_clipText ? Vector2(std::min(size.x, position.x + glyphSize.x),
-				std::min(size.y, position.y + glyphSize.y)) : position + glyphSize;
+			Vector2 const end =
+				m_clipText
+					? Vector2(std::min(size.x, position.x + glyphSize.x), std::min(size.y, position.y + glyphSize.y))
+					: position + glyphSize;
 			if (end.x <= start.x || end.y <= start.y)
 			{
 				continue;
@@ -234,15 +236,15 @@ void Label::DrawText()
 
 			Rect2 target;
 			target.m_position = start;
-			target.m_size = end - start;
+			target.m_size     = end - start;
 			Rect2 source;
 			source.m_position = start - position;
-			source.m_size = target.m_size;
+			source.m_size     = target.m_size;
 			DrawTextureRectRegion(texture->m_texture, target, source, m_themeCache.font_color);
 		}
 
 		y += std::abs(line.m_config.m_ascent) + std::abs(line.m_config.m_descent)
-			+ std::max(0.f, line.m_config.m_lineGap) + std::max(0, m_layoutLineSpacing);
+			 + std::max(0.f, line.m_config.m_lineGap) + std::max(0, m_layoutLineSpacing);
 	}
 }
 

@@ -197,10 +197,18 @@ void Renderer::RenderViewport(ViewportData* viewport, CameraData* camera)
 	sortPass(viewport->m_renderRequests[static_cast<size_t>(RenderRequestPass::Opaque)]);
 	sortPass(viewport->m_renderRequests[static_cast<size_t>(RenderRequestPass::Transparent)]);
 	sortPass(viewport->m_renderRequests[static_cast<size_t>(RenderRequestPass::UI)]);
+	sortPass(viewport->m_renderRequests[static_cast<size_t>(RenderRequestPass::EditorOverlay)]);
 
 	RenderSkybox(viewport);
 	RenderOpaque(viewport);
 	RenderPostProcess(viewport, projection);
+	m_renderBackend->BindRenderTarget(viewport->m_viewportOutputTexture);
+	m_renderBackend->BindCamera(projection);
+	for (RenderRequest const& request :
+		 viewport->m_renderRequests[static_cast<size_t>(RenderRequestPass::EditorOverlay)])
+	{
+		ExecuteRenderRequest(request);
+	}
 
 	RenderUI(viewport);
 }

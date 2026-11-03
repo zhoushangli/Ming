@@ -12,7 +12,6 @@ class RaycastSpace3D;
 class SceneTree : public Object
 {
 	MCLASS(SceneTree, Object);
-
 	friend class Node;
 
 public:
@@ -28,12 +27,12 @@ public:
 	void QueueTransformChangedNode(ObjectID nodeID);
 	void FlushTransformChangedNodes();
 
-	void  UpdateScene(float deltaSeconds);
-	Node* GetRoot() const;
-	Node* GetScene() const;
-	void  ClearScene();
-	void  ChangeScene(Node* newSceneNode);
-	void SetSceneViewport(Viewport* viewport);
+	void      UpdateScene(float deltaSeconds);
+	Node*     GetRoot() const;
+	Node*     GetScene() const;
+	void      ClearScene();
+	void      ChangeScene(Node* newSceneNode);
+	void      SetSceneViewport(Viewport* viewport);
 	Viewport* GetSceneViewport() const;
 
 	void      SetUICamera(Camera3D* camera);
@@ -68,10 +67,10 @@ protected:
 
 	// tree -> root -> scene node
 	// Scene also need pending, because the old scene needs pending to destroy safely
-	Viewport* m_root         = nullptr;
-	ObjectID  m_sceneID      = ObjectID::Invalid;
+	Viewport* m_root            = nullptr;
+	ObjectID  m_sceneID         = ObjectID::Invalid;
 	ObjectID  m_sceneViewportID = ObjectID::Invalid;
-	Node*     m_pendingScene = nullptr;
+	Node*     m_pendingScene    = nullptr;
 
 	// Raycast space is a helping class to manage raycast objects
 	// and perform raycasting in the scene.

@@ -12,12 +12,12 @@ private:
 	struct ThemeCache
 	{
 		Ref<FontResource>  font;
-		int                font_size = 0;
-		int                tab_height = 0;
+		int                font_size         = 0;
+		int                tab_height        = 0;
 		int                tab_minimum_width = 0;
-		int                tab_separation = 0;
-		int                page_separation = 0;
-		int                drop_mark_width = 0;
+		int                tab_separation    = 0;
+		int                page_separation   = 0;
+		int                drop_mark_width   = 0;
 		Color              font_color;
 		Color              font_hover_color;
 		Color              font_selected_color;
@@ -36,20 +36,20 @@ private:
 public:
 	TabContainer();
 
-	int      GetCurrentTab() const { return m_current; }
-	Control* GetCurrentPage() const;
-	int GetPageCount() const { return static_cast<int>(m_pages.size()); }
-	Control* GetPage(int index) const;
-	Button* GetTabButton(int index) const;
-	int GetPageIndex(Control const* page) const;
-	int GetTabInsertIndex(Vector2 const& position) const;
-	String GetPageTitle(int index) const;
-	Vector2  GetInternalMinimumSize() const override;
-	AABB2 GetTabBarRect() const;
+	int            GetCurrentTab() const { return m_current; }
+	Control*       GetCurrentPage() const;
+	int            GetPageCount() const { return static_cast<int>(m_pages.size()); }
+	Control*       GetPage(int index) const;
+	Button*        GetTabButton(int index) const;
+	int            GetPageIndex(Control const* page) const;
+	int            GetTabInsertIndex(Vector2 const& position) const;
+	String         GetPageTitle(int index) const;
+	Vector2        GetInternalMinimumSize() const override;
+	AABB2          GetTabBarRect() const;
 	HBoxContainer* GetTitleActions() const { return m_titleActions; }
 	HBoxContainer* GetTabExtras() const { return m_tabExtras; }
-	AABB2 GetPageRect() const;
-	AABB2 GetTabInsertRect(int index) const;
+	AABB2          GetPageRect() const;
+	AABB2          GetTabInsertRect(int index) const;
 
 	void SetCurrentTab(int index);
 	void SetTabsAtBottom(bool enabled);
@@ -59,10 +59,10 @@ public:
 	void SetTabsRearrangeGroup(int group) { m_rearrangeGroup = group; }
 	void SetDropInsertIndex(int index);
 
-	void AddPage(String const& title, Control* page);
-	void InsertPage(String const& title, Control* page, int index);
+	void     AddPage(String const& title, Control* page);
+	void     InsertPage(String const& title, Control* page, int index);
 	Control* RemovePage(int index);
-	void MovePage(int from, int to);
+	void     MovePage(int from, int to);
 
 	bool CanDropData(Vector2 const& position, GuiDragData const& data) const override;
 	void DropData(Vector2 const& position, GuiDragData const& data) override;
@@ -76,22 +76,22 @@ protected:
 	void OnNotification(int notification);
 
 private:
-	void ApplyTabTheme(Button* button);
+	void  ApplyTabTheme(Button* button);
 	float GetTabWidth(Button const* button) const;
-	void HoverTab(Control* page, Vector2 const& position, GuiDragData const& data);
+	void  HoverTab(Control* page, Vector2 const& position, GuiDragData const& data);
 
 private:
-	ThemeCache m_themeCache;
-	HBoxContainer* m_titleActions = nullptr;
-	HBoxContainer* m_tabExtras = nullptr;
-	std::vector<Control*>    m_pages;
-	std::vector<Button*>     m_buttons;
-	int                      m_current = -1;
-	bool m_tabsAtBottom = false;
-	std::function<void(int)> m_changed;
+	ThemeCache                                  m_themeCache;
+	HBoxContainer*                              m_titleActions = nullptr;
+	HBoxContainer*                              m_tabExtras    = nullptr;
+	std::vector<Control*>                       m_pages;
+	std::vector<Button*>                        m_buttons;
+	int                                         m_current      = -1;
+	bool                                        m_tabsAtBottom = false;
+	std::function<void(int)>                    m_changed;
 	std::function<bool(Control*, GuiDragData&)> m_drag;
-	int m_rearrangeGroup = -1;
-	int m_dropIndex = -1;
-	ObjectID m_hoverPage = ObjectID::Invalid;
-	double m_hoverStarted = 0.0;
+	int                                         m_rearrangeGroup = -1;
+	int                                         m_dropIndex      = -1;
+	ObjectID                                    m_hoverPage      = ObjectID::Invalid;
+	double                                      m_hoverStarted   = 0.0;
 };

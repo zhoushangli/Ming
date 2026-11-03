@@ -64,7 +64,6 @@ static int GetMouseModifiers(GLFWwindow* window)
 
 static void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
-
 	(void)window;
 
 	InputEvent event;
@@ -79,9 +78,8 @@ static void KeyCallback(GLFWwindow* window, int key, int scancode, int action, i
 
 static void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
 {
-
 	InputEvent event;
-	event.m_type        = InputEventType::MouseButton;
+	event.m_type = InputEventType::MouseButton;
 	// Use the last dispatched motion position when queued button events are processed.
 	// e.g. A quick drag keeps its press position even if the OS cursor has already reached the drop target.
 	event.m_position    = s_hasPreviousMousePosition ? s_previousMousePosition : GetMousePosition(window);
@@ -113,7 +111,6 @@ static void CursorPosCallback(GLFWwindow* window, double x, double y)
 
 static void CharCallback(GLFWwindow* window, unsigned int codepoint)
 {
-
 	(void)window;
 
 	InputEvent event;
@@ -124,7 +121,6 @@ static void CharCallback(GLFWwindow* window, unsigned int codepoint)
 
 static void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset)
 {
-
 	InputEvent event;
 	event.m_type      = InputEventType::MouseWheel;
 	event.m_position  = GetMousePosition(window);
@@ -191,8 +187,10 @@ void WindowSystem::Shutdown()
 	SetCursorShape(CursorShape::Arrow);
 	glfwDestroyCursor(m_resizeHorizontalCursor);
 	glfwDestroyCursor(m_resizeVerticalCursor);
+	glfwDestroyCursor(m_textCursor);
 	m_resizeHorizontalCursor = nullptr;
-	m_resizeVerticalCursor = nullptr;
+	m_resizeVerticalCursor   = nullptr;
+	m_textCursor             = nullptr;
 
 	if (m_glfwWindow != nullptr)
 	{
@@ -240,10 +238,17 @@ void WindowSystem::SetCursorShape(CursorShape shape)
 	GLFWcursor* cursor = nullptr;
 	if (shape != CursorShape::Arrow)
 	{
-		GLFWcursor*& cached = shape == CursorShape::ResizeHorizontal ? m_resizeHorizontalCursor : m_resizeVerticalCursor;
+		GLFWcursor*& cached =
+			shape == CursorShape::IBeam
+				? m_textCursor
+				: (shape == CursorShape::ResizeHorizontal ? m_resizeHorizontalCursor : m_resizeVerticalCursor);
 		if (cached == nullptr)
 		{
-			cached = glfwCreateStandardCursor(shape == CursorShape::ResizeHorizontal ? GLFW_HRESIZE_CURSOR : GLFW_VRESIZE_CURSOR);
+			int const nativeShape =
+				shape == CursorShape::IBeam
+					? GLFW_IBEAM_CURSOR
+					: (shape == CursorShape::ResizeHorizontal ? GLFW_HRESIZE_CURSOR : GLFW_VRESIZE_CURSOR);
+			cached = glfwCreateStandardCursor(nativeShape);
 		}
 
 		cursor = cached;
@@ -345,9 +350,9 @@ void WindowSystem::SetTitleBarColors(Color const& background, Color const& text)
 		return;
 	}
 
-	HWND const window = static_cast<HWND>(m_windowHandle);
-	BOOL const dark = TRUE;
-	COLORREF const caption = RGB(background.r, background.g, background.b);
+	HWND const     window     = static_cast<HWND>(m_windowHandle);
+	BOOL const     dark       = TRUE;
+	COLORREF const caption    = RGB(background.r, background.g, background.b);
 	COLORREF const foreground = RGB(text.r, text.g, text.b);
 	// Unsupported DWM attributes leave the operating system's default decoration intact.
 	// e.g. Older Windows versions can accept dark mode without supporting custom caption colors.

@@ -9,8 +9,9 @@ class VertexBuffer
 
 public:
 	VertexBuffer(ID3D11Device* device, unsigned int size, unsigned int stride);
-	VertexBuffer(const VertexBuffer& copy) = delete;
 	virtual ~VertexBuffer();
+
+	VertexBuffer(const VertexBuffer& copy) = delete;
 
 	void Resize(unsigned int size);
 

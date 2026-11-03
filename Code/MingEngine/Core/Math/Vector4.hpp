@@ -2,12 +2,17 @@
 
 struct Vector4
 {
+	// Standalone "friend" functions
+	friend Vector4 const operator*(float uniformScale, Vector4 const& vecToScale);
+
 public:
 	// Construction/Destruction
 	Vector4();
-	Vector4(Vector4 const& other);
 	~Vector4();
 	explicit Vector4(float xVal, float yVal, float zVal, float wVal);
+
+	Vector4(Vector4 const& other);
+	void operator=(Vector4 const& copyFrom);
 
 	// Operators (const)
 	bool          operator==(Vector4 const& compare) const;
@@ -24,10 +29,6 @@ public:
 	void operator-=(Vector4 const& vecToSubtract);
 	void operator*=(const float uniformScale);
 	void operator/=(const float uniformDivisor);
-	void operator=(Vector4 const& copyFrom);
-
-	// Standalone "friend" functions
-	friend Vector4 const operator*(float uniformScale, Vector4 const& vecToScale);
 
 	// Vec4 methods
 	float GetLength() const;

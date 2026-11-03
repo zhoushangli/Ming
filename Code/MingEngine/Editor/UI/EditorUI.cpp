@@ -5,7 +5,7 @@
 #include "MingEngine/Engine/Input/InputSystem.hpp"
 #include "MingEngine/Scene/GUI/TabContainer.hpp"
 #include "MingEngine/Scene/GUI/ColorRect.hpp"
-
+#include "ThirdParty/GLFW/glfw3.h"
 
 Control* EditorUI::GetRootControl() const
 {
@@ -27,6 +27,51 @@ bool EditorUI::HandleInput(InputEvent const& event)
 	UpdateNativeDocking();
 	m_owner->GetSceneTree()->FlushContainerUpdate();
 	auto* root = static_cast<Viewport*>(m_owner->GetSceneTree()->GetRoot());
+	if (root->GetGuiPopup() == nullptr && event.m_type == InputEventType::Key && event.m_pressed
+		&& (event.m_modifiers & GLFW_MOD_CONTROL) != 0)
+	{
+		if ((event.m_keyCode == GLFW_KEY_Z || event.m_keyCode == GLFW_KEY_Y)
+			&& dynamic_cast<LineEdit*>(root->GetGuiFocus()) == nullptr)
+		{
+			if (Node* scene = m_owner->GetSceneTree()->GetScene())
+			{
+				FinishNativeEditing();
+				if (event.m_keyCode == GLFW_KEY_Y || (event.m_modifiers & GLFW_MOD_SHIFT) != 0)
+				{
+					m_owner->GetUndoRedo().Redo(scene->GetObjectID());
+				}
+				else
+				{
+					m_owner->GetUndoRedo().Undo(scene->GetObjectID());
+				}
+			}
+			return true;
+		}
+
+		switch (event.m_keyCode)
+		{
+		case GLFW_KEY_N:
+			m_owner->RequestNewScene();
+			return true;
+		case GLFW_KEY_O:
+			m_owner->RequestOpenScene();
+			return true;
+		case GLFW_KEY_S:
+			if ((event.m_modifiers & GLFW_MOD_SHIFT) != 0)
+			{
+				m_owner->RequestSaveSceneAs();
+			}
+			else
+			{
+				m_owner->SaveScene();
+			}
+			return true;
+		case GLFW_KEY_W:
+			m_owner->RequestCloseScene();
+			return true;
+		}
+	}
+
 	root->ProcessInputEvent(event);
 	UpdateNativeDocking();
 	root->UpdateGuiDrag(root->GetGuiDragPosition());
@@ -42,7 +87,7 @@ bool EditorUI::IsNativeInputActive() const
 
 	auto* root = static_cast<Viewport*>(m_owner->GetSceneTree()->GetRoot());
 	return root->GetGuiPopup() != nullptr || (root->GetGuiFocus() != nullptr && root->GetGuiFocus() != m_sceneView)
-		|| (!IsSceneNavigationActive() && !IsSceneHovered());
+		   || (!IsSceneNavigationActive() && !IsSceneHovered());
 }
 
 void EditorUI::FinishInput(EditorUIContext& context)
@@ -57,8 +102,8 @@ void EditorUI::Warning(std::string const& title, std::string const& message)
 	{
 		EditorUIContext context;
 		context.m_rootControl = GetRootControl();
-		context.m_sceneTree = m_owner->GetSceneTree();
-		context.m_editorUI = this;
+		context.m_sceneTree   = m_owner->GetSceneTree();
+		context.m_editorUI    = this;
 		m_warningPopup.Render(context);
 	}
 }
@@ -66,7 +111,7 @@ void EditorUI::Warning(std::string const& title, std::string const& message)
 void EditorUI::SetViewportRect(Vector2 origin, Vector2 dims)
 {
 	m_viewportOrigin = origin;
-	m_viewportDims = dims;
+	m_viewportDims   = dims;
 }
 
 Vector2 EditorUI::ToViewportPos(Vector2 position) const
@@ -83,7 +128,8 @@ bool EditorUI::IsSceneHovered() const
 
 	Vector2 const position(g_engine->m_inputSystem->GetCursorClientPosition());
 	return m_sceneView->GetViewport()->GetGuiPopup() == nullptr && !m_sceneView->GetViewport()->IsGuiDragging()
-		&& m_sceneView->IsVisibleInHierarchy() && m_sceneView->IsPointInside(position - m_sceneView->GetGlobalPosition());
+		   && m_sceneView->IsVisibleInHierarchy()
+		   && m_sceneView->IsPointInside(position - m_sceneView->GetGlobalPosition());
 }
 
 bool EditorUI::IsSceneNavigationActive() const
@@ -107,7 +153,10 @@ void EditorUI::TogglePanel(EditorPanel* panel)
 	}
 	else if (!panel->IsOpen())
 	{
-		int const destination = (panel == m_inspectorPanel || panel == m_importPanel) ? 2 : panel == m_outputPanel ? 3 : panel == m_fileSystemPanel ? 1 : 0;
+		int const destination = panel == m_inspectorPanel    ? 2
+								: panel == m_outputPanel     ? 3
+								: panel == m_fileSystemPanel ? 1
+															 : 0;
 		panel->Open();
 		m_dockSlots[destination]->AddPage(panel->GetTitle(), panel);
 	}

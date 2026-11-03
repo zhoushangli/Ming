@@ -45,6 +45,11 @@ public:
 	Color         GetCurrentColor() const;
 	bool          IsScreenObject() const;
 
+private:
+	void UploadVertices(Renderer& renderer, std::vector<Vertex> const& vertices);
+	bool UsesUniformColor() const;
+
+public:
 	DebugObjectType type = DebugObjectType::WORLD_SPHERE;
 	DebugRenderMode mode = DebugRenderMode::USE_DEPTH;
 
@@ -70,9 +75,6 @@ public:
 	VertexBuffer*       vertexBuffer = nullptr;
 
 private:
-	void UploadVertices(Renderer& renderer, std::vector<Vertex> const& vertices);
-	bool UsesUniformColor() const;
-
 	GPUTexture*         m_texture = nullptr;
 	Ref<ShaderResource> m_shaderResource;
 };

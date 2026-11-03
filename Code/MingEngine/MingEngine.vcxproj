@@ -166,6 +166,7 @@
     <ClCompile Include="Editor\UI\Popup\CreateNodePopup.cpp" />
     <ClCompile Include="Editor\UI\Popup\CreateFolderPopup.cpp" />
     <ClCompile Include="Editor\UI\Popup\CreateScenePopup.cpp" />
+    <ClCompile Include="Editor\UI\Popup\SceneFilePopup.cpp" />
     <ClCompile Include="Editor\UI\Popup\DeleteEntryPopup.cpp" />
     <ClCompile Include="Editor\UI\Popup\EditorPopupUtils.cpp" />
     <ClCompile Include="Editor\UI\Popup\ProjectSettingsPopup.cpp" />
@@ -357,6 +358,7 @@
     <ClInclude Include="Editor\UI\Popup\CreateNodePopup.hpp" />
     <ClInclude Include="Editor\UI\Popup\CreateFolderPopup.hpp" />
     <ClInclude Include="Editor\UI\Popup\CreateScenePopup.hpp" />
+    <ClInclude Include="Editor\UI\Popup\SceneFilePopup.hpp" />
     <ClInclude Include="Editor\UI\Popup\DeleteEntryPopup.hpp" />
     <ClInclude Include="Editor\UI\Popup\EditorPopupUtils.hpp" />
     <ClInclude Include="Editor\UI\Popup\ProjectSettingsPopup.hpp" />

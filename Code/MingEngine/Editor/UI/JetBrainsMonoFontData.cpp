@@ -4,7 +4,6 @@
 
 #include "MingEngine/Editor/UI/JetBrainsMonoFont.cpp"
 
-
 namespace JetBrainsMonoFont
 {
 unsigned char const* GetData()
@@ -21,8 +20,8 @@ Ref<FontResource> Create()
 	auto font = CreateRef<FontResource>();
 	if (g_engine != nullptr && g_engine->m_textServer != nullptr)
 	{
-		font->SetFontRID(g_engine->m_textServer->CreateFont(
-			std::vector<uint8_t>(GetData(), GetData() + GetSize()), true));
+		font->SetFontRID(
+			g_engine->m_textServer->CreateFont(std::vector<uint8_t>(GetData(), GetData() + GetSize()), true));
 	}
 
 	return font;

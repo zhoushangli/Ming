@@ -7,6 +7,7 @@
 enum class CursorShape
 {
 	Arrow,
+	IBeam,
 	ResizeHorizontal,
 	ResizeVertical
 };

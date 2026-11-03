@@ -3,6 +3,7 @@
 #include "MingEngine/Core/Object/ObjectID.hpp"
 #include "MingEngine/Core/Object/Variant.hpp"
 
+#include "MingEngine/Core/Object/Resource.hpp"
 #include <map>
 #include <string>
 #include <vector>
@@ -12,9 +13,10 @@ class EditorUndoRedo
 private:
 	struct Argument
 	{
-		Variant  m_value;
-		ObjectID m_objectID = ObjectID::Invalid;
-		bool     m_isObject = false;
+		Variant       m_value;
+		Ref<Resource> m_resource;
+		ObjectID      m_objectID = ObjectID::Invalid;
+		bool          m_isObject = false;
 	};
 
 	struct Operation

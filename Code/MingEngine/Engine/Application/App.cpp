@@ -52,10 +52,19 @@
 
 #include <windows.h>
 #include <commdlg.h>
+#include <shobjidl.h>
+#include <fstream>
+#include <cwctype>
+#include "ThirdParty/nlohmann/json.hpp"
+#include "MingEngine/Scene/GUI/Tree.hpp"
+#include "MingEngine/Scene/GUI/ScrollContainer.hpp"
+#include "MingEngine/Editor/UI/Popup/EditorPopupUtils.hpp"
 #include <memory>
 #include <string>
 
 #pragma comment(lib, "Comdlg32.lib")
+#pragma comment(lib, "Ole32.lib")
+#pragma comment(lib, "Shell32.lib")
 
 App* g_app = nullptr;
 
@@ -89,7 +98,21 @@ void App::Startup()
 	RegisterAllTypes();
 
 	g_engine->Startup();
-
+	if (m_runConfig.mode != MingRunMode::ProjectManager)
+	{
+		std::string error;
+		if (!ProjectSettings::Load(m_runConfig.projectPath, error))
+		{
+			ERR_PRINT(error);
+			if (m_runConfig.mode == MingRunMode::Editor)
+			{
+				MessageBoxA(nullptr, error.c_str(), "MingEngine - Project Error", MB_OK | MB_ICONERROR);
+			}
+			m_exitCode   = 1;
+			m_shouldQuit = true;
+			return;
+		}
+	}
 	if (m_runConfig.mode == MingRunMode::Editor)
 	{
 		StartupEditor();
@@ -102,7 +125,8 @@ void App::Startup()
 	{
 		GLFWwindow* window = g_engine->m_windowSystem->GetGLFWWindow();
 		glfwRestoreWindow(window);
-		glfwSetWindowSize(window, 720, 360);
+		glfwSetWindowSizeLimits(window, 900, 600, GLFW_DONT_CARE, GLFW_DONT_CARE);
+		glfwSetWindowSize(window, 1000, 700);
 	}
 
 	m_quitEventID = RegisterEvent("Quit", App::OnQuit);
@@ -110,6 +134,17 @@ void App::Startup()
 
 void App::Shutdown()
 {
+	StopGame();
+	if (m_gameProcess != nullptr)
+	{
+		if (WaitForSingleObject(m_gameProcess, 2000) == WAIT_TIMEOUT)
+		{
+			TerminateProcess(m_gameProcess, 0);
+			WaitForSingleObject(m_gameProcess, 1000);
+		}
+		CloseHandle(m_gameProcess);
+		m_gameProcess = nullptr;
+	}
 	ShutdownScene();
 
 	if (g_engine != nullptr && g_engine->m_eventSystem != nullptr)
@@ -118,6 +153,7 @@ void App::Shutdown()
 		m_quitEventID = 0;
 	}
 
+	ProjectSettings::Reset();
 	ThemeDatabase::Shutdown();
 
 	ResourceLoader::Shutdown();
@@ -139,10 +175,11 @@ void App::RunMainLoop()
 
 void App::Update(float deltaSeconds)
 {
+	PollGame();
 	if (m_runConfig.mode == MingRunMode::ProjectManager)
 	{
 		DrawProjectManager();
-        m_sceneTree->UpdateScene(deltaSeconds);
+		m_sceneTree->UpdateScene(deltaSeconds);
 		return;
 	}
 
@@ -161,12 +198,6 @@ void App::Update(float deltaSeconds)
 	float const sceneDeltaSeconds = m_clock != nullptr ? static_cast<float>(m_clock->GetDeltaSeconds()) : deltaSeconds;
 	if (m_sceneTree != nullptr)
 	{
-		if (m_uiResizeSizeLabel != nullptr)
-		{
-			IntVec2 const size = static_cast<Viewport*>(m_sceneTree->GetRoot())->GetOutputResolution();
-			m_uiResizeSizeLabel->SetText(Stringf("Viewport: %d x %d", size.x, size.y).c_str());
-		}
-
 		m_sceneTree->UpdateScene(sceneDeltaSeconds);
 	}
 }
@@ -224,19 +255,24 @@ void App::Quit()
 		editor->m_editorUI->FinishNativeEditing();
 	}
 
-	if (EditorNode* editor = EditorNode::Get();
-		editor != nullptr && editor->IsSceneDirty())
+	if (EditorNode* editor = EditorNode::Get(); editor != nullptr && editor->IsSceneDirty())
 	{
 		glfwSetWindowShouldClose(g_engine->m_windowSystem->GetGLFWWindow(), GLFW_FALSE);
 		editor->RequestQuit();
 		return;
 	}
 
+	StopGame();
 	m_shouldQuit = true;
 }
 
 bool App::LaunchGame()
 {
+	PollGame();
+	if (IsGameRunning())
+	{
+		return false;
+	}
 	// 1) Get the current executable path
 	std::wstring executablePath(32768, L'\0');
 
@@ -298,7 +334,10 @@ bool App::LaunchGame()
 
 	// 5) Release the launch-only process handles
 	CloseHandle(processInfo.hThread);
-	CloseHandle(processInfo.hProcess);
+	m_gameProcess      = processInfo.hProcess;
+	m_gameProcessID    = processInfo.dwProcessId;
+	m_gameStopDeadline = 0;
+	INFO_PRINT("Game process started.");
 	return true;
 }
 
@@ -326,53 +365,425 @@ void App::RestartImmediately()
 	}
 }
 
+namespace
+{
+std::filesystem::path SelectProjectFolder(HWND owner)
+{
+	HRESULT const         initialized = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
+	IFileOpenDialog*      dialog      = nullptr;
+	std::filesystem::path result;
+	if (SUCCEEDED(CoCreateInstance(CLSID_FileOpenDialog, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&dialog))))
+	{
+		dialog->SetOptions(FOS_PICKFOLDERS | FOS_FORCEFILESYSTEM | FOS_PATHMUSTEXIST | FOS_NOCHANGEDIR);
+		if (SUCCEEDED(dialog->Show(owner)))
+		{
+			IShellItem* item = nullptr;
+			if (SUCCEEDED(dialog->GetResult(&item)))
+			{
+				PWSTR path = nullptr;
+				if (SUCCEEDED(item->GetDisplayName(SIGDN_FILESYSPATH, &path)))
+				{
+					result = path;
+					CoTaskMemFree(path);
+				}
+				item->Release();
+			}
+		}
+		dialog->Release();
+	}
+	if (SUCCEEDED(initialized))
+	{
+		CoUninitialize();
+	}
+	return result;
+}
+
+std::wstring ProjectKey(std::filesystem::path const& directory)
+{
+	std::error_code error;
+	auto            normalized = std::filesystem::weakly_canonical(directory, error);
+	std::wstring    key        = (error ? directory.lexically_normal() : normalized).wstring();
+	std::transform(
+		key.begin(),
+		key.end(),
+		key.begin(),
+		[](wchar_t value)
+		{
+			return static_cast<wchar_t>(std::towlower(value));
+		});
+	return key;
+}
+}
+
 void App::DrawProjectManager()
 {
 	if (m_sceneTree == nullptr)
 	{
-		m_sceneTree      = MemNew<SceneTree>();
-		auto* background = MemNew<ColorRect>();
+		m_sceneTree          = MemNew<SceneTree>();
+		auto* background     = MemNew<ColorRect>();
+		m_projectManagerRoot = background;
 		background->SetName("ProjectManager");
-		background->SetColor(Color(25, 29, 37));
 		background->SetClipContents(true);
 		m_sceneTree->GetRoot()->AddNode(background);
-		auto* content = MemNew<VBoxContainer>();
-		content->SetPosition(Vector2(28.f, 28.f));
-		content->SetSeparation(20.f);
+		Ref<Theme> theme =
+			EditorThemeManager::CreateScaledTheme(EditorThemeManager::CreateTheme(), EditorThemeManager::LoadScale());
+		ThemeDatabase::SetThemeContext(background, { theme });
+		background->SetColor(theme->GetColor("background", "Editor"));
+		g_engine->m_windowSystem->SetTitleBarColors(
+			theme->GetColor("background", "Editor"),
+			theme->GetColor("font_color", "Control"));
+		auto*       content = MemNew<VBoxContainer>();
+		float const padding = static_cast<float>(background->GetThemeConstant("content_padding", "Editor"));
+		content->SetPosition(Vector2(padding, padding));
+		content->AddThemeChangedCallback(
+			[control = content]()
+			{
+				control->SetSeparation(static_cast<float>(control->GetThemeConstant("content_padding", "Editor")));
+			});
 		background->AddNode(content);
-		auto* title = MemNew<Label>();
-		title->SetText("MingEngine - Project Manager");
-		title->SetFontSize(24);
-		content->AddNode(title);
-		auto* hint = MemNew<Label>();
-		hint->SetText("Select project.ming to open a project.");
-		content->AddNode(hint);
-		auto* open = MemNew<Button>();
-		open->SetText("Open Project...");
-		open->SetPressedCallback(
+		EditorPopupUtils::AddLabel(content, "Ming - Project Manager", "EditorInspectorTitle");
+		auto* tools = MemNew<HBoxContainer>();
+		tools->AddThemeChangedCallback(
+			[control = tools]()
+			{
+				control->SetSeparation(static_cast<float>(control->GetThemeConstant("content_padding", "Editor")));
+			});
+		content->AddNode(tools);
+		EditorPopupUtils::AddButton(
+			tools,
+			"New Project...",
+			[this]()
+			{
+				NewProject();
+			});
+		EditorPopupUtils::AddButton(
+			tools,
+			"Import / Open...",
 			[this]()
 			{
 				OpenProject();
 			});
-		content->AddNode(open);
-		m_projectManagerErrorLabel = MemNew<Label>();
-		content->AddNode(m_projectManagerErrorLabel);
-		ThemeDatabase::SetThemeContext(background, { EditorThemeManager::CreateTheme() });
+		m_projectSearch = MemNew<LineEdit>();
+		m_projectSearch->SetPlaceholder("Filter Projects");
+		m_projectSearch->SetMinimumCharacterWidth(1);
+		m_projectSearch->SetHorizontalSizeFlags(Control::Size_ExpandFill);
+		tools->AddNode(m_projectSearch);
+		m_projectSearch->SetTextChangedCallback(
+			[this](String const&)
+			{
+				m_recentDirty = true;
+			});
+		auto* scroll = MemNew<ScrollContainer>();
+		scroll->SetVerticalSizeFlags(Control::Size_ExpandFill);
+		content->AddNode(scroll);
+		m_recentTree = MemNew<Tree>();
+		m_recentTree->SetClipText(true);
+		scroll->AddNode(m_recentTree);
+		m_recentTree->SetActivatedCallback(
+			[this](uint64_t key)
+			{
+				if (key > 0 && key <= m_recentAvailable.size() && m_recentAvailable[key - 1])
+				{
+					OpenProject(m_recentProjects[key - 1]);
+				}
+			});
+		m_projectManagerErrorLabel = EditorPopupUtils::AddLabel(content, "", "EditorErrorLabel");
+		auto* actions              = EditorPopupUtils::AddActions(content);
+		m_editProjectButton        = EditorPopupUtils::AddButton(
+			actions,
+			"Edit",
+			[this]()
+			{
+				uint64_t const key = m_recentTree->GetSelected();
+				if (key > 0 && key <= m_recentAvailable.size() && m_recentAvailable[key - 1])
+				{
+					OpenProject(m_recentProjects[key - 1]);
+				}
+			});
+		m_removeProjectButton = EditorPopupUtils::AddButton(
+			actions,
+			"Remove",
+			[this]()
+			{
+				uint64_t const key = m_recentTree->GetSelected();
+				if (key > 0 && key <= m_recentProjects.size())
+				{
+					m_recentProjects.erase(m_recentProjects.begin() + key - 1);
+					if (!SaveRecentProjects(m_recentProjects))
+					{
+						m_projectManagerError = "Could not save recent projects.";
+					}
+					m_recentDirty = true;
+				}
+			});
+		m_recentProjects = LoadRecentProjects();
 	}
 
-	auto*         background = static_cast<Control*>(m_sceneTree->GetRoot()->GetChildren()[0]);
 	Vector2 const size(static_cast<Viewport*>(m_sceneTree->GetRoot())->GetOutputResolution());
-	background->UpdateSize(size);
-	static_cast<Control*>(background->GetChildren()[0])
-		->UpdateSize(Vector2(std::max(1.f, size.x - 56.f), std::max(1.f, size.y - 56.f)));
+	m_projectManagerRoot->UpdateSize(size);
+	auto*         content = static_cast<Control*>(m_projectManagerRoot->GetChildren().front());
+	Vector2 const padding = content->GetLocalPosition();
+	content->UpdateSize(Vector2(std::max(1.f, size.x - padding.x * 2.f), std::max(1.f, size.y - padding.y * 2.f)));
+	if (m_recentDirty)
+	{
+		RefreshRecentProjects();
+	}
+	uint64_t const selected     = m_recentTree->GetSelected();
+	bool const     hasSelection = selected > 0 && selected <= m_recentAvailable.size();
+	m_editProjectButton->SetDisabled(!hasSelection || !m_recentAvailable[selected - 1]);
+	m_removeProjectButton->SetDisabled(!hasSelection);
 	m_projectManagerErrorLabel->SetText(m_projectManagerError);
+	if (m_createProjectPopup != nullptr && m_createProjectPopup->IsVisible())
+	{
+		EditorPopupUtils::Layout(
+			m_createProjectPopup,
+			Vector2(
+				static_cast<float>(content->GetThemeConstant("project_popup_width", "Editor")),
+				static_cast<float>(content->GetThemeConstant("create_popup_height", "Editor"))));
+	}
+}
+
+void App::RefreshRecentProjects()
+{
+	m_recentAvailable.clear();
+	std::vector<Tree::Item> items;
+	for (size_t i = 0; i < m_recentProjects.size(); ++i)
+	{
+		std::string error;
+		bool const  valid = ProjectSettings::Read(m_recentProjects[i], error).IsValid();
+		m_recentAvailable.push_back(valid);
+		std::string const text   = m_recentProjects[i].filename().u8string() + "   " + m_recentProjects[i].u8string()
+								   + (valid ? "" : "  [Unavailable]");
+		std::wstring      search = m_projectSearch->GetText().IsEmpty()
+									   ? std::wstring()
+									   : std::filesystem::u8path(m_projectSearch->GetText().ToUtf8()).wstring();
+		std::transform(
+			search.begin(),
+			search.end(),
+			search.begin(),
+			[](wchar_t c)
+			{
+				return static_cast<wchar_t>(std::towlower(c));
+			});
+		items.push_back(
+			{ i + 1,
+			  0,
+			  text,
+			  search.empty() || ProjectKey(m_recentProjects[i]).find(search) != std::wstring::npos,
+			  false,
+			  m_projectManagerRoot->GetThemeIcon("Folder", "EditorIcons") });
+		items.back().m_dimmed = !valid;
+	}
+	m_recentTree->SetItems(std::move(items));
+	m_recentDirty = false;
+}
+
+void App::NewProject()
+{
+	if (m_createProjectPopup == nullptr)
+	{
+		VBoxContainer* content = nullptr;
+		m_createProjectPopup   = EditorPopupUtils::Create(m_projectManagerRoot, "Create Empty Project", content);
+		EditorPopupUtils::AddLabel(content, "Project Name (folder name)");
+		m_projectName = MemNew<LineEdit>();
+		m_projectName->SetMinimumCharacterWidth(1);
+		content->AddNode(m_projectName);
+		EditorPopupUtils::AddLabel(content, "Parent Directory");
+		m_projectParent = MemNew<LineEdit>();
+		m_projectParent->SetMinimumCharacterWidth(1);
+		content->AddNode(m_projectParent);
+		EditorPopupUtils::AddButton(
+			content,
+			"Browse...",
+			[this]()
+			{
+				auto directory = SelectProjectFolder(static_cast<HWND>(g_engine->m_windowSystem->GetHwnd()));
+				if (!directory.empty())
+				{
+					m_projectParent->SetText(directory.u8string());
+				}
+			});
+		m_createProjectError = EditorPopupUtils::AddLabel(content, "", "EditorErrorLabel");
+		auto* actions        = EditorPopupUtils::AddActions(content);
+		EditorPopupUtils::AddButton(
+			actions,
+			"Create & Edit",
+			[this]()
+			{
+				std::string const name = m_projectName->GetText().ToUtf8();
+				if (name.empty() || name == "." || name == ".."
+					|| name.find_first_of("<>:\"/\\|?*") != std::string::npos || name.front() == ' '
+					|| name.back() == ' ' || name.back() == '.')
+				{
+					m_createProjectError->SetText("Enter a valid project folder name.");
+					return;
+				}
+				auto directory =
+					std::filesystem::u8path(m_projectParent->GetText().ToUtf8()) / std::filesystem::u8path(name);
+				std::string error;
+				if (!CreateEmptyProject(directory, error))
+				{
+					m_createProjectError->SetText(error);
+					return;
+				}
+				m_createProjectPopup->Close();
+				OpenProject(directory);
+			});
+		EditorPopupUtils::AddButton(
+			actions,
+			"Cancel",
+			[this]()
+			{
+				m_createProjectPopup->Close();
+			});
+	}
+	m_createProjectError->SetText("");
+	EditorPopupUtils::Open(
+		m_createProjectPopup,
+		m_projectManagerRoot,
+		Vector2(
+			static_cast<float>(m_projectManagerRoot->GetThemeConstant("project_popup_width", "Editor")),
+			static_cast<float>(m_projectManagerRoot->GetThemeConstant("create_popup_height", "Editor"))));
+	m_projectName->GrabFocus();
+}
+
+bool App::CreateEmptyProject(std::filesystem::path const& directory, std::string& error)
+{
+	error.clear();
+	std::error_code code;
+	if (!directory.is_absolute() || directory.filename().empty())
+	{
+		error = "Choose an absolute project directory.";
+		return false;
+	}
+	bool const existed = std::filesystem::exists(directory, code);
+	if (code
+		|| (existed
+			&& (!std::filesystem::is_directory(directory, code) || !std::filesystem::is_empty(directory, code))))
+	{
+		error = "The project directory must be empty.";
+		return false;
+	}
+	if (!existed && !std::filesystem::create_directory(directory, code))
+	{
+		error = "Could not create the project directory.";
+		return false;
+	}
+	HANDLE file = CreateFileW(
+		(directory / L"project.ming").c_str(),
+		GENERIC_WRITE,
+		0,
+		nullptr,
+		CREATE_NEW,
+		FILE_ATTRIBUTE_NORMAL,
+		nullptr);
+	bool success = false;
+	if (file != INVALID_HANDLE_VALUE)
+	{
+		std::string const text    = R"({"type":"ProjectSettings","version":1,"start_scene_path":""})";
+		DWORD             written = 0;
+		success =
+			WriteFile(file, text.data(), static_cast<DWORD>(text.size()), &written, nullptr) && written == text.size();
+		CloseHandle(file);
+		if (!success)
+		{
+			std::filesystem::remove(directory / L"project.ming", code);
+		}
+	}
+	if (!success)
+	{
+		error = "Could not write project.ming.";
+		if (!existed && std::filesystem::is_empty(directory, code))
+		{
+			std::filesystem::remove(directory, code);
+		}
+	}
+	return success;
+}
+
+std::vector<std::filesystem::path> App::LoadRecentProjects()
+{
+	std::vector<std::filesystem::path> result;
+	std::ifstream                      input(EditorThemeManager::GetSettingsDirectory() / L"RecentProjects.json");
+	if (!input)
+	{
+		return result;
+	}
+	auto paths = nlohmann::json::parse(input, nullptr, false);
+	if (paths.is_array())
+	{
+		for (auto const& path : paths)
+		{
+			if (path.is_string())
+			{
+				auto directory = std::filesystem::u8path(path.get<std::string>());
+				if (directory.is_absolute()
+					&& std::none_of(
+						result.begin(),
+						result.end(),
+						[&](auto const& other)
+						{
+							return ProjectKey(other) == ProjectKey(directory);
+						}))
+				{
+					result.push_back(directory);
+				}
+			}
+			if (result.size() == 10)
+			{
+				break;
+			}
+		}
+	}
+	return result;
+}
+
+bool App::SaveRecentProjects(std::vector<std::filesystem::path> const& projects)
+{
+	std::error_code error;
+	std::filesystem::create_directories(EditorThemeManager::GetSettingsDirectory(), error);
+	if (error)
+	{
+		return false;
+	}
+	auto paths = nlohmann::json::array();
+	for (auto const& project : projects)
+	{
+		paths.push_back(project.u8string());
+		if (paths.size() == 10)
+		{
+			break;
+		}
+	}
+	std::ofstream output(EditorThemeManager::GetSettingsDirectory() / L"RecentProjects.json");
+	output << paths.dump(2);
+	output.flush();
+	return output.good();
+}
+
+void App::RememberProject(std::filesystem::path const& directory)
+{
+	auto               projects = LoadRecentProjects();
+	std::wstring const key      = ProjectKey(directory);
+	projects.erase(
+		std::remove_if(
+			projects.begin(),
+			projects.end(),
+			[&](auto const& other)
+			{
+				return ProjectKey(other) == key;
+			}),
+		projects.end());
+	projects.insert(projects.begin(), directory);
+	if (!SaveRecentProjects(projects))
+	{
+		WARN_PRINT("Could not save recent projects.");
+	}
 }
 
 void App::OpenProject()
 {
 	m_projectManagerError.clear();
-
-	// 1) Select an existing project settings file without changing the working directory
 	std::wstring  selectedPath(32768, L'\0');
 	OPENFILENAMEW dialog{};
 	dialog.lStructSize = sizeof(dialog);
@@ -380,64 +791,64 @@ void App::OpenProject()
 	dialog.lpstrFilter = L"Ming project (project.ming)\0*.ming\0\0";
 	dialog.lpstrFile   = selectedPath.data();
 	dialog.nMaxFile    = static_cast<DWORD>(selectedPath.size());
-	dialog.lpstrTitle  = L"Open Ming Project";
 	dialog.Flags       = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_NOCHANGEDIR | OFN_EXPLORER;
-	if (!GetOpenFileNameW(&dialog))
+	if (GetOpenFileNameW(&dialog))
 	{
-		DWORD const error = CommDlgExtendedError();
-		if (error != 0)
+		std::filesystem::path settings(selectedPath.c_str());
+		if (settings.filename() == L"project.ming")
 		{
-			m_projectManagerError = "Failed to open the file dialog. Windows error: " + std::to_string(error);
+			OpenProject(settings.parent_path());
 		}
-
-		return;
+		else
+		{
+			m_projectManagerError = "Select project.ming.";
+		}
 	}
-
-	// 2) Validate the selected file before launching the editor
-	std::filesystem::path const settingsPath(selectedPath.c_str());
-	std::error_code             error;
-	if (settingsPath.filename() != L"project.ming" || !std::filesystem::is_regular_file(settingsPath, error) || error)
+	else if (CommDlgExtendedError() != 0)
 	{
-		m_projectManagerError = "Please select an existing project.ming file.";
-		return;
+		m_projectManagerError = "Could not open the project file dialog.";
 	}
+}
 
-	std::wstring executablePath(32768, L'\0');
-	DWORD const  length = GetModuleFileNameW(nullptr, executablePath.data(), static_cast<DWORD>(executablePath.size()));
-	if (length == 0 || length >= executablePath.size())
+bool App::OpenProject(std::filesystem::path const& directory)
+{
+	if (!ProjectSettings::Read(directory, m_projectManagerError).IsValid())
 	{
-		m_projectManagerError = "Failed to get the executable path.";
-		return;
+		return false;
 	}
-
-	executablePath.resize(length);
-
-	// 3) Launch the editor with an absolute project path and close the manager only on success
-	std::wstring const projectArgument = (settingsPath.parent_path() / L".").wstring();
-	std::wstring       commandLine     = L"\"" + executablePath + L"\" --editor --project \"" + projectArgument + L"\"";
-	std::wstring const workingDirectory = std::filesystem::path(executablePath).parent_path().wstring();
-	STARTUPINFOW       startupInfo{};
-	startupInfo.cb = sizeof(startupInfo);
-	PROCESS_INFORMATION processInfo{};
+	std::wstring executable(32768, L'\0');
+	DWORD const  length = GetModuleFileNameW(nullptr, executable.data(), static_cast<DWORD>(executable.size()));
+	if (length == 0 || length >= executable.size())
+	{
+		m_projectManagerError = "Could not find the engine executable.";
+		return false;
+	}
+	executable.resize(length);
+	std::wstring command = L"\"" + executable + L"\" --editor --project \"" + (directory / L".").wstring() + L"\"";
+	std::wstring working = std::filesystem::path(executable).parent_path().wstring();
+	STARTUPINFOW startup{};
+	startup.cb = sizeof(startup);
+	PROCESS_INFORMATION process{};
 	if (!CreateProcessW(
-			executablePath.c_str(),
-			commandLine.data(),
+			executable.c_str(),
+			command.data(),
 			nullptr,
 			nullptr,
 			FALSE,
 			0,
 			nullptr,
-			workingDirectory.c_str(),
-			&startupInfo,
-			&processInfo))
+			working.c_str(),
+			&startup,
+			&process))
 	{
-		m_projectManagerError = "Failed to launch the editor. Windows error: " + std::to_string(GetLastError());
-		return;
+		m_projectManagerError = "Could not launch the editor. Windows error: " + std::to_string(GetLastError());
+		return false;
 	}
-
-	CloseHandle(processInfo.hThread);
-	CloseHandle(processInfo.hProcess);
+	CloseHandle(process.hThread);
+	CloseHandle(process.hProcess);
+	RememberProject(directory);
 	Quit();
+	return true;
 }
 
 void App::StartupEditor()
@@ -446,472 +857,56 @@ void App::StartupEditor()
 	m_clock     = new Clock();
 	m_sceneTree = MemNew<SceneTree>();
 
-	auto editorNode = new EditorNode();
+	auto editorNode = new EditorNode(EditorThemeManager::LoadScale());
 	editorNode->SetName("EditorNode");
 	m_sceneTree->GetRoot()->AddNode(editorNode);
+	RememberProject(m_runConfig.projectPath);
 	VirtualPath const& startScenePath = ProjectSettings::Get()->m_startScenePath;
 	if (startScenePath.IsValid())
 	{
-		editorNode->LoadScene(startScenePath);
+		if (!editorNode->LoadScene(startScenePath))
+		{
+			editorNode->m_editorUI->Warning("Open Scene Failed", startScenePath.GetString());
+		}
 	}
 }
 
 void App::StartupGame()
 {
-	m_clock     = new Clock();
-	m_sceneTree = MemNew<SceneTree>();
-
-	// 1) Load the font and build the visual test helpers
-	Ref<FontResource> font = ResourceLoader::Load("res://fusion-pixel-12px-proportional-zh_hans.ttf");
-	if (!font.IsValid())
+	m_clock                = new Clock();
+	m_sceneTree            = MemNew<SceneTree>();
+	VirtualPath const path = ProjectSettings::Get()->m_startScenePath;
+	Ref<PackedScene>  scene;
+	if (path.IsValid())
 	{
-		font = FontResource::CreateDefault();
-		WARN_PRINT("UI layout test is using the embedded fallback font.");
+		scene = Ref<PackedScene>(ResourceLoader::LoadUncached(path));
 	}
-
-	auto addRect = [](Node* parent, char const* name, Color const& color, Vector2 const& minimum)
+	Node* root = scene.IsValid() ? scene->Instantiate() : nullptr;
+	if (root == nullptr)
 	{
-		ColorRect* rect = MemNew<ColorRect>();
-		rect->SetName(name);
-		rect->SetColor(color);
-		rect->SetCustomMinimumSize(minimum);
-		parent->AddNode(rect);
-		return rect;
-	};
-
-	auto addLabel = [&font](Node* parent, char const* name, char const* text, int fontSize)
-	{
-		Label* label = MemNew<Label>();
-		label->SetName(name);
-		label->SetFont(font);
-		label->SetFontSize(fontSize);
-		label->SetText(text);
-		parent->AddNode(label);
-		return label;
-	};
-
-	// 2) Build three nested margins that follow the root Viewport in both axes
-	MarginContainer* example = MemNew<MarginContainer>();
-	example->SetName("UIResizeTest");
-	example->SetMargins(24.0f, 24.0f, 24.0f, 24.0f);
-	addRect(example, "OuterBackground", Color(40, 80, 125), Vector2::Zero);
-
-	MarginContainer* nested = MemNew<MarginContainer>();
-	nested->SetName("MiddleMargin");
-	nested->SetMargins(16.0f, 16.0f, 16.0f, 16.0f);
-	example->AddNode(nested);
-	addRect(nested, "MiddleBackground", Color(35, 125, 110), Vector2::Zero);
-
-	MarginContainer* content = MemNew<MarginContainer>();
-	content->SetName("InnerMargin");
-	content->SetMargins(16.0f, 16.0f, 16.0f, 16.0f);
-	nested->AddNode(content);
-	addRect(content, "InnerBackground", Color(25, 30, 40), Vector2::Zero);
-
-	VBoxContainer* column = MemNew<VBoxContainer>();
-	column->SetName("Content");
-	column->SetSeparation(12.0f);
-	content->AddNode(column);
-
-	// 3) Build the layout comparison header
-	Label* title = addLabel(column, "Title", "Ming UI Size Flags Test", 28);
-	title->SetHorizontalAlignment(HorizontalAlignment::Center);
-	Label* hint = addLabel(column, "Hint", "Resize window. Dark areas show allocated rectangles.", 20);
-	hint->SetHorizontalAlignment(HorizontalAlignment::Center);
-	m_uiResizeSizeLabel = addLabel(column, "ViewportSize", "Viewport", 20);
-	m_uiResizeSizeLabel->SetHorizontalAlignment(HorizontalAlignment::Center);
-
-	// 4) Verify button activation, disabling, and independent toggles
-	HBoxContainer* buttons = MemNew<HBoxContainer>();
-	buttons->SetName("ButtonInteractionTest");
-	buttons->SetSeparation(12.f);
-	column->AddNode(buttons);
-
-	auto addButton = [&font, buttons](char const* name, bool toggle)
-	{
-		Button* button = MemNew<Button>();
-		button->SetName(name);
-		button->SetFont(font);
-		button->SetFontSize(20);
-		button->SetText(name);
-		button->SetToggleMode(toggle);
-		buttons->AddNode(button);
-		return button;
-	};
-
-	Button*        regenerate   = addButton("Regenerate", false);
-	Button*        disable      = addButton("Disable Regenerate", true);
-	Button*        modeA        = addButton("Mode A", true);
-	Button*        modeB        = addButton("Mode B", true);
-	Label*         status       = addLabel(column, "ButtonStatus", "Regenerate: 0 | Mode A: off | Mode B: off", 18);
-	ObjectID const statusID     = status->GetObjectID();
-	ObjectID const regenerateID = regenerate->GetObjectID();
-	ObjectID const modeAID      = modeA->GetObjectID();
-	ObjectID const modeBID      = modeB->GetObjectID();
-	auto           updateStatus = [this, statusID, modeAID, modeBID]()
-	{
-		Label*  label = ObjectDatabase::GetInstance<Label>(statusID);
-		Button* a     = ObjectDatabase::GetInstance<Button>(modeAID);
-		Button* b     = ObjectDatabase::GetInstance<Button>(modeBID);
-		if (label != nullptr && a != nullptr && b != nullptr)
-		{
-			label->SetText(Stringf(
-							   "Regenerate: %d | Mode A: %s | Mode B: %s",
-							   m_uiRegenerateCount,
-							   a->IsPressed() ? "on" : "off",
-							   b->IsPressed() ? "on" : "off")
-							   .c_str());
-		}
-	};
-
-	regenerate->SetPressedCallback(
-		[this, updateStatus]()
-		{
-			++m_uiRegenerateCount;
-			updateStatus();
-		});
-	disable->SetToggledCallback(
-		[regenerateID](bool selected)
-		{
-			if (Button* button = ObjectDatabase::GetInstance<Button>(regenerateID))
-			{
-				button->SetDisabled(selected);
-			}
-		});
-	modeA->SetToggledCallback(
-		[updateStatus](bool)
-		{
-			updateStatus();
-		});
-	modeB->SetToggledCallback(
-		[updateStatus](bool)
-		{
-			updateStatus();
-		});
-
-	// 5) Verify single-line editing, selection, scrolling, and state changes
-	addLabel(column, "LineEditHint", "LineEdit: Enter applies, Esc restores, Tab/click applies nonempty text", 16);
-	HBoxContainer* editRow = MemNew<HBoxContainer>();
-	editRow->SetName("LineEditInteractionTest");
-	editRow->SetSeparation(12.f);
-	column->AddNode(editRow);
-
-	LineEdit* firstEdit = MemNew<LineEdit>();
-	firstEdit->SetName("NameInput");
-	firstEdit->SetFont(font);
-	firstEdit->SetFontSize(20);
-	firstEdit->SetPlaceholder(U"Enter a name / \u8f93\u5165\u540d\u79f0");
-	firstEdit->SetText("Player");
-	firstEdit->SetHorizontalSizeFlags(Control::Size_ExpandFill);
-	editRow->AddNode(firstEdit);
-
-	String const longName   = U"Long name / \u957f\u540d\u79f0: ABCDEFGHIJKLMNOPQRSTUVWXYZ 0123456789 -- "
-							  U"ABCDEFGHIJKLMNOPQRSTUVWXYZ 0123456789 -- ABCDEFGHIJKLMNOPQRSTUVWXYZ 0123456789 -- "
-							  U"ABCDEFGHIJKLMNOPQRSTUVWXYZ 0123456789 -- scroll to the end";
-	LineEdit*    secondEdit = MemNew<LineEdit>();
-	secondEdit->SetName("LongNameInput");
-	secondEdit->SetFont(font);
-	secondEdit->SetFontSize(20);
-	secondEdit->SetText(longName);
-	secondEdit->SetHorizontalSizeFlags(Control::Size_ExpandFill);
-	editRow->AddNode(secondEdit);
-
-	// 1) Keep each field's snapshot and committed values outside LineEdit
-	struct EditExample
-	{
-		ObjectID    m_editID;
-		String      m_values[2];
-		String      m_original;
-		int         m_target      = 0;
-		int         m_starts      = 0;
-		int         m_ends        = 0;
-		int         m_writes      = 0;
-		char const* m_result      = "Ready";
-		bool        m_focusOnEnd  = false;
-		bool        m_removeOnEnd = false;
-	};
-
-	auto bindEdit = [&addLabel, column](LineEdit* edit, LineEdit* other, char const* name)
-	{
-		auto state              = std::make_shared<EditExample>();
-		state->m_editID         = edit->GetObjectID();
-		state->m_values[0]      = edit->GetText();
-		state->m_values[1]      = "Enemy";
-		state->m_original       = edit->GetText();
-		ObjectID const statusID = addLabel(column, name, "", 14)->GetObjectID();
-		ObjectID const otherID  = other->GetObjectID();
-		auto           update   = [state, statusID, name]()
-		{
-			if (Label* label = ObjectDatabase::GetInstance<Label>(statusID))
-			{
-				LineEdit*    field = ObjectDatabase::GetInstance<LineEdit>(state->m_editID);
-				String const draft = field != nullptr ? field->GetText() : String("<removed>");
-				label->SetText(Stringf(
-								   "%s[%d] before:%s draft:%s saved:%s | %s | start:%d end:%d writes:%d",
-								   name,
-								   state->m_target,
-								   state->m_original.Substr(0, 12).ToUtf8().c_str(),
-								   draft.Substr(0, 12).ToUtf8().c_str(),
-								   state->m_values[state->m_target].Substr(0, 12).ToUtf8().c_str(),
-								   state->m_result,
-								   state->m_starts,
-								   state->m_ends,
-								   state->m_writes)
-								   .c_str());
-			}
-		};
-		edit->SetEditingStartedCallback(
-			[state, update](String const& text)
-			{
-				state->m_original = text;
-				++state->m_starts;
-				state->m_result = "Editing";
-				update();
-			});
-		edit->SetTextChangedCallback(
-			[update](String const&)
-			{
-				update();
-			});
-		edit->SetEditingEndedCallback(
-			[state, update, otherID](String const& text, LineEdit::EditEndReason reason)
-			{
-				++state->m_ends;
-				bool const apply =
-					reason == LineEdit::EditEndReason::Submitted || reason == LineEdit::EditEndReason::FocusLost;
-				if (apply && !text.IsEmpty())
-				{
-					if (state->m_values[state->m_target] != text)
-					{
-						state->m_values[state->m_target] = text;
-						++state->m_writes;
-					}
-
-					state->m_result = reason == LineEdit::EditEndReason::Submitted ? "Submitted" : "FocusLost";
-				}
-				else
-				{
-					state->m_result = apply                                          ? "Invalid:empty"
-									  : reason == LineEdit::EditEndReason::Cancelled ? "Cancelled"
-																					 : "Interrupted";
-					if (LineEdit* field = ObjectDatabase::GetInstance<LineEdit>(state->m_editID))
-					{
-						field->SetText(state->m_original);
-					}
-				}
-
-				// 2) Exercise callbacks that change focus or remove their own field
-				if (state->m_focusOnEnd)
-				{
-					if (LineEdit* next = ObjectDatabase::GetInstance<LineEdit>(otherID))
-					{
-						next->GrabFocus();
-					}
-				}
-
-				if (state->m_removeOnEnd)
-				{
-					if (LineEdit* field = ObjectDatabase::GetInstance<LineEdit>(state->m_editID))
-					{
-						field->QueueFree();
-					}
-
-					state->m_editID = ObjectID::Invalid;
-				}
-
-				update();
-			});
-		update();
-		return std::make_pair(state, update);
-	};
-
-	auto           firstExample  = bindEdit(firstEdit, secondEdit, "First");
-	auto           secondExample = bindEdit(secondEdit, firstEdit, "Second");
-	ObjectID const editRowID     = editRow->GetObjectID();
-
-	// 3) Interrupt fields directly without moving focus to a test button first
-	char const* const editButtonNames[] = { "Read only",     "Disabled",     "Hide fields",  "Reset text",
-											"Switch object", "Remove first", "Focus on end", "Remove on end" };
-	HBoxContainer*    editButtons       = nullptr;
-	for (int index = 0; index < 8; ++index)
-	{
-		if (index % 4 == 0)
-		{
-			editButtons = MemNew<HBoxContainer>();
-			editButtons->SetName(index == 0 ? "LineEditStateTest" : "LineEditEndTest");
-			editButtons->SetSeparation(12.f);
-			column->AddNode(editButtons);
-		}
-
-		Button* button = MemNew<Button>();
-		button->SetFont(font);
-		button->SetFontSize(16);
-		button->SetFocusMode(Control::FocusMode::None);
-		button->SetText(editButtonNames[index]);
-		button->SetToggleMode(index < 3 || index >= 6);
-		editButtons->AddNode(button);
-		button->SetPressedCallback(
-			[firstExample, secondExample, editRowID, longName, index, buttonID = button->GetObjectID()]()
-			{
-				auto       state    = firstExample.first;
-				LineEdit*  field    = ObjectDatabase::GetInstance<LineEdit>(state->m_editID);
-				Button*    source   = ObjectDatabase::GetInstance<Button>(buttonID);
-				bool const selected = source != nullptr && source->IsPressed();
-				if (index == 0 && field != nullptr)
-				{
-					field->SetEditable(!selected);
-				}
-				else if (index == 1 && field != nullptr)
-				{
-					field->SetDisabled(selected);
-				}
-				else if (index == 2)
-				{
-					if (Control* row = ObjectDatabase::GetInstance<Control>(editRowID))
-					{
-						row->SetVisible(!selected);
-					}
-				}
-				else if (index == 3 || index == 4)
-				{
-					if (field != nullptr)
-					{
-						field->EndEditing();
-						field = ObjectDatabase::GetInstance<LineEdit>(state->m_editID);
-						if (field != nullptr && !field->IsQueuedForDeletion())
-						{
-							if (index == 4)
-							{
-								state->m_target = 1 - state->m_target;
-							}
-							else
-							{
-								state->m_values[state->m_target] = "Player";
-							}
-
-							state->m_original = state->m_values[state->m_target];
-							field->SetText(state->m_original);
-						}
-					}
-
-					if (index == 3)
-					{
-						auto second = secondExample.first;
-						if (LineEdit* other = ObjectDatabase::GetInstance<LineEdit>(second->m_editID))
-						{
-							other->EndEditing();
-							second->m_values[second->m_target] = longName;
-							second->m_original                 = longName;
-							other = ObjectDatabase::GetInstance<LineEdit>(second->m_editID);
-							if (other != nullptr)
-							{
-								other->SetText(longName);
-							}
-						}
-					}
-				}
-				else if (index == 5 && field != nullptr)
-				{
-					field->EndEditing();
-					if (LineEdit* remaining = ObjectDatabase::GetInstance<LineEdit>(state->m_editID))
-					{
-						remaining->QueueFree();
-					}
-
-					state->m_editID = ObjectID::Invalid;
-				}
-				else if (index == 6)
-				{
-					state->m_focusOnEnd = selected;
-				}
-				else if (index == 7)
-				{
-					state->m_removeOnEnd = selected;
-				}
-
-				firstExample.second();
-				secondExample.second();
-			});
+		ERR_PRINT("Cannot run project: no valid main scene. " + path.GetString());
+		m_exitCode   = 1;
+		m_shouldQuit = true;
+		return;
 	}
-
-	// 6) Compare fill and shrink alignment inside visible allocated rectangles
-	auto addAlignmentRow = [&](char const* name, bool vertical)
-	{
-		HBoxContainer* row = MemNew<HBoxContainer>();
-		row->SetName(name);
-		row->SetSeparation(12.0f);
-		if (vertical)
-		{
-			row->SetVerticalSizeFlags(Control::Size_ExpandFill);
-		}
-
-		column->AddNode(row);
-
-		char const* const names[] = { "Fill", "Shrink Begin", "Shrink Center", "Shrink End" };
-		int const         flags[] = { Control::Size_Fill,
-									  Control::Size_ShrinkBegin,
-									  Control::Size_ShrinkCenter,
-									  Control::Size_ShrinkEnd };
-		Color const colors[] = { Color(70, 145, 235), Color(220, 80, 80), Color(80, 190, 120), Color(220, 180, 70) };
-		for (int index = 0; index < 4; ++index)
-		{
-			VBoxContainer* group = MemNew<VBoxContainer>();
-			group->SetName(names[index]);
-			group->SetSeparation(4.0f);
-			group->SetHorizontalSizeFlags(Control::Size_ExpandFill);
-			row->AddNode(group);
-			addLabel(group, "Caption", names[index], 16);
-
-			MarginContainer* slot = MemNew<MarginContainer>();
-			slot->SetName("AllocatedArea");
-			slot->SetCustomMinimumSize(Vector2(96.0f, vertical ? 80.0f : 36.0f));
-			slot->SetVerticalSizeFlags(Control::Size_ExpandFill);
-			group->AddNode(slot);
-			addRect(slot, "Background", Color(45, 55, 70), Vector2::Zero);
-
-			ColorRect* sample = addRect(slot, "Sample", colors[index], Vector2(48.0f, 24.0f));
-			sample->SetHorizontalSizeFlags(vertical ? Control::Size_ShrinkCenter : flags[index]);
-			sample->SetVerticalSizeFlags(vertical ? flags[index] : Control::Size_ShrinkCenter);
-		}
-	};
-
-	addLabel(column, "HorizontalHint", "Horizontal alignment", 18);
-	addAlignmentRow("HorizontalAlignment", false);
-	addLabel(column, "VerticalHint", "Vertical alignment (this row expands vertically)", 18);
-	addAlignmentRow("VerticalAlignment", true);
-
-	// 7) Compare fixed width, expand with fill, and expand with shrink center
-	addLabel(column, "ExpandHint", "HBox: fixed red | Expand + Fill green | Expand + Center yellow", 18);
-	MarginContainer* expandArea = MemNew<MarginContainer>();
-	expandArea->SetName("ExpandArea");
-	expandArea->SetMargins(8.0f, 8.0f, 8.0f, 8.0f);
-	column->AddNode(expandArea);
-	addRect(expandArea, "Background", Color(45, 55, 70), Vector2::Zero);
-
-	HBoxContainer* expandRow = MemNew<HBoxContainer>();
-	expandRow->SetName("ExpandComparison");
-	expandRow->SetSeparation(12.0f);
-	expandArea->AddNode(expandRow);
-	addRect(expandRow, "Fixed", Color(220, 80, 80), Vector2(80.0f, 28.0f));
-	ColorRect* expandFill = addRect(expandRow, "ExpandFill", Color(80, 190, 120), Vector2(80.0f, 28.0f));
-	expandFill->SetHorizontalSizeFlags(Control::Size_ExpandFill);
-	ColorRect* expandCenter = addRect(expandRow, "ExpandCenter", Color(220, 180, 70), Vector2(80.0f, 28.0f));
-	expandCenter->SetHorizontalSizeFlags(Control::Size_Expand | Control::Size_ShrinkCenter);
-
-	Label* corner = addLabel(content, "BottomRight", "BOTTOM RIGHT | fixed margins", 20);
-	corner->SetHorizontalAlignment(HorizontalAlignment::Right);
-	corner->SetVerticalAlignment(VerticalAlignment::Bottom);
-
-	m_sceneTree->GetRoot()->AddNode(example);
+	m_sceneTree->ChangeScene(root);
+	m_sceneTree->FlushPendingNode();
+	INFO_PRINT("Running main scene: " + path.GetString());
 }
 
 void App::ShutdownScene()
 {
 	m_projectManagerErrorLabel = nullptr;
-	m_uiRegenerateCount = 0;
-	m_uiResizeSizeLabel = nullptr;
-	m_editorCamera      = nullptr;
-	m_isSlowMode        = false;
+	m_projectManagerRoot       = nullptr;
+	m_createProjectPopup       = nullptr;
+	m_recentTree               = nullptr;
+	m_editProjectButton        = nullptr;
+	m_removeProjectButton      = nullptr;
+	m_recentAvailable.clear();
+	m_projectSearch = nullptr;
+	m_recentDirty   = true;
+	m_editorCamera  = nullptr;
+	m_isSlowMode    = false;
 
 	MemDelete(m_sceneTree);
 	m_sceneTree = nullptr;
@@ -944,5 +939,49 @@ int MingEngine::Run(MingRunConfig const& config)
 	app.Shutdown();
 
 	g_app = nullptr;
-	return 0;
+	return app.GetExitCode();
+}
+
+void App::StopGame()
+{
+	if (m_gameProcess == nullptr || m_gameStopDeadline != 0)
+	{
+		return;
+	}
+	EnumWindows(
+		[](HWND window, LPARAM parameter) -> BOOL
+		{
+			DWORD process = 0;
+			GetWindowThreadProcessId(window, &process);
+			if (process == static_cast<DWORD>(parameter))
+			{
+				PostMessageW(window, WM_CLOSE, 0, 0);
+			}
+			return TRUE;
+		},
+		static_cast<LPARAM>(m_gameProcessID));
+	m_gameStopDeadline = GetTickCount64() + 2000;
+}
+
+void App::PollGame()
+{
+	if (m_gameProcess == nullptr)
+	{
+		return;
+	}
+	if (m_gameStopDeadline != 0 && GetTickCount64() >= m_gameStopDeadline
+		&& WaitForSingleObject(m_gameProcess, 0) == WAIT_TIMEOUT)
+	{
+		TerminateProcess(m_gameProcess, 0);
+	}
+	if (WaitForSingleObject(m_gameProcess, 0) == WAIT_OBJECT_0)
+	{
+		DWORD code = 0;
+		GetExitCodeProcess(m_gameProcess, &code);
+		CloseHandle(m_gameProcess);
+		m_gameProcess      = nullptr;
+		m_gameProcessID    = 0;
+		m_gameStopDeadline = 0;
+		INFO_PRINT("Game process exited with code " + std::to_string(code));
+	}
 }

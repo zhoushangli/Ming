@@ -45,7 +45,8 @@ Ref<FontResource> FontResource::CreateDefault(bool sizeInEm)
 	if (g_engine != nullptr && g_engine->m_textServer != nullptr)
 	{
 		font->SetFontRID(g_engine->m_textServer->CreateFont(
-			std::vector<uint8_t>(std::begin(kNativeFontData), std::end(kNativeFontData)), sizeInEm));
+			std::vector<uint8_t>(std::begin(kNativeFontData), std::end(kNativeFontData)),
+			sizeInEm));
 	}
 
 	return font;

@@ -19,6 +19,7 @@ public:
 protected:
 	void Parse(std::string path);
 
+protected:
 	std::vector<std::string> m_paths;
 	bool                     m_isAbsolute = false;
 };

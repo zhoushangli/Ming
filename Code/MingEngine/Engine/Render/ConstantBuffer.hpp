@@ -9,8 +9,9 @@ class ConstantBuffer
 
 public:
 	ConstantBuffer(ID3D11Device* device, size_t size);
-	ConstantBuffer(const ConstantBuffer& copy) = delete;
 	virtual ~ConstantBuffer();
+
+	ConstantBuffer(const ConstantBuffer& copy) = delete;
 
 private:
 	void Create();

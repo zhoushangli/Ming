@@ -119,7 +119,7 @@ public:
 	static void         InitializeClass();
 
 	ObjectID GetObjectID() const;
-	bool IsPreDeleting() const { return m_isPreDeleting; }
+	bool     IsPreDeleting() const { return m_isPreDeleting; }
 	void     Notification(int notification, bool reverse = false);
 	void     Free();
 

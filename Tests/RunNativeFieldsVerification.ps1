@@ -1,4 +1,4 @@
-param([switch]$SkipBuild, [ValidateSet("NativeFieldsVerification", "NativeEditorStartupVerification", "TextLayoutVerification", "EditorUIVerification")][string]$Suite = "NativeFieldsVerification", [switch]$Preview)
+param([switch]$SkipBuild, [ValidateSet("NativeFieldsVerification", "NativeEditorStartupVerification", "TextLayoutVerification", "EditorUIVerification", "EditorWorkflowVerification")][string]$Suite = "NativeFieldsVerification", [switch]$Preview)
 
 $ErrorActionPreference = 'Stop'
 if ($Preview -and $Suite -notin @('TextLayoutVerification', 'EditorUIVerification'))
@@ -56,7 +56,7 @@ try
     {
         New-Item -ItemType Directory -Force -Path (Join-Path $outputDirectory 'MingSharp') | Out-Null
         Copy-Item -Path (Join-Path $repoRoot 'Run\MingSharp\*') -Destination (Join-Path $outputDirectory 'MingSharp') -Recurse -Force
-        foreach ($mode in @('manager', 'editor', 'game'))
+        foreach ($mode in @('manager', 'editor', 'game', 'game-no-main', 'game-invalid', 'game-version'))
         {
             & (Join-Path $outputDirectory ($Suite + '.exe')) (Join-Path $outputDirectory 'Project') $mode
             if ($LASTEXITCODE -ne 0)

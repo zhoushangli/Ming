@@ -55,16 +55,23 @@ int EditorUI::FindNativePanel(String const& id) const
 
 void EditorUI::InitializeNativeDocking()
 {
-	m_dockPanels = { DockPanel{ "Scene", m_scenePage },
-					 DockPanel{ "FileSystem", m_filePage },
-					 DockPanel{ "Inspector", m_inspectorBackground },
-		DockPanel{ "Import", m_importPanel }, DockPanel{ "Output", m_outputPanel } };
+	m_dockPanels = { DockPanel{ "Scene", m_scenePanel },
+					 DockPanel{ "FileSystem", m_fileSystemPanel },
+					 DockPanel{ "Inspector", m_inspectorPanel },
+					 DockPanel{ "Import", m_importPanel },
+					 DockPanel{ "Output", m_outputPanel } };
 	for (DockPanel const& panel : m_dockPanels)
 	{
 		panel.m_root->SetSerializable(false);
 	}
 
-	m_viewportPanel->SetCustomMinimumSize(Vector2(static_cast<float>(m_nativeRoot->GetThemeConstant("viewport_min_width", "Editor")), static_cast<float>(m_nativeRoot->GetThemeConstant("viewport_min_height", "Editor"))));
+	m_viewportPanel->AddThemeChangedCallback(
+		[control = m_viewportPanel]()
+		{
+			control->SetCustomMinimumSize(Vector2(
+				static_cast<float>(control->GetThemeConstant("viewport_min_width", "Editor")),
+				static_cast<float>(control->GetThemeConstant("viewport_min_height", "Editor"))));
+		});
 	for (int i = 0; i < 4; ++i)
 	{
 		m_dockSplits[i] = MemNew<SplitContainer>();
@@ -75,44 +82,75 @@ void EditorUI::InitializeNativeDocking()
 			{
 				SaveNativeLayout();
 			});
-		m_dockSlots[i] = i == 0 ? m_tabs : MemNew<TabContainer>();
+		m_dockSlots[i] = MemNew<TabContainer>();
 		m_dockSlots[i]->SetSerializable(false);
 		m_dockSlots[i]->SetTabsRearrangeGroup(1);
 		m_dockSlots[i]->SetThemeTypeVariation("EditorDockTabs");
-		auto* actions = m_dockSlots[i]->GetTitleActions();
-		Button* collapse = EditorPopupUtils::AddButton(actions, "", [this]() { ToggleOutputCollapsed(); });
+		auto*   actions  = m_dockSlots[i]->GetTitleActions();
+		Button* collapse = EditorPopupUtils::AddButton(
+			actions,
+			"",
+			[this]()
+			{
+				ToggleOutputCollapsed();
+			});
 		collapse->SetName("Collapse");
 		collapse->SetThemeTypeVariation("EditorPanelAction");
 		collapse->SetIcon(EditorIcons::GetIconTexture("ChevronDown"));
 		collapse->SetVisible(false);
-		Button* more = EditorPopupUtils::AddButton(actions, "", [this, i, actions]()
-		{
-			std::vector<MenuItem> items;
-			if (m_dockSlots[i]->GetCurrentPage() == m_fileSystemPanel)
+		Button* more = EditorPopupUtils::AddButton(
+			actions,
+			"",
+			[this, i, actions]()
 			{
-				items.push_back({ "Refresh", [this]() { g_engine->m_fileSystem->ScanResourceTree(); } });
+				std::vector<MenuItem> items;
+				if (m_dockSlots[i]->GetCurrentPage() == m_fileSystemPanel)
+				{
+					items.push_back(
+						{ "Refresh",
+						  [this]()
+						  {
+							  g_engine->m_fileSystem->ScanResourceTree();
+						  } });
+					items.push_back({ "", {}, "", true });
+				}
+
+				for (DockPanel const& dock : m_dockPanels)
+				{
+					auto* panel = static_cast<EditorPanel*>(dock.m_root);
+					items.push_back(
+						{ dock.m_id,
+						  [this, panel]()
+						  {
+							  TogglePanel(panel);
+						  },
+						  "",
+						  false,
+						  true,
+						  panel->IsOpen() });
+				}
+
 				items.push_back({ "", {}, "", true });
-			}
-
-			for (DockPanel const& dock : m_dockPanels)
-			{
-				auto* panel = static_cast<EditorPanel*>(dock.m_root);
-				items.push_back({ dock.m_id, [this, panel]() { TogglePanel(panel); }, "", false, true, panel->IsOpen() });
-			}
-
-			items.push_back({ "", {}, "", true });
-			items.push_back({ "Restore Default Layout", [this]() { ResetNativeLayout(); } });
-			ShowMenu(actions, actions->GetGlobalPosition() + Vector2(0.f, actions->GetSize().y), items);
-		});
+				items.push_back(
+					{ "Restore Default Layout",
+					  [this]()
+					  {
+						  ResetNativeLayout();
+					  } });
+				ShowMenu(actions, actions->GetGlobalPosition() + Vector2(0.f, actions->GetSize().y), items);
+			});
 		more->SetThemeTypeVariation("EditorPanelAction");
 		more->SetIcon(EditorIcons::GetIconTexture("More"));
-		Button* close = EditorPopupUtils::AddButton(actions, "", [this, i]()
-		{
-			if (auto* panel = dynamic_cast<EditorPanel*>(m_dockSlots[i]->GetCurrentPage()))
+		Button* close = EditorPopupUtils::AddButton(
+			actions,
+			"",
+			[this, i]()
 			{
-				TogglePanel(panel);
-			}
-		});
+				if (auto* panel = dynamic_cast<EditorPanel*>(m_dockSlots[i]->GetCurrentPage()))
+				{
+					TogglePanel(panel);
+				}
+			});
 		close->SetThemeTypeVariation("EditorPanelAction");
 		close->SetIcon(EditorIcons::GetIconTexture("Close"));
 		m_dockSlots[i]->SetTabChangedCallback(
@@ -149,7 +187,9 @@ void EditorUI::InitializeNativeDocking()
 	m_dockSlots[0]->Reparent(m_dockSplits[2], false);
 	m_dockSplits[2]->AddNode(m_dockSlots[1]);
 	m_dockSplits[3]->AddNode(m_dockSlots[3]);
-	m_dockSlots[2]->AddPage("Inspector", m_inspectorBackground);
+	m_dockSlots[0]->AddPage("Scene", m_scenePanel);
+	m_dockSlots[1]->AddPage("FileSystem", m_fileSystemPanel);
+	m_dockSlots[2]->AddPage("Inspector", m_inspectorPanel);
 	m_dockSlots[2]->AddPage("Import", m_importPanel);
 	m_dockSlots[3]->AddPage("Output", m_outputPanel);
 	for (int i = 0; i < 4; ++i)
@@ -167,7 +207,7 @@ void EditorUI::InitializeNativeDocking()
 			{
 				int index = -1;
 				return data.m_type == String("dock") && FindNativePanel(data.m_value) >= 0
-					&& GetNativeDockDestination(i, position + hint->GetGlobalPosition(), index) >= 0;
+					   && GetNativeDockDestination(i, position + hint->GetGlobalPosition(), index) >= 0;
 			},
 			[this, i, hint](Vector2 const& position, GuiDragData const& data)
 			{
@@ -198,7 +238,7 @@ void EditorUI::InitializeNativeDocking()
 					return;
 				}
 
-				TabContainer* slot   = m_dockSlots[target];
+				TabContainer* slot = m_dockSlots[target];
 				if (index >= 0)
 				{
 					slot->SetDropInsertIndex(index);
@@ -224,7 +264,6 @@ void EditorUI::InitializeNativeDocking()
 	m_layoutReady   = true;
 	LoadNativeLayout();
 	UpdateNativeDocking();
-
 }
 
 bool EditorUI::MoveNativePanel(String const& id, int slot, int index)
@@ -317,7 +356,8 @@ void EditorUI::UpdateNativeDocking()
 			{
 				auto* button = static_cast<Button*>(child);
 				button->SetVisible(slot->GetCurrentPage() == m_outputPanel);
-				button->SetIcon(EditorIcons::GetIconTexture(m_outputPanel->IsCollapsed() ? "ChevronUp" : "ChevronDown"));
+				button->SetIcon(
+					EditorIcons::GetIconTexture(m_outputPanel->IsCollapsed() ? "ChevronUp" : "ChevronDown"));
 			}
 		}
 	}
@@ -326,8 +366,10 @@ void EditorUI::UpdateNativeDocking()
 	m_dockSplits[3]->SetVisible(true);
 	bool const  docking    = m_nativeRoot->GetViewport() != nullptr && m_nativeRoot->GetViewport()->IsGuiDragging()
 							 && m_nativeRoot->GetViewport()->GetGuiDragData().m_type == String("dock");
-	float const bodyHeight = std::max(1.f, m_nativeRoot->GetSize().y - m_nativeRoot->GetThemeConstant("top_bar_height", "Editor")
-		- m_nativeRoot->GetThemeConstant("status_bar_height", "Editor"));
+	float const bodyHeight = std::max(
+		1.f,
+		m_nativeRoot->GetSize().y - m_nativeRoot->GetThemeConstant("top_bar_height", "Editor")
+			- m_nativeRoot->GetThemeConstant("status_bar_height", "Editor"));
 	for (int i = 0; i < 4; ++i)
 	{
 		ColorRect* hint = m_dockHints[i];
@@ -362,24 +404,27 @@ void EditorUI::UpdateNativeDocking()
 		}
 		else
 		{
-			float const width = std::min(i == 2 ? 347.5f : 275.f, m_nativeRoot->GetSize().x * 0.25f);
+			float const width  = std::min(i == 2 ? 347.5f : 275.f, m_nativeRoot->GetSize().x * 0.25f);
 			float const height = std::min(165.f, bodyHeight * 0.25f);
 			if (i < 2)
 			{
-				position = Vector2(5.f,
-					static_cast<float>(m_nativeRoot->GetThemeConstant("top_bar_height", "Editor")) + (i == 0 ? 0.f : bodyHeight - height));
+				position = Vector2(
+					5.f,
+					static_cast<float>(m_nativeRoot->GetThemeConstant("top_bar_height", "Editor"))
+						+ (i == 0 ? 0.f : bodyHeight - height));
 				size = Vector2(width, height);
 			}
 			else if (i == 2)
 			{
-				position = Vector2(m_nativeRoot->GetSize().x - width - 5.f,
+				position = Vector2(
+					m_nativeRoot->GetSize().x - width - 5.f,
 					static_cast<float>(m_nativeRoot->GetThemeConstant("top_bar_height", "Editor")));
 				size = Vector2(width, bodyHeight);
 			}
 			else
 			{
 				position = m_viewportPanel->GetGlobalPosition() - m_nativeRoot->GetGlobalPosition();
-				size = Vector2(m_viewportPanel->GetSize().x, height);
+				size     = Vector2(m_viewportPanel->GetSize().x, height);
 				position.y += std::max(0.f, m_viewportPanel->GetSize().y - height);
 			}
 		}
@@ -408,7 +453,11 @@ void EditorUI::ResetNativeLayout()
 
 	bool const loading = m_loadingLayout;
 	m_loadingLayout    = true;
-	for (EditorPanel* panel : std::initializer_list<EditorPanel*>{ m_scenePanel, m_fileSystemPanel, m_inspectorPanel, m_importPanel, m_outputPanel })
+	for (EditorPanel* panel : std::initializer_list<EditorPanel*>{ m_scenePanel,
+																   m_fileSystemPanel,
+																   m_inspectorPanel,
+																   m_importPanel,
+																   m_outputPanel })
 	{
 		if (!panel->IsOpen())
 		{
@@ -419,19 +468,23 @@ void EditorUI::ResetNativeLayout()
 	MoveNativePanel("Scene", 0);
 	MoveNativePanel("FileSystem", 1);
 	MoveNativePanel("Inspector", 2);
-	MoveNativePanel("Import", 2);
+	MoveNativePanel("Import", 0);
 	MoveNativePanel("Output", 3);
 	m_dockSlots[0]->SetCurrentTab(0);
 	m_outputPanel->SetCollapsed(false);
 	m_dockSlots[2]->SetCurrentTab(0);
 	Vector2 const bounds(m_nativeRoot->GetViewport()->GetOutputResolution());
-	float const width = std::max(1.f, bounds.x - 10.f);
-	float const height = std::max(1.f, bounds.y - m_nativeRoot->GetThemeConstant("top_bar_height", "Editor")
-		- m_nativeRoot->GetThemeConstant("status_bar_height", "Editor"));
-	m_dockSplits[0]->SetSplitRatio(275.f / std::max(1.f, width - 7.5f));
-	m_dockSplits[1]->SetSplitRatio(1.f - 347.5f / std::max(1.f, width - 290.f));
-	m_dockSplits[2]->SetSplitRatio(490.f / std::max(1.f, height - 7.5f));
-	m_dockSplits[3]->SetSplitRatio(1.f - 165.f / std::max(1.f, height - 7.5f));
+	float const   scale  = m_owner->GetEditorScale();
+	float const   margin = static_cast<float>(m_nativeRoot->GetThemeConstant("panel_margin", "Editor"));
+	float const   width  = std::max(1.f, bounds.x - margin * 2.f);
+	float const   height = std::max(
+		1.f,
+		bounds.y - m_nativeRoot->GetThemeConstant("top_bar_height", "Editor")
+			- m_nativeRoot->GetThemeConstant("status_bar_height", "Editor"));
+	m_dockSplits[0]->SetSplitRatio(240.f * scale / std::max(1.f, width - 6.f * scale));
+	m_dockSplits[1]->SetSplitRatio(1.f - 278.f * scale / std::max(1.f, width - 252.f * scale));
+	m_dockSplits[2]->SetSplitRatio(392.f * scale / std::max(1.f, height - 6.f * scale));
+	m_dockSplits[3]->SetSplitRatio(1.f - 132.f * scale / std::max(1.f, height - 6.f * scale));
 	m_loadingLayout = loading;
 	UpdateNativeDocking();
 	if (m_layoutReady && !m_loadingLayout)
@@ -469,7 +522,7 @@ bool EditorUI::SaveNativeLayout()
 	layout["version"] = 2;
 	layout["slots"]   = nlohmann::json::array();
 	layout["ratios"]  = nlohmann::json::array();
-	layout["closed"] = nlohmann::json::array();
+	layout["closed"]  = nlohmann::json::array();
 	for (DockPanel const& entry : m_dockPanels)
 	{
 		if (auto* panel = dynamic_cast<EditorPanel*>(entry.m_root); panel != nullptr && !panel->IsOpen())
@@ -555,12 +608,12 @@ void EditorUI::LoadNativeLayout()
 
 		std::array<std::vector<String>, 4> groups;
 		std::array<String, 4>              current;
-		std::array<float, 4> ratios;
+		std::array<float, 4>               ratios;
 		for (int i = 0; i < 4; ++i)
 		{
 			ratios[i] = m_dockSplits[i]->GetSplitRatio();
 		}
-		std::array<bool, 5>                found  = {};
+		std::array<bool, 5> found = {};
 		for (int i = 0; i < 4 && i < static_cast<int>(layout["slots"].size()); ++i)
 		{
 			auto const& slot = layout["slots"][i];
@@ -600,9 +653,10 @@ void EditorUI::LoadNativeLayout()
 		{
 			if (!found[i])
 			{
-				if (auto* panel = dynamic_cast<EditorPanel*>(m_dockPanels[i].m_root); panel != nullptr && panel->IsOpen())
+				if (auto* panel = dynamic_cast<EditorPanel*>(m_dockPanels[i].m_root);
+					panel != nullptr && panel->IsOpen())
 				{
-					groups[i == 1 ? 1 : (i == 2 || i == 3) ? 2 : i == 4 ? 3 : 0].push_back(m_dockPanels[i].m_id);
+					groups[i == 1 ? 1 : i == 2 ? 2 : i == 4 ? 3 : 0].push_back(m_dockPanels[i].m_id);
 				}
 			}
 		}
@@ -625,8 +679,8 @@ void EditorUI::LoadNativeLayout()
 		m_loadingLayout = true;
 		for (DockPanel const& entry : m_dockPanels)
 		{
-			auto* panel = static_cast<EditorPanel*>(entry.m_root);
-			bool closed = false;
+			auto* panel  = static_cast<EditorPanel*>(entry.m_root);
+			bool  closed = false;
 			if (layout.contains("closed") && layout["closed"].is_array())
 			{
 				for (auto const& value : layout["closed"])

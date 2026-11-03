@@ -76,22 +76,28 @@ void Tree::OnThemeChanged()
 float Tree::GetRowHeight() const
 {
 	float height = static_cast<float>(std::max(1, m_themeCache.font_size));
-	if (m_themeCache.font.IsValid() && m_themeCache.font->GetFontRID().IsValid()
-		&& g_engine != nullptr && g_engine->m_textServer != nullptr)
+	if (m_themeCache.font.IsValid() && m_themeCache.font->GetFontRID().IsValid() && g_engine != nullptr
+		&& g_engine->m_textServer != nullptr)
 	{
 		auto const line = g_engine->m_textServer->GetTextLine(
-			m_themeCache.font->GetFontRID(), "W", static_cast<float>(m_themeCache.font_size));
+			m_themeCache.font->GetFontRID(),
+			"W",
+			static_cast<float>(m_themeCache.font_size));
 		height = std::abs(line.m_config.m_ascent) + std::abs(line.m_config.m_descent);
 	}
 
-	return std::max({ 1.f, height, static_cast<float>(m_themeCache.row_height),
-		m_edit != nullptr ? m_edit->GetCombinedMinimumSize().y : 0.f });
+	return std::max(
+		{ 1.f,
+		  height,
+		  static_cast<float>(m_themeCache.row_height),
+		  m_edit != nullptr ? m_edit->GetCombinedMinimumSize().y : 0.f });
 }
 
 AABB2 Tree::GetRowRect(size_t row) const
 {
-	float const top = (m_themeCache.panel.IsValid()
-		? m_themeCache.panel->GetContentMargin(ThemeStyleBox::Side::Top) : 0.f) + row * GetRowHeight();
+	float const top =
+		(m_themeCache.panel.IsValid() ? m_themeCache.panel->GetContentMargin(ThemeStyleBox::Side::Top) : 0.f)
+		+ row * GetRowHeight();
 	return AABB2(0.f, top, GetSize().x, top + GetRowHeight());
 }
 
@@ -110,8 +116,8 @@ AABB2 Tree::GetItemRect(uint64_t id) const
 
 int Tree::GetRowAtPosition(Vector2 const& position) const
 {
-	float const top = m_themeCache.panel.IsValid()
-		? m_themeCache.panel->GetContentMargin(ThemeStyleBox::Side::Top) : 0.f;
+	float const top =
+		m_themeCache.panel.IsValid() ? m_themeCache.panel->GetContentMargin(ThemeStyleBox::Side::Top) : 0.f;
 	if (!IsPointInside(position) || position.y < top)
 	{
 		return -1;
@@ -128,13 +134,15 @@ float Tree::GetFoldWidth(size_t row) const
 		return static_cast<float>(std::max(0, m_themeCache.fold_size));
 	}
 
-	String const prefix(HasChildren(m_items[m_rows[row]].m_ID)
-		? (IsCollapsed(m_items[m_rows[row]].m_ID) && !m_filtering ? "> " : "v ") : "  ");
-	if (m_themeCache.font.IsValid() && m_themeCache.font->GetFontRID().IsValid()
-		&& g_engine != nullptr && g_engine->m_textServer != nullptr)
+	String const prefix(
+		HasChildren(m_items[m_rows[row]].m_ID) ? (IsCollapsed(m_items[m_rows[row]].m_ID) && !m_filtering ? "> " : "v ")
+											   : "  ");
+	if (m_themeCache.font.IsValid() && m_themeCache.font->GetFontRID().IsValid() && g_engine != nullptr
+		&& g_engine->m_textServer != nullptr)
 	{
-		return g_engine->m_textServer->GetTextLine(
-			m_themeCache.font->GetFontRID(), prefix, static_cast<float>(m_themeCache.font_size)).m_width;
+		return g_engine->m_textServer
+			->GetTextLine(m_themeCache.font->GetFontRID(), prefix, static_cast<float>(m_themeCache.font_size))
+			.m_width;
 	}
 
 	return static_cast<float>(std::max(1, m_themeCache.font_size));
@@ -142,17 +150,20 @@ float Tree::GetFoldWidth(size_t row) const
 
 float Tree::GetRowTextX(size_t row) const
 {
-	float const left = m_themeCache.panel.IsValid()
-		? m_themeCache.panel->GetContentMargin(ThemeStyleBox::Side::Left) : 0.f;
+	float const left =
+		m_themeCache.panel.IsValid() ? m_themeCache.panel->GetContentMargin(ThemeStyleBox::Side::Left) : 0.f;
 	float const iconWidth = m_items[m_rows[row]].m_icon.IsValid()
-		? static_cast<float>(m_themeCache.icon_size + m_themeCache.icon_separation) : 0.f;
+								? static_cast<float>(m_themeCache.icon_size + m_themeCache.icon_separation)
+								: 0.f;
 	return left + m_depths[row] * static_cast<float>(std::max(0, m_themeCache.indent)) + GetFoldWidth(row) + iconWidth;
 }
 
 float Tree::GetRowTextEnd(size_t row) const
 {
-	float const right = m_themeCache.panel.IsValid() ? m_themeCache.panel->GetContentMargin(ThemeStyleBox::Side::Right) : 0.f;
-	return GetSize().x - right - m_items[m_rows[row]].m_actions.size() * (m_themeCache.icon_size + m_themeCache.icon_separation);
+	float const right =
+		m_themeCache.panel.IsValid() ? m_themeCache.panel->GetContentMargin(ThemeStyleBox::Side::Right) : 0.f;
+	return GetSize().x - right
+		   - m_items[m_rows[row]].m_actions.size() * (m_themeCache.icon_size + m_themeCache.icon_separation);
 }
 
 AABB2 Tree::GetItemActionRect(uint64_t id, int action) const
@@ -163,9 +174,10 @@ AABB2 Tree::GetItemActionRect(uint64_t id, int action) const
 		if (m_items[m_rows[row]].m_ID == id && action >= 0 && action < static_cast<int>(actions.size()))
 		{
 			float const side = static_cast<float>(m_themeCache.icon_size);
-			float const right = m_themeCache.panel.IsValid() ? m_themeCache.panel->GetContentMargin(ThemeStyleBox::Side::Right) : 0.f;
+			float const right =
+				m_themeCache.panel.IsValid() ? m_themeCache.panel->GetContentMargin(ThemeStyleBox::Side::Right) : 0.f;
 			float const x = GetSize().x - right - side
-				- (static_cast<int>(actions.size()) - action - 1) * (side + m_themeCache.icon_separation);
+							- (static_cast<int>(actions.size()) - action - 1) * (side + m_themeCache.icon_separation);
 			float const y = GetRowRect(row).GetCenter().y - side * 0.5f;
 			return AABB2(x, y, x + side, y + side);
 		}
@@ -184,27 +196,38 @@ void Tree::UpdateRowLayout()
 	m_updatingRowLayout = true;
 	m_edit->SetFont(m_themeCache.font);
 	m_edit->SetFontSize(m_themeCache.font_size);
-	float const left = m_themeCache.panel.IsValid()
-		? m_themeCache.panel->GetContentMargin(ThemeStyleBox::Side::Left) : 0.f;
-	float const right = m_themeCache.panel.IsValid()
-		? m_themeCache.panel->GetContentMargin(ThemeStyleBox::Side::Right) : 0.f;
+	float const left =
+		m_themeCache.panel.IsValid() ? m_themeCache.panel->GetContentMargin(ThemeStyleBox::Side::Left) : 0.f;
+	float const right =
+		m_themeCache.panel.IsValid() ? m_themeCache.panel->GetContentMargin(ThemeStyleBox::Side::Right) : 0.f;
 	float width = std::max(1.f, left + right);
 	for (size_t row = 0; row < m_rows.size(); ++row)
 	{
-		Item const& item = m_items[m_rows[row]];
-		Label* label = m_labels[row];
-		bool const texturedFold = m_themeCache.arrow_collapsed.IsValid() && m_themeCache.arrow_expanded.IsValid();
-		label->SetText(texturedFold ? item.m_text : String(HasChildren(item.m_ID)
-			? (IsCollapsed(item.m_ID) && !m_filtering ? "> " : "v ") : "  ") + item.m_text);
+		Item const& item         = m_items[m_rows[row]];
+		Label*      label        = m_labels[row];
+		bool const  texturedFold = m_themeCache.arrow_collapsed.IsValid() && m_themeCache.arrow_expanded.IsValid();
+		label->SetText(
+			texturedFold
+				? item.m_text
+				: String(HasChildren(item.m_ID) ? (IsCollapsed(item.m_ID) && !m_filtering ? "> " : "v ") : "  ")
+					  + item.m_text);
 		label->SetFont(m_themeCache.font);
 		label->SetFontSize(m_themeCache.font_size);
-		label->SetFontColor(item.m_dimmed ? m_themeCache.guide_color : (item.m_ID == m_selected ? m_themeCache.font_selected_color : m_themeCache.font_color));
+		label->SetFontColor(
+			item.m_dimmed ? m_themeCache.guide_color
+						  : (item.m_ID == m_selected ? m_themeCache.font_selected_color : m_themeCache.font_color));
 		label->SetClipText(m_clipText);
 		AABB2 const rect = GetRowRect(row);
 		label->SetPosition(Vector2(GetRowTextX(row) - (texturedFold ? 0.f : GetFoldWidth(row)), rect.m_mins.y));
-		label->UpdateSize(Vector2(m_clipText ? std::max(0.f, GetRowTextEnd(row) - label->GetLocalPosition().x) : label->GetCombinedMinimumSize().x, rect.GetHeight()));
-		width = std::max(width, m_clipText ? 60.f : label->GetLocalPosition().x + label->GetSize().x + right
-			+ item.m_actions.size() * (m_themeCache.icon_size + m_themeCache.icon_separation));
+		label->UpdateSize(Vector2(
+			m_clipText ? std::max(0.f, GetRowTextEnd(row) - label->GetLocalPosition().x)
+					   : label->GetCombinedMinimumSize().x,
+			rect.GetHeight()));
+		width = std::max(
+			width,
+			m_clipText ? 60.f
+					   : label->GetLocalPosition().x + label->GetSize().x + right
+							 + item.m_actions.size() * (m_themeCache.icon_size + m_themeCache.icon_separation));
 		if (item.m_ID == m_editing)
 		{
 			float const x = GetRowTextX(row) - m_edit->GetContentRect().m_mins.x;
@@ -214,8 +237,8 @@ void Tree::UpdateRowLayout()
 	}
 
 	bool const widthChanged = m_contentWidth != width;
-	m_contentWidth = width;
-	m_updatingRowLayout = false;
+	m_contentWidth          = width;
+	m_updatingRowLayout     = false;
 	if (widthChanged)
 	{
 		PropagateMinimumSizeChanged();
@@ -238,7 +261,7 @@ void Tree::SetItems(std::vector<Item> items, bool filtering)
 		{
 			auto const& a = items[i].m_actions[action];
 			auto const& b = m_items[i].m_actions[action];
-			same = a.m_icon == b.m_icon && a.m_color == b.m_color && a.m_enabled == b.m_enabled;
+			same          = a.m_icon == b.m_icon && a.m_color == b.m_color && a.m_enabled == b.m_enabled;
 		}
 	}
 
@@ -463,8 +486,9 @@ bool Tree::GuiInput(InputEvent const& event)
 		}
 
 		Select(id, true);
-		float const foldEnd = GetRowTextX(row) - (m_items[m_rows[row]].m_icon.IsValid()
-			? m_themeCache.icon_size + m_themeCache.icon_separation : 0);
+		float const foldEnd =
+			GetRowTextX(row)
+			- (m_items[m_rows[row]].m_icon.IsValid() ? m_themeCache.icon_size + m_themeCache.icon_separation : 0);
 		if (event.m_position.x < foldEnd && HasChildren(id))
 		{
 			SetCollapsed(id, !IsCollapsed(id));
@@ -587,8 +611,9 @@ bool Tree::GetDragData(Vector2 const& position, GuiDragData& data)
 		return false;
 	}
 
-	float const foldEnd = GetRowTextX(row) - (m_items[m_rows[row]].m_icon.IsValid()
-		? m_themeCache.icon_size + m_themeCache.icon_separation : 0);
+	float const foldEnd =
+		GetRowTextX(row)
+		- (m_items[m_rows[row]].m_icon.IsValid() ? m_themeCache.icon_size + m_themeCache.icon_separation : 0);
 	if (HasChildren(id) && position.x < foldEnd)
 	{
 		return false;
@@ -654,18 +679,22 @@ void Tree::OnNotification(int notification)
 
 			if (selectedRow >= 0 && m_themeCache.children_guide_width > 0)
 			{
-				int lastChild = -1;
-				float const left = m_themeCache.panel.IsValid() ? m_themeCache.panel->GetContentMargin(ThemeStyleBox::Side::Left) : 0.f;
+				int         lastChild = -1;
+				float const left      = m_themeCache.panel.IsValid()
+											? m_themeCache.panel->GetContentMargin(ThemeStyleBox::Side::Left)
+											: 0.f;
 				float const x = left + m_depths[selectedRow] * m_themeCache.indent + GetFoldWidth(selectedRow) * 0.5f;
 				float const width = static_cast<float>(m_themeCache.children_guide_width);
-				for (int row = selectedRow + 1; row < static_cast<int>(m_rows.size()) && m_depths[row] > m_depths[selectedRow]; ++row)
+				for (int row = selectedRow + 1;
+					 row < static_cast<int>(m_rows.size()) && m_depths[row] > m_depths[selectedRow];
+					 ++row)
 				{
 					if (m_items[m_rows[row]].m_parentID != m_selected)
 					{
 						continue;
 					}
 
-					float const y = GetRowRect(row).GetCenter().y;
+					float const y   = GetRowRect(row).GetCenter().y;
 					float const end = left + m_depths[row] * m_themeCache.indent;
 					DrawRect(AABB2(x, y, std::max(x, end), y + width), m_themeCache.children_guide_color);
 					lastChild = row;
@@ -673,8 +702,13 @@ void Tree::OnNotification(int notification)
 
 				if (lastChild >= 0)
 				{
-					DrawRect(AABB2(x, GetRowRect(selectedRow).GetCenter().y + GetFoldWidth(selectedRow) * 0.5f,
-						x + width, GetRowRect(lastChild).GetCenter().y + width), m_themeCache.children_guide_color);
+					DrawRect(
+						AABB2(
+							x,
+							GetRowRect(selectedRow).GetCenter().y + GetFoldWidth(selectedRow) * 0.5f,
+							x + width,
+							GetRowRect(lastChild).GetCenter().y + width),
+						m_themeCache.children_guide_color);
 				}
 			}
 
@@ -691,13 +725,17 @@ void Tree::OnNotification(int notification)
 					break;
 				}
 
-				float const left = m_themeCache.panel.IsValid() ? m_themeCache.panel->GetContentMargin(ThemeStyleBox::Side::Left) : 0.f;
-				float const x = left + m_depths[parent] * m_themeCache.indent + GetFoldWidth(parent) * 0.5f;
-				float const top = GetRowRect(parent).GetCenter().y + GetFoldWidth(parent) * 0.5f;
+				float const left   = m_themeCache.panel.IsValid()
+										 ? m_themeCache.panel->GetContentMargin(ThemeStyleBox::Side::Left)
+										 : 0.f;
+				float const x      = left + m_depths[parent] * m_themeCache.indent + GetFoldWidth(parent) * 0.5f;
+				float const top    = GetRowRect(parent).GetCenter().y + GetFoldWidth(parent) * 0.5f;
 				float const bottom = GetRowRect(child).GetCenter().y;
-				float const end = left + m_depths[child] * m_themeCache.indent - m_themeCache.icon_separation;
+				float const end    = left + m_depths[child] * m_themeCache.indent - m_themeCache.icon_separation;
 				DrawRect(AABB2(x, top, x + m_themeCache.guide_width, bottom), m_themeCache.guide_color);
-				DrawRect(AABB2(x, bottom, std::max(x, end), bottom + m_themeCache.guide_width), m_themeCache.guide_color);
+				DrawRect(
+					AABB2(x, bottom, std::max(x, end), bottom + m_themeCache.guide_width),
+					m_themeCache.guide_color);
 				child = parent;
 			}
 		}
@@ -709,11 +747,14 @@ void Tree::OnNotification(int notification)
 			bool const texturedFold = m_themeCache.arrow_collapsed.IsValid() && m_themeCache.arrow_expanded.IsValid();
 			if (texturedFold && HasChildren(id))
 			{
-				auto arrow = IsCollapsed(id) && !m_filtering ? m_themeCache.arrow_collapsed : m_themeCache.arrow_expanded;
-				float const iconWidth = m_items[m_rows[row]].m_icon.IsValid() ? m_themeCache.icon_size + m_themeCache.icon_separation : 0.f;
-				Rect2 target;
+				auto arrow =
+					IsCollapsed(id) && !m_filtering ? m_themeCache.arrow_collapsed : m_themeCache.arrow_expanded;
+				float const iconWidth =
+					m_items[m_rows[row]].m_icon.IsValid() ? m_themeCache.icon_size + m_themeCache.icon_separation : 0.f;
+				Rect2       target;
 				float const foldSize = GetFoldWidth(row);
-				target.m_position = Vector2(GetRowTextX(row) - foldSize - iconWidth, GetRowRect(row).GetCenter().y - foldSize * 0.5f);
+				target.m_position =
+					Vector2(GetRowTextX(row) - foldSize - iconWidth, GetRowRect(row).GetCenter().y - foldSize * 0.5f);
 				target.m_size = Vector2(foldSize, foldSize);
 				Rect2 source;
 				source.m_size = Vector2(arrow->GetDimensions());
@@ -723,10 +764,11 @@ void Tree::OnNotification(int notification)
 			if (auto icon = m_items[m_rows[row]].m_icon; icon.IsValid())
 			{
 				AABB2 const rowRect = GetRowRect(row);
-				float const size = static_cast<float>(std::max(1, m_themeCache.icon_size));
-				Rect2 target;
-				target.m_position = Vector2(GetRowTextX(row) - (texturedFold ? 0.f : GetFoldWidth(row))
-					- size - m_themeCache.icon_separation, rowRect.m_mins.y + (rowRect.GetHeight() - size) * 0.5f);
+				float const size    = static_cast<float>(std::max(1, m_themeCache.icon_size));
+				Rect2       target;
+				target.m_position = Vector2(
+					GetRowTextX(row) - (texturedFold ? 0.f : GetFoldWidth(row)) - size - m_themeCache.icon_separation,
+					rowRect.m_mins.y + (rowRect.GetHeight() - size) * 0.5f);
 				target.m_size = Vector2(size, size);
 				Rect2 source;
 				source.m_size = Vector2(icon->GetDimensions());
@@ -739,9 +781,9 @@ void Tree::OnNotification(int notification)
 				if (entry.m_icon.IsValid())
 				{
 					AABB2 const bounds = GetItemActionRect(id, action);
-					Rect2 target;
+					Rect2       target;
 					target.m_position = bounds.m_mins;
-					target.m_size = bounds.GetDimensions();
+					target.m_size     = bounds.GetDimensions();
 					Rect2 source;
 					source.m_size = Vector2(entry.m_icon->GetDimensions());
 					DrawTextureRectRegion(entry.m_icon, target, source, entry.m_color);

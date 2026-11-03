@@ -26,16 +26,19 @@ enum class RenderRequestPass
 	Skybox,
 	Opaque,
 	Transparent,
+	EditorOverlay,
 	UI,
 	Count
 };
 
 struct RenderRequest
 {
+public:
 	// One VisualizeInstance produces at most one request.
 	// A missing vertex buffer represents an intentionally empty request.
 	bool IsValid() const { return m_vertexBuffer != nullptr; }
 
+public:
 	RenderRequestPass m_pass           = RenderRequestPass::Opaque;
 	int               m_renderPriority = 0; // Lower numbers render first.
 
@@ -140,8 +143,10 @@ struct Instance
 
 	InstanceBaseType m_baseType = InstanceBaseType::None;
 
-	Matrix4x4 m_transform = Matrix4x4::Identity;
-	bool      m_visible   = true;
+	Matrix4x4         m_transform      = Matrix4x4::Identity;
+	bool              m_visible        = true;
+	RenderRequestPass m_renderPass     = RenderRequestPass::Opaque;
+	int               m_renderPriority = 0;
 };
 
 // How a camera projects onto the clip space it renders with.
@@ -175,10 +180,21 @@ struct CameraData
 struct ViewportData
 {
 public:
+	// Will be filled in pre render stage
+	// Collect lights from the scene
+	// That's why we use pointers instead of RIDs, to represent their temporary exstence
+	using RenderRequestArray = std::array<std::vector<RenderRequest>, (int)RenderRequestPass::Count>;
+
+	struct LightInstance
+	{
+		Instance*  m_instance  = nullptr;
+		LightData* m_lightData = nullptr;
+	};
+
+public:
 	// 1) Game fills cameras, dimensions, requests, lights, and post-process passes.
 	// 2) Renderer creates and resizes the GPU textures below.
 	// 3) All transient data and GPU resources belong to this Viewport only.
-
 	// m_presentToScreen indicates this viewport should present to the backbuffer
 	// Which is like the main viewport
 	bool m_active          = false;
@@ -204,18 +220,6 @@ public:
 	GPUTexture*      m_pongTexture           = nullptr;
 	PostProcessChain m_postProcessChain;
 
-public:
-	// Will be filled in pre render stage
-	// Collect lights from the scene
-	// That's why we use pointers instead of RIDs, to represent their temporary exstence
-	using RenderRequestArray = std::array<std::vector<RenderRequest>, (int)RenderRequestPass::Count>;
-
-	struct LightInstance
-	{
-		Instance*  m_instance  = nullptr;
-		LightData* m_lightData = nullptr;
-	};
-
 	LightInstance              m_directionalLight;
 	std::vector<LightInstance> m_pointLights;
 
@@ -224,10 +228,7 @@ public:
 
 struct CanvasItemData
 {
-	bool m_clipChildren = false;
-	Vector2 m_childrenClipSize = Vector2::Zero;
-	bool m_clipContents = false;
-	Vector2 m_clipSize = Vector2::Zero;
+public:
 	struct Command
 	{
 		enum Type
@@ -246,8 +247,8 @@ struct CanvasItemData
 		Rect2                rect;
 		Color                color = Color::White;
 		Ref<TextureResource> texture;
-		RID viewportTexture = RID::Invalid;
-		bool                 isTiling = false;
+		RID                  viewportTexture = RID::Invalid;
+		bool                 isTiling        = false;
 
 		Rect2 sourceRect;
 		bool  hasRegion = false;
@@ -255,11 +256,13 @@ struct CanvasItemData
 		CommandRect() { type = TYPE_RECT; }
 	};
 
-	CanvasItemData()                                 = default;
-	CanvasItemData(CanvasItemData const&)            = delete;
-	CanvasItemData& operator=(CanvasItemData const&) = delete;
+public:
+	CanvasItemData() = default;
 
 	~CanvasItemData() { ClearCommands(); }
+
+	CanvasItemData(CanvasItemData const&)            = delete;
+	CanvasItemData& operator=(CanvasItemData const&) = delete;
 
 	void ClearCommands()
 	{
@@ -270,6 +273,12 @@ struct CanvasItemData
 
 		m_commands.clear();
 	}
+
+public:
+	bool    m_clipChildren     = false;
+	Vector2 m_childrenClipSize = Vector2::Zero;
+	bool    m_clipContents     = false;
+	Vector2 m_clipSize         = Vector2::Zero;
 
 	RID              m_viewport = RID::Invalid;
 	RID              m_parent   = RID::Invalid;
@@ -283,9 +292,11 @@ struct CanvasItemData
 
 struct CanvasLayerData
 {
+public:
 	CanvasLayerData()  = default;
 	~CanvasLayerData() = default;
 
+public:
 	RID              m_viewport = RID::Invalid;
 	std::vector<RID> m_children;
 };

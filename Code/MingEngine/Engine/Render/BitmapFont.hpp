@@ -13,9 +13,6 @@ class BitmapFont
 {
 	friend class D3D11RenderBackend; // Only the Renderer can create new BitmapFont objects!
 
-private:
-	BitmapFont(char const* fontFilePathNameWithNoExtension, GPUTexture& fontTexture);
-
 public:
 	GPUTexture* GetTexture();
 
@@ -61,6 +58,9 @@ public:
 
 protected:
 	float GetGlyphAspect(int glyphUnicode) const; // For now this will always return m_fontDefaultAspect
+
+private:
+	BitmapFont(char const* fontFilePathNameWithNoExtension, GPUTexture& fontTexture);
 
 protected:
 	std::string m_fontFilePathNameWithNoExtension;

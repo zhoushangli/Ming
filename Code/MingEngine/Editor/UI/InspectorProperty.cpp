@@ -34,31 +34,64 @@ InspectorProperty::InspectorProperty(PropertyInfo info, std::string labelId, Val
 		m_root->SetThemeSource(EditorNode::Get()->m_editorUI->GetRootControl());
 	}
 	m_root->SetSerializable(false);
-	m_root->SetSeparation(GetEditorDimension("status_spacing", 15.f) * 0.25f);
+	m_root->AddThemeChangedCallback(
+		[control = m_root]()
+		{
+			control->SetSeparation(static_cast<float>(control->GetThemeConstant("status_spacing", "Editor")) * 0.25f);
+		});
 	auto* title = MemNew<Label>();
-	m_title = title;
+	m_title     = title;
 	title->SetText(GetDisplayName());
 	title->SetThemeTypeVariation("EditorPropertyTitle");
 	auto* row = MemNew<HBoxContainer>();
-	row->SetSeparation(GetEditorDimension("status_spacing", 15.f) * 0.5f);
+	row->AddThemeChangedCallback(
+		[control = row]()
+		{
+			control->SetSeparation(static_cast<float>(control->GetThemeConstant("status_spacing", "Editor")) * 0.5f);
+		});
 	m_root->AddNode(row);
-	title->SetCustomMinimumSize(Vector2(GetEditorDimension("property_label_width", 112.5f), 0.f));
+	title->AddThemeChangedCallback(
+		[control = title]()
+		{
+			control->SetCustomMinimumSize(
+				Vector2(static_cast<float>(control->GetThemeConstant("property_label_width", "Editor")), 0.f));
+		});
 	title->SetClipText(true);
 	title->SetVerticalAlignment(VerticalAlignment::Center);
 	row->AddNode(title);
 	m_fields = MemNew<VBoxContainer>();
 	m_fields->SetHorizontalSizeFlags(Control::Size_ExpandFill);
-	m_fields->SetSeparation(GetEditorDimension("panel_margin", 5.f) * 0.5f);
+	m_fields->AddThemeChangedCallback(
+		[control = m_fields]()
+		{
+			control->SetSeparation(static_cast<float>(control->GetThemeConstant("panel_margin", "Editor")) * 0.5f);
+		});
 	row->AddNode(m_fields);
 	m_revert = MemNew<Button>();
+	m_revert->SetName("RevertProperty");
 	m_revert->SetThemeTypeVariation("EditorPanelAction");
 	m_revert->SetIcon(EditorIcons::GetIconTexture("Undo"));
-	m_revert->SetCustomMinimumSize(Vector2(GetEditorDimension("action_slot", 22.5f), GetEditorDimension("action_slot", 22.5f)));
+	m_revert->AddThemeChangedCallback(
+		[control = m_revert]()
+		{
+			control->SetCustomMinimumSize(Vector2(
+				static_cast<float>(control->GetThemeConstant("action_slot", "Editor")),
+				static_cast<float>(control->GetThemeConstant("action_slot", "Editor"))));
+		});
 	m_revert->SetDisabled(true);
 	m_revert->SetVisible(false);
-	m_revert->SetPressedCallback([this]() { EmitValueChanged(m_revertValue); });
+	m_revert->SetPressedCallback(
+		[this]()
+		{
+			EmitValueChanged(m_revertValue);
+		});
 	auto* revertSlot = MemNew<HBoxContainer>();
-	revertSlot->SetCustomMinimumSize(Vector2(GetEditorDimension("action_slot", 22.5f), 0.f));
+	revertSlot->AddThemeChangedCallback(
+		[control = revertSlot]()
+		{
+			control->SetCustomMinimumSize(
+				Vector2(static_cast<float>(control->GetThemeConstant("action_slot", "Editor")), 0.f));
+		});
 	row->AddNode(revertSlot);
 	revertSlot->AddNode(m_revert);
 	m_error = MemNew<Label>();
@@ -109,7 +142,6 @@ Control* InspectorProperty::GetControl() const
 	return ObjectDatabase::GetInstance<Control>(m_rootID);
 }
 
-
 void InspectorProperty::SetError(std::string const& message)
 {
 	m_error->SetText(message);
@@ -153,15 +185,30 @@ void InspectorProperty::BuildNumeric()
 
 void InspectorProperty::BuildComponents()
 {
-	m_title->SetVisible(false);
+	if (m_info.m_type == Variant::Type::EulerAngles)
+	{
+		m_title->SetText(GetDisplayName() + " (deg)");
+	}
 	int const count = m_info.m_type == Variant::Type::Vector2 ? 2 : (m_info.m_type == Variant::Type::Color ? 4 : 3);
 	if (m_info.m_type == Variant::Type::Color)
 	{
 		m_color = MemNew<ColorRect>();
-		m_color->SetCustomMinimumSize(Vector2(0.f, GetEditorDimension("color_height", 27.5f)));
+		m_color->AddThemeChangedCallback(
+			[control = m_color]()
+			{
+				control->SetCustomMinimumSize(
+					Vector2(0.f, static_cast<float>(control->GetThemeConstant("color_height", "Editor"))));
+			});
 		m_fields->AddNode(m_color);
 	}
 
+	auto* components = MemNew<HBoxContainer>();
+	components->AddThemeChangedCallback(
+		[control = components]()
+		{
+			control->SetSeparation(static_cast<float>(control->GetThemeConstant("panel_margin", "Editor")) * 0.5f);
+		});
+	m_fields->AddNode(components);
 	char const* names[]  = { "X", "Y", "Z", "W" };
 	char const* angles[] = { "X", "Y", "Z" };
 	char const* colors[] = { "R", "G", "B", "A" };
@@ -169,15 +216,24 @@ void InspectorProperty::BuildComponents()
 	{
 		auto* row   = MemNew<HBoxContainer>();
 		auto* label = MemNew<Label>();
-		label->SetText(String(GetDisplayName() + " ") + String(
+		label->SetText(String(
 			m_info.m_type == Variant::Type::EulerAngles
 				? angles[i]
 				: (m_info.m_type == Variant::Type::Color ? colors[i] : names[i])));
 		label->SetThemeTypeVariation("EditorPropertyLabel");
-		label->SetCustomMinimumSize(Vector2(GetEditorDimension("property_label_width", 112.5f), 0.f));
+		label->AddThemeChangedCallback(
+			[control = label]()
+			{
+				control->SetCustomMinimumSize(
+					Vector2(static_cast<float>(control->GetThemeConstant("spacing", "Editor")), 0.f));
+			});
 		label->SetClipText(true);
 		label->SetVerticalAlignment(VerticalAlignment::Center);
-		row->SetSeparation(GetEditorDimension("status_spacing", 15.f) * 0.5f);
+		row->AddThemeChangedCallback(
+			[control = row]()
+			{
+				control->SetSeparation(static_cast<float>(control->GetThemeConstant("panel_margin", "Editor")) * 0.25f);
+			});
 		row->AddNode(label);
 		auto* spin = MemNew<SpinBox>();
 		spin->SetStepButtonsVisible(false);
@@ -199,16 +255,9 @@ void InspectorProperty::BuildComponents()
 				SetComponent(i, value);
 			});
 		row->AddNode(spin);
-		if (m_info.m_type == Variant::Type::EulerAngles)
-		{
-			auto* unit = MemNew<Label>();
-			unit->SetText("deg");
-			unit->SetThemeTypeVariation("EditorStatusLabel");
-			unit->SetVerticalAlignment(VerticalAlignment::Center);
-			row->AddNode(unit);
-		}
 
-		m_fields->AddNode(row);
+		components->AddNode(row);
+		row->SetHorizontalSizeFlags(Control::Size_ExpandFill);
 		m_spins.push_back(spin);
 	}
 }
@@ -325,7 +374,7 @@ void InspectorProperty::BuildText(bool resource)
 		{
 			VirtualPath path;
 			return data.m_type == String("file") && VirtualPath::TryParse(data.m_value.ToUtf8(), path)
-				&& CanAssignResource(path);
+				   && CanAssignResource(path);
 		};
 		auto drop = [this](Vector2 const&, GuiDragData const& data)
 		{

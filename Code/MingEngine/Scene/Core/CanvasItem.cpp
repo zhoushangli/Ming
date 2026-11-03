@@ -201,7 +201,8 @@ void CanvasItem::DrawViewportRect(RID viewport, Rect2 const& rect)
 	g_engine->m_renderServer->CanvasItemAddViewportRect(m_canvasItemRID, viewport, rect);
 }
 
-void CanvasItem::DrawTextureRect(Ref<TextureResource> const& texture, Rect2 const& rect, bool isTiling, Color const& color)
+void CanvasItem::DrawTextureRect(
+	Ref<TextureResource> const& texture, Rect2 const& rect, bool isTiling, Color const& color)
 {
 	if (!texture.IsValid())
 	{
@@ -220,4 +221,10 @@ void CanvasItem::DrawTextureRectRegion(
 	}
 
 	g_engine->m_renderServer->CanvasItemAddTextureRectRegion(m_canvasItemRID, texture, rect, sourceRect, color);
+}
+
+void CanvasItem::BindMethods()
+{
+	ClassDatabase::BindMethod("SetVisible", &CanvasItem::SetVisible, { "visible", "cancelDrag" });
+	ClassDatabase::BindMethod("IsVisible", &CanvasItem::IsVisible, {});
 }

@@ -23,6 +23,7 @@ EditorCamera::EditorCamera()
 	m_camera = MemNew<Camera3D>(60.f, 0.1f, 100.f);
 	AddNode(m_camera);
 
+	ResetView();
 	SetReady(true);
 	SetProcess(true);
 }
@@ -45,13 +46,10 @@ void EditorCamera::OnProcess(float deltaSeconds)
 	// PCG editor commands will move to a scene-local world/editor manager.
 
 	bool const shouldReset = g_engine->m_inputSystem->WasKeyJustPressed('H')
-        && (EditorNode::Get() == nullptr || !EditorNode::Get()->IsEditingNativeControl());
+							 && (EditorNode::Get() == nullptr || !EditorNode::Get()->IsEditingNativeControl());
 	if (shouldReset)
 	{
-		SetLocalPosition(Vector3(0.f, 0.f, 0.f));
-		SetLocalOrientation(EulerAngles(0.f, 0.f, 0.f));
-		m_velocity        = Vector3(0.f, 0.f, 0.f);
-		m_angularVelocity = EulerAngles(0.f, 0.f, 0.f);
+		ResetView();
 	}
 
 	UpdateControlState();
@@ -87,8 +85,9 @@ void EditorCamera::OnNotification(int notification)
 void EditorCamera::UpdateControlState()
 {
 	EditorNode* editor = EditorNode::Get();
-	EnterControlState(editor != nullptr && editor->IsSceneNavigationActive()
-		? EditorControlState::FlyThrough : EditorControlState::Pointer);
+	EnterControlState(
+		editor != nullptr && editor->IsSceneNavigationActive() ? EditorControlState::FlyThrough
+															   : EditorControlState::Pointer);
 }
 
 void EditorCamera::EnterControlState(EditorControlState nextState)
@@ -211,4 +210,12 @@ void EditorCamera::UpdateCameraChild()
 Camera3D* EditorCamera::GetCamera() const
 {
 	return m_camera;
+}
+
+void EditorCamera::ResetView()
+{
+	SetLocalPosition(Vector3(5.f, 5.f, 5.f));
+	SetLocalOrientation(EulerAngles(-135.f, 45.f, 0.f));
+	m_velocity        = Vector3::Zero;
+	m_angularVelocity = EulerAngles::Zero;
 }

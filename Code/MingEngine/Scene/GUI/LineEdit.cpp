@@ -118,7 +118,7 @@ void LineEdit::SetPadding(Vector2 const& padding)
 		return;
 	}
 
-	m_padding = Vector2(std::max(0.f, padding.x), std::max(0.f, padding.y));
+	m_padding            = Vector2(std::max(0.f, padding.x), std::max(0.f, padding.y));
 	m_hasPaddingOverride = true;
 	OnThemeChanged();
 	PropagateMinimumSizeChanged();
@@ -255,10 +255,13 @@ Vector2 LineEdit::GetInternalMinimumSize() const
 {
 	float width  = 0.f;
 	float height = static_cast<float>(m_themeCache.font_size);
-	if (m_themeCache.font.IsValid() && m_themeCache.font->GetFontRID().IsValid() && g_engine != nullptr && g_engine->m_textServer != nullptr)
+	if (m_themeCache.font.IsValid() && m_themeCache.font->GetFontRID().IsValid() && g_engine != nullptr
+		&& g_engine->m_textServer != nullptr)
 	{
-		TextLine const minimum =
-			g_engine->m_textServer->GetTextLine(m_themeCache.font->GetFontRID(), std::string(m_minimumCharacterWidth, 'W'), static_cast<float>(m_themeCache.font_size));
+		TextLine const minimum = g_engine->m_textServer->GetTextLine(
+			m_themeCache.font->GetFontRID(),
+			std::string(m_minimumCharacterWidth, 'W'),
+			static_cast<float>(m_themeCache.font_size));
 		width  = minimum.m_width;
 		height = std::abs(minimum.m_config.m_ascent) + std::abs(minimum.m_config.m_descent);
 	}
@@ -266,7 +269,9 @@ Vector2 LineEdit::GetInternalMinimumSize() const
 	Vector2 const margins(
 		GetContentMargin(ThemeStyleBox::Side::Left) + GetContentMargin(ThemeStyleBox::Side::Right),
 		GetContentMargin(ThemeStyleBox::Side::Top) + GetContentMargin(ThemeStyleBox::Side::Bottom));
-	return Vector2(std::max(1.f, width) + margins.x + (m_icon.IsValid() ? m_themeCache.font_size + static_cast<float>(m_themeCache.icon_separation) : 0.f),
+	return Vector2(
+		std::max(1.f, width) + margins.x
+			+ (m_icon.IsValid() ? m_themeCache.font_size + static_cast<float>(m_themeCache.icon_separation) : 0.f),
 		std::max(height + margins.y, static_cast<float>(std::max(0, m_themeCache.minimum_height))));
 }
 
@@ -288,11 +293,16 @@ void LineEdit::UpdateTextLayout()
 {
 	m_line            = {};
 	m_placeholderLine = {};
-	if (m_themeCache.font.IsValid() && m_themeCache.font->GetFontRID().IsValid() && g_engine != nullptr && g_engine->m_textServer != nullptr)
+	if (m_themeCache.font.IsValid() && m_themeCache.font->GetFontRID().IsValid() && g_engine != nullptr
+		&& g_engine->m_textServer != nullptr)
 	{
 		TextServer* server = g_engine->m_textServer;
-		m_line             = server->GetTextLine(m_themeCache.font->GetFontRID(), m_text, static_cast<float>(m_themeCache.font_size));
-		m_placeholderLine  = server->GetTextLine(m_themeCache.font->GetFontRID(), m_placeholder, static_cast<float>(m_themeCache.font_size));
+		m_line =
+			server->GetTextLine(m_themeCache.font->GetFontRID(), m_text, static_cast<float>(m_themeCache.font_size));
+		m_placeholderLine = server->GetTextLine(
+			m_themeCache.font->GetFontRID(),
+			m_placeholder,
+			static_cast<float>(m_themeCache.font_size));
 	}
 
 	EnsureCursorVisible();
@@ -303,11 +313,16 @@ AABB2 LineEdit::GetContentRect() const
 {
 	Vector2 const size = GetSize();
 	Vector2 const start(
-		std::min(size.x, GetContentMargin(ThemeStyleBox::Side::Left) + (m_icon.IsValid() ? m_themeCache.font_size + static_cast<float>(m_themeCache.icon_separation) : 0.f)),
+		std::min(
+			size.x,
+			GetContentMargin(ThemeStyleBox::Side::Left)
+				+ (m_icon.IsValid() ? m_themeCache.font_size + static_cast<float>(m_themeCache.icon_separation) : 0.f)),
 		std::min(size.y, GetContentMargin(ThemeStyleBox::Side::Top)));
-	return AABB2(start, Vector2(
-		std::max(start.x, size.x - GetContentMargin(ThemeStyleBox::Side::Right)),
-		std::max(start.y, size.y - GetContentMargin(ThemeStyleBox::Side::Bottom))));
+	return AABB2(
+		start,
+		Vector2(
+			std::max(start.x, size.x - GetContentMargin(ThemeStyleBox::Side::Right)),
+			std::max(start.y, size.y - GetContentMargin(ThemeStyleBox::Side::Bottom))));
 }
 
 float LineEdit::GetColumnPosition(int column) const
@@ -322,7 +337,8 @@ float LineEdit::GetColumnPosition(int column) const
 
 void LineEdit::EnsureCursorVisible()
 {
-	float const width    = std::max(0.f, GetContentRect().GetWidth() - static_cast<float>(std::max(1, m_themeCache.caret_width)));
+	float const width =
+		std::max(0.f, GetContentRect().GetWidth() - static_cast<float>(std::max(1, m_themeCache.caret_width)));
 	float const position = GetColumnPosition(m_cursorColumn);
 	if (position < m_scrollOffset)
 	{
@@ -346,6 +362,11 @@ void LineEdit::MoveCursor(int column, bool select)
 
 	EnsureCursorVisible();
 	QueueRedraw();
+}
+
+CursorShape LineEdit::GetCursorShape([[maybe_unused]] Vector2 const& localPosition) const
+{
+	return m_editable && !m_disabled ? CursorShape::IBeam : CursorShape::Arrow;
 }
 
 void LineEdit::SetCursorColumn(int column)
@@ -606,7 +627,8 @@ bool LineEdit::GuiInput(InputEvent const& event)
 
 		if (command)
 		{
-			if ((event.m_modifiers & GLFW_MOD_CONTROL) != 0 && (event.m_modifiers & (GLFW_MOD_ALT | GLFW_MOD_SUPER)) == 0)
+			if ((event.m_modifiers & GLFW_MOD_CONTROL) != 0
+				&& (event.m_modifiers & (GLFW_MOD_ALT | GLFW_MOD_SUPER)) == 0)
 			{
 				if (event.m_keyCode == GLFW_KEY_Z)
 				{
@@ -678,8 +700,9 @@ bool LineEdit::GuiInput(InputEvent const& event)
 			{
 				if (!HasSelection())
 				{
-					int const adjacent = event.m_keyCode == GLFW_KEY_BACKSPACE ? m_cursorColumn - 1 : m_cursorColumn + 1;
-					m_selectionAnchor  = std::clamp(adjacent, 0, static_cast<int>(m_text.Length()));
+					int const adjacent =
+						event.m_keyCode == GLFW_KEY_BACKSPACE ? m_cursorColumn - 1 : m_cursorColumn + 1;
+					m_selectionAnchor = std::clamp(adjacent, 0, static_cast<int>(m_text.Length()));
 				}
 
 				ReplaceSelection(String());
@@ -732,17 +755,21 @@ void LineEdit::DrawContent()
 
 	bool const      placeholder = m_text.IsEmpty();
 	TextLine const& line        = placeholder ? m_placeholderLine : m_line;
-	Color const textColor = m_disabled ? m_themeCache.font_disabled_color
-		: (placeholder ? m_themeCache.font_placeholder_color
-			: (!m_editable ? m_themeCache.font_read_only_color : m_themeCache.font_color));
-	if (m_themeCache.font.IsValid() && m_themeCache.font->GetFontRID().IsValid() && g_engine != nullptr && g_engine->m_textServer != nullptr)
+	Color const     textColor =
+		m_disabled ? m_themeCache.font_disabled_color
+				   : (placeholder ? m_themeCache.font_placeholder_color
+								  : (!m_editable ? m_themeCache.font_read_only_color : m_themeCache.font_color));
+	if (m_themeCache.font.IsValid() && m_themeCache.font->GetFontRID().IsValid() && g_engine != nullptr
+		&& g_engine->m_textServer != nullptr)
 	{
 		float const lineHeight = std::abs(line.m_config.m_ascent) + std::abs(line.m_config.m_descent);
 		float const baseline   = content.m_mins.y + (content.GetHeight() - lineHeight) * 0.5f + line.m_config.m_ascent;
 		for (TextLineGlyph const& glyph : line.m_glyphs)
 		{
-			GlyphTexture const* texture =
-				g_engine->m_textServer->GetOrCreateGlyphTexture(m_themeCache.font->GetFontRID(), glyph.m_glyphIndex, m_themeCache.font_size);
+			GlyphTexture const* texture = g_engine->m_textServer->GetOrCreateGlyphTexture(
+				m_themeCache.font->GetFontRID(),
+				glyph.m_glyphIndex,
+				m_themeCache.font_size);
 			if (texture == nullptr || !texture->m_texture.IsValid())
 			{
 				continue;
@@ -778,7 +805,13 @@ void LineEdit::DrawContent()
 		float const cursorHeight = height > 0.f ? height : static_cast<float>(m_themeCache.font_size);
 		float const cursorTop    = content.m_mins.y + (content.GetHeight() - cursorHeight) * 0.5f;
 		float const x            = originX + GetColumnPosition(m_cursorColumn);
-		drawClippedRect(AABB2(x, cursorTop, x + static_cast<float>(std::max(1, m_themeCache.caret_width)), cursorTop + cursorHeight), m_themeCache.caret_color);
+		drawClippedRect(
+			AABB2(
+				x,
+				cursorTop,
+				x + static_cast<float>(std::max(1, m_themeCache.caret_width)),
+				cursorTop + cursorHeight),
+			m_themeCache.caret_color);
 	}
 }
 
@@ -828,7 +861,8 @@ void LineEdit::OnNotification(int notification)
 	case Notification_Draw:
 	{
 		Ref<ThemeStyleBox> style = m_disabled ? m_themeCache.disabled
-			: (!m_editable ? m_themeCache.read_only : (m_hovering ? m_themeCache.hover : m_themeCache.normal));
+											  : (!m_editable ? m_themeCache.read_only
+															 : (m_hovering ? m_themeCache.hover : m_themeCache.normal));
 		DrawThemeStyleBox(style, GetLocalRect());
 		if (HasFocus())
 		{
@@ -838,9 +872,9 @@ void LineEdit::OnNotification(int notification)
 		if (m_icon.IsValid())
 		{
 			float const side = static_cast<float>(m_themeCache.font_size);
-			Rect2 target;
+			Rect2       target;
 			target.m_position = Vector2(GetContentMargin(ThemeStyleBox::Side::Left), (GetSize().y - side) * 0.5f);
-			target.m_size = Vector2(side, side);
+			target.m_size     = Vector2(side, side);
 			Rect2 source;
 			source.m_size = Vector2(m_icon->GetDimensions());
 			DrawTextureRectRegion(m_icon, target, source, m_themeCache.font_placeholder_color);

@@ -78,9 +78,9 @@ inline Ref<Theme> CreateWarmCarbonInkTheme(Ref<FontResource> const& font)
 inline void VerifyThemeContexts(std::function<void(bool, char const*)> const& check)
 {
 	SceneTree tree;
-	auto* scope = MemNew<Control>();
+	auto*     scope = MemNew<Control>();
 	tree.GetRoot()->AddNode(scope);
-	auto first = CreateRef<Theme>();
+	auto first  = CreateRef<Theme>();
 	auto second = CreateRef<Theme>();
 	first->SetDefaultFontSize(13);
 	first->SetDefaultFont(ThemeDatabase::GetDefaultTheme()->GetDefaultFont());
@@ -89,7 +89,8 @@ inline void VerifyThemeContexts(std::function<void(bool, char const*)> const& ch
 	auto* button = MemNew<Button>();
 	button->SetText("Context");
 	scope->AddNode(button);
-	check(button->GetFontSize() == 13 && button->GetFont() == first->GetDefaultFont(),
+	check(
+		button->GetFontSize() == 13 && button->GetFont() == first->GetDefaultFont(),
 		"context resolves default font and size from its first source");
 	first->SetDefaultFontSize(-1);
 	check(button->GetFontSize() == 17, "context missing item falls through to its next source");
@@ -109,7 +110,8 @@ inline void VerifyThemeContexts(std::function<void(bool, char const*)> const& ch
 	scope->AddNode(inner);
 	ThemeDatabase::SetThemeContext(inner, {});
 	button->Reparent(inner);
-	check(button->GetFontSize() == ThemeDatabase::GetDefaultTheme()->GetDefaultFontSize(),
+	check(
+		button->GetFontSize() == ThemeDatabase::GetDefaultTheme()->GetDefaultFontSize(),
 		"nearest empty Context isolates outer editor defaults");
 	ThemeDatabase::ClearThemeContext(inner);
 	check(button->GetFontSize() == 13, "removing Context refreshes descendants and restores outer Context");
@@ -134,7 +136,9 @@ inline void VerifyThemeContexts(std::function<void(bool, char const*)> const& ch
 	check(!button->SetThemeSource(option), "theme source cycle is rejected");
 	button->QueueFree();
 	tree.FlushPendingNode();
-	check(!popup->IsVisible() && popup->GetThemeSource() == nullptr, "owner deletion closes popup and releases weak source");
+	check(
+		!popup->IsVisible() && popup->GetThemeSource() == nullptr,
+		"owner deletion closes popup and releases weak source");
 
 	auto* replacement = MemNew<Button>();
 	scope->AddNode(replacement);
@@ -146,16 +150,18 @@ inline void VerifyThemeContexts(std::function<void(bool, char const*)> const& ch
 	auto moved = CreateRef<Theme>();
 	moved->SetDefaultFont(first->GetDefaultFont());
 	moved->SetDefaultFontSize(22);
-	check(second->CopyFrom(std::move(*moved)) && replacement->GetFontSize() == 22
-		&& option->GetFontSize() == 22, "Theme CopyFrom moves defaults and refreshes Context consumers");
+	check(
+		second->CopyFrom(std::move(*moved)) && replacement->GetFontSize() == 22 && option->GetFontSize() == 22,
+		"Theme CopyFrom moves defaults and refreshes Context consumers");
 
 	replacement->SetText("Icon");
 	Vector2 const textSize = replacement->GetCombinedMinimumSize();
-	auto icon = CreateRef<TextureResource>();
-	icon->m_image = CreateRef<Image>();
+	auto          icon     = CreateRef<TextureResource>();
+	icon->m_image          = CreateRef<Image>();
 	icon->m_image->LoadFromRGBA8(IntVec2(8, 8), std::vector<uint8_t>(8 * 8 * 4, 255));
 	replacement->SetIcon(icon);
-	check(replacement->GetChildren().empty() && replacement->GetCombinedMinimumSize().x > textSize.x,
+	check(
+		replacement->GetChildren().empty() && replacement->GetCombinedMinimumSize().x > textSize.x,
 		"Button text and icon contribute directly to minimum size without an internal Label");
 	replacement->SetText("");
 	check(replacement->GetCombinedMinimumSize().x > 0.f, "icon-only Button retains a nonempty minimum size");
@@ -172,58 +178,66 @@ inline void VerifyThemes(
 		base->SetConstant("mode", "Button", 7);
 		base->SetFontSize("font_size", "CustomTitle", 17);
 		base->SetTypeVariation("CustomTitle", "Label");
-		auto original = base->GetStyleBox("normal", "EditorMenuItem");
+		auto        original       = base->GetStyleBox("normal", "EditorMenuItem");
 		float const originalMargin = original->GetContentMargin(ThemeStyleBox::Side::Left);
 		for (float scale : { 1.f, 1.25f, 1.5f, 1.75f, 2.f, 1.25f, 1.f })
 		{
 			auto generated = EditorThemeManager::CreateScaledTheme(base, scale);
-			auto box = generated->GetStyleBox("normal", "EditorMenuItem");
-			check(generated != base && box != original
-				&& box == generated->GetStyleBox("disabled", "EditorMenuItem"),
+			auto box       = generated->GetStyleBox("normal", "EditorMenuItem");
+			check(
+				generated != base && box != original && box == generated->GetStyleBox("disabled", "EditorMenuItem"),
 				"Theme duplicate isolates mutable boxes and preserves internal sharing");
-			check(std::abs(box->GetContentMargin(ThemeStyleBox::Side::Left) - originalMargin * scale) < 0.001f
-				&& original->GetContentMargin(ThemeStyleBox::Side::Left) == originalMargin,
+			check(
+				std::abs(box->GetContentMargin(ThemeStyleBox::Side::Left) - originalMargin * scale) < 0.001f
+					&& original->GetContentMargin(ThemeStyleBox::Side::Left) == originalMargin,
 				"each generated Theme scales shared margins once from the unchanged base");
-			check(generated->GetConstant("mode", "Button") == 7
-				&& generated->GetColor("font_color", "Control") == base->GetColor("font_color", "Control")
-				&& generated->GetDefaultFont() == base->GetDefaultFont()
-				&& generated->GetIcon("Node", "EditorIcons") == base->GetIcon("Node", "EditorIcons"),
+			check(
+				generated->GetConstant("mode", "Button") == 7
+					&& generated->GetColor("font_color", "Control") == base->GetColor("font_color", "Control")
+					&& generated->GetDefaultFont() == base->GetDefaultFont()
+					&& generated->GetIcon("Node", "EditorIcons") == base->GetIcon("Node", "EditorIcons"),
 				"Theme scaling preserves non-dimensional data and shares immutable resources");
-			check(generated->GetFontSize("font_size", "CustomTitle") == static_cast<int>(std::round(17.f * scale))
-				&& generated->GetTypeVariationBase("CustomTitle") == "Label",
+			check(
+				generated->GetFontSize("font_size", "CustomTitle") == static_cast<int>(std::round(17.f * scale))
+					&& generated->GetTypeVariationBase("CustomTitle") == "Label",
 				"Theme scaling enumerates custom font sizes and preserves variations");
 			box->SetContentMargin(ThemeStyleBox::Side::Left, 123.f);
-			check(original->GetContentMargin(ThemeStyleBox::Side::Left) == originalMargin,
+			check(
+				original->GetContentMargin(ThemeStyleBox::Side::Left) == originalMargin,
 				"editing a generated StyleBox leaves the base unchanged");
 		}
 
 		auto generated = EditorThemeManager::CreateScaledTheme(base);
-		check(generated->GetDefaultFontSize() == 19
-			&& generated->GetConstant("icon_size", "Button") == 25
-			&& generated->GetConstant("minimum_height", "Button") == 38
-			&& generated->GetConstant("top_bar_height", "Editor") == 75
-			&& generated->GetConstant("guide_width", "Tree") == 2
-			&& generated->GetConstant("children_guide_width", "Tree") == 1,
+		check(
+			generated->GetDefaultFontSize() == 19 && generated->GetConstant("icon_size", "Button") == 25
+				&& generated->GetConstant("minimum_height", "Button") == 38
+				&& generated->GetConstant("top_bar_height", "Editor") == 75
+				&& generated->GetConstant("guide_width", "Tree") == 2
+				&& generated->GetConstant("children_guide_width", "Tree") == 1,
 			"125 percent Theme uses the agreed representative dimensions and line widths");
-		check(base->GetDefaultFontSize() == 15 && base->GetConstant("icon_size", "Button") == 20,
+		check(
+			base->GetDefaultFontSize() == 15 && base->GetConstant("icon_size", "Button") == 20,
 			"base Theme remains the original 100 percent data");
-		for (float invalid : { 0.f, -1.f, std::numeric_limits<float>::infinity(), std::numeric_limits<float>::quiet_NaN() })
+		for (float invalid :
+			 { 0.f, -1.f, std::numeric_limits<float>::infinity(), std::numeric_limits<float>::quiet_NaN() })
 		{
-			check(EditorThemeManager::CreateScaledTheme(base, invalid)->GetDefaultFontSize() == 19,
+			check(
+				EditorThemeManager::CreateScaledTheme(base, invalid)->GetDefaultFontSize() == 19,
 				"invalid scale uses the default 125 percent");
 		}
 
-		check(EditorThemeManager::CreateScaledTheme(base, 0.001f)->GetDefaultFontSize() == 1,
+		check(
+			EditorThemeManager::CreateScaledTheme(base, 0.001f)->GetDefaultFontSize() == 1,
 			"positive tiny scale keeps fonts drawable");
 		check(!EditorThemeManager::CreateScaledTheme({}).IsValid(), "missing base does not create a partial Theme");
 	}
-	auto font            = FontResource::CreateDefault();
-	auto originalDefault = ThemeDatabase::GetDefaultTheme();
+	auto      font            = FontResource::CreateDefault();
+	auto      originalDefault = ThemeDatabase::GetDefaultTheme();
 	int const defaultFontSize = originalDefault->GetDefaultFontSize();
 	{
 		SceneTree editTree;
-		auto* edit = MemNew<LineEdit>();
-		auto editTheme = CreateRef<Theme>();
+		auto*     edit      = MemNew<LineEdit>();
+		auto      editTheme = CreateRef<Theme>();
 		editTheme->SetFont("font", "LineEdit", font);
 		auto normal = CreateRef<ThemeStyleBox>();
 		normal->SetContentMargin(ThemeStyleBox::Side::Left, 11.f);
@@ -237,21 +251,30 @@ inline void VerifyThemes(
 		edit->GrabFocus();
 		edit->Select(3, 8);
 		int ended = 0;
-		edit->SetEditingEndedCallback([&](String const&, LineEdit::EditEndReason) { ++ended; });
+		edit->SetEditingEndedCallback(
+			[&](String const&, LineEdit::EditEndReason)
+			{
+				++ended;
+			});
 		bool const editing = edit->IsEditing();
-		bool const undo = edit->HasUndo();
-		check(edit->GetFont() == font && edit->GetFontSize() == defaultFontSize
-			&& edit->GetPadding() == Vector2(11.f, 5.f), "LineEdit resolves font and asymmetric state margins");
+		bool const undo    = edit->HasUndo();
+		check(
+			edit->GetFont() == font && edit->GetFontSize() == defaultFontSize
+				&& edit->GetPadding() == Vector2(11.f, 5.f),
+			"LineEdit resolves font and asymmetric state margins");
 		editTheme->SetFontSize("font_size", "LineEdit", 18);
 		normal->SetContentMargin(ThemeStyleBox::Side::Left, 15.f);
-		check(edit->GetCursorColumn() == 8 && edit->GetSelectionFromColumn() == 3
-			&& edit->GetSelectionToColumn() == 8 && edit->IsEditing() == editing
-			&& edit->HasUndo() == undo && ended == 0, "LineEdit theme reflow preserves active edit and selection");
+		check(
+			edit->GetCursorColumn() == 8 && edit->GetSelectionFromColumn() == 3 && edit->GetSelectionToColumn() == 8
+				&& edit->IsEditing() == editing && edit->HasUndo() == undo && ended == 0,
+			"LineEdit theme reflow preserves active edit and selection");
 		edit->SetPadding(Vector2(2.5f, 1.25f));
 		normal->SetContentMargin(ThemeStyleBox::Side::Left, 17.f);
 		check(edit->GetPadding() == Vector2(2.5f, 1.25f), "LineEdit explicit padding preserves fractional precision");
 		edit->RemovePaddingOverride();
-		check(edit->GetPadding() == Vector2(17.f, 5.f), "LineEdit removing padding override restores live theme margins");
+		check(
+			edit->GetPadding() == Vector2(17.f, 5.f),
+			"LineEdit removing padding override restores live theme margins");
 		edit->SetFontSize(14);
 		editTheme->SetFontSize("font_size", "LineEdit", 20);
 		check(edit->GetFontSize() == 14, "LineEdit font setter remains an explicit theme override");
@@ -262,43 +285,53 @@ inline void VerifyThemes(
 
 	{
 		SceneTree rowTree;
-		auto* rows = MemNew<Tree>();
-		auto rowTheme = CreateRef<Theme>();
+		auto*     rows     = MemNew<Tree>();
+		auto      rowTheme = CreateRef<Theme>();
 		rowTheme->SetFont("font", "Tree", font);
 		rows->SetTheme(rowTheme);
 		rowTree.GetRoot()->AddNode(rows);
 		rows->UpdateSize(Vector2(260.f, 160.f));
 		rows->SetItems({ { 1, 0, "Root", true, true }, { 2, 1, "Child", true, true }, { 3, 0, "Other", true, true } });
 		rowTree.FlushPendingNode();
-		check(rows->GetRowHeight() == 24.f && rows->GetItemRect(2).m_mins.y == 24.f
-			&& rows->GetItemAtPosition(Vector2(100.f, 24.f)) == 2, "Tree compact row boundaries share draw and hit geometry");
+		check(
+			rows->GetRowHeight() == 24.f && rows->GetItemRect(2).m_mins.y == 24.f
+				&& rows->GetItemAtPosition(Vector2(100.f, 24.f)) == 2,
+			"Tree compact row boundaries share draw and hit geometry");
 		rows->Select(2);
 		rows->EditSelected();
 		auto* rename = dynamic_cast<LineEdit*>(rows->GetChildren()[0]);
 		rename->Select(1, 3);
 		int renamed = 0;
-		rows->SetRenamedCallback([&](uint64_t, String const&) { ++renamed; });
+		rows->SetRenamedCallback(
+			[&](uint64_t, String const&)
+			{
+				++renamed;
+			});
 		size_t const children = rows->GetChildren().size();
 		rowTheme->SetConstant("row_height", "Tree", 40);
 		rowTheme->SetConstant("indent", "Tree", 22);
 		rowTheme->SetFontSize("font_size", "Tree", 18);
-		check(rows->GetRowHeight() == 40.f && rows->GetItemRect(2).m_mins.y == 40.f
-			&& rows->GetItemAtPosition(Vector2(100.f, 79.f)) == 2
-			&& rows->GetItemAtPosition(Vector2(100.f, 80.f)) == 3, "Tree expanded row boundaries update together");
-		check(rows->GetChildren().size() == children && rename->GetText() == String("Child")
-			&& rename->GetCursorColumn() == 3 && rename->GetSelectionFromColumn() == 1
-			&& rename->IsEditing() && renamed == 0 && rename->GetLocalPosition().y == 40.f,
+		check(
+			rows->GetRowHeight() == 40.f && rows->GetItemRect(2).m_mins.y == 40.f
+				&& rows->GetItemAtPosition(Vector2(100.f, 79.f)) == 2
+				&& rows->GetItemAtPosition(Vector2(100.f, 80.f)) == 3,
+			"Tree expanded row boundaries update together");
+		check(
+			rows->GetChildren().size() == children && rename->GetText() == String("Child")
+				&& rename->GetCursorColumn() == 3 && rename->GetSelectionFromColumn() == 1 && rename->IsEditing()
+				&& renamed == 0 && rename->GetLocalPosition().y == 40.f,
 			"Tree theme reflow reuses rows and preserves active rename");
 		rows->SetCollapsed(1, true);
-		check(rows->IsCollapsed(1) && rows->GetItemRect(2) == AABB2::Zero,
+		check(
+			rows->IsCollapsed(1) && rows->GetItemRect(2) == AABB2::Zero,
 			"Tree collapsed children have no visible item rectangle");
 		rows->SetRenamedCallback({});
 	}
 
 	{
 		SceneTree tabTree;
-		auto* tabs = MemNew<TabContainer>();
-		auto tabTheme = CreateRef<Theme>();
+		auto*     tabs     = MemNew<TabContainer>();
+		auto      tabTheme = CreateRef<Theme>();
 		tabTheme->SetFont("font", "TabContainer", font);
 		tabs->SetTheme(tabTheme);
 		tabTree.GetRoot()->AddNode(tabs);
@@ -307,8 +340,10 @@ inline void VerifyThemes(
 		tabs->AddPage("Two", MemNew<Control>());
 		tabs->UpdateSize(Vector2(300.f, 180.f));
 		tabTree.FlushContainerUpdate();
-		check(tabs->GetTabBarRect().GetHeight() == 26.f && first->GetLocalPosition().y == 26.f
-			&& tabs->GetTabInsertRect(1).GetHeight() == 26.f, "Tab compact page and insertion geometry use header height");
+		check(
+			tabs->GetTabBarRect().GetHeight() == 26.f && first->GetLocalPosition().y == 26.f
+				&& tabs->GetTabInsertRect(1).GetHeight() == 26.f,
+			"Tab compact page and insertion geometry use header height");
 		auto selected = CreateRef<ThemeStyleBox>();
 		selected->SetBackgroundColor(Color::Red);
 		tabTheme->SetStyleBox("tab_selected", "TabContainer", selected);
@@ -317,23 +352,26 @@ inline void VerifyThemes(
 		tabTheme->SetConstant("tab_separation", "TabContainer", 7);
 		tabTheme->SetConstant("page_separation", "TabContainer", 5);
 		tabTree.FlushContainerUpdate();
-		check(tabs->GetTabBarRect().GetHeight() == 38.f && first->GetLocalPosition().y == 43.f
-			&& tabs->GetTabButton(1)->GetLocalPosition().x == tabs->GetTabButton(0)->GetSize().x + 7.f,
+		check(
+			tabs->GetTabBarRect().GetHeight() == 38.f && first->GetLocalPosition().y == 43.f
+				&& tabs->GetTabButton(1)->GetLocalPosition().x == tabs->GetTabButton(0)->GetSize().x + 7.f,
 			"Tab theme metrics update page placement and tab spacing");
-		check(tabs->GetTabButton(0)->GetThemeStyleBox("pressed") == selected
-			&& tabs->GetTabButton(0)->GetThemeColor("font_pressed_color") == Color::Green,
+		check(
+			tabs->GetTabButton(0)->GetThemeStyleBox("pressed") == selected
+				&& tabs->GetTabButton(0)->GetThemeColor("font_pressed_color") == Color::Green,
 			"Tab internal buttons use dedicated selected style and text color");
 		tabs->MovePage(0, 1);
 		tabTree.FlushContainerUpdate();
-		check(tabs->GetCurrentPage() == first && tabs->GetCurrentTab() == 1
-			&& tabs->GetTabInsertIndex(tabs->GetTabButton(1)->GetLocalPosition()) == 1,
+		check(
+			tabs->GetCurrentPage() == first && tabs->GetCurrentTab() == 1
+				&& tabs->GetTabInsertIndex(tabs->GetTabButton(1)->GetLocalPosition()) == 1,
 			"Tab reordering retains selected page identity with themed geometry");
 	}
 
 	{
 		SceneTree scrollTree;
-		auto* scroll = MemNew<ScrollContainer>();
-		auto scrollTheme = CreateRef<Theme>();
+		auto*     scroll      = MemNew<ScrollContainer>();
+		auto      scrollTheme = CreateRef<Theme>();
 		scroll->SetTheme(scrollTheme);
 		scrollTree.GetRoot()->AddNode(scroll);
 		scroll->UpdateSize(Vector2(100.f, 80.f));
@@ -348,29 +386,32 @@ inline void VerifyThemes(
 		scrollTree.FlushContainerUpdate();
 		check(scroll->GetPageSize() == Vector2(92.f, 72.f), "dual-axis scrollbar geometry reserves both themed tracks");
 		InputEvent wheel;
-		wheel.m_type = InputEventType::MouseWheel;
+		wheel.m_type   = InputEventType::MouseWheel;
 		wheel.m_scroll = Vector2(0.f, -1.f);
 		scroll->GuiInput(wheel);
 		check(scroll->GetScroll() == 24.f, "scroll wheel uses compact themed step");
 		scroll->SetScroll(0.f);
 		InputEvent press;
-		press.m_type = InputEventType::MouseButton;
+		press.m_type        = InputEventType::MouseButton;
 		press.m_mouseButton = GLFW_MOUSE_BUTTON_LEFT;
-		press.m_pressed = true;
-		press.m_position = Vector2(96.f, 5.f);
+		press.m_pressed     = true;
+		press.m_position    = Vector2(96.f, 5.f);
 		check(scroll->GuiInput(press), "scrollbar drawn track accepts pointer drag");
 		scrollTheme->SetConstant("scrollbar_width", "ScrollContainer", 16);
 		InputEvent motion;
-		motion.m_type = InputEventType::MouseMotion;
+		motion.m_type     = InputEventType::MouseMotion;
 		motion.m_position = Vector2(96.f, 70.f);
-		check(!scroll->GuiInput(motion) && scroll->GetScroll() == 0.f
-			&& scroll->GetPageSize() == Vector2(84.f, 64.f), "scrollbar theme resize cancels old drag and recomputes page");
+		check(
+			!scroll->GuiInput(motion) && scroll->GetScroll() == 0.f && scroll->GetPageSize() == Vector2(84.f, 64.f),
+			"scrollbar theme resize cancels old drag and recomputes page");
 		scroll->SetScroll(10000.f);
 		scroll->SetHorizontalScroll(10000.f);
 		content->SetCustomMinimumSize(Vector2(20.f, 20.f));
 		scrollTree.FlushContainerUpdate();
-		check(scroll->GetPageSize() == Vector2(100.f, 80.f) && scroll->GetScroll() == 0.f
-			&& scroll->GetHorizontalScroll() == 0.f, "shrinking content removes bars and clamps both scroll offsets");
+		check(
+			scroll->GetPageSize() == Vector2(100.f, 80.f) && scroll->GetScroll() == 0.f
+				&& scroll->GetHorizontalScroll() == 0.f,
+			"shrinking content removes bars and clamps both scroll offsets");
 		scrollTheme->SetConstant("scrollbar_width", "ScrollContainer", -4);
 		scrollTheme->SetConstant("grabber_minimum_size", "ScrollContainer", 1000);
 		content->SetCustomMinimumSize(Vector2(300.f, 300.f));
@@ -380,11 +421,11 @@ inline void VerifyThemes(
 
 	{
 		SceneTree splitTree;
-		auto* split = MemNew<SplitContainer>();
-		auto splitTheme = CreateRef<Theme>();
+		auto*     split      = MemNew<SplitContainer>();
+		auto      splitTheme = CreateRef<Theme>();
 		split->SetTheme(splitTheme);
 		splitTree.GetRoot()->AddNode(split);
-		auto* first = MemNew<Control>();
+		auto* first  = MemNew<Control>();
 		auto* second = MemNew<Control>();
 		first->SetCustomMinimumSize(Vector2(70.f, 40.f));
 		second->SetCustomMinimumSize(Vector2(50.f, 30.f));
@@ -393,26 +434,32 @@ inline void VerifyThemes(
 		split->UpdateSize(Vector2(300.f, 160.f));
 		splitTree.FlushContainerUpdate();
 		float const defaultGap = static_cast<float>(split->GetThemeConstant("separation"));
-		check(split->GetInternalMinimumSize() == Vector2(120.f + defaultGap, 40.f)
-			&& split->GetDividerRect().GetWidth() == defaultGap
-			&& second->GetLocalPosition().x == first->GetSize().x + defaultGap,
+		check(
+			split->GetInternalMinimumSize() == Vector2(120.f + defaultGap, 40.f)
+				&& split->GetDividerRect().GetWidth() == defaultGap
+				&& second->GetLocalPosition().x == first->GetSize().x + defaultGap,
 			"Split compact gap is shared by minimum size, divider and panel layout");
 		int finished = 0;
-		split->SetDragFinishedCallback([&]() { ++finished; });
+		split->SetDragFinishedCallback(
+			[&]()
+			{
+				++finished;
+			});
 		InputEvent press;
-		press.m_type = InputEventType::MouseButton;
+		press.m_type        = InputEventType::MouseButton;
 		press.m_mouseButton = GLFW_MOUSE_BUTTON_LEFT;
-		press.m_pressed = true;
-		press.m_position = split->GetDividerRect().GetCenter();
+		press.m_pressed     = true;
+		press.m_position    = split->GetDividerRect().GetCenter();
 		check(split->GuiInput(press), "themed divider accepts pointer drag");
 		float const ratio = split->GetSplitRatio();
 		splitTheme->SetConstant("separation", "SplitContainer", 20);
 		splitTree.FlushContainerUpdate();
 		InputEvent motion;
-		motion.m_type = InputEventType::MouseMotion;
+		motion.m_type     = InputEventType::MouseMotion;
 		motion.m_position = Vector2(10000.f, 80.f);
-		check(!split->GuiInput(motion) && split->GetSplitRatio() == ratio && finished == 0
-			&& split->GetDividerRect().GetWidth() == 20.f,
+		check(
+			!split->GuiInput(motion) && split->GetSplitRatio() == ratio && finished == 0
+				&& split->GetDividerRect().GetWidth() == 20.f,
 			"Split theme geometry change cancels drag without commit callback");
 		press.m_position = split->GetDividerRect().GetCenter();
 		split->GuiInput(press);
@@ -420,26 +467,29 @@ inline void VerifyThemes(
 		splitTree.FlushContainerUpdate();
 		press.m_pressed = false;
 		split->GuiInput(press);
-		check(second->GetSize().x == 50.f && finished == 1,
+		check(
+			second->GetSize().x == 50.f && finished == 1,
 			"Split outside drag clamps second panel minimum and commits once");
 		split->SetVertical(true);
 		splitTree.FlushContainerUpdate();
-		check(split->GetDividerRect().GetHeight() == 20.f
-			&& second->GetLocalPosition().y == first->GetSize().y + 20.f,
+		check(
+			split->GetDividerRect().GetHeight() == 20.f && second->GetLocalPosition().y == first->GetSize().y + 20.f,
 			"vertical Split shares the same themed separation geometry");
 		split->UpdateSize(Vector2(1.f, 1.f));
 		splitTree.FlushContainerUpdate();
-		check(first->GetSize().y >= 40.f && second->GetSize().y >= 30.f,
+		check(
+			first->GetSize().y >= 40.f && second->GetSize().y >= 30.f,
 			"undersized Split preserves both panel minimum sizes");
 		second->SetVisible(false);
 		splitTree.FlushContainerUpdate();
-		check(split->GetDividerRect() == AABB2::Zero && first->GetSize() == split->GetSize(),
+		check(
+			split->GetDividerRect() == AABB2::Zero && first->GetSize() == split->GetSize(),
 			"single-panel Split has no divider or reserved gap");
 		split->SetDragFinishedCallback({});
 	}
 
-	auto theme           = CreateWarmCarbonInkTheme(font);
-	auto other           = CreateRef<Theme>();
+	auto theme = CreateWarmCarbonInkTheme(font);
+	auto other = CreateRef<Theme>();
 	other->SetFontSize("font_size", "Control", 20);
 	other->SetFont("font", "Control", font);
 	auto* left  = MemNew<Control>();
@@ -492,9 +542,7 @@ inline void VerifyThemes(
 	theme->SetConstant("spacing", "ThemeProbe", 9);
 	check(button->GetRefreshCount() == count, "same theme value does not notify subscribers");
 	theme->SetFontSize("font_size", "Control", 14);
-	check(
-		button->GetFontSize() == 14,
-		"in-place font size update refreshes Button text metrics");
+	check(button->GetFontSize() == 14, "in-place font size update refreshes Button text metrics");
 	button->SetFontSize(18);
 	theme->SetFontSize("font_size", "Control", 13);
 	check(button->GetFontSize() == 18, "explicit Button font size remains above Theme values");
@@ -502,13 +550,9 @@ inline void VerifyThemes(
 	check(button->GetFontSize() == 13, "removing Button override restores inherited font size");
 	Color const amber(211, 173, 114);
 	theme->SetColor("font_color", "Button", amber);
-	check(
-		button->GetThemeColor("font_color") == amber,
-		"normal Button text uses resolved theme color");
+	check(button->GetThemeColor("font_color") == amber, "normal Button text uses resolved theme color");
 	button->RefreshTheme();
-	check(
-		button->GetThemeColor("font_color") == amber,
-		"internal Label refresh retains Button text override");
+	check(button->GetThemeColor("font_color") == amber, "internal Label refresh retains Button text override");
 	button->AddThemeColorOverride("font_color", Color::Red);
 	check(button->GetThemeColor("font_color") == Color::Red, "local color override precedes inherited Theme");
 	button->RemoveThemeColorOverride("font_color");
@@ -599,7 +643,9 @@ inline void VerifyThemes(
 	check(
 		theme->CopyFrom(std::move(*copied)) && button->GetFontSize() == 19 && !copied->HasStyleBox("normal", "Button"),
 		"Theme CopyFrom transfers values and clears source items");
-	check(sourceUser->GetFontSize() == defaultFontSize, "Theme CopyFrom also refreshes users of the emptied source resource");
+	check(
+		sourceUser->GetFontSize() == defaultFontSize,
+		"Theme CopyFrom also refreshes users of the emptied source resource");
 	MemDelete(sourceUser);
 	count = button->GetRefreshCount();
 	shared->SetBorderColor(amber);
@@ -710,8 +756,7 @@ inline void VerifyThemes(
 			ReadPixel(output, 137, 63) == Color(60, 51, 38),
 			"GPU draw updates automatically after shared style mutation");
 		check(
-			buttons[1]->GetThemeColor("font_hover_color") == amber
-				&& buttons[1]->GetFontSize() == 14,
+			buttons[1]->GetThemeColor("font_hover_color") == amber && buttons[1]->GetFontSize() == 14,
 			"live theme edits update state text and font cache");
 		ink->GetStyleBox("normal", "Button")->SetContentMargin(ThemeStyleBox::Side::Top, 20.f);
 		check(
@@ -775,13 +820,13 @@ inline void VerifyThemes(
 	// 2) Exercise all five controls together with a locally mutable theme and real rendering.
 	{
 		SceneTree tree;
-		auto* viewport = static_cast<Viewport*>(tree.GetRoot());
+		auto*     viewport = static_cast<Viewport*>(tree.GetRoot());
 		viewport->UpdateResolution(IntVec2(1040, 680));
-		auto ink = CreateWarmCarbonInkTheme(font);
+		auto ink       = CreateWarmCarbonInkTheme(font);
 		auto copyStyle = [&](char const* name, char const* type)
 		{
 			auto const source = originalDefault->GetStyleBox(name, type);
-			auto copy = CreateRef<ThemeStyleBox>();
+			auto       copy   = CreateRef<ThemeStyleBox>();
 			copy->SetBackgroundColor(source->GetBackgroundColor());
 			copy->SetBorderColor(source->GetBorderColor());
 			for (int side = 0; side < 4; ++side)
@@ -794,12 +839,12 @@ inline void VerifyThemes(
 			ink->SetStyleBox(name, type, copy);
 			return copy;
 		};
-		auto inputStyle = copyStyle("normal", "LineEdit");
-		auto selectedStyle = copyStyle("selected", "Tree");
-		auto tabStyle = copyStyle("tab_selected", "TabContainer");
-		auto grabberStyle = copyStyle("grabber", "ScrollContainer");
-		auto dividerStyle = copyStyle("normal", "SplitContainer");
-		auto* background = MemNew<ColorRect>();
+		auto  inputStyle    = copyStyle("normal", "LineEdit");
+		auto  selectedStyle = copyStyle("selected", "Tree");
+		auto  tabStyle      = copyStyle("tab_selected", "TabContainer");
+		auto  grabberStyle  = copyStyle("grabber", "ScrollContainer");
+		auto  dividerStyle  = copyStyle("normal", "SplitContainer");
+		auto* background    = MemNew<ColorRect>();
 		background->SetColor(Color(25, 24, 23));
 		viewport->AddNode(background);
 		auto* root = MemNew<Control>();
@@ -852,23 +897,28 @@ inline void VerifyThemes(
 		items.push_back({ 1, 0, "Scene root", true, true });
 		for (uint64_t id = 2; id <= 28; ++id)
 		{
-			items.push_back({ id, 1, String("Editable item ") + String(std::to_string(id).c_str())
-				+ " - horizontally scrollable content", true, true });
+			items.push_back(
+				{ id,
+				  1,
+				  String("Editable item ") + String(std::to_string(id).c_str()) + " - horizontally scrollable content",
+				  true,
+				  true });
 		}
 
 		rows->SetItems(items);
-		rows->SetRenamedCallback([rows, items = std::move(items)](uint64_t id, String const& text) mutable
-		{
-			for (auto& item : items)
+		rows->SetRenamedCallback(
+			[rows, items = std::move(items)](uint64_t id, String const& text) mutable
 			{
-				if (item.m_ID == id)
+				for (auto& item : items)
 				{
-					item.m_text = text;
+					if (item.m_ID == id)
+					{
+						item.m_text = text;
+					}
 				}
-			}
 
-			rows->SetItems(items);
-		});
+				rows->SetItems(items);
+			});
 		auto* tabs = MemNew<TabContainer>();
 		split->AddNode(tabs);
 		auto* fields = MemNew<VBoxContainer>();
@@ -921,7 +971,7 @@ inline void VerifyThemes(
 			engine.EndFrame();
 		};
 		bool expanded = false;
-		auto apply = [&](bool large)
+		auto apply    = [&](bool large)
 		{
 			ink->SetFontSize("font_size", "Control", large ? 16 : 12);
 			ink->SetConstant("row_height", "Tree", large ? 34 : 24);
@@ -944,27 +994,40 @@ inline void VerifyThemes(
 		frame();
 		rows->Select(2);
 		frame();
-		SaveRenderedFrame(engine.m_renderServer->ViewportGetTexture(viewport->GetViewportRID()), captures / "theme-controls-compact.ppm");
-		check(rows->GetRowHeight() == 24.f && tabs->GetTabBarRect().GetHeight() == 26.f
-			&& split->GetDividerRect().GetWidth() == 6.f, "combined compact specimen uses shared default metrics");
+		SaveRenderedFrame(
+			engine.m_renderServer->ViewportGetTexture(viewport->GetViewportRID()),
+			captures / "theme-controls-compact.ppm");
+		check(
+			rows->GetRowHeight() == 24.f && tabs->GetTabBarRect().GetHeight() == 26.f
+				&& split->GetDividerRect().GetWidth() == 6.f,
+			"combined compact specimen uses shared default metrics");
 		rows->EditSelected();
 		auto* rename = static_cast<LineEdit*>(rows->GetChildren()[0]);
 		rename->Select(1, 4);
 		apply(true);
 		frame();
-		SaveRenderedFrame(engine.m_renderServer->ViewportGetTexture(viewport->GetViewportRID()), captures / "theme-controls-expanded.ppm");
-		check(rows->GetRowHeight() >= 34.f && tabs->GetTabBarRect().GetHeight() >= 36.f
-			&& split->GetDividerRect().GetWidth() == 12.f && rename->GetSelectionFromColumn() == 1
-			&& rename->GetCursorColumn() == 4 && rename->IsEditing(), "combined live reflow preserves rename while all five controls resize");
+		SaveRenderedFrame(
+			engine.m_renderServer->ViewportGetTexture(viewport->GetViewportRID()),
+			captures / "theme-controls-expanded.ppm");
+		check(
+			rows->GetRowHeight() >= 34.f && tabs->GetTabBarRect().GetHeight() >= 36.f
+				&& split->GetDividerRect().GetWidth() == 12.f && rename->GetSelectionFromColumn() == 1
+				&& rename->GetCursorColumn() == 4 && rename->IsEditing(),
+			"combined live reflow preserves rename while all five controls resize");
 		rename->EndEditing(LineEdit::EditEndReason::Cancelled);
 		apply(false);
 		bool done = false;
-		update->SetPressedCallback([&]()
-		{
-			expanded = !expanded;
-			apply(expanded);
-		});
-		close->SetPressedCallback([&]() { done = true; });
+		update->SetPressedCallback(
+			[&]()
+			{
+				expanded = !expanded;
+				apply(expanded);
+			});
+		close->SetPressedCallback(
+			[&]()
+			{
+				done = true;
+			});
 		if (std::getenv("MING_THEME_PREVIEW") != nullptr)
 		{
 			glfwRestoreWindow(engine.m_windowSystem->GetGLFWWindow());
@@ -982,5 +1045,4 @@ inline void VerifyThemes(
 		root->QueueFree();
 		tree.FlushPendingNode();
 	}
-
 }

@@ -8,11 +8,12 @@
 #include "MingEngine/Core/Math/MathUtils.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Engine/Render/RenderServer.hpp"
-#include "MingEngine/Engine/Render/VertexBuffer.hpp"
-
-using namespace Math;
 
 #include <algorithm>
+#include "MingEngine/Engine/Render/BuiltinShaders.hpp"
+#include "MingEngine/Editor/EditorNode.hpp"
+
+using namespace Math;
 
 namespace
 {
@@ -82,12 +83,6 @@ ViewportAxisIndicator::ViewportAxisIndicator()
 {
 	SetReady(true);
 	SetProcess(true);
-
-	std::vector<Vertex> verts{ Vertex(Vector3::Zero, Color::White) };
-	m_vertexBuffer = g_engine->m_renderServer->CreateVertexBuffer(
-		verts.data(),
-		(unsigned int)(verts.size() * sizeof(Vertex)),
-		sizeof(Vertex));
 }
 
 ViewportAxisIndicator::~ViewportAxisIndicator()
@@ -113,8 +108,9 @@ void ViewportAxisIndicator::OnNotification(int notification)
 		EulerAngles cameraRotation = editorCamera->GetWorldOrientation();
 
 		// We just hardcode the position
-		IntVec2 dimensions = m_data.m_viewport->GetOutputResolution();
-		Vector2 center     = (Vector2)dimensions - Vector2(100.f, 100.f);
+		IntVec2     dimensions = m_data.m_viewport->GetOutputResolution();
+		float const scale      = EditorNode::Get()->GetEditorTheme()->GetConstant("icon_size", "Button") / 20.f;
+		Vector2     center     = Vector2(static_cast<float>(dimensions.x) - 80.f * scale, 80.f * scale);
 
 		if (cameraRotation != m_lastCameraRotation || center != m_center)
 		{
@@ -195,8 +191,5 @@ void ViewportAxisIndicator::RebuildVertexBuffer()
 			axisColor);
 	}
 
-	g_engine->m_renderServer->UpdateVertexBuffer(
-		m_vertexBuffer,
-		m_verts.data(),
-		(unsigned int)(m_verts.size() * sizeof(Vertex)));
+	UploadGeometry("DefaultUI", BuiltinShaders::DefaultUI, RenderRequestPass::UI);
 }

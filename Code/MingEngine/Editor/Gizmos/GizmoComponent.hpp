@@ -12,7 +12,6 @@
 
 class Camera3D;
 class GizmoComponent;
-class IndexBuffer;
 class Node3D;
 class SceneTree;
 struct MathRaycastQuery3D;
@@ -22,6 +21,23 @@ enum class GizmoAxis
 	X,
 	Y,
 	Z,
+};
+
+enum class GizmoTool
+{
+	Transform,
+	Move,
+	Rotate,
+	Scale
+};
+
+enum class GizmoKind
+{
+	Move,
+	Plane,
+	Rotate,
+	Scale,
+	UniformScale
 };
 
 struct GizmoContext
@@ -34,6 +50,9 @@ struct GizmoContext
 	float           m_scale            = 1.f;
 	Vector2         m_clientPos        = Vector2::Zero;
 	Vector2         m_clientDimensions = Vector2::Zero;
+	Matrix4x4       m_basis;
+	GizmoTool       m_tool  = GizmoTool::Transform;
+	bool            m_local = false;
 };
 
 GizmoContext BuildGizmoContext(SceneTree* sceneTree, Camera3D const& camera, Vector2 clientPos = Vector2::Zero);
@@ -58,29 +77,30 @@ public:
 
 	void SetHovered(bool isHovered);
 
-	void SetRenderPriority(int renderPriority) { m_renderPriority = renderPriority; }
-
 	bool         IsHovered() const;
 	bool         IsDragging() const;
 	virtual bool IsRotationGizmo() const;
+	GizmoKind    GetKind() const { return m_kind; }
+	bool         IsEnabledForTool(GizmoTool tool) const;
 
 protected:
 	void    OnNotification(int notification);
 	Vector3 GetAxisWorld() const;
 	Vector3 GetPlaneU() const;
 	Vector3 GetPlaneV() const;
+	Vector3 GetContextAxis(GizmoContext const& context) const;
 	Color   GetDrawColor() const;
 
 protected:
 	GizmoAxis m_axis       = GizmoAxis::X;
+	GizmoKind m_kind       = GizmoKind::Move;
 	Color     m_baseColor  = Color::White;
 	bool      m_isHovered  = false;
 	bool      m_isDragging = false;
 
 	// Used for arranging the gizmos in front of each other when they overlap.
 	// This is a local position
-	Vector3 m_virtualCenter  = Vector3::Zero;
-	int     m_renderPriority = 0;
+	Vector3 m_virtualCenter = Vector3::Zero;
 };
 
 class GizmoAxisArrow : public GizmoComponent
@@ -88,7 +108,7 @@ class GizmoAxisArrow : public GizmoComponent
 	MCLASS(GizmoAxisArrow, GizmoComponent)
 
 public:
-	GizmoAxisArrow(GizmoAxis axis, Color const& color);
+	GizmoAxisArrow(GizmoAxis axis, Color const& color, GizmoKind kind = GizmoKind::Move);
 
 	MathRaycastResult3D Raycast(GizmoContext const& context, MathRaycastQuery3D const& raycastInfo) const override;
 	void                OnBeginDrag(GizmoContext const& context, Vector3 const& hitPos) override;
@@ -98,8 +118,11 @@ public:
 		MathRaycastQuery3D const& currentRaycastInfo) override;
 
 private:
-	Vector3 m_startPosition = Vector3::Zero;
-	Vector3 m_dragOrigin    = Vector3::Zero;
+	Vector3   m_startPosition = Vector3::Zero;
+	Vector3   m_dragOrigin    = Vector3::Zero;
+	Vector3   m_startScale    = Vector3::One;
+	Matrix4x4 m_startWorld;
+	Vector2   m_startClient;
 };
 
 class GizmoPlaneSquare : public GizmoComponent
@@ -142,10 +165,8 @@ protected:
 	void OnNotification(int notification);
 
 private:
-	std::vector<unsigned int> m_indices;
-	IndexBuffer*              m_indexBuffer      = nullptr;
-	EulerAngles               m_startOrientation = EulerAngles::Zero;
-	Vector3                   m_dragOrigin       = Vector3::Zero;
-	Vector3                   m_startVectorWorld = Vector3::Zero;
-	float                     m_currentDegrees   = 0.f;
+	Matrix4x4 m_startLocalRotation;
+	Vector3   m_dragOrigin       = Vector3::Zero;
+	Vector3   m_startVectorWorld = Vector3::Zero;
+	float     m_currentDegrees   = 0.f;
 };

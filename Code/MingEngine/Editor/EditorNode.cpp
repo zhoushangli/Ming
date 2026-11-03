@@ -20,9 +20,13 @@
 #include "MingEngine/Scene/Core/RaycastSpace3D.hpp"
 #include "MingEngine/Scene/Core/SceneTree.hpp"
 #include "MingEngine/Scene/GUI/SubViewportContainer.hpp"
+#include "MingEngine/Scene/GUI/ThemeDatabase.hpp"
+#include "MingEngine/Scene/GUI/ScrollContainer.hpp"
+#include "MingEngine/Scene/GUI/PopupPanel.hpp"
 #include "MingEngine/Engine/Application/App.hpp"
+#include "MingEngine/Engine/Application/ProjectSettings.hpp"
+#include "MingEngine/Engine/Script/ScriptSystem.hpp"
 #include "ThirdParty/GLFW/glfw3.h"
-
 
 #include <filesystem>
 
@@ -109,6 +113,7 @@ EditorNode::EditorNode(float editorScale) : m_editorScale(editorScale)
 
 EditorNode::~EditorNode()
 {
+	SetReportMessageCallback({});
 	delete m_editorUI;
 	m_editorUI = nullptr;
 
@@ -168,7 +173,6 @@ void EditorNode::OnMouseMove(Vector2 screenPos, [[maybe_unused]] Vector2 delta)
 
 void EditorNode::OnMouseDown(int keyCode, Vector2 screenPos)
 {
-
 	if (keyCode != ToKeyCode(KeyCode::LeftMouse))
 	{
 		return;
@@ -186,9 +190,8 @@ void EditorNode::OnMouseDown(int keyCode, Vector2 screenPos)
 	}
 
 	// 1) Let hovered gizmos capture the click
-	if (m_editorGizmos != nullptr && m_editorGizmos->IsHovered())
+	if (m_editorGizmos != nullptr && m_editorGizmos->BeginDragHovered(*camera, screenPos))
 	{
-		m_editorGizmos->BeginDragHovered(*camera, screenPos);
 		return;
 	}
 
@@ -230,33 +233,49 @@ void EditorNode::OnMouseUp(int keyCode, [[maybe_unused]] Vector2 screenPos)
 
 void EditorNode::OnReady()
 {
-	m_uiContext.m_sceneTree = GetSceneTree();
-	m_uiContext.m_selection = &m_selection;
-	m_uiContext.m_editorUI = m_editorUI;
+	m_uiContext.m_sceneTree  = GetSceneTree();
+	m_uiContext.m_selection  = &m_selection;
+	m_uiContext.m_editorUI   = m_editorUI;
 	m_uiContext.m_fileSystem = g_engine->m_fileSystem;
-	m_baseEditorTheme = EditorThemeManager::CreateTheme();
-	m_editorTheme = EditorThemeManager::CreateScaledTheme(m_baseEditorTheme, m_editorScale);
-	g_engine->m_windowSystem->SetTitleBarColors(m_editorTheme->GetColor("background", "Editor"), m_editorTheme->GetColor("font_color", "Control"));
+	m_baseEditorTheme        = EditorThemeManager::CreateTheme();
+	m_editorTheme            = EditorThemeManager::CreateScaledTheme(m_baseEditorTheme, m_editorScale);
+	g_engine->m_windowSystem->SetTitleBarColors(
+		m_editorTheme->GetColor("background", "Editor"),
+		m_editorTheme->GetColor("font_color", "Control"));
 	m_editorUI->InitializeNative(this);
 	SubViewport* sceneViewport = m_editorUI->GetSceneView()->GetSubViewport();
 	m_editorCamera->Reparent(sceneViewport);
 	m_editorGizmos->Reparent(sceneViewport);
 	m_editorCamera->GetCamera()->SetCurrent();
+	SetReportMessageCallback(
+		[this](char const* severity, std::string const& message)
+		{
+			std::lock_guard<std::mutex> lock(m_messageMutex);
+			m_messages.emplace_back(severity, message);
+		});
 }
 
 void EditorNode::OnProcess([[maybe_unused]] float deltaSeconds)
 {
+	std::vector<std::pair<std::string, std::string>> messages;
+	{
+		std::lock_guard<std::mutex> lock(m_messageMutex);
+		messages.swap(m_messages);
+	}
+	for (auto const& message : messages)
+	{
+		OutputPanel::Level const level = message.first == "Info"      ? OutputPanel::Level::Info
+										 : message.first == "Warning" ? OutputPanel::Level::Warning
+																	  : OutputPanel::Level::Error;
+		m_editorUI->GetPanel<OutputPanel>().AddMessage({ "", level, message.second });
+		m_editorUI->SetStatusMessage(message.second);
+	}
 	m_editorUI->Render(m_uiContext);
 	RenderUnsavedScenePopup();
-	InputSystem* input = g_engine->m_inputSystem;
-	bool const controlDown = input->IsKeyDown(KeyCode::LeftControl) || input->IsKeyDown(KeyCode::RightControl);
-	bool const modalOpen = static_cast<Viewport*>(GetSceneTree()->GetRoot())->GetGuiPopup() != nullptr;
-	if (controlDown && input->WasKeyJustPressed(KeyCode::S) && HasScene() && !modalOpen)
+	if (m_resumePending)
 	{
-		if (!SaveScene())
-		{
-			m_editorUI->Warning("Save Scene Failed", m_editorData.m_currentScenePath.GetString());
-		}
+		m_resumePending = false;
+		ExecutePendingSceneAction();
 	}
 
 	m_editorUI->FinishInput(m_uiContext);
@@ -264,40 +283,112 @@ void EditorNode::OnProcess([[maybe_unused]] float deltaSeconds)
 
 void EditorNode::RequestLoadScene(VirtualPath const& virtualPath)
 {
-	m_editorUI->FinishNativeEditing();
-
-	if (!m_editorData.m_isSceneDirty)
-	{
-		if (!LoadScene(virtualPath) && m_editorUI != nullptr)
-		{
-			m_editorUI->Warning("Open Scene Failed", virtualPath.GetString());
-		}
-
-		return;
-	}
-
-	// Store the requested load so the confirmation popup can resume it.
-	// e.g. ExecutePendingSceneAction() loads m_pendingScenePath after confirmation.
-	m_pendingSceneAction = PendingSceneAction::Load;
-	m_pendingScenePath   = virtualPath;
-	m_pendingSceneRootName.clear();
-	m_openUnsavedScenePopup = true;
+	m_pendingScenePath = virtualPath;
+	RequestSceneAction(PendingSceneAction::Load);
 }
 
-void EditorNode::RequestCreateScene(VirtualPath const& virtualPath, std::string const& rootName)
+void EditorNode::RequestCreateScene(
+	VirtualPath const& virtualPath, std::string const& rootName, std::function<void()> completed)
 {
-	if (!m_editorData.m_isSceneDirty)
+	m_pendingScenePath     = virtualPath;
+	m_pendingSceneRootName = rootName;
+	RequestSceneAction(PendingSceneAction::Create, std::move(completed));
+}
+
+void EditorNode::CancelPendingSceneAction()
+{
+	m_pendingSceneAction    = PendingSceneAction::None;
+	m_waitingForSave        = false;
+	m_resumePending         = false;
+	m_openUnsavedScenePopup = false;
+	m_afterClose            = {};
+}
+
+void EditorNode::RequestSceneAction(PendingSceneAction action, std::function<void()> completed)
+{
+	m_editorUI->FinishNativeEditing();
+	CancelPendingSceneAction();
+	m_pendingSceneAction = action;
+	m_afterClose         = std::move(completed);
+	if (IsSceneDirty())
 	{
-		CreateScene(virtualPath, rootName);
+		m_openUnsavedScenePopup = true;
+	}
+	else
+	{
+		ExecutePendingSceneAction();
+	}
+}
+
+void EditorNode::RequestNewScene()
+{
+	RequestSceneAction(PendingSceneAction::New);
+}
+
+void EditorNode::RequestCloseScene(std::function<void()> completed)
+{
+	RequestSceneAction(PendingSceneAction::Close, std::move(completed));
+}
+
+void EditorNode::RequestPlay()
+{
+	if (g_app == nullptr || g_app->IsGameRunning())
+	{
 		return;
 	}
 
-	// Store the requested creation so no file is written before confirmation.
-	// e.g. ExecutePendingSceneAction() creates m_pendingScenePath after confirmation.
-	m_pendingSceneAction    = PendingSceneAction::Create;
-	m_pendingScenePath      = virtualPath;
-	m_pendingSceneRootName  = rootName;
-	m_openUnsavedScenePopup = true;
+	m_editorUI->FinishNativeEditing();
+	CancelPendingSceneAction();
+	m_pendingSceneAction = PendingSceneAction::Play;
+	if (HasScene() && !SaveScene())
+	{
+		m_waitingForSave = m_lastSaveResult == SaveResult::AwaitingPath;
+		if (!m_waitingForSave)
+		{
+			CancelPendingSceneAction();
+		}
+		return;
+	}
+
+	ExecutePendingSceneAction();
+}
+
+void EditorNode::ClearSceneState()
+{
+	m_editorGizmos->CancelDrag();
+	GetSceneTree()->ClearScene();
+	m_selection.Clear();
+	m_undoRedo.ClearAllHistory();
+	m_editorData.m_currentScenePath = {};
+	m_editorData.m_isSceneDirty     = false;
+}
+
+void EditorNode::NewRootCreated()
+{
+	m_editorData.m_currentScenePath = {};
+	m_undoRedo.ClearAllHistory();
+	MarkSceneDirty();
+}
+
+bool EditorNode::SetMainScene(VirtualPath const& path)
+{
+	Ref<PackedScene> scene(ResourceLoader::LoadUncached(path));
+	if (!scene.IsValid())
+	{
+		return false;
+	}
+
+	Ref<ProjectSettings> settings = ProjectSettings::Get();
+	VirtualPath const    previous = settings->m_startScenePath;
+	settings->m_startScenePath    = path;
+	if (!ResourceSaver::Save(ProjectSettings::GetSettingsPath(), settings))
+	{
+		settings->m_startScenePath = previous;
+		return false;
+	}
+
+	INFO_PRINT("Main scene: " + path.GetString());
+	return true;
 }
 
 bool EditorNode::LoadScene(VirtualPath const& virtualPath)
@@ -320,6 +411,7 @@ bool EditorNode::LoadScene(VirtualPath const& virtualPath)
 		return false;
 	}
 
+	m_editorGizmos->CancelDrag();
 	GetSceneTree()->ChangeScene(newSceneRoot);
 	m_undoRedo.ClearAllHistory();
 	m_editorData.m_currentScenePath = virtualPath;
@@ -329,34 +421,93 @@ bool EditorNode::LoadScene(VirtualPath const& virtualPath)
 	return true;
 }
 
+EditorNode::SaveResult EditorNode::SaveCurrentScene()
+{
+	m_editorUI->FinishNativeEditing();
+	if (!HasScene())
+	{
+		return SaveResult::Failed;
+	}
+
+	if (!m_editorData.m_currentScenePath.IsValid())
+	{
+		RequestSaveSceneAs();
+		return SaveResult::AwaitingPath;
+	}
+
+	if (!SaveSceneAs(m_editorData.m_currentScenePath))
+	{
+		m_editorUI->Warning("Save Failed", "Changes have not been discarded.");
+		return SaveResult::Failed;
+	}
+	return SaveResult::Saved;
+}
+
 bool EditorNode::SaveScene()
 {
-	if (m_editorUI != nullptr)
-	{
-		m_editorUI->FinishNativeEditing();
-	}
+	m_lastSaveResult = SaveCurrentScene();
+	return m_lastSaveResult == SaveResult::Saved;
+}
 
-	SceneTree* sceneTree = GetSceneTree();
-	Node*      sceneRoot = sceneTree->GetScene();
-	if (sceneRoot == nullptr || !m_editorData.m_currentScenePath.IsValid())
-	{
-		return false;
-	}
-
-	Ref<PackedScene> packedScene = CreateRef<PackedScene>();
-
-	if (!packedScene->Pack(sceneRoot))
+bool EditorNode::SaveSceneAs(VirtualPath const& path)
+{
+	m_editorUI->FinishNativeEditing();
+	Node* root = GetSceneTree()->GetScene();
+	if (root == nullptr || !path.IsValid() || !path.HasExtension(".tscn"))
 	{
 		return false;
 	}
 
-	bool const result = ResourceSaver::Save(m_editorData.m_currentScenePath, packedScene);
-	if (result)
+	Ref<PackedScene> scene = CreateRef<PackedScene>();
+	if (!scene->Pack(root) || !ResourceSaver::Save(path, scene))
 	{
-		m_editorData.m_isSceneDirty = false;
+		ERR_PRINT("Could not save scene: " + path.GetString());
+		return false;
 	}
 
-	return result;
+	m_editorData.m_currentScenePath = path;
+	m_editorData.m_isSceneDirty     = false;
+	g_engine->m_fileSystem->ScanResourceTree();
+	INFO_PRINT("Saved scene: " + path.GetString());
+	return true;
+}
+
+void EditorNode::RequestSaveSceneAs()
+{
+	if (!HasScene())
+	{
+		return;
+	}
+
+	VirtualPath initial = m_editorData.m_currentScenePath;
+	if (!initial.IsValid())
+	{
+		initial = VirtualPath("res://").Join("NewScene.tscn");
+	}
+	m_editorUI->OpenSceneFile(
+		SceneFilePopup::Mode::Save,
+		initial,
+		[this](VirtualPath const& path)
+		{
+			if (!SaveSceneAs(path))
+			{
+				CancelPendingSceneAction();
+				return false;
+			}
+
+			m_resumePending  = m_waitingForSave;
+			m_waitingForSave = false;
+			return true;
+		},
+		[this]()
+		{
+			CancelPendingSceneAction();
+		});
+}
+
+void EditorNode::BindMethods()
+{
+	ClassDatabase::BindMethod("MarkSceneDirty", &EditorNode::MarkSceneDirty, {});
 }
 
 void EditorNode::MarkSceneDirty()
@@ -379,7 +530,9 @@ bool EditorNode::HasScene() const
 
 std::string EditorNode::GetCurrentSceneName() const
 {
-	return !m_editorData.m_currentScenePath.IsValid() ? std::string() : m_editorData.m_currentScenePath.GetStem();
+	return m_editorData.m_currentScenePath.IsValid() ? m_editorData.m_currentScenePath.GetStem()
+		   : HasScene()                              ? "Untitled"
+													 : "No Scene";
 }
 
 bool EditorNode::CreateScene(VirtualPath const& virtualPath, std::string const& rootName)
@@ -398,6 +551,7 @@ bool EditorNode::CreateScene(VirtualPath const& virtualPath, std::string const& 
 		return false;
 	}
 
+	m_editorGizmos->CancelDrag();
 	GetSceneTree()->ChangeScene(sceneRoot);
 	m_undoRedo.ClearAllHistory();
 	m_editorData.m_currentScenePath = virtualPath;
@@ -422,21 +576,74 @@ void EditorNode::RenderUnsavedScenePopup()
 
 void EditorNode::ExecutePendingSceneAction()
 {
-	// Execute and clear the deferred scene operation selected before the popup.
-	// e.g. a pending load resumes after Save & Close or Don't Save.
-	PendingSceneAction const action   = m_pendingSceneAction;
-	VirtualPath const        path     = std::move(m_pendingScenePath);
-	std::string const        rootName = std::move(m_pendingSceneRootName);
-	m_pendingSceneAction              = PendingSceneAction::None;
-
-	bool const result = action == PendingSceneAction::Load
-							? LoadScene(path)
-							: action == PendingSceneAction::Create && CreateScene(path, rootName);
-	if (!result && action != PendingSceneAction::None && m_editorUI != nullptr)
+	PendingSceneAction const action    = m_pendingSceneAction;
+	auto                     completed = std::move(m_afterClose);
+	m_pendingSceneAction               = PendingSceneAction::None;
+	switch (action)
 	{
-		m_editorUI->Warning(
-			action == PendingSceneAction::Load ? "Open Scene Failed" : "Create Scene Failed",
-			path.GetString());
+	case PendingSceneAction::New:
+	case PendingSceneAction::Close:
+		ClearSceneState();
+		if (action == PendingSceneAction::Close && completed)
+		{
+			completed();
+		}
+		break;
+	case PendingSceneAction::Load:
+		if (!LoadScene(m_pendingScenePath))
+		{
+			m_editorUI->Warning("Open Scene Failed", m_pendingScenePath.GetString());
+		}
+		break;
+	case PendingSceneAction::Create:
+		if (CreateScene(m_pendingScenePath, m_pendingSceneRootName) && completed)
+		{
+			completed();
+		}
+		break;
+	case PendingSceneAction::Quit:
+		m_editorData.m_isSceneDirty = false;
+		g_app->Quit();
+		break;
+	case PendingSceneAction::Play:
+	{
+		VirtualPath const main = ProjectSettings::Get()->m_startScenePath;
+		Ref<PackedScene>  scene;
+		if (main.IsValid())
+		{
+			scene = Ref<PackedScene>(ResourceLoader::LoadUncached(main));
+		}
+		if (!scene.IsValid())
+		{
+			m_editorUI->OpenSceneFile(
+				SceneFilePopup::Mode::MainScene,
+				GetCurrentScenePath(),
+				[this](VirtualPath const& path)
+				{
+					if (!SetMainScene(path))
+					{
+						return false;
+					}
+					m_pendingSceneAction = PendingSceneAction::Play;
+					m_resumePending      = true;
+					return true;
+				});
+			return;
+		}
+
+		if (g_engine->m_fileSystem->Exists("res://Game.csproj") && !BuildCSharpProject())
+		{
+			INFO_PRINT("Play cancelled because the C# build failed.");
+			return;
+		}
+		if (!g_app->LaunchGame())
+		{
+			m_editorUI->Warning("Run Failed", "Could not start the game. See Output for details.");
+		}
+		break;
+	}
+	default:
+		break;
 	}
 }
 
@@ -445,42 +652,184 @@ bool EditorNode::IsSceneNavigationActive() const
 	return m_editorUI != nullptr && m_editorUI->IsSceneNavigationActive();
 }
 
-void EditorNode::ResolvePendingSceneAction(int choice)
+void EditorNode::ResolvePendingSceneAction(SceneActionChoice choice)
 {
-	if (choice == 1)
+	switch (choice)
 	{
-		m_pendingSceneAction = PendingSceneAction::None;
-		m_pendingScenePath   = {};
-		m_pendingSceneRootName.clear();
+	case SceneActionChoice::Cancel:
+		CancelPendingSceneAction();
 		return;
+	case SceneActionChoice::Save:
+		if (!SaveScene())
+		{
+			m_waitingForSave = m_lastSaveResult == SaveResult::AwaitingPath;
+			if (!m_waitingForSave)
+			{
+				CancelPendingSceneAction();
+			}
+			return;
+		}
+		break;
+	case SceneActionChoice::Discard:
+		break;
 	}
 
-	if (choice == 0 && !SaveScene())
-	{
-		m_editorUI->Warning("Save failed", "The scene remains open; changes have not been discarded.");
-		m_pendingSceneAction = PendingSceneAction::None;
-		return;
-	}
-
-	if (m_pendingSceneAction == PendingSceneAction::Quit)
-	{
-		m_pendingSceneAction        = PendingSceneAction::None;
-		m_editorData.m_isSceneDirty = false;
-		g_app->Quit();
-		return;
-	}
-
-	ExecutePendingSceneAction();
+	m_resumePending = true;
 }
 
 void EditorNode::RequestQuit()
 {
-	if (m_pendingSceneAction == PendingSceneAction::Quit || m_openUnsavedScenePopup)
+	if (m_pendingSceneAction != PendingSceneAction::Quit)
 	{
-		return;
+		RequestSceneAction(PendingSceneAction::Quit);
+	}
+}
+
+namespace
+{
+bool ContainsPath(VirtualPath const& directory, VirtualPath const& path)
+{
+	return path.IsValid() && (directory == path || path.GetString().rfind(directory.GetString() + "/", 0) == 0);
+}
+}
+
+bool EditorNode::ContainsCurrentScene(VirtualPath const& path) const
+{
+	return ContainsPath(path, m_editorData.m_currentScenePath);
+}
+
+void EditorNode::FilesMoved(VirtualPath const& before, VirtualPath const& after)
+{
+	m_editorUI->GetPanel<FileSystemPanel>().FilesMoved(before, after);
+	auto update = [&](VirtualPath& path)
+	{
+		if (ContainsPath(before, path))
+		{
+			path = VirtualPath(after.GetString() + path.GetString().substr(before.GetString().size()));
+			return true;
+		}
+		return false;
+	};
+	update(m_editorData.m_currentScenePath);
+	Ref<ProjectSettings> settings = ProjectSettings::Get();
+	if (update(settings->m_startScenePath) && !ResourceSaver::Save(ProjectSettings::GetSettingsPath(), settings))
+	{
+		ERR_PRINT("Files moved, but project.ming could not be saved. The updated main scene path remains in memory.");
+		m_editorUI->Warning(
+			"Project Settings",
+			"Files moved, but project.ming could not be saved. Save Project Settings to retry.");
+	}
+}
+
+bool EditorNode::FilesRemoved(VirtualPath const& path)
+{
+	Ref<ProjectSettings> settings = ProjectSettings::Get();
+	if (!ContainsPath(path, settings->m_startScenePath))
+	{
+		return true;
 	}
 
+	settings->m_startScenePath = {};
+	return ResourceSaver::Save(ProjectSettings::GetSettingsPath(), settings);
+}
+
+bool EditorNode::SetEditorScale(float scale)
+{
+	if (!EditorThemeManager::SaveScale(scale))
+	{
+		return false;
+	}
+	struct ScrollState
+	{
+		ObjectID m_id;
+		Vector2  m_position;
+	};
+	std::vector<ScrollState>   scrolls;
+	std::function<void(Node*)> collect = [&](Node* node)
+	{
+		if (node == m_editorUI->GetSceneView())
+		{
+			return;
+		}
+		if (auto* scroll = dynamic_cast<ScrollContainer*>(node))
+		{
+			scrolls.push_back({ scroll->GetObjectID(), Vector2(scroll->GetHorizontalScroll(), scroll->GetScroll()) });
+		}
+		for (Node* child : node->GetChildren())
+		{
+			collect(child);
+		}
+	};
+	collect(m_editorUI->GetRootControl());
+	for (Node* child : GetSceneTree()->GetRoot()->GetChildren())
+	{
+		if (dynamic_cast<PopupPanel*>(child) != nullptr)
+		{
+			collect(child);
+		}
+	}
+	float const ratio = scale / m_editorScale;
+	m_editorGizmos->CancelDrag();
+	m_editorScale = scale;
+	m_editorTheme = EditorThemeManager::CreateScaledTheme(m_baseEditorTheme, scale);
+	ThemeDatabase::SetThemeContext(m_editorUI->GetRootControl(), { m_editorTheme });
+	g_engine->m_windowSystem->SetTitleBarColors(
+		m_editorTheme->GetColor("background", "Editor"),
+		m_editorTheme->GetColor("font_color", "Control"));
+	GetSceneTree()->FlushContainerUpdate();
+	for (ScrollState const& state : scrolls)
+	{
+		if (auto* scroll = ObjectDatabase::GetInstance<ScrollContainer>(state.m_id))
+		{
+			scroll->SetHorizontalScroll(state.m_position.x * ratio);
+			scroll->SetScroll(state.m_position.y * ratio);
+		}
+	}
+	return true;
+}
+
+void EditorNode::RequestOpenScene()
+{
+	m_editorUI->OpenSceneFile(
+		SceneFilePopup::Mode::Open,
+		GetCurrentScenePath(),
+		[this](VirtualPath const& path)
+		{
+			RequestLoadScene(path);
+			return true;
+		});
+}
+
+bool EditorNode::GenerateCSharpProject()
+{
+	if (!g_engine->m_scriptSystem->EnsureProjectSolution())
+	{
+		m_editorUI->Warning("C# Project", "Could not generate the C# project. See Output.");
+		return false;
+	}
+	INFO_PRINT("C# project generated.");
+	return true;
+}
+
+bool EditorNode::BuildCSharpProject()
+{
 	m_editorUI->FinishNativeEditing();
-	m_pendingSceneAction    = PendingSceneAction::Quit;
-	m_openUnsavedScenePopup = true;
+	if (!g_engine->m_scriptSystem->EnsureProjectSolution() || !g_engine->m_scriptSystem->BuildProjectSolution())
+	{
+		m_editorUI->Warning("C# Build", "Build failed. See Output.");
+		return false;
+	}
+	INFO_PRINT("C# build completed.");
+	return true;
+}
+
+bool EditorNode::ReloadCSharpAssembly()
+{
+	if (!g_engine->m_scriptSystem->ReloadProjectAssembly())
+	{
+		m_editorUI->Warning("C# Reload", "Reload failed. See Output.");
+		return false;
+	}
+	INFO_PRINT("C# assembly reloaded.");
+	return true;
 }

@@ -7,18 +7,28 @@ struct Vector4;
 struct Matrix4x4
 {
 public:
+	// clang-format off
+enum
+	{
+		Ix, Iy, Iz, Iw,
+		Jx, Jy, Jz, Jw,
+		Kx, Ky, Kz, Kw,
+		Tx, Ty, Tz, Tw
+	}; // index nicknames
+
+public:
 	Matrix4x4();
 	explicit Matrix4x4(float const* sixteenValuesBasisMajor);
 
 	// clang-format off
-	explicit Matrix4x4(
+explicit Matrix4x4(
 		float ix, float jx, float kx, float tx,
 		float iy, float jy, float ky, float ty,
 		float iz, float jz, float kz, float tz,
 		float iw, float jw, float kw, float tw
 	);
-	// clang-format on
 
+	// clang-format on
 	explicit Matrix4x4(Vector2 const& iBasis2D, Vector2 const& jBasis2D, Vector2 const& translation2D);
 	explicit Matrix4x4(
 		Vector3 const& iBasis3D, Vector3 const& jBasis3D, Vector3 const& kBasis3D, Vector3 const& translation3D);
@@ -93,20 +103,10 @@ public:
 	void      Orthonormalize_XFwd_YLeft_ZUp2();
 	Matrix4x4 GetOrthonormalInverse();
 
+public:
 	static Matrix4x4 const Zero;
 	static Matrix4x4 const Identity;
 
-public:
-	// clang-format off
-	enum
-	{
-		Ix, Iy, Iz, Iw,
-		Jx, Jy, Jz, Jw,
-		Kx, Ky, Kz, Kw,
-		Tx, Ty, Tz, Tw
-	}; // index nicknames
-
 	// clang-format on
-
 	float m_values[16];
 };

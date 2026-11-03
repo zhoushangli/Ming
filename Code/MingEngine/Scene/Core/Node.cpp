@@ -228,6 +228,20 @@ void Node::QueueFree()
 	m_data.m_sceneTree->QueueDestroyNode(this);
 }
 
+void Node::MoveChild(Node* child, int index)
+{
+	auto found = std::find(m_data.m_children.begin(), m_data.m_children.end(), child);
+	if (found == m_data.m_children.end())
+	{
+		return;
+	}
+
+	m_data.m_children.erase(found);
+	index = std::clamp(index, 0, static_cast<int>(m_data.m_children.size()));
+	m_data.m_children.insert(m_data.m_children.begin() + index, child);
+	Notification(Notification_ChildrenChanged);
+}
+
 void Node::Reparent(Node* newParent, [[maybe_unused]] bool keepWorldTransform)
 {
 	GUARANTEE_OR_DIE(newParent != this, "Node::Reparent failed: cannot reparent a node to itself.");
@@ -255,6 +269,7 @@ void Node::BindMethods()
 	ClassDatabase::BindMethod("FindChildByName", &Node::FindChildByName, { "name" });
 	ClassDatabase::BindMethod("GetSceneTree", &Node::GetSceneTree, {});
 	ClassDatabase::BindMethod("AddNode", &Node::AddNode, { "child" });
+	ClassDatabase::BindMethod("MoveChild", &Node::MoveChild, { "child", "index" });
 	ClassDatabase::BindMethod("QueueFree", &Node::QueueFree, {});
 	ClassDatabase::BindMethod("Reparent", &Node::Reparent, { "newParent", "keepWorldTransform" });
 

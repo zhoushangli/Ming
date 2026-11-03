@@ -16,16 +16,18 @@ public:
 	bool ConsumeSelectedVirtualPath(VirtualPath& outVirtualPath);
 
 private:
-	EditorUIContext m_context;
-	PopupPanel* m_popup = nullptr;
-	LineEdit* m_nameEdit = nullptr;
-	LineEdit* m_rootEdit = nullptr;
-	Label* m_errorLabel = nullptr;
 	void Confirm();
-	bool        m_openRequested = false;
-	bool        m_isDirectory   = false;
-	VirtualPath m_parentVirtualPath;
-	VirtualPath m_targetVirtualPath;
-	VirtualPath m_selectedVirtualPath;
-	std::string m_error;
+
+private:
+	EditorUIContext m_context;
+	PopupPanel*     m_popup         = nullptr;
+	LineEdit*       m_nameEdit      = nullptr;
+	LineEdit*       m_rootEdit      = nullptr;
+	Label*          m_errorLabel    = nullptr;
+	bool            m_openRequested = false;
+	bool            m_isDirectory   = false;
+	VirtualPath     m_parentVirtualPath;
+	VirtualPath     m_targetVirtualPath;
+	VirtualPath     m_selectedVirtualPath;
+	std::string     m_error;
 };

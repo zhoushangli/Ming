@@ -15,10 +15,11 @@ class MeshResource : public Resource
 	MCLASS(MeshResource, Resource)
 
 public:
-	MeshResource()                                    = default;
+	MeshResource() = default;
+	~MeshResource();
+
 	MeshResource(MeshResource const& copy)            = delete;
 	MeshResource& operator=(MeshResource const& copy) = delete;
-	~MeshResource();
 
 	bool IsEmpty() const;
 	bool CopyFrom(Resource&& other) override;

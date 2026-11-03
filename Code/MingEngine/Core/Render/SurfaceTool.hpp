@@ -10,9 +10,6 @@
 
 class SurfaceTool : public RefCounted
 {
-public:
-	static constexpr uint32_t NoSmoothingGroup = UINT32_MAX;
-
 private:
 	struct SurfaceVertex
 	{
@@ -117,6 +114,9 @@ public:
 	void Clear();
 
 	Ref<MeshResource> CreateMeshResource() const;
+
+public:
+	static constexpr uint32_t NoSmoothingGroup = UINT32_MAX;
 
 private:
 	std::vector<SurfaceVertex> m_vertices;

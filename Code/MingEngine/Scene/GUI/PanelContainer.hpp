@@ -17,7 +17,7 @@ public:
 
 protected:
 	static void BindMethods();
-	void OnNotification(int notification);
+	void        OnNotification(int notification);
 
 private:
 	ThemeCache m_themeCache;

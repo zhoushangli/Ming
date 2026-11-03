@@ -30,7 +30,7 @@ protected:
 	void OnNotification(int notification);
 
 private:
-	bool  m_vertical   = false;
+	bool                 m_vertical = false;
 	std::optional<float> m_separationOverride;
-	ThemeCache m_themeCache;
+	ThemeCache           m_themeCache;
 };

@@ -33,8 +33,8 @@ protected:
 		ObjectID m_focusedControl = ObjectID::Invalid;
 		uint64_t m_focusVersion   = 0;
 		bool     m_windowFocused  = true;
-		Vector2 m_mousePosition = Vector2::Zero;
-		bool m_mouseInside = false;
+		Vector2  m_mousePosition  = Vector2::Zero;
+		bool     m_mouseInside    = false;
 
 		ObjectID m_popupControl = ObjectID::Invalid;
 
@@ -52,7 +52,6 @@ protected:
 		Vector2  m_dragPreviewSize = Vector2::Zero;
 		ObjectID m_dragPreview     = ObjectID::Invalid;
 	};
-
 
 public:
 	Viewport();
@@ -88,20 +87,20 @@ public:
 	bool HasGuiFocus(Control const* control) const;
 	bool IsWindowFocused() const { return m_gui.m_windowFocused; }
 
-	void SetGuiHovered(Control* control);
-	void SetGuiFocus(Control* control);
+	void     SetGuiHovered(Control* control);
+	void     SetGuiFocus(Control* control);
 	Control* GetGuiFocus() const { return ResolveGuiControl(m_gui.m_focusedControl); }
 	Control* GetGuiPopup() const { return ResolveGuiControl(m_gui.m_popupControl); }
-	void SetGuiPopup(Control* control);
-	bool HasGuiMouseCapture() const { return ResolveGuiControl(m_gui.m_mouseCaptureControl) != nullptr; }
+	void     SetGuiPopup(Control* control);
+	bool     HasGuiMouseCapture() const { return ResolveGuiControl(m_gui.m_mouseCaptureControl) != nullptr; }
 
-	bool IsGuiDragging() const { return m_gui.m_dragging; }
+	bool               IsGuiDragging() const { return m_gui.m_dragging; }
 	GuiDragData const& GetGuiDragData() const { return m_gui.m_dragData; }
-	Vector2 GetGuiDragPosition() const { return m_gui.m_dragPosition; }
-	Control* GetGuiDragTarget() const { return ResolveGuiControl(m_gui.m_dragTarget); }
-	void SetGuiDragPreview(Control* preview);
-	void UpdateGuiDrag(Vector2 const& position);
-	void CancelGuiDrag();
+	Vector2            GetGuiDragPosition() const { return m_gui.m_dragPosition; }
+	Control*           GetGuiDragTarget() const { return ResolveGuiControl(m_gui.m_dragTarget); }
+	void               SetGuiDragPreview(Control* preview);
+	void               UpdateGuiDrag(Vector2 const& position);
+	void               CancelGuiDrag();
 
 	void CancelGuiInteraction(Node* subtree, bool clearFocus = true, bool cancelDrag = true);
 
@@ -116,11 +115,11 @@ protected:
 
 	void CollectFocusableControls(Node* node, std::vector<ObjectID>& controls) const;
 
-	bool PropagateGuiInput(ObjectID target, InputEvent const& event);
-	void TryStartGuiDrag(Vector2 const& position);
+	bool     PropagateGuiInput(ObjectID target, InputEvent const& event);
+	void     TryStartGuiDrag(Vector2 const& position);
 	ObjectID FindGuiDropTarget(Vector2 const& position) const;
-	void SetGuiDragTarget(ObjectID target);
-	void UpdateGuiCursor();
+	void     SetGuiDragTarget(ObjectID target);
+	void     UpdateGuiCursor();
 
 protected:
 	Camera3D*           m_currentCamera = nullptr;
@@ -130,7 +129,6 @@ protected:
 	RID     m_canvasLayerRID   = RID::Invalid;
 	RID     m_scenarioRID      = RID::Invalid;
 	IntVec2 m_outputResolution = IntVec2::Zero;
-
 
 	GuiContext m_gui;
 };

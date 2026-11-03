@@ -34,8 +34,6 @@ protected:
 	// source assets and may need options because more than one importer can match a file.
 	virtual Ref<Resource> Import(
 		std::unordered_map<std::string, Variant> const& importOptions, VirtualPath const& sourceVirtualPath) = 0;
-
-protected:
 	static void BindMethods() {};
 };
 
@@ -64,11 +62,10 @@ public:
 	static VirtualPath GetImportOutputPath(VirtualPath const& sourceVirtualPath, std::string const& importedExtension);
 
 private:
-	static constexpr int MaxImporters = 64;
-
 	static std::vector<Ref<ResourceFormatImporter>> FindMatchedImporters(VirtualPath const& sourceVirtualPath);
 
 private:
+	static constexpr int               MaxImporters = 64;
 	static int                         s_importerCount;
 	static Ref<ResourceFormatImporter> s_importer[MaxImporters];
 };

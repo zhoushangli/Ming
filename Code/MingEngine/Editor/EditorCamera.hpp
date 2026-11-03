@@ -25,6 +25,7 @@ public:
 	void OnProcess(float deltaSeconds) override;
 
 	Camera3D* GetCamera() const;
+	void      ResetView();
 
 	EditorControlState GetControlState() const { return m_controlState; }
 	Vector2            GetCursorClientPos() const { return m_lastCursorClientPos; }

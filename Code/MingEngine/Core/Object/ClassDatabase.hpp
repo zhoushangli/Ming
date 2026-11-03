@@ -66,11 +66,6 @@ public:
 		Default   = Storage | Inspector
 	};
 
-	friend constexpr UsageFlags operator|(UsageFlags left, UsageFlags right)
-	{
-		return static_cast<UsageFlags>(static_cast<unsigned int>(left) | static_cast<unsigned int>(right));
-	}
-
 public:
 	PropertyInfo() = default;
 
@@ -101,6 +96,11 @@ public:
 	MethodBind const* m_setter = nullptr;
 	MethodBind const* m_getter = nullptr;
 };
+
+constexpr PropertyInfo::UsageFlags operator|(PropertyInfo::UsageFlags left, PropertyInfo::UsageFlags right)
+{
+	return static_cast<PropertyInfo::UsageFlags>(static_cast<unsigned int>(left) | static_cast<unsigned int>(right));
+}
 
 enum class ApiType
 {

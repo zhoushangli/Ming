@@ -6,14 +6,19 @@ struct Vector3;
 //-----------------------------------------------------------------------------------------------
 struct Vector2
 {
+	// Standalone "friend" functions that are conceptually, but not actually, part of Vec2::
+	friend Vector2 const operator*(float uniformScale, Vector2 const& vecToScale); // float * vec2
+
 public:
 	// Construction/Destruction
 	~Vector2();                                       // destructor (do nothing)
 	Vector2();                                        // default constructor (do nothing)
-	Vector2(Vector2 const& copyFrom);                 // copy constructor (from another vec2)
 	Vector2(Vector3 const& copyFrom);                 // copy constructor (from Vec3, dropping Z)
 	Vector2(IntVec2 const& copyFrom);                 // copy constructor (from IntVec2)
 	explicit Vector2(float initialX, float initialY); // explicit constructor (from x, y)
+
+	Vector2(Vector2 const& copyFrom);        // copy constructor (from another vec2)
+	void operator=(Vector2 const& copyFrom); // vec2 = vec2
 
 	// Operators (const)
 	bool          operator==(Vector2 const& compare) const;      // vec2 == vec2
@@ -30,10 +35,6 @@ public:
 	void operator-=(Vector2 const& vecToSubtract); // vec2 -= vec2
 	void operator*=(const float uniformScale);     // vec2 *= float
 	void operator/=(const float uniformDivisor);   // vec2 /= float
-	void operator=(Vector2 const& copyFrom);       // vec2 = vec2
-
-	// Standalone "friend" functions that are conceptually, but not actually, part of Vec2::
-	friend Vector2 const operator*(float uniformScale, Vector2 const& vecToScale); // float * vec2
 
 	// Static factory methods
 	static Vector2 MakeFromPolarDegrees(float degrees, float length = 1.f);
@@ -80,9 +81,11 @@ public:
 	Vector2 const GetReflected(Vector2 const& normal) const;
 	void          Reflect(Vector2 const& normal);
 
-	void SetFromText(char const* text);
+	void SetFromText(
+		char const*
+			text); // NOTE: this is one of the few cases where we break both the "m_" naming rule AND the avoid-public-members rule
 
-public: // NOTE: this is one of the few cases where we break both the "m_" naming rule AND the avoid-public-members rule
+public:
 	float x = 0.f;
 	float y = 0.f;
 

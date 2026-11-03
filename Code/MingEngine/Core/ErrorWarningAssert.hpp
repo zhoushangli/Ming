@@ -15,6 +15,9 @@
 
 //-----------------------------------------------------------------------------------------------
 #include <string>
+#include <functional>
+
+void SetReportMessageCallback(std::function<void(char const*, std::string const&)> callback);
 
 //-----------------------------------------------------------------------------------------------
 enum class MsgSeverityLevel

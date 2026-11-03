@@ -62,22 +62,34 @@ void CreateFolderPopup::Render(EditorUIContext& context)
 	if (m_popup == nullptr)
 	{
 		VBoxContainer* content = nullptr;
-		m_popup = EditorPopupUtils::Create(context.m_rootControl, "Create Folder", content);
+		m_popup                = EditorPopupUtils::Create(context.m_rootControl, "Create Folder", content);
 		EditorPopupUtils::AddLabel(content, "Name:");
 		m_nameEdit = MemNew<LineEdit>();
 		content->AddNode(m_nameEdit);
-		m_nameEdit->SetEditingEndedCallback([this](String const&, LineEdit::EditEndReason reason)
-		{
-			if (reason == LineEdit::EditEndReason::Submitted)
+		m_nameEdit->SetEditingEndedCallback(
+			[this](String const&, LineEdit::EditEndReason reason)
+			{
+				if (reason == LineEdit::EditEndReason::Submitted)
+				{
+					Confirm();
+				}
+			});
+		m_errorLabel  = EditorPopupUtils::AddLabel(content, "", "EditorErrorLabel");
+		auto* buttons = EditorPopupUtils::AddActions(content);
+		EditorPopupUtils::AddButton(
+			buttons,
+			"Create",
+			[this]()
 			{
 				Confirm();
-			}
-		});
-		m_errorLabel = EditorPopupUtils::AddLabel(content, "", "EditorErrorLabel");
-		auto* buttons = MemNew<HBoxContainer>();
-		content->AddNode(buttons);
-		EditorPopupUtils::AddButton(buttons, "Create", [this]() { Confirm(); });
-		EditorPopupUtils::AddButton(buttons, "Cancel", [this]() { m_popup->Close(); });
+			});
+		EditorPopupUtils::AddButton(
+			buttons,
+			"Cancel",
+			[this]()
+			{
+				m_popup->Close();
+			});
 	}
 
 	if (m_openRequested)
@@ -85,14 +97,23 @@ void CreateFolderPopup::Render(EditorUIContext& context)
 		m_openRequested = false;
 		m_nameEdit->SetText(m_name);
 		m_errorLabel->SetText("");
-		EditorPopupUtils::Open(m_popup, context.m_rootControl, Vector2(static_cast<float>(context.m_rootControl->GetThemeConstant("project_popup_width", "Editor")), static_cast<float>(context.m_rootControl->GetThemeConstant("create_popup_height", "Editor"))));
+		EditorPopupUtils::Open(
+			m_popup,
+			context.m_rootControl,
+			Vector2(
+				static_cast<float>(context.m_rootControl->GetThemeConstant("project_popup_width", "Editor")),
+				static_cast<float>(context.m_rootControl->GetThemeConstant("create_popup_height", "Editor"))));
 		m_nameEdit->GrabFocus();
 		m_nameEdit->SelectAll();
 	}
 
 	if (m_popup->IsVisible())
 	{
-		EditorPopupUtils::Layout(m_popup, Vector2(static_cast<float>(context.m_rootControl->GetThemeConstant("project_popup_width", "Editor")), static_cast<float>(context.m_rootControl->GetThemeConstant("create_popup_height", "Editor"))));
+		EditorPopupUtils::Layout(
+			m_popup,
+			Vector2(
+				static_cast<float>(context.m_rootControl->GetThemeConstant("project_popup_width", "Editor")),
+				static_cast<float>(context.m_rootControl->GetThemeConstant("create_popup_height", "Editor"))));
 	}
 }
 

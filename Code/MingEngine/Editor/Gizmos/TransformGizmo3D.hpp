@@ -18,6 +18,8 @@ public:
 	bool BeginDragHovered(GizmoContext const& context);
 	void OnDrag(GizmoContext const& context);
 	void EndDrag(GizmoContext const& context);
+	void CancelDrag();
+	void ClearHover();
 
 	bool IsHovered() const;
 	bool IsDragging() const;
@@ -38,4 +40,6 @@ private:
 	Vector3                      m_dragStartPosition = Vector3::Zero;
 	EulerAngles                  m_dragStartOrientation;
 	Vector3                      m_dragStartScale = Vector3::One;
+	GizmoContext                 m_dragContext;
+	ObjectID                     m_dragSceneID = ObjectID::Invalid;
 };

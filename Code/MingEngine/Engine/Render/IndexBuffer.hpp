@@ -9,8 +9,9 @@ class IndexBuffer
 
 public:
 	IndexBuffer(ID3D11Device* device, unsigned int size);
-	IndexBuffer(const IndexBuffer& copy) = delete;
 	virtual ~IndexBuffer();
+
+	IndexBuffer(const IndexBuffer& copy) = delete;
 
 	void Resize(unsigned int size);
 

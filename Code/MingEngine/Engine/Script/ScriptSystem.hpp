@@ -101,6 +101,13 @@ private:
 		ObjectID          m_owner;
 		Ref<CSharpScript> m_script;
 	};
+	using ShutdownFunc = int32_t(CORECLR_DELEGATE_CALLTYPE*)();
+	using LoadProjectAssemblyFunc =
+		int32_t(CORECLR_DELEGATE_CALLTYPE*)(String const* assemblyPath, String* outLoadedAssemblyPath);
+	using UnloadProjectAssemblyFunc = int32_t(CORECLR_DELEGATE_CALLTYPE*)();
+	using EnsureProjectSolutionFunc =
+		int32_t(CORECLR_DELEGATE_CALLTYPE*)(String const* projectDirectory, String const* sdkDirectory);
+	using BuildProjectSolutionFunc = int32_t(CORECLR_DELEGATE_CALLTYPE*)(String const* projectDirectory);
 
 public:
 	ScriptSystem(ScriptSystemConfig const& config);
@@ -133,14 +140,6 @@ public:
 	void UnregisterScriptOwner(ObjectID id);
 
 private:
-	using ShutdownFunc = int32_t(CORECLR_DELEGATE_CALLTYPE*)();
-	using LoadProjectAssemblyFunc =
-		int32_t(CORECLR_DELEGATE_CALLTYPE*)(String const* assemblyPath, String* outLoadedAssemblyPath);
-	using UnloadProjectAssemblyFunc = int32_t(CORECLR_DELEGATE_CALLTYPE*)();
-	using EnsureProjectSolutionFunc =
-		int32_t(CORECLR_DELEGATE_CALLTYPE*)(String const* projectDirectory, String const* sdkDirectory);
-	using BuildProjectSolutionFunc = int32_t(CORECLR_DELEGATE_CALLTYPE*)(String const* projectDirectory);
-
 	bool InitializeDotNetRuntime();
 	void CollectReloadInstances();
 	void DetachScriptInstances();

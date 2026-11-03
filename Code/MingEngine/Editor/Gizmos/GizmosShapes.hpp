@@ -3,22 +3,32 @@
 #include "MingEngine/Scene/3D/VisualInstance3D.hpp"
 
 #include "MingEngine/Core/Render/Vertex.hpp"
+#include "MingEngine/Scene/Resource/MeshResource.hpp"
+#include "MingEngine/Engine/Render/RenderContext.hpp"
 
 #include <vector>
-
-class VertexBuffer;
 
 class EditorGizmoVisual3D : public VisualInstance3D
 {
 	MCLASS(EditorGizmoVisual3D, VisualInstance3D)
 
 public:
-	EditorGizmoVisual3D() = default;
-	~EditorGizmoVisual3D() override;
+	EditorGizmoVisual3D()           = default;
+	~EditorGizmoVisual3D() override = default;
+
+	void SetRenderPriority(int priority);
+
+	void UploadGeometry(
+		char const*       shaderName,
+		std::string_view  shaderSource,
+		RenderRequestPass pass  = RenderRequestPass::EditorOverlay,
+		DepthMode         depth = DepthMode::READ_ONLY_ALWAYS);
+	void SetGizmoColor(Color const& color);
 
 protected:
-	std::vector<Vertex> m_verts;
-	VertexBuffer*       m_vertexBuffer = nullptr;
+	std::vector<Vertex>       m_verts;
+	std::vector<unsigned int> m_indices;
+	Ref<MeshResource>         m_mesh;
 };
 
 class EditorWorldGrid3D : public EditorGizmoVisual3D

@@ -23,10 +23,10 @@ private:
 	struct ThemeCache
 	{
 		Ref<FontResource>  font;
-		int                font_size = 16;
-		int                minimum_height = 0;
-		int                caret_width = 1;
-		int icon_separation = 8;
+		int                font_size       = 16;
+		int                minimum_height  = 0;
+		int                caret_width     = 1;
+		int                icon_separation = 8;
 		Color              font_color;
 		Color              font_read_only_color;
 		Color              font_disabled_color;
@@ -53,9 +53,10 @@ public:
 	Vector2           GetInternalMinimumSize() const override;
 	AABB2             GetContentRect() const;
 
-	bool IsEditable() const { return m_editable; }
-	bool IsDisabled() const override { return m_disabled; }
-	bool IsEditing() const { return m_editing; }
+	bool        IsEditable() const { return m_editable; }
+	bool        IsDisabled() const override { return m_disabled; }
+	bool        IsEditing() const { return m_editing; }
+	CursorShape GetCursorShape(Vector2 const& localPosition) const override;
 
 	int GetCursorColumn() const { return m_cursorColumn; }
 	// Return the nonnegative pixel distance subtracted from text positions when drawing.
@@ -67,8 +68,8 @@ public:
 	int    GetSelectionToColumn() const;
 	String GetSelectedText() const;
 
-	bool   HasUndo() const;
-	bool   HasRedo() const;
+	bool HasUndo() const;
+	bool HasRedo() const;
 
 	// Set filtered single-line content, reset editing state, and leave the change callback silent.
 	// e.g. SetText(U"Name\n") stores U"Name" with the cursor at column zero.
@@ -151,18 +152,18 @@ private:
 	ThemeCache                                        m_themeCache;
 	TextLine                                          m_line;
 	TextLine                                          m_placeholderLine;
-	Vector2                                           m_padding         = Vector2::Zero;
-	bool                                              m_hasPaddingOverride = false;
-	bool                                              m_hovering = false;
+	Vector2                                           m_padding               = Vector2::Zero;
+	bool                                              m_hasPaddingOverride    = false;
+	bool                                              m_hovering              = false;
 	int                                               m_minimumCharacterWidth = 8;
-	int                                               m_cursorColumn    = 0;
-	int                                               m_selectionAnchor = 0;
-	float                                             m_scrollOffset    = 0.f;
-	bool                                              m_editable        = true;
-	bool                                              m_disabled        = false;
-	bool                                              m_selecting       = false;
-	bool                                              m_editing         = false;
-	uint64_t                                          m_editVersion     = 0;
+	int                                               m_cursorColumn          = 0;
+	int                                               m_selectionAnchor       = 0;
+	float                                             m_scrollOffset          = 0.f;
+	bool                                              m_editable              = true;
+	bool                                              m_disabled              = false;
+	bool                                              m_selecting             = false;
+	bool                                              m_editing               = false;
+	uint64_t                                          m_editVersion           = 0;
 	std::function<void(String const&)>                m_textChangedCallback;
 	std::function<void(String const&)>                m_editingStartedCallback;
 	std::function<void(String const&, EditEndReason)> m_editingEndedCallback;

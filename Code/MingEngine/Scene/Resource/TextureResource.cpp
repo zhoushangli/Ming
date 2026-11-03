@@ -32,7 +32,8 @@ bool TextureResource::CopyFrom(Resource&& other)
 
 	// 2) Move CPU image data
 	MoveBaseFrom(std::move(other));
-	m_image = std::move(otherTex->m_image);
+	m_image       = std::move(otherTex->m_image);
+	m_samplerMode = otherTex->m_samplerMode;
 
 	// 3) Hand the loaded GPU texture to the registration of this resource.
 	//    The other resource gives up its RID so it cannot free what this one keeps.

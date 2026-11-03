@@ -25,7 +25,9 @@ void PopupPanel::Open(Control* owner)
 		return;
 	}
 
-	m_owner = owner->GetObjectID();
+	m_owner         = owner->GetObjectID();
+	Control* focus  = GetViewport()->GetGuiFocus();
+	m_previousFocus = focus != nullptr ? focus->GetObjectID() : m_owner;
 	GetViewport()->CancelGuiInteraction(GetViewport());
 	UpdateSize(Vector2(GetViewport()->GetOutputResolution()));
 	SetVisible(true);
@@ -42,7 +44,11 @@ void PopupPanel::Close(bool restoreFocus)
 	}
 
 	SetVisible(false);
-	Control* owner = ObjectDatabase::GetInstance<Control>(m_owner);
+	Control* owner = ObjectDatabase::GetInstance<Control>(m_previousFocus);
+	if (owner == nullptr || owner->IsQueuedForDeletion() || !owner->IsVisibleInHierarchy())
+	{
+		owner = ObjectDatabase::GetInstance<Control>(m_owner);
+	}
 	if (restoreFocus && owner != nullptr && !owner->IsQueuedForDeletion() && owner->IsVisibleInHierarchy())
 	{
 		owner->GrabFocus();
@@ -57,17 +63,22 @@ void PopupPanel::Close(bool restoreFocus)
 
 bool PopupPanel::GuiInput(InputEvent const& event)
 {
-	if (event.m_type == InputEventType::MouseMotion || event.m_type == InputEventType::MouseButton)
+	switch (event.m_type)
+	{
+	case InputEventType::MouseMotion:
+	case InputEventType::MouseButton:
 	{
 		auto callback = m_pointerCallback;
 		if (callback && callback(event))
 		{
 			return true;
 		}
+		if (event.m_type == InputEventType::MouseButton && !m_modal && event.m_pressed)
+		{
+			Close();
+		}
+		break;
 	}
-
-	switch (event.m_type)
-	{
 	case InputEventType::Key:
 	case InputEventType::Text:
 	{
@@ -79,12 +90,6 @@ bool PopupPanel::GuiInput(InputEvent const& event)
 
 		break;
 	}
-	case InputEventType::MouseButton:
-		if (!m_modal && event.m_pressed)
-		{
-			Close();
-		}
-		break;
 	}
 
 	return true;
@@ -94,6 +99,13 @@ void PopupPanel::OnNotification(int notification)
 {
 	switch (notification)
 	{
+	case Notification_Draw:
+		if (m_modal)
+		{
+			DrawRect(AABB2(Vector2::Zero, GetSize()), GetThemeColor("modal_color", "PopupPanel"));
+		}
+		break;
+
 	case Notification_GuiInputCancelled:
 	case Notification_ExitTree:
 		Close(false);

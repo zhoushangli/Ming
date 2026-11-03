@@ -15,6 +15,19 @@
 //-----------------------------------------------------------------------------------------------
 #include <iostream>
 #include <string_view>
+#include <mutex>
+
+namespace
+{
+std::mutex                                           s_messageMutex;
+std::function<void(char const*, std::string const&)> s_messageCallback;
+}
+
+void SetReportMessageCallback(std::function<void(char const*, std::string const&)> callback)
+{
+	std::lock_guard<std::mutex> lock(s_messageMutex);
+	s_messageCallback = std::move(callback);
+}
 
 //-----------------------------------------------------------------------------------------------
 bool IsDebuggerAvailable()
@@ -91,6 +104,11 @@ void ReportMessage(
 
 	output += '\n';
 	WriteDebugMessage(output);
+	std::lock_guard<std::mutex> lock(s_messageMutex);
+	if (s_messageCallback)
+	{
+		s_messageCallback(severity, output);
+	}
 }
 
 //-----------------------------------------------------------------------------------------------

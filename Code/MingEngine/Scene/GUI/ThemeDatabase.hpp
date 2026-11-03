@@ -26,7 +26,7 @@ struct ThemeItemBind
 // e.g. BIND_THEME_ITEM(Theme::DataType::Color, Button, font_color) binds the "font_color" theme item.
 #define BIND_THEME_ITEM(dataType, className, memberName)                                                               \
 	ThemeDatabase::BindThemeItem(                                                                                      \
-		dataType,                                                                                                     \
+		dataType,                                                                                                      \
 		className::GetStaticClassName(),                                                                               \
 		#memberName,                                                                                                   \
 		[](Control* control)                                                                                           \
@@ -69,14 +69,14 @@ public:
 
 	// Context entries are ordered fallback sources; the engine default is appended during lookup.
 	// e.g. SetThemeContext(editorRoot, { editorTheme }) isolates editor defaults from a scene context.
-	static void SetThemeContext(Node* root, std::vector<Ref<Theme>> const& themes);
-	static void ClearThemeContext(Node* root);
+	static void                    SetThemeContext(Node* root, std::vector<Ref<Theme>> const& themes);
+	static void                    ClearThemeContext(Node* root);
 	static std::vector<Ref<Theme>> GetThemeContext(Node const* node);
-	static void RefreshThemeContexts(Node* root);
+	static void                    RefreshThemeContexts(Node* root);
 
 private:
 	static std::map<std::string, std::vector<ThemeItemBind>> m_items;
 	static std::set<ObjectID>                                m_controls;
 	static Ref<Theme>                                        m_defaultTheme;
-	static std::map<ObjectID, std::vector<Ref<Theme>>> m_contexts;
+	static std::map<ObjectID, std::vector<Ref<Theme>>>       m_contexts;
 };

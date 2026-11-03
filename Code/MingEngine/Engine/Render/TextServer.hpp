@@ -77,12 +77,14 @@ public:
 	RID  CreateFont(std::vector<uint8_t> bytes, bool sizeInEm = false);
 	void FreeFont(RID font);
 
-	int            GetGlyphIndex(RID font, char32_t codePoint) const;
-	TextLineConfig GetFontMetrics(RID font, float pixelHeight) const;
-	TextLine       GetTextLine(RID font, String const& text, float pixelHeight) const;
-	std::vector<TextLine> GetTextLines(RID font, String const& text, float pixelHeight, float width, AutowrapMode wrap) const;
-	TextLine TrimTextLine(RID font, TextLine const& line, float pixelHeight, float width, TextOverrunBehavior behavior) const;
-	GlyphImage     RasterizeGlyph(RID font, int glyphIndex, float pixelHeight) const;
+	int                   GetGlyphIndex(RID font, char32_t codePoint) const;
+	TextLineConfig        GetFontMetrics(RID font, float pixelHeight) const;
+	TextLine              GetTextLine(RID font, String const& text, float pixelHeight) const;
+	std::vector<TextLine> GetTextLines(
+		RID font, String const& text, float pixelHeight, float width, AutowrapMode wrap) const;
+	TextLine TrimTextLine(
+		RID font, TextLine const& line, float pixelHeight, float width, TextOverrunBehavior behavior) const;
+	GlyphImage RasterizeGlyph(RID font, int glyphIndex, float pixelHeight) const;
 
 private:
 	RIDOwner<FontData> m_fontOwner;

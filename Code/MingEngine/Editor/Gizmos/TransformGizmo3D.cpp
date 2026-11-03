@@ -59,6 +59,17 @@ TransformGizmo3D::TransformGizmo3D()
 	m_components.push_back(arcX);
 	m_components.push_back(arcY);
 	m_components.push_back(arcZ);
+	Color const colors[] = { kAxisXColor, kAxisYColor, kAxisZColor, Color::White };
+	for (int i = 0; i < 4; ++i)
+	{
+		auto* handle = MemNew<GizmoAxisArrow>(
+			static_cast<GizmoAxis>(i % 3),
+			colors[i],
+			i == 3 ? GizmoKind::UniformScale : GizmoKind::Scale);
+		handle->SetSerializable(false);
+		AddNode(handle);
+		m_components.push_back(handle);
+	}
 }
 
 TransformGizmo3D::~TransformGizmo3D()
@@ -93,7 +104,8 @@ void TransformGizmo3D::UpdateHover(GizmoContext const& context)
 
 bool TransformGizmo3D::BeginDragHovered(GizmoContext const& context)
 {
-	if (m_hoveredComponent == nullptr)
+	UpdateHover(context);
+	if (m_hoveredComponent == nullptr || context.m_selectedNode3D == nullptr)
 	{
 		return false;
 	}
@@ -107,6 +119,9 @@ bool TransformGizmo3D::BeginDragHovered(GizmoContext const& context)
 		context.m_camera->BuildRaycastFromMouse(context.m_clientPos, context.m_clientDimensions, kRaycastMaxLength);
 	m_hoveredComponent->SetHovered(true);
 	m_activeComponent = m_hoveredComponent;
+	m_dragContext     = context;
+	Node* scene       = context.m_sceneTree != nullptr ? context.m_sceneTree->GetScene() : nullptr;
+	m_dragSceneID     = scene != nullptr ? scene->GetObjectID() : ObjectID::Invalid;
 	if (context.m_selectedNode3D != nullptr)
 	{
 		m_draggedNodeID        = context.m_selectedNode3D->GetObjectID();
@@ -121,42 +136,99 @@ bool TransformGizmo3D::BeginDragHovered(GizmoContext const& context)
 
 void TransformGizmo3D::OnDrag(GizmoContext const& context)
 {
-	if (m_activeComponent != nullptr)
+	Node3D* target = ObjectDatabase::GetInstance<Node3D>(m_draggedNodeID);
+	if (m_activeComponent == nullptr)
 	{
-		if (context.m_camera == nullptr)
-		{
-			return;
-		}
-
-		MathRaycastQuery3D const currentRaycastInfo =
-			context.m_camera->BuildRaycastFromMouse(context.m_clientPos, context.m_clientDimensions, kRaycastMaxLength);
-		m_activeComponent->OnDrag(context, m_dragStartRaycastInfo, currentRaycastInfo);
+		return;
 	}
+
+	if (target == nullptr || target->IsQueuedForDeletion() || target->GetSceneTree() != context.m_sceneTree
+		|| context.m_selectedNodeID != m_draggedNodeID)
+	{
+		CancelDrag();
+		return;
+	}
+
+	GizmoContext frozen       = m_dragContext;
+	frozen.m_selectedNode3D   = target;
+	frozen.m_clientPos        = context.m_clientPos;
+	frozen.m_clientDimensions = context.m_clientDimensions;
+	MathRaycastQuery3D const ray =
+		frozen.m_camera->BuildRaycastFromMouse(frozen.m_clientPos, frozen.m_clientDimensions, kRaycastMaxLength);
+	m_activeComponent->OnDrag(frozen, m_dragStartRaycastInfo, ray);
 }
 
 void TransformGizmo3D::EndDrag(GizmoContext const& context)
 {
+	if (m_activeComponent == nullptr)
+	{
+		return;
+	}
+
+	Node3D* target = ObjectDatabase::GetInstance<Node3D>(m_draggedNodeID);
+	Node*   scene  = context.m_sceneTree != nullptr ? context.m_sceneTree->GetScene() : nullptr;
+	if (target == nullptr || target->IsQueuedForDeletion() || target->GetSceneTree() != context.m_sceneTree
+		|| scene == nullptr || scene->GetObjectID() != m_dragSceneID)
+	{
+		CancelDrag();
+		return;
+	}
+
+	m_activeComponent->OnEndDrag(context);
+	bool const  changed = target->GetLocalPosition() != m_dragStartPosition
+						  || target->GetLocalOrientation() != m_dragStartOrientation
+						  || target->GetLocalScale() != m_dragStartScale;
+	EditorNode* editor  = EditorNode::Get();
+	if (changed && editor != nullptr)
+	{
+		EditorUndoRedo& undo = editor->GetUndoRedo();
+		if (undo.CreateAction("Transform Node", m_dragSceneID))
+		{
+			undo.AddDoMethod(target, "SetLocalPosition", { target->GetLocalPosition() });
+			undo.AddDoMethod(target, "SetLocalOrientation", { target->GetLocalOrientation() });
+			undo.AddDoMethod(target, "SetLocalScale", { target->GetLocalScale() });
+			undo.AddDoMethod(editor, "MarkSceneDirty");
+			undo.AddUndoMethod(target, "SetLocalPosition", { m_dragStartPosition });
+			undo.AddUndoMethod(target, "SetLocalOrientation", { m_dragStartOrientation });
+			undo.AddUndoMethod(target, "SetLocalScale", { m_dragStartScale });
+			undo.AddUndoMethod(editor, "MarkSceneDirty");
+			undo.CommitAction(false);
+		}
+
+		editor->MarkSceneDirty();
+	}
+
+	m_activeComponent = nullptr;
+	m_draggedNodeID   = ObjectID::Invalid;
+	ClearHover();
+}
+
+void TransformGizmo3D::CancelDrag()
+{
 	if (m_activeComponent != nullptr)
 	{
-		m_activeComponent->OnEndDrag(context);
-		Node3D* draggedNode = ObjectDatabase::GetInstance<Node3D>(m_draggedNodeID);
-		if (context.m_sceneTree == nullptr
-			|| (draggedNode != nullptr && draggedNode->GetSceneTree() != context.m_sceneTree))
+		Node3D* target = ObjectDatabase::GetInstance<Node3D>(m_draggedNodeID);
+		if (target != nullptr && !target->IsQueuedForDeletion() && target->GetSceneTree() == m_dragContext.m_sceneTree)
 		{
-			draggedNode = nullptr;
+			target->SetLocalPosition(m_dragStartPosition);
+			target->SetLocalOrientation(m_dragStartOrientation);
+			target->SetLocalScale(m_dragStartScale);
 		}
 
-		bool const changed = draggedNode != nullptr
-							 && (draggedNode->GetLocalPosition() != m_dragStartPosition
-								 || draggedNode->GetLocalOrientation() != m_dragStartOrientation
-								 || draggedNode->GetLocalScale() != m_dragStartScale);
-		if (changed && EditorNode::Get() != nullptr)
-		{
-			EditorNode::Get()->MarkSceneDirty();
-		}
+		m_activeComponent->OnEndDrag(m_dragContext);
+	}
 
-		m_draggedNodeID   = ObjectID::Invalid;
-		m_activeComponent = nullptr;
+	m_activeComponent = nullptr;
+	m_draggedNodeID   = ObjectID::Invalid;
+	ClearHover();
+}
+
+void TransformGizmo3D::ClearHover()
+{
+	if (m_hoveredComponent != nullptr)
+	{
+		m_hoveredComponent->SetHovered(false);
+		m_hoveredComponent = nullptr;
 	}
 }
 
@@ -178,18 +250,34 @@ void TransformGizmo3D::OnNotification(int notification)
 			return;
 		}
 
-		GizmoContext const context        = BuildGizmoContext(GetSceneTree(), *camera);
-		bool const         hasSelection   = context.m_selectedNode3D != nullptr;
-		bool const         rotationActive = m_activeComponent != nullptr && m_activeComponent->IsRotationGizmo();
+		GizmoContext const context      = BuildGizmoContext(GetSceneTree(), *camera);
+		bool const         hasSelection = context.m_selectedNode3D != nullptr;
+		if (m_activeComponent != nullptr && (!hasSelection || context.m_selectedNodeID != m_draggedNodeID))
+		{
+			CancelDrag();
+		}
+
+		if (!hasSelection)
+		{
+			ClearHover();
+		}
+
+		bool const rotationActive = m_activeComponent != nullptr && m_activeComponent->IsRotationGizmo();
 
 		for (GizmoComponent* component : m_components)
 		{
-			bool const isVisible = hasSelection && (!rotationActive || component == m_activeComponent);
+			bool const allowed   = component->IsEnabledForTool(context.m_tool);
+			bool const isVisible = hasSelection && allowed && (!rotationActive || component == m_activeComponent);
 			component->SetVisible(isVisible);
 			if (isVisible)
 			{
+				Matrix4x4 const& basis = IsDragging() ? m_dragContext.m_basis : context.m_basis;
+				EulerAngles      orientation;
+				orientation.SetFromMatrix_IFwd_JLeft_KUp(basis);
+				float const scale = IsDragging() ? m_dragContext.m_scale : context.m_scale;
 				component->SetWorldPosition(context.m_originWorld);
-				component->SetWorldScale(Vector3(context.m_scale, context.m_scale, context.m_scale));
+				component->SetWorldOrientation(orientation);
+				component->SetWorldScale(Vector3(scale, scale, scale));
 			}
 		}
 
@@ -238,7 +326,7 @@ GizmoComponent* TransformGizmo3D::HitTest(GizmoContext const& context, Vector3& 
 	float           closestDistance  = raycastInfo.m_maxLength;
 	for (GizmoComponent* component : m_components)
 	{
-		if (component == nullptr || !component->GetVisible())
+		if (component == nullptr || !component->IsEnabledForTool(context.m_tool))
 		{
 			continue;
 		}

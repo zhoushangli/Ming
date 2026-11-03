@@ -45,9 +45,6 @@ public:
 		Any, // This is a special type used for method binding, it means the method can accept any type of argument
 	};
 
-	// Element count of the payload, every inline type has to fit into that many bytes.
-	static constexpr uint32_t kPayloadSize = 16;
-
 private:
 	// Only scalars and pointers are named here: a union member with a user provided constructor
 	// or destructor would delete the special members of the union itself.
@@ -57,19 +54,11 @@ private:
 		int32_t m_int;
 		float   m_float;
 		void*   m_pointer;
-		uint8_t m_bytes[kPayloadSize];
+		uint8_t m_bytes[16];
 	};
 
 public:
 	Variant() = default;
-
-	// 1) Copy or steal the payload of the other variant
-	// 2) Keep the tag, so a copied String shares its text and an owned type is copied by value
-	// e.g. Variant copy = Variant(Matrix4x4()) allocates a second Matrix4x4 for the copy.
-	Variant(Variant const& other);
-	Variant(Variant&& other) noexcept;
-	Variant& operator=(Variant const& other);
-	Variant& operator=(Variant&& other) noexcept;
 	~Variant();
 
 	Variant(bool value);
@@ -91,6 +80,15 @@ public:
 	Variant(EulerAngles const& value);
 	Variant(Matrix4x4 const& value);
 	Variant(Object* const& value);
+
+	// 1) Copy or steal the payload of the other variant
+	// 2) Keep the tag, so a copied String shares its text and an owned type is copied by value
+	// e.g. Variant copy = Variant(Matrix4x4()) allocates a second Matrix4x4 for the copy.
+	Variant(Variant const& other);
+	Variant(Variant&& other) noexcept;
+	Variant& operator=(Variant const& other);
+	Variant& operator=(Variant&& other) noexcept;
+
 	bool IsEmpty() const;
 	Type GetType() const;
 	bool operator==(Variant const& other) const;
@@ -231,6 +229,10 @@ private:
 	// 2) Leave the variant empty so the same storage can be reused
 	// e.g. Clear() on a Variant holding a Matrix4x4 deletes that Matrix4x4.
 	void Clear();
+
+public:
+	// Element count of the payload, every inline type has to fit into that many bytes.
+	static constexpr uint32_t kPayloadSize = sizeof(Payload::m_bytes);
 
 private:
 	Type    m_type    = Type::Empty;

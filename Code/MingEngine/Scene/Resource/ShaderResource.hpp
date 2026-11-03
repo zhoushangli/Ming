@@ -8,10 +8,11 @@ class ShaderResource : public Resource
 	MCLASS(ShaderResource, Resource);
 
 public:
-	ShaderResource()                                      = default;
+	ShaderResource() = default;
+	~ShaderResource() override;
+
 	ShaderResource(ShaderResource const& copy)            = delete;
 	ShaderResource& operator=(ShaderResource const& copy) = delete;
-	~ShaderResource() override;
 
 	bool IsEmpty() const { return m_shader == nullptr; }
 

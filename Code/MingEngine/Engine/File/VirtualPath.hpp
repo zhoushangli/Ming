@@ -45,9 +45,6 @@ namespace std
 template <>
 struct hash<VirtualPath>
 {
-	size_t operator()(VirtualPath const& path) const noexcept
-	{
-		return hash<std::string>{}(path.GetString());
-	}
+	size_t operator()(VirtualPath const& path) const noexcept { return hash<std::string>{}(path.GetString()); }
 };
 }

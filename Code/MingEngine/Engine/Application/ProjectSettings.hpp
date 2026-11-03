@@ -3,6 +3,7 @@
 #include "MingEngine/Core/Object/Resource.hpp"
 
 #include <string>
+#include <filesystem>
 
 class ProjectSettings : public Resource
 {
@@ -10,6 +11,10 @@ class ProjectSettings : public Resource
 
 public:
 	static Ref<ProjectSettings> Get();
+	static bool                 Load(std::filesystem::path const& directory, std::string& error);
+	static Ref<ProjectSettings> Parse(std::string const& text, std::string& error);
+	static Ref<ProjectSettings> Read(std::filesystem::path const& directory, std::string& error);
+	static void                 Reset();
 
 	static constexpr char const* GetSettingsPath() { return "res://project.ming"; }
 

@@ -119,16 +119,26 @@ void ImportPanel::RebuildImportOptionProperties()
 			InspectorProperty::Create(option.m_propertyInfo, std::move(labelId), std::move(onChanged));
 		if (property != nullptr)
 		{
+			property->SetRevertValue(option.m_defaultValue);
 			m_optionsContent->AddNode(property->GetControl());
 			m_importOptionProperties.push_back(property);
 		}
 	}
 }
 
-void ImportPanel::RefreshSelection(VirtualPath const& selectedPath)
+void ImportPanel::RefreshSelection(VirtualPath const& selectedPath, bool discard)
 {
 	if (m_cachedSelectedPath == selectedPath)
 	{
+		return;
+	}
+
+	if (!discard && (m_changing || IsImportOptionModified()))
+	{
+		if (!m_changing)
+		{
+			RequestSwitch(selectedPath);
+		}
 		return;
 	}
 
@@ -156,6 +166,16 @@ void ImportPanel::RefreshSelection(VirtualPath const& selectedPath)
 
 	RebuildImportOptionProperties();
 	ApplyCachedImportOptions();
+	std::string hint;
+	for (int i = 0; i < static_cast<int>(m_matchedImporters.size()); ++i)
+	{
+		if (!hint.empty())
+		{
+			hint += ',';
+		}
+		hint += m_matchedImporters[i]->GetVisibleName() + ":" + std::to_string(i);
+	}
+	m_importerChoice->SetOptions(hint);
 }
 
 // 1) Compare current import options with saved config
@@ -163,43 +183,125 @@ void ImportPanel::RefreshSelection(VirtualPath const& selectedPath)
 bool ImportPanel::IsImportOptionModified() const
 {
 	Ref<ResourceFormatImporter> importer = GetSelectedImporter();
-
-	// No saved config: modified if user has changed any option from default
-	if (!m_hasImportConfig)
+	if (!importer.IsValid())
 	{
-		return !m_importOptions.empty();
+		return false;
 	}
 
-	// Saved config exists but importer was switched
-	if (!importer.IsValid() || importer->GetClassName() != m_configImporterClassName)
+	if (m_hasImportConfig && importer->GetClassName() != m_configImporterClassName)
 	{
 		return true;
 	}
 
-	// Same importer: compare option values
-	if (m_importOptions.size() != m_configImportOptions.size())
+	for (ImportOptions const& option : importer->GetImportOptions())
 	{
-		return true;
-	}
-
-	for (auto const& [key, value] : m_configImportOptions)
-	{
-		auto const iter = m_importOptions.find(key);
-		if (iter == m_importOptions.end() || iter->second != value)
+		auto          saved    = m_configImportOptions.find(option.m_propertyInfo.m_name);
+		Variant const baseline = saved != m_configImportOptions.end() ? saved->second : option.m_defaultValue;
+		if (GetOptionDisplayValue(option) != baseline)
 		{
 			return true;
 		}
 	}
-
 	return false;
+}
+
+void ImportPanel::RequestSwitch(VirtualPath const& path, int importer)
+{
+	if (m_changePopup == nullptr)
+	{
+		VBoxContainer* content = nullptr;
+		m_changePopup          = EditorPopupUtils::Create(m_context.m_rootControl, "Unsaved Import Options", content);
+		EditorPopupUtils::AddLabel(content, "Reimport before changing the selection?");
+		m_changeError = EditorPopupUtils::AddLabel(content, "", "EditorErrorLabel");
+		auto* actions = EditorPopupUtils::AddActions(content);
+		EditorPopupUtils::AddButton(
+			actions,
+			"Reimport",
+			[this]()
+			{
+				ResolveSwitch(SwitchChoice::Reimport);
+			});
+		EditorPopupUtils::AddButton(
+			actions,
+			"Discard",
+			[this]()
+			{
+				ResolveSwitch(SwitchChoice::Discard);
+			});
+		EditorPopupUtils::AddButton(
+			actions,
+			"Cancel",
+			[this]()
+			{
+				ResolveSwitch(SwitchChoice::Cancel);
+			});
+		m_changePopup->SetClosedCallback(
+			[this]()
+			{
+				if (m_changing)
+				{
+					m_changing = false;
+					m_context.m_editorUI->GetPanel<FileSystemPanel>().SelectPath(m_cachedSelectedPath);
+				}
+			});
+	}
+	m_pendingPath     = path;
+	m_pendingImporter = importer;
+	m_changing        = true;
+	m_changeError->SetText("");
+	EditorPopupUtils::Open(
+		m_changePopup,
+		m_context.m_rootControl,
+		Vector2(
+			static_cast<float>(GetThemeConstant("project_popup_width", "Editor")),
+			static_cast<float>(GetThemeConstant("create_popup_height", "Editor"))));
+}
+
+void ImportPanel::ResolveSwitch(SwitchChoice choice)
+{
+	if (choice == SwitchChoice::Reimport && !Reimport())
+	{
+		return;
+	}
+
+	m_changing = false;
+	m_changePopup->Close();
+	if (choice == SwitchChoice::Cancel)
+	{
+		m_context.m_editorUI->GetPanel<FileSystemPanel>().SelectPath(m_cachedSelectedPath);
+		return;
+	}
+
+	if (m_pendingImporter >= 0)
+	{
+		m_selectedImporterIndex = m_pendingImporter;
+		RebuildImportOptionProperties();
+		ApplyCachedImportOptions();
+	}
+	else
+	{
+		RefreshSelection(m_pendingPath, true);
+	}
 }
 
 void ImportPanel::OnInitialize()
 {
 	auto* layout = MemNew<VBoxContainer>();
-	layout->SetSeparation(static_cast<float>(GetThemeConstant("panel_margin", "Editor")));
+	layout->AddThemeChangedCallback(
+		[control = layout]()
+		{
+			control->SetSeparation(static_cast<float>(control->GetThemeConstant("panel_margin", "Editor")));
+		});
 	auto* margin = MemNew<MarginContainer>();
-	margin->SetMargins(static_cast<float>(GetThemeConstant("panel_margin", "Editor")), static_cast<float>(GetThemeConstant("panel_margin", "Editor")), static_cast<float>(GetThemeConstant("panel_margin", "Editor")), static_cast<float>(GetThemeConstant("panel_margin", "Editor")));
+	margin->AddThemeChangedCallback(
+		[control = margin]()
+		{
+			control->SetMargins(
+				static_cast<float>(control->GetThemeConstant("panel_margin", "Editor")),
+				static_cast<float>(control->GetThemeConstant("panel_margin", "Editor")),
+				static_cast<float>(control->GetThemeConstant("panel_margin", "Editor")),
+				static_cast<float>(control->GetThemeConstant("panel_margin", "Editor")));
+		});
 	AddNode(margin);
 	margin->AddNode(layout);
 	layout->UpdateSize(GetSize());
@@ -214,42 +316,66 @@ void ImportPanel::OnInitialize()
 	m_objectBar->SetThemeTypeVariation("EditorObjectBar");
 	layout->AddNode(m_objectBar);
 	auto* row = MemNew<HBoxContainer>();
-	row->SetSeparation(static_cast<float>(GetThemeConstant("status_spacing", "Editor")) * 0.5f);
+	row->AddThemeChangedCallback(
+		[control = row]()
+		{
+			control->SetSeparation(static_cast<float>(control->GetThemeConstant("status_spacing", "Editor")) * 0.5f);
+		});
 	m_objectBar->AddNode(row);
 	m_icon = MemNew<TextureRect>();
 	m_icon->SetExpandMode(TextureRect::ExpandMode::IgnoreSize);
 	m_icon->SetStretchMode(TextureRect::StretchMode::KeepAspectCentered);
-	m_icon->SetCustomMinimumSize(Vector2(static_cast<float>(GetThemeConstant("icon_size", "Button")), static_cast<float>(GetThemeConstant("icon_size", "Button"))));
+	m_icon->AddThemeChangedCallback(
+		[control = m_icon]()
+		{
+			control->SetCustomMinimumSize(Vector2(
+				static_cast<float>(control->GetThemeConstant("icon_size", "Button")),
+				static_cast<float>(control->GetThemeConstant("icon_size", "Button"))));
+		});
 	row->AddNode(m_icon);
 	m_header = EditorPopupUtils::AddLabel(row, "");
 	m_header->SetHorizontalSizeFlags(Size_ExpandFill);
 	m_header->SetClipText(true);
 	m_header->SetVerticalAlignment(VerticalAlignment::Center);
-	m_type = EditorPopupUtils::AddLabel(layout, "IMPORT", "EditorPropertyLabel");
+	m_type           = EditorPopupUtils::AddLabel(layout, "IMPORT", "EditorPropertyLabel");
 	m_importerChoice = MemNew<OptionButton>();
 	layout->AddNode(m_importerChoice);
-	m_importerChoice->SetValueChangedCallback([this](int index)
-	{
-		m_selectedImporterIndex = index;
-		RebuildImportOptionProperties();
-		ApplyCachedImportOptions();
-	});
+	m_importerChoice->SetValueChangedCallback(
+		[this](int index)
+		{
+			if (IsImportOptionModified())
+			{
+				RequestSwitch(m_cachedSelectedPath, index);
+				m_importerChoice->SetValueNoSignal(m_selectedImporterIndex);
+				return;
+			}
+			m_selectedImporterIndex = index;
+			RebuildImportOptionProperties();
+			ApplyCachedImportOptions();
+		});
 	auto* scroll = MemNew<ScrollContainer>();
-	m_scroll = scroll;
+	m_scroll     = scroll;
 	scroll->SetVerticalSizeFlags(Size_ExpandFill);
 	layout->AddNode(scroll);
 	m_optionsContent = MemNew<VBoxContainer>();
 	scroll->AddNode(m_optionsContent);
-	m_reimport = EditorPopupUtils::AddButton(layout, "Reimport", [this]() { Reimport(); });
+	m_reimport = EditorPopupUtils::AddButton(
+		layout,
+		"Reimport",
+		[this]()
+		{
+			Reimport();
+		});
 	m_reimport->SetHorizontalSizeFlags(Size_ShrinkEnd);
 }
 
 void ImportPanel::OnRender(EditorUIContext& context)
 {
-	VirtualPath const selected = context.m_editorUI->GetPanel<FileSystemPanel>().GetSelectedVirtualPath();
-	bool const changed = selected != m_cachedSelectedPath;
-	RefreshSelection(selected);
-	bool const valid = GetSelectedImporter().IsValid();
+	VirtualPath const previous = m_cachedSelectedPath;
+	RefreshSelection(context.m_editorUI->GetPanel<FileSystemPanel>().GetSelectedVirtualPath());
+	VirtualPath const selected = m_cachedSelectedPath;
+	bool const        changed  = selected != previous;
+	bool const        valid    = GetSelectedImporter().IsValid();
 	m_header->SetText(valid ? selected.GetFileName() : "");
 	m_objectBar->SetVisible(valid);
 	m_empty->SetVisible(!valid);
@@ -259,7 +385,7 @@ void ImportPanel::OnRender(EditorUIContext& context)
 	if (valid)
 	{
 		std::string const extension = selected.GetExtension();
-		char const* icon = extension == ".png" || extension == ".jpg" ? "Texture2D" : "Resource";
+		char const*       icon      = extension == ".png" || extension == ".jpg" ? "Texture2D" : "Resource";
 		m_icon->SetTexture(GetThemeIcon(icon, "EditorIcons"));
 		m_icon->SetTint(EditorIcons::GetIconColor(icon, this));
 		m_type->SetText("IMPORT AS " + GetSelectedImporter()->GetVisibleName());
@@ -288,24 +414,50 @@ void ImportPanel::OnRender(EditorUIContext& context)
 		for (size_t i = 0; i < options.size() && i < m_importOptionProperties.size(); ++i)
 		{
 			m_importOptionProperties[i]->UpdateValue(GetOptionDisplayValue(options[i]));
-			std::string name = m_importOptionProperties[i]->GetDisplayName();
+			std::string name  = m_importOptionProperties[i]->GetDisplayName();
 			std::string query = m_filter->GetText().ToUtf8();
-			std::transform(name.begin(), name.end(), name.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
-			std::transform(query.begin(), query.end(), query.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
-			m_importOptionProperties[i]->GetControl()->SetVisible(query.empty() || name.find(query) != std::string::npos);
+			std::transform(
+				name.begin(),
+				name.end(),
+				name.begin(),
+				[](unsigned char c)
+				{
+					return static_cast<char>(std::tolower(c));
+				});
+			std::transform(
+				query.begin(),
+				query.end(),
+				query.begin(),
+				[](unsigned char c)
+				{
+					return static_cast<char>(std::tolower(c));
+				});
+			m_importOptionProperties[i]->GetControl()->SetVisible(
+				query.empty() || name.find(query) != std::string::npos);
 		}
 	}
 }
 
-void ImportPanel::Reimport()
+bool ImportPanel::Reimport()
 {
 	if (!ResourceImporter::Import(m_cachedSelectedPath, GetSelectedImporter(), m_importOptions))
 	{
-		m_context.m_editorUI->Warning("Import Failed", m_cachedSelectedPath.GetString());
-		return;
+		std::string const error = "Could not reimport: " + m_cachedSelectedPath.GetString();
+		ERR_PRINT(error);
+		if (m_changing)
+		{
+			m_changeError->SetText(error);
+		}
+		else
+		{
+			m_context.m_editorUI->Warning("Import Failed", error);
+		}
+		return false;
 	}
 
 	RefreshImportConfigCache(m_cachedSelectedPath);
 	ApplyCachedImportOptions();
 	ResourceLoader::Reload(m_cachedSelectedPath);
+	INFO_PRINT("Reimported: " + m_cachedSelectedPath.GetString());
+	return true;
 }

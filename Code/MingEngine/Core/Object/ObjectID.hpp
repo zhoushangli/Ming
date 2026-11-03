@@ -15,6 +15,7 @@ public:
 	bool     operator!=(ObjectID const& other) const;
 	bool     operator<(ObjectID const& other) const;
 
+public:
 	static const ObjectID     Invalid;
 	static constexpr uint32_t kMaxUID   = 0xfffffffeu;
 	static constexpr uint32_t kMaxIndex = 0xffffffffu;

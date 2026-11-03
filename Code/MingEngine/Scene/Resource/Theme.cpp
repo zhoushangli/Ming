@@ -9,15 +9,15 @@ Theme::~Theme()
 
 Ref<Theme> Theme::Duplicate() const
 {
-	auto result = CreateRef<Theme>();
-	result->m_defaultFont = m_defaultFont;
+	auto result               = CreateRef<Theme>();
+	result->m_defaultFont     = m_defaultFont;
 	result->m_defaultFontSize = m_defaultFontSize;
-	result->m_colorItems = m_colorItems;
-	result->m_constantItems = m_constantItems;
-	result->m_fontItems = m_fontItems;
-	result->m_fontSizeItems = m_fontSizeItems;
-	result->m_iconItems = m_iconItems;
-	result->m_variations = m_variations;
+	result->m_colorItems      = m_colorItems;
+	result->m_constantItems   = m_constantItems;
+	result->m_fontItems       = m_fontItems;
+	result->m_fontSizeItems   = m_fontSizeItems;
+	result->m_iconItems       = m_iconItems;
+	result->m_variations      = m_variations;
 
 	// Copy each mutable box once while preserving aliases inside the new Theme.
 	// e.g. Shared normal/disabled boxes remain shared without modifying the base Theme.
@@ -50,7 +50,7 @@ Ref<Theme> Theme::Duplicate() const
 std::vector<std::string> Theme::GetTypeList(DataType dataType) const
 {
 	std::vector<std::string> result;
-	auto append = [&result](auto const& groups)
+	auto                     append = [&result](auto const& groups)
 	{
 		for (auto const& group : groups)
 		{
@@ -89,7 +89,7 @@ std::vector<std::string> Theme::GetTypeList(DataType dataType) const
 std::vector<std::string> Theme::GetItemList(DataType dataType, std::string const& type) const
 {
 	std::vector<std::string> result;
-	auto append = [&result, &type](auto const& groups)
+	auto                     append = [&result, &type](auto const& groups)
 	{
 		auto group = groups.find(type);
 		if (group != groups.end())
@@ -570,11 +570,11 @@ bool Theme::CopyFrom(Resource&& other)
 	ReleaseStyleBoxes();
 	theme->ReleaseStyleBoxes();
 	MoveBaseFrom(std::move(other));
-	m_defaultFont = theme->m_defaultFont;
-	m_defaultFontSize = theme->m_defaultFontSize;
-	theme->m_defaultFont = nullptr;
+	m_defaultFont            = theme->m_defaultFont;
+	m_defaultFontSize        = theme->m_defaultFontSize;
+	theme->m_defaultFont     = nullptr;
 	theme->m_defaultFontSize = -1;
-	m_colorItems = std::move(theme->m_colorItems);
+	m_colorItems             = std::move(theme->m_colorItems);
 	theme->m_colorItems.clear();
 	m_constantItems = std::move(theme->m_constantItems);
 	theme->m_constantItems.clear();

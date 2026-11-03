@@ -221,8 +221,11 @@ void OptionButton::HandleKey(InputEvent const& event)
 
 void OptionButton::OnNotification(int notification)
 {
-	if (notification == Notification_ExitTree || notification == Notification_GuiInputCancelled)
+	switch (notification)
 	{
+	case Notification_ExitTree:
+	case Notification_GuiInputCancelled:
 		CloseOptions(false);
+		break;
 	}
 }

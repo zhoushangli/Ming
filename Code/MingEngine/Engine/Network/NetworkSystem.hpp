@@ -25,6 +25,17 @@ public:
 		ClientConnected,
 	};
 
+private:
+	using SocketHandle = uintptr_t;
+
+	struct NetworkConnection
+	{
+		SocketHandle        m_socket = INVALID_SOCKET_HANDLE;
+		std::deque<uint8_t> m_incomingBytes;
+		std::deque<uint8_t> m_outgoingBytes;
+	};
+
+public:
 	NetworkSystem(NetworkSystemConfig const& config) : m_config(config) {}
 
 	virtual ~NetworkSystem() = default;
@@ -48,16 +59,6 @@ public:
 	std::size_t  GetConnectionCount() const { return m_connections.size(); }
 
 private:
-	using SocketHandle                                  = uintptr_t;
-	static constexpr SocketHandle INVALID_SOCKET_HANDLE = ~SocketHandle(0);
-
-	struct NetworkConnection
-	{
-		SocketHandle        m_socket = INVALID_SOCKET_HANDLE;
-		std::deque<uint8_t> m_incomingBytes;
-		std::deque<uint8_t> m_outgoingBytes;
-	};
-
 	void AcceptNewClients();
 	void UpdateClientConnection();
 	void ProcessConnections();
@@ -67,7 +68,8 @@ private:
 	void CloseAllConnections();
 
 private:
-	NetworkSystemConfig m_config;
+	static constexpr SocketHandle INVALID_SOCKET_HANDLE = ~SocketHandle(0);
+	NetworkSystemConfig           m_config;
 
 	NetworkState                   m_state        = NetworkState::Inactive;
 	SocketHandle                   m_listenSocket = INVALID_SOCKET_HANDLE;

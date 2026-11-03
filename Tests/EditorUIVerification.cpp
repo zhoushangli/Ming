@@ -1,3 +1,4 @@
+#include "MingEngine/Engine/Application/ProjectSettings.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Engine/Window/WindowSystem.hpp"
 #include "MingEngine/Engine/File/FileSystem.hpp"
@@ -5,6 +6,10 @@
 #include "MingEngine/Editor/EditorThemeManager.hpp"
 #include "MingEngine/Editor/UI/EditorUI.hpp"
 #include "MingEngine/Editor/UI/EditorIcons.hpp"
+#include "MingEngine/Editor/EditorCamera.hpp"
+#include "MingEngine/Editor/Gizmos/EditorGizmos.hpp"
+#include "MingEngine/Editor/Gizmos/GizmoComponent.hpp"
+#include "MingEngine/Scene/3D/MeshInstance3D.hpp"
 #include "MingEngine/Scene/RegisterAllTypes.hpp"
 #include "MingEngine/Scene/Core/SceneTree.hpp"
 #include "MingEngine/Scene/Core/Viewport.hpp"
@@ -25,6 +30,9 @@
 #include "MingEngine/Scene/3D/Camera3D.hpp"
 #include "MingEngine/Core/Object/ResourceLoader.hpp"
 #include "RenderReadback.hpp"
+#include "UILayoutPreview.hpp"
+#include "MingEngine/Core/Render/VertexUtils.hpp"
+#include "MingEngine/Core/Render/SurfaceTool.hpp"
 
 #include <cstdio>
 #include <filesystem>
@@ -55,7 +63,8 @@ T* FindUIControl(Node* node)
 
 Control* FindNamedUI(Node* node, String const& name)
 {
-	if (auto* control = dynamic_cast<Control*>(node); control != nullptr && node->GetName() == name && !node->IsQueuedForDeletion())
+	if (auto* control = dynamic_cast<Control*>(node);
+		control != nullptr && node->GetName() == name && !node->IsQueuedForDeletion())
 	{
 		return control;
 	}
@@ -77,12 +86,16 @@ int main(int argc, char** argv)
 	{
 		return 2;
 	}
-	bool preview = false;
+	bool  preview = false;
 	float uiScale = 1.25f;
 	for (int i = 2; i < argc; ++i)
 	{
 		std::string const argument(argv[i]);
-		if (argument == "--preview")
+		if (argument == "--layout-preview")
+		{
+			preview = true;
+		}
+		else if (argument == "--preview")
 		{
 			preview = true;
 		}
@@ -96,9 +109,11 @@ int main(int argc, char** argv)
 		}
 	}
 
-	int checks = 0;
-	int failures = 0;
-	auto check = [&](bool result, char const* message)
+	bool const layoutPreview = argc >= 3 && std::string(argv[2]) == "--layout-preview";
+
+	int  checks   = 0;
+	int  failures = 0;
+	auto check    = [&](bool result, char const* message)
 	{
 		++checks;
 		if (!result)
@@ -112,20 +127,64 @@ int main(int argc, char** argv)
 	std::filesystem::path const project = std::filesystem::absolute(argv[1]);
 	std::filesystem::create_directories(project);
 	EngineConfig config;
-	config.m_fileSystemConfig.m_resourceRoot = project;
-	config.m_scriptSystemConfig.m_isEnabled = false;
-	config.m_audioConfig.m_isEnable = false;
-	config.m_networkConfig.m_isEnable = false;
-	config.m_windowConfig.m_appName = "Editor UI Verification";
-	config.m_windowConfig.m_isResizable = true;
+	config.m_fileSystemConfig.m_resourceRoot       = project;
+	config.m_scriptSystemConfig.m_isEnabled        = false;
+	config.m_audioConfig.m_isEnable                = false;
+	config.m_networkConfig.m_isEnable              = false;
+	config.m_windowConfig.m_appName                = "Editor UI Verification";
+	config.m_windowConfig.m_isResizable            = true;
 	config.m_windowConfig.m_isBorderlessFullscreen = false;
 	Engine engine(config);
 	ClassDatabase::Startup();
 	RegisterAllTypes();
 	engine.Startup();
+	std::ofstream(project / L"project.ming") << R"({"type":"ProjectSettings","version":1,"start_scene_path":""})";
+	std::string settingsError;
+	check(ProjectSettings::Load(project, settingsError), "fixture installs its own project settings");
+	// 1) Keep scripted input independent of desktop focus, mouse motion and resize messages.
+	auto* scriptedWindow      = engine.m_windowSystem->GetGLFWWindow();
+	auto  keyCallback         = glfwSetKeyCallback(scriptedWindow, nullptr);
+	auto  mouseButtonCallback = glfwSetMouseButtonCallback(scriptedWindow, nullptr);
+	auto  cursorPosCallback   = glfwSetCursorPosCallback(scriptedWindow, nullptr);
+	auto  characterCallback   = glfwSetCharCallback(scriptedWindow, nullptr);
+	auto  scrollCallback      = glfwSetScrollCallback(scriptedWindow, nullptr);
+	auto  windowFocusCallback = glfwSetWindowFocusCallback(scriptedWindow, nullptr);
+	auto  cursorEnterCallback = glfwSetCursorEnterCallback(scriptedWindow, nullptr);
+	auto  framebufferCallback = glfwSetFramebufferSizeCallback(scriptedWindow, nullptr);
+
+	if (layoutPreview)
+	{
+		SceneTree previewTree;
+		Label*    sizeLabel = BuildUILayoutPreview(&previewTree);
+		auto*     root      = static_cast<Viewport*>(previewTree.GetRoot());
+		auto*     window    = engine.m_windowSystem->GetGLFWWindow();
+		glfwRestoreWindow(window);
+		glfwSetWindowSize(window, 1440, 900);
+		glfwSetKeyCallback(window, keyCallback);
+		glfwSetMouseButtonCallback(window, mouseButtonCallback);
+		glfwSetCursorPosCallback(window, cursorPosCallback);
+		glfwSetCharCallback(window, characterCallback);
+		glfwSetScrollCallback(window, scrollCallback);
+		glfwSetWindowFocusCallback(window, windowFocusCallback);
+		glfwSetCursorEnterCallback(window, cursorEnterCallback);
+		glfwSetFramebufferSizeCallback(window, framebufferCallback);
+		while (!glfwWindowShouldClose(window))
+		{
+			engine.BeginFrame();
+			IntVec2 const resolution = engine.m_windowSystem->GetClientDimensions();
+			root->UpdateResolution(resolution);
+			sizeLabel->SetText(Stringf("Viewport: %d x %d", resolution.x, resolution.y));
+			previewTree.UpdateScene(1.f / 60.f);
+			engine.m_renderServer->Render();
+			previewTree.FlushPendingNode();
+			engine.EndFrame();
+			std::this_thread::sleep_for(std::chrono::milliseconds(16));
+		}
+	}
+	else
 	{
 		SceneTree tree;
-		auto* root = static_cast<Viewport*>(tree.GetRoot());
+		auto*     root = static_cast<Viewport*>(tree.GetRoot());
 		root->UpdateResolution(IntVec2(1440, 900));
 		auto* scope = MemNew<Control>();
 		root->AddNode(scope);
@@ -135,16 +194,16 @@ int main(int argc, char** argv)
 		auto pointer = [&](InputEventType type, Vector2 position, bool pressed = false)
 		{
 			InputEvent event;
-			event.m_type = type;
-			event.m_position = position;
-			event.m_pressed = pressed;
+			event.m_type        = type;
+			event.m_position    = position;
+			event.m_pressed     = pressed;
 			event.m_mouseButton = GLFW_MOUSE_BUTTON_LEFT;
 			root->ProcessInputEvent(event);
 		};
 		auto key = [&](int code)
 		{
 			InputEvent event;
-			event.m_type = InputEventType::Key;
+			event.m_type    = InputEventType::Key;
 			event.m_keyCode = code;
 			event.m_pressed = true;
 			root->ProcessInputEvent(event);
@@ -162,36 +221,60 @@ int main(int argc, char** argv)
 		scope->AddNode(bar);
 		bar->SetPosition(Vector2(20.f, 15.f));
 		int actions = 0;
-		bar->AddMenu("First", [&]()
-		{
-			return std::vector<MenuBar::MenuItem>{ { "Disabled", {} }, { "", {}, "", true }, { "Action", [&]() { ++actions; }, "Ctrl+A", false, true, true } };
-		});
-		bar->AddMenu("Second", []()
-		{
-			return std::vector<MenuBar::MenuItem>{ { "Unavailable", {} } };
-		});
+		bar->AddMenu(
+			"First",
+			[&]()
+			{
+				return std::vector<MenuBar::MenuItem>{ { "Disabled", {} },
+													   { "", {}, "", true },
+													   { "Action",
+														 [&]()
+														 {
+															 ++actions;
+														 },
+														 "Ctrl+A",
+														 false,
+														 true,
+														 true } };
+			});
+		bar->AddMenu(
+			"Second",
+			[]()
+			{
+				return std::vector<MenuBar::MenuItem>{ { "Unavailable", {} } };
+			});
 		bar->UpdateSize(bar->GetCombinedMinimumSize());
 		tree.FlushContainerUpdate();
-		auto* first = static_cast<Button*>(bar->GetChildren()[0]);
+		auto* first  = static_cast<Button*>(bar->GetChildren()[0]);
 		auto* second = static_cast<Button*>(bar->GetChildren()[1]);
-		check(first->GetFontSize() == theme->GetDefaultFontSize() && bar->GetSize().y >= theme->GetConstant("minimum_height", "MenuBar") && first->GetSize().y == bar->GetSize().y,
+		check(
+			first->GetFontSize() == theme->GetDefaultFontSize()
+				&& bar->GetSize().y >= theme->GetConstant("minimum_height", "MenuBar")
+				&& first->GetSize().y == bar->GetSize().y,
 			"editor menu fonts and title hit areas use configured menu height");
 		click(first);
-		check(bar->GetActiveMenu() == 0 && root->GetGuiPopup() != nullptr && first->IsPressed(),
+		check(
+			bar->GetActiveMenu() == 0 && root->GetGuiPopup() != nullptr && first->IsPressed(),
 			"click opens menu and marks its title active");
 		auto* focused = dynamic_cast<Button*>(root->GetGuiFocus());
-		check(focused != nullptr && focused->GetText() == String("Action"), "menu initially skips disabled items and separators");
-		check(focused != nullptr && FindNamedUI(focused, "Shortcut") != nullptr && FindNamedUI(focused, "Check") != nullptr,
+		check(
+			focused != nullptr && focused->GetText() == String("Action"),
+			"menu initially skips disabled items and separators");
+		check(
+			focused != nullptr && FindNamedUI(focused, "Shortcut") != nullptr
+				&& FindNamedUI(focused, "Check") != nullptr,
 			"menu row has independent shortcut and check columns");
 		pointer(InputEventType::MouseMotion, second->GetGlobalPosition() + second->GetSize() * 0.5f);
-		check(bar->GetActiveMenu() == 1 && second->IsPressed() && !first->IsPressed(),
+		check(
+			bar->GetActiveMenu() == 1 && second->IsPressed() && !first->IsPressed(),
 			"hover switches an open menu through its popup overlay");
 		key(GLFW_KEY_RIGHT);
 		check(bar->GetActiveMenu() == 0, "Right wraps to the first menu");
 		key(GLFW_KEY_LEFT);
 		check(bar->GetActiveMenu() == 1, "Left wraps to the last menu");
 		key(GLFW_KEY_ESCAPE);
-		check(root->GetGuiPopup() == nullptr && bar->GetActiveMenu() == -1 && bar->HasFocus() && !second->IsPressed(),
+		check(
+			root->GetGuiPopup() == nullptr && bar->GetActiveMenu() == -1 && bar->HasFocus() && !second->IsPressed(),
 			"Escape closes menu, clears active appearance and restores title focus");
 		key(GLFW_KEY_LEFT);
 		key(GLFW_KEY_DOWN);
@@ -206,10 +289,11 @@ int main(int argc, char** argv)
 		check(root->GetGuiPopup() == nullptr, "clicking the active title closes its menu");
 		click(first);
 		InputEvent menuFocus;
-		menuFocus.m_type = InputEventType::WindowFocus;
+		menuFocus.m_type    = InputEventType::WindowFocus;
 		menuFocus.m_focused = false;
 		root->ProcessInputEvent(menuFocus);
-		check(root->GetGuiPopup() == nullptr && bar->GetActiveMenu() == -1 && !first->IsPressed(),
+		check(
+			root->GetGuiPopup() == nullptr && bar->GetActiveMenu() == -1 && !first->IsPressed(),
 			"window focus loss closes the open menu and clears its title state");
 		menuFocus.m_focused = true;
 		root->ProcessInputEvent(menuFocus);
@@ -225,23 +309,29 @@ int main(int argc, char** argv)
 		split->AddNode(MemNew<Control>());
 		split->UpdateSize(Vector2(600.f, 220.f));
 		tree.FlushContainerUpdate();
-		auto dividerPosition = [&]() { return split->GetGlobalPosition() + split->GetDividerRect().GetCenter(); };
+		auto dividerPosition = [&]()
+		{
+			return split->GetGlobalPosition() + split->GetDividerRect().GetCenter();
+		};
 		pointer(InputEventType::MouseMotion, dividerPosition());
-		check(engine.m_windowSystem->GetCursorShape() == CursorShape::ResizeHorizontal,
+		check(
+			engine.m_windowSystem->GetCursorShape() == CursorShape::ResizeHorizontal,
 			"horizontal split hover selects the system horizontal resize cursor");
 		pointer(InputEventType::MouseButton, dividerPosition(), true);
 		pointer(InputEventType::MouseMotion, Vector2(10.f, 100.f));
-		check(engine.m_windowSystem->GetCursorShape() == CursorShape::ResizeHorizontal,
+		check(
+			engine.m_windowSystem->GetCursorShape() == CursorShape::ResizeHorizontal,
 			"captured split keeps resize cursor when pointer leaves its divider");
 		pointer(InputEventType::MouseButton, Vector2(10.f, 100.f));
 		check(engine.m_windowSystem->GetCursorShape() == CursorShape::Arrow, "release outside split restores arrow");
 		split->SetVertical(true);
 		tree.FlushContainerUpdate();
 		pointer(InputEventType::MouseMotion, dividerPosition());
-		check(engine.m_windowSystem->GetCursorShape() == CursorShape::ResizeVertical,
+		check(
+			engine.m_windowSystem->GetCursorShape() == CursorShape::ResizeVertical,
 			"vertical split hover selects the system vertical resize cursor");
 		InputEvent focus;
-		focus.m_type = InputEventType::WindowFocus;
+		focus.m_type    = InputEventType::WindowFocus;
 		focus.m_focused = false;
 		root->ProcessInputEvent(focus);
 		check(engine.m_windowSystem->GetCursorShape() == CursorShape::Arrow, "window focus loss restores arrow");
@@ -255,7 +345,11 @@ int main(int argc, char** argv)
 		actionTree->SetPosition(Vector2(20.f, 400.f));
 		actionTree->SetClipText(true);
 		int tailClicks = 0;
-		actionTree->SetItemActionCallback([&](uint64_t, int) { ++tailClicks; });
+		actionTree->SetItemActionCallback(
+			[&](uint64_t, int)
+			{
+				++tailClicks;
+			});
 		Tree::Item item{ 1, 0, "LongNameThatMustLeaveRoomForTailIcons", true, true };
 		item.m_actions.push_back({ EditorIcons::GetIconTexture("Visible"), Color::White, true });
 		actionTree->SetItems({ item });
@@ -264,21 +358,26 @@ int main(int argc, char** argv)
 		Vector2 const tail = actionTree->GetGlobalPosition() + actionTree->GetItemActionRect(1, 0).GetCenter();
 		pointer(InputEventType::MouseButton, tail, true);
 		pointer(InputEventType::MouseButton, tail);
-		check(tailClicks == 1 && actionTree->GetSelected() == 0, "tree tail action does not select or activate the row");
+		check(
+			tailClicks == 1 && actionTree->GetSelected() == 0,
+			"tree tail action does not select or activate the row");
 		GuiDragData tailDrag;
-		check(!actionTree->GetDragData(actionTree->GetItemActionRect(1, 0).GetCenter(), tailDrag),
+		check(
+			!actionTree->GetDragData(actionTree->GetItemActionRect(1, 0).GetCenter(), tailDrag),
 			"tree tail action does not initiate row dragging");
 		actionTree->Select(1);
 		actionTree->EditSelected();
-		check(FindUIControl<LineEdit>(actionTree)->GetLocalPosition().x + FindUIControl<LineEdit>(actionTree)->GetSize().x
-			<= actionTree->GetItemActionRect(1, 0).m_mins.x, "rename field reserves the same tail area as drawing and hit testing");
+		check(
+			FindUIControl<LineEdit>(actionTree)->GetLocalPosition().x + FindUIControl<LineEdit>(actionTree)->GetSize().x
+				<= actionTree->GetItemActionRect(1, 0).m_mins.x,
+			"rename field reserves the same tail area as drawing and hit testing");
 		scope->QueueFree();
 		tree.FlushPendingNode();
 
 		auto* editor = MemNew<EditorNode>(uiScale);
 		root->AddNode(editor);
-		EditorUI* ui = editor->m_editorUI;
-		auto frame = [&]()
+		EditorUI* ui    = editor->m_editorUI;
+		auto      frame = [&]()
 		{
 			engine.BeginFrame();
 			tree.UpdateScene(0.016f);
@@ -290,17 +389,24 @@ int main(int argc, char** argv)
 		ui->ResetNativeLayout();
 		frame();
 		MenuBar* productionBar = FindUIControl<MenuBar>(ui->GetRootControl());
-		check(productionBar != nullptr && ui->GetDockSplit(0)->GetGlobalPosition().y == editor->GetEditorTheme()->GetConstant("top_bar_height", "Editor"),
+		check(
+			productionBar != nullptr
+				&& ui->GetDockSplit(0)->GetGlobalPosition().y
+					   == editor->GetEditorTheme()->GetConstant("top_bar_height", "Editor"),
 			"production editor uses MenuBar and the configured top bar height");
-		check(editor->GetEditorTheme()->GetDefaultFontSize() == theme->GetDefaultFontSize()
-			&& ThemeDatabase::GetDefaultTheme()->GetDefaultFontSize() == 16,
+		check(
+			editor->GetEditorTheme()->GetDefaultFontSize() == theme->GetDefaultFontSize()
+				&& ThemeDatabase::GetDefaultTheme()->GetDefaultFontSize() == 16,
 			"scaled editor dimensions leave runtime theme unchanged");
 		auto const contextThemes = ThemeDatabase::GetThemeContext(ui->GetRootControl());
-		check(contextThemes.size() == 1 && contextThemes.front() == editor->GetEditorTheme(),
+		check(
+			contextThemes.size() == 1 && contextThemes.front() == editor->GetEditorTheme(),
 			"editor context contains only the generated Theme");
-		check(ThemeDatabase::GetThemeContext(ui->GetSceneView()->GetSubViewport()).empty(),
+		check(
+			ThemeDatabase::GetThemeContext(ui->GetSceneView()->GetSubViewport()).empty(),
 			"scene preview remains isolated from editor scaling");
-		check(ui->GetDockSlot(3)->GetTabBarRect().m_mins.y >= ui->GetDockSlot(3)->GetPageRect().m_maxs.y,
+		check(
+			ui->GetDockSlot(3)->GetTabBarRect().m_mins.y >= ui->GetDockSlot(3)->GetPageRect().m_maxs.y,
 			"Output tabs and their input geometry sit below its content");
 		if (productionBar != nullptr)
 		{
@@ -310,21 +416,26 @@ int main(int argc, char** argv)
 				std::filesystem::create_directories(path.parent_path());
 				SaveRenderedFrame(engine.m_renderServer->ViewportGetTexture(root->GetViewportRID()), path);
 				std::ifstream input(path, std::ios::binary);
-				std::string magic;
-				int width = 0;
-				int height = 0;
-				int maximum = 0;
+				std::string   magic;
+				int           width   = 0;
+				int           height  = 0;
+				int           maximum = 0;
 				input >> magic >> width >> height >> maximum;
 				input.get();
 				std::vector<char> bytes((std::istreambuf_iterator<char>(input)), std::istreambuf_iterator<char>());
 				std::vector<char> pixels;
-				Vector2 const start = productionBar->GetGlobalPosition();
-				Vector2 const end = start + productionBar->GetSize();
-				for (int y = std::max(0, static_cast<int>(start.y)); y < std::min(height, static_cast<int>(std::ceil(end.y))); ++y)
+				Vector2 const     start = productionBar->GetGlobalPosition();
+				Vector2 const     end   = start + productionBar->GetSize();
+				for (int y = std::max(0, static_cast<int>(start.y));
+					 y < std::min(height, static_cast<int>(std::ceil(end.y)));
+					 ++y)
 				{
-					int const left = std::clamp(static_cast<int>(start.x), 0, width);
+					int const left  = std::clamp(static_cast<int>(start.x), 0, width);
 					int const right = std::clamp(static_cast<int>(std::ceil(end.x)), left, width);
-					pixels.insert(pixels.end(), bytes.begin() + (y * width + left) * 3, bytes.begin() + (y * width + right) * 3);
+					pixels.insert(
+						pixels.end(),
+						bytes.begin() + (y * width + left) * 3,
+						bytes.begin() + (y * width + right) * 3);
 				}
 
 				return pixels;
@@ -347,24 +458,27 @@ int main(int argc, char** argv)
 				frame();
 			}
 
-			check(!stablePixels.empty() && stablePixels == menuPixels(),
+			check(
+				!stablePixels.empty() && stablePixels == menuPixels(),
 				"menu pixels return unchanged after repeated open, hover switching, close and redraw");
 		}
 		Tree* files = ui->GetFileTreeControl();
 		files->GrabFocus();
-		check(files->HasFocus() && files->GetThemeStyleBox("focus")->GetBorderWidth(ThemeStyleBox::Side::Right) == 0.f,
+		check(
+			files->HasFocus() && files->GetThemeStyleBox("focus")->GetBorderWidth(ThemeStyleBox::Side::Right) == 0.f,
 			"editor tree keeps keyboard focus without drawing its focus border");
 		if (productionBar != nullptr)
 		{
 			click(static_cast<Control*>(productionBar->GetChildren()[1]));
-			check(root->GetGuiPopup() != nullptr && productionBar->GetActiveMenu() == 1,
+			check(
+				root->GetGuiPopup() != nullptr && productionBar->GetActiveMenu() == 1,
 				"production Project menu uses the independent MenuBar");
 			key(GLFW_KEY_ESCAPE);
 		}
 
 		auto white = CreateRef<Image>();
 		white->LoadFromRGBA8(IntVec2(2, 2), std::vector<uint8_t>(16, 255));
-		auto texture = CreateRef<TextureResource>();
+		auto texture     = CreateRef<TextureResource>();
 		texture->m_image = white;
 		texture->InitGPUResources();
 		auto* tintProbe = MemNew<TextureRect>();
@@ -374,12 +488,16 @@ int main(int argc, char** argv)
 		tintProbe->SetPosition(Vector2(1400.f, 5.f));
 		tintProbe->UpdateSize(Vector2(20.f, 20.f));
 		frame();
-		check(ReadPixel(engine.m_renderServer->ViewportGetTexture(root->GetViewportRID()), 1405, 10) == Color(147, 208, 221),
+		check(
+			ReadPixel(engine.m_renderServer->ViewportGetTexture(root->GetViewportRID()), 1405, 10)
+				== Color(147, 208, 221),
 			"TextureRect tint reaches the actual rendered texture");
 		tintProbe->SetStretchMode(TextureRect::StretchMode::Tile);
 		tintProbe->SetHorizontalFlip(true);
 		frame();
-		check(ReadPixel(engine.m_renderServer->ViewportGetTexture(root->GetViewportRID()), 1405, 10) == Color(147, 208, 221),
+		check(
+			ReadPixel(engine.m_renderServer->ViewportGetTexture(root->GetViewportRID()), 1405, 10)
+				== Color(147, 208, 221),
 			"tint also applies to tiled and flipped textures");
 		tintProbe->QueueFree();
 		frame();
@@ -396,7 +514,7 @@ int main(int argc, char** argv)
 		frame();
 		frame();
 		InspectorPanel& inspector = ui->GetPanel<InspectorPanel>();
-		auto headerFor = [&](char const* name) -> Control*
+		auto            headerFor = [&](char const* name) -> Control*
 		{
 			for (Node* child : inspector.GetContentControl()->GetChildren())
 			{
@@ -414,16 +532,18 @@ int main(int argc, char** argv)
 			return nullptr;
 		};
 		Control* cameraHeader = headerFor("Camera3D");
-		Control* nodeHeader = headerFor("Node3D");
-		check(cameraHeader != nullptr && nodeHeader != nullptr
-			&& cameraHeader->IsVisibleInHierarchy() && nodeHeader->IsVisibleInHierarchy()
-			&& cameraHeader->GetGlobalPosition().y < nodeHeader->GetGlobalPosition().y,
+		Control* nodeHeader   = headerFor("Node3D");
+		check(
+			cameraHeader != nullptr && nodeHeader != nullptr && cameraHeader->IsVisibleInHierarchy()
+				&& nodeHeader->IsVisibleInHierarchy()
+				&& cameraHeader->GetGlobalPosition().y < nodeHeader->GetGlobalPosition().y,
 			"Inspector shows class headers from derived class to base class");
 		if (cameraHeader != nullptr)
 		{
-			auto* icon = FindUIControl<TextureRect>(cameraHeader);
+			auto* icon  = FindUIControl<TextureRect>(cameraHeader);
 			auto* title = FindUIControl<Label>(cameraHeader);
-			check(icon != nullptr && icon->GetTint() == EditorIcons::GetIconColor("Camera3D", &inspector),
+			check(
+				icon != nullptr && icon->GetTint() == EditorIcons::GetIconColor("Camera3D", &inspector),
 				"Inspector class icon uses the same category color as Scene");
 			Color const changedTint(120, 90, 180);
 			editor->GetEditorTheme()->SetColor("t3d", "EditorIcons", changedTint);
@@ -431,15 +551,21 @@ int main(int argc, char** argv)
 			check(icon != nullptr && icon->GetTint() == changedTint, "Inspector icon tint follows live Theme edits");
 			editor->GetEditorTheme()->SetColor("t3d", "EditorIcons", Color(166, 139, 212));
 			frame();
-			check(icon != nullptr && icon->GetTexture().IsValid() && title != nullptr
-				&& std::abs((icon->GetGlobalPosition().x + title->GetGlobalPosition().x + title->GetSize().x) * 0.5f
-					- (cameraHeader->GetGlobalPosition().x + cameraHeader->GetSize().x * 0.5f)) < 1.f,
+			check(
+				icon != nullptr && icon->GetTexture().IsValid() && title != nullptr
+					&& std::abs(
+						   (icon->GetGlobalPosition().x + title->GetGlobalPosition().x + title->GetSize().x) * 0.5f
+						   - (cameraHeader->GetGlobalPosition().x + cameraHeader->GetSize().x * 0.5f))
+						   < 1.f,
 				"class icon and label form one centered group");
 			title->SetText("VeryLongClassNameThatMustNotExpandTheInspectorPanel");
 			frame();
 			frame();
-			check(title->GetGlobalPosition().x + title->GetSize().x <= cameraHeader->GetGlobalPosition().x + cameraHeader->GetSize().x
-				&& icon->GetSize().x == theme->GetConstant("icon_size", "Button"), "long class names clip inside the bar without shrinking its icon");
+			check(
+				title->GetGlobalPosition().x + title->GetSize().x
+						<= cameraHeader->GetGlobalPosition().x + cameraHeader->GetSize().x
+					&& icon->GetSize().x == theme->GetConstant("icon_size", "Button"),
+				"long class names clip inside the bar without shrinking its icon");
 			title->SetText("Camera3D");
 			frame();
 		}
@@ -447,7 +573,8 @@ int main(int argc, char** argv)
 		Button* transformGroup = nullptr;
 		for (Node* child : inspector.GetContentControl()->GetChildren())
 		{
-			if (auto* button = dynamic_cast<Button*>(child); button != nullptr && button->GetText() == String("Transform"))
+			if (auto* button = dynamic_cast<Button*>(child);
+				button != nullptr && button->GetText() == String("Transform"))
 			{
 				transformGroup = button;
 			}
@@ -461,7 +588,9 @@ int main(int argc, char** argv)
 			LineEdit* search = FindUIControl<LineEdit>(&inspector);
 			search->SetText("Transform");
 			frame();
-			check(transformGroup->IsVisibleInHierarchy() && nodeHeader->IsVisibleInHierarchy(), "group-name search expands matching group");
+			check(
+				transformGroup->IsVisibleInHierarchy() && nodeHeader->IsVisibleInHierarchy(),
+				"group-name search expands matching group");
 			search->SetText("");
 			frame();
 			click(transformGroup);
@@ -471,7 +600,9 @@ int main(int argc, char** argv)
 		auto* filter = FindUIControl<LineEdit>(&inspector);
 		filter->SetText("position");
 		frame();
-		check(cameraHeader != nullptr && nodeHeader != nullptr && !cameraHeader->IsVisibleInHierarchy() && nodeHeader->IsVisibleInHierarchy(),
+		check(
+			cameraHeader != nullptr && nodeHeader != nullptr && !cameraHeader->IsVisibleInHierarchy()
+				&& nodeHeader->IsVisibleInHierarchy(),
 			"property search hides the complete unrelated class header");
 		SpinBox* position = FindUIControl<SpinBox>(inspector.GetContentControl());
 		for (Node* child : inspector.GetContentControl()->GetChildren())
@@ -490,13 +621,16 @@ int main(int argc, char** argv)
 		if (position != nullptr)
 		{
 			position->Step(1);
-			check(camera->GetLocalPosition().x > 0.f && editor->IsSceneDirty(),
+			check(
+				camera->GetLocalPosition().x > 0.f && editor->IsSceneDirty(),
 				"inherited Inspector property still writes through its setter");
 		}
 
 		filter->SetText("no matching property");
 		frame();
-		check(cameraHeader != nullptr && nodeHeader != nullptr && !cameraHeader->IsVisibleInHierarchy() && !nodeHeader->IsVisibleInHierarchy(),
+		check(
+			cameraHeader != nullptr && nodeHeader != nullptr && !cameraHeader->IsVisibleInHierarchy()
+				&& !nodeHeader->IsVisibleInHierarchy(),
 			"no search matches leaves no empty class bars");
 		filter->SetText("");
 		editor->GetSelection().SetSelected(ui->GetPanel<ViewportPanel>().GetObjectID());
@@ -508,14 +642,15 @@ int main(int argc, char** argv)
 		editor->GetSelection().SetSelected(camera->GetObjectID());
 		frame();
 		frame();
-		SubViewportContainer* sceneView = ui->GetSceneView();
-		Vector2 const beforeDockResize = sceneView->GetSize();
+		SubViewportContainer* sceneView        = ui->GetSceneView();
+		Vector2 const         beforeDockResize = sceneView->GetSize();
 		ui->GetDockSplit(1)->SetSplitRatio(ui->GetDockSplit(1)->GetSplitRatio() - 0.05f);
 		frame();
 		frame();
-		check(sceneView->GetSize().x <= beforeDockResize.x
-			&& sceneView->GetSubViewport()->GetOutputResolution().x == static_cast<int>(sceneView->GetSize().x),
-			"dock resize respects minimum widths and keeps the content texture aligned with ruler margins");
+		check(
+			sceneView->GetSize().x <= beforeDockResize.x
+				&& sceneView->GetSubViewport()->GetOutputResolution().x == static_cast<int>(sceneView->GetSize().x),
+			"dock resize respects minimum widths and keeps the content texture aligned with the viewport content bounds");
 		ui->ResetNativeLayout();
 		frame();
 		frame();
@@ -524,7 +659,8 @@ int main(int argc, char** argv)
 		for (int i = 0; i < 4; ++i)
 		{
 			TabContainer* slot = ui->GetDockSlot(i);
-			check(slot->GetTabInsertIndex(slot->GetTitleActions()->GetLocalPosition() + Vector2(5.f, 5.f)) == -1,
+			check(
+				slot->GetTabInsertIndex(slot->GetTitleActions()->GetLocalPosition() + Vector2(5.f, 5.f)) == -1,
 				"dock action area cannot become a tab insertion target");
 		}
 
@@ -533,16 +669,19 @@ int main(int argc, char** argv)
 		outputPanel.AddMessage({ "10:24:02", OutputPanel::Level::Warning, "Texture uses default import settings" });
 		outputPanel.AddMessage({ "10:24:03", OutputPanel::Level::Error, "Preview diagnostic message" });
 		frame();
-		outputPanel.SetErrorsOnly(true);
+		click(FindNamedUI(&outputPanel, "StatusError"));
 		frame();
-		check(outputPanel.GetMessageCount() == 3, "Errors filtering leaves source messages intact");
+		check(outputPanel.GetMessageCount() == 3, "level filtering leaves source messages intact");
 		outputPanel.ClearMessages();
 		frame();
-		check(outputPanel.GetMessageCount() == 0, "Clear removes messages from Output and Errors");
-		outputPanel.SetErrorsOnly(false);
+		check(outputPanel.GetMessageCount() == 0, "Clear removes Output messages");
+		click(FindNamedUI(&outputPanel, "StatusError"));
 		ui->ToggleOutputCollapsed();
 		frame();
-		check(outputPanel.IsCollapsed() && ui->GetDockSlot(3)->GetSize().y <= ui->GetDockSlot(3)->GetTabBarRect().GetHeight() + 1.f, "Output collapse reserves only its header");
+		check(
+			outputPanel.IsCollapsed()
+				&& ui->GetDockSlot(3)->GetSize().y <= ui->GetDockSlot(3)->GetTabBarRect().GetHeight() + 1.f,
+			"Output collapse reserves only its header");
 		ui->ToggleOutputCollapsed();
 		frame();
 		check(!outputPanel.IsCollapsed(), "Output reopens its content area");
@@ -563,9 +702,13 @@ int main(int argc, char** argv)
 		FileSystemPanel& filePanel = ui->GetPanel<FileSystemPanel>();
 		filePanel.NavigateTo("res://Scenes");
 		frame();
-		check(filePanel.GetDirectory() == VirtualPath("res://Scenes"), "path navigation changes the displayed directory");
+		check(
+			filePanel.GetDirectory() == VirtualPath("res://Scenes"),
+			"path navigation changes the displayed directory");
 		filePanel.NavigateTo("res://MissingDirectory");
-		check(filePanel.GetDirectory() == VirtualPath("res://Scenes"), "invalid directory leaves browsing state intact");
+		check(
+			filePanel.GetDirectory() == VirtualPath("res://Scenes"),
+			"invalid directory leaves browsing state intact");
 		filePanel.NavigateTo("res://");
 		frame();
 		click(FindNamedUI(&filePanel, "Back"));
@@ -575,12 +718,14 @@ int main(int argc, char** argv)
 		frame();
 		check(filePanel.GetDirectory() == VirtualPath("res://"), "Forward restores the next directory");
 		outputPanel.AddMessage({ "10:24:01", OutputPanel::Level::Info, "Project loaded: StyleVerification" });
-		outputPanel.AddMessage({ "10:24:02", OutputPanel::Level::Warning, "Preview resource has default import settings" });
+		outputPanel.AddMessage(
+			{ "10:24:02", OutputPanel::Level::Warning, "Preview resource has default import settings" });
 		outputPanel.AddMessage({ "10:24:03", OutputPanel::Level::Error, "Preview diagnostic message" });
 		for (int i = 0; i < 5; ++i)
 		{
 			auto* child = MemNew<Node3D>();
-			child->SetName(i == 4 ? "Long_Node_Name_That_Must_Be_Clipped_In_The_Dock" : "Environment" + std::to_string(i));
+			child->SetName(
+				i == 4 ? "Long_Node_Name_That_Must_Be_Clipped_In_The_Dock" : "Environment" + std::to_string(i));
 			scene->AddNode(child);
 			if (i == 0)
 			{
@@ -602,37 +747,45 @@ int main(int argc, char** argv)
 			frame();
 			frame();
 			SubViewportContainer* view = ui->GetSceneView();
-			cameraHeader = headerFor("Camera3D");
-			auto* inspectorScroll = FindUIControl<ScrollContainer>(&inspector);
-			check(cameraHeader != nullptr && inspectorScroll != nullptr
-				&& std::abs(cameraHeader->GetSize().x - (inspectorScroll->GetPageSize().x - theme->GetConstant("content_padding", "Editor"))) < 1.f,
+			cameraHeader               = headerFor("Camera3D");
+			auto* inspectorScroll      = FindUIControl<ScrollContainer>(&inspector);
+			check(
+				cameraHeader != nullptr && inspectorScroll != nullptr
+					&& std::abs(
+						   cameraHeader->GetSize().x
+						   - (inspectorScroll->GetPageSize().x - theme->GetConstant("content_padding", "Editor")))
+						   < 1.f,
 				"class bars use the visible Inspector width even when properties require horizontal scrolling");
-			Vector2 const origin = ui->GetViewportOrigin();
+			Vector2 const origin     = ui->GetViewportOrigin();
 			Vector2 const dimensions = ui->GetViewportDimensions();
-			IntVec2 const output = view->GetSubViewport()->GetOutputResolution();
-			check(output == IntVec2(static_cast<int>(dimensions.x), static_cast<int>(dimensions.y))
-				&& view->GetGlobalPosition() == origin, "rulers preserve the scene content resolution contract after resize");
+			IntVec2 const output     = view->GetSubViewport()->GetOutputResolution();
+			check(
+				output == IntVec2(static_cast<int>(dimensions.x), static_cast<int>(dimensions.y))
+					&& view->GetGlobalPosition() == origin,
+				"viewport preserves its content resolution contract after resize");
 			Vector2 const mapped = ui->ToViewportPos(origin + dimensions * 0.5f);
-			check(ui->ToViewportPos(origin) == Vector2::Zero
-				&& std::abs(mapped.x - output.x * 0.5f) < 0.01f && std::abs(mapped.y - output.y * 0.5f) < 0.01f,
-				"content origin and center map into the scene texture after reserving ruler space");
+			check(
+				ui->ToViewportPos(origin) == Vector2::Zero && std::abs(mapped.x - output.x * 0.5f) < 0.01f
+					&& std::abs(mapped.y - output.y * 0.5f) < 0.01f,
+				"content origin and center map into the scene texture without pixel ruler margins");
 			Vector2 const edge = ui->ToViewportPos(origin + dimensions - Vector2(1.f, 1.f));
-			check(edge.x >= output.x - 2.f && edge.x < output.x && edge.y >= output.y - 2.f && edge.y < output.y,
+			check(
+				edge.x >= output.x - 2.f && edge.x < output.x && edge.y >= output.y - 2.f && edge.y < output.y,
 				"content bottom-right edge maps inside the scene texture");
 			auto right = [&](Vector2 point, bool pressed)
 			{
 				InputEvent event;
-				event.m_type = InputEventType::MouseButton;
+				event.m_type        = InputEventType::MouseButton;
 				event.m_mouseButton = GLFW_MOUSE_BUTTON_RIGHT;
-				event.m_pressed = pressed;
-				event.m_position = point;
+				event.m_pressed     = pressed;
+				event.m_position    = point;
 				root->ProcessInputEvent(event);
 			};
 			right(origin + Vector2(40.f, -10.f), true);
-			check(!ui->IsSceneNavigationActive(), "top ruler does not start camera navigation");
+			check(!ui->IsSceneNavigationActive(), "viewport toolbar does not start camera navigation");
 			right(origin + Vector2(40.f, -10.f), false);
 			right(origin + Vector2(-10.f, 40.f), true);
-			check(!ui->IsSceneNavigationActive(), "left ruler does not start camera navigation");
+			check(!ui->IsSceneNavigationActive(), "neighboring dock does not start camera navigation");
 			right(origin + Vector2(-10.f, 40.f), false);
 			right(origin + Vector2(40.f, 40.f), true);
 			check(ui->IsSceneNavigationActive(), "content area still starts camera navigation");
@@ -641,25 +794,22 @@ int main(int argc, char** argv)
 			pointer(InputEventType::MouseButton, origin + Vector2(40.f, -10.f));
 			pointer(InputEventType::MouseButton, origin + Vector2(-10.f, 40.f), true);
 			pointer(InputEventType::MouseButton, origin + Vector2(-10.f, 40.f));
-			check(editor->GetSelection().GetSelected() == camera->GetObjectID(),
-				"ruler clicks leave the scene selection unchanged");
-			GPUTexture* texture = engine.m_renderServer->ViewportGetTexture(root->GetViewportRID());
-			unsigned const tickX = static_cast<unsigned>(std::round(origin.x + 100.f));
-			unsigned const tickY = static_cast<unsigned>(std::round(origin.y - 2.f));
-			check(ReadPixel(texture, tickX, tickY) == Color(81, 74, 64)
-				&& ReadPixel(texture, tickX + 5, tickY) == Color(29, 28, 26),
-				"rendered ruler marks pixel 100 with a sharp line on field background");
-			SaveRenderedFrame(engine.m_renderServer->ViewportGetTexture(root->GetViewportRID()),
+			check(
+				editor->GetSelection().GetSelected() == camera->GetObjectID(),
+				"toolbar and neighboring dock clicks preserve the scene selection");
+			SaveRenderedFrame(
+				engine.m_renderServer->ViewportGetTexture(root->GetViewportRID()),
 				captures / ("editor-ui-" + std::to_string(size.x) + ".ppm"));
 		}
 
 		filePanel.NavigateTo("res://Textures");
 		frame();
 		Tree* resources = ui->GetFileTreeControl();
-		for (int row = 0; row < static_cast<int>(resources->GetInternalMinimumSize().y / resources->GetRowHeight()); ++row)
+		for (int row = 0; row < static_cast<int>(resources->GetInternalMinimumSize().y / resources->GetRowHeight());
+			 ++row)
 		{
 			Vector2 const point(80.f, (row + 0.5f) * resources->GetRowHeight());
-			GuiDragData data;
+			GuiDragData   data;
 			if (resources->GetDragData(point, data) && data.m_value == String("res://Textures/preview-triangle.obj"))
 			{
 				resources->Select(resources->GetItemAtPosition(point), true);
@@ -667,175 +817,414 @@ int main(int argc, char** argv)
 			}
 		}
 
-		ui->GetDockSlot(2)->SetCurrentTab(ui->GetDockSlot(2)->GetPageIndex(&ui->GetPanel<ImportPanel>()));
+		ui->GetDockSlot(0)->SetCurrentTab(ui->GetDockSlot(0)->GetPageIndex(&ui->GetPanel<ImportPanel>()));
 		root->UpdateResolution(IntVec2(1440, 900));
 		frame();
 		frame();
-		check(FindUIControl<SpinBox>(&ui->GetPanel<ImportPanel>()) != nullptr, "Import displays real options for its own preview fixture");
-		SaveRenderedFrame(engine.m_renderServer->ViewportGetTexture(root->GetViewportRID()), captures / "editor-ui-import.ppm");
+		check(
+			FindUIControl<SpinBox>(&ui->GetPanel<ImportPanel>()) != nullptr,
+			"Import displays real options for its own preview fixture");
+		SaveRenderedFrame(
+			engine.m_renderServer->ViewportGetTexture(root->GetViewportRID()),
+			captures / "editor-ui-import.ppm");
 		ui->GetDockSlot(2)->SetCurrentTab(ui->GetDockSlot(2)->GetPageIndex(&inspector));
 		filePanel.NavigateTo("res://");
 		frame();
 		click(static_cast<Control*>(productionBar->GetChildren()[0]));
 		frame();
-		SaveRenderedFrame(engine.m_renderServer->ViewportGetTexture(root->GetViewportRID()), captures / "editor-ui-menu.ppm");
+		SaveRenderedFrame(
+			engine.m_renderServer->ViewportGetTexture(root->GetViewportRID()),
+			captures / "editor-ui-menu.ppm");
 		key(GLFW_KEY_ESCAPE);
 		root->SetGuiFocus(nullptr);
 		frame();
 
-		Ref<Theme> editorTheme = editor->GetEditorTheme();
-		editorTheme->SetFontSize("ruler_font_size", "ViewportPanel", 15);
-		editorTheme->SetColor("ruler_major_color", "ViewportPanel", Color(130, 110, 80));
+		// 1) Exercise creation through the production modal and keyboard routes.
+		auto textInput = [&](LineEdit* edit, std::string const& value)
+		{
+			edit->GrabFocus();
+			edit->SelectAll();
+			for (unsigned char ch : value)
+			{
+				InputEvent event;
+				event.m_type      = InputEventType::Text;
+				event.m_codepoint = ch;
+				root->ProcessInputEvent(event);
+			}
+			frame();
+		};
+		std::function<bool(Node*, String const&)> hasLabel = [&](Node* node, String const& text)
+		{
+			if (auto* label = dynamic_cast<Label*>(node); label != nullptr && label->IsVisibleInHierarchy()
+														  && !node->IsQueuedForDeletion() && label->GetText() == text)
+			{
+				return true;
+			}
+
+			for (Node* child : node->GetChildren())
+			{
+				if (hasLabel(child, text))
+				{
+					return true;
+				}
+			}
+			return false;
+		};
+		auto* outputSearch = static_cast<LineEdit*>(FindNamedUI(&outputPanel, "SearchOutput"));
+		textInput(outputSearch, "DIAGNOSTIC");
+		click(FindNamedUI(&outputPanel, "Info"));
+		click(FindNamedUI(&outputPanel, "StatusWarning"));
 		frame();
-		Vector2 const themedOrigin = ui->GetViewportOrigin();
-		check(ReadPixel(engine.m_renderServer->ViewportGetTexture(root->GetViewportRID()),
-			static_cast<unsigned>(std::round(themedOrigin.x + 100.f)),
-			static_cast<unsigned>(std::round(themedOrigin.y - 2.f))) == Color(130, 110, 80),
-			"ruler Theme edits redraw without changing scene coordinate mapping");
-		editorTheme->SetFontSize("ruler_font_size", "ViewportPanel", 13);
-		editorTheme->SetColor("ruler_major_color", "ViewportPanel", Color(81, 74, 64));
+		check(
+			hasLabel(&outputPanel, "Preview diagnostic message")
+				&& !hasLabel(&outputPanel, "Preview resource has default import settings"),
+			"case-insensitive Output search intersects the enabled levels");
+		click(FindNamedUI(&outputPanel, "ClearOutputSearch"));
+		check(
+			outputSearch->GetText().IsEmpty() && outputPanel.GetMessageCount() == 3,
+			"clearing search keeps the source log intact");
+		click(FindNamedUI(&outputPanel, "Info"));
+		click(FindNamedUI(&outputPanel, "StatusWarning"));
+		engine.m_fileSystem->WriteText("res://.ming/Editor/CreateNodeState.json", "{\"favorites\":[],\"recent\":[]}");
+		auto* creationParent = MemNew<Node3D>();
+		creationParent->SetName("CreationFixture");
+		scene->AddNode(creationParent);
+		editor->GetSelection().SetSelected(creationParent->GetObjectID());
 		frame();
+		ui->GetPanel<ScenePanel>().OpenCreateNode();
+		frame();
+		auto* createSearch = static_cast<LineEdit*>(FindNamedUI(root->GetGuiPopup(), "SearchNodeTypes"));
+		check(
+			createSearch != nullptr && createSearch->HasFocus()
+				&& createSearch->GetCursorShape(Vector2::Zero) == CursorShape::IBeam,
+			"Create Node focuses a text-cursor search field");
+		auto typeKey = [](std::string const& name)
+		{
+			uint64_t id = 0;
+			for (ClassInfo const* info : ClassDatabase::GetRegisteredClasses(true))
+			{
+				if (info != nullptr && info->m_apiType == ApiType::Runtime
+					&& ClassDatabase::IsSubclassOf(info->m_className, "Node"))
+				{
+					++id;
+					if (info->m_className == name)
+					{
+						return id;
+					}
+				}
+			}
+			return uint64_t(0);
+		};
+		auto* initialTypes = static_cast<Tree*>(FindNamedUI(root->GetGuiPopup(), "NodeTypes"));
+		check(
+			initialTypes->GetItemRect(typeKey("Node3D")).m_mins.y
+					< initialTypes->GetItemRect(typeKey("Camera3D")).m_mins.y
+				&& initialTypes->GetItemRect(typeKey("Camera3D")).m_mins.y
+					   < initialTypes->GetItemRect(typeKey("Viewport")).m_mins.y,
+			"unfiltered type tree keeps a parent's descendants together before the next branch");
+		textInput(createSearch, "zzzz-no-node");
+		Tree* createTypes = static_cast<Tree*>(FindNamedUI(root->GetGuiPopup(), "NodeTypes"));
+		check(createTypes->GetSelected() == 0, "no search match clears stale creation selection");
+		key(GLFW_KEY_ENTER);
+		check(
+			root->GetGuiPopup() != nullptr && creationParent->GetChildren().empty(),
+			"Enter with no match cannot create a stale type");
+		textInput(createSearch, "Camera3D");
+		check(
+			createTypes->GetSelected() != 0 && createTypes->GetItemRect(1).GetHeight() > 0.f,
+			"search selects a concrete match while retaining its Node ancestor");
+		std::function<Button*(Node*, String const&)> findButton = [&](Node* node, String const& text) -> Button*
+		{
+			if (auto* button = dynamic_cast<Button*>(node);
+				button != nullptr && button->GetText() == text && !node->IsQueuedForDeletion())
+			{
+				return button;
+			}
+
+			for (Node* child : node->GetChildren())
+			{
+				if (Button* result = findButton(child, text))
+				{
+					return result;
+				}
+			}
+			return nullptr;
+		};
+		click(findButton(root->GetGuiPopup(), "Favorite"));
+		frame();
+		check(
+			engine.m_fileSystem->Exists("res://.ming/Editor/CreateNodeState.json"),
+			"favorites persist in project editor data");
+		SaveRenderedFrame(
+			engine.m_renderServer->ViewportGetTexture(root->GetViewportRID()),
+			captures / "create-node.ppm");
+		check(
+			static_cast<Control*>(createTypes->GetParent())->GetGlobalPosition().x
+					- static_cast<Control*>(root->GetGuiPopup()->GetChildren().front())->GetLocalPosition().x
+				>= editor->GetEditorTheme()->GetConstant("node_sidebar_width", "Editor"),
+			"creation sidebar receives editor dimensions before initial layout");
+		createSearch->GrabFocus();
+		key(GLFW_KEY_ENTER);
+		frame();
+		check(
+			root->GetGuiPopup() == nullptr && creationParent->GetChildren().size() == 1
+				&& dynamic_cast<Camera3D*>(creationParent->GetChildren().front()) != nullptr,
+			"Enter creates the selected type under the captured parent");
+		editor->GetSelection().SetSelected(creationParent->GetObjectID());
+		frame();
+		ui->GetPanel<ScenePanel>().OpenCreateNode();
+		frame();
+		createSearch = static_cast<LineEdit*>(FindNamedUI(root->GetGuiPopup(), "SearchNodeTypes"));
+		textInput(createSearch, "Node3D");
+		creationParent->QueueFree();
+		frame();
+		key(GLFW_KEY_ENTER);
+		check(
+			root->GetGuiPopup() != nullptr,
+			"deleted creation target leaves modal open instead of falling back to scene root");
+		key(GLFW_KEY_ESCAPE);
+		frame();
+
+		// 2) Verify real viewport picking, capture, transforms and scene history.
+		auto* gizmoTarget = MemNew<MeshInstance3D>();
+		gizmoTarget->SetName("GizmoFixture");
+		gizmoTarget->SetLocalPosition(Vector3(8.f, 0.f, 0.f));
+		scene->AddNode(gizmoTarget);
+		editor->GetEditorCamera()->SetLocalPosition(Vector3::Zero);
+		editor->GetEditorCamera()->SetLocalOrientation(EulerAngles::Zero);
+		editor->GetSelection().SetSelected(gizmoTarget->GetObjectID());
+		Camera3D* editCamera = editor->GetEditorCamera()->GetCamera();
+		editCamera->SetCurrent();
+		EditorGizmos* gizmos = editor->m_editorGizmos;
+		gizmos->SetTool(GizmoTool::Move);
+		frame();
+		frame();
+		auto screenPoint = [&](Vector3 const& world)
+		{
+			Vector2 const size    = sceneView->GetSize();
+			float const   tangent = std::tan(editCamera->GetFovDegrees() * 3.14159265f / 360.f);
+			return sceneView->GetGlobalPosition()
+				   + Vector2(
+					   size.x * 0.5f - world.y * size.y / (2.f * world.x * tangent),
+					   size.y * 0.5f - world.z * size.y / (2.f * world.x * tangent));
+		};
+		auto startMove = [&]()
+		{
+			GizmoContext const context = BuildGizmoContext(&tree, *editCamera);
+			Vector2 const      at =
+				screenPoint(gizmoTarget->GetWorldPosition() + Vector3(0.f, context.m_scale * 0.95f, 0.f));
+			pointer(InputEventType::MouseMotion, at);
+			pointer(InputEventType::MouseButton, at, true);
+			return at;
+		};
+		Vector3 const initial = gizmoTarget->GetLocalPosition();
+		Vector2       at      = startMove();
+		check(gizmos->IsDragging(), "viewport press captures a visible move handle");
+		pointer(InputEventType::MouseMotion, at + Vector2(-35.f, 0.f));
+		pointer(InputEventType::MouseButton, at + Vector2(-35.f, 0.f));
+		check(
+			gizmoTarget->GetLocalPosition().y > initial.y && editor->GetUndoRedo().HasUndo(scene->GetObjectID()),
+			"move drag changes the constrained axis and records one scene action");
+		editor->GetUndoRedo().Undo(scene->GetObjectID());
+		check(gizmoTarget->GetLocalPosition() == initial, "scene Undo restores the initial transform");
+		editor->GetUndoRedo().Redo(scene->GetObjectID());
+		check(gizmoTarget->GetLocalPosition().y > initial.y, "scene Redo restores the committed transform");
+		Vector3 const committed = gizmoTarget->GetLocalPosition();
+		frame();
+		at = startMove();
+		pointer(InputEventType::MouseMotion, at + Vector2(-20.f, 0.f));
+		key(GLFW_KEY_ESCAPE);
+		pointer(InputEventType::MouseButton, at);
+		check(
+			!gizmos->IsDragging() && gizmoTarget->GetLocalPosition() == committed,
+			"Escape restores drag snapshot without committing");
+		frame();
+		at = startMove();
+		pointer(InputEventType::MouseMotion, at + Vector2(-20.f, 0.f));
+		InputEvent lostFocus;
+		lostFocus.m_type = InputEventType::WindowFocus;
+		root->ProcessInputEvent(lostFocus);
+		check(
+			!gizmos->IsDragging() && gizmoTarget->GetLocalPosition() == committed,
+			"window focus loss cancels the captured transform");
+		lostFocus.m_focused = true;
+		root->ProcessInputEvent(lostFocus);
+		frame();
+		at = startMove();
+		pointer(InputEventType::MouseMotion, at + Vector2(-20.f, 0.f));
+		ui->Warning("Transform Interrupted", "A modal cancels the active transform.");
+		check(
+			!gizmos->IsDragging() && gizmoTarget->GetLocalPosition() == committed,
+			"opening a modal cancels the transform before its input starts");
+		key(GLFW_KEY_ESCAPE);
+		frame();
+		at                    = startMove();
+		Vector2 const outside = sceneView->GetGlobalPosition() + Vector2(-20.f, sceneView->GetSize().y * 0.5f);
+		pointer(InputEventType::MouseMotion, outside);
+		pointer(InputEventType::MouseButton, outside);
+		check(
+			!gizmos->IsDragging() && gizmoTarget->GetLocalPosition() != committed,
+			"release outside viewport commits the captured transform");
+		editor->GetUndoRedo().Undo(scene->GetObjectID());
+		check(gizmoTarget->GetLocalPosition() == committed, "outside-release operation remains one undoable transform");
+		gizmoTarget->SetLocalOrientation(EulerAngles(35.f, 20.f, 10.f));
+		gizmos->SetLocal(true);
+		GizmoContext const local = BuildGizmoContext(&tree, *editCamera);
+		check(local.m_basis.GetIBasis3D() != Vector3::Forward, "Local gizmo basis follows the rotated target");
+		gizmos->SetLocal(false);
+		check(
+			BuildGizmoContext(&tree, *editCamera).m_basis.GetIBasis3D() == Vector3::Forward,
+			"World gizmo retains fixed axes");
+		gizmos->SetTool(GizmoTool::Scale);
+		frame();
+		Vector3 const initialScale = gizmoTarget->GetLocalScale();
+		at                         = screenPoint(gizmoTarget->GetWorldPosition());
+		pointer(InputEventType::MouseButton, at, true);
+		pointer(InputEventType::MouseMotion, at + Vector2(30.f, -30.f));
+		pointer(InputEventType::MouseButton, at + Vector2(30.f, -30.f));
+		check(gizmoTarget->GetLocalScale().x > initialScale.x, "center scale handle changes uniform scale");
+		// 3) Exercise rotated parents and TRS limits without depending on another test's state.
+		auto* mathParent = MemNew<Node3D>();
+		mathParent->SetLocalOrientation(EulerAngles(25.f, 10.f, 15.f));
+		scene->AddNode(mathParent);
+		auto* mathTarget = MemNew<Node3D>();
+		mathParent->AddNode(mathTarget);
+		mathTarget->SetLocalOrientation(EulerAngles(35.f, 20.f, 10.f));
+		mathTarget->SetLocalScale(Vector3(1.f, 2.f, 3.f));
+		GizmoContext rotationContext;
+		rotationContext.m_camera         = editCamera;
+		rotationContext.m_sceneTree      = &tree;
+		rotationContext.m_selectedNode3D = mathTarget;
+		rotationContext.m_originWorld    = mathTarget->GetWorldPosition();
+		Vector3 const beforeForward      = mathTarget->GetWorldForward();
+		auto*         rotationHandle     = MemNew<GizmoRotationArc>(GizmoAxis::X, Color::White);
+		rotationHandle->OnBeginDrag(rotationContext, rotationContext.m_originWorld + Vector3::Left);
+		MathRaycastQuery3D quarterTurn{ rotationContext.m_originWorld + Vector3(10.f, 0.f, 1.f),
+										-Vector3::Forward,
+										100.f };
+		rotationHandle->OnDrag(rotationContext, quarterTurn, quarterTurn);
+		Vector3 const expectedForward(beforeForward.x, -beforeForward.z, beforeForward.y);
+		check(
+			(mathTarget->GetWorldForward() - expectedForward).GetLengthSquared() < 0.00001f
+				&& mathTarget->GetLocalScale() == Vector3(1.f, 2.f, 3.f),
+			"World rotation composes around the selected axis through a rotated parent");
+		mathParent->SetLocalScale(Vector3(2.f, 3.f, 1.f));
+		rotationContext.m_local   = true;
+		rotationContext.m_basis   = mathTarget->GetWorldOrientation().GetAsMatrix_IFwd_JLeft_KUp();
+		Vector3 const axis        = rotationContext.m_basis.GetIBasis3D();
+		Vector3 const initialAxis = mathTarget->GetWorldTransform().GetIBasis3D().GetNormalized();
+		rotationHandle->OnBeginDrag(
+			rotationContext,
+			rotationContext.m_originWorld + rotationContext.m_basis.GetJBasis3D());
+		quarterTurn = { rotationContext.m_originWorld + rotationContext.m_basis.GetKBasis3D() + axis * 10.f,
+						-axis,
+						100.f };
+		rotationHandle->OnDrag(rotationContext, quarterTurn, quarterTurn);
+		check(
+			(mathTarget->GetWorldTransform().GetIBasis3D().GetNormalized() - initialAxis).GetLengthSquared() < 0.00001f
+				&& mathTarget->GetLocalScale() == Vector3(1.f, 2.f, 3.f),
+			"Local rotation preserves its axis and scale under a nonuniform parent");
+		MemDelete(rotationHandle);
+		mathTarget->SetLocalScale(Vector3(-1.f, -2.f, 3.f));
+		GizmoContext scaleContext;
+		scaleContext.m_camera         = editCamera;
+		scaleContext.m_selectedNode3D = mathTarget;
+		scaleContext.m_local          = true;
+		scaleContext.m_scale          = 1.f;
+		auto* scaleHandle             = MemNew<GizmoAxisArrow>(GizmoAxis::Y, Color::White, GizmoKind::Scale);
+		scaleHandle->OnBeginDrag(scaleContext, Vector3::Left);
+		MathRaycastQuery3D scaleStart{ Vector3(10.f, 1.f, 0.f), -Vector3::Forward, 100.f };
+		MathRaycastQuery3D scaleEnd{ Vector3(10.f, -100.f, 0.f), -Vector3::Forward, 100.f };
+		scaleHandle->OnDrag(scaleContext, scaleStart, scaleEnd);
+		check(
+			mathTarget->GetLocalScale().x == -1.f && mathTarget->GetLocalScale().y < 0.f
+				&& std::abs(mathTarget->GetLocalScale().y) >= 0.0001f,
+			"axis scaling preserves signs and cannot cross a singular zero scale");
+		MemDelete(scaleHandle);
+		mathParent->QueueFree();
+		gizmos->SetTool(GizmoTool::Transform);
+		frame();
+		SaveRenderedFrame(
+			engine.m_renderServer->ViewportGetTexture(root->GetViewportRID()),
+			captures / "viewport-gizmos.ppm");
+		gizmoTarget->QueueFree();
+		editor->GetSelection().SetSelected(camera->GetObjectID());
+		frame();
+		check(
+			EditorIcons::GetIconTexture("Search")->GetDimensions() == IntVec2(32, 32)
+				&& EditorIcons::GetIconTexture("Search")->m_samplerMode == SamplerMode::BILINEAR_CLAMP,
+			"editor icons keep 32px sources with bilinear sampling");
+
+		if (!preview)
+		{
+			tree.ClearScene();
+			tree.FlushPendingNode();
+			editor->GetSelection().Clear();
+			frame();
+			ui->GetPanel<ScenePanel>().OpenCreateNode();
+			frame();
+			key(GLFW_KEY_ENTER);
+			frame();
+			check(
+				tree.GetScene() != nullptr && tree.GetScene()->GetName() == String("Node") && editor->IsSceneDirty(),
+				"creating the first scene root attaches it before marking it unsaved");
+		}
 
 		if (preview)
 		{
-			auto* overlay = MemNew<Control>();
-			overlay->SetMouseFilter(Control::MouseFilter::Ignore);
-			overlay->SetClipContents(true);
-			ui->GetSceneView()->AddNode(overlay);
-			std::vector<ColorRect*> gridLines;
-			for (int i = 0; i < 96; ++i)
+			std::vector<Vertex> vertices;
+			AddVertsForAABB3D(
+				vertices,
+				AABB3(Vector3(-0.5f, -0.5f, -0.5f), Vector3(0.5f, 0.5f, 0.5f)),
+				Color(155, 143, 125));
+			SurfaceTool surface;
+			for (Vertex const& vertex : vertices)
 			{
-				auto* line = MemNew<ColorRect>();
-				line->SetColor(Color(41, 41, 41));
-				overlay->AddNode(line);
-				gridLines.push_back(line);
+				surface.SetColor(vertex.m_color);
+				surface.SetUV(vertex.m_uv);
+				surface.AddVertex(vertex.m_position);
 			}
 
-			auto* axisX = MemNew<ColorRect>();
-			axisX->SetColor(Color(121, 81, 81));
-			overlay->AddNode(axisX);
-			auto* axisY = MemNew<ColorRect>();
-			axisY->SetColor(Color(82, 112, 98));
-			overlay->AddNode(axisY);
-			auto* readout = MemNew<Label>();
-			readout->SetText("X -  Y -                         Grid 24 px");
-			readout->SetThemeTypeVariation("EditorStatusLabel");
-			overlay->AddNode(readout);
-			bool grid = true;
-			bool running = false;
-			bool paused = false;
-			auto* play = static_cast<Button*>(FindNamedUI(ui->GetRootControl(), "Play"));
-			auto* pause = static_cast<Button*>(FindNamedUI(ui->GetRootControl(), "Pause"));
-			auto* stop = static_cast<Button*>(FindNamedUI(ui->GetRootControl(), "Stop"));
-			auto updateRun = [&]()
-			{
-				play->SetPressedNoSignal(running && !paused);
-				pause->SetPressedNoSignal(paused);
-				pause->SetDisabled(!running);
-				stop->SetDisabled(!running);
-			};
-			play->SetToggleMode(true);
-			pause->SetToggleMode(true);
-			play->SetPressedCallback([&]() { running = true; paused = false; updateRun(); });
-			pause->SetPressedCallback([&]() { paused = !paused; updateRun(); });
-			stop->SetPressedCallback([&]() { running = false; paused = false; updateRun(); });
-			std::vector<Button*> tools;
-			for (char const* name : { "ToolSelect", "ToolMove", "ToolRotate", "ToolScale" })
-			{
-				auto* button = static_cast<Button*>(FindNamedUI(&ui->GetPanel<ViewportPanel>(), name));
-				button->SetDisabled(false);
-				button->SetToggleMode(true);
-				tools.push_back(button);
-				button->SetPressedCallback([&, button]()
-				{
-					for (Button* tool : tools)
-					{
-						tool->SetPressedNoSignal(tool == button);
-					}
-				});
-			}
-
-			tools.front()->SetPressedNoSignal(true);
-			auto* gridButton = static_cast<Button*>(FindNamedUI(&ui->GetPanel<ViewportPanel>(), "Grid"));
-			gridButton->SetDisabled(false);
-			gridButton->SetToggleMode(true);
-			gridButton->SetPressedNoSignal(true);
-			gridButton->SetPressedCallback([&]() { grid = !grid; });
-			auto* snap = static_cast<Button*>(FindNamedUI(&ui->GetPanel<ViewportPanel>(), "Snap"));
-			snap->SetDisabled(false);
-			snap->SetToggleMode(true);
-			int zoom = 100;
-			auto* zoomLabel = static_cast<Label*>(FindNamedUI(&ui->GetPanel<ViewportPanel>(), "ZoomReadout"));
-			for (char const* name : { "ZoomOut", "ZoomIn", "CenterView" })
-			{
-				auto* button = static_cast<Button*>(FindNamedUI(&ui->GetPanel<ViewportPanel>(), name));
-				button->SetDisabled(false);
-				button->SetPressedCallback([&, name]()
-				{
-					zoom = std::string(name) == "CenterView" ? 100 : std::clamp(zoom + (std::string(name) == "ZoomIn" ? 25 : -25), 25, 400);
-					zoomLabel->SetText(std::to_string(zoom) + "%");
-				});
-			}
-
-			PropertyInfo demoInfo(Variant::Type::Float, "z_index", PropertyInfo::Hint::None, "", PropertyInfo::UsageFlags::Inspector);
-			InspectorProperty* demoProperty = nullptr;
-			auto createModifiedSample = [&]()
-			{
-				delete demoProperty;
-				demoProperty = InspectorProperty::Create(demoInfo, "Preview::Modified", [&](Variant const& value) { demoProperty->UpdateValue(value); });
-				inspector.GetContentControl()->AddNode(demoProperty->GetControl());
-				demoProperty->SetRevertValue(Variant(0.f));
-				demoProperty->UpdateValue(Variant(2.f));
-			};
-			createModifiedSample();
+			surface.GenerateNormals();
+			surface.Index();
+			auto mesh                                  = surface.CreateMeshResource();
+			mesh->m_materialResource                   = CreateRef<MaterialResource>();
+			mesh->m_materialResource->m_shaderResource = engine.m_renderServer->GetDefaultUnlitShaderResource();
+			mesh->InitGPUResources();
+			auto* previewTarget = MemNew<MeshInstance3D>();
+			previewTarget->SetName("GizmoPreview");
+			previewTarget->SetMeshResource(mesh);
+			previewTarget->SetLocalPosition(Vector3(8.f, 0.f, 0.f));
+			scene->AddNode(previewTarget);
+			editor->GetEditorCamera()->SetLocalPosition(Vector3(0.f, 0.f, 3.f));
+			editor->GetEditorCamera()->SetLocalOrientation(EulerAngles(0.f, 20.f, 0.f));
+			editor->GetEditorCamera()->GetCamera()->SetCurrent();
+			editor->GetSelection().SetSelected(previewTarget->GetObjectID());
 			auto* window = engine.m_windowSystem->GetGLFWWindow();
-			glfwSetWindowTitle(window, "Ming Editor Style Preview - F1 1440x900 / F2 960x600");
+			glfwSetKeyCallback(window, keyCallback);
+			glfwSetMouseButtonCallback(window, mouseButtonCallback);
+			glfwSetCursorPosCallback(window, cursorPosCallback);
+			glfwSetCharCallback(window, characterCallback);
+			glfwSetScrollCallback(window, scrollCallback);
+			glfwSetWindowFocusCallback(window, windowFocusCallback);
+			glfwSetCursorEnterCallback(window, cursorEnterCallback);
+			glfwSetFramebufferSizeCallback(window, framebufferCallback);
+			glfwSetWindowTitle(window, "Ming Editor Interaction Preview");
 			glfwRestoreWindow(window);
 			glfwSetWindowSize(window, 1440, 900);
 			while (!glfwWindowShouldClose(window))
 			{
-				if (glfwGetKey(window, GLFW_KEY_F1) == GLFW_PRESS)
-				{
-					glfwSetWindowSize(window, 1440, 900);
-				}
-				else if (glfwGetKey(window, GLFW_KEY_F2) == GLFW_PRESS)
-				{
-					glfwSetWindowSize(window, 960, 600);
-				}
-
-				int width = 0;
+				int width  = 0;
 				int height = 0;
 				glfwGetFramebufferSize(window, &width, &height);
 				root->UpdateResolution(IntVec2(width, height));
-				Vector2 const area = ui->GetSceneView()->GetSize();
-				overlay->UpdateSize(area);
-				for (int i = 0; i < 96; ++i)
-				{
-					gridLines[i]->SetVisible(grid);
-					bool const vertical = i < 48;
-					float const at = static_cast<float>(i % 48) * 30.f * zoom / 100.f;
-					gridLines[i]->SetPosition(vertical ? Vector2(at, 0.f) : Vector2(0.f, at));
-					gridLines[i]->UpdateSize(vertical ? Vector2(1.f, area.y) : Vector2(area.x, 1.f));
-				}
-
-				axisX->SetPosition(Vector2(0.f, area.y * 0.35f));
-				axisX->UpdateSize(Vector2(area.x, 1.f));
-				axisY->SetPosition(Vector2(area.x * 0.25f, 0.f));
-				axisY->UpdateSize(Vector2(1.f, area.y));
-				readout->SetPosition(Vector2(10.f, std::max(0.f, area.y - 25.f)));
 				frame();
-				if (demoProperty->GetControl() == nullptr && editor->GetSelection().GetSelected().IsValid())
-				{
-					createModifiedSample();
-				}
-
 				std::this_thread::sleep_for(std::chrono::milliseconds(16));
 			}
-
-			delete demoProperty;
 		}
 	}
 
+	ProjectSettings::Reset();
 	ThemeDatabase::Shutdown();
 	ResourceLoader::Shutdown();
 	EditorIcons::Shutdown();

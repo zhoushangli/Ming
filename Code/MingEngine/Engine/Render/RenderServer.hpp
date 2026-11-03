@@ -7,7 +7,6 @@
 #include "MingEngine/Scene/Resource/MeshResource.hpp"
 #include "MingEngine/Scene/Resource/ShaderResource.hpp"
 
-
 #include <string>
 #include <string_view>
 
@@ -44,7 +43,11 @@ public:
 
 	void CanvasItemAddRect(RID item, AABB2 const& rect, Color const& color);
 	void CanvasItemAddTextureRect(
-		RID item, Ref<TextureResource> const& texture, Rect2 const& rect, bool isTiling = false, Color const& color = Color::White);
+		RID                         item,
+		Ref<TextureResource> const& texture,
+		Rect2 const&                rect,
+		bool                        isTiling = false,
+		Color const&                color    = Color::White);
 	void CanvasItemAddTextureRectRegion(
 		RID item, Ref<TextureResource> const& texture, Rect2 const& rect, Rect2 const& sourceRect, Color const& color);
 
@@ -68,6 +71,8 @@ public:
 	void InstanceSetBase(RID instance, RID base);
 	void InstanceSetTransform(RID instance, Matrix4x4 const& transform);
 	void InstanceSetVisible(RID instance, bool visible);
+	void InstanceSetRenderPass(RID instance, RenderRequestPass pass);
+	void InstanceSetRenderPriority(RID instance, int priority);
 	void InstanceSetScenario(RID instance, RID scenario);
 
 #pragma endregion
@@ -177,7 +182,6 @@ public:
 
 	void CopyCPUToGPU(void const* data, unsigned int size, VertexBuffer* buffer);
 
-
 private:
 	static bool OnWindowResized(EventArgs& args);
 
@@ -200,8 +204,12 @@ private:
 	bool PrepareTextureData(TextureData& data, TextureResource const& textureResource);
 
 	void PrepareCanvasLayerRequests(RID layer, RID viewport, ViewportData* viewportData);
-	void PrepareCanvasItemRequests(RID item, RID viewport, ViewportData* viewportData, Vector2 const& parentPosition,
-		AABB2 const* parentClip = nullptr);
+	void PrepareCanvasItemRequests(
+		RID            item,
+		RID            viewport,
+		ViewportData*  viewportData,
+		Vector2 const& parentPosition,
+		AABB2 const*   parentClip = nullptr);
 
 private:
 	Renderer*         m_renderer             = nullptr;

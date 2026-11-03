@@ -21,7 +21,6 @@ class Viewport;
 class Node : public Object
 {
 	MCLASS(Node, Object);
-
 	friend class SceneTree;
 
 public:
@@ -34,6 +33,24 @@ public:
 		Notification_ChildrenChanged = 7,
 		Notification_Parented        = 8,
 		Notification_Unparented      = 9
+	};
+
+protected:
+	struct NodeData
+	{
+		String             m_name;
+		Node*              m_parent    = nullptr;
+		SceneTree*         m_sceneTree = nullptr;
+		Viewport*          m_viewport  = nullptr;
+		std::vector<Node*> m_children;
+		bool               m_isPendingDestroy = false;
+		bool               m_isSerializable   = true;
+
+		// For readyPending and enableProcess
+		// 1) readyPending will be used once when PropagateReady is called and set to false
+		// 2) enableProcess will be set to true when Notification_Ready is called
+		bool m_readyPending  = true;
+		bool m_enableProcess = false;
 	};
 
 public:
@@ -71,6 +88,7 @@ public:
 	// 2) DeleteNode deletes detached nodes immediately.
 	// 3) DeleteNode queues in-tree nodes so SceneTree can destroy them at a safe point.
 	void         AddNode(Node* child);
+	void         MoveChild(Node* child, int index);
 	void         QueueFree();
 	virtual void Reparent(Node* newParent, bool keepWorldTransform = true);
 
@@ -86,7 +104,6 @@ protected:
 	// 2) OnExitTree is called before this node unregisters from its SceneTree.
 	// 3) OnReady is called after this node and its children enter a SceneTree.
 	// 4) OnProcess is called once per frame by SceneTree::UpdateScene.
-
 	// For c++ side, please DO NOT USE THIS, they are ONLY for script side
 	// this is because these OnXXX will overrider their parent class
 	// but c++ side is normally pipeline function, which we normally do not want to override
@@ -117,22 +134,5 @@ protected:
 	void PropagateReady();
 
 protected:
-	struct NodeData
-	{
-		String             m_name;
-		Node*              m_parent    = nullptr;
-		SceneTree*         m_sceneTree = nullptr;
-		Viewport*          m_viewport  = nullptr;
-		std::vector<Node*> m_children;
-		bool               m_isPendingDestroy = false;
-		bool               m_isSerializable   = true;
-
-		// For readyPending and enableProcess
-		// 1) readyPending will be used once when PropagateReady is called and set to false
-		// 2) enableProcess will be set to true when Notification_Ready is called
-		bool m_readyPending  = true;
-		bool m_enableProcess = false;
-	};
-
 	NodeData m_data;
 };

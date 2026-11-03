@@ -1,4 +1,5 @@
 #include "MingEngine/Engine/Application/Engine.hpp"
+#include "MingEngine/Engine/Window/WindowSystem.hpp"
 #include "MingEngine/Engine/Application/ProjectSettings.hpp"
 #include "MingEngine/Editor/EditorNode.hpp"
 #include "MingEngine/Editor/UI/InspectorPanel.hpp"
@@ -184,10 +185,24 @@ int main(int argc, char** argv)
 	RegisterAllTypes();
 	ClassDatabase::RegisterClass<FieldProbe>();
 	engine.Startup();
+	std::ofstream(projectPath / L"project.ming") << R"({"type":"ProjectSettings","version":1,"start_scene_path":""})";
+	std::string settingsError;
+	check(ProjectSettings::Load(projectPath, settingsError), "fixture installs its own project settings");
+	// 1) Keep scripted input independent of desktop focus, mouse motion and resize messages.
+	auto* scriptedWindow = engine.m_windowSystem->GetGLFWWindow();
+	glfwSetKeyCallback(scriptedWindow, nullptr);
+	glfwSetMouseButtonCallback(scriptedWindow, nullptr);
+	glfwSetCursorPosCallback(scriptedWindow, nullptr);
+	glfwSetCharCallback(scriptedWindow, nullptr);
+	glfwSetScrollCallback(scriptedWindow, nullptr);
+	glfwSetWindowFocusCallback(scriptedWindow, nullptr);
+	glfwSetCursorEnterCallback(scriptedWindow, nullptr);
+	glfwSetFramebufferSizeCallback(scriptedWindow, nullptr);
+
 	{
 		SceneTree tree;
-		auto* viewport = static_cast<Viewport*>(tree.GetRoot());
-		auto* canvas = MemNew<Control>();
+		auto*     viewport = static_cast<Viewport*>(tree.GetRoot());
+		auto*     canvas   = MemNew<Control>();
 		viewport->AddNode(canvas);
 		auto* source = MemNew<Button>();
 		canvas->AddNode(source);
@@ -202,18 +217,25 @@ int main(int argc, char** argv)
 		target->AddNode(child);
 		child->SetMouseFilter(Control::MouseFilter::Pass);
 		child->UpdateSize(Vector2(100.f, 60.f));
-		int drops = 0;
-		int clicks = 0;
+		int  drops       = 0;
+		int  clicks      = 0;
 		bool allowSource = true;
-		source->SetPressedCallback([&]() { ++clicks; });
+		source->SetPressedCallback(
+			[&]()
+			{
+				++clicks;
+			});
 		source->SetDragCallbacks(
 			[&](Vector2 const&, GuiDragData& data)
 			{
-				data.m_type = "test";
+				data.m_type  = "test";
 				data.m_value = "payload";
 				return allowSource;
-			}, {}, {});
-		target->SetDragCallbacks({},
+			},
+			{},
+			{});
+		target->SetDragCallbacks(
+			{},
 			[](Vector2 const& position, GuiDragData const& data)
 			{
 				return data.m_type == String("test") && position.x >= 0.f;
@@ -227,10 +249,10 @@ int main(int argc, char** argv)
 		auto pointer = [&](InputEventType type, Vector2 position, bool pressed = false)
 		{
 			InputEvent event;
-			event.m_type = type;
-			event.m_position = position;
+			event.m_type        = type;
+			event.m_position    = position;
 			event.m_mouseButton = GLFW_MOUSE_BUTTON_LEFT;
-			event.m_pressed = pressed;
+			event.m_pressed     = pressed;
 			viewport->ProcessInputEvent(event);
 		};
 		auto begin = [&]()
@@ -242,11 +264,15 @@ int main(int argc, char** argv)
 		pointer(InputEventType::MouseMotion, Vector2(48.f, 40.f));
 		check(!viewport->IsGuiDragging(), "drag threshold preserves an eight-unit click");
 		pointer(InputEventType::MouseMotion, Vector2(49.f, 40.f));
-		check(viewport->IsGuiDragging() && !viewport->HasGuiMouseCapture(), "drag starts beyond threshold and releases ordinary capture");
+		check(
+			viewport->IsGuiDragging() && !viewport->HasGuiMouseCapture(),
+			"drag starts beyond threshold and releases ordinary capture");
 		pointer(InputEventType::MouseMotion, Vector2(280.f, 40.f));
 		check(viewport->GetGuiDragTarget() == target, "drop checks parent of pass-through child");
 		auto* preview = dynamic_cast<Control*>(viewport->GetChildren().back());
-		check(preview != nullptr && preview->GetMouseFilter() == Control::MouseFilter::Ignore && !preview->GetSerializable(),
+		check(
+			preview != nullptr && preview->GetMouseFilter() == Control::MouseFilter::Ignore
+				&& !preview->GetSerializable(),
 			"drag preview ignores pointer and scene serialization");
 		pointer(InputEventType::MouseButton, Vector2(280.f, 40.f));
 		pointer(InputEventType::MouseButton, Vector2(280.f, 40.f));
@@ -257,7 +283,7 @@ int main(int argc, char** argv)
 		check(!viewport->IsGuiDragging() && drops == 1, "escape cancels drag without commit");
 		begin();
 		InputEvent focus;
-		focus.m_type = InputEventType::WindowFocus;
+		focus.m_type    = InputEventType::WindowFocus;
 		focus.m_focused = false;
 		viewport->ProcessInputEvent(focus);
 		check(!viewport->IsGuiDragging(), "window focus loss cancels drag");
@@ -680,12 +706,12 @@ int main(int argc, char** argv)
 			root->AddNode(panel);
 			panel->UpdateSize(Vector2(320.f, 640.f));
 			context.m_rootControl = panel;
-			auto           frame = [&]()
+			auto frame            = [&]()
 			{
 				engine.BeginFrame();
-								panel->Render(context);
+				panel->Render(context);
 				tree.FlushContainerUpdate();
-								panel->FinishInput(context);
+				panel->FinishInput(context);
 				engine.m_renderServer->Render();
 				engine.EndFrame();
 				tree.FlushPendingNode();
@@ -733,8 +759,9 @@ int main(int argc, char** argv)
 					!resource->CanAssignResource("res://roundtrip.tscn")
 						&& !resource->AssignResource("res://roundtrip.tscn") && vectorValue.As<Object*>() == nullptr,
 					"wrong resource type rejected");
-				GuiDragData const data { "file", ObjectID::Invalid, "res://roundtrip.tscn" };
-				check(!Find<LineEdit>(resource->GetControl())->CanDropData(Vector2::Zero, data),
+				GuiDragData const data{ "file", ObjectID::Invalid, "res://roundtrip.tscn" };
+				check(
+					!Find<LineEdit>(resource->GetControl())->CanDropData(Vector2::Zero, data),
 					"native resource drop rejects incompatible class");
 			}
 
@@ -745,26 +772,29 @@ int main(int argc, char** argv)
 					resource->AssignResource("res://roundtrip.tscn")
 						&& dynamic_cast<PackedScene*>(vectorValue.As<Object*>()) != nullptr,
 					"matching resource assigns actual resource");
-				GuiDragData const data { "file", ObjectID::Invalid, "res://roundtrip.tscn" };
-				LineEdit* field = Find<LineEdit>(resource->GetControl());
-				vectorValue = Variant(static_cast<Object*>(nullptr));
+				GuiDragData const data{ "file", ObjectID::Invalid, "res://roundtrip.tscn" };
+				LineEdit*         field = Find<LineEdit>(resource->GetControl());
+				vectorValue             = Variant(static_cast<Object*>(nullptr));
 				check(field->CanDropData(Vector2::Zero, data), "native resource field accepts matching class");
 				field->DropData(Vector2::Zero, data);
-				check(dynamic_cast<PackedScene*>(vectorValue.As<Object*>()) != nullptr,
+				check(
+					dynamic_cast<PackedScene*>(vectorValue.As<Object*>()) != nullptr,
 					"native resource drop follows property value callback");
 			}
 
 			probe->QueueFree();
 			panel->FinishInput(context);
 			frame();
-			check(
-				panel->GetViewport()->GetGuiFocus() == nullptr,
-				"deleted selection loses native focus safely");
+			check(panel->GetViewport()->GetGuiFocus() == nullptr, "deleted selection loses native focus safely");
 
 			ProjectSettingsPopup popup;
 			Ref<ProjectSettings> settings = ProjectSettings::Get();
 			settings->m_startScenePath    = "res://old.tscn";
-			auto popupFrame               = [&]()
+			engine.m_fileSystem->WriteText(
+				"res://new.tscn",
+				R"({"nodes":[{"name":"StartScene","type":"Node3D","parent":""}]})");
+			ResourceSaver::Save(ProjectSettings::GetSettingsPath(), settings);
+			auto popupFrame = [&]()
 			{
 				engine.BeginFrame();
 				popup.Render(context);
@@ -887,14 +917,14 @@ int main(int argc, char** argv)
 		std::ofstream(fixture / "source" / "conflict.txt") << "source";
 		std::ofstream(fixture / "target" / "conflict.txt") << "target";
 		SceneTree tree;
-		auto* editor = MemNew<EditorNode>();
+		auto*     editor = MemNew<EditorNode>();
 		tree.GetRoot()->AddNode(editor);
-		auto* root = static_cast<Viewport*>(tree.GetRoot());
+		auto* root   = static_cast<Viewport*>(tree.GetRoot());
 		auto* window = static_cast<Window*>(root);
 		root->UpdateResolution(IntVec2(1200, 760));
-		auto* scene = MemNew<Node3D>();
+		auto* scene  = MemNew<Node3D>();
 		auto* source = MemNew<Node3D>();
-		auto* child = MemNew<Node3D>();
+		auto* child  = MemNew<Node3D>();
 		auto* target = MemNew<Node3D>();
 		scene->SetName("DragRoot");
 		source->SetName("DragSource");
@@ -918,16 +948,17 @@ int main(int argc, char** argv)
 		EditorUI* ui = editor->m_editorUI;
 		ui->ResetNativeLayout();
 		frame();
-		check(!ui->GetDockSlot(0)->GetPage(0)->GetSerializable()
-			&& !ui->GetDockSlot(1)->GetPage(0)->GetSerializable() && !ui->GetDockSlot(2)->GetPage(0)->GetSerializable(),
+		check(
+			!ui->GetDockSlot(0)->GetPage(0)->GetSerializable() && !ui->GetDockSlot(1)->GetPage(0)->GetSerializable()
+				&& !ui->GetDockSlot(2)->GetPage(0)->GetSerializable(),
 			"dock panel roots remain explicitly nonserializable");
 		auto pointer = [&](InputEventType type, Vector2 position, bool pressed = false)
 		{
 			InputEvent event;
-			event.m_type = type;
-			event.m_position = position;
+			event.m_type        = type;
+			event.m_position    = position;
 			event.m_mouseButton = GLFW_MOUSE_BUTTON_LEFT;
-			event.m_pressed = pressed;
+			event.m_pressed     = pressed;
 			window->OnInputEvent(event);
 		};
 		auto drag = [&](Vector2 from, Vector2 to)
@@ -938,35 +969,39 @@ int main(int argc, char** argv)
 			pointer(InputEventType::MouseButton, to);
 			frame();
 		};
-		Tree* nodes = ui->GetSceneTreeControl();
-		auto nodePosition = [nodes](Node* node)
+		Tree* nodes        = ui->GetSceneTreeControl();
+		auto  nodePosition = [nodes](Node* node)
 		{
-			ObjectID const id = node->GetObjectID();
+			ObjectID const id  = node->GetObjectID();
 			uint64_t const key = (static_cast<uint64_t>(id.GetUID()) << 32 | id.GetIndex()) + 1;
 			return nodes->GetItemRect(key).GetCenter();
 		};
-		GuiDragData nodeData { "node", source->GetObjectID(), "DragSource" };
+		GuiDragData nodeData{ "node", source->GetObjectID(), "DragSource" };
 		check(!nodes->CanDropData(nodePosition(source), nodeData), "node cannot drop onto itself");
-		check(!nodes->CanDropData(nodePosition(source->GetChildren()[0]), nodeData), "node cannot drop into descendant");
-		GuiDragData rootData { "node", scene->GetObjectID(), "DragRoot" };
+		check(
+			!nodes->CanDropData(nodePosition(source->GetChildren()[0]), nodeData),
+			"node cannot drop into descendant");
+		GuiDragData rootData{ "node", scene->GetObjectID(), "DragRoot" };
 		check(!nodes->CanDropData(nodePosition(target), rootData), "scene root cannot be reparented");
 		check(nodes->CanDropData(nodePosition(target), nodeData), "native node target accepts valid reparent");
 		Vector3 const world = source->GetWorldPosition();
 		drag(nodes->GetGlobalPosition() + nodePosition(source), nodes->GetGlobalPosition() + nodePosition(target));
-		check(source->GetParent() == target && source->GetWorldPosition() == world,
+		check(
+			source->GetParent() == target && source->GetWorldPosition() == world,
 			"real pointer drag reparents node and preserves world transform");
-		check(editor->IsSceneDirty() && editor->GetSelection().GetSelected() == source->GetObjectID(),
+		check(
+			editor->IsSceneDirty() && editor->GetSelection().GetSelected() == source->GetObjectID(),
 			"node drop preserves selection and marks edited scene dirty");
 		ui->MoveNativePanel("FileSystem", 0);
-		ui->GetTabs()->SetCurrentTab(1);
+		ui->GetDockSlot(0)->SetCurrentTab(ui->GetDockSlot(0)->GetPageIndex(&ui->GetPanel<FileSystemPanel>()));
 		frame();
-		Tree* files = ui->GetFileTreeControl();
-		auto filePosition = [&](char const* path)
+		Tree* files        = ui->GetFileTreeControl();
+		auto  filePosition = [&](char const* path)
 		{
 			for (int row = 0; row < static_cast<int>(files->GetInternalMinimumSize().y / files->GetRowHeight()); ++row)
 			{
 				Vector2 const position(110.f, row * files->GetRowHeight() + files->GetRowHeight() * 0.5f);
-				GuiDragData data;
+				GuiDragData   data;
 				if (files->GetDragData(position, data) && data.m_value == String(path))
 				{
 					return position;
@@ -977,54 +1012,72 @@ int main(int argc, char** argv)
 		};
 		Vector2 const targetPosition = filePosition("res://DragDockFixture/target");
 		check(targetPosition.y >= 0.f, "native file rows expose stable paths");
-		GuiDragData fileData { "file", ObjectID::Invalid, "res://DragDockFixture/source/move.txt" };
-		GuiDragData folderData { "file", ObjectID::Invalid, "res://DragDockFixture/source" };
+		GuiDragData fileData{ "file", ObjectID::Invalid, "res://DragDockFixture/source/move.txt" };
+		GuiDragData folderData{ "file", ObjectID::Invalid, "res://DragDockFixture/source" };
 		check(files->CanDropData(targetPosition, fileData), "native file target accepts valid move");
-		check(!files->CanDropData(filePosition("res://DragDockFixture/source/child"), folderData),
+		check(
+			!files->CanDropData(filePosition("res://DragDockFixture/source/child"), folderData),
 			"native folder cannot move into descendant");
-		check(!files->CanDropData(filePosition("res://DragDockFixture/source"), folderData), "native folder cannot move into itself");
-		GuiDragData conflict { "file", ObjectID::Invalid, "res://DragDockFixture/source/conflict.txt" };
+		check(
+			!files->CanDropData(filePosition("res://DragDockFixture/source"), folderData),
+			"native folder cannot move into itself");
+		GuiDragData conflict{ "file", ObjectID::Invalid, "res://DragDockFixture/source/conflict.txt" };
 		check(!files->CanDropData(targetPosition, conflict), "native file drop rejects name collision");
-		check(!files->CanDropData(filePosition("res://DragDockFixture/source"), fileData), "native file drop rejects existing parent");
+		check(
+			!files->CanDropData(filePosition("res://DragDockFixture/source"), fileData),
+			"native file drop rejects existing parent");
 		files->DropData(targetPosition, fileData);
-		check(std::filesystem::exists(fixture / "target" / "move.txt")
-			&& std::filesystem::exists(fixture / "target" / "move.txt.import")
-			&& !std::filesystem::exists(fixture / "source" / "move.txt"), "native file drop moves content and import metadata");
-		Draft(root, NativePanelVerification::FindFilter(ui->GetTabs()->GetPage(1), "Filter files"), "target");
+		check(
+			std::filesystem::exists(fixture / "target" / "move.txt")
+				&& std::filesystem::exists(fixture / "target" / "move.txt.import")
+				&& !std::filesystem::exists(fixture / "source" / "move.txt"),
+			"native file drop moves content and import metadata");
+		Draft(root, NativePanelVerification::FindFilter(&ui->GetPanel<FileSystemPanel>(), "Filter files"), "target");
 		Key(root, GLFW_KEY_ENTER);
 		frame();
 		Vector2 const fromFile = files->GetGlobalPosition() + filePosition("res://DragDockFixture/target");
 		pointer(InputEventType::MouseButton, fromFile, true);
 		pointer(InputEventType::MouseMotion, fromFile + Vector2(12.f, 0.f));
-		Vector2 const sceneTabPosition = ui->GetTabs()->GetTabButton(0)->GetGlobalPosition() + Vector2(20.f, 14.f);
+		Vector2 const sceneTabPosition =
+			ui->GetDockSlot(0)
+				->GetTabButton(ui->GetDockSlot(0)->GetPageIndex(&ui->GetPanel<ScenePanel>()))
+				->GetGlobalPosition()
+			+ Vector2(20.f, 14.f);
 		pointer(InputEventType::MouseMotion, sceneTabPosition);
 		frame();
 		glfwSetTime(glfwGetTime() + 0.6);
 		frame();
-		check(root->IsGuiDragging() && ui->GetTabs()->GetCurrentTab() == 0 && !files->IsVisibleInHierarchy(),
+		check(
+			root->IsGuiDragging() && ui->GetDockSlot(0)->GetCurrentPage() == &ui->GetPanel<ScenePanel>()
+				&& !files->IsVisibleInHierarchy(),
 			"hover switches tab after half a second while preserving drag from hidden page");
 		Key(root, GLFW_KEY_ESCAPE);
-		Draft(root, NativePanelVerification::FindFilter(ui->GetTabs()->GetPage(1), "Filter files"), "");
+		Draft(root, NativePanelVerification::FindFilter(&ui->GetPanel<FileSystemPanel>(), "Filter files"), "");
 		Key(root, GLFW_KEY_ENTER);
 		ui->ResetNativeLayout();
 		frame();
-		ObjectID const pageID = ui->GetDockSlot(1)->GetPage(0)->GetObjectID();
-		Button* tab = ui->GetDockSlot(1)->GetTabButton(0);
-		Vector2 const dockTarget = ui->GetDockSlot(2)->GetGlobalPosition() + Vector2(70.f, 180.f);
+		ObjectID const pageID     = ui->GetDockSlot(1)->GetPage(0)->GetObjectID();
+		Button*        tab        = ui->GetDockSlot(1)->GetTabButton(0);
+		Vector2 const  dockTarget = ui->GetDockSlot(2)->GetGlobalPosition() + Vector2(70.f, 180.f);
 		drag(tab->GetGlobalPosition() + Vector2(20.f, 14.f), dockTarget);
-		check(ui->GetDockSlot(2)->GetPageCount() == 3 && ui->GetDockSlot(2)->GetCurrentPage()->GetObjectID() == pageID,
+		check(
+			ui->GetDockSlot(2)->GetPageIndex(&ui->GetPanel<FileSystemPanel>()) >= 0
+				&& ui->GetDockSlot(2)->GetCurrentPage()->GetObjectID() == pageID,
 			"pointer dock transfer preserves panel instance and selects it");
 		ui->MoveNativePanel("FileSystem", 3);
 		frame();
-		check(ui->GetDockSlot(3)->IsVisible() && ui->GetDockSlot(3)->GetCurrentPage()->GetObjectID() == pageID,
+		check(
+			ui->GetDockSlot(3)->IsVisible() && ui->GetDockSlot(3)->GetCurrentPage()->GetObjectID() == pageID,
 			"preset lower slot expands without recreating panel");
-		SplitContainer* split = ui->GetDockSplit(3);
-		Vector2 const divider = split->GetGlobalPosition() + split->GetDividerRect().GetCenter();
+		SplitContainer* split   = ui->GetDockSplit(3);
+		Vector2 const   divider = split->GetGlobalPosition() + split->GetDividerRect().GetCenter();
 		pointer(InputEventType::MouseButton, divider, true);
 		pointer(InputEventType::MouseMotion, divider + Vector2(0.f, 10000.f));
 		pointer(InputEventType::MouseButton, divider + Vector2(0.f, 10000.f));
 		frame();
-		check(!root->HasGuiMouseCapture() && ui->GetDockSlot(3)->GetSize().y >= ui->GetDockSlot(3)->GetCombinedMinimumSize().y,
+		check(
+			!root->HasGuiMouseCapture()
+				&& ui->GetDockSlot(3)->GetSize().y >= ui->GetDockSlot(3)->GetCombinedMinimumSize().y,
 			"split drag clamps panel minimum and releases outside window");
 		ui->GetDockSplit(0)->SetSplitRatio(0.3f);
 		check(ui->SaveNativeLayout(), "native dock layout saves");
@@ -1034,43 +1087,55 @@ int main(int argc, char** argv)
 		engine.m_fileSystem->WriteText("res://.ming/Editor/NativeEditorLayout.json", savedLayout);
 		ui->LoadNativeLayout();
 		frame();
-		check(ui->GetDockSlot(3)->GetPageCount() == 2 && ui->GetDockSlot(0)->GetPageTitle(0) == String("Scene"),
+		check(
+			ui->GetDockSlot(3)->GetPageCount() == 2 && ui->GetDockSlot(0)->GetPageTitle(0) == String("Scene"),
 			"layout reload restores panel locations");
 		check(std::abs(ui->GetDockSplit(0)->GetSplitRatio() - 0.3f) < 0.001f, "layout reload restores split ratio");
-		engine.m_fileSystem->WriteText("res://.ming/Editor/NativeEditorLayout.json",
+		engine.m_fileSystem->WriteText(
+			"res://.ming/Editor/NativeEditorLayout.json",
 			R"({"version":2,"slots":[{"panels":["FileSystem","FileSystem","Unknown"],"current":"FileSystem"}],"ratios":[-10,20,"bad"]})");
 		ui->LoadNativeLayout();
 		frame();
-		check(ui->GetDockSlot(0)->GetPageCount() == 2 && ui->GetDockSlot(2)->GetPageCount() == 2,
+		check(
+			ui->GetDockSlot(0)->GetPageIndex(&ui->GetPanel<ImportPanel>()) >= 0
+				&& ui->GetDockSlot(2)->GetPageIndex(&ui->GetPanel<InspectorPanel>()) >= 0,
 			"layout ignores duplicate and unknown panels and restores missing panels");
-		check(ui->GetDockSplit(0)->GetSplitRatio() == 0.f && ui->GetDockSplit(1)->GetSplitRatio() == 1.f,
+		check(
+			ui->GetDockSplit(0)->GetSplitRatio() == 0.f && ui->GetDockSplit(1)->GetSplitRatio() == 1.f,
 			"layout clamps out-of-range ratios");
 		engine.m_fileSystem->WriteText("res://.ming/Editor/NativeEditorLayout.json", "{invalid json");
 		ui->LoadNativeLayout();
-		check(ui->GetDockSlot(0)->GetPageTitle(0) == String("Scene") && ui->GetDockSlot(3)->IsVisible(),
+		check(
+			ui->GetDockSlot(0)->GetPageTitle(0) == String("Scene") && ui->GetDockSlot(3)->IsVisible(),
 			"invalid layout restores default without losing panels");
 		ui->MoveNativePanel("FileSystem", 3);
 		std::filesystem::path const layoutFile = projectPath / ".ming" / "Editor" / "NativeEditorLayout.json";
 		std::filesystem::remove(layoutFile);
 		std::filesystem::create_directory(layoutFile);
-		check(!ui->SaveNativeLayout() && root->GetGuiPopup() != nullptr && ui->GetDockSlot(3)->GetPageCount() == 2,
+		check(
+			!ui->SaveNativeLayout() && root->GetGuiPopup() != nullptr && ui->GetDockSlot(3)->GetPageCount() == 2,
 			"layout write failure reports error and preserves live layout");
 		Key(root, GLFW_KEY_ESCAPE);
 		std::filesystem::remove(layoutFile);
 		ui->ResetNativeLayout();
 		frame();
-		check(ui->GetDockSlot(0)->GetPageCount() == 1 && ui->GetDockSlot(2)->GetPageCount() == 2
-			&& ui->GetDockSlot(1)->IsVisible() && ui->GetDockSlot(3)->IsVisible(), "reset restores Warm Carbon default layout with all panels visible");
+		check(
+			ui->GetDockSlot(0)->GetPageIndex(&ui->GetPanel<ImportPanel>()) >= 0
+				&& ui->GetDockSlot(2)->GetPageIndex(&ui->GetPanel<InspectorPanel>()) >= 0
+				&& ui->GetDockSlot(1)->IsVisible() && ui->GetDockSlot(3)->IsVisible(),
+			"reset restores Warm Carbon default layout with all panels visible");
 		ui->MoveNativePanel("FileSystem", 0);
 		for (int i = 0; i < 3; ++i)
 		{
-			ui->GetTabs()->MovePage(0, 1);
+			ui->GetDockSlot(0)->MovePage(0, 1);
 			tree.FlushContainerUpdate();
-			Button* button = ui->GetTabs()->GetTabButton(0);
+			Button*       button   = ui->GetDockSlot(0)->GetTabButton(0);
 			Vector2 const position = button->GetGlobalPosition() + Vector2(15.f, 15.f);
 			pointer(InputEventType::MouseButton, position, true);
 			pointer(InputEventType::MouseButton, position);
-			check(ui->GetTabs()->GetCurrentPage() == ui->GetTabs()->GetPage(0), "reordered tab button resolves current page identity");
+			check(
+				ui->GetDockSlot(0)->GetCurrentPage() == ui->GetDockSlot(0)->GetPage(0),
+				"reordered tab button resolves current page identity");
 		}
 
 		ui->ResetNativeLayout();
@@ -1081,11 +1146,13 @@ int main(int argc, char** argv)
 
 	{
 		SceneTree tree;
-		auto* editor = MemNew<EditorNode>();
+		auto*     editor = MemNew<EditorNode>();
 		tree.GetRoot()->AddNode(editor);
 		EditorUI* ui = editor->m_editorUI;
-		check(ui->GetDockSlot(3)->GetPageTitle(ui->GetDockSlot(3)->GetCurrentTab()) == String("FileSystem")
-			&& ui->GetDockSlot(0)->GetPageCount() == 1 && std::abs(ui->GetDockSplit(0)->GetSplitRatio() - 0.31f) < 0.001f,
+		check(
+			ui->GetDockSlot(3)->GetPageTitle(ui->GetDockSlot(3)->GetCurrentTab()) == String("FileSystem")
+				&& ui->GetDockSlot(0)->GetPageIndex(&ui->GetPanel<ImportPanel>()) >= 0
+				&& std::abs(ui->GetDockSplit(0)->GetSplitRatio() - 0.31f) < 0.001f,
 			"new editor instance restores panel identities and split ratio from disk");
 		ui->ResetNativeLayout();
 	}
@@ -1187,15 +1254,15 @@ int main(int argc, char** argv)
 			"edited scene mounts in independent SubViewport");
 		frame();
 		frame();
-		EditorUI* ui       = editor->m_editorUI;
+		EditorUI* ui = editor->m_editorUI;
 		ui->MoveNativePanel("FileSystem", 0);
 		frame();
-		ObjectID const editorPageID = ui->GetTabs()->GetPage(0)->GetObjectID();
-		Tree*     nodes    = ui->GetSceneTreeControl();
-		Button*   sceneTab = ui->GetTabs()->GetTabButton(0);
+		ObjectID const editorPageID = ui->GetDockSlot(0)->GetPage(0)->GetObjectID();
+		Tree*          nodes        = ui->GetSceneTreeControl();
+		Button*        sceneTab     = ui->GetDockSlot(0)->GetTabButton(0);
 		click(sceneTab->GetGlobalPosition() + Vector2(12.f, 12.f));
 		check(
-			sceneTab->IsPressed() && ui->GetTabs()->GetCurrentTab() == 0,
+			sceneTab->IsPressed() && ui->GetDockSlot(0)->GetCurrentTab() == 0,
 			"clicking active tab preserves selection highlight");
 
 		auto key = [](Node* node)
@@ -1209,10 +1276,12 @@ int main(int argc, char** argv)
 		check(
 			nodes->IsCollapsed(key(group)) && nodes->GetInternalMinimumSize().y < expandedHeight,
 			"Tree collapse hides descendants");
-		auto* filter = Find<LineEdit>(ui->GetTabs()->GetCurrentPage());
+		auto* filter = Find<LineEdit>(ui->GetDockSlot(0)->GetCurrentPage());
 		filter->SetText("Needle");
 		frame();
-		check(nodes->GetInternalMinimumSize().y == 3.f * nodes->GetRowHeight(), "filter retains ancestor path and expands matching branch");
+		check(
+			nodes->GetInternalMinimumSize().y == 3.f * nodes->GetRowHeight(),
+			"filter retains ancestor path and expands matching branch");
 		filter->SetText("");
 		frame();
 		check(
@@ -1247,18 +1316,20 @@ int main(int argc, char** argv)
 		tree.FlushContainerUpdate();
 		scroll->SetHorizontalScroll(500.f);
 		scroll->SetScroll(500.f);
-		check(scroll->GetHorizontalScroll() == 0.f && scroll->GetScroll() > 0.f, "editor Tree clips long names and scrolls vertically");
+		check(
+			scroll->GetHorizontalScroll() == 0.f && scroll->GetScroll() > 0.f,
+			"editor Tree clips long names and scrolls vertically");
 		scroll->SetScroll(0.f);
 		scroll->SetHorizontalScroll(0.f);
 		nodes->GrabFocus();
 		ui->MoveNativePanel("FileSystem", 0);
-		ui->GetTabs()->SetCurrentTab(1);
+		ui->GetDockSlot(0)->SetCurrentTab(ui->GetDockSlot(0)->GetPageIndex(&ui->GetPanel<FileSystemPanel>()));
 		frame();
 		check(!nodes->IsVisibleInHierarchy() && !nodes->HasFocus(), "Tab switch hides old page and releases its focus");
 		check(ui->GetFileTreeControl()->IsVisibleInHierarchy(), "FileSystem tab displays actual resource Tree");
 		click(nodes->GetGlobalPosition() + Vector2(60.f, 12.f));
 		check(!nodes->HasFocus(), "hidden Tree cannot receive pointer focus");
-		ui->GetTabs()->SetCurrentTab(0);
+		ui->GetDockSlot(0)->SetCurrentTab(ui->GetDockSlot(0)->GetPageIndex(&ui->GetPanel<ScenePanel>()));
 		frame();
 		editor->GetSelection().Clear();
 		Vector2 const center = ui->GetViewportOrigin() + ui->GetViewportDimensions() * 0.5f;
@@ -1306,7 +1377,8 @@ int main(int argc, char** argv)
 		check(
 			scene->GetChildren().size() == 43 && scene->FindChildByName("EditorUI") == nullptr,
 			"scene serialization excludes editor controls and camera");
-		check(ui->GetTabs()->GetPage(0)->GetObjectID() == editorPageID,
+		check(
+			ui->GetDockSlot(0)->GetPage(0)->GetObjectID() == editorPageID,
 			"scene save and reopen preserve editor dock panel instance");
 		editor->GetSelection().SetSelected(cube->GetObjectID());
 		capture("03-reopened.ppm");
@@ -1324,9 +1396,9 @@ int main(int argc, char** argv)
 			"resized scene coordinate mapping stays aligned");
 		capture("04-resized.ppm");
 		ui->MoveNativePanel("FileSystem", 0);
-		ui->GetTabs()->SetCurrentTab(1);
+		ui->GetDockSlot(0)->SetCurrentTab(ui->GetDockSlot(0)->GetPageIndex(&ui->GetPanel<FileSystemPanel>()));
 		capture("05-filesystem.ppm");
-		ui->GetTabs()->SetCurrentTab(0);
+		ui->GetDockSlot(0)->SetCurrentTab(ui->GetDockSlot(0)->GetPageIndex(&ui->GetPanel<ScenePanel>()));
 		editor->MarkSceneDirty();
 		editor->RequestLoadScene("res://roundtrip.tscn");
 		frame();
@@ -1356,7 +1428,7 @@ int main(int argc, char** argv)
 			!editor->IsSceneNavigationActive() && !root->HasGuiMouseCapture(),
 			"camera release outside scene ends capture");
 		right.m_pressed  = true;
-		right.m_position = ui->GetTabs()->GetGlobalPosition() + Vector2(10.f, 10.f);
+		right.m_position = ui->GetDockSlot(0)->GetGlobalPosition() + Vector2(10.f, 10.f);
 		window->OnInputEvent(right);
 		check(!editor->IsSceneNavigationActive(), "right click outside scene does not start camera");
 		right.m_pressed = false;
@@ -1375,38 +1447,47 @@ int main(int argc, char** argv)
 		window->OnInputEvent(lost);
 		root->UpdateResolution(IntVec2(1100, 600));
 		frame();
-		auto* inspectorScroll =
-			Find<ScrollContainer>(&ui->GetPanel<InspectorPanel>());
-		auto*      number = Find<SpinBox>(ui->GetPanel<InspectorPanel>().GetContentControl());
+		auto* inspectorScroll = Find<ScrollContainer>(&ui->GetPanel<InspectorPanel>());
+		auto* number          = Find<SpinBox>(ui->GetPanel<InspectorPanel>().GetContentControl());
+		auto* overflow        = MemNew<Control>();
+		overflow->SetCustomMinimumSize(Vector2(0.f, inspectorScroll->GetPageSize().y + 100.f));
+		ui->GetPanel<InspectorPanel>().GetContentControl()->AddNode(overflow);
+		frame();
 		inspectorScroll->EnsureControlVisible(number->GetLineEdit());
 		frame();
 		float const scrollBeforeWheel = inspectorScroll->GetScroll();
-		InputEvent wheel;
-		wheel.m_type = InputEventType::MouseWheel;
-		wheel.m_scroll = Vector2(0.f, -3.f);
+		InputEvent  wheel;
+		wheel.m_type             = InputEventType::MouseWheel;
+		wheel.m_scroll           = Vector2(0.f, -3.f);
 		Vector2 const fieldStart = number->GetLineEdit()->GetGlobalPosition();
-		Vector2 const fieldEnd = fieldStart + number->GetLineEdit()->GetSize();
-		Vector2 const pageStart = inspectorScroll->GetGlobalPosition();
-		Vector2 const pageEnd = pageStart + inspectorScroll->GetPageSize();
-		wheel.m_position = Vector2((std::max(fieldStart.x, pageStart.x) + std::min(fieldEnd.x, pageEnd.x)) * 0.5f,
+		Vector2 const fieldEnd   = fieldStart + number->GetLineEdit()->GetSize();
+		Vector2 const pageStart  = inspectorScroll->GetGlobalPosition();
+		Vector2 const pageEnd    = pageStart + inspectorScroll->GetPageSize();
+		wheel.m_position         = Vector2(
+			(std::max(fieldStart.x, pageStart.x) + std::min(fieldEnd.x, pageEnd.x)) * 0.5f,
 			(std::max(fieldStart.y, pageStart.y) + std::min(fieldEnd.y, pageEnd.y)) * 0.5f);
 		window->OnInputEvent(wheel);
 
-		check(inspectorScroll->GetScroll() > scrollBeforeWheel, "wheel over visible property field reaches enclosing ScrollContainer");
+		check(
+			inspectorScroll->GetScroll() > scrollBeforeWheel,
+			"wheel over visible property field reaches enclosing ScrollContainer");
+		overflow->QueueFree();
+		frame();
 
 		editor->GetSelection().Clear();
 		auto* leafTree   = ui->GetSceneTreeControl();
 		auto* scrollTree = static_cast<ScrollContainer*>(leafTree->GetParent());
 		scrollTree->SetScroll(0.f);
 		frame();
-		check(scrollTree->GetContentSize().y > scrollTree->GetPageSize().y,
+		check(
+			scrollTree->GetContentSize().y > scrollTree->GetPageSize().y,
 			"scrollbar fixture has vertical content outside its page");
 		InputEvent bar;
 		bar.m_type        = InputEventType::MouseButton;
 		bar.m_mouseButton = 0;
 		bar.m_pressed     = true;
-		bar.m_position = scrollTree->GetGlobalPosition()
-			+ Vector2((scrollTree->GetSize().x + scrollTree->GetPageSize().x) * 0.5f, 4.f);
+		bar.m_position    = scrollTree->GetGlobalPosition()
+							+ Vector2((scrollTree->GetSize().x + scrollTree->GetPageSize().x) * 0.5f, 4.f);
 		window->OnInputEvent(bar);
 
 		InputEvent motion;
@@ -1425,8 +1506,8 @@ int main(int argc, char** argv)
 			"clipped Tree row outside scroll area cannot select scene nodes");
 		check(editor->SaveScene(), "save resolves dirty scene before resource browsing");
 		ui->MoveNativePanel("FileSystem", 0);
-		ui->GetTabs()->SetCurrentTab(1);
-		auto* filesFilter = NativePanelVerification::FindFilter(ui->GetTabs()->GetCurrentPage(), "Filter files");
+		ui->GetDockSlot(0)->SetCurrentTab(ui->GetDockSlot(0)->GetPageIndex(&ui->GetPanel<FileSystemPanel>()));
+		auto* filesFilter = NativePanelVerification::FindFilter(ui->GetDockSlot(0)->GetCurrentPage(), "Filter files");
 		filesFilter->GrabFocus();
 		text("roundtrip");
 		frame();
@@ -1457,6 +1538,7 @@ int main(int argc, char** argv)
 	VerifyNativeEditorPanels(engine, check, projectPath);
 	VerifyThemes(engine, check, projectPath);
 
+	ProjectSettings::Reset();
 	ThemeDatabase::Shutdown();
 	ResourceLoader::Shutdown();
 	EditorIcons::Shutdown();

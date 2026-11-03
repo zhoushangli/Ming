@@ -47,47 +47,67 @@ String LineText(TextLine const& line)
 
 void VerifyText(TextServer& server, RID font, RID fallback, Check const& check)
 {
-	auto shape = [&](String const& text) { return server.GetTextLine(font, text, 20.f); };
+	auto shape = [&](String const& text)
+	{
+		return server.GetTextLine(font, text, 20.f);
+	};
 	auto lines = [&](String const& text, float width, AutowrapMode wrap = AutowrapMode::WordSmart)
 	{
 		return server.GetTextLines(font, text, 20.f, width, wrap);
 	};
 	auto original = shape("AVeryLongFileName.texture");
 	check(LineText(shape("first\nsecond")) == "first", "single-line API retains its contract");
-	check(server.GetTextLines(RID::Invalid, "text", 20.f, 100.f, AutowrapMode::Off).empty(), "invalid font has no layout");
-	check(LineText(server.TrimTextLine(font, original, 20.f, 1.f, TextOverrunBehavior::TrimNothing)) == LineText(original),
+	check(
+		server.GetTextLines(RID::Invalid, "text", 20.f, 100.f, AutowrapMode::Off).empty(),
+		"invalid font has no layout");
+	check(
+		LineText(server.TrimTextLine(font, original, 20.f, 1.f, TextOverrunBehavior::TrimNothing))
+			== LineText(original),
 		"Trim Nothing retains all characters");
-	check(LineText(server.TrimTextLine(font, original, 20.f, original.m_width, TextOverrunBehavior::EllipsisAlways)) == LineText(original),
+	check(
+		LineText(server.TrimTextLine(font, original, 20.f, original.m_width, TextOverrunBehavior::EllipsisAlways))
+			== LineText(original),
 		"exact fit does not add ellipsis");
-	auto trimmed = server.TrimTextLine(font, original, 20.f, shape("AVery").m_width, TextOverrunBehavior::TrimCharacters);
+	auto trimmed =
+		server.TrimTextLine(font, original, 20.f, shape("AVery").m_width, TextOverrunBehavior::TrimCharacters);
 	check(LineText(trimmed) == "AVery", "character trimming keeps the longest complete prefix");
 	float const ellipsisWidth = shape(String(U"\u2026")).m_width;
 	auto shortTrim = server.TrimTextLine(font, original, 20.f, ellipsisWidth, TextOverrunBehavior::EllipsisAlways);
 	check(LineText(shortTrim) == String(U"\u2026"), "short result still displays ellipsis");
-	check(server.TrimTextLine(font, original, 20.f, ellipsisWidth * 0.5f, TextOverrunBehavior::EllipsisAlways).m_glyphs.empty(),
+	check(
+		server.TrimTextLine(font, original, 20.f, ellipsisWidth * 0.5f, TextOverrunBehavior::EllipsisAlways)
+			.m_glyphs.empty(),
 		"insufficient ellipsis width displays no text");
 	for (float width : { 0.f, 1.f, 18.f, 57.f, 100.f })
 	{
 		for (auto mode : { TextOverrunBehavior::TrimCharacters, TextOverrunBehavior::EllipsisAlways })
 		{
 			auto const result = server.TrimTextLine(font, original, 20.f, width, mode);
-			check(result.m_width <= width + 0.001f && Near(result.m_width, shape(LineText(result)).m_width),
+			check(
+				result.m_width <= width + 0.001f && Near(result.m_width, shape(LineText(result)).m_width),
 				"trimmed glyph positions and measured width agree");
 		}
 	}
 
-	auto fallbackLine = server.GetTextLine(fallback, "AAAAAA", 20.f);
+	auto        fallbackLine  = server.GetTextLine(fallback, "AAAAAA", 20.f);
 	float const fallbackWidth = server.GetTextLine(fallback, "A...", 20.f).m_width;
-	auto fallbackTrim = server.TrimTextLine(fallback, fallbackLine, 20.f, fallbackWidth, TextOverrunBehavior::EllipsisAlways);
-	check(server.GetGlyphIndex(fallback, U'\u2026') == 0 && LineText(fallbackTrim) == "A..."
-		&& Near(fallbackTrim.m_width, fallbackWidth), "missing ellipsis uses three dots including prefix kerning");
+	auto        fallbackTrim =
+		server.TrimTextLine(fallback, fallbackLine, 20.f, fallbackWidth, TextOverrunBehavior::EllipsisAlways);
+	check(
+		server.GetGlyphIndex(fallback, U'\u2026') == 0 && LineText(fallbackTrim) == "A..."
+			&& Near(fallbackTrim.m_width, fallbackWidth),
+		"missing ellipsis uses three dots including prefix kerning");
 
 	auto explicitLines = lines("a\r\n\rb\n", 1.f, AutowrapMode::Off);
-	check(explicitLines.size() == 4 && LineText(explicitLines[0]) == "a" && explicitLines[1].m_glyphs.empty()
-		&& LineText(explicitLines[2]) == "b" && explicitLines[3].m_glyphs.empty(), "CRLF, CR, empty and trailing lines survive");
+	check(
+		explicitLines.size() == 4 && LineText(explicitLines[0]) == "a" && explicitLines[1].m_glyphs.empty()
+			&& LineText(explicitLines[2]) == "b" && explicitLines[3].m_glyphs.empty(),
+		"CRLF, CR, empty and trailing lines survive");
 	check(lines("", 100.f).size() == 1, "empty text retains one font-height line");
 	auto words = lines("one   two", shape("one ").m_width);
-	check(words.size() == 2 && LineText(words[0]) == "one" && LineText(words[1]) == "two", "word wrapping skips separator spaces");
+	check(
+		words.size() == 2 && LineText(words[0]) == "one" && LineText(words[1]) == "two",
+		"word wrapping skips separator spaces");
 	auto indent = lines("a\n  b", 1000.f);
 	check(indent.size() == 2 && LineText(indent[1]) == "  b", "explicit newline preserves indentation");
 	auto longWord = lines("abcdefgh", shape("abc").m_width);
@@ -101,7 +121,7 @@ void VerifyText(TextServer& server, RID font, RID fallback, Check const& check)
 void VerifyLayout(Ref<FontResource> const& font, Check const& check)
 {
 	SceneTree tree;
-	auto theme = CreateRef<Theme>();
+	auto      theme = CreateRef<Theme>();
 	theme->SetDefaultFont(font);
 	theme->SetDefaultFontSize(20);
 	theme->SetConstant("separation", "BoxContainer", 7);
@@ -128,14 +148,17 @@ void VerifyLayout(Ref<FontResource> const& font, Check const& check)
 	float const wide = label->GetInternalMinimumSize().y;
 	layout(110.f);
 	float const narrow = label->GetInternalMinimumSize().y;
-	check(narrow > wide && Near(after->GetLocalPosition().y, narrow + 7.f), "nested resize increases height and moves following row");
+	check(
+		narrow > wide && Near(after->GetLocalPosition().y, narrow + 7.f),
+		"nested resize increases height and moves following row");
 	for (float width : { 320.f, 110.f, 320.f, 110.f })
 	{
 		layout(width);
 		float const height = label->GetInternalMinimumSize().y;
 		tree.FlushContainerUpdate();
-		check(Near(height, width == 320.f ? wide : narrow)
-			&& Near(after->GetLocalPosition().y, height + 7.f), "alternating width converges without stale row heights");
+		check(
+			Near(height, width == 320.f ? wide : narrow) && Near(after->GetLocalPosition().y, height + 7.f),
+			"alternating width converges without stale row heights");
 	}
 
 	label->SetClipText(true);
@@ -159,13 +182,18 @@ void VerifyLayout(Ref<FontResource> const& font, Check const& check)
 	check(rows->GetSeparation() == 2.5f, "float separation override survives Theme updates");
 	rows->RemoveSeparationOverride();
 	tree.FlushContainerUpdate();
-	check(rows->GetSeparation() == 19.f && Near(after->GetLocalPosition().y, label->GetSize().y + 19.f),
+	check(
+		rows->GetSeparation() == 19.f && Near(after->GetLocalPosition().y, label->GetSize().y + 19.f),
 		"removing separation override restores themed layout");
 	root->SetMarginLeft(1.25f);
 	theme->SetConstant("margin_right", "MarginContainer", 15);
-	check(root->GetMarginLeft() == 1.25f && root->GetMarginRight() == 15.f, "single-edge float override leaves other edges themed");
+	check(
+		root->GetMarginLeft() == 1.25f && root->GetMarginRight() == 15.f,
+		"single-edge float override leaves other edges themed");
 	root->SetMargins(1.5f, 2.5f, 3.5f, 4.5f);
-	check(root->GetMarginTop() == 2.5f && root->GetMarginBottom() == 4.5f, "four-edge setter preserves float precision");
+	check(
+		root->GetMarginTop() == 2.5f && root->GetMarginBottom() == 4.5f,
+		"four-edge setter preserves float precision");
 	root->RemoveMarginsOverride();
 	check(root->GetMarginLeft() == 5.f && root->GetMarginRight() == 15.f, "removing margin overrides restores Theme");
 	theme->SetConstant("separation", "BoxContainer", -3);
@@ -173,7 +201,9 @@ void VerifyLayout(Ref<FontResource> const& font, Check const& check)
 	check(rows->GetSeparation() == 0.f && root->GetMarginLeft() == 0.f, "negative Theme dimensions clamp to zero");
 	after->SetVisible(false);
 	tree.FlushContainerUpdate();
-	check(Near(rows->GetInternalMinimumSize().y, label->GetCombinedMinimumSize().y), "hidden children reserve no height or gap");
+	check(
+		Near(rows->GetInternalMinimumSize().y, label->GetCombinedMinimumSize().y),
+		"hidden children reserve no height or gap");
 
 	auto* plain = MemNew<Label>();
 	rows->AddNode(plain);
@@ -194,10 +224,11 @@ void VerifyLayout(Ref<FontResource> const& font, Check const& check)
 	check(Near(plain->GetInternalMinimumSize().x, natural), "default configuration restores natural width");
 }
 
-void VerifyRendering(Engine& engine, Ref<FontResource> const& fixture, std::filesystem::path const& project, Check const& check)
+void VerifyRendering(
+	Engine& engine, Ref<FontResource> const& fixture, std::filesystem::path const& project, Check const& check)
 {
 	SceneTree tree;
-	auto* viewport = static_cast<Viewport*>(tree.GetRoot());
+	auto*     viewport = static_cast<Viewport*>(tree.GetRoot());
 	viewport->UpdateResolution(IntVec2(240, 180));
 	auto* canvas = MemNew<Control>();
 	viewport->AddNode(canvas);
@@ -219,7 +250,7 @@ void VerifyRendering(Engine& engine, Ref<FontResource> const& fixture, std::file
 		canvas->AddNode(label);
 	}
 
-	auto icon = CreateRef<TextureResource>();
+	auto icon     = CreateRef<TextureResource>();
 	icon->m_image = CreateRef<Image>();
 	std::vector<uint8_t> pixels(16 * 16 * 4, 0);
 	for (size_t i = 0; i < pixels.size(); i += 4)
@@ -238,7 +269,9 @@ void VerifyRendering(Engine& engine, Ref<FontResource> const& fixture, std::file
 	float const buttonNatural = button->GetInternalMinimumSize().x;
 	button->SetTextOverrunBehavior(TextOverrunBehavior::TrimCharacters);
 	float const buttonMinimum = button->GetInternalMinimumSize().x;
-	check(buttonMinimum < buttonNatural && buttonMinimum >= 16.f + 6.f + 1.f, "button shrink retains icon, spacing and margins");
+	check(
+		buttonMinimum < buttonNatural && buttonMinimum >= 16.f + 6.f + 1.f,
+		"button shrink retains icon, spacing and margins");
 	button->SetCustomMinimumSize(Vector2(60.f, 0.f));
 	check(button->GetCombinedMinimumSize().x >= 60.f, "button keeps its explicit minimum width");
 	button->SetCustomMinimumSize(Vector2::Zero);
@@ -251,8 +284,8 @@ void VerifyRendering(Engine& engine, Ref<FontResource> const& fixture, std::file
 	engine.m_renderServer->Render();
 	engine.EndFrame();
 	auto* texture = engine.m_renderServer->ViewportGetTexture(viewport->GetViewportRID());
-	check(ReadPixel(texture, 39, 48).r == 0 && ReadPixel(texture, 54, 48).r == 0
-		&& ReadPixel(texture, 42, 48).r > 200,
+	check(
+		ReadPixel(texture, 39, 48).r == 0 && ReadPixel(texture, 54, 48).r == 0 && ReadPixel(texture, 42, 48).r > 200,
 		"glyph clipping updates target and source rectangles");
 	check(ReadPixel(texture, 39, 88).r > 200, "trimming without clipping preserves negative glyph bearing");
 	check(ReadPixel(texture, 52, 135).g > 200, "narrow button keeps its icon visible");
@@ -263,8 +296,8 @@ void VerifyRendering(Engine& engine, Ref<FontResource> const& fixture, std::file
 void Preview(Engine& engine)
 {
 	SceneTree tree;
-	auto* viewport = static_cast<Viewport*>(tree.GetRoot());
-	auto theme = CreateRef<Theme>();
+	auto*     viewport = static_cast<Viewport*>(tree.GetRoot());
+	auto      theme    = CreateRef<Theme>();
 	theme->SetDefaultFont(FontResource::CreateDefault());
 	theme->SetDefaultFontSize(18);
 	theme->SetConstant("separation", "BoxContainer", 8);
@@ -310,7 +343,8 @@ void Preview(Engine& engine)
 	}
 
 	addLabel("Wrapped description (following controls track its height)");
-	auto* wrap = addLabel("Ordinary text wraps at word boundaries. ALongUnbrokenFilenameStillWrapsCharacterByCharacter.\n\nExplicit blank lines and indentation remain:\n  Indented text after an explicit newline.");
+	auto* wrap = addLabel(
+		"Ordinary text wraps at word boundaries. ALongUnbrokenFilenameStillWrapsCharacterByCharacter.\n\nExplicit blank lines and indentation remain:\n  Indented text after an explicit newline.");
 	wrap->SetAutowrapMode(AutowrapMode::WordSmart);
 	auto* button = MemNew<Button>();
 	button->SetText("A long button title also reserves its own content margins before adding an ellipsis - end");
@@ -319,16 +353,21 @@ void Preview(Engine& engine)
 	rows->AddNode(button);
 	addLabel("End of content");
 	bool large = false;
-	bool done = false;
-	update->SetPressedCallback([&]()
-	{
-		large = !large;
-		theme->SetDefaultFontSize(large ? 24 : 18);
-		theme->SetConstant("line_spacing", "Label", large ? 5 : 0);
-		theme->SetConstant("separation", "BoxContainer", large ? 12 : 8);
-		theme->SetConstant("margin_left", "MarginContainer", large ? 32 : 20);
-	});
-	close->SetPressedCallback([&]() { done = true; });
+	bool done  = false;
+	update->SetPressedCallback(
+		[&]()
+		{
+			large = !large;
+			theme->SetDefaultFontSize(large ? 24 : 18);
+			theme->SetConstant("line_spacing", "Label", large ? 5 : 0);
+			theme->SetConstant("separation", "BoxContainer", large ? 12 : 8);
+			theme->SetConstant("margin_left", "MarginContainer", large ? 32 : 20);
+		});
+	close->SetPressedCallback(
+		[&]()
+		{
+			done = true;
+		});
 	auto* window = engine.m_windowSystem->GetGLFWWindow();
 	glfwSetWindowTitle(window, "Ming Text Layout Preview");
 	glfwSetWindowSize(window, 760, 800);
@@ -354,24 +393,24 @@ int main(int argc, char** argv)
 		return 2;
 	}
 
-	bool const preview = argc == 3 && std::string(argv[2]) == "--preview";
+	bool const                  preview = argc == 3 && std::string(argv[2]) == "--preview";
 	std::filesystem::path const project = std::filesystem::absolute(argv[1]);
 	std::filesystem::create_directories(project);
 	EngineConfig config;
-	config.m_scriptSystemConfig.m_isEnabled = false;
-	config.m_audioConfig.m_isEnable = false;
-	config.m_networkConfig.m_isEnable = false;
-	config.m_fileSystemConfig.m_resourceRoot = project;
-	config.m_windowConfig.m_appName = "Ming Text Layout Verification";
-	config.m_windowConfig.m_isResizable = true;
+	config.m_scriptSystemConfig.m_isEnabled        = false;
+	config.m_audioConfig.m_isEnable                = false;
+	config.m_networkConfig.m_isEnable              = false;
+	config.m_fileSystemConfig.m_resourceRoot       = project;
+	config.m_windowConfig.m_appName                = "Ming Text Layout Verification";
+	config.m_windowConfig.m_isResizable            = true;
 	config.m_windowConfig.m_isBorderlessFullscreen = false;
 	Engine engine(config);
 	ClassDatabase::Startup();
 	RegisterAllTypes();
 	engine.Startup();
-	int checks = 0;
-	int failures = 0;
-	auto check = [&](bool result, char const* name)
+	int  checks   = 0;
+	int  failures = 0;
+	auto check    = [&](bool result, char const* name)
 	{
 		++checks;
 		if (!result)
@@ -383,15 +422,17 @@ int main(int argc, char** argv)
 		std::fflush(stdout);
 	};
 	{
-		auto font = FontResource::CreateDefault();
-		auto editorFont = FontResource::CreateDefault(true);
+		auto           font       = FontResource::CreateDefault();
+		auto           editorFont = FontResource::CreateDefault(true);
 		TextLine const editorLine = engine.m_textServer->GetTextLine(editorFont->GetFontRID(), "W", 12.f);
 		check(Near(editorLine.m_width, 7.2f), "12 pixel editor em matches the CSS monospace advance");
 		TextLineConfig const legacyMetrics = engine.m_textServer->GetFontMetrics(font->GetFontRID(), 12.f);
-		check(Near(legacyMetrics.m_ascent - legacyMetrics.m_descent, 12.f),
+		check(
+			Near(legacyMetrics.m_ascent - legacyMetrics.m_descent, 12.f),
 			"default font loading preserves the existing pixel height sizing contract");
 		auto fixture = CreateRef<FontResource>();
-		fixture->SetFontRID(engine.m_textServer->CreateFont(std::vector<uint8_t>(std::begin(kTextLayoutFont), std::end(kTextLayoutFont))));
+		fixture->SetFontRID(engine.m_textServer->CreateFont(
+			std::vector<uint8_t>(std::begin(kTextLayoutFont), std::end(kTextLayoutFont))));
 		if (preview)
 		{
 			Preview(engine);
@@ -411,4 +452,3 @@ int main(int argc, char** argv)
 	std::printf("TEXT_LAYOUT checks=%d failures=%d\n", checks, failures);
 	return failures == 0 ? 0 : 1;
 }
-

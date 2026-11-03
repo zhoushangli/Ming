@@ -10,9 +10,9 @@ class MarginContainer : public Container
 private:
 	struct ThemeCache
 	{
-		int margin_left = 0;
-		int margin_top = 0;
-		int margin_right = 0;
+		int margin_left   = 0;
+		int margin_top    = 0;
+		int margin_right  = 0;
 		int margin_bottom = 0;
 	};
 
@@ -42,5 +42,5 @@ private:
 
 private:
 	std::optional<float> m_marginOverrides[4];
-	ThemeCache m_themeCache;
+	ThemeCache           m_themeCache;
 };

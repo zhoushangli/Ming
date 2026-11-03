@@ -33,7 +33,7 @@ std::string ToLower(std::string text)
 
 bool IsReservedWindowsName(std::string const& name)
 {
-	std::string const stem = ToLower(std::filesystem::path(name).stem().string());
+	std::string const stem = ToLower(std::filesystem::u8path(name).stem().u8string());
 	if (stem == "con" || stem == "prn" || stem == "aux" || stem == "nul")
 	{
 		return true;
@@ -50,6 +50,7 @@ void CreateScenePopup::Open(VirtualPath const& parentVirtualPath)
 	m_parentVirtualPath   = parentVirtualPath;
 	m_selectedVirtualPath = {};
 	m_error.clear();
+	m_overwrite      = {};
 	m_sceneName[0]   = '\0';
 	m_rootName[0]    = '\0';
 	m_focusNameInput = true;
@@ -67,48 +68,77 @@ void CreateScenePopup::Render(EditorUIContext& context)
 	if (m_popup == nullptr)
 	{
 		VBoxContainer* content = nullptr;
-		m_popup = EditorPopupUtils::Create(context.m_rootControl, "Create Scene", content);
+		m_popup                = EditorPopupUtils::Create(context.m_rootControl, "Create Scene", content);
 		EditorPopupUtils::AddLabel(content, "Name:");
 		m_nameEdit = MemNew<LineEdit>();
-		content->AddNode(m_nameEdit);
-		m_nameEdit->SetEditingEndedCallback([this](String const&, LineEdit::EditEndReason reason)
-		{
-			if (reason == LineEdit::EditEndReason::Submitted)
+		m_nameEdit->SetTextChangedCallback(
+			[this](String const&)
 			{
-				Confirm();
-			}
-		});
+				m_overwrite = {};
+				m_confirm->SetText("Create");
+			});
+		content->AddNode(m_nameEdit);
+		m_nameEdit->SetEditingEndedCallback(
+			[this](String const&, LineEdit::EditEndReason reason)
+			{
+				if (reason == LineEdit::EditEndReason::Submitted)
+				{
+					Confirm();
+				}
+			});
 		EditorPopupUtils::AddLabel(content, "Root name (empty uses scene name):");
 		m_rootEdit = MemNew<LineEdit>();
 		content->AddNode(m_rootEdit);
-		m_rootEdit->SetEditingEndedCallback([this](String const&, LineEdit::EditEndReason reason)
-		{
-			if (reason == LineEdit::EditEndReason::Submitted)
+		m_rootEdit->SetEditingEndedCallback(
+			[this](String const&, LineEdit::EditEndReason reason)
+			{
+				if (reason == LineEdit::EditEndReason::Submitted)
+				{
+					Confirm();
+				}
+			});
+		m_errorLabel  = EditorPopupUtils::AddLabel(content, "", "EditorErrorLabel");
+		auto* buttons = EditorPopupUtils::AddActions(content);
+		m_confirm     = EditorPopupUtils::AddButton(
+			buttons,
+			"Create",
+			[this]()
 			{
 				Confirm();
-			}
-		});
-		m_errorLabel = EditorPopupUtils::AddLabel(content, "", "EditorErrorLabel");
-		auto* buttons = MemNew<HBoxContainer>();
-		content->AddNode(buttons);
-		EditorPopupUtils::AddButton(buttons, "Create", [this]() { Confirm(); });
-		EditorPopupUtils::AddButton(buttons, "Cancel", [this]() { m_popup->Close(); });
+			});
+		EditorPopupUtils::AddButton(
+			buttons,
+			"Cancel",
+			[this]()
+			{
+				m_popup->Close();
+			});
 	}
 
 	if (m_openRequested)
 	{
 		m_openRequested = false;
+		m_confirm->SetText("Create");
 		m_nameEdit->SetText(m_sceneName);
 		m_rootEdit->SetText(m_rootName);
 		m_errorLabel->SetText("");
-		EditorPopupUtils::Open(m_popup, context.m_rootControl, Vector2(static_cast<float>(context.m_rootControl->GetThemeConstant("project_popup_width", "Editor")), static_cast<float>(context.m_rootControl->GetThemeConstant("create_popup_height", "Editor"))));
+		EditorPopupUtils::Open(
+			m_popup,
+			context.m_rootControl,
+			Vector2(
+				static_cast<float>(context.m_rootControl->GetThemeConstant("project_popup_width", "Editor")),
+				static_cast<float>(context.m_rootControl->GetThemeConstant("create_popup_height", "Editor"))));
 		m_nameEdit->GrabFocus();
 		m_nameEdit->SelectAll();
 	}
 
 	if (m_popup->IsVisible())
 	{
-		EditorPopupUtils::Layout(m_popup, Vector2(static_cast<float>(context.m_rootControl->GetThemeConstant("project_popup_width", "Editor")), static_cast<float>(context.m_rootControl->GetThemeConstant("create_popup_height", "Editor"))));
+		EditorPopupUtils::Layout(
+			m_popup,
+			Vector2(
+				static_cast<float>(context.m_rootControl->GetThemeConstant("project_popup_width", "Editor")),
+				static_cast<float>(context.m_rootControl->GetThemeConstant("create_popup_height", "Editor"))));
 	}
 }
 
@@ -152,7 +182,7 @@ bool CreateScenePopup::ValidateEntryName(char const* name, std::string& outError
 void CreateScenePopup::Confirm()
 {
 	std::string const sceneName = m_nameEdit->GetText().ToUtf8();
-	std::string const rootName = m_rootEdit->GetText().IsEmpty() ? sceneName : m_rootEdit->GetText().ToUtf8();
+	std::string const rootName  = m_rootEdit->GetText().IsEmpty() ? sceneName : m_rootEdit->GetText().ToUtf8();
 	if (!ValidateEntryName(sceneName.c_str(), m_error) || !ValidateEntryName(rootName.c_str(), m_error))
 	{
 		m_errorLabel->SetText(m_error);
@@ -160,19 +190,30 @@ void CreateScenePopup::Confirm()
 	}
 
 	VirtualPath const path = m_parentVirtualPath.Join(sceneName + ".tscn");
-	if (std::filesystem::path(sceneName).has_extension())
+	if (std::filesystem::u8path(sceneName).has_extension())
 	{
 		m_error = "Scene name must not include an extension.";
 	}
-	else if (m_context.m_fileSystem == nullptr || m_context.m_fileSystem->Exists(path))
+	else if (m_context.m_fileSystem == nullptr)
 	{
-		m_error = "FileSystem unavailable or a scene with this name already exists.";
+		m_error = "FileSystem unavailable.";
+	}
+	else if (m_context.m_fileSystem->Exists(path) && m_overwrite != path)
+	{
+		m_overwrite = path;
+		m_error     = "This scene already exists. Press Overwrite to replace it.";
+		m_confirm->SetText("Overwrite");
 	}
 	else if (EditorNode::Get() != nullptr)
 	{
 		m_popup->Close();
-		EditorNode::Get()->RequestCreateScene(path, rootName);
-		m_selectedVirtualPath = path;
+		EditorNode::Get()->RequestCreateScene(
+			path,
+			rootName,
+			[this, path]()
+			{
+				m_selectedVirtualPath = path;
+			});
 		return;
 	}
 

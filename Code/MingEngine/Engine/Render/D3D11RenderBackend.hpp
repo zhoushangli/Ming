@@ -124,7 +124,6 @@ public:
 	void                 UnbindAllShaderResourceViews();
 	void                 BindBackBuffer();
 
-
 	template <typename T>
 	void UpdateConstantBuffer(ConstantBuffer* constantBuffer, const T& data)
 	{

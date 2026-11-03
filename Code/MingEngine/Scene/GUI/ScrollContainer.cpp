@@ -27,8 +27,9 @@ void ScrollContainer::BindMethods()
 
 void ScrollContainer::OnThemeChanged()
 {
-	if (m_dragAxis >= 0 && (m_dragScrollbarWidth != m_themeCache.scrollbar_width
-		|| m_dragMinimumSize != m_themeCache.grabber_minimum_size || m_dragMargin != m_themeCache.grabber_margin))
+	if (m_dragAxis >= 0
+		&& (m_dragScrollbarWidth != m_themeCache.scrollbar_width
+			|| m_dragMinimumSize != m_themeCache.grabber_minimum_size || m_dragMargin != m_themeCache.grabber_margin))
 	{
 		m_dragAxis = -1;
 	}
@@ -46,13 +47,12 @@ AABB2 ScrollContainer::GetTrackRect(int axis) const
 		return AABB2::Zero;
 	}
 
-	return axis == 0 ? AABB2(0.f, m_pageSize.y, length, GetSize().y)
-		: AABB2(m_pageSize.x, 0.f, GetSize().x, length);
+	return axis == 0 ? AABB2(0.f, m_pageSize.y, length, GetSize().y) : AABB2(m_pageSize.x, 0.f, GetSize().x, length);
 }
 
 AABB2 ScrollContainer::GetGrabberRect(int axis) const
 {
-	AABB2 const track = GetTrackRect(axis);
+	AABB2 const track  = GetTrackRect(axis);
 	float const length = axis == 0 ? track.GetWidth() : track.GetHeight();
 	if (track.GetWidth() <= 0.f || track.GetHeight() <= 0.f)
 	{
@@ -61,14 +61,15 @@ AABB2 ScrollContainer::GetGrabberRect(int axis) const
 
 	float const extent = axis == 0 ? m_contentSize.x : m_contentSize.y;
 	float const offset = axis == 0 ? m_horizontalScroll : m_scroll;
-	float const thumb = std::min(length,
+	float const thumb  = std::min(
+		length,
 		std::max(static_cast<float>(std::max(1, m_themeCache.grabber_minimum_size)), length * length / extent));
-	float const top = offset / (extent - length) * (length - thumb);
+	float const top       = offset / (extent - length) * (length - thumb);
 	float const thickness = axis == 0 ? track.GetHeight() : track.GetWidth();
-	float const margin = std::min(static_cast<float>(std::max(0, m_themeCache.grabber_margin)),
-		std::max(0.f, (thickness - 1.f) * 0.5f));
+	float const margin =
+		std::min(static_cast<float>(std::max(0, m_themeCache.grabber_margin)), std::max(0.f, (thickness - 1.f) * 0.5f));
 	return axis == 0 ? AABB2(top, track.m_mins.y + margin, top + thumb, track.m_maxs.y - margin)
-		: AABB2(track.m_mins.x + margin, top, track.m_maxs.x - margin, top + thumb);
+					 : AABB2(track.m_mins.x + margin, top, track.m_maxs.x - margin, top + thumb);
 }
 
 Control* ScrollContainer::GetContent() const
@@ -91,13 +92,13 @@ float ScrollContainer::GetMaximumScroll() const
 
 void ScrollContainer::Arrange()
 {
-	Control*      content    = GetContent();
-	Vector2 const minimum    = content != nullptr ? content->GetCombinedMinimumSize() : Vector2::Zero;
-	Vector2 const previousPage = m_pageSize;
+	Control*      content         = GetContent();
+	Vector2 const minimum         = content != nullptr ? content->GetCombinedMinimumSize() : Vector2::Zero;
+	Vector2 const previousPage    = m_pageSize;
 	Vector2 const previousContent = m_contentSize;
-	float const thickness = static_cast<float>(std::max(0, m_themeCache.scrollbar_width));
-	bool          horizontal = false;
-	bool          vertical   = false;
+	float const   thickness       = static_cast<float>(std::max(0, m_themeCache.scrollbar_width));
+	bool          horizontal      = false;
+	bool          vertical        = false;
 	for (int i = 0; i < 3; ++i)
 	{
 		m_pageSize = Vector2(
@@ -110,10 +111,10 @@ void ScrollContainer::Arrange()
 	m_pageSize = Vector2(
 		std::max(0.f, GetSize().x - (vertical ? thickness : 0.f)),
 		std::max(0.f, GetSize().y - (horizontal ? thickness : 0.f)));
-	m_contentSize      = Vector2(std::max(minimum.x, m_pageSize.x), std::max(minimum.y, m_pageSize.y));
+	m_contentSize = Vector2(std::max(minimum.x, m_pageSize.x), std::max(minimum.y, m_pageSize.y));
 	if (m_pageSize != previousPage || m_contentSize != previousContent)
 	{
-		m_dragAxis = -1;
+		m_dragAxis  = -1;
 		m_hoverAxis = -1;
 	}
 
@@ -251,14 +252,14 @@ bool ScrollContainer::GuiInput(InputEvent const& event)
 			return false;
 		}
 
-		AABB2 const thumb = GetGrabberRect(m_dragAxis);
-		float const top = m_dragAxis == 0 ? thumb.m_mins.x : thumb.m_mins.y;
-		float const size = m_dragAxis == 0 ? thumb.GetWidth() : thumb.GetHeight();
+		AABB2 const thumb    = GetGrabberRect(m_dragAxis);
+		float const top      = m_dragAxis == 0 ? thumb.m_mins.x : thumb.m_mins.y;
+		float const size     = m_dragAxis == 0 ? thumb.GetWidth() : thumb.GetHeight();
 		float const position = m_dragAxis == 0 ? event.m_position.x : event.m_position.y;
-		m_dragOffset = position >= top && position < top + size ? position - top : size * 0.5f;
+		m_dragOffset         = position >= top && position < top + size ? position - top : size * 0.5f;
 		m_dragScrollbarWidth = m_themeCache.scrollbar_width;
-		m_dragMinimumSize = m_themeCache.grabber_minimum_size;
-		m_dragMargin = m_themeCache.grabber_margin;
+		m_dragMinimumSize    = m_themeCache.grabber_minimum_size;
+		m_dragMargin         = m_themeCache.grabber_margin;
 		QueueRedraw();
 	}
 		[[fallthrough]];
@@ -269,13 +270,13 @@ bool ScrollContainer::GuiInput(InputEvent const& event)
 			break;
 		}
 
-		AABB2 const track = GetTrackRect(m_dragAxis);
-		AABB2 const thumb = GetGrabberRect(m_dragAxis);
-		float const length = m_dragAxis == 0 ? track.GetWidth() : track.GetHeight();
-		float const size = m_dragAxis == 0 ? thumb.GetWidth() : thumb.GetHeight();
-		float const extent = m_dragAxis == 0 ? m_contentSize.x : m_contentSize.y;
+		AABB2 const track    = GetTrackRect(m_dragAxis);
+		AABB2 const thumb    = GetGrabberRect(m_dragAxis);
+		float const length   = m_dragAxis == 0 ? track.GetWidth() : track.GetHeight();
+		float const size     = m_dragAxis == 0 ? thumb.GetWidth() : thumb.GetHeight();
+		float const extent   = m_dragAxis == 0 ? m_contentSize.x : m_contentSize.y;
 		float const position = m_dragAxis == 0 ? event.m_position.x : event.m_position.y;
-		float const offset = length > size ? (position - m_dragOffset) / (length - size) * (extent - length) : 0.f;
+		float const offset   = length > size ? (position - m_dragOffset) / (length - size) * (extent - length) : 0.f;
 		if (m_dragAxis == 0)
 		{
 			SetHorizontalScroll(offset);
@@ -305,7 +306,7 @@ void ScrollContainer::OnNotification(int notification)
 		break;
 	case Notification_GuiInputCancelled:
 	case Notification_ExitTree:
-		m_dragAxis = -1;
+		m_dragAxis  = -1;
 		m_hoverAxis = -1;
 		QueueRedraw();
 		break;
@@ -320,8 +321,9 @@ void ScrollContainer::OnNotification(int notification)
 			}
 
 			DrawThemeStyleBox(m_themeCache.track, track);
-			Ref<ThemeStyleBox> const style = m_dragAxis == axis ? m_themeCache.grabber_pressed
-				: (m_hoverAxis == axis ? m_themeCache.grabber_hover : m_themeCache.grabber);
+			Ref<ThemeStyleBox> const style =
+				m_dragAxis == axis ? m_themeCache.grabber_pressed
+								   : (m_hoverAxis == axis ? m_themeCache.grabber_hover : m_themeCache.grabber);
 			DrawThemeStyleBox(style, GetGrabberRect(axis));
 		}
 		break;

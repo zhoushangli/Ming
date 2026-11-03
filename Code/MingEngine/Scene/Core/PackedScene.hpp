@@ -18,11 +18,13 @@ class PackedSceneSaver;
 
 struct PackedProperty
 {
+public:
 	PackedProperty() = default;
 	PackedProperty(String const& name, Variant const& value);
 
 	bool CanApplyTo(PropertyInfo const& propertyInfo) const;
 
+public:
 	String  m_name;
 	Variant m_value;
 };
@@ -43,7 +45,6 @@ struct PackedSceneData
 class PackedScene : public Resource
 {
 	MCLASS(PackedScene, Resource)
-
 	friend class PackedSceneLoader;
 	friend class PackedSceneSaver;
 

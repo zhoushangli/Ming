@@ -13,12 +13,12 @@ public:
 	// Default constructor, uses the system clock as the parent of the new clock.
 	Clock();
 
-	// Constructor to specify a parent clock for the new clock.
-	explicit Clock(Clock& parent);
-
 	// Destructor, unparents ourself and our children to avoid crashes but does not otherwise try
 	// to fix up the clock hierarchy. That is the responsibility of the user of this class.
 	~Clock();
+
+	// Constructor to specify a parent clock for the new clock.
+	explicit Clock(Clock& parent);
 	Clock(const Clock& copy) = delete;
 
 	// Reset all book keeping variables values back to zero and then set the last updated time
@@ -41,8 +41,6 @@ public:
 	double GetTotalSeconds() const;
 	double GetFrameRate() const;
 	int    GetFrameCount() const;
-
-public:
 	// Returns a reference to a static system clock that by default will be the parent of all
 	// other clocks if a parent is not specified.
 	static Clock& GetSystemClock();

@@ -5,12 +5,14 @@
 class AABB3
 {
 public:
-	AABB3()                  = default;
-	AABB3(const AABB3& copy) = default;
-	~AABB3()                 = default;
+	AABB3()  = default;
+	~AABB3() = default;
 
 	explicit AABB3(const Vector3& mins, const Vector3& maxs);
 	explicit AABB3(float minX, float minY, float minZ, float maxX, float maxY, float maxZ);
+
+	AABB3(const AABB3& copy) = default;
+	AABB3& operator=(const AABB3& other);
 
 	bool          IsPointInside(const Vector3& point) const;
 	Vector3 const GetCenter() const;
@@ -24,8 +26,7 @@ public:
 	void SetDimensions(const Vector3& newDimensions);
 	void StretchToIncludePoint(const Vector3& point);
 
-	bool   operator==(const AABB3& other) const;
-	AABB3& operator=(const AABB3& other);
+	bool operator==(const AABB3& other) const;
 
 public:
 	Vector3 m_mins;

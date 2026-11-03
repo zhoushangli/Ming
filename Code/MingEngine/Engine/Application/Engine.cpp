@@ -48,7 +48,6 @@ Engine::Engine(EngineConfig config) : m_config(config)
 		m_audioSystem = MemNew<AudioSystem>(config.m_audioConfig);
 	}
 
-
 	if (config.m_networkConfig.m_isEnable)
 	{
 		m_networkSystem = MemNew<NetworkSystem>(config.m_networkConfig);
@@ -57,7 +56,6 @@ Engine::Engine(EngineConfig config) : m_config(config)
 
 Engine::~Engine()
 {
-
 	MemDelete(m_audioSystem);
 	m_audioSystem = nullptr;
 
@@ -113,7 +111,6 @@ void Engine::Startup()
 		m_scriptSystem->Startup();
 	}
 
-
 	if (m_inputSystem != nullptr)
 	{
 		m_inputSystem->Startup();
@@ -146,7 +143,6 @@ void Engine::Shutdown()
 	{
 		m_inputSystem->Shutdown();
 	}
-
 
 	if (m_renderServer != nullptr)
 	{
@@ -196,7 +192,6 @@ void Engine::BeginFrame()
 		m_scriptSystem->BeginFrame();
 	}
 
-
 	if (m_renderServer != nullptr)
 	{
 		m_renderServer->BeginFrame();
@@ -224,7 +219,6 @@ void Engine::EndFrame()
 	{
 		m_networkSystem->EndFrame();
 	}
-
 
 	if (m_renderServer != nullptr)
 	{

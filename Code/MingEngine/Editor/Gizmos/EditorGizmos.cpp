@@ -110,3 +110,44 @@ bool EditorGizmos::IsDragging() const
 {
 	return m_transformGizmo != nullptr && m_transformGizmo->IsDragging();
 }
+
+void EditorGizmos::CancelDrag()
+{
+	m_transformGizmo->CancelDrag();
+}
+
+void EditorGizmos::ClearHover()
+{
+	if (!IsDragging())
+	{
+		m_transformGizmo->ClearHover();
+	}
+}
+
+void EditorGizmos::SetTool(GizmoTool tool)
+{
+	if (!IsDragging())
+	{
+		m_tool = tool;
+		ClearHover();
+	}
+}
+
+void EditorGizmos::SetLocal(bool local)
+{
+	if (!IsDragging())
+	{
+		m_local = local;
+		ClearHover();
+	}
+}
+
+void EditorGizmos::SetGridVisible(bool visible)
+{
+	m_worldGrid->SetVisible(visible);
+}
+
+bool EditorGizmos::IsGridVisible() const
+{
+	return m_worldGrid->GetVisible();
+}

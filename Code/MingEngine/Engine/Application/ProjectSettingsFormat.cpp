@@ -35,20 +35,12 @@ Ref<Resource> ProjectSettingsLoader::Load(VirtualPath const& virtualPath)
 		return Ref<Resource>();
 	}
 
-	Json const root = Json::parse(text, nullptr, false);
-	if (root.is_discarded() || !root.is_object() || !root.contains("type") || !root["type"].is_string()
-		|| root["type"].get<std::string>() != "ProjectSettings" || !root.contains("version")
-		|| !root["version"].is_number_unsigned() || root["version"].get<uint32_t>() != kProjectSettingsVersion
-		|| !root.contains("start_scene_path") || !root["start_scene_path"].is_string())
+	std::string          error;
+	Ref<ProjectSettings> settings = ProjectSettings::Parse(text, error);
+	if (!settings.IsValid())
 	{
-		return Ref<Resource>();
-	}
-
-	Ref<ProjectSettings> settings       = CreateRef<ProjectSettings>();
-	std::string const    startScenePath = root["start_scene_path"].get<std::string>();
-	if (!startScenePath.empty() && !VirtualPath::TryParse(startScenePath, settings->m_startScenePath))
-	{
-		return Ref<Resource>();
+		ERR_PRINT(error);
+		return {};
 	}
 
 	settings->SetVirtualPath(virtualPath);

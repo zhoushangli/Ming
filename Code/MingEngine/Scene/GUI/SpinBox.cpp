@@ -110,8 +110,9 @@ std::string SpinBox::FormatValue(Variant const& value)
 		return std::to_string(value.As<int>());
 	}
 
-	char buffer[64];
-	auto const result = std::to_chars(std::begin(buffer), std::end(buffer), value.As<float>(), std::chars_format::general);
+	char       buffer[64];
+	auto const result =
+		std::to_chars(std::begin(buffer), std::end(buffer), value.As<float>(), std::chars_format::general);
 	return result.ec == std::errc() ? std::string(buffer, result.ptr) : std::string();
 }
 

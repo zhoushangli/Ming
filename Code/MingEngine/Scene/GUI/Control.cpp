@@ -61,13 +61,13 @@ void Control::SetDragPreview(Control* preview)
 }
 
 void Control::SetDragCallbacks(
-	std::function<bool(Vector2 const&, GuiDragData&)> source,
+	std::function<bool(Vector2 const&, GuiDragData&)>       source,
 	std::function<bool(Vector2 const&, GuiDragData const&)> check,
 	std::function<void(Vector2 const&, GuiDragData const&)> drop)
 {
 	m_dragSource = std::move(source);
-	m_dropCheck = std::move(check);
-	m_drop = std::move(drop);
+	m_dropCheck  = std::move(check);
+	m_drop       = std::move(drop);
 }
 
 void Control::SetDragHoverCallback(std::function<void(Vector2 const&, GuiDragData const&, bool)> callback)
@@ -343,10 +343,10 @@ void Control::RebuildThemeSubscriptions()
 		}
 	};
 
-	Node const* contextNode = this;
+	Node const*        contextNode = this;
 	std::set<ObjectID> visited;
 	for (Control const* current = this; current != nullptr && visited.insert(current->GetObjectID()).second;
-		 current = current->GetThemeParent())
+		 current                = current->GetThemeParent())
 	{
 		add(current->m_theme);
 		if (Control* source = current->GetThemeSource())
@@ -445,11 +445,16 @@ void Control::RefreshTheme()
 		ThemeDatabase::UpdateClassInstanceItems(this);
 		// 2) Apply derived state only after every inherited cache has been populated.
 		OnThemeChanged();
+		auto callbacks = m_themeChangedCallbacks;
+		for (auto const& callback : callbacks)
+		{
+			callback();
+		}
 		PropagateMinimumSizeChanged();
 		QueueRedraw();
 	}
 
-	m_refreshingTheme = false;
+	m_refreshingTheme     = false;
 	auto const dependents = m_themeDependents;
 	for (ObjectID id : dependents)
 	{
@@ -457,6 +462,15 @@ void Control::RefreshTheme()
 		{
 			dependent->RefreshThemeBranch();
 		}
+	}
+}
+
+void Control::AddThemeChangedCallback(std::function<void()> callback)
+{
+	if (callback)
+	{
+		m_themeChangedCallbacks.push_back(callback);
+		callback();
 	}
 }
 

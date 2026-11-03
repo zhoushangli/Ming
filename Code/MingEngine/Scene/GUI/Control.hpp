@@ -72,7 +72,7 @@ public:
 	virtual bool IsPointInside(Vector2 const& localPosition) const;
 	// If GuiInput returns true
 	// it means the event is consumed and should not propagate to other controls.
-	virtual bool GuiInput(InputEvent const& event);
+	virtual bool        GuiInput(InputEvent const& event);
 	virtual CursorShape GetCursorShape(Vector2 const& localPosition) const;
 
 	virtual bool GetDragData(Vector2 const& position, GuiDragData& data);
@@ -82,12 +82,12 @@ public:
 
 	void SetDragPreview(Control* preview);
 	void SetDragCallbacks(
-		std::function<bool(Vector2 const&, GuiDragData&)> source,
+		std::function<bool(Vector2 const&, GuiDragData&)>       source,
 		std::function<bool(Vector2 const&, GuiDragData const&)> check,
 		std::function<void(Vector2 const&, GuiDragData const&)> drop);
 	void SetDragHoverCallback(std::function<void(Vector2 const&, GuiDragData const&, bool)> callback);
 
-	Ref<Theme> GetTheme() const { return m_theme; }
+	Ref<Theme>         GetTheme() const { return m_theme; }
 	std::string const& GetThemeTypeVariation() const { return m_themeTypeVariation; }
 	void               SetTheme(Ref<Theme> const& theme);
 	void               SetThemeTypeVariation(std::string const& variation);
@@ -95,11 +95,12 @@ public:
 	// Borrow a detached control's theme ancestry without inheriting its overrides or variation.
 	// e.g. A viewport popup uses its triggering OptionButton as its theme source.
 	Control* GetThemeSource() const;
-	bool SetThemeSource(Control* source);
+	bool     SetThemeSource(Control* source);
 
 	// Refresh parsed values, not the source Theme; setters and subscriptions call this automatically.
 	// e.g. Editing a shared ThemeStyleBox updates cache, minimum size and drawing on its subscribed controls.
 	void RefreshTheme();
+	void AddThemeChangedCallback(std::function<void()> callback);
 
 	Color GetThemeColor(std::string const& name, std::string const& type = {}) const;
 	void  AddThemeColorOverride(std::string const& name, Color const& value);
@@ -197,28 +198,29 @@ public:
 protected:
 	virtual void OnThemeChanged() {}
 	virtual void OnThemeSourceLost() {}
-	void DrawThemeStyleBox(Ref<ThemeStyleBox> const& box, AABB2 const& rect);
+	void         DrawThemeStyleBox(Ref<ThemeStyleBox> const& box, AABB2 const& rect);
 
 	void OnNotification(int notification);
 
 private:
-	void RefreshThemeBranch();
-	void ReleaseThemeDependents();
-	Control const* GetThemeParent() const;
-	void ReleaseThemeSubscriptions();
-	void RebuildThemeSubscriptions();
+	void                     RefreshThemeBranch();
+	void                     ReleaseThemeDependents();
+	Control const*           GetThemeParent() const;
+	void                     ReleaseThemeSubscriptions();
+	void                     RebuildThemeSubscriptions();
 	std::vector<std::string> GetThemeTypes(std::string const& type) const;
-	void SetSize(Vector2 const& size);
+	void                     SetSize(Vector2 const& size);
 
 private:
-	ObjectID m_themeSource = ObjectID::Invalid;
-	std::set<ObjectID> m_themeDependents;
-	Ref<Theme>              m_theme;
-	std::string             m_themeTypeVariation;
-	std::vector<Ref<Theme>> m_themeSubscriptions;
-	bool                    m_themeInitialized    = false;
-	bool                    m_refreshingTheme     = false;
-	bool                    m_pendingThemeRefresh = false;
+	ObjectID                           m_themeSource = ObjectID::Invalid;
+	std::vector<std::function<void()>> m_themeChangedCallbacks;
+	std::set<ObjectID>                 m_themeDependents;
+	Ref<Theme>                         m_theme;
+	std::string                        m_themeTypeVariation;
+	std::vector<Ref<Theme>>            m_themeSubscriptions;
+	bool                               m_themeInitialized    = false;
+	bool                               m_refreshingTheme     = false;
+	bool                               m_pendingThemeRefresh = false;
 
 	std::map<std::string, Color>                m_colorOverrides;
 	std::map<std::string, int>                  m_constantOverrides;

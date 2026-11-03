@@ -43,14 +43,15 @@ public:
 	static Ref<Resource> Reload(VirtualPath const& virtualPath);
 
 private:
+	// Raw loading path shared by Load() and LoadUncached().
+	// 1) Resolve import chain
+	// 2) Iterate registered loaders and call loader->Load(path)
+	static Ref<Resource> LoadInternal(VirtualPath const& virtualPath);
+
+private:
 	static constexpr int MaxLoaders = 64;
 
 	static int                                            s_loaderCount;
 	static Ref<ResourceFormatLoader>                      s_loader[MaxLoaders];
 	static std::unordered_map<VirtualPath, Ref<Resource>> s_loadedResources;
-
-	// Raw loading path shared by Load() and LoadUncached().
-	// 1) Resolve import chain
-	// 2) Iterate registered loaders and call loader->Load(path)
-	static Ref<Resource> LoadInternal(VirtualPath const& virtualPath);
 };
