@@ -238,7 +238,7 @@ Variant Object::GetScript() const
 {
 	if (!m_scriptInstance)
 	{
-		return Variant();
+		return Variant(static_cast<Object*>(nullptr));
 	}
 
 	return Variant(this->m_scriptInstance->GetScript().Get());
@@ -250,32 +250,38 @@ void Object::SetScript(Variant const& script)
 		g_engine->m_scriptSystem->IsScriptExecutionSuspended(),
 		"Cannot replace a script while reload is incomplete.\n");
 
-	if (m_scriptInstance)
+	Ref<Script> scriptRef = script;
+	if (dynamic_cast<CSharpScript*>(scriptRef.Get()) != nullptr && !g_engine->IsEditorMode())
+	{
+		std::string const base = g_engine->m_scriptSystem->GetScriptNativeBase(scriptRef->GetVirtualPath());
+		ERR_FAIL_COND_MSG(base.empty() || !ClassDatabase::IsSubclassOf(GetClassName(), base),
+			"Script is missing a registered type or has an incompatible native base: " + scriptRef->GetVirtualPath().GetString());
+	}
+
+	if (!scriptRef.IsValid())
 	{
 		SetScriptInstance(nullptr);
+		return;
 	}
 
-	Ref<Script> scriptRef = script;
-
-	// e.g. When we clear the script, we will call like SetScript(Variant())
-	if (scriptRef.IsValid())
+	ScriptInstance* previous = std::exchange(m_scriptInstance, nullptr);
+	bool const created = g_engine->IsEditorMode() ? scriptRef->InstantiatePlaceHolder(this) : scriptRef->Instantiate(this);
+	if (!created)
 	{
-		bool result;
-		if (g_engine->IsEditorMode())
-		{
-			result = scriptRef->InstantiatePlaceHolder(this);
-		}
-		else
-		{
-			result = scriptRef->Instantiate(this);
-		}
-
-		if (!result)
-		{
-			ERR_PRINT(Stringf("Failed to instantiate script for Object %s\n", GetClassName().c_str()));
-			SetScriptInstance(nullptr);
-		}
+		SetScriptInstance(nullptr);
+		m_scriptInstance = previous;
+		ERR_PRINT("Failed to instantiate script " + scriptRef->GetVirtualPath().GetString() + " for " + GetClassName());
 	}
+	else
+	{
+		MemDelete(previous);
+	}
+
+	if (dynamic_cast<CSharpInstance*>(m_scriptInstance) != nullptr)
+	{
+		g_engine->m_scriptSystem->RegisterScriptOwner(GetObjectID());
+	}
+
 }
 
 void Object::SetScriptInstance(ScriptInstance* instance)

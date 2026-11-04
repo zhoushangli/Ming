@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<class name="Container">
+  <brief_description>Base class for controls that arrange child controls.</brief_description>
+</class>

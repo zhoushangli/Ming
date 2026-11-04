@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<class name="MeshResourceLoader">
+  <brief_description>Engine loader for mesh resources from .mesh files.</brief_description>
+</class>

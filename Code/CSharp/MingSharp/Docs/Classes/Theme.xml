@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<class name="Theme">
+  <brief_description>Stores the colors, fonts, icons, sizes, and styles used by controls.</brief_description>
+</class>

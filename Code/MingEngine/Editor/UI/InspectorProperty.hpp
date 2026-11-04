@@ -27,6 +27,7 @@ public:
 	Variant::Type             GetType() const { return m_info.m_type; }
 	std::string               GetDisplayName() const;
 	void                      SetValueReader(std::function<Variant()> reader) { m_reader = std::move(reader); }
+	void                      SetEditedObject(ObjectID id) { m_editedObject = id; }
 	void                      UpdateValue(Variant const& value);
 	void                      SetRevertValue(Variant const& value);
 	void                      EndEditing(LineEdit::EditEndReason reason = LineEdit::EditEndReason::Interrupted);
@@ -41,6 +42,8 @@ protected:
 	void           BuildNumeric();
 	void           BuildComponents();
 	void           BuildText(bool resource = false);
+	void           BuildScript();
+	void           ShowScriptMenu();
 	void           BuildBool();
 	void           BuildEnum();
 	void           EmitValueChanged(Variant const& value);
@@ -69,4 +72,10 @@ protected:
 	OptionButton*            m_options = nullptr;
 	ColorRect*               m_color   = nullptr;
 	std::vector<SpinBox*>    m_spins;
+	ObjectID m_editedObject = ObjectID::Invalid;
+	Button* m_resourceButton = nullptr;
+	Button* m_resourceMenu = nullptr;
+	ObjectID m_tooltipID = ObjectID::Invalid;
+	Label* m_resourceHint = nullptr;
+	bool m_dropHighlighted = false;
 };

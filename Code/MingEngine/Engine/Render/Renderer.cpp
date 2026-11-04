@@ -348,6 +348,9 @@ void Renderer::CopyTextureToBackBuffer(GPUTexture* colorTexture)
 		return;
 	}
 
+	m_renderBackend->SetBlendMode(BlendMode::OPAQUE);
+	m_renderBackend->SetRasterizerMode(RasterizerMode::SOLID_CULL_NONE);
+	m_renderBackend->SetDepthMode(DepthMode::DISABLED);
 	m_renderBackend->BindBackBuffer();
 	m_renderBackend->BindPostProcessInputs(colorTexture, m_defaultWhiteTexture, m_defaultNormalTexture);
 	Shader* copyShader =

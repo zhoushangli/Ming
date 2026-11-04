@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<class name="SceneTree">
+  <brief_description>Manages the root node, current scene, and scene updates.</brief_description>
+  <description>Scene changes and queued node deletion are applied when the engine processes pending changes.</description>
+  <methods>
+    <method name="GetRoot">
+      <description>Gets the root viewport node owned by this scene tree.</description>
+      <returns>The root node. The current scene is a child below a scene viewport, not the root itself.</returns>
+    </method>
+    <method name="GetScene">
+      <description>Gets the root node of the current scene.</description>
+      <returns>The current scene root, or null if no current scene is in this tree.</returns>
+    </method>
+    <method name="ClearScene">
+      <description>Queues the current scene and its child nodes for deletion. Does nothing if there is no current scene. Deletion happens when the engine processes pending changes.</description>
+    </method>
+    <method name="ChangeScene">
+      <description>Queues a new current scene and queues the old scene for deletion. The change takes effect when the engine processes pending changes.</description>
+      <param name="newSceneNode">The new scene root, normally created by PackedScene.Instantiate. Pass null to clear the current scene.</param>
+    </method>
+    <method name="GetWorldCamera">
+      <description>Gets the current camera of the scene viewport.</description>
+      <returns>The current 3D camera, or null if no camera is set.</returns>
+    </method>
+    <method name="GetRaycastSpace">
+      <description>Gets the raycast space owned by this scene tree.</description>
+      <returns>The raycast space. Its ray query methods are not exposed to C# yet.</returns>
+    </method>
+    <method name="GetDeltaSeconds">
+      <description>Gets the time step from the most recent scene update.</description>
+      <returns>The update time in seconds. This is the same time step passed to Node.OnProcess.</returns>
+    </method>
+  </methods>
+</class>

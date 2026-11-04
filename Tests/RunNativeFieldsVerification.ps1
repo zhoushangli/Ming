@@ -1,4 +1,4 @@
-param([switch]$SkipBuild, [ValidateSet("NativeFieldsVerification", "NativeEditorStartupVerification", "TextLayoutVerification", "EditorUIVerification", "EditorWorkflowVerification")][string]$Suite = "NativeFieldsVerification", [switch]$Preview)
+param([switch]$SkipBuild, [ValidateSet("NativeFieldsVerification", "NativeEditorStartupVerification", "TextLayoutVerification", "EditorUIVerification", "EditorWorkflowVerification", "RenderCompositionVerification", "CSharpWorkflowVerification")][string]$Suite = "NativeFieldsVerification", [switch]$Preview)
 
 $ErrorActionPreference = 'Stop'
 if ($Preview -and $Suite -notin @('TextLayoutVerification', 'EditorUIVerification'))
@@ -64,6 +64,12 @@ try
                 throw ('Native startup verification failed: ' + $mode)
             }
         }
+    }
+    elseif ($Suite -eq 'CSharpWorkflowVerification')
+    {
+        New-Item -ItemType Directory -Force -Path (Join-Path $outputDirectory 'MingSharp') | Out-Null
+        Copy-Item -Path (Join-Path $repoRoot 'Run\MingSharp\*') -Destination (Join-Path $outputDirectory 'MingSharp') -Recurse -Force
+        & (Join-Path $outputDirectory ($Suite + '.exe')) (Join-Path $outputDirectory 'Project')
     }
     elseif ($Preview)
     {

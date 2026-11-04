@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<class name="TextureResourceLoader">
+  <brief_description>Engine loader for texture resources from .tex files.</brief_description>
+</class>

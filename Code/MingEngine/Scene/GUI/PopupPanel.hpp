@@ -35,6 +35,7 @@ protected:
 
 private:
 	ObjectID                               m_owner         = ObjectID::Invalid;
+	ObjectID                               m_parentPopup   = ObjectID::Invalid;
 	ObjectID                               m_previousFocus = ObjectID::Invalid;
 	bool                                   m_modal         = false;
 	std::function<void(InputEvent const&)> m_keyCallback;

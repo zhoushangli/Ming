@@ -72,6 +72,7 @@ bool EditorUI::HandleInput(InputEvent const& event)
 		}
 	}
 
+	HandleMenuPointer(event);
 	root->ProcessInputEvent(event);
 	UpdateNativeDocking();
 	root->UpdateGuiDrag(root->GetGuiDragPosition());

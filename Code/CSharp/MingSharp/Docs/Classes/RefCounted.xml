@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<class name="RefCounted">
+  <brief_description>Base class for engine objects with a native reference count.</brief_description>
+  <description>Resource classes inherit this class. The reference count belongs to the native object.</description>
+</class>

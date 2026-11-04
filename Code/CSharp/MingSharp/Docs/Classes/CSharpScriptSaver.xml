@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<class name="CSharpScriptSaver">
+  <brief_description>Engine save handler for C# script resources.</brief_description>
+  <description>The save step currently returns success without writing the source file.</description>
+</class>

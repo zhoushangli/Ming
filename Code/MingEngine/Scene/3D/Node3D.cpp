@@ -37,6 +37,8 @@ void Node3D::BindMethods()
 		"SetLocalTransform",
 		"GetLocalTransform");
 
+	ADD_GROUP("Transform");
+
 	ADD_PROPERTY(
 		PropertyInfo(
 			Variant::Type::Vector3,

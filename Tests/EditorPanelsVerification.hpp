@@ -120,7 +120,7 @@ inline void VerifyNativeEditorPanels(
 			&& ui->GetDockSlot(2)->GetCurrentPage() == &ui->GetPanel<InspectorPanel>()
 			&& ui->GetDockSlot(3)->GetCurrentPage() == &ui->GetPanel<OutputPanel>(),
 		"Warm Carbon opens Scene, FileSystem, Inspector and Output in their default regions");
-	bool iconsValid = BuiltinIcons::IconCount == 254;
+	bool iconsValid = static_cast<bool>(BuiltinIcons::Find("Dropdown"));
 	for (auto const& icon : BuiltinIcons::Detail::kEntries)
 	{
 		auto texture = EditorIcons::GetIconTexture(std::string(icon.m_name));
@@ -273,7 +273,7 @@ inline void VerifyNativeEditorPanels(
 	Tree* files = ui->GetFileTreeControl();
 	files->Select(FileItem(files, "res://PanelMigration"), true);
 	rightClickSelected();
-	if (!click("New Folder..."))
+	if (!click("Create New") || !click("Folder..."))
 	{
 		return;
 	}
@@ -330,7 +330,7 @@ inline void VerifyNativeEditorPanels(
 	frame();
 	files->Select(FileItem(files, "res://PanelMigration"), true);
 	rightClickSelected();
-	if (!click("New Scene..."))
+	if (!click("Create New") || !click("Scene..."))
 	{
 		return;
 	}

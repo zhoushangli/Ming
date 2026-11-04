@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<class name="TextureResource">
+  <brief_description>Holds image data and the texture used for rendering.</brief_description>
+</class>

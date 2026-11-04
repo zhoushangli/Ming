@@ -1,5 +1,7 @@
 #include "MingEngine/Engine/Script/CSharpScriptFormat.hpp"
 #include "MingEngine/Engine/Script/CSharpScript.hpp"
+#include "MingEngine/Engine/Application/Engine.hpp"
+#include "MingEngine/Engine/File/FileSystem.hpp"
 
 std::vector<std::string> CSharpScriptLoader::GetSupportedExtensions() const
 {
@@ -8,6 +10,11 @@ std::vector<std::string> CSharpScriptLoader::GetSupportedExtensions() const
 
 Ref<Resource> CSharpScriptLoader::Load(VirtualPath const& virtualPath)
 {
+	if (g_engine == nullptr || !g_engine->m_fileSystem->Exists(virtualPath))
+	{
+		return {};
+	}
+
 	Ref<CSharpScript> script = CreateRef<CSharpScript>();
 	script->SetVirtualPath(virtualPath);
 	return script;

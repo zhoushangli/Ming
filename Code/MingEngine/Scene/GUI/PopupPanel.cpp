@@ -15,9 +15,17 @@ void PopupPanel::Open(Control* owner)
 		return;
 	}
 
+	m_parentPopup = ObjectID::Invalid;
 	if (auto* previous = dynamic_cast<PopupPanel*>(GetViewport()->GetGuiPopup()))
 	{
-		previous->Close(false);
+		if (previous->IsAncestorOf(owner))
+		{
+			m_parentPopup = previous->GetObjectID();
+		}
+		else
+		{
+			previous->Close(false);
+		}
 	}
 
 	if (!SetThemeSource(owner))
@@ -28,6 +36,12 @@ void PopupPanel::Open(Control* owner)
 	m_owner         = owner->GetObjectID();
 	Control* focus  = GetViewport()->GetGuiFocus();
 	m_previousFocus = focus != nullptr ? focus->GetObjectID() : m_owner;
+	if (focus != nullptr && focus->GetObjectID() == m_parentPopup)
+	{
+		m_previousFocus = m_owner;
+		GetViewport()->SetGuiFocus(nullptr);
+	}
+
 	GetViewport()->CancelGuiInteraction(GetViewport());
 	UpdateSize(Vector2(GetViewport()->GetOutputResolution()));
 	SetVisible(true);
@@ -37,10 +51,20 @@ void PopupPanel::Open(Control* owner)
 
 void PopupPanel::Close(bool restoreFocus)
 {
+	if (GetViewport() != nullptr)
+	{
+		auto* child = dynamic_cast<PopupPanel*>(GetViewport()->GetGuiPopup());
+		if (child != nullptr && child != this && child->m_parentPopup == GetObjectID())
+		{
+			child->Close(false);
+		}
+	}
+
 	bool const wasVisible = IsVisible();
 	if (GetViewport() != nullptr && GetViewport()->GetGuiPopup() == this)
 	{
-		GetViewport()->SetGuiPopup(nullptr);
+		auto* parent = ObjectDatabase::GetInstance<PopupPanel>(m_parentPopup);
+		GetViewport()->SetGuiPopup(parent != nullptr && parent->IsVisibleInHierarchy() ? parent : nullptr);
 	}
 
 	SetVisible(false);

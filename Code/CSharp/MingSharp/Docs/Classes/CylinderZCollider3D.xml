@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<class name="CylinderZCollider3D">
+  <brief_description>A 3D cylinder collision shape aligned with the local Z axis.</brief_description>
+</class>

@@ -223,14 +223,18 @@ void D3D11RenderBackend::Startup()
 	hr = m_d3dDevice->CreateBlendState(&blendDesc, &m_blendStates[(int)(BlendMode::OPAQUE)]);
 
 	// ALPHA
-	blendDesc.RenderTarget[0].SrcBlend  = D3D11_BLEND_SRC_ALPHA;
-	blendDesc.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
+	blendDesc.RenderTarget[0].SrcBlend       = D3D11_BLEND_SRC_ALPHA;
+	blendDesc.RenderTarget[0].DestBlend      = D3D11_BLEND_INV_SRC_ALPHA;
+	blendDesc.RenderTarget[0].SrcBlendAlpha  = D3D11_BLEND_ONE;
+	blendDesc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_INV_SRC_ALPHA;
 
 	hr = m_d3dDevice->CreateBlendState(&blendDesc, &m_blendStates[(int)(BlendMode::ALPHA)]);
 
 	// ADDITIVE
-	blendDesc.RenderTarget[0].SrcBlend  = D3D11_BLEND_SRC_ALPHA;
-	blendDesc.RenderTarget[0].DestBlend = D3D11_BLEND_ONE;
+	blendDesc.RenderTarget[0].SrcBlend       = D3D11_BLEND_SRC_ALPHA;
+	blendDesc.RenderTarget[0].DestBlend      = D3D11_BLEND_ONE;
+	blendDesc.RenderTarget[0].SrcBlendAlpha  = D3D11_BLEND_ONE;
+	blendDesc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ZERO;
 
 	hr = m_d3dDevice->CreateBlendState(&blendDesc, &m_blendStates[(int)(BlendMode::ADDITIVE)]);
 

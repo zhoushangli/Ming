@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<class name="Node">
+  <brief_description>A node that can have a parent and child nodes.</brief_description>
+  <description>Nodes form the scene tree. Override the callbacks to run script code when a node enters, leaves, or updates in the tree.</description>
+  <methods>
+    <method name="SetName">
+      <description>Sets the node name. If a sibling already uses the name, a number is added to make it unique.</description>
+      <param name="name">The new name. An empty name uses the engine class name.</param>
+    </method>
+    <method name="GetName">
+      <description>Gets the node name.</description>
+      <returns>The current name.</returns>
+    </method>
+    <method name="SetSerializable">
+      <description>Sets whether this node and its child nodes can be saved in a packed scene.</description>
+      <param name="isSerializable">True to allow saving this branch of the scene.</param>
+    </method>
+    <method name="GetSerializable">
+      <description>Checks whether this node can be saved in a packed scene.</description>
+      <returns>True if this node allows saving. A parent that blocks saving also blocks this node.</returns>
+    </method>
+    <method name="SetReady">
+      <description>Sets whether OnReady is pending. This does not call OnReady right away. A pending call runs the next time this node goes through the ready step.</description>
+      <param name="isReady">True to request another ready call, or false to clear the pending call.</param>
+    </method>
+    <method name="GetReady">
+      <description>Checks whether an OnReady call is still pending.</description>
+      <returns>True if the ready call is pending. This does not mean the node is already ready.</returns>
+    </method>
+    <method name="SetProcess">
+      <description>Turns OnProcess calls on or off. The ready step turns processing on.</description>
+      <param name="isProcess">True to receive frame updates, or false to stop them.</param>
+    </method>
+    <method name="GetProcess">
+      <description>Checks whether frame updates are enabled for this node.</description>
+      <returns>True if processing is enabled. The node must also be in a scene tree to receive updates.</returns>
+    </method>
+    <method name="GetRoot">
+      <description>Follows the parent links to find the top node.</description>
+      <returns>The top node, or this node if it has no parent.</returns>
+    </method>
+    <method name="GetParent">
+      <description>Gets the direct parent of this node.</description>
+      <returns>The parent node, or null if this node has no parent.</returns>
+    </method>
+    <method name="FindChildByName">
+      <description>Finds a child by name. Searches each child and its child nodes in order. Does not check this node.</description>
+      <param name="name">The name to find.</param>
+      <returns>The first matching node, or null if no node matches.</returns>
+    </method>
+    <method name="GetSceneTree">
+      <description>Gets the scene tree that contains this node.</description>
+      <returns>The scene tree, or null if this node is outside a tree.</returns>
+    </method>
+    <method name="AddNode">
+      <description>Adds a child node. Moves it from its old parent if needed. If this node is in a scene tree, the child enters the same tree. Moving between different scene trees is not supported.</description>
+      <param name="child">The node to add. A null node, this node, or an ancestor is ignored.</param>
+    </method>
+    <method name="MoveChild">
+      <description>Changes the order of a direct child. Does nothing if the node is not a child of this node.</description>
+      <param name="child">The child to move.</param>
+      <param name="index">The new position, starting at zero. Values outside the child list are moved to the nearest end.</param>
+    </method>
+    <method name="QueueFree">
+      <description>Queues this node and its child nodes for deletion by the scene tree. If this node is outside a tree, it is deleted right away. Do not use the node after calling this method.</description>
+    </method>
+    <method name="Reparent">
+      <description>Moves this node to a new parent. The new parent must be a valid node. Moving between different scene trees is not supported.</description>
+      <param name="newParent">The new parent. It must not be this node or one of its child nodes.</param>
+      <param name="keepWorldTransform">True to keep the world transform when this node is a Node3D. Has no effect on a plain Node.</param>
+    </method>
+    <method name="OnEnterTree">
+      <description>Called each time this node enters a scene tree, before its child nodes enter.</description>
+    </method>
+    <method name="OnExitTree">
+      <description>Called when this node leaves a scene tree, after its child nodes leave.</description>
+    </method>
+    <method name="OnReady">
+      <description>Called after this node and its child nodes enter the scene tree. Child nodes become ready first. Runs once unless SetReady requests another call.</description>
+    </method>
+    <method name="OnProcess">
+      <description>Called each frame while this node is in a scene tree and processing is enabled.</description>
+      <param name="deltaSeconds">The time since the last frame, in seconds.</param>
+    </method>
+  </methods>
+</class>

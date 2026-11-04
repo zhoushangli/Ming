@@ -14,6 +14,7 @@
 #include "MingEngine/Scene/GUI/PanelContainer.hpp"
 #include "MingEngine/Scene/GUI/OptionButton.hpp"
 #include "MingEngine/Scene/GUI/MarginContainer.hpp"
+#include "MingEngine/Scene/GUI/ScrollContainer.hpp"
 
 #include "MingEngine/Scene/GUI/TextureRect.hpp"
 #include <algorithm>
@@ -327,7 +328,7 @@ void EditorUI::Render(EditorUIContext& context)
 	InitializeNative(m_owner != nullptr ? m_owner : EditorNode::Get());
 	context.m_editorUI    = this;
 	context.m_rootControl = m_nativeRoot;
-	m_playButton->SetDisabled(g_app != nullptr && g_app->IsGameRunning());
+	m_playButton->SetDisabled(m_owner->IsPreparingPlay() || (g_app != nullptr && g_app->IsGameRunning()));
 	m_stopButton->SetDisabled(g_app == nullptr || !g_app->IsGameRunning());
 	Vector2 const size(static_cast<Viewport*>(context.m_sceneTree->GetRoot())->GetOutputResolution());
 	m_nativeRoot->SetColor(m_nativeRoot->GetThemeColor("background", "Editor"));
@@ -407,6 +408,7 @@ void EditorUI::Render(EditorUIContext& context)
 	m_statusInfo->SetText("D3D11    " + std::to_string(resolution.x) + " x " + std::to_string(resolution.y));
 	m_projectSettingsPopup.Render(context);
 	m_sceneFilePopup.Render(context);
+	m_createScriptPopup.Render(context);
 	m_warningPopup.Render(context);
 	if (m_settingsPopup != nullptr && m_settingsPopup->IsVisible())
 	{
@@ -421,8 +423,8 @@ void EditorUI::Render(EditorUIContext& context)
 		EditorPopupUtils::Layout(
 			m_unsavedPopup,
 			Vector2(
-				static_cast<float>(m_nativeRoot->GetThemeConstant("project_popup_width", "Editor")),
-				static_cast<float>(m_nativeRoot->GetThemeConstant("create_popup_height", "Editor"))));
+				static_cast<float>(m_nativeRoot->GetThemeConstant("unsaved_popup_width", "Editor")),
+				0.f));
 	}
 
 	context.m_sceneTree->FlushContainerUpdate();
@@ -434,14 +436,28 @@ void EditorUI::Render(EditorUIContext& context)
 
 void EditorUI::SetNativeDragPreview(Control* source, String const& text)
 {
-	auto* panel = MemNew<PanelContainer>();
+	auto* panel = MemNew<ColorRect>();
 	panel->SetThemeSource(source);
-	auto* label = EditorPopupUtils::AddLabel(panel, text);
-	panel->UpdateSize(
-		label->GetCombinedMinimumSize()
-		+ Vector2(
-			static_cast<float>(source->GetThemeConstant("spacing", "Editor")) * 2.f,
-			static_cast<float>(source->GetThemeConstant("spacing", "Editor")) * 2.f));
+	auto* row = MemNew<HBoxContainer>();
+	panel->AddNode(row);
+	VirtualPath path;
+	bool const script = VirtualPath::TryParse(text.ToUtf8(), path) && path.HasExtension(".cs");
+	if (script)
+	{
+		auto* icon = MemNew<TextureRect>();
+		icon->SetTexture(source->GetThemeIcon("CSharpScript", "EditorIcons"));
+		icon->SetExpandMode(TextureRect::ExpandMode::IgnoreSize);
+		float const iconSize = static_cast<float>(source->GetThemeConstant("icon_size", "Button"));
+		icon->SetCustomMinimumSize(Vector2(iconSize, iconSize));
+		row->AddNode(icon);
+	}
+
+	EditorPopupUtils::AddLabel(row, script ? String(path.GetFileName()) : text);
+	float const padding = static_cast<float>(source->GetThemeConstant("spacing", "Editor"));
+	Vector2 const contentSize = row->GetCombinedMinimumSize();
+	row->SetPosition(Vector2(padding, padding));
+	row->UpdateSize(contentSize);
+	panel->UpdateSize(contentSize + Vector2(padding * 2.f, padding * 2.f));
 	source->SetDragPreview(panel);
 }
 
@@ -455,7 +471,15 @@ void EditorUI::ShowMenu(Control* source, Vector2 position, std::vector<MenuItem>
 		static_cast<Control*>(m_menuContent->GetParent())->SetThemeTypeVariation("EditorMenuPopup");
 	}
 
+	for (size_t i = 1; i < m_menuLevels.size(); ++i)
+	{
+		m_menuLevels[i].m_panel->SetVisible(false);
+		m_menuLevels[i].m_panel->QueueFree();
+	}
+
+	m_menuLevels.clear();
 	EditorPopupUtils::ClearContent(m_menuContent);
+	m_menu->SetKeyCallback([this](InputEvent const& event) { HandleMenuKey(event); });
 	m_menuContent->SetSeparation(0.f);
 	auto buttons = MenuBar::CreatePopupItems(
 		m_menuContent,
@@ -464,7 +488,9 @@ void EditorUI::ShowMenu(Control* source, Vector2 position, std::vector<MenuItem>
 		[this]()
 		{
 			m_menu->Close(false);
-		});
+		},
+		[this](Button* parent, std::vector<MenuItem> const& children) { OpenSubmenu(parent, children); });
+	m_menuLevels.push_back({ static_cast<Control*>(m_menuContent->GetParent()), nullptr, buttons, items });
 
 	EditorPopupUtils::Open(
 		m_menu,
@@ -504,14 +530,14 @@ void EditorUI::AcceptUnsavedScene(EditorNode::SceneActionChoice choice)
 	m_owner->ResolvePendingSceneAction(choice);
 }
 
-void EditorUI::ShowUnsavedScene()
+void EditorUI::ShowUnsavedScene(String const& message, String const& question, String const& action)
 {
 	FinishNativeEditing();
 	m_viewportPanel->CancelNavigation();
 	if (m_unsavedPopup == nullptr)
 	{
 		VBoxContainer* content = nullptr;
-		m_unsavedPopup         = EditorPopupUtils::Create(GetRootControl(), "Unsaved Scene", content);
+		m_unsavedPopup         = EditorPopupUtils::Create(GetRootControl(), "Please Confirm...", content);
 		m_unsavedPopup->SetClosedCallback(
 			[this]()
 			{
@@ -520,37 +546,59 @@ void EditorUI::ShowUnsavedScene()
 					m_owner->ResolvePendingSceneAction(EditorNode::SceneActionChoice::Cancel);
 				}
 			});
-		EditorPopupUtils::AddLabel(content, "This scene has unsaved changes. Save before continuing?");
-		auto* actions = EditorPopupUtils::AddActions(content);
-		EditorPopupUtils::AddButton(
-			actions,
-			"Don't Save",
-			[this]()
-			{
-				AcceptUnsavedScene(EditorNode::SceneActionChoice::Discard);
-			});
-		EditorPopupUtils::AddButton(
-			actions,
-			"Cancel",
-			[this]()
-			{
-				AcceptUnsavedScene(EditorNode::SceneActionChoice::Cancel);
-			});
-		Button* save = EditorPopupUtils::AddButton(
-			actions,
-			"Save & Continue",
-			[this]()
-			{
-				AcceptUnsavedScene(EditorNode::SceneActionChoice::Save);
-			});
-		save->SetThemeTypeVariation("EditorPrimaryButton");
+		m_unsavedMessage = EditorPopupUtils::AddLabel(content, "");
+		m_unsavedMessage->SetAutowrapMode(AutowrapMode::WordSmart);
+		m_unsavedQuestion = EditorPopupUtils::AddLabel(content, "");
+		auto* actions = MemNew<HBoxContainer>();
+		m_unsavedActions = actions;
+		actions->AddThemeChangedCallback([actions]()
+		{
+			actions->SetSeparation(static_cast<float>(actions->GetThemeConstant("content_padding", "Editor")) * 2.f);
+		});
+		actions->SetHorizontalSizeFlags(Control::Size_ExpandFill);
+		content->AddNode(actions);
+		m_unsavedSave = EditorPopupUtils::AddButton(actions, "", [this]()
+		{
+			AcceptUnsavedScene(EditorNode::SceneActionChoice::Save);
+		});
+		m_unsavedSave->SetThemeTypeVariation("EditorPrimaryButton");
+		Button* cancel = EditorPopupUtils::AddButton(actions, "Cancel", [this]()
+		{
+			AcceptUnsavedScene(EditorNode::SceneActionChoice::Cancel);
+		});
+		Button* discard = EditorPopupUtils::AddButton(actions, "Don't Save", [this]()
+		{
+			AcceptUnsavedScene(EditorNode::SceneActionChoice::Discard);
+		});
+		for (Button* button : { m_unsavedSave, cancel, discard })
+		{
+			button->SetHorizontalSizeFlags(Control::Size_ExpandFill);
+		}
+
 	}
+	m_unsavedMessage->SetText(message);
+	m_unsavedQuestion->SetText(question);
+	m_unsavedSave->SetText(action);
+	float buttonWidth = 0.f;
+	for (Node* child : m_unsavedActions->GetChildren())
+	{
+		auto* button = static_cast<Button*>(child);
+		button->SetCustomMinimumSize(Vector2::Zero);
+		buttonWidth = std::max(buttonWidth, button->GetCombinedMinimumSize().x);
+	}
+
+	for (Node* child : m_unsavedActions->GetChildren())
+	{
+		static_cast<Button*>(child)->SetCustomMinimumSize(Vector2(buttonWidth, 0.f));
+	}
+
 	EditorPopupUtils::Open(
 		m_unsavedPopup,
 		GetRootControl(),
 		Vector2(
-			static_cast<float>(m_nativeRoot->GetThemeConstant("project_popup_width", "Editor")),
-			static_cast<float>(m_nativeRoot->GetThemeConstant("create_popup_height", "Editor"))));
+			static_cast<float>(m_nativeRoot->GetThemeConstant("unsaved_popup_width", "Editor")),
+			0.f));
+	m_unsavedSave->GrabFocus();
 }
 
 void EditorUI::OpenSceneFile(
@@ -601,4 +649,265 @@ void EditorUI::ShowEditorSettings()
 		Vector2(
 			static_cast<float>(m_nativeRoot->GetThemeConstant("project_popup_width", "Editor")),
 			static_cast<float>(m_nativeRoot->GetThemeConstant("create_popup_height", "Editor"))));
+}
+
+void EditorUI::CreateScript(VirtualPath const& directory, std::string const& base, std::function<void(VirtualPath const&)> created)
+{
+	FinishNativeEditing();
+	m_createScriptPopup.Open(directory, base, std::move(created));
+}
+
+void EditorUI::OpenSubmenu(Button* parent, std::vector<MenuItem> const& items)
+{
+	size_t level = 0;
+	for (; level < m_menuLevels.size(); ++level)
+	{
+		auto const& buttons = m_menuLevels[level].m_buttons;
+		if (std::find(buttons.begin(), buttons.end(), parent) != buttons.end())
+		{
+			break;
+		}
+	}
+
+	if (level == m_menuLevels.size())
+	{
+		return;
+	}
+
+	if (level + 1 < m_menuLevels.size() && m_menuLevels[level + 1].m_parent == parent)
+	{
+		return;
+	}
+
+	while (m_menuLevels.size() > level + 1)
+	{
+		m_menuLevels.back().m_panel->SetVisible(false);
+		m_menuLevels.back().m_panel->QueueFree();
+		m_menuLevels.pop_back();
+	}
+
+	auto* panel = MemNew<PanelContainer>();
+	panel->SetThemeTypeVariation("EditorMenuPopup");
+	m_menu->AddNode(panel);
+	auto* content = MemNew<VBoxContainer>();
+	content->SetSeparation(0.f);
+	panel->AddNode(content);
+	auto buttons = MenuBar::CreatePopupItems(content, parent, items, [this]() { m_menu->Close(false); },
+		[this](Button* button, std::vector<MenuItem> const& children) { OpenSubmenu(button, children); });
+	Vector2 size = panel->GetCombinedMinimumSize();
+	size.x = std::max(size.x, static_cast<float>(parent->GetThemeConstant("popup_minimum_width", "MenuBar")));
+	Vector2 const bounds(m_menu->GetViewport()->GetOutputResolution());
+	Vector2 origin = parent->GetGlobalPosition() + Vector2(parent->GetSize().x, 0.f);
+	if (origin.x + size.x > bounds.x)
+	{
+		origin.x = m_menuLevels[level].m_panel->GetGlobalPosition().x - size.x;
+	}
+
+	panel->SetPosition(Vector2(std::clamp(origin.x, 0.f, std::max(0.f, bounds.x - size.x)),
+		std::clamp(origin.y, 0.f, std::max(0.f, bounds.y - size.y))));
+	panel->UpdateSize(size);
+	m_owner->GetSceneTree()->FlushContainerUpdate();
+	MenuBar::LayoutPopupItems(buttons);
+	m_menuLevels.push_back({ panel, parent, buttons, items });
+}
+
+void EditorUI::HandleMenuPointer(InputEvent const& event)
+{
+	if (m_menu == nullptr || !m_menu->IsVisible() || event.m_type != InputEventType::MouseMotion)
+	{
+		return;
+	}
+
+	for (size_t depth = m_menuLevels.size(); depth > 0; --depth)
+	{
+		auto const buttons = m_menuLevels[depth - 1].m_buttons;
+		auto const items = m_menuLevels[depth - 1].m_items;
+		size_t index = 0;
+		for (auto const& item : items)
+		{
+			if (item.m_separator)
+			{
+				continue;
+			}
+
+			Button* button = buttons[index++];
+			if (!button->IsPointInside(event.m_position - button->GetGlobalPosition()))
+			{
+				continue;
+			}
+
+			if (!button->IsDisabled() && !item.m_children.empty())
+			{
+				OpenSubmenu(button, item.m_children);
+			}
+			else
+			{
+				while (m_menuLevels.size() > depth)
+				{
+					m_menuLevels.back().m_panel->SetVisible(false);
+					m_menuLevels.back().m_panel->QueueFree();
+					m_menuLevels.pop_back();
+				}
+			}
+
+			return;
+		}
+	}
+}
+
+void EditorUI::HandleMenuKey(InputEvent const& event)
+{
+	if (event.m_type != InputEventType::Key || m_menuLevels.empty())
+	{
+		return;
+	}
+
+	Control* focus = m_menu->GetViewport()->GetGuiFocus();
+	size_t depth = m_menuLevels.size() - 1;
+	for (size_t i = 0; i < m_menuLevels.size(); ++i)
+	{
+		auto const& buttons = m_menuLevels[i].m_buttons;
+		if (std::find(buttons.begin(), buttons.end(), focus) != buttons.end())
+		{
+			depth = i;
+			break;
+		}
+	}
+
+	if (!event.m_pressed)
+	{
+		auto const& buttons = m_menuLevels[depth].m_buttons;
+		if (focus != nullptr && std::find(buttons.begin(), buttons.end(), focus) != buttons.end())
+		{
+			focus->GuiInput(event);
+		}
+
+		return;
+	}
+
+	if (event.m_keyCode == GLFW_KEY_ESCAPE || event.m_keyCode == GLFW_KEY_LEFT)
+	{
+		if (m_menuLevels.size() > 1)
+		{
+			Button* parent = m_menuLevels.back().m_parent;
+			m_menuLevels.back().m_panel->SetVisible(false);
+			m_menuLevels.back().m_panel->QueueFree();
+			m_menuLevels.pop_back();
+			parent->GrabFocus();
+		}
+		else
+		{
+			m_menu->Close();
+		}
+
+		return;
+	}
+
+	auto buttons = m_menuLevels[depth].m_buttons;
+	if (event.m_keyCode == GLFW_KEY_UP || event.m_keyCode == GLFW_KEY_DOWN)
+	{
+		int index = -1;
+		for (int i = 0; i < static_cast<int>(buttons.size()); ++i)
+		{
+			if (buttons[i] == focus)
+			{
+				index = i;
+			}
+		}
+
+		for (size_t i = 0; i < buttons.size(); ++i)
+		{
+			index = (index + (event.m_keyCode == GLFW_KEY_DOWN ? 1 : static_cast<int>(buttons.size()) - 1)
+				+ static_cast<int>(buttons.size())) % static_cast<int>(buttons.size());
+			if (!buttons[index]->IsDisabled())
+			{
+				buttons[index]->GrabFocus();
+				break;
+			}
+		}
+
+		return;
+	}
+
+	if (event.m_keyCode == GLFW_KEY_RIGHT || event.m_keyCode == GLFW_KEY_ENTER || event.m_keyCode == GLFW_KEY_KP_ENTER)
+	{
+		size_t index = 0;
+		for (auto const& item : m_menuLevels[depth].m_items)
+		{
+			if (item.m_separator)
+			{
+				continue;
+			}
+
+			Button* button = buttons[index++];
+			if (button == focus && !item.m_children.empty())
+			{
+				auto children = item.m_children;
+				OpenSubmenu(button, children);
+				for (Button* child : m_menuLevels.back().m_buttons)
+				{
+					if (!child->IsDisabled())
+					{
+						child->GrabFocus();
+						break;
+					}
+				}
+
+				return;
+			}
+		}
+	}
+
+	if (focus != nullptr && std::find(buttons.begin(), buttons.end(), focus) != buttons.end())
+	{
+		focus->GuiInput(event);
+	}
+}
+
+void EditorUI::OpenScriptFile(std::function<void(VirtualPath const&)> selected)
+{
+	FinishNativeEditing();
+	if (m_scriptFilePopup == nullptr)
+	{
+		m_scriptFilePopup = EditorPopupUtils::Create(GetRootControl(), "Load C# Script", m_scriptFileContent);
+	}
+
+	EditorPopupUtils::ClearContent(m_scriptFileContent);
+	auto* scroll = MemNew<ScrollContainer>();
+	scroll->SetCustomMinimumSize(Vector2(0.f, static_cast<float>(GetRootControl()->GetThemeConstant("create_popup_height", "Editor"))));
+	m_scriptFileContent->AddNode(scroll);
+	auto* list = MemNew<VBoxContainer>();
+	scroll->AddNode(list);
+	std::error_code error;
+	bool found = false;
+	for (std::filesystem::recursive_directory_iterator it(g_engine->m_fileSystem->GetResourceRoot(), error), end;
+		!error && it != end; it.increment(error))
+	{
+		if (it->is_directory(error) && (it->path().filename() == ".ming" || it->path().filename() == "obj" || it->path().filename() == "bin"))
+		{
+			it.disable_recursion_pending();
+		}
+		else if (it->path().extension() == ".cs")
+		{
+			VirtualPath path;
+			if (g_engine->m_fileSystem->TryToVirtualPath(it->path(), path))
+			{
+				found = true;
+				EditorPopupUtils::AddButton(list, path.GetString(), [this, selected, path]()
+				{
+					m_scriptFilePopup->Close();
+					selected(path);
+				});
+			}
+		}
+	}
+
+	if (!found)
+	{
+		EditorPopupUtils::AddLabel(list, "No C# scripts in this project.");
+	}
+
+	EditorPopupUtils::AddButton(EditorPopupUtils::AddActions(m_scriptFileContent), "Cancel", [this]() { m_scriptFilePopup->Close(); });
+	EditorPopupUtils::Open(m_scriptFilePopup, GetRootControl(),
+		Vector2(static_cast<float>(GetRootControl()->GetThemeConstant("project_popup_width", "Editor")), 0.f));
 }

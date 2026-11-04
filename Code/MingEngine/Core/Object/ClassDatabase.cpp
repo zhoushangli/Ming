@@ -200,7 +200,7 @@ PropertyInfo const* ClassDatabase::FindProperty(std::string const& className, st
 	for (auto iter = properties.rbegin(); iter != properties.rend(); ++iter)
 	{
 		PropertyInfo const* property = *iter;
-		if (property->m_name == propertyName)
+		if (!property->HasUsage(PropertyInfo::UsageFlags::Group) && property->m_name == propertyName)
 		{
 			return property;
 		}
@@ -226,6 +226,12 @@ MethodBind const* ClassDatabase::GetMethodBind(std::string const& className, std
 	}
 
 	return nullptr;
+}
+
+void ClassDatabase::AddPropertyGroup(std::string const& className, std::string const& name)
+{
+	m_classInfoMap[className].m_properties.emplace_back(
+		Variant::Type::Empty, name, PropertyInfo::Hint::None, "", PropertyInfo::UsageFlags::Group);
 }
 
 void ClassDatabase::AddProperty(

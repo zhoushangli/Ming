@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<class name="RaycastSpace3D">
+  <brief_description>Stores objects that can be tested by 3D rays.</brief_description>
+  <description>Each scene tree owns a raycast space. Ray query methods are not exposed to C# yet.</description>
+</class>

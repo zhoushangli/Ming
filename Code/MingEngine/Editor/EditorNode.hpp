@@ -53,6 +53,7 @@ private:
 		New,
 		Close,
 		Play,
+		BuildPlay,
 		Load,
 		Create,
 		Quit
@@ -92,7 +93,9 @@ public:
 	void        RequestNewScene();
 	void        RequestCloseScene(std::function<void()> completed = {});
 	void        RequestPlay();
+	bool        IsPreparingPlay() const { return m_pendingSceneAction == PendingSceneAction::BuildPlay; }
 	bool        GenerateCSharpProject();
+	bool        OpenCSharpScript(VirtualPath const& path);
 	bool        BuildCSharpProject();
 	bool        ReloadCSharpAssembly();
 	void        NewRootCreated();
@@ -148,6 +151,7 @@ private:
 	bool                                             m_openUnsavedScenePopup = false;
 	bool                                             m_waitingForSave        = false;
 	bool                                             m_resumePending         = false;
+	int m_playDelayFrames = 0;
 	std::function<void()>                            m_afterClose;
 	std::mutex                                       m_messageMutex;
 	std::vector<std::pair<std::string, std::string>> m_messages;

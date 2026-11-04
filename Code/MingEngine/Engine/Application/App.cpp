@@ -19,6 +19,7 @@
 #include "MingEngine/Engine/Input/InputSystem.hpp"
 #include "MingEngine/Engine/Render/RenderServer.hpp"
 #include "MingEngine/Engine/Script/CSharpScript.hpp"
+#include "MingEngine/Engine/Script/ScriptSystem.hpp"
 #include "MingEngine/Engine/Script/CSharpScriptGenerator.hpp"
 #include "MingEngine/Engine/Window/WindowSystem.hpp"
 #include "MingEngine/Scene/3D/Camera3D.hpp"
@@ -145,6 +146,13 @@ void App::Shutdown()
 		CloseHandle(m_gameProcess);
 		m_gameProcess = nullptr;
 	}
+	ReadGameOutput();
+	if (m_gameOutputRead != nullptr)
+	{
+		CloseHandle(m_gameOutputRead);
+		m_gameOutputRead = nullptr;
+	}
+
 	ShutdownScene();
 
 	if (g_engine != nullptr && g_engine->m_eventSystem != nullptr)
@@ -309,6 +317,21 @@ bool App::LaunchGame()
 
 	STARTUPINFOW startupInfo{};
 	startupInfo.cb = sizeof(startupInfo);
+	SECURITY_ATTRIBUTES security{ sizeof(SECURITY_ATTRIBUTES), nullptr, TRUE };
+	HANDLE outputRead = nullptr;
+	HANDLE outputWrite = nullptr;
+	if (!CreatePipe(&outputRead, &outputWrite, &security, 0))
+	{
+		ERR_PRINT("Could not create the game output pipe.");
+		return false;
+	}
+
+	SetHandleInformation(outputRead, HANDLE_FLAG_INHERIT, 0);
+	HANDLE input = CreateFileW(L"NUL", GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, &security, OPEN_EXISTING, 0, nullptr);
+	startupInfo.dwFlags = STARTF_USESTDHANDLES;
+	startupInfo.hStdOutput = outputWrite;
+	startupInfo.hStdError = outputWrite;
+	startupInfo.hStdInput = input;
 
 	PROCESS_INFORMATION processInfo{};
 
@@ -318,8 +341,8 @@ bool App::LaunchGame()
 			commandLine.data(),
 			nullptr,
 			nullptr,
-			FALSE,
-			0,
+			TRUE,
+			CREATE_NO_WINDOW,
 			nullptr,
 			nullptr,
 			&startupInfo,
@@ -329,8 +352,15 @@ bool App::LaunchGame()
 		std::string const message   = "Failed to launch game. Windows error: " + std::to_string(errorCode) + "\n";
 
 		ERR_PRINT(message.c_str());
+		CloseHandle(outputRead);
+		CloseHandle(outputWrite);
+		CloseHandle(input);
 		return false;
 	}
+	CloseHandle(outputWrite);
+	CloseHandle(input);
+	m_gameOutputRead = outputRead;
+	m_gameOutput.clear();
 
 	// 5) Release the launch-only process handles
 	CloseHandle(processInfo.hThread);
@@ -873,6 +903,14 @@ void App::StartupEditor()
 
 void App::StartupGame()
 {
+	if (g_engine->m_scriptSystem->HasProjectScripts() && !g_engine->m_scriptSystem->IsProjectAssemblyLoaded())
+	{
+		ERR_PRINT("Cannot run C# project: Game.dll could not be loaded. Build the net9.0 project first.");
+		m_exitCode = 1;
+		m_shouldQuit = true;
+		return;
+	}
+
 	m_clock                = new Clock();
 	m_sceneTree            = MemNew<SceneTree>();
 	VirtualPath const path = ProjectSettings::Get()->m_startScenePath;
@@ -965,6 +1003,7 @@ void App::StopGame()
 
 void App::PollGame()
 {
+	ReadGameOutput();
 	if (m_gameProcess == nullptr)
 	{
 		return;
@@ -976,6 +1015,19 @@ void App::PollGame()
 	}
 	if (WaitForSingleObject(m_gameProcess, 0) == WAIT_OBJECT_0)
 	{
+		ReadGameOutput();
+		if (m_gameOutputRead != nullptr)
+		{
+			CloseHandle(m_gameOutputRead);
+			m_gameOutputRead = nullptr;
+		}
+
+		if (!m_gameOutput.empty())
+		{
+			INFO_PRINT("[Game] " + m_gameOutput);
+			m_gameOutput.clear();
+		}
+
 		DWORD code = 0;
 		GetExitCodeProcess(m_gameProcess, &code);
 		CloseHandle(m_gameProcess);
@@ -983,5 +1035,40 @@ void App::PollGame()
 		m_gameProcessID    = 0;
 		m_gameStopDeadline = 0;
 		INFO_PRINT("Game process exited with code " + std::to_string(code));
+	}
+}
+
+void App::ReadGameOutput()
+{
+	if (m_gameOutputRead == nullptr)
+	{
+		return;
+	}
+
+	DWORD available = 0;
+	char buffer[4096];
+	while (PeekNamedPipe(m_gameOutputRead, nullptr, 0, nullptr, &available, nullptr) && available > 0)
+	{
+		DWORD read = 0;
+		if (!ReadFile(m_gameOutputRead, buffer, (std::min)(available, static_cast<DWORD>(sizeof(buffer))), &read, nullptr) || read == 0)
+		{
+			break;
+		}
+
+		m_gameOutput.append(buffer, read);
+		size_t end = 0;
+		while ((end = m_gameOutput.find('\n')) != std::string::npos)
+		{
+			std::string line = m_gameOutput.substr(0, end);
+			m_gameOutput.erase(0, end + 1);
+			if (line.find("[Error]") != std::string::npos)
+			{
+				ERR_PRINT("[Game] " + line);
+			}
+			else
+			{
+				INFO_PRINT("[Game] " + line);
+			}
+		}
 	}
 }

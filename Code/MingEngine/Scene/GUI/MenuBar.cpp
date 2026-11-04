@@ -183,7 +183,8 @@ void MenuBar::LayoutPopup()
 }
 
 std::vector<Button*> MenuBar::CreatePopupItems(
-	VBoxContainer* content, Control* source, std::vector<MenuItem> const& items, std::function<void()> close)
+	VBoxContainer* content, Control* source, std::vector<MenuItem> const& items, std::function<void()> close,
+	std::function<void(Button*, std::vector<MenuItem> const&)> openSubmenu)
 {
 	std::vector<Button*> buttons;
 	for (MenuItem const& item : items)
@@ -203,10 +204,21 @@ std::vector<Button*> MenuBar::CreatePopupItems(
 		button->SetThemeTypeVariation("EditorMenuItem");
 		button->SetHorizontalAlignment(HorizontalAlignment::Left);
 		button->SetText(item.m_text);
-		button->SetDisabled(!item.m_enabled || !item.m_action);
+		if (!item.m_icon.IsEmpty())
+		{
+			button->SetIcon(source->GetThemeIcon(item.m_icon.ToUtf8(), "EditorIcons"));
+		}
+
+		button->SetDisabled(!item.m_enabled || (!item.m_action && item.m_children.empty()));
 		button->SetPressedCallback(
-			[close, action = item.m_action]()
+			[close, action = item.m_action, children = item.m_children, openSubmenu, button]()
 			{
+				if (!children.empty() && openSubmenu)
+				{
+					openSubmenu(button, children);
+					return;
+				}
+
 				close();
 				if (action)
 				{
@@ -228,11 +240,11 @@ std::vector<Button*> MenuBar::CreatePopupItems(
 			button->AddNode(check);
 		}
 
-		if (!item.m_shortcut.IsEmpty())
+		if (!item.m_shortcut.IsEmpty() || !item.m_children.empty())
 		{
 			auto* shortcut = MemNew<Label>();
 			shortcut->SetName("Shortcut");
-			shortcut->SetText(item.m_shortcut);
+			shortcut->SetText(item.m_children.empty() ? item.m_shortcut : String("›"));
 			shortcut->SetThemeTypeVariation("EditorStatusLabel");
 			shortcut->SetHorizontalAlignment(HorizontalAlignment::Right);
 			shortcut->SetVerticalAlignment(VerticalAlignment::Center);

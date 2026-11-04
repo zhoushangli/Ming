@@ -69,6 +69,7 @@ public:
 private:
 	void Update(float deltaSeconds);
 	void PollGame();
+	void ReadGameOutput();
 	void Render() const;
 	void BeginFrame();
 	void EndFrame();
@@ -85,6 +86,8 @@ private:
 
 private:
 	void*              m_gameProcess      = nullptr;
+	void*              m_gameOutputRead   = nullptr;
+	std::string        m_gameOutput;
 	unsigned long      m_gameProcessID    = 0;
 	unsigned long long m_gameStopDeadline = 0;
 	bool               m_shouldRestart    = false;

@@ -3,10 +3,12 @@
 
 #include "MingEngine/Core/ErrorWarningAssert.hpp"
 #include "MingEngine/Core/Object/ClassDatabase.hpp"
+#include "ThirdParty/tinyxml2/tinyxml2.h"
 
 #include <algorithm>
 #include <fstream>
 #include <map>
+#include <sstream>
 #include <utility>
 
 namespace
@@ -152,6 +154,7 @@ struct NativeCallInfo
 using NativeCallMap       = std::map<std::string, NativeCallInfo>;
 using MethodNativeCallMap = std::map<MethodInfo const*, std::string>;
 using CSharpTypeMap       = std::map<Variant::Type, CSharpTypeInfo>;
+using DocumentationMap   = std::map<std::string, std::map<std::string, std::string>>;
 
 void ReplaceAll(std::string& source, std::string const& placeholder, std::string const& value)
 {
@@ -161,6 +164,168 @@ void ReplaceAll(std::string& source, std::string const& placeholder, std::string
 		source.replace(position, placeholder.length(), value);
 		position += value.length();
 	}
+}
+
+std::string EscapeXmlText(std::string text)
+{
+	ReplaceAll(text, "&", "&amp;");
+	ReplaceAll(text, "<", "&lt;");
+	ReplaceAll(text, ">", "&gt;");
+	ReplaceAll(text, "\"", "&quot;");
+	ReplaceAll(text, "'", "&apos;");
+	return text;
+}
+
+std::string BuildDocumentationTag(tinyxml2::XMLElement const* element, std::string const& tag,
+	std::string const& indent, std::string const& attributes = "")
+{
+	if (element == nullptr || element->GetText() == nullptr)
+	{
+		return "";
+	}
+
+	std::istringstream input(element->GetText());
+	std::string text;
+	std::string word;
+	while (input >> word)
+	{
+		if (!text.empty())
+		{
+			text += " ";
+		}
+
+		text += word;
+	}
+
+	return indent + "/// <" + tag + attributes + ">" + EscapeXmlText(text) + "</" + tag + ">\n";
+}
+
+bool LoadDocumentation(std::filesystem::path const& directory, DocumentationMap& documentation)
+{
+	std::error_code error;
+	if (!std::filesystem::exists(directory, error))
+	{
+		if (error)
+		{
+			ERR_PRINT("Could not read C# documentation directory: " + directory.u8string());
+		}
+
+		return !error;
+	}
+
+	for (std::filesystem::directory_iterator iter(directory, error), end; !error && iter != end; iter.increment(error))
+	{
+		auto const path = iter->path();
+		if (path.extension() != ".xml" || !iter->is_regular_file(error))
+		{
+			continue;
+		}
+
+		auto fail = [&path](int line, std::string const& message)
+		{
+			ERR_PRINT(Stringf("%s:%d: %s", path.u8string().c_str(), line, message.c_str()));
+			return false;
+		};
+		std::ifstream input(path, std::ios::binary);
+		if (!input)
+		{
+			return fail(1, "Could not read the documentation file.");
+		}
+
+		std::string const source((std::istreambuf_iterator<char>(input)), std::istreambuf_iterator<char>());
+		tinyxml2::XMLDocument document;
+		if (document.Parse(source.c_str(), source.size()) != tinyxml2::XML_SUCCESS)
+		{
+			return fail(document.ErrorLineNum(), document.ErrorStr());
+		}
+
+		auto const* root = document.RootElement();
+		char const* name = root != nullptr ? root->Attribute("name") : nullptr;
+		if (root == nullptr || std::string(root->Name()) != "class" || name == nullptr)
+		{
+			return fail(root != nullptr ? root->GetLineNum() : 1, "Expected <class name=\"ClassName\">.");
+		}
+
+		ClassInfo const* classInfo = ClassDatabase::GetClassInfo(name);
+		if (classInfo == nullptr || path.stem().u8string() != name || documentation.count(name) != 0)
+		{
+			return fail(root->GetLineNum(), "Use one file named after a registered class.");
+		}
+
+		auto& classDocs = documentation[name];
+		classDocs[""] = BuildDocumentationTag(root->FirstChildElement("brief_description"), "summary", "")
+			+ BuildDocumentationTag(root->FirstChildElement("description"), "remarks", "");
+		auto const* methods = root->FirstChildElement("methods");
+		for (auto const* method = methods != nullptr ? methods->FirstChildElement("method") : nullptr;
+			method != nullptr; method = method->NextSiblingElement("method"))
+		{
+			char const* methodName = method->Attribute("name");
+			MethodInfo const* methodInfo = nullptr;
+			for (auto const* list : { &classInfo->m_methods, &classInfo->m_virtualMethods })
+			{
+				for (auto const& candidate : *list)
+				{
+					if (methodName != nullptr && candidate.m_name == methodName)
+					{
+						methodInfo = &candidate;
+					}
+				}
+			}
+
+			if (methodInfo == nullptr || classDocs.count(methodName) != 0)
+			{
+				return fail(method->GetLineNum(), "Expected a unique method registered on this class.");
+			}
+
+			std::string comment = BuildDocumentationTag(method->FirstChildElement("description"), "summary", "\t");
+			std::vector<std::string> parameterNames;
+			for (auto const* parameter = method->FirstChildElement("param"); parameter != nullptr;
+				parameter = parameter->NextSiblingElement("param"))
+			{
+				char const* parameterName = parameter->Attribute("name");
+				if (parameterName == nullptr || std::none_of(methodInfo->m_argumentInfos.begin(),
+					methodInfo->m_argumentInfos.end(), [parameterName](ArgumentInfo const& argument)
+					{
+						return argument.m_name == parameterName;
+					}) || std::find(parameterNames.begin(), parameterNames.end(), parameterName) != parameterNames.end())
+				{
+					return fail(parameter->GetLineNum(), std::string(methodName) + ": unknown or repeated parameter name.");
+				}
+
+				parameterNames.emplace_back(parameterName);
+				comment += BuildDocumentationTag(parameter, "param", "\t", " name=\"" + EscapeXmlText(parameterName) + "\"");
+			}
+
+			auto const* returns = method->FirstChildElement("returns");
+			if (returns != nullptr && methodInfo->m_returnInfo.m_type == Variant::Type::Empty)
+			{
+				return fail(returns->GetLineNum(), std::string(methodName) + ": a void method has no return value.");
+			}
+
+			comment += BuildDocumentationTag(returns, "returns", "\t");
+			classDocs[methodName] = comment;
+		}
+	}
+
+	if (error)
+	{
+		ERR_PRINT("Could not read C# documentation directory: " + directory.u8string());
+	}
+
+	return !error;
+}
+
+std::string GetDocumentation(DocumentationMap const& documentation, std::string const& className,
+	std::string const& methodName = "")
+{
+	auto const classIter = documentation.find(className);
+	if (classIter == documentation.end())
+	{
+		return "";
+	}
+
+	auto const methodIter = classIter->second.find(methodName);
+	return methodIter == classIter->second.end() ? "" : methodIter->second;
 }
 
 std::string FormatTypeExpression(
@@ -632,7 +797,8 @@ bool GenerateClassBindings(
 	std::vector<ClassInfo const*> const& classes,
 	CSharpTypeMap const&                 builtinTypes,
 	NativeCallMap const&                 nativeCalls,
-	MethodNativeCallMap const&           methodNativeCalls)
+	MethodNativeCallMap const&           methodNativeCalls,
+	DocumentationMap const&             documentation)
 {
 	for (ClassInfo const* classInfo : classes)
 	{
@@ -647,6 +813,7 @@ bool GenerateClassBindings(
 		}
 
 		std::string       classSource = ClassTemplate;
+		ReplaceAll(classSource, "public partial class", GetDocumentation(documentation, classInfo->m_className) + "public partial class");
 		std::string const parentClassName =
 			classInfo->m_parentClassName == "Object" ? "MingObject" : classInfo->m_parentClassName;
 		ReplaceAll(classSource, "{PARENT_CLASS_NAME}", parentClassName);
@@ -673,12 +840,14 @@ bool GenerateClassBindings(
 			ReplaceAll(methodBinding, "{CLASS_NAME}", classInfo->m_className);
 			ReplaceAll(methodBinding, "{METHOD_NAME}", methodInfo.m_name);
 			methodBindings += methodBinding;
-			classMethods += GenerateClassMethod(methodInfo, nativeCallIter->second);
+			classMethods += GetDocumentation(documentation, classInfo->m_className, methodInfo.m_name)
+				+ GenerateClassMethod(methodInfo, nativeCallIter->second);
 		}
 
 		for (MethodInfo const& virtualMethodInfo : classInfo->m_virtualMethods)
 		{
-			virtualMethods += GenerateClassVirtualMethod(*classInfo, virtualMethodInfo, builtinTypes);
+			virtualMethods += GetDocumentation(documentation, classInfo->m_className, virtualMethodInfo.m_name)
+				+ GenerateClassVirtualMethod(*classInfo, virtualMethodInfo, builtinTypes);
 		}
 
 		std::string const mingClassMethodDispatch =
@@ -892,6 +1061,12 @@ bool CSharpScriptGenerator::GenerateCSharpBindings(std::filesystem::path const& 
 		return false;
 	}
 
+	DocumentationMap documentation;
+	if (!LoadDocumentation(outputDirectory / "Docs" / "Classes", documentation))
+	{
+		return false;
+	}
+
 	std::filesystem::path const generatedDirectory = outputDirectory / "Generated";
 	std::error_code             errorCode;
 	std::filesystem::create_directories(generatedDirectory, errorCode);
@@ -957,7 +1132,7 @@ bool CSharpScriptGenerator::GenerateCSharpBindings(std::filesystem::path const& 
 		ERROR_AND_DIE("Failed to generate C# Constructors.");
 	}
 
-	if (!GenerateClassBindings(generatedDirectory, classes, m_builtinTypes, nativeCalls, methodNativeCalls))
+	if (!GenerateClassBindings(generatedDirectory, classes, m_builtinTypes, nativeCalls, methodNativeCalls, documentation))
 	{
 		ERROR_AND_DIE("Failed to generate C# Class Bindings.");
 	}

@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<class name="MarginContainer">
+  <brief_description>Adds space between its edges and its child controls.</brief_description>
+</class>

@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<class name="VBoxContainer">
+  <brief_description>Arranges child controls in a vertical column.</brief_description>
+</class>

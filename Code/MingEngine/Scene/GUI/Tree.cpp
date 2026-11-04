@@ -695,7 +695,8 @@ void Tree::OnNotification(int notification)
 					}
 
 					float const y   = GetRowRect(row).GetCenter().y;
-					float const end = left + m_depths[row] * m_themeCache.indent;
+					float const end = left + m_depths[row] * m_themeCache.indent + GetFoldWidth(row)
+									  - m_themeCache.icon_separation;
 					DrawRect(AABB2(x, y, std::max(x, end), y + width), m_themeCache.children_guide_color);
 					lastChild = row;
 				}
@@ -731,7 +732,8 @@ void Tree::OnNotification(int notification)
 				float const x      = left + m_depths[parent] * m_themeCache.indent + GetFoldWidth(parent) * 0.5f;
 				float const top    = GetRowRect(parent).GetCenter().y + GetFoldWidth(parent) * 0.5f;
 				float const bottom = GetRowRect(child).GetCenter().y;
-				float const end    = left + m_depths[child] * m_themeCache.indent - m_themeCache.icon_separation;
+				float const end    = left + m_depths[child] * m_themeCache.indent + GetFoldWidth(child)
+								   - m_themeCache.icon_separation;
 				DrawRect(AABB2(x, top, x + m_themeCache.guide_width, bottom), m_themeCache.guide_color);
 				DrawRect(
 					AABB2(x, bottom, std::max(x, end), bottom + m_themeCache.guide_width),

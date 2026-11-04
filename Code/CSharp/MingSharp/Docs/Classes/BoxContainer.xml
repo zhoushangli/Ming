@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<class name="BoxContainer">
+  <brief_description>Arranges child controls in a row or a column.</brief_description>
+  <description>HBoxContainer uses a row. VBoxContainer uses a column.</description>
+</class>

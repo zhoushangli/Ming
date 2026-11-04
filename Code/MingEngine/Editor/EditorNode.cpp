@@ -29,12 +29,77 @@
 #include "ThirdParty/GLFW/glfw3.h"
 
 #include <filesystem>
+#include <cwchar>
+#define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
+#include <windows.h>
+#undef GetClassName
 
 namespace
 {
 std::string FormatObjectID(ObjectID objectID)
 {
 	return Stringf("uid=%u index=%u", objectID.GetUID(), objectID.GetIndex());
+}
+
+std::filesystem::path FindVSCode()
+{
+	std::vector<std::filesystem::path> candidates;
+	for (auto const* name : { L"Code.exe", L"code.cmd" })
+	{
+		DWORD const length = SearchPathW(nullptr, name, nullptr, 0, nullptr, nullptr);
+		if (length == 0)
+		{
+			continue;
+		}
+
+		std::wstring buffer(length, L'\0');
+		DWORD const written = SearchPathW(nullptr, name, nullptr, length, buffer.data(), nullptr);
+		if (written == 0 || written >= length)
+		{
+			continue;
+		}
+
+		buffer.resize(written);
+		std::filesystem::path const found(buffer);
+		candidates.push_back(found.extension() == L".cmd" ? found.parent_path().parent_path() / L"Code.exe" : found);
+	}
+
+	for (auto const* variable : { L"LOCALAPPDATA", L"ProgramFiles", L"ProgramFiles(x86)" })
+	{
+		DWORD const length = GetEnvironmentVariableW(variable, nullptr, 0);
+		if (length == 0)
+		{
+			continue;
+		}
+
+		std::wstring buffer(length, L'\0');
+		DWORD const written = GetEnvironmentVariableW(variable, buffer.data(), length);
+		if (written == 0 || written >= length)
+		{
+			continue;
+		}
+
+		buffer.resize(written);
+		std::filesystem::path directory(buffer);
+		if (std::wstring(variable) == L"LOCALAPPDATA")
+		{
+			directory /= L"Programs";
+		}
+
+		candidates.push_back(directory / L"Microsoft VS Code" / L"Code.exe");
+	}
+
+	for (auto const& candidate : candidates)
+	{
+		std::error_code error;
+		if (std::filesystem::is_regular_file(candidate, error))
+		{
+			return candidate;
+		}
+	}
+
+	return {};
 }
 } // namespace
 
@@ -272,7 +337,11 @@ void EditorNode::OnProcess([[maybe_unused]] float deltaSeconds)
 	}
 	m_editorUI->Render(m_uiContext);
 	RenderUnsavedScenePopup();
-	if (m_resumePending)
+	if (m_resumePending && m_playDelayFrames > 0)
+	{
+		--m_playDelayFrames;
+	}
+	else if (m_resumePending)
 	{
 		m_resumePending = false;
 		ExecutePendingSceneAction();
@@ -332,7 +401,7 @@ void EditorNode::RequestCloseScene(std::function<void()> completed)
 
 void EditorNode::RequestPlay()
 {
-	if (g_app == nullptr || g_app->IsGameRunning())
+	if (g_app == nullptr || g_app->IsGameRunning() || IsPreparingPlay())
 	{
 		return;
 	}
@@ -361,10 +430,14 @@ void EditorNode::ClearSceneState()
 	m_undoRedo.ClearAllHistory();
 	m_editorData.m_currentScenePath = {};
 	m_editorData.m_isSceneDirty     = false;
+	m_editorData.m_sceneActionTime = std::chrono::steady_clock::now();
+	m_editorData.m_sceneWasSaved = false;
 }
 
 void EditorNode::NewRootCreated()
 {
+	m_editorData.m_sceneActionTime = std::chrono::steady_clock::now();
+	m_editorData.m_sceneWasSaved = false;
 	m_editorData.m_currentScenePath = {};
 	m_undoRedo.ClearAllHistory();
 	MarkSceneDirty();
@@ -416,6 +489,8 @@ bool EditorNode::LoadScene(VirtualPath const& virtualPath)
 	m_undoRedo.ClearAllHistory();
 	m_editorData.m_currentScenePath = virtualPath;
 	m_editorData.m_isSceneDirty     = false;
+	m_editorData.m_sceneActionTime = std::chrono::steady_clock::now();
+	m_editorData.m_sceneWasSaved = false;
 	m_selection.Clear();
 
 	return true;
@@ -467,6 +542,9 @@ bool EditorNode::SaveSceneAs(VirtualPath const& path)
 
 	m_editorData.m_currentScenePath = path;
 	m_editorData.m_isSceneDirty     = false;
+	m_editorData.m_sceneActionTime = std::chrono::steady_clock::now();
+	m_editorData.m_sceneWasSaved = false;
+	m_editorData.m_sceneWasSaved = true;
 	g_engine->m_fileSystem->ScanResourceTree();
 	INFO_PRINT("Saved scene: " + path.GetString());
 	return true;
@@ -556,6 +634,8 @@ bool EditorNode::CreateScene(VirtualPath const& virtualPath, std::string const& 
 	m_undoRedo.ClearAllHistory();
 	m_editorData.m_currentScenePath = virtualPath;
 	m_editorData.m_isSceneDirty     = false;
+	m_editorData.m_sceneActionTime = std::chrono::steady_clock::now();
+	m_editorData.m_sceneWasSaved = false;
 	m_selection.Clear();
 	if (g_engine->m_fileSystem != nullptr)
 	{
@@ -570,7 +650,17 @@ void EditorNode::RenderUnsavedScenePopup()
 	if (m_openUnsavedScenePopup)
 	{
 		m_openUnsavedScenePopup = false;
-		m_editorUI->ShowUnsavedScene();
+		auto const seconds = std::chrono::duration_cast<std::chrono::seconds>(
+			std::chrono::steady_clock::now() - m_editorData.m_sceneActionTime).count();
+		std::string const path = GetCurrentScenePath().IsValid() ? GetCurrentScenePath().GetString() : GetCurrentSceneName();
+		std::string const time = seconds < 60 ? std::to_string(seconds) + " seconds ago."
+			: std::to_string(seconds / 60) + " minutes ago.";
+		bool const quit = m_pendingSceneAction == PendingSceneAction::Quit;
+		bool const close = m_pendingSceneAction == PendingSceneAction::Close;
+		m_editorUI->ShowUnsavedScene("Scene \"" + path + "\" has unsaved changes.\nScene "
+			+ (m_editorData.m_sceneWasSaved ? "saved: " : "opened: ") + time,
+			quit ? "Save before quitting?" : close ? "Save before closing?" : "Save before continuing?",
+			quit ? "Save & Quit" : close ? "Save & Close" : "Save & Continue");
 	}
 }
 
@@ -631,11 +721,40 @@ void EditorNode::ExecutePendingSceneAction()
 			return;
 		}
 
-		if (g_engine->m_fileSystem->Exists("res://Game.csproj") && !BuildCSharpProject())
+		m_editorUI->SetStatusMessage("Preparing project for Play...");
+		m_pendingSceneAction = PendingSceneAction::BuildPlay;
+		m_playDelayFrames = 1;
+		m_resumePending = true;
+		break;
+	}
+	case PendingSceneAction::BuildPlay:
+	{
+		bool const scripted = g_engine->m_scriptSystem->HasProjectScripts()
+			|| g_engine->m_fileSystem->Exists("res://Game.csproj");
+		if (scripted && !BuildCSharpProject())
 		{
 			INFO_PRINT("Play cancelled because the C# build failed.");
 			return;
 		}
+		if (scripted)
+		{
+			if (!g_engine->m_scriptSystem->ReloadProjectAssembly())
+			{
+				m_editorUI->Warning("Run Failed", "Could not load the compiled C# assembly. See Output.");
+				return;
+			}
+
+			Ref<PackedScene> main(ResourceLoader::LoadUncached(ProjectSettings::Get()->m_startScenePath));
+			Node* root = main.IsValid() ? main->Instantiate() : nullptr;
+			bool const valid = g_engine->m_scriptSystem->ValidateSceneScripts(root);
+			MemDelete(root);
+			if (!valid)
+			{
+				m_editorUI->Warning("Run Failed", "A scene script has no compiled type or an incompatible base. See Output.");
+				return;
+			}
+		}
+
 		if (!g_app->LaunchGame())
 		{
 			m_editorUI->Warning("Run Failed", "Could not start the game. See Output for details.");
@@ -808,6 +927,73 @@ bool EditorNode::GenerateCSharpProject()
 		return false;
 	}
 	INFO_PRINT("C# project generated.");
+	return true;
+}
+
+bool EditorNode::OpenCSharpScript(VirtualPath const& path)
+{
+	auto fail = [this](std::string const& message)
+	{
+		ERR_PRINT(message);
+		m_editorUI->Warning("C# Editor", message);
+		return false;
+	};
+
+	std::filesystem::path script;
+	std::filesystem::path project;
+	std::error_code error;
+	if (!path.HasExtension(".cs") || !g_engine->m_fileSystem->TryGetPhysicalPath(path, script)
+		|| !std::filesystem::is_regular_file(script, error)
+		|| !g_engine->m_fileSystem->TryGetPhysicalPath(VirtualPath("res://"), project))
+	{
+		return fail("Could not find the C# script in the current project.");
+	}
+
+	std::filesystem::path const executable = FindVSCode();
+	if (executable.empty())
+	{
+		return fail("Could not find Visual Studio Code. Install it in the default location or add its bin folder to PATH.");
+	}
+
+	if (!g_engine->m_scriptSystem->EnsureProjectSolution())
+	{
+		return fail("Could not prepare the C# project. See Output.");
+	}
+
+	// Start VS Code as an editor even when Ming was launched from an Electron tool.
+	// e.g. Remove ELECTRON_RUN_AS_NODE=1 from the child environment only.
+	wchar_t* inherited = GetEnvironmentStringsW();
+	if (inherited == nullptr)
+	{
+		return fail("Could not read the environment for Visual Studio Code.");
+	}
+
+	std::wstring environment;
+	for (wchar_t const* entry = inherited; *entry != L'\0'; entry += std::wcslen(entry) + 1)
+	{
+		wchar_t const* key = L"ELECTRON_RUN_AS_NODE=";
+		if (_wcsnicmp(entry, key, std::wcslen(key)) != 0)
+		{
+			environment.append(entry, std::wcslen(entry) + 1);
+		}
+	}
+
+	environment.push_back(L'\0');
+	FreeEnvironmentStringsW(inherited);
+
+	std::wstring command = L"\"" + executable.wstring() + L"\" \"" + (project / L".").wstring()
+		+ L"\" \"" + script.wstring() + L"\"";
+	STARTUPINFOW startup{};
+	startup.cb = sizeof(startup);
+	PROCESS_INFORMATION process{};
+	if (!CreateProcessW(executable.c_str(), command.data(), nullptr, nullptr, FALSE, CREATE_NO_WINDOW | CREATE_UNICODE_ENVIRONMENT,
+		environment.data(), project.c_str(), &startup, &process))
+	{
+		return fail("Could not start Visual Studio Code. Windows error: " + std::to_string(GetLastError()));
+	}
+
+	CloseHandle(process.hThread);
+	CloseHandle(process.hProcess);
 	return true;
 }
 

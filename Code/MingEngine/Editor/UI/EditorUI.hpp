@@ -10,6 +10,7 @@
 #include "MingEngine/Editor/UI/Popup/WarningPopup.hpp"
 #include "MingEngine/Scene/GUI/MenuBar.hpp"
 
+#include "MingEngine/Editor/UI/Popup/CreateScriptPopup.hpp"
 #include <array>
 #include "MingEngine/Editor/EditorNode.hpp"
 #include "MingEngine/Editor/UI/Popup/SceneFilePopup.hpp"
@@ -41,6 +42,14 @@ private:
 		String      m_text;
 	};
 
+	struct MenuLevel
+	{
+		Control* m_panel = nullptr;
+		Button* m_parent = nullptr;
+		std::vector<Button*> m_buttons;
+		std::vector<MenuItem> m_items;
+	};
+
 public:
 	~EditorUI();
 	void InitializeNative(EditorNode* owner);
@@ -49,7 +58,8 @@ public:
 	bool IsNativeInputActive() const;
 	void FinishInput(EditorUIContext& context);
 	void FinishNativeEditing();
-	void ShowUnsavedScene();
+	void ShowUnsavedScene(String const& message, String const& question, String const& action);
+	void CreateScript(VirtualPath const& directory, std::string const& base, std::function<void(VirtualPath const&)> created);
 	void OpenSceneFile(
 		SceneFilePopup::Mode                    mode,
 		VirtualPath const&                      initial,
@@ -58,6 +68,8 @@ public:
 	void Warning(std::string const& title, std::string const& message);
 	void ShowMenu(Control* source, Vector2 position, std::vector<MenuItem> const& items);
 	void SetNativeDragPreview(Control* source, String const& text);
+	void OpenScriptFile(std::function<void(VirtualPath const&)> selected);
+	void HandleMenuPointer(InputEvent const& event);
 
 	Control*              GetRootControl() const;
 	bool                  IsSceneNavigationActive() const;
@@ -92,6 +104,8 @@ private:
 	std::vector<MenuItem> CreateMenuItems(std::string const& menu);
 	void                  AcceptUnsavedScene(EditorNode::SceneActionChoice choice);
 	void                  ShowEditorSettings();
+	void OpenSubmenu(Button* parent, std::vector<MenuItem> const& items);
+	void HandleMenuKey(InputEvent const& event);
 
 	void InitializeNativeDocking();
 	void UpdateNativeDocking();
@@ -108,6 +122,9 @@ private:
 	OutputPanel*               m_outputPanel     = nullptr;
 	PopupPanel*                m_settingsPopup   = nullptr;
 	OptionButton*              m_settingsScale   = nullptr;
+	PopupPanel* m_scriptFilePopup = nullptr;
+	VBoxContainer* m_scriptFileContent = nullptr;
+	CreateScriptPopup          m_createScriptPopup;
 	SceneFilePopup             m_sceneFilePopup;
 	ProjectSettingsPopup       m_projectSettingsPopup;
 	WarningPopup               m_warningPopup;
@@ -128,9 +145,14 @@ private:
 
 	SubViewportContainer* m_sceneView    = nullptr;
 	PopupPanel*           m_unsavedPopup = nullptr;
+	Label* m_unsavedMessage = nullptr;
+	Label* m_unsavedQuestion = nullptr;
+	Button* m_unsavedSave = nullptr;
+	HBoxContainer* m_unsavedActions = nullptr;
 
 	PopupPanel*                    m_menu        = nullptr;
 	VBoxContainer*                 m_menuContent = nullptr;
+	std::vector<MenuLevel> m_menuLevels;
 	Vector2                        m_viewportOrigin;
 	Vector2                        m_viewportDims;
 	std::array<DockPanel, 5>       m_dockPanels;

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<class name="OmniLight3D">
+  <brief_description>A light that shines in all directions from a point.</brief_description>
+  <description>Adds range and distance fade settings to Light3D.</description>
+  <methods>
+    <method name="SetRange">
+      <description>Sets the light range value and updates the render light. Does not clamp the value.</description>
+      <param name="range">The light range in world units. Use a positive value.</param>
+    </method>
+    <method name="GetRange">
+      <description>Gets the light range value.</description>
+      <returns>The light range in world units.</returns>
+    </method>
+    <method name="SetAttenuation">
+      <description>Sets the distance fade value sent to the render light. Does not clamp the value.</description>
+      <param name="attenuation">The setting for how the light fades with distance.</param>
+    </method>
+    <method name="GetAttenuation">
+      <description>Gets the distance fade value.</description>
+      <returns>The current distance fade setting.</returns>
+    </method>
+  </methods>
+</class>

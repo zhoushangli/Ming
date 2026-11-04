@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<class name="SpinBox">
+  <brief_description>A control for entering numbers and changing them in steps.</brief_description>
+</class>

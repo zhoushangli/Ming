@@ -78,6 +78,22 @@ Ref<Theme> EditorThemeManager::CreateTheme()
 		"Button",
 		box(Color::Transparent, Color::Transparent, 0.f, contentPadding, static_cast<float>(compactSpacing)));
 	theme->SetStyleBox("focus", "Button", box(Color::Transparent, accent, 1.f, 0.f, 0.f));
+	theme->SetTypeVariation("EditorScriptButton", "Button");
+	theme->SetStyleBox("normal", "EditorScriptButton", box(field, border, 1.f, 4.f, 2.5f));
+	theme->SetStyleBox("hover", "EditorScriptButton", box(elevated, accent, 1.f, 4.f, 2.5f));
+	theme->SetStyleBox("pressed", "EditorScriptButton", box(tint, accent, 1.f, 4.f, 2.5f));
+	theme->SetStyleBox("hover_pressed", "EditorScriptButton", box(tint, accent, 1.f, 4.f, 2.5f));
+	theme->SetStyleBox("disabled", "EditorScriptButton", box(field, border, 1.f, 4.f, 2.5f));
+	for (char const* type : { "EditorScriptAction", "EditorScriptMenu" })
+	{
+		theme->SetTypeVariation(type, "Button");
+		theme->SetConstant("icon_size", type, std::string(type) == "EditorScriptMenu" ? 8 : 16);
+		theme->SetStyleBox("normal", type, box(Color::Transparent, Color::Transparent, 0.f, 3.f, 0.f));
+		theme->SetStyleBox("hover", type, box(elevated, Color::Transparent, 0.f, 3.f, 0.f));
+		theme->SetStyleBox("pressed", type, box(tint, Color::Transparent, 0.f, 3.f, 0.f));
+		theme->SetStyleBox("hover_pressed", type, box(tint, Color::Transparent, 0.f, 3.f, 0.f));
+		theme->SetStyleBox("disabled", type, box(Color::Transparent, Color::Transparent, 0.f, 3.f, 0.f));
+	}
 	theme->SetColor("font_hover_color", "Button", text);
 	theme->SetColor("font_pressed_color", "Button", accent);
 	theme->SetColor("font_hover_pressed_color", "Button", accent);
@@ -95,6 +111,16 @@ Ref<Theme> EditorThemeManager::CreateTheme()
 	theme->SetStyleBox("read_only", "LineEdit", box(panel, border, 1.f, fieldPadding, fieldVerticalPadding));
 	theme->SetStyleBox("disabled", "LineEdit", box(field, border, 1.f, fieldPadding, fieldVerticalPadding));
 	theme->SetStyleBox("focus", "LineEdit", box(Color::Transparent, accent, 1.f, 0.f, 0.f));
+	theme->SetTypeVariation("EditorVectorField", "PanelContainer");
+	theme->SetStyleBox("panel", "EditorVectorField", box(field, Color::Transparent, 0.f, 3.f, 0.f));
+	theme->SetTypeVariation("EditorVectorEdit", "LineEdit");
+	for (char const* state : { "normal", "hover", "read_only", "disabled" })
+	{
+		theme->SetStyleBox(state, "EditorVectorEdit", box(Color::Transparent, Color::Transparent, 0.f, 0.f, fieldVerticalPadding));
+	}
+	theme->SetColor("property_color_x", "Editor", Color(224, 97, 120));
+	theme->SetColor("property_color_y", "Editor", Color(194, 237, 102));
+	theme->SetColor("property_color_z", "Editor", Color(107, 171, 245));
 
 	theme->SetConstant("row_height", "Tree", controlHeight);
 	theme->SetConstant("indent", "Tree", 18);
@@ -249,6 +275,13 @@ Ref<Theme> EditorThemeManager::CreateTheme()
 	theme->SetStyleBox("panel", "EditorObjectBar", box(field, Color::Transparent, 0.f, 7.5f, 3.75f));
 	theme->SetTypeVariation("EditorGroupButton", "EditorToolbarButton");
 	theme->SetColor("font_color", "EditorGroupButton", text);
+	theme->SetConstant("icon_size", "EditorGroupButton", 16);
+	theme->SetConstant("icon_separation", "EditorGroupButton", 4);
+	for (char const* state : { "normal", "hover", "pressed", "hover_pressed", "disabled" })
+	{
+		theme->SetStyleBox(state, "EditorGroupButton", box(std::string(state) == "normal" ? Color::Transparent : elevated,
+			Color::Transparent, 0.f, 3.f, 2.f));
+	}
 	theme->SetTypeVariation("EditorPropertyLabel", "Label");
 	theme->SetFontSize("font_size", "EditorPropertyLabel", 14);
 	theme->SetColor("font_color", "EditorPropertyLabel", muted);
@@ -294,6 +327,8 @@ Ref<Theme> EditorThemeManager::CreateTheme()
 	theme->SetConstant("spacing", "Editor", 8);
 	theme->SetConstant("section_height", "Editor", 30);
 	theme->SetConstant("property_label_width", "Editor", 113);
+	theme->SetConstant("script_label_width", "Editor", 52);
+	theme->SetConstant("unsaved_popup_width", "Editor", 540);
 	theme->SetConstant("action_slot", "Editor", 23);
 	theme->SetConstant("color_height", "Editor", 28);
 	theme->SetConstant("viewport_min_width", "Editor", 280);
@@ -354,7 +389,7 @@ Ref<Theme> EditorThemeManager::CreateTheme()
 	theme->SetStyleBox("panel", "EditorDialogSidebar", box(field, Color::Transparent, 0.f, 6.f, 6.f));
 	theme->SetConstant("node_sidebar_width", "Editor", 170);
 	theme->SetConstant("node_description_height", "Editor", 80);
-	theme->SetConstant("gizmo_size", "Editor", 80);
+	theme->SetConstant("gizmo_size", "Editor", 104);
 	return theme;
 }
 
@@ -410,6 +445,10 @@ Ref<Theme> EditorThemeManager::CreateScaledTheme(Ref<Theme> const& baseTheme, fl
 		{ "Button", "icon_separation" },
 		{ "Button", "icon_size" },
 		{ "Button", "minimum_height" },
+		{ "EditorGroupButton", "icon_size" },
+		{ "EditorGroupButton", "icon_separation" },
+		{ "EditorScriptAction", "icon_size" },
+		{ "EditorScriptMenu", "icon_size" },
 		{ "Editor", "action_slot" },
 		{ "Editor", "beam_center_gap" },
 		{ "Editor", "beam_max_width" },
@@ -420,6 +459,8 @@ Ref<Theme> EditorThemeManager::CreateScaledTheme(Ref<Theme> const& baseTheme, fl
 		{ "Editor", "popup_height" },
 		{ "Editor", "popup_screen_margin" },
 		{ "Editor", "property_label_width" },
+		{ "Editor", "script_label_width" },
+		{ "Editor", "unsaved_popup_width" },
 		{ "Editor", "scene_title_width" },
 		{ "Editor", "section_height" },
 		{ "Editor", "separator_height" },

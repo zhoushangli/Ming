@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<class name="BaseButton">
+  <brief_description>Base class for controls that can be pressed.</brief_description>
+  <description>Stores the hover, pressed, toggle, and disabled states used by button controls.</description>
+</class>

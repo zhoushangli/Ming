@@ -9,6 +9,7 @@
 #include "MingEngine/Editor/EditorCamera.hpp"
 #include "MingEngine/Editor/Gizmos/EditorGizmos.hpp"
 #include "MingEngine/Editor/Gizmos/GizmoComponent.hpp"
+#include "MingEngine/Editor/Gizmos/TransformGizmo3D.hpp"
 #include "MingEngine/Scene/3D/MeshInstance3D.hpp"
 #include "MingEngine/Scene/RegisterAllTypes.hpp"
 #include "MingEngine/Scene/Core/SceneTree.hpp"
@@ -570,29 +571,78 @@ int main(int argc, char** argv)
 			frame();
 		}
 
-		Button* transformGroup = nullptr;
-		for (Node* child : inspector.GetContentControl()->GetChildren())
+		Button* transformGroup = dynamic_cast<Button*>(FindNamedUI(&inspector, "InspectorGroupHeading_Transform"));
+		Control* positionField = FindNamedUI(&inspector, "position");
+		Control* rotationField = FindNamedUI(&inspector, "rotation");
+		if (transformGroup != nullptr && positionField != nullptr && rotationField != nullptr)
 		{
-			if (auto* button = dynamic_cast<Button*>(child);
-				button != nullptr && button->GetText() == String("Transform"))
+			auto* title = FindUIControl<Label>(positionField);
+			auto style = transformGroup->GetThemeStyleBox("normal");
+			float const textStart = transformGroup->GetGlobalPosition().x
+				+ style->GetContentMargin(ThemeStyleBox::Side::Left)
+				+ transformGroup->GetThemeConstant("icon_size", "EditorGroupButton")
+				+ transformGroup->GetThemeConstant("icon_separation", "EditorGroupButton");
+			check(title != nullptr && std::abs(title->GetGlobalPosition().x - textStart) < 0.01f,
+				"group contents align with the heading text");
+			auto* x = FindNamedUI(positionField, "x");
+			auto* y = FindNamedUI(positionField, "y");
+			auto* z = FindNamedUI(positionField, "z");
+			check(x != nullptr && y != nullptr && z != nullptr
+				&& std::abs(x->GetSize().x - y->GetSize().x) < 0.01f
+				&& std::abs(y->GetSize().x - z->GetSize().x) < 0.01f
+				&& x->GetGlobalPosition().y >= title->GetGlobalPosition().y + title->GetSize().y,
+				"Vector3 uses equal-width components below its title");
+			if (x != nullptr)
 			{
-				transformGroup = button;
+				check(FindUIControl<Label>(x)->GetFontColor() == theme->GetColor("property_color_x", "Editor"),
+					"vector axis labels use the theme axis color");
 			}
+
+			auto* rotationX = FindNamedUI(rotationField, "x");
+			check(FindUIControl<Label>(rotationField)->GetText() == String("Rotation")
+				&& rotationX != nullptr && FindUIControl<SpinBox>(rotationX)->GetLineEdit()->GetText() == String("0"),
+				"rotation keeps units outside the editable numeric text");
+			bool degree = false;
+			if (rotationX != nullptr)
+			{
+				for (Node* child : FindUIControl<SpinBox>(rotationX)->GetParent()->GetChildren())
+				{
+					if (auto* label = dynamic_cast<Label*>(child))
+					{
+						degree = degree || label->GetText() == String(U"\u00b0");
+					}
+				}
+			}
+
+			check(degree, "Euler component displays a separate degree suffix");
 		}
+
+		auto* loadScript = FindNamedUI(&inspector, "LoadScript");
+		auto* scriptMenu = dynamic_cast<Button*>(FindNamedUI(&inspector, "ScriptMenu"));
+		check(loadScript != nullptr && scriptMenu != nullptr
+			&& loadScript->GetCombinedMinimumSize().x == theme->GetConstant("icon_size", "EditorScriptAction")
+				+ loadScript->GetThemeStyleBox("normal")->GetMinimumSize().x
+			&& scriptMenu->GetCombinedMinimumSize().x == theme->GetConstant("icon_size", "EditorScriptMenu")
+				+ scriptMenu->GetThemeStyleBox("normal")->GetMinimumSize().x
+			&& scriptMenu->GetIcon() == theme->GetIcon("Dropdown", "EditorIcons"),
+			"Script actions use compact icon slots and the dedicated triangle");
 
 		check(transformGroup != nullptr, "Node3D properties are grouped under Transform");
 		if (transformGroup != nullptr)
 		{
 			click(transformGroup);
 			frame();
+			check(positionField != nullptr && !positionField->IsVisibleInHierarchy(), "fold hides section contents");
 			LineEdit* search = FindUIControl<LineEdit>(&inspector);
 			search->SetText("Transform");
 			frame();
 			check(
-				transformGroup->IsVisibleInHierarchy() && nodeHeader->IsVisibleInHierarchy(),
+				transformGroup->IsVisibleInHierarchy() && nodeHeader->IsVisibleInHierarchy()
+					&& positionField != nullptr && positionField->IsVisibleInHierarchy(),
 				"group-name search expands matching group");
 			search->SetText("");
 			frame();
+			check(!positionField->IsVisibleInHierarchy(), "clearing search restores the previous folded state");
 			click(transformGroup);
 			frame();
 		}
@@ -604,19 +654,8 @@ int main(int argc, char** argv)
 			cameraHeader != nullptr && nodeHeader != nullptr && !cameraHeader->IsVisibleInHierarchy()
 				&& nodeHeader->IsVisibleInHierarchy(),
 			"property search hides the complete unrelated class header");
-		SpinBox* position = FindUIControl<SpinBox>(inspector.GetContentControl());
-		for (Node* child : inspector.GetContentControl()->GetChildren())
-		{
-			auto* control = dynamic_cast<Control*>(child);
-			if (control != nullptr && control->IsVisible())
-			{
-				if (auto* spin = FindUIControl<SpinBox>(control))
-				{
-					position = spin;
-					break;
-				}
-			}
-		}
+		SpinBox* position = positionField != nullptr ? FindUIControl<SpinBox>(positionField) : nullptr;
+		check(rotationField != nullptr && !rotationField->IsVisibleInHierarchy(), "property-name search hides unmatched siblings");
 
 		if (position != nullptr)
 		{
@@ -654,6 +693,7 @@ int main(int argc, char** argv)
 		ui->ResetNativeLayout();
 		frame();
 		frame();
+
 
 		check(SpinBox::FormatValue(Variant(0.1f)) == "0.1", "float fields use shortest round-trip representation");
 		for (int i = 0; i < 4; ++i)
@@ -999,15 +1039,52 @@ int main(int argc, char** argv)
 		gizmos->SetTool(GizmoTool::Move);
 		frame();
 		frame();
+		float const beforeNarrow = ui->GetDockSplit(1)->GetSplitRatio();
+		ui->GetDockSplit(1)->SetSplitRatio(0.99f);
+		frame();
+		frame();
+		auto* narrowScript = FindNamedUI(&inspector, "ScriptMenu");
+		auto* narrowScroll = FindUIControl<ScrollContainer>(&inspector);
+		check(narrowScript != nullptr && narrowScroll != nullptr
+			&& narrowScript->GetGlobalPosition().x + narrowScript->GetSize().x
+				<= narrowScroll->GetGlobalPosition().x + narrowScroll->GetPageSize().x + 0.01f
+			&& narrowScript->GetGlobalPosition().x + narrowScript->GetSize().x <= root->GetOutputResolution().x,
+			"Script actions remain inside the visible page at minimum dock width");
+
+		ui->GetDockSplit(1)->SetSplitRatio(beforeNarrow);
+		frame();
+		frame();
 		auto screenPoint = [&](Vector3 const& world)
 		{
 			Vector2 const size    = sceneView->GetSize();
 			float const   tangent = std::tan(editCamera->GetFovDegrees() * 3.14159265f / 360.f);
+			Vector3 const cameraPoint = editCamera->GetWorldInverseTransform().TransformPosition3D(world);
 			return sceneView->GetGlobalPosition()
 				   + Vector2(
-					   size.x * 0.5f - world.y * size.y / (2.f * world.x * tangent),
-					   size.y * 0.5f - world.z * size.y / (2.f * world.x * tangent));
+					   size.x * 0.5f - cameraPoint.y * size.y / (2.f * cameraPoint.x * tangent),
+					   size.y * 0.5f - cameraPoint.z * size.y / (2.f * cameraPoint.x * tangent));
 		};
+		auto activeDragValue = [&]() -> Label*
+		{
+			for (Node* child : FindUIControl<TransformGizmo3D>(gizmos)->GetChildren())
+			{
+				auto* component = dynamic_cast<GizmoComponent*>(child);
+				if (component != nullptr && component->IsDragging())
+				{
+					return static_cast<Label*>(FindNamedUI(component, "GizmoDragValue"));
+				}
+			}
+
+			return nullptr;
+		};
+		float const indicatorScale = editor->GetEditorTheme()->GetConstant("icon_size", "Button") / 20.f;
+		IntVec2 const sceneSize = sceneView->GetSubViewport()->GetOutputResolution();
+		Color const positiveZ = ReadPixel(
+			engine.m_renderServer->ViewportGetTexture(sceneView->GetSubViewport()->GetViewportRID()),
+			static_cast<unsigned>(sceneSize.x - 80.f * indicatorScale),
+			static_cast<unsigned>(80.f * indicatorScale - 25.f));
+		check(positiveZ.b > positiveZ.r && positiveZ.b > positiveZ.g,
+			"axis indicator connects positive Z above its center when the camera looks along X");
 		auto startMove = [&]()
 		{
 			GizmoContext const context = BuildGizmoContext(&tree, *editCamera);
@@ -1020,8 +1097,13 @@ int main(int argc, char** argv)
 		Vector3 const initial = gizmoTarget->GetLocalPosition();
 		Vector2       at      = startMove();
 		check(gizmos->IsDragging(), "viewport press captures a visible move handle");
+		Label* dragValue = static_cast<Label*>(FindNamedUI(gizmos, "GizmoDragValue"));
+		check(dragValue != nullptr && dragValue->IsVisible(), "press displays the active transform feedback");
 		pointer(InputEventType::MouseMotion, at + Vector2(-35.f, 0.f));
+		frame();
+		SaveRenderedFrame(engine.m_renderServer->ViewportGetTexture(root->GetViewportRID()), captures / "gizmo-move-drag.ppm");
 		pointer(InputEventType::MouseButton, at + Vector2(-35.f, 0.f));
+		check(dragValue != nullptr && !dragValue->IsVisible(), "release clears transform feedback");
 		check(
 			gizmoTarget->GetLocalPosition().y > initial.y && editor->GetUndoRedo().HasUndo(scene->GetObjectID()),
 			"move drag changes the constrained axis and records one scene action");
@@ -1038,6 +1120,7 @@ int main(int argc, char** argv)
 		check(
 			!gizmos->IsDragging() && gizmoTarget->GetLocalPosition() == committed,
 			"Escape restores drag snapshot without committing");
+		check(dragValue != nullptr && !dragValue->IsVisible(), "Escape clears transform feedback");
 		frame();
 		at = startMove();
 		pointer(InputEventType::MouseMotion, at + Vector2(-20.f, 0.f));
@@ -1047,6 +1130,7 @@ int main(int argc, char** argv)
 		check(
 			!gizmos->IsDragging() && gizmoTarget->GetLocalPosition() == committed,
 			"window focus loss cancels the captured transform");
+		check(dragValue != nullptr && !dragValue->IsVisible(), "focus loss clears transform feedback");
 		lostFocus.m_focused = true;
 		root->ProcessInputEvent(lostFocus);
 		frame();
@@ -1081,9 +1165,138 @@ int main(int argc, char** argv)
 		at                         = screenPoint(gizmoTarget->GetWorldPosition());
 		pointer(InputEventType::MouseButton, at, true);
 		pointer(InputEventType::MouseMotion, at + Vector2(30.f, -30.f));
+		frame();
+		Label* scaleValue = activeDragValue();
+		check(scaleValue != nullptr && scaleValue->IsVisible() && scaleValue->GetText() != String("x 1.000"),
+			"uniform scaling displays the changing scale factor");
+		SaveRenderedFrame(engine.m_renderServer->ViewportGetTexture(root->GetViewportRID()), captures / "gizmo-scale-drag.ppm");
 		pointer(InputEventType::MouseButton, at + Vector2(30.f, -30.f));
 		check(gizmoTarget->GetLocalScale().x > initialScale.x, "center scale handle changes uniform scale");
-		// 3) Exercise rotated parents and TRS limits without depending on another test's state.
+		gizmos->SetTool(GizmoTool::Rotate);
+		frame();
+		GizmoContext const rotationPreview = BuildGizmoContext(&tree, *editCamera);
+		at = screenPoint(gizmoTarget->GetWorldPosition() + Vector3::Left * (rotationPreview.m_scale * 0.8f));
+		pointer(InputEventType::MouseMotion, at);
+		pointer(InputEventType::MouseButton, at, true);
+		Vector2 const rotatedPoint = screenPoint(
+			gizmoTarget->GetWorldPosition() + Vector3::Up * (rotationPreview.m_scale * 0.8f));
+		pointer(InputEventType::MouseMotion, rotatedPoint);
+		frame();
+		Label* angleValue = activeDragValue();
+		check(angleValue != nullptr && angleValue->IsVisible()
+				&& std::abs(std::stof(angleValue->GetText().ToUtf8()) - 90.f) < 1.f,
+			"rotation drag displays the swept quarter-turn angle");
+		SaveRenderedFrame(engine.m_renderServer->ViewportGetTexture(root->GetViewportRID()), captures / "gizmo-rotate-drag.ppm");
+		key(GLFW_KEY_ESCAPE);
+		pointer(InputEventType::MouseButton, rotatedPoint);
+		check(angleValue != nullptr && !angleValue->IsVisible(), "cancelling rotation removes its angle and sector feedback");
+
+		// 3) Verify camera-facing plane picking and continuous display scaling during a real drag.
+		Vector3 const planeFixturePosition = gizmoTarget->GetLocalPosition();
+		EulerAngles const planeFixtureOrientation = gizmoTarget->GetLocalOrientation();
+		gizmoTarget->SetLocalPosition(Vector3::Zero);
+		gizmos->SetTool(GizmoTool::Move);
+		for (bool localMode : { false, true })
+		{
+			gizmos->SetLocal(localMode);
+			for (int octant = 0; octant < 8; ++octant)
+			{
+				Vector3 const cameraPosition((octant & 1) ? -6.f : 6.f,
+					(octant & 2) ? -6.f : 6.f, (octant & 4) ? -6.f : 6.f);
+				editor->GetEditorCamera()->SetLocalPosition(cameraPosition);
+				editor->GetEditorCamera()->SetWorldForward(-cameraPosition);
+				frame();
+				GizmoContext const facing = BuildGizmoContext(&tree, *editCamera);
+				bool facesCamera = true;
+				bool picksVisibleCenter = true;
+				for (Node* child : FindUIControl<TransformGizmo3D>(gizmos)->GetChildren())
+				{
+					auto* component = dynamic_cast<GizmoComponent*>(child);
+					if (component == nullptr || component->GetKind() != GizmoKind::Plane)
+					{
+						continue;
+					}
+
+					Vector3 const center = component->GetWorldVirtualCenter();
+					facesCamera = facesCamera && Vector3::DotProduct(center, cameraPosition) > 0.f;
+					MathRaycastQuery3D const ray{ cameraPosition, (center - cameraPosition).GetNormalized(), 100.f };
+					picksVisibleCenter = picksVisibleCenter && component->Raycast(facing, ray).m_didImpact;
+				}
+
+				check(facesCamera, "World and Local plane handles face the camera in every viewing octant");
+				check(picksVisibleCenter, "plane hit regions follow the rendered mirrored centers");
+			}
+		}
+
+		gizmos->SetLocal(false);
+		gizmoTarget->SetLocalOrientation(EulerAngles::Zero);
+		Vector3 const planeCameraPosition(6.f, -6.f, 6.f);
+		editor->GetEditorCamera()->SetLocalPosition(planeCameraPosition);
+		editor->GetEditorCamera()->SetWorldForward(-planeCameraPosition);
+		editCamera->SetOrthogonal(10.f, 0.f, 100.f);
+		check(BuildGizmoContext(&tree, *editCamera).m_planeSigns == Vector3::One,
+			"orthographic plane handles retain their unmirrored layout");
+		editCamera->SetPerspective(60.f, 0.1f, 100.f);
+		frame();
+		GizmoComponent* planeHandle = nullptr;
+		for (Node* child : FindUIControl<TransformGizmo3D>(gizmos)->GetChildren())
+		{
+			auto* component = dynamic_cast<GizmoComponent*>(child);
+			if (component != nullptr && component->GetKind() == GizmoKind::Plane
+				&& std::abs(component->GetWorldVirtualCenter().z) < 0.0001f)
+			{
+				planeHandle = component;
+			}
+		}
+
+		check(planeHandle != nullptr, "XY plane fixture has a visible handle");
+		if (planeHandle != nullptr)
+		{
+			Vector3 const startCenter = planeHandle->GetWorldVirtualCenter();
+			float const startSize = planeHandle->GetWorldScale().x;
+			at = screenPoint(startCenter);
+			pointer(InputEventType::MouseMotion, at);
+			pointer(InputEventType::MouseButton, at, true);
+			check(gizmos->IsDragging() && planeHandle->IsDragging(), "mirrored plane press captures that plane");
+			pointer(InputEventType::MouseMotion, screenPoint(startCenter + Vector3(1.5f, 0.5f, 0.f)));
+			frame();
+			SaveRenderedFrame(engine.m_renderServer->ViewportGetTexture(root->GetViewportRID()),
+				captures / "gizmo-plane-drag.ppm");
+			Vector2 const planeEnd = screenPoint(startCenter + Vector3(12.f, 0.f, 0.f));
+			pointer(InputEventType::MouseMotion, planeEnd);
+			frame();
+			GizmoContext const moved = BuildGizmoContext(&tree, *editCamera);
+			check(gizmoTarget->GetWorldPosition().x > 6.f && std::abs(gizmoTarget->GetWorldPosition().z) < 0.0001f,
+				"plane translation remains constrained while crossing a facing boundary");
+			check(planeHandle->GetWorldTransform().GetIBasis3D().x > 0.f && moved.m_planeSigns.x < 0.f,
+				"active plane keeps its starting quadrant while the object crosses the camera");
+			check(std::abs(planeHandle->GetWorldScale().x / moved.m_scale - 1.f) < 0.001f
+					&& std::abs(planeHandle->GetWorldScale().x - startSize) > 0.1f,
+				"dragging updates the displayed size using the current object depth");
+			Label* planeValue = activeDragValue();
+			check(planeValue != nullptr && planeValue->IsVisible() && planeValue->GetText().Contains(U'X')
+					&& planeValue->GetText().Contains(U'Y'),
+				"plane feedback displays both constrained displacement components");
+			editor->GetEditorCamera()->SetLocalPosition(planeCameraPosition * 1.5f);
+			frame();
+			float const currentSize = planeHandle->GetWorldScale().x;
+			check(std::abs(currentSize / BuildGizmoContext(&tree, *editCamera).m_scale - 1.f) < 0.001f,
+				"camera distance changes refresh the active display without another mouse event");
+			pointer(InputEventType::MouseButton, planeEnd);
+			frame();
+			check(!gizmos->IsDragging() && std::abs(planeHandle->GetWorldScale().x - currentSize) < 0.001f,
+				"releasing a depth-changing drag does not jump in size");
+			editor->GetUndoRedo().Undo(scene->GetObjectID());
+			check(gizmoTarget->GetWorldPosition().GetLengthSquared() < 0.0001f,
+				"a depth-changing plane drag remains one undoable transform");
+		}
+
+		gizmoTarget->SetLocalPosition(planeFixturePosition);
+		gizmoTarget->SetLocalOrientation(planeFixtureOrientation);
+		editor->GetEditorCamera()->SetLocalPosition(Vector3::Zero);
+		editor->GetEditorCamera()->SetLocalOrientation(EulerAngles::Zero);
+		frame();
+		// 4) Exercise rotated parents and TRS limits without depending on another test's state.
 		auto* mathParent = MemNew<Node3D>();
 		mathParent->SetLocalOrientation(EulerAngles(25.f, 10.f, 15.f));
 		scene->AddNode(mathParent);

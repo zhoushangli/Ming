@@ -165,6 +165,7 @@ public:
 	static PropertyInfo const*              FindProperty(std::string const& className, std::string const& propertyName);
 
 	static MethodBind const* GetMethodBind(std::string const& className, std::string const& methodName);
+	static void              AddPropertyGroup(std::string const& className, std::string const& name);
 	static void              AddProperty(
 		std::string const& className,
 		PropertyInfo       propertyInfo,

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<class name="SystemBase">
+  <brief_description>Base class for engine systems with startup and frame steps.</brief_description>
+  <description>The engine drives these steps. They are not exposed as C# override points.</description>
+</class>

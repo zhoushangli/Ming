@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<class name="PopupPanel">
+  <brief_description>A control used for popup content such as menus and dialogs.</brief_description>
+</class>

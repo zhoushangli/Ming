@@ -80,6 +80,8 @@ public:
 		ClassDatabase::BindMethod("GetMode", &FieldProbe::GetMode, {});
 		ClassDatabase::BindMethod("SetNumber", &FieldProbe::SetNumber, { "value" });
 		ClassDatabase::BindMethod("GetNumber", &FieldProbe::GetNumber, {});
+		ADD_GROUP("Empty");
+		ADD_GROUP("Modes");
 		ADD_PROPERTY(
 			PropertyInfo(
 				Variant::Type::Int,
@@ -89,6 +91,7 @@ public:
 				PropertyInfo::UsageFlags::Default),
 			"SetMode",
 			"GetMode");
+		ADD_GROUP("Numbers");
 		ADD_PROPERTY(
 			PropertyInfo(
 				Variant::Type::Float,
@@ -98,6 +101,12 @@ public:
 				PropertyInfo::UsageFlags::Default),
 			"SetNumber",
 			"GetNumber");
+		ADD_GROUP("");
+		ADD_PROPERTY(
+			PropertyInfo(Variant::Type::Int, "ungrouped_mode", PropertyInfo::Hint::None, "", PropertyInfo::UsageFlags::Inspector),
+			"SetMode",
+			"GetMode");
+		ADD_GROUP("number");
 	}
 };
 
@@ -489,6 +498,25 @@ int main(int argc, char** argv)
 		tree.FlushPendingNode();
 		check(root->GetGuiPopup() == nullptr, "destroying enum owner closes popup safely");
 		{
+			auto* modalOwner = MemNew<Control>();
+			root->AddNode(modalOwner);
+			auto* modal = MemNew<PopupPanel>();
+			root->AddNode(modal);
+			auto* nestedOption = MemNew<OptionButton>();
+			nestedOption->SetOptions("Node:0,Node3D:1");
+			modal->AddNode(nestedOption);
+			modal->Open(modalOwner);
+			nestedOption->OpenOptions();
+			check(modal->IsVisible() && root->GetGuiPopup() != modal, "dropdown preserves its modal parent");
+			nestedOption->CloseOptions();
+			check(root->GetGuiPopup() == modal && modal->IsVisible(), "closing dropdown restores modal input");
+			modal->Close();
+			modal->QueueFree();
+			modalOwner->QueueFree();
+			tree.FlushPendingNode();
+		}
+
+		{
 			PropertyInfo
 				integer(Variant::Type::Int, "mode", PropertyInfo::Hint::None, "", PropertyInfo::UsageFlags::Default);
 			std::unique_ptr<InspectorProperty> ordinary(InspectorProperty::Create(integer, "ordinary", {}));
@@ -719,6 +747,35 @@ int main(int argc, char** argv)
 			frame();
 			frame();
 			auto* nativeRoot = panel->GetViewport();
+			auto* modes = NativePanelVerification::FindButton(panel, "Modes");
+			auto* numbers = NativePanelVerification::FindButton(panel, "Numbers");
+			check(modes != nullptr && numbers != nullptr && modes->GetParent() != numbers->GetParent(),
+				"group markers switch to separate section containers");
+			check(NativePanelVerification::FindButton(panel, "Empty") == nullptr
+				&& NativePanelVerification::FindButton(panel, "number") == nullptr,
+				"groups without editable properties do not create headers");
+			auto const* numberInfo = ClassDatabase::FindProperty("FieldProbe", "number");
+			check(numberInfo != nullptr && numberInfo->GetGetter() != nullptr
+				&& ClassDatabase::FindProperty("FieldProbe", "Modes") == nullptr,
+				"group markers neither shadow value properties nor resolve as editable properties");
+			bool ungrouped = false;
+			bool inherited = false;
+			for (Node* child : panel->GetContentControl()->GetChildren())
+			{
+				ungrouped = ungrouped || child->GetName() == String("ungrouped_mode");
+				inherited = inherited || child->GetName() == String("script");
+			}
+
+			check(ungrouped && inherited, "empty group ends grouping and inherited classes reset group state");
+			for (PropertyInfo const& info : ClassDatabase::GetProperties("FieldProbe"))
+			{
+				if (info.HasUsage(PropertyInfo::UsageFlags::Group))
+				{
+					check(info.m_type == Variant::Type::Empty && info.GetGetter() == nullptr && info.GetSetter() == nullptr
+						&& !info.HasUsage(PropertyInfo::UsageFlags::Storage), "group marker carries no value binding or storage");
+				}
+			}
+
 			auto* number     = Find<SpinBox>(panel->GetContentControl());
 			Draft(nativeRoot, number->GetLineEdit(), "50");
 			Key(nativeRoot, GLFW_KEY_ENTER);

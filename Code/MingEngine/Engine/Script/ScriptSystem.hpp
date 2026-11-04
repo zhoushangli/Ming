@@ -8,6 +8,7 @@
 
 #include "ThirdParty/DotNetHost/coreclr_delegates.h"
 
+#include <filesystem>
 #include <set>
 #include <string>
 #include <utility>
@@ -69,6 +70,8 @@ struct ManagedCallbacks
 	CreateUserManagedInstanceFunc   m_createUserManagedInstance   = nullptr;
 	ReleaseGCHandleFunc             m_releaseGCHandle             = nullptr;
 	CallFunc                        m_call                        = nullptr;
+	void(CORECLR_DELEGATE_CALLTYPE* m_getScriptBaseTypes)(String*) = nullptr;
+	int32_t(CORECLR_DELEGATE_CALLTYPE* m_getScriptNativeBase)(String const*, String*) = nullptr;
 };
 
 //---------------------------------------------------------------------------
@@ -85,6 +88,7 @@ struct ScriptSystemConfig
 };
 
 class Script;
+class Node;
 
 class ScriptSystem : public SystemBase
 {
@@ -120,6 +124,12 @@ public:
 	bool EnsureProjectSolution();
 	bool BuildProjectSolution();
 	bool ReloadProjectAssembly();
+	bool HasProjectScripts() const;
+	bool IsProjectAssemblyCurrent() const;
+	bool IsProjectAssemblyLoaded() const { return m_projectAssemblyLoaded; }
+	std::string GetScriptBaseTypes() const;
+	std::string GetScriptNativeBase(VirtualPath const& path) const;
+	bool ValidateSceneScripts(Node* root) const;
 
 	bool AddScriptBridge(CSharpScript* script, std::string const& scriptPath);
 	bool RemoveScriptBridge(CSharpScript* script);
@@ -152,6 +162,8 @@ private:
 	bool                      m_scriptExecutionSuspended = false;
 	bool                      m_isRecreatingInstances    = false;
 	bool                      m_isInitialized            = false;
+	bool                      m_projectAssemblyLoaded    = false;
+	std::filesystem::file_time_type m_loadedAssemblyTime{};
 	bool                      m_isAssemblyReloading      = false;
 	void*                     m_hostfxrModule            = nullptr;
 	ShutdownFunc              m_shutdown                 = nullptr;

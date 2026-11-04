@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<class name="ShaderResource">
+  <brief_description>Holds a shader used by the renderer.</brief_description>
+</class>

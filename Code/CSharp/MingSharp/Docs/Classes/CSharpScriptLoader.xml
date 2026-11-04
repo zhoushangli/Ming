@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<class name="CSharpScriptLoader">
+  <brief_description>Engine loader for C# script resources from .cs paths.</brief_description>
+  <description>Creates a script resource for an existing file. This loader does not compile the file.</description>
+</class>

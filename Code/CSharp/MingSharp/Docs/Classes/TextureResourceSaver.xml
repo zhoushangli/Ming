@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<class name="TextureResourceSaver">
+  <brief_description>Engine save handler for texture resources in .tex files.</brief_description>
+</class>

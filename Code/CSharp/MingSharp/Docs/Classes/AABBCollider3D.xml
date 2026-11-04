@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<class name="AABBCollider3D">
+  <brief_description>A 3D collision shape defined by an axis-aligned box.</brief_description>
+</class>

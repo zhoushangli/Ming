@@ -17,6 +17,7 @@
 #include "MingEngine/Scene/3D/Node3D.hpp"
 #include "MingEngine/Scene/Core/Node.hpp"
 #include "MingEngine/Scene/Core/SceneTree.hpp"
+#include "MingEngine/Scene/GUI/Label.hpp"
 
 #include <cmath>
 
@@ -158,6 +159,15 @@ GizmoContext BuildGizmoContext(SceneTree* sceneTree, Camera3D const& camera, Vec
 			context.m_basis = context.m_selectedNode3D->GetWorldOrientation().GetAsMatrix_IFwd_JLeft_KUp();
 		}
 
+		if (camera.GetMode() == CameraMode::Perspective)
+		{
+			Vector3 const direction = (context.m_originWorld - camera.GetWorldPosition()).GetNormalized();
+			context.m_planeSigns = Vector3(
+				DotProduct3D(context.m_basis.GetIBasis3D(), direction) > 1e-6f ? -1.f : 1.f,
+				DotProduct3D(context.m_basis.GetJBasis3D(), direction) > 1e-6f ? -1.f : 1.f,
+				DotProduct3D(context.m_basis.GetKBasis3D(), direction) > 1e-6f ? -1.f : 1.f);
+		}
+
 		float const height = std::max(1.f, context.m_clientDimensions.y);
 		float const depth  = DotProduct3D(context.m_originWorld - camera.GetWorldPosition(), camera.GetWorldForward());
 		float const extent = camera.GetMode() == CameraMode::Orthographic
@@ -198,10 +208,12 @@ MathRaycastResult3D GizmoComponent::Raycast(
 	return MathRaycastResult3D(raycastInfo.m_startPos, raycastInfo.m_forwardNormal, raycastInfo.m_maxLength);
 }
 
-void GizmoComponent::OnBeginDrag([[maybe_unused]] GizmoContext const& context, [[maybe_unused]] Vector3 const& hitPos)
+void GizmoComponent::OnBeginDrag(GizmoContext const& context, Vector3 const& hitPos)
 {
-	m_isDragging = true;
+	m_isDragging             = true;
+	m_feedbackStartDirection = (hitPos - context.m_originWorld).GetNormalized();
 	SetGizmoColor(GetDrawColor());
+	UpdateDragFeedback(context, m_kind == GizmoKind::Scale || m_kind == GizmoKind::UniformScale ? 1.f : 0.f);
 }
 
 void GizmoComponent::OnDrag(
@@ -215,6 +227,11 @@ void GizmoComponent::OnEndDrag([[maybe_unused]] GizmoContext const& context)
 {
 	m_isDragging = false;
 	SetGizmoColor(GetDrawColor());
+	if (m_dragVisual != nullptr)
+	{
+		m_dragVisual->SetVisible(false);
+		m_dragLabel->SetVisible(false);
+	}
 }
 
 Vector3 GizmoComponent::GetWorldVirtualCenter() const
@@ -226,6 +243,31 @@ void GizmoComponent::SetHovered(bool isHovered)
 {
 	m_isHovered = isHovered;
 	SetGizmoColor(GetDrawColor());
+}
+
+void GizmoComponent::RefreshDragFeedback(GizmoContext const& context)
+{
+	UpdateDragFeedback(context, m_feedbackValue);
+}
+
+void GizmoComponent::UpdateView(GizmoContext const& context)
+{
+	Vector3 signs = Vector3::One;
+	if (m_kind == GizmoKind::Plane)
+	{
+		signs = context.m_planeSigns;
+		float const parity = signs.x * signs.y * signs.z;
+
+		// Keep plane mirroring a proper rotation so child feedback can cancel the parent transform.
+		// e.g. Mirror X on an XY handle by also reversing its unused Z normal.
+		signs = signs * (Vector3::One + GetAxisWorld() * (parity - 1.f));
+	}
+
+	EulerAngles orientation;
+	orientation.SetFromMatrix_IFwd_JLeft_KUp(context.m_basis);
+	SetWorldPosition(context.m_originWorld);
+	SetWorldOrientation(orientation);
+	SetWorldScale(signs * context.m_scale);
 }
 
 bool GizmoComponent::IsHovered() const
@@ -309,17 +351,168 @@ Vector3 GizmoComponent::GetPlaneV() const
 
 Color GizmoComponent::GetDrawColor() const
 {
+	Color color = m_baseColor;
+	if (m_kind == GizmoKind::Plane)
+	{
+		if (m_isHovered || m_isDragging)
+		{
+			float const maximum = std::max(1.f, static_cast<float>(std::max({ color.r, color.g, color.b })));
+			auto        brighten = [&](unsigned char channel)
+			{
+				return static_cast<unsigned char>(255.f * (0.75f + 0.25f * channel / maximum));
+			};
+
+			return Color(brighten(color.r), brighten(color.g), brighten(color.b), 255);
+		}
+
+		color.a = 230;
+		return color;
+	}
+
 	if (m_isDragging)
 	{
-		return kActiveColor;
+		color = kActiveColor;
 	}
-
-	if (m_isHovered)
+	else if (m_isHovered)
 	{
-		return kHoverColor;
+		color = kHoverColor;
 	}
 
-	return m_baseColor;
+	return color;
+}
+
+void GizmoComponent::UpdateDragFeedback(GizmoContext const& context, float value)
+{
+	m_feedbackValue = value;
+	if (GetSceneTree() == nullptr || context.m_selectedNode3D == nullptr || context.m_camera == nullptr)
+	{
+		return;
+	}
+
+	if (m_dragVisual == nullptr)
+	{
+		m_dragVisual = MemNew<EditorGizmoVisual3D>();
+		m_dragVisual->SetName("GizmoDragFeedback");
+		m_dragVisual->SetSerializable(false);
+		AddNode(m_dragVisual);
+		m_dragVisual->SetRenderPriority(1100);
+		m_dragLabel = MemNew<Label>();
+		m_dragLabel->SetName("GizmoDragValue");
+		m_dragLabel->SetSerializable(false);
+		AddNode(m_dragLabel);
+		m_dragLabel->SetThemeSource(EditorNode::Get()->m_editorUI->GetRootControl());
+		m_dragLabel->SetFontColor(kActiveColor);
+	}
+
+	std::vector<Vertex> vertices;
+	Vector3 const       origin    = context.m_originWorld;
+	Vector3 const       axis      = GetContextAxis(context);
+	GizmoContext const  view      = BuildGizmoContext(context.m_sceneTree, *context.m_camera);
+	float const         scale     = view.m_scale;
+	float const         thickness = scale * 0.006f;
+	auto                line      = [&](Vector3 const& start, Vector3 const& end, Color const& color)
+	{
+		if ((end - start).GetLengthSquared() > 1e-10f)
+		{
+			AddVertsForCylinder3D(vertices, start, end, thickness, color, AABB2::Unit, 6);
+		}
+	};
+
+	switch (m_kind)
+	{
+	case GizmoKind::Rotate:
+	{
+		Vector3 const start    = m_feedbackStartDirection;
+		float const   radius   = kGizmoRotationRadius * scale;
+		int const     segments = std::max(1, static_cast<int>(std::ceil(std::abs(value) / 4.f)));
+		Vector3       previous = origin + start * radius;
+		Color         fill     = kActiveColor;
+		fill.a                 = 55;
+		for (int i = 1; i <= segments; ++i)
+		{
+			float const   degrees = value * static_cast<float>(i) / segments;
+			Vector3 const current = origin + AxisRotation(axis, degrees).TransformDirection3D(start) * radius;
+			vertices.emplace_back(origin, fill);
+			vertices.emplace_back(previous, fill);
+			vertices.emplace_back(current, fill);
+			previous = current;
+		}
+
+		line(origin, origin + start * radius, kGuideColor);
+		line(origin, previous, kActiveColor);
+		m_dragLabel->SetText(Stringf("%.1f deg", value));
+		break;
+	}
+	case GizmoKind::UniformScale:
+	{
+		Matrix4x4 const cameraBasis = context.m_camera->GetWorldOrientation().GetAsMatrix_IFwd_JLeft_KUp();
+		Vector3 const   u           = cameraBasis.GetJBasis3D();
+		Vector3 const   v           = cameraBasis.GetKBasis3D();
+		for (float factor : { 1.f, value })
+		{
+			float const   radius    = scale * 0.14f * factor;
+			Vector3 const corners[] = { origin + (u + v) * radius,
+									   origin + (-u + v) * radius,
+									   origin + (-u - v) * radius,
+									   origin + (u - v) * radius };
+			for (int i = 0; i < 4; ++i)
+			{
+				line(corners[i], corners[(i + 1) % 4], factor == 1.f ? kGuideColor : kActiveColor);
+			}
+		}
+
+		m_dragLabel->SetText(Stringf("x %.3f", value));
+		break;
+	}
+	case GizmoKind::Scale:
+	{
+		Vector3 const end  = origin + axis * (scale * kGizmoAxisLength);
+		Vector3 const tick = context.m_basis.TransformDirection3D(GetPlaneU()) * (scale * 0.08f);
+		line(origin, end, kGuideColor);
+		line(end - tick, end + tick, kGuideColor);
+		line(origin, origin + (end - origin) * value, kActiveColor);
+		m_dragLabel->SetText(Stringf("x %.3f", value));
+		break;
+	}
+	case GizmoKind::Move:
+	{
+		float const extent = scale * 100.f;
+		Color       guide  = m_baseColor;
+		guide.a            = 110;
+		line(origin - axis * extent, origin + axis * extent, guide);
+		line(origin, context.m_selectedNode3D->GetWorldPosition(), kActiveColor);
+		m_dragLabel->SetText(Stringf("%+.3f", value));
+		break;
+	}
+	case GizmoKind::Plane:
+	{
+		Vector3 const current = context.m_selectedNode3D->GetWorldPosition();
+		Vector3 const delta   = current - origin;
+		Vector3 const u       = context.m_basis.TransformDirection3D(GetPlaneU());
+		Vector3 const v       = context.m_basis.TransformDirection3D(GetPlaneV());
+		Color const colors[]  = { Color(255, 70, 105, 110), Color(155, 225, 20, 110), Color(55, 160, 255, 110) };
+		char const* names[]   = { "X", "Y", "Z" };
+		int const   uIndex    = m_axis == GizmoAxis::X ? 1 : 0;
+		int const   vIndex    = m_axis == GizmoAxis::Z ? 1 : 2;
+		float const extent    = scale * 100.f;
+		line(current - u * extent, current + u * extent, colors[uIndex]);
+		line(current - v * extent, current + v * extent, colors[vIndex]);
+		m_dragLabel->SetText(Stringf("%s %+.3f / %s %+.3f",
+			names[uIndex], DotProduct3D(delta, u), names[vIndex], DotProduct3D(delta, v)));
+		break;
+	}
+	}
+
+	m_dragVisual->SetWorldTransform(Matrix4x4::Identity);
+	m_dragVisual->UploadGeometry(vertices);
+	m_dragVisual->SetVisible(!vertices.empty());
+	m_dragLabel->SetFontColor(m_kind == GizmoKind::Plane ? GetDrawColor() : kActiveColor);
+	Vector2 const size = m_dragLabel->GetCombinedMinimumSize();
+	m_dragLabel->UpdateSize(size);
+	m_dragLabel->SetPosition(Vector2(
+		std::clamp(context.m_clientPos.x + 18.f, 8.f, std::max(8.f, view.m_clientDimensions.x - size.x - 8.f)),
+		std::clamp(context.m_clientPos.y + 18.f, 8.f, std::max(8.f, view.m_clientDimensions.y - size.y - 8.f))));
+	m_dragLabel->SetVisible(true);
 }
 
 GizmoAxisArrow::GizmoAxisArrow(GizmoAxis axis, Color const& color, GizmoKind kind) : GizmoComponent(axis, color)
@@ -405,6 +598,7 @@ void GizmoAxisArrow::OnDrag(
 		scale.y              = std::copysign(std::max(0.0001f, std::abs(scale.y)), m_startScale.y);
 		scale.z              = std::copysign(std::max(0.0001f, std::abs(scale.z)), m_startScale.z);
 		context.m_selectedNode3D->SetLocalScale(scale);
+		UpdateDragFeedback(context, factor);
 		return;
 	}
 
@@ -476,10 +670,12 @@ void GizmoAxisArrow::OnDrag(
 		scale.y = std::copysign(std::max(0.0001f, std::abs(scale.y)), m_startScale.y);
 		scale.z = std::copysign(std::max(0.0001f, std::abs(scale.z)), m_startScale.z);
 		context.m_selectedNode3D->SetLocalScale(scale);
+		UpdateDragFeedback(context, factor);
 		return;
 	}
 
 	context.m_selectedNode3D->SetWorldPosition(m_startPosition + translation);
+	UpdateDragFeedback(context, axisDelta);
 }
 
 GizmoPlaneSquare::GizmoPlaneSquare(GizmoAxis axis, Color const& color) : GizmoComponent(axis, color)
@@ -520,18 +716,24 @@ GizmoPlaneSquare::GizmoPlaneSquare(GizmoAxis axis, Color const& color) : GizmoCo
 
 MathRaycastResult3D GizmoPlaneSquare::Raycast(GizmoContext const& context, MathRaycastQuery3D const& raycastInfo) const
 {
-	Vector3 const planeU      = context.m_basis.TransformDirection3D(GetPlaneU());
-	Vector3 const planeV      = context.m_basis.TransformDirection3D(GetPlaneV());
+	Vector3 const planeU      = context.m_basis.TransformDirection3D(GetPlaneU() * context.m_planeSigns);
+	Vector3 const planeV      = context.m_basis.TransformDirection3D(GetPlaneV() * context.m_planeSigns);
 	Vector3 const planeCenter = context.m_originWorld + (planeU + planeV) * (kGizmoPlaneOffset * context.m_scale);
 	float const   planeHalf   = kGizmoPlanePickSize * context.m_scale * 0.5f;
-	Quad3 const   quad(
-		planeCenter - planeU * planeHalf - planeV * planeHalf,
-		planeCenter + planeU * planeHalf - planeV * planeHalf,
-		planeCenter + planeU * planeHalf + planeV * planeHalf,
-		planeCenter - planeU * planeHalf + planeV * planeHalf);
-
-	MathRaycastResult3D const result =
-		RaycastVsQuad3D(raycastInfo.m_startPos, raycastInfo.m_forwardNormal, raycastInfo.m_maxLength, quad);
+	MathRaycastResult3D const result = RaycastVsPlane3D(
+		raycastInfo.m_startPos,
+		raycastInfo.m_forwardNormal,
+		raycastInfo.m_maxLength,
+		planeCenter,
+		GetContextAxis(context));
+	if (result.m_didImpact)
+	{
+		Vector3 const offset = result.m_impactPos - planeCenter;
+		if (std::abs(DotProduct3D(offset, planeU)) > planeHalf || std::abs(DotProduct3D(offset, planeV)) > planeHalf)
+		{
+			return MathRaycastResult3D(raycastInfo.m_startPos, raycastInfo.m_forwardNormal, raycastInfo.m_maxLength);
+		}
+	}
 
 	return result;
 }
@@ -579,6 +781,7 @@ void GizmoPlaneSquare::OnDrag(
 	Vector3 const translation = currentHit.m_impactPos - startHit.m_impactPos;
 
 	context.m_selectedNode3D->SetWorldPosition(m_startPosition + translation);
+	UpdateDragFeedback(context, translation.GetLength());
 }
 
 GizmoRotationArc::GizmoRotationArc(GizmoAxis axis, Color const& color) : GizmoComponent(axis, color)
@@ -705,6 +908,7 @@ void GizmoRotationArc::OnDrag(
 	EulerAngles orientation;
 	orientation.SetFromMatrix_IFwd_JLeft_KUp(rotation);
 	context.m_selectedNode3D->SetLocalOrientation(orientation);
+	UpdateDragFeedback(context, m_currentDegrees);
 }
 
 void GizmoRotationArc::OnEndDrag(GizmoContext const& context)

@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<class name="PackedSceneSaver">
+  <brief_description>Engine save handler for packed scenes in .tscn files.</brief_description>
+</class>

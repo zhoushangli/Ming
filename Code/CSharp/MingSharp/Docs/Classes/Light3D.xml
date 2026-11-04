@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<class name="Light3D">
+  <brief_description>Base class for lights in a 3D scene.</brief_description>
+  <description>Provides light color and intensity settings. Other light types add range or direction settings.</description>
+  <methods>
+    <method name="SetIntensity">
+      <description>Sets the light intensity value and updates the render light. Does not clamp the value.</description>
+      <param name="intensity">The light strength. Use a non-negative value; zero gives no light.</param>
+    </method>
+    <method name="GetIntensity">
+      <description>Gets the light intensity value.</description>
+      <returns>The current light strength.</returns>
+    </method>
+    <method name="SetColor">
+      <description>Sets the light color and updates the render light.</description>
+      <param name="color">The light color. Color channels use the engine Color type.</param>
+    </method>
+    <method name="GetColor">
+      <description>Gets the light color.</description>
+      <returns>The current light color.</returns>
+    </method>
+  </methods>
+</class>

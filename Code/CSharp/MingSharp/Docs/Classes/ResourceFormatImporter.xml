@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<class name="ResourceFormatImporter">
+  <brief_description>Base class for engine handlers that import source files.</brief_description>
+  <description>Converts source data to an engine resource. Import methods are not exposed to C#.</description>
+</class>

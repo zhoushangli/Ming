@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<class name="ResourceFormatSaver">
+  <brief_description>Base class for engine handlers that save resource files.</brief_description>
+  <description>The engine resource saver chooses a handler for the path and resource type. Saving methods are not exposed to C#.</description>
+</class>

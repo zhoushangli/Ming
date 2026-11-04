@@ -952,7 +952,10 @@ void Viewport::UpdateGuiDrag(Vector2 const& position)
 
 	if (Control* preview = ResolveGuiControl(m_gui.m_dragPreview))
 	{
-		preview->SetPosition(position + Vector2(14.f, 18.f));
+		Vector2 const bounds(m_outputResolution);
+		preview->SetPosition(Vector2(
+			std::clamp(position.x + 14.f, 0.f, std::max(0.f, bounds.x - m_gui.m_dragPreviewSize.x)),
+			std::clamp(position.y + 18.f, 0.f, std::max(0.f, bounds.y - m_gui.m_dragPreviewSize.y))));
 		preview->UpdateSize(m_gui.m_dragPreviewSize);
 		if (auto* background = dynamic_cast<ColorRect*>(preview))
 		{

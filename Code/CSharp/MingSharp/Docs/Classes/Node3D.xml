@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<class name="Node3D">
+  <brief_description>A node with a position, rotation, and scale in 3D space.</brief_description>
+  <description>The local transform is relative to the direct parent when it is a Node3D. Otherwise, it is also the world transform. Rotation values use degrees.</description>
+  <methods>
+    <method name="SetLocalTransform">
+      <description>Sets the position, rotation, and scale from a matrix in local space.</description>
+      <param name="localTransform">The transform relative to the direct Node3D parent, or to the world if there is no Node3D parent.</param>
+    </method>
+    <method name="GetLocalTransform">
+      <description>Gets the matrix for this node's local position, rotation, and scale.</description>
+      <returns>The transform relative to the direct Node3D parent, or to the world if there is no Node3D parent.</returns>
+    </method>
+    <method name="SetLocalPosition">
+      <description>Sets the position in local space.</description>
+      <param name="localPosition">The position relative to the direct Node3D parent, or to the world if there is no Node3D parent.</param>
+    </method>
+    <method name="GetLocalPosition">
+      <description>Gets the position in local space.</description>
+      <returns>The position relative to the direct Node3D parent, or to the world if there is no Node3D parent.</returns>
+    </method>
+    <method name="SetLocalOrientation">
+      <description>Sets the rotation in local space.</description>
+      <param name="localOrientation">The yaw, pitch, and roll angles in degrees, relative to the direct Node3D parent.</param>
+    </method>
+    <method name="GetLocalOrientation">
+      <description>Gets the rotation in local space.</description>
+      <returns>The local yaw, pitch, and roll angles in degrees.</returns>
+    </method>
+    <method name="SetLocalScale">
+      <description>Sets the scale in local space.</description>
+      <param name="scale">The scale on each local axis. A value of 1 keeps the size on that axis.</param>
+    </method>
+    <method name="GetLocalScale">
+      <description>Gets the scale in local space.</description>
+      <returns>The scale on each local axis.</returns>
+    </method>
+  </methods>
+</class>

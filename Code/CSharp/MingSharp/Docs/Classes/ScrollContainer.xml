@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<class name="ScrollContainer">
+  <brief_description>Shows child content through a scrollable area.</brief_description>
+</class>

@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<class name="ThemeStyleBox">
+  <brief_description>Stores the background, borders, and margins for a styled box.</brief_description>
+</class>

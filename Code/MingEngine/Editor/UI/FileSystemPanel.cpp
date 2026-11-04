@@ -285,12 +285,7 @@ void FileSystemPanel::OpenSelected()
 		}
 		else if (entry->GetVirtualPath().HasExtension(".cs"))
 		{
-			HINSTANCE result =
-				ShellExecuteW(nullptr, L"open", entry->GetPhysicalPath().c_str(), nullptr, nullptr, SW_SHOWNORMAL);
-			if (reinterpret_cast<intptr_t>(result) <= 32)
-			{
-				ShowError("Could not open the script in the system editor.");
-			}
+			EditorNode::Get()->OpenCSharpScript(entry->GetVirtualPath());
 		}
 		else if (entry->GetVirtualPath().HasExtension(".tscn"))
 		{
@@ -351,21 +346,28 @@ void FileSystemPanel::ShowContextMenu(Vector2 position)
 	VirtualPath const               directory = entry == nullptr       ? m_directory
 												: entry->IsDirectory() ? entry->GetVirtualPath()
 																	   : entry->GetVirtualPath().GetParent();
-	std::vector<EditorUI::MenuItem> actions   = { { "Open",
-													[this]()
-													{
-													  OpenSelected();
-												  } },
-												{ "New Folder...",
-												  [this, directory]()
-												  {
-													  m_createFolderPopup.Open(directory);
-												  } },
-												{ "New Scene...",
-												  [this, directory]()
-												  {
-													  m_createScenePopup.Open(directory);
-												  } } };
+	EditorUI::MenuItem create;
+	create.m_text = "Create New";
+	create.m_icon = "Add";
+	create.m_children = {
+		{ "Folder...", [this, directory]() { m_createFolderPopup.Open(directory); } },
+		{ "Scene...", [this, directory]() { m_createScenePopup.Open(directory); } },
+		{ "Script...", [this, directory]()
+			{
+				m_context.m_editorUI->CreateScript(directory, "Node", [this](VirtualPath const& path)
+				{
+					NavigateTo(path.GetParent());
+					SelectPath(path);
+				});
+			} }
+	};
+	create.m_children[0].m_icon = "Folder";
+	create.m_children[1].m_icon = "PackedScene";
+	create.m_children[2].m_icon = "CSharpScript";
+	std::vector<EditorUI::MenuItem> actions = {
+		{ "Open", [this]() { OpenSelected(); } },
+		std::move(create)
+	};
 	if (entry != nullptr)
 	{
 		VirtualPath const path = entry->GetVirtualPath();

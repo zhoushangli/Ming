@@ -146,7 +146,15 @@ int main(int argc, char** argv)
 			check(edit != nullptr, "scene picker exposes its filename field");
 			if (edit != nullptr)
 			{
-				edit->SetText(name);
+				edit->GrabFocus();
+				edit->SelectAll();
+				for (char const* character = name; *character != '\0'; ++character)
+				{
+					InputEvent text;
+					text.m_type = InputEventType::Text;
+					text.m_codepoint = static_cast<unsigned char>(*character);
+					root->ProcessInputEvent(text);
+				}
 			}
 		};
 		frame();
@@ -185,13 +193,13 @@ int main(int argc, char** argv)
 		check(!editor->GetCurrentScenePath().IsValid(), "new root cannot reuse the previous save path");
 		editor->RequestCloseScene();
 		frame();
-		click("Save & Continue");
+		click("Save & Close");
 		frame();
 		click("Cancel");
 		check(editor->HasScene() && editor->IsSceneDirty(), "cancelling first save cancels deferred close");
 		editor->RequestCloseScene();
 		frame();
-		click("Save & Continue");
+		click("Save & Close");
 		frame();
 		filename("second");
 		click("Save");
@@ -482,6 +490,7 @@ int main(int argc, char** argv)
 		// 2) A failed first save cancels its continuation even when a later correction saves successfully.
 		editor->RequestNewScene();
 		frame();
+		frame();
 		click("Node3D");
 		FILE* locked = _wfsopen((project / L"locked.tscn").c_str(), L"w", _SH_DENYWR);
 		check(locked != nullptr, "first-save failure fixture holds its own target file");
@@ -492,7 +501,7 @@ int main(int argc, char** argv)
 				closed = true;
 			});
 		frame();
-		click("Save & Continue");
+		click("Save & Close");
 		filename("locked.tscn");
 		click("Save");
 		click("Overwrite");

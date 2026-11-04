@@ -109,6 +109,10 @@ int main(int argc, char** argv)
 		invalid << "Invalid C# project for build failure verification";
 		invalid.close();
 		EditorNode::Get()->RequestPlay();
+		for (int frame = 0; frame < 4; ++frame)
+		{
+			app.RunFrame();
+		}
 		buildBlocked = !app.IsGameRunning();
 	}
 

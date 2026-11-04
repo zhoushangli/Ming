@@ -540,4 +540,8 @@
     <ClInclude Include="Editor\BuiltinIcons.hpp" />
     <ClInclude Include="Editor\BuiltinBrand.hpp" />
   </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Editor\UI\Popup\CreateScriptPopup.cpp" />
+    <ClInclude Include="Editor\UI\Popup\CreateScriptPopup.hpp" />
+  </ItemGroup>
 </Project>

@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<class name="ShaderResourceLoader">
+  <brief_description>Engine loader for shader resources from .hlsl files.</brief_description>
+</class>

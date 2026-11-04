@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<class name="VisualInstance3D">
+  <brief_description>Base class for 3D nodes that have a render instance.</brief_description>
+</class>

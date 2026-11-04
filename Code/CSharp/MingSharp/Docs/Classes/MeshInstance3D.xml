@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<class name="MeshInstance3D">
+  <brief_description>A 3D node that draws a mesh resource.</brief_description>
+  <description>The mesh assignment methods are not exposed to C# yet. The node still inherits the Node3D transform methods.</description>
+</class>

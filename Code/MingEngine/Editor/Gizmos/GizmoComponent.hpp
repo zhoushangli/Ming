@@ -12,6 +12,7 @@
 
 class Camera3D;
 class GizmoComponent;
+class Label;
 class Node3D;
 class SceneTree;
 struct MathRaycastQuery3D;
@@ -51,6 +52,7 @@ struct GizmoContext
 	Vector2         m_clientPos        = Vector2::Zero;
 	Vector2         m_clientDimensions = Vector2::Zero;
 	Matrix4x4       m_basis;
+	Vector3         m_planeSigns = Vector3::One;
 	GizmoTool       m_tool  = GizmoTool::Transform;
 	bool            m_local = false;
 };
@@ -77,6 +79,9 @@ public:
 
 	void SetHovered(bool isHovered);
 
+	void UpdateView(GizmoContext const& context);
+	void RefreshDragFeedback(GizmoContext const& context);
+
 	bool         IsHovered() const;
 	bool         IsDragging() const;
 	virtual bool IsRotationGizmo() const;
@@ -91,6 +96,8 @@ protected:
 	Vector3 GetContextAxis(GizmoContext const& context) const;
 	Color   GetDrawColor() const;
 
+	void    UpdateDragFeedback(GizmoContext const& context, float value);
+
 protected:
 	GizmoAxis m_axis       = GizmoAxis::X;
 	GizmoKind m_kind       = GizmoKind::Move;
@@ -101,6 +108,12 @@ protected:
 	// Used for arranging the gizmos in front of each other when they overlap.
 	// This is a local position
 	Vector3 m_virtualCenter = Vector3::Zero;
+
+private:
+	EditorGizmoVisual3D* m_dragVisual             = nullptr;
+	Label*              m_dragLabel              = nullptr;
+	Vector3             m_feedbackStartDirection = Vector3::Zero;
+	float               m_feedbackValue          = 0.f;
 };
 
 class GizmoAxisArrow : public GizmoComponent

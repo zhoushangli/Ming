@@ -176,6 +176,13 @@ Node* PackedScene::Instantiate() const
 			try
 			{
 				property->GetSetter()->Invoke(node, { packedProperty.m_value });
+				if (packedProperty.m_name == String("script") && !g_engine->IsEditorMode()
+					&& node->GetScript() != packedProperty.m_value)
+				{
+					ERR_PRINT("Could not instantiate script on node " + node->GetName().ToUtf8());
+					MemDelete(root);
+					return nullptr;
+				}
 			}
 
 			catch (std::exception const& error)

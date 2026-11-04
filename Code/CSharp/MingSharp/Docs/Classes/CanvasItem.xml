@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<class name="CanvasItem">
+  <brief_description>Base class for nodes drawn on a 2D canvas.</brief_description>
+  <description>Controls inherit this class. An item can be hidden by its own visibility setting or by a parent item.</description>
+  <methods>
+    <method name="SetVisible">
+      <description>Sets the visibility of this item. Hiding it also cancels interface interaction with it. Does nothing if the visibility value has not changed.</description>
+      <param name="visible">True to show the item, or false to hide it. A hidden parent item can still hide this item.</param>
+      <param name="cancelDrag">True to also cancel a drag tied to this item when hiding it. Focus, hover, and pointer capture are cleared either way.</param>
+    </method>
+    <method name="IsVisible">
+      <description>Gets this item's own visibility setting. Does not check whether a parent item is hidden.</description>
+      <returns>True if this item is set to be visible.</returns>
+    </method>
+  </methods>
+</class>

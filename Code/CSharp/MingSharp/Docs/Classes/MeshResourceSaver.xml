@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<class name="MeshResourceSaver">
+  <brief_description>Engine save handler for mesh resources in .mesh files.</brief_description>
+</class>

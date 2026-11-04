@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<class name="Viewport">
+  <brief_description>Holds a scene view, its camera, and its interface input state.</brief_description>
+</class>

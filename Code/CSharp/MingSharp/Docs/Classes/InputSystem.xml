@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<class name="InputSystem">
+  <brief_description>Tracks key states and controls the mouse pointer.</brief_description>
+  <description>Use the active engine input system to read game input. Press and release flags last until the end of the frame.</description>
+  <methods>
+    <method name="IsKeyDown">
+      <description>Checks whether a key is held down in the current processed input state.</description>
+      <param name="keyCode">The engine key code to check.</param>
+      <returns>True if the key is down. False if it is up or the code is outside the supported range.</returns>
+    </method>
+    <method name="WasKeyJustPressed">
+      <description>Checks whether a key was pressed during this frame. The flag is cleared at the end of the frame.</description>
+      <param name="keyCode">The engine key code to check.</param>
+      <returns>True if a press was processed this frame. False for a code outside the supported range.</returns>
+    </method>
+    <method name="WasKeyJustReleased">
+      <description>Checks whether a key was released during this frame. The flag is cleared at the end of the frame.</description>
+      <param name="keyCode">The engine key code to check.</param>
+      <returns>True if a release was processed this frame. False for a code outside the supported range.</returns>
+    </method>
+    <method name="SetCursorMode">
+      <description>Sets whether the mouse pointer is free or captured for camera movement. Values outside the supported range are ignored.</description>
+      <param name="cursorMode">0 for a normal pointer, or 1 to hide and capture it for camera movement.</param>
+    </method>
+  </methods>
+</class>

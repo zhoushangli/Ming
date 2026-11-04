@@ -21,6 +21,8 @@ public:
 		bool                  m_checkable = false;
 		bool                  m_checked   = false;
 		bool                  m_enabled   = true;
+		String                m_icon;
+		std::vector<MenuItem> m_children;
 	};
 
 	using MenuProvider = std::function<std::vector<MenuItem>()>;
@@ -47,7 +49,8 @@ public:
 
 	void                        AddMenu(String const& title, MenuProvider provider);
 	static std::vector<Button*> CreatePopupItems(
-		VBoxContainer* content, Control* source, std::vector<MenuItem> const& items, std::function<void()> close);
+		VBoxContainer* content, Control* source, std::vector<MenuItem> const& items, std::function<void()> close,
+		std::function<void(Button*, std::vector<MenuItem> const&)> openSubmenu = {});
 	static void LayoutPopupItems(std::vector<Button*> const& items);
 	void        SetAboutToOpenCallback(std::function<void()> callback) { m_aboutToOpen = std::move(callback); }
 	void        CloseMenu(bool restoreFocus = true);

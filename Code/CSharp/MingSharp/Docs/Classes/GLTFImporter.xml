@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<class name="GLTFImporter">
+  <brief_description>Imports mesh data from .gltf and .glb files.</brief_description>
+  <description>Produces an engine mesh resource. This importer does not expose import methods to C#.</description>
+</class>

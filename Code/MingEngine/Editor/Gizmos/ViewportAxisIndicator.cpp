@@ -126,13 +126,6 @@ void ViewportAxisIndicator::OnNotification(int notification)
 
 void ViewportAxisIndicator::RebuildVertexBuffer()
 {
-	// Here we have two potential transform
-	// 1) We need to get the inverse rotation of camera
-	// this is because the rotMatrix is CameraToWorld, but we want WorldToCamera
-	// 2) We need to get the CameraToScreen
-	// because for 3D space, we use right hand coordinate system, when y is in the right of z
-	// but for screen space, we use left hand coordinate system, when y is in the left of z
-
 	m_verts.clear();
 	Matrix4x4 rotMatrix = m_lastCameraRotation.GetAsMatrix_IFwd_JLeft_KUp();
 	rotMatrix           = rotMatrix.GetOrthonormalInverse();
@@ -141,9 +134,14 @@ void ViewportAxisIndicator::RebuildVertexBuffer()
 	Vector3 yAxis = rotMatrix.GetJBasis3D();
 	Vector3 zAxis = rotMatrix.GetKBasis3D();
 
+	// Map camera-space left/up directions to screen-space right/down directions.
+	// e.g. camera-space +Z points upward, so its screen Y component is negative.
 	xAxis.y = -xAxis.y;
 	yAxis.y = -yAxis.y;
 	zAxis.y = -zAxis.y;
+	xAxis.z = -xAxis.z;
+	yAxis.z = -yAxis.z;
+	zAxis.z = -zAxis.z;
 
 	m_axises[0] = { Vector2(xAxis.y, xAxis.z), xAxis.x, 0, true };
 	m_axises[1] = { Vector2(yAxis.y, yAxis.z), yAxis.x, 1, true };

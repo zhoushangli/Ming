@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<class name="PackedSceneLoader">
+  <brief_description>Engine loader for packed scenes from .tscn files.</brief_description>
+  <description>Uses Ming's JSON scene format.</description>
+</class>

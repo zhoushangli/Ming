@@ -149,10 +149,11 @@ void TransformGizmo3D::OnDrag(GizmoContext const& context)
 		return;
 	}
 
-	GizmoContext frozen       = m_dragContext;
-	frozen.m_selectedNode3D   = target;
-	frozen.m_clientPos        = context.m_clientPos;
-	frozen.m_clientDimensions = context.m_clientDimensions;
+	m_dragContext.m_clientPos        = context.m_clientPos;
+	m_dragContext.m_clientDimensions = context.m_clientDimensions;
+
+	GizmoContext frozen     = m_dragContext;
+	frozen.m_selectedNode3D = target;
 	MathRaycastQuery3D const ray =
 		frozen.m_camera->BuildRaycastFromMouse(frozen.m_clientPos, frozen.m_clientDimensions, kRaycastMaxLength);
 	m_activeComponent->OnDrag(frozen, m_dragStartRaycastInfo, ray);
@@ -262,7 +263,13 @@ void TransformGizmo3D::OnNotification(int notification)
 			ClearHover();
 		}
 
-		bool const rotationActive = m_activeComponent != nullptr && m_activeComponent->IsRotationGizmo();
+		bool const   rotationActive = m_activeComponent != nullptr && m_activeComponent->IsRotationGizmo();
+		GizmoContext view           = context;
+		if (IsDragging())
+		{
+			view.m_basis      = m_dragContext.m_basis;
+			view.m_planeSigns = m_dragContext.m_planeSigns;
+		}
 
 		for (GizmoComponent* component : m_components)
 		{
@@ -271,14 +278,13 @@ void TransformGizmo3D::OnNotification(int notification)
 			component->SetVisible(isVisible);
 			if (isVisible)
 			{
-				Matrix4x4 const& basis = IsDragging() ? m_dragContext.m_basis : context.m_basis;
-				EulerAngles      orientation;
-				orientation.SetFromMatrix_IFwd_JLeft_KUp(basis);
-				float const scale = IsDragging() ? m_dragContext.m_scale : context.m_scale;
-				component->SetWorldPosition(context.m_originWorld);
-				component->SetWorldOrientation(orientation);
-				component->SetWorldScale(Vector3(scale, scale, scale));
+				component->UpdateView(view);
 			}
+		}
+
+		if (m_activeComponent != nullptr)
+		{
+			m_activeComponent->RefreshDragFeedback(m_dragContext);
 		}
 
 		Vector3 const cameraPos = camera->GetWorldPosition();

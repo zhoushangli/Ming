@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<class name="PackedScene">
+  <brief_description>Stores a node tree so it can be created again.</brief_description>
+  <description>Pack copies scene data into this resource. Instantiate creates new nodes outside the scene tree.</description>
+  <methods>
+    <method name="Pack">
+      <description>Copies a node and its child nodes into this resource. Clears the old packed data before reading the new tree. Nodes that block saving are skipped with their child nodes. Does not write a file.</description>
+      <param name="node">The root node to copy. It must allow saving.</param>
+      <returns>True if scene data was stored. False for a null root, an empty result, invalid node names, or while script reload is incomplete.</returns>
+    </method>
+    <method name="Instantiate">
+      <description>Creates a new node tree from the stored scene data. Does not add the result to a scene tree.</description>
+      <returns>The new root node, or null if the data is empty or the node tree could not be created.</returns>
+    </method>
+  </methods>
+</class>

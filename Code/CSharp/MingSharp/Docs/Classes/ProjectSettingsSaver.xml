@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<class name="ProjectSettingsSaver">
+  <brief_description>Engine save handler for project settings in .ming files.</brief_description>
+</class>

@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<class name="PanelContainer">
+  <brief_description>Draws a styled panel behind its child controls.</brief_description>
+</class>

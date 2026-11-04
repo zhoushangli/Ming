@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<class name="ProjectSettings">
+  <brief_description>Holds the settings stored in project.ming.</brief_description>
+  <description>Includes the project start scene path. Project settings access methods are not exposed to C# yet.</description>
+</class>

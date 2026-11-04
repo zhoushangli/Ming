@@ -23,6 +23,51 @@ public static class ScriptManagerBridge
 
     #region Type Registration
 
+    [UnmanagedCallersOnly]
+    internal static unsafe void GetScriptBaseTypes(String* result)
+    {
+        try
+        {
+            *result = Marshaling.ConvertStringToNative(string.Join(",", typeof(Node).Assembly.GetTypes()
+                .Where(t => typeof(Node).IsAssignableFrom(t) && !t.IsAbstract && !t.ContainsGenericParameters)
+                .Select(t => t.Name).OrderBy(n => n, StringComparer.Ordinal)));
+        }
+        catch (Exception exception)
+        {
+            NativeFuncs.Log("[Error] " + exception);
+        }
+    }
+
+    [UnmanagedCallersOnly]
+    internal static unsafe int GetScriptNativeBase(String* path, String* result)
+    {
+        try
+        {
+            if (!TryGetScriptType(Marshaling.ConvertStringToManaged(*path), out var type))
+            {
+                return 0;
+            }
+
+            while (type != null && type.Assembly != typeof(Node).Assembly)
+            {
+                type = type.BaseType;
+            }
+
+            if (type == null || !typeof(Node).IsAssignableFrom(type))
+            {
+                return 0;
+            }
+
+            *result = Marshaling.ConvertStringToNative(type.Name);
+            return 1;
+        }
+        catch (Exception exception)
+        {
+            NativeFuncs.Log("[Error] " + exception);
+            return 0;
+        }
+    }
+
     internal static void AddScriptType(IntPtr scriptPtr, Type scriptType)
     {
         if (scriptPtr == IntPtr.Zero)
@@ -127,7 +172,7 @@ public static class ScriptManagerBridge
 
         catch (Exception exception)
         {
-            Console.Error.WriteLine(exception);
+            NativeFuncs.Log("[Error] " + exception);
             return 0;
         }
     }
@@ -148,7 +193,7 @@ public static class ScriptManagerBridge
 
         catch (Exception exception)
         {
-            Console.Error.WriteLine(exception);
+            NativeFuncs.Log("[Error] " + exception);
             return 0;
         }
     }
@@ -197,7 +242,7 @@ public static class ScriptManagerBridge
 
         catch (Exception exception)
         {
-            Console.Error.WriteLine(exception);
+            NativeFuncs.Log("[Error] " + exception);
             return IntPtr.Zero;
         }
     }
@@ -263,7 +308,7 @@ public static class ScriptManagerBridge
 
         catch (Exception exception)
         {
-            Console.Error.WriteLine(exception);
+            NativeFuncs.Log("[Error] " + exception);
             return IntPtr.Zero;
         }
     }
@@ -315,7 +360,7 @@ public static class ScriptManagerBridge
 
         catch (Exception exception)
         {
-            Console.Error.WriteLine(exception);
+            NativeFuncs.Log("[Error] " + exception);
             return 0;
         }
     }
@@ -416,7 +461,7 @@ public static class ScriptManagerBridge
 
             catch (Exception exception)
             {
-                Console.Error.WriteLine(exception);
+                NativeFuncs.Log("[Error] " + exception);
             }
 
             if (isScriptInstance)
@@ -434,7 +479,7 @@ public static class ScriptManagerBridge
 
         catch (Exception exception)
         {
-            Console.Error.WriteLine(exception);
+            NativeFuncs.Log("[Error] " + exception);
         }
     }
 

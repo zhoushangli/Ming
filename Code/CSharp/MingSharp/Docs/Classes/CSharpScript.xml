@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<class name="CSharpScript">
+  <brief_description>A resource that links a script file path to a compiled C# type.</brief_description>
+  <description>The script file is identified by its resource path. The engine finds the matching type in the game assembly.</description>
+</class>

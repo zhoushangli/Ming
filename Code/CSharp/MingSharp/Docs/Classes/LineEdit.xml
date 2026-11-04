@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<class name="LineEdit">
+  <brief_description>A control for editing one line of text.</brief_description>
+  <description>Supports a caret, text selection, and horizontal scrolling. RestoreEditState restores an edit state; other text editing methods are not exposed to C# yet.</description>
+  <methods>
+    <method name="RestoreEditState">
+      <description>Restores the text, caret, and horizontal scroll position, and clears the selection. Text changes notify the text change callback. If the text differs and editing cannot begin, nothing is changed.</description>
+      <param name="text">The text to restore.</param>
+      <param name="cursorColumn">The caret position in text characters, starting at zero. Clamped to the text length.</param>
+      <param name="scrollOffset">The horizontal scroll offset in local control units. The text layout may adjust it to keep the caret visible.</param>
+    </method>
+  </methods>
+</class>

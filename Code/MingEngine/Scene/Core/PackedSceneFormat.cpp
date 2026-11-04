@@ -46,6 +46,12 @@ bool TryParseProperties(Json const& nodeJson, PackedNode& outNode)
 		Variant value;
 		if (!VariantJson::TryDeserialize(propertyEntry.value(), property->m_type, value))
 		{
+			if (propertyName == "script")
+			{
+				ERR_PRINT("PackedScene: could not load script reference " + propertyEntry.value().dump());
+				return false;
+			}
+
 			WARN_PRINT(Stringf(
 				"PackedScene: skipping property '%s' with an incompatible JSON value on type '%s'.\n",
 				propertyName.c_str(),

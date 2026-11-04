@@ -60,6 +60,10 @@ public static class ProjectGenerator
         {
             GenerateGameProject(projectPath, sdkDirectory);
         }
+        else if (XDocument.Load(projectPath).Descendants("TargetFramework").SingleOrDefault()?.Value != "net9.0")
+        {
+            throw new InvalidOperationException("Game.csproj must target net9.0. Update the project explicitly before building.");
+        }
 
         // 4) Create the missing solution file
         string solutionPath = Path.Combine(projectDirectory, "Game.sln");
@@ -90,7 +94,7 @@ public static class ProjectGenerator
                         "$(MingSdkDirectory)/Sdk.props")),
 
                 new XElement("PropertyGroup",
-                    new XElement("TargetFramework", "net10.0"),
+                    new XElement("TargetFramework", "net9.0"),
                     new XElement("OutputType", "Library"),
                     new XElement("AssemblyName", "Game"),
                     new XElement("RootNamespace", "Game")),

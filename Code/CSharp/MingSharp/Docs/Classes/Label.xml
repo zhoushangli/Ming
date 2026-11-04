@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<class name="Label">
+  <brief_description>A control that displays text.</brief_description>
+</class>

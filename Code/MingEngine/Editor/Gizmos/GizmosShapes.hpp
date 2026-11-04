@@ -18,6 +18,7 @@ public:
 
 	void SetRenderPriority(int priority);
 
+	void UploadGeometry(std::vector<Vertex> const& vertices);
 	void UploadGeometry(
 		char const*       shaderName,
 		std::string_view  shaderSource,

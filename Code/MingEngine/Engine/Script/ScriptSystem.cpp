@@ -8,6 +8,7 @@
 #include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Engine/File/FileSystem.hpp"
 #include "MingEngine/Engine/Script/CSharpScript.hpp"
+#include "MingEngine/Scene/Core/Node.hpp"
 
 #define NETHOST_USE_AS_STATIC
 #include "ThirdParty/DotNetHost/hostfxr.h"
@@ -188,7 +189,7 @@ void ScriptSystem::Startup()
 	GUARANTEE_OR_DIE(initialized, "Failed to initialize .NET Runtime or managed bridge.");
 
 	// 2) Load the current project's assembly
-	if (g_engine->m_fileSystem->GetResourceRoot().empty())
+	if (g_engine->m_fileSystem->GetResourceRoot().empty() || !HasProjectScripts())
 	{
 		return;
 	}
@@ -247,12 +248,12 @@ bool ScriptSystem::InitializeDotNetRuntime()
 	ERR_FAIL_COND_V_MSG(
 		!std::filesystem::exists(runtimeConfigPath),
 		false,
-		Stringf("Missing .NET runtime config: %ls\n", runtimeConfigPath.c_str()));
+		Stringf("Missing .NET runtime config: %s\n", runtimeConfigPath.u8string().c_str()));
 
 	ERR_FAIL_COND_V_MSG(
 		!std::filesystem::exists(managedAssemblyPath),
 		false,
-		Stringf("Missing managed assembly: %ls\n", managedAssemblyPath.c_str()));
+		Stringf("Missing managed assembly: %s\n", managedAssemblyPath.u8string().c_str()));
 
 	size_t hostfxrPathSize = 0;
 
@@ -482,7 +483,7 @@ bool ScriptSystem::EnsureProjectSolution()
 
 	ERR_FAIL_COND_V_MSG(result != 0, false, Stringf("Failed to ensure C# project files: %d\n", result));
 
-	INFO_PRINT(Stringf("C# project files are ready: %ls\n", projectDirectory.c_str()));
+	INFO_PRINT(Stringf("C# project files are ready: %s\n", projectDirectory.u8string().c_str()));
 
 	return true;
 }
@@ -515,9 +516,9 @@ bool ScriptSystem::BuildProjectSolution()
 	ERR_FAIL_COND_V_MSG(
 		result != 0,
 		false,
-		Stringf("Failed to build C# project solution: %ls (status: %d)\n", projectDirectory.c_str(), result));
+		Stringf("Failed to build C# project solution: %s (status: %d)\n", projectDirectory.u8string().c_str(), result));
 
-	INFO_PRINT(Stringf("C# project solution built: %ls\n", projectDirectory.c_str()));
+	INFO_PRINT(Stringf("C# project solution built: %s\n", projectDirectory.u8string().c_str()));
 	return true;
 }
 
@@ -551,15 +552,15 @@ bool ScriptSystem::LoadProjectAssembly()
 	ERR_FAIL_COND_V_MSG(
 		errorCode,
 		false,
-		Stringf("Failed to inspect project assembly: %ls (%s)\n", assemblyPath.c_str(), errorCode.message().c_str()));
+		Stringf("Failed to inspect project assembly: %s (%s)\n", assemblyPath.u8string().c_str(), errorCode.message().c_str()));
 
 	ERR_FAIL_COND_V_MSG(
 		!exists,
 		false,
 		Stringf(
-			"Project assembly does not exist: %ls\n"
+			"Project assembly does not exist: %s\n"
 			"Build Game.csproj with configuration Debug first.\n",
-			assemblyPath.c_str()));
+			assemblyPath.u8string().c_str()));
 
 	// 4) Invoke the managed loader
 	String nativeLoadedPath{};
@@ -574,7 +575,7 @@ bool ScriptSystem::LoadProjectAssembly()
 	{
 		nativeLoadedPath = String();
 
-		ERR_PRINT(Stringf("Project assembly load did not succeed: %ls (status: %d)\n", assemblyPath.c_str(), result));
+		ERR_PRINT(Stringf("Project assembly load did not succeed: %s (status: %d)\n", assemblyPath.u8string().c_str(), result));
 		return false;
 	}
 
@@ -593,6 +594,8 @@ bool ScriptSystem::LoadProjectAssembly()
 	nativeLoadedPath = String();
 
 	INFO_PRINT(Stringf("Project assembly loaded: %s\n", loadedPath.c_str()));
+	m_projectAssemblyLoaded = true;
+	m_loadedAssemblyTime = std::filesystem::last_write_time(assemblyPath, errorCode);
 
 	return true;
 }
@@ -611,6 +614,104 @@ bool ScriptSystem::UnloadProjectAssembly()
 	ERR_FAIL_COND_V_MSG(result != 0, false, Stringf("Failed to unload the project assembly (status: %d)\n", result));
 
 	INFO_PRINT("Project assembly unloaded.\n");
+	m_projectAssemblyLoaded = false;
+	return true;
+}
+
+bool ScriptSystem::HasProjectScripts() const
+{
+	auto const& root = g_engine->m_fileSystem->GetResourceRoot();
+	std::error_code error;
+	for (std::filesystem::recursive_directory_iterator it(root, error), end; !error && it != end; it.increment(error))
+	{
+		if (it->is_directory(error) && (it->path().filename() == ".ming" || it->path().filename() == "obj" || it->path().filename() == "bin"))
+		{
+			it.disable_recursion_pending();
+		}
+		else if (it->path().extension() == ".cs")
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+bool ScriptSystem::IsProjectAssemblyCurrent() const
+{
+	if (!m_projectAssemblyLoaded)
+	{
+		return false;
+	}
+
+	std::error_code error;
+	for (std::filesystem::recursive_directory_iterator it(g_engine->m_fileSystem->GetResourceRoot(), error), end;
+		 !error && it != end; it.increment(error))
+	{
+		if (it->is_directory(error) && (it->path().filename() == ".ming" || it->path().filename() == "obj" || it->path().filename() == "bin"))
+		{
+			it.disable_recursion_pending();
+		}
+		else if ((it->path().extension() == ".cs" || it->path().extension() == ".csproj")
+			&& std::filesystem::last_write_time(it->path(), error) > m_loadedAssemblyTime)
+		{
+			return false;
+		}
+	}
+
+	return !error;
+}
+
+std::string ScriptSystem::GetScriptBaseTypes() const
+{
+	String result;
+	if (m_isInitialized && m_managedCallbacks.m_getScriptBaseTypes != nullptr)
+	{
+		m_managedCallbacks.m_getScriptBaseTypes(&result);
+	}
+
+	return result.ToUtf8();
+}
+
+std::string ScriptSystem::GetScriptNativeBase(VirtualPath const& path) const
+{
+	String result;
+	String const scriptPath(path.GetString());
+	if (m_isInitialized && m_managedCallbacks.m_getScriptNativeBase != nullptr)
+	{
+		m_managedCallbacks.m_getScriptNativeBase(&scriptPath, &result);
+	}
+
+	return result.ToUtf8();
+}
+
+bool ScriptSystem::ValidateSceneScripts(Node* root) const
+{
+	if (root == nullptr)
+	{
+		return false;
+	}
+
+	Ref<CSharpScript> script(root->GetScript());
+	if (script.IsValid())
+	{
+		std::string const base = GetScriptNativeBase(script->GetVirtualPath());
+		if (base.empty() || !ClassDatabase::IsSubclassOf(root->GetClassName(), base))
+		{
+			ERR_PRINT("Cannot run script " + script->GetVirtualPath().GetString() + " on " + root->GetClassName()
+				+ (base.empty() ? ": no compiled script type is registered." : ": script requires " + base + "."));
+			return false;
+		}
+	}
+
+	for (Node* child : root->GetChildren())
+	{
+		if (!ValidateSceneScripts(child))
+		{
+			return false;
+		}
+	}
+
 	return true;
 }
 
@@ -826,6 +927,11 @@ bool ScriptSystem::ReloadProjectAssembly()
 
 	m_isRecreatingInstances = false;
 	m_isAssemblyReloading   = false;
+	if (!success && m_pendingReloadBackups.empty())
+	{
+		m_scriptExecutionSuspended = false;
+	}
+
 	if (success)
 	{
 		INFO_PRINT("Project assembly reloaded and script instances recreated.\n");

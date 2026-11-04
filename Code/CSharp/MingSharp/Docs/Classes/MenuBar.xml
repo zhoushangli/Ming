@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<class name="MenuBar">
+  <brief_description>A row of menus that can open popup lists.</brief_description>
+</class>

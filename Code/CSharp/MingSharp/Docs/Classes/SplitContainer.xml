@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<class name="SplitContainer">
+  <brief_description>Divides an area between two child panels with a movable divider.</brief_description>
+</class>

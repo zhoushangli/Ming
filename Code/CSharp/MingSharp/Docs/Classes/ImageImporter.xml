@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<class name="ImageImporter">
+  <brief_description>Imports image files as engine texture resources.</brief_description>
+</class>

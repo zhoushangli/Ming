@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<class name="CapsuleCollider3D">
+  <brief_description>A 3D collision shape defined by a line segment and a radius.</brief_description>
+</class>

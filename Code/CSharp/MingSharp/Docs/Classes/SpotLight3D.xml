@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<class name="SpotLight3D">
+  <brief_description>A light that shines from a point into a cone.</brief_description>
+  <description>Adds range, cone angle, and fade settings to Light3D.</description>
+  <methods>
+    <method name="SetRange">
+      <description>Sets the light range value and updates the render light. Does not clamp the value.</description>
+      <param name="range">The light range in world units. Use a positive value.</param>
+    </method>
+    <method name="GetRange">
+      <description>Gets the light range value.</description>
+      <returns>The light range in world units.</returns>
+    </method>
+    <method name="SetAttenuation">
+      <description>Sets the distance fade value sent to the render light. Does not clamp the value.</description>
+      <param name="attenuation">The setting for how the light fades with distance.</param>
+    </method>
+    <method name="GetAttenuation">
+      <description>Gets the distance fade value.</description>
+      <returns>The current distance fade setting.</returns>
+    </method>
+    <method name="SetSpotAngle">
+      <description>Sets the cone angle value sent to the render light. Does not clamp the value.</description>
+      <param name="angle">The cone angle setting.</param>
+    </method>
+    <method name="GetSpotAngle">
+      <description>Gets the stored cone angle value.</description>
+      <returns>The current cone angle setting.</returns>
+    </method>
+    <method name="SetSpotAttenuation">
+      <description>Sets the cone fade value sent to the render light. Does not clamp the value.</description>
+      <param name="attenuation">The setting for how the light fades toward the edge of the cone.</param>
+    </method>
+    <method name="GetSpotAttenuation">
+      <description>Gets the cone fade value.</description>
+      <returns>The current cone fade setting.</returns>
+    </method>
+  </methods>
+</class>

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<class name="Image">
+  <brief_description>Holds image size, pixel data, and encoded image bytes.</brief_description>
+  <description>Image loading and pixel access methods are not exposed to C# yet.</description>
+</class>

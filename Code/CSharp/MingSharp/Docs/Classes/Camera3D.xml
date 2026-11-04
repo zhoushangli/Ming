@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<class name="Camera3D">
+  <brief_description>A camera that provides a view of a 3D scene.</brief_description>
+  <description>A viewport uses one current camera at a time. This class exposes clip distances, the field of view, and the size used for an orthographic view.</description>
+  <methods>
+    <method name="SetNearClip">
+      <description>Sets the near clipping distance and updates the render camera. Does not clamp the value.</description>
+      <param name="nearClip">The near clipping distance in world units. For a perspective view, use a value greater than zero and less than the far distance.</param>
+    </method>
+    <method name="GetNearClip">
+      <description>Gets the near clipping distance.</description>
+      <returns>The near clipping distance in world units.</returns>
+    </method>
+    <method name="SetFarClip">
+      <description>Sets the far clipping distance and updates the render camera. Does not clamp the value.</description>
+      <param name="farClip">The far clipping distance in world units. Use a value greater than the near distance.</param>
+    </method>
+    <method name="GetFarClip">
+      <description>Gets the far clipping distance.</description>
+      <returns>The far clipping distance in world units.</returns>
+    </method>
+    <method name="SetFovDegrees">
+      <description>Sets the vertical field of view for a perspective camera. Does not change the camera mode or clamp the value.</description>
+      <param name="fovDegrees">The vertical view angle in degrees. Use a value greater than 0 and less than 180.</param>
+    </method>
+    <method name="GetFovDegrees">
+      <description>Gets the stored perspective field of view.</description>
+      <returns>The vertical field of view in degrees.</returns>
+    </method>
+    <method name="SetSize">
+      <description>Sets the height covered by an orthographic view. Does not change the camera mode or clamp the value.</description>
+      <param name="size">The view height in world units. Use a positive value. The viewport shape determines the width.</param>
+    </method>
+    <method name="GetSize">
+      <description>Gets the stored orthographic view size.</description>
+      <returns>The view height in world units. This setting does not affect a perspective view.</returns>
+    </method>
+  </methods>
+</class>

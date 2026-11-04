@@ -15,11 +15,13 @@
       <MingSdkFiles Include="$(MSBuildProjectDirectory)/../Ming.NET.Sdk/Sdk/Sdk.targets" />
     </ItemGroup>
     <Copy SourceFiles="@(MingSdkFiles)" DestinationFolder="$(MSBuildProjectDirectory)/../../../Run/MingSharp/Tool/Sdk/" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="$(MSBuildProjectDirectory)/../Ming.SourceGenerators/bin/$(Configuration)/netstandard2.0/Ming.SourceGenerators.dll" DestinationFolder="$(MSBuildProjectDirectory)/../../../Run/MingSharp/Tool/Analyzers/" />
   </Target>
 
   <ItemGroup>
     <ProjectReference Include="..\MingSharp\MingSharp.csproj" />
     <ProjectReference Include="..\MingTools\MingTools.csproj" />
+    <ProjectReference Include="..\Ming.SourceGenerators\Ming.SourceGenerators.csproj" ReferenceOutputAssembly="false" />
   </ItemGroup>
 
 </Project>

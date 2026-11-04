@@ -27,9 +27,12 @@ private:
 
 	struct PropertySection
 	{
-		std::string m_name;
-		Button*     m_heading   = nullptr;
-		bool        m_collapsed = false;
+		std::string    m_name;
+		VBoxContainer* m_root      = nullptr;
+		Button*        m_heading   = nullptr;
+		Control*       m_content   = nullptr;
+		VBoxContainer* m_fields    = nullptr;
+		bool           m_collapsed = false;
 	};
 
 	struct PropertyGroup

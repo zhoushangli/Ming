@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<class name="DirectionalLight3D">
+  <brief_description>A light that shines in one direction across the scene.</brief_description>
+  <description>Inherits the color and intensity settings from Light3D.</description>
+</class>

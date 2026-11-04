@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<class name="Collider3D">
+  <brief_description>Base class for 3D collision shapes.</brief_description>
+  <description>Shape data and collision callbacks are handled by the engine. Shape setup methods are not exposed to C# yet.</description>
+</class>

@@ -10,6 +10,7 @@
 
 #define ADD_PROPERTY(propertyInfo, setterName, getterName)                                                             \
 	ClassDatabase::AddProperty(GetStaticClassName(), propertyInfo, setterName, getterName)
+#define ADD_GROUP(name) ClassDatabase::AddPropertyGroup(GetStaticClassName(), name)
 
 #define BIND_ENUM(className, enumName)                                                                                 \
 	ClassDatabase::BindConstant(#className, #enumName, static_cast<int>(className::enumName))

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<class name="Control">
+  <brief_description>Base class for interface controls with a position and size.</brief_description>
+  <description>Controls take part in drawing, layout, focus, and input handling inside a viewport. Their own layout and input methods are not exposed to C# yet.</description>
+</class>

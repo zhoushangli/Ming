@@ -205,7 +205,18 @@ void InspectorPanel::RebuildProperties(EditorUIContext& context)
 
 		std::string sectionName;
 		int         sectionIndex = -1;
-		for (PropertyInfo const& prop : ClassDatabase::GetProperties(className))
+		auto properties = ClassDatabase::GetProperties(className);
+		if (className == "Node")
+		{
+			if (auto* script = ClassDatabase::FindProperty("Object", "script"))
+			{
+				properties.emplace_back(
+					Variant::Type::Empty, "", PropertyInfo::Hint::None, "", PropertyInfo::UsageFlags::Group);
+				properties.push_back(*script);
+			}
+		}
+
+		for (PropertyInfo const& prop : properties)
 		{
 			if (prop.HasUsage(PropertyInfo::UsageFlags::Group))
 			{
@@ -217,43 +228,6 @@ void InspectorPanel::RebuildProperties(EditorUIContext& context)
 			if (!prop.HasUsage(PropertyInfo::UsageFlags::Inspector))
 			{
 				continue;
-			}
-
-			std::string const desiredSection =
-				className == "Node3D"
-						&& (prop.m_name == "position" || prop.m_name == "rotation" || prop.m_name == "scale")
-					? "Transform"
-					: sectionName;
-			if (!desiredSection.empty()
-				&& (sectionIndex < 0 || group.m_sections[sectionIndex].m_name != desiredSection))
-			{
-				Button* sectionHeading = EditorPopupUtils::AddButton(
-					m_content,
-					desiredSection,
-					[this, className, desiredSection]()
-					{
-						for (PropertyGroup& current : m_propertyGroups)
-						{
-							if (current.m_className != className)
-							{
-								continue;
-							}
-
-							for (PropertySection& section : current.m_sections)
-							{
-								if (section.m_name == desiredSection)
-								{
-									section.m_collapsed = !section.m_collapsed;
-								}
-							}
-						}
-
-						FilterProperties();
-					});
-				sectionHeading->SetThemeTypeVariation("EditorGroupButton");
-				sectionHeading->SetHorizontalAlignment(HorizontalAlignment::Left);
-				group.m_sections.push_back({ desiredSection, sectionHeading, false });
-				sectionIndex = static_cast<int>(group.m_sections.size()) - 1;
 			}
 
 			ObjectID const    id     = m_cachedObjectID;
@@ -271,6 +245,56 @@ void InspectorPanel::RebuildProperties(EditorUIContext& context)
 				continue;
 			}
 
+			if (!sectionName.empty() && sectionIndex < 0)
+			{
+				sectionIndex = static_cast<int>(group.m_sections.size());
+				auto* sectionRoot = MemNew<VBoxContainer>();
+				sectionRoot->SetName("InspectorGroup_" + sectionName);
+				m_content->AddNode(sectionRoot);
+				Button* sectionHeading = EditorPopupUtils::AddButton(
+					sectionRoot,
+					sectionName,
+					[this, className, sectionIndex]()
+					{
+						for (PropertyGroup& current : m_propertyGroups)
+						{
+							if (current.m_className == className)
+							{
+								auto& section = current.m_sections[sectionIndex];
+								section.m_collapsed = !section.m_collapsed;
+								break;
+							}
+						}
+
+						FilterProperties();
+					});
+				sectionHeading->SetThemeTypeVariation("EditorGroupButton");
+				sectionHeading->SetName("InspectorGroupHeading_" + sectionName);
+				sectionHeading->SetHorizontalAlignment(HorizontalAlignment::Left);
+				sectionHeading->SetClipText(true);
+				sectionHeading->SetIcon(GetThemeIcon("ChevronDown", "EditorIcons"));
+				auto* content = MemNew<MarginContainer>();
+				sectionRoot->AddNode(content);
+				content->AddThemeChangedCallback(
+					[content, sectionHeading]()
+					{
+						auto style = sectionHeading->GetThemeStyleBox("normal");
+						float const inset = (style.IsValid() ? style->GetContentMargin(ThemeStyleBox::Side::Left) : 0.f)
+							+ sectionHeading->GetThemeConstant("icon_size", "EditorGroupButton")
+							+ sectionHeading->GetThemeConstant("icon_separation", "EditorGroupButton");
+						content->SetMargins(inset, 0.f, 0.f, 0.f);
+					});
+				auto* fields = MemNew<VBoxContainer>();
+				content->AddNode(fields);
+				fields->AddThemeChangedCallback(
+					[fields]()
+					{
+						fields->SetSeparation(static_cast<float>(fields->GetThemeConstant("panel_margin", "Editor")));
+					});
+				group.m_sections.push_back({ sectionName, sectionRoot, sectionHeading, content, fields, false });
+			}
+
+			field->SetEditedObject(id);
 			field->SetValueReader(
 				[id, getter]() -> Variant
 				{
@@ -282,8 +306,9 @@ void InspectorPanel::RebuildProperties(EditorUIContext& context)
 
 					return getter->Invoke(target, {});
 				});
-			m_content->AddNode(field->GetControl());
-			group.m_properties.push_back({ field, getter, desiredSection.empty() ? -1 : sectionIndex });
+			auto* destination = sectionIndex >= 0 ? group.m_sections[sectionIndex].m_fields : m_content;
+			destination->AddNode(field->GetControl());
+			group.m_properties.push_back({ field, getter, sectionIndex });
 		}
 
 		m_propertyGroups.push_back(std::move(group));
@@ -413,8 +438,14 @@ void InspectorPanel::FilterProperties()
 			bool const matches = query.empty()
 								 || lower(entry.m_property->GetDisplayName()).find(query) != std::string::npos
 								 || (section != nullptr && lower(section->m_name).find(query) != std::string::npos);
-			entry.m_property->GetControl()->SetVisible(
-				matches && (section == nullptr || !section->m_collapsed || !query.empty()));
+			Control* control = entry.m_property->GetControl();
+			bool const visible = matches && (section == nullptr || !section->m_collapsed || !query.empty());
+			if (control->IsVisibleInHierarchy() && !visible)
+			{
+				entry.m_property->EndEditing(LineEdit::EditEndReason::FocusLost);
+			}
+
+			control->SetVisible(matches);
 			if (section != nullptr)
 			{
 				sectionMatches[entry.m_section] = sectionMatches[entry.m_section] || matches;
@@ -426,7 +457,8 @@ void InspectorPanel::FilterProperties()
 		for (size_t i = 0; i < group.m_sections.size(); ++i)
 		{
 			PropertySection& section = group.m_sections[i];
-			section.m_heading->SetVisible(sectionMatches[i]);
+			section.m_content->SetVisible(sectionMatches[i] && (!section.m_collapsed || !query.empty()));
+			section.m_root->SetVisible(sectionMatches[i]);
 			section.m_heading->SetIcon(
 				GetThemeIcon(section.m_collapsed && query.empty() ? "ChevronRight" : "ChevronDown", "EditorIcons"));
 		}

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<class name="Tree">
+  <brief_description>A control that displays items in rows with parent and child links.</brief_description>
+  <description>Items can be expanded, selected, and edited by the engine interface code.</description>
+</class>

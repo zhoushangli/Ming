@@ -7,6 +7,13 @@
 #include "MingEngine/Engine/Render/RenderServer.hpp"
 #include <cstring>
 
+void EditorGizmoVisual3D::UploadGeometry(std::vector<Vertex> const& vertices)
+{
+	m_verts = vertices;
+	m_indices.clear();
+	UploadGeometry("DefaultUnlit", BuiltinShaders::DefaultUnlit);
+}
+
 void EditorGizmoVisual3D::UploadGeometry(
 	char const* shaderName, std::string_view shaderSource, RenderRequestPass pass, DepthMode depth)
 {

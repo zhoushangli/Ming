@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<class name="Resource">
+  <brief_description>Base class for data that can be loaded from a resource path.</brief_description>
+  <description>Resources have a path and an optional name. Setting either value does not load or save a file.</description>
+  <methods>
+    <method name="GetPath">
+      <description>Gets the virtual path recorded for this resource.</description>
+      <returns>The virtual path, or an empty string if no path is set.</returns>
+    </method>
+    <method name="SetPath">
+      <description>Sets the virtual path recorded for this resource. Does not move, load, or save a file. An invalid path leaves the old path unchanged.</description>
+      <param name="path">A valid virtual path, such as res://Textures/Stone.tex. An empty string clears the path.</param>
+    </method>
+    <method name="GetName">
+      <description>Gets the resource name.</description>
+      <returns>The current name, which may be empty.</returns>
+    </method>
+    <method name="SetName">
+      <description>Sets the resource name. Does not rename the file.</description>
+      <param name="name">The new display name. It may be empty.</param>
+    </method>
+  </methods>
+</class>

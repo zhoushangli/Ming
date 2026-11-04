@@ -1,0 +1,552 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>MingSharp</name>
+    </assembly>
+    <members>
+        <member name="T:Ming.AABBCollider3D">
+            <summary>A 3D collision shape defined by an axis-aligned box.</summary>
+        </member>
+        <member name="T:Ming.BaseButton">
+            <summary>Base class for controls that can be pressed.</summary>
+            <remarks>Stores the hover, pressed, toggle, and disabled states used by button controls.</remarks>
+        </member>
+        <member name="T:Ming.BoxContainer">
+            <summary>Arranges child controls in a row or a column.</summary>
+            <remarks>HBoxContainer uses a row. VBoxContainer uses a column.</remarks>
+        </member>
+        <member name="T:Ming.Button">
+            <summary>A button that can show text and an icon.</summary>
+        </member>
+        <member name="T:Ming.Camera3D">
+            <summary>A camera that provides a view of a 3D scene.</summary>
+            <remarks>A viewport uses one current camera at a time. This class exposes clip distances, the field of view, and the size used for an orthographic view.</remarks>
+        </member>
+        <member name="M:Ming.Camera3D.SetNearClip(System.Single)">
+            <summary>Sets the near clipping distance and updates the render camera. Does not clamp the value.</summary>
+            <param name="nearClip">The near clipping distance in world units. For a perspective view, use a value greater than zero and less than the far distance.</param>
+        </member>
+        <member name="M:Ming.Camera3D.GetNearClip">
+            <summary>Gets the near clipping distance.</summary>
+            <returns>The near clipping distance in world units.</returns>
+        </member>
+        <member name="M:Ming.Camera3D.SetFarClip(System.Single)">
+            <summary>Sets the far clipping distance and updates the render camera. Does not clamp the value.</summary>
+            <param name="farClip">The far clipping distance in world units. Use a value greater than the near distance.</param>
+        </member>
+        <member name="M:Ming.Camera3D.GetFarClip">
+            <summary>Gets the far clipping distance.</summary>
+            <returns>The far clipping distance in world units.</returns>
+        </member>
+        <member name="M:Ming.Camera3D.SetFovDegrees(System.Single)">
+            <summary>Sets the vertical field of view for a perspective camera. Does not change the camera mode or clamp the value.</summary>
+            <param name="fovDegrees">The vertical view angle in degrees. Use a value greater than 0 and less than 180.</param>
+        </member>
+        <member name="M:Ming.Camera3D.GetFovDegrees">
+            <summary>Gets the stored perspective field of view.</summary>
+            <returns>The vertical field of view in degrees.</returns>
+        </member>
+        <member name="M:Ming.Camera3D.SetSize(System.Single)">
+            <summary>Sets the height covered by an orthographic view. Does not change the camera mode or clamp the value.</summary>
+            <param name="size">The view height in world units. Use a positive value. The viewport shape determines the width.</param>
+        </member>
+        <member name="M:Ming.Camera3D.GetSize">
+            <summary>Gets the stored orthographic view size.</summary>
+            <returns>The view height in world units. This setting does not affect a perspective view.</returns>
+        </member>
+        <member name="T:Ming.CanvasItem">
+            <summary>Base class for nodes drawn on a 2D canvas.</summary>
+            <remarks>Controls inherit this class. An item can be hidden by its own visibility setting or by a parent item.</remarks>
+        </member>
+        <member name="M:Ming.CanvasItem.SetVisible(System.Boolean,System.Boolean)">
+            <summary>Sets the visibility of this item. Hiding it also cancels interface interaction with it. Does nothing if the visibility value has not changed.</summary>
+            <param name="visible">True to show the item, or false to hide it. A hidden parent item can still hide this item.</param>
+            <param name="cancelDrag">True to also cancel a drag tied to this item when hiding it. Focus, hover, and pointer capture are cleared either way.</param>
+        </member>
+        <member name="M:Ming.CanvasItem.IsVisible">
+            <summary>Gets this item&apos;s own visibility setting. Does not check whether a parent item is hidden.</summary>
+            <returns>True if this item is set to be visible.</returns>
+        </member>
+        <member name="T:Ming.CapsuleCollider3D">
+            <summary>A 3D collision shape defined by a line segment and a radius.</summary>
+        </member>
+        <member name="T:Ming.Collider3D">
+            <summary>Base class for 3D collision shapes.</summary>
+            <remarks>Shape data and collision callbacks are handled by the engine. Shape setup methods are not exposed to C# yet.</remarks>
+        </member>
+        <member name="T:Ming.ColorRect">
+            <summary>A control that draws a filled rectangle.</summary>
+        </member>
+        <member name="T:Ming.Container">
+            <summary>Base class for controls that arrange child controls.</summary>
+        </member>
+        <member name="T:Ming.Control">
+            <summary>Base class for interface controls with a position and size.</summary>
+            <remarks>Controls take part in drawing, layout, focus, and input handling inside a viewport. Their own layout and input methods are not exposed to C# yet.</remarks>
+        </member>
+        <member name="T:Ming.CSharpScript">
+            <summary>A resource that links a script file path to a compiled C# type.</summary>
+            <remarks>The script file is identified by its resource path. The engine finds the matching type in the game assembly.</remarks>
+        </member>
+        <member name="T:Ming.CSharpScriptLoader">
+            <summary>Engine loader for C# script resources from .cs paths.</summary>
+            <remarks>Creates a script resource for an existing file. This loader does not compile the file.</remarks>
+        </member>
+        <member name="T:Ming.CSharpScriptSaver">
+            <summary>Engine save handler for C# script resources.</summary>
+            <remarks>The save step currently returns success without writing the source file.</remarks>
+        </member>
+        <member name="T:Ming.CylinderZCollider3D">
+            <summary>A 3D cylinder collision shape aligned with the local Z axis.</summary>
+        </member>
+        <member name="T:Ming.DirectionalLight3D">
+            <summary>A light that shines in one direction across the scene.</summary>
+            <remarks>Inherits the color and intensity settings from Light3D.</remarks>
+        </member>
+        <member name="T:Ming.FontResource">
+            <summary>Holds a font used to draw text.</summary>
+        </member>
+        <member name="T:Ming.FontResourceLoader">
+            <summary>Engine loader for font resources from .ttf files.</summary>
+        </member>
+        <member name="T:Ming.GLTFImporter">
+            <summary>Imports mesh data from .gltf and .glb files.</summary>
+            <remarks>Produces an engine mesh resource. This importer does not expose import methods to C#.</remarks>
+        </member>
+        <member name="T:Ming.HBoxContainer">
+            <summary>Arranges child controls in a horizontal row.</summary>
+        </member>
+        <member name="T:Ming.Image">
+            <summary>Holds image size, pixel data, and encoded image bytes.</summary>
+            <remarks>Image loading and pixel access methods are not exposed to C# yet.</remarks>
+        </member>
+        <member name="T:Ming.ImageImporter">
+            <summary>Imports image files as engine texture resources.</summary>
+        </member>
+        <member name="T:Ming.InputSystem">
+            <summary>Tracks key states and controls the mouse pointer.</summary>
+            <remarks>Use the active engine input system to read game input. Press and release flags last until the end of the frame.</remarks>
+        </member>
+        <member name="M:Ming.InputSystem.IsKeyDown(System.Int32)">
+            <summary>Checks whether a key is held down in the current processed input state.</summary>
+            <param name="keyCode">The engine key code to check.</param>
+            <returns>True if the key is down. False if it is up or the code is outside the supported range.</returns>
+        </member>
+        <member name="M:Ming.InputSystem.WasKeyJustPressed(System.Int32)">
+            <summary>Checks whether a key was pressed during this frame. The flag is cleared at the end of the frame.</summary>
+            <param name="keyCode">The engine key code to check.</param>
+            <returns>True if a press was processed this frame. False for a code outside the supported range.</returns>
+        </member>
+        <member name="M:Ming.InputSystem.WasKeyJustReleased(System.Int32)">
+            <summary>Checks whether a key was released during this frame. The flag is cleared at the end of the frame.</summary>
+            <param name="keyCode">The engine key code to check.</param>
+            <returns>True if a release was processed this frame. False for a code outside the supported range.</returns>
+        </member>
+        <member name="M:Ming.InputSystem.SetCursorMode(System.Int32)">
+            <summary>Sets whether the mouse pointer is free or captured for camera movement. Values outside the supported range are ignored.</summary>
+            <param name="cursorMode">0 for a normal pointer, or 1 to hide and capture it for camera movement.</param>
+        </member>
+        <member name="T:Ming.Label">
+            <summary>A control that displays text.</summary>
+        </member>
+        <member name="T:Ming.Light3D">
+            <summary>Base class for lights in a 3D scene.</summary>
+            <remarks>Provides light color and intensity settings. Other light types add range or direction settings.</remarks>
+        </member>
+        <member name="M:Ming.Light3D.SetIntensity(System.Single)">
+            <summary>Sets the light intensity value and updates the render light. Does not clamp the value.</summary>
+            <param name="intensity">The light strength. Use a non-negative value; zero gives no light.</param>
+        </member>
+        <member name="M:Ming.Light3D.GetIntensity">
+            <summary>Gets the light intensity value.</summary>
+            <returns>The current light strength.</returns>
+        </member>
+        <member name="M:Ming.Light3D.SetColor(Ming.Color)">
+            <summary>Sets the light color and updates the render light.</summary>
+            <param name="color">The light color. Color channels use the engine Color type.</param>
+        </member>
+        <member name="M:Ming.Light3D.GetColor">
+            <summary>Gets the light color.</summary>
+            <returns>The current light color.</returns>
+        </member>
+        <member name="T:Ming.LineEdit">
+            <summary>A control for editing one line of text.</summary>
+            <remarks>Supports a caret, text selection, and horizontal scrolling. RestoreEditState restores an edit state; other text editing methods are not exposed to C# yet.</remarks>
+        </member>
+        <member name="M:Ming.LineEdit.RestoreEditState(System.String,System.Int32,System.Single)">
+            <summary>Restores the text, caret, and horizontal scroll position, and clears the selection. Text changes notify the text change callback. If the text differs and editing cannot begin, nothing is changed.</summary>
+            <param name="text">The text to restore.</param>
+            <param name="cursorColumn">The caret position in text characters, starting at zero. Clamped to the text length.</param>
+            <param name="scrollOffset">The horizontal scroll offset in local control units. The text layout may adjust it to keep the caret visible.</param>
+        </member>
+        <member name="T:Ming.MarginContainer">
+            <summary>Adds space between its edges and its child controls.</summary>
+        </member>
+        <member name="T:Ming.MenuBar">
+            <summary>A row of menus that can open popup lists.</summary>
+        </member>
+        <member name="T:Ming.MeshInstance3D">
+            <summary>A 3D node that draws a mesh resource.</summary>
+            <remarks>The mesh assignment methods are not exposed to C# yet. The node still inherits the Node3D transform methods.</remarks>
+        </member>
+        <member name="T:Ming.MeshResource">
+            <summary>Holds mesh vertices and indices used for rendering.</summary>
+            <remarks>Mesh data editing methods are not exposed to C# yet.</remarks>
+        </member>
+        <member name="T:Ming.MeshResourceLoader">
+            <summary>Engine loader for mesh resources from .mesh files.</summary>
+        </member>
+        <member name="T:Ming.MeshResourceSaver">
+            <summary>Engine save handler for mesh resources in .mesh files.</summary>
+        </member>
+        <member name="T:Ming.Node">
+            <summary>A node that can have a parent and child nodes.</summary>
+            <remarks>Nodes form the scene tree. Override the callbacks to run script code when a node enters, leaves, or updates in the tree.</remarks>
+        </member>
+        <member name="M:Ming.Node.SetName(System.String)">
+            <summary>Sets the node name. If a sibling already uses the name, a number is added to make it unique.</summary>
+            <param name="name">The new name. An empty name uses the engine class name.</param>
+        </member>
+        <member name="M:Ming.Node.GetName">
+            <summary>Gets the node name.</summary>
+            <returns>The current name.</returns>
+        </member>
+        <member name="M:Ming.Node.SetSerializable(System.Boolean)">
+            <summary>Sets whether this node and its child nodes can be saved in a packed scene.</summary>
+            <param name="isSerializable">True to allow saving this branch of the scene.</param>
+        </member>
+        <member name="M:Ming.Node.GetSerializable">
+            <summary>Checks whether this node can be saved in a packed scene.</summary>
+            <returns>True if this node allows saving. A parent that blocks saving also blocks this node.</returns>
+        </member>
+        <member name="M:Ming.Node.SetReady(System.Boolean)">
+            <summary>Sets whether OnReady is pending. This does not call OnReady right away. A pending call runs the next time this node goes through the ready step.</summary>
+            <param name="isReady">True to request another ready call, or false to clear the pending call.</param>
+        </member>
+        <member name="M:Ming.Node.GetReady">
+            <summary>Checks whether an OnReady call is still pending.</summary>
+            <returns>True if the ready call is pending. This does not mean the node is already ready.</returns>
+        </member>
+        <member name="M:Ming.Node.SetProcess(System.Boolean)">
+            <summary>Turns OnProcess calls on or off. The ready step turns processing on.</summary>
+            <param name="isProcess">True to receive frame updates, or false to stop them.</param>
+        </member>
+        <member name="M:Ming.Node.GetProcess">
+            <summary>Checks whether frame updates are enabled for this node.</summary>
+            <returns>True if processing is enabled. The node must also be in a scene tree to receive updates.</returns>
+        </member>
+        <member name="M:Ming.Node.GetRoot">
+            <summary>Follows the parent links to find the top node.</summary>
+            <returns>The top node, or this node if it has no parent.</returns>
+        </member>
+        <member name="M:Ming.Node.GetParent">
+            <summary>Gets the direct parent of this node.</summary>
+            <returns>The parent node, or null if this node has no parent.</returns>
+        </member>
+        <member name="M:Ming.Node.FindChildByName(System.String)">
+            <summary>Finds a child by name. Searches each child and its child nodes in order. Does not check this node.</summary>
+            <param name="name">The name to find.</param>
+            <returns>The first matching node, or null if no node matches.</returns>
+        </member>
+        <member name="M:Ming.Node.GetSceneTree">
+            <summary>Gets the scene tree that contains this node.</summary>
+            <returns>The scene tree, or null if this node is outside a tree.</returns>
+        </member>
+        <member name="M:Ming.Node.AddNode(Ming.Node)">
+            <summary>Adds a child node. Moves it from its old parent if needed. If this node is in a scene tree, the child enters the same tree. Moving between different scene trees is not supported.</summary>
+            <param name="child">The node to add. A null node, this node, or an ancestor is ignored.</param>
+        </member>
+        <member name="M:Ming.Node.MoveChild(Ming.Node,System.Int32)">
+            <summary>Changes the order of a direct child. Does nothing if the node is not a child of this node.</summary>
+            <param name="child">The child to move.</param>
+            <param name="index">The new position, starting at zero. Values outside the child list are moved to the nearest end.</param>
+        </member>
+        <member name="M:Ming.Node.QueueFree">
+            <summary>Queues this node and its child nodes for deletion by the scene tree. If this node is outside a tree, it is deleted right away. Do not use the node after calling this method.</summary>
+        </member>
+        <member name="M:Ming.Node.Reparent(Ming.Node,System.Boolean)">
+            <summary>Moves this node to a new parent. The new parent must be a valid node. Moving between different scene trees is not supported.</summary>
+            <param name="newParent">The new parent. It must not be this node or one of its child nodes.</param>
+            <param name="keepWorldTransform">True to keep the world transform when this node is a Node3D. Has no effect on a plain Node.</param>
+        </member>
+        <member name="M:Ming.Node.OnEnterTree">
+            <summary>Called each time this node enters a scene tree, before its child nodes enter.</summary>
+        </member>
+        <member name="M:Ming.Node.OnExitTree">
+            <summary>Called when this node leaves a scene tree, after its child nodes leave.</summary>
+        </member>
+        <member name="M:Ming.Node.OnReady">
+            <summary>Called after this node and its child nodes enter the scene tree. Child nodes become ready first. Runs once unless SetReady requests another call.</summary>
+        </member>
+        <member name="M:Ming.Node.OnProcess(System.Single)">
+            <summary>Called each frame while this node is in a scene tree and processing is enabled.</summary>
+            <param name="deltaSeconds">The time since the last frame, in seconds.</param>
+        </member>
+        <member name="T:Ming.Node3D">
+            <summary>A node with a position, rotation, and scale in 3D space.</summary>
+            <remarks>The local transform is relative to the direct parent when it is a Node3D. Otherwise, it is also the world transform. Rotation values use degrees.</remarks>
+        </member>
+        <member name="M:Ming.Node3D.SetLocalTransform(Ming.Matrix4x4)">
+            <summary>Sets the position, rotation, and scale from a matrix in local space.</summary>
+            <param name="localTransform">The transform relative to the direct Node3D parent, or to the world if there is no Node3D parent.</param>
+        </member>
+        <member name="M:Ming.Node3D.GetLocalTransform">
+            <summary>Gets the matrix for this node&apos;s local position, rotation, and scale.</summary>
+            <returns>The transform relative to the direct Node3D parent, or to the world if there is no Node3D parent.</returns>
+        </member>
+        <member name="M:Ming.Node3D.SetLocalPosition(Ming.Vector3)">
+            <summary>Sets the position in local space.</summary>
+            <param name="localPosition">The position relative to the direct Node3D parent, or to the world if there is no Node3D parent.</param>
+        </member>
+        <member name="M:Ming.Node3D.GetLocalPosition">
+            <summary>Gets the position in local space.</summary>
+            <returns>The position relative to the direct Node3D parent, or to the world if there is no Node3D parent.</returns>
+        </member>
+        <member name="M:Ming.Node3D.SetLocalOrientation(Ming.EulerAngles)">
+            <summary>Sets the rotation in local space.</summary>
+            <param name="localOrientation">The yaw, pitch, and roll angles in degrees, relative to the direct Node3D parent.</param>
+        </member>
+        <member name="M:Ming.Node3D.GetLocalOrientation">
+            <summary>Gets the rotation in local space.</summary>
+            <returns>The local yaw, pitch, and roll angles in degrees.</returns>
+        </member>
+        <member name="M:Ming.Node3D.SetLocalScale(Ming.Vector3)">
+            <summary>Sets the scale in local space.</summary>
+            <param name="scale">The scale on each local axis. A value of 1 keeps the size on that axis.</param>
+        </member>
+        <member name="M:Ming.Node3D.GetLocalScale">
+            <summary>Gets the scale in local space.</summary>
+            <returns>The scale on each local axis.</returns>
+        </member>
+        <member name="T:Ming.OBJImporter">
+            <summary>Imports mesh data from .obj files.</summary>
+            <remarks>Produces an engine mesh resource. This importer does not expose import methods to C#.</remarks>
+        </member>
+        <member name="T:Ming.OmniLight3D">
+            <summary>A light that shines in all directions from a point.</summary>
+            <remarks>Adds range and distance fade settings to Light3D.</remarks>
+        </member>
+        <member name="M:Ming.OmniLight3D.SetRange(System.Single)">
+            <summary>Sets the light range value and updates the render light. Does not clamp the value.</summary>
+            <param name="range">The light range in world units. Use a positive value.</param>
+        </member>
+        <member name="M:Ming.OmniLight3D.GetRange">
+            <summary>Gets the light range value.</summary>
+            <returns>The light range in world units.</returns>
+        </member>
+        <member name="M:Ming.OmniLight3D.SetAttenuation(System.Single)">
+            <summary>Sets the distance fade value sent to the render light. Does not clamp the value.</summary>
+            <param name="attenuation">The setting for how the light fades with distance.</param>
+        </member>
+        <member name="M:Ming.OmniLight3D.GetAttenuation">
+            <summary>Gets the distance fade value.</summary>
+            <returns>The current distance fade setting.</returns>
+        </member>
+        <member name="T:Ming.OptionButton">
+            <summary>A button that opens a list of choices.</summary>
+        </member>
+        <member name="T:Ming.PackedScene">
+            <summary>Stores a node tree so it can be created again.</summary>
+            <remarks>Pack copies scene data into this resource. Instantiate creates new nodes outside the scene tree.</remarks>
+        </member>
+        <member name="M:Ming.PackedScene.Pack(Ming.Node)">
+            <summary>Copies a node and its child nodes into this resource. Clears the old packed data before reading the new tree. Nodes that block saving are skipped with their child nodes. Does not write a file.</summary>
+            <param name="node">The root node to copy. It must allow saving.</param>
+            <returns>True if scene data was stored. False for a null root, an empty result, invalid node names, or while script reload is incomplete.</returns>
+        </member>
+        <member name="M:Ming.PackedScene.Instantiate">
+            <summary>Creates a new node tree from the stored scene data. Does not add the result to a scene tree.</summary>
+            <returns>The new root node, or null if the data is empty or the node tree could not be created.</returns>
+        </member>
+        <member name="T:Ming.PackedSceneLoader">
+            <summary>Engine loader for packed scenes from .tscn files.</summary>
+            <remarks>Uses Ming&apos;s JSON scene format.</remarks>
+        </member>
+        <member name="T:Ming.PackedSceneSaver">
+            <summary>Engine save handler for packed scenes in .tscn files.</summary>
+        </member>
+        <member name="T:Ming.PanelContainer">
+            <summary>Draws a styled panel behind its child controls.</summary>
+        </member>
+        <member name="T:Ming.PopupPanel">
+            <summary>A control used for popup content such as menus and dialogs.</summary>
+        </member>
+        <member name="T:Ming.ProjectSettings">
+            <summary>Holds the settings stored in project.ming.</summary>
+            <remarks>Includes the project start scene path. Project settings access methods are not exposed to C# yet.</remarks>
+        </member>
+        <member name="T:Ming.ProjectSettingsLoader">
+            <summary>Engine loader for project settings from .ming files.</summary>
+        </member>
+        <member name="T:Ming.ProjectSettingsSaver">
+            <summary>Engine save handler for project settings in .ming files.</summary>
+        </member>
+        <member name="T:Ming.RaycastSpace3D">
+            <summary>Stores objects that can be tested by 3D rays.</summary>
+            <remarks>Each scene tree owns a raycast space. Ray query methods are not exposed to C# yet.</remarks>
+        </member>
+        <member name="T:Ming.RefCounted">
+            <summary>Base class for engine objects with a native reference count.</summary>
+            <remarks>Resource classes inherit this class. The reference count belongs to the native object.</remarks>
+        </member>
+        <member name="T:Ming.Resource">
+            <summary>Base class for data that can be loaded from a resource path.</summary>
+            <remarks>Resources have a path and an optional name. Setting either value does not load or save a file.</remarks>
+        </member>
+        <member name="M:Ming.Resource.GetPath">
+            <summary>Gets the virtual path recorded for this resource.</summary>
+            <returns>The virtual path, or an empty string if no path is set.</returns>
+        </member>
+        <member name="M:Ming.Resource.SetPath(System.String)">
+            <summary>Sets the virtual path recorded for this resource. Does not move, load, or save a file. An invalid path leaves the old path unchanged.</summary>
+            <param name="path">A valid virtual path, such as res://Textures/Stone.tex. An empty string clears the path.</param>
+        </member>
+        <member name="M:Ming.Resource.GetName">
+            <summary>Gets the resource name.</summary>
+            <returns>The current name, which may be empty.</returns>
+        </member>
+        <member name="M:Ming.Resource.SetName(System.String)">
+            <summary>Sets the resource name. Does not rename the file.</summary>
+            <param name="name">The new display name. It may be empty.</param>
+        </member>
+        <member name="T:Ming.ResourceFormatImporter">
+            <summary>Base class for engine handlers that import source files.</summary>
+            <remarks>Converts source data to an engine resource. Import methods are not exposed to C#.</remarks>
+        </member>
+        <member name="T:Ming.ResourceFormatLoader">
+            <summary>Base class for engine handlers that load resource files.</summary>
+            <remarks>The engine resource loader chooses a handler for the file type. Loading methods are not exposed to C#.</remarks>
+        </member>
+        <member name="T:Ming.ResourceFormatSaver">
+            <summary>Base class for engine handlers that save resource files.</summary>
+            <remarks>The engine resource saver chooses a handler for the path and resource type. Saving methods are not exposed to C#.</remarks>
+        </member>
+        <member name="T:Ming.SceneTree">
+            <summary>Manages the root node, current scene, and scene updates.</summary>
+            <remarks>Scene changes and queued node deletion are applied when the engine processes pending changes.</remarks>
+        </member>
+        <member name="M:Ming.SceneTree.GetRoot">
+            <summary>Gets the root viewport node owned by this scene tree.</summary>
+            <returns>The root node. The current scene is a child below a scene viewport, not the root itself.</returns>
+        </member>
+        <member name="M:Ming.SceneTree.GetScene">
+            <summary>Gets the root node of the current scene.</summary>
+            <returns>The current scene root, or null if no current scene is in this tree.</returns>
+        </member>
+        <member name="M:Ming.SceneTree.ClearScene">
+            <summary>Queues the current scene and its child nodes for deletion. Does nothing if there is no current scene. Deletion happens when the engine processes pending changes.</summary>
+        </member>
+        <member name="M:Ming.SceneTree.ChangeScene(Ming.Node)">
+            <summary>Queues a new current scene and queues the old scene for deletion. The change takes effect when the engine processes pending changes.</summary>
+            <param name="newSceneNode">The new scene root, normally created by PackedScene.Instantiate. Pass null to clear the current scene.</param>
+        </member>
+        <member name="M:Ming.SceneTree.GetWorldCamera">
+            <summary>Gets the current camera of the scene viewport.</summary>
+            <returns>The current 3D camera, or null if no camera is set.</returns>
+        </member>
+        <member name="M:Ming.SceneTree.GetRaycastSpace">
+            <summary>Gets the raycast space owned by this scene tree.</summary>
+            <returns>The raycast space. Its ray query methods are not exposed to C# yet.</returns>
+        </member>
+        <member name="M:Ming.SceneTree.GetDeltaSeconds">
+            <summary>Gets the time step from the most recent scene update.</summary>
+            <returns>The update time in seconds. This is the same time step passed to Node.OnProcess.</returns>
+        </member>
+        <member name="T:Ming.Script">
+            <summary>Base resource for scripts attached to engine objects.</summary>
+        </member>
+        <member name="T:Ming.ScrollContainer">
+            <summary>Shows child content through a scrollable area.</summary>
+        </member>
+        <member name="T:Ming.ShaderResource">
+            <summary>Holds a shader used by the renderer.</summary>
+        </member>
+        <member name="T:Ming.ShaderResourceLoader">
+            <summary>Engine loader for shader resources from .hlsl files.</summary>
+        </member>
+        <member name="T:Ming.SpinBox">
+            <summary>A control for entering numbers and changing them in steps.</summary>
+        </member>
+        <member name="T:Ming.SplitContainer">
+            <summary>Divides an area between two child panels with a movable divider.</summary>
+        </member>
+        <member name="T:Ming.SpotLight3D">
+            <summary>A light that shines from a point into a cone.</summary>
+            <remarks>Adds range, cone angle, and fade settings to Light3D.</remarks>
+        </member>
+        <member name="M:Ming.SpotLight3D.SetRange(System.Single)">
+            <summary>Sets the light range value and updates the render light. Does not clamp the value.</summary>
+            <param name="range">The light range in world units. Use a positive value.</param>
+        </member>
+        <member name="M:Ming.SpotLight3D.GetRange">
+            <summary>Gets the light range value.</summary>
+            <returns>The light range in world units.</returns>
+        </member>
+        <member name="M:Ming.SpotLight3D.SetAttenuation(System.Single)">
+            <summary>Sets the distance fade value sent to the render light. Does not clamp the value.</summary>
+            <param name="attenuation">The setting for how the light fades with distance.</param>
+        </member>
+        <member name="M:Ming.SpotLight3D.GetAttenuation">
+            <summary>Gets the distance fade value.</summary>
+            <returns>The current distance fade setting.</returns>
+        </member>
+        <member name="M:Ming.SpotLight3D.SetSpotAngle(System.Single)">
+            <summary>Sets the cone angle value sent to the render light. Does not clamp the value.</summary>
+            <param name="angle">The cone angle setting.</param>
+        </member>
+        <member name="M:Ming.SpotLight3D.GetSpotAngle">
+            <summary>Gets the stored cone angle value.</summary>
+            <returns>The current cone angle setting.</returns>
+        </member>
+        <member name="M:Ming.SpotLight3D.SetSpotAttenuation(System.Single)">
+            <summary>Sets the cone fade value sent to the render light. Does not clamp the value.</summary>
+            <param name="attenuation">The setting for how the light fades toward the edge of the cone.</param>
+        </member>
+        <member name="M:Ming.SpotLight3D.GetSpotAttenuation">
+            <summary>Gets the cone fade value.</summary>
+            <returns>The current cone fade setting.</returns>
+        </member>
+        <member name="T:Ming.SubViewportContainer">
+            <summary>Displays a child SubViewport inside the interface.</summary>
+            <remarks>Maps pointer positions to the viewport and forwards input to it.</remarks>
+        </member>
+        <member name="T:Ming.SystemBase">
+            <summary>Base class for engine systems with startup and frame steps.</summary>
+            <remarks>The engine drives these steps. They are not exposed as C# override points.</remarks>
+        </member>
+        <member name="T:Ming.TabContainer">
+            <summary>Shows one child page at a time, selected by tabs.</summary>
+        </member>
+        <member name="T:Ming.TextureResource">
+            <summary>Holds image data and the texture used for rendering.</summary>
+        </member>
+        <member name="T:Ming.TextureResourceLoader">
+            <summary>Engine loader for texture resources from .tex files.</summary>
+        </member>
+        <member name="T:Ming.TextureResourceSaver">
+            <summary>Engine save handler for texture resources in .tex files.</summary>
+        </member>
+        <member name="T:Ming.Theme">
+            <summary>Stores the colors, fonts, icons, sizes, and styles used by controls.</summary>
+        </member>
+        <member name="T:Ming.ThemeStyleBox">
+            <summary>Stores the background, borders, and margins for a styled box.</summary>
+        </member>
+        <member name="T:Ming.Tree">
+            <summary>A control that displays items in rows with parent and child links.</summary>
+            <remarks>Items can be expanded, selected, and edited by the engine interface code.</remarks>
+        </member>
+        <member name="T:Ming.TriangleMeshCollider3D">
+            <summary>A 3D collision shape defined by mesh triangles.</summary>
+        </member>
+        <member name="T:Ming.VBoxContainer">
+            <summary>Arranges child controls in a vertical column.</summary>
+        </member>
+        <member name="T:Ming.Viewport">
+            <summary>Holds a scene view, its camera, and its interface input state.</summary>
+        </member>
+        <member name="T:Ming.VisualInstance3D">
+            <summary>Base class for 3D nodes that have a render instance.</summary>
+        </member>
+    </members>
+</doc>
