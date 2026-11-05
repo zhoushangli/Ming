@@ -17,11 +17,16 @@
 #include <string>
 #include <type_traits>
 
-// Hold one value of any builtin type inside 24 bytes: a 4 byte tag, 4 bytes of padding and a
-// 16 byte payload, which is the shape the Godot Variant uses.
-// The payload keeps the small types inline, holds the String in place and keeps the types that
-// are wider than the payload behind an owned pointer.
-// e.g. Variant(Vector3::One) stores 12 bytes inline, Variant(Matrix4x4()) owns a Matrix4x4.
+template <typename T> class Ref;
+template <typename T> struct RefTypeInfo { static constexpr bool IsRef = false; };
+template <typename T> struct RefTypeInfo<Ref<T>>
+{
+	static constexpr bool IsRef = true;
+	using ElementType = T;
+};
+
+// Hold a tag, reference ownership flag and 16 byte payload in a 24 byte ABI value.
+// e.g. Variant::FromRef(mesh) retains a resource without changing the payload layout.
 class Variant
 {
 public:
@@ -43,6 +48,7 @@ public:
 		Matrix4x4,
 		ObjectPtr,
 		Any, // This is a special type used for method binding, it means the method can accept any type of argument
+		UInt32,
 	};
 
 private:
@@ -63,6 +69,10 @@ public:
 
 	Variant(bool value);
 	Variant(int value);
+	Variant(uint32_t value);
+	template <typename T, std::enable_if_t<std::is_enum_v<T>, int> = 0>
+	Variant(T value) : Variant(static_cast<int>(value)) {}
+	static Variant FromRef(Object* value);
 	Variant(float value);
 	Variant(char const* value);
 
@@ -137,6 +147,19 @@ public:
 		else if constexpr (std::is_same_v<CleanType, bool>)
 		{
 			return Type::Bool;
+		}
+		else if constexpr (RefTypeInfo<CleanType>::IsRef)
+		{
+			return Type::ObjectPtr;
+		}
+		else if constexpr (std::is_same_v<CleanType, uint32_t>)
+		{
+			return Type::UInt32;
+		}
+		else if constexpr (std::is_enum_v<CleanType>)
+		{
+			static_assert(sizeof(CleanType) == sizeof(int32_t));
+			return Type::Int;
 		}
 		else if constexpr (std::is_same_v<CleanType, int>)
 		{
@@ -235,8 +258,9 @@ public:
 	static constexpr uint32_t kPayloadSize = sizeof(Payload::m_bytes);
 
 private:
-	Type    m_type    = Type::Empty;
-	Payload m_payload = {};
+	Type     m_type    = Type::Empty;
+	uint32_t m_ownsRef = 0;
+	Payload  m_payload = {};
 };
 
 static_assert(sizeof(Variant) == 24, "Variant must stay 24 bytes so the tag and the payload fit.");
@@ -244,7 +268,7 @@ static_assert(sizeof(Variant) == 24, "Variant must stay 24 bytes so the tag and 
 template <typename T>
 struct VariantCaster
 {
-	static T Cast(Variant const& value)
+	static decltype(auto) Cast(Variant const& value)
 	{
 		using CleanType   = std::remove_cv_t<std::remove_reference_t<T>>;
 		using PointeeType = std::remove_cv_t<std::remove_pointer_t<CleanType>>;
@@ -255,6 +279,15 @@ struct VariantCaster
 		if constexpr (std::is_same_v<CleanType, Variant>)
 		{
 			return value;
+		}
+
+		else if constexpr (RefTypeInfo<CleanType>::IsRef)
+		{
+			return CleanType(value);
+		}
+		else if constexpr (std::is_enum_v<CleanType>)
+		{
+			return static_cast<CleanType>(value.As<int>());
 		}
 
 		// Object pointer.

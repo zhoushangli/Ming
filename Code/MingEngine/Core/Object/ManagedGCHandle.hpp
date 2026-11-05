@@ -20,6 +20,12 @@ public:
 	void* GetValue() const { return m_value; }
 
 	void Release();
+	void* Detach()
+	{
+		void* value = m_value;
+		m_value = nullptr;
+		return value;
+	}
 
 private:
 	void* m_value = nullptr;

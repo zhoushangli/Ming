@@ -52,13 +52,13 @@ void EditorGizmoVisual3D::UploadGeometry(
 	m_mesh->m_indices.resize(indices.size() * sizeof(unsigned int));
 	std::memcpy(m_mesh->m_indices.data(), indices.data(), m_mesh->m_indices.size());
 	m_mesh->InitGPUResources();
-	server->InstanceSetBase(m_instanceRID, m_mesh->GetMeshRID());
-	server->InstanceSetRenderPass(m_instanceRID, pass);
+	server->Instance3DSetBase(m_instanceRID, m_mesh->GetMeshRID());
+	server->Instance3DSetRenderPass(m_instanceRID, pass);
 }
 
 void EditorGizmoVisual3D::SetRenderPriority(int priority)
 {
-	g_engine->m_renderServer->InstanceSetRenderPriority(m_instanceRID, priority);
+	g_engine->m_renderServer->Instance3DSetRenderPriority(m_instanceRID, priority);
 }
 
 void EditorGizmoVisual3D::SetGizmoColor(Color const& color)

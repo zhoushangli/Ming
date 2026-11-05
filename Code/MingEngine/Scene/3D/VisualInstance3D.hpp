@@ -23,6 +23,6 @@ public:
 
 protected:
 	// Render instance that mirrors this node while it stays in the SceneTree.
-	// e.g. InstanceSetScenario() links it to the Viewport Scenario so Render() can visit it
+	// e.g. Instance3DSetScenario() links it to the Viewport Scenario so Render() can visit it
 	RID m_instanceRID = RID::Invalid;
 };

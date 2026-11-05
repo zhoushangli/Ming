@@ -162,5 +162,16 @@ Ref<Theme> CreateDefaultTheme()
 	theme->SetFontSize("font_size", "SpinBoxStep", 12);
 	theme->SetTypeVariation("SpinBoxError", "Label");
 	theme->SetFontSize("font_size", "SpinBoxError", 11);
+	theme->SetConstant("minimum_width", "ColorPicker", 320);
+	theme->SetConstant("shape_height", "ColorPicker", 200);
+	theme->SetConstant("bar_width", "ColorPicker", 20);
+	theme->SetConstant("row_height", "ColorPicker", 32);
+	theme->SetConstant("spacing", "ColorPicker", 8);
+	theme->SetConstant("padding", "ColorPicker", 8);
+	theme->SetConstant("checker_size", "ColorPicker", 6);
+	theme->SetColor("checker_light", "ColorPicker", Color(160, 160, 160));
+	theme->SetColor("checker_dark", "ColorPicker", Color(100, 100, 100));
+	theme->SetColor("cursor_color", "ColorPicker", Color::White);
+	theme->SetStyleBox("panel", "ColorPicker", box(panel, border, 1.f, 0.f, 0.f));
 	return theme;
 }

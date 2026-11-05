@@ -132,6 +132,9 @@ void Object::Notification(int notification, bool reverse)
 
 void Object::Free()
 {
+	ERR_FAIL_COND_MSG(dynamic_cast<RefCounted*>(this) != nullptr,
+		"RefCounted objects must be released through their references.");
+
 	MemDelete(this);
 }
 
@@ -310,6 +313,12 @@ bool Object::TrySetNativeBindingGCHandle(void* value)
 	}
 
 	m_nativeBindingGCHandle = ManagedGCHandle(value);
+
+	if (auto* refCounted = dynamic_cast<RefCounted*>(this))
+	{
+		refCounted->UpdateNativeBindingGCHandle();
+	}
+
 	return true;
 }
 
@@ -318,5 +327,13 @@ void Object::ReleaseNativeBindingGCHandle()
 	if (m_nativeBindingGCHandle.IsValid())
 	{
 		m_nativeBindingGCHandle.Release();
+	}
+}
+
+void Object::DetachNativeBindingGCHandle(void* expected)
+{
+	if (m_nativeBindingGCHandle.GetValue() == expected)
+	{
+		m_nativeBindingGCHandle.Detach();
 	}
 }

@@ -331,6 +331,17 @@ Ref<Theme> EditorThemeManager::CreateTheme()
 	theme->SetConstant("unsaved_popup_width", "Editor", 540);
 	theme->SetConstant("action_slot", "Editor", 23);
 	theme->SetConstant("color_height", "Editor", 28);
+	theme->SetConstant("minimum_width", "ColorPicker", 320);
+	theme->SetConstant("shape_height", "ColorPicker", 200);
+	theme->SetConstant("bar_width", "ColorPicker", 20);
+	theme->SetConstant("row_height", "ColorPicker", 32);
+	theme->SetConstant("spacing", "ColorPicker", 8);
+	theme->SetConstant("padding", "ColorPicker", 8);
+	theme->SetConstant("checker_size", "ColorPicker", 6);
+	theme->SetColor("checker_light", "ColorPicker", Color(145, 140, 132));
+	theme->SetColor("checker_dark", "ColorPicker", Color(85, 81, 75));
+	theme->SetColor("cursor_color", "ColorPicker", text);
+	theme->SetStyleBox("panel", "ColorPicker", box(panel, border, 1.f, 0.f, 0.f));
 	theme->SetConstant("viewport_min_width", "Editor", 280);
 	theme->SetConstant("viewport_min_height", "Editor", 200);
 	theme->SetConstant("viewport_header_height", "Editor", 33);
@@ -431,6 +442,13 @@ Ref<Theme> EditorThemeManager::CreateScaledTheme(Ref<Theme> const& baseTheme, fl
 	// Only these constants represent editor dimensions; switches and counts retain their values.
 	// e.g. A user-defined mode constant is copied even when its value happens to be 20.
 	static std::pair<char const*, char const*> const dimensions[] = {
+		{ "ColorPicker", "minimum_width" },
+		{ "ColorPicker", "shape_height" },
+		{ "ColorPicker", "bar_width" },
+		{ "ColorPicker", "row_height" },
+		{ "ColorPicker", "spacing" },
+		{ "ColorPicker", "padding" },
+		{ "ColorPicker", "checker_size" },
 		{ "Editor", "node_sidebar_width" },
 		{ "Editor", "node_description_height" },
 		{ "Editor", "gizmo_size" },

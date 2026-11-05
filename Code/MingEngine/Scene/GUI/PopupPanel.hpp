@@ -12,8 +12,11 @@ public:
 	PopupPanel();
 
 	Control* GetOwner() const { return ObjectDatabase::GetInstance<Control>(m_owner); }
+	bool        WasInterrupted() const { return m_interrupted; }
+	CursorShape GetCursorShape(Vector2 const&) const override { return m_cursorShape; }
 
 	void SetModal(bool modal) { m_modal = modal; }
+	void SetCursorOverride(CursorShape shape) { m_cursorShape = shape; }
 
 	void SetKeyCallback(std::function<void(InputEvent const&)> callback) { m_keyCallback = std::move(callback); }
 	void SetPointerCallback(std::function<bool(InputEvent const&)> callback)
@@ -38,6 +41,8 @@ private:
 	ObjectID                               m_parentPopup   = ObjectID::Invalid;
 	ObjectID                               m_previousFocus = ObjectID::Invalid;
 	bool                                   m_modal         = false;
+	bool                                   m_interrupted   = false;
+	CursorShape                            m_cursorShape   = CursorShape::Arrow;
 	std::function<void(InputEvent const&)> m_keyCallback;
 	std::function<bool(InputEvent const&)> m_pointerCallback;
 	std::function<void()>                  m_closedCallback;

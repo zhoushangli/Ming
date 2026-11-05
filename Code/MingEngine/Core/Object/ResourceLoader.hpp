@@ -35,6 +35,7 @@ public:
 	static bool CanLoad(VirtualPath const& virtualPath);
 	// Load will return a cached resource if it has already been loaded
 	static Ref<Resource> Load(VirtualPath const& virtualPath);
+	static Ref<Resource> LoadForScript(String const& path);
 	// Load a resource from disk bypassing s_loadedResources.
 	// Used by Reload() to obtain fresh data that will be moved into the existing
 	// cached object via MoveFrom(), so that all Ref<> holders see the update.

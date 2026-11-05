@@ -16,6 +16,11 @@ internal unsafe struct NativeCallbacks
     public delegate* unmanaged<IntPtr, IntPtr, int> TieNativeManagedToUnmanaged;
     public delegate* unmanaged<IntPtr, IntPtr> UnmanagedGetInstanceBindingManaged;
     public delegate* unmanaged<IntPtr, IntPtr> UnmanagedInstanceBindingCreateManaged;
+    public delegate* unmanaged<IntPtr, int> RetainRef;
+    public delegate* unmanaged<IntPtr, void> ReleaseRef;
+    public delegate* unmanaged<IntPtr, IntPtr, void> DetachBinding;
+    public delegate* unmanaged<IntPtr, ming_variant*, void> CreateObjectVariant;
+    public delegate* unmanaged<ming_variant*, void> DestroyVariant;
 }
 
 [StructLayout(LayoutKind.Sequential)]
@@ -29,6 +34,9 @@ internal unsafe struct ManagedCallbacks
     public delegate* unmanaged<IntPtr, String*, ming_variant**, int, ming_variant*, int> Call;
     public delegate* unmanaged<String*, void> GetScriptBaseTypes;
     public delegate* unmanaged<String*, String*, int> GetScriptNativeBase;
+    public delegate* unmanaged<void> DrainResourceBindings;
+    public delegate* unmanaged<void> DisposeResourceBindings;
+    public delegate* unmanaged<IntPtr, int, IntPtr> UpdateNativeBindingGCHandle;
 }
 
 public static unsafe class NativeFuncs
@@ -55,6 +63,7 @@ public static unsafe class NativeFuncs
         }
 
         s_callbacks = *(NativeCallbacks*)nativeCallbacks;
+        ScriptManagerBridge.StartNativeBindings();
         *(ManagedCallbacks*)managedCallbacks = new ManagedCallbacks
         {
             AddScriptBridge = &ScriptManagerBridge.AddScriptBridge,
@@ -64,7 +73,10 @@ public static unsafe class NativeFuncs
             ReleaseGCHandle = &ScriptManagerBridge.ReleaseGCHandle,
             Call = &ScriptManagerBridge.Call,
             GetScriptBaseTypes = &ScriptManagerBridge.GetScriptBaseTypes,
-            GetScriptNativeBase = &ScriptManagerBridge.GetScriptNativeBase
+            GetScriptNativeBase = &ScriptManagerBridge.GetScriptNativeBase,
+            DrainResourceBindings = &ScriptManagerBridge.DrainResourceBindings,
+            DisposeResourceBindings = &ScriptManagerBridge.DisposeResourceBindings,
+            UpdateNativeBindingGCHandle = &ScriptManagerBridge.UpdateNativeBindingGCHandle
         };
     }
 
@@ -102,7 +114,12 @@ public static unsafe class NativeFuncs
     {
         using String nativeClass = Marshaling.ConvertStringToNative(className);
         using String nativeMethod = Marshaling.ConvertStringToNative(methodName);
-        return s_callbacks.GetMethodBind(&nativeClass, &nativeMethod);
+        IntPtr binding = s_callbacks.GetMethodBind(&nativeClass, &nativeMethod);
+        if (binding == IntPtr.Zero)
+        {
+            throw new MissingMethodException($"Native method is not registered: {className}.{methodName}");
+        }
+        return binding;
     }
 
     internal static void MethodBindPtrCall(
@@ -159,4 +176,21 @@ public static unsafe class NativeFuncs
     }
 
     #endregion
+    internal static void DestroyVariant(ref ming_variant variant)
+    {
+        fixed (ming_variant* value = &variant)
+        {
+            s_callbacks.DestroyVariant(value);
+        }
+    }
+
+    internal static bool RetainRef(IntPtr ptr) => s_callbacks.RetainRef(ptr) != 0;
+    internal static void ReleaseRef(IntPtr ptr) => s_callbacks.ReleaseRef(ptr);
+    internal static void DetachBinding(IntPtr ptr, IntPtr handle) => s_callbacks.DetachBinding(ptr, handle);
+    internal static ming_variant CreateObjectVariant(IntPtr ptr)
+    {
+        ming_variant result = default;
+        s_callbacks.CreateObjectVariant(ptr, &result);
+        return result;
+    }
 }

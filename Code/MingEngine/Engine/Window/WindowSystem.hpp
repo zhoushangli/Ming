@@ -42,6 +42,7 @@ public:
 	IntVec2     GetClientDimensions() const;
 	void        SetCursorMode(CursorMode mode);
 	void        SetCursorShape(CursorShape shape);
+	bool        TryGetScreenColor(Vector2 clientPosition, Color& outColor) const;
 	CursorShape GetCursorShape() const { return m_cursorShape; }
 	String      GetClipboardText() const;
 	bool        SetClipboardText(String const& text);
@@ -63,5 +64,6 @@ private:
 	GLFWcursor*        m_resizeHorizontalCursor = nullptr;
 	GLFWcursor*        m_resizeVerticalCursor   = nullptr;
 	GLFWcursor*        m_textCursor             = nullptr;
+	GLFWcursor*        m_crosshairCursor        = nullptr;
 	CursorShape        m_cursorShape            = CursorShape::Arrow;
 };

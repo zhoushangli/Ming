@@ -114,3 +114,24 @@ The Drag/Dock desktop session on 2026-10-29 was stopped by the user with Escape 
 Editor tree items carry their own icon color; the theme resolves neutral, 2D, 3D, GUI and status colors. Selection changes the row background, preserving the icon type color. Icons absent for a class resolve through registered ancestors and then the new Node icon. The native panel suite checks all embedded textures, default regions, old-cache invalidation and non-mutating Inspector filtering.
 
 The editor loads its font with em sizing so theme font sizes follow CSS-style em sizing. Other font loads retain the existing total-height convention; TextLayoutVerification checks both contracts. EditorPanel includes its child layout's minimum size, keeping toolbars and scrollbar hit areas inside the panel when narrowed.
+
+## C# procedural resources
+
+The native suite covers UInt32 boundary values, JSON range rejection, owning Ref Variants,
+enum invocation, temporary Ref returns, and material replacement without mesh re-registration.
+The C# workflow suite prepares its own encoded atlas and checks generic loading, all material fields,
+resource construction failure, Dispose, GC, wrapper recreation and delayed release across Play/Stop.
+Native resource owners keep the same managed wrapper alive through a strong GCHandle. Removing
+the last native owner switches it to a weak GCHandle, allowing collection once managed references
+also disappear. The workflow checks repeated strong/weak transitions and collection without native owners.
+
+After the current Debug build and workflow test executable build, run the actual SimpleMiner sample twice:
+
+```powershell
+# Working directory: Run
+../Temporary/CSharpWorkflowVerification/CSharpWorkflowVerification.exe --resource-sample C:/Work/Ming/Project/SimpleMiner
+```
+
+This mode validates the actual script's 24 vertices, 36 indices, atlas tile UV and POINT_CLAMP,
+captures the default, tinted and replaced material, and checks mesh destruction at shutdown.
+Renderer PPM captures are written under `Temporary/CSharpResourceSample`; they are separate from desktop interaction evidence.

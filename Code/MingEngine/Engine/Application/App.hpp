@@ -92,6 +92,7 @@ private:
 	unsigned long long m_gameStopDeadline = 0;
 	bool               m_shouldRestart    = false;
 	bool               m_shouldQuit       = false;
+	bool               m_comInitialized   = false;
 	int                m_exitCode         = 0;
 	EventConnectionID  m_quitEventID      = 0;
 

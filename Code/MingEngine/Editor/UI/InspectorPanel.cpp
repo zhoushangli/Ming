@@ -28,6 +28,7 @@ InspectorPanel::~InspectorPanel()
 
 void InspectorPanel::ClearProperties()
 {
+	EndColorEdit(false);
 	if (GetViewport() != nullptr)
 	{
 		GetViewport()->CancelGuiInteraction(this);
@@ -64,6 +65,16 @@ void InspectorPanel::BuildInheritanceChain(std::string const& className)
 
 void InspectorPanel::RefreshValues()
 {
+	if (m_colorEdit.m_target.IsValid() && !m_colorEdit.m_applying)
+	{
+		Node* target = ObjectDatabase::GetInstance<Node>(m_colorEdit.m_target);
+		if (target == nullptr || target->IsQueuedForDeletion()
+			|| m_colorEdit.m_getter->Invoke(target, {}) != m_colorEdit.m_last)
+		{
+			EndColorEdit(false);
+		}
+	}
+
 	Node* node = ObjectDatabase::GetInstance<Node>(m_cachedObjectID);
 	if (node == nullptr || node->IsQueuedForDeletion() || node->GetSceneTree() != m_sceneTree)
 	{
@@ -87,7 +98,8 @@ void InspectorPanel::CommitValue(
 	ObjectID           id,
 	MethodBind const*  setter,
 	MethodBind const*  getter,
-	Variant const&     value)
+	Variant const&     value,
+	Variant const*     original)
 {
 	Node* node = ObjectDatabase::GetInstance<Node>(id);
 	if (id != m_cachedObjectID || node == nullptr || node->IsQueuedForDeletion() || node->GetSceneTree() != m_sceneTree
@@ -96,7 +108,7 @@ void InspectorPanel::CommitValue(
 		return;
 	}
 
-	Variant const oldValue = getter->Invoke(node, {});
+	Variant const oldValue = original != nullptr ? *original : getter->Invoke(node, {});
 	if (value.GetType() != oldValue.GetType() || value == oldValue)
 	{
 		return;
@@ -109,7 +121,10 @@ void InspectorPanel::CommitValue(
 	}
 
 	Ref<Resource> oldResource(oldValue);
-	setter->Invoke(node, { value });
+	if (original == nullptr)
+	{
+		setter->Invoke(node, { value });
+	}
 	node = ObjectDatabase::GetInstance<Node>(id);
 	if (node == nullptr || node->IsQueuedForDeletion())
 	{
@@ -243,6 +258,23 @@ void InspectorPanel::RebuildProperties(EditorUIContext& context)
 			if (field == nullptr)
 			{
 				continue;
+			}
+
+			if (prop.m_type == Variant::Type::Color)
+			{
+				field->SetColorEditCallbacks(
+					[this, id, setter, getter, field, name = prop.m_name]()
+					{
+						BeginColorEdit(name, id, setter, getter, field);
+					},
+					[this](Variant const& value)
+					{
+						PreviewColorValue(value);
+					},
+					[this](bool accept)
+					{
+						EndColorEdit(accept);
+					});
 			}
 
 			if (!sectionName.empty() && sectionIndex < 0)
@@ -555,4 +587,80 @@ void InspectorPanel::OnClose()
 Control* InspectorPanel::GetContentControl() const
 {
 	return m_content;
+}
+
+void InspectorPanel::BeginColorEdit(
+	std::string const& name, ObjectID id, MethodBind const* setter, MethodBind const* getter, InspectorProperty* field)
+{
+	EndColorEdit(false);
+	Node* target = ObjectDatabase::GetInstance<Node>(id);
+	Node* scene  = m_sceneTree != nullptr ? m_sceneTree->GetScene() : nullptr;
+	if (id != m_cachedObjectID || target == nullptr || target->IsQueuedForDeletion() || scene == nullptr
+		|| setter == nullptr || getter == nullptr)
+	{
+		field->EndEditing();
+		return;
+	}
+
+	m_colorEdit.m_target   = id;
+	m_colorEdit.m_scene    = scene->GetObjectID();
+	m_colorEdit.m_name     = name;
+	m_colorEdit.m_setter   = setter;
+	m_colorEdit.m_getter   = getter;
+	m_colorEdit.m_field    = field;
+	m_colorEdit.m_original = getter->Invoke(target, {});
+	m_colorEdit.m_last     = m_colorEdit.m_original;
+}
+
+void InspectorPanel::PreviewColorValue(Variant const& value)
+{
+	Node* target = ObjectDatabase::GetInstance<Node>(m_colorEdit.m_target);
+	if (target == nullptr || target->IsQueuedForDeletion() || !value.Is<Color>()
+		|| target->GetSceneTree() != m_sceneTree || m_colorEdit.m_target != m_cachedObjectID
+		|| m_colorEdit.m_getter->Invoke(target, {}) != m_colorEdit.m_last)
+	{
+		EndColorEdit(false);
+		return;
+	}
+
+	m_colorEdit.m_applying = true;
+	m_colorEdit.m_setter->Invoke(target, { value });
+	target = ObjectDatabase::GetInstance<Node>(m_colorEdit.m_target);
+	if (target != nullptr && !target->IsQueuedForDeletion())
+	{
+		m_colorEdit.m_last = m_colorEdit.m_getter->Invoke(target, {});
+	}
+
+	m_colorEdit.m_applying = false;
+	RefreshValues();
+}
+
+void InspectorPanel::EndColorEdit(bool accept)
+{
+	if (!m_colorEdit.m_target.IsValid())
+	{
+		return;
+	}
+
+	ColorEdit const edit = m_colorEdit;
+	m_colorEdit          = {};
+	Node* target         = ObjectDatabase::GetInstance<Node>(edit.m_target);
+	if (target != nullptr && !target->IsQueuedForDeletion() && target->GetSceneTree() == m_sceneTree)
+	{
+		Variant const actual = edit.m_getter->Invoke(target, {});
+		if (actual == edit.m_last)
+		{
+			Node* scene = m_sceneTree->GetScene();
+			if (accept && scene != nullptr && scene->GetObjectID() == edit.m_scene)
+			{
+				CommitValue(edit.m_name, edit.m_target, edit.m_setter, edit.m_getter, actual, &edit.m_original);
+			}
+			else
+			{
+				edit.m_setter->Invoke(target, { edit.m_original });
+			}
+		}
+	}
+
+	edit.m_field->EndEditing();
 }

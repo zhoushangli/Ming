@@ -11,6 +11,7 @@
 #include <memory>
 #include <string>
 #include <type_traits>
+#include <typeindex>
 #include <unordered_map>
 #include <variant>
 #include <vector>
@@ -24,6 +25,8 @@ class PackedScene;
 struct ArgumentInfo
 {
 	Variant::Type m_type = Variant::Type::Empty;
+	std::string m_enumName;
+	bool m_isRef = false;
 	std::string   m_objectClassName; // "Node", "Resource", etc. Only used when m_type is Variant::Type::ObjectPtr
 	// Parameter name used by the C# bindings, the return info keeps it empty.
 	// e.g. BindMethod("SetName", &Node::SetName, {"name"}) stores "name" here
@@ -140,6 +143,7 @@ struct ConstantInfo
 
 struct GlobalNamespaceInfo
 {
+	bool m_isEnum = false;
 	std::string               m_namespaceName;
 	std::vector<ConstantInfo> m_constants;
 	std::vector<MethodInfo>   m_methods;
@@ -257,7 +261,18 @@ public:
 
 		ArgumentInfo argumentInfo;
 		argumentInfo.m_type = Variant::GetType<CleanType>();
-		if constexpr (std::is_pointer_v<CleanType> && std::is_base_of_v<Object, PointeeType>)
+		if constexpr (RefTypeInfo<CleanType>::IsRef)
+		{
+			argumentInfo.m_objectClassName = RefTypeInfo<CleanType>::ElementType::GetStaticClassName();
+			argumentInfo.m_isRef = true;
+		}
+		else if constexpr (std::is_enum_v<CleanType>)
+		{
+			auto found = m_enumNames.find(std::type_index(typeid(CleanType)));
+			GUARANTEE_OR_DIE(found != m_enumNames.end(), "Register enum constants before binding methods.");
+			argumentInfo.m_enumName = found->second;
+		}
+		else if constexpr (std::is_pointer_v<CleanType> && std::is_base_of_v<Object, PointeeType>)
 		{
 			argumentInfo.m_type            = Variant::Type::ObjectPtr;
 			argumentInfo.m_objectClassName = PointeeType::GetStaticClassName();
@@ -345,7 +360,8 @@ public:
 
 	template <typename ReturnType, typename... Args>
 	static void BindGlobalMethod(
-		std::string const& namespaceName, std::string const& methodName, ReturnType (*method)(Args...))
+		std::string const& namespaceName, std::string const& methodName, ReturnType (*method)(Args...),
+		std::vector<std::string> const& argumentNames = {})
 	{
 		MethodInfo methodInfo;
 
@@ -362,12 +378,26 @@ public:
 			m_namespaceInfoMap[namespaceName]   = std::move(globalNamespaceInfo);
 		}
 
+		for (size_t index = 0; index < methodInfo.m_argumentInfos.size(); ++index)
+		{
+			methodInfo.m_argumentInfos[index].m_name = argumentNames.empty()
+				? "arg" + std::to_string(index + 1) : argumentNames.at(index);
+		}
 		m_namespaceInfoMap[namespaceName].m_methods.push_back(std::move(methodInfo));
 	}
 
 	static std::vector<GlobalNamespaceInfo const*> GetRegisteredGlobalNamespaces();
 
 	static MethodBind const* GetGlobalMethodBind(std::string const& namespaceName, std::string const& methodName);
+
+	template <typename T>
+	static void BindEnumConstant(std::string const& enumName, std::string const& name, T value)
+	{
+		static_assert(std::is_enum_v<T> && sizeof(T) == sizeof(int32_t));
+		m_enumNames[std::type_index(typeid(T))] = enumName;
+		BindConstant(enumName, name, static_cast<int>(value));
+		m_namespaceInfoMap[enumName].m_isEnum = true;
+	}
 
 	static void BindConstant(std::string const& namespaceName, std::string const& constantName, Variant value)
 	{
@@ -397,5 +427,6 @@ private:
 	static std::unordered_map<std::string, GlobalNamespaceInfo> m_namespaceInfoMap;
 	static std::unordered_map<std::string, Object*>             m_globalObjectMap;
 
+	static std::unordered_map<std::type_index, std::string> m_enumNames;
 	static ApiType m_currentApiType;
 };

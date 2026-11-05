@@ -8,6 +8,7 @@
 std::unordered_map<std::string, ClassInfo>           ClassDatabase::m_classInfoMap;
 std::unordered_map<std::string, GlobalNamespaceInfo> ClassDatabase::m_namespaceInfoMap;
 std::unordered_map<std::string, Object*>             ClassDatabase::m_globalObjectMap;
+std::unordered_map<std::type_index, std::string> ClassDatabase::m_enumNames;
 ApiType                                              ClassDatabase::m_currentApiType = ApiType::None;
 
 namespace
@@ -55,11 +56,17 @@ void ClassDatabase::ApplyArgumentNames(
 void ClassDatabase::Startup()
 {
 	m_classInfoMap.clear();
+	m_namespaceInfoMap.clear();
+	m_enumNames.clear();
+	m_globalObjectMap.clear();
 }
 
 void ClassDatabase::Shutdown()
 {
 	m_classInfoMap.clear();
+	m_namespaceInfoMap.clear();
+	m_enumNames.clear();
+	m_globalObjectMap.clear();
 }
 
 Object* ClassDatabase::CreateInstance(std::string const& className)

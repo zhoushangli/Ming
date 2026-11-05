@@ -264,10 +264,10 @@ void RenderServer::LightFree(RID rid)
 	// 1) Detach every instance before releasing its light data.
 	for (RID instanceRID : m_instanceOwner.GetRIDList())
 	{
-		Instance* instance = m_instanceOwner.GetOrNull(instanceRID);
-		if (instance->m_baseType == InstanceBaseType::Light && instance->m_base == rid)
+		Instance3D* instance = m_instanceOwner.GetOrNull(instanceRID);
+		if (instance->m_baseType == Instance3DBaseType::Light && instance->m_base == rid)
 		{
-			InstanceSetBase(instanceRID, RID::Invalid);
+			Instance3DSetBase(instanceRID, RID::Invalid);
 		}
 	}
 
@@ -984,14 +984,14 @@ void RenderServer::CanvasLayerRemoveChild(RID layer, RID child)
 	}
 }
 
-RID RenderServer::InstanceCreate()
+RID RenderServer::Instance3DCreate()
 {
 	return m_instanceOwner.CreateRID();
 }
 
-void RenderServer::InstanceFree(RID instance)
+void RenderServer::Instance3DFree(RID instance)
 {
-	Instance const* data = m_instanceOwner.GetOrNull(instance);
+	Instance3D const* data = m_instanceOwner.GetOrNull(instance);
 	if (data == nullptr)
 	{
 		return;
@@ -1013,35 +1013,35 @@ void RenderServer::InstanceFree(RID instance)
 	m_instanceOwner.Free(instance);
 }
 
-void RenderServer::InstanceSetTransform(RID instance, Matrix4x4 const& transform)
+void RenderServer::Instance3DSetTransform(RID instance, Matrix4x4 const& transform)
 {
-	Instance* data = m_instanceOwner.GetOrNull(instance);
+	Instance3D* data = m_instanceOwner.GetOrNull(instance);
 	if (data != nullptr)
 	{
 		data->m_transform = transform;
 	}
 }
 
-void RenderServer::InstanceSetVisible(RID instance, bool visible)
+void RenderServer::Instance3DSetVisible(RID instance, bool visible)
 {
-	Instance* data = m_instanceOwner.GetOrNull(instance);
+	Instance3D* data = m_instanceOwner.GetOrNull(instance);
 	if (data != nullptr)
 	{
 		data->m_visible = visible;
 	}
 }
 
-void RenderServer::InstanceSetRenderPass(RID instance, RenderRequestPass pass)
+void RenderServer::Instance3DSetRenderPass(RID instance, RenderRequestPass pass)
 {
-	if (Instance* data = m_instanceOwner.GetOrNull(instance))
+	if (Instance3D* data = m_instanceOwner.GetOrNull(instance))
 	{
 		data->m_renderPass = pass;
 	}
 }
 
-void RenderServer::InstanceSetRenderPriority(RID instance, int priority)
+void RenderServer::Instance3DSetRenderPriority(RID instance, int priority)
 {
-	if (Instance* data = m_instanceOwner.GetOrNull(instance))
+	if (Instance3D* data = m_instanceOwner.GetOrNull(instance))
 	{
 		data->m_renderPriority = priority;
 	}
@@ -1073,7 +1073,7 @@ void RenderServer::PrepareViewportData(ViewportData* viewportData)
 	// 2) Every instance of the Scenario contributes a request or a light.
 	for (RID instanceRID : scenarioData->m_instances)
 	{
-		Instance* instance = m_instanceOwner.GetOrNull(instanceRID);
+		Instance3D* instance = m_instanceOwner.GetOrNull(instanceRID);
 		if (instance == nullptr)
 		{
 			continue;
@@ -1081,11 +1081,11 @@ void RenderServer::PrepareViewportData(ViewportData* viewportData)
 
 		switch (instance->m_baseType)
 		{
-		case InstanceBaseType::None:
+		case Instance3DBaseType::None:
 			continue;
-		case InstanceBaseType::Mesh:
+		case Instance3DBaseType::Mesh:
 		{
-			RenderRequest request = BuildInstanceRenderRequest(instance);
+			RenderRequest request = BuildInstance3DRenderRequest(instance);
 			if (!request.IsValid())
 			{
 				continue;
@@ -1095,7 +1095,7 @@ void RenderServer::PrepareViewportData(ViewportData* viewportData)
 			break;
 		}
 
-		case InstanceBaseType::Light:
+		case Instance3DBaseType::Light:
 		{
 			LightData* lightData = m_lightOwner.GetOrNull(instance->m_base);
 
@@ -1129,7 +1129,7 @@ void RenderServer::PrepareViewportData(ViewportData* viewportData)
 	}
 }
 
-RenderRequest RenderServer::BuildInstanceRenderRequest(Instance const* instance)
+RenderRequest RenderServer::BuildInstance3DRenderRequest(Instance3D const* instance)
 {
 	RenderRequest request;
 
@@ -1143,7 +1143,7 @@ RenderRequest RenderServer::BuildInstanceRenderRequest(Instance const* instance)
 
 	switch (instance->m_baseType)
 	{
-	case InstanceBaseType::Mesh:
+	case Instance3DBaseType::Mesh:
 	{
 		MeshData* meshData = m_meshOwner.GetOrNull(instance->m_base);
 		if (meshData == nullptr)
@@ -1183,7 +1183,7 @@ RenderRequest RenderServer::BuildInstanceRenderRequest(Instance const* instance)
 		break;
 	}
 
-	case InstanceBaseType::None:
+	case Instance3DBaseType::None:
 		break;
 	default:
 		break;
@@ -1364,18 +1364,18 @@ void RenderServer::MeshFree(RID mesh)
 	// 2) The switch keeps other Base types untouched when they are added later.
 	for (RID rid : m_instanceOwner.GetRIDList())
 	{
-		Instance* instance = m_instanceOwner.GetOrNull(rid);
+		Instance3D* instance = m_instanceOwner.GetOrNull(rid);
 		switch (instance->m_baseType)
 		{
-		case InstanceBaseType::Mesh:
+		case Instance3DBaseType::Mesh:
 			if (instance->m_base == mesh)
 			{
 				instance->m_base     = RID::Invalid;
-				instance->m_baseType = InstanceBaseType::None;
+				instance->m_baseType = Instance3DBaseType::None;
 			}
 
 			break;
-		case InstanceBaseType::None:
+		case Instance3DBaseType::None:
 		default:
 			break;
 		}
@@ -1480,7 +1480,7 @@ void RenderServer::ScenarioFree(RID scenario)
 
 	for (RID rid : m_instanceOwner.GetRIDList())
 	{
-		Instance* instance = m_instanceOwner.GetOrNull(rid);
+		Instance3D* instance = m_instanceOwner.GetOrNull(rid);
 		if (instance->m_scenario == scenario)
 		{
 			instance->m_scenario = RID::Invalid;
@@ -1499,32 +1499,32 @@ void RenderServer::ScenarioFree(RID scenario)
 	m_scenarioOwner.Free(scenario);
 }
 
-void RenderServer::InstanceSetBase(RID instance, RID base)
+void RenderServer::Instance3DSetBase(RID instance, RID base)
 {
-	Instance* data = m_instanceOwner.GetOrNull(instance);
+	Instance3D* data = m_instanceOwner.GetOrNull(instance);
 	if (data == nullptr)
 	{
 		return;
 	}
 
 	// A Base RID defines the instance type only while its owner still holds the RID.
-	InstanceBaseType baseType = InstanceBaseType::None;
+	Instance3DBaseType baseType = Instance3DBaseType::None;
 	if (base != RID::Invalid && m_meshOwner.GetOrNull(base) != nullptr)
 	{
-		baseType = InstanceBaseType::Mesh;
+		baseType = Instance3DBaseType::Mesh;
 	}
 	else if (base != RID::Invalid && m_lightOwner.GetOrNull(base) != nullptr)
 	{
-		baseType = InstanceBaseType::Light;
+		baseType = Instance3DBaseType::Light;
 	}
 
 	switch (baseType)
 	{
-	case InstanceBaseType::Mesh:
-	case InstanceBaseType::Light:
+	case Instance3DBaseType::Mesh:
+	case Instance3DBaseType::Light:
 		data->m_base = base;
 		break;
-	case InstanceBaseType::None:
+	case Instance3DBaseType::None:
 	default:
 		data->m_base = RID::Invalid;
 		break;
@@ -1533,9 +1533,9 @@ void RenderServer::InstanceSetBase(RID instance, RID base)
 	data->m_baseType = baseType;
 }
 
-void RenderServer::InstanceSetScenario(RID instance, RID scenario)
+void RenderServer::Instance3DSetScenario(RID instance, RID scenario)
 {
-	Instance* data = m_instanceOwner.GetOrNull(instance);
+	Instance3D* data = m_instanceOwner.GetOrNull(instance);
 	if (data == nullptr)
 	{
 		return;
@@ -1615,5 +1615,13 @@ void RenderServer::CanvasItemAddViewportRect(RID item, RID viewport, Rect2 const
 		command->rect            = rect;
 		command->viewportTexture = viewport;
 		data->m_commands.push_back(command);
+	}
+}
+
+void RenderServer::MeshSetMaterial(RID mesh, Ref<MaterialResource> const& material)
+{
+	if (MeshData* data = m_meshOwner.GetOrNull(mesh))
+	{
+		data->m_materialResource = material;
 	}
 }

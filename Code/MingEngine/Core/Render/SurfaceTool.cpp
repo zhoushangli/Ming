@@ -1,4 +1,5 @@
 #include "MingEngine/Core/Render/SurfaceTool.hpp"
+#include "MingEngine/Core/Object/ClassDatabase.hpp"
 
 #include "MingEngine/Core/ErrorWarningAssert.hpp"
 
@@ -273,4 +274,14 @@ Ref<MeshResource> SurfaceTool::CreateMeshResource() const
 
 	meshResource->InitGPUResources();
 	return meshResource;
+}
+
+void SurfaceTool::BindMethods()
+{
+	ClassDatabase::BindMethod("SetNormal", &SurfaceTool::SetNormal, { "normal" });
+	ClassDatabase::BindMethod("SetUV", &SurfaceTool::SetUV, { "uv" });
+	ClassDatabase::BindMethod("AddVertex", &SurfaceTool::AddVertex, { "position" });
+	ClassDatabase::BindMethod("AddIndex", &SurfaceTool::AddIndex, { "index" });
+	ClassDatabase::BindMethod("CreateMeshResource", &SurfaceTool::CreateMeshResource, {});
+	ClassDatabase::BindMethod("Clear", &SurfaceTool::Clear, {});
 }

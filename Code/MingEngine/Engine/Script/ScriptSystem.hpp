@@ -48,6 +48,11 @@ struct NativeCallbacks
 	TieNativeManagedToUnmanagedFunc           m_tieNativeManagedToUnmanaged           = nullptr;
 	UnmanagedGetInstanceBindingManagedFunc    m_unmanagedGetInstanceBindingManaged    = nullptr;
 	UnmanagedInstanceBindingCreateManagedFunc m_unmanagedInstanceBindingCreateManaged = nullptr;
+	int32_t(CORECLR_DELEGATE_CALLTYPE* m_retainRef)(void*) = nullptr;
+	void(CORECLR_DELEGATE_CALLTYPE* m_releaseRef)(void*) = nullptr;
+	void(CORECLR_DELEGATE_CALLTYPE* m_detachBinding)(void*, void*) = nullptr;
+	void(CORECLR_DELEGATE_CALLTYPE* m_createObjectVariant)(void*, Variant*) = nullptr;
+	void(CORECLR_DELEGATE_CALLTYPE* m_destroyVariant)(Variant*) = nullptr;
 };
 
 //---------------------------------------------------------------------------
@@ -72,6 +77,9 @@ struct ManagedCallbacks
 	CallFunc                        m_call                        = nullptr;
 	void(CORECLR_DELEGATE_CALLTYPE* m_getScriptBaseTypes)(String*) = nullptr;
 	int32_t(CORECLR_DELEGATE_CALLTYPE* m_getScriptNativeBase)(String const*, String*) = nullptr;
+	void(CORECLR_DELEGATE_CALLTYPE* m_drainResourceBindings)() = nullptr;
+	void(CORECLR_DELEGATE_CALLTYPE* m_disposeResourceBindings)() = nullptr;
+	void*(CORECLR_DELEGATE_CALLTYPE* m_updateNativeBindingGCHandle)(void*, int32_t) = nullptr;
 };
 
 //---------------------------------------------------------------------------
@@ -134,9 +142,10 @@ public:
 	bool AddScriptBridge(CSharpScript* script, std::string const& scriptPath);
 	bool RemoveScriptBridge(CSharpScript* script);
 
-	void* GetOrCreateNativeManagedWrapper(Object* owner);
+	void* GetOrCreateNativeManagedWrapper(Object* owner, bool recreate = false);
 	bool  CreateUserManagedInstance(CSharpScript* script, Object* owner);
 	void  ReleaseGCHandle(void* gcHandle);
+	void* UpdateNativeBindingGCHandle(void* gcHandle, int refCount);
 	bool  Call(void* gcHandle, std::string const& methodName, std::vector<Variant> const& args, Variant& ret);
 
 	bool TryBeginScriptInstantiation()

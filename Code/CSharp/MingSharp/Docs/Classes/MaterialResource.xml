@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<class name="MaterialResource">
+  <brief_description>Stores shader, textures, tint and draw states shared by mesh instances.</brief_description>
+</class>

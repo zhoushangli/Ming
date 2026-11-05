@@ -9,7 +9,8 @@ enum class CursorShape
 	Arrow,
 	IBeam,
 	ResizeHorizontal,
-	ResizeVertical
+	ResizeVertical,
+	Crosshair
 };
 
 enum class InputEventType

@@ -20,6 +20,7 @@ public:
 
 	void SetValueNoSignal(Variant const& value);
 	void SetStepButtonsVisible(bool visible);
+	void SetErrorMessagesVisible(bool visible);
 
 	void SetValueChangedCallback(std::function<void(Variant const&)> callback) { m_changed = std::move(callback); }
 	void SetValueReader(std::function<Variant()> reader) { m_reader = std::move(reader); }
@@ -49,6 +50,7 @@ private:
 	Variant                             m_value          = Variant(0.f);
 	bool                                m_integer        = false;
 	bool                                m_configured     = true;
+	bool                                m_showErrors     = true;
 	double                              m_min            = -3.4028234663852886e38;
 	double                              m_max            = 3.4028234663852886e38;
 	double                              m_step           = 0.1;

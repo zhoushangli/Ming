@@ -45,7 +45,7 @@ public:
 	Matrix4x4 m_modelToWorld = Matrix4x4::Identity;
 
 	// Material tint of this request; requests without a material keep the white default.
-	// e.g. BuildInstanceRenderRequest() copies MaterialResource::m_tint here
+	// e.g. BuildInstance3DRenderRequest() copies MaterialResource::m_tint here
 	Color m_tint = Color::White;
 
 	VertexBuffer* m_vertexBuffer = nullptr;
@@ -86,7 +86,7 @@ struct LightData
 	float m_spotAttenuation = 1.f;
 };
 
-enum class InstanceBaseType
+enum class Instance3DBaseType
 {
 	None,
 	Mesh,
@@ -135,13 +135,13 @@ struct ScenarioData
 };
 
 // One render instance: the Base RID decides how the instance is drawn.
-// e.g. InstanceSetBase(instance, meshRID) makes it an InstanceBaseType::Mesh instance
-struct Instance
+// e.g. Instance3DSetBase(instance, meshRID) makes it an Instance3DBaseType::Mesh instance
+struct Instance3D
 {
 	RID m_base     = RID::Invalid;
 	RID m_scenario = RID::Invalid;
 
-	InstanceBaseType m_baseType = InstanceBaseType::None;
+	Instance3DBaseType m_baseType = Instance3DBaseType::None;
 
 	Matrix4x4         m_transform      = Matrix4x4::Identity;
 	bool              m_visible        = true;
@@ -187,8 +187,8 @@ public:
 
 	struct LightInstance
 	{
-		Instance*  m_instance  = nullptr;
-		LightData* m_lightData = nullptr;
+		Instance3D* m_instance  = nullptr;
+		LightData*  m_lightData = nullptr;
 	};
 
 public:

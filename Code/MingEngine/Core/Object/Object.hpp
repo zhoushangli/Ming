@@ -13,7 +13,7 @@
 #define ADD_GROUP(name) ClassDatabase::AddPropertyGroup(GetStaticClassName(), name)
 
 #define BIND_ENUM(className, enumName)                                                                                 \
-	ClassDatabase::BindConstant(#className, #enumName, static_cast<int>(className::enumName))
+	ClassDatabase::BindEnumConstant<className>(#className, #enumName, className::enumName)
 
 #define BIND_CONSTANT(namespaceName, constantName)                                                                     \
 	ClassDatabase::BindConstant(#namespaceName, #constantName, static_cast<int>(namespaceName::constantName))
@@ -138,6 +138,7 @@ public:
 	void* GetNativeBindingGCHandle() const { return m_nativeBindingGCHandle.GetValue(); }
 
 	void ReleaseNativeBindingGCHandle();
+	void DetachNativeBindingGCHandle(void* expected);
 
 protected:
 	void OnNotification([[maybe_unused]] int notification) {}

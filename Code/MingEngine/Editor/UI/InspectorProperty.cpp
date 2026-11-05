@@ -13,7 +13,8 @@
 #include "MingEngine/Core/Object/ResourceLoader.hpp"
 #include "MingEngine/Scene/GUI/SpinBox.hpp"
 #include "MingEngine/Scene/GUI/OptionButton.hpp"
-#include "MingEngine/Scene/GUI/ColorRect.hpp"
+#include "MingEngine/Scene/GUI/ColorPickerButton.hpp"
+#include "MingEngine/Engine/Window/WindowSystem.hpp"
 #include "MingEngine/Scene/GUI/HBoxContainer.hpp"
 #include "MingEngine/Scene/GUI/VBoxContainer.hpp"
 #include "MingEngine/Scene/GUI/Label.hpp"
@@ -125,6 +126,11 @@ InspectorProperty::~InspectorProperty()
 		tooltip->QueueFree();
 	}
 
+	if (GetControl() != nullptr && m_color != nullptr)
+	{
+		m_color->ClosePicker(false, false);
+	}
+
 	m_onValueChanged = {};
 	m_reader         = {};
 	if (GetControl() == nullptr)
@@ -133,6 +139,13 @@ InspectorProperty::~InspectorProperty()
 	}
 
 	EndEditing();
+	if (m_color != nullptr)
+	{
+		m_color->SetColorChangedCallback({});
+		m_color->SetEditingStartedCallback({});
+		m_color->SetEditingEndedCallback({});
+	}
+
 	if (m_text != nullptr)
 	{
 		m_text->SetEditingEndedCallback({});
@@ -209,18 +222,7 @@ void InspectorProperty::BuildNumeric()
 void InspectorProperty::BuildComponents()
 {
 	bool const vector = m_info.m_type == Variant::Type::Vector3 || m_info.m_type == Variant::Type::EulerAngles;
-	int const count = m_info.m_type == Variant::Type::Vector2 ? 2 : (m_info.m_type == Variant::Type::Color ? 4 : 3);
-	if (m_info.m_type == Variant::Type::Color)
-	{
-		m_color = MemNew<ColorRect>();
-		m_color->AddThemeChangedCallback(
-			[control = m_color]()
-			{
-				control->SetCustomMinimumSize(
-					Vector2(0.f, static_cast<float>(control->GetThemeConstant("color_height", "Editor"))));
-			});
-		m_fields->AddNode(m_color);
-	}
+	int const  count  = m_info.m_type == Variant::Type::Vector2 ? 2 : 3;
 
 	auto* components = MemNew<HBoxContainer>();
 	components->AddThemeChangedCallback(
@@ -230,7 +232,6 @@ void InspectorProperty::BuildComponents()
 		});
 	m_fields->AddNode(components);
 	char const* names[]  = { "X", "Y", "Z", "W" };
-	char const* colors[] = { "R", "G", "B", "A" };
 	char const* axes[] = { "x", "y", "z" };
 	char const* axisColors[] = { "property_color_x", "property_color_y", "property_color_z" };
 	for (int i = 0; i < count; ++i)
@@ -251,8 +252,7 @@ void InspectorProperty::BuildComponents()
 		}
 
 		auto* label = MemNew<Label>();
-		label->SetText(String(
-			vector ? axes[i] : (m_info.m_type == Variant::Type::Color ? colors[i] : names[i])));
+		label->SetText(String(vector ? axes[i] : names[i]));
 		label->SetThemeTypeVariation("EditorPropertyLabel");
 		label->AddThemeChangedCallback(
 			[control = label, vector, color = vector ? axisColors[i] : ""]()
@@ -280,11 +280,8 @@ void InspectorProperty::BuildComponents()
 		spin->SetStepButtonsVisible(false);
 		spin->SetHorizontalSizeFlags(Control::Size_ExpandFill);
 		spin->Configure(
-			m_info.m_type == Variant::Type::Color,
-			m_info.m_type == Variant::Type::Color
-				? "0,255,1"
-				: (m_info.m_hint == PropertyInfo::Hint::Range ? (m_info.m_hintData.empty() ? "," : m_info.m_hintData)
-															  : ""));
+			false,
+			m_info.m_hint == PropertyInfo::Hint::Range ? (m_info.m_hintData.empty() ? "," : m_info.m_hintData) : "");
 		spin->SetValueReader(
 			[this, i]()
 			{
@@ -334,11 +331,6 @@ Variant InspectorProperty::GetComponentValue(Variant const& value, int index)
 		return Variant(index == 0 ? v.m_rollDegrees : (index == 1 ? v.m_pitchDegrees : v.m_yawDegrees));
 	}
 
-	if (value.Is<Color>())
-	{
-		Color const& v = value.As<Color>();
-		return Variant(static_cast<int>(index == 0 ? v.r : (index == 1 ? v.g : (index == 2 ? v.b : v.a))));
-	}
 
 	return {};
 }
@@ -366,12 +358,6 @@ void InspectorProperty::SetComponent(int index, Variant const& component)
 	{
 		EulerAngles& v                                                                    = value.As<EulerAngles>();
 		(index == 0 ? v.m_rollDegrees : (index == 1 ? v.m_pitchDegrees : v.m_yawDegrees)) = component.As<float>();
-	}
-	else if (value.Is<Color>())
-	{
-		Color& v = value.As<Color>();
-		(index == 0 ? v.r : (index == 1 ? v.g : (index == 2 ? v.b : v.a))) =
-			static_cast<unsigned char>(component.As<int>());
 	}
 	else
 	{
@@ -710,7 +696,7 @@ void InspectorProperty::UpdateValue(Variant const& value)
 
 	if (m_color != nullptr)
 	{
-		m_color->SetColor(value.As<Color>());
+		m_color->SetColorNoSignal(value.As<Color>());
 	}
 
 	if (m_options != nullptr)
@@ -750,6 +736,11 @@ void InspectorProperty::EndEditing(LineEdit::EditEndReason reason)
 	if (GetControl() == nullptr)
 	{
 		return;
+	}
+
+	if (m_color != nullptr)
+	{
+		m_color->ClosePicker(false, false);
 	}
 
 	for (SpinBox* spin : m_spins)
@@ -874,4 +865,67 @@ float InspectorProperty::GetEditorDimension(char const* name, float fallback) co
 {
 	int const value = m_root->GetThemeConstant(name, "Editor");
 	return value > 0 ? static_cast<float>(value) : fallback;
+}
+
+void InspectorProperty::SetColorEditCallbacks(
+	std::function<void()> started, ValueChangedCallback preview, std::function<void(bool)> ended)
+{
+	m_colorStarted = std::move(started);
+	m_colorPreview = std::move(preview);
+	m_colorEnded   = std::move(ended);
+}
+
+void InspectorProperty::BuildColor()
+{
+	m_color = MemNew<ColorPickerButton>();
+	m_color->SetHorizontalSizeFlags(Control::Size_ExpandFill);
+	m_color->AddThemeChangedCallback(
+		[button = m_color]()
+		{
+			button->SetCustomMinimumSize(
+				Vector2(0.f, static_cast<float>(button->GetThemeConstant("color_height", "Editor"))));
+		});
+	m_color->SetEditingStartedCallback(
+		[this]()
+		{
+			m_colorStart  = ReadValue();
+			auto callback = m_colorStarted;
+			if (callback)
+			{
+				callback();
+			}
+		});
+	m_color->SetColorChangedCallback(
+		[this](Color const& color)
+		{
+			auto callback = m_colorPreview;
+			if (callback)
+			{
+				callback(Variant(color));
+			}
+			else
+			{
+				EmitValueChanged(Variant(color));
+			}
+		});
+	m_color->SetEditingEndedCallback(
+		[this](bool accept)
+		{
+			auto callback = m_colorEnded;
+			if (callback)
+			{
+				callback(accept);
+			}
+			else if (!accept && m_colorStart.Is<Color>())
+			{
+				EmitValueChanged(m_colorStart);
+			}
+		});
+	m_color->SetScreenColorReader(
+		[](Vector2 const& position, Color& color)
+		{
+			return g_engine != nullptr && g_engine->m_windowSystem != nullptr
+				   && g_engine->m_windowSystem->TryGetScreenColor(position, color);
+		});
+	m_fields->AddNode(m_color);
 }

@@ -32,6 +32,8 @@ void RegisterCoreTypes()
 	ClassDatabase::RegisterAbstractClass<ResourceFormatLoader>();
 	ClassDatabase::RegisterAbstractClass<ResourceFormatSaver>();
 
+	ClassDatabase::BindGlobalMethod("ResourceLoader", "Load", &ResourceLoader::LoadForScript, { "path" });
+
 	// --- Global math methods ---
 
 	// Basic Math

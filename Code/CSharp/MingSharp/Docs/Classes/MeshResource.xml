@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <class name="MeshResource">
   <brief_description>Holds mesh vertices and indices used for rendering.</brief_description>
-  <description>Mesh data editing methods are not exposed to C# yet.</description>
+  <description>Owns mesh geometry and one default MaterialResource. SurfaceTool builds its geometry.</description>
 </class>

@@ -138,7 +138,7 @@ void MeshInstance3D::SyncMeshBase()
 
 	// An invalid Base RID keeps the instance type at None, so it produces no request.
 	RID meshRID = m_meshResource.IsValid() ? m_meshResource->GetMeshRID() : RID::Invalid;
-	server->InstanceSetBase(m_instanceRID, meshRID);
+	server->Instance3DSetBase(m_instanceRID, meshRID);
 }
 
 bool MeshInstance3D::IsEmpty() const
@@ -146,16 +146,15 @@ bool MeshInstance3D::IsEmpty() const
 	return m_meshResource == nullptr || m_meshResource->IsEmpty();
 }
 
-void MeshInstance3D::SetMeshResource(Variant meshResource)
+void MeshInstance3D::SetMeshResource(Ref<MeshResource> const& meshResource)
 {
-	Ref<MeshResource> mesh = meshResource;
-	m_meshResource         = mesh;
+	m_meshResource = meshResource;
 
 	// The resource owns its single Mesh RID, so the instance only points at it.
 	SyncMeshBase();
 }
 
-Variant MeshInstance3D::GetMeshResource() const
+Ref<MeshResource> MeshInstance3D::GetMeshResource() const
 {
 	return m_meshResource;
 }

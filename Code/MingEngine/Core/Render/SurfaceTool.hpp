@@ -10,6 +10,7 @@
 
 class SurfaceTool : public RefCounted
 {
+	MCLASS(SurfaceTool, RefCounted)
 private:
 	struct SurfaceVertex
 	{
@@ -117,6 +118,9 @@ public:
 
 public:
 	static constexpr uint32_t NoSmoothingGroup = UINT32_MAX;
+
+protected:
+	static void BindMethods();
 
 private:
 	std::vector<SurfaceVertex> m_vertices;

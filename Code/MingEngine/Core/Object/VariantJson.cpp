@@ -6,6 +6,7 @@
 #include "MingEngine/Core/Object/ResourceLoader.hpp"
 
 #include <exception>
+#include <limits>
 
 namespace
 {
@@ -46,6 +47,9 @@ bool TrySerialize(Variant const& value, Json& outJson)
 	{
 	case Variant::Type::Bool:
 		outJson = value.As<bool>();
+		return true;
+	case Variant::Type::UInt32:
+		outJson = value.As<uint32_t>();
 		return true;
 	case Variant::Type::Int:
 		outJson = value.As<int>();
@@ -146,6 +150,17 @@ bool TryDeserialize(Json const& json, Variant::Type expectedType, Variant& outVa
 				return true;
 			}
 
+			break;
+		case Variant::Type::UInt32:
+			if (json.is_number_unsigned() || (json.is_number_integer() && json.get<int64_t>() >= 0))
+			{
+				auto number = json.get<uint64_t>();
+				if (number <= (std::numeric_limits<uint32_t>::max)())
+				{
+					outValue = Variant(static_cast<uint32_t>(number));
+					return true;
+				}
+			}
 			break;
 		case Variant::Type::Int:
 			if (json.is_number_integer())

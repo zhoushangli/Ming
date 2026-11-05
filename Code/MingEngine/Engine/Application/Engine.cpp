@@ -144,14 +144,14 @@ void Engine::Shutdown()
 		m_inputSystem->Shutdown();
 	}
 
-	if (m_renderServer != nullptr)
-	{
-		m_renderServer->Shutdown();
-	}
-
 	if (m_scriptSystem != nullptr)
 	{
 		m_scriptSystem->Shutdown();
+	}
+
+	if (m_renderServer != nullptr)
+	{
+		m_renderServer->Shutdown();
 	}
 
 	if (m_fileSystem != nullptr)

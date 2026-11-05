@@ -10,7 +10,7 @@
 #include <array>
 
 // How a mesh surface is drawn: shader, surface textures, tint and draw states.
-// e.g. MeshResource holds one and BuildInstanceRenderRequest() reads it into a RenderRequest
+// e.g. MeshResource holds one and BuildInstance3DRenderRequest() reads it into a RenderRequest
 class MaterialResource : public Resource
 {
 	MCLASS(MaterialResource, Resource)
@@ -22,8 +22,36 @@ public:
 
 	bool CopyFrom(Resource&& other) override;
 
+	void SetShaderResource(Ref<ShaderResource> const& value) { m_shaderResource = value; }
+	Ref<ShaderResource> GetShaderResource() const { return m_shaderResource; }
+
+	void SetDiffuseTexture(Ref<TextureResource> const& value) { m_textureResources[SurfaceTextureSlot::Diffuse] = value; }
+	Ref<TextureResource> GetDiffuseTexture() const { return m_textureResources[SurfaceTextureSlot::Diffuse]; }
+
+	void SetNormalTexture(Ref<TextureResource> const& value) { m_textureResources[SurfaceTextureSlot::Normal] = value; }
+	Ref<TextureResource> GetNormalTexture() const { return m_textureResources[SurfaceTextureSlot::Normal]; }
+
+	void SetSGETexture(Ref<TextureResource> const& value) { m_textureResources[SurfaceTextureSlot::SGE] = value; }
+	Ref<TextureResource> GetSGETexture() const { return m_textureResources[SurfaceTextureSlot::SGE]; }
+
+	void SetTint(Color const& value) { m_tint = value; }
+	Color GetTint() const { return m_tint; }
+
+	void SetBlendMode(BlendMode value);
+	BlendMode GetBlendMode() const { return m_blendMode; }
+
+	void SetDepthMode(DepthMode value);
+	DepthMode GetDepthMode() const { return m_depthMode; }
+
+	void SetRasterizerMode(RasterizerMode value);
+	RasterizerMode GetRasterizerMode() const { return m_rasterizerMode; }
+
+	void SetSamplerMode(SamplerMode value);
+	SamplerMode GetSamplerMode() const { return m_samplerMode; }
+
+
 protected:
-	static void BindMethods() {}
+	static void BindMethods();
 
 public:
 	// Shader the material is drawn with; an invalid reference lets the Renderer bind its default shader.

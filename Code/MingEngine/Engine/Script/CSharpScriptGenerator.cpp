@@ -338,6 +338,10 @@ std::string FormatTypeExpression(
 
 std::string GetPublicCSharpType(ArgumentInfo const& argumentInfo, CSharpTypeInfo const& typeInfo)
 {
+	if (!argumentInfo.m_enumName.empty())
+	{
+		return argumentInfo.m_enumName;
+	}
 	if (argumentInfo.m_type != Variant::Type::ObjectPtr || argumentInfo.m_objectClassName.empty())
 	{
 		return typeInfo.m_csType;
@@ -354,6 +358,8 @@ char const* GetVariantTypeName(Variant::Type type)
 		return "Empty";
 	case Variant::Type::Bool:
 		return "Bool";
+	case Variant::Type::UInt32:
+		return "UInt32";
 	case Variant::Type::Int:
 		return "Int";
 	case Variant::Type::Float:
@@ -402,6 +408,14 @@ bool TryCreateNativeCall(
 
 	outNativeCall.m_name       = std::string("MingCall_") + returnTypeIter->second.m_name;
 	outNativeCall.m_returnType = returnTypeIter->second;
+    if (methodInfo.m_returnInfo.m_isRef)
+    {
+        outNativeCall.m_name = "MingCall_Ref";
+        outNativeCall.m_returnType.m_name = "Ref";
+        outNativeCall.m_returnType.m_ptrCallType = "ming_ref";
+        outNativeCall.m_returnType.m_disposableReturn = true;
+        outNativeCall.m_returnType.m_callOut = "return InteropUtils.UnmanagedGetManaged({VALUE}.Reference);";
+    }
 	outNativeCall.m_argumentTypes.clear();
 	outNativeCall.m_argumentTypes.reserve(methodInfo.m_argumentInfos.size());
 
@@ -471,7 +485,7 @@ std::string BuildMethodArgumentList(MethodInfo const& methodInfo, std::vector<CS
 	return methodArguments;
 }
 
-std::string GenerateClassMethod(MethodInfo const& methodInfo, NativeCallInfo const& nativeCall)
+std::string GenerateClassMethod(MethodInfo const& methodInfo, NativeCallInfo const& nativeCall, bool isStatic = false)
 {
 	std::string callArguments;
 	for (size_t argumentIndex = 0; argumentIndex < nativeCall.m_argumentTypes.size(); ++argumentIndex)
@@ -480,13 +494,13 @@ std::string GenerateClassMethod(MethodInfo const& methodInfo, NativeCallInfo con
 		ArgumentInfo const&   argumentInfo     = methodInfo.m_argumentInfos[argumentIndex];
 
 		callArguments += ", ";
-		callArguments += FormatTypeExpression(argumentTypeInfo.m_csInExpression, argumentInfo.m_name);
+		callArguments += FormatTypeExpression(argumentTypeInfo.m_csInExpression, argumentInfo.m_enumName.empty() ? argumentInfo.m_name : "(int)" + argumentInfo.m_name);
 	}
 
 	std::string const methodArguments = BuildMethodArgumentList(methodInfo, nativeCall.m_argumentTypes);
 
 	std::string const nativeCallExpression =
-		"NativeCalls." + nativeCall.m_name + "(" + methodInfo.m_name + "MethodBind, GetPtr(this)" + callArguments + ")";
+		"NativeCalls." + nativeCall.m_name + "(" + methodInfo.m_name + "MethodBind, " + (isStatic ? std::string("IntPtr.Zero") : std::string("GetPtr(this)")) + callArguments + ")";
 	std::string methodCall;
 	if (nativeCall.m_returnType.m_csType == "void")
 	{
@@ -495,8 +509,8 @@ std::string GenerateClassMethod(MethodInfo const& methodInfo, NativeCallInfo con
 	else
 	{
 		std::string returnExpression = nativeCallExpression;
-		if (methodInfo.m_returnInfo.m_type == Variant::Type::ObjectPtr
-			&& !methodInfo.m_returnInfo.m_objectClassName.empty())
+		if (!methodInfo.m_returnInfo.m_enumName.empty() || (methodInfo.m_returnInfo.m_type == Variant::Type::ObjectPtr
+			&& !methodInfo.m_returnInfo.m_objectClassName.empty()))
 		{
 			returnExpression =
 				"(" + GetPublicCSharpType(methodInfo.m_returnInfo, nativeCall.m_returnType) + ")" + returnExpression;
@@ -510,6 +524,11 @@ std::string GenerateClassMethod(MethodInfo const& methodInfo, NativeCallInfo con
 	ReplaceAll(source, "{METHOD_NAME}", methodInfo.m_name);
 	ReplaceAll(source, "{METHOD_ARGUMENTS}", methodArguments);
 	ReplaceAll(source, "{METHOD_CALL}", methodCall);
+	if (isStatic)
+	{
+		ReplaceAll(source, "public ", "public static ");
+		ReplaceAll(source, "GetPtr(", "MingObject.GetPtr(");
+	}
 	return source;
 }
 
@@ -921,6 +940,12 @@ CSharpScriptGenerator::CSharpScriptGenerator()
 		typeInfo.m_ptrCallArgument         = "&{VALUE}";
 		typeInfo.m_callOut                 = "return {VALUE};";
 		m_builtinTypes[Variant::Type::Int] = typeInfo;
+        typeInfo.m_name = "UInt32";
+        typeInfo.m_csType = "uint";
+        typeInfo.m_callTypeIn = "uint";
+        typeInfo.m_callTypeOut = "uint";
+        typeInfo.m_ptrCallType = "uint";
+        m_builtinTypes[Variant::Type::UInt32] = typeInfo;
 	}
 
 	{
@@ -1111,6 +1136,65 @@ bool CSharpScriptGenerator::GenerateCSharpBindings(std::filesystem::path const& 
 	MethodNativeCallMap                 methodNativeCalls;
 	std::vector<std::string>            skippedNativeCalls;
 	CollectBindings(classes, m_builtinTypes, nativeCalls, methodNativeCalls, skippedNativeCalls);
+    auto globals = ClassDatabase::GetRegisteredGlobalNamespaces();
+    std::sort(globals.begin(), globals.end(), [](auto* a, auto* b) { return a->m_namespaceName < b->m_namespaceName; });
+    for (auto* group : globals)
+    {
+        for (auto const& method : group->m_methods)
+        {
+            NativeCallInfo call;
+            std::string reason;
+            if (TryCreateNativeCall(method, m_builtinTypes, call, reason))
+            {
+                methodNativeCalls.emplace(&method, call.m_name);
+                nativeCalls.emplace(call.m_name, call);
+            }
+            else
+            {
+                skippedNativeCalls.push_back(group->m_namespaceName + "." + method.m_name + ": " + reason);
+            }
+        }
+    }
+    for (auto* group : globals)
+    {
+        if (group->m_namespaceName.empty())
+        {
+            continue;
+        }
+        std::string source = "namespace Ming;\n\npublic ";
+        source += group->m_isEnum ? "enum " : "static partial class ";
+        source += group->m_namespaceName + "\n{\n";
+        for (auto const& constant : group->m_constants)
+        {
+            if (constant.m_type != Variant::Type::Int)
+            {
+                continue;
+            }
+            source += "    ";
+            source += group->m_isEnum ? "" : "public const int ";
+            source += constant.m_name + " = " + std::to_string(constant.m_value.As<int>()) + (group->m_isEnum ? ",\n" : ";\n");
+        }
+        for (auto const& method : group->m_methods)
+        {
+            auto found = methodNativeCalls.find(&method);
+            if (found == methodNativeCalls.end())
+            {
+                continue;
+            }
+            std::string bind = MethodBindingTemplate;
+            ReplaceAll(bind, "[DebuggerBrowsable(DebuggerBrowsableState.Never)]", "[System.Diagnostics.DebuggerBrowsable(System.Diagnostics.DebuggerBrowsableState.Never)]");
+            ReplaceAll(bind, "{METHOD_BIND_NAME}", method.m_name + "MethodBind");
+            ReplaceAll(bind, "{CLASS_NAME}", group->m_namespaceName);
+            ReplaceAll(bind, "{METHOD_NAME}", method.m_name);
+            source += bind + GenerateClassMethod(method, nativeCalls.at(found->second), true);
+        }
+        source += "}\n";
+        if (!WriteTextFile(generatedDirectory / (group->m_namespaceName + ".cs"), source))
+        {
+            return false;
+        }
+    }
+
 
 	std::sort(skippedNativeCalls.begin(), skippedNativeCalls.end());
 	if (!skippedNativeCalls.empty())

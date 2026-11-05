@@ -1,4 +1,5 @@
 #include "MingEngine/Scene/Resource/MeshResource.hpp"
+#include "MingEngine/Core/Object/ClassDatabase.hpp"
 
 #include "MingEngine/Core/Render/Vertex.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
@@ -115,4 +116,22 @@ void MeshResource::InitGPUResources()
 	}
 
 	m_meshRID = server->MeshCreate(*this);
+}
+
+void MeshResource::BindMethods()
+{
+	ClassDatabase::BindMethod("SetMaterial", &MeshResource::SetMaterial, { "material" });
+	ClassDatabase::BindMethod("GetMaterial", &MeshResource::GetMaterial, {});
+	ADD_PROPERTY(PropertyInfo(Variant::Type::ObjectPtr, "material", PropertyInfo::Hint::ResourceType,
+		"MaterialResource", PropertyInfo::UsageFlags::Default), "SetMaterial", "GetMaterial");
+}
+
+void MeshResource::SetMaterial(Ref<MaterialResource> const& material)
+{
+	m_materialResource = material;
+	RenderServer* server = g_engine != nullptr ? g_engine->m_renderServer : nullptr;
+	if (server != nullptr && m_meshRID.IsValid())
+	{
+		server->MeshSetMaterial(m_meshRID, material);
+	}
 }

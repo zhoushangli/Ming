@@ -52,6 +52,7 @@
 
 #include "ThemeVerification.hpp"
 #include "EditorPanelsVerification.hpp"
+#include "ColorPickerVerification.hpp"
 
 #include <cmath>
 #include <cstdio>
@@ -194,6 +195,66 @@ int main(int argc, char** argv)
 	RegisterAllTypes();
 	ClassDatabase::RegisterClass<FieldProbe>();
 	engine.Startup();
+	{
+		for (uint32_t value : { 0u, 2147483648u, 4294967295u })
+		{
+			Variant source(value);
+			Variant copy(source);
+			nlohmann::ordered_json json;
+			Variant decoded;
+			uint32_t encoded = 0;
+			PtrToArg<uint32_t>::Encode(value, &encoded);
+			check(copy.GetType() == Variant::Type::UInt32 && VariantCaster<uint32_t>::Cast(copy) == value
+				&& PtrToArg<uint32_t>::Decode(&encoded) == value
+				&& VariantJson::TrySerialize(copy, json)
+				&& VariantJson::TryDeserialize(json, Variant::Type::UInt32, decoded)
+				&& decoded.As<uint32_t>() == value, "UInt32 preserves all bits through Variant, PtrCall and JSON");
+		}
+		Variant decoded;
+		check(!VariantJson::TryDeserialize(nlohmann::ordered_json(-1), Variant::Type::UInt32, decoded)
+			&& !VariantJson::TryDeserialize(nlohmann::ordered_json(uint64_t(4294967296)), Variant::Type::UInt32, decoded),
+			"UInt32 JSON rejects negative and overflowing values");
+		auto resource = CreateRef<MeshResource>();
+		ObjectID id = resource->GetObjectID();
+		{
+			Variant first = resource;
+			Variant second(first);
+			Variant moved(std::move(second));
+			check(resource->GetRefCount() == 3 && second.IsEmpty(), "Ref Variant copy and move preserve native owners");
+		}
+		check(resource->GetRefCount() == 1, "Ref Variant destruction releases its native owners");
+		resource = Ref<MeshResource>();
+		check(ObjectDatabase::GetInstance(id) == nullptr, "last Ref destroys the resource");
+		auto material = CreateRef<MaterialResource>();
+		auto* setter = ClassDatabase::GetMethodBind("MaterialResource", "SetSamplerMode");
+		auto* getter = ClassDatabase::GetMethodBind("MaterialResource", "GetSamplerMode");
+		setter->Invoke(material.Get(), { Variant(SamplerMode::POINT_WRAP) });
+		check(getter->Invoke(material.Get(), {}).As<int>() == static_cast<int>(SamplerMode::POINT_WRAP),
+			"enum dynamic invocation preserves the registered value");
+		material->SetSamplerMode(SamplerMode::COUNT);
+		check(material->GetSamplerMode() == SamplerMode::POINT_WRAP, "invalid enum leaves material unchanged");
+		auto tool = CreateRef<SurfaceTool>();
+		tool->SetNormal(Vector3(0, 0, 1));
+		tool->SetUV(Vector2(0, 0));
+		tool->AddVertex(Vector3(0, 0, 0));
+		tool->AddVertex(Vector3(1, 0, 0));
+		tool->AddVertex(Vector3(0, 1, 0));
+		tool->AddIndex(0); tool->AddIndex(1); tool->AddIndex(2);
+		auto* create = ClassDatabase::GetMethodBind("SurfaceTool", "CreateMeshResource");
+		MeshResource* returned = nullptr;
+		create->PtrCall(tool.Get(), nullptr, &returned);
+		check(returned != nullptr && returned->GetRefCount() == 1 && returned->m_vertexCount == 3,
+			"PtrCall Ref return owns its temporary reference");
+		Ref<MeshResource> mesh(returned);
+		returned->RemoveRef();
+		RID meshRID = mesh->GetMeshRID();
+		mesh->SetMaterial(material);
+		check(mesh->GetMeshRID() == meshRID && mesh->m_vertexCount == 3 && mesh->GetMaterial() == material,
+			"material replacement preserves mesh registration and geometry");
+		Variant dynamicMesh = create->Invoke(tool.Get(), {});
+		check(Ref<MeshResource>(dynamicMesh).IsValid(), "dynamic Ref return remains alive after the method returns");
+	}
+
 	std::ofstream(projectPath / L"project.ming") << R"({"type":"ProjectSettings","version":1,"start_scene_path":""})";
 	std::string settingsError;
 	check(ProjectSettings::Load(projectPath, settingsError), "fixture installs its own project settings");
@@ -592,16 +653,7 @@ int main(int argc, char** argv)
 				"Euler degree order preserved");
 		}
 
-		{
-			vectorValue = Variant(Color(10, 20, 30, 40));
-			auto field  = makeField(Variant::Type::Color, "color");
-			Draft(root, Find<SpinBox>(field->GetControl(), 3)->GetLineEdit(), "255");
-			Key(root, GLFW_KEY_ENTER);
-			check(vectorValue.As<Color>() == Color(10, 20, 30, 255), "RGBA edits one byte");
-			Draft(root, Find<SpinBox>(field->GetControl())->GetLineEdit(), "200");
-			Key(root, GLFW_KEY_ESCAPE);
-			check(vectorValue.As<Color>() == Color(10, 20, 30, 255), "RGBA cancellation preserves all bytes");
-		}
+		ColorPickerVerification::Run(check);
 
 		{
 			vectorValue    = Variant(false);

@@ -33,6 +33,7 @@ void PopupPanel::Open(Control* owner)
 		return;
 	}
 
+	m_interrupted   = false;
 	m_owner         = owner->GetObjectID();
 	Control* focus  = GetViewport()->GetGuiFocus();
 	m_previousFocus = focus != nullptr ? focus->GetObjectID() : m_owner;
@@ -132,13 +133,18 @@ void PopupPanel::OnNotification(int notification)
 
 	case Notification_GuiInputCancelled:
 	case Notification_ExitTree:
-		Close(false);
+		if (IsVisible())
+		{
+			m_interrupted = true;
+			Close(false);
+		}
 		break;
 	}
 }
 
 void PopupPanel::OnThemeSourceLost()
 {
+	m_interrupted = true;
 	Close(false);
 	m_owner = ObjectID::Invalid;
 }

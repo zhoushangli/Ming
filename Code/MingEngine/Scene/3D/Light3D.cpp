@@ -79,7 +79,7 @@ void Light3D::OnNotification(int notification)
 		if (m_lightRID.IsValid() && renderService != nullptr)
 		{
 			SyncRenderData();
-			renderService->InstanceSetBase(m_instanceRID, m_lightRID);
+			renderService->Instance3DSetBase(m_instanceRID, m_lightRID);
 		}
 
 		break;

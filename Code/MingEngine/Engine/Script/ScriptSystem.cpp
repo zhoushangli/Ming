@@ -103,17 +103,23 @@ void const* CORECLR_DELEGATE_CALLTYPE GetMethodBind(String const* className, Str
 		return nullptr;
 	}
 
-	return ClassDatabase::GetMethodBind(className->ToUtf8(), methodName->ToUtf8());
+	auto* method = ClassDatabase::GetMethodBind(className->ToUtf8(), methodName->ToUtf8());
+	return method != nullptr ? method : ClassDatabase::GetGlobalMethodBind(className->ToUtf8(), methodName->ToUtf8());
 }
 
 void CORECLR_DELEGATE_CALLTYPE MethodBindPtrCall(void const* methodBind, void* objectPtr, void** args, void* retPtr)
 {
-	if (methodBind == nullptr || objectPtr == nullptr)
+	if (methodBind == nullptr)
 	{
 		return;
 	}
 
 	MethodBind const* methodBindPtr = static_cast<MethodBind const*>(methodBind);
+	if (objectPtr == nullptr && !methodBindPtr->IsStatic())
+	{
+		ERR_PRINT("Instance method requires a valid object.");
+		return;
+	}
 	Object*           object        = static_cast<Object*>(objectPtr);
 	methodBindPtr->PtrCall(object, args, retPtr);
 }
@@ -172,7 +178,44 @@ void* CORECLR_DELEGATE_CALLTYPE UnmanagedInstanceBindingCreateManaged(void* nati
 		return nullptr;
 	}
 
-	return g_engine->m_scriptSystem->GetOrCreateNativeManagedWrapper(static_cast<Object*>(nativeValue));
+	return g_engine->m_scriptSystem->GetOrCreateNativeManagedWrapper(static_cast<Object*>(nativeValue), true);
+}
+
+int32_t CORECLR_DELEGATE_CALLTYPE RetainRef(void* ptr)
+{
+	auto* object = dynamic_cast<RefCounted*>(static_cast<Object*>(ptr));
+	if (object == nullptr)
+	{
+		return 0;
+	}
+	return object->GetRefCount() == 0 ? object->InitRef() : object->AddRef();
+}
+
+void CORECLR_DELEGATE_CALLTYPE ReleaseRef(void* ptr)
+{
+	auto* object = static_cast<RefCounted*>(ptr);
+	if (object != nullptr && object->RemoveRef())
+	{
+		MemDelete(object);
+	}
+}
+
+void CORECLR_DELEGATE_CALLTYPE DetachBinding(void* ptr, void* handle)
+{
+	if (ptr != nullptr)
+	{
+		static_cast<Object*>(ptr)->DetachNativeBindingGCHandle(handle);
+	}
+}
+
+void CORECLR_DELEGATE_CALLTYPE CreateObjectVariant(void* ptr, Variant* result)
+{
+	*result = Variant::FromRef(static_cast<Object*>(ptr));
+}
+
+void CORECLR_DELEGATE_CALLTYPE DestroyVariant(Variant* value)
+{
+	*value = Variant();
 }
 
 } // namespace
@@ -212,6 +255,11 @@ void ScriptSystem::Shutdown()
 	m_pendingReloadBackups.clear();
 	UnloadProjectAssembly();
 
+	if (m_managedCallbacks.m_disposeResourceBindings != nullptr)
+	{
+		m_managedCallbacks.m_disposeResourceBindings();
+	}
+
 	// 2) Release the managed entry points
 	m_isInitialized = false;
 
@@ -235,6 +283,10 @@ void ScriptSystem::BeginFrame()
 
 void ScriptSystem::EndFrame()
 {
+	if (m_isInitialized && m_managedCallbacks.m_drainResourceBindings != nullptr)
+	{
+		m_managedCallbacks.m_drainResourceBindings();
+	}
 }
 
 bool ScriptSystem::InitializeDotNetRuntime()
@@ -426,6 +478,11 @@ bool ScriptSystem::InitializeDotNetRuntime()
 		&TieNativeManagedToUnmanaged,
 		&UnmanagedGetInstanceBindingManaged,
 		&UnmanagedInstanceBindingCreateManaged,
+		&RetainRef,
+		&ReleaseRef,
+		&DetachBinding,
+		&CreateObjectVariant,
+		&DestroyVariant,
 	};
 
 	int32_t const initResult = initialize(
@@ -737,7 +794,7 @@ bool ScriptSystem::RemoveScriptBridge(CSharpScript* script)
 	return m_managedCallbacks.m_removeScriptBridge(script) == 1;
 }
 
-void* ScriptSystem::GetOrCreateNativeManagedWrapper(Object* owner)
+void* ScriptSystem::GetOrCreateNativeManagedWrapper(Object* owner, bool recreate)
 {
 	if (!m_isInitialized || owner == nullptr)
 	{
@@ -746,7 +803,16 @@ void* ScriptSystem::GetOrCreateNativeManagedWrapper(Object* owner)
 
 	if (owner->IsNativeBindingGCHandleValid())
 	{
-		return owner->GetNativeBindingGCHandle();
+		if (!recreate)
+		{
+			return owner->GetNativeBindingGCHandle();
+		}
+		void* previous = owner->GetNativeBindingGCHandle();
+		owner->DetachNativeBindingGCHandle(previous);
+		if (dynamic_cast<RefCounted*>(owner) == nullptr)
+		{
+			ReleaseGCHandle(previous);
+		}
 	}
 
 	// 2) Forward the class name through the managed instance factory
@@ -770,7 +836,7 @@ void* ScriptSystem::GetOrCreateNativeManagedWrapper(Object* owner)
 		return owner->GetNativeBindingGCHandle();
 	}
 
-	return gcHandle;
+	return owner->GetNativeBindingGCHandle();
 }
 
 bool ScriptSystem::CreateUserManagedInstance(CSharpScript* script, Object* owner)
@@ -795,6 +861,16 @@ bool ScriptSystem::CreateUserManagedInstance(CSharpScript* script, Object* owner
 	}
 
 	return true;
+}
+
+void* ScriptSystem::UpdateNativeBindingGCHandle(void* gcHandle, int refCount)
+{
+	if (m_isInitialized && m_managedCallbacks.m_updateNativeBindingGCHandle != nullptr)
+	{
+		return m_managedCallbacks.m_updateNativeBindingGCHandle(gcHandle, refCount);
+	}
+
+	return gcHandle;
 }
 
 void ScriptSystem::ReleaseGCHandle(void* gcHandle)

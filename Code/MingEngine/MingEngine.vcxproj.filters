@@ -604,6 +604,12 @@
     <ClCompile Include="Scene\GUI\ColorRect.cpp">
       <Filter>Scene\GUI</Filter>
     </ClCompile>
+    <ClCompile Include="Scene\GUI\ColorPicker.cpp">
+      <Filter>Scene\GUI</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene\GUI\ColorPickerButton.cpp">
+      <Filter>Scene\GUI</Filter>
+    </ClCompile>
     <ClCompile Include="Scene\Resource\MaterialResource.cpp">
       <Filter>Scene\Resource</Filter>
     </ClCompile>
@@ -1210,6 +1216,12 @@
       <Filter>Scene\GUI</Filter>
     </ClInclude>
     <ClInclude Include="Scene\GUI\ColorRect.hpp">
+      <Filter>Scene\GUI</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\GUI\ColorPicker.hpp">
+      <Filter>Scene\GUI</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\GUI\ColorPickerButton.hpp">
       <Filter>Scene\GUI</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Render\RenderTypes.hpp">

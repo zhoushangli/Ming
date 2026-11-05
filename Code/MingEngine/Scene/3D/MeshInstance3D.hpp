@@ -33,8 +33,8 @@ public:
 
 	bool IsEmpty() const;
 
-	void    SetMeshResource(Variant meshResource);
-	Variant GetMeshResource() const;
+	void    SetMeshResource(Ref<MeshResource> const& meshResource);
+	Ref<MeshResource> GetMeshResource() const;
 
 protected:
 	static void BindMethods();

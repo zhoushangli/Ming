@@ -1,6 +1,7 @@
 #include "MingEngine/Core/Object/Variant.hpp"
 
 #include "MingEngine/Core/Memory.hpp"
+#include "MingEngine/Core/Object/RefCounted.hpp"
 
 #include <new>
 #include <utility>
@@ -55,6 +56,29 @@ Variant::Variant(bool value) : m_type(Type::Bool)
 Variant::Variant(int value) : m_type(Type::Int)
 {
 	m_payload.m_int = value;
+}
+
+Variant::Variant(uint32_t value) : m_type(Type::UInt32)
+{
+	Write(value);
+}
+
+Variant Variant::FromRef(Object* value)
+{
+	Variant result(value);
+	if (auto* resource = dynamic_cast<RefCounted*>(value))
+	{
+		if (resource->GetRefCount() == 0)
+		{
+			resource->InitRef();
+		}
+		else
+		{
+			resource->AddRef();
+		}
+		result.m_ownsRef = 1;
+	}
+	return result;
 }
 
 Variant::Variant(float value) : m_type(Type::Float)
@@ -147,6 +171,11 @@ Variant::Type Variant::GetType() const
 void Variant::CopyFrom(Variant const& other)
 {
 	m_type = other.m_type;
+	m_ownsRef = other.m_ownsRef;
+	if (m_ownsRef)
+	{
+		static_cast<RefCounted*>(other.As<Object*>())->AddRef();
+	}
 
 	switch (m_type)
 	{
@@ -174,6 +203,7 @@ void Variant::CopyFrom(Variant const& other)
 void Variant::MoveFrom(Variant& other)
 {
 	m_type = other.m_type;
+	m_ownsRef = other.m_ownsRef;
 
 	switch (m_type)
 	{
@@ -192,6 +222,7 @@ void Variant::MoveFrom(Variant& other)
 	}
 
 	other.m_type = Type::Empty;
+	other.m_ownsRef = 0;
 }
 
 // 1) Release whatever the payload owns right now
@@ -199,6 +230,15 @@ void Variant::MoveFrom(Variant& other)
 // e.g. Clear() on a Variant holding a Matrix4x4 deletes that Matrix4x4.
 void Variant::Clear()
 {
+	if (m_ownsRef)
+	{
+		auto* resource = static_cast<RefCounted*>(As<Object*>());
+		m_ownsRef = 0;
+		if (resource->RemoveRef())
+		{
+			MemDelete(resource);
+		}
+	}
 	switch (m_type)
 	{
 	case Type::String:
@@ -231,6 +271,8 @@ bool Variant::operator==(Variant const& other) const
 	{
 	case Type::Empty:
 		return true;
+	case Type::UInt32:
+		return As<uint32_t>() == other.As<uint32_t>();
 	case Type::Bool:
 		return As<bool>() == other.As<bool>();
 	case Type::Int:

@@ -21,7 +21,8 @@ public partial struct Variant
         EulerAngles = 12,
         Matrix4x4 = 13,
         ObjectPtr = 14,
-        Any = 15
+        Any = 15,
+        UInt32 = 16
     }
 
 

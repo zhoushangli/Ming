@@ -9,6 +9,9 @@
 #include "RenderReadback.hpp"
 
 #include <cstdio>
+#include <shobjidl.h>
+
+#pragma comment(lib, "Ole32.lib")
 
 int main(int argc, char** argv)
 {
@@ -56,6 +59,29 @@ int main(int argc, char** argv)
 	App app(config);
 	g_app = &app;
 	app.Startup();
+	bool folderDialogReady = true;
+	if (config.mode == MingRunMode::ProjectManager)
+	{
+		HRESULT const initialized = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
+		folderDialogReady = SUCCEEDED(initialized);
+		if (folderDialogReady)
+		{
+			IFileOpenDialog* dialog = nullptr;
+			folderDialogReady = SUCCEEDED(CoCreateInstance(
+				CLSID_FileOpenDialog, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&dialog)));
+			if (dialog != nullptr)
+			{
+				folderDialogReady = folderDialogReady && SUCCEEDED(dialog->SetOptions(
+					FOS_PICKFOLDERS | FOS_FORCEFILESYSTEM | FOS_PATHMUSTEXIST | FOS_NOCHANGEDIR));
+				dialog->Release();
+			}
+
+			CoUninitialize();
+		}
+
+		std::printf("NATIVE_FOLDER_DIALOG sta_and_creation=%d\n", folderDialogReady);
+	}
+
 	if (expectedFailure)
 	{
 		bool const rejected = app.IsQuitting() && app.GetExitCode() != 0
@@ -127,5 +153,5 @@ int main(int argc, char** argv)
 		editor,
 		shutdown);
 	g_app = nullptr;
-	return scene && mainScene && editor && shutdown && buildBlocked ? 0 : 1;
+	return scene && mainScene && editor && shutdown && buildBlocked && folderDialogReady ? 0 : 1;
 }

@@ -1,6 +1,8 @@
 #include "MingEngine/Scene/RegisterSceneTypes.hpp"
 
 #include "MingEngine/Core/Object/ClassDatabase.hpp"
+#include "MingEngine/Core/Render/SurfaceTool.hpp"
+#include "MingEngine/Scene/Resource/MaterialResource.hpp"
 #include "MingEngine/Core/Object/ResourceImporter.hpp"
 #include "MingEngine/Core/Object/ResourceLoader.hpp"
 #include "MingEngine/Core/Object/ResourceSaver.hpp"
@@ -22,6 +24,8 @@
 #include "MingEngine/Scene/Core/Viewport.hpp"
 #include "MingEngine/Scene/GUI/BoxContainer.hpp"
 #include "MingEngine/Scene/GUI/ColorRect.hpp"
+#include "MingEngine/Scene/GUI/ColorPicker.hpp"
+#include "MingEngine/Scene/GUI/ColorPickerButton.hpp"
 #include "MingEngine/Scene/GUI/Container.hpp"
 #include "MingEngine/Scene/GUI/Control.hpp"
 #include "MingEngine/Scene/GUI/BaseButton.hpp"
@@ -63,6 +67,30 @@
 void RegisterSceneTypes()
 {
 	ClassDatabase::SetApiType(ApiType::Runtime);
+
+
+	BIND_ENUM(SamplerMode, POINT_CLAMP);
+	BIND_ENUM(SamplerMode, BILINEAR_CLAMP);
+	BIND_ENUM(SamplerMode, POINT_WRAP);
+	BIND_ENUM(SamplerMode, BILINEAR_WRAP);
+	BIND_ENUM(SamplerMode, COUNT);
+	BIND_ENUM(BlendMode, ALPHA);
+	BIND_ENUM(BlendMode, ADDITIVE);
+	BIND_ENUM(BlendMode, OPAQUE);
+	BIND_ENUM(BlendMode, COUNT);
+	BIND_ENUM(DepthMode, DISABLED);
+	BIND_ENUM(DepthMode, READ_ONLY_ALWAYS);
+	BIND_ENUM(DepthMode, READ_ONLY_LESS_EQUAL);
+	BIND_ENUM(DepthMode, READ_WRITE_LESS_EQUAL);
+	BIND_ENUM(DepthMode, COUNT);
+	BIND_ENUM(RasterizerMode, SOLID_CULL_NONE);
+	BIND_ENUM(RasterizerMode, SOLID_CULL_BACK);
+	BIND_ENUM(RasterizerMode, WIREFRAME_CULL_NONE);
+	BIND_ENUM(RasterizerMode, WIREFRAME_CULL_BACK);
+	BIND_ENUM(RasterizerMode, COUNT);
+
+	ClassDatabase::RegisterClass<MaterialResource>();
+	ClassDatabase::RegisterClass<SurfaceTool>();
 
 	// Resource types
 	ClassDatabase::RegisterClass<ThemeStyleBox>();
@@ -134,6 +162,8 @@ void RegisterSceneTypes()
 	ClassDatabase::RegisterClass<Button>();
 	ClassDatabase::RegisterClass<PanelContainer>();
 	ClassDatabase::RegisterClass<ColorRect>();
+	ClassDatabase::RegisterClass<ColorPicker>();
+	ClassDatabase::RegisterClass<ColorPickerButton>();
 	ClassDatabase::RegisterClass<Label>();
 	ClassDatabase::RegisterClass<LineEdit>();
 	ClassDatabase::RegisterClass<SpinBox>();

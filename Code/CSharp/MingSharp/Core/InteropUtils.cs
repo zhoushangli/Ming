@@ -26,7 +26,14 @@ internal static class InteropUtils
         {
             if (!transferred)
             {
-                ScriptManagerBridge.ReleaseGCHandleCore(gcHandlePtr);
+                if (managed is RefCounted)
+                {
+                    managed.Dispose();
+                }
+                else
+                {
+                    ScriptManagerBridge.ReleaseGCHandleCore(gcHandlePtr);
+                }
             }
         }
     }
@@ -39,9 +46,10 @@ internal static class InteropUtils
         }
 
         IntPtr gcHandlePtr = NativeFuncs.UnmanagedGetInstanceBindingManaged(unmanaged);
-        if (gcHandlePtr != IntPtr.Zero)
+        if (gcHandlePtr != IntPtr.Zero && GCHandle.FromIntPtr(gcHandlePtr).Target is MingObject wrapper
+            && wrapper.NativePtr != IntPtr.Zero)
         {
-            return GCHandle.FromIntPtr(gcHandlePtr).Target as MingObject;
+            return wrapper;
         }
 
         gcHandlePtr = NativeFuncs.UnmanagedInstanceBindingCreateManaged(unmanaged);

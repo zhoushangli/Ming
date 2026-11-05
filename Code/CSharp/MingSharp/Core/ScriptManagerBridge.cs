@@ -1,6 +1,7 @@
 namespace Ming;
 
 using System.Reflection;
+using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Loader;
@@ -20,6 +21,11 @@ public static class ScriptManagerBridge
     private static int s_scriptInstanceHandleFreed;
     private static int s_nativeBindingHandleAllocated;
     private static int s_nativeBindingHandleFreed;
+    private static readonly HashSet<IntPtr> s_nativeBindingHandles = new();
+    private static readonly Dictionary<long, (IntPtr Owner, IntPtr Handle, WeakReference<MingObject> Wrapper, bool IsStrong)> s_resourceBindings = new();
+    private static readonly ConcurrentQueue<long> s_pendingResourceReleases = new();
+    private static long s_nextResourceLease;
+    private static bool s_acceptResourceBindings = true;
 
     #region Type Registration
 
@@ -371,9 +377,95 @@ public static class ScriptManagerBridge
 
     internal static IntPtr AllocNativeBindingGCHandle(MingObject instance)
     {
-        GCHandle handle = GCHandle.Alloc(instance, GCHandleType.Normal);
-        s_nativeBindingHandleAllocated++;
-        return GCHandle.ToIntPtr(handle);
+        // Here we have some special logic for RefCounted
+        // Which is basically a resource
+        // This is because there will be loop reference for RefCounted
+        // e.g. 
+        // For c++ side, the RefCounted object will hold a reference to the managed object (GCHandle)
+        // For c# side, the managed object will hold a reference to the RefCounted object (Count in RefCounted)
+        bool resource = instance is RefCounted;
+        IntPtr owner = instance.NativePtr;
+        if (resource && (!s_acceptResourceBindings || !NativeFuncs.RetainRef(owner)))
+        {
+            throw new InvalidOperationException("Resource bindings are unavailable.");
+        }
+        IntPtr handlePtr = IntPtr.Zero;
+        try
+        {
+            // Keep the wrapper alive until native binding installation synchronizes its handle strength.
+            // e.g. a wrapper returned to C++ cannot be collected before TrySetNativeBindingGCHandle runs.
+            handlePtr = GCHandle.ToIntPtr(GCHandle.Alloc(instance, GCHandleType.Normal));
+            s_nativeBindingHandles.Add(handlePtr);
+            s_nativeBindingHandleAllocated++;
+            if (resource)
+            {
+                long lease = ++s_nextResourceLease;
+                s_resourceBindings.Add(lease, (instance.NativePtr, handlePtr, new WeakReference<MingObject>(instance), true));
+                instance.ResourceLease = lease;
+            }
+            return handlePtr;
+        }
+        catch
+        {
+            if (handlePtr != IntPtr.Zero)
+            {
+                ReleaseGCHandleCore(handlePtr);
+            }
+            if (resource)
+            {
+                NativeFuncs.ReleaseRef(owner);
+            }
+            throw;
+        }
+    }
+
+    // Keep resource wrappers strong while native owners hold references besides their lease.
+    // e.g. a mesh retaining a material promotes its wrapper until that native reference is removed.
+    [UnmanagedCallersOnly]
+    internal static IntPtr UpdateNativeBindingGCHandle(IntPtr handlePtr, int refCount)
+    {
+        IntPtr replacementPtr = IntPtr.Zero;
+
+        try
+        {
+            if (!s_nativeBindingHandles.Contains(handlePtr)
+                || GCHandle.FromIntPtr(handlePtr).Target is not MingObject wrapper
+                || wrapper.NativePtr == IntPtr.Zero
+                || !s_resourceBindings.TryGetValue(wrapper.ResourceLease, out var binding)
+                || binding.Handle != handlePtr)
+            {
+                return handlePtr;
+            }
+
+            bool strong = refCount > 1;
+            if (binding.IsStrong == strong)
+            {
+                return handlePtr;
+            }
+
+            replacementPtr = GCHandle.ToIntPtr(GCHandle.Alloc(wrapper, strong ? GCHandleType.Normal : GCHandleType.Weak));
+            s_nativeBindingHandles.Add(replacementPtr);
+
+            binding.Handle = replacementPtr;
+            binding.IsStrong = strong;
+            s_resourceBindings[wrapper.ResourceLease] = binding;
+            s_nativeBindingHandles.Remove(handlePtr);
+            GCHandle.FromIntPtr(handlePtr).Free();
+            s_nativeBindingHandleAllocated++;
+            s_nativeBindingHandleFreed++;
+            return replacementPtr;
+        }
+        catch (Exception exception)
+        {
+            if (replacementPtr != IntPtr.Zero)
+            {
+                s_nativeBindingHandles.Remove(replacementPtr);
+                GCHandle.FromIntPtr(replacementPtr).Free();
+            }
+
+            NativeFuncs.Log("[Error] " + exception);
+            return handlePtr;
+        }
     }
 
     private static GCHandle AllocScriptGCHandle(MingObject instance)
@@ -449,13 +541,17 @@ public static class ScriptManagerBridge
 
         try
         {
+            if (!s_scriptInstanceHandles.Contains(handlePtr) && !s_nativeBindingHandles.Remove(handlePtr))
+            {
+                return;
+            }
             GCHandle handle = GCHandle.FromIntPtr(handlePtr);
             bool isScriptInstance = s_scriptInstanceHandles.Contains(handlePtr);
             try
             {
                 if (handle.Target is MingObject instance)
                 {
-                    instance.Dispose();
+                    instance.InvalidateFromNative();
                 }
             }
 
@@ -481,6 +577,51 @@ public static class ScriptManagerBridge
         {
             NativeFuncs.Log("[Error] " + exception);
         }
+    }
+
+    internal static void StartNativeBindings()
+    {
+        s_acceptResourceBindings = true;
+    }
+
+    internal static void EnqueueResourceRelease(long lease)
+    {
+        s_pendingResourceReleases.Enqueue(lease);
+    }
+
+    [UnmanagedCallersOnly]
+    internal static void DrainResourceBindings()
+    {
+        DrainResourceBindingsCore();
+    }
+
+    private static void DrainResourceBindingsCore()
+    {
+        while (s_pendingResourceReleases.TryDequeue(out long lease))
+        {
+            if (!s_resourceBindings.Remove(lease, out var binding))
+            {
+                continue;
+            }
+            if (binding.Wrapper.TryGetTarget(out var wrapper))
+            {
+                wrapper.InvalidateFromNative();
+            }
+            NativeFuncs.DetachBinding(binding.Owner, binding.Handle);
+            ReleaseGCHandleCore(binding.Handle);
+            NativeFuncs.ReleaseRef(binding.Owner);
+        }
+    }
+
+    [UnmanagedCallersOnly]
+    internal static void DisposeResourceBindings()
+    {
+        s_acceptResourceBindings = false;
+        foreach (var lease in s_resourceBindings.Keys.ToArray())
+        {
+            s_pendingResourceReleases.Enqueue(lease);
+        }
+        DrainResourceBindingsCore();
     }
 
     private static void FreeScriptGCHandle(GCHandle handle)

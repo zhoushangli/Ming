@@ -10,6 +10,8 @@
 #include "MingEngine/Core/Object/ResourceLoader.hpp"
 #include "MingEngine/Core/Object/ResourceSaver.hpp"
 #include "MingEngine/Core/Render/Vertex.hpp"
+#include "MingEngine/Core/Image.hpp"
+#include "MingEngine/Scene/Resource/TextureResource.hpp"
 #include "MingEngine/Core/Render/VertexUtils.hpp"
 #include "MingEngine/Scene/Core/SceneTree.hpp"
 #include "MingEngine/Scene/Core/Viewport.hpp"
@@ -59,6 +61,61 @@ T* FindScriptControl(Node* root, Predicate predicate)
 
 int main(int argc, char** argv)
 {
+	if (argc == 3 && std::string(argv[1]) == "--resource-sample")
+	{
+		MingRunConfig config;
+		config.mode = MingRunMode::Game;
+		config.projectPath = std::filesystem::absolute(argv[2]);
+		App app(config);
+		g_app = &app;
+		app.Startup();
+		for (int frame = 0; frame < 8; ++frame)
+		{
+			app.RunFrame();
+		}
+		auto* root = app.GetSceneTree()->GetScene();
+		auto* block = root != nullptr ? dynamic_cast<MeshInstance3D*>(root->FindChildByName("Block")) : nullptr;
+		auto mesh = block != nullptr ? block->GetMeshResource() : Ref<MeshResource>();
+		bool valid = mesh.IsValid() && mesh->m_vertexCount == 24 && mesh->m_indexCount == 36
+			&& mesh->GetMaterial().IsValid() && mesh->GetMaterial()->GetDiffuseTexture().IsValid()
+			&& mesh->GetMaterial()->GetSamplerMode() == SamplerMode::POINT_CLAMP;
+		if (valid)
+		{
+			auto const* vertices = reinterpret_cast<Vertex const*>(mesh->m_vertices.data());
+			valid = vertices[0].m_uv == Vector2(5.f / 8.f, 1.f / 8.f);
+		}
+		std::filesystem::path captures = "../Temporary/CSharpResourceSample";
+		std::filesystem::create_directories(captures);
+		auto* viewport = static_cast<Viewport*>(app.GetSceneTree()->GetRoot());
+		auto capture = [&](char const* name)
+		{
+			app.RunFrame();
+			SaveRenderedFrame(g_engine->m_renderServer->ViewportGetTexture(viewport->GetViewportRID()), captures / name);
+		};
+		if (valid)
+		{
+			capture("block.ppm");
+			auto original = mesh->GetMaterial();
+			original->SetTint(Color(255, 100, 100));
+			capture("tinted.ppm");
+			auto replacement = CreateRef<MaterialResource>();
+			replacement->SetTint(Color(40, 200, 255));
+			RID rid = mesh->GetMeshRID();
+			mesh->SetMaterial(replacement);
+			capture("replacement.ppm");
+			valid = valid && rid == mesh->GetMeshRID();
+			original->SetTint(Color::White);
+			mesh->SetMaterial(original);
+		}
+		ObjectID meshID = mesh.IsValid() ? mesh->GetObjectID() : ObjectID::Invalid;
+		mesh = Ref<MeshResource>();
+		app.Shutdown();
+		bool released = ObjectDatabase::GetInstance(meshID) == nullptr;
+		g_app = nullptr;
+		std::printf("CSHARP_RESOURCE_SAMPLE geometry=%d released=%d\n", valid, released);
+		return valid && released ? 0 : 1;
+	}
+
 	if (argc == 3)
 	{
 		int count = 0;
@@ -115,6 +172,169 @@ int main(int argc, char** argv)
 	app.Startup();
 	auto* editor = EditorNode::Get();
 	auto* scripts = g_engine->m_scriptSystem;
+	{
+		std::vector<uint8_t> encodedAtlas = { 137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82, 0, 0, 0, 8, 0, 0, 0, 8, 8, 6, 0, 0, 0, 196, 15, 190, 139, 0, 0, 0, 18, 73, 68, 65, 84, 120, 156, 99, 184, 83, 33, 242, 31, 31, 102, 24, 25, 10, 0, 76, 9, 153, 193, 65, 227, 173, 68, 0, 0, 0, 0, 73, 69, 78, 68, 174, 66, 96, 130 };
+		auto image = CreateRef<Image>();
+		auto texture = CreateRef<TextureResource>();
+		texture->m_image = image;
+		bool decodedAtlas = image->LoadFromMemory(std::move(encodedAtlas));
+		check(decodedAtlas, "resource fixture decodes its own encoded atlas");
+		check(decodedAtlas && texture->InitGPUResources(), "resource fixture uploads its own atlas");
+		check(decodedAtlas && ResourceSaver::Save("res://resource-atlas.tex", texture), "resource fixture saves its own atlas");
+	}
+    std::ofstream(project / "Scripts/ResourceChecks.cs") << R"CS(
+using Ming;
+using System;
+using System.IO;
+using System.Runtime.CompilerServices;
+
+internal static class ResourceChecks
+{
+    private static MeshInstance3D holder;
+    private static WeakReference<MaterialResource> retainedMaterial;
+    private static int frames;
+    private static void Require(bool value, string message)
+    {
+        if (!value) { throw new InvalidOperationException("RESOURCE_CHECK: " + message); }
+    }
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static WeakReference<MaterialResource> ForgetMaterial(MeshResource mesh)
+    {
+        var material = new MaterialResource();
+        material.SetSamplerMode(SamplerMode.POINT_WRAP);
+
+        if (mesh != null)
+        {
+            mesh.SetMaterial(material);
+        }
+
+        return new WeakReference<MaterialResource>(material);
+    }
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static bool Alive(WeakReference<MaterialResource> weak) => weak.TryGetTarget(out _);
+
+    private static void CollectGarbage()
+    {
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        GC.Collect();
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void CheckMaterialIdentity(MeshResource mesh, WeakReference<MaterialResource> weak)
+    {
+        Require(weak.TryGetTarget(out var material) && ReferenceEquals(material, mesh.GetMaterial()),
+            "native ownership preserves the managed wrapper identity");
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void ToggleMaterial(MeshResource mesh, WeakReference<MaterialResource> weak)
+    {
+        Require(weak.TryGetTarget(out var material), "retained material wrapper is alive");
+        mesh.SetMaterial(null);
+        CollectGarbage();
+        Require(Alive(weak), "managed reference keeps wrapper alive after native ownership ends");
+        mesh.SetMaterial(material);
+        CheckMaterialIdentity(mesh, weak);
+        GC.KeepAlive(material);
+    }
+
+    private sealed class UnsupportedMaterial : MaterialResource { }
+    public static void Run()
+    {
+        frames = 0;
+        var unsignedValue = VariantUtils.CreateFrom(uint.MaxValue);
+        Require(VariantUtils.ConvertTo<uint>(in unsignedValue) == uint.MaxValue, "uint Variant round trip");
+        using var atlas = ResourceLoader.Load<TextureResource>("res://resource-atlas.tex");
+        Require(atlas != null && ReferenceEquals(atlas, ResourceLoader.Load<TextureResource>("res://resource-atlas.tex")), "load reuses live wrapper");
+        Require(ResourceLoader.Load<TextureResource>("res://missing-resource.tex") == null, "missing resource returns null");
+        bool mismatch = false;
+        try { ResourceLoader.Load<MeshResource>("res://resource-atlas.tex"); }
+        catch (InvalidCastException) { mismatch = true; }
+        Require(mismatch, "generic load checks resource type");
+        bool rejected = false;
+        try { new UnsupportedMaterial(); }
+        catch (NotSupportedException) { rejected = true; }
+        Require(rejected, "unsupported resource constructor fails before taking ownership");
+        using var tool = new SurfaceTool();
+        tool.AddIndex(uint.MaxValue);
+        tool.Clear();
+        tool.SetNormal(new Vector3(0, 0, 1));
+        tool.SetUV(new Vector2(0, 0));
+        tool.AddVertex(new Vector3(0, 0, 0));
+        tool.AddVertex(new Vector3(1, 0, 0));
+        tool.AddVertex(new Vector3(0, 1, 0));
+        tool.AddIndex(0); tool.AddIndex(1); tool.AddIndex(2);
+        using var mesh = tool.CreateMeshResource();
+        var material = new MaterialResource();
+        material.SetDiffuseTexture(atlas);
+        material.SetNormalTexture(atlas);
+        material.SetSGETexture(atlas);
+        material.SetShaderResource(null);
+        material.SetTint(new Color(200, 100, 50));
+        material.SetBlendMode(BlendMode.OPAQUE);
+        material.SetDepthMode(DepthMode.READ_WRITE_LESS_EQUAL);
+        material.SetRasterizerMode(RasterizerMode.SOLID_CULL_BACK);
+        material.SetSamplerMode(SamplerMode.POINT_CLAMP);
+        Require(material.GetDiffuseTexture() == atlas && material.GetNormalTexture() == atlas
+            && material.GetSGETexture() == atlas && material.GetShaderResource() == null
+            && material.GetTint().R == 200 && material.GetBlendMode() == BlendMode.OPAQUE
+            && material.GetDepthMode() == DepthMode.READ_WRITE_LESS_EQUAL
+            && material.GetRasterizerMode() == RasterizerMode.SOLID_CULL_BACK
+            && material.GetSamplerMode() == SamplerMode.POINT_CLAMP, "material fields round trip");
+        using (var resourceValue = VariantUtils.CreateFrom(material))
+        {
+            Require(ReferenceEquals(VariantUtils.ConvertTo<MaterialResource>(in resourceValue), material), "resource Variant round trip");
+        }
+        mesh.SetMaterial(material);
+        holder = new MeshInstance3D();
+        holder.SetMeshResource(mesh);
+        material.Dispose(); material.Dispose();
+        using (var rebuilt = mesh.GetMaterial())
+        {
+            Require(!ReferenceEquals(material, rebuilt) && rebuilt.GetTint().R == 200, "disposed wrapper rebuilds while native resource survives");
+        }
+        var unowned = ForgetMaterial(null);
+        for (int attempt = 0; attempt < 8 && Alive(unowned); ++attempt)
+        {
+            CollectGarbage();
+        }
+
+        Require(!Alive(unowned), "new wrapper without native owners is weak and collectible");
+
+        var weak = ForgetMaterial(mesh);
+        for (int attempt = 0; attempt < 3; ++attempt)
+        {
+            CollectGarbage();
+            Require(Alive(weak), "native material owner keeps wrapper alive through GC");
+            CheckMaterialIdentity(mesh, weak);
+            ToggleMaterial(mesh, weak);
+        }
+
+        mesh.SetMaterial(null);
+        for (int attempt = 0; attempt < 8 && Alive(weak); ++attempt)
+        {
+            CollectGarbage();
+        }
+
+        Require(!Alive(weak), "removing last native owner weakens wrapper and permits collection");
+        retainedMaterial = ForgetMaterial(mesh);
+    }
+    public static void Tick()
+    {
+        if (++frames != 2) { return; }
+        using var mesh = holder.GetMeshResource();
+        using var material = mesh.GetMaterial();
+        CollectGarbage();
+        Require(Alive(retainedMaterial), "retained wrapper survives GC after deferred releases drain");
+        CheckMaterialIdentity(mesh, retainedMaterial);
+        Require(material.GetSamplerMode() == SamplerMode.POINT_WRAP, "old deferred release leaves new binding usable");
+        holder.Free(); holder = null;
+        File.WriteAllText(Path.Combine(Environment.GetEnvironmentVariable("MING_WORKFLOW_PROJECT")!, "resource-checks.txt"), "PASS");
+    }
+}
+)CS";
+
 	auto* viewport = static_cast<Viewport*>(app.GetSceneTree()->GetRoot());
 	auto* window = g_engine->m_windowSystem->GetGLFWWindow();
 	glfwSetWindowFocusCallback(window, nullptr);
@@ -226,8 +446,8 @@ int main(int argc, char** argv)
 	{
 		std::ofstream output(project / "Scripts/Mover.cs");
 		output << "using Ming;\nnamespace Workflow.Sample;\npublic partial class Mover : Node3D\n{\n"
-			<< "float elapsed;\npublic override void OnReady() { NativeFuncs.Log(\"CS_READY_" << speed << "\"); }\n"
-			<< "public override void OnProcess(float deltaSeconds) { elapsed += deltaSeconds; "
+			<< "float elapsed;\npublic override void OnReady() { ResourceChecks.Run(); NativeFuncs.Log(\"CS_READY_" << speed << "\"); }\n"
+			<< "public override void OnProcess(float deltaSeconds) { ResourceChecks.Tick(); elapsed += deltaSeconds; "
 			<< "SetLocalPosition(new Vector3(6, System.MathF.Sin(elapsed) * " << speed << ", 0)); "
 			<< "System.IO.File.WriteAllText(System.IO.Path.Combine(System.Environment.GetEnvironmentVariable(\"MING_WORKFLOW_PROJECT\")!, \"progress.txt\"), \""
 			<< speed << " \" + GetLocalPosition().Y); " << extra << " }\n}\n";
@@ -471,6 +691,7 @@ int main(int argc, char** argv)
 	auto play = [&](int speed)
 	{
 		std::filesystem::remove(project / "progress.txt", ignored);
+		std::filesystem::remove(project / "resource-checks.txt", ignored);
 		editor->RequestPlay();
 		for (int i = 0; i < 300; ++i)
 		{
@@ -486,6 +707,14 @@ int main(int argc, char** argv)
 		std::ifstream(project / "progress.txt") >> progress;
 		check(app.IsGameRunning() && progress == std::to_string(speed), "Play compiles, instantiates and runs latest OnProcess");
 		check(scripts->GetScriptNativeBase("res://Scripts/Mover.cs") == "Node3D", "source generator maps namespace and subdirectory to native base");
+		for (int i = 0; i < 30 && !std::filesystem::exists(project / "resource-checks.txt"); ++i)
+		{
+			app.RunFrame();
+			std::this_thread::sleep_for(std::chrono::milliseconds(10));
+		}
+		std::string resources;
+		std::ifstream(project / "resource-checks.txt") >> resources;
+		check(resources == "PASS", "C# resources support loading, Ref returns, Dispose, strong/weak GC handles and wrapper recreation");
 		stop();
 	};
 	play(1);

@@ -63,17 +63,17 @@ public:
 
 #pragma endregion
 
-#pragma region Instance API
+#pragma region Instance3D API
 
-	RID  InstanceCreate();
-	void InstanceFree(RID instance);
+	RID  Instance3DCreate();
+	void Instance3DFree(RID instance);
 
-	void InstanceSetBase(RID instance, RID base);
-	void InstanceSetTransform(RID instance, Matrix4x4 const& transform);
-	void InstanceSetVisible(RID instance, bool visible);
-	void InstanceSetRenderPass(RID instance, RenderRequestPass pass);
-	void InstanceSetRenderPriority(RID instance, int priority);
-	void InstanceSetScenario(RID instance, RID scenario);
+	void Instance3DSetBase(RID instance, RID base);
+	void Instance3DSetTransform(RID instance, Matrix4x4 const& transform);
+	void Instance3DSetVisible(RID instance, bool visible);
+	void Instance3DSetRenderPass(RID instance, RenderRequestPass pass);
+	void Instance3DSetRenderPriority(RID instance, int priority);
+	void Instance3DSetScenario(RID instance, RID scenario);
 
 #pragma endregion
 
@@ -112,6 +112,7 @@ public:
 	RID  MeshCreate(MeshResource const& meshResource);
 	void MeshFree(RID mesh);
 	void MeshRefresh(RID mesh, MeshResource const& meshResource);
+	void MeshSetMaterial(RID mesh, Ref<MaterialResource> const& material);
 
 #pragma endregion
 
@@ -186,10 +187,10 @@ private:
 	static bool OnWindowResized(EventArgs& args);
 
 	void          PrepareViewportData(ViewportData* viewportData);
-	RenderRequest BuildInstanceRenderRequest(Instance const* instance);
+	RenderRequest BuildInstance3DRenderRequest(Instance3D const* instance);
 
 	// Fill shader, textures, tint and draw states of one request from a material.
-	// e.g. BuildInstanceRenderRequest() calls it with the mesh material or the default material
+	// e.g. BuildInstance3DRenderRequest() calls it with the mesh material or the default material
 	void ApplyMaterialToRequest(MaterialResource const& materialResource, RenderRequest& request);
 
 	// GPU buffer registrations stay private because only MeshCreate()/MeshFree() use them.
@@ -229,7 +230,7 @@ private:
 	RIDOwner<IndexBufferData>  m_indexBufferOwner;
 	RIDOwner<TextureData>      m_textureOwner;
 	RIDOwner<ScenarioData>     m_scenarioOwner;
-	RIDOwner<Instance>         m_instanceOwner;
+	RIDOwner<Instance3D>       m_instanceOwner;
 	RIDOwner<ViewportData>     m_viewportOwner;
 	RIDOwner<CameraData>       m_cameraOwner;
 };

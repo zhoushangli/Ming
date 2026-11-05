@@ -144,3 +144,8 @@ bool ResourceFormatLoader::CanLoad(VirtualPath const& virtualPath) const
 
 	return false;
 }
+
+Ref<Resource> ResourceLoader::LoadForScript(String const& path)
+{
+	return Load(VirtualPath(path.ToUtf8()));
+}

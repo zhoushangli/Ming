@@ -17,6 +17,8 @@ public:
 
 	int GetRefCount() const;
 
+	void UpdateNativeBindingGCHandle();
+
 protected:
 	static void BindMethods();
 
@@ -115,7 +117,7 @@ public:
 	bool operator!=(const Ref<T>& other) const { return reference != other.reference; }
 	bool operator==(const T* ptr) const { return reference == ptr; }
 	bool operator!=(const T* ptr) const { return reference != ptr; }
-		 operator Variant() const { return Variant(reference); }
+		 operator Variant() const { return Variant::FromRef(reference); }
 
 private:
 	void RefPointer(T* ptr)

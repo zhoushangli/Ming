@@ -94,6 +94,15 @@ App::~App()
 
 void App::Startup()
 {
+	// Initialize the UI thread's COM apartment before audio initializes its backend.
+	// e.g. Browse uses an STA file dialog even when miniaudio also uses COM.
+	HRESULT const initialized = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
+	m_comInitialized = SUCCEEDED(initialized);
+	if (!m_comInitialized)
+	{
+		WARN_PRINT(Stringf("Could not initialize the UI COM apartment (HRESULT 0x%08X).", initialized));
+	}
+
 	ClassDatabase::Startup();
 
 	RegisterAllTypes();
@@ -171,6 +180,12 @@ void App::Shutdown()
 	g_engine->Shutdown();
 
 	ClassDatabase::Shutdown();
+
+	if (m_comInitialized)
+	{
+		CoUninitialize();
+		m_comInitialized = false;
+	}
 }
 
 void App::RunMainLoop()
@@ -397,21 +412,36 @@ void App::RestartImmediately()
 
 namespace
 {
-std::filesystem::path SelectProjectFolder(HWND owner)
+std::filesystem::path SelectProjectFolder(HWND owner, std::string& error)
 {
-	HRESULT const         initialized = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
+	error.clear();
+	HRESULT const initialized = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
+	if (FAILED(initialized))
+	{
+		error = Stringf("Could not initialize the folder dialog (HRESULT 0x%08X).", initialized);
+		return {};
+	}
+
 	IFileOpenDialog*      dialog      = nullptr;
 	std::filesystem::path result;
-	if (SUCCEEDED(CoCreateInstance(CLSID_FileOpenDialog, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&dialog))))
+	HRESULT status = CoCreateInstance(CLSID_FileOpenDialog, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&dialog));
+	if (SUCCEEDED(status))
 	{
-		dialog->SetOptions(FOS_PICKFOLDERS | FOS_FORCEFILESYSTEM | FOS_PATHMUSTEXIST | FOS_NOCHANGEDIR);
-		if (SUCCEEDED(dialog->Show(owner)))
+		status = dialog->SetOptions(FOS_PICKFOLDERS | FOS_FORCEFILESYSTEM | FOS_PATHMUSTEXIST | FOS_NOCHANGEDIR);
+		if (SUCCEEDED(status))
+		{
+			status = dialog->Show(owner);
+		}
+
+		if (SUCCEEDED(status))
 		{
 			IShellItem* item = nullptr;
-			if (SUCCEEDED(dialog->GetResult(&item)))
+			status = dialog->GetResult(&item);
+			if (SUCCEEDED(status))
 			{
 				PWSTR path = nullptr;
-				if (SUCCEEDED(item->GetDisplayName(SIGDN_FILESYSPATH, &path)))
+				status = item->GetDisplayName(SIGDN_FILESYSPATH, &path);
+				if (SUCCEEDED(status))
 				{
 					result = path;
 					CoTaskMemFree(path);
@@ -421,10 +451,13 @@ std::filesystem::path SelectProjectFolder(HWND owner)
 		}
 		dialog->Release();
 	}
-	if (SUCCEEDED(initialized))
+
+	CoUninitialize();
+	if (FAILED(status) && status != HRESULT_FROM_WIN32(ERROR_CANCELLED))
 	{
-		CoUninitialize();
+		error = Stringf("Could not select a project folder (HRESULT 0x%08X).", status);
 	}
+
 	return result;
 }
 
@@ -627,11 +660,20 @@ void App::NewProject()
 			"Browse...",
 			[this]()
 			{
-				auto directory = SelectProjectFolder(static_cast<HWND>(g_engine->m_windowSystem->GetHwnd()));
+				std::string error;
+				auto directory = SelectProjectFolder(static_cast<HWND>(g_engine->m_windowSystem->GetHwnd()), error);
+
+				// Discard input collected while the native modal dialog owns the window.
+				// e.g. Its queued focus-loss event must not dismiss Create Empty Project after Browse returns.
+				g_engine->m_inputSystem->GetInputEvents();
+				g_engine->m_inputSystem->ClearAllInputStates();
+				m_createProjectError->SetText(error);
 				if (!directory.empty())
 				{
 					m_projectParent->SetText(directory.u8string());
 				}
+
+				m_projectParent->GrabFocus();
 			});
 		m_createProjectError = EditorPopupUtils::AddLabel(content, "", "EditorErrorLabel");
 		auto* actions        = EditorPopupUtils::AddActions(content);

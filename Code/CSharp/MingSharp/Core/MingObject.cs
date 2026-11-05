@@ -15,6 +15,7 @@ public class MingObject : IDisposable
     private static readonly IntPtr FreeMethodBind = NativeFuncs.GetMethodBind("Object", "Free");
 
     internal IntPtr NativePtr;
+    internal long ResourceLease;
 
     public unsafe MingObject()
     {
@@ -48,12 +49,27 @@ public class MingObject : IDisposable
         return NativeFuncs.GetConstructor(in nativeName);
     }
 
+    ~MingObject()
+    {
+        Dispose();
+    }
+
     public void Dispose()
     {
-        if (NativePtr != IntPtr.Zero)
+        NativePtr = IntPtr.Zero;
+        long lease = System.Threading.Interlocked.Exchange(ref ResourceLease, 0);
+        if (lease != 0)
         {
-            NativePtr = IntPtr.Zero;
+            ScriptManagerBridge.EnqueueResourceRelease(lease);
         }
+        GC.SuppressFinalize(this);
+    }
+
+    internal void InvalidateFromNative()
+    {
+        NativePtr = IntPtr.Zero;
+        System.Threading.Interlocked.Exchange(ref ResourceLease, 0);
+        GC.SuppressFinalize(this);
     }
 
     // Return the engine class name of this object.

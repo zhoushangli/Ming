@@ -2,6 +2,7 @@
 
 #include "MingEngine/Core/Object/Object.hpp"
 #include "MingEngine/Core/Object/Variant.hpp"
+#include "MingEngine/Core/Object/RefCounted.hpp"
 #include "MingEngine/Core/String.hpp"
 
 #include <stdexcept>
@@ -20,7 +21,11 @@ public:
 	// form an unknown pointer
 	static decltype(auto) Decode(void* ptr)
 	{
-		if constexpr (std::is_lvalue_reference_v<T> && !std::is_const_v<ReferenceType>)
+		if constexpr (std::is_enum_v<ValueType>)
+		{
+			return static_cast<ValueType>(*static_cast<int32_t const*>(ptr));
+		}
+		else if constexpr (std::is_lvalue_reference_v<T> && !std::is_const_v<ReferenceType>)
 		{
 			return *static_cast<ValueType*>(ptr);
 		}
@@ -32,7 +37,17 @@ public:
 
 	// The Encode here reference to we want to set the actual value
 	// to an unknown pointer
-	static void Encode(ValueType const& value, void* ptr) { *static_cast<ValueType*>(ptr) = value; }
+	static void Encode(ValueType const& value, void* ptr)
+	{
+		if constexpr (std::is_enum_v<ValueType>)
+		{
+			*static_cast<int32_t*>(ptr) = static_cast<int32_t>(value);
+		}
+		else
+		{
+			*static_cast<ValueType*>(ptr) = value;
+		}
+	}
 };
 
 // bool is a special case, because for different platform, the size of bool is different
@@ -45,10 +60,27 @@ struct PtrToArg<bool>
 	static void Encode(bool value, void* ptr) { *static_cast<uint8_t*>(ptr) = value ? 1 : 0; }
 };
 
+template <typename T>
+struct PtrToArg<Ref<T>>
+{
+	static Ref<T> Decode(void* ptr) { return Ref<T>(*static_cast<T* const*>(ptr)); }
+	static void Encode(Ref<T> const& value, void* ptr)
+	{
+		T* object = value.Get();
+		if (object != nullptr)
+		{
+			object->AddRef();
+		}
+		*static_cast<T**>(ptr) = object;
+	}
+};
+template <typename T> struct PtrToArg<Ref<T> const&> : PtrToArg<Ref<T>> {};
+
 class MethodBind
 {
 public:
 	virtual ~MethodBind() = default;
+	virtual bool IsStatic() const { return false; }
 
 	virtual Variant Invoke(Object* object, std::vector<Variant> const& arguments) const = 0;
 
@@ -200,6 +232,7 @@ public:
 
 public:
 	explicit GlobalMethodBind(Method method) : m_method(method) {}
+	bool IsStatic() const override { return true; }
 
 	Variant Invoke([[maybe_unused]] Object* object, std::vector<Variant> const& arguments) const override
 	{

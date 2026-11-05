@@ -224,7 +224,7 @@ void Renderer::ExecuteRenderRequest(RenderRequest const& request)
 	m_renderBackend->UpdateAndBindConstantBuffer(BuiltinConstantBufferType::Model, modelData);
 
 	// Requests always carry a shader, because the RenderServer fills the fallback at collection time.
-	// e.g. BuildInstanceRenderRequest() and ViewportSubmitRenderRequest() both guarantee it
+	// e.g. BuildInstance3DRenderRequest() and ViewportSubmitRenderRequest() both guarantee it
 	m_renderBackend->BindShader(request.m_shader);
 
 	for (unsigned int textureSlot = 0; textureSlot < request.m_textures.size(); ++textureSlot)

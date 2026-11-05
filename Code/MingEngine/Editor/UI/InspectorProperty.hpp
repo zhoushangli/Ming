@@ -13,7 +13,7 @@ class Label;
 class Button;
 class SpinBox;
 class OptionButton;
-class ColorRect;
+class ColorPickerButton;
 struct EditorUIContext;
 
 class InspectorProperty
@@ -30,6 +30,8 @@ public:
 	void                      SetEditedObject(ObjectID id) { m_editedObject = id; }
 	void                      UpdateValue(Variant const& value);
 	void                      SetRevertValue(Variant const& value);
+	void                      SetColorEditCallbacks(
+		std::function<void()> started, ValueChangedCallback preview, std::function<void(bool)> ended);
 	void                      EndEditing(LineEdit::EditEndReason reason = LineEdit::EditEndReason::Interrupted);
 	bool                      CanAssignResource(VirtualPath const& path) const;
 	bool                      AssignResource(VirtualPath const& path);
@@ -41,6 +43,7 @@ protected:
 	float          GetEditorDimension(char const* name, float fallback) const;
 	void           BuildNumeric();
 	void           BuildComponents();
+	void           BuildColor();
 	void           BuildText(bool resource = false);
 	void           BuildScript();
 	void           ShowScriptMenu();
@@ -70,7 +73,7 @@ protected:
 	LineEdit*                m_text    = nullptr;
 	Button*                  m_button  = nullptr;
 	OptionButton*            m_options = nullptr;
-	ColorRect*               m_color   = nullptr;
+	ColorPickerButton*        m_color   = nullptr;
 	std::vector<SpinBox*>    m_spins;
 	ObjectID m_editedObject = ObjectID::Invalid;
 	Button* m_resourceButton = nullptr;
@@ -78,4 +81,8 @@ protected:
 	ObjectID m_tooltipID = ObjectID::Invalid;
 	Label* m_resourceHint = nullptr;
 	bool m_dropHighlighted = false;
+	Variant                   m_colorStart;
+	std::function<void()>     m_colorStarted;
+	ValueChangedCallback      m_colorPreview;
+	std::function<void(bool)> m_colorEnded;
 };

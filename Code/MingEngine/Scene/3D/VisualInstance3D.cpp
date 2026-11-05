@@ -20,9 +20,9 @@ void VisualInstance3D::OnNotification(int notification)
 		// 2) Join the Viewport Scenario so the RenderServer can draw this node.
 		if (m_data.m_viewport != nullptr)
 		{
-			server->InstanceSetScenario(m_instanceRID, m_data.m_viewport->GetScenarioRID());
-			server->InstanceSetTransform(m_instanceRID, GetWorldTransform());
-			server->InstanceSetVisible(m_instanceRID, m_isVisible);
+			server->Instance3DSetScenario(m_instanceRID, m_data.m_viewport->GetScenarioRID());
+			server->Instance3DSetTransform(m_instanceRID, GetWorldTransform());
+			server->Instance3DSetVisible(m_instanceRID, m_isVisible);
 		}
 
 		break;
@@ -30,7 +30,7 @@ void VisualInstance3D::OnNotification(int notification)
 
 	case Notification_ExitTree:
 	{
-		server->InstanceSetScenario(m_instanceRID, RID::Invalid);
+		server->Instance3DSetScenario(m_instanceRID, RID::Invalid);
 		break;
 	}
 
@@ -38,7 +38,7 @@ void VisualInstance3D::OnNotification(int notification)
 	{
 		if (m_instanceRID.IsValid())
 		{
-			server->InstanceSetTransform(m_instanceRID, GetWorldTransform());
+			server->Instance3DSetTransform(m_instanceRID, GetWorldTransform());
 		}
 
 		break;
@@ -48,14 +48,14 @@ void VisualInstance3D::OnNotification(int notification)
 
 VisualInstance3D::VisualInstance3D()
 {
-	m_instanceRID = g_engine->m_renderServer->InstanceCreate();
+	m_instanceRID = g_engine->m_renderServer->Instance3DCreate();
 }
 
 VisualInstance3D::~VisualInstance3D()
 {
 	if (m_instanceRID.IsValid())
 	{
-		g_engine->m_renderServer->InstanceFree(m_instanceRID);
+		g_engine->m_renderServer->Instance3DFree(m_instanceRID);
 		m_instanceRID = RID::Invalid;
 	}
 }
@@ -67,7 +67,7 @@ void VisualInstance3D::SetVisible(bool visible)
 	RenderServer* server = g_engine != nullptr ? g_engine->m_renderServer : nullptr;
 	if (server != nullptr && m_instanceRID.IsValid())
 	{
-		server->InstanceSetVisible(m_instanceRID, visible);
+		server->Instance3DSetVisible(m_instanceRID, visible);
 	}
 }
 

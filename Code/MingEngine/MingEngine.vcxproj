@@ -250,6 +250,8 @@
     <ClCompile Include="Scene\Core\RaycastSpace3D.cpp" />
     <ClCompile Include="Scene\Core\Window.cpp" />
     <ClCompile Include="Scene\GUI\ColorRect.cpp" />
+    <ClCompile Include="Scene\GUI\ColorPicker.cpp" />
+    <ClCompile Include="Scene\GUI\ColorPickerButton.cpp" />
     <ClCompile Include="Scene\GUI\Container.cpp" />
     <ClCompile Include="Scene\GUI\BoxContainer.cpp" />
     <ClCompile Include="Scene\GUI\Control.cpp" />
@@ -454,6 +456,8 @@
     <ClInclude Include="Scene\Core\RaycastSpace3D.hpp" />
     <ClInclude Include="Scene\Core\Window.hpp" />
     <ClInclude Include="Scene\GUI\ColorRect.hpp" />
+    <ClInclude Include="Scene\GUI\ColorPicker.hpp" />
+    <ClInclude Include="Scene\GUI\ColorPickerButton.hpp" />
     <ClInclude Include="Scene\GUI\Container.hpp" />
     <ClInclude Include="Scene\GUI\BoxContainer.hpp" />
     <ClInclude Include="Scene\GUI\Control.hpp" />

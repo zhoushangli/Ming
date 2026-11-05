@@ -230,7 +230,13 @@ void SpinBox::SetError(std::string const& error)
 {
 	m_error = error;
 	m_errorLabel->SetText(error);
-	m_errorLabel->SetVisible(!error.empty());
+	m_errorLabel->SetVisible(m_showErrors && !error.empty());
+}
+
+void SpinBox::SetErrorMessagesVisible(bool visible)
+{
+	m_showErrors = visible;
+	m_errorLabel->SetVisible(visible && !m_error.empty());
 }
 
 bool SpinBox::Validate(String const& text, Variant& value)

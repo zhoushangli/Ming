@@ -182,16 +182,19 @@
         <member name="T:Ming.MarginContainer">
             <summary>Adds space between its edges and its child controls.</summary>
         </member>
+        <member name="T:Ming.MaterialResource">
+            <summary>Stores shader, textures, tint and draw states shared by mesh instances.</summary>
+        </member>
         <member name="T:Ming.MenuBar">
             <summary>A row of menus that can open popup lists.</summary>
         </member>
         <member name="T:Ming.MeshInstance3D">
             <summary>A 3D node that draws a mesh resource.</summary>
-            <remarks>The mesh assignment methods are not exposed to C# yet. The node still inherits the Node3D transform methods.</remarks>
+            <remarks>Assigns a shared MeshResource and keeps it alive while the node uses it.</remarks>
         </member>
         <member name="T:Ming.MeshResource">
             <summary>Holds mesh vertices and indices used for rendering.</summary>
-            <remarks>Mesh data editing methods are not exposed to C# yet.</remarks>
+            <remarks>Owns mesh geometry and one default MaterialResource. SurfaceTool builds its geometry.</remarks>
         </member>
         <member name="T:Ming.MeshResourceLoader">
             <summary>Engine loader for mesh resources from .mesh files.</summary>
@@ -509,6 +512,9 @@
         <member name="T:Ming.SubViewportContainer">
             <summary>Displays a child SubViewport inside the interface.</summary>
             <remarks>Maps pointer positions to the viewport and forwards input to it.</remarks>
+        </member>
+        <member name="T:Ming.SurfaceTool">
+            <summary>Builds procedural triangle geometry and returns a MeshResource.</summary>
         </member>
         <member name="T:Ming.SystemBase">
             <summary>Base class for engine systems with startup and frame steps.</summary>

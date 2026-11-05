@@ -26,6 +26,8 @@
 #include "MingEngine/Scene/GUI/SpinBox.hpp"
 #include "MingEngine/Scene/GUI/ScrollContainer.hpp"
 #include "MingEngine/Scene/GUI/ColorRect.hpp"
+#include "MingEngine/Scene/3D/Light3D.hpp"
+#include "ColorPickerVerification.hpp"
 #include "MingEngine/Scene/GUI/OptionButton.hpp"
 #include "MingEngine/Editor/UI/InspectorPropertyFloat.hpp"
 #include "MingEngine/Scene/3D/Camera3D.hpp"
@@ -1368,6 +1370,92 @@ int main(int argc, char** argv)
 				&& EditorIcons::GetIconTexture("Search")->m_samplerMode == SamplerMode::BILINEAR_CLAMP,
 			"editor icons keep 32px sources with bilinear sampling");
 
+		auto* colorLight = MemNew<OmniLight3D>();
+		colorLight->SetName("ColorPickerPreview");
+		Color const originalColor(200, 120, 60, 128);
+		colorLight->SetColor(originalColor);
+		scene->AddNode(colorLight);
+		editor->GetSelection().SetSelected(colorLight->GetObjectID());
+		frame();
+		auto* colorButton = FindUIControl<ColorPickerButton>(&inspector);
+		check(colorButton != nullptr, "Inspector uses a clickable color field for Light3D");
+		if (colorButton != nullptr)
+		{
+			check(
+				editor->SaveSceneAs(VirtualPath("res://Scenes/ColorPickerVerification.tscn")),
+				"color workflow saves its own baseline scene");
+			editor->GetUndoRedo().ClearHistory(scene->GetObjectID());
+			click(colorButton);
+			colorButton->ClosePicker(true);
+			check(
+				!editor->IsSceneDirty() && !editor->GetUndoRedo().Undo(scene->GetObjectID()),
+				"unchanged picker session creates neither dirty state nor undo action");
+			click(colorButton);
+			frame();
+			auto* picker = colorButton->GetPicker();
+			ColorPickerVerification::EnterHex(root, picker, "#12345678");
+			frame();
+			check(
+				colorLight->GetColor() == Color(18, 52, 86, 120) && !editor->IsSceneDirty(),
+				"color drag previews getter value without dirtying scene");
+			check(!editor->GetUndoRedo().Undo(scene->GetObjectID()), "color preview does not add undo actions");
+			ColorPickerVerification::EnterHex(root, picker, "#00000000");
+			frame();
+			float const checker = static_cast<float>(picker->GetThemeConstant("checker_size", "ColorPicker"));
+			AABB2 const oldPreview = picker->GetOldColorRect();
+			Vector2 const sample = picker->GetGlobalPosition() + Vector2(oldPreview.m_maxs.x + checker * 0.5f, oldPreview.m_mins.y + checker * 0.5f);
+			GPUTexture* output = engine.m_renderServer->ViewportGetTexture(root->GetViewportRID());
+			check(ReadPixel(output, static_cast<unsigned>(sample.x), static_cast<unsigned>(sample.y)) == picker->GetThemeColor("checker_light", "ColorPicker")
+				&& ReadPixel(output, static_cast<unsigned>(sample.x + checker), static_cast<unsigned>(sample.y)) == picker->GetThemeColor("checker_dark", "ColorPicker"),
+				"transparent preview renders the scaled checker background");
+			ColorPickerVerification::EnterHex(root, picker, "#98765432");
+			frame();
+			SaveRenderedFrame(
+				engine.m_renderServer->ViewportGetTexture(root->GetViewportRID()),
+				captures / "inspector-color-picker.ppm");
+			colorButton->ClosePicker(true);
+			check(
+				editor->IsSceneDirty() && colorLight->GetColor() == Color(152, 118, 84, 50),
+				"closing color picker commits actual value");
+			check(
+				editor->GetUndoRedo().Undo(scene->GetObjectID()) && colorLight->GetColor() == originalColor,
+				"one undo restores color before full picker session");
+			check(!editor->GetUndoRedo().Undo(scene->GetObjectID()), "multiple previews create only one undo action");
+			check(
+				editor->GetUndoRedo().Redo(scene->GetObjectID()) && colorLight->GetColor() == Color(152, 118, 84, 50),
+				"redo restores final color");
+			frame();
+			colorButton->OpenPicker();
+			ColorPickerVerification::EnterHex(root, picker, "#ffffffff");
+			colorLight->SetColor(Color(6, 7, 8, 9));
+			frame();
+			check(
+				!colorButton->IsPickerOpen() && colorLight->GetColor() == Color(6, 7, 8, 9),
+				"external property change closes color session without overwriting new value");
+			colorButton->OpenPicker();
+			ColorPickerVerification::EnterHex(root, picker, "#ffffffff");
+			key(GLFW_KEY_ESCAPE);
+			check(colorLight->GetColor() == Color(6, 7, 8, 9), "Escape restores original property through setter");
+			colorButton->OpenPicker();
+			ColorPickerVerification::EnterHex(root, picker, "#10203040");
+			editor->GetSelection().SetSelected(camera->GetObjectID());
+			frame();
+			check(
+				root->GetGuiPopup() == nullptr && colorLight->GetColor() == Color(6, 7, 8, 9),
+				"selection switch rolls back color preview and closes popup");
+			editor->GetSelection().SetSelected(colorLight->GetObjectID());
+			frame();
+			colorButton = FindUIControl<ColorPickerButton>(&inspector);
+			colorButton->OpenPicker();
+			ColorPickerVerification::EnterHex(root, colorButton->GetPicker(), "#10203040");
+			colorLight->QueueFree();
+			frame();
+			check(root->GetGuiPopup() == nullptr, "deleting selected color target closes popup safely");
+		}
+
+		editor->GetSelection().SetSelected(camera->GetObjectID());
+		frame();
+
 		if (!preview)
 		{
 			tree.ClearScene();
@@ -1412,7 +1500,11 @@ int main(int argc, char** argv)
 			editor->GetEditorCamera()->SetLocalPosition(Vector3(0.f, 0.f, 3.f));
 			editor->GetEditorCamera()->SetLocalOrientation(EulerAngles(0.f, 20.f, 0.f));
 			editor->GetEditorCamera()->GetCamera()->SetCurrent();
-			editor->GetSelection().SetSelected(previewTarget->GetObjectID());
+			auto* previewLight = MemNew<OmniLight3D>();
+			previewLight->SetName("ColorPickerPreview");
+			previewLight->SetColor(Color(211, 173, 114, 180));
+			scene->AddNode(previewLight);
+			editor->GetSelection().SetSelected(previewLight->GetObjectID());
 			auto* window = engine.m_windowSystem->GetGLFWWindow();
 			glfwSetKeyCallback(window, keyCallback);
 			glfwSetMouseButtonCallback(window, mouseButtonCallback);

@@ -25,11 +25,13 @@ public:
 	bool CopyFrom(Resource&& other) override;
 
 	void InitGPUResources();
+	void SetMaterial(Ref<MaterialResource> const& material);
+	Ref<MaterialResource> GetMaterial() const { return m_materialResource; }
 
 	RID GetMeshRID() const { return m_meshRID; }
 
 protected:
-	static void BindMethods() {}
+	static void BindMethods();
 
 public:
 	std::string          m_vertexFormat;

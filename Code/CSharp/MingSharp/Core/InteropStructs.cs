@@ -24,6 +24,23 @@ public static class ming_bool_extensions
     }
 }
 
+[StructLayout(LayoutKind.Sequential)]
+internal ref struct ming_ref
+{
+    internal IntPtr Reference;
+
+    public void Dispose()
+    {
+        IntPtr pointer = Reference;
+        Reference = IntPtr.Zero;
+
+        if (pointer != IntPtr.Zero)
+        {
+            NativeFuncs.ReleaseRef(pointer);
+        }
+    }
+}
+
 // Pack = 8 will align the 16 byte payload of ming_variant to 8 bytes
 // We use ref here to prevent ming_variant hold by struct or class for long term usage
 // Because normally it is passing as a temporary value
@@ -35,6 +52,7 @@ public unsafe ref struct ming_variant
     {
         [FieldOffset(0)] public ming_bool Bool;
         [FieldOffset(0)] public int Int;
+        [FieldOffset(0)] public uint UInt32;
         [FieldOffset(0)] public float Float;
         [FieldOffset(0)] public Color Color;
         [FieldOffset(0)] public Vector2 Vector2;
@@ -62,6 +80,7 @@ public unsafe ref struct ming_variant
 #pragma warning restore CS8981
     {
         private int _type;
+        private uint _ownsRef;
 
         private ming_variant_payload _payload;
 
@@ -70,6 +89,7 @@ public unsafe ref struct ming_variant
             return new movable
             {
                 _type = value._type,
+                _ownsRef = value._ownsRef,
                 _payload = value._payload
             };
         }
@@ -79,12 +99,14 @@ public unsafe ref struct ming_variant
             return new ming_variant
             {
                 _type = value._type,
+                _ownsRef = value._ownsRef,
                 _payload = value._payload
             };
         }
     }
 
     private int _type;
+    private uint _ownsRef;
     private ming_variant_payload _payload;
 
     public Variant.Type Type
@@ -109,6 +131,17 @@ public unsafe ref struct ming_variant
         readonly get => _payload.Int;
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         set => _payload.Int = value;
+    }
+
+    public void Dispose()
+    {
+        NativeFuncs.DestroyVariant(ref this);
+    }
+
+    public uint UInt32
+    {
+        readonly get => _payload.UInt32;
+        set => _payload.UInt32 = value;
     }
 
     public float Float

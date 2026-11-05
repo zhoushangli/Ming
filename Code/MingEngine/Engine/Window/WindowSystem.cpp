@@ -9,6 +9,7 @@
 #include "ThirdParty/GLFW/glfw3.h"
 #include "ThirdParty/GLFW/glfw3native.h"
 #include <dwmapi.h>
+#include <cmath>
 
 #pragma comment(lib, "ThirdParty/GLFW/glfw3.lib")
 #pragma comment(lib, "dwmapi.lib")
@@ -188,9 +189,11 @@ void WindowSystem::Shutdown()
 	glfwDestroyCursor(m_resizeHorizontalCursor);
 	glfwDestroyCursor(m_resizeVerticalCursor);
 	glfwDestroyCursor(m_textCursor);
+	glfwDestroyCursor(m_crosshairCursor);
 	m_resizeHorizontalCursor = nullptr;
 	m_resizeVerticalCursor   = nullptr;
 	m_textCursor             = nullptr;
+	m_crosshairCursor        = nullptr;
 
 	if (m_glfwWindow != nullptr)
 	{
@@ -241,13 +244,17 @@ void WindowSystem::SetCursorShape(CursorShape shape)
 		GLFWcursor*& cached =
 			shape == CursorShape::IBeam
 				? m_textCursor
-				: (shape == CursorShape::ResizeHorizontal ? m_resizeHorizontalCursor : m_resizeVerticalCursor);
+				: (shape == CursorShape::Crosshair
+					   ? m_crosshairCursor
+					   : (shape == CursorShape::ResizeHorizontal ? m_resizeHorizontalCursor : m_resizeVerticalCursor));
 		if (cached == nullptr)
 		{
 			int const nativeShape =
 				shape == CursorShape::IBeam
 					? GLFW_IBEAM_CURSOR
-					: (shape == CursorShape::ResizeHorizontal ? GLFW_HRESIZE_CURSOR : GLFW_VRESIZE_CURSOR);
+					: (shape == CursorShape::Crosshair
+						   ? GLFW_CROSSHAIR_CURSOR
+						   : (shape == CursorShape::ResizeHorizontal ? GLFW_HRESIZE_CURSOR : GLFW_VRESIZE_CURSOR));
 			cached = glfwCreateStandardCursor(nativeShape);
 		}
 
@@ -377,4 +384,52 @@ IntVec2 WindowSystem::GetClientDimensions() const
 	int height = 0;
 	glfwGetFramebufferSize(m_glfwWindow, &width, &height);
 	return IntVec2(width, height);
+}
+
+bool WindowSystem::TryGetScreenColor(Vector2 clientPosition, Color& outColor) const
+{
+	if (m_glfwWindow == nullptr || m_windowHandle == nullptr || !std::isfinite(clientPosition.x)
+		|| !std::isfinite(clientPosition.y))
+	{
+		return false;
+	}
+
+	int width  = 0;
+	int height = 0;
+	glfwGetWindowSize(m_glfwWindow, &width, &height);
+	if (width <= 0 || height <= 0 || clientPosition.x < 0.f || clientPosition.y < 0.f || clientPosition.x >= width
+		|| clientPosition.y >= height)
+	{
+		return false;
+	}
+
+	HWND const window = static_cast<HWND>(m_windowHandle);
+	RECT       client = {};
+	if (!GetClientRect(window, &client))
+	{
+		return false;
+	}
+
+	POINT position = { static_cast<LONG>(std::floor(clientPosition.x * (client.right - client.left) / width)),
+					   static_cast<LONG>(std::floor(clientPosition.y * (client.bottom - client.top) / height)) };
+	if (!ClientToScreen(window, &position) || !LogicalToPhysicalPointForPerMonitorDPI(window, &position))
+	{
+		return false;
+	}
+
+	HDC const dc = GetDC(nullptr);
+	if (dc == nullptr)
+	{
+		return false;
+	}
+
+	COLORREF const pixel = GetPixel(dc, position.x, position.y);
+	ReleaseDC(nullptr, dc);
+	if (pixel == CLR_INVALID)
+	{
+		return false;
+	}
+
+	outColor = Color(GetRValue(pixel), GetGValue(pixel), GetBValue(pixel), 255);
+	return true;
 }

@@ -21,6 +21,17 @@ public static partial class VariantUtils
             return (T)(object)variant.Bool.ToBool();
         }
 
+        if (typeof(T) == typeof(uint))
+        {
+            GuaranteeTag(in variant, Variant.Type.UInt32);
+            return (T)(object)variant.UInt32;
+        }
+        if (typeof(T).IsEnum)
+        {
+            GuaranteeTag(in variant, Variant.Type.Int);
+            return (T)Enum.ToObject(typeof(T), variant.Int);
+        }
+
         if (typeof(T) == typeof(int))
         {
             GuaranteeTag(in variant, Variant.Type.Int);
@@ -132,6 +143,19 @@ public static partial class VariantUtils
             return variant;
         }
 
+        if (typeof(T) == typeof(uint))
+        {
+            variant.Type = Variant.Type.UInt32;
+            variant.UInt32 = (uint)(object)value;
+            return variant;
+        }
+        if (typeof(T).IsEnum)
+        {
+            variant.Type = Variant.Type.Int;
+            variant.Int = Convert.ToInt32(value);
+            return variant;
+        }
+
         if (typeof(T) == typeof(int))
         {
             variant.Type = Variant.Type.Int;
@@ -211,12 +235,9 @@ public static partial class VariantUtils
                 $"Variant cannot store {typeof(T).Name} yet, the owned payload needs a native allocation callback.");
         }
 
-        // TODO: an object pointer has to keep the wrapped object alive, which has no rule yet.
-        // e.g. CreateFrom(node) needs the ownership contract for object pointers crossing the boundary.
         if (typeof(MingObject).IsAssignableFrom(typeof(T)))
         {
-            throw new NotSupportedException(
-                $"Variant cannot store {typeof(T).FullName} yet, the object pointer ownership is not defined.");
+            return NativeFuncs.CreateObjectVariant(MingObject.GetPtr(value as MingObject));
         }
 
         throw new NotSupportedException($"Variant cannot be created from {typeof(T).FullName}.");
