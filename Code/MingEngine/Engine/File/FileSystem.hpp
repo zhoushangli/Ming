@@ -2,6 +2,7 @@
 
 #include "MingEngine/Engine/Application/SystemBase.hpp"
 #include "MingEngine/Engine/File/VirtualPath.hpp"
+#include "MingEngine/Core/String.hpp"
 
 #include <filesystem>
 #include <memory>
@@ -96,6 +97,7 @@ public:
 		std::string&       outError) const;
 
 	std::filesystem::path const& GetResourceRoot() const;
+	String                       GetResourceRootPath() const;
 	void                         ScanResourceTree();
 	bool                         HasResourceTree() const;
 	FileEntry const*             GetResourceRootEntry() const;

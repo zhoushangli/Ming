@@ -157,6 +157,7 @@ public:
 
 	static void Startup();
 	static void Shutdown();
+	static void ClearGlobalObjects();
 
 	static Object*                       CreateInstance(std::string const& className);
 	static ConstructorFunc               GetConstructor(std::string const& className);

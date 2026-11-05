@@ -134,6 +134,11 @@ ConstructorFunc CORECLR_DELEGATE_CALLTYPE GetConstructor(String const* name)
 	return ClassDatabase::GetConstructor(name->ToUtf8());
 }
 
+Object* CORECLR_DELEGATE_CALLTYPE GetGlobalObject(String const* name)
+{
+	return name != nullptr ? ClassDatabase::GetGlobalObject(name->ToUtf8()) : nullptr;
+}
+
 // Transfer a newly allocated class name to the caller.
 // e.g. GetObjectClassName(owner, &name) leaves name owning its UTF-32 buffer.
 void CORECLR_DELEGATE_CALLTYPE GetObjectClassName(void* objectPtr, String* outName)
@@ -259,6 +264,8 @@ void ScriptSystem::Shutdown()
 	{
 		m_managedCallbacks.m_disposeResourceBindings();
 	}
+
+	ClassDatabase::ClearGlobalObjects();
 
 	// 2) Release the managed entry points
 	m_isInitialized = false;
@@ -483,6 +490,7 @@ bool ScriptSystem::InitializeDotNetRuntime()
 		&DetachBinding,
 		&CreateObjectVariant,
 		&DestroyVariant,
+		&GetGlobalObject,
 	};
 
 	int32_t const initResult = initialize(

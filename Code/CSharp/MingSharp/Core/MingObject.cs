@@ -79,6 +79,17 @@ public class MingObject : IDisposable
         return NativeFuncs.GetClassName(GetPtr(this));
     }
 
+    public static T GetGlobalObject<T>(string name) where T : MingObject
+    {
+        MingObject instance = InteropUtils.UnmanagedGetManaged(NativeFuncs.GetGlobalObject(name));
+        if (instance == null)
+        {
+            throw new InvalidOperationException("Global object is unavailable: " + name);
+        }
+
+        return instance as T ?? throw new InvalidCastException("Global object has a different type: " + name);
+    }
+
     internal unsafe void ConstructAndInitialize(delegate* unmanaged<IntPtr> nativeCtor, Type nativeType)
     {
         Type managedType = GetType();

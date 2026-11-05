@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<class name="FileSystem">
+  <brief_description>Resolves files belonging to the active project.</brief_description>
+  <methods>
+    <method name="GetResourceRootPath">
+      <description>Returns the absolute physical directory corresponding to res://. Does not depend on the process working directory.</description>
+      <returns>The active project's resource root.</returns>
+    </method>
+  </methods>
+</class>

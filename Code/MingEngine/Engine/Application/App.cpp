@@ -206,16 +206,18 @@ void App::Update(float deltaSeconds)
 		return;
 	}
 
-	GLFWwindow* window   = g_engine->m_windowSystem->GetGLFWWindow();
-	bool const  hasFocus = window != nullptr && glfwGetWindowAttrib(window, GLFW_FOCUSED);
+	bool const hasFocus = g_engine->m_inputSystem->IsWindowFocused();
 
 	if (!hasFocus)
 	{
-		g_engine->m_inputSystem->SetCursorMode(CursorMode::POINTER);
-		if (!hasFocus)
+		// Preserve the game's requested mode while GLFW temporarily releases native capture.
+		// e.g. FPS capture resumes on focus gain without a second request from the game script.
+		if (m_runConfig.mode != MingRunMode::Game)
 		{
-			g_engine->m_inputSystem->ClearCursorDelta();
+			g_engine->m_inputSystem->SetCursorMode(CursorMode::POINTER);
 		}
+
+		g_engine->m_inputSystem->ClearCursorDelta();
 	}
 
 	float const sceneDeltaSeconds = m_clock != nullptr ? static_cast<float>(m_clock->GetDeltaSeconds()) : deltaSeconds;

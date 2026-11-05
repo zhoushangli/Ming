@@ -278,6 +278,7 @@ Ref<MeshResource> SurfaceTool::CreateMeshResource() const
 
 void SurfaceTool::BindMethods()
 {
+	ClassDatabase::BindMethod("SetColor", &SurfaceTool::SetColor, { "color" });
 	ClassDatabase::BindMethod("SetNormal", &SurfaceTool::SetNormal, { "normal" });
 	ClassDatabase::BindMethod("SetUV", &SurfaceTool::SetUV, { "uv" });
 	ClassDatabase::BindMethod("AddVertex", &SurfaceTool::AddVertex, { "position" });

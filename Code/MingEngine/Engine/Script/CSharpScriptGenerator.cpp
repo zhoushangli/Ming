@@ -25,18 +25,18 @@ public partial class {CLASS_NAME} : {PARENT_CLASS_NAME}
 	[DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private unsafe static readonly delegate* unmanaged<IntPtr> NativeCtor = GetConstrcutor(NativeName);
 
-{METHOD_BINDINGS}	public unsafe {CLASS_NAME}() : base(false)
+{METHOD_BINDINGS}	{CONSTRUCTOR_ACCESS} unsafe {CLASS_NAME}() : base(false)
     {
         ConstructAndInitialize(NativeCtor, CachedType);
     }
 
-    public unsafe {CLASS_NAME}(nint nativePtr) : base(false)
+    internal unsafe {CLASS_NAME}(nint nativePtr) : base(false)
     {
         NativePtr = nativePtr;
         ConstructAndInitialize(NativeCtor, CachedType);
     }
 
-    public unsafe {CLASS_NAME}(bool initialize) : base(initialize)
+    protected internal unsafe {CLASS_NAME}(bool initialize) : base(initialize)
     {
     }
 
@@ -832,6 +832,7 @@ bool GenerateClassBindings(
 		}
 
 		std::string       classSource = ClassTemplate;
+		ReplaceAll(classSource, "{CONSTRUCTOR_ACCESS}", classInfo->m_creator != nullptr ? "public" : "internal");
 		ReplaceAll(classSource, "public partial class", GetDocumentation(documentation, classInfo->m_className) + "public partial class");
 		std::string const parentClassName =
 			classInfo->m_parentClassName == "Object" ? "MingObject" : classInfo->m_parentClassName;

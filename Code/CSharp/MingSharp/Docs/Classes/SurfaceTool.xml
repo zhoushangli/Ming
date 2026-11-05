@@ -1,4 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <class name="SurfaceTool">
   <brief_description>Builds procedural triangle geometry and returns a MeshResource.</brief_description>
+  <methods>
+    <method name="SetColor">
+      <description>Sets the color copied into subsequently added vertices.</description>
+      <param name="color">The vertex color, multiplied by texture and material tint.</param>
+    </method>
+  </methods>
 </class>

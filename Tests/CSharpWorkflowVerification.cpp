@@ -34,6 +34,7 @@
 #include <shellapi.h>
 #undef GetClassName
 #include "RenderReadback.hpp"
+#include "SimpleMinerVerification.hpp"
 
 template <typename T, typename Predicate>
 T* FindScriptControl(Node* root, Predicate predicate)
@@ -61,11 +62,38 @@ T* FindScriptControl(Node* root, Predicate predicate)
 
 int main(int argc, char** argv)
 {
+	if (argc == 3 && std::string(argv[1]) == "--simpleminer-editor")
+	{
+		return VerifySimpleMinerEditorStop(std::filesystem::absolute(argv[2]));
+	}
+
+	if (argc == 3 && std::string(argv[1]) == "--simpleminer")
+	{
+		return VerifySimpleMinerRuntime(std::filesystem::absolute(argv[2]));
+	}
+
 	if (argc == 3 && std::string(argv[1]) == "--resource-sample")
 	{
 		MingRunConfig config;
 		config.mode = MingRunMode::Game;
-		config.projectPath = std::filesystem::absolute(argv[2]);
+		std::filesystem::path const source = std::filesystem::absolute(argv[2]);
+		std::filesystem::path const fixture = source / ".ming/Verification/BlockSample";
+		for (auto const& file : { "Game.csproj", "project.ming", "Scripts/Block.cs", "Textures/BlockTiles.png" })
+		{
+			std::filesystem::create_directories((fixture / file).parent_path());
+			std::filesystem::copy_file(source / file, fixture / file, std::filesystem::copy_options::overwrite_existing);
+		}
+
+		std::filesystem::create_directories(fixture / "Scenes");
+		std::filesystem::copy_file(source / "Scenes/BlockExample.tscn", fixture / "Scenes/Main.tscn", std::filesystem::copy_options::overwrite_existing);
+		std::filesystem::create_directories(fixture / ".ming/dotnet/bin/Debug");
+		for (auto const& file : { "Game.dll", "Game.deps.json" })
+		{
+			std::filesystem::copy_file(source / ".ming/dotnet/bin/Debug" / file,
+				fixture / ".ming/dotnet/bin/Debug" / file, std::filesystem::copy_options::overwrite_existing);
+		}
+
+		config.projectPath = fixture;
 		App app(config);
 		g_app = &app;
 		app.Startup();
@@ -243,6 +271,11 @@ internal static class ResourceChecks
     public static void Run()
     {
         frames = 0;
+        var input = InputSystem.GetInput();
+        Require(ReferenceEquals(input, MingObject.GetGlobalObject<InputSystem>("InputSystem")), "global input wrapper identity");
+        Require(typeof(InputSystem).GetConstructors().Length == 0, "engine input is not publicly constructible");
+        Require(!input.IsKeyDown(-1) && !input.WasKeyJustPressed(-1), "global input instance invokes registered methods");
+        Require(Path.IsPathFullyQualified(MingObject.GetGlobalObject<Ming.FileSystem>("FileSystem").GetResourceRootPath()), "project path is absolute");
         var unsignedValue = VariantUtils.CreateFrom(uint.MaxValue);
         Require(VariantUtils.ConvertTo<uint>(in unsignedValue) == uint.MaxValue, "uint Variant round trip");
         using var atlas = ResourceLoader.Load<TextureResource>("res://resource-atlas.tex");
@@ -259,6 +292,7 @@ internal static class ResourceChecks
         using var tool = new SurfaceTool();
         tool.AddIndex(uint.MaxValue);
         tool.Clear();
+        tool.SetColor(new Color(120, 140, 160));
         tool.SetNormal(new Vector3(0, 0, 1));
         tool.SetUV(new Vector2(0, 0));
         tool.AddVertex(new Vector3(0, 0, 0));

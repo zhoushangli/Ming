@@ -2,6 +2,7 @@
 
 #include "MingEngine/Core/Object/ResourceImporter.hpp"
 #include "MingEngine/Core/Object/ResourceLoader.hpp"
+#include "MingEngine/Core/Object/ClassDatabase.hpp"
 
 #include <algorithm>
 #include <cctype>
@@ -200,6 +201,12 @@ FileSystem::FileSystem(FileSystemConfig const& config) : m_resourceRoot(config.m
 
 void FileSystem::BindMethods()
 {
+	ClassDatabase::BindMethod("GetResourceRootPath", &FileSystem::GetResourceRootPath, {});
+}
+
+String FileSystem::GetResourceRootPath() const
+{
+	return String(std::filesystem::absolute(m_resourceRoot).lexically_normal().u8string());
 }
 
 void FileSystem::Startup()

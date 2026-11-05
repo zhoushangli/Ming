@@ -75,6 +75,11 @@ public:
 	// e.g. Two motions of (2, 1) and (3, -1) produce a frame delta of (5, 0).
 	IntVec2 GetCursorClientDelta() const;
 
+	// Return this frame's accumulated floating-point mouse motion without consuming it.
+	// e.g. Two motions of (0.25, 0) return (0.5, 0) on every query this frame.
+	Vector2 GetMouseDelta() const;
+	bool    IsWindowFocused() const { return m_windowFocused; }
+
 	// Returns the cursor position, in pixels relative to the client region.
 	IntVec2 GetCursorClientPosition() const;
 

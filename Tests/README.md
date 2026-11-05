@@ -132,6 +132,26 @@ After the current Debug build and workflow test executable build, run the actual
 ../Temporary/CSharpWorkflowVerification/CSharpWorkflowVerification.exe --resource-sample C:/Work/Ming/Project/SimpleMiner
 ```
 
-This mode validates the actual script's 24 vertices, 36 indices, atlas tile UV and POINT_CLAMP,
+This mode prepares an independent fixture from `Scripts/Block.cs`, `Scenes/BlockExample.tscn`
+and the project's current compiled assembly. It validates 24 vertices, 36 indices, atlas tile UV and POINT_CLAMP,
 captures the default, tinted and replaced material, and checks mesh destruction at shutdown.
 Renderer PPM captures are written under `Temporary/CSharpResourceSample`; they are separate from desktop interaction evidence.
+
+## SimpleMiner migration
+
+After building Debug and the current CSharpWorkflowVerification executable, run:
+
+```powershell
+powershell -NoProfile -File Tests/RunSimpleMinerVerification.ps1 -SkipBuild -ProjectPath C:/Work/Ming/Project/SimpleMiner
+```
+
+The project's independent .NET checks cover generation, cross-chunk faces, frame count limits and complete GCHK/RLE saves.
+The runner creates its own runtime project, injects managed assertions, builds it, checks the editor's actual Play/Stop save path,
+and starts two fresh game processes to check persistence across runs.
+It verifies global system identity, normal input bindings, fractional mouse events, camera movement, mesh colors,
+an editable chunk becoming empty, save-on-exit and reload, and release of mesh registrations and global wrappers.
+Each runtime prints measured frame durations and exports a terrain PPM under its fixture's `.ming/Verification` directory.
+These scripted events and renderer captures are separate from real desktop mouse/keyboard acceptance.
+
+Focus checks use processed focus events: the game retains its requested FPS cursor mode across loss/recovery,
+while the editor returns to pointer mode on focus loss. Subsequent fractional mouse motion must still move the C# camera.

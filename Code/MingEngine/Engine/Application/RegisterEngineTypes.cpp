@@ -23,10 +23,19 @@ void RegisterEngineTypes()
 
 	// Engine system types
 	ClassDatabase::RegisterClass<SystemBase>(true);
-	ClassDatabase::RegisterClass<InputSystem>();
+	ClassDatabase::RegisterAbstractClass<InputSystem>();
+	ClassDatabase::RegisterAbstractClass<FileSystem>();
 
 	// Global objects
-	// ClassDatabase::RegisterGlobalObject(g_engine->m_inputSystem);
+	if (g_engine != nullptr && g_engine->m_inputSystem != nullptr)
+	{
+		ClassDatabase::RegisterGlobalObject(g_engine->m_inputSystem);
+	}
+
+	if (g_engine != nullptr && g_engine->m_fileSystem != nullptr)
+	{
+		ClassDatabase::RegisterGlobalObject(g_engine->m_fileSystem);
+	}
 }
 
 #pragma endregion

@@ -3,6 +3,10 @@
   <brief_description>Tracks key states and controls the mouse pointer.</brief_description>
   <description>Use the active engine input system to read game input. Press and release flags last until the end of the frame.</description>
   <methods>
+    <method name="GetMouseDelta">
+      <description>Returns accumulated floating-point mouse motion for this frame without consuming it. Motion is collected in FPS cursor mode and reset at the start of the next frame.</description>
+      <returns>Relative mouse motion in client pixels.</returns>
+    </method>
     <method name="IsKeyDown">
       <description>Checks whether a key is held down in the current processed input state.</description>
       <param name="keyCode">The engine key code to check.</param>

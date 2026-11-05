@@ -1,4 +1,5 @@
 #include "MingEngine/Engine/Application/Engine.hpp"
+#include "MingEngine/Core/Object/ClassDatabase.hpp"
 
 #include "MingEngine/Core/Math/RandomNumberGenerator.hpp"
 #include "MingEngine/Engine/Audio/AudioSystem.hpp"
@@ -56,6 +57,8 @@ Engine::Engine(EngineConfig config) : m_config(config)
 
 Engine::~Engine()
 {
+	ClassDatabase::ClearGlobalObjects();
+
 	MemDelete(m_audioSystem);
 	m_audioSystem = nullptr;
 

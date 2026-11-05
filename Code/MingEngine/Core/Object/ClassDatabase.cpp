@@ -61,6 +61,16 @@ void ClassDatabase::Startup()
 	m_globalObjectMap.clear();
 }
 
+void ClassDatabase::ClearGlobalObjects()
+{
+	for (auto const& entry : m_globalObjectMap)
+	{
+		entry.second->ReleaseNativeBindingGCHandle();
+	}
+
+	m_globalObjectMap.clear();
+}
+
 void ClassDatabase::Shutdown()
 {
 	m_classInfoMap.clear();

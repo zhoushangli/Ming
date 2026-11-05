@@ -30,6 +30,7 @@ void InputSystem::BindMethods()
 		static_cast<bool (InputSystem::*)(int)>(&InputSystem::WasKeyJustReleased),
 		{ "keyCode" });
 	ClassDatabase::BindMethod("SetCursorMode", &InputSystem::SetCursorModeByInt, { "cursorMode" });
+	ClassDatabase::BindMethod("GetMouseDelta", &InputSystem::GetMouseDelta, {});
 
 	// 1) Function keys
 	BIND_CONSTANT(KeyCode, F1);
@@ -173,7 +174,10 @@ void InputSystem::Startup()
 	m_pendingInputEvents.clear();
 	m_cursorClientPosition = IntVec2::Zero;
 	ClearCursorDelta();
-	m_windowFocused = true;
+
+	GLFWwindow* window = g_engine != nullptr && g_engine->m_windowSystem != nullptr
+		? g_engine->m_windowSystem->GetGLFWWindow() : nullptr;
+	m_windowFocused = window != nullptr && glfwGetWindowAttrib(window, GLFW_FOCUSED) == GLFW_TRUE;
 	SetCursorMode(m_cursorMode);
 }
 
@@ -543,6 +547,11 @@ void InputSystem::SetCursorModeByInt(int cursorMode)
 IntVec2 InputSystem::GetCursorClientDelta() const
 {
 	return IntVec2(static_cast<int>(m_cursorClientDelta.x), static_cast<int>(m_cursorClientDelta.y));
+}
+
+Vector2 InputSystem::GetMouseDelta() const
+{
+	return m_cursorClientDelta;
 }
 
 IntVec2 InputSystem::GetCursorClientPosition() const
