@@ -3,6 +3,7 @@
 
   <PropertyGroup>
     <MingApiDirectory Condition="'$(MingApiDirectory)' == ''">$(MSBuildThisFileDirectory)../../Api/</MingApiDirectory>
+    <AssemblySearchPaths>{HintPathFromItem};$(AssemblySearchPaths)</AssemblySearchPaths>
   </PropertyGroup>
 
   <ItemGroup>

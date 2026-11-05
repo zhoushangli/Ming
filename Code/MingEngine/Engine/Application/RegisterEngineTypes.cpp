@@ -23,8 +23,8 @@ void RegisterEngineTypes()
 
 	// Engine system types
 	ClassDatabase::RegisterClass<SystemBase>(true);
-	ClassDatabase::RegisterAbstractClass<InputSystem>();
-	ClassDatabase::RegisterAbstractClass<FileSystem>();
+	ClassDatabase::RegisterSingletonClass<InputSystem>();
+	ClassDatabase::RegisterSingletonClass<FileSystem>();
 
 	// Global objects
 	if (g_engine != nullptr && g_engine->m_inputSystem != nullptr)

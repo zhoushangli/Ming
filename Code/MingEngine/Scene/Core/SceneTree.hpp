@@ -71,6 +71,7 @@ protected:
 	ObjectID  m_sceneID         = ObjectID::Invalid;
 	ObjectID  m_sceneViewportID = ObjectID::Invalid;
 	Node*     m_pendingScene    = nullptr;
+	bool      m_shuttingDown    = false;
 
 	// Raycast space is a helping class to manage raycast objects
 	// and perform raycasting in the scene.

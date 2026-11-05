@@ -172,6 +172,22 @@ Node* Node::GetNode(NodePath const& path) const
 	return current;
 }
 
+Node* Node::GetNodeByString(String const& path) const
+{
+	Node* node = GetNodeOrNull(path);
+	if (node == nullptr)
+	{
+		ERR_PRINT(Stringf("Node not found: %s", path.ToUtf8().c_str()));
+	}
+
+	return node;
+}
+
+Node* Node::GetNodeOrNull(String const& path) const
+{
+	return GetNode(NodePath(path.ToUtf8()));
+}
+
 void Node::AddNode(Node* child)
 {
 	if (child == nullptr || child == this || child->IsAncestorOf(this))
@@ -267,6 +283,8 @@ void Node::BindMethods()
 	ClassDatabase::BindMethod("GetRoot", &Node::GetRoot, {});
 	ClassDatabase::BindMethod("GetParent", &Node::GetParent, {});
 	ClassDatabase::BindMethod("FindChildByName", &Node::FindChildByName, { "name" });
+	ClassDatabase::BindMethod("GetNode", &Node::GetNodeByString, { "path" });
+	ClassDatabase::BindMethod("GetNodeOrNull", &Node::GetNodeOrNull, { "path" });
 	ClassDatabase::BindMethod("GetSceneTree", &Node::GetSceneTree, {});
 	ClassDatabase::BindMethod("AddNode", &Node::AddNode, { "child" });
 	ClassDatabase::BindMethod("MoveChild", &Node::MoveChild, { "child", "index" });

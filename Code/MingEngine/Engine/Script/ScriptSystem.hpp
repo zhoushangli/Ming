@@ -54,6 +54,7 @@ struct NativeCallbacks
 	void(CORECLR_DELEGATE_CALLTYPE* m_createObjectVariant)(void*, Variant*) = nullptr;
 	void(CORECLR_DELEGATE_CALLTYPE* m_destroyVariant)(Variant*) = nullptr;
 	Object*(CORECLR_DELEGATE_CALLTYPE* m_getGlobalObject)(String const*) = nullptr;
+	void*(CORECLR_DELEGATE_CALLTYPE* m_getScriptInstanceManaged)(void*, int32_t*) = nullptr;
 };
 
 //---------------------------------------------------------------------------

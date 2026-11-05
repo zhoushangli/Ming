@@ -22,6 +22,7 @@
 #include "MingEngine/Scene/Core/RaycastSpace3D.hpp"
 #include "MingEngine/Scene/Core/SceneTree.hpp"
 #include "MingEngine/Scene/Core/Viewport.hpp"
+#include "MingEngine/Scene/Core/Window.hpp"
 #include "MingEngine/Scene/GUI/BoxContainer.hpp"
 #include "MingEngine/Scene/GUI/ColorRect.hpp"
 #include "MingEngine/Scene/GUI/ColorPicker.hpp"
@@ -141,6 +142,7 @@ void RegisterSceneTypes()
 	// Scene types
 	ClassDatabase::RegisterClass<Node>();
 	ClassDatabase::RegisterClass<Viewport>();
+	ClassDatabase::RegisterAbstractClass<Window>();
 	ClassDatabase::RegisterClass<SceneTree>();
 	ClassDatabase::RegisterClass<RaycastSpace3D>();
 	ClassDatabase::RegisterClass<Node3D>();

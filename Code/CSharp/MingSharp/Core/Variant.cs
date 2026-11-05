@@ -2,7 +2,6 @@ namespace Ming;
 
 public partial struct Variant
 {
-    internal ming_variant.movable NativeVariant;
 
     public enum Type : int
     {
@@ -24,6 +23,8 @@ public partial struct Variant
         Any = 15,
         UInt32 = 16
     }
+
+    internal ming_variant.movable NativeVariant;
 
 
 }

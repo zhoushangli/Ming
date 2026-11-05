@@ -4,109 +4,262 @@ using System.Linq;
 using Ming;
 using SimpleMiner;
 
-internal static class SimpleMinerRuntimeChecks
+public partial class SimpleMinerRuntimeChecks : Node
 {
-    public static void Ready(WorldScene scene, Camera3D camera)
+
+    private MinerEngine engine;
+    private string root;
+    private string phase;
+    private int frames;
+    private bool failed;
+
+    public override void OnReady()
     {
-        input = InputSystem.GetInput();
-        Require(ReferenceEquals(input, MingObject.GetGlobalObject<InputSystem>("InputSystem")), "global wrapper identity");
-        Require(typeof(InputSystem).GetConstructors().Length == 0, "input has no public constructor");
-        Require(!input.IsKeyDown(-1) && !input.WasKeyJustPressed(-1) && !input.WasKeyJustReleased(-1), "normal bound input calls");
-        root = MingObject.GetGlobalObject<Ming.FileSystem>("FileSystem").GetResourceRootPath();
+        root = Ming.FileSystem.GetResourceRootPath();
         phase = Environment.GetEnvironmentVariable("MING_SIMPLEMINER_PHASE") ?? "first";
-        if (phase == "second")
-        {
-            saved = File.ReadAllLines(Path.Combine(root, "runtime-save.txt")).Select(int.Parse).ToArray();
-            camera.SetLocalPosition(new Vector3(saved[0] * 16 + 8, saved[1] * 16 + 8, 150));
-        }
-
-        bool missing = false;
-        try
-        {
-            MingObject.GetGlobalObject<InputSystem>("missing");
-        }
-        catch (InvalidOperationException)
-        {
-            missing = true;
-        }
-
-        Require(missing, "missing global reports an error");
-        var noise = new FastNoiseLite(1);
-        Require(float.IsFinite(noise.GetNoise(10, 20, 30)), "managed noise is callable");
+        engine = g_minerEngine;
+        Require(engine != null && engine.Definitions == null, "scene autoload precedes Boot initialization");
+        Require(ReferenceEquals(GetNode<MinerEngine>("/Root/MinerEngine"), engine), "absolute node path preserves script identity");
+        Require(ReferenceEquals(InputSystem.Singleton, MingObject.GetGlobalObject<InputSystemInstance>("InputSystem")), "global wrapper identity");
+        Require(typeof(InputSystem).GetConstructors().Length == 0, "static input has no constructor");
+        Require(!InputSystem.IsKeyDown(-1) && !InputSystem.WasKeyJustPressed(-1), "static input invokes native methods");
+        Log("SIMPLEMINER_AUTOLOAD_READY");
     }
 
-    public static void Tick(WorldScene scene)
+    public override void OnProcess(float deltaSeconds)
     {
-        World world = scene.GetWorld();
-        Require(world.LoadsLastFrame <= 1 && world.RebuildsLastFrame <= 4 && world.UnloadsLastFrame <= 4, "frame budgets");
+        if (failed)
+        {
+            return;
+        }
+
+        try
+        {
+            Tick();
+        }
+        catch
+        {
+            failed = true;
+            File.WriteAllText(Path.Combine(root, "runtime-" + phase + ".txt"), "FAIL");
+            throw;
+        }
+    }
+
+    private void Tick()
+    {
+        if (GetSceneTree().GetScene() is not WorldScene scene || engine.VoxelDataService.Chunks.Count == 0)
+        {
+            return;
+        }
+
+        VoxelDataService data = engine.VoxelDataService;
+        VoxelRenderService render = engine.VoxelRenderService;
+        Camera3D camera = scene.GetNode<Camera3D>("Camera3D");
+        Require(ReferenceEquals(engine, g_minerEngine) && GetNodeOrNull("/Root/Boot") == null,
+            "Boot was replaced while service tree survived");
+        Require(data.LoadsLastFrame <= 1 && render.RebuildsLastFrame <= 4 && data.UnloadsLastFrame <= 4, "frame budgets");
         if (++frames == 1)
         {
-            if (phase != "second")
+            Require(scene.GetNode<Node>(".") == scene && scene.GetNodeOrNull<Camera3D>("VoxelRoot") == null
+                && scene.GetNodeOrNull("Missing") == null, "self path and optional missing or mismatched node lookup");
+            bool mismatch = false;
+            try
             {
-                Chunk chunk = world.Chunks.Values.First();
-                int index = Chunk.Index(2, 3, 120);
-                byte type = chunk.Blocks[index] == 6 ? (byte)0 : (byte)6;
-                Require(world.SetBlock(chunk.Coords.X * 16 + 2, chunk.Coords.Y * 16 + 3, 120, type), "live block edit");
-                File.WriteAllLines(Path.Combine(root, "runtime-save.txt"), new[] { chunk.Coords.X, chunk.Coords.Y, (int)type }.Select(value => value.ToString()));
+                scene.GetNode<Camera3D>("VoxelRoot");
+            }
+            catch (InvalidCastException)
+            {
+                mismatch = true;
+            }
+
+            Require(mismatch, "required typed lookup rejects wrong type");
+            Vector3 original = camera.Position;
+            camera.Position = new Vector3(original.X + 1, original.Y, original.Z);
+            Require(camera.GetLocalPosition().X == original.X + 1, "position property reaches native transform");
+            camera.Position = original;
+            EulerAngles rotation = camera.Rotation;
+            camera.Rotation = new EulerAngles(rotation.Pitch + 1, rotation.Yaw, rotation.Roll);
+            Require(camera.GetLocalOrientation().Pitch == rotation.Pitch + 1, "rotation property preserves degree semantics");
+            camera.Rotation = rotation;
+            camera.Scale = new Vector3(1, 1, 1);
+            Require(camera.GetLocalScale().X == 1 && camera.NearClip == 0.1f && camera.FarClip == 1000f
+                && camera.FovDegrees == 60f, "scene camera properties are applied");
+
+            if (phase == "second")
+            {
+                int[] saved = File.ReadAllLines(Path.Combine(root, "runtime-save.txt")).Select(int.Parse).ToArray();
+                Require(data.Chunks[new ChunkCoord(saved[0], saved[1])].Blocks[Chunk.Index(2, 3, 120)] == saved[2],
+                    "shutdown save survives fresh runtime");
             }
             else
             {
-                Require(world.Chunks[new ChunkCoord(saved[0], saved[1])].Blocks[Chunk.Index(2, 3, 120)] == saved[2], "shutdown save survives fresh runtime");
+                Chunk chunk = data.Chunks.Values.First();
+                byte type = chunk.Blocks[Chunk.Index(2, 3, 120)] == 6 ? (byte)0 : (byte)6;
+                Require(data.SetBlock(chunk.Coords.X * 16 + 2, chunk.Coords.Y * 16 + 3, 120, type), "live block edit");
+                File.WriteAllLines(Path.Combine(root, "runtime-save.txt"), new[] { chunk.Coords.X, chunk.Coords.Y, (int)type }.Select(value => value.ToString()));
             }
-        }
 
-        if (frames == 3)
-        {
-            using var mesh = new SurfaceTool();
-            mesh.SetColor(new Color(12, 34, 56));
-            mesh.SetNormal(new Vector3(0, 0, 1));
-            mesh.SetUV(new Vector2(0, 0));
-            mesh.AddVertex(new Vector3(0, 0, 0));
-            mesh.AddVertex(new Vector3(1, 0, 0));
-            mesh.AddVertex(new Vector3(0, 1, 0));
-            mesh.AddIndex(0);
-            mesh.AddIndex(1);
-            mesh.AddIndex(2);
-            using var resource = mesh.CreateMeshResource();
-            testChunk = new Chunk(new ChunkCoord(100, 100), new byte[Chunk.BlockCount]);
-            testChunk.Attach(scene);
-            testMaterial = new MaterialResource();
-        }
-
-        if (frames == 4)
-        {
-            var definitions = BlockDefinition.Load(Path.Combine(root, "Data/Definitions/BlockSpriteSheet_BlockDefinitions.xml"));
-            testChunk.SetBlock(0, 0, 0, 6);
-            testChunk.Rebuild(definitions, world.Chunks, testMaterial);
-            Require(testChunk.Node.GetMeshResource() != null, "editable chunk creates its first mesh");
-            testChunk.SetBlock(0, 0, 0, 0);
-            testChunk.Rebuild(definitions, world.Chunks, testMaterial);
-            Require(testChunk.Node.GetMeshResource() == null, "removing the final block clears the mesh");
-            testChunk.Dispose();
-            testMaterial.Dispose();
+            VerifyServiceBehaviors();
         }
 
         if (frames == 8)
         {
-            File.WriteAllText(Path.Combine(root, "runtime-" + phase + ".txt"), failed ? "FAIL" : "PASS");
+            File.WriteAllText(Path.Combine(root, "runtime-" + phase + ".txt"), "PASS");
         }
+
+        if (frames == 3)
+        {
+            VerifySessionGuards();
+        }
+    }
+
+    public override void OnExitTree()
+    {
+        Require(g_minerEngine == null && engine.VoxelDataService.Chunks.Count == 0
+            && engine.VoxelRenderService.Nodes.Count == 0, "world and services release before the observer exits");
+        File.WriteAllText(Path.Combine(root, "runtime-exit-" + phase + ".txt"), "PASS");
+    }
+
+    private void VerifyServiceBehaviors()
+    {
+        using PackedScene packed = ResourceLoader.Load<PackedScene>("res://Scenes/ServiceChecks.tscn");
+        Node services = packed.Instantiate();
+        GetRoot().AddNode(services);
+        var camera = new Camera3D();
+        services.AddNode(camera);
+        var view = new Node3D();
+        services.AddNode(view);
+        var saves = services.GetNode<SaveLoadService>("SaveLoadService");
+        var generation = services.GetNode<GenerationService>("GenerationService");
+        var data = services.GetNode<VoxelDataService>("VoxelDataService");
+        var render = services.GetNode<VoxelRenderService>("VoxelRenderService");
+        string fixtures = Path.Combine(root, ".ming", "Verification", "Services", Guid.NewGuid().ToString("N"));
+        BlockDefinition[] definitions = engine.Definitions;
+        byte stone = BlockDefinition.Find(definitions, "Cobblestone");
+        GenerationSettings settings = GenerationSettings.Load(Path.Combine(root, "Data", "GameConfig.xml"));
+        generation.Configure(settings, definitions);
+        try
+        {
+            string streaming = Path.Combine(fixtures, "streaming");
+            for (int y = -2; y <= 2; y++)
+            {
+                for (int x = -2; x <= 2; x++)
+                {
+                    ChunkFile.Write(ChunkFile.GetPath(Path.Combine(streaming, "Saves"), new(x, y)), new byte[Chunk.BlockCount]);
+                }
+            }
+
+            saves.Configure(streaming, definitions.Length);
+            data.Configure(definitions, saves, generation);
+            render.Start(data, definitions, camera, view);
+            for (int frame = 0; frame < 9; frame++)
+            {
+                data.Update(new Vector3(8, 8, 100));
+                Require(data.LoadsLastFrame <= 1 && data.UnloadsLastFrame <= 4, "streaming budgets in independent fixture");
+            }
+
+            Require(data.Chunks.Count == 9 && data.Chunks.ContainsKey(new(1, 0)), "nearest missing chunks load first");
+            render.Rebuild(new(0, 0));
+            render.Rebuild(new(1, 0));
+            Require(data.SetBlock(15, 2, 20, stone) && !data.SetBlock(15, 2, 20, stone), "identical block writes are no-op");
+            Require(render.DirtyChunks.Contains(new(0, 0)) && render.DirtyChunks.Contains(new(1, 0))
+                && data.Chunks[new(0, 0)].NeedsSaving && !data.Chunks[new(1, 0)].NeedsSaving,
+                "boundary edit invalidates both meshes but saves only changed data");
+            render.Rebuild(new(0, 0));
+            using (MeshResource mesh = render.Nodes[new(0, 0)].GetMeshResource())
+            {
+                Require(mesh != null, "first visible block creates a mesh");
+            }
+
+            data.SetBlock(15, 2, 20, 0);
+            render.Rebuild(new(0, 0));
+            Require(render.Nodes[new(0, 0)].GetMeshResource() == null, "final block removal clears the mesh");
+            data.SetBlock(15, 2, 20, stone);
+            Require(data.SaveChanged(), "changed chunk saves successfully");
+            Require(ChunkFile.Read(ChunkFile.GetPath(Path.Combine(streaming, "Saves"), new(0, 0)), definitions.Length)
+                .SequenceEqual(data.Chunks[new(0, 0)].Blocks), "full chunk save roundtrip");
+            data.Update(new Vector3(900, 900, 100));
+            Require(data.UnloadsLastFrame == 4, "distant chunks respect unload budget");
+            data.Clear();
+            data.Update(new Vector3(8, 8, 100));
+            Require(data.Chunks[new(0, 0)].Blocks[Chunk.Index(15, 2, 20)] == stone, "service data survives close and reopen");
+            data.Clear();
+
+            string failedSave = Path.Combine(fixtures, "failed-save");
+            Directory.CreateDirectory(failedSave);
+            saves.Configure(failedSave, definitions.Length);
+            data.Update(new Vector3(8, 8, 100));
+            data.SetBlock(3, 3, 120, stone);
+            File.WriteAllText(Path.Combine(failedSave, "Saves"), "block directory creation");
+            Require(!data.SaveChanged() && data.Chunks[new(0, 0)].NeedsSaving, "save failure retains dirty data");
+            data.Update(new Vector3(900, 900, 100));
+            Require(data.Chunks.ContainsKey(new(0, 0)), "save failure prevents unload");
+            File.Delete(Path.Combine(failedSave, "Saves"));
+            Require(data.SaveChanged(), "failed save can be retried");
+            data.Clear();
+
+            string damaged = Path.Combine(fixtures, "damaged");
+            string path = ChunkFile.GetPath(Path.Combine(damaged, "Saves"), new(0, 0));
+            Directory.CreateDirectory(Path.GetDirectoryName(path));
+            File.WriteAllBytes(path, new byte[] { 1, 2, 3 });
+            saves.Configure(damaged, definitions.Length);
+            data.Update(new Vector3(8, 8, 100));
+            Require(!data.Chunks.ContainsKey(new(0, 0)) && File.ReadAllBytes(path).SequenceEqual(new byte[] { 1, 2, 3 }),
+                "corrupt save is retained and not replaced by generated terrain");
+        }
+        finally
+        {
+            render.Stop();
+            data.Clear();
+            services.QueueFree();
+        }
+
+        Log("SIMPLEMINER_SERVICE_BEHAVIORS PASS");
+    }
+
+    private void VerifySessionGuards()
+    {
+        VoxelDataService data = engine.VoxelDataService;
+        Chunk chunk = data.Chunks.Values.First();
+        string config = Path.Combine(root, "Data", "GameConfig.xml");
+        string original = File.ReadAllText(config);
+        try
+        {
+            File.WriteAllText(config, "<Invalid");
+            Require(!engine.ReloadWorld() && ReferenceEquals(data.Chunks[chunk.Coords], chunk),
+                "invalid reload configuration preserves the current world");
+        }
+        finally
+        {
+            File.WriteAllText(config, original);
+        }
+
+        string blocked = Path.Combine(root, ".ming", "Verification", "EndWorld-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(blocked);
+        File.WriteAllText(Path.Combine(blocked, "Saves"), "block directory creation");
+        engine.SaveLoadService.Configure(blocked, engine.Definitions.Length);
+        byte type = chunk.Blocks[Chunk.Index(3, 4, 125)] == 6 ? (byte)0 : (byte)6;
+        data.SetBlock(chunk.Coords.X * 16 + 3, chunk.Coords.Y * 16 + 4, 125, type);
+        try
+        {
+            Require(!engine.EndWorld() && !engine.ReloadWorld() && ReferenceEquals(data.Chunks[chunk.Coords], chunk),
+                "save failure blocks explicit world end and reload");
+        }
+        finally
+        {
+            engine.SaveLoadService.Configure(root, engine.Definitions.Length);
+        }
+
+        Require(engine.ReloadWorld() && data.Chunks.Count == 0 && engine.VoxelRenderService.Nodes.Count == 0
+            && ReferenceEquals(engine, g_minerEngine), "successful reload clears session data and presentation while services survive");
+        Log("SIMPLEMINER_SESSION_GUARDS PASS");
     }
 
     private static void Require(bool value, string message)
     {
         if (!value)
         {
-            failed = true;
             throw new InvalidOperationException("SIMPLEMINER_RUNTIME: " + message);
         }
     }
-
-    private static Chunk testChunk;
-    private static MaterialResource testMaterial;
-    private static InputSystem input;
-    private static string root;
-    private static string phase;
-    private static int frames;
-    private static bool failed;
-    private static int[] saved;
 }

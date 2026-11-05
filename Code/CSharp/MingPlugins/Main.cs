@@ -17,17 +17,9 @@ namespace MingPlugins
         // reference alive on the stack, which would prevent the context from unloading.
         private sealed class ProjectLoadContextHolder
         {
-            private PluginLoadContext? _context;
-            private readonly WeakReference _weakReference;
             public bool IsLoaded
             {
                 get; set;
-            }
-
-            private ProjectLoadContextHolder(PluginLoadContext context, WeakReference weakReference)
-            {
-                _context = context;
-                _weakReference = weakReference;
             }
 
             public string AssemblyLoadedPath
@@ -40,6 +32,15 @@ namespace MingPlugins
             {
                 [MethodImpl(MethodImplOptions.NoInlining)]
                 get => _weakReference.IsAlive;
+            }
+
+            private PluginLoadContext? _context;
+            private readonly WeakReference _weakReference;
+
+            private ProjectLoadContextHolder(PluginLoadContext context, WeakReference weakReference)
+            {
+                _context = context;
+                _weakReference = weakReference;
             }
 
             [MethodImpl(MethodImplOptions.NoInlining)]

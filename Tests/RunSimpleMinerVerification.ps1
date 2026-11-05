@@ -26,22 +26,38 @@ if ($LASTEXITCODE -ne 0)
 
 $fixture = Join-Path $repoRoot ('Temporary/SimpleMinerRuntime/' + [guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Force -Path $fixture | Out-Null
-foreach ($file in @('Game.csproj', 'project.ming', 'Scenes/Main.tscn', 'Scenes/BlockExample.tscn', 'Textures/BlockTiles.png', 'Data/GameConfig.xml', 'Data/Definitions/BlockSpriteSheet_BlockDefinitions.xml'))
+foreach ($file in @('Game.csproj', 'project.ming', 'Textures/BlockTiles.png', 'Data/GameConfig.xml', 'Data/Definitions/BlockSpriteSheet_BlockDefinitions.xml'))
 {
     $target = Join-Path $fixture $file
     New-Item -ItemType Directory -Force -Path (Split-Path -Parent $target) | Out-Null
     Copy-Item -LiteralPath (Join-Path $projectRoot $file) -Destination $target
 }
 
+$fixtureConfig = Get-Item -LiteralPath (Join-Path $fixture 'Data/GameConfig.xml')
+$fixtureConfig.IsReadOnly = $false
+
+$scenes = Join-Path $fixture 'Scenes'
+New-Item -ItemType Directory -Force -Path $scenes | Out-Null
+Get-ChildItem -LiteralPath (Join-Path $projectRoot 'Scenes') -Filter '*.tscn' -File | Copy-Item -Destination $scenes
+$serviceScene = Get-Content -LiteralPath (Join-Path $scenes 'MinerEngine.tscn') -Raw | ConvertFrom-Json
+$serviceScene.nodes[0].name = 'ServiceChecks'
+$serviceScene.nodes[0].properties.PSObject.Properties.Remove('script')
+$serviceScene | ConvertTo-Json -Depth 20 | Set-Content -LiteralPath (Join-Path $scenes 'ServiceChecks.tscn') -Encoding UTF8
+$settings = Get-Content -LiteralPath (Join-Path $fixture 'project.ming') -Raw | ConvertFrom-Json
+$settings.autoloads += [pscustomobject]@{ name = 'RuntimeChecks'; path = 'res://Scripts/SimpleMinerRuntimeChecks.cs' }
+$settings | ConvertTo-Json -Depth 20 | Set-Content -LiteralPath (Join-Path $fixture 'project.ming') -Encoding UTF8
+
 $scripts = Join-Path $fixture 'Scripts'
 New-Item -ItemType Directory -Force -Path $scripts | Out-Null
 Get-ChildItem -LiteralPath (Join-Path $projectRoot 'Scripts') -Filter '*.cs' -File | Copy-Item -Destination $scripts
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'SimpleMinerRuntimeChecks.cs') -Destination $scripts
-$sceneScript = Join-Path $scripts 'WorldScene.cs'
-$source = Get-Content -LiteralPath $sceneScript -Raw
-$source = $source.Replace('NativeFuncs.Log("SimpleMiner ready:', 'SimpleMinerRuntimeChecks.Ready(this, camera);' + [Environment]::NewLine + '        NativeFuncs.Log("SimpleMiner ready:')
-$source = $source.Replace('world.Update(camera.GetLocalPosition());', 'world.Update(camera.GetLocalPosition());' + [Environment]::NewLine + '        SimpleMinerRuntimeChecks.Tick(this);')
-Set-Content -LiteralPath $sceneScript -Value $source -Encoding UTF8
+Set-Content -LiteralPath (Join-Path $scripts 'AutoloadResource.cs') -Encoding UTF8 -Value @'
+using Ming;
+
+public partial class AutoloadResource : MaterialResource
+{
+}
+'@
 
 & dotnet build (Join-Path $fixture 'Game.csproj') --nologo
 if ($LASTEXITCODE -ne 0)
@@ -68,6 +84,44 @@ try
         {
             throw ('SimpleMiner runtime verification failed: ' + $phase)
         }
+    }
+
+    foreach ($case in @('missing-scene', 'non-node-script', 'duplicate-name'))
+    {
+        $failureProject = Join-Path $fixture ('.ming/Verification/Autoload-' + $case)
+        New-Item -ItemType Directory -Force -Path (Join-Path $failureProject 'Scenes') | Out-Null
+        New-Item -ItemType Directory -Force -Path (Join-Path $failureProject 'Scripts') | Out-Null
+        New-Item -ItemType Directory -Force -Path (Join-Path $failureProject '.ming/dotnet/bin/Debug') | Out-Null
+        Copy-Item -LiteralPath (Join-Path $fixture 'Game.csproj') -Destination $failureProject
+        Copy-Item -LiteralPath (Join-Path $scripts 'AutoloadResource.cs') -Destination (Join-Path $failureProject 'Scripts')
+        foreach ($file in @('Game.dll', 'Game.deps.json'))
+        {
+            Copy-Item -LiteralPath (Join-Path $fixture ('.ming/dotnet/bin/Debug/' + $file)) -Destination (Join-Path $failureProject '.ming/dotnet/bin/Debug')
+        }
+
+        Set-Content -LiteralPath (Join-Path $failureProject 'Scenes/Empty.tscn') -Encoding UTF8 -Value '{"nodes":[{"name":"Empty","type":"Node","parent":""}]}'
+        $entries = @([pscustomobject]@{ name = 'Valid'; path = 'res://Scenes/Empty.tscn' })
+        switch ($case)
+        {
+            'missing-scene' { $entries += [pscustomobject]@{ name = 'Missing'; path = 'res://Scenes/Missing.tscn' } }
+            'non-node-script' { $entries += [pscustomobject]@{ name = 'Resource'; path = 'res://Scripts/AutoloadResource.cs' } }
+            'duplicate-name' { $entries += [pscustomobject]@{ name = 'Valid'; path = 'res://Scenes/Empty.tscn' } }
+        }
+
+        [pscustomobject]@{ type = 'ProjectSettings'; version = 1; start_scene_path = 'res://Scenes/Empty.tscn'; autoloads = $entries } |
+            ConvertTo-Json -Depth 20 | Set-Content -LiteralPath (Join-Path $failureProject 'project.ming') -Encoding UTF8
+        & $executable --autoload-failure $failureProject
+        if ($LASTEXITCODE -ne 0)
+        {
+            throw ('AutoLoad failure cleanup failed: ' + $case)
+        }
+    }
+
+    $env:MING_SIMPLEMINER_PHASE = 'pending'
+    & $executable --autoload-pending-stop $fixture
+    if ($LASTEXITCODE -ne 0)
+    {
+        throw 'Shutdown with a pending Boot scene change failed.'
     }
 
     & $executable --resource-sample $fixture

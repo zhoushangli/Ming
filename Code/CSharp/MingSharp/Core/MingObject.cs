@@ -3,8 +3,15 @@ namespace Ming;
 using System.Diagnostics;
 
 
-public class MingObject : IDisposable
+public partial class MingObject : IDisposable
 {
+
+    public class MethodName
+    {
+        public static readonly string Free = nameof(MingObject.Free);
+        public static readonly string _Notification = nameof(MingObject._Notification);
+    }
+
     private static readonly Type CachedType = typeof(MingObject);
     private static readonly string NativeName = "Object";
 
@@ -156,12 +163,6 @@ public class MingObject : IDisposable
         }
 
         return false;
-    }
-
-    public class MethodName
-    {
-        public static readonly string Free = nameof(MingObject.Free);
-        public static readonly string _Notification = nameof(MingObject._Notification);
     }
 
 }

@@ -8,7 +8,6 @@ using System.Runtime.InteropServices;
 [StructLayout(LayoutKind.Sequential)]
 public struct String : IDisposable
 {
-    internal ming_string NativeValue;
 
     // Read the UTF-32 code points without converting them.
     // e.g. Data returns the block the native side wrote into this string.
@@ -17,6 +16,8 @@ public struct String : IDisposable
     // Read the code point count that the native block header stores, so no native call is needed.
     // e.g. Length returns 4 for a native String that owns "Ming".
     internal unsafe uint Length => Marshaling.GetStringLength(in NativeValue);
+
+    internal ming_string NativeValue;
 
     public unsafe static explicit operator String(string str)
     {

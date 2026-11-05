@@ -72,6 +72,41 @@ int main(int argc, char** argv)
 		return VerifySimpleMinerRuntime(std::filesystem::absolute(argv[2]));
 	}
 
+	if (argc == 3 && std::string(argv[1]) == "--autoload-failure")
+	{
+		MingRunConfig config;
+		config.mode = MingRunMode::Game;
+		config.projectPath = std::filesystem::absolute(argv[2]);
+		App app(config);
+		g_app = &app;
+		app.Startup();
+		bool failedCleanly = app.IsQuitting() && app.GetExitCode() != 0 && app.GetSceneTree() == nullptr;
+		app.Shutdown();
+		g_app = nullptr;
+		std::printf("AUTOLOAD_FAILURE cleaned=%d\n", failedCleanly);
+		return failedCleanly ? 0 : 1;
+	}
+
+	if (argc == 3 && std::string(argv[1]) == "--autoload-pending-stop")
+	{
+		MingRunConfig config;
+		config.mode = MingRunMode::Game;
+		config.projectPath = std::filesystem::absolute(argv[2]);
+		App app(config);
+		g_app = &app;
+		app.Startup();
+		Node* engine = app.GetSceneTree() != nullptr ? app.GetSceneTree()->GetRoot()->FindChildByName("MinerEngine") : nullptr;
+		ObjectID const engineID = engine != nullptr ? engine->GetObjectID() : ObjectID::Invalid;
+		bool pending = !app.IsQuitting() && engine != nullptr && app.GetSceneTree()->GetScene() == nullptr;
+		app.Shutdown();
+		std::string result;
+		std::ifstream(config.projectPath / "runtime-exit-pending.txt") >> result;
+		bool cleaned = ObjectDatabase::GetInstance(engineID) == nullptr && result == "PASS";
+		g_app = nullptr;
+		std::printf("AUTOLOAD_PENDING_STOP pending=%d cleaned=%d\n", pending, cleaned);
+		return pending && cleaned ? 0 : 1;
+	}
+
 	if (argc == 3 && std::string(argv[1]) == "--resource-sample")
 	{
 		MingRunConfig config;
@@ -85,6 +120,7 @@ int main(int argc, char** argv)
 		}
 
 		std::filesystem::create_directories(fixture / "Scenes");
+		std::ofstream(fixture / "project.ming") << R"({"type":"ProjectSettings","version":1,"start_scene_path":"res://Scenes/Main.tscn"})";
 		std::filesystem::copy_file(source / "Scenes/BlockExample.tscn", fixture / "Scenes/Main.tscn", std::filesystem::copy_options::overwrite_existing);
 		std::filesystem::create_directories(fixture / ".ming/dotnet/bin/Debug");
 		for (auto const& file : { "Game.dll", "Game.deps.json" })
@@ -201,6 +237,24 @@ int main(int argc, char** argv)
 	auto* editor = EditorNode::Get();
 	auto* scripts = g_engine->m_scriptSystem;
 	{
+		std::string error;
+		auto legacy = ProjectSettings::Parse(R"({"type":"ProjectSettings","version":1,"start_scene_path":""})", error);
+		check(legacy.IsValid() && legacy->m_autoLoads.empty(), "old project settings default to no autoloads");
+		auto settings = ProjectSettings::Parse(R"({"type":"ProjectSettings","version":1,"start_scene_path":"","autoloads":[{"name":"First","path":"res://First.tscn"},{"name":"Second","path":"res://Second.cs"}]})", error);
+		check(settings.IsValid() && settings->m_autoLoads.size() == 2 && settings->m_autoLoads[0].m_name == "First"
+			&& settings->m_autoLoads[1].m_name == "Second", "autoload settings retain order and scene or script paths");
+		check(settings.IsValid() && ResourceSaver::Save("res://AutoloadSettings.ming", settings), "save autoload configuration");
+		auto restored = Ref<ProjectSettings>(ResourceLoader::LoadUncached("res://AutoloadSettings.ming"));
+		check(restored.IsValid() && restored->m_autoLoads.size() == 2 && restored->m_autoLoads[1].m_name == "Second",
+			"autoload configuration survives editor resource save and load");
+		for (char const* autoloads : { R"({})", R"([{"name":"Same","path":"res://A.tscn"},{"name":"Same","path":"res://B.cs"}])",
+			R"([{"name":"Bad","path":"C:/Bad.cs"}])", R"([{"name":"Bad/Name","path":"res://A.cs"}])" })
+		{
+			std::string text = std::string(R"({"type":"ProjectSettings","version":1,"start_scene_path":"","autoloads":)") + autoloads + "}";
+			check(!ProjectSettings::Parse(text, error).IsValid() && !error.empty(), "invalid autoload configuration is rejected");
+		}
+	}
+	{
 		std::vector<uint8_t> encodedAtlas = { 137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82, 0, 0, 0, 8, 0, 0, 0, 8, 8, 6, 0, 0, 0, 196, 15, 190, 139, 0, 0, 0, 18, 73, 68, 65, 84, 120, 156, 99, 184, 83, 33, 242, 31, 31, 102, 24, 25, 10, 0, 76, 9, 153, 193, 65, 227, 173, 68, 0, 0, 0, 0, 73, 69, 78, 68, 174, 66, 96, 130 };
 		auto image = CreateRef<Image>();
 		auto texture = CreateRef<TextureResource>();
@@ -271,11 +325,11 @@ internal static class ResourceChecks
     public static void Run()
     {
         frames = 0;
-        var input = InputSystem.GetInput();
-        Require(ReferenceEquals(input, MingObject.GetGlobalObject<InputSystem>("InputSystem")), "global input wrapper identity");
+        var input = InputSystem.Singleton;
+        Require(ReferenceEquals(input, MingObject.GetGlobalObject<InputSystemInstance>("InputSystem")), "global input wrapper identity");
         Require(typeof(InputSystem).GetConstructors().Length == 0, "engine input is not publicly constructible");
         Require(!input.IsKeyDown(-1) && !input.WasKeyJustPressed(-1), "global input instance invokes registered methods");
-        Require(Path.IsPathFullyQualified(MingObject.GetGlobalObject<Ming.FileSystem>("FileSystem").GetResourceRootPath()), "project path is absolute");
+        Require(Path.IsPathFullyQualified(Ming.FileSystem.GetResourceRootPath()), "project path is absolute");
         var unsignedValue = VariantUtils.CreateFrom(uint.MaxValue);
         Require(VariantUtils.ConvertTo<uint>(in unsignedValue) == uint.MaxValue, "uint Variant round trip");
         using var atlas = ResourceLoader.Load<TextureResource>("res://resource-atlas.tex");
@@ -407,6 +461,13 @@ internal static class ResourceChecks
 			"docs escape XML and preserve the public signature");
 		check(readText(directory / "Generated/Node3D.cs").find("public Vector3 GetLocalPosition()") != std::string::npos,
 			"a class without docs keeps its methods");
+		check(readText(directory / "Generated/Node3D.cs").find("public Vector3 Position") != std::string::npos
+			&& readText(directory / "Generated/Node3D.cs").find("public EulerAngles Rotation") != std::string::npos
+			&& readText(directory / "Generated/Node3D.cs").find("public Vector3 Scale") != std::string::npos,
+			"registered transform properties generate typed accessors");
+		check(readText(directory / "Generated/InputSystem.cs").find("public static partial class InputSystem") != std::string::npos
+			&& readText(directory / "Generated/Constructors.cs").find("new InputSystemInstance(ptr)") != std::string::npos,
+			"singleton API separates static calls from native instance wrappers");
 
 		tinyxml2::XMLDocument deployed;
 		auto const xml = readText(std::filesystem::current_path() / "MingSharp/Api/MingSharp.xml");

@@ -77,6 +77,8 @@ public:
 	// it do not support ../ or ..
 	Node* FindChildByName(String const& name) const;
 	Node* GetNode(NodePath const& path) const;
+	Node* GetNodeByString(String const& path) const;
+	Node* GetNodeOrNull(String const& path) const;
 
 	SceneTree* GetSceneTree() const;
 

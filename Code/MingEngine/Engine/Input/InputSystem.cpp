@@ -29,7 +29,6 @@ void InputSystem::BindMethods()
 		"WasKeyJustReleased",
 		static_cast<bool (InputSystem::*)(int)>(&InputSystem::WasKeyJustReleased),
 		{ "keyCode" });
-	ClassDatabase::BindMethod("SetCursorMode", &InputSystem::SetCursorModeByInt, { "cursorMode" });
 	ClassDatabase::BindMethod("GetMouseDelta", &InputSystem::GetMouseDelta, {});
 
 	// 1) Function keys
@@ -162,6 +161,8 @@ void InputSystem::BindMethods()
 	BIND_ENUM(CursorMode, POINTER);
 	BIND_ENUM(CursorMode, FPS);
 	BIND_ENUM(CursorMode, COUNT);
+
+	ClassDatabase::BindMethod("SetCursorMode", &InputSystem::SetCursorMode, { "cursorMode" });
 }
 
 InputSystem::~InputSystem()

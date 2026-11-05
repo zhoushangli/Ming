@@ -6,6 +6,7 @@
 #include "ThirdParty/tinyxml2/tinyxml2.h"
 
 #include <algorithm>
+#include <cctype>
 #include <fstream>
 #include <map>
 #include <sstream>
@@ -19,8 +20,8 @@ using System.Diagnostics;
 
 public partial class {CLASS_NAME} : {PARENT_CLASS_NAME}
 {
-    private static readonly Type CachedType = typeof({CLASS_NAME});
-    private const string NativeName = "{CLASS_NAME}";
+{METHOD_NAME_CLASS}{CLASS_PROPERTIES}    private static readonly Type CachedType = typeof({CLASS_NAME});
+    private const string NativeName = "{NATIVE_CLASS_NAME}";
 
 	[DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private unsafe static readonly delegate* unmanaged<IntPtr> NativeCtor = GetConstrcutor(NativeName);
@@ -40,7 +41,7 @@ public partial class {CLASS_NAME} : {PARENT_CLASS_NAME}
     {
     }
 
-{CLASS_METHODS}{VIRTUAL_METHODS}{MING_CLASS_METHOD_DISPATCH}{METHOD_NAME_CLASS}}
+{CLASS_METHODS}{VIRTUAL_METHODS}{MING_CLASS_METHOD_DISPATCH}}
 )";
 
 constexpr char const* MethodBindingTemplate = R"(	[DebuggerBrowsable(DebuggerBrowsableState.Never)]
@@ -64,6 +65,7 @@ constexpr char const* VirtualMethodTemplate = R"(	public virtual {RETURN_TYPE} {
 constexpr char const* MethodNameTemplate = R"(	public new class MethodName : {PARENT_METHOD_NAME_CLASS}
 	{
 {METHOD_NAMES}	}
+
 )";
 
 constexpr char const* InvokeMingClassMethodTemplate =
@@ -347,7 +349,13 @@ std::string GetPublicCSharpType(ArgumentInfo const& argumentInfo, CSharpTypeInfo
 		return typeInfo.m_csType;
 	}
 
-	return argumentInfo.m_objectClassName == "Object" ? "MingObject" : argumentInfo.m_objectClassName;
+	if (argumentInfo.m_objectClassName == "Object")
+	{
+		return "MingObject";
+	}
+
+	ClassInfo const* classInfo = ClassDatabase::GetClassInfo(argumentInfo.m_objectClassName);
+	return argumentInfo.m_objectClassName + (classInfo != nullptr && classInfo->m_isSingleton ? "Instance" : "");
 }
 
 char const* GetVariantTypeName(Variant::Type type)
@@ -803,12 +811,99 @@ bool GenerateConstructors(std::filesystem::path const& outputDirectory, std::vec
 		}
 
 		constructorEntries += "        BuiltInMethodConstructors.Add(\"" + classInfo->m_className + "\", ptr => new "
-							  + classInfo->m_className + "(ptr));\n";
+							  + classInfo->m_className + (classInfo->m_isSingleton ? "Instance" : "") + "(ptr));\n";
 	}
 
 	std::string constructorsSource = ConstructorsTemplate;
 	ReplaceAll(constructorsSource, "{CONSTRUCTORS}", constructorEntries);
 	return WriteTextFile(outputDirectory / "Constructors.cs", constructorsSource);
+}
+
+std::string GenerateClassProperties(ClassInfo const& classInfo, CSharpTypeMap const& builtinTypes,
+	MethodNativeCallMap const& methodNativeCalls, bool isStatic = false)
+{
+	std::string source;
+	for (PropertyInfo const& property : classInfo.m_properties)
+	{
+		if (property.HasUsage(PropertyInfo::UsageFlags::Group))
+		{
+			continue;
+		}
+
+		auto findMethod = [&](std::string const& name) -> MethodInfo const*
+		{
+			for (ClassInfo const* current = &classInfo; current != nullptr;
+				current = ClassDatabase::GetClassInfo(current->m_parentClassName))
+			{
+				for (MethodInfo const& method : current->m_methods)
+				{
+					if (method.m_name == name && methodNativeCalls.count(&method) != 0)
+					{
+						return &method;
+					}
+				}
+			}
+
+			return nullptr;
+		};
+
+		MethodInfo const* getter = findMethod(property.m_getterName);
+		MethodInfo const* setter = findMethod(property.m_setterName);
+		if ((!property.m_getterName.empty() && getter == nullptr)
+			|| (!property.m_setterName.empty() && setter == nullptr) || (getter == nullptr && setter == nullptr))
+		{
+			continue;
+		}
+
+		if ((getter != nullptr && !getter->m_argumentInfos.empty())
+			|| (setter != nullptr && setter->m_argumentInfos.size() != 1))
+		{
+			continue;
+		}
+
+		ArgumentInfo const& type = getter != nullptr ? getter->m_returnInfo : setter->m_argumentInfos[0];
+		auto found = builtinTypes.find(type.m_type);
+		if (found == builtinTypes.end())
+		{
+			continue;
+		}
+
+		std::string name;
+		bool uppercase = true;
+		for (unsigned char character : property.m_name)
+		{
+			if (character == '_')
+			{
+				uppercase = true;
+				continue;
+			}
+
+			name += uppercase ? static_cast<char>(std::toupper(character)) : static_cast<char>(character);
+			uppercase = false;
+		}
+
+		if (name.empty() || name == classInfo.m_className)
+		{
+			continue;
+		}
+
+		source += "    public " + std::string(isStatic ? "static " : "")
+			+ GetPublicCSharpType(type, found->second) + " " + name + "\n    {\n";
+		std::string const receiver = isStatic ? "Singleton." : "";
+		if (getter != nullptr)
+		{
+			source += "        get\n        {\n            return " + receiver + getter->m_name + "();\n        }\n";
+		}
+
+		if (setter != nullptr)
+		{
+			source += "        set\n        {\n            " + receiver + setter->m_name + "(value);\n        }\n";
+		}
+
+		source += "    }\n\n";
+	}
+
+	return source;
 }
 
 bool GenerateClassBindings(
@@ -832,6 +927,8 @@ bool GenerateClassBindings(
 		}
 
 		std::string       classSource = ClassTemplate;
+		std::string const managedClassName = classInfo->m_className + (classInfo->m_isSingleton ? "Instance" : "");
+		ReplaceAll(classSource, "{NATIVE_CLASS_NAME}", classInfo->m_className);
 		ReplaceAll(classSource, "{CONSTRUCTOR_ACCESS}", classInfo->m_creator != nullptr ? "public" : "internal");
 		ReplaceAll(classSource, "public partial class", GetDocumentation(documentation, classInfo->m_className) + "public partial class");
 		std::string const parentClassName =
@@ -840,6 +937,7 @@ bool GenerateClassBindings(
 
 		std::string methodBindings;
 		std::string classMethods;
+		std::string singletonMethods;
 		std::string virtualMethods;
 		for (MethodInfo const& methodInfo : classInfo->m_methods)
 		{
@@ -862,6 +960,25 @@ bool GenerateClassBindings(
 			methodBindings += methodBinding;
 			classMethods += GetDocumentation(documentation, classInfo->m_className, methodInfo.m_name)
 				+ GenerateClassMethod(methodInfo, nativeCallIter->second);
+			if (classInfo->m_isSingleton)
+			{
+				std::string arguments;
+				for (ArgumentInfo const& argument : methodInfo.m_argumentInfos)
+				{
+					if (!arguments.empty())
+					{
+						arguments += ", ";
+					}
+
+					arguments += argument.m_name;
+				}
+
+				std::string const returnType = GetPublicCSharpType(methodInfo.m_returnInfo, nativeCallIter->second.m_returnType);
+				singletonMethods += GetDocumentation(documentation, classInfo->m_className, methodInfo.m_name)
+					+ "    public static " + returnType + " " + methodInfo.m_name + "("
+					+ BuildMethodArgumentList(methodInfo, nativeCallIter->second.m_argumentTypes) + ")\n    {\n        "
+					+ (returnType == "void" ? "" : "return ") + "Singleton." + methodInfo.m_name + "(" + arguments + ");\n    }\n\n";
+			}
 		}
 
 		for (MethodInfo const& virtualMethodInfo : classInfo->m_virtualMethods)
@@ -878,6 +995,7 @@ bool GenerateClassBindings(
 													  : classInfo->m_parentClassName + ".MethodName";
 
 		ReplaceAll(classSource, "{METHOD_BINDINGS}", methodBindings);
+		ReplaceAll(classSource, "{CLASS_PROPERTIES}", GenerateClassProperties(*classInfo, builtinTypes, methodNativeCalls));
 		ReplaceAll(classSource, "{CLASS_METHODS}", classMethods);
 		ReplaceAll(classSource, "{VIRTUAL_METHODS}", virtualMethods);
 		ReplaceAll(classSource, "{MING_CLASS_METHOD_DISPATCH}", mingClassMethodDispatch);
@@ -885,11 +1003,24 @@ bool GenerateClassBindings(
 			classSource,
 			"{METHOD_NAME_CLASS}",
 			GenerateMethodNameClass(*classInfo, methodNativeCalls, parentMethodNameClass));
-		ReplaceAll(classSource, "{CLASS_NAME}", classInfo->m_className);
+		ReplaceAll(classSource, "{CLASS_NAME}", managedClassName);
 
-		if (!WriteTextFile(outputDirectory / (classInfo->m_className + ".cs"), classSource))
+		if (!WriteTextFile(outputDirectory / (managedClassName + ".cs"), classSource))
 		{
 			return false;
+		}
+
+		if (classInfo->m_isSingleton)
+		{
+			std::string const singletonSource = "namespace Ming;\n\n" + GetDocumentation(documentation, classInfo->m_className)
+				+ "public static partial class " + classInfo->m_className
+				+ "\n{\n    public static " + managedClassName + " Singleton => MingObject.GetGlobalObject<" + managedClassName
+				+ ">(\"" + classInfo->m_className + "\");\n\n"
+				+ GenerateClassProperties(*classInfo, builtinTypes, methodNativeCalls, true) + singletonMethods + "}\n";
+			if (!WriteTextFile(outputDirectory / (classInfo->m_className + ".cs"), singletonSource))
+			{
+				return false;
+			}
 		}
 	}
 
@@ -1175,6 +1306,7 @@ bool CSharpScriptGenerator::GenerateCSharpBindings(std::filesystem::path const& 
             source += group->m_isEnum ? "" : "public const int ";
             source += constant.m_name + " = " + std::to_string(constant.m_value.As<int>()) + (group->m_isEnum ? ",\n" : ";\n");
         }
+        std::string globalMethods;
         for (auto const& method : group->m_methods)
         {
             auto found = methodNativeCalls.find(&method);
@@ -1187,9 +1319,10 @@ bool CSharpScriptGenerator::GenerateCSharpBindings(std::filesystem::path const& 
             ReplaceAll(bind, "{METHOD_BIND_NAME}", method.m_name + "MethodBind");
             ReplaceAll(bind, "{CLASS_NAME}", group->m_namespaceName);
             ReplaceAll(bind, "{METHOD_NAME}", method.m_name);
-            source += bind + GenerateClassMethod(method, nativeCalls.at(found->second), true);
+            source += bind;
+            globalMethods += GenerateClassMethod(method, nativeCalls.at(found->second), true);
         }
-        source += "}\n";
+        source += globalMethods + "}\n";
         if (!WriteTextFile(generatedDirectory / (group->m_namespaceName + ".cs"), source))
         {
             return false;

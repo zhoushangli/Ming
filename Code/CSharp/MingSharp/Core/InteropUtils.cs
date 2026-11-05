@@ -45,7 +45,13 @@ internal static class InteropUtils
             return null;
         }
 
-        IntPtr gcHandlePtr = NativeFuncs.UnmanagedGetInstanceBindingManaged(unmanaged);
+        IntPtr gcHandlePtr = NativeFuncs.GetScriptInstanceManaged(unmanaged, out bool hasScript);
+        if (hasScript)
+        {
+            return gcHandlePtr != IntPtr.Zero ? GCHandle.FromIntPtr(gcHandlePtr).Target as MingObject : null;
+        }
+
+        gcHandlePtr = NativeFuncs.UnmanagedGetInstanceBindingManaged(unmanaged);
         if (gcHandlePtr != IntPtr.Zero && GCHandle.FromIntPtr(gcHandlePtr).Target is MingObject wrapper
             && wrapper.NativePtr != IntPtr.Zero)
         {

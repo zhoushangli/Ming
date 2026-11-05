@@ -122,6 +122,7 @@ struct ClassInfo
 	// IsVirutal means this class can be instantiated
 	// but it should use as the base class for other classes
 	bool            m_isVirtual = false;
+	bool            m_isSingleton = false;
 	ConstructorFunc m_creator   = nullptr;
 
 	// Registration is the only writer and it runs before anyone keeps a pointer,
@@ -226,6 +227,13 @@ public:
 
 		m_classInfoMap[className] = std::move(classInfo);
 		T::InitializeClass();
+	}
+
+	template <typename T>
+	static void RegisterSingletonClass()
+	{
+		RegisterAbstractClass<T>();
+		m_classInfoMap[T::GetStaticClassName()].m_isSingleton = true;
 	}
 
 	template <typename T>

@@ -70,6 +70,14 @@ bool ProjectSettingsSaver::Save(VirtualPath const& virtualPath, Variant const& v
 	root["type"]             = "ProjectSettings";
 	root["version"]          = kProjectSettingsVersion;
 	root["start_scene_path"] = settings->m_startScenePath.GetString();
+	if (!settings->m_autoLoads.empty())
+	{
+		root["autoloads"] = Json::array();
+		for (ProjectSettings::AutoLoad const& autoload : settings->m_autoLoads)
+		{
+			root["autoloads"].push_back({ { "name", autoload.m_name }, { "path", autoload.m_path.GetString() } });
+		}
+	}
 
 	if (!g_engine->m_fileSystem->WriteText(virtualPath, root.dump(1, '\t')))
 	{

@@ -22,6 +22,7 @@ internal unsafe struct NativeCallbacks
     public delegate* unmanaged<IntPtr, ming_variant*, void> CreateObjectVariant;
     public delegate* unmanaged<ming_variant*, void> DestroyVariant;
     public delegate* unmanaged<String*, IntPtr> GetGlobalObject;
+    public delegate* unmanaged<IntPtr, int*, IntPtr> GetScriptInstanceManaged;
 }
 
 [StructLayout(LayoutKind.Sequential)]
@@ -43,6 +44,14 @@ internal unsafe struct ManagedCallbacks
 public static unsafe class NativeFuncs
 {
     private static NativeCallbacks s_callbacks;
+
+    internal static IntPtr GetScriptInstanceManaged(IntPtr native, out bool hasScript)
+    {
+        int found = 0;
+        IntPtr handle = s_callbacks.GetScriptInstanceManaged(native, &found);
+        hasScript = found != 0;
+        return handle;
+    }
 
     internal static IntPtr GetGlobalObject(string name)
     {

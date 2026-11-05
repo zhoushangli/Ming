@@ -8,13 +8,14 @@ using System.Runtime.Loader;
 // e.g. new PluginLoadContext(".../Game.dll", new[] { "MingSharp" }, hostContext)
 public sealed class PluginLoadContext : AssemblyLoadContext
 {
-    private readonly AssemblyLoadContext _hostLoadContext;
-    private readonly HashSet<string> _sharedAssemblies;
-    private readonly string _pluginDirectory;
 
     // Absolute path of the project assembly that was loaded into this context.
     // e.g. ".../Project/.ming/dotnet/bin/Debug/Game.dll"
     public string AssemblyLoadedPath { get; private set; } = string.Empty;
+
+    private readonly AssemblyLoadContext _hostLoadContext;
+    private readonly HashSet<string> _sharedAssemblies;
+    private readonly string _pluginDirectory;
 
     public PluginLoadContext(
         string pluginPath,

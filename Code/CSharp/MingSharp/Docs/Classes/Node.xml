@@ -52,6 +52,16 @@
       <description>Gets the scene tree that contains this node.</description>
       <returns>The scene tree, or null if this node is outside a tree.</returns>
     </method>
+    <method name="GetNode">
+      <description>Gets this node, a descendant, or a node at an absolute path. Logs an error when no node matches. Attached C# scripts retain their managed type.</description>
+      <param name="path">A child path, a path starting with /Root, or . for this node. Parent path segments are not supported.</param>
+      <returns>The matching node, or null.</returns>
+    </method>
+    <method name="GetNodeOrNull">
+      <description>Gets a node without reporting a missing path.</description>
+      <param name="path">A child path, an absolute path, or . for this node.</param>
+      <returns>The matching node, or null.</returns>
+    </method>
     <method name="AddNode">
       <description>Adds a child node. Moves it from its old parent if needed. If this node is in a scene tree, the child enters the same tree. Moving between different scene trees is not supported.</description>
       <param name="child">The node to add. A null node, this node, or an ancestor is ignored.</param>

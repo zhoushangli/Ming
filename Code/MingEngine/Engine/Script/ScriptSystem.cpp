@@ -139,6 +139,24 @@ Object* CORECLR_DELEGATE_CALLTYPE GetGlobalObject(String const* name)
 	return name != nullptr ? ClassDatabase::GetGlobalObject(name->ToUtf8()) : nullptr;
 }
 
+void* CORECLR_DELEGATE_CALLTYPE GetScriptInstanceManaged(void* native, int32_t* hasScript)
+{
+	*hasScript = 0;
+	if (native == nullptr)
+	{
+		return nullptr;
+	}
+
+	auto* instance = dynamic_cast<CSharpInstance*>(static_cast<Object*>(native)->GetScriptInstance());
+	if (instance == nullptr)
+	{
+		return nullptr;
+	}
+
+	*hasScript = 1;
+	return instance->GetGCHandle();
+}
+
 // Transfer a newly allocated class name to the caller.
 // e.g. GetObjectClassName(owner, &name) leaves name owning its UTF-32 buffer.
 void CORECLR_DELEGATE_CALLTYPE GetObjectClassName(void* objectPtr, String* outName)
@@ -491,6 +509,7 @@ bool ScriptSystem::InitializeDotNetRuntime()
 		&CreateObjectVariant,
 		&DestroyVariant,
 		&GetGlobalObject,
+		&GetScriptInstanceManaged,
 	};
 
 	int32_t const initResult = initialize(

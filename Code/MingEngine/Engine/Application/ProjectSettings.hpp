@@ -4,10 +4,18 @@
 
 #include <string>
 #include <filesystem>
+#include <vector>
 
 class ProjectSettings : public Resource
 {
 	MCLASS(ProjectSettings, Resource)
+
+public:
+	struct AutoLoad
+	{
+		std::string m_name;
+		VirtualPath m_path;
+	};
 
 public:
 	static Ref<ProjectSettings> Get();
@@ -25,6 +33,7 @@ private:
 
 public:
 	VirtualPath m_startScenePath;
+	std::vector<AutoLoad> m_autoLoads;
 
 private:
 	static Ref<ProjectSettings> s_instance;

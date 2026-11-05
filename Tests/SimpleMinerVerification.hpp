@@ -2,6 +2,7 @@
 
 #include "MingEngine/Engine/Input/InputSystem.hpp"
 #include "MingEngine/Core/Object/ClassDatabase.hpp"
+#include "MingEngine/Engine/Application/ProjectSettings.hpp"
 
 inline int VerifySimpleMinerEditorStop(std::filesystem::path const& project)
 {
@@ -11,6 +12,7 @@ inline int VerifySimpleMinerEditorStop(std::filesystem::path const& project)
 	App app(config);
 	g_app = &app;
 	app.Startup();
+	bool editorSkippedAutoLoads = app.GetSceneTree()->GetRoot()->FindChildByName("MinerEngine") == nullptr;
 	auto* input = g_engine->m_inputSystem;
 	input->SetCursorMode(CursorMode::FPS);
 	InputEvent focus;
@@ -25,7 +27,7 @@ inline int VerifySimpleMinerEditorStop(std::filesystem::path const& project)
 	EditorNode::Get()->RequestPlay();
 	auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(60);
 	std::string result;
-	while (std::chrono::steady_clock::now() < deadline && result != "PASS")
+	while (std::chrono::steady_clock::now() < deadline && result != "PASS" && result != "FAIL")
 	{
 		app.RunFrame();
 		std::ifstream(project / "runtime-editor.txt") >> result;
@@ -50,7 +52,7 @@ inline int VerifySimpleMinerEditorStop(std::filesystem::path const& project)
 	app.Shutdown();
 	g_app = nullptr;
 	std::printf("SIMPLEMINER_EDITOR_STOP started=%d stopped=%d saved=%d focus_released=%d\n", started, stopped, saved, editorReleased);
-	return started && stopped && saved && editorReleased ? 0 : 1;
+	return started && stopped && saved && editorReleased && editorSkippedAutoLoads ? 0 : 1;
 }
 
 inline int VerifySimpleMinerRuntime(std::filesystem::path const& project)
@@ -175,7 +177,9 @@ inline int VerifySimpleMinerRuntime(std::filesystem::path const& project)
 	bool geometry = false;
 	if (scene != nullptr)
 	{
-		for (Node* child : scene->GetChildren())
+		Node* voxelRoot = scene->GetNode(NodePath("VoxelRoot"));
+		check(voxelRoot != nullptr, "Game exposes its voxel presentation root");
+		for (Node* child : voxelRoot != nullptr ? voxelRoot->GetChildren() : std::vector<Node*>())
 		{
 			auto* instance = dynamic_cast<MeshInstance3D*>(child);
 			if (instance == nullptr || !instance->GetMeshResource().IsValid())
@@ -218,6 +222,9 @@ inline int VerifySimpleMinerRuntime(std::filesystem::path const& project)
 	std::string result;
 	std::ifstream(project / (std::string("runtime-") + phase + ".txt")) >> result;
 	check(result == "PASS", "managed input, frame budgets, editing and persistence checks");
+	std::string exited;
+	std::ifstream(project / (std::string("runtime-exit-") + phase + ".txt")) >> exited;
+	check(exited == "PASS", "current world ends before autoload tree shutdown and static reference clears");
 	g_app = nullptr;
 	std::printf("SIMPLEMINER_RUNTIME phase=%s failures=%d\n", phase, failures);
 	return failures == 0 ? 0 : 1;

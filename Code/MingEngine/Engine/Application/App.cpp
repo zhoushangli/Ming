@@ -957,6 +957,58 @@ void App::StartupGame()
 
 	m_clock                = new Clock();
 	m_sceneTree            = MemNew<SceneTree>();
+	std::vector<Node*> autoloads;
+	for (ProjectSettings::AutoLoad const& entry : ProjectSettings::Get()->m_autoLoads)
+	{
+		Node* node = nullptr;
+		if (entry.m_path.HasExtension(".tscn"))
+		{
+			Ref<PackedScene> scene(ResourceLoader::LoadUncached(entry.m_path));
+			node = scene.IsValid() ? scene->Instantiate() : nullptr;
+		}
+		else
+		{
+			Ref<CSharpScript> script(ResourceLoader::LoadUncached(entry.m_path));
+			std::string const base = g_engine->m_scriptSystem->GetScriptNativeBase(entry.m_path);
+			if (script.IsValid() && ClassDatabase::IsSubclassOf(base, "Node"))
+			{
+				node = dynamic_cast<Node*>(ClassDatabase::CreateInstance(base));
+				if (node != nullptr)
+				{
+					node->SetScript(Variant(script.Get()));
+					if (node->GetScriptInstance() == nullptr)
+					{
+						MemDelete(node);
+						node = nullptr;
+					}
+				}
+			}
+		}
+
+		if (node == nullptr || !g_engine->m_scriptSystem->ValidateSceneScripts(node))
+		{
+			MemDelete(node);
+			for (Node* pending : autoloads)
+			{
+				MemDelete(pending);
+			}
+
+			ERR_PRINT("Cannot load autoload " + entry.m_name + ": " + entry.m_path.GetString());
+			m_exitCode = 1;
+			m_shouldQuit = true;
+			ShutdownScene();
+			return;
+		}
+
+		node->SetName(entry.m_name.c_str());
+		autoloads.push_back(node);
+	}
+
+	for (Node* node : autoloads)
+	{
+		m_sceneTree->GetRoot()->AddNode(node);
+	}
+
 	VirtualPath const path = ProjectSettings::Get()->m_startScenePath;
 	Ref<PackedScene>  scene;
 	if (path.IsValid())
@@ -969,6 +1021,7 @@ void App::StartupGame()
 		ERR_PRINT("Cannot run project: no valid main scene. " + path.GetString());
 		m_exitCode   = 1;
 		m_shouldQuit = true;
+		ShutdownScene();
 		return;
 	}
 	m_sceneTree->ChangeScene(root);

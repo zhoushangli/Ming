@@ -4,14 +4,6 @@ namespace Ming;
 
 public unsafe ref struct NativeVariantPtrArgs
 {
-    private ming_variant** args;
-    private int argc;
-
-    internal NativeVariantPtrArgs(ming_variant** args, int argc)
-    {
-        this.args = args;
-        this.argc = argc;
-    }
 
     public int Count
     {
@@ -23,5 +15,14 @@ public unsafe ref struct NativeVariantPtrArgs
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get => ref *args[index];
+    }
+
+    private ming_variant** args;
+    private int argc;
+
+    internal NativeVariantPtrArgs(ming_variant** args, int argc)
+    {
+        this.args = args;
+        this.argc = argc;
     }
 }

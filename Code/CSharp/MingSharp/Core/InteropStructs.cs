@@ -105,10 +105,6 @@ public unsafe ref struct ming_variant
         }
     }
 
-    private int _type;
-    private uint _ownsRef;
-    private ming_variant_payload _payload;
-
     public Variant.Type Type
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -131,11 +127,6 @@ public unsafe ref struct ming_variant
         readonly get => _payload.Int;
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         set => _payload.Int = value;
-    }
-
-    public void Dispose()
-    {
-        NativeFuncs.DestroyVariant(ref this);
     }
 
     public uint UInt32
@@ -222,6 +213,15 @@ public unsafe ref struct ming_variant
         readonly get => _payload.OwnedValue;
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         set => _payload.OwnedValue = value;
+    }
+
+    private int _type;
+    private uint _ownsRef;
+    private ming_variant_payload _payload;
+
+    public void Dispose()
+    {
+        NativeFuncs.DestroyVariant(ref this);
     }
 }
 

@@ -36,6 +36,18 @@ SceneTree::SceneTree()
 
 SceneTree::~SceneTree()
 {
+	m_shuttingDown = true;
+	MemDelete(m_pendingScene);
+	m_pendingScene = nullptr;
+
+	if (Node* scene = GetScene())
+	{
+		m_sceneID = ObjectID::Invalid;
+		scene->GetParent()->DetachChildImmediately(scene);
+		scene->MoveToSceneTree(nullptr);
+		MemDelete(scene);
+	}
+
 	if (m_root != nullptr)
 	{
 		// 1) Propagate exit so instances, lights, and the Viewport unregister.
@@ -85,6 +97,8 @@ void SceneTree::FlushPendingNode()
 	// Flush pending scene
 	if (m_pendingScene != nullptr)
 	{
+		Node* nextScene = m_pendingScene;
+		m_pendingScene = nullptr;
 		Node* previousScene = ObjectDatabase::GetInstance<Node>(m_sceneID);
 		if (previousScene != nullptr && previousScene->GetSceneTree() == this)
 		{
@@ -93,9 +107,8 @@ void SceneTree::FlushPendingNode()
 			MemDelete(previousScene);
 		}
 
-		GetSceneViewport()->AddNode(m_pendingScene);
-		m_sceneID      = m_pendingScene->GetObjectID();
-		m_pendingScene = nullptr;
+		m_sceneID = nextScene->GetObjectID();
+		GetSceneViewport()->AddNode(nextScene);
 	}
 
 	// Flush pending destroy nodes
@@ -210,6 +223,24 @@ void SceneTree::ClearScene()
 
 void SceneTree::ChangeScene(Node* newSceneNode)
 {
+	if (newSceneNode == nullptr || newSceneNode->GetParent() != nullptr || newSceneNode->GetSceneTree() != nullptr)
+	{
+		ERR_PRINT("ChangeScene requires a detached scene root.");
+		return;
+	}
+
+	if (m_shuttingDown)
+	{
+		MemDelete(newSceneNode);
+		return;
+	}
+
+	if (newSceneNode == m_pendingScene)
+	{
+		return;
+	}
+
+	MemDelete(m_pendingScene);
 	ClearScene();
 
 	m_pendingScene = newSceneNode;

@@ -24,7 +24,7 @@
     </method>
     <method name="SetCursorMode">
       <description>Sets whether the mouse pointer is free or captured for camera movement. Values outside the supported range are ignored.</description>
-      <param name="cursorMode">0 for a normal pointer, or 1 to hide and capture it for camera movement.</param>
+      <param name="cursorMode">CursorMode.POINTER for a normal pointer, or CursorMode.FPS to hide and capture it.</param>
     </method>
   </methods>
 </class>
