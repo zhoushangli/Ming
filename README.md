@@ -4,16 +4,16 @@ Ming Engine is a personal C++ game engine developed as a learning and research p
 
 ## Features
 
-- C++ engine architecture with modular core, engine, scene, editor, and service layers
+- C++ engine architecture organized into Core, Engine, Scene, and Editor
 - Direct3D 11 rendering backend
 - Scene graph / node-based runtime structure
 - 3D scene objects, cameras, lights, resources, and viewport management
-- AngelScript integration for gameplay scripting
+- C# gameplay scripting through the .NET host and generated bindings
 - Native C++ bindings exposed to script-side code
 - Runtime script modules, script instances, and script resource identity tracking
-- Editor tooling built with ImGui, including UI panels and transform gizmos
+- Editor tooling built with native scene GUI controls, including UI panels and transform gizmos
 - Input and window management through GLFW
-- Audio support through FMOD
+- Audio support through miniaudio
 - Asset and data loading support using tinygltf, tinyxml2, stb, and nlohmann json
 - Math library with vectors, matrices, Euler angles, raycasts, bounds, and utility functions
 - Debug rendering, bitmap fonts, post-processing pipeline, buffers, shaders, and texture handling
@@ -21,16 +21,25 @@ Ming Engine is a personal C++ game engine developed as a learning and research p
 
 ## Repository Layout
 
-- `Code/MingEngine/Core` - math, object model, variants, and render primitives
+- `Code/MingEngine/Core` - math, object model, variants, OS primitives, and render primitives
+- `Code/MingEngine/Core/IO` - virtual paths, base resources, loading, saving, importing, images, and XML utilities
 - `Code/MingEngine/Engine` - application, rendering, input, window, audio, file, event, and scripting systems
-- `Code/MingEngine/Scene` - node system, 3D scene types, resources, import, physics, and viewport logic
-- `Code/MingEngine/Editor` - editor UI and gizmo tools
-- `Code/MingEngine/EngineService` - shared engine services
+- `Code/MingEngine/Scene` - nodes, GUI controls, 3D scene types, concrete resources, SurfaceTool, importers, physics, and viewports
+- `Code/MingEngine/Editor` - editor lifecycle, themes, UI shell, and gizmo tools
+- `Code/MingEngine/Editor/UI/Panels` - scene, filesystem, import, output, and viewport panels
+- `Code/MingEngine/Editor/UI/Inspector` - Inspector panel and property editors
+- `Code/MingEngine/Editor/UI/Controls` - reusable editor controls, including EditorSpinSlider
+- `Code/CSharp` - managed API, assembly loading bridge, build tools, source generator, and SDK
 - `Code/ThirdParty` - third-party libraries used by the engine
+- `Tests` - verification sources, runners, fixtures, and standalone threading lessons
+- `Run` - deployed engine executables and runtime files
+- `Temporary` - build intermediates and generated verification artifacts
+
+Solution folders follow this layout. C++ filters mirror source directories, with external dependencies grouped under `ThirdParty`. `Ming.NET.Sdk` and test files are shown as solution items without adding build projects.
 
 ## Script System
 
-Ming Engine uses AngelScript as its embedded scripting language. The script layer is designed to bridge C++ engine objects and script-side gameplay code through generated/native bindings, script modules, script instances, and resource identity tracking.
+Ming Engine hosts C# gameplay scripts through .NET. `MingSharp` exposes the managed API, `MingPlugins` handles managed loading and interop, `MingTools` provides project/build tools, and `Ming.SourceGenerators` supplies compile-time script metadata.
 
 ## Build Notes
 
@@ -55,16 +64,16 @@ Ming Engine 是一个使用 C++ 编写的个人自研游戏引擎项目，主要
 
 ## 技术特性
 
-- 使用 C++ 构建的模块化引擎架构，包含 Core、Engine、Scene、Editor 和 EngineService 等层级
+- 使用 C++ 构建的引擎架构，按 Core、Engine、Scene 和 Editor 组织
 - 基于 Direct3D 11 的渲染后端
 - 基于节点的场景结构和运行时对象管理
 - 支持 3D 场景对象、摄像机、光源、资源和 Viewport 管理
-- 集成 AngelScript 作为游戏逻辑脚本语言
+- 通过 .NET 宿主与生成绑定支持 C# 游戏逻辑脚本
 - 将原生 C++ 引擎接口绑定并暴露给脚本侧使用
 - 支持脚本模块、脚本实例和脚本资源身份追踪
-- 使用 ImGui 构建编辑器工具，包括 UI 面板和变换 Gizmo
+- 使用原生场景 GUI 控件构建编辑器工具，包括 UI 面板和变换 Gizmo
 - 使用 GLFW 进行窗口和输入管理
-- 使用 FMOD 提供音频支持
+- 使用 miniaudio 提供音频支持
 - 使用 tinygltf、tinyxml2、stb 和 nlohmann json 支持资源与数据加载
 - 自研数学库，包含向量、矩阵、欧拉角、射线检测、包围体和常用工具函数
 - 包含 Debug Renderer、Bitmap Font、后处理管线、Buffer、Shader 和 Texture 等渲染基础设施
@@ -72,16 +81,25 @@ Ming Engine 是一个使用 C++ 编写的个人自研游戏引擎项目，主要
 
 ## 仓库结构
 
-- `Code/MingEngine/Core` - 数学库、对象模型、Variant 和渲染基础类型
+- `Code/MingEngine/Core` - 数学库、对象模型、Variant、OS 基础能力和渲染基础类型
+- `Code/MingEngine/Core/IO` - 虚拟路径、资源基类、加载、保存、导入、图像和 XML 工具
 - `Code/MingEngine/Engine` - 应用层、渲染、输入、窗口、音频、文件、事件和脚本系统
-- `Code/MingEngine/Scene` - 节点系统、3D 场景类型、资源、导入、物理和 Viewport 逻辑
-- `Code/MingEngine/Editor` - 编辑器 UI 和 Gizmo 工具
-- `Code/MingEngine/EngineService` - 引擎公共服务
+- `Code/MingEngine/Scene` - 节点、GUI 控件、3D 场景类型、具体资源、SurfaceTool、导入器、物理和 Viewport
+- `Code/MingEngine/Editor` - 编辑器生命周期、主题、UI 外壳和 Gizmo 工具
+- `Code/MingEngine/Editor/UI/Panels` - 场景、文件系统、导入、输出和视口面板
+- `Code/MingEngine/Editor/UI/Inspector` - Inspector 面板与属性编辑器
+- `Code/MingEngine/Editor/UI/Controls` - 编辑器可复用控件，包括 EditorSpinSlider
+- `Code/CSharp` - 托管 API、程序集加载桥接、构建工具、源码生成器和 SDK
 - `Code/ThirdParty` - 项目使用的第三方库
+- `Tests` - 验证源码、运行脚本、测试数据和独立线程示例
+- `Run` - 部署后的引擎程序与运行时文件
+- `Temporary` - 构建中间文件与验证生成产物
+
+解决方案文件夹与上述结构对应。C++ 筛选器跟随源码目录，外部依赖统一归入 `ThirdParty`。`Ming.NET.Sdk` 和测试文件通过解决方案条目展示，不增加构建项目。
 
 ## 脚本系统
 
-Ming Engine 使用 AngelScript 作为嵌入式脚本语言。脚本系统用于连接 C++ 引擎对象和脚本侧游戏逻辑，包含原生绑定、脚本模块、脚本实例和资源身份追踪等机制。
+Ming Engine 通过 .NET 承载 C# 游戏脚本。`MingSharp` 提供托管 API，`MingPlugins` 处理托管加载与互操作，`MingTools` 提供项目及构建工具，`Ming.SourceGenerators` 提供编译期脚本元数据。
 
 ## 构建说明
 

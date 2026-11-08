@@ -193,7 +193,7 @@ std::vector<Button*> MenuBar::CreatePopupItems(
 		{
 			auto* line = MemNew<ColorRect>();
 			line->SetColor(source->GetThemeColor("separator_color", "MenuBar"));
-			line->SetCustomMinimumSize(Vector2(0.f, source->GetThemeConstant("separator_width", "MenuBar")));
+			line->SetCustomMinimumSize(Vector2(0.f, static_cast<float>(source->GetThemeConstant("separator_width", "MenuBar"))));
 			line->SetMouseFilter(MouseFilter::Ignore);
 			content->AddNode(line);
 			continue;
@@ -235,8 +235,8 @@ std::vector<Button*> MenuBar::CreatePopupItems(
 			check->SetExpandMode(TextureRect::ExpandMode::IgnoreSize);
 			check->SetStretchMode(TextureRect::StretchMode::KeepAspectCentered);
 			check->SetCustomMinimumSize(Vector2(
-				source->GetThemeConstant("check_size", "MenuBar"),
-				source->GetThemeConstant("check_size", "MenuBar")));
+				static_cast<float>(source->GetThemeConstant("check_size", "MenuBar")),
+				static_cast<float>(source->GetThemeConstant("check_size", "MenuBar"))));
 			button->AddNode(check);
 		}
 

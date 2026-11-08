@@ -1,7 +1,7 @@
 #pragma once
 
 #include "MingEngine/Editor/UI/EditorUIContext.hpp"
-#include "MingEngine/Engine/File/VirtualPath.hpp"
+#include "MingEngine/Core/IO/VirtualPath.hpp"
 #include <functional>
 
 class PopupPanel;

@@ -1,7 +1,7 @@
 #include "MingEngine/Scene/GUI/ColorPicker.hpp"
 #include "ThirdParty/GLFW/glfw3.h"
 
-#include "MingEngine/Core/Image.hpp"
+#include "MingEngine/Core/IO/Image.hpp"
 #include "MingEngine/Scene/Core/Viewport.hpp"
 #include "MingEngine/Scene/GUI/Button.hpp"
 #include "MingEngine/Scene/GUI/Label.hpp"

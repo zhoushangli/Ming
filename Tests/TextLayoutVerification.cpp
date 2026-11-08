@@ -10,7 +10,7 @@
 #include "MingEngine/Scene/GUI/PanelContainer.hpp"
 #include "MingEngine/Scene/GUI/ColorRect.hpp"
 #include "MingEngine/Scene/GUI/ThemeDatabase.hpp"
-#include "MingEngine/Core/Object/ResourceLoader.hpp"
+#include "MingEngine/Core/IO/ResourceLoader.hpp"
 #include "RenderReadback.hpp"
 #include "TextLayoutTestFont.inc"
 #include "ThirdParty/GLFW/glfw3.h"

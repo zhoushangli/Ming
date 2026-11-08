@@ -3,7 +3,7 @@
 #include "MingEngine/Core/Object/ObjectID.hpp"
 #include "MingEngine/Core/Object/Variant.hpp"
 
-#include "MingEngine/Core/Object/Resource.hpp"
+#include "MingEngine/Core/IO/Resource.hpp"
 #include <map>
 #include <string>
 #include <vector>

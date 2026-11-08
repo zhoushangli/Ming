@@ -1,6 +1,6 @@
 #pragma once
 
-#include "MingEngine/Core/Object/ResourceLoader.hpp"
+#include "MingEngine/Core/IO/ResourceLoader.hpp"
 
 class ShaderResourceLoader : public ResourceFormatLoader
 {

@@ -1,17 +1,17 @@
 #include "MingEngine/Scene/Import/GLTFImporter.hpp"
 
-#include "MingEngine/Core/Object/ResourceLoader.hpp"
-#include "MingEngine/Core/Render/SurfaceTool.hpp"
+#include "MingEngine/Core/IO/ResourceLoader.hpp"
+#include "MingEngine/Scene/Resource/SurfaceTool.hpp"
 #include "MingEngine/Core/Render/Vertex.hpp"
 #include "MingEngine/Core/Render/VertexUtils.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Scene/Resource/MeshResource.hpp"
 
-// tiny_fltf_v3 use fopen and strcpy, which are considered unsafe by MSVC.
-// Disable the warnings for this file.
+// Suppress MSVC warnings for legacy CRT calls and unused tinygltf helper functions.
+// e.g. fopen and tg3__b64_is_valid are confined to the third-party implementation.
 #if defined(_MSC_VER)
 #pragma warning(push)
-#pragma warning(disable : 4996)
+#pragma warning(disable : 4505 4996)
 #endif
 
 #define TINYGLTF3_IMPLEMENTATION

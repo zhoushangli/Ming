@@ -1,7 +1,7 @@
 #pragma once
 
-#include "MingEngine/Core/Object/ResourceLoader.hpp"
-#include "MingEngine/Core/Object/ResourceSaver.hpp"
+#include "MingEngine/Core/IO/ResourceLoader.hpp"
+#include "MingEngine/Core/IO/ResourceSaver.hpp"
 
 class CSharpScriptLoader : public ResourceFormatLoader
 {

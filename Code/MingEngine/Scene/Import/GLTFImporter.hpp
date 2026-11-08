@@ -1,6 +1,6 @@
 #pragma once
 
-#include "MingEngine/Core/Object/ResourceImporter.hpp"
+#include "MingEngine/Core/IO/ResourceImporter.hpp"
 
 class GLTFImporter : public ResourceFormatImporter
 {

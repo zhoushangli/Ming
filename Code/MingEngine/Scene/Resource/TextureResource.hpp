@@ -1,7 +1,7 @@
 #pragma once
 
-#include "MingEngine/Core/Image.hpp"
-#include "MingEngine/Core/Object/Resource.hpp"
+#include "MingEngine/Core/IO/Image.hpp"
+#include "MingEngine/Core/IO/Resource.hpp"
 #include "MingEngine/Core/Render/RID.hpp"
 #include "MingEngine/Engine/Render/RenderTypes.hpp"
 

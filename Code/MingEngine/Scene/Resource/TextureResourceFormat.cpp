@@ -1,6 +1,6 @@
 #include "MingEngine/Scene/Resource/TextureResourceFormat.hpp"
 
-#include "MingEngine/Core/Image.hpp"
+#include "MingEngine/Core/IO/Image.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Engine/File/FileSystem.hpp"
 #include "MingEngine/Scene/Resource/TextureResource.hpp"

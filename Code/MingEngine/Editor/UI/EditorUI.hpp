@@ -1,11 +1,11 @@
 #pragma once
 
-#include "MingEngine/Editor/UI/FileSystemPanel.hpp"
-#include "MingEngine/Editor/UI/ImportPanel.hpp"
-#include "MingEngine/Editor/UI/InspectorPanel.hpp"
-#include "MingEngine/Editor/UI/OutputPanel.hpp"
-#include "MingEngine/Editor/UI/ScenePanel.hpp"
-#include "MingEngine/Editor/UI/ViewportPanel.hpp"
+#include "MingEngine/Editor/UI/Panels/FileSystemPanel.hpp"
+#include "MingEngine/Editor/UI/Panels/ImportPanel.hpp"
+#include "MingEngine/Editor/UI/Inspector/InspectorPanel.hpp"
+#include "MingEngine/Editor/UI/Panels/OutputPanel.hpp"
+#include "MingEngine/Editor/UI/Panels/ScenePanel.hpp"
+#include "MingEngine/Editor/UI/Panels/ViewportPanel.hpp"
 #include "MingEngine/Editor/UI/Popup/ProjectSettingsPopup.hpp"
 #include "MingEngine/Editor/UI/Popup/WarningPopup.hpp"
 #include "MingEngine/Scene/GUI/MenuBar.hpp"

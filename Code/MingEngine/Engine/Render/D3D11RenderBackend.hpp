@@ -2,7 +2,7 @@
 
 #include "MingEngine/Engine/Application/EngineBuildPreferences.hpp"
 
-#include "MingEngine/Core/Image.hpp"
+#include "MingEngine/Core/IO/Image.hpp"
 #include "MingEngine/Core/Math/IntVec2.hpp"
 #include "MingEngine/Core/Math/Matrix4x4.hpp"
 #include "MingEngine/Engine/Event/EventSystem.hpp"

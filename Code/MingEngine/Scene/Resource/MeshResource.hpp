@@ -2,7 +2,7 @@
 
 #include "MingEngine/Core/Math/AABB3.hpp"
 #include "MingEngine/Core/Math/Triangle3.hpp"
-#include "MingEngine/Core/Object/Resource.hpp"
+#include "MingEngine/Core/IO/Resource.hpp"
 #include "MingEngine/Core/Render/RID.hpp"
 #include "MingEngine/Scene/Resource/MaterialResource.hpp"
 

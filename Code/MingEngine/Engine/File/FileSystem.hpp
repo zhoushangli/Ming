@@ -1,7 +1,7 @@
 #pragma once
 
 #include "MingEngine/Engine/Application/SystemBase.hpp"
-#include "MingEngine/Engine/File/VirtualPath.hpp"
+#include "MingEngine/Core/IO/VirtualPath.hpp"
 #include "MingEngine/Core/String.hpp"
 
 #include <filesystem>

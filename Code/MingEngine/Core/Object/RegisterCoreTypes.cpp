@@ -1,12 +1,12 @@
 #include "MingEngine/Core/Object/RegisterCoreTypes.hpp"
 
-#include "MingEngine/Core/Image.hpp"
+#include "MingEngine/Core/IO/Image.hpp"
 #include "MingEngine/Core/Object/ClassDatabase.hpp"
 #include "MingEngine/Core/Object/RefCounted.hpp"
-#include "MingEngine/Core/Object/Resource.hpp"
-#include "MingEngine/Core/Object/ResourceImporter.hpp"
-#include "MingEngine/Core/Object/ResourceLoader.hpp"
-#include "MingEngine/Core/Object/ResourceSaver.hpp"
+#include "MingEngine/Core/IO/Resource.hpp"
+#include "MingEngine/Core/IO/ResourceImporter.hpp"
+#include "MingEngine/Core/IO/ResourceLoader.hpp"
+#include "MingEngine/Core/IO/ResourceSaver.hpp"
 #include "MingEngine/Core/Object/Script.hpp"
 
 #include "MingEngine/Core/Math/MathUtils.hpp"

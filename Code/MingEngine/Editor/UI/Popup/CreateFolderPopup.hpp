@@ -1,6 +1,6 @@
 #pragma once
 
-#include "MingEngine/Engine/File/VirtualPath.hpp"
+#include "MingEngine/Core/IO/VirtualPath.hpp"
 
 #include <string>
 #include "MingEngine/Editor/UI/EditorUIContext.hpp"

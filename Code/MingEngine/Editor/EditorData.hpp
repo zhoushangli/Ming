@@ -1,7 +1,7 @@
 #pragma once
 #include <chrono>
 
-#include "MingEngine/Engine/File/VirtualPath.hpp"
+#include "MingEngine/Core/IO/VirtualPath.hpp"
 
 class EditorData
 {

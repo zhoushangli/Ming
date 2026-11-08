@@ -1,7 +1,7 @@
 #include "MingEngine/Engine/File/FileSystem.hpp"
 
-#include "MingEngine/Core/Object/ResourceImporter.hpp"
-#include "MingEngine/Core/Object/ResourceLoader.hpp"
+#include "MingEngine/Core/IO/ResourceImporter.hpp"
+#include "MingEngine/Core/IO/ResourceLoader.hpp"
 #include "MingEngine/Core/Object/ClassDatabase.hpp"
 
 #include <algorithm>

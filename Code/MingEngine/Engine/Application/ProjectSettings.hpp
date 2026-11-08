@@ -1,6 +1,6 @@
 #pragma once
 
-#include "MingEngine/Core/Object/Resource.hpp"
+#include "MingEngine/Core/IO/Resource.hpp"
 
 #include <string>
 #include <filesystem>

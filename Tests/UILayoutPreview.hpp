@@ -1,6 +1,6 @@
 #pragma once
 
-#include "MingEngine/Core/Object/ResourceLoader.hpp"
+#include "MingEngine/Core/IO/ResourceLoader.hpp"
 #include "MingEngine/Core/StringUtils.hpp"
 #include "MingEngine/Scene/Core/SceneTree.hpp"
 #include "MingEngine/Scene/GUI/ColorRect.hpp"

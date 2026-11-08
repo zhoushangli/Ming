@@ -1,7 +1,7 @@
 #include "MingEngine/Scene/3D/Skybox3D.hpp"
 
 #include "MingEngine/Core/Math/MathUtils.hpp"
-#include "MingEngine/Core/Object/ResourceLoader.hpp"
+#include "MingEngine/Core/IO/ResourceLoader.hpp"
 #include "MingEngine/Core/Render/Vertex.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Engine/Render/IndexBuffer.hpp"

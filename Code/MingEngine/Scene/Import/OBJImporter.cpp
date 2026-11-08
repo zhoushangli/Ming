@@ -1,8 +1,8 @@
 #include "MingEngine/Scene/Import/OBJImporter.hpp"
 
 #include "MingEngine/Core/Object/ClassDatabase.hpp"
-#include "MingEngine/Core/Object/ResourceLoader.hpp"
-#include "MingEngine/Core/Render/SurfaceTool.hpp"
+#include "MingEngine/Core/IO/ResourceLoader.hpp"
+#include "MingEngine/Scene/Resource/SurfaceTool.hpp"
 #include "MingEngine/Core/Render/Vertex.hpp"
 #include "MingEngine/Core/Render/VertexUtils.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"

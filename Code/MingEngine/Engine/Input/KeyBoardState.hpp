@@ -3,6 +3,10 @@
 #include <cstdint>
 
 #include "ThirdParty/GLFW/glfw3.h"
+#ifdef GLFW_APIENTRY_DEFINED
+#undef APIENTRY
+#undef GLFW_APIENTRY_DEFINED
+#endif
 
 enum class KeyCode
 {

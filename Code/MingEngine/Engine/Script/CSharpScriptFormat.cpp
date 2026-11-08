@@ -26,7 +26,7 @@ bool CSharpScriptSaver::CanSave(VirtualPath const& virtualPath, Variant const& v
 	return csharpScript.IsValid() && virtualPath.HasExtension(".cs");
 }
 
-bool CSharpScriptSaver::Save(VirtualPath const& virtualPath, Variant const& value)
+bool CSharpScriptSaver::Save(VirtualPath const&, Variant const&)
 {
 	return true;
 }

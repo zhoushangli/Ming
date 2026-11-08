@@ -22,11 +22,11 @@
     <Filter Include="Engine\Audio">
       <UniqueIdentifier>{3E58DBDD-334E-4B20-B258-A95AAAA90C70}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Engine\Console">
-      <UniqueIdentifier>{9315B5CB-8E8E-43F9-8B23-B7C6FE749814}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Core">
       <UniqueIdentifier>{B78E0A61-909B-4F5C-A05F-4DEFDE31BD22}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core\OS">
+      <UniqueIdentifier>{D8E49BA3-55A9-497A-9232-56A1CF4D3864}</UniqueIdentifier>
     </Filter>
     <Filter Include="Core\Object">
       <UniqueIdentifier>{85A6A2C3-2F43-49A8-A471-73C5F5966CF4}</UniqueIdentifier>
@@ -94,12 +94,6 @@
     <Filter Include="ThirdParty\miniaudio">
       <UniqueIdentifier>{fc603be4-6932-4a78-9d4c-1c53d22e8e02}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Editor\Icons">
-      <UniqueIdentifier>{f6a9b2d7-fb76-40d2-8a0c-da3a8571fb25}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Scene\2D">
-      <UniqueIdentifier>{ee7351fa-f52d-4758-b774-1ca39938894b}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Scene\Core">
       <UniqueIdentifier>{4F21D01C-8451-4760-BDF2-F6E55D327144}</UniqueIdentifier>
     </Filter>
@@ -111,6 +105,18 @@
     </Filter>
     <Filter Include="Scene\Import">
       <UniqueIdentifier>{4D6B3428-FC4F-4FAD-A9ED-F46B6CEC4C85}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core\IO">
+      <UniqueIdentifier>{0DCB034A-DF91-57F9-8464-CCC9741B1232}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Editor\UI\Controls">
+      <UniqueIdentifier>{048EB2D8-E4D9-56E6-A6BA-ABE1E3599B5B}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Editor\UI\Inspector">
+      <UniqueIdentifier>{1931402A-217A-56B4-88E5-98745B10A8AB}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Editor\UI\Panels">
+      <UniqueIdentifier>{B9AC4486-FC44-5D30-A6CA-88DE0D790A06}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -135,8 +141,8 @@
     <ClCompile Include="Engine\Render\HeatMaps.cpp">
       <Filter>Engine\Render</Filter>
     </ClCompile>
-    <ClCompile Include="Core\Image.cpp">
-      <Filter>Core</Filter>
+    <ClCompile Include="Core\IO\Image.cpp">
+      <Filter>Core\IO</Filter>
     </ClCompile>
     <ClCompile Include="Core\NamedStrings.cpp">
       <Filter>Core</Filter>
@@ -159,8 +165,8 @@
     <ClCompile Include="Core\Render\VertexUtils.cpp">
       <Filter>Core\Render</Filter>
     </ClCompile>
-    <ClCompile Include="Core\XmlUtils.cpp">
-      <Filter>Core</Filter>
+    <ClCompile Include="Core\IO\XmlUtils.cpp">
+      <Filter>Core\IO</Filter>
     </ClCompile>
     <ClCompile Include="Editor\EditorCamera.cpp">
       <Filter>Editor</Filter>
@@ -204,26 +210,26 @@
     <ClCompile Include="Editor\UI\EditorUI.cpp">
       <Filter>Editor\UI</Filter>
     </ClCompile>
-    <ClCompile Include="Editor\UI\FileSystemPanel.cpp">
-      <Filter>Editor\UI</Filter>
+    <ClCompile Include="Editor\UI\Panels\FileSystemPanel.cpp">
+      <Filter>Editor\UI\Panels</Filter>
     </ClCompile>
-    <ClCompile Include="Editor\UI\ImportPanel.cpp">
-      <Filter>Editor\UI</Filter>
+    <ClCompile Include="Editor\UI\Panels\ImportPanel.cpp">
+      <Filter>Editor\UI\Panels</Filter>
     </ClCompile>
-    <ClCompile Include="Editor\UI\InspectorPanel.cpp">
-      <Filter>Editor\UI</Filter>
+    <ClCompile Include="Editor\UI\Inspector\InspectorPanel.cpp">
+      <Filter>Editor\UI\Inspector</Filter>
     </ClCompile>
-    <ClCompile Include="Editor\UI\InspectorProperty.cpp">
-      <Filter>Editor\UI</Filter>
+    <ClCompile Include="Editor\UI\Inspector\InspectorProperty.cpp">
+      <Filter>Editor\UI\Inspector</Filter>
     </ClCompile>
-    <ClCompile Include="Editor\UI\OutputPanel.cpp">
-      <Filter>Editor\UI</Filter>
+    <ClCompile Include="Editor\UI\Panels\OutputPanel.cpp">
+      <Filter>Editor\UI\Panels</Filter>
     </ClCompile>
-    <ClCompile Include="Editor\UI\ScenePanel.cpp">
-      <Filter>Editor\UI</Filter>
+    <ClCompile Include="Editor\UI\Panels\ScenePanel.cpp">
+      <Filter>Editor\UI\Panels</Filter>
     </ClCompile>
-    <ClCompile Include="Editor\UI\ViewportPanel.cpp">
-      <Filter>Editor\UI</Filter>
+    <ClCompile Include="Editor\UI\Panels\ViewportPanel.cpp">
+      <Filter>Editor\UI\Panels</Filter>
     </ClCompile>
     <ClCompile Include="Editor\Gizmos\GizmoComponent.cpp">
       <Filter>Editor\Gizmos</Filter>
@@ -462,8 +468,8 @@
     <ClCompile Include="Engine\File\FileSystem.cpp">
       <Filter>Engine\File</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\File\VirtualPath.cpp">
-      <Filter>Engine\File</Filter>
+    <ClCompile Include="Core\IO\VirtualPath.cpp">
+      <Filter>Core\IO</Filter>
     </ClCompile>
     <ClCompile Include="Engine\Script\ScriptSystem.cpp">
       <Filter>Engine\Script</Filter>
@@ -483,17 +489,17 @@
     <ClCompile Include="Core\Object\RefCounted.cpp">
       <Filter>Core\Object</Filter>
     </ClCompile>
-    <ClCompile Include="Core\Object\Resource.cpp">
-      <Filter>Core\Object</Filter>
+    <ClCompile Include="Core\IO\Resource.cpp">
+      <Filter>Core\IO</Filter>
     </ClCompile>
-    <ClCompile Include="Core\Object\ResourceImporter.cpp">
-      <Filter>Core\Object</Filter>
+    <ClCompile Include="Core\IO\ResourceImporter.cpp">
+      <Filter>Core\IO</Filter>
     </ClCompile>
-    <ClCompile Include="Core\Object\ResourceLoader.cpp">
-      <Filter>Core\Object</Filter>
+    <ClCompile Include="Core\IO\ResourceLoader.cpp">
+      <Filter>Core\IO</Filter>
     </ClCompile>
-    <ClCompile Include="Core\Object\ResourceSaver.cpp">
-      <Filter>Core\Object</Filter>
+    <ClCompile Include="Core\IO\ResourceSaver.cpp">
+      <Filter>Core\IO</Filter>
     </ClCompile>
     <ClCompile Include="Core\Object\Script.cpp">
       <Filter>Core\Object</Filter>
@@ -543,8 +549,8 @@
     <ClCompile Include="Scene\Resource\ShaderResourceFormat.cpp">
       <Filter>Scene\Resource</Filter>
     </ClCompile>
-    <ClCompile Include="Core\Render\SurfaceTool.cpp">
-      <Filter>Core\Render</Filter>
+    <ClCompile Include="Scene\Resource\SurfaceTool.cpp">
+      <Filter>Scene\Resource</Filter>
     </ClCompile>
     <ClCompile Include="Engine\Network\NetworkSystem.cpp">
       <Filter>Engine\Network</Filter>
@@ -600,7 +606,9 @@
     <ClCompile Include="Engine\Render\RenderBackend.cpp">
       <Filter>Engine\Render</Filter>
     </ClCompile>
-    <ClCompile Include="Core\Render\RID.cpp" />
+    <ClCompile Include="Core\Render\RID.cpp">
+      <Filter>Core\Render</Filter>
+    </ClCompile>
     <ClCompile Include="Scene\GUI\ColorRect.cpp">
       <Filter>Scene\GUI</Filter>
     </ClCompile>
@@ -696,8 +704,8 @@
     <ClInclude Include="Engine\Render\HeatMaps.hpp">
       <Filter>Engine\Render</Filter>
     </ClInclude>
-    <ClInclude Include="Core\Image.hpp">
-      <Filter>Core</Filter>
+    <ClInclude Include="Core\IO\Image.hpp">
+      <Filter>Core\IO</Filter>
     </ClInclude>
     <ClInclude Include="Core\NamedStrings.hpp">
       <Filter>Core</Filter>
@@ -720,8 +728,8 @@
     <ClInclude Include="Core\Render\VertexUtils.hpp">
       <Filter>Core\Render</Filter>
     </ClInclude>
-    <ClInclude Include="Core\XmlUtils.hpp">
-      <Filter>Core</Filter>
+    <ClInclude Include="Core\IO\XmlUtils.hpp">
+      <Filter>Core\IO</Filter>
     </ClInclude>
     <ClInclude Include="Editor\EditorCamera.hpp">
       <Filter>Editor</Filter>
@@ -765,23 +773,23 @@
     <ClInclude Include="Editor\UI\EditorUIContext.hpp">
       <Filter>Editor\UI</Filter>
     </ClInclude>
-    <ClInclude Include="Editor\UI\FileSystemPanel.hpp">
-      <Filter>Editor\UI</Filter>
+    <ClInclude Include="Editor\UI\Panels\FileSystemPanel.hpp">
+      <Filter>Editor\UI\Panels</Filter>
     </ClInclude>
-    <ClInclude Include="Editor\UI\ImportPanel.hpp">
-      <Filter>Editor\UI</Filter>
+    <ClInclude Include="Editor\UI\Panels\ImportPanel.hpp">
+      <Filter>Editor\UI\Panels</Filter>
     </ClInclude>
-    <ClInclude Include="Editor\UI\InspectorPanel.hpp">
-      <Filter>Editor\UI</Filter>
+    <ClInclude Include="Editor\UI\Inspector\InspectorPanel.hpp">
+      <Filter>Editor\UI\Inspector</Filter>
     </ClInclude>
-    <ClInclude Include="Editor\UI\OutputPanel.hpp">
-      <Filter>Editor\UI</Filter>
+    <ClInclude Include="Editor\UI\Panels\OutputPanel.hpp">
+      <Filter>Editor\UI\Panels</Filter>
     </ClInclude>
-    <ClInclude Include="Editor\UI\ScenePanel.hpp">
-      <Filter>Editor\UI</Filter>
+    <ClInclude Include="Editor\UI\Panels\ScenePanel.hpp">
+      <Filter>Editor\UI\Panels</Filter>
     </ClInclude>
-    <ClInclude Include="Editor\UI\ViewportPanel.hpp">
-      <Filter>Editor\UI</Filter>
+    <ClInclude Include="Editor\UI\Panels\ViewportPanel.hpp">
+      <Filter>Editor\UI\Panels</Filter>
     </ClInclude>
     <ClInclude Include="Editor\Gizmos\GizmoComponent.hpp">
       <Filter>Editor\Gizmos</Filter>
@@ -1050,38 +1058,38 @@
     <ClInclude Include="Editor\Gizmos\GizmosShapes.hpp">
       <Filter>Editor\Gizmos</Filter>
     </ClInclude>
-    <ClInclude Include="Editor\UI\InspectorPropertyVec3.hpp">
-      <Filter>Editor\UI</Filter>
+    <ClInclude Include="Editor\UI\Inspector\InspectorPropertyVec3.hpp">
+      <Filter>Editor\UI\Inspector</Filter>
     </ClInclude>
-    <ClInclude Include="Editor\UI\InspectorProperty.hpp">
-      <Filter>Editor\UI</Filter>
+    <ClInclude Include="Editor\UI\Inspector\InspectorProperty.hpp">
+      <Filter>Editor\UI\Inspector</Filter>
     </ClInclude>
-    <ClInclude Include="Editor\UI\InspectorPropertyBool.hpp">
-      <Filter>Editor\UI</Filter>
+    <ClInclude Include="Editor\UI\Inspector\InspectorPropertyBool.hpp">
+      <Filter>Editor\UI\Inspector</Filter>
     </ClInclude>
-    <ClInclude Include="Editor\UI\InspectorPropertyColor.hpp">
-      <Filter>Editor\UI</Filter>
+    <ClInclude Include="Editor\UI\Inspector\InspectorPropertyColor.hpp">
+      <Filter>Editor\UI\Inspector</Filter>
     </ClInclude>
-    <ClInclude Include="Editor\UI\InspectorPropertyEuler.hpp">
-      <Filter>Editor\UI</Filter>
+    <ClInclude Include="Editor\UI\Inspector\InspectorPropertyEuler.hpp">
+      <Filter>Editor\UI\Inspector</Filter>
     </ClInclude>
-    <ClInclude Include="Editor\UI\InspectorPropertyFloat.hpp">
-      <Filter>Editor\UI</Filter>
+    <ClInclude Include="Editor\UI\Inspector\InspectorPropertyFloat.hpp">
+      <Filter>Editor\UI\Inspector</Filter>
     </ClInclude>
-    <ClInclude Include="Editor\UI\InspectorPropertyInt.hpp">
-      <Filter>Editor\UI</Filter>
+    <ClInclude Include="Editor\UI\Inspector\InspectorPropertyInt.hpp">
+      <Filter>Editor\UI\Inspector</Filter>
     </ClInclude>
-    <ClInclude Include="Editor\UI\InspectorPropertyResource.hpp">
-      <Filter>Editor\UI</Filter>
+    <ClInclude Include="Editor\UI\Inspector\InspectorPropertyResource.hpp">
+      <Filter>Editor\UI\Inspector</Filter>
     </ClInclude>
-    <ClInclude Include="Editor\UI\InspectorPropertyString.hpp">
-      <Filter>Editor\UI</Filter>
+    <ClInclude Include="Editor\UI\Inspector\InspectorPropertyString.hpp">
+      <Filter>Editor\UI\Inspector</Filter>
     </ClInclude>
     <ClInclude Include="Engine\File\FileSystem.hpp">
       <Filter>Engine\File</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\File\VirtualPath.hpp">
-      <Filter>Engine\File</Filter>
+    <ClInclude Include="Core\IO\VirtualPath.hpp">
+      <Filter>Core\IO</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Script\ScriptSystem.hpp">
       <Filter>Engine\Script</Filter>
@@ -1104,17 +1112,17 @@
     <ClInclude Include="Core\Object\RefCounted.hpp">
       <Filter>Core\Object</Filter>
     </ClInclude>
-    <ClInclude Include="Core\Object\Resource.hpp">
-      <Filter>Core\Object</Filter>
+    <ClInclude Include="Core\IO\Resource.hpp">
+      <Filter>Core\IO</Filter>
     </ClInclude>
-    <ClInclude Include="Core\Object\ResourceImporter.hpp">
-      <Filter>Core\Object</Filter>
+    <ClInclude Include="Core\IO\ResourceImporter.hpp">
+      <Filter>Core\IO</Filter>
     </ClInclude>
-    <ClInclude Include="Core\Object\ResourceLoader.hpp">
-      <Filter>Core\Object</Filter>
+    <ClInclude Include="Core\IO\ResourceLoader.hpp">
+      <Filter>Core\IO</Filter>
     </ClInclude>
-    <ClInclude Include="Core\Object\ResourceSaver.hpp">
-      <Filter>Core\Object</Filter>
+    <ClInclude Include="Core\IO\ResourceSaver.hpp">
+      <Filter>Core\IO</Filter>
     </ClInclude>
     <ClInclude Include="Core\Object\Script.hpp">
       <Filter>Core\Object</Filter>
@@ -1161,8 +1169,8 @@
     <ClInclude Include="Scene\Resource\ShaderResourceFormat.hpp">
       <Filter>Scene\Resource</Filter>
     </ClInclude>
-    <ClInclude Include="Core\Render\SurfaceTool.hpp">
-      <Filter>Core\Render</Filter>
+    <ClInclude Include="Scene\Resource\SurfaceTool.hpp">
+      <Filter>Scene\Resource</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Network\NetworkSystem.hpp">
       <Filter>Engine\Network</Filter>
@@ -1230,7 +1238,9 @@
     <ClInclude Include="Engine\Render\RenderBackend.hpp">
       <Filter>Engine\Render</Filter>
     </ClInclude>
-    <ClInclude Include="Core\Render\RID.hpp" />
+    <ClInclude Include="Core\Render\RID.hpp">
+      <Filter>Core\Render</Filter>
+    </ClInclude>
     <ClInclude Include="Scene\Resource\MaterialResource.hpp">
       <Filter>Scene\Resource</Filter>
     </ClInclude>
@@ -1304,8 +1314,8 @@
     <ClInclude Include="Scene\GUI\PopupPanel.hpp"><Filter>Scene\GUI</Filter></ClInclude>
     <ClCompile Include="Scene\GUI\ScrollContainer.cpp"><Filter>Scene\GUI</Filter></ClCompile>
     <ClInclude Include="Scene\GUI\ScrollContainer.hpp"><Filter>Scene\GUI</Filter></ClInclude>
-    <ClInclude Include="Editor\UI\InspectorPropertyVec2.hpp"><Filter>Editor\UI</Filter></ClInclude>
-    <ClInclude Include="Editor\UI\InspectorPropertyEnum.hpp"><Filter>Editor\UI</Filter></ClInclude>
+    <ClInclude Include="Editor\UI\Inspector\InspectorPropertyVec2.hpp"><Filter>Editor\UI\Inspector</Filter></ClInclude>
+    <ClInclude Include="Editor\UI\Inspector\InspectorPropertyEnum.hpp"><Filter>Editor\UI\Inspector</Filter></ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Scene\GUI\Tree.cpp"><Filter>Scene\GUI</Filter></ClCompile>
@@ -1348,5 +1358,56 @@
     <None Include="Scene\Resource\DefaultFontData.inc">
       <Filter>Scene\Resource</Filter>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Core\OS\Thread.cpp"><Filter>Core\OS</Filter></ClCompile>
+    <ClInclude Include="Core\OS\Thread.hpp"><Filter>Core\OS</Filter></ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Editor\UI\Popup\SceneFilePopup.cpp">
+      <Filter>Editor\UI\Popup</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\UI\Controls\EditorSpinSlider.cpp">
+      <Filter>Editor\UI\Controls</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\Gizmos\EditorNodeGizmo3D.cpp">
+      <Filter>Editor\Gizmos</Filter>
+    </ClCompile>
+    <ClInclude Include="Editor\UI\Popup\SceneFilePopup.hpp">
+      <Filter>Editor\UI\Popup</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\UI\Controls\EditorSpinSlider.hpp">
+      <Filter>Editor\UI\Controls</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\Gizmos\EditorNodeGizmo3D.hpp">
+      <Filter>Editor\Gizmos</Filter>
+    </ClInclude>
+    <ClCompile Include="Scene\GUI\ProgressBar.cpp">
+      <Filter>Scene\GUI</Filter>
+    </ClCompile>
+    <ClInclude Include="Scene\GUI\ProgressBar.hpp">
+      <Filter>Scene\GUI</Filter>
+    </ClInclude>
+    <ClCompile Include="Scene\GUI\SplitContainer.cpp">
+      <Filter>Scene\GUI</Filter>
+    </ClCompile>
+    <ClInclude Include="Scene\GUI\SplitContainer.hpp">
+      <Filter>Scene\GUI</Filter>
+    </ClInclude>
+    <ClCompile Include="Editor\UI\EditorUIDocking.cpp">
+      <Filter>Editor\UI</Filter>
+    </ClCompile>
+    <ClInclude Include="Editor\BuiltinIcons.hpp">
+      <Filter>Editor</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\BuiltinBrand.hpp">
+      <Filter>Editor</Filter>
+    </ClInclude>
+    <ClCompile Include="Editor\UI\Popup\CreateScriptPopup.cpp">
+      <Filter>Editor\UI\Popup</Filter>
+    </ClCompile>
+    <ClInclude Include="Editor\UI\Popup\CreateScriptPopup.hpp">
+      <Filter>Editor\UI\Popup</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

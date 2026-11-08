@@ -11,13 +11,64 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MingSharp", "Code\CSharp\Mi
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MingTools", "Code\CSharp\MingTools\MingTools.csproj", "{5CFEBF8F-57CA-466C-B5B8-3AD5C630E2FB}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Temporary", "Temporary", "{00755D0B-A695-EAAE-4CA6-E21549AA452C}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Code", "Code", "{314C6247-30EA-3492-19B6-DF847E3B326F}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "CSharp", "CSharp", "{C5EEEF96-C86D-50AE-B555-7C730A6AAC9A}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ming.SourceGenerators", "Code\CSharp\Ming.SourceGenerators\Ming.SourceGenerators.csproj", "{D49F9914-5304-4DD2-85EC-5182ECFB6DB1}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Ming.NET.Sdk", "Ming.NET.Sdk", "{8A41EAE7-42B9-5AEE-BFFD-AF52C40FBB6D}"
+	ProjectSection(SolutionItems) = preProject
+		Code\CSharp\Ming.NET.Sdk\Sdk\Sdk.props = Code\CSharp\Ming.NET.Sdk\Sdk\Sdk.props
+		Code\CSharp\Ming.NET.Sdk\Sdk\Sdk.targets = Code\CSharp\Ming.NET.Sdk\Sdk\Sdk.targets
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{F9207162-8F1F-529E-896D-51FAB0381B03}"
+	ProjectSection(SolutionItems) = preProject
+		Tests\CSharpBuildVerification.hpp = Tests\CSharpBuildVerification.hpp
+		Tests\CSharpWorkflowVerification.cpp = Tests\CSharpWorkflowVerification.cpp
+		Tests\ColorPickerVerification.hpp = Tests\ColorPickerVerification.hpp
+		Tests\EditorNumericGizmoVerification.hpp = Tests\EditorNumericGizmoVerification.hpp
+		Tests\EditorPanelsVerification.hpp = Tests\EditorPanelsVerification.hpp
+		Tests\EditorUIVerification.cpp = Tests\EditorUIVerification.cpp
+		Tests\EditorWorkflowVerification.cpp = Tests\EditorWorkflowVerification.cpp
+		Tests\ExportNativeEditorEvidence.py = Tests\ExportNativeEditorEvidence.py
+		Tests\InspectorVisibilityVerification.hpp = Tests\InspectorVisibilityVerification.hpp
+		Tests\NativeEditorStartupVerification.cpp = Tests\NativeEditorStartupVerification.cpp
+		Tests\NativeFieldsVerification.cpp = Tests\NativeFieldsVerification.cpp
+		Tests\README.md = Tests\README.md
+		Tests\RenderCompositionVerification.cpp = Tests\RenderCompositionVerification.cpp
+		Tests\RenderReadback.hpp = Tests\RenderReadback.hpp
+		Tests\RunNativeFieldsVerification.ps1 = Tests\RunNativeFieldsVerification.ps1
+		Tests\RunSimpleMinerVerification.ps1 = Tests\RunSimpleMinerVerification.ps1
+		Tests\SimpleMinerRuntimeChecks.cs = Tests\SimpleMinerRuntimeChecks.cs
+		Tests\SimpleMinerVerification.hpp = Tests\SimpleMinerVerification.hpp
+		Tests\TextLayoutTestFont.inc = Tests\TextLayoutTestFont.inc
+		Tests\TextLayoutVerification.cpp = Tests\TextLayoutVerification.cpp
+		Tests\ThemeVerification.hpp = Tests\ThemeVerification.hpp
+		Tests\UILayoutPreview.hpp = Tests\UILayoutPreview.hpp
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Threading", "Threading", "{B1AC42A8-8941-54CE-BEA2-4D8EE76DC53E}"
+	ProjectSection(SolutionItems) = preProject
+		Tests\Threading\L01PersistentWorker.cpp = Tests\Threading\L01PersistentWorker.cpp
+		Tests\Threading\README.md = Tests\Threading\README.md
+		Tests\Threading\ThreadingLesson.vcxproj = Tests\Threading\ThreadingLesson.vcxproj
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{1BBE16E4-8FA9-596F-82E3-BCCFFE769860}"
+	ProjectSection(SolutionItems) = preProject
+		.clang-format = .clang-format
+		.editorconfig = .editorconfig
+		.gitignore = .gitignore
+		.vscode\c_cpp_properties.json = .vscode\c_cpp_properties.json
+		.vscode\launch.json = .vscode\launch.json
+		.vscode\tasks.json = .vscode\tasks.json
+		AGENTS.md = AGENTS.md
+		NativeEditorUI.md = NativeEditorUI.md
+		README.md = README.md
+		dotnet-tools.json = dotnet-tools.json
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -95,7 +146,13 @@ Global
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{C5EEEF96-C86D-50AE-B555-7C730A6AAC9A} = {314C6247-30EA-3492-19B6-DF847E3B326F}
+		{DDA81A11-FF9B-4B77-835F-A6323D431AED} = {314C6247-30EA-3492-19B6-DF847E3B326F}
+		{1340BEF0-1951-EB9E-A3C5-15E26A91156A} = {C5EEEF96-C86D-50AE-B555-7C730A6AAC9A}
+		{831C5CB7-0FF1-C229-EFC7-20E4F514F205} = {C5EEEF96-C86D-50AE-B555-7C730A6AAC9A}
+		{5CFEBF8F-57CA-466C-B5B8-3AD5C630E2FB} = {C5EEEF96-C86D-50AE-B555-7C730A6AAC9A}
 		{D49F9914-5304-4DD2-85EC-5182ECFB6DB1} = {C5EEEF96-C86D-50AE-B555-7C730A6AAC9A}
+		{8A41EAE7-42B9-5AEE-BFFD-AF52C40FBB6D} = {C5EEEF96-C86D-50AE-B555-7C730A6AAC9A}
+		{B1AC42A8-8941-54CE-BEA2-4D8EE76DC53E} = {F9207162-8F1F-529E-896D-51FAB0381B03}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {0F3C69D9-3653-47A6-B777-9D75E77AB5DF}

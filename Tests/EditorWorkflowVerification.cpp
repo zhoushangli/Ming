@@ -11,11 +11,11 @@
 #include "MingEngine/Scene/3D/Node3D.hpp"
 #include "MingEngine/Scene/GUI/ThemeDatabase.hpp"
 #include "MingEngine/Scene/GUI/TabContainer.hpp"
-#include "MingEngine/Editor/UI/EditorSpinSlider.hpp"
+#include "MingEngine/Editor/UI/Controls/EditorSpinSlider.hpp"
 #include "MingEngine/Scene/Resource/MaterialResource.hpp"
 #include "MingEngine/Scene/3D/MeshInstance3D.hpp"
 #include "MingEngine/Scene/Resource/MeshResource.hpp"
-#include "MingEngine/Core/Object/ResourceLoader.hpp"
+#include "MingEngine/Core/IO/ResourceLoader.hpp"
 #include "ThirdParty/GLFW/glfw3.h"
 
 #include <cstdio>

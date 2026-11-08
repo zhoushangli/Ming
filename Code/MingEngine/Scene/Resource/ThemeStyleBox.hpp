@@ -1,7 +1,7 @@
 #pragma once
 
 #include "MingEngine/Core/Math/AABB2.hpp"
-#include "MingEngine/Core/Object/Resource.hpp"
+#include "MingEngine/Core/IO/Resource.hpp"
 #include "MingEngine/Core/Render/Color.hpp"
 
 #include <map>

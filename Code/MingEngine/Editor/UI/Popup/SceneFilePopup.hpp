@@ -2,7 +2,7 @@
 
 #include "MingEngine/Editor/UI/EditorUIContext.hpp"
 #include "MingEngine/Editor/UI/Popup/EditorPopupUtils.hpp"
-#include "MingEngine/Engine/File/VirtualPath.hpp"
+#include "MingEngine/Core/IO/VirtualPath.hpp"
 #include "MingEngine/Scene/GUI/Tree.hpp"
 
 #include <functional>

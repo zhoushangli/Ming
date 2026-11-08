@@ -2,10 +2,10 @@
 #include "MingEngine/Engine/Window/WindowSystem.hpp"
 #include "MingEngine/Engine/Application/ProjectSettings.hpp"
 #include "MingEngine/Editor/EditorNode.hpp"
-#include "MingEngine/Editor/UI/InspectorPanel.hpp"
-#include "MingEngine/Editor/UI/InspectorProperty.hpp"
-#include "MingEngine/Editor/UI/InspectorPropertyEnum.hpp"
-#include "MingEngine/Editor/UI/InspectorPropertyInt.hpp"
+#include "MingEngine/Editor/UI/Inspector/InspectorPanel.hpp"
+#include "MingEngine/Editor/UI/Inspector/InspectorProperty.hpp"
+#include "MingEngine/Editor/UI/Inspector/InspectorPropertyEnum.hpp"
+#include "MingEngine/Editor/UI/Inspector/InspectorPropertyInt.hpp"
 #include "MingEngine/Editor/UI/Popup/ProjectSettingsPopup.hpp"
 #include "MingEngine/Scene/RegisterAllTypes.hpp"
 #include "MingEngine/Scene/GUI/ThemeDatabase.hpp"
@@ -14,7 +14,7 @@
 #include "MingEngine/Scene/Core/Window.hpp"
 #include "MingEngine/Scene/Core/PackedScene.hpp"
 #include "MingEngine/Scene/GUI/SpinBox.hpp"
-#include "MingEngine/Editor/UI/EditorSpinSlider.hpp"
+#include "MingEngine/Editor/UI/Controls/EditorSpinSlider.hpp"
 #include "MingEngine/Scene/GUI/Label.hpp"
 #include "MingEngine/Scene/GUI/OptionButton.hpp"
 #include "MingEngine/Scene/GUI/ScrollContainer.hpp"
@@ -22,8 +22,8 @@
 #include "MingEngine/Scene/GUI/ColorRect.hpp"
 #include "MingEngine/Scene/GUI/TextureRect.hpp"
 #include "MingEngine/Engine/Render/GPUTexture.hpp"
-#include "MingEngine/Core/Object/ResourceLoader.hpp"
-#include "MingEngine/Core/Object/ResourceSaver.hpp"
+#include "MingEngine/Core/IO/ResourceLoader.hpp"
+#include "MingEngine/Core/IO/ResourceSaver.hpp"
 #include "MingEngine/Core/Object/VariantJson.hpp"
 #include "MingEngine/Editor/UI/EditorUI.hpp"
 #include "MingEngine/Editor/UI/EditorIcons.hpp"
@@ -37,7 +37,7 @@
 #include "MingEngine/Editor/EditorCamera.hpp"
 #include "MingEngine/Scene/3D/Light3D.hpp"
 #include "MingEngine/Core/Render/VertexUtils.hpp"
-#include "MingEngine/Core/Render/SurfaceTool.hpp"
+#include "MingEngine/Scene/Resource/SurfaceTool.hpp"
 
 #include "RenderReadback.hpp"
 #include <d3d11.h>
@@ -719,6 +719,31 @@ int main(int argc, char** argv)
 				&& VariantJson::TryDeserialize(json, Variant::Type::Vector2, decoded)
 				&& decoded.As<Vector2>() == Vector2(1.25f, -2.5f),
 			"Vector2 JSON round trip");
+
+		Color const sourceColor(0, 128, 255, 64);
+		check(
+			VariantJson::TrySerialize(Variant(sourceColor), json)
+				&& VariantJson::TryDeserialize(json, Variant::Type::Color, decoded)
+				&& decoded.As<Color>() == sourceColor,
+			"Color JSON preserves byte components including both boundaries");
+
+		for (auto const& invalidComponent : {
+			 nlohmann::ordered_json(-1), nlohmann::ordered_json(256), nlohmann::ordered_json(1.5),
+			 nlohmann::ordered_json(1.0), nlohmann::ordered_json((std::numeric_limits<int64_t>::min)()),
+			 nlohmann::ordered_json((std::numeric_limits<uint64_t>::max)()), nlohmann::ordered_json(true),
+			 nlohmann::ordered_json(nullptr) })
+		{
+			for (int componentIndex = 0; componentIndex < 4; ++componentIndex)
+			{
+				json = nlohmann::ordered_json::array({ 0, 128, 255, 64 });
+				json[componentIndex] = invalidComponent;
+				decoded = Variant(sourceColor);
+				check(
+					!VariantJson::TryDeserialize(json, Variant::Type::Color, decoded)
+						&& decoded.As<Color>() == sourceColor,
+					"Color JSON rejects invalid components without replacing the output");
+			}
+		}
 
 		{
 			auto* clipped = MemNew<Control>();

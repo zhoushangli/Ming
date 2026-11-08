@@ -3,7 +3,7 @@
 #include "MingEngine/Engine/Render/BuiltinShaders.hpp"
 #include "MingEngine/Core/Render/Vertex.hpp"
 #include "MingEngine/Core/Render/VertexUtils.hpp"
-#include "MingEngine/Core/Object/ResourceLoader.hpp"
+#include "MingEngine/Core/IO/ResourceLoader.hpp"
 #include "MingEngine/Scene/RegisterAllTypes.hpp"
 #include "MingEngine/Scene/GUI/ThemeDatabase.hpp"
 #include "RenderReadback.hpp"
