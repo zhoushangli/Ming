@@ -18,8 +18,14 @@ void EditorGizmoVisual3D::UploadGeometry(
 	char const* shaderName, std::string_view shaderSource, RenderRequestPass pass, DepthMode depth)
 {
 	RenderServer* server = g_engine != nullptr ? g_engine->m_renderServer : nullptr;
-	if (server == nullptr || m_verts.empty())
+	if (server == nullptr)
 	{
+		return;
+	}
+
+	if (m_verts.empty())
+	{
+		server->Instance3DSetBase(m_instanceRID, RID::Invalid);
 		return;
 	}
 
@@ -66,6 +72,14 @@ void EditorGizmoVisual3D::SetGizmoColor(Color const& color)
 	if (m_mesh.IsValid())
 	{
 		m_mesh->m_materialResource->m_tint = color;
+	}
+}
+
+void EditorGizmoVisual3D::SetGizmoTexture(Ref<TextureResource> const& texture)
+{
+	if (m_mesh.IsValid())
+	{
+		m_mesh->m_materialResource->SetDiffuseTexture(texture);
 	}
 }
 

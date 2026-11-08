@@ -63,6 +63,10 @@ Ref<Theme> EditorThemeManager::CreateTheme()
 	}
 
 	theme->SetConstant("minimum_height", "Button", controlHeight);
+	theme->SetConstant("minimum_height", "ProgressBar", 12);
+	theme->SetStyleBox("background", "ProgressBar", box(field, border, 1.f, 1.f, 1.f));
+	theme->SetStyleBox("fill", "ProgressBar", box(accent, Color::Transparent, 0.f, 0.f, 0.f));
+	theme->SetConstant("build_popup_width", "Editor", 420);
 	theme->SetStyleBox(
 		"normal",
 		"Button",
@@ -84,6 +88,18 @@ Ref<Theme> EditorThemeManager::CreateTheme()
 	theme->SetStyleBox("pressed", "EditorScriptButton", box(tint, accent, 1.f, 4.f, 2.5f));
 	theme->SetStyleBox("hover_pressed", "EditorScriptButton", box(tint, accent, 1.f, 4.f, 2.5f));
 	theme->SetStyleBox("disabled", "EditorScriptButton", box(field, border, 1.f, 4.f, 2.5f));
+	theme->SetTypeVariation("EditorPropertyValue", "PanelContainer");
+	theme->SetStyleBox("panel", "EditorPropertyValue", box(field, Color::Transparent, 0.f, 0.f, 0.f));
+	theme->SetTypeVariation("EditorPropertyEdit", "LineEdit");
+	theme->SetTypeVariation("EditorPropertyButton", "Button");
+	theme->SetTypeVariation("EditorPropertyOption", "OptionButton");
+	for (char const* type : { "EditorScriptButton", "EditorPropertyEdit", "EditorPropertyButton", "EditorPropertyOption" })
+	{
+		for (char const* state : { "normal", "read_only", "disabled" })
+		{
+			theme->SetStyleBox(state, type, box(Color::Transparent, Color::Transparent, 0.f, 4.f, 2.5f));
+		}
+	}
 	for (char const* type : { "EditorScriptAction", "EditorScriptMenu" })
 	{
 		theme->SetTypeVariation(type, "Button");
@@ -94,6 +110,9 @@ Ref<Theme> EditorThemeManager::CreateTheme()
 		theme->SetStyleBox("hover_pressed", type, box(tint, Color::Transparent, 0.f, 3.f, 0.f));
 		theme->SetStyleBox("disabled", type, box(Color::Transparent, Color::Transparent, 0.f, 3.f, 0.f));
 	}
+	theme->SetStyleBox("pressed", "EditorPropertyButton", box(Color::Transparent, Color::Transparent, 0.f, 4.f, 2.5f));
+	theme->SetStyleBox("hover_pressed", "EditorPropertyButton", box(elevated, Color::Transparent, 0.f, 4.f, 2.5f));
+	theme->SetColor("font_pressed_color", "EditorPropertyButton", text);
 	theme->SetColor("font_hover_color", "Button", text);
 	theme->SetColor("font_pressed_color", "Button", accent);
 	theme->SetColor("font_hover_pressed_color", "Button", accent);
@@ -463,6 +482,8 @@ Ref<Theme> EditorThemeManager::CreateScaledTheme(Ref<Theme> const& baseTheme, fl
 		{ "Button", "icon_separation" },
 		{ "Button", "icon_size" },
 		{ "Button", "minimum_height" },
+		{ "ProgressBar", "minimum_height" },
+		{ "Editor", "build_popup_width" },
 		{ "EditorGroupButton", "icon_size" },
 		{ "EditorGroupButton", "icon_separation" },
 		{ "EditorScriptAction", "icon_size" },

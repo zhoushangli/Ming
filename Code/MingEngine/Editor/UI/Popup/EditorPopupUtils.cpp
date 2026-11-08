@@ -6,7 +6,7 @@
 
 #include <algorithm>
 
-PopupPanel* EditorPopupUtils::Create(Control* owner, String const& title, VBoxContainer*& content)
+PopupPanel* EditorPopupUtils::Create(Control* owner, String const& title, VBoxContainer*& content, bool closable)
 {
 	auto* popup = MemNew<PopupPanel>();
 	popup->SetSerializable(false);
@@ -31,16 +31,19 @@ PopupPanel* EditorPopupUtils::Create(Control* owner, String const& title, VBoxCo
 		Label* heading = AddLabel(row, title, "EditorInspectorTitle");
 		heading->SetVerticalAlignment(VerticalAlignment::Center);
 		heading->SetHorizontalSizeFlags(Control::Size_ExpandFill);
-		Button* close = AddButton(
-			row,
-			"",
-			[popup]()
-			{
-				popup->Close();
-			});
-		close->SetName("CloseDialog");
-		close->SetIcon(owner->GetThemeIcon("Close", "EditorIcons"));
-		close->SetThemeTypeVariation("EditorPanelAction");
+		if (closable)
+		{
+			Button* close = AddButton(
+				row,
+				"",
+				[popup]()
+				{
+					popup->Close();
+				});
+			close->SetName("CloseDialog");
+			close->SetIcon(owner->GetThemeIcon("Close", "EditorIcons"));
+			close->SetThemeTypeVariation("EditorPanelAction");
+		}
 		auto* area = MemNew<PanelContainer>();
 		area->SetThemeTypeVariation("EditorDialogBody");
 		area->SetVerticalSizeFlags(Control::Size_ExpandFill);
@@ -58,11 +61,11 @@ PopupPanel* EditorPopupUtils::Create(Control* owner, String const& title, VBoxCo
 
 	ObjectID const id = popup->GetObjectID();
 	popup->SetKeyCallback(
-		[id](InputEvent const& event)
+		[id, closable](InputEvent const& event)
 		{
 			if (event.m_type == InputEventType::Key && event.m_pressed && event.m_keyCode == GLFW_KEY_ESCAPE)
 			{
-				if (auto* current = ObjectDatabase::GetInstance<PopupPanel>(id))
+				if (auto* current = ObjectDatabase::GetInstance<PopupPanel>(id); closable && current != nullptr)
 				{
 					current->Close();
 				}

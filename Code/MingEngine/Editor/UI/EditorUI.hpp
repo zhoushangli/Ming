@@ -22,6 +22,7 @@ class SplitContainer;
 class TextureRect;
 class MenuBar;
 class OptionButton;
+class ProgressBar;
 
 class EditorUI
 {
@@ -66,6 +67,9 @@ public:
 		std::function<bool(VirtualPath const&)> accepted,
 		std::function<void()>                   cancelled = {});
 	void Warning(std::string const& title, std::string const& message);
+	void ShowBuildProgress(String const& message);
+	void HideBuildProgress();
+	bool IsBuildProgressVisible() const;
 	void ShowMenu(Control* source, Vector2 position, std::vector<MenuItem> const& items);
 	void SetNativeDragPreview(Control* source, String const& text);
 	void OpenScriptFile(std::function<void(VirtualPath const&)> selected);
@@ -90,7 +94,7 @@ public:
 
 	void    SetViewportRect(Vector2 origin, Vector2 dims);
 	Vector2 GetViewportOrigin() const { return m_viewportOrigin; }
-	Vector2 GetViewportDimensions() const { return m_viewportDims; }
+	Vector2 GetViewportDimensions() const;
 	Vector2 ToViewportPos(Vector2 position) const;
 
 	template <typename TPanel>
@@ -128,6 +132,9 @@ private:
 	SceneFilePopup             m_sceneFilePopup;
 	ProjectSettingsPopup       m_projectSettingsPopup;
 	WarningPopup               m_warningPopup;
+	PopupPanel*                m_buildPopup = nullptr;
+	Label*                     m_buildMessage = nullptr;
+	ProgressBar*               m_buildProgress = nullptr;
 	EditorNode*                m_owner         = nullptr;
 	ColorRect*                 m_nativeRoot    = nullptr;
 	MenuBar*                   m_menuBar       = nullptr;

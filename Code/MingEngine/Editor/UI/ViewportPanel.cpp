@@ -254,6 +254,11 @@ bool ViewportPanel::HandleSceneInput(InputEvent const& event)
 	case InputEventType::MouseButton:
 		if (event.m_mouseButton == GLFW_MOUSE_BUTTON_RIGHT)
 		{
+			if (event.m_pressed && owner->m_editorGizmos->IsDragging())
+			{
+				owner->m_editorGizmos->CancelDrag();
+				return true;
+			}
 			m_navigating =
 				event.m_pressed && !owner->m_editorGizmos->IsDragging() && m_view->IsPointInside(event.m_position);
 			if (m_navigating)

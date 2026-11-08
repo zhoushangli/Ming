@@ -122,6 +122,7 @@ inline int VerifySimpleMinerRuntime(std::filesystem::path const& project)
 	check(input->GetMouseDelta() == Vector2::Zero, "new input frame clears previous mouse motion");
 
 	Vector3 initialPosition;
+	Vector3 initialPlayerPosition;
 	float initialYaw = 0.f;
 	double totalFrameMs = 0.0;
 	double maxFrameMs = 0.0;
@@ -158,15 +159,27 @@ inline int VerifySimpleMinerRuntime(std::filesystem::path const& project)
 		auto* camera = app.GetSceneTree()->GetWorldCamera();
 		if (frame == 0 && camera != nullptr)
 		{
-			initialPosition = camera->GetLocalPosition();
-			initialYaw = camera->GetLocalOrientation().m_yawDegrees;
+			initialPosition = camera->GetWorldPosition();
+			initialYaw = camera->GetWorldOrientation().m_yawDegrees;
+			auto* player = dynamic_cast<Node3D*>(camera->GetParent());
+			check(player != nullptr && player->GetName() == "Player" && camera->GetName() == "Camera",
+				"Player prefab owns the active Camera");
+			if (player != nullptr)
+			{
+				initialPlayerPosition = player->GetWorldPosition();
+			}
 		}
 
 		if (frame == 5)
 		{
-			check(camera != nullptr && camera->GetLocalPosition() != initialPosition
-				&& camera->GetLocalOrientation().m_yawDegrees != initialYaw,
-				"scripted key and fractional mouse events drive the C# camera");
+			auto* player = camera != nullptr ? dynamic_cast<Node3D*>(camera->GetParent()) : nullptr;
+			check(player != nullptr && player->GetWorldPosition() != initialPlayerPosition
+				&& camera->GetWorldPosition() != initialPosition
+				&& camera->GetWorldOrientation().m_yawDegrees != initialYaw
+				&& camera->GetLocalPosition() == Vector3::Zero
+				&& camera->GetLocalOrientation().m_yawDegrees == 0.f
+				&& player->GetLocalOrientation().m_pitchDegrees == 0.f,
+				"scripted input moves and turns Player while Camera follows with local pitch");
 		}
 	}
 

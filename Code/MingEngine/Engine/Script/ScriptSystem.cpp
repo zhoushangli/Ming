@@ -273,6 +273,8 @@ void ScriptSystem::Shutdown()
 		return;
 	}
 
+	CloseProjectBuild();
+
 	// 1) Release retained resources while the managed bridge is still available
 	DetachScriptInstances();
 	m_pendingReloadBackups.clear();
@@ -297,6 +299,9 @@ void ScriptSystem::Shutdown()
 		m_unloadProjectAssembly = nullptr;
 		m_ensureProjectSolution = nullptr;
 		m_buildProjectSolution  = nullptr;
+		m_beginProjectBuild     = nullptr;
+		m_pollProjectBuild      = nullptr;
+		m_closeProjectBuild     = nullptr;
 	}
 
 	INFO_PRINT("Script system shutdown completed.\n");
@@ -492,6 +497,18 @@ bool ScriptSystem::InitializeDotNetRuntime()
 			"(0x%08X)\n",
 			result));
 
+	result = loadAssembly(managedAssemblyPath.c_str(), typeName, L"BeginProjectBuild",
+		UNMANAGEDCALLERSONLY_METHOD, nullptr, reinterpret_cast<void**>(&m_beginProjectBuild));
+	ERR_FAIL_COND_V_MSG(result != 0 || m_beginProjectBuild == nullptr, false, "Failed to resolve BeginProjectBuild.");
+
+	result = loadAssembly(managedAssemblyPath.c_str(), typeName, L"PollProjectBuild",
+		UNMANAGEDCALLERSONLY_METHOD, nullptr, reinterpret_cast<void**>(&m_pollProjectBuild));
+	ERR_FAIL_COND_V_MSG(result != 0 || m_pollProjectBuild == nullptr, false, "Failed to resolve PollProjectBuild.");
+
+	result = loadAssembly(managedAssemblyPath.c_str(), typeName, L"CloseProjectBuild",
+		UNMANAGEDCALLERSONLY_METHOD, nullptr, reinterpret_cast<void**>(&m_closeProjectBuild));
+	ERR_FAIL_COND_V_MSG(result != 0 || m_closeProjectBuild == nullptr, false, "Failed to resolve CloseProjectBuild.");
+
 	NativeCallbacks const nativeCallbacks{
 		&Log,
 		&CreateString,
@@ -570,6 +587,39 @@ bool ScriptSystem::EnsureProjectSolution()
 	INFO_PRINT(Stringf("C# project files are ready: %s\n", projectDirectory.u8string().c_str()));
 
 	return true;
+}
+
+bool ScriptSystem::BeginProjectBuild()
+{
+	ERR_FAIL_COND_V_MSG(!m_isInitialized || m_beginProjectBuild == nullptr, false,
+		"Cannot build C# project: managed bridge is not initialized.");
+
+	std::filesystem::path projectDirectory;
+	ERR_FAIL_COND_V_MSG(g_engine == nullptr || g_engine->m_fileSystem == nullptr
+		|| !g_engine->m_fileSystem->TryGetPhysicalPath(VirtualPath("res://"), projectDirectory), false,
+		"Cannot resolve the C# project directory.");
+
+	String const nativePath(projectDirectory.u8string());
+	return m_beginProjectBuild(&nativePath) == 0;
+}
+
+ScriptSystem::BuildState ScriptSystem::PollProjectBuild(int32_t& exitCode)
+{
+	exitCode = -1;
+	if (!m_isInitialized || m_pollProjectBuild == nullptr)
+	{
+		return BuildState::Failed;
+	}
+
+	return static_cast<BuildState>(m_pollProjectBuild(&exitCode));
+}
+
+void ScriptSystem::CloseProjectBuild()
+{
+	if (m_isInitialized && m_closeProjectBuild != nullptr)
+	{
+		m_closeProjectBuild();
+	}
 }
 
 bool ScriptSystem::BuildProjectSolution()

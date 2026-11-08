@@ -9,6 +9,8 @@
 #include "RenderReadback.hpp"
 
 #include <cstdio>
+#include <chrono>
+#include <thread>
 #include <shobjidl.h>
 
 #pragma comment(lib, "Ole32.lib")
@@ -135,11 +137,16 @@ int main(int argc, char** argv)
 		invalid << "Invalid C# project for build failure verification";
 		invalid.close();
 		EditorNode::Get()->RequestPlay();
-		for (int frame = 0; frame < 4; ++frame)
+		auto const deadline = std::chrono::steady_clock::now() + std::chrono::seconds(60);
+		do
 		{
 			app.RunFrame();
+			std::this_thread::sleep_for(std::chrono::milliseconds(10));
 		}
-		buildBlocked = !app.IsGameRunning();
+		while ((EditorNode::Get()->IsPreparingPlay() || EditorNode::Get()->IsBuildingCSharpProject())
+			&& std::chrono::steady_clock::now() < deadline);
+		buildBlocked = !app.IsGameRunning() && !EditorNode::Get()->IsPreparingPlay()
+			&& !EditorNode::Get()->IsBuildingCSharpProject();
 	}
 
 	app.Quit();

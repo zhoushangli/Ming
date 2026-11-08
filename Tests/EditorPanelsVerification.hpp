@@ -394,7 +394,7 @@ inline void VerifyNativeEditorPanels(
 	frame();
 	ui->GetDockSlot(0)->SetCurrentTab(ui->GetDockSlot(0)->GetPageIndex(&ui->GetPanel<ImportPanel>()));
 	frame();
-	SpinBox* scale = FindControl<SpinBox>(&ui->GetPanel<ImportPanel>());
+	EditorSpinSlider* scale = FindControl<EditorSpinSlider>(&ui->GetPanel<ImportPanel>());
 	check(
 		scale != nullptr && scale->GetValue().As<float>() == 1.f,
 		"native import panel preserves unit scale defaults without static initialization dependencies");

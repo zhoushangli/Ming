@@ -227,4 +227,11 @@ void CanvasItem::BindMethods()
 {
 	ClassDatabase::BindMethod("SetVisible", &CanvasItem::SetVisible, { "visible", "cancelDrag" });
 	ClassDatabase::BindMethod("IsVisible", &CanvasItem::IsVisible, {});
+	ClassDatabase::BindMethod("SetVisibility", &CanvasItem::SetVisibility, { "visible" });
+	ClassDatabase::BindMethod("IsVisibleInHierarchy", &CanvasItem::IsVisibleInHierarchy, {});
+	ADD_GROUP("Visibility");
+	ADD_PROPERTY(
+		PropertyInfo(Variant::Type::Bool, "visible", PropertyInfo::Hint::None, "", PropertyInfo::UsageFlags::Default),
+		"SetVisibility",
+		"IsVisible");
 }

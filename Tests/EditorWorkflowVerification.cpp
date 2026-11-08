@@ -11,7 +11,7 @@
 #include "MingEngine/Scene/3D/Node3D.hpp"
 #include "MingEngine/Scene/GUI/ThemeDatabase.hpp"
 #include "MingEngine/Scene/GUI/TabContainer.hpp"
-#include "MingEngine/Scene/GUI/SpinBox.hpp"
+#include "MingEngine/Editor/UI/EditorSpinSlider.hpp"
 #include "MingEngine/Scene/Resource/MaterialResource.hpp"
 #include "MingEngine/Scene/3D/MeshInstance3D.hpp"
 #include "MingEngine/Scene/Resource/MeshResource.hpp"
@@ -243,9 +243,9 @@ int main(int argc, char** argv)
 			"MoveChild preserves parent membership");
 		editor->GetSelection().SetSelected(first->GetObjectID());
 		frame();
-		auto* field = FindWorkflowControl<SpinBox>(
+		auto* field = FindWorkflowControl<EditorSpinSlider>(
 			&ui->GetPanel<InspectorPanel>(),
-			[](SpinBox*)
+			[](EditorSpinSlider*)
 			{
 				return true;
 			});
@@ -253,7 +253,12 @@ int main(int argc, char** argv)
 		if (field != nullptr)
 		{
 			editor->GetUndoRedo().ClearHistory(scene->GetObjectID());
-			field->GetLineEdit()->GrabFocus();
+			field->GrabFocus();
+			InputEvent enter;
+			enter.m_type = InputEventType::Key;
+			enter.m_keyCode = GLFW_KEY_ENTER;
+			enter.m_pressed = true;
+			root->ProcessInputEvent(enter);
 			InputEvent input;
 			input.m_type    = InputEventType::Key;
 			input.m_keyCode = GLFW_KEY_ENTER;

@@ -51,6 +51,9 @@ Ref<Theme> CreateDefaultTheme()
 	}
 
 	theme->SetConstant("minimum_height", "Button", controlHeight);
+	theme->SetConstant("minimum_height", "ProgressBar", 12);
+	theme->SetStyleBox("background", "ProgressBar", box(field, border, 1.f, 1.f, 1.f));
+	theme->SetStyleBox("fill", "ProgressBar", box(accent, Color::Transparent, 0.f, 0.f, 0.f));
 	theme->SetTypeVariation("MenuBarButton", "Button");
 	theme->SetConstant("minimum_height", "MenuBar", 24);
 	theme->SetConstant("popup_minimum_width", "MenuBar", 200);

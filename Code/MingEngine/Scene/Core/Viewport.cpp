@@ -657,6 +657,12 @@ bool Viewport::ProcessGuiInputEvent(InputEvent const& event)
 			// 1) Keep a single-button capture until its matching release
 			if (m_gui.m_mouseCaptureControl.IsValid() && event.m_mouseButton != m_gui.m_mouseCaptureButton)
 			{
+				if (event.m_pressed && event.m_mouseButton == GLFW_MOUSE_BUTTON_RIGHT
+					&& m_gui.m_mouseCaptureButton == GLFW_MOUSE_BUTTON_LEFT)
+				{
+					PropagateGuiInput(m_gui.m_mouseCaptureControl, event);
+					UpdateGuiCursor();
+				}
 				return true;
 			}
 

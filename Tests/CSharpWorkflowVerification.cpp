@@ -60,8 +60,15 @@ T* FindScriptControl(Node* root, Predicate predicate)
 	return nullptr;
 }
 
+#include "CSharpBuildVerification.hpp"
+
 int main(int argc, char** argv)
 {
+	if (argc == 3 && std::string(argv[1]) == "--build-checks")
+	{
+		return VerifyCSharpBuild(std::filesystem::absolute(argv[2]));
+	}
+
 	if (argc == 3 && std::string(argv[1]) == "--simpleminer-editor")
 	{
 		return VerifySimpleMinerEditorStop(std::filesystem::absolute(argv[2]));
@@ -113,7 +120,7 @@ int main(int argc, char** argv)
 		config.mode = MingRunMode::Game;
 		std::filesystem::path const source = std::filesystem::absolute(argv[2]);
 		std::filesystem::path const fixture = source / ".ming/Verification/BlockSample";
-		for (auto const& file : { "Game.csproj", "project.ming", "Scripts/Block.cs", "Textures/BlockTiles.png" })
+		for (auto const& file : { "Game.csproj", "project.ming", "Scripts/Gameplay/Scene/Block.cs", "Textures/BlockTiles.png" })
 		{
 			std::filesystem::create_directories((fixture / file).parent_path());
 			std::filesystem::copy_file(source / file, fixture / file, std::filesystem::copy_options::overwrite_existing);
@@ -783,11 +790,25 @@ internal static class ResourceChecks
 
 		check(!app.IsGameRunning(), "Stop releases game process");
 	};
+	auto waitForBuild = [&]()
+	{
+		auto const deadline = std::chrono::steady_clock::now() + std::chrono::seconds(60);
+		do
+		{
+			app.RunFrame();
+			std::this_thread::sleep_for(std::chrono::milliseconds(10));
+		}
+		while ((editor->IsPreparingPlay() || editor->IsBuildingCSharpProject())
+			&& std::chrono::steady_clock::now() < deadline);
+
+		check(!editor->IsPreparingPlay() && !editor->IsBuildingCSharpProject(), "C# build completes before timeout");
+	};
 	auto play = [&](int speed)
 	{
 		std::filesystem::remove(project / "progress.txt", ignored);
 		std::filesystem::remove(project / "resource-checks.txt", ignored);
 		editor->RequestPlay();
+		waitForBuild();
 		for (int i = 0; i < 300; ++i)
 		{
 			app.RunFrame();
@@ -822,10 +843,7 @@ internal static class ResourceChecks
 	check(!scripts->BuildProjectSolution(), "mismatched filename produces build diagnostic");
 	std::ofstream(project / "Scripts/Mover.cs") << "syntax error";
 	editor->RequestPlay();
-	for (int i = 0; i < 4; ++i)
-	{
-		app.RunFrame();
-	}
+	waitForBuild();
 
 	check(!app.IsGameRunning(), "compiler error blocks Play");
 	if (auto* popup = dynamic_cast<PopupPanel*>(viewport->GetGuiPopup()))
@@ -849,10 +867,7 @@ internal static class ResourceChecks
 	root->SetScript(Variant(ResourceLoader::Load("res://Scripts/Missing.cs")));
 	editor->SaveScene();
 	editor->RequestPlay();
-	for (int i = 0; i < 4; ++i)
-	{
-		app.RunFrame();
-	}
+	waitForBuild();
 
 	check(!app.IsGameRunning(), "missing compiled mapping blocks Play");
 	if (auto* popup = dynamic_cast<PopupPanel*>(viewport->GetGuiPopup()))
@@ -866,10 +881,7 @@ internal static class ResourceChecks
 	root->AddNode(wrongBase);
 	editor->SaveScene();
 	editor->RequestPlay();
-	for (int i = 0; i < 4; ++i)
-	{
-		app.RunFrame();
-	}
+	waitForBuild();
 
 	check(!app.IsGameRunning(), "incompatible script base blocks Play");
 	if (auto* popup = dynamic_cast<PopupPanel*>(viewport->GetGuiPopup()))
@@ -888,7 +900,8 @@ internal static class ResourceChecks
 	}
 
 	editor->RequestPlay();
-	bool launched = false;
+	waitForBuild();
+	bool launched = app.IsGameRunning();
 	for (int i = 0; i < 300; ++i)
 	{
 		app.RunFrame();

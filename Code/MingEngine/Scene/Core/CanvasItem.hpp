@@ -30,6 +30,7 @@ public:
 	Vector2         GetGlobalPosition() const;
 
 	void SetVisible(bool visible, bool cancelDrag = true);
+	void SetVisibility(bool visible) { SetVisible(visible); }
 	bool IsVisible() const;
 	bool IsVisibleInHierarchy() const;
 

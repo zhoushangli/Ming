@@ -8,6 +8,7 @@
 #include "MingEngine/Scene/Core/Node.hpp"
 #include "MingEngine/Scene/Resource/Theme.hpp"
 #include <functional>
+#include <chrono>
 #include <mutex>
 #include <vector>
 
@@ -54,6 +55,7 @@ private:
 		Close,
 		Play,
 		BuildPlay,
+		LaunchPlay,
 		Load,
 		Create,
 		Quit
@@ -93,9 +95,17 @@ public:
 	void        RequestNewScene();
 	void        RequestCloseScene(std::function<void()> completed = {});
 	void        RequestPlay();
-	bool        IsPreparingPlay() const { return m_pendingSceneAction == PendingSceneAction::BuildPlay; }
+	bool        IsPreparingPlay() const
+	{
+		return m_pendingSceneAction == PendingSceneAction::BuildPlay
+			|| m_pendingSceneAction == PendingSceneAction::LaunchPlay;
+	}
+	bool        IsBuildingCSharpProject() const { return m_buildInProgress; }
+	int32_t     GetCSharpBuildExitCode() const { return m_buildExitCode; }
 	bool        GenerateCSharpProject();
 	bool        OpenCSharpScript(VirtualPath const& path);
+	// Start a menu build and return whether the build process was started.
+	// e.g. BuildCSharpProject() returns before the compiler finishes.
 	bool        BuildCSharpProject();
 	bool        ReloadCSharpAssembly();
 	void        NewRootCreated();
@@ -125,6 +135,9 @@ private:
 	void       ExecutePendingSceneAction();
 	void       RequestSceneAction(PendingSceneAction action, std::function<void()> completed = {});
 	void       CancelPendingSceneAction();
+	bool       BeginCSharpBuild(bool runAfterBuild);
+	void       UpdateCSharpBuild();
+	void       LaunchPreparedGame(bool scripted);
 	SaveResult SaveCurrentScene();
 	void       ClearSceneState();
 
@@ -152,6 +165,10 @@ private:
 	bool                                             m_waitingForSave        = false;
 	bool                                             m_resumePending         = false;
 	int m_playDelayFrames = 0;
+	bool m_buildInProgress = false;
+	bool m_runAfterBuild = false;
+	int32_t m_buildExitCode = -1;
+	std::chrono::steady_clock::time_point m_buildStarted;
 	std::function<void()>                            m_afterClose;
 	std::mutex                                       m_messageMutex;
 	std::vector<std::pair<std::string, std::string>> m_messages;

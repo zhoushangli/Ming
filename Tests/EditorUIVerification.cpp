@@ -24,6 +24,8 @@
 #include "MingEngine/Scene/GUI/PanelContainer.hpp"
 #include "MingEngine/Scene/GUI/TextureRect.hpp"
 #include "MingEngine/Scene/GUI/SpinBox.hpp"
+#include "MingEngine/Editor/UI/EditorSpinSlider.hpp"
+#include "MingEngine/Editor/Gizmos/EditorNodeGizmo3D.hpp"
 #include "MingEngine/Scene/GUI/ScrollContainer.hpp"
 #include "MingEngine/Scene/GUI/ColorRect.hpp"
 #include "MingEngine/Scene/3D/Light3D.hpp"
@@ -66,6 +68,11 @@ T* FindUIControl(Node* node)
 
 Control* FindNamedUI(Node* node, String const& name)
 {
+	if (node == nullptr)
+	{
+		return nullptr;
+	}
+
 	if (auto* control = dynamic_cast<Control*>(node);
 		control != nullptr && node->GetName() == name && !node->IsQueuedForDeletion())
 	{
@@ -82,6 +89,9 @@ Control* FindNamedUI(Node* node, String const& name)
 
 	return nullptr;
 }
+
+#include "InspectorVisibilityVerification.hpp"
+#include "EditorNumericGizmoVerification.hpp"
 
 int main(int argc, char** argv)
 {
@@ -378,6 +388,7 @@ int main(int argc, char** argv)
 		tree.FlushPendingNode();
 
 		auto* editor = MemNew<EditorNode>(uiScale);
+		check(editor->m_editorGizmos->IsLocal(), "Transform defaults to Local coordinates");
 		root->AddNode(editor);
 		EditorUI* ui    = editor->m_editorUI;
 		auto      frame = [&]()
@@ -505,6 +516,8 @@ int main(int argc, char** argv)
 		tintProbe->QueueFree();
 		frame();
 
+		VerifyInspectorVisibility(tree, editor, frame, click, check);
+
 		// 1) Build an independent Inspector selection with class-local and inherited properties
 		auto* scene = MemNew<Node3D>();
 		scene->SetName("StyleVerification");
@@ -602,12 +615,12 @@ int main(int argc, char** argv)
 
 			auto* rotationX = FindNamedUI(rotationField, "x");
 			check(FindUIControl<Label>(rotationField)->GetText() == String("Rotation")
-				&& rotationX != nullptr && FindUIControl<SpinBox>(rotationX)->GetLineEdit()->GetText() == String("0"),
+				&& rotationX != nullptr && FindUIControl<EditorSpinSlider>(rotationX)->GetLineEdit()->GetText() == String("0"),
 				"rotation keeps units outside the editable numeric text");
 			bool degree = false;
 			if (rotationX != nullptr)
 			{
-				for (Node* child : FindUIControl<SpinBox>(rotationX)->GetParent()->GetChildren())
+				for (Node* child : FindUIControl<EditorSpinSlider>(rotationX)->GetParent()->GetChildren())
 				{
 					if (auto* label = dynamic_cast<Label*>(child))
 					{
@@ -656,12 +669,17 @@ int main(int argc, char** argv)
 			cameraHeader != nullptr && nodeHeader != nullptr && !cameraHeader->IsVisibleInHierarchy()
 				&& nodeHeader->IsVisibleInHierarchy(),
 			"property search hides the complete unrelated class header");
-		SpinBox* position = positionField != nullptr ? FindUIControl<SpinBox>(positionField) : nullptr;
+		EditorSpinSlider* position = positionField != nullptr ? FindUIControl<EditorSpinSlider>(positionField) : nullptr;
 		check(rotationField != nullptr && !rotationField->IsVisibleInHierarchy(), "property-name search hides unmatched siblings");
 
 		if (position != nullptr)
 		{
-			position->Step(1);
+			click(position);
+			InputEvent digit;
+			digit.m_type = InputEventType::Text;
+			digit.m_codepoint = '1';
+			root->ProcessInputEvent(digit);
+			key(GLFW_KEY_ENTER);
 			check(
 				camera->GetLocalPosition().x > 0.f && editor->IsSceneDirty(),
 				"inherited Inspector property still writes through its setter");
@@ -805,12 +823,12 @@ int main(int argc, char** argv)
 				output == IntVec2(static_cast<int>(dimensions.x), static_cast<int>(dimensions.y))
 					&& view->GetGlobalPosition() == origin,
 				"viewport preserves its content resolution contract after resize");
-			Vector2 const mapped = ui->ToViewportPos(origin + dimensions * 0.5f);
+			Vector2 const mapped = ui->ToViewportPos(origin + view->GetSize() * 0.5f);
 			check(
 				ui->ToViewportPos(origin) == Vector2::Zero && std::abs(mapped.x - output.x * 0.5f) < 0.01f
 					&& std::abs(mapped.y - output.y * 0.5f) < 0.01f,
 				"content origin and center map into the scene texture without pixel ruler margins");
-			Vector2 const edge = ui->ToViewportPos(origin + dimensions - Vector2(1.f, 1.f));
+			Vector2 const edge = ui->ToViewportPos(origin + view->GetSize() - Vector2(1.f, 1.f));
 			check(
 				edge.x >= output.x - 2.f && edge.x < output.x && edge.y >= output.y - 2.f && edge.y < output.y,
 				"content bottom-right edge maps inside the scene texture");
@@ -864,7 +882,7 @@ int main(int argc, char** argv)
 		frame();
 		frame();
 		check(
-			FindUIControl<SpinBox>(&ui->GetPanel<ImportPanel>()) != nullptr,
+			FindUIControl<EditorSpinSlider>(&ui->GetPanel<ImportPanel>()) != nullptr,
 			"Import displays real options for its own preview fixture");
 		SaveRenderedFrame(
 			engine.m_renderServer->ViewportGetTexture(root->GetViewportRID()),
@@ -1370,6 +1388,8 @@ int main(int argc, char** argv)
 				&& EditorIcons::GetIconTexture("Search")->m_samplerMode == SamplerMode::BILINEAR_CLAMP,
 			"editor icons keep 32px sources with bilinear sampling");
 
+		VerifyEditorNumericAndGizmos(editor, root, check, frame);
+
 		auto* colorLight = MemNew<OmniLight3D>();
 		colorLight->SetName("ColorPickerPreview");
 		Color const originalColor(200, 120, 60, 128);
@@ -1501,9 +1521,23 @@ int main(int argc, char** argv)
 			editor->GetEditorCamera()->SetLocalOrientation(EulerAngles(0.f, 20.f, 0.f));
 			editor->GetEditorCamera()->GetCamera()->SetCurrent();
 			auto* previewLight = MemNew<OmniLight3D>();
-			previewLight->SetName("ColorPickerPreview");
+			previewLight->SetName("OmniLightGizmoPreview");
+			previewLight->SetLocalPosition(Vector3(8.f, 2.5f, 0.f));
+			previewLight->SetRange(2.f);
 			previewLight->SetColor(Color(211, 173, 114, 180));
 			scene->AddNode(previewLight);
+			auto* previewSpot = MemNew<SpotLight3D>();
+			previewSpot->SetName("SpotLightGizmoPreview");
+			previewSpot->SetLocalPosition(Vector3(8.f, -2.5f, 0.f));
+			previewSpot->SetLocalOrientation(EulerAngles(35.f, 0.f, 0.f));
+			previewSpot->SetRange(3.f);
+			scene->AddNode(previewSpot);
+			auto* previewCamera = MemNew<Camera3D>();
+			previewCamera->SetName("CameraGizmoPreview");
+			previewCamera->SetLocalPosition(Vector3(12.f, 0.f, 1.f));
+			previewCamera->SetLocalOrientation(EulerAngles(20.f, 0.f, 0.f));
+			scene->AddNode(previewCamera);
+			gizmos->SetLocal(true);
 			editor->GetSelection().SetSelected(previewLight->GetObjectID());
 			auto* window = engine.m_windowSystem->GetGLFWWindow();
 			glfwSetKeyCallback(window, keyCallback);

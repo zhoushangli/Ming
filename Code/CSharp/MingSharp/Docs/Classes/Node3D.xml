@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <class name="Node3D">
   <brief_description>A node with a position, rotation, and scale in 3D space.</brief_description>
-  <description>The local transform is relative to the direct parent when it is a Node3D. Otherwise, it is also the world transform. Rotation values use degrees.</description>
+  <description>Position, Rotation, and Scale are relative to the direct Node3D parent. GlobalPosition, GlobalRotation, and GlobalScale use world space. Without a Node3D parent, local and global transforms are the same. Rotation values use degrees.</description>
   <methods>
     <method name="SetLocalTransform">
       <description>Sets the position, rotation, and scale from a matrix in local space.</description>
@@ -34,6 +34,30 @@
     <method name="GetLocalScale">
       <description>Gets the scale in local space.</description>
       <returns>The scale on each local axis.</returns>
+    </method>
+    <method name="SetWorldPosition">
+      <description>Sets the position in world space, accounting for the parent transform.</description>
+      <param name="worldPosition">The desired world position.</param>
+    </method>
+    <method name="GetWorldPosition">
+      <description>Gets the position in world space.</description>
+      <returns>The position after applying the parent transform.</returns>
+    </method>
+    <method name="SetWorldOrientation">
+      <description>Sets the rotation in world space, accounting for the parent transform.</description>
+      <param name="worldOrientation">The desired world yaw, pitch, and roll in degrees.</param>
+    </method>
+    <method name="GetWorldOrientation">
+      <description>Gets the rotation in world space.</description>
+      <returns>The world yaw, pitch, and roll in degrees.</returns>
+    </method>
+    <method name="SetWorldScale">
+      <description>Sets the scale in world space, accounting for the parent scale.</description>
+      <param name="scale">The desired scale on each world axis. Parent scale components must be nonzero.</param>
+    </method>
+    <method name="GetWorldScale">
+      <description>Gets the scale in world space.</description>
+      <returns>The scale after applying the parent transform.</returns>
     </method>
   </methods>
 </class>

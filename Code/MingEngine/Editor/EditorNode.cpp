@@ -178,6 +178,11 @@ EditorNode::EditorNode(float editorScale) : m_editorScale(editorScale)
 
 EditorNode::~EditorNode()
 {
+	if (g_engine != nullptr && g_engine->m_scriptSystem != nullptr)
+	{
+		g_engine->m_scriptSystem->CloseProjectBuild();
+	}
+
 	SetReportMessageCallback({});
 	delete m_editorUI;
 	m_editorUI = nullptr;
@@ -200,7 +205,8 @@ bool EditorNode::HandleGuiInput(InputEvent const& event)
 
 bool EditorNode::IsEditingNativeControl() const
 {
-	return m_editorUI != nullptr && m_editorUI->IsNativeInputActive();
+	return IsBuildingCSharpProject() || IsPreparingPlay()
+		|| (m_editorUI != nullptr && m_editorUI->IsNativeInputActive());
 }
 
 EditorSelection& EditorNode::GetSelection()
@@ -273,6 +279,14 @@ void EditorNode::OnMouseDown(int keyCode, Vector2 screenPos)
 	RaycastQuery3D        raycastQuery = camera->BuildRaycastFromMouse(mousePos, viewportDimensions, 10000.f);
 	RaycastResult3D const result       = raycastSpace->IntersectRay(raycastQuery);
 
+	ObjectID const gizmoNode = m_editorGizmos->PickNode(*camera, screenPos,
+		result.m_didImpact ? result.m_impactDist : 10000.f);
+	if (gizmoNode.IsValid())
+	{
+		m_selection.SetSelected(gizmoNode);
+		return;
+	}
+
 	if (result.m_didImpact)
 	{
 		m_selection.SetSelected(result.m_owner);
@@ -322,6 +336,8 @@ void EditorNode::OnReady()
 
 void EditorNode::OnProcess([[maybe_unused]] float deltaSeconds)
 {
+	UpdateCSharpBuild();
+
 	std::vector<std::pair<std::string, std::string>> messages;
 	{
 		std::lock_guard<std::mutex> lock(m_messageMutex);
@@ -352,6 +368,11 @@ void EditorNode::OnProcess([[maybe_unused]] float deltaSeconds)
 
 void EditorNode::RequestLoadScene(VirtualPath const& virtualPath)
 {
+	if (IsBuildingCSharpProject() || IsPreparingPlay())
+	{
+		return;
+	}
+
 	m_pendingScenePath = virtualPath;
 	RequestSceneAction(PendingSceneAction::Load);
 }
@@ -359,6 +380,11 @@ void EditorNode::RequestLoadScene(VirtualPath const& virtualPath)
 void EditorNode::RequestCreateScene(
 	VirtualPath const& virtualPath, std::string const& rootName, std::function<void()> completed)
 {
+	if (IsBuildingCSharpProject() || IsPreparingPlay())
+	{
+		return;
+	}
+
 	m_pendingScenePath     = virtualPath;
 	m_pendingSceneRootName = rootName;
 	RequestSceneAction(PendingSceneAction::Create, std::move(completed));
@@ -375,6 +401,11 @@ void EditorNode::CancelPendingSceneAction()
 
 void EditorNode::RequestSceneAction(PendingSceneAction action, std::function<void()> completed)
 {
+	if (IsBuildingCSharpProject() || IsPreparingPlay())
+	{
+		return;
+	}
+
 	m_editorUI->FinishNativeEditing();
 	CancelPendingSceneAction();
 	m_pendingSceneAction = action;
@@ -401,11 +432,12 @@ void EditorNode::RequestCloseScene(std::function<void()> completed)
 
 void EditorNode::RequestPlay()
 {
-	if (g_app == nullptr || g_app->IsGameRunning() || IsPreparingPlay())
+	if (g_app == nullptr || g_app->IsGameRunning() || IsPreparingPlay() || IsBuildingCSharpProject())
 	{
 		return;
 	}
 
+	m_editorGizmos->CancelDrag();
 	m_editorUI->FinishNativeEditing();
 	CancelPendingSceneAction();
 	m_pendingSceneAction = PendingSceneAction::Play;
@@ -731,36 +763,19 @@ void EditorNode::ExecutePendingSceneAction()
 	{
 		bool const scripted = g_engine->m_scriptSystem->HasProjectScripts()
 			|| g_engine->m_fileSystem->Exists("res://Game.csproj");
-		if (scripted && !BuildCSharpProject())
-		{
-			INFO_PRINT("Play cancelled because the C# build failed.");
-			return;
-		}
 		if (scripted)
 		{
-			if (!g_engine->m_scriptSystem->ReloadProjectAssembly())
-			{
-				m_editorUI->Warning("Run Failed", "Could not load the compiled C# assembly. See Output.");
-				return;
-			}
-
-			Ref<PackedScene> main(ResourceLoader::LoadUncached(ProjectSettings::Get()->m_startScenePath));
-			Node* root = main.IsValid() ? main->Instantiate() : nullptr;
-			bool const valid = g_engine->m_scriptSystem->ValidateSceneScripts(root);
-			MemDelete(root);
-			if (!valid)
-			{
-				m_editorUI->Warning("Run Failed", "A scene script has no compiled type or an incompatible base. See Output.");
-				return;
-			}
+			BeginCSharpBuild(true);
 		}
-
-		if (!g_app->LaunchGame())
+		else
 		{
-			m_editorUI->Warning("Run Failed", "Could not start the game. See Output for details.");
+			LaunchPreparedGame(false);
 		}
 		break;
 	}
+	case PendingSceneAction::LaunchPlay:
+		LaunchPreparedGame(true);
+		break;
 	default:
 		break;
 	}
@@ -798,6 +813,15 @@ void EditorNode::ResolvePendingSceneAction(SceneActionChoice choice)
 
 void EditorNode::RequestQuit()
 {
+	if (IsBuildingCSharpProject() || IsPreparingPlay())
+	{
+		m_runAfterBuild = false;
+		g_engine->m_scriptSystem->CloseProjectBuild();
+		m_buildInProgress = false;
+		m_editorUI->HideBuildProgress();
+		CancelPendingSceneAction();
+	}
+
 	if (m_pendingSceneAction != PendingSceneAction::Quit)
 	{
 		RequestSceneAction(PendingSceneAction::Quit);
@@ -909,6 +933,11 @@ bool EditorNode::SetEditorScale(float scale)
 
 void EditorNode::RequestOpenScene()
 {
+	if (IsBuildingCSharpProject() || IsPreparingPlay())
+	{
+		return;
+	}
+
 	m_editorUI->OpenSceneFile(
 		SceneFilePopup::Mode::Open,
 		GetCurrentScenePath(),
@@ -921,6 +950,11 @@ void EditorNode::RequestOpenScene()
 
 bool EditorNode::GenerateCSharpProject()
 {
+	if (IsBuildingCSharpProject() || IsPreparingPlay())
+	{
+		return false;
+	}
+
 	if (!g_engine->m_scriptSystem->EnsureProjectSolution())
 	{
 		m_editorUI->Warning("C# Project", "Could not generate the C# project. See Output.");
@@ -999,18 +1033,133 @@ bool EditorNode::OpenCSharpScript(VirtualPath const& path)
 
 bool EditorNode::BuildCSharpProject()
 {
-	m_editorUI->FinishNativeEditing();
-	if (!g_engine->m_scriptSystem->EnsureProjectSolution() || !g_engine->m_scriptSystem->BuildProjectSolution())
+	if (IsBuildingCSharpProject() || IsPreparingPlay() || (g_app != nullptr && g_app->IsGameRunning()))
 	{
+		return false;
+	}
+
+	return BeginCSharpBuild(false);
+}
+
+bool EditorNode::BeginCSharpBuild(bool runAfterBuild)
+{
+	m_editorUI->FinishNativeEditing();
+	m_editorUI->GetPanel<ViewportPanel>().CancelNavigation();
+	m_editorGizmos->CancelDrag();
+	auto* viewport = m_editorUI->GetRootControl()->GetViewport();
+	viewport->CancelGuiInteraction(viewport);
+
+	m_buildExitCode = -1;
+	if (!g_engine->m_scriptSystem->EnsureProjectSolution() || !g_engine->m_scriptSystem->BeginProjectBuild())
+	{
+		g_engine->m_scriptSystem->PollProjectBuild(m_buildExitCode);
+		g_engine->m_scriptSystem->CloseProjectBuild();
+		CancelPendingSceneAction();
 		m_editorUI->Warning("C# Build", "Build failed. See Output.");
 		return false;
 	}
-	INFO_PRINT("C# build completed.");
+
+	m_buildStarted = std::chrono::steady_clock::now();
+	m_buildInProgress = true;
+	m_runAfterBuild = runAfterBuild;
+	if (runAfterBuild)
+	{
+		m_pendingSceneAction = PendingSceneAction::BuildPlay;
+	}
+	m_editorUI->SetStatusMessage("Checking and building C# project...");
 	return true;
+}
+
+void EditorNode::UpdateCSharpBuild()
+{
+	if (!m_buildInProgress)
+	{
+		return;
+	}
+
+	auto* scripts = g_engine->m_scriptSystem;
+	ScriptSystem::BuildState const state = scripts->PollProjectBuild(m_buildExitCode);
+	if (state == ScriptSystem::BuildState::Running)
+	{
+		if (std::chrono::steady_clock::now() - m_buildStarted >= std::chrono::milliseconds(250))
+		{
+			m_editorUI->ShowBuildProgress("Checking and building C# project...");
+		}
+		return;
+	}
+
+	m_buildInProgress = false;
+	bool const runAfterBuild = std::exchange(m_runAfterBuild, false);
+	scripts->CloseProjectBuild();
+	if (state != ScriptSystem::BuildState::Succeeded)
+	{
+		CancelPendingSceneAction();
+		m_editorUI->HideBuildProgress();
+		m_editorUI->SetStatusMessage("C# build failed.");
+		m_editorUI->Warning("C# Build", "Build failed. See Output.");
+		return;
+	}
+
+	INFO_PRINT("C# build completed.");
+	if (runAfterBuild)
+	{
+		m_editorUI->SetStatusMessage("Loading C# assembly...");
+		if (m_editorUI->IsBuildProgressVisible())
+		{
+			m_editorUI->ShowBuildProgress("Loading C# assembly...");
+		}
+		m_pendingSceneAction = PendingSceneAction::LaunchPlay;
+		m_playDelayFrames = 1;
+		m_resumePending = true;
+	}
+	else
+	{
+		m_editorUI->HideBuildProgress();
+		m_editorUI->SetStatusMessage("C# build completed.");
+	}
+}
+
+void EditorNode::LaunchPreparedGame(bool scripted)
+{
+	std::string error;
+	if (scripted)
+	{
+		if (!g_engine->m_scriptSystem->ReloadProjectAssembly())
+		{
+			error = "Could not load the compiled C# assembly. See Output.";
+		}
+		else
+		{
+			Ref<PackedScene> main(ResourceLoader::LoadUncached(ProjectSettings::Get()->m_startScenePath));
+			Node* root = main.IsValid() ? main->Instantiate() : nullptr;
+			bool const valid = g_engine->m_scriptSystem->ValidateSceneScripts(root);
+			MemDelete(root);
+			if (!valid)
+			{
+				error = "A scene script has no compiled type or an incompatible base. See Output.";
+			}
+		}
+	}
+
+	m_editorUI->HideBuildProgress();
+	if (error.empty() && !g_app->LaunchGame())
+	{
+		error = "Could not start the game. See Output for details.";
+	}
+	if (!error.empty())
+	{
+		m_editorUI->SetStatusMessage("Run failed.");
+		m_editorUI->Warning("Run Failed", error);
+	}
 }
 
 bool EditorNode::ReloadCSharpAssembly()
 {
+	if (IsBuildingCSharpProject() || IsPreparingPlay())
+	{
+		return false;
+	}
+
 	if (!g_engine->m_scriptSystem->ReloadProjectAssembly())
 	{
 		m_editorUI->Warning("C# Reload", "Reload failed. See Output.");

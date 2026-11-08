@@ -28,7 +28,7 @@ InspectorPanel::~InspectorPanel()
 
 void InspectorPanel::ClearProperties()
 {
-	EndColorEdit(false);
+	EndPropertyEdit(false);
 	if (GetViewport() != nullptr)
 	{
 		GetViewport()->CancelGuiInteraction(this);
@@ -65,13 +65,13 @@ void InspectorPanel::BuildInheritanceChain(std::string const& className)
 
 void InspectorPanel::RefreshValues()
 {
-	if (m_colorEdit.m_target.IsValid() && !m_colorEdit.m_applying)
+	if (m_propertyEdit.m_target.IsValid() && !m_propertyEdit.m_applying)
 	{
-		Node* target = ObjectDatabase::GetInstance<Node>(m_colorEdit.m_target);
+		Node* target = ObjectDatabase::GetInstance<Node>(m_propertyEdit.m_target);
 		if (target == nullptr || target->IsQueuedForDeletion()
-			|| m_colorEdit.m_getter->Invoke(target, {}) != m_colorEdit.m_last)
+			|| m_propertyEdit.m_getter->Invoke(target, {}) != m_propertyEdit.m_last)
 		{
-			EndColorEdit(false);
+			EndPropertyEdit(false);
 		}
 	}
 
@@ -159,6 +159,7 @@ void InspectorPanel::RebuildProperties(EditorUIContext& context)
 		return;
 	}
 
+	auto const defaults = ClassDatabase::GetPropertyDefaultValues(node->GetClassName());
 	for (std::string const& className : m_inheritanceChain)
 	{
 		PropertyGroup group;
@@ -260,20 +261,22 @@ void InspectorPanel::RebuildProperties(EditorUIContext& context)
 				continue;
 			}
 
-			if (prop.m_type == Variant::Type::Color)
+			if (prop.m_type == Variant::Type::Color || prop.m_type == Variant::Type::Int
+				|| prop.m_type == Variant::Type::Float || prop.m_type == Variant::Type::Vector2
+				|| prop.m_type == Variant::Type::Vector3 || prop.m_type == Variant::Type::EulerAngles)
 			{
-				field->SetColorEditCallbacks(
+				field->SetContinuousEditCallbacks(
 					[this, id, setter, getter, field, name = prop.m_name]()
 					{
-						BeginColorEdit(name, id, setter, getter, field);
+						BeginPropertyEdit(name, id, setter, getter, field);
 					},
 					[this](Variant const& value)
 					{
-						PreviewColorValue(value);
+						PreviewPropertyValue(value);
 					},
 					[this](bool accept)
 					{
-						EndColorEdit(accept);
+						EndPropertyEdit(accept);
 					});
 			}
 
@@ -327,6 +330,11 @@ void InspectorPanel::RebuildProperties(EditorUIContext& context)
 			}
 
 			field->SetEditedObject(id);
+			if (auto found = defaults.find(prop.m_name); found != defaults.end())
+			{
+				field->SetRevertValue(found->second);
+			}
+
 			field->SetValueReader(
 				[id, getter]() -> Variant
 				{
@@ -589,10 +597,10 @@ Control* InspectorPanel::GetContentControl() const
 	return m_content;
 }
 
-void InspectorPanel::BeginColorEdit(
+void InspectorPanel::BeginPropertyEdit(
 	std::string const& name, ObjectID id, MethodBind const* setter, MethodBind const* getter, InspectorProperty* field)
 {
-	EndColorEdit(false);
+	EndPropertyEdit(false);
 	Node* target = ObjectDatabase::GetInstance<Node>(id);
 	Node* scene  = m_sceneTree != nullptr ? m_sceneTree->GetScene() : nullptr;
 	if (id != m_cachedObjectID || target == nullptr || target->IsQueuedForDeletion() || scene == nullptr
@@ -602,48 +610,48 @@ void InspectorPanel::BeginColorEdit(
 		return;
 	}
 
-	m_colorEdit.m_target   = id;
-	m_colorEdit.m_scene    = scene->GetObjectID();
-	m_colorEdit.m_name     = name;
-	m_colorEdit.m_setter   = setter;
-	m_colorEdit.m_getter   = getter;
-	m_colorEdit.m_field    = field;
-	m_colorEdit.m_original = getter->Invoke(target, {});
-	m_colorEdit.m_last     = m_colorEdit.m_original;
+	m_propertyEdit.m_target   = id;
+	m_propertyEdit.m_scene    = scene->GetObjectID();
+	m_propertyEdit.m_name     = name;
+	m_propertyEdit.m_setter   = setter;
+	m_propertyEdit.m_getter   = getter;
+	m_propertyEdit.m_field    = field;
+	m_propertyEdit.m_original = getter->Invoke(target, {});
+	m_propertyEdit.m_last     = m_propertyEdit.m_original;
 }
 
-void InspectorPanel::PreviewColorValue(Variant const& value)
+void InspectorPanel::PreviewPropertyValue(Variant const& value)
 {
-	Node* target = ObjectDatabase::GetInstance<Node>(m_colorEdit.m_target);
-	if (target == nullptr || target->IsQueuedForDeletion() || !value.Is<Color>()
-		|| target->GetSceneTree() != m_sceneTree || m_colorEdit.m_target != m_cachedObjectID
-		|| m_colorEdit.m_getter->Invoke(target, {}) != m_colorEdit.m_last)
+	Node* target = ObjectDatabase::GetInstance<Node>(m_propertyEdit.m_target);
+	if (target == nullptr || target->IsQueuedForDeletion() || value.GetType() != m_propertyEdit.m_original.GetType()
+		|| target->GetSceneTree() != m_sceneTree || m_propertyEdit.m_target != m_cachedObjectID
+		|| m_propertyEdit.m_getter->Invoke(target, {}) != m_propertyEdit.m_last)
 	{
-		EndColorEdit(false);
+		EndPropertyEdit(false);
 		return;
 	}
 
-	m_colorEdit.m_applying = true;
-	m_colorEdit.m_setter->Invoke(target, { value });
-	target = ObjectDatabase::GetInstance<Node>(m_colorEdit.m_target);
+	m_propertyEdit.m_applying = true;
+	m_propertyEdit.m_setter->Invoke(target, { value });
+	target = ObjectDatabase::GetInstance<Node>(m_propertyEdit.m_target);
 	if (target != nullptr && !target->IsQueuedForDeletion())
 	{
-		m_colorEdit.m_last = m_colorEdit.m_getter->Invoke(target, {});
+		m_propertyEdit.m_last = m_propertyEdit.m_getter->Invoke(target, {});
 	}
 
-	m_colorEdit.m_applying = false;
+	m_propertyEdit.m_applying = false;
 	RefreshValues();
 }
 
-void InspectorPanel::EndColorEdit(bool accept)
+void InspectorPanel::EndPropertyEdit(bool accept)
 {
-	if (!m_colorEdit.m_target.IsValid())
+	if (!m_propertyEdit.m_target.IsValid())
 	{
 		return;
 	}
 
-	ColorEdit const edit = m_colorEdit;
-	m_colorEdit          = {};
+	PropertyEdit const edit = m_propertyEdit;
+	m_propertyEdit          = {};
 	Node* target         = ObjectDatabase::GetInstance<Node>(edit.m_target);
 	if (target != nullptr && !target->IsQueuedForDeletion() && target->GetSceneTree() == m_sceneTree)
 	{

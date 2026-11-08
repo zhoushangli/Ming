@@ -24,6 +24,11 @@ bool EditorUI::HandleInput(InputEvent const& event)
 		m_viewportPanel->CancelNavigation();
 	}
 
+	if (m_owner->IsBuildingCSharpProject() || m_owner->IsPreparingPlay())
+	{
+		return true;
+	}
+
 	UpdateNativeDocking();
 	m_owner->GetSceneTree()->FlushContainerUpdate();
 	auto* root = static_cast<Viewport*>(m_owner->GetSceneTree()->GetRoot());
@@ -113,6 +118,12 @@ void EditorUI::SetViewportRect(Vector2 origin, Vector2 dims)
 {
 	m_viewportOrigin = origin;
 	m_viewportDims   = dims;
+}
+
+Vector2 EditorUI::GetViewportDimensions() const
+{
+	return m_sceneView != nullptr && m_sceneView->GetSubViewport() != nullptr
+		? Vector2(m_sceneView->GetSubViewport()->GetOutputResolution()) : m_viewportDims;
 }
 
 Vector2 EditorUI::ToViewportPos(Vector2 position) const

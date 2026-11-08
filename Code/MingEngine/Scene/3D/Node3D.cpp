@@ -27,6 +27,13 @@ void Node3D::BindMethods()
 	ClassDatabase::BindMethod("SetLocalScale", &Node3D::SetLocalScale, { "scale" });
 	ClassDatabase::BindMethod("GetLocalScale", &Node3D::GetLocalScale, {});
 
+	ClassDatabase::BindMethod("SetWorldPosition", &Node3D::SetWorldPosition, { "worldPosition" });
+	ClassDatabase::BindMethod("GetWorldPosition", &Node3D::GetWorldPosition, {});
+	ClassDatabase::BindMethod("SetWorldOrientation", &Node3D::SetWorldOrientation, { "worldOrientation" });
+	ClassDatabase::BindMethod("GetWorldOrientation", &Node3D::GetWorldOrientation, {});
+	ClassDatabase::BindMethod("SetWorldScale", &Node3D::SetWorldScale, { "scale" });
+	ClassDatabase::BindMethod("GetWorldScale", &Node3D::GetWorldScale, {});
+
 	ADD_PROPERTY(
 		PropertyInfo(
 			Variant::Type::Matrix4x4,
@@ -68,6 +75,89 @@ void Node3D::BindMethods()
 			PropertyInfo::UsageFlags::Inspector),
 		"SetLocalScale",
 		"GetLocalScale");
+
+	ADD_PROPERTY(
+		PropertyInfo(
+			Variant::Type::Vector3,
+			"global_position",
+			PropertyInfo::Hint::None,
+			"",
+			PropertyInfo::UsageFlags::None),
+		"SetWorldPosition",
+		"GetWorldPosition");
+
+	ADD_PROPERTY(
+		PropertyInfo(
+			Variant::Type::EulerAngles,
+			"global_rotation",
+			PropertyInfo::Hint::None,
+			"",
+			PropertyInfo::UsageFlags::None),
+		"SetWorldOrientation",
+		"GetWorldOrientation");
+
+	ADD_PROPERTY(
+		PropertyInfo(
+			Variant::Type::Vector3,
+			"global_scale",
+			PropertyInfo::Hint::None,
+			"",
+			PropertyInfo::UsageFlags::None),
+		"SetWorldScale",
+		"GetWorldScale");
+
+	ClassDatabase::BindMethod("SetVisible", &Node3D::SetVisible, { "visible" });
+	ClassDatabase::BindMethod("IsVisible", &Node3D::IsVisible, {});
+	ClassDatabase::BindMethod("IsVisibleInHierarchy", &Node3D::IsVisibleInHierarchy, {});
+	ADD_GROUP("Visibility");
+	ADD_PROPERTY(
+		PropertyInfo(Variant::Type::Bool, "visible", PropertyInfo::Hint::None, "", PropertyInfo::UsageFlags::Default),
+		"SetVisible",
+		"IsVisible");
+}
+
+void Node3D::SetVisible(bool visible)
+{
+	if (m_visible == visible)
+	{
+		return;
+	}
+
+	m_visible = visible;
+	PropagateVisibilityChanged();
+}
+
+bool Node3D::IsVisible() const
+{
+	return m_visible;
+}
+
+bool Node3D::IsVisibleInHierarchy() const
+{
+	Node3D const* node = this;
+	while (node != nullptr)
+	{
+		if (!node->m_visible)
+		{
+			return false;
+		}
+
+		node = dynamic_cast<Node3D const*>(node->GetParent());
+	}
+
+	return true;
+}
+
+void Node3D::PropagateVisibilityChanged()
+{
+	Notification(Notification_VisibilityChanged);
+	for (Node* child : GetChildren())
+	{
+		if (auto* child3D = dynamic_cast<Node3D*>(child))
+		{
+			child3D->PropagateVisibilityChanged();
+		}
+	}
 }
 
 Matrix4x4 Node3D::GetLocalTransform() const

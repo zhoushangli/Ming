@@ -9,6 +9,7 @@
 #include "MingEngine/Editor/EditorCamera.hpp"
 #include "MingEngine/Editor/EditorNode.hpp"
 #include "MingEngine/Editor/Gizmos/EditorGizmos.hpp"
+#include "MingEngine/Editor/UI/EditorSpinSlider.hpp"
 #include "MingEngine/Engine/Script/CSharpScriptFormat.hpp"
 #include "MingEngine/Scene/3D/Camera3D.hpp"
 #include "MingEngine/Scene/3D/Light3D.hpp"
@@ -39,6 +40,7 @@
 #include "MingEngine/Scene/GUI/SpinBox.hpp"
 #include "MingEngine/Scene/GUI/OptionButton.hpp"
 #include "MingEngine/Scene/GUI/PopupPanel.hpp"
+#include "MingEngine/Scene/GUI/ProgressBar.hpp"
 #include "MingEngine/Scene/GUI/Tree.hpp"
 #include "MingEngine/Scene/GUI/TabContainer.hpp"
 #include "MingEngine/Scene/GUI/SplitContainer.hpp"
@@ -171,6 +173,7 @@ void RegisterSceneTypes()
 	ClassDatabase::RegisterClass<SpinBox>();
 	ClassDatabase::RegisterClass<OptionButton>();
 	ClassDatabase::RegisterClass<PopupPanel>();
+	ClassDatabase::RegisterClass<ProgressBar>();
 	ClassDatabase::RegisterClass<Tree>();
 	ClassDatabase::RegisterClass<TabContainer>();
 	ClassDatabase::RegisterClass<SplitContainer>();
@@ -188,6 +191,7 @@ void RegisterSceneTypes()
 
 	ClassDatabase::RegisterClass<EditorNode>();
 	ClassDatabase::RegisterClass<EditorGizmos>();
+	ClassDatabase::RegisterClass<EditorSpinSlider>();
 	ClassDatabase::RegisterClass<EditorCamera>();
 }
 

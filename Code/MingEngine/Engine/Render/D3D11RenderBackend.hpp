@@ -96,11 +96,11 @@ public:
 	GPUTexture* CreateDepthStencilTexture(char const* name, IntVec2 dimensions);
 	void        DestroyTexture(GPUTexture* texture);
 
-	VertexBuffer*   CreateVertexBuffer(const unsigned int size, unsigned int stride);
-	VertexBuffer*   CreateVertexBuffer(void const* data, const unsigned int size, unsigned int stride);
-	ConstantBuffer* CreateConstantBuffer(const unsigned int size);
-	IndexBuffer*    CreateIndexBuffer(const unsigned int size);
-	IndexBuffer*    CreateIndexBuffer(void const* data, const unsigned int size, unsigned int stride);
+	VertexBuffer*   CreateVertexBuffer(const unsigned int size, unsigned int stride) override;
+	VertexBuffer*   CreateVertexBuffer(void const* data, const unsigned int size, unsigned int stride) override;
+	ConstantBuffer* CreateConstantBuffer(const unsigned int size) override;
+	IndexBuffer*    CreateIndexBuffer(const unsigned int size) override;
+	IndexBuffer*    CreateIndexBuffer(void const* data, const unsigned int size, unsigned int stride) override;
 
 	// CPU -> GPU uploads
 	void CopyCPUToGPU(const void* data, unsigned int size, VertexBuffer* vertexBuffer);

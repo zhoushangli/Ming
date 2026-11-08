@@ -25,6 +25,7 @@ public:
 		RenderRequestPass pass  = RenderRequestPass::EditorOverlay,
 		DepthMode         depth = DepthMode::READ_ONLY_ALWAYS);
 	void SetGizmoColor(Color const& color);
+	void SetGizmoTexture(Ref<TextureResource> const& texture);
 
 protected:
 	std::vector<Vertex>       m_verts;

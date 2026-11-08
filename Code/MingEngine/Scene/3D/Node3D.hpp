@@ -16,6 +16,7 @@ public:
 	enum
 	{
 		Notification_TransformChanged = 40,
+		Notification_VisibilityChanged = 41,
 	};
 
 public:
@@ -48,14 +49,23 @@ public:
 	Vector3 GetWorldScale() const;
 	void    SetWorldScale(Vector3 const& scale);
 
+	void SetVisible(bool visible);
+	bool IsVisible() const;
+	bool GetVisible() const { return IsVisible(); }
+	bool IsVisibleInHierarchy() const;
+
 protected:
 	void OnNotification(int notification);
 
 	virtual void OnTransformChanged();
 	void         PropagateTransformChanged();
+	void         PropagateVisibilityChanged();
 
 protected:
 	Transform3D m_transform;
 	Vector3     m_velocity        = Vector3::Zero;
 	EulerAngles m_angularVelocity = EulerAngles::Zero;
+
+private:
+	bool m_visible = true;
 };

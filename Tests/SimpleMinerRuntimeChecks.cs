@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using Ming;
 using SimpleMiner;
+using Math = System.Math;
 
 public partial class SimpleMinerRuntimeChecks : Node
 {
@@ -54,7 +55,7 @@ public partial class SimpleMinerRuntimeChecks : Node
 
         VoxelDataService data = engine.VoxelDataService;
         VoxelRenderService render = engine.VoxelRenderService;
-        Camera3D camera = scene.GetNode<Camera3D>("Camera3D");
+        Camera3D camera = scene.GetNode<Camera3D>("Player/Camera");
         Require(ReferenceEquals(engine, g_minerEngine) && GetNodeOrNull("/Root/Boot") == null,
             "Boot was replaced while service tree survived");
         Require(data.LoadsLastFrame <= 1 && render.RebuildsLastFrame <= 4 && data.UnloadsLastFrame <= 4, "frame budgets");
@@ -88,17 +89,18 @@ public partial class SimpleMinerRuntimeChecks : Node
             if (phase == "second")
             {
                 int[] saved = File.ReadAllLines(Path.Combine(root, "runtime-save.txt")).Select(int.Parse).ToArray();
-                Require(data.Chunks[new ChunkCoord(saved[0], saved[1])].Blocks[Chunk.Index(2, 3, 120)] == saved[2],
+                Require(data.Chunks[new ChunkCoord(saved[0], saved[1])].Blocks[ChunkData.Index(2, 3, 120)] == saved[2],
                     "shutdown save survives fresh runtime");
             }
             else
             {
-                Chunk chunk = data.Chunks.Values.First();
-                byte type = chunk.Blocks[Chunk.Index(2, 3, 120)] == 6 ? (byte)0 : (byte)6;
+                ChunkData chunk = data.Chunks.Values.First();
+                byte type = chunk.Blocks[ChunkData.Index(2, 3, 120)] == 6 ? (byte)0 : (byte)6;
                 Require(data.SetBlock(chunk.Coords.X * 16 + 2, chunk.Coords.Y * 16 + 3, 120, type), "live block edit");
                 File.WriteAllLines(Path.Combine(root, "runtime-save.txt"), new[] { chunk.Coords.X, chunk.Coords.Y, (int)type }.Select(value => value.ToString()));
             }
 
+            VerifyGlobalTransforms();
             VerifyServiceBehaviors();
         }
 
@@ -120,6 +122,46 @@ public partial class SimpleMinerRuntimeChecks : Node
         File.WriteAllText(Path.Combine(root, "runtime-exit-" + phase + ".txt"), "PASS");
     }
 
+    private void VerifyGlobalTransforms()
+    {
+        bool Near(Vector3 value, float x, float y, float z) =>
+            Math.Abs(value.X - x) < 0.001f && Math.Abs(value.Y - y) < 0.001f && Math.Abs(value.Z - z) < 0.001f;
+
+        var parent = new Node3D();
+        var child = new Node3D();
+        parent.AddNode(child);
+        try
+        {
+            parent.GlobalPosition = new Vector3(10, 20, 30);
+            parent.GlobalRotation = new EulerAngles(0, 90, 0);
+            parent.GlobalScale = new Vector3(2, 2, 2);
+            child.Position = new Vector3(1, 2, 3);
+            Require(Near(child.GlobalPosition, 6, 22, 36), "global position includes parent translation, rotation and scale");
+            Require(Math.Abs(child.GlobalRotation.Yaw - 90) < 0.001f && Near(child.GlobalScale, 2, 2, 2),
+                "global rotation and scale include the parent transform");
+
+            child.GlobalPosition = new Vector3(14, 26, 38);
+            Require(Near(child.Position, 3, -2, 4) && Near(child.GlobalPosition, 14, 26, 38),
+                "global position setter converts back to parent space");
+            child.GlobalRotation = new EulerAngles(15, 30, 0);
+            Require(Math.Abs(child.Rotation.Yaw + 60) < 0.001f && Math.Abs(child.Rotation.Pitch - 15) < 0.001f
+                && Math.Abs(child.GlobalRotation.Yaw - 30) < 0.001f && Math.Abs(child.GlobalRotation.Pitch - 15) < 0.001f,
+                "global rotation setter preserves degree semantics beneath a rotated parent");
+            child.GlobalScale = new Vector3(6, 8, 10);
+            Require(Near(child.Scale, 3, 4, 5) && Near(child.GlobalScale, 6, 8, 10),
+                "global scale setter accounts for parent scale");
+            Require(Near(parent.Position, 10, 20, 30) && Near(parent.GlobalPosition, 10, 20, 30)
+                && Math.Abs(parent.Rotation.Yaw - 90) < 0.001f && Near(parent.Scale, 2, 2, 2),
+                "global setters equal local setters without a Node3D parent");
+        }
+        finally
+        {
+            parent.QueueFree();
+        }
+
+        Log("SIMPLEMINER_GLOBAL_TRANSFORMS PASS");
+    }
+
     private void VerifyServiceBehaviors()
     {
         using PackedScene packed = ResourceLoader.Load<PackedScene>("res://Scenes/ServiceChecks.tscn");
@@ -136,7 +178,7 @@ public partial class SimpleMinerRuntimeChecks : Node
         string fixtures = Path.Combine(root, ".ming", "Verification", "Services", Guid.NewGuid().ToString("N"));
         BlockDefinition[] definitions = engine.Definitions;
         byte stone = BlockDefinition.Find(definitions, "Cobblestone");
-        GenerationSettings settings = GenerationSettings.Load(Path.Combine(root, "Data", "GameConfig.xml"));
+        GenerationConfig settings = GenerationConfig.Load(Path.Combine(root, "Data", "GameConfig.xml"));
         generation.Configure(settings, definitions);
         try
         {
@@ -145,7 +187,7 @@ public partial class SimpleMinerRuntimeChecks : Node
             {
                 for (int x = -2; x <= 2; x++)
                 {
-                    ChunkFile.Write(ChunkFile.GetPath(Path.Combine(streaming, "Saves"), new(x, y)), new byte[Chunk.BlockCount]);
+                    ChunkFile.Write(ChunkFile.GetPath(Path.Combine(streaming, "Saves"), new(x, y)), new byte[ChunkData.BlockCount]);
                 }
             }
 
@@ -182,7 +224,7 @@ public partial class SimpleMinerRuntimeChecks : Node
             Require(data.UnloadsLastFrame == 4, "distant chunks respect unload budget");
             data.Clear();
             data.Update(new Vector3(8, 8, 100));
-            Require(data.Chunks[new(0, 0)].Blocks[Chunk.Index(15, 2, 20)] == stone, "service data survives close and reopen");
+            Require(data.Chunks[new(0, 0)].Blocks[ChunkData.Index(15, 2, 20)] == stone, "service data survives close and reopen");
             data.Clear();
 
             string failedSave = Path.Combine(fixtures, "failed-save");
@@ -220,7 +262,7 @@ public partial class SimpleMinerRuntimeChecks : Node
     private void VerifySessionGuards()
     {
         VoxelDataService data = engine.VoxelDataService;
-        Chunk chunk = data.Chunks.Values.First();
+        ChunkData chunk = data.Chunks.Values.First();
         string config = Path.Combine(root, "Data", "GameConfig.xml");
         string original = File.ReadAllText(config);
         try
@@ -238,7 +280,7 @@ public partial class SimpleMinerRuntimeChecks : Node
         Directory.CreateDirectory(blocked);
         File.WriteAllText(Path.Combine(blocked, "Saves"), "block directory creation");
         engine.SaveLoadService.Configure(blocked, engine.Definitions.Length);
-        byte type = chunk.Blocks[Chunk.Index(3, 4, 125)] == 6 ? (byte)0 : (byte)6;
+        byte type = chunk.Blocks[ChunkData.Index(3, 4, 125)] == 6 ? (byte)0 : (byte)6;
         data.SetBlock(chunk.Coords.X * 16 + 3, chunk.Coords.Y * 16 + 4, 125, type);
         try
         {

@@ -7,10 +7,12 @@
 #include "MingEngine/Core/Math/Vector2.hpp"
 
 #include <array>
+#include <map>
 
 class Camera3D;
 class TransformGizmo3D;
 class ViewportAxisIndicator;
+class EditorNodeGizmo3D;
 
 class EditorGizmos : public Node
 {
@@ -35,12 +37,22 @@ public:
 	bool      IsLocal() const { return m_local; }
 	void      SetGridVisible(bool visible);
 	bool      IsGridVisible() const;
+	ObjectID  PickNode(Camera3D const& camera, Vector2 screenPos, float maxDistance);
+
+protected:
+	void OnNotification(int notification);
 
 private:
-	EditorWorldGrid3D*                m_worldGrid      = nullptr;
-	std::array<EditorWorldAxis3D*, 6> m_worldAxises    = {};
-	TransformGizmo3D*                 m_transformGizmo = nullptr;
-	ViewportAxisIndicator*            m_axisIndicator  = nullptr;
-	GizmoTool                         m_tool           = GizmoTool::Transform;
-	bool                              m_local          = false;
+	void SyncNodeGizmos(GizmoContext const& context);
+
+private:
+	EditorWorldGrid3D*                     m_worldGrid      = nullptr;
+	std::array<EditorWorldAxis3D*, 6>      m_worldAxises    = {};
+	TransformGizmo3D*                      m_transformGizmo = nullptr;
+	ViewportAxisIndicator*                 m_axisIndicator  = nullptr;
+	GizmoTool                              m_tool           = GizmoTool::Transform;
+	bool                                   m_local          = true;
+	std::map<ObjectID, EditorNodeGizmo3D*> m_nodeGizmos;
+	EditorNodeGizmo3D*                     m_activeNodeGizmo = nullptr;
+	bool                                   m_nodeHovered     = false;
 };

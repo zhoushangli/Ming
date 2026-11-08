@@ -18,7 +18,7 @@ class InspectorPanel final : public EditorPanel
 	MCLASS(InspectorPanel, EditorPanel);
 
 private:
-	struct ColorEdit
+	struct PropertyEdit
 	{
 		ObjectID           m_target = ObjectID::Invalid;
 		ObjectID           m_scene  = ObjectID::Invalid;
@@ -76,14 +76,14 @@ private:
 	void ClearProperties();
 	void RefreshValues();
 	void FilterProperties();
-	void BeginColorEdit(
+	void BeginPropertyEdit(
 		std::string const& name,
 		ObjectID           id,
 		MethodBind const*  setter,
 		MethodBind const*  getter,
 		InspectorProperty* field);
-	void PreviewColorValue(Variant const& value);
-	void EndColorEdit(bool accept);
+	void PreviewPropertyValue(Variant const& value);
+	void EndPropertyEdit(bool accept);
 	void CommitValue(
 		std::string const& propertyName,
 		ObjectID           objectID,
@@ -104,5 +104,5 @@ private:
 	SceneTree*                 m_sceneTree  = nullptr;
 	std::vector<std::string>   m_inheritanceChain;
 	std::vector<PropertyGroup> m_propertyGroups;
-	ColorEdit                  m_colorEdit;
+	PropertyEdit                  m_propertyEdit;
 };

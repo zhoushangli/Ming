@@ -169,6 +169,7 @@ public:
 	static std::vector<PropertyInfo>        GetProperties(std::string const& className);
 	static std::vector<PropertyInfo const*> GetAllProperties(std::string const& className);
 	static PropertyInfo const*              FindProperty(std::string const& className, std::string const& propertyName);
+	static std::unordered_map<std::string, Variant> GetPropertyDefaultValues(std::string const& className);
 
 	static MethodBind const* GetMethodBind(std::string const& className, std::string const& methodName);
 	static void              AddPropertyGroup(std::string const& className, std::string const& name);

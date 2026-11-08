@@ -102,6 +102,33 @@ ConstructorFunc ClassDatabase::GetConstructor(std::string const& className)
 	return classInfo.m_creator;
 }
 
+std::unordered_map<std::string, Variant> ClassDatabase::GetPropertyDefaultValues(std::string const& className)
+{
+	std::unordered_map<std::string, Variant> values;
+	ClassInfo const* info = GetClassInfo(className);
+	if (info == nullptr || info->m_isSingleton)
+	{
+		return values;
+	}
+
+	Object* instance = CreateInstance(className);
+	if (instance == nullptr)
+	{
+		return values;
+	}
+
+	for (PropertyInfo const* property : GetAllProperties(className))
+	{
+		if (property->HasUsage(PropertyInfo::UsageFlags::Inspector) && property->GetGetter() != nullptr)
+		{
+			values.emplace(property->m_name, property->GetGetter()->Invoke(instance, {}));
+		}
+	}
+
+	MemDelete(instance);
+	return values;
+}
+
 ClassInfo const* ClassDatabase::GetClassInfo(std::string const& className)
 {
 	auto iter = m_classInfoMap.find(className);

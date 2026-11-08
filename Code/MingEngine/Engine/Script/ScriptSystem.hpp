@@ -104,6 +104,15 @@ class ScriptSystem : public SystemBase
 {
 	MCLASS(ScriptSystem, SystemBase)
 
+public:
+	enum class BuildState
+	{
+		Idle,
+		Running,
+		Succeeded,
+		Failed
+	};
+
 private:
 	// When we reload the assembly(suppose we have already rebuild a new version), we need to
 	// 1) Record all the Objects and their script
@@ -122,6 +131,7 @@ private:
 	using EnsureProjectSolutionFunc =
 		int32_t(CORECLR_DELEGATE_CALLTYPE*)(String const* projectDirectory, String const* sdkDirectory);
 	using BuildProjectSolutionFunc = int32_t(CORECLR_DELEGATE_CALLTYPE*)(String const* projectDirectory);
+	using PollProjectBuildFunc = int32_t(CORECLR_DELEGATE_CALLTYPE*)(int32_t* exitCode);
 
 public:
 	ScriptSystem(ScriptSystemConfig const& config);
@@ -133,6 +143,9 @@ public:
 
 	bool EnsureProjectSolution();
 	bool BuildProjectSolution();
+	bool BeginProjectBuild();
+	BuildState PollProjectBuild(int32_t& exitCode);
+	void CloseProjectBuild();
 	bool ReloadProjectAssembly();
 	bool HasProjectScripts() const;
 	bool IsProjectAssemblyCurrent() const;
@@ -182,6 +195,9 @@ private:
 	UnloadProjectAssemblyFunc m_unloadProjectAssembly    = nullptr;
 	EnsureProjectSolutionFunc m_ensureProjectSolution    = nullptr;
 	BuildProjectSolutionFunc  m_buildProjectSolution     = nullptr;
+	BuildProjectSolutionFunc  m_beginProjectBuild        = nullptr;
+	PollProjectBuildFunc      m_pollProjectBuild         = nullptr;
+	ShutdownFunc              m_closeProjectBuild        = nullptr;
 
 	ManagedCallbacks m_managedCallbacks = {};
 

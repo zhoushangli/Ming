@@ -101,18 +101,19 @@ void ScenePanel::OnInitialize()
 		[this](uint64_t key, int action)
 		{
 			auto  found = m_nodeItems.find(key);
-			auto* item  = found != m_nodeItems.end() ? ObjectDatabase::GetInstance<CanvasItem>(found->second) : nullptr;
-			if (item != nullptr && !item->IsQueuedForDeletion()
+			auto* item  = found != m_nodeItems.end() ? ObjectDatabase::GetInstance<Node>(found->second) : nullptr;
+			PropertyInfo const* visibility = item != nullptr ? ClassDatabase::FindProperty(item->GetClassName(), "visible") : nullptr;
+			if (item != nullptr && !item->IsQueuedForDeletion() && visibility != nullptr
 				&& action == (item->GetScriptInstance() != nullptr ? 1 : 0))
 			{
-				bool const before = item->IsVisible();
-				item->SetVisible(!before);
+				bool const before = visibility->GetGetter()->Invoke(item, {}).As<bool>();
+				visibility->GetSetter()->Invoke(item, { !before });
 				auto* editor = EditorNode::Get();
 				auto& undo   = editor->GetUndoRedo();
 				if (undo.CreateAction("Toggle Visibility", m_context.m_sceneTree->GetScene()->GetObjectID()))
 				{
-					undo.AddDoMethod(item, "SetVisible", { !before, true });
-					undo.AddUndoMethod(item, "SetVisible", { before, true });
+					undo.AddDoProperty(item, "visible", !before);
+					undo.AddUndoProperty(item, "visible", before);
 					undo.AddDoMethod(editor, "MarkSceneDirty");
 					undo.AddUndoMethod(editor, "MarkSceneDirty");
 					undo.CommitAction(false);
@@ -420,16 +421,19 @@ void ScenePanel::UpdateItems()
 
 		if (auto* canvas = dynamic_cast<CanvasItem*>(node))
 		{
+			items[index].m_dimmed = !canvas->IsVisibleInHierarchy();
 			items[index].m_actions.push_back(
 				{ GetThemeIcon(canvas->IsVisible() ? "Visible" : "Hidden", "EditorIcons"),
-				  GetThemeColor("tn", "EditorIcons"),
+				  GetThemeColor(items[index].m_dimmed ? "font_color" : "tn", items[index].m_dimmed ? "EditorStatusLabel" : "EditorIcons"),
 				  true });
-			items[index].m_dimmed = !canvas->IsVisibleInHierarchy();
 		}
-		else
+		else if (auto* spatial = dynamic_cast<Node3D*>(node))
 		{
+			items[index].m_dimmed = !spatial->IsVisibleInHierarchy();
 			items[index].m_actions.push_back(
-				{ GetThemeIcon("Visible", "EditorIcons"), GetThemeColor("font_color", "EditorStatusLabel"), false });
+				{ GetThemeIcon(spatial->IsVisible() ? "Visible" : "Hidden", "EditorIcons"),
+				  GetThemeColor(items[index].m_dimmed ? "font_color" : "tn", items[index].m_dimmed ? "EditorStatusLabel" : "EditorIcons"),
+				  true });
 		}
 		std::string lower = node->GetName().ToUtf8();
 		std::transform(

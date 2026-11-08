@@ -9,7 +9,7 @@
 
 namespace EditorPopupUtils
 {
-PopupPanel*    Create(Control* owner, String const& title, VBoxContainer*& content);
+PopupPanel*    Create(Control* owner, String const& title, VBoxContainer*& content, bool closable = true);
 void           Layout(PopupPanel* popup, Vector2 preferredSize);
 void           Open(PopupPanel* popup, Control* owner, Vector2 preferredSize);
 Button*        AddButton(Control* parent, String const& text, std::function<void()> callback);

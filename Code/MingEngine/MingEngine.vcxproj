@@ -183,6 +183,8 @@
     <ClCompile Include="Editor\UI\ScenePanel.cpp" />
     <ClCompile Include="Editor\UI\ViewportPanel.cpp" />
     <ClCompile Include="Editor\Gizmos\GizmoComponent.cpp" />
+    <ClCompile Include="Editor\UI\EditorSpinSlider.cpp" />
+    <ClCompile Include="Editor\Gizmos\EditorNodeGizmo3D.cpp" />
     <ClCompile Include="Editor\Gizmos\TransformGizmo3D.cpp" />
     <ClCompile Include="Core\Math\AABB2.cpp" />
     <ClCompile Include="Core\Math\AABB3.cpp" />
@@ -386,6 +388,8 @@
     <ClInclude Include="Editor\UI\ScenePanel.hpp" />
     <ClInclude Include="Editor\UI\ViewportPanel.hpp" />
     <ClInclude Include="Editor\Gizmos\GizmoComponent.hpp" />
+    <ClInclude Include="Editor\UI\EditorSpinSlider.hpp" />
+    <ClInclude Include="Editor\Gizmos\EditorNodeGizmo3D.hpp" />
     <ClInclude Include="Editor\Gizmos\TransformGizmo3D.hpp" />
     <ClInclude Include="Core\Math\AABB2.hpp" />
     <ClInclude Include="Core\Math\AABB3.hpp" />
@@ -515,6 +519,8 @@
   </ImportGroup>
   <ItemGroup>
     <ClCompile Include="Scene\GUI\SpinBox.cpp" />
+    <ClCompile Include="Scene\GUI\ProgressBar.cpp" />
+    <ClInclude Include="Scene\GUI\ProgressBar.hpp" />
     <ClInclude Include="Scene\GUI\SpinBox.hpp" />
     <ClCompile Include="Scene\GUI\OptionButton.cpp" />
     <ClInclude Include="Scene\GUI\OptionButton.hpp" />

@@ -49,7 +49,13 @@ $settings | ConvertTo-Json -Depth 20 | Set-Content -LiteralPath (Join-Path $fixt
 
 $scripts = Join-Path $fixture 'Scripts'
 New-Item -ItemType Directory -Force -Path $scripts | Out-Null
-Get-ChildItem -LiteralPath (Join-Path $projectRoot 'Scripts') -Filter '*.cs' -File | Copy-Item -Destination $scripts
+foreach ($scriptFile in Get-ChildItem -LiteralPath (Join-Path $projectRoot 'Scripts') -Filter '*.cs' -File -Recurse)
+{
+    $relativePath = $scriptFile.FullName.Substring((Join-Path $projectRoot 'Scripts').Length + 1)
+    $target = Join-Path $scripts $relativePath
+    New-Item -ItemType Directory -Force -Path (Split-Path -Parent $target) | Out-Null
+    Copy-Item -LiteralPath $scriptFile.FullName -Destination $target
+}
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'SimpleMinerRuntimeChecks.cs') -Destination $scripts
 Set-Content -LiteralPath (Join-Path $scripts 'AutoloadResource.cs') -Encoding UTF8 -Value @'
 using Ming;

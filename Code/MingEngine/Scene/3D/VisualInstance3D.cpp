@@ -22,7 +22,7 @@ void VisualInstance3D::OnNotification(int notification)
 		{
 			server->Instance3DSetScenario(m_instanceRID, m_data.m_viewport->GetScenarioRID());
 			server->Instance3DSetTransform(m_instanceRID, GetWorldTransform());
-			server->Instance3DSetVisible(m_instanceRID, m_isVisible);
+			server->Instance3DSetVisible(m_instanceRID, IsVisibleInHierarchy());
 		}
 
 		break;
@@ -43,6 +43,12 @@ void VisualInstance3D::OnNotification(int notification)
 
 		break;
 	}
+
+	case Notification_VisibilityChanged:
+	{
+		server->Instance3DSetVisible(m_instanceRID, IsVisibleInHierarchy());
+		break;
+	}
 	}
 }
 
@@ -58,20 +64,4 @@ VisualInstance3D::~VisualInstance3D()
 		g_engine->m_renderServer->Instance3DFree(m_instanceRID);
 		m_instanceRID = RID::Invalid;
 	}
-}
-
-void VisualInstance3D::SetVisible(bool visible)
-{
-	m_isVisible = visible;
-
-	RenderServer* server = g_engine != nullptr ? g_engine->m_renderServer : nullptr;
-	if (server != nullptr && m_instanceRID.IsValid())
-	{
-		server->Instance3DSetVisible(m_instanceRID, visible);
-	}
-}
-
-bool VisualInstance3D::GetVisible() const
-{
-	return m_isVisible;
 }

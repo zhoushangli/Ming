@@ -14,6 +14,7 @@
 #include "MingEngine/Scene/Core/Window.hpp"
 #include "MingEngine/Scene/Core/PackedScene.hpp"
 #include "MingEngine/Scene/GUI/SpinBox.hpp"
+#include "MingEngine/Editor/UI/EditorSpinSlider.hpp"
 #include "MingEngine/Scene/GUI/Label.hpp"
 #include "MingEngine/Scene/GUI/OptionButton.hpp"
 #include "MingEngine/Scene/GUI/ScrollContainer.hpp"
@@ -149,7 +150,15 @@ void Key(Viewport* viewport, int key, int modifiers = 0)
 void Draft(Viewport* viewport, LineEdit* edit, char const* text)
 {
 	viewport->SetGuiFocus(nullptr);
-	edit->GrabFocus();
+	if (auto* numeric = dynamic_cast<EditorSpinSlider*>(edit->GetParent()))
+	{
+		numeric->GrabFocus();
+		Key(viewport, GLFW_KEY_ENTER);
+	}
+	else
+	{
+		edit->GrabFocus();
+	}
 	edit->SelectAll();
 	Key(viewport, GLFW_KEY_BACKSPACE);
 	for (char const* cursor = text; *cursor != '\0'; ++cursor)
@@ -614,7 +623,7 @@ int main(int argc, char** argv)
 		};
 		{
 			auto  field = makeField(Variant::Type::Vector3, "position");
-			auto* x     = Find<SpinBox>(field->GetControl(), 0);
+			auto* x     = Find<EditorSpinSlider>(field->GetControl(), 0);
 			Draft(root, x->GetLineEdit(), "5.25");
 			vectorValue = Variant(Vector3(1.f, 7.f, 8.f));
 			Key(root, GLFW_KEY_ENTER);
@@ -629,7 +638,7 @@ int main(int argc, char** argv)
 		{
 			vectorValue = Variant(Vector2(1.f, 2.f));
 			auto field  = makeField(Variant::Type::Vector2, "size");
-			Draft(root, Find<SpinBox>(field->GetControl(), 1)->GetLineEdit(), "-4.5");
+			Draft(root, Find<EditorSpinSlider>(field->GetControl(), 1)->GetLineEdit(), "-4.5");
 			Key(root, GLFW_KEY_ENTER);
 			check(vectorValue.As<Vector2>() == Vector2(1.f, -4.5f), "Vector2 edits preserve other component");
 		}
@@ -637,7 +646,7 @@ int main(int argc, char** argv)
 		{
 			vectorValue = Variant(Vector3(1.f, 2.f, 3.f));
 			auto field  = makeField(Variant::Type::Vector3, "scale");
-			Draft(root, Find<SpinBox>(field->GetControl())->GetLineEdit(), "0");
+			Draft(root, Find<EditorSpinSlider>(field->GetControl())->GetLineEdit(), "0");
 			Key(root, GLFW_KEY_ENTER);
 			check(vectorValue.As<Vector3>() == Vector3(1e-5f, 2.f, 3.f), "scale retains near-zero protection");
 		}
@@ -645,7 +654,7 @@ int main(int argc, char** argv)
 		{
 			vectorValue = Variant(EulerAngles(30.f, 20.f, 10.f));
 			auto field  = makeField(Variant::Type::EulerAngles, "rotation");
-			Draft(root, Find<SpinBox>(field->GetControl())->GetLineEdit(), "-90");
+			Draft(root, Find<EditorSpinSlider>(field->GetControl())->GetLineEdit(), "-90");
 			Key(root, GLFW_KEY_ENTER);
 			EulerAngles const v = vectorValue.As<EulerAngles>();
 			check(
@@ -659,6 +668,18 @@ int main(int argc, char** argv)
 			vectorValue    = Variant(false);
 			auto    field  = makeField(Variant::Type::Bool, "enabled");
 			Button* button = Find<Button>(field->GetControl());
+			int buttonIndex = 0;
+			while (button != nullptr && !button->IsToggleMode())
+			{
+				button = Find<Button>(field->GetControl(), ++buttonIndex);
+			}
+
+			if (button == nullptr)
+			{
+				check(false, "boolean exposes a native toggle button");
+				return 1;
+			}
+
 			button->GrabFocus();
 			Key(root, GLFW_KEY_SPACE);
 			InputEvent release;
@@ -828,7 +849,7 @@ int main(int argc, char** argv)
 				}
 			}
 
-			auto* number     = Find<SpinBox>(panel->GetContentControl());
+			auto* number     = Find<EditorSpinSlider>(panel->GetContentControl());
 			Draft(nativeRoot, number->GetLineEdit(), "50");
 			Key(nativeRoot, GLFW_KEY_ENTER);
 			check(
@@ -870,7 +891,7 @@ int main(int argc, char** argv)
 					"wrong resource type rejected");
 				GuiDragData const data{ "file", ObjectID::Invalid, "res://roundtrip.tscn" };
 				check(
-					!Find<LineEdit>(resource->GetControl())->CanDropData(Vector2::Zero, data),
+					!resource->GetControl()->CanDropData(Vector2::Zero, data),
 					"native resource drop rejects incompatible class");
 			}
 
@@ -882,7 +903,7 @@ int main(int argc, char** argv)
 						&& dynamic_cast<PackedScene*>(vectorValue.As<Object*>()) != nullptr,
 					"matching resource assigns actual resource");
 				GuiDragData const data{ "file", ObjectID::Invalid, "res://roundtrip.tscn" };
-				LineEdit*         field = Find<LineEdit>(resource->GetControl());
+				Control*          field = resource->GetControl();
 				vectorValue             = Variant(static_cast<Object*>(nullptr));
 				check(field->CanDropData(Vector2::Zero, data), "native resource field accepts matching class");
 				field->DropData(Vector2::Zero, data);
@@ -965,7 +986,7 @@ int main(int argc, char** argv)
 		};
 		frame();
 		frame();
-		auto* number = Find<SpinBox>(editor);
+		auto* number = Find<EditorSpinSlider>(editor);
 		check(number != nullptr, "production Inspector owns persistent native controls");
 		if (number != nullptr)
 		{
@@ -1332,6 +1353,7 @@ int main(int argc, char** argv)
 		scene->AddNode(cube);
 		auto* light = MemNew<DirectionalLight3D>();
 		light->SetName("Sun");
+		light->SetLocalPosition(Vector3(-3.f, 2.f, 4.f));
 		light->SetLocalOrientation(EulerAngles(45.f, 45.f, 0.f));
 		light->SetIntensity(2.f);
 		scene->AddNode(light);
@@ -1441,7 +1463,7 @@ int main(int argc, char** argv)
 		ui->GetDockSlot(0)->SetCurrentTab(ui->GetDockSlot(0)->GetPageIndex(&ui->GetPanel<ScenePanel>()));
 		frame();
 		editor->GetSelection().Clear();
-		Vector2 const center = ui->GetViewportOrigin() + ui->GetViewportDimensions() * 0.5f;
+		Vector2 const center = ui->GetSceneView()->GetGlobalPosition() + ui->GetSceneView()->GetSize() * 0.5f;
 		click(center);
 		check(editor->GetSelection().GetSelected() == cube->GetObjectID(), "native viewport center picks real mesh");
 		frame();
@@ -1463,7 +1485,7 @@ int main(int argc, char** argv)
 		check(
 			source == composed && source != Color(47, 54, 65, 255),
 			"root UI samples current rendered mesh viewport texture");
-		auto* spin = Find<SpinBox>(editor);
+		auto* spin = Find<EditorSpinSlider>(editor);
 		if (spin != nullptr)
 		{
 			click(spin->GetLineEdit()->GetGlobalPosition() + Vector2(8.f, 8.f));
@@ -1557,7 +1579,7 @@ int main(int argc, char** argv)
 		root->UpdateResolution(IntVec2(1100, 600));
 		frame();
 		auto* inspectorScroll = Find<ScrollContainer>(&ui->GetPanel<InspectorPanel>());
-		auto* number          = Find<SpinBox>(ui->GetPanel<InspectorPanel>().GetContentControl());
+		auto* number          = Find<EditorSpinSlider>(ui->GetPanel<InspectorPanel>().GetContentControl());
 		auto* overflow        = MemNew<Control>();
 		overflow->SetCustomMinimumSize(Vector2(0.f, inspectorScroll->GetPageSize().y + 100.f));
 		ui->GetPanel<InspectorPanel>().GetContentControl()->AddNode(overflow);

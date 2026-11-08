@@ -11,7 +11,7 @@
 class VBoxContainer;
 class Label;
 class Button;
-class SpinBox;
+class EditorSpinSlider;
 class OptionButton;
 class ColorPickerButton;
 struct EditorUIContext;
@@ -30,7 +30,7 @@ public:
 	void                      SetEditedObject(ObjectID id) { m_editedObject = id; }
 	void                      UpdateValue(Variant const& value);
 	void                      SetRevertValue(Variant const& value);
-	void                      SetColorEditCallbacks(
+	void                      SetContinuousEditCallbacks(
 		std::function<void()> started, ValueChangedCallback preview, std::function<void(bool)> ended);
 	void                      EndEditing(LineEdit::EditEndReason reason = LineEdit::EditEndReason::Interrupted);
 	bool                      CanAssignResource(VirtualPath const& path) const;
@@ -41,12 +41,13 @@ public:
 protected:
 	InspectorProperty(PropertyInfo info, std::string labelId, ValueChangedCallback onValueChanged);
 	float          GetEditorDimension(char const* name, float fallback) const;
+	void           BindNumericDrag(EditorSpinSlider* spin);
 	void           BuildNumeric();
 	void           BuildComponents();
 	void           BuildColor();
 	void           BuildText(bool resource = false);
-	void           BuildScript();
-	void           ShowScriptMenu();
+	void           BuildResource();
+	void           ShowResourceMenu();
 	void           BuildBool();
 	void           BuildEnum();
 	void           EmitValueChanged(Variant const& value);
@@ -74,15 +75,17 @@ protected:
 	Button*                  m_button  = nullptr;
 	OptionButton*            m_options = nullptr;
 	ColorPickerButton*        m_color   = nullptr;
-	std::vector<SpinBox*>    m_spins;
+	std::vector<EditorSpinSlider*>    m_spins;
 	ObjectID m_editedObject = ObjectID::Invalid;
 	Button* m_resourceButton = nullptr;
 	Button* m_resourceMenu = nullptr;
 	ObjectID m_tooltipID = ObjectID::Invalid;
 	Label* m_resourceHint = nullptr;
 	bool m_dropHighlighted = false;
+	bool m_numericDragging = false;
+	Variant m_numericStart;
 	Variant                   m_colorStart;
-	std::function<void()>     m_colorStarted;
-	ValueChangedCallback      m_colorPreview;
-	std::function<void(bool)> m_colorEnded;
+	std::function<void()>     m_editStarted;
+	ValueChangedCallback      m_editPreview;
+	std::function<void(bool)> m_editEnded;
 };

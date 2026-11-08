@@ -15,6 +15,7 @@
 #include "MingEngine/Scene/GUI/OptionButton.hpp"
 #include "MingEngine/Scene/GUI/MarginContainer.hpp"
 #include "MingEngine/Scene/GUI/ScrollContainer.hpp"
+#include "MingEngine/Scene/GUI/ProgressBar.hpp"
 
 #include "MingEngine/Scene/GUI/TextureRect.hpp"
 #include <algorithm>
@@ -328,7 +329,8 @@ void EditorUI::Render(EditorUIContext& context)
 	InitializeNative(m_owner != nullptr ? m_owner : EditorNode::Get());
 	context.m_editorUI    = this;
 	context.m_rootControl = m_nativeRoot;
-	m_playButton->SetDisabled(m_owner->IsPreparingPlay() || (g_app != nullptr && g_app->IsGameRunning()));
+	m_playButton->SetDisabled(m_owner->IsPreparingPlay() || m_owner->IsBuildingCSharpProject()
+		|| (g_app != nullptr && g_app->IsGameRunning()));
 	m_stopButton->SetDisabled(g_app == nullptr || !g_app->IsGameRunning());
 	Vector2 const size(static_cast<Viewport*>(context.m_sceneTree->GetRoot())->GetOutputResolution());
 	m_nativeRoot->SetColor(m_nativeRoot->GetThemeColor("background", "Editor"));
@@ -410,6 +412,11 @@ void EditorUI::Render(EditorUIContext& context)
 	m_sceneFilePopup.Render(context);
 	m_createScriptPopup.Render(context);
 	m_warningPopup.Render(context);
+	if (IsBuildProgressVisible())
+	{
+		EditorPopupUtils::Layout(m_buildPopup,
+			Vector2(static_cast<float>(m_nativeRoot->GetThemeConstant("build_popup_width", "Editor")), 0.f));
+	}
 	if (m_settingsPopup != nullptr && m_settingsPopup->IsVisible())
 	{
 		EditorPopupUtils::Layout(
@@ -520,6 +527,43 @@ void EditorUI::FinishNativeEditing()
 	{
 		m_nativeRoot->GetViewport()->SetGuiFocus(nullptr);
 	}
+}
+
+void EditorUI::ShowBuildProgress(String const& message)
+{
+	if (m_buildPopup == nullptr)
+	{
+		VBoxContainer* content = nullptr;
+		m_buildPopup = EditorPopupUtils::Create(GetRootControl(), "C# Build", content, false);
+		m_buildPopup->SetName("BuildProgressPopup");
+		m_buildMessage = EditorPopupUtils::AddLabel(content, message);
+		m_buildProgress = MemNew<ProgressBar>();
+		m_buildProgress->SetName("BuildProgress");
+		m_buildProgress->SetHorizontalSizeFlags(Control::Size_ExpandFill);
+		content->AddNode(m_buildProgress);
+	}
+
+	m_buildMessage->SetText(message);
+	m_buildProgress->SetIndeterminate(true);
+	if (!m_buildPopup->IsVisible())
+	{
+		EditorPopupUtils::Open(m_buildPopup, GetRootControl(),
+			Vector2(static_cast<float>(m_nativeRoot->GetThemeConstant("build_popup_width", "Editor")), 0.f));
+	}
+}
+
+void EditorUI::HideBuildProgress()
+{
+	if (m_buildPopup != nullptr)
+	{
+		m_buildProgress->SetIndeterminate(false);
+		m_buildPopup->Close();
+	}
+}
+
+bool EditorUI::IsBuildProgressVisible() const
+{
+	return m_buildPopup != nullptr && m_buildPopup->IsVisible();
 }
 
 void EditorUI::AcceptUnsavedScene(EditorNode::SceneActionChoice choice)

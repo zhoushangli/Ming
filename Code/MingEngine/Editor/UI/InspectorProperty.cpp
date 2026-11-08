@@ -11,7 +11,7 @@
 #include "MingEngine/Editor/UI/InspectorPropertyVec2.hpp"
 #include "MingEngine/Editor/UI/InspectorPropertyEnum.hpp"
 #include "MingEngine/Core/Object/ResourceLoader.hpp"
-#include "MingEngine/Scene/GUI/SpinBox.hpp"
+#include "MingEngine/Editor/UI/EditorSpinSlider.hpp"
 #include "MingEngine/Scene/GUI/OptionButton.hpp"
 #include "MingEngine/Scene/GUI/ColorPickerButton.hpp"
 #include "MingEngine/Engine/Window/WindowSystem.hpp"
@@ -58,19 +58,21 @@ InspectorProperty::InspectorProperty(PropertyInfo info, std::string labelId, Val
 			control->SetSeparation(static_cast<float>(control->GetThemeConstant("status_spacing", "Editor")) * 0.5f);
 		});
 	m_root->AddNode(row);
-	title->AddThemeChangedCallback(
-		[control = title, vector]()
+	auto* labelArea = MemNew<HBoxContainer>();
+	labelArea->SetName("PropertyLabelArea");
+	labelArea->SetHorizontalSizeFlags(Control::Size_ExpandFill);
+	labelArea->SetSeparation(0.f);
+	labelArea->AddThemeChangedCallback(
+		[control = labelArea, vector]()
 		{
 			control->SetCustomMinimumSize(
 				Vector2(vector ? 0.f : static_cast<float>(control->GetThemeConstant("property_label_width", "Editor")), 0.f));
 		});
-	if (vector)
-	{
-		title->SetHorizontalSizeFlags(Control::Size_ExpandFill);
-	}
+	title->SetHorizontalSizeFlags(Control::Size_ExpandFill);
 	title->SetClipText(true);
 	title->SetVerticalAlignment(VerticalAlignment::Center);
-	row->AddNode(title);
+	row->AddNode(labelArea);
+	labelArea->AddNode(title);
 	m_fields = MemNew<VBoxContainer>();
 	m_fields->SetHorizontalSizeFlags(Control::Size_ExpandFill);
 	m_fields->AddThemeChangedCallback(
@@ -78,13 +80,24 @@ InspectorProperty::InspectorProperty(PropertyInfo info, std::string labelId, Val
 		{
 			control->SetSeparation(static_cast<float>(control->GetThemeConstant("panel_margin", "Editor")) * 0.5f);
 		});
+	auto* valueArea = MemNew<PanelContainer>();
+	valueArea->SetName("PropertyValueArea");
+	valueArea->SetThemeTypeVariation("EditorPropertyValue");
+	valueArea->SetHorizontalSizeFlags(Control::Size_ExpandFill);
+	valueArea->AddThemeChangedCallback(
+		[control = valueArea, vector]()
+		{
+			control->SetCustomMinimumSize(
+				Vector2(vector ? 0.f : static_cast<float>(control->GetThemeConstant("property_label_width", "Editor")), 0.f));
+		});
+	valueArea->AddNode(m_fields);
 	if (vector)
 	{
-		m_root->AddNode(m_fields);
+		m_root->AddNode(valueArea);
 	}
 	else
 	{
-		row->AddNode(m_fields);
+		row->AddNode(valueArea);
 	}
 	m_revert = MemNew<Button>();
 	m_revert->SetName("RevertProperty");
@@ -111,7 +124,7 @@ InspectorProperty::InspectorProperty(PropertyInfo info, std::string labelId, Val
 			control->SetCustomMinimumSize(
 				Vector2(static_cast<float>(control->GetThemeConstant("action_slot", "Editor")), 0.f));
 		});
-	row->AddNode(revertSlot);
+	labelArea->AddNode(revertSlot);
 	revertSlot->AddNode(m_revert);
 	m_error = MemNew<Label>();
 	m_error->SetThemeTypeVariation("EditorErrorLabel");
@@ -152,10 +165,11 @@ InspectorProperty::~InspectorProperty()
 		m_text->SetEditingStartedCallback({});
 	}
 
-	for (SpinBox* spin : m_spins)
+	for (EditorSpinSlider* spin : m_spins)
 	{
 		spin->SetValueChangedCallback({});
 		spin->SetValueReader({});
+		spin->SetDragCallbacks({}, {}, {});
 	}
 
 	if (m_button != nullptr)
@@ -191,17 +205,65 @@ Variant InspectorProperty::ReadValue() const
 
 void InspectorProperty::EmitValueChanged(Variant const& value)
 {
-	auto callback = m_onValueChanged;
+	auto callback = m_numericDragging && m_editPreview ? m_editPreview : m_onValueChanged;
 	if (value.GetType() == m_info.m_type && callback)
 	{
 		callback(value);
 	}
 }
 
+void InspectorProperty::BindNumericDrag(EditorSpinSlider* spin)
+{
+	spin->SetDragCallbacks([this]()
+	{
+		m_numericStart = ReadValue();
+		m_numericDragging = true;
+		auto callback = m_editStarted;
+		if (callback)
+		{
+			callback();
+		}
+	}, [this, spin](Variant const& value)
+	{
+		if (!m_numericDragging)
+		{
+			return;
+		}
+
+		if (m_info.m_type == Variant::Type::Int || m_info.m_type == Variant::Type::Float)
+		{
+			EmitValueChanged(value);
+		}
+		else
+		{
+			for (size_t i = 0; i < m_spins.size(); ++i)
+			{
+				if (m_spins[i] == spin)
+				{
+					SetComponent(static_cast<int>(i), value);
+					break;
+				}
+			}
+		}
+	}, [this](bool accept)
+	{
+		m_numericDragging = false;
+		auto callback = m_editEnded;
+		if (callback)
+		{
+			callback(accept);
+		}
+		else if (!accept)
+		{
+			EmitValueChanged(m_numericStart);
+		}
+	});
+}
+
 void InspectorProperty::BuildNumeric()
 {
-	auto* spin = MemNew<SpinBox>();
-	spin->SetStepButtonsVisible(false);
+	auto* spin = MemNew<EditorSpinSlider>();
+	spin->GetLineEdit()->SetThemeTypeVariation("EditorPropertyEdit");
 	spin->Configure(
 		m_info.m_type == Variant::Type::Int,
 		m_info.m_hint == PropertyInfo::Hint::Range ? (m_info.m_hintData.empty() ? "," : m_info.m_hintData) : "");
@@ -215,6 +277,7 @@ void InspectorProperty::BuildNumeric()
 		{
 			EmitValueChanged(value);
 		});
+	BindNumericDrag(spin);
 	m_fields->AddNode(spin);
 	m_spins.push_back(spin);
 }
@@ -272,12 +335,11 @@ void InspectorProperty::BuildComponents()
 				control->SetSeparation(static_cast<float>(control->GetThemeConstant("panel_margin", "Editor")) * 0.25f);
 			});
 		row->AddNode(label);
-		auto* spin = MemNew<SpinBox>();
+		auto* spin = MemNew<EditorSpinSlider>();
 		if (vector)
 		{
 			spin->GetLineEdit()->SetThemeTypeVariation("EditorVectorEdit");
 		}
-		spin->SetStepButtonsVisible(false);
 		spin->SetHorizontalSizeFlags(Control::Size_ExpandFill);
 		spin->Configure(
 			false,
@@ -292,6 +354,7 @@ void InspectorProperty::BuildComponents()
 			{
 				SetComponent(i, value);
 			});
+		BindNumericDrag(spin);
 		row->AddNode(spin);
 
 		if (m_info.m_type == Variant::Type::EulerAngles)
@@ -370,6 +433,7 @@ void InspectorProperty::SetComponent(int index, Variant const& component)
 void InspectorProperty::BuildBool()
 {
 	m_button = MemNew<Button>();
+	m_button->SetThemeTypeVariation("EditorPropertyButton");
 	m_button->SetToggleMode(true);
 	m_button->SetToggledCallback(
 		[this](bool pressed)
@@ -382,6 +446,7 @@ void InspectorProperty::BuildBool()
 void InspectorProperty::BuildEnum()
 {
 	m_options = MemNew<OptionButton>();
+	m_options->SetThemeTypeVariation("EditorPropertyOption");
 	if (!m_options->SetOptions(m_info.m_hintData))
 	{
 		SetError("Invalid enum hint");
@@ -396,43 +461,50 @@ void InspectorProperty::BuildEnum()
 }
 
 
-void InspectorProperty::BuildScript()
+void InspectorProperty::BuildResource()
 {
 	m_root->SetHorizontalSizeFlags(Control::Size_ShrinkBegin);
-	if (auto* slot = dynamic_cast<Control*>(m_revert->GetParent()))
-	{
-		slot->SetVisible(false);
-	}
-
-	m_title->AddThemeChangedCallback([label = m_title]()
-	{
-		label->SetCustomMinimumSize(Vector2(static_cast<float>(label->GetThemeConstant("script_label_width", "Editor")), 0.f));
-	});
-
 	auto* row = MemNew<HBoxContainer>();
 	row->SetHorizontalSizeFlags(Control::Size_ExpandFill);
 	row->SetSeparation(0.f);
 	m_fields->AddNode(row);
 	m_resourceButton = MemNew<Button>();
 	m_resourceButton->SetThemeTypeVariation("EditorScriptButton");
-	m_resourceButton->SetName("ScriptResource");
+	m_resourceButton->SetName(m_info.m_name == "script" ? "ScriptResource" : "ResourceValue");
 	m_resourceButton->SetClipText(true);
 	m_resourceButton->SetHorizontalSizeFlags(Control::Size_ExpandFill);
-	m_resourceButton->AddThemeChangedCallback([button = m_resourceButton]()
-	{
-		button->SetCustomMinimumSize(Vector2(static_cast<float>(button->GetThemeConstant("property_label_width", "Editor")), 0.f));
-	});
 	m_resourceButton->SetText("<empty>");
 	m_resourceButton->SetPressedCallback([this]()
 	{
 		Ref<Resource> resource(ReadValue());
 		if (resource.IsValid())
 		{
-			EditorNode::Get()->OpenCSharpScript(resource->GetVirtualPath());
+			if (m_info.m_name == "script")
+			{
+				EditorNode::Get()->OpenCSharpScript(resource->GetVirtualPath());
+			}
+			else
+			{
+				auto& files = EditorNode::Get()->m_editorUI->GetPanel<FileSystemPanel>();
+				files.NavigateTo(resource->GetVirtualPath().GetParent());
+				files.SelectPath(resource->GetVirtualPath());
+			}
 		}
 	});
 	row->AddNode(m_resourceButton);
 	m_resourceButton->SetDragCallbacks({}, [this](Vector2 const&, GuiDragData const& data)
+	{
+		VirtualPath path;
+		return data.m_type == String("file") && VirtualPath::TryParse(data.m_value.ToUtf8(), path) && CanAssignResource(path);
+	}, [this](Vector2 const&, GuiDragData const& data)
+	{
+		VirtualPath path;
+		if (VirtualPath::TryParse(data.m_value.ToUtf8(), path))
+		{
+			AssignResource(path);
+		}
+	});
+	m_root->SetDragCallbacks({}, [this](Vector2 const&, GuiDragData const& data)
 	{
 		VirtualPath path;
 		return data.m_type == String("file") && VirtualPath::TryParse(data.m_value.ToUtf8(), path) && CanAssignResource(path);
@@ -476,11 +548,12 @@ void InspectorProperty::BuildScript()
 		});
 	});
 	row->AddNode(load);
+	load->SetVisible(m_info.m_name == "script");
 	m_resourceMenu = MemNew<Button>();
 	m_resourceMenu->SetThemeTypeVariation("EditorScriptMenu");
-	m_resourceMenu->SetName("ScriptMenu");
+	m_resourceMenu->SetName(m_info.m_name == "script" ? "ScriptMenu" : "ResourceMenu");
 	m_resourceMenu->SetIcon(m_root->GetThemeIcon("Dropdown", "EditorIcons"));
-	m_resourceMenu->SetPressedCallback([this]() { ShowScriptMenu(); });
+	m_resourceMenu->SetPressedCallback([this]() { ShowResourceMenu(); });
 	row->AddNode(m_resourceMenu);
 	if (EditorNode::Get() != nullptr && EditorNode::Get()->m_editorUI->GetRootControl() != nullptr)
 	{
@@ -498,7 +571,7 @@ void InspectorProperty::BuildScript()
 
 }
 
-void InspectorProperty::ShowScriptMenu()
+void InspectorProperty::ShowResourceMenu()
 {
 	EditorUI* ui = EditorNode::Get()->m_editorUI;
 	Ref<Resource> resource(ReadValue());
@@ -544,50 +617,26 @@ void InspectorProperty::ShowScriptMenu()
 	};
 	items[1].m_enabled = resource.IsValid();
 	items[2].m_enabled = resource.IsValid();
+	if (m_info.m_name != "script")
+	{
+		items.erase(items.begin(), items.begin() + 2);
+	}
+
 	ui->ShowMenu(m_resourceMenu, m_resourceMenu->GetGlobalPosition() + Vector2(0.f, m_resourceMenu->GetSize().y), items);
 }
 
 void InspectorProperty::BuildText(bool resource)
 {
-	if (resource && m_info.m_name == "script")
+	if (resource)
 	{
-		BuildScript();
+		BuildResource();
 		return;
 	}
 
 	m_text = MemNew<LineEdit>();
 	m_text->SetMinimumCharacterWidth(1);
-	m_text->SetEditable(!resource);
+	m_text->SetThemeTypeVariation("EditorPropertyEdit");
 	m_fields->AddNode(m_text);
-	if (resource)
-	{
-		auto check = [this](Vector2 const&, GuiDragData const& data)
-		{
-			VirtualPath path;
-			return data.m_type == String("file") && VirtualPath::TryParse(data.m_value.ToUtf8(), path)
-				   && CanAssignResource(path);
-		};
-		auto drop = [this](Vector2 const&, GuiDragData const& data)
-		{
-			VirtualPath path;
-			if (data.m_type == String("file") && VirtualPath::TryParse(data.m_value.ToUtf8(), path))
-			{
-				AssignResource(path);
-			}
-		};
-		m_text->SetDragCallbacks({}, check, drop);
-		m_root->SetDragCallbacks({}, check, drop);
-		m_button = MemNew<Button>();
-		m_button->SetText("Clear");
-		m_button->SetPressedCallback(
-			[this]()
-			{
-				EmitValueChanged(Variant(static_cast<Object*>(nullptr)));
-			});
-		m_fields->AddNode(m_button);
-		return;
-	}
-
 	m_text->SetEditingEndedCallback(
 		[this](String const& text, LineEdit::EditEndReason reason)
 		{
@@ -634,16 +683,25 @@ void InspectorProperty::UpdateValue(Variant const& value)
 	if (m_resourceButton != nullptr)
 	{
 		Ref<Resource> resource(value);
-		m_resourceButton->SetText(resource.IsValid() ? String(resource->GetVirtualPath().GetFileName()) : String("<empty>"));
-		m_resourceButton->SetIcon(resource.IsValid() ? m_root->GetThemeIcon("CSharpScript", "EditorIcons") : Ref<TextureResource>());
+		String label("<empty>");
+		if (resource.IsValid())
+		{
+			label = resource->GetVirtualPath().GetFileName();
+			if (label.IsEmpty())
+			{
+				label = resource->GetName().IsEmpty() ? String(resource->GetClassName()) : resource->GetName();
+			}
+		}
+
+		m_resourceButton->SetText(label);
+		m_resourceButton->SetIcon(resource.IsValid() ? m_root->GetThemeIcon(resource->GetClassName(), "EditorIcons") : Ref<TextureResource>());
 		if (EditorNode::Get() != nullptr && EditorNode::Get()->m_editorUI->GetRootControl() != nullptr)
 		{
 			auto& inspector = EditorNode::Get()->m_editorUI->GetPanel<InspectorPanel>();
-			auto* outer = static_cast<HBoxContainer*>(m_title->GetParent());
-			auto* buttons = static_cast<HBoxContainer*>(m_resourceButton->GetParent());
-			float const padding = static_cast<float>(m_root->GetThemeConstant("panel_margin", "Editor")) * 2.f
-				+ static_cast<float>(m_root->GetThemeConstant("scrollbar_width", "ScrollContainer"));
-			float const minimum = m_title->GetCombinedMinimumSize().x + outer->GetSeparation() + buttons->GetCombinedMinimumSize().x;
+			float const padding = m_root->GetThemeConstant("panel_margin", "Editor") * 2.f
+				+ m_root->GetThemeConstant("scrollbar_width", "ScrollContainer");
+			auto* row = static_cast<Control*>(m_title->GetParent()->GetParent());
+			float const minimum = row->GetCombinedMinimumSize().x;
 			inspector.SetCustomMinimumSize(Vector2(minimum + padding, 0.f));
 			m_root->SetCustomMinimumSize(Vector2(std::max(minimum, inspector.GetSize().x - padding), 0.f));
 		}
@@ -743,7 +801,7 @@ void InspectorProperty::EndEditing(LineEdit::EditEndReason reason)
 		m_color->ClosePicker(false, false);
 	}
 
-	for (SpinBox* spin : m_spins)
+	for (EditorSpinSlider* spin : m_spins)
 	{
 		spin->EndEditing(reason);
 	}
@@ -867,12 +925,12 @@ float InspectorProperty::GetEditorDimension(char const* name, float fallback) co
 	return value > 0 ? static_cast<float>(value) : fallback;
 }
 
-void InspectorProperty::SetColorEditCallbacks(
+void InspectorProperty::SetContinuousEditCallbacks(
 	std::function<void()> started, ValueChangedCallback preview, std::function<void(bool)> ended)
 {
-	m_colorStarted = std::move(started);
-	m_colorPreview = std::move(preview);
-	m_colorEnded   = std::move(ended);
+	m_editStarted = std::move(started);
+	m_editPreview = std::move(preview);
+	m_editEnded   = std::move(ended);
 }
 
 void InspectorProperty::BuildColor()
@@ -889,7 +947,7 @@ void InspectorProperty::BuildColor()
 		[this]()
 		{
 			m_colorStart  = ReadValue();
-			auto callback = m_colorStarted;
+			auto callback = m_editStarted;
 			if (callback)
 			{
 				callback();
@@ -898,7 +956,7 @@ void InspectorProperty::BuildColor()
 	m_color->SetColorChangedCallback(
 		[this](Color const& color)
 		{
-			auto callback = m_colorPreview;
+			auto callback = m_editPreview;
 			if (callback)
 			{
 				callback(Variant(color));
@@ -911,7 +969,7 @@ void InspectorProperty::BuildColor()
 	m_color->SetEditingEndedCallback(
 		[this](bool accept)
 		{
-			auto callback = m_colorEnded;
+			auto callback = m_editEnded;
 			if (callback)
 			{
 				callback(accept);

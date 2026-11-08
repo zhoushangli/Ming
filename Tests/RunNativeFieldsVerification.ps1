@@ -70,6 +70,11 @@ try
         New-Item -ItemType Directory -Force -Path (Join-Path $outputDirectory 'MingSharp') | Out-Null
         Copy-Item -Path (Join-Path $repoRoot 'Run\MingSharp\*') -Destination (Join-Path $outputDirectory 'MingSharp') -Recurse -Force
         & (Join-Path $outputDirectory ($Suite + '.exe')) (Join-Path $outputDirectory 'Project')
+        if ($LASTEXITCODE -ne 0)
+        {
+            throw 'C# workflow verification failed.'
+        }
+        & (Join-Path $outputDirectory ($Suite + '.exe')) --build-checks (Join-Path $outputDirectory 'BuildChecks')
     }
     elseif ($Preview)
     {

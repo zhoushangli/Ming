@@ -124,6 +124,7 @@ namespace MingPlugins
         {
             try
             {
+                MingTools.BuildSystem.CloseProjectBuild();
                 return Log(ScriptManagerBridge.GetBindingSummary());
             }
 
@@ -313,6 +314,58 @@ namespace MingPlugins
                 }
 
                 return -5;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        private static unsafe int BeginProjectBuild(String* projectDirectory)
+        {
+            try
+            {
+                return projectDirectory != null && MingTools.BuildSystem.BeginProjectBuild(
+                    Marshaling.ConvertStringToManaged(*projectDirectory)) ? 0 : -1;
+            }
+            catch (Exception exception)
+            {
+                Log($"[Error] Could not start C# build: {exception}");
+                return -1;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        private static unsafe int PollProjectBuild(int* exitCode)
+        {
+            if (exitCode == null)
+            {
+                return (int)MingTools.BuildSystem.BuildState.Failed;
+            }
+
+            try
+            {
+                var state = MingTools.BuildSystem.PollProjectBuild(message => Log(message), out int code);
+                *exitCode = code;
+                return (int)state;
+            }
+            catch (Exception exception)
+            {
+                *exitCode = -1;
+                Log($"[Error] Could not poll C# build: {exception}");
+                return (int)MingTools.BuildSystem.BuildState.Failed;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        private static int CloseProjectBuild()
+        {
+            try
+            {
+                MingTools.BuildSystem.CloseProjectBuild();
+                return 0;
+            }
+            catch (Exception exception)
+            {
+                Log($"[Error] Could not close C# build: {exception}");
+                return -1;
             }
         }
 

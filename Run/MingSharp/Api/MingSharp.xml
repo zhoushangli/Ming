@@ -342,7 +342,7 @@
         </member>
         <member name="T:Ming.Node3D">
             <summary>A node with a position, rotation, and scale in 3D space.</summary>
-            <remarks>The local transform is relative to the direct parent when it is a Node3D. Otherwise, it is also the world transform. Rotation values use degrees.</remarks>
+            <remarks>Position, Rotation, and Scale are relative to the direct Node3D parent. GlobalPosition, GlobalRotation, and GlobalScale use world space. Without a Node3D parent, local and global transforms are the same. Rotation values use degrees.</remarks>
         </member>
         <member name="M:Ming.Node3D.SetLocalTransform(Ming.Matrix4x4)">
             <summary>Sets the position, rotation, and scale from a matrix in local space.</summary>
@@ -375,6 +375,30 @@
         <member name="M:Ming.Node3D.GetLocalScale">
             <summary>Gets the scale in local space.</summary>
             <returns>The scale on each local axis.</returns>
+        </member>
+        <member name="M:Ming.Node3D.SetWorldPosition(Ming.Vector3)">
+            <summary>Sets the position in world space, accounting for the parent transform.</summary>
+            <param name="worldPosition">The desired world position.</param>
+        </member>
+        <member name="M:Ming.Node3D.GetWorldPosition">
+            <summary>Gets the position in world space.</summary>
+            <returns>The position after applying the parent transform.</returns>
+        </member>
+        <member name="M:Ming.Node3D.SetWorldOrientation(Ming.EulerAngles)">
+            <summary>Sets the rotation in world space, accounting for the parent transform.</summary>
+            <param name="worldOrientation">The desired world yaw, pitch, and roll in degrees.</param>
+        </member>
+        <member name="M:Ming.Node3D.GetWorldOrientation">
+            <summary>Gets the rotation in world space.</summary>
+            <returns>The world yaw, pitch, and roll in degrees.</returns>
+        </member>
+        <member name="M:Ming.Node3D.SetWorldScale(Ming.Vector3)">
+            <summary>Sets the scale in world space, accounting for the parent scale.</summary>
+            <param name="scale">The desired scale on each world axis. Parent scale components must be nonzero.</param>
+        </member>
+        <member name="M:Ming.Node3D.GetWorldScale">
+            <summary>Gets the scale in world space.</summary>
+            <returns>The scale after applying the parent transform.</returns>
         </member>
         <member name="T:Ming.OBJImporter">
             <summary>Imports mesh data from .obj files.</summary>

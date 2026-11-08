@@ -11,15 +11,9 @@ public:
 	VisualInstance3D();
 	~VisualInstance3D() override;
 
-	void SetVisible(bool visible);
-	bool GetVisible() const;
-
 protected:
 	void        OnNotification(int notification);
 	static void BindMethods() {};
-
-public:
-	bool m_isVisible = true;
 
 protected:
 	// Render instance that mirrors this node while it stays in the SceneTree.
