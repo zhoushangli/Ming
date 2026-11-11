@@ -5,6 +5,7 @@
 #include "MingEngine/Core/Object/ObjectID.hpp"
 
 #include <memory>
+#include <map>
 #include <string>
 #include <vector>
 
@@ -78,6 +79,8 @@ protected:                                                                      
 class ScriptInstance;
 class Variant;
 class Object;
+class Callable;
+struct CallError;
 
 // These are for Memory.hpp override
 // so we can call PostInitialize and PreDelete when creating and deleting objects
@@ -101,6 +104,9 @@ public:
 		Notification_PreDeleteCleanup = 2,
 	};
 
+private:
+	struct Connection;
+
 public:
 	Object();
 	virtual ~Object();
@@ -123,6 +129,22 @@ public:
 	bool     IsPreDeleting() const { return m_isPreDeleting; }
 	void     Notification(int notification, bool reverse = false);
 	void     Free();
+
+	bool HasMethod(std::string const& methodName) const;
+	Variant Call(std::string const& methodName, std::vector<Variant> const& arguments = {});
+	Variant Call(std::string const& methodName, std::vector<Variant> const& arguments, CallError& error);
+
+	// Store synchronous connections on the emitter; signal names are dynamic in this minimal implementation.
+	// e.g. button->Connect("pressed", Callable(inventory, "Open")) subscribes inventory to that button.
+	bool Connect(std::string const& signalName, Callable const& callable);
+	bool Disconnect(std::string const& signalName, Callable const& callable);
+	bool IsConnected(std::string const& signalName, Callable const& callable) const;
+	bool HasSignalConnections(std::string const& signalName) const;
+
+	// Invoke a snapshot in connection order; connection changes affect subsequent emissions.
+	// e.g. EmitSignal("pressed") calls each connected method before returning.
+	bool EmitSignal(std::string const& signalName);
+	bool EmitSignal(std::string const& signalName, std::vector<Variant> const& arguments);
 
 	// Return the script resource attached to the current runtime instance.
 	// e.g. GetScript() is empty while the instance is detached for reload.
@@ -155,6 +177,7 @@ protected:
 private:
 	void PostInitialize();
 	bool PreDelete();
+	void ClearSignalConnections();
 
 protected:
 	ObjectID        m_id            = ObjectID::Invalid;
@@ -162,6 +185,10 @@ protected:
 	ManagedGCHandle m_nativeBindingGCHandle;
 
 	ScriptInstance* m_scriptInstance = nullptr;
+
+private:
+	std::map<std::string, std::vector<Connection>> m_signalMap;
+	std::vector<Connection>                      m_signalSubscriptions;
 };
 
 class ObjectDatabase

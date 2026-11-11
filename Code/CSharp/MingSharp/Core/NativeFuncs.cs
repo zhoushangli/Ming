@@ -23,6 +23,14 @@ internal unsafe struct NativeCallbacks
     public delegate* unmanaged<ming_variant*, void> DestroyVariant;
     public delegate* unmanaged<String*, IntPtr> GetGlobalObject;
     public delegate* unmanaged<IntPtr, int*, IntPtr> GetScriptInstanceManaged;
+    public delegate* unmanaged<IntPtr, String*, ming_callable*, void> CreateCallable;
+    public delegate* unmanaged<ming_callable*, ming_callable*, void> CopyCallable;
+    public delegate* unmanaged<ming_callable*, void> DestroyCallable;
+    public delegate* unmanaged<IntPtr, String*, ming_callable*, int> ConnectSignal;
+    public delegate* unmanaged<IntPtr, String*, ming_callable*, int> IsSignalConnected;
+    public delegate* unmanaged<IntPtr, String*, ming_callable*, int> DisconnectSignal;
+    public delegate* unmanaged<ming_variant*, ming_variant*, void> CopyVariant;
+    public delegate* unmanaged<IntPtr, String*, ming_variant**, int, int> EmitSignal;
 }
 
 [StructLayout(LayoutKind.Sequential)]
@@ -33,7 +41,8 @@ internal unsafe struct ManagedCallbacks
     public delegate* unmanaged<String*, IntPtr, IntPtr> CreateNativeManagedInstance;
     public delegate* unmanaged<IntPtr, IntPtr, IntPtr> CreateUserManagedInstance;
     public delegate* unmanaged<IntPtr, void> ReleaseGCHandle;
-    public delegate* unmanaged<IntPtr, String*, ming_variant**, int, ming_variant*, int> Call;
+    public delegate* unmanaged<IntPtr, String*, ming_variant**, int, ming_variant*, ming_call_error*, void> Call;
+    public delegate* unmanaged<IntPtr, String*, int> HasMethod;
     public delegate* unmanaged<String*, void> GetScriptBaseTypes;
     public delegate* unmanaged<String*, String*, int> GetScriptNativeBase;
     public delegate* unmanaged<void> DrainResourceBindings;
@@ -73,6 +82,16 @@ public static unsafe class NativeFuncs
         if (
             nativeCallbackSize != sizeof(NativeCallbacks)
             || managedCallbackSize != sizeof(ManagedCallbacks)
+            || sizeof(ming_call_error) != 16
+            || Marshal.OffsetOf<ming_call_error>(nameof(ming_call_error.Error)).ToInt32() != 0
+            || Marshal.OffsetOf<ming_call_error>(nameof(ming_call_error.Argument)).ToInt32() != 4
+            || Marshal.OffsetOf<ming_call_error>(nameof(ming_call_error.ExpectedArgumentCount)).ToInt32() != 8
+            || Marshal.OffsetOf<ming_call_error>(nameof(ming_call_error.ExpectedType)).ToInt32() != 12
+            || sizeof(ming_callable) != 16
+            || sizeof(ming_variant) != 24
+            || sizeof(ming_variant.movable) != 24
+            || Marshal.OffsetOf<ming_callable>(nameof(ming_callable.ObjectID)).ToInt32() != 0
+            || Marshal.OffsetOf<ming_callable>(nameof(ming_callable.Method)).ToInt32() != 8
         )
         {
             throw new InvalidOperationException("Callbacks size mismatch.");
@@ -88,12 +107,112 @@ public static unsafe class NativeFuncs
             CreateUserManagedInstance = &ScriptManagerBridge.CreateUserManagedInstance,
             ReleaseGCHandle = &ScriptManagerBridge.ReleaseGCHandle,
             Call = &ScriptManagerBridge.Call,
+            HasMethod = &ScriptManagerBridge.HasMethod,
             GetScriptBaseTypes = &ScriptManagerBridge.GetScriptBaseTypes,
             GetScriptNativeBase = &ScriptManagerBridge.GetScriptNativeBase,
             DrainResourceBindings = &ScriptManagerBridge.DrainResourceBindings,
             DisposeResourceBindings = &ScriptManagerBridge.DisposeResourceBindings,
             UpdateNativeBindingGCHandle = &ScriptManagerBridge.UpdateNativeBindingGCHandle
         };
+    }
+
+    #endregion
+
+    #region Callable and Signals
+
+    internal static ming_callable CreateCallable(IntPtr target, string methodName)
+    {
+        using String name = Marshaling.ConvertStringToNative(methodName);
+        ming_callable result = default;
+        s_callbacks.CreateCallable(target, &name, &result);
+        return result;
+    }
+
+    internal static ming_callable CopyCallable(in ming_callable source)
+    {
+        ming_callable result = default;
+        fixed (ming_callable* sourcePtr = &source)
+        {
+            s_callbacks.CopyCallable(sourcePtr, &result);
+        }
+
+        return result;
+    }
+
+    internal static void DestroyCallable(ref ming_callable value)
+    {
+        fixed (ming_callable* valuePtr = &value)
+        {
+            s_callbacks.DestroyCallable(valuePtr);
+        }
+    }
+
+    internal static bool ConnectSignal(MingObject source, string name, Callable callback)
+    {
+        return InvokeSignalOperation(s_callbacks.ConnectSignal, source, name, callback);
+    }
+
+    internal static bool IsSignalConnected(MingObject source, string name, Callable callback)
+    {
+        return InvokeSignalOperation(s_callbacks.IsSignalConnected, source, name, callback);
+    }
+
+    internal static bool DisconnectSignal(MingObject source, string name, Callable callback)
+    {
+        return InvokeSignalOperation(s_callbacks.DisconnectSignal, source, name, callback);
+    }
+
+    internal static bool EmitSignal(MingObject source, string name, Variant[] arguments)
+    {
+        ArgumentNullException.ThrowIfNull(name);
+        ArgumentNullException.ThrowIfNull(arguments);
+        ScriptManagerBridge.EnsureNativeBindings();
+        IntPtr sourcePtr = MingObject.GetPtr(source);
+        var values = new ming_variant.movable[arguments.Length];
+        for (int i = 0; i < arguments.Length; i++)
+        {
+            ming_variant value = arguments[i].BorrowNativeValue();
+            values[i] = (ming_variant.movable)value;
+        }
+
+        using String nativeName = Marshaling.ConvertStringToNative(name);
+        try
+        {
+            fixed (ming_variant.movable* valuesPtr = values)
+            {
+                var pointers = new IntPtr[arguments.Length];
+                for (int i = 0; i < arguments.Length; i++)
+                {
+                    pointers[i] = (IntPtr)(valuesPtr + i);
+                }
+
+                fixed (IntPtr* args = pointers)
+                {
+                    return s_callbacks.EmitSignal(sourcePtr, &nativeName, (ming_variant**)args, arguments.Length) != 0;
+                }
+            }
+        }
+        finally
+        {
+            GC.KeepAlive(arguments);
+            GC.KeepAlive(source);
+        }
+    }
+
+    private static bool InvokeSignalOperation(
+        delegate* unmanaged<IntPtr, String*, ming_callable*, int> operation,
+        MingObject source, string name, Callable callback)
+    {
+        ArgumentNullException.ThrowIfNull(name);
+        ArgumentNullException.ThrowIfNull(callback);
+
+        IntPtr sourcePtr = MingObject.GetPtr(source);
+        ming_callable nativeCallback = callback.BorrowNativeValue();
+        using String nativeName = Marshaling.ConvertStringToNative(name);
+        bool result = operation(sourcePtr, &nativeName, &nativeCallback) != 0;
+        GC.KeepAlive(callback);
+        GC.KeepAlive(source);
+        return result;
     }
 
     #endregion
@@ -198,6 +317,18 @@ public static unsafe class NativeFuncs
         {
             s_callbacks.DestroyVariant(value);
         }
+    }
+
+    internal static ming_variant CopyVariant(in ming_variant source)
+    {
+        ScriptManagerBridge.EnsureNativeBindings();
+        ming_variant result = default;
+        fixed (ming_variant* value = &source)
+        {
+            s_callbacks.CopyVariant(value, &result);
+        }
+
+        return result;
     }
 
     internal static bool RetainRef(IntPtr ptr) => s_callbacks.RetainRef(ptr) != 0;

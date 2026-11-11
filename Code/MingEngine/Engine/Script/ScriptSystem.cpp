@@ -16,8 +16,12 @@
 
 #include <filesystem>
 #include <limits>
+#include <new>
 #include <string>
 #include <vector>
+
+static_assert(sizeof(Variant) == 24);
+static_assert(offsetof(NativeCallbacks, m_emitSignal) == offsetof(NativeCallbacks, m_copyVariant) + sizeof(void*));
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -94,6 +98,42 @@ void CORECLR_DELEGATE_CALLTYPE DestroyString(String* str)
 	}
 
 	*str = String();
+}
+
+// Construct an owned callable in empty managed storage, sharing the method name's native block.
+// e.g. CreateCallable(owner, &name, &result) gives result its own String reference.
+void CORECLR_DELEGATE_CALLTYPE CreateCallable(Object const* target, String const* methodName, Callable* result)
+{
+	new (result) Callable(target, *methodName);
+}
+
+// Copy a borrowed callable into empty storage and retain its method name.
+// e.g. CopyCallable(&source, &result) lets either owner be released first.
+void CORECLR_DELEGATE_CALLTYPE CopyCallable(Callable const* source, Callable* result)
+{
+	new (result) Callable(*source);
+}
+
+// Release this callable's String reference and reset its target without affecting other owners.
+// e.g. DestroyCallable(&result) preserves an independent connection copy.
+void CORECLR_DELEGATE_CALLTYPE DestroyCallable(Callable* value)
+{
+	*value = Callable();
+}
+
+int32_t CORECLR_DELEGATE_CALLTYPE ConnectSignal(Object* source, String const* name, Callable const* callback)
+{
+	return source != nullptr && source->Connect(name->ToUtf8(), *callback);
+}
+
+int32_t CORECLR_DELEGATE_CALLTYPE IsSignalConnected(Object* source, String const* name, Callable const* callback)
+{
+	return source != nullptr && source->IsConnected(name->ToUtf8(), *callback);
+}
+
+int32_t CORECLR_DELEGATE_CALLTYPE DisconnectSignal(Object* source, String const* name, Callable const* callback)
+{
+	return source != nullptr && source->Disconnect(name->ToUtf8(), *callback);
 }
 
 void const* CORECLR_DELEGATE_CALLTYPE GetMethodBind(String const* className, String const* methodName)
@@ -239,6 +279,41 @@ void CORECLR_DELEGATE_CALLTYPE CreateObjectVariant(void* ptr, Variant* result)
 void CORECLR_DELEGATE_CALLTYPE DestroyVariant(Variant* value)
 {
 	*value = Variant();
+}
+
+void CORECLR_DELEGATE_CALLTYPE CopyVariant(Variant const* source, Variant* result)
+{
+	new (result) Variant(*source);
+}
+
+int32_t CORECLR_DELEGATE_CALLTYPE EmitSignalFromManaged(
+	Object* source, String const* name, Variant const* const* arguments, int32_t count)
+{
+	if (source == nullptr || name == nullptr || count < 0 || (count > 0 && arguments == nullptr))
+	{
+		return 0;
+	}
+
+	try
+	{
+		std::vector<Variant> values;
+		values.reserve(static_cast<size_t>(count));
+		for (int32_t i = 0; i < count; ++i)
+		{
+			if (arguments[i] == nullptr)
+			{
+				return 0;
+			}
+
+			values.emplace_back(*arguments[i]);
+		}
+
+		return source->EmitSignal(name->ToUtf8(), values) ? 1 : 0;
+	}
+	catch (...)
+	{
+		return 0;
+	}
 }
 
 } // namespace
@@ -527,6 +602,14 @@ bool ScriptSystem::InitializeDotNetRuntime()
 		&DestroyVariant,
 		&GetGlobalObject,
 		&GetScriptInstanceManaged,
+		&CreateCallable,
+		&CopyCallable,
+		&DestroyCallable,
+		&ConnectSignal,
+		&IsSignalConnected,
+		&DisconnectSignal,
+		&CopyVariant,
+		&EmitSignalFromManaged,
 	};
 
 	int32_t const initResult = initialize(
@@ -958,27 +1041,50 @@ void ScriptSystem::ReleaseGCHandle(void* gcHandle)
 	}
 }
 
-bool ScriptSystem::Call(void* gcHandle, std::string const& methodName, std::vector<Variant> const& args, Variant& ret)
+bool ScriptSystem::HasMethod(void* gcHandle, std::string const& methodName) const
 {
-	if (!m_isInitialized || m_managedCallbacks.m_call == nullptr)
+	if (!m_isInitialized || gcHandle == nullptr || m_managedCallbacks.m_hasMethod == nullptr)
 	{
 		return false;
 	}
 
 	String const nativeMethodName(methodName);
+	return m_managedCallbacks.m_hasMethod(gcHandle, &nativeMethodName) != 0;
+}
 
-	// Convert the std::vector<Variant> to a Variant** array
+bool ScriptSystem::Call(void* gcHandle, std::string const& methodName, std::vector<Variant> const& args, Variant& ret)
+{
+	CallError error;
+	ret = Call(gcHandle, methodName, args, error);
+	return error.m_error == CallError::Error::Ok;
+}
+
+Variant ScriptSystem::Call(void* gcHandle, std::string const& methodName, std::vector<Variant> const& args, CallError& error)
+{
+	error = {};
+	if (gcHandle == nullptr)
+	{
+		error.m_error = CallError::Error::InvalidTarget;
+		return {};
+	}
+
+	if (!m_isInitialized || m_managedCallbacks.m_call == nullptr)
+	{
+		error.m_error = CallError::Error::ExecutionFailed;
+		return {};
+	}
+
+	String const nativeMethodName(methodName);
 	std::vector<Variant*> argPointers;
 	argPointers.reserve(args.size());
-	for (const auto& arg : args)
+	for (Variant const& arg : args)
 	{
 		argPointers.push_back(const_cast<Variant*>(&arg));
 	}
 
-	return m_managedCallbacks
-				   .m_call(gcHandle, &nativeMethodName, argPointers.data(), static_cast<int32_t>(args.size()), &ret)
-			   ? true
-			   : false;
+	Variant ret;
+	m_managedCallbacks.m_call(gcHandle, &nativeMethodName, argPointers.data(), static_cast<int32_t>(args.size()), &ret, &error);
+	return ret;
 }
 
 void ScriptSystem::RegisterScriptOwner(ObjectID id)

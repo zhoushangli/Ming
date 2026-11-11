@@ -16,12 +16,18 @@ public:
 	Ref<Script> GetScript() const override { return m_script; }
 	bool        ReloadGCHandle([[maybe_unused]] void* value) override { return false; }
 
-	bool Call(
+	using ScriptInstance::Call;
+
+	bool HasMethod([[maybe_unused]] std::string const& methodName) const override { return false; }
+
+	Variant Call(
 		[[maybe_unused]] std::string const&          methodName,
 		[[maybe_unused]] std::vector<Variant> const& args,
-		[[maybe_unused]] Variant&                    ret) override
+		CallError&                                  error) override
 	{
-		return false;
+		error = {};
+		error.m_error = CallError::Error::InvalidMethod;
+		return {};
 	}
 
 	void Notification([[maybe_unused]] int notification, [[maybe_unused]] bool reverse) override { /* Do nothing */ };

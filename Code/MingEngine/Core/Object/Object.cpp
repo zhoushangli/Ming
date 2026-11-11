@@ -5,12 +5,44 @@
 
 #include "MingEngine/Core/ErrorWarningAssert.hpp"
 #include "MingEngine/Core/Object/ClassDatabase.hpp"
+#include "MingEngine/Core/Object/Callable.hpp"
+#include "MingEngine/Core/Object/Signal.hpp"
 #include "MingEngine/Core/Object/NativeScript.hpp"
 #include "MingEngine/Core/Object/RefCounted.hpp"
 #include "MingEngine/Core/Object/Script.hpp"
 #include "MingEngine/Core/Object/ScriptInstance.hpp"
 #include "MingEngine/Core/Object/Variant.hpp"
 #include "MingEngine/Core/StringUtils.hpp"
+
+#include <algorithm>
+
+namespace
+{
+MethodInfo const* FindNativeMethod(std::string const& className, std::string const& methodName)
+{
+	ClassInfo const* classInfo = ClassDatabase::GetClassInfo(className);
+	while (classInfo != nullptr)
+	{
+		for (MethodInfo const& method : classInfo->m_methods)
+		{
+			if (method.m_name == methodName && method.m_bind != nullptr)
+			{
+				return &method;
+			}
+		}
+
+		classInfo = ClassDatabase::GetClassInfo(classInfo->m_parentClassName);
+	}
+
+	return nullptr;
+}
+} // namespace
+
+struct Object::Connection
+{
+	Signal   m_signal;
+	Callable m_callable;
+};
 
 std::vector<Object*> ObjectDatabase::m_objectSlots;
 uint32_t             ObjectDatabase::m_nextObjectUID = 1u;
@@ -22,6 +54,8 @@ Object::Object()
 
 Object::~Object()
 {
+	m_isPreDeleting = true;
+	ClearSignalConnections();
 	ReleaseNativeBindingGCHandle();
 	ObjectDatabase::RemoveInstance(this);
 }
@@ -72,6 +106,91 @@ bool Object::PreDelete()
 Object::BindMethodsFunc Object::GetBindMethodsFunc()
 {
 	return &Object::BindMethods;
+}
+
+bool Object::HasMethod(std::string const& methodName) const
+{
+	if (m_scriptInstance != nullptr && m_scriptInstance->HasMethod(methodName))
+	{
+		return true;
+	}
+
+	return FindNativeMethod(GetClassName(), methodName) != nullptr;
+}
+
+Variant Object::Call(std::string const& methodName, std::vector<Variant> const& arguments)
+{
+	CallError error;
+	Variant result = Call(methodName, arguments, error);
+	if (error.m_error != CallError::Error::Ok)
+	{
+		ERR_PRINT("Object: failed to invoke '" + methodName + "'. Use Call(methodName, arguments, error) for details.");
+	}
+
+	return result;
+}
+
+Variant Object::Call(std::string const& methodName, std::vector<Variant> const& arguments, CallError& error)
+{
+	error = {};
+
+	// 1) Only a missing script method permits native fallback
+	if (m_scriptInstance != nullptr)
+	{
+		Variant result = m_scriptInstance->Call(methodName, arguments, error);
+		if (error.m_error != CallError::Error::InvalidMethod)
+		{
+			return result;
+		}
+	}
+
+	error = {};
+
+	// 2) Find the native binding and its declared argument types
+	MethodInfo const* method = FindNativeMethod(GetClassName(), methodName);
+	if (method == nullptr || method->m_bind == nullptr)
+	{
+		error.m_error = CallError::Error::InvalidMethod;
+		return {};
+	}
+
+	// 3) Validate argument counts and types before MethodBind reads their payloads
+	if (arguments.size() != method->m_argumentInfos.size())
+	{
+		error.m_error = arguments.size() < method->m_argumentInfos.size() ? CallError::Error::TooFewArguments
+																		  : CallError::Error::TooManyArguments;
+		error.m_expectedArgumentCount = static_cast<int>(method->m_argumentInfos.size());
+		return {};
+	}
+
+	for (size_t index = 0; index < arguments.size(); ++index)
+	{
+		ArgumentInfo const& expected = method->m_argumentInfos[index];
+		Variant const&      argument = arguments[index];
+		if (expected.m_type == Variant::Type::Any)
+		{
+			continue;
+		}
+
+		bool valid = argument.GetType() == expected.m_type;
+		if (valid && expected.m_type == Variant::Type::ObjectPtr && !expected.m_objectClassName.empty())
+		{
+			Object* argumentObject = argument.As<Object*>();
+			valid = argumentObject == nullptr
+					|| ClassDatabase::IsSubclassOf(argumentObject->GetClassName(), expected.m_objectClassName);
+		}
+
+		if (!valid)
+		{
+			error.m_error        = CallError::Error::InvalidArgument;
+			error.m_argument     = static_cast<int>(index);
+			error.m_expectedType = expected.m_type;
+			return {};
+		}
+	}
+
+	// 4) Invoke with this call's arguments and return the method's result
+	return method->m_bind->Invoke(this, arguments);
 }
 
 void Object::BindMethods()
@@ -136,6 +255,163 @@ void Object::Free()
 		"RefCounted objects must be released through their references.");
 
 	MemDelete(this);
+}
+
+bool Object::Connect(std::string const& signalName, Callable const& callable)
+{
+	if (m_isPreDeleting || signalName.empty() || !callable.IsValid() || IsConnected(signalName, callable))
+	{
+		return false;
+	}
+
+	Connection connection{ Signal(this, signalName), callable };
+	Object*    target = callable.GetTarget();
+	m_signalMap[signalName].push_back(connection);
+	target->m_signalSubscriptions.push_back(connection);
+	return true;
+}
+
+bool Object::Disconnect(std::string const& signalName, Callable const& callable)
+{
+	auto signal = m_signalMap.find(signalName);
+	if (signal == m_signalMap.end())
+	{
+		return false;
+	}
+
+	auto& connections = signal->second;
+	auto  found       = std::find_if(
+		connections.begin(),
+		connections.end(),
+		[&callable](Connection const& connection)
+		{
+			return connection.m_callable == callable;
+		});
+	if (found == connections.end())
+	{
+		return false;
+	}
+
+	Connection connection = *found;
+	Object*    target     = connection.m_callable.GetTarget();
+	if (target != nullptr)
+	{
+		auto& subscriptions = target->m_signalSubscriptions;
+		subscriptions.erase(
+			std::remove_if(
+				subscriptions.begin(),
+				subscriptions.end(),
+				[&connection](Connection const& subscription)
+				{
+					return subscription.m_signal == connection.m_signal
+						   && subscription.m_callable == connection.m_callable;
+				}),
+			subscriptions.end());
+	}
+
+	connections.erase(found);
+	if (connections.empty())
+	{
+		m_signalMap.erase(signal);
+	}
+
+	return true;
+}
+
+bool Object::IsConnected(std::string const& signalName, Callable const& callable) const
+{
+	auto signal = m_signalMap.find(signalName);
+	if (signal == m_signalMap.end())
+	{
+		return false;
+	}
+
+	auto const& connections = signal->second;
+	return std::any_of(
+		connections.begin(),
+		connections.end(),
+		[&callable](Connection const& connection)
+		{
+			return connection.m_callable == callable;
+		});
+}
+
+bool Object::HasSignalConnections(std::string const& signalName) const
+{
+	return m_signalMap.find(signalName) != m_signalMap.end();
+}
+
+bool Object::EmitSignal(std::string const& signalName)
+{
+	return EmitSignal(signalName, {});
+}
+
+bool Object::EmitSignal(std::string const& signalName, std::vector<Variant> const& arguments)
+{
+	if (m_isPreDeleting || signalName.empty())
+	{
+		return false;
+	}
+
+	auto signal = m_signalMap.find(signalName);
+	if (signal == m_signalMap.end())
+	{
+		return true;
+	}
+
+	// 1) Copy connections and arguments before callbacks can change or destroy their owners
+	std::vector<Connection> const connections   = signal->second;
+	std::vector<Variant> const    callArguments = arguments;
+	ObjectID const                sourceID      = m_id;
+	bool                          success       = true;
+
+	// 2) Invoke the snapshot without keeping references into either object's connection tables
+	for (Connection const& connection : connections)
+	{
+		Object* target = connection.m_callable.GetTarget();
+		if (target == nullptr || target->IsPreDeleting())
+		{
+			continue;
+		}
+
+		Callable::CallError error;
+		connection.m_callable.Call(callArguments, error);
+		if (error.m_error != Callable::CallError::Error::Ok)
+		{
+			ERR_PRINT(
+				"Signal: failed to invoke '" + connection.m_callable.GetMethodName().ToUtf8() + "' from '"
+				+ connection.m_signal.GetName() + "'.");
+			success = false;
+		}
+
+		Object* source = ObjectDatabase::GetInstance(sourceID);
+		if (source == nullptr || source->IsPreDeleting())
+		{
+			break;
+		}
+	}
+
+	return success;
+}
+
+void Object::ClearSignalConnections()
+{
+	// 1) Remove outgoing connections and their records on each receiver
+	while (!m_signalMap.empty())
+	{
+		Connection connection = m_signalMap.begin()->second.back();
+		Disconnect(connection.m_signal.GetName(), connection.m_callable);
+	}
+
+	// 2) Ask each emitter to remove the subscriptions that target this object
+	while (!m_signalSubscriptions.empty())
+	{
+		Connection connection = m_signalSubscriptions.back();
+		if (!connection.m_signal.Disconnect(connection.m_callable))
+		{
+			m_signalSubscriptions.pop_back();
+		}
+	}
 }
 
 void Object::NotificationForward(int notification)

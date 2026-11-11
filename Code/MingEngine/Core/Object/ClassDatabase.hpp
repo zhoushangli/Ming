@@ -171,6 +171,7 @@ public:
 	static PropertyInfo const*              FindProperty(std::string const& className, std::string const& propertyName);
 	static std::unordered_map<std::string, Variant> GetPropertyDefaultValues(std::string const& className);
 
+	static MethodInfo const* GetMethodInfo(std::string const& className, std::string const& methodName);
 	static MethodBind const* GetMethodBind(std::string const& className, std::string const& methodName);
 	static void              AddPropertyGroup(std::string const& className, std::string const& name);
 	static void              AddProperty(

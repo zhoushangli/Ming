@@ -123,6 +123,13 @@ void BaseButton::CompletePress(bool activate)
 		{
 			callback();
 		}
+
+		button = ObjectDatabase::GetInstance<BaseButton>(id);
+		if (button != nullptr && !button->IsQueuedForDeletion() && !button->IsDisabled()
+			&& button->IsVisibleInHierarchy() && button->GetSceneTree() != nullptr)
+		{
+			button->EmitSignal("pressed");
+		}
 	}
 
 	button = ObjectDatabase::GetInstance<BaseButton>(id);

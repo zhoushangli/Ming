@@ -3,6 +3,34 @@ namespace Ming;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
+public enum CallErrorCode : int
+{
+    Ok = 0,
+    InvalidTarget = 1,
+    InvalidMethod = 2,
+    TooFewArguments = 3,
+    TooManyArguments = 4,
+    InvalidArgument = 5,
+    ExecutionFailed = 6,
+}
+
+[StructLayout(LayoutKind.Sequential)]
+public struct ming_call_error
+{
+    public CallErrorCode Error;
+    public int Argument;
+    public int ExpectedArgumentCount;
+    public Variant.Type ExpectedType;
+
+    public ming_call_error()
+    {
+        Error = CallErrorCode.Ok;
+        Argument = -1;
+        ExpectedArgumentCount = 0;
+        ExpectedType = Variant.Type.Empty;
+    }
+}
+
 // Bool is very special, for different platform, the size of bool is different
 // e.g. in x64 bool is 1 byte, but BOOL in Windows is 4 bytes, so we need to use a custom enum to represent bool in Ming
 public enum ming_bool : byte
@@ -104,6 +132,8 @@ public unsafe ref struct ming_variant
             };
         }
     }
+
+    internal readonly bool OwnsReference => _ownsRef != 0;
 
     public Variant.Type Type
     {
@@ -223,6 +253,20 @@ public unsafe ref struct ming_variant
     {
         NativeFuncs.DestroyVariant(ref this);
     }
+}
+
+// ming_callable is a little different from ming_string and other ming_xxx
+// Because for other ming_xxx, they are a wrapper of the same memory
+// which means for c# and c++ side, they are the same memory
+// but for ming_callable, it is a wrapper of two different memory
+// which means when we pass a ming_callable to c++ side, it will copy the data to c++ side
+// and when we pass a ming_callable from c++ side to c# side, it will copy the data to c# side
+// but in different memory
+[StructLayout(LayoutKind.Sequential)]
+internal struct ming_callable
+{
+    public ulong ObjectID;
+    public ming_string Method;
 }
 
 // Point at the code points owned by a native String, which lives in a native CowData block.

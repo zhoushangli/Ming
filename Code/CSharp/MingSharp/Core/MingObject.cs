@@ -130,26 +130,65 @@ public partial class MingObject : IDisposable
     {
     }
 
-    protected internal virtual bool InvokeMingClassMethod(in String methodName, NativeVariantPtrArgs args, out ming_variant ret)
+    public bool EmitSignal(string signalName, params Variant[] arguments)
     {
+        return NativeFuncs.EmitSignal(this, signalName, arguments);
+    }
+
+    public bool Connect(string signalName, Callable callback)
+    {
+        return NativeFuncs.ConnectSignal(this, signalName, callback);
+    }
+
+    public bool IsConnected(string signalName, Callable callback)
+    {
+        return NativeFuncs.IsSignalConnected(this, signalName, callback);
+    }
+
+    public bool Disconnect(string signalName, Callable callback)
+    {
+        return NativeFuncs.DisconnectSignal(this, signalName, callback);
+    }
+
+    protected internal virtual void InvokeMingClassMethod(in String methodName, NativeVariantPtrArgs args,
+        out ming_variant ret, out ming_call_error error)
+    {
+        ret = default;
+        error = new ming_call_error();
         string methodNameStr = methodName.ToString();
 
-        if (methodNameStr == MethodName.Free && args.Count == 0)
+        if (methodNameStr == MethodName.Free)
         {
+            if (args.Count != 0)
+            {
+                error.Error = CallErrorCode.TooManyArguments;
+                error.ExpectedArgumentCount = 0;
+                return;
+            }
+
             Free();
-            ret = default;
-            return true;
+            return;
         }
 
-        if (methodNameStr == MethodName._Notification && args.Count == 1)
+        if (methodNameStr == MethodName._Notification)
         {
-            _Notification(VariantUtils.ConvertTo<int>(args[0]));
-            ret = default;
-            return true;
+            if (args.Count != 1)
+            {
+                error.Error = args.Count < 1 ? CallErrorCode.TooFewArguments : CallErrorCode.TooManyArguments;
+                error.ExpectedArgumentCount = 1;
+                return;
+            }
+
+            if (!VariantUtils.TryConvertTo<int>(args[0], 0, Variant.Type.Int, out int notification, out error))
+            {
+                return;
+            }
+
+            _Notification(notification);
+            return;
         }
 
-        ret = default;
-        return false;
+        error.Error = CallErrorCode.InvalidMethod;
     }
 
     protected internal virtual bool HasMingClassMethod(in String methodName)

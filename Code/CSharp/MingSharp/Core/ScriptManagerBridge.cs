@@ -25,7 +25,13 @@ public static class ScriptManagerBridge
     private static readonly Dictionary<long, (IntPtr Owner, IntPtr Handle, WeakReference<MingObject> Wrapper, bool IsStrong)> s_resourceBindings = new();
     private static readonly ConcurrentQueue<long> s_pendingResourceReleases = new();
     private static long s_nextResourceLease;
-    private static bool s_acceptResourceBindings = true;
+    private static bool s_acceptResourceBindings;
+    private static readonly Dictionary<long, (ming_callable Value, WeakReference<Callable> Wrapper)> s_callableBindings = new();
+    private static readonly ConcurrentQueue<long> s_pendingCallableReleases = new();
+    private static long s_nextCallableLease;
+    private static readonly Dictionary<long, (ming_variant.movable Value, WeakReference<Variant.Disposer> Owner)> s_variantBindings = new();
+    private static readonly ConcurrentQueue<long> s_pendingVariantReleases = new();
+    private static long s_nextVariantLease;
 
     #region Type Registration
 
@@ -320,12 +326,7 @@ public static class ScriptManagerBridge
     }
 
     [UnmanagedCallersOnly]
-    internal static unsafe int Call(
-        IntPtr objectGCHandle,
-        String* methodName,
-        ming_variant** args,
-        int argc,
-        ming_variant* ret)
+    internal static unsafe int HasMethod(IntPtr objectGCHandle, String* methodName)
     {
         if (objectGCHandle == IntPtr.Zero || methodName == null)
         {
@@ -334,40 +335,56 @@ public static class ScriptManagerBridge
 
         try
         {
-            var mingObject = (MingObject)GCHandle.FromIntPtr(objectGCHandle).Target;
-
-            if (mingObject == null)
-            {
-                throw new InvalidOperationException(
-                    "The managed object has been garbage collected."
-                );
-            }
-
-            ming_variant retVariant = default;
-            bool methodInvoke = mingObject.InvokeMingClassMethod(
-                in *methodName,
-                new NativeVariantPtrArgs(args, argc),
-                out retVariant
-            );
-
-            if (!methodInvoke)
-            {
-                *ret = default;
-
-                throw new MissingMethodException(
-                    mingObject.GetType().FullName,
-                    methodName->ToString()
-                );
-            }
-
-            *ret = retVariant;
-            return 1;
+            var instance = GCHandle.FromIntPtr(objectGCHandle).Target as MingObject;
+            return instance != null && instance.NativePtr != IntPtr.Zero
+                && instance.HasMingClassMethod(in *methodName) ? 1 : 0;
         }
-
         catch (Exception exception)
         {
             NativeFuncs.Log("[Error] " + exception);
             return 0;
+        }
+    }
+
+    [UnmanagedCallersOnly]
+    internal static unsafe void Call(
+        IntPtr objectGCHandle,
+        String* methodName,
+        ming_variant** args,
+        int argc,
+        ming_variant* ret,
+        ming_call_error* error)
+    {
+        *ret = default;
+        *error = new ming_call_error();
+        if (objectGCHandle == IntPtr.Zero)
+        {
+            error->Error = CallErrorCode.InvalidTarget;
+            return;
+        }
+
+        if (methodName == null)
+        {
+            error->Error = CallErrorCode.InvalidMethod;
+            return;
+        }
+
+        try
+        {
+            var instance = GCHandle.FromIntPtr(objectGCHandle).Target as MingObject;
+            if (instance == null || instance.NativePtr == IntPtr.Zero)
+            {
+                error->Error = CallErrorCode.InvalidTarget;
+                return;
+            }
+
+            instance.InvokeMingClassMethod(in *methodName, new NativeVariantPtrArgs(args, argc), out *ret, out *error);
+        }
+        catch (Exception exception)
+        {
+            NativeFuncs.DestroyVariant(ref *ret);
+            *error = new ming_call_error { Error = CallErrorCode.ExecutionFailed };
+            NativeFuncs.Log("[Error] " + exception);
         }
     }
 
@@ -584,9 +601,42 @@ public static class ScriptManagerBridge
         s_acceptResourceBindings = true;
     }
 
+    internal static void EnsureNativeBindings()
+    {
+        ObjectDisposedException.ThrowIf(!s_acceptResourceBindings, typeof(ScriptManagerBridge));
+    }
+
+    internal static long RegisterVariant(Variant.Disposer owner, in ming_variant value)
+    {
+        EnsureNativeBindings();
+        long lease = ++s_nextVariantLease;
+        s_variantBindings.Add(lease, ((ming_variant.movable)value, new WeakReference<Variant.Disposer>(owner)));
+        return lease;
+    }
+
+    internal static void EnqueueVariantRelease(long lease)
+    {
+        s_pendingVariantReleases.Enqueue(lease);
+    }
+
     internal static void EnqueueResourceRelease(long lease)
     {
         s_pendingResourceReleases.Enqueue(lease);
+    }
+
+    // Register one native owner; the wrapper's field is a borrowed view of the same owned value.
+    // e.g. RegisterCallable(wrapper, in value) transfers ownership once registration succeeds.
+    internal static long RegisterCallable(Callable wrapper, in ming_callable value)
+    {
+        ObjectDisposedException.ThrowIf(!s_acceptResourceBindings, typeof(ScriptManagerBridge));
+        long lease = ++s_nextCallableLease;
+        s_callableBindings.Add(lease, (value, new WeakReference<Callable>(wrapper)));
+        return lease;
+    }
+
+    internal static void EnqueueCallableRelease(long lease)
+    {
+        s_pendingCallableReleases.Enqueue(lease);
     }
 
     [UnmanagedCallersOnly]
@@ -597,6 +647,23 @@ public static class ScriptManagerBridge
 
     private static void DrainResourceBindingsCore()
     {
+        // 1) Release Variant owners before their resource wrappers can lose their references
+        while (s_pendingVariantReleases.TryDequeue(out long lease))
+        {
+            if (!s_variantBindings.Remove(lease, out var binding))
+            {
+                continue;
+            }
+
+            if (binding.Owner.TryGetTarget(out var owner))
+            {
+                owner.InvalidateFromNative();
+            }
+
+            ming_variant value = (ming_variant)binding.Value;
+            NativeFuncs.DestroyVariant(ref value);
+        }
+
         while (s_pendingResourceReleases.TryDequeue(out long lease))
         {
             if (!s_resourceBindings.Remove(lease, out var binding))
@@ -611,16 +678,48 @@ public static class ScriptManagerBridge
             ReleaseGCHandleCore(binding.Handle);
             NativeFuncs.ReleaseRef(binding.Owner);
         }
+
+        // 1) Release native String references on the engine thread, never on the finalizer thread
+        while (s_pendingCallableReleases.TryDequeue(out long lease))
+        {
+            if (!s_callableBindings.Remove(lease, out var binding))
+            {
+                continue;
+            }
+
+            if (binding.Wrapper.TryGetTarget(out var wrapper))
+            {
+                wrapper.InvalidateFromNative();
+            }
+
+            NativeFuncs.DestroyCallable(ref binding.Value);
+        }
     }
 
     [UnmanagedCallersOnly]
     internal static void DisposeResourceBindings()
     {
+        DisposeResourceBindingsCore();
+    }
+
+    private static void DisposeResourceBindingsCore()
+    {
         s_acceptResourceBindings = false;
+        foreach (var lease in s_variantBindings.Keys.ToArray())
+        {
+            s_pendingVariantReleases.Enqueue(lease);
+        }
+
         foreach (var lease in s_resourceBindings.Keys.ToArray())
         {
             s_pendingResourceReleases.Enqueue(lease);
         }
+
+        foreach (var lease in s_callableBindings.Keys.ToArray())
+        {
+            s_pendingCallableReleases.Enqueue(lease);
+        }
+
         DrainResourceBindingsCore();
     }
 

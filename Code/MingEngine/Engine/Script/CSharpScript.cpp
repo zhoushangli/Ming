@@ -83,10 +83,28 @@ CSharpInstance::~CSharpInstance()
 	m_owner  = nullptr;
 }
 
-bool CSharpInstance::Call(std::string const& methodName, std::vector<Variant> const& args, Variant& ret)
+bool CSharpInstance::HasMethod(std::string const& methodName) const
 {
-	bool result = g_engine->m_scriptSystem->Call(m_gcHandle.GetValue(), methodName, args, ret);
-	return result;
+	return m_gcHandle.IsValid() && g_engine != nullptr && g_engine->m_scriptSystem != nullptr
+		&& g_engine->m_scriptSystem->HasMethod(m_gcHandle.GetValue(), methodName);
+}
+
+Variant CSharpInstance::Call(std::string const& methodName, std::vector<Variant> const& args, CallError& error)
+{
+	error = {};
+	if (!m_gcHandle.IsValid())
+	{
+		error.m_error = CallError::Error::InvalidTarget;
+		return {};
+	}
+
+	if (g_engine == nullptr || g_engine->m_scriptSystem == nullptr)
+	{
+		error.m_error = CallError::Error::ExecutionFailed;
+		return {};
+	}
+
+	return g_engine->m_scriptSystem->Call(m_gcHandle.GetValue(), methodName, args, error);
 }
 
 void CSharpInstance::Notification(int notification, [[maybe_unused]] bool reverse)

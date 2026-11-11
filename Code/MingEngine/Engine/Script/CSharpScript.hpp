@@ -28,7 +28,10 @@ public:
 	Object*     GetOwner() const override { return m_owner; }
 	Ref<Script> GetScript() const override { return m_script; }
 
-	bool Call(std::string const& methodName, std::vector<Variant> const& args, Variant& ret) override;
+	using ScriptInstance::Call;
+
+	bool HasMethod(std::string const& methodName) const override;
+	Variant Call(std::string const& methodName, std::vector<Variant> const& args, CallError& error) override;
 	void Notification(int notification, bool reverse) override;
 
 	void* GetGCHandle() const { return m_gcHandle.GetValue(); }

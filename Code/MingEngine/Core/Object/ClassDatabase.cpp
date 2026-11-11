@@ -253,7 +253,7 @@ PropertyInfo const* ClassDatabase::FindProperty(std::string const& className, st
 	return nullptr;
 }
 
-MethodBind const* ClassDatabase::GetMethodBind(std::string const& className, std::string const& methodName)
+MethodInfo const* ClassDatabase::GetMethodInfo(std::string const& className, std::string const& methodName)
 {
 	ClassInfo const* classInfo = GetClassInfo(className);
 	if (classInfo == nullptr)
@@ -265,11 +265,17 @@ MethodBind const* ClassDatabase::GetMethodBind(std::string const& className, std
 	{
 		if (method.m_name == methodName)
 		{
-			return method.m_bind.get();
+			return &method;
 		}
 	}
 
 	return nullptr;
+}
+
+MethodBind const* ClassDatabase::GetMethodBind(std::string const& className, std::string const& methodName)
+{
+	MethodInfo const* method = GetMethodInfo(className, methodName);
+	return method != nullptr ? method->m_bind.get() : nullptr;
 }
 
 void ClassDatabase::AddPropertyGroup(std::string const& className, std::string const& name)

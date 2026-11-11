@@ -2,6 +2,7 @@
 
 #include "MingEngine/Core/ErrorWarningAssert.hpp"
 #include "MingEngine/Core/Object/ClassDatabase.hpp"
+#include "MingEngine/Core/Object/Callable.hpp"
 #include "MingEngine/Core/String.hpp"
 #include "MingEngine/Engine/Application/SystemBase.hpp"
 #include "MingEngine/Engine/Script/CSharpScript.hpp"
@@ -55,6 +56,14 @@ struct NativeCallbacks
 	void(CORECLR_DELEGATE_CALLTYPE* m_destroyVariant)(Variant*) = nullptr;
 	Object*(CORECLR_DELEGATE_CALLTYPE* m_getGlobalObject)(String const*) = nullptr;
 	void*(CORECLR_DELEGATE_CALLTYPE* m_getScriptInstanceManaged)(void*, int32_t*) = nullptr;
+	void(CORECLR_DELEGATE_CALLTYPE* m_createCallable)(Object const*, String const*, Callable*) = nullptr;
+	void(CORECLR_DELEGATE_CALLTYPE* m_copyCallable)(Callable const*, Callable*) = nullptr;
+	void(CORECLR_DELEGATE_CALLTYPE* m_destroyCallable)(Callable*) = nullptr;
+	int32_t(CORECLR_DELEGATE_CALLTYPE* m_connectSignal)(Object*, String const*, Callable const*) = nullptr;
+	int32_t(CORECLR_DELEGATE_CALLTYPE* m_isSignalConnected)(Object*, String const*, Callable const*) = nullptr;
+	int32_t(CORECLR_DELEGATE_CALLTYPE* m_disconnectSignal)(Object*, String const*, Callable const*) = nullptr;
+	void(CORECLR_DELEGATE_CALLTYPE* m_copyVariant)(Variant const*, Variant*) = nullptr;
+	int32_t(CORECLR_DELEGATE_CALLTYPE* m_emitSignal)(Object*, String const*, Variant const* const*, int32_t) = nullptr;
 };
 
 //---------------------------------------------------------------------------
@@ -66,8 +75,9 @@ using RemoveScriptBridgeFunc          = int32_t(CORECLR_DELEGATE_CALLTYPE*)(void
 using CreateNativeManagedInstanceFunc = void*(CORECLR_DELEGATE_CALLTYPE*)(String const* nativeClassName, void* owner);
 using CreateUserManagedInstanceFunc   = void*(CORECLR_DELEGATE_CALLTYPE*)(void* script, void* owner);
 using ReleaseGCHandleFunc             = void(CORECLR_DELEGATE_CALLTYPE*)(void* gcHandle);
-using CallFunc                        = int32_t(CORECLR_DELEGATE_CALLTYPE*)(
-	void* gcHandle, String const* methodName, Variant** args, int32_t argCount, Variant* ret);
+using CallFunc                        = void(CORECLR_DELEGATE_CALLTYPE*)(
+	void* gcHandle, String const* methodName, Variant** args, int32_t argCount, Variant* ret, CallError* error);
+using HasMethodFunc = int32_t(CORECLR_DELEGATE_CALLTYPE*)(void* gcHandle, String const* methodName);
 
 struct ManagedCallbacks
 {
@@ -77,6 +87,7 @@ struct ManagedCallbacks
 	CreateUserManagedInstanceFunc   m_createUserManagedInstance   = nullptr;
 	ReleaseGCHandleFunc             m_releaseGCHandle             = nullptr;
 	CallFunc                        m_call                        = nullptr;
+	HasMethodFunc                   m_hasMethod                   = nullptr;
 	void(CORECLR_DELEGATE_CALLTYPE* m_getScriptBaseTypes)(String*) = nullptr;
 	int32_t(CORECLR_DELEGATE_CALLTYPE* m_getScriptNativeBase)(String const*, String*) = nullptr;
 	void(CORECLR_DELEGATE_CALLTYPE* m_drainResourceBindings)() = nullptr;
@@ -162,6 +173,8 @@ public:
 	void  ReleaseGCHandle(void* gcHandle);
 	void* UpdateNativeBindingGCHandle(void* gcHandle, int refCount);
 	bool  Call(void* gcHandle, std::string const& methodName, std::vector<Variant> const& args, Variant& ret);
+	Variant Call(void* gcHandle, std::string const& methodName, std::vector<Variant> const& args, CallError& error);
+	bool HasMethod(void* gcHandle, std::string const& methodName) const;
 
 	bool TryBeginScriptInstantiation()
 	{

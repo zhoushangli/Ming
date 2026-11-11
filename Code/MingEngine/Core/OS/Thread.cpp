@@ -1,6 +1,6 @@
 #include "MingEngine/Core/OS/Thread.hpp"
 
-#include <stdexcept>
+#include <system_error>
 
 Thread::ID Thread::GetId() const
 {
@@ -17,10 +17,28 @@ bool Thread::IsStarted() const
 	return m_thread.joinable();
 }
 
-bool Thread::Start(Callback /*callback*/, void* /*userdata*/)
+bool Thread::Start(Callback callback, void* userdata)
 {
-	// 1) TODO: Start the callback with its userdata and reject an invalid or unjoined start.
-	throw std::logic_error("TODO 1: implement Thread::Start and Thread::WaitToFinish together.");
+	if (IsStarted())
+	{
+		return false;
+	}
+
+	if (callback == nullptr)
+	{
+		return false;
+	}
+
+	try
+	{
+		m_thread = std::thread(callback, userdata);
+	}
+	catch (std::system_error const&)
+	{
+		return false;
+	}
+
+	return true;
 }
 
 void Thread::WaitToFinish()
@@ -30,6 +48,5 @@ void Thread::WaitToFinish()
 		return;
 	}
 
-	// 1) TODO: Wait for the started thread and reclaim its joinable handle.
-	throw std::logic_error("TODO 1: implement Thread::WaitToFinish before starting a thread.");
+	m_thread.join();
 }

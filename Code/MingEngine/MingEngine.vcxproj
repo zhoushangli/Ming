@@ -115,6 +115,8 @@
     <ClCompile Include="Core\CowData.cpp" />
     <ClCompile Include="Core\OS\Thread.cpp" />
     <ClInclude Include="Core\OS\Thread.hpp" />
+    <ClCompile Include="Core\OS\WorkerThreadPool.cpp" />
+    <ClInclude Include="Core\OS\WorkerThreadPool.hpp" />
     <ClCompile Include="Core\Math\Rect2.cpp" />
     <ClCompile Include="Core\Memory.cpp" />
     <ClCompile Include="Core\Object\ManagedGCHandle.cpp" />
@@ -146,6 +148,8 @@
     <ClCompile Include="Core\Object\VariantJson.cpp" />
     <ClCompile Include="Core\Object\MethodBind.cpp" />
     <ClCompile Include="Core\Object\ClassDatabase.cpp" />
+    <ClCompile Include="Core\Object\Callable.cpp" />
+    <ClCompile Include="Core\Object\Signal.cpp" />
     <ClCompile Include="Engine\Event\EventSystem.cpp" />
     <ClCompile Include="Engine\File\FileSystem.cpp" />
     <ClCompile Include="Core\IO\VirtualPath.cpp" />
@@ -343,6 +347,9 @@
     <ClInclude Include="Core\Object\VariantJson.hpp" />
     <ClInclude Include="Core\Object\MethodBind.hpp" />
     <ClInclude Include="Core\Object\ClassDatabase.hpp" />
+    <ClInclude Include="Core\Object\CallError.hpp" />
+    <ClInclude Include="Core\Object\Callable.hpp" />
+    <ClInclude Include="Core\Object\Signal.hpp" />
     <ClInclude Include="Engine\Event\EventSystem.hpp" />
     <ClInclude Include="Engine\File\FileSystem.hpp" />
     <ClInclude Include="Core\IO\VirtualPath.hpp" />

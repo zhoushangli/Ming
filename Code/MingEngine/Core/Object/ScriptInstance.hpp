@@ -1,5 +1,6 @@
 #pragma once
 
+#include "MingEngine/Core/Object/CallError.hpp"
 #include "MingEngine/Core/Object/Script.hpp"
 
 class Object;
@@ -26,6 +27,9 @@ public:
 	virtual Ref<Script> GetScript() const           = 0;
 	virtual bool        ReloadGCHandle(void* value) = 0;
 
-	virtual bool Call(std::string const& methodName, std::vector<Variant> const& args, Variant& ret) = 0;
-	virtual void Notification(int notification, bool reverse)                                        = 0;
+	virtual bool HasMethod(std::string const& methodName) const = 0;
+	virtual Variant Call(std::string const& methodName, std::vector<Variant> const& args, CallError& error) = 0;
+	bool Call(std::string const& methodName, std::vector<Variant> const& args, Variant& ret);
+
+	virtual void Notification(int notification, bool reverse) = 0;
 };

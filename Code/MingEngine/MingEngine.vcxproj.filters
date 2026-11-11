@@ -423,6 +423,12 @@
     <ClCompile Include="Core\Object\ClassDatabase.cpp">
       <Filter>Core\Object</Filter>
     </ClCompile>
+    <ClCompile Include="Core\Object\Callable.cpp">
+      <Filter>Core\Object</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Object\Signal.cpp">
+      <Filter>Core\Object</Filter>
+    </ClCompile>
     <ClCompile Include="Scene\Core\Node.cpp">
       <Filter>Scene\Core</Filter>
     </ClCompile>
@@ -995,6 +1001,15 @@
     <ClInclude Include="Core\Object\ClassDatabase.hpp">
       <Filter>Core\Object</Filter>
     </ClInclude>
+    <ClInclude Include="Core\Object\CallError.hpp">
+      <Filter>Core\Object</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Object\Callable.hpp">
+      <Filter>Core\Object</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Object\Signal.hpp">
+      <Filter>Core\Object</Filter>
+    </ClInclude>
     <ClInclude Include="Scene\Core\Node.hpp">
       <Filter>Scene\Core</Filter>
     </ClInclude>
@@ -1362,6 +1377,8 @@
   <ItemGroup>
     <ClCompile Include="Core\OS\Thread.cpp"><Filter>Core\OS</Filter></ClCompile>
     <ClInclude Include="Core\OS\Thread.hpp"><Filter>Core\OS</Filter></ClInclude>
+    <ClCompile Include="Core\OS\WorkerThreadPool.cpp"><Filter>Core\OS</Filter></ClCompile>
+    <ClInclude Include="Core\OS\WorkerThreadPool.hpp"><Filter>Core\OS</Filter></ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Editor\UI\Popup\SceneFilePopup.cpp">

@@ -2,6 +2,27 @@ namespace Ming;
 
 public static partial class VariantUtils
 {
+    // Convert one dispatch argument before entering the method body and report type mismatches.
+    // e.g. TryConvertTo<float>(value, 0, Variant.Type.Float, out result, out error).
+    public static bool TryConvertTo<T>(in ming_variant variant, int argument, Variant.Type expectedType,
+        out T value, out ming_call_error error)
+    {
+        error = new ming_call_error();
+        try
+        {
+            value = ConvertTo<T>(in variant);
+            return true;
+        }
+        catch (InvalidCastException)
+        {
+            value = default;
+            error.Error = CallErrorCode.InvalidArgument;
+            error.Argument = argument;
+            error.ExpectedType = expectedType;
+            return false;
+        }
+    }
+
     // Read the native pointer out of a variant that holds an object.
     // e.g. ConvertToMingObjectPtr(variant) returns IntPtr.Zero for a null object pointer.
     public static unsafe IntPtr ConvertToMingObjectPtr(in ming_variant variant)
@@ -28,6 +49,11 @@ public static partial class VariantUtils
         }
         if (typeof(T).IsEnum)
         {
+            if (Enum.GetUnderlyingType(typeof(T)) != typeof(int))
+            {
+                throw new NotSupportedException("Variant enums must use int as their underlying type.");
+            }
+
             GuaranteeTag(in variant, Variant.Type.Int);
             return (T)Enum.ToObject(typeof(T), variant.Int);
         }
@@ -151,6 +177,11 @@ public static partial class VariantUtils
         }
         if (typeof(T).IsEnum)
         {
+            if (Enum.GetUnderlyingType(typeof(T)) != typeof(int))
+            {
+                throw new NotSupportedException("Variant enums must use int as their underlying type.");
+            }
+
             variant.Type = Variant.Type.Int;
             variant.Int = Convert.ToInt32(value);
             return variant;
@@ -237,7 +268,9 @@ public static partial class VariantUtils
 
         if (typeof(MingObject).IsAssignableFrom(typeof(T)))
         {
-            return NativeFuncs.CreateObjectVariant(MingObject.GetPtr(value as MingObject));
+            ming_variant result = NativeFuncs.CreateObjectVariant(MingObject.GetPtr(value as MingObject));
+            GC.KeepAlive(value);
+            return result;
         }
 
         throw new NotSupportedException($"Variant cannot be created from {typeof(T).FullName}.");

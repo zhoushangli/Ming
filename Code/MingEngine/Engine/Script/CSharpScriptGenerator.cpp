@@ -69,11 +69,11 @@ constexpr char const* MethodNameTemplate = R"(	public new class MethodName : {PA
 )";
 
 constexpr char const* InvokeMingClassMethodTemplate =
-	R"(	protected internal override bool InvokeMingClassMethod(in String methodName, NativeVariantPtrArgs args, out ming_variant ret)
+	R"(	protected internal override void InvokeMingClassMethod(in String methodName, NativeVariantPtrArgs args, out ming_variant ret, out ming_call_error error)
 	{
 		string methodNameStr = methodName.ToString();
 
-{INVOKE_CASES}		return base.InvokeMingClassMethod(methodName, args, out ret);
+{INVOKE_CASES}		base.InvokeMingClassMethod(methodName, args, out ret, out error);
 	}
 
 )";
@@ -89,19 +89,36 @@ constexpr char const* HasMingClassMethodTemplate =
 )";
 
 constexpr char const* VoidMethodDispatchCaseTemplate =
-	R"(		if (methodNameStr == MethodName.{METHOD_NAME} && args.Count == {ARGUMENT_COUNT})
+	R"(		if (methodNameStr == MethodName.{METHOD_NAME})
 		{
-			{METHOD_CALL};
 			ret = default;
-			return true;
+			error = new ming_call_error();
+			if (args.Count != {ARGUMENT_COUNT})
+			{
+				error.Error = args.Count < {ARGUMENT_COUNT} ? CallErrorCode.TooFewArguments : CallErrorCode.TooManyArguments;
+				error.ExpectedArgumentCount = {ARGUMENT_COUNT};
+				return;
+			}
+
+{ARGUMENT_CONVERSIONS}			{METHOD_CALL};
+			return;
 		}
 )";
 
 constexpr char const* ValueMethodDispatchCaseTemplate =
-	R"(		if (methodNameStr == MethodName.{METHOD_NAME} && args.Count == {ARGUMENT_COUNT})
+	R"(		if (methodNameStr == MethodName.{METHOD_NAME})
 		{
-			ret = VariantUtils.CreateFrom({METHOD_CALL});
-			return true;
+			ret = default;
+			error = new ming_call_error();
+			if (args.Count != {ARGUMENT_COUNT})
+			{
+				error.Error = args.Count < {ARGUMENT_COUNT} ? CallErrorCode.TooFewArguments : CallErrorCode.TooManyArguments;
+				error.ExpectedArgumentCount = {ARGUMENT_COUNT};
+				return;
+			}
+
+{ARGUMENT_CONVERSIONS}			ret = VariantUtils.CreateFrom({METHOD_CALL});
+			return;
 		}
 )";
 
@@ -613,11 +630,11 @@ std::string GenerateMethodNameClass(
 	return source;
 }
 
-// Build one method call that reads the dispatch arguments out of the variant array.
-// e.g. BuildMingClassMethodCall(classInfo, SetName, builtinTypes) returns
-// SetName(VariantUtils.ConvertTo<string>(args[0]))
+// Build argument conversions separately from method execution so method exceptions keep their meaning.
+// e.g. SetName(arg0) executes only after arg0 has been converted successfully.
 std::string BuildMingClassMethodCall(
-	ClassInfo const& classInfo, MethodInfo const& methodInfo, CSharpTypeMap const& builtinTypes)
+	ClassInfo const& classInfo, MethodInfo const& methodInfo, CSharpTypeMap const& builtinTypes,
+	std::string& argumentConversions)
 {
 	std::string callArguments;
 	for (size_t argumentIndex = 0; argumentIndex < methodInfo.m_argumentInfos.size(); ++argumentIndex)
@@ -638,8 +655,12 @@ std::string BuildMingClassMethodCall(
 			callArguments += ", ";
 		}
 
-		callArguments += "VariantUtils.ConvertTo<" + GetPublicCSharpType(argumentInfo, argumentTypeIter->second)
-						 + ">(args[" + std::to_string(argumentIndex) + "])";
+		std::string const index = std::to_string(argumentIndex);
+		std::string const type = GetPublicCSharpType(argumentInfo, argumentTypeIter->second);
+		callArguments += "arg" + index;
+		argumentConversions += "\t\t\tif (!VariantUtils.TryConvertTo<" + type + ">(args[" + index + "], " + index
+			+ ", Variant.Type." + GetVariantTypeName(argumentInfo.m_type) + ", out " + type + " arg" + index
+			+ ", out error))\n\t\t\t{\n\t\t\t\treturn;\n\t\t\t}\n\n";
 	}
 
 	return methodInfo.m_name + "(" + callArguments + ")";
@@ -675,7 +696,9 @@ std::string GenerateMingClassMethodDispatch(
 									 : ValueMethodDispatchCaseTemplate;
 		ReplaceAll(caseSource, "{METHOD_NAME}", methodInfo->m_name);
 		ReplaceAll(caseSource, "{ARGUMENT_COUNT}", std::to_string(methodInfo->m_argumentInfos.size()));
-		ReplaceAll(caseSource, "{METHOD_CALL}", BuildMingClassMethodCall(classInfo, *methodInfo, builtinTypes));
+		std::string argumentConversions;
+		ReplaceAll(caseSource, "{METHOD_CALL}", BuildMingClassMethodCall(classInfo, *methodInfo, builtinTypes, argumentConversions));
+		ReplaceAll(caseSource, "{ARGUMENT_CONVERSIONS}", argumentConversions);
 		invokeCases += caseSource;
 
 		if (!hasConditions.empty())
