@@ -1427,4 +1427,15 @@
       <Filter>Editor\UI\Popup</Filter>
     </ClInclude>
   </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Engine\Physics">
+      <UniqueIdentifier>{37F83FF2-DBA5-4F06-9D56-21CE998CE12D}</UniqueIdentifier>
+    </Filter>
+    <ClCompile Include="Engine\Physics\PhysicsServer.cpp">
+      <Filter>Engine\Physics</Filter>
+    </ClCompile>
+    <ClInclude Include="Engine\Physics\PhysicsServer.hpp">
+      <Filter>Engine\Physics</Filter>
+    </ClInclude>
+  </ItemGroup>
 </Project>

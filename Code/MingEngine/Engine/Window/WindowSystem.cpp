@@ -8,6 +8,7 @@
 #define GLFW_EXPOSE_NATIVE_WIN32
 #include "ThirdParty/GLFW/glfw3.h"
 #include "ThirdParty/GLFW/glfw3native.h"
+
 #include <dwmapi.h>
 #include <cmath>
 
