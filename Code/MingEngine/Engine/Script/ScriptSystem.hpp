@@ -64,6 +64,8 @@ struct NativeCallbacks
 	int32_t(CORECLR_DELEGATE_CALLTYPE* m_disconnectSignal)(Object*, String const*, Callable const*) = nullptr;
 	void(CORECLR_DELEGATE_CALLTYPE* m_copyVariant)(Variant const*, Variant*) = nullptr;
 	int32_t(CORECLR_DELEGATE_CALLTYPE* m_emitSignal)(Object*, String const*, Variant const* const*, int32_t) = nullptr;
+	int32_t(CORECLR_DELEGATE_CALLTYPE* m_createManagedCallable)(Object const*, void*, void*, Callable*) = nullptr;
+	void(CORECLR_DELEGATE_CALLTYPE* m_callCallable)(Callable const*, Variant const* const*, int32_t, Variant*, CallError*) = nullptr;
 };
 
 //---------------------------------------------------------------------------
@@ -93,6 +95,9 @@ struct ManagedCallbacks
 	void(CORECLR_DELEGATE_CALLTYPE* m_drainResourceBindings)() = nullptr;
 	void(CORECLR_DELEGATE_CALLTYPE* m_disposeResourceBindings)() = nullptr;
 	void*(CORECLR_DELEGATE_CALLTYPE* m_updateNativeBindingGCHandle)(void*, int32_t) = nullptr;
+	Callable::InvokeDelegate m_invokeDelegate = nullptr;
+	Callable::CompareDelegates m_delegateEquals = nullptr;
+	Callable::ReleaseDelegate m_releaseDelegateGCHandle = nullptr;
 };
 
 //---------------------------------------------------------------------------
@@ -183,6 +188,8 @@ public:
 
 	bool IsScriptExecutionSuspended() const { return m_scriptExecutionSuspended; }
 
+	bool CreateManagedCallable(Object const* target, void* handle, void* trampoline, Callable& result);
+
 	void RegisterScriptOwner(ObjectID id);
 	void UnregisterScriptOwner(ObjectID id);
 
@@ -199,6 +206,7 @@ private:
 	bool                      m_scriptExecutionSuspended = false;
 	bool                      m_isRecreatingInstances    = false;
 	bool                      m_isInitialized            = false;
+	bool                      m_acceptManagedCallables   = false;
 	bool                      m_projectAssemblyLoaded    = false;
 	std::filesystem::file_time_type m_loadedAssemblyTime{};
 	bool                      m_isAssemblyReloading      = false;

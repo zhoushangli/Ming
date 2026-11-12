@@ -53,13 +53,14 @@ public:
 	bool GuiInput(InputEvent const& event) override;
 
 protected:
-	static void  BindMethods() {}
+	static void  BindMethods();
 	virtual void OnDrawModeChanged() {}
 
 	void OnNotification(int notification);
 
 private:
 	void CompletePress(bool activate);
+	void EmitToggled(bool pressed);
 
 private:
 	Status                    m_status;

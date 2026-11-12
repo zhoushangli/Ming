@@ -1,10 +1,23 @@
 #include "MingEngine/Scene/GUI/BaseButton.hpp"
 
+#include "MingEngine/Core/Object/ClassDatabase.hpp"
 #include "MingEngine/Scene/Core/Viewport.hpp"
 
 BaseButton::BaseButton()
 {
 	SetFocusMode(FocusMode::All);
+}
+
+void BaseButton::BindMethods()
+{
+	ADD_SIGNAL("pressed");
+	ADD_SIGNAL("toggled", ArgumentInfo(Variant::Type::Bool, "toggled_on"));
+
+	ClassDatabase::BindMethod("IsToggleMode", &BaseButton::IsToggleMode, {});
+	ClassDatabase::BindMethod("IsPressed", &BaseButton::IsPressed, {});
+	ClassDatabase::BindMethod("SetToggleMode", &BaseButton::SetToggleMode, { "toggleMode" });
+	ClassDatabase::BindMethod("SetPressed", &BaseButton::SetPressed, { "pressed" });
+	ClassDatabase::BindMethod("SetPressedNoSignal", &BaseButton::SetPressedNoSignal, { "pressed" });
 }
 
 bool BaseButton::GuiInput(InputEvent const& event)
@@ -106,11 +119,7 @@ void BaseButton::CompletePress(bool activate)
 	QueueRedraw();
 	if (toggled)
 	{
-		auto callback = m_toggledCallback;
-		if (callback)
-		{
-			callback(pressed);
-		}
+		EmitToggled(pressed);
 	}
 
 	// 2) Resolve the button again between notifications
@@ -140,6 +149,22 @@ void BaseButton::CompletePress(bool activate)
 		{
 			callback();
 		}
+	}
+}
+
+void BaseButton::EmitToggled(bool pressed)
+{
+	ObjectID const id = GetObjectID();
+	auto callback = m_toggledCallback;
+	if (callback)
+	{
+		callback(pressed);
+	}
+
+	BaseButton* button = ObjectDatabase::GetInstance<BaseButton>(id);
+	if (button != nullptr && !button->IsQueuedForDeletion())
+	{
+		button->EmitSignal("toggled", { Variant(pressed) });
 	}
 }
 
@@ -179,11 +204,7 @@ void BaseButton::SetToggleMode(bool toggleMode)
 		m_status.m_pressed = false;
 		OnDrawModeChanged();
 		QueueRedraw();
-		auto callback = m_toggledCallback;
-		if (callback)
-		{
-			callback(false);
-		}
+		EmitToggled(false);
 
 		return;
 	}
@@ -202,11 +223,7 @@ void BaseButton::SetPressed(bool pressed)
 	m_status.m_pressed = pressed;
 	OnDrawModeChanged();
 	QueueRedraw();
-	auto callback = m_toggledCallback;
-	if (callback)
-	{
-		callback(pressed);
-	}
+	EmitToggled(pressed);
 }
 
 BaseButton::DrawMode BaseButton::GetDrawMode() const

@@ -255,18 +255,14 @@ public unsafe ref struct ming_variant
     }
 }
 
-// ming_callable is a little different from ming_string and other ming_xxx
-// Because for other ming_xxx, they are a wrapper of the same memory
-// which means for c# and c++ side, they are the same memory
-// but for ming_callable, it is a wrapper of two different memory
-// which means when we pass a ming_callable to c++ side, it will copy the data to c++ side
-// and when we pass a ming_callable from c++ side to c# side, it will copy the data to c# side
-// but in different memory
+// Mirror native Callable storage; raw layout assignment borrows rather than retains its payload.
+// e.g. CopyCallable creates an owner, while BorrowNativeValue only copies these three fields.
 [StructLayout(LayoutKind.Sequential)]
 internal struct ming_callable
 {
     public ulong ObjectID;
     public ming_string Method;
+    public IntPtr Managed;
 }
 
 // Point at the code points owned by a native String, which lives in a native CowData block.

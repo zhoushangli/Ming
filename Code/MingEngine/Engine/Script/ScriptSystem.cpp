@@ -107,18 +107,56 @@ void CORECLR_DELEGATE_CALLTYPE CreateCallable(Object const* target, String const
 	new (result) Callable(target, *methodName);
 }
 
-// Copy a borrowed callable into empty storage and retain its method name.
+// Copy a borrowed callable into empty storage and retain its String or managed state.
 // e.g. CopyCallable(&source, &result) lets either owner be released first.
 void CORECLR_DELEGATE_CALLTYPE CopyCallable(Callable const* source, Callable* result)
 {
 	new (result) Callable(*source);
 }
 
-// Release this callable's String reference and reset its target without affecting other owners.
+// Release this callable's String or managed state without affecting other owners.
 // e.g. DestroyCallable(&result) preserves an independent connection copy.
 void CORECLR_DELEGATE_CALLTYPE DestroyCallable(Callable* value)
 {
 	*value = Callable();
+}
+
+int32_t CORECLR_DELEGATE_CALLTYPE CreateManagedCallableFromManaged(Object const* target, void* handle, void* trampoline, Callable* result)
+{
+	new (result) Callable();
+	try
+	{
+		return g_engine != nullptr && g_engine->m_scriptSystem != nullptr
+			&& g_engine->m_scriptSystem->CreateManagedCallable(target, handle, trampoline, *result);
+	}
+	catch (...)
+	{
+		return 0;
+	}
+}
+
+void CORECLR_DELEGATE_CALLTYPE CallCallable(Callable const* source, Variant const* const* arguments,
+	int32_t count, Variant* result, CallError* error)
+{
+	new (result) Variant();
+	*error = {};
+	try
+	{
+		Callable owner(*source);
+		std::vector<Variant> values;
+		values.reserve(static_cast<size_t>(count));
+		for (int32_t index = 0; index < count; ++index)
+		{
+			values.push_back(*arguments[index]);
+		}
+
+		*result = owner.Call(values, *error);
+	}
+	catch (...)
+	{
+		*result = Variant();
+		error->m_error = CallError::Error::ExecutionFailed;
+	}
 }
 
 int32_t CORECLR_DELEGATE_CALLTYPE ConnectSignal(Object* source, String const* name, Callable const* callback)
@@ -343,12 +381,16 @@ void ScriptSystem::Startup()
 
 void ScriptSystem::Shutdown()
 {
+	ERR_FAIL_COND_MSG(Callable::IsInvokingManagedCallable(), "Cannot shut down scripts during a delegate callback.\n");
+
 	if (!m_isInitialized)
 	{
 		return;
 	}
 
 	CloseProjectBuild();
+	m_acceptManagedCallables = false;
+	Callable::InvalidateManagedCallables();
 
 	// 1) Release retained resources while the managed bridge is still available
 	DetachScriptInstances();
@@ -610,6 +652,8 @@ bool ScriptSystem::InitializeDotNetRuntime()
 		&DisconnectSignal,
 		&CopyVariant,
 		&EmitSignalFromManaged,
+		&CreateManagedCallableFromManaged,
+		&CallCallable,
 	};
 
 	int32_t const initResult = initialize(
@@ -620,6 +664,7 @@ bool ScriptSystem::InitializeDotNetRuntime()
 	ERR_FAIL_COND_V_MSG(initResult != 0, false, Stringf("Managed Initialize failed: 0x%08X\n", initResult));
 
 	m_isInitialized = true;
+	m_acceptManagedCallables = true;
 
 	INFO_PRINT(".NET Runtime initialized.\n");
 
@@ -812,6 +857,7 @@ bool ScriptSystem::LoadProjectAssembly()
 
 	INFO_PRINT(Stringf("Project assembly loaded: %s\n", loadedPath.c_str()));
 	m_projectAssemblyLoaded = true;
+	m_acceptManagedCallables = true;
 	m_loadedAssemblyTime = std::filesystem::last_write_time(assemblyPath, errorCode);
 
 	return true;
@@ -819,6 +865,10 @@ bool ScriptSystem::LoadProjectAssembly()
 
 bool ScriptSystem::UnloadProjectAssembly()
 {
+	ERR_FAIL_COND_V_MSG(Callable::IsInvokingManagedCallable(), false, "Cannot unload scripts during a delegate callback.\n");
+	m_acceptManagedCallables = false;
+	Callable::InvalidateManagedCallables();
+
 	// 1) Check the managed entry point
 	ERR_FAIL_COND_V_MSG(
 		!m_isInitialized || m_unloadProjectAssembly == nullptr,
@@ -1156,6 +1206,7 @@ bool ScriptSystem::RestoreScriptInstances()
 
 bool ScriptSystem::ReloadProjectAssembly()
 {
+	ERR_FAIL_COND_V_MSG(Callable::IsInvokingManagedCallable(), false, "Cannot reload scripts during a delegate callback.\n");
 	ERR_FAIL_COND_V_MSG(m_isAssemblyReloading || !m_isInitialized, false, "Cannot start script reload.\n");
 	m_isAssemblyReloading      = true;
 	bool const wasSuspended    = m_scriptExecutionSuspended;
@@ -1197,4 +1248,18 @@ bool ScriptSystem::ReloadProjectAssembly()
 	}
 
 	return success;
+}
+
+bool ScriptSystem::CreateManagedCallable(Object const* target, void* handle, void* trampoline, Callable& result)
+{
+	if (!m_acceptManagedCallables || handle == nullptr || trampoline == nullptr
+		|| m_managedCallbacks.m_invokeDelegate == nullptr || m_managedCallbacks.m_delegateEquals == nullptr
+		|| m_managedCallbacks.m_releaseDelegateGCHandle == nullptr)
+	{
+		return false;
+	}
+
+	result = Callable::FromManaged(target, handle, trampoline, m_managedCallbacks.m_invokeDelegate,
+		m_managedCallbacks.m_delegateEquals, m_managedCallbacks.m_releaseDelegateGCHandle);
+	return true;
 }

@@ -305,6 +305,25 @@ void ClassDatabase::AddProperty(
 	m_classInfoMap[className].m_properties.push_back(std::move(propertyInfo));
 }
 
+void ClassDatabase::AddSignal(std::string const& className, std::string const& signalName,
+	std::initializer_list<ArgumentInfo> arguments)
+{
+	auto iter = m_classInfoMap.find(className);
+	GUARANTEE_OR_DIE(iter != m_classInfoMap.end(),
+		Stringf("ClassDatabase: signal '%s' belongs to unregistered class '%s'.", signalName.c_str(), className.c_str()));
+	GUARANTEE_OR_DIE(!signalName.empty(),
+		Stringf("ClassDatabase: signal name must not be empty on class '%s'.", className.c_str()));
+
+	auto& signals = iter->second.m_signals;
+	GUARANTEE_OR_DIE(std::none_of(signals.begin(), signals.end(), [&signalName](SignalInfo const& signal)
+		{
+			return signal.m_name == signalName;
+		}),
+		Stringf("ClassDatabase: signal '%s' is already declared on class '%s'.", signalName.c_str(), className.c_str()));
+
+	signals.push_back({ signalName, arguments });
+}
+
 std::vector<GlobalNamespaceInfo const*> ClassDatabase::GetRegisteredGlobalNamespaces()
 {
 	std::vector<GlobalNamespaceInfo const*> globalNamespaces;

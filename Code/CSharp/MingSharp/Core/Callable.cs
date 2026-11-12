@@ -3,9 +3,9 @@ namespace Ming;
 using System.Threading;
 
 
-// Describe a named call without retaining its target object or allocating a delegate handle.
-// e.g. new Callable(controller, nameof(OnButtonPressed)) identifies a script callback.
-public sealed class Callable : IDisposable
+// Own a native named call or shared managed delegate state.
+// e.g. Callable.From(() => UpdateLabel()) retains the actual callback until its owners release it.
+public sealed partial class Callable : IDisposable
 {
     private ming_callable _nativeValue;
     private long _nativeLease;
@@ -28,6 +28,22 @@ public sealed class Callable : IDisposable
     ~Callable()
     {
         Dispose();
+    }
+
+    public Variant Call(params Variant[] arguments)
+    {
+        Variant result = Call(arguments, out ming_call_error error);
+        if (error.Error != CallErrorCode.Ok)
+        {
+            NativeFuncs.Log($"[Error] Callable: invocation failed ({error.Error}). Use Call(arguments, out error) for details.");
+        }
+
+        return result;
+    }
+
+    public Variant Call(Variant[] arguments, out ming_call_error error)
+    {
+        return NativeFuncs.CallCallable(this, arguments, out error);
     }
 
     // Create an independent owner from a borrowed native value through the native copy constructor.

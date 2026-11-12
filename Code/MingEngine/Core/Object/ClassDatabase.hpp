@@ -24,9 +24,15 @@ class PackedScene;
 // Because we want method info deconstruct when the class info is destroyed
 struct ArgumentInfo
 {
+public:
+	ArgumentInfo() = default;
+
+	ArgumentInfo(Variant::Type type, std::string name) : m_type(type), m_name(name) {}
+
+public:
 	Variant::Type m_type = Variant::Type::Empty;
-	std::string m_enumName;
-	bool m_isRef = false;
+	std::string   m_enumName;
+	bool          m_isRef = false;
 	std::string   m_objectClassName; // "Node", "Resource", etc. Only used when m_type is Variant::Type::ObjectPtr
 	// Parameter name used by the C# bindings, the return info keeps it empty.
 	// e.g. BindMethod("SetName", &Node::SetName, {"name"}) stores "name" here
@@ -40,6 +46,12 @@ struct MethodInfo
 	ArgumentInfo                m_returnInfo;
 	std::vector<ArgumentInfo>   m_argumentInfos;
 	bool                        m_isConst = false;
+};
+
+struct SignalInfo
+{
+	std::string               m_name;
+	std::vector<ArgumentInfo> m_argumentInfos;
 };
 
 struct PropertyInfo
@@ -121,14 +133,15 @@ struct ClassInfo
 	ApiType     m_apiType = ApiType::None;
 	// IsVirutal means this class can be instantiated
 	// but it should use as the base class for other classes
-	bool            m_isVirtual = false;
+	bool            m_isVirtual   = false;
 	bool            m_isSingleton = false;
-	ConstructorFunc m_creator   = nullptr;
+	ConstructorFunc m_creator     = nullptr;
 
 	// Registration is the only writer and it runs before anyone keeps a pointer,
 	// so MethodInfo may move while MethodBind stays reachable through MethodInfo::m_bind
 	std::vector<PropertyInfo> m_properties;
 	std::vector<MethodInfo>   m_methods;
+	std::vector<SignalInfo>   m_signals;
 
 	// Virtual methods are the override points exposed to C# scripts, they hold no MethodBind
 	// so we generate the C# override from m_name and m_argumentInfos
@@ -144,7 +157,7 @@ struct ConstantInfo
 
 struct GlobalNamespaceInfo
 {
-	bool m_isEnum = false;
+	bool                      m_isEnum = false;
 	std::string               m_namespaceName;
 	std::vector<ConstantInfo> m_constants;
 	std::vector<MethodInfo>   m_methods;
@@ -179,6 +192,11 @@ public:
 		PropertyInfo       propertyInfo,
 		std::string const& setterName,
 		std::string const& getterName);
+
+	static void AddSignal(
+		std::string const&                  className,
+		std::string const&                  signalName,
+		std::initializer_list<ArgumentInfo> arguments = {});
 
 	static void SetApiType(ApiType apiType) { m_currentApiType = apiType; }
 
@@ -265,17 +283,18 @@ public:
 	}
 
 	template <typename T>
-	static ArgumentInfo GetArgumentInfo()
+	static ArgumentInfo CreateArgumentInfo(std::string const& name = {})
 	{
 		using CleanType   = std::remove_cv_t<std::remove_reference_t<T>>;
 		using PointeeType = std::remove_cv_t<std::remove_pointer_t<CleanType>>;
 
 		ArgumentInfo argumentInfo;
 		argumentInfo.m_type = Variant::GetType<CleanType>();
+		argumentInfo.m_name = name;
 		if constexpr (RefTypeInfo<CleanType>::IsRef)
 		{
 			argumentInfo.m_objectClassName = RefTypeInfo<CleanType>::ElementType::GetStaticClassName();
-			argumentInfo.m_isRef = true;
+			argumentInfo.m_isRef           = true;
 		}
 		else if constexpr (std::is_enum_v<CleanType>)
 		{
@@ -322,9 +341,9 @@ public:
 
 		methodInfo.m_name       = methodName;
 		methodInfo.m_bind       = std::unique_ptr<MethodBind>(CreateMethodBind(method));
-		methodInfo.m_returnInfo = GetArgumentInfo<ReturnType>();
+		methodInfo.m_returnInfo = CreateArgumentInfo<ReturnType>();
 		methodInfo.m_argumentInfos.reserve(sizeof...(Args));
-		(methodInfo.m_argumentInfos.push_back(GetArgumentInfo<Args>()), ...);
+		(methodInfo.m_argumentInfos.push_back(CreateArgumentInfo<Args>()), ...);
 		ApplyArgumentNames(methodInfo, argumentNames, methodName);
 
 		m_classInfoMap[ClassType::GetStaticClassName()].m_methods.push_back(std::move(methodInfo));
@@ -340,9 +359,9 @@ public:
 
 		methodInfo.m_name       = methodName;
 		methodInfo.m_bind       = std::unique_ptr<MethodBind>(CreateMethodBind(method));
-		methodInfo.m_returnInfo = GetArgumentInfo<ReturnType>();
+		methodInfo.m_returnInfo = CreateArgumentInfo<ReturnType>();
 		methodInfo.m_argumentInfos.reserve(sizeof...(Args));
-		(methodInfo.m_argumentInfos.push_back(GetArgumentInfo<Args>()), ...);
+		(methodInfo.m_argumentInfos.push_back(CreateArgumentInfo<Args>()), ...);
 		methodInfo.m_isConst = true;
 		ApplyArgumentNames(methodInfo, argumentNames, methodName);
 
@@ -361,9 +380,9 @@ public:
 		MethodInfo methodInfo;
 
 		methodInfo.m_name       = methodName;
-		methodInfo.m_returnInfo = GetArgumentInfo<ReturnType>();
+		methodInfo.m_returnInfo = CreateArgumentInfo<ReturnType>();
 		methodInfo.m_argumentInfos.reserve(sizeof...(Args));
-		(methodInfo.m_argumentInfos.push_back(GetArgumentInfo<Args>()), ...);
+		(methodInfo.m_argumentInfos.push_back(CreateArgumentInfo<Args>()), ...);
 		ApplyArgumentNames(methodInfo, argumentNames, methodName);
 
 		m_classInfoMap[ClassType::GetStaticClassName()].m_virtualMethods.push_back(std::move(methodInfo));
@@ -371,16 +390,18 @@ public:
 
 	template <typename ReturnType, typename... Args>
 	static void BindGlobalMethod(
-		std::string const& namespaceName, std::string const& methodName, ReturnType (*method)(Args...),
+		std::string const& namespaceName,
+		std::string const& methodName,
+		ReturnType (*method)(Args...),
 		std::vector<std::string> const& argumentNames = {})
 	{
 		MethodInfo methodInfo;
 
 		methodInfo.m_name       = methodName;
 		methodInfo.m_bind       = std::unique_ptr<MethodBind>(CreateMethodBind(method));
-		methodInfo.m_returnInfo = GetArgumentInfo<ReturnType>();
+		methodInfo.m_returnInfo = CreateArgumentInfo<ReturnType>();
 		methodInfo.m_argumentInfos.reserve(sizeof...(Args));
-		(methodInfo.m_argumentInfos.push_back(GetArgumentInfo<Args>()), ...);
+		(methodInfo.m_argumentInfos.push_back(CreateArgumentInfo<Args>()), ...);
 
 		if (m_namespaceInfoMap.find(namespaceName) == m_namespaceInfoMap.end())
 		{
@@ -391,8 +412,8 @@ public:
 
 		for (size_t index = 0; index < methodInfo.m_argumentInfos.size(); ++index)
 		{
-			methodInfo.m_argumentInfos[index].m_name = argumentNames.empty()
-				? "arg" + std::to_string(index + 1) : argumentNames.at(index);
+			methodInfo.m_argumentInfos[index].m_name =
+				argumentNames.empty() ? "arg" + std::to_string(index + 1) : argumentNames.at(index);
 		}
 		m_namespaceInfoMap[namespaceName].m_methods.push_back(std::move(methodInfo));
 	}
@@ -439,5 +460,5 @@ private:
 	static std::unordered_map<std::string, Object*>             m_globalObjectMap;
 
 	static std::unordered_map<std::type_index, std::string> m_enumNames;
-	static ApiType m_currentApiType;
+	static ApiType                                          m_currentApiType;
 };

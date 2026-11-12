@@ -11,26 +11,39 @@
 #include <vector>
 
 class Object;
+struct ManagedCallable;
 
 class Callable
 {
 public:
-	using CallError = ::CallError;
+	using CallError         = ::CallError;
+	using InvokeDelegate    = void (*)(void*, void*, Variant const* const*, int32_t, Variant*, CallError*);
+	using CompareDelegates = int32_t (*)(void*, void*);
+	using ReleaseDelegate   = void (*)(void*);
 
 public:
 	Callable() = default;
 	Callable(Object const* target, String const& methodName);
-	~Callable() = default;
+	~Callable();
 
-	Callable(Callable const& other)                = default;
-	Callable(Callable&& other) noexcept            = default;
-	Callable& operator=(Callable const& other)     = default;
-	Callable& operator=(Callable&& other) noexcept = default;
+	Callable(Callable const& other);
+	Callable(Callable&& other) noexcept;
+	Callable& operator=(Callable const& other);
+	Callable& operator=(Callable&& other) noexcept;
+
+	// Retain a real delegate and its typed trampoline in shared native state.
+	// e.g. FromManaged(nullptr, handle, trampoline, invoke, compare, release) can represent a closure.
+	static Callable FromManaged(Object const* target, void* handle, void* trampoline,
+		InvokeDelegate invoke, CompareDelegates compare, ReleaseDelegate release);
+
+	static void InvalidateManagedCallables();
+	static bool IsInvokingManagedCallable();
 
 	Object*            GetTarget() const;
 	ObjectID           GetTargetID() const { return m_targetID; }
 	String const&      GetMethodName() const { return m_methodName; }
 	bool               IsValid() const;
+	bool               IsManaged() const { return m_managed != nullptr; }
 
 	bool operator==(Callable const& other) const;
 	bool operator!=(Callable const& other) const;
@@ -50,6 +63,10 @@ public:
 	Variant Call(std::vector<Variant> const& arguments, CallError& error) const;
 
 private:
-	ObjectID    m_targetID = ObjectID::Invalid;
-	String      m_methodName;
+	void ReleaseManaged();
+
+private:
+	ObjectID         m_targetID = ObjectID::Invalid;
+	String           m_methodName;
+	ManagedCallable* m_managed = nullptr;
 };

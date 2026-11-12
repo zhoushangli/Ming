@@ -12,6 +12,7 @@
 #define ADD_PROPERTY(propertyInfo, setterName, getterName)                                                             \
 	ClassDatabase::AddProperty(GetStaticClassName(), propertyInfo, setterName, getterName)
 #define ADD_GROUP(name) ClassDatabase::AddPropertyGroup(GetStaticClassName(), name)
+#define ADD_SIGNAL(name, ...) ClassDatabase::AddSignal(GetStaticClassName(), name, { __VA_ARGS__ })
 
 #define BIND_ENUM(className, enumName)                                                                                 \
 	ClassDatabase::BindEnumConstant<className>(#className, #enumName, className::enumName)

@@ -12,6 +12,10 @@ public partial class MingObject : IDisposable
         public static readonly string _Notification = nameof(MingObject._Notification);
     }
 
+    public class SignalName
+    {
+    }
+
     private static readonly Type CachedType = typeof(MingObject);
     private static readonly string NativeName = "Object";
 

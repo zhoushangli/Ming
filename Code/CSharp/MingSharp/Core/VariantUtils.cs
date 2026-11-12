@@ -2,6 +2,93 @@ namespace Ming;
 
 public static partial class VariantUtils
 {
+    // Resolve the tag for the same types accepted by the existing Variant conversions.
+    // e.g. GetVariantType<Matrix4x4>(true) permits arguments while false rejects unsupported returns.
+    internal static Variant.Type GetVariantType<T>(bool reading)
+    {
+        if (typeof(T) == typeof(bool))
+        {
+            return Variant.Type.Bool;
+        }
+
+        if (typeof(T) == typeof(uint))
+        {
+            return Variant.Type.UInt32;
+        }
+
+        if (typeof(T) == typeof(int))
+        {
+            return Variant.Type.Int;
+        }
+
+        if (typeof(T) == typeof(float))
+        {
+            return Variant.Type.Float;
+        }
+
+        if (typeof(T) == typeof(string))
+        {
+            return Variant.Type.String;
+        }
+
+        if (typeof(T) == typeof(Vector2))
+        {
+            return Variant.Type.Vector2;
+        }
+
+        if (typeof(T) == typeof(Vector3))
+        {
+            return Variant.Type.Vector3;
+        }
+
+        if (typeof(T) == typeof(Vector4))
+        {
+            return Variant.Type.Vector4;
+        }
+
+        if (typeof(T) == typeof(Color))
+        {
+            return Variant.Type.Color;
+        }
+
+        if (typeof(T) == typeof(AABB2))
+        {
+            return Variant.Type.AABB2;
+        }
+
+        if (typeof(T) == typeof(EulerAngles))
+        {
+            return Variant.Type.EulerAngles;
+        }
+
+        if (typeof(T).IsEnum && Enum.GetUnderlyingType(typeof(T)) == typeof(int))
+        {
+            return Variant.Type.Int;
+        }
+
+        if (typeof(MingObject).IsAssignableFrom(typeof(T)))
+        {
+            return Variant.Type.ObjectPtr;
+        }
+
+        if (reading && typeof(T) == typeof(OBB2))
+        {
+            return Variant.Type.OBB2;
+        }
+
+        if (reading && typeof(T) == typeof(Capsule3))
+        {
+            return Variant.Type.Capsule3;
+        }
+
+        if (reading && typeof(T) == typeof(Matrix4x4))
+        {
+            return Variant.Type.Matrix4x4;
+        }
+
+        throw new NotSupportedException($"Variant does not support {typeof(T).FullName} as a Callable {(reading ? "parameter" : "return type")}.");
+    }
+
     // Convert one dispatch argument before entering the method body and report type mismatches.
     // e.g. TryConvertTo<float>(value, 0, Variant.Type.Float, out result, out error).
     public static bool TryConvertTo<T>(in ming_variant variant, int argument, Variant.Type expectedType,

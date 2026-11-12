@@ -29,6 +29,8 @@ public static class ScriptManagerBridge
     private static readonly Dictionary<long, (ming_callable Value, WeakReference<Callable> Wrapper)> s_callableBindings = new();
     private static readonly ConcurrentQueue<long> s_pendingCallableReleases = new();
     private static long s_nextCallableLease;
+    private static int s_delegateHandleAllocated;
+    private static int s_delegateHandleFreed;
     private static readonly Dictionary<long, (ming_variant.movable Value, WeakReference<Variant.Disposer> Owner)> s_variantBindings = new();
     private static readonly ConcurrentQueue<long> s_pendingVariantReleases = new();
     private static long s_nextVariantLease;
@@ -392,6 +394,83 @@ public static class ScriptManagerBridge
 
     #region Handle Management
 
+    internal static IntPtr AllocDelegateGCHandle(Delegate callback)
+    {
+        IntPtr handle = GCHandle.ToIntPtr(GCHandle.Alloc(callback, GCHandleType.Normal));
+        ++s_delegateHandleAllocated;
+        return handle;
+    }
+
+    internal static void ReleaseDelegateGCHandleCore(IntPtr handle)
+    {
+        GCHandle.FromIntPtr(handle).Free();
+        ++s_delegateHandleFreed;
+    }
+
+    [UnmanagedCallersOnly]
+    internal static void ReleaseDelegateGCHandle(IntPtr handle)
+    {
+        try
+        {
+            ReleaseDelegateGCHandleCore(handle);
+        }
+        catch (Exception exception)
+        {
+            LogDelegateException(exception);
+        }
+    }
+
+    [UnmanagedCallersOnly]
+    internal static int DelegateEquals(IntPtr left, IntPtr right)
+    {
+        try
+        {
+            return Equals(GCHandle.FromIntPtr(left).Target, GCHandle.FromIntPtr(right).Target) ? 1 : 0;
+        }
+        catch (Exception exception)
+        {
+            LogDelegateException(exception);
+            return 0;
+        }
+    }
+
+    [UnmanagedCallersOnly]
+    internal static unsafe void InvokeDelegate(IntPtr handle, IntPtr trampoline, ming_variant** args, int argc,
+        ming_variant* ret, ming_call_error* error)
+    {
+        *ret = default;
+        *error = new ming_call_error();
+        try
+        {
+            var callback = GCHandle.FromIntPtr(handle).Target as Delegate;
+            if (callback == null || (callback.Target is MingObject target && target.NativePtr == IntPtr.Zero))
+            {
+                error->Error = CallErrorCode.InvalidTarget;
+                return;
+            }
+
+            var invoke = (delegate* managed<Delegate, NativeVariantPtrArgs, out ming_variant, out ming_call_error, void>)trampoline;
+            invoke(callback, new NativeVariantPtrArgs(args, argc), out *ret, out *error);
+        }
+        catch (Exception exception)
+        {
+            NativeFuncs.DestroyVariant(ref *ret);
+            *error = new ming_call_error { Error = CallErrorCode.ExecutionFailed };
+            LogDelegateException(exception);
+        }
+    }
+
+    private static void LogDelegateException(Exception exception)
+    {
+        try
+        {
+            NativeFuncs.Log("[Error] " + exception);
+        }
+        catch
+        {
+        }
+    }
+
     internal static IntPtr AllocNativeBindingGCHandle(MingObject instance)
     {
         // Here we have some special logic for RefCounted
@@ -679,7 +758,7 @@ public static class ScriptManagerBridge
             NativeFuncs.ReleaseRef(binding.Owner);
         }
 
-        // 1) Release native String references on the engine thread, never on the finalizer thread
+        // 3) Release native Callable ownership on the engine thread, never on the finalizer thread
         while (s_pendingCallableReleases.TryDequeue(out long lease))
         {
             if (!s_callableBindings.Remove(lease, out var binding))
@@ -822,12 +901,13 @@ public static class ScriptManagerBridge
 
     public static string GetBindingSummary()
     {
-        int allocated = s_nativeBindingHandleAllocated + s_scriptInstanceHandleAllocated;
-        int freed = s_nativeBindingHandleFreed + s_scriptInstanceHandleFreed;
+        int allocated = s_nativeBindingHandleAllocated + s_scriptInstanceHandleAllocated + s_delegateHandleAllocated;
+        int freed = s_nativeBindingHandleFreed + s_scriptInstanceHandleFreed + s_delegateHandleFreed;
         string severity = allocated != freed ? "[Warning] " : string.Empty;
         return severity + "Managed binding summary (active = allocated - freed):\n"
             + $"  NativeBinding: allocated={s_nativeBindingHandleAllocated}, freed={s_nativeBindingHandleFreed}, active={s_nativeBindingHandleAllocated - s_nativeBindingHandleFreed}\n"
             + $"  ScriptInstance: allocated={s_scriptInstanceHandleAllocated}, freed={s_scriptInstanceHandleFreed}, active={s_scriptInstanceHandleAllocated - s_scriptInstanceHandleFreed}\n"
+            + $"  Delegate: allocated={s_delegateHandleAllocated}, freed={s_delegateHandleFreed}, active={s_delegateHandleAllocated - s_delegateHandleFreed}\n"
             + $"  Total: allocated={allocated}, freed={freed}, active={allocated - freed}";
     }
 

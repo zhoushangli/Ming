@@ -9,6 +9,7 @@
 #include <cctype>
 #include <fstream>
 #include <map>
+#include <set>
 #include <sstream>
 #include <utility>
 
@@ -20,7 +21,7 @@ using System.Diagnostics;
 
 public partial class {CLASS_NAME} : {PARENT_CLASS_NAME}
 {
-{METHOD_NAME_CLASS}{CLASS_PROPERTIES}    private static readonly Type CachedType = typeof({CLASS_NAME});
+{METHOD_NAME_CLASS}{SIGNAL_NAME_CLASS}{CLASS_PROPERTIES}{CLASS_SIGNALS}    private static readonly Type CachedType = typeof({CLASS_NAME});
     private const string NativeName = "{NATIVE_CLASS_NAME}";
 
 	[DebuggerBrowsable(DebuggerBrowsableState.Never)]
@@ -842,8 +843,29 @@ bool GenerateConstructors(std::filesystem::path const& outputDirectory, std::vec
 	return WriteTextFile(outputDirectory / "Constructors.cs", constructorsSource);
 }
 
+// Convert native property and signal names to the public C# member spelling.
+// e.g. GetCSharpMemberName("button_down") returns "ButtonDown".
+std::string GetCSharpMemberName(std::string const& nativeName)
+{
+	std::string name;
+	bool uppercase = true;
+	for (unsigned char character : nativeName)
+	{
+		if (character == '_')
+		{
+			uppercase = true;
+			continue;
+		}
+
+		name += uppercase ? static_cast<char>(std::toupper(character)) : static_cast<char>(character);
+		uppercase = false;
+	}
+
+	return name;
+}
+
 std::string GenerateClassProperties(ClassInfo const& classInfo, CSharpTypeMap const& builtinTypes,
-	MethodNativeCallMap const& methodNativeCalls, bool isStatic = false)
+	MethodNativeCallMap const& methodNativeCalls, bool isStatic = false, std::set<std::string>* memberNames = nullptr)
 {
 	std::string source;
 	for (PropertyInfo const& property : classInfo.m_properties)
@@ -891,23 +913,15 @@ std::string GenerateClassProperties(ClassInfo const& classInfo, CSharpTypeMap co
 			continue;
 		}
 
-		std::string name;
-		bool uppercase = true;
-		for (unsigned char character : property.m_name)
-		{
-			if (character == '_')
-			{
-				uppercase = true;
-				continue;
-			}
-
-			name += uppercase ? static_cast<char>(std::toupper(character)) : static_cast<char>(character);
-			uppercase = false;
-		}
-
+		std::string const name = GetCSharpMemberName(property.m_name);
 		if (name.empty() || name == classInfo.m_className)
 		{
 			continue;
+		}
+
+		if (memberNames != nullptr)
+		{
+			memberNames->insert(name);
 		}
 
 		source += "    public " + std::string(isStatic ? "static " : "")
@@ -927,6 +941,105 @@ std::string GenerateClassProperties(ClassInfo const& classInfo, CSharpTypeMap co
 	}
 
 	return source;
+}
+
+// Generate native signal event accessors after checking the managed inheritance chain for name conflicts.
+// e.g. "pressed" generates SignalName.Pressed and an Action event that forwards to Connect/Disconnect.
+bool GenerateClassSignals(ClassInfo const& classInfo, CSharpTypeMap const& builtinTypes,
+	MethodNativeCallMap const& methodNativeCalls, std::string const& parentClassName,
+	std::string& signalNameClass, std::string& classSignals)
+{
+	std::set<std::string> memberNames{
+		"MethodName", "SignalName", "CachedType", "NativeName", "NativeCtor", "NativePtr", "ResourceLease",
+		"GetPtr", "GetConstrcutor", "Dispose", "InvalidateFromNative", "GetClassName", "GetGlobalObject",
+		"ConstructAndInitialize", "Free", "_Notification", "EmitSignal", "Connect", "IsConnected", "Disconnect",
+		"InvokeMingClassMethod", "HasMingClassMethod", "Equals", "GetHashCode", "GetType", "ToString",
+		"MemberwiseClone", "Finalize"
+	};
+	std::vector<ClassInfo const*> hierarchy;
+	for (ClassInfo const* current = &classInfo; current != nullptr;
+		current = ClassDatabase::GetClassInfo(current->m_parentClassName))
+	{
+		hierarchy.push_back(current);
+		memberNames.insert(current->m_className + (current->m_isSingleton ? "Instance" : ""));
+		GenerateClassProperties(*current, builtinTypes, methodNativeCalls, false, &memberNames);
+		for (MethodInfo const& method : current->m_methods)
+		{
+			if (methodNativeCalls.count(&method) != 0)
+			{
+				memberNames.insert(method.m_name);
+				memberNames.insert(method.m_name + "MethodBind");
+			}
+		}
+
+		for (MethodInfo const& method : current->m_virtualMethods)
+		{
+			memberNames.insert(method.m_name);
+		}
+	}
+
+	std::set<std::string> signalNames;
+	for (ClassInfo const* current : hierarchy)
+	{
+		for (SignalInfo const& signal : current->m_signals)
+		{
+			std::string const name = GetCSharpMemberName(signal.m_name);
+			bool const validName = !name.empty() && std::isalpha(static_cast<unsigned char>(name.front()))
+				&& std::all_of(signal.m_name.begin(), signal.m_name.end(), [](unsigned char character)
+				{
+					return character < 128 && (std::isalnum(character) || character == '_');
+				});
+			if (!validName || memberNames.count(name) != 0 || !signalNames.insert(name).second)
+			{
+				ERR_PRINT(Stringf("C# bindings: signal '%s.%s' has invalid or conflicting generated name '%s' in class '%s'.",
+					current->m_className.c_str(), signal.m_name.c_str(), name.c_str(), classInfo.m_className.c_str()));
+				return false;
+			}
+		}
+	}
+
+	signalNameClass = "    public new class SignalName : " + parentClassName + ".SignalName\n    {\n";
+	classSignals.clear();
+	for (SignalInfo const& signal : classInfo.m_signals)
+	{
+		std::string const name = GetCSharpMemberName(signal.m_name);
+		if (signal.m_argumentInfos.size() > 9)
+		{
+			ERR_PRINT(Stringf("C# bindings: signal '%s.%s' exceeds Callable.From's nine-argument limit.",
+				classInfo.m_className.c_str(), signal.m_name.c_str()));
+			return false;
+		}
+
+		std::string argumentTypes;
+		for (ArgumentInfo const& argument : signal.m_argumentInfos)
+		{
+			auto found = builtinTypes.find(argument.m_type);
+			if (argument.m_type == Variant::Type::Empty || found == builtinTypes.end() || found->second.m_csType.empty())
+			{
+				ERR_PRINT(Stringf("C# bindings: signal '%s.%s' parameter '%s' has unsupported type %s.",
+					classInfo.m_className.c_str(), signal.m_name.c_str(), argument.m_name.c_str(), GetVariantTypeName(argument.m_type)));
+				return false;
+			}
+
+			if (!argumentTypes.empty())
+			{
+				argumentTypes += ", ";
+			}
+
+			argumentTypes += GetPublicCSharpType(argument, found->second);
+		}
+
+		std::string const delegateType = "Action" + (argumentTypes.empty() ? "" : "<" + argumentTypes + ">");
+		signalNameClass += "        public static readonly string " + name + " = \"" + signal.m_name + "\";\n";
+		classSignals += "    public event " + delegateType + " " + name + "\n    {\n"
+			"        add\n        {\n            using global::Ming.Callable callback = global::Ming.Callable.From(value);\n"
+			"            Connect(SignalName." + name + ", callback);\n        }\n\n"
+			"        remove\n        {\n            using global::Ming.Callable callback = global::Ming.Callable.From(value);\n"
+			"            Disconnect(SignalName." + name + ", callback);\n        }\n    }\n\n";
+	}
+
+	signalNameClass += "    }\n\n";
+	return true;
 }
 
 bool GenerateClassBindings(
@@ -957,6 +1070,16 @@ bool GenerateClassBindings(
 		std::string const parentClassName =
 			classInfo->m_parentClassName == "Object" ? "MingObject" : classInfo->m_parentClassName;
 		ReplaceAll(classSource, "{PARENT_CLASS_NAME}", parentClassName);
+
+		std::string signalNameClass;
+		std::string classSignals;
+		if (!GenerateClassSignals(*classInfo, builtinTypes, methodNativeCalls, parentClassName, signalNameClass, classSignals))
+		{
+			return false;
+		}
+
+		ReplaceAll(classSource, "{SIGNAL_NAME_CLASS}", signalNameClass);
+		ReplaceAll(classSource, "{CLASS_SIGNALS}", classSignals);
 
 		std::string methodBindings;
 		std::string classMethods;

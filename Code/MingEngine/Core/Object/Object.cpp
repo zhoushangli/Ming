@@ -267,7 +267,10 @@ bool Object::Connect(std::string const& signalName, Callable const& callable)
 	Connection connection{ Signal(this, signalName), callable };
 	Object*    target = callable.GetTarget();
 	m_signalMap[signalName].push_back(connection);
-	target->m_signalSubscriptions.push_back(connection);
+	if (target != nullptr)
+	{
+		target->m_signalSubscriptions.push_back(connection);
+	}
 	return true;
 }
 
@@ -368,8 +371,15 @@ bool Object::EmitSignal(std::string const& signalName, std::vector<Variant> cons
 	// 2) Invoke the snapshot without keeping references into either object's connection tables
 	for (Connection const& connection : connections)
 	{
+		if (connection.m_callable.IsManaged() && !connection.m_callable.IsValid())
+		{
+			Disconnect(signalName, connection.m_callable);
+			continue;
+		}
+
 		Object* target = connection.m_callable.GetTarget();
-		if (target == nullptr || target->IsPreDeleting())
+		if ((!connection.m_callable.IsManaged() && target == nullptr)
+			|| (target != nullptr && target->IsPreDeleting()))
 		{
 			continue;
 		}
@@ -379,7 +389,8 @@ bool Object::EmitSignal(std::string const& signalName, std::vector<Variant> cons
 		if (error.m_error != Callable::CallError::Error::Ok)
 		{
 			ERR_PRINT(
-				"Signal: failed to invoke '" + connection.m_callable.GetMethodName().ToUtf8() + "' from '"
+				"Signal: failed to invoke '" + (connection.m_callable.IsManaged() ? std::string("Delegate::Invoke")
+					: connection.m_callable.GetMethodName().ToUtf8()) + "' from '"
 				+ connection.m_signal.GetName() + "'.");
 			success = false;
 		}
