@@ -208,7 +208,7 @@ bool CreateScriptPopup::Create(VirtualPath const& path, std::string const& base,
 	std::string text = "using Ming;\n\npublic partial class " + name + " : global::Ming." + base + "\n{\n";
 	if (useTemplate)
 	{
-		text += "    public override void OnReady()\n    {\n    }\n\n    public override void OnProcess(float deltaSeconds)\n    {\n    }\n";
+		text += "    public override void _Ready()\n    {\n    }\n\n    public override void _Process(float deltaSeconds)\n    {\n    }\n\n    public override void _PhysicsProcess(float deltaSeconds)\n    {\n    }\n";
 	}
 
 	text += "}\n";

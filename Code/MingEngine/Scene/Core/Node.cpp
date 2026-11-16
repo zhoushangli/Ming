@@ -80,6 +80,11 @@ bool Node::GetProcess() const
 	return m_data.m_enableProcess;
 }
 
+bool Node::GetPhysicsProcess() const
+{
+	return m_data.m_enablePhysicsProcess;
+}
+
 void Node::SetName(String const& name)
 {
 	m_data.m_name = EnsureUniqueName(name);
@@ -98,6 +103,11 @@ void Node::SetReady(bool isReady)
 void Node::SetProcess(bool isProcess)
 {
 	m_data.m_enableProcess = isProcess;
+}
+
+void Node::SetPhysicsProcess(bool isPhysicsProcess)
+{
+	m_data.m_enablePhysicsProcess = isPhysicsProcess;
 }
 
 Node* Node::FindChildByName(String const& name) const
@@ -280,6 +290,8 @@ void Node::BindMethods()
 	ClassDatabase::BindMethod("GetReady", &Node::GetReady, {});
 	ClassDatabase::BindMethod("SetProcess", &Node::SetProcess, { "isProcess" });
 	ClassDatabase::BindMethod("GetProcess", &Node::GetProcess, {});
+	ClassDatabase::BindMethod("SetPhysicsProcess", &Node::SetPhysicsProcess, { "isPhysicsProcess" });
+	ClassDatabase::BindMethod("GetPhysicsProcess", &Node::GetPhysicsProcess, {});
 	ClassDatabase::BindMethod("GetRoot", &Node::GetRoot, {});
 	ClassDatabase::BindMethod("GetParent", &Node::GetParent, {});
 	ClassDatabase::BindMethod("FindChildByName", &Node::FindChildByName, { "name" });
@@ -292,10 +304,11 @@ void Node::BindMethods()
 	ClassDatabase::BindMethod("Reparent", &Node::Reparent, { "newParent", "keepWorldTransform" });
 
 	// Virtual methods are the override points for C# scripts, the C++ side keeps using OnNotification
-	ClassDatabase::BindVirtualMethod("OnEnterTree", &Node::OnEnterTree, {});
-	ClassDatabase::BindVirtualMethod("OnExitTree", &Node::OnExitTree, {});
-	ClassDatabase::BindVirtualMethod("OnReady", &Node::OnReady, {});
-	ClassDatabase::BindVirtualMethod("OnProcess", &Node::OnProcess, { "deltaSeconds" });
+	ClassDatabase::BindVirtualMethod("_EnterTree", &Node::_EnterTree, {});
+	ClassDatabase::BindVirtualMethod("_ExitTree", &Node::_ExitTree, {});
+	ClassDatabase::BindVirtualMethod("_Ready", &Node::_Ready, {});
+	ClassDatabase::BindVirtualMethod("_Process", &Node::_Process, { "deltaSeconds" });
+	ClassDatabase::BindVirtualMethod("_PhysicsProcess", &Node::_PhysicsProcess, { "deltaSeconds" });
 
 	ADD_PROPERTY(
 		PropertyInfo(Variant::Type::String, "name", PropertyInfo::Hint::None, "", PropertyInfo::UsageFlags::None),
@@ -387,24 +400,34 @@ void Node::OnNotification(int notification)
 		break;
 	case Notification_EnterTree:
 	{
-		OnEnterTree();
-		CallScriptVoidMethod("OnEnterTree", {});
+		_EnterTree();
+		CallScriptVoidMethod("_EnterTree", {});
 		break;
 	}
 
 	case Notification_ExitTree:
 	{
-		CallScriptVoidMethod("OnExitTree", {});
-		OnExitTree();
+		CallScriptVoidMethod("_ExitTree", {});
+		_ExitTree();
 		break;
 	}
 
 	case Notification_Ready:
 	{
 		SetProcess(true);
+		SetPhysicsProcess(true);
 
-		OnReady();
-		CallScriptVoidMethod("OnReady", {});
+		_Ready();
+		CallScriptVoidMethod("_Ready", {});
+		break;
+	}
+
+	case Notification_PhysicsProcess:
+	{
+		SceneTree* sceneTree = GetSceneTree();
+		float const deltaSeconds = sceneTree != nullptr ? sceneTree->GetPhysicsDeltaSeconds() : 0.f;
+		_PhysicsProcess(deltaSeconds);
+		CallScriptVoidMethod("_PhysicsProcess", { Variant(deltaSeconds) });
 		break;
 	}
 
@@ -417,8 +440,8 @@ void Node::OnNotification(int notification)
 			deltaSeconds = sceneTree->GetDeltaSeconds();
 		}
 
-		OnProcess(deltaSeconds);
-		CallScriptVoidMethod("OnProcess", { Variant(deltaSeconds) });
+		_Process(deltaSeconds);
+		CallScriptVoidMethod("_Process", { Variant(deltaSeconds) });
 		break;
 	}
 
@@ -575,18 +598,22 @@ void Node::PropagateReady()
 	}
 }
 
-void Node::OnEnterTree()
+void Node::_EnterTree()
 {
 }
 
-void Node::OnExitTree()
+void Node::_ExitTree()
 {
 }
 
-void Node::OnReady()
+void Node::_Ready()
 {
 }
 
-void Node::OnProcess([[maybe_unused]] float deltaSeconds)
+void Node::_Process([[maybe_unused]] float deltaSeconds)
+{
+}
+
+void Node::_PhysicsProcess([[maybe_unused]] float deltaSeconds)
 {
 }

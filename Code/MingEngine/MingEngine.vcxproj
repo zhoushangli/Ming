@@ -567,4 +567,17 @@
     <ClCompile Include="Editor\UI\Popup\CreateScriptPopup.cpp" />
     <ClInclude Include="Editor\UI\Popup\CreateScriptPopup.hpp" />
   </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Engine\Application\AppState.cpp" />
+    <ClInclude Include="Engine\Application\AppState.hpp" />
+    <ClCompile Include="Engine\Application\ProjectManagerState.cpp" />
+    <ClInclude Include="Engine\Application\ProjectManagerState.hpp" />
+    <ClCompile Include="Engine\Application\EditorState.cpp" />
+    <ClInclude Include="Engine\Application\EditorState.hpp" />
+    <ClCompile Include="Engine\Application\GameState.cpp" />
+    <ClInclude Include="Engine\Application\GameState.hpp" />
+    <ClCompile Include="Engine\Scene\SceneSystem.cpp" />
+    <ClInclude Include="Engine\Scene\SceneSystem.hpp" />
+    <ClInclude Include="Engine\Application\MingRunConfig.hpp" />
+  </ItemGroup>
 </Project>

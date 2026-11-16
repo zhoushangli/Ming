@@ -370,7 +370,7 @@ public:
 
 	// Virtual methods are not callable through MethodBind, they only tell the generator
 	// which C# override points a class exposes.
-	// e.g. BindVirtualMethod("OnProcess", &Node::OnProcess, {"deltaSeconds"})
+	// e.g. BindVirtualMethod("_Process", &Node::_Process, {"deltaSeconds"})
 	template <typename ClassType, typename ReturnType, typename... Args>
 	static void BindVirtualMethod(
 		std::string const& methodName,

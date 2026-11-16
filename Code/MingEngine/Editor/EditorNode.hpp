@@ -128,8 +128,8 @@ protected:
 	static void BindMethods();
 
 private:
-	void       OnReady() override;
-	void       OnProcess(float deltaSeconds) override;
+	void       _Ready() override;
+	void       _Process(float deltaSeconds) override;
 	bool       CreateScene(VirtualPath const& virtualPath, std::string const& rootName);
 	void       RenderUnsavedScenePopup();
 	void       ExecutePendingSceneAction();

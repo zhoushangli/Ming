@@ -32,7 +32,7 @@ protected:
 	static void BindMethods();
 
 private:
-	void OnProcess(float deltaSeconds) override;
+	void _Process(float deltaSeconds) override;
 	void OnNotification(int notification);
 
 private:

@@ -25,20 +25,28 @@
             <returns>True if this node allows saving. A parent that blocks saving also blocks this node.</returns>
         </member>
         <member name="M:Ming.Node.SetReady(System.Boolean)">
-            <summary>Sets whether OnReady is pending. This does not call OnReady right away. A pending call runs the next time this node goes through the ready step.</summary>
+            <summary>Sets whether _Ready is pending. This does not call _Ready right away. A pending call runs the next time this node goes through the ready step.</summary>
             <param name="isReady">True to request another ready call, or false to clear the pending call.</param>
         </member>
         <member name="M:Ming.Node.GetReady">
-            <summary>Checks whether an OnReady call is still pending.</summary>
+            <summary>Checks whether an _Ready call is still pending.</summary>
             <returns>True if the ready call is pending. This does not mean the node is already ready.</returns>
         </member>
         <member name="M:Ming.Node.SetProcess(System.Boolean)">
-            <summary>Turns OnProcess calls on or off. The ready step turns processing on.</summary>
+            <summary>Turns _Process calls on or off. The ready step turns processing on.</summary>
             <param name="isProcess">True to receive frame updates, or false to stop them.</param>
         </member>
         <member name="M:Ming.Node.GetProcess">
             <summary>Checks whether frame updates are enabled for this node.</summary>
             <returns>True if processing is enabled. The node must also be in a scene tree to receive updates.</returns>
+        </member>
+        <member name="M:Ming.Node.SetPhysicsProcess(System.Boolean)">
+            <summary>Enables or disables fixed-step callbacks. The ready step enables physics processing.</summary>
+            <param name="isPhysicsProcess">True to enable physics processing.</param>
+        </member>
+        <member name="M:Ming.Node.GetPhysicsProcess">
+            <summary>Checks whether fixed-step callbacks are enabled.</summary>
+            <returns>True when physics processing is enabled.</returns>
         </member>
         <member name="M:Ming.Node.GetRoot">
             <summary>Follows the parent links to find the top node.</summary>
@@ -84,18 +92,22 @@
             <param name="newParent">The new parent. It must not be this node or one of its child nodes.</param>
             <param name="keepWorldTransform">True to keep the world transform when this node is a Node3D. Has no effect on a plain Node.</param>
         </member>
-        <member name="M:Ming.Node.OnEnterTree">
+        <member name="M:Ming.Node._EnterTree">
             <summary>Called each time this node enters a scene tree, before its child nodes enter.</summary>
         </member>
-        <member name="M:Ming.Node.OnExitTree">
+        <member name="M:Ming.Node._ExitTree">
             <summary>Called when this node leaves a scene tree, after its child nodes leave.</summary>
         </member>
-        <member name="M:Ming.Node.OnReady">
+        <member name="M:Ming.Node._Ready">
             <summary>Called after this node and its child nodes enter the scene tree. Child nodes become ready first. Runs once unless SetReady requests another call.</summary>
         </member>
-        <member name="M:Ming.Node.OnProcess(System.Single)">
+        <member name="M:Ming.Node._Process(System.Single)">
             <summary>Called each frame while this node is in a scene tree and processing is enabled.</summary>
             <param name="deltaSeconds">The time since the last frame, in seconds.</param>
+        </member>
+        <member name="M:Ming.Node._PhysicsProcess(System.Single)">
+            <summary>Called at a fixed interval while the game is running and physics processing is enabled.</summary>
+            <param name="deltaSeconds">The fixed physics interval in seconds.</param>
         </member>
         <member name="T:Ming.AABBCollider3D">
             <summary>A 3D collision shape defined by an axis-aligned box.</summary>
@@ -532,7 +544,11 @@
         </member>
         <member name="M:Ming.SceneTree.GetDeltaSeconds">
             <summary>Gets the time step from the most recent scene update.</summary>
-            <returns>The update time in seconds. This is the same time step passed to Node.OnProcess.</returns>
+            <returns>The update time in seconds. This is the same time step passed to Node._Process.</returns>
+        </member>
+        <member name="M:Ming.SceneTree.GetPhysicsDeltaSeconds">
+            <summary>Gets the time step from the most recent physics callback pass.</summary>
+            <returns>The fixed time step passed to Node._PhysicsProcess, in seconds.</returns>
         </member>
         <member name="T:Ming.Script">
             <summary>Base resource for scripts attached to engine objects.</summary>

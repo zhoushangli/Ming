@@ -604,7 +604,7 @@ std::string BuildMethodNameEntry(std::string const& className, std::string const
 
 // The nested MethodName class collects the generated method names so C# scripts can
 // reference them without string literals.
-// e.g. MethodName.OnProcess is the string "OnProcess"
+// e.g. MethodName._Process is the string "_Process"
 std::string GenerateMethodNameClass(
 	ClassInfo const& classInfo, MethodNativeCallMap const& methodNativeCalls, std::string const& parentMethodNameClass)
 {

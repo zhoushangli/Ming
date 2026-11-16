@@ -1,6 +1,8 @@
 #pragma once
 
 #include "MingEngine/Engine/Audio/AudioSystem.hpp"
+#include "MingEngine/Engine/Scene/SceneSystem.hpp"
+#include "MingEngine/Engine/Physics/PhysicsServer.hpp"
 #include "MingEngine/Engine/Event/EventSystem.hpp"
 #include "MingEngine/Engine/File/FileSystem.hpp"
 #include "MingEngine/Engine/Input/InputSystem.hpp"
@@ -30,6 +32,8 @@ public:
 
 	void Startup();
 	void Shutdown();
+	void Update(float deltaSeconds);
+	void Render() const;
 	void BeginFrame();
 	void EndFrame();
 
@@ -47,6 +51,9 @@ public:
 	InputSystem*   m_inputSystem   = nullptr;
 	AudioSystem*   m_audioSystem   = nullptr;
 	NetworkSystem* m_networkSystem = nullptr;
+
+	SceneSystem* m_sceneSystem = nullptr;
+	PhysicsServer* m_physicsServer = nullptr;
 
 	RenderServer* m_renderServer = nullptr;
 	TextServer*   m_textServer   = nullptr;

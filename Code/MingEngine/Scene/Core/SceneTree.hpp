@@ -27,7 +27,9 @@ public:
 	void QueueTransformChangedNode(ObjectID nodeID);
 	void FlushTransformChangedNodes();
 
-	void      UpdateScene(float deltaSeconds);
+	void      Process(float deltaSeconds);
+	void      PhysicsProcess(float fixedDeltaSeconds);
+	
 	Node*     GetRoot() const;
 	Node*     GetScene() const;
 	void      ClearScene();
@@ -42,6 +44,7 @@ public:
 	RaycastSpace3D* GetRaycastSpace() const { return m_raycastSpace; }
 
 	float GetDeltaSeconds() const;
+	float GetPhysicsDeltaSeconds() const;
 
 	void QueueContainerSort(ObjectID containerID);
 	void FlushContainerUpdate();
@@ -52,11 +55,6 @@ protected:
 	void         RegisterNode(Node* node);
 	void         UnregisterNode(Node* node);
 	unsigned int FindAvailableNodeIndex() const;
-
-	// Physics update hook:
-	// 1) SceneTree calls this at a fixed interval.
-	// 2) Derived scenes can override it for map-specific collision and simulation.
-	virtual void UpdatePhysics(float deltaSeconds);
 
 protected:
 	std::vector<ObjectID> m_pendingDestroyNodes;
@@ -77,7 +75,6 @@ protected:
 	// and perform raycasting in the scene.
 	RaycastSpace3D* m_raycastSpace = nullptr;
 
-	float m_deltaSeconds          = 0.f;
-	float m_physicsUpdateTimer    = 0.f;
-	float m_physicsUpdateInterval = 1.f / 60.f;
+	float m_deltaSeconds = 0.f;
+	float m_physicsDeltaSeconds = 0.f;
 };

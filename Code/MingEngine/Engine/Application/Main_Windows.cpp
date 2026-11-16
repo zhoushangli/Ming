@@ -1,6 +1,11 @@
 #include "MingEngine/Engine/Application/Main_Windows.hpp"
 
 #include "MingEngine/Engine/Application/App.hpp"
+#include "MingEngine/Core/ErrorWarningAssert.hpp"
+#include "MingEngine/Core/Object/ClassDatabase.hpp"
+#include "MingEngine/Engine/Script/CSharpScriptGenerator.hpp"
+#include "MingEngine/Scene/RegisterAllTypes.hpp"
+#include "MingEngine/Scene/GUI/ThemeDatabase.hpp"
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -24,15 +29,19 @@ std::filesystem::path GetExecutableDirectory()
 
 bool TryParseRunConfig(MingRunConfig& outConfig, int argc, wchar_t** argv)
 {
+	bool hasEditor = false;
+	bool hasGame = false;
 	for (int i = 1; i < argc; ++i)
 	{
 		std::wstring const arg = argv[i];
 		if (arg == L"--game")
 		{
+			hasGame = true;
 			outConfig.mode = MingRunMode::Game;
 		}
 		else if (arg == L"--editor")
 		{
+			hasEditor = true;
 			outConfig.mode = MingRunMode::Editor;
 		}
 		else if (arg == L"--project" && i + 1 < argc)
@@ -82,9 +91,14 @@ bool TryParseRunConfig(MingRunConfig& outConfig, int argc, wchar_t** argv)
 		}
 	}
 
+	if (hasEditor && hasGame)
+	{
+		return false;
+	}
+
 	if (outConfig.projectPath.empty())
 	{
-		if (outConfig.mode == MingRunMode::Game)
+		if (hasEditor || hasGame)
 		{
 			return false;
 		}
@@ -141,7 +155,22 @@ int Main(int argc, wchar_t** wc_argv)
 		return EXIT_FAILURE;
 	}
 
-	return MingEngine::Run(config);
+	if (config.generateCSharpBindings)
+	{
+		ClassDatabase::Startup();
+		RegisterAllTypes();
+		CSharpScriptGenerator generator;
+		bool const generated = generator.GenerateCSharpBindings(config.csharpBindingsOutputDirectory);
+		ThemeDatabase::Shutdown();
+		ClassDatabase::Shutdown();
+		return generated ? EXIT_SUCCESS : EXIT_FAILURE;
+	}
+
+	App app(config);
+	app.Startup();
+	app.RunMainLoop();
+	app.Shutdown();
+	return app.GetExitCode();
 }
 }
 

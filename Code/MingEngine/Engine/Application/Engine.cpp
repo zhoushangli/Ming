@@ -12,6 +12,8 @@ Engine* g_engine = nullptr;
 Engine::Engine(EngineConfig config) : m_config(config)
 {
 	g_engine = this;
+	m_sceneSystem = new SceneSystem();
+	m_physicsServer = new PhysicsServer();
 
 	if (config.m_eventSystemConfig.m_isEnable)
 	{
@@ -57,6 +59,11 @@ Engine::Engine(EngineConfig config) : m_config(config)
 
 Engine::~Engine()
 {
+	delete m_sceneSystem;
+	m_sceneSystem = nullptr;
+	delete m_physicsServer;
+	m_physicsServer = nullptr;
+
 	ClassDatabase::ClearGlobalObjects();
 
 	MemDelete(m_audioSystem);
@@ -128,10 +135,18 @@ void Engine::Startup()
 	{
 		m_networkSystem->Startup();
 	}
+
+	if (m_windowSystem != nullptr && m_renderServer != nullptr && m_inputSystem != nullptr && m_eventSystem != nullptr)
+	{
+		m_sceneSystem->Startup();
+	}
 }
 
 void Engine::Shutdown()
 {
+	m_sceneSystem->Shutdown();
+	m_physicsServer->Shutdown();
+
 	if (m_networkSystem != nullptr)
 	{
 		m_networkSystem->Shutdown();
@@ -218,6 +233,8 @@ void Engine::BeginFrame()
 
 void Engine::EndFrame()
 {
+	m_sceneSystem->EndFrame();
+
 	if (m_networkSystem != nullptr)
 	{
 		m_networkSystem->EndFrame();
@@ -256,5 +273,18 @@ void Engine::EndFrame()
 	if (m_eventSystem != nullptr)
 	{
 		m_eventSystem->EndFrame();
+	}
+}
+
+void Engine::Update(float deltaSeconds)
+{
+	m_sceneSystem->Process(deltaSeconds);
+}
+
+void Engine::Render() const
+{
+	if (m_renderServer != nullptr)
+	{
+		m_renderServer->Render();
 	}
 }

@@ -22,7 +22,7 @@ public:
 
 	static EditorCamera* Get();
 
-	void OnProcess(float deltaSeconds) override;
+	void _Process(float deltaSeconds) override;
 
 	Camera3D* GetCamera() const;
 	void      ResetView();

@@ -26,9 +26,13 @@
       <description>Gets the raycast space owned by this scene tree.</description>
       <returns>The raycast space. Its ray query methods are not exposed to C# yet.</returns>
     </method>
+    <method name="GetPhysicsDeltaSeconds">
+      <description>Gets the time step from the most recent physics callback pass.</description>
+      <returns>The fixed time step passed to Node._PhysicsProcess, in seconds.</returns>
+    </method>
     <method name="GetDeltaSeconds">
       <description>Gets the time step from the most recent scene update.</description>
-      <returns>The update time in seconds. This is the same time step passed to Node.OnProcess.</returns>
+      <returns>The update time in seconds. This is the same time step passed to Node._Process.</returns>
     </method>
   </methods>
 </class>

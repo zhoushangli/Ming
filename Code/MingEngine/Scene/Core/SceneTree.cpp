@@ -73,6 +73,7 @@ void SceneTree::BindMethods()
 	ClassDatabase::BindMethod("GetWorldCamera", &SceneTree::GetWorldCamera, {});
 	ClassDatabase::BindMethod("GetRaycastSpace", &SceneTree::GetRaycastSpace, {});
 	ClassDatabase::BindMethod("GetDeltaSeconds", &SceneTree::GetDeltaSeconds, {});
+	ClassDatabase::BindMethod("GetPhysicsDeltaSeconds", &SceneTree::GetPhysicsDeltaSeconds, {});
 }
 
 void SceneTree::QueueDestroyNode(Node* node)
@@ -169,15 +170,9 @@ void SceneTree::FlushTransformChangedNodes()
 	}
 }
 
-void SceneTree::UpdateScene(float deltaSeconds)
+void SceneTree::Process(float deltaSeconds)
 {
 	m_deltaSeconds = deltaSeconds;
-	m_physicsUpdateTimer += deltaSeconds;
-	while (m_physicsUpdateTimer >= m_physicsUpdateInterval)
-	{
-		UpdatePhysics(m_physicsUpdateInterval);
-		m_physicsUpdateTimer -= m_physicsUpdateInterval;
-	}
 
 	std::vector<Node*> registeredNodes = m_registeredNodes;
 	for (Node* node : registeredNodes)
@@ -193,7 +188,6 @@ void SceneTree::UpdateScene(float deltaSeconds)
 		}
 	}
 
-	UpdatePhysics(deltaSeconds);
 	FlushTransformChangedNodes();
 	FlushContainerUpdate();
 }
@@ -212,6 +206,9 @@ Node* SceneTree::GetScene() const
 void SceneTree::ClearScene()
 {
 	m_root->CancelGuiDrag();
+	MemDelete(m_pendingScene);
+	m_pendingScene = nullptr;
+
 	Node* sceneRoot = GetScene();
 	if (sceneRoot == nullptr)
 	{
@@ -240,7 +237,6 @@ void SceneTree::ChangeScene(Node* newSceneNode)
 		return;
 	}
 
-	MemDelete(m_pendingScene);
 	ClearScene();
 
 	m_pendingScene = newSceneNode;
@@ -355,6 +351,35 @@ unsigned int SceneTree::FindAvailableNodeIndex() const
 	return (unsigned int)m_registeredNodes.size();
 }
 
-void SceneTree::UpdatePhysics([[maybe_unused]] float deltaSeconds) {
+void SceneTree::PhysicsProcess(float fixedDeltaSeconds)
+{
+	m_physicsDeltaSeconds = fixedDeltaSeconds;
+	FlushPendingNode();
 
-};
+	std::vector<ObjectID> registeredNodes;
+	for (Node* node : m_registeredNodes)
+	{
+		if (node != nullptr)
+		{
+			registeredNodes.push_back(node->GetObjectID());
+		}
+	}
+
+	for (ObjectID nodeID : registeredNodes)
+	{
+		Node* node = ObjectDatabase::GetInstance<Node>(nodeID);
+		if (node != nullptr && node->GetSceneTree() == this && !node->IsQueuedForDeletion()
+			&& node->m_data.m_enablePhysicsProcess)
+		{
+			node->Notification(Node::Notification_PhysicsProcess);
+		}
+	}
+
+	FlushPendingNode();
+	FlushTransformChangedNodes();
+}
+
+float SceneTree::GetPhysicsDeltaSeconds() const
+{
+	return m_physicsDeltaSeconds;
+}

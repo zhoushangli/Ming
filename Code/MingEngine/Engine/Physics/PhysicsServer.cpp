@@ -13,24 +13,28 @@
 #define JPH_USE_F16C
 #define JPH_USE_FMADD
 
-#include <Jolt/Jolt.h>
-#include <Jolt/RegisterTypes.h>
-#include <Jolt/Core/Factory.h>
-#include <Jolt/Core/JobSystemSingleThreaded.h>
-#include <Jolt/Core/TempAllocator.h>
-#include <Jolt/Physics/PhysicsSystem.h>
-#include <Jolt/Physics/Body/BodyCreationSettings.h>
-#include <Jolt/Physics/Collision/BroadPhase/BroadPhaseLayerInterfaceTable.h>
-#include <Jolt/Physics/Collision/BroadPhase/ObjectVsBroadPhaseLayerFilterTable.h>
-#include <Jolt/Physics/Collision/ObjectLayerPairFilterTable.h>
-#include <Jolt/Physics/Collision/Shape/BoxShape.h>
-#include <Jolt/Physics/Collision/Shape/SphereShape.h>
+#include "ThirdParty/JoltPhysics/Jolt/Jolt.h"
+#include "ThirdParty/JoltPhysics/Jolt/RegisterTypes.h"
+#include "ThirdParty/JoltPhysics/Jolt/Core/Factory.h"
+#include "ThirdParty/JoltPhysics/Jolt/Core/JobSystemSingleThreaded.h"
+#include "ThirdParty/JoltPhysics/Jolt/Core/TempAllocator.h"
+#include "ThirdParty/JoltPhysics/Jolt/Physics/PhysicsSystem.h"
+#include "ThirdParty/JoltPhysics/Jolt/Physics/Body/BodyCreationSettings.h"
+#include "ThirdParty/JoltPhysics/Jolt/Physics/Collision/BroadPhase/BroadPhaseLayerInterfaceTable.h"
+#include "ThirdParty/JoltPhysics/Jolt/Physics/Collision/BroadPhase/ObjectVsBroadPhaseLayerFilterTable.h"
+#include "ThirdParty/JoltPhysics/Jolt/Physics/Collision/ObjectLayerPairFilterTable.h"
+#include "ThirdParty/JoltPhysics/Jolt/Physics/Collision/Shape/BoxShape.h"
+#include "ThirdParty/JoltPhysics/Jolt/Physics/Collision/Shape/SphereShape.h"
 
 #include <cstdarg>
 #include <cmath>
 #include <cstdio>
 
+#ifdef _DEBUG
 #pragma comment(lib, "ThirdParty/JoltPhysics/Lib/x64/Debug/Jolt.lib")
+#else
+#pragma comment(lib, "ThirdParty/JoltPhysics/Lib/x64/Release/Jolt.lib")
+#endif
 
 namespace
 {

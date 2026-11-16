@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
+    <Filter Include="Engine\Scene">
+      <UniqueIdentifier>{2cb85475-de5b-4af6-8897-13a774915952}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Editor">
       <UniqueIdentifier>{C9BF96AB-D8A3-49B8-B20B-4680B90E7402}</UniqueIdentifier>
     </Filter>
@@ -1436,6 +1439,41 @@
     </ClCompile>
     <ClInclude Include="Engine\Physics\PhysicsServer.hpp">
       <Filter>Engine\Physics</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Engine\Application\AppState.cpp">
+      <Filter>Engine\Application</Filter>
+    </ClCompile>
+    <ClInclude Include="Engine\Application\AppState.hpp">
+      <Filter>Engine\Application</Filter>
+    </ClInclude>
+    <ClCompile Include="Engine\Application\ProjectManagerState.cpp">
+      <Filter>Engine\Application</Filter>
+    </ClCompile>
+    <ClInclude Include="Engine\Application\ProjectManagerState.hpp">
+      <Filter>Engine\Application</Filter>
+    </ClInclude>
+    <ClCompile Include="Engine\Application\EditorState.cpp">
+      <Filter>Engine\Application</Filter>
+    </ClCompile>
+    <ClInclude Include="Engine\Application\EditorState.hpp">
+      <Filter>Engine\Application</Filter>
+    </ClInclude>
+    <ClCompile Include="Engine\Application\GameState.cpp">
+      <Filter>Engine\Application</Filter>
+    </ClCompile>
+    <ClInclude Include="Engine\Application\GameState.hpp">
+      <Filter>Engine\Application</Filter>
+    </ClInclude>
+    <ClCompile Include="Engine\Scene\SceneSystem.cpp">
+      <Filter>Engine\Scene</Filter>
+    </ClCompile>
+    <ClInclude Include="Engine\Scene\SceneSystem.hpp">
+      <Filter>Engine\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Application\MingRunConfig.hpp">
+      <Filter>Engine\Application</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

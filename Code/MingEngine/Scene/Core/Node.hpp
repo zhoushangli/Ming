@@ -32,7 +32,8 @@ public:
 		Notification_Process         = 6,
 		Notification_ChildrenChanged = 7,
 		Notification_Parented        = 8,
-		Notification_Unparented      = 9
+		Notification_Unparented      = 9,
+		Notification_PhysicsProcess  = 10
 	};
 
 protected:
@@ -51,6 +52,7 @@ protected:
 		// 2) enableProcess will be set to true when Notification_Ready is called
 		bool m_readyPending  = true;
 		bool m_enableProcess = false;
+		bool m_enablePhysicsProcess = false;
 	};
 
 public:
@@ -67,11 +69,13 @@ public:
 	bool                      GetSerializable() const;
 	bool                      GetReady() const;
 	bool                      GetProcess() const;
+	bool                      GetPhysicsProcess() const;
 
 	void SetName(String const& name);
 	void SetSerializable(bool isSerializable);
 	void SetReady(bool isReady);
 	void SetProcess(bool isProcess);
+	void SetPhysicsProcess(bool isPhysicsProcess);
 
 	// Currently GetNode only supports child
 	// it do not support ../ or ..
@@ -102,18 +106,20 @@ protected:
 	String EnsureUniqueName(String const& requestedName) const;
 
 	// Lifecycle callbacks:
-	// 1) OnEnterTree is called after this node receives a SceneTree.
-	// 2) OnExitTree is called before this node unregisters from its SceneTree.
-	// 3) OnReady is called after this node and its children enter a SceneTree.
-	// 4) OnProcess is called once per frame by SceneTree::UpdateScene.
+	// 1) _EnterTree is called after this node receives a SceneTree.
+	// 2) _ExitTree is called before this node unregisters from its SceneTree.
+	// 3) _Ready is called after this node and its children enter a SceneTree.
+	// 4) _Process is called once per frame by SceneTree::Process.
+	// 5) _PhysicsProcess is called at a fixed interval while the game is running.
 	// For c++ side, please DO NOT USE THIS, they are ONLY for script side
-	// this is because these OnXXX will overrider their parent class
+	// this is because these callbacks override their parent class
 	// but c++ side is normally pipeline function, which we normally do not want to override
 	// so for c++ side, we should use OnNotification instead, which will call along the inherit chain
-	virtual void OnEnterTree();
-	virtual void OnExitTree();
-	virtual void OnReady();
-	virtual void OnProcess(float deltaSeconds);
+	virtual void _EnterTree();
+	virtual void _ExitTree();
+	virtual void _Ready();
+	virtual void _Process(float deltaSeconds);
+	virtual void _PhysicsProcess(float deltaSeconds);
 
 	// Immediate hierarchy operations:
 	// 1) Used by Node and SceneTree after mutation has been validated.

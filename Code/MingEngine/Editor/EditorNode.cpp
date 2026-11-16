@@ -310,7 +310,7 @@ void EditorNode::OnMouseUp(int keyCode, [[maybe_unused]] Vector2 screenPos)
 	}
 }
 
-void EditorNode::OnReady()
+void EditorNode::_Ready()
 {
 	m_uiContext.m_sceneTree  = GetSceneTree();
 	m_uiContext.m_selection  = &m_selection;
@@ -334,7 +334,7 @@ void EditorNode::OnReady()
 		});
 }
 
-void EditorNode::OnProcess([[maybe_unused]] float deltaSeconds)
+void EditorNode::_Process([[maybe_unused]] float deltaSeconds)
 {
 	UpdateCSharpBuild();
 

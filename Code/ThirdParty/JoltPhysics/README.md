@@ -1,17 +1,27 @@
 # Ming dependency layout
 
-This directory contains Jolt Physics 5.6.0 source and a prebuilt Windows x64 Debug static library.
+This directory contains Jolt Physics 5.6.0 source and prebuilt Windows x64 Debug and Release static libraries.
 
 - `Jolt/`: upstream headers and implementation sources, preserved for reference and debugging.
 - `Lib/x64/Debug/Jolt.lib`: static library linked by Ming's `PhysicsServer.cpp`.
 - `Lib/x64/Debug/Jolt.pdb`: matching library debug symbols.
+- `Lib/x64/Release/Jolt.lib`: Release static library using `/MD` and disabled STL iterator debugging.
+- `Build/CMakeLists.txt`: Ming's minimal MSVC library build using the retained sources, with compute backends disabled.
 - `LICENSE`: upstream MIT license.
 
-The build scripts, examples, tests, assets, documentation sources, and repository maintenance files have been removed. Relative links in the original README below may point to files that are no longer included. See the [upstream version](https://github.com/jrouwe/JoltPhysics/tree/v5.6.0) for the complete repository and build instructions.
+The upstream build scripts, examples, tests, assets, documentation sources, and repository maintenance files have been removed. Relative links in the original README below may point to files that are no longer included. See the [upstream version](https://github.com/jrouwe/JoltPhysics/tree/v5.6.0) for the complete repository and build instructions.
 
 The supplied library uses MSVC v143, `/MDd`, AVX2, single-precision positions, and the default Jolt allocator. Debug rendering, profiling, object streams, and floating-point exception support are enabled; compute backends and interprocedural optimization are disabled. Matching Jolt feature macros are defined in Ming's `PhysicsServer.cpp`.
 
-Only a Debug library is supplied. Build a matching Release library from the upstream source before adding Release linkage; keep its files separately in `Lib/x64/Release/`.
+`PhysicsServer.cpp` selects the Debug or Release library using `_DEBUG`. Both libraries use the same feature macros listed above; their runtime libraries and iterator debugging must match the engine configuration.
+
+To rebuild the Release library with Visual Studio 2026's bundled CMake and the v143 toolset, run from the repository root in PowerShell:
+
+```powershell
+$joltCmake = 'C:/Program Files/Microsoft Visual Studio/18/Community/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/bin/cmake.exe'
+& $joltCmake -S Code/ThirdParty/JoltPhysics/Build -B Temporary/JoltBuild -G 'Visual Studio 18 2026' -A x64 -T v143
+& $joltCmake --build Temporary/JoltBuild --config Release --parallel 6
+```
 
 ---
 

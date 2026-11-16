@@ -93,7 +93,7 @@ void ProgressBar::SetIndeterminate(bool enabled)
 	QueueRedraw();
 }
 
-void ProgressBar::OnProcess(float deltaSeconds)
+void ProgressBar::_Process(float deltaSeconds)
 {
 	if (m_indeterminate && IsVisibleInHierarchy())
 	{

@@ -41,7 +41,7 @@ EditorCamera* EditorCamera::Get()
 	return s_instance;
 }
 
-void EditorCamera::OnProcess(float deltaSeconds)
+void EditorCamera::_Process(float deltaSeconds)
 {
 	// PCG editor commands will move to a scene-local world/editor manager.
 
