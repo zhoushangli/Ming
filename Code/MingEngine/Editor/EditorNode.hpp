@@ -62,7 +62,7 @@ private:
 	};
 
 public:
-	explicit EditorNode(float editorScale = 1.25f);
+	explicit EditorNode(float editorScale = 1.25f, std::function<void()> pollGameProcess = {});
 	~EditorNode() override;
 
 	Ref<Theme> GetEditorTheme() const { return m_editorTheme; }
@@ -129,7 +129,7 @@ protected:
 
 private:
 	void       _Ready() override;
-	void       _Process(float deltaSeconds) override;
+	void       OnNotification(int notification);
 	bool       CreateScene(VirtualPath const& virtualPath, std::string const& rootName);
 	void       RenderUnsavedScenePopup();
 	void       ExecutePendingSceneAction();
@@ -170,6 +170,7 @@ private:
 	int32_t m_buildExitCode = -1;
 	std::chrono::steady_clock::time_point m_buildStarted;
 	std::function<void()>                            m_afterClose;
+	std::function<void()>                            m_pollGameProcess;
 	std::mutex                                       m_messageMutex;
 	std::vector<std::pair<std::string, std::string>> m_messages;
 };

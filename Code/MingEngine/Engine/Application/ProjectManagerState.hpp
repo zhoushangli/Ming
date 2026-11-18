@@ -17,7 +17,6 @@ class ProjectManagerState : public AppState
 {
 public:
 	bool Enter(App& app) override;
-	void Update(App& app, float deltaSeconds) override;
 	void Exit(App& app) override;
 
 	static bool CreateEmptyProject(std::filesystem::path const& directory, std::string& error);
@@ -26,7 +25,8 @@ public:
 	static void RememberProject(std::filesystem::path const& directory);
 
 private:
-	void DrawProjectManager();
+	void CreateProjectManager();
+	void UpdateProjectManager();
 	void OpenProject();
 	bool OpenProject(std::filesystem::path const& directory);
 	void NewProject();

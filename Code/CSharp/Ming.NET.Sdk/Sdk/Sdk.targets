@@ -2,7 +2,7 @@
   <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
 
   <PropertyGroup>
-    <MingApiDirectory Condition="'$(MingApiDirectory)' == ''">$(MSBuildThisFileDirectory)../../Api/</MingApiDirectory>
+    <MingApiDirectory Condition="'$(MingApiDirectory)' == ''">$(MSBuildThisFileDirectory)../Api/</MingApiDirectory>
     <AssemblySearchPaths>{HintPathFromItem};$(AssemblySearchPaths)</AssemblySearchPaths>
   </PropertyGroup>
 
@@ -21,6 +21,9 @@
   </PropertyGroup>
 
   <Target Name="ValidateMingApi" BeforeTargets="PrepareForBuild">
+    <Error
+      Condition="!Exists('$(MSBuildThisFileDirectory)../Analyzers/Ming.SourceGenerators.dll')"
+      Text="Ming.SourceGenerators.dll was not found in the Ming SDK package." />
     <Error
       Condition="!Exists('$(MingApiDirectory)/MingSharp.dll')"
       Text="MingSharp.dll was not found in '$(MingApiDirectory)'." />

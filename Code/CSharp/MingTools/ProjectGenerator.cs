@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Reflection;
 using System.Text;
 using System.Xml.Linq;
 
@@ -7,7 +8,7 @@ namespace MingTools;
 
 public static class ProjectGenerator
 {
-    public static void EnsureProjectSolution(string projectDirectory, string sdkDirectory)
+    public static void EnsureProjectSolution(string projectDirectory)
     {
         // 1) Validate the input paths
         if (string.IsNullOrWhiteSpace(projectDirectory)
@@ -18,16 +19,7 @@ public static class ProjectGenerator
                 nameof(projectDirectory));
         }
 
-        if (string.IsNullOrWhiteSpace(sdkDirectory)
-            || !Path.IsPathFullyQualified(sdkDirectory))
-        {
-            throw new ArgumentException(
-                "SDK directory must be an absolute path.",
-                nameof(sdkDirectory));
-        }
-
         projectDirectory = Path.GetFullPath(projectDirectory);
-        sdkDirectory = Path.GetFullPath(sdkDirectory);
 
         if (!Directory.Exists(projectDirectory))
         {
@@ -35,37 +27,19 @@ public static class ProjectGenerator
                 $"Project directory does not exist: {projectDirectory}");
         }
 
-        // 2) Validate the SDK files
-        string sdkPropsPath = Path.Combine(sdkDirectory, "Sdk.props");
-        string sdkTargetsPath = Path.Combine(sdkDirectory, "Sdk.targets");
-
-        if (!File.Exists(sdkPropsPath))
-        {
-            throw new FileNotFoundException(
-                "Ming SDK props file was not found.",
-                sdkPropsPath);
-        }
-
-        if (!File.Exists(sdkTargetsPath))
-        {
-            throw new FileNotFoundException(
-                "Ming SDK targets file was not found.",
-                sdkTargetsPath);
-        }
-
-        // 3) Create the missing project file
+        // 2) Create the missing project file
         string projectPath = Path.Combine(projectDirectory, "Game.csproj");
 
         if (!File.Exists(projectPath))
         {
-            GenerateGameProject(projectPath, sdkDirectory);
+            GenerateGameProject(projectPath);
         }
         else if (XDocument.Load(projectPath).Descendants("TargetFramework").SingleOrDefault()?.Value != "net9.0")
         {
             throw new InvalidOperationException("Game.csproj must target net9.0. Update the project explicitly before building.");
         }
 
-        // 4) Create the missing solution file
+        // 3) Create the missing solution file
         string solutionPath = Path.Combine(projectDirectory, "Game.sln");
 
         if (!File.Exists(solutionPath))
@@ -74,37 +48,21 @@ public static class ProjectGenerator
         }
     }
 
-    private static void GenerateGameProject(
-    string projectPath,
-    string sdkDirectory)
+    private static void GenerateGameProject(string projectPath)
     {
-        // 1) Create the project XML
+        // 1) Create the project XML using the SDK identity embedded at build time
+        var metadata = typeof(ProjectGenerator).Assembly
+            .GetCustomAttributes<AssemblyMetadataAttribute>()
+            .ToDictionary(attribute => attribute.Key, attribute => attribute.Value);
+        string sdk = $"{metadata["MingSdkPackageId"]}/{metadata["MingSdkPackageVersion"]}";
         var document = new XDocument(
             new XElement("Project",
-                new XElement("PropertyGroup",
-                    new XElement("MingSdkDirectory",
-                        new XAttribute(
-                            "Condition",
-                            "'$(MingSdkDirectory)' == ''"),
-                        sdkDirectory)),
-
-                new XElement("Import",
-                    new XAttribute(
-                        "Project",
-                        "$(MingSdkDirectory)/Sdk.props")),
-
+                new XAttribute("Sdk", sdk),
                 new XElement("PropertyGroup",
                     new XElement("TargetFramework", "net9.0"),
                     new XElement("OutputType", "Library"),
                     new XElement("AssemblyName", "Game"),
-                    new XElement("RootNamespace", "Game")),
-
-                new XElement("Import",
-                    new XAttribute(
-                        "Project",
-                        "$(MingSdkDirectory)/Sdk.targets"))
-            )
-        );
+                    new XElement("RootNamespace", "Game"))));
 
         // 2) Write the new file without overwriting an existing file
         using var stream = new FileStream(

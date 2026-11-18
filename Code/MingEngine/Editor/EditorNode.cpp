@@ -154,7 +154,8 @@ void EditorSelection::Clear()
 	SetSelected(ObjectID::Invalid);
 }
 
-EditorNode::EditorNode(float editorScale) : m_editorScale(editorScale)
+EditorNode::EditorNode(float editorScale, std::function<void()> pollGameProcess)
+	: m_editorScale(editorScale), m_pollGameProcess(std::move(pollGameProcess))
 {
 	s_instance = this;
 	SetSerializable(false);
@@ -334,36 +335,53 @@ void EditorNode::_Ready()
 		});
 }
 
-void EditorNode::_Process([[maybe_unused]] float deltaSeconds)
+void EditorNode::OnNotification(int notification)
 {
-	UpdateCSharpBuild();
+	switch (notification)
+	{
+	case Notification_Process:
+	{
+		if (m_pollGameProcess)
+		{
+			m_pollGameProcess();
+		}
 
-	std::vector<std::pair<std::string, std::string>> messages;
-	{
-		std::lock_guard<std::mutex> lock(m_messageMutex);
-		messages.swap(m_messages);
-	}
-	for (auto const& message : messages)
-	{
-		OutputPanel::Level const level = message.first == "Info"      ? OutputPanel::Level::Info
-										 : message.first == "Warning" ? OutputPanel::Level::Warning
-																	  : OutputPanel::Level::Error;
-		m_editorUI->GetPanel<OutputPanel>().AddMessage({ "", level, message.second });
-		m_editorUI->SetStatusMessage(message.second);
-	}
-	m_editorUI->Render(m_uiContext);
-	RenderUnsavedScenePopup();
-	if (m_resumePending && m_playDelayFrames > 0)
-	{
-		--m_playDelayFrames;
-	}
-	else if (m_resumePending)
-	{
-		m_resumePending = false;
-		ExecutePendingSceneAction();
-	}
+		if (!g_engine->m_inputSystem->IsWindowFocused())
+		{
+			g_engine->m_inputSystem->SetCursorMode(CursorMode::POINTER);
+		}
 
-	m_editorUI->FinishInput(m_uiContext);
+		UpdateCSharpBuild();
+
+		std::vector<std::pair<std::string, std::string>> messages;
+		{
+			std::lock_guard<std::mutex> lock(m_messageMutex);
+			messages.swap(m_messages);
+		}
+		for (auto const& message : messages)
+		{
+			OutputPanel::Level const level = message.first == "Info"      ? OutputPanel::Level::Info
+											 : message.first == "Warning" ? OutputPanel::Level::Warning
+																		  : OutputPanel::Level::Error;
+			m_editorUI->GetPanel<OutputPanel>().AddMessage({ "", level, message.second });
+			m_editorUI->SetStatusMessage(message.second);
+		}
+		m_editorUI->Render(m_uiContext);
+		RenderUnsavedScenePopup();
+		if (m_resumePending && m_playDelayFrames > 0)
+		{
+			--m_playDelayFrames;
+		}
+		else if (m_resumePending)
+		{
+			m_resumePending = false;
+			ExecutePendingSceneAction();
+		}
+
+		m_editorUI->FinishInput(m_uiContext);
+		break;
+	}
+	}
 }
 
 void EditorNode::RequestLoadScene(VirtualPath const& virtualPath)

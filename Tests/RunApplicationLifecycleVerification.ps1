@@ -17,16 +17,15 @@ if (-not $SkipBuild)
 $managedProject = Join-Path $verificationDirectory 'ManagedProject'
 New-Item -ItemType Directory -Force -Path $managedProject | Out-Null
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'ManagedLifecycleProbe.cs') -Destination $managedProject
-$sdkDirectory = Join-Path $workspace 'Run\MingSharp\Tool\Sdk'
+[xml]$sdkPackage = Get-Content -LiteralPath (Join-Path $workspace 'Code/CSharp/Ming.NET.Sdk/MingSdkPackage.props')
+$sdkIdentity = "$($sdkPackage.Project.PropertyGroup.MingSdkPackageId)/$($sdkPackage.Project.PropertyGroup.MingSdkPackageVersion)"
 @"
-<Project>
-  <Import Project="$sdkDirectory/Sdk.props" />
+<Project Sdk="$sdkIdentity">
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
     <OutputType>Library</OutputType>
     <AssemblyName>Game</AssemblyName>
   </PropertyGroup>
-  <Import Project="$sdkDirectory/Sdk.targets" />
 </Project>
 "@ | Set-Content -LiteralPath (Join-Path $managedProject 'Game.csproj') -Encoding UTF8
 dotnet build (Join-Path $managedProject 'Game.csproj') --nologo --verbosity quiet

@@ -12,6 +12,8 @@
 #include "MingEngine/Engine/Script/ScriptSystem.hpp"
 #include "MingEngine/Engine/Window/WindowSystem.hpp"
 
+#include <functional>
+
 struct EngineConfig
 {
 	EventSystemConfig    m_eventSystemConfig;
@@ -22,6 +24,7 @@ struct EngineConfig
 	AudioSystemConfig    m_audioConfig;
 	InputSystemConfig    m_inputConfig;
 	NetworkSystemConfig  m_networkConfig;
+	bool                 m_enablePhysics = false;
 };
 
 class Engine
@@ -30,9 +33,9 @@ public:
 	Engine(EngineConfig config);
 	~Engine();
 
-	void Startup();
+	bool Startup();
 	void Shutdown();
-	void Update(float deltaSeconds);
+	bool Update(float deltaSeconds, std::function<bool()> const& shouldQuit = {});
 	void Render() const;
 	void BeginFrame();
 	void EndFrame();
@@ -59,7 +62,8 @@ public:
 	TextServer*   m_textServer   = nullptr;
 
 private:
-	bool m_isEditorMode = false;
+	double m_physicsAccumulator = 0.0;
+	bool   m_isEditorMode       = false;
 };
 
 extern Engine* g_engine;

@@ -1,208 +1,210 @@
-# Ming dependency layout
+# Ming 依赖目录结构
 
-This directory contains Jolt Physics 5.6.0 source and prebuilt Windows x64 Debug and Release static libraries.
+此目录包含 Jolt Physics 5.6.0 源码，以及预编译的 Windows x64 Debug 和 Release 静态库。
 
-- `Jolt/`: upstream headers and implementation sources, preserved for reference and debugging.
-- `Lib/x64/Debug/Jolt.lib`: static library linked by Ming's `PhysicsServer.cpp`.
-- `Lib/x64/Debug/Jolt.pdb`: matching library debug symbols.
-- `Lib/x64/Release/Jolt.lib`: Release static library using `/MD` and disabled STL iterator debugging.
-- `Build/CMakeLists.txt`: Ming's minimal MSVC library build using the retained sources, with compute backends disabled.
-- `LICENSE`: upstream MIT license.
+- `Jolt/`：上游头文件和实现源码，保留用于参考和调试。
+- `Lib/x64/Debug/Jolt.lib`：Ming 的 `PhysicsServer.cpp` 链接的静态库。
+- `Lib/x64/Debug/Jolt.pdb`：与静态库匹配的调试符号。
+- `Lib/x64/Release/Jolt.lib`：使用 MSVC 14.38（VS 2022 17.8）构建的 Release 静态库，采用 `/MD` 并禁用 STL 迭代器调试。
+- `Build/CMakeLists.txt`：Ming 使用保留源码构建 MSVC 静态库的最小构建配置，禁用了计算后端。
+- `LICENSE`：上游 MIT 许可证。
 
-The upstream build scripts, examples, tests, assets, documentation sources, and repository maintenance files have been removed. Relative links in the original README below may point to files that are no longer included. See the [upstream version](https://github.com/jrouwe/JoltPhysics/tree/v5.6.0) for the complete repository and build instructions.
+上游构建脚本、示例、测试、资源、文档源码和仓库维护文件已移除。下方上游 README 译文中的相对链接可能指向未包含在此目录中的文件。完整仓库和构建说明请参阅[上游版本](https://github.com/jrouwe/JoltPhysics/tree/v5.6.0)。
 
-The supplied library uses MSVC v143, `/MDd`, AVX2, single-precision positions, and the default Jolt allocator. Debug rendering, profiling, object streams, and floating-point exception support are enabled; compute backends and interprocedural optimization are disabled. Matching Jolt feature macros are defined in Ming's `PhysicsServer.cpp`.
+随附的 Debug 静态库使用 MSVC v143、`/MDd`、AVX2、单精度位置和 Jolt 默认分配器。已启用调试渲染、性能分析、对象流和浮点异常支持；已禁用计算后端和过程间优化。对应的 Jolt 功能宏定义在 Ming 的 `PhysicsServer.cpp` 中。
 
-`PhysicsServer.cpp` selects the Debug or Release library using `_DEBUG`. Both libraries use the same feature macros listed above; their runtime libraries and iterator debugging must match the engine configuration.
+`PhysicsServer.cpp` 根据 `_DEBUG` 选择 Debug 或 Release 静态库。两个静态库使用上述相同的功能宏；其运行时库和迭代器调试设置必须与引擎配置一致。
 
-To rebuild the Release library with Visual Studio 2026's bundled CMake and the v143 toolset, run from the repository root in PowerShell:
+如需使用 Visual Studio 2026 随附的 CMake 和 VS 2022 v143 14.38 工具集重新构建 Release 静态库，请先在 VS 2022 中安装 14.38 工具集，再从仓库根目录运行以下 PowerShell 命令：
 
 ```powershell
 $joltCmake = 'C:/Program Files/Microsoft Visual Studio/18/Community/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/bin/cmake.exe'
-& $joltCmake -S Code/ThirdParty/JoltPhysics/Build -B Temporary/JoltBuild -G 'Visual Studio 18 2026' -A x64 -T v143
-& $joltCmake --build Temporary/JoltBuild --config Release --parallel 6
+& $joltCmake -S Code/ThirdParty/JoltPhysics/Build -B Temporary/JoltBuild-v143-14.38-VS2022 -G 'Visual Studio 17 2022' -A x64 -T 'v143,version=14.38.33130' '-DCMAKE_GENERATOR_INSTANCE=C:/Program Files/Microsoft Visual Studio/2022/Community'
+& $joltCmake --build Temporary/JoltBuild-v143-14.38-VS2022 --config Release --parallel 6
 ```
+
+请保持预编译 Release 静态库使用此工具集基线，以便 Ming 能够使用 MSVC 14.38 或更新版本链接。未指定版本的 `v143` 可能选择更新的编译器和 STL；生成的静态库可能依赖 `__std_search_1` 等符号，而 14.38 的运行时库不提供这些符号。
 
 ---
 
-[![CLA assistant](https://cla-assistant.io/readme/badge/jrouwe/JoltPhysics)](https://cla-assistant.io/jrouwe/JoltPhysics)
-[![Build Status](https://github.com/jrouwe/JoltPhysics/actions/workflows/build.yml/badge.svg)](https://github.com/jrouwe/JoltPhysics/actions/)
-[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=jrouwe_JoltPhysics&metric=alert_status)](https://sonarcloud.io/dashboard?id=jrouwe_JoltPhysics)
-[![Bugs](https://sonarcloud.io/api/project_badges/measure?project=jrouwe_JoltPhysics&metric=bugs)](https://sonarcloud.io/dashboard?id=jrouwe_JoltPhysics)
-[![Code Smells](https://sonarcloud.io/api/project_badges/measure?project=jrouwe_JoltPhysics&metric=code_smells)](https://sonarcloud.io/dashboard?id=jrouwe_JoltPhysics)
-[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=jrouwe_JoltPhysics&metric=coverage)](https://sonarcloud.io/dashboard?id=jrouwe_JoltPhysics)
+[![CLA 签署助手](https://cla-assistant.io/readme/badge/jrouwe/JoltPhysics)](https://cla-assistant.io/jrouwe/JoltPhysics)
+[![构建状态](https://github.com/jrouwe/JoltPhysics/actions/workflows/build.yml/badge.svg)](https://github.com/jrouwe/JoltPhysics/actions/)
+[![质量门禁状态](https://sonarcloud.io/api/project_badges/measure?project=jrouwe_JoltPhysics&metric=alert_status)](https://sonarcloud.io/dashboard?id=jrouwe_JoltPhysics)
+[![缺陷](https://sonarcloud.io/api/project_badges/measure?project=jrouwe_JoltPhysics&metric=bugs)](https://sonarcloud.io/dashboard?id=jrouwe_JoltPhysics)
+[![代码异味](https://sonarcloud.io/api/project_badges/measure?project=jrouwe_JoltPhysics&metric=code_smells)](https://sonarcloud.io/dashboard?id=jrouwe_JoltPhysics)
+[![覆盖率](https://sonarcloud.io/api/project_badges/measure?project=jrouwe_JoltPhysics&metric=coverage)](https://sonarcloud.io/dashboard?id=jrouwe_JoltPhysics)
 
 # Jolt Physics
 
-A multi core friendly rigid body physics and collision detection library. Suitable for games and VR applications. Used by Horizon Forbidden West and Death Stranding 2: On the Beach.
+一个适合多核并行的刚体物理与碰撞检测库，适用于游戏和虚拟现实应用。《地平线：西之绝境》和《死亡搁浅 2：冥滩之上》使用了此库。
 
-[![Horizon Forbidden West Cover Art](https://jrouwe.nl/jolt/Horizon_Forbidden_West.png)](https://www.playstation.com/en-us/games/horizon-forbidden-west/)
-[![Death Stranding 2 Cover Art](https://jrouwe.nl/jolt/Death_Stranding_2.png)](https://www.playstation.com/en-us/games/death-stranding-2-on-the-beach/)
+[![《地平线：西之绝境》封面](https://jrouwe.nl/jolt/Horizon_Forbidden_West.png)](https://www.playstation.com/en-us/games/horizon-forbidden-west/)
+[![《死亡搁浅 2》封面](https://jrouwe.nl/jolt/Death_Stranding_2.png)](https://www.playstation.com/en-us/games/death-stranding-2-on-the-beach/)
 
-|[![Ragdoll Pile](https://img.youtube.com/vi/pwyCW0yNKMA/hqdefault.jpg)](https://www.youtube.com/watch?v=pwyCW0yNKMA)|
+|[![布娃娃堆叠](https://img.youtube.com/vi/pwyCW0yNKMA/hqdefault.jpg)](https://www.youtube.com/watch?v=pwyCW0yNKMA)|
 |:-|
-|*A YouTube video showing a ragdoll pile simulated with Jolt Physics.*|
+|*展示使用 Jolt Physics 模拟布娃娃堆叠的 YouTube 视频。*|
 
-For more demos and [videos](https://www.youtube.com/watch?v=pwyCW0yNKMA&list=PLYXVwtOr1CBxbA50jVg2dKUQvHW_5OOom) go to the [Samples](Docs/Samples.md) section.
+更多演示和[视频](https://www.youtube.com/watch?v=pwyCW0yNKMA&list=PLYXVwtOr1CBxbA50jVg2dKUQvHW_5OOom)请参阅[示例](Docs/Samples.md)章节。
 
-## Design considerations
+## 设计考量
 
-Why create yet another physics engine? Firstly, it has been a personal learning project. Secondly, I wanted to address some issues that I had with existing physics engines:
+为什么还要创建一个物理引擎？首先，这是作者的个人学习项目。其次，作者希望解决使用现有物理引擎时遇到的一些问题：
 
-* Games do more than simulating physics. These things happen across multiple threads. We emphasize on concurrently accessing physics data outside of the main simulation update:
-	* Sections of the simulation can be loaded / unloaded in the background. We prepare a batch of physics bodies on a background thread without locking or affecting the simulation. We insert the batch into the simulation with a minimal impact on performance.
-	* Collision queries can run parallel to adding / removing or updating a body. If a change to a body happened on the same thread, the change will be immediately visible. If the change happened on another thread, the query will see a consistent before or after state. An alternative would be to have a read and write version of the world. This prevents changes from being visible immediately, so we avoid this.
-	* Collision queries can run parallel to the main physics simulation. We do a coarse check (broad phase query) before the simulation step and do fine checks (narrow phase query) in the background. This way, long running processes (like navigation mesh generation) can be spread out across multiple frames.
-* Accidental wake up of bodies cause performance problems when loading / unloading content. Therefore, bodies will not automatically wake up when created. Neighboring bodies will not be woken up when bodies are removed. This can be triggered manually if desired.
-* The simulation runs deterministically. You can replicate a simulation to a remote client by merely replicating the inputs to the simulation. Read the [Deterministic Simulation](https://jrouwe.github.io/JoltPhysics/#deterministic-simulation) section to understand the limits.
-* We try to simulate behavior of rigid bodies in the real world but make approximations. Therefore, this library should mainly be used for games or VR simulations.
+* 游戏除了物理模拟，还需要在多个线程中执行其他任务。因此，本库重视在主要模拟更新之外并发访问物理数据的能力：
+    * 可以在后台加载或卸载部分模拟内容。在后台线程中批量准备物理体，无需加锁，也不会影响模拟；随后以尽可能小的性能开销将它们批量加入模拟。
+    * 碰撞查询可以与物理体的添加、移除或更新并行执行。同一线程对物理体所做的修改会立即对查询可见；其他线程的修改则会让查询看到修改前或修改后的一致状态。另一种方案是分别维护世界的读版本和写版本，但这会使修改无法立即可见，因此本库未采用这种方式。
+    * 碰撞查询可以与主要物理模拟并行执行。在模拟步骤之前进行粗略检测（宽阶段查询），然后在后台进行精细检测（窄阶段查询）。这样，导航网格生成等耗时任务就可以分散到多帧执行。
+* 加载或卸载内容时，意外唤醒物理体会造成性能问题。因此，新建物理体不会自动将其唤醒，移除物理体也不会唤醒相邻物理体。如有需要，可以手动触发唤醒。
+* 模拟具有确定性。只需复制模拟输入，就能在远程客户端重现模拟。有关限制，请阅读[确定性模拟](https://jrouwe.github.io/JoltPhysics/#deterministic-simulation)章节。
+* 本库尝试模拟现实世界中的刚体行为，但会进行近似处理，因此主要面向游戏或虚拟现实模拟。
 
-## Features
+## 功能特性
 
-* Simulation of rigid bodies of various shapes using continuous collision detection:
-	* Sphere
-	* Box
-	* Capsule
-	* Tapered-capsule
-	* Cylinder
-	* Tapered-cylinder
-	* Convex hull
-	* Plane
-	* Compound
-	* Mesh (triangle)
-	* Terrain (height field)
-* Simulation of constraints between bodies:
-	* Fixed
-	* Point
-	* Distance (including springs)
-	* Hinge
-	* Slider (also called prismatic)
-	* Cone
-	* Rack and pinion
-	* Gear
-	* Pulley
-	* Smooth spline paths
-	* Swing-twist (for humanoid shoulders)
-	* 6 DOF
-* Motors to drive the constraints.
-* Collision detection:
-	* Casting rays.
-	* Testing shapes vs shapes.
-	* Casting a shape vs another shape.
-	* Broadphase only tests to quickly determine which objects may intersect.
-* Sensors (trigger volumes).
-* Animated ragdolls:
-	* Hard keying (kinematic only rigid bodies).
-	* Soft keying (setting velocities on dynamic rigid bodies).
-	* Driving constraint motors to an animated pose.
-	* Mapping a high detail (animation) skeleton onto a low detail (ragdoll) skeleton and vice versa.
-* Game character simulation (capsule)
-	* Rigid body character. Moves during the physics simulation. Cheapest option and most accurate collision response between character and dynamic bodies.
-	* Virtual character. Does not have a rigid body in the simulation but simulates one using collision checks. Updated outside of the physics update for more control. Less accurate interaction with dynamic bodies.
-* Vehicles
-	* Wheeled vehicles.
-	* Tracked vehicles.
-	* Motorcycles.
-* Soft body simulation (e.g. a soft ball or piece of cloth).
-	* Edge constraints.
-	* Dihedral bend constraints.
-	* Cosserat rod constraints (an edge with an orientation that can be used to orient geometry, e.g. a plant leaf).
-	* Tetrahedron volume constraints.
-	* Long range attachment constraints (also called tethers).
-	* Limiting the simulation to stay within a certain range of a skinned vertex.
-	* Internal pressure.
-	* Collision with simulated rigid bodies.
-	* Collision tests against soft bodies.
-* A strand based hair simulation running on GPU
-	* System is based on Cosserad rods.
-	* Can use long range attachment constraints to limit the stretch of hairs.
-	* Supports simulation (guide) and render (follow) hairs.
-	* Hair vs hair collision is handled by accumulating the average velocity in a grid and using those velocities to drive hairs.
-	* Supports collision with the environment, although it only supports ConvexHull and CompoundShapes at the moment.
-	* The roots of the hairs can be skinned to the scalp mesh.
-* Water buoyancy calculations.
-* An optional double precision mode that allows large worlds.
+* 使用连续碰撞检测模拟多种形状的刚体：
+    * 球体
+    * 盒体
+    * 胶囊体
+    * 渐缩胶囊体
+    * 圆柱体
+    * 渐缩圆柱体
+    * 凸包
+    * 平面
+    * 复合形状
+    * 三角网格
+    * 地形（高度场）
+* 模拟物理体之间的约束：
+    * 固定约束
+    * 点约束
+    * 距离约束（包括弹簧）
+    * 铰链约束
+    * 滑动约束（也称移动副约束）
+    * 圆锥约束
+    * 齿轮齿条约束
+    * 齿轮约束
+    * 滑轮约束
+    * 平滑样条路径约束
+    * 摆动扭转约束（用于人形肩部）
+    * 六自由度约束
+* 使用马达驱动约束。
+* 碰撞检测：
+    * 射线投射。
+    * 形状之间的相交检测。
+    * 一个形状相对于另一个形状的扫掠检测。
+    * 仅执行宽阶段检测，快速判断哪些对象可能相交。
+* 传感器（触发区域）。
+* 动画驱动的布娃娃：
+    * 硬驱动（仅使用运动学刚体）。
+    * 软驱动（为动态刚体设置速度）。
+    * 通过约束马达驱动到动画姿态。
+    * 在高精度动画骨架与低精度布娃娃骨架之间进行双向映射。
+* 游戏角色模拟（胶囊体）：
+    * 刚体角色：在物理模拟期间移动，开销最低，角色与动态物理体之间的碰撞响应最准确。
+    * 虚拟角色：模拟中没有对应的刚体，而是使用碰撞检测来模拟角色。在物理更新之外执行更新，以提供更多控制，但与动态物理体的交互精度较低。
+* 载具：
+    * 轮式车辆。
+    * 履带车辆。
+    * 摩托车。
+* 软体模拟（例如软球或布料）：
+    * 边约束。
+    * 二面角弯曲约束。
+    * Cosserat 杆约束（带有朝向的边，可用于确定植物叶片等几何体的方向）。
+    * 四面体体积约束。
+    * 长距离附着约束（也称系绳约束）。
+    * 将模拟限制在蒙皮顶点周围的指定范围内。
+    * 内部压力。
+    * 与模拟刚体碰撞。
+    * 针对软体的碰撞检测。
+* 在 GPU 上运行的发丝模拟：
+    * 基于 Cosserat 杆。
+    * 可以使用长距离附着约束限制发丝拉伸。
+    * 支持模拟用的引导发丝和渲染用的跟随发丝。
+    * 通过在网格中累积平均速度，并使用这些速度驱动发丝，处理发丝之间的碰撞。
+    * 支持与环境碰撞，但目前仅支持 ConvexHull 和 CompoundShapes。
+    * 发根可以通过蒙皮绑定到头皮网格。
+* 水中浮力计算。
+* 可选的双精度模式，支持大型世界。
 
-## Supported platforms
+## 支持的平台
 
 * Windows x86/x64/ARM64
-* Linux (tested on Ubuntu) x86/x64/ARM32/ARM64/RISC-V64/LoongArch64/PowerPC64LE
+* Linux（在 Ubuntu 上测试）x86/x64/ARM32/ARM64/RISC-V64/LoongArch64/PowerPC64LE
 * FreeBSD
 * Android x86/x64/ARM32/ARM64
-* Platform Blue (a popular game console) x64
+* Platform Blue（一款流行的游戏主机）x64
 * macOS x64/ARM64
 * iOS x64/ARM64
 * MSYS2 MinGW64
-* WebAssembly, see [this](https://github.com/jrouwe/JoltPhysics.js) separate project.
+* WebAssembly，请参阅[独立项目](https://github.com/jrouwe/JoltPhysics.js)。
 
-## Required CPU features
+## CPU 功能要求
 
-* On x86/x64 the minimal requirements are SSE2. The library can be compiled using SSE4.1, SSE4.2, AVX, AVX2, or AVX512.
-* On ARM64 the library uses NEON and FP16. On ARM32 it can be compiled without any special CPU instructions.
+* x86/x64 的最低要求为 SSE2，也可以使用 SSE4.1、SSE4.2、AVX、AVX2 或 AVX512 编译本库。
+* ARM64 使用 NEON 和 FP16；ARM32 可以在不使用任何特殊 CPU 指令的情况下编译。
 
-## Documentation
+## 文档
 
-To get started, look at the [HelloWorld](HelloWorld/HelloWorld.cpp) example. A [HelloWorld example using CMake FetchContent](https://github.com/jrouwe/JoltPhysicsHelloWorld) is also available to show how you can integrate Jolt Physics in a CMake project.
+入门请查看 [HelloWorld](HelloWorld/HelloWorld.cpp) 示例。另有[使用 CMake FetchContent 的 HelloWorld 示例](https://github.com/jrouwe/JoltPhysicsHelloWorld)，展示如何将 Jolt Physics 集成到 CMake 项目中。
 
-Every feature in Jolt has its own sample. [Running the Samples application](Docs/Samples.md) and browsing through the [code](https://github.com/jrouwe/JoltPhysics/tree/master/Samples/Tests) is a great way to learn about the library!
+Jolt 的每项功能都有对应示例。[运行示例应用](Docs/Samples.md)并浏览[源码](https://github.com/jrouwe/JoltPhysics/tree/master/Samples/Tests)，是学习此库的好方法。
 
-To learn more about Jolt go to the latest [Architecture and API documentation](https://jrouwe.github.io/JoltPhysics/). Documentation for [a specific release is also available](https://jrouwe.github.io/JoltPhysicsDocs/).
+更多信息请参阅最新的[架构与 API 文档](https://jrouwe.github.io/JoltPhysics/)，也可以查看[特定发布版本的文档](https://jrouwe.github.io/JoltPhysicsDocs/)。
 
-Some algorithms used by Jolt are described in detail in my GDC 2022 talk: Architecting Jolt Physics for 'Horizon Forbidden West' ([slides](https://gdcvault.com/play/1027560/Architecting-Jolt-Physics-for-Horizon), [slides with speaker notes](https://jrouwe.nl/architectingjolt/ArchitectingJoltPhysics_Rouwe_Jorrit_Notes.pdf), [video](https://gdcvault.com/play/1027891/Architecting-Jolt-Physics-for-Horizon)).
+作者在 GDC 2022 演讲《为〈地平线：西之绝境〉设计 Jolt Physics 架构》中详细介绍了部分算法（[幻灯片](https://gdcvault.com/play/1027560/Architecting-Jolt-Physics-for-Horizon)、[附演讲者备注的幻灯片](https://jrouwe.nl/architectingjolt/ArchitectingJoltPhysics_Rouwe_Jorrit_Notes.pdf)、[视频](https://gdcvault.com/play/1027891/Architecting-Jolt-Physics-for-Horizon)）。
 
-## Compiling
+## 编译
 
-* Compiles with Visual Studio 2022+, Clang 16+ or GCC 12+.
-* Uses C++ 17.
-* Depends only on the standard template library.
-* Doesn't use RTTI.
-* Doesn't use exceptions.
+* 支持 Visual Studio 2022 及更新版本、Clang 16 及更新版本，或 GCC 12 及更新版本。
+* 使用 C++17。
+* 仅依赖标准模板库。
+* 不使用运行时类型信息（RTTI）。
+* 不使用异常。
 
-If you want to run on Platform Blue you'll need to provide your own build environment and PlatformBlue.h due to NDA requirements. This file is available on the Platform Blue developer forum.
+如需在 Platform Blue 上运行，受保密协议要求限制，需要自行提供构建环境和 PlatformBlue.h。该文件可在 Platform Blue 开发者论坛获取。
 
-For build instructions go to the [Build](Build/README.md) section. When upgrading from an older version of the library go to the [Release Notes](Docs/ReleaseNotes.md) or [API Changes](Docs/APIChanges.md) sections.
+构建说明请参阅[构建](Build/README.md)章节。从旧版本升级时，请参阅[发行说明](Docs/ReleaseNotes.md)或 [API 变更](Docs/APIChanges.md)章节。
 
-## Performance
+## 性能
 
-If you're interested in how Jolt scales with multiple CPUs and compares to other physics engines, take a look at [this document](https://jrouwe.nl/jolt/JoltPhysicsMulticoreScaling.pdf).
+如需了解 Jolt 的多核扩展能力，以及与其他物理引擎的对比，请参阅[此文档](https://jrouwe.nl/jolt/JoltPhysicsMulticoreScaling.pdf)。
 
-## Folder structure
+## 目录结构
 
-* Assets - This folder contains assets used by the TestFramework, Samples and JoltViewer.
-* Build - Contains everything needed to build the library, see the [Build](Build/README.md) section.
-* Docs - Contains documentation for the library.
-* HelloWorld - A simple application demonstrating how to use the Jolt Physics library.
-* Jolt - All source code for the library is in this folder.
-* JoltViewer - It is possible to record the output of the physics engine using the DebugRendererRecorder class (a .jor file), this folder contains the source code to an application that can visualize a recording. This is useful for e.g. visualizing the output of the PerformanceTest from different platforms. Currently available on Windows, macOS and Linux.
-* PerformanceTest - Contains a simple application that runs a [performance test](Docs/PerformanceTest.md) and collects timing information.
-* Samples - This contains the sample application, see the [Samples](Docs/Samples.md) section. Currently available on Windows, macOS and Linux.
-* TestFramework - A rendering framework to visualize the results of the physics engine. Used by Samples and JoltViewer. Currently available on Windows, macOS and Linux.
-* UnitTests - A set of unit tests to validate the behavior of the physics engine.
+* Assets：TestFramework、Samples 和 JoltViewer 使用的资源。
+* Build：构建本库所需的全部内容，参阅[构建](Build/README.md)章节。
+* Docs：本库的文档。
+* HelloWorld：展示如何使用 Jolt Physics 的简单应用。
+* Jolt：本库的全部源码。
+* JoltViewer：可以使用 DebugRendererRecorder 类将物理引擎输出记录为 .jor 文件。此目录包含用于可视化回放记录的应用源码，例如可用于查看不同平台的 PerformanceTest 输出。目前支持 Windows、macOS 和 Linux。
+* PerformanceTest：用于运行[性能测试](Docs/PerformanceTest.md)并收集耗时信息的简单应用。
+* Samples：示例应用，参阅[示例](Docs/Samples.md)章节。目前支持 Windows、macOS 和 Linux。
+* TestFramework：用于可视化物理引擎结果的渲染框架，供 Samples 和 JoltViewer 使用。目前支持 Windows、macOS 和 Linux。
+* UnitTests：用于验证物理引擎行为的一组单元测试。
 
-## Bindings for other languages
+## 其他语言的绑定
 
-* C [here](https://github.com/amerkoleci/joltc), [here](https://github.com/zig-gamedev/zphysics/tree/main/libs/JoltC) and [here](https://github.com/SecondHalfGames/JoltC/)
+* C：[实现一](https://github.com/amerkoleci/joltc)、[实现二](https://github.com/zig-gamedev/zphysics/tree/main/libs/JoltC)和[实现三](https://github.com/SecondHalfGames/JoltC/)
 * [C#](https://github.com/amerkoleci/JoltPhysicsSharp)
-* Java or Kotlin [here](https://stephengold.github.io/jolt-jni-docs) and [here](https://github.com/Morgoth398/JoltPhysics-JavaFFM)
+* Java 或 Kotlin：[实现一](https://stephengold.github.io/jolt-jni-docs)和[实现二](https://github.com/Morgoth398/JoltPhysics-JavaFFM)
 * [JavaScript](https://github.com/jrouwe/JoltPhysics.js)
 * [Rust](https://github.com/SecondHalfGames/jolt-rust)
 * [Python](https://github.com/Evilpasture/Culverin)
 * [Zig](https://github.com/zig-gamedev/zphysics)
 
-## Integrations in other engines
+## 与其他引擎的集成
 
 * [Godot](https://github.com/godotengine/godot)
 * [Source Engine](https://github.com/Joshua-Ashton/VPhysics-Jolt)
-* Unreal Plugin [here](https://github.com/OversizedSunCoreDev/ArtilleryEco) and [here](https://github.com/Yadhu-S/UnrealJolt)
+* Unreal 插件：[实现一](https://github.com/OversizedSunCoreDev/ArtilleryEco)和[实现二](https://github.com/Yadhu-S/UnrealJolt)
 
-See [a list of projects that use Jolt Physics here](Docs/ProjectsUsingJolt.md).
+使用 Jolt Physics 的项目请参阅[项目列表](Docs/ProjectsUsingJolt.md)。
 
-## License
+## 许可证
 
-The project is distributed under the [MIT license](LICENSE).
+本项目采用 [MIT 许可证](LICENSE)分发。
 
-## Contributions
+## 贡献
 
-All contributions are welcome! If you intend to make larger changes, please discuss first in the GitHub Discussion section. For non-trivial changes, we require that you agree to a [Contributor Agreement](ContributorAgreement.md). When you create a PR, [CLA assistant](https://cla-assistant.io/) will prompt you to sign it.
+欢迎所有贡献！如计划进行较大改动，请先在 GitHub 讨论区沟通。对于非简单改动，需要同意[贡献者协议](ContributorAgreement.md)。创建拉取请求（PR）时，[CLA 签署助手](https://cla-assistant.io/)会提示签署协议。
 
-Note that all PRs will be squashed before merging, so there's no need to force-push to git to keep the history clean.
+所有 PR 都会在合并前压缩为一个提交，因此无需通过强制推送来整理提交历史。

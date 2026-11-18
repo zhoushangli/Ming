@@ -1,11 +1,14 @@
 #include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Core/Object/ClassDatabase.hpp"
+#include "MingEngine/Core/ErrorWarningAssert.hpp"
 
 #include "MingEngine/Core/Math/RandomNumberGenerator.hpp"
 #include "MingEngine/Engine/Audio/AudioSystem.hpp"
 #include "MingEngine/Engine/Input/InputSystem.hpp"
 #include "MingEngine/Engine/Render/RenderServer.hpp"
 #include "MingEngine/Engine/Window/WindowSystem.hpp"
+
+#include <cmath>
 
 Engine* g_engine = nullptr;
 
@@ -94,7 +97,7 @@ Engine::~Engine()
 	m_networkSystem = nullptr;
 }
 
-void Engine::Startup()
+bool Engine::Startup()
 {
 	if (m_eventSystem != nullptr)
 	{
@@ -140,12 +143,21 @@ void Engine::Startup()
 	{
 		m_sceneSystem->Startup();
 	}
+
+	if (m_config.m_enablePhysics && !m_physicsServer->Startup())
+	{
+		ERR_PRINT("Cannot start the physics world.");
+		return false;
+	}
+
+	return true;
 }
 
 void Engine::Shutdown()
 {
 	m_sceneSystem->Shutdown();
 	m_physicsServer->Shutdown();
+	m_physicsAccumulator = 0.0;
 
 	if (m_networkSystem != nullptr)
 	{
@@ -276,9 +288,41 @@ void Engine::EndFrame()
 	}
 }
 
-void Engine::Update(float deltaSeconds)
+bool Engine::Update(float deltaSeconds, std::function<bool()> const& shouldQuit)
 {
+	if (m_config.m_enablePhysics && std::isfinite(deltaSeconds) && deltaSeconds >= 0.f
+		&& (!shouldQuit || !shouldQuit()))
+	{
+		constexpr double fixedDelta = 1.0 / 60.0;
+		constexpr int maxSteps = 8;
+		m_physicsAccumulator += static_cast<double>(deltaSeconds);
+
+		int steps = 0;
+		while (m_physicsAccumulator >= fixedDelta && steps < maxSteps)
+		{
+			m_sceneSystem->PhysicsProcess(static_cast<float>(fixedDelta));
+			if (!m_physicsServer->Step(static_cast<float>(fixedDelta)))
+			{
+				ERR_PRINT("Physics simulation failed; stopping the game.");
+				return false;
+			}
+
+			m_physicsAccumulator -= fixedDelta;
+			++steps;
+			if (shouldQuit && shouldQuit())
+			{
+				break;
+			}
+		}
+
+		if (steps == maxSteps && m_physicsAccumulator >= fixedDelta)
+		{
+			m_physicsAccumulator = std::fmod(m_physicsAccumulator, fixedDelta);
+		}
+	}
+
 	m_sceneSystem->Process(deltaSeconds);
+	return true;
 }
 
 void Engine::Render() const

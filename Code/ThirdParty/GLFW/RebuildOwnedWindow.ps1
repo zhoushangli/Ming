@@ -36,7 +36,7 @@ $object = Join-Path $build 'win32_window.obj'
 $base = Join-Path $build 'glfw-base.lib'
 $patched = Join-Path $build 'glfw3.lib'
 $members = & cmd /c "`"$VsDevCmd`" -arch=x64 -host_arch=x64 >nul && lib /nologo /list `"$library`""
-$member = @($members | Where-Object { $_ -match '(^|[\/])win32_window\.obj$' })
+$member = @($members | Where-Object { (Split-Path -Leaf $_) -eq 'win32_window.obj' })
 if ($member.Count -ne 1)
 {
     throw 'Expected exactly one Win32 window object in glfw3.lib.'

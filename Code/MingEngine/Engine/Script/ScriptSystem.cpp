@@ -694,21 +694,11 @@ bool ScriptSystem::EnsureProjectSolution()
 		false,
 		"Failed to resolve the active project directory.\n");
 
-	// 3) Resolve the SDK directory beside the executable
-	std::filesystem::path const executableDirectory = GetExecutableDirectory();
-
-	ERR_FAIL_COND_V_MSG(executableDirectory.empty(), false, "Failed to resolve the executable directory.\n");
-
-	std::filesystem::path const sdkDirectory = executableDirectory / L"MingSharp" / L"Tool" / L"Sdk";
-
-	// 4) Call the managed generator
+	// 3) Call the managed generator
 	auto const    projectUtf8 = projectDirectory.u8string();
-	auto const    sdkUtf8     = sdkDirectory.u8string();
 	std::string   projectText(projectUtf8.begin(), projectUtf8.end());
-	std::string   sdkText(sdkUtf8.begin(), sdkUtf8.end());
 	String const  nativeProject(projectText);
-	String const  nativeSdk(sdkText);
-	int32_t const result = m_ensureProjectSolution(&nativeProject, &nativeSdk);
+	int32_t const result = m_ensureProjectSolution(&nativeProject);
 
 	ERR_FAIL_COND_V_MSG(result != 0, false, Stringf("Failed to ensure C# project files: %d\n", result));
 

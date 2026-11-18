@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="MingSdkPackage.props" />
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <PackageId>$(MingSdkPackageId)</PackageId>
+    <PackageVersion>$(MingSdkPackageVersion)</PackageVersion>
+    <Authors>ZhouShangLi</Authors>
+    <Description>MSBuild SDK for Ming C# projects targeting .NET 9.</Description>
+    <PackageType>MSBuildSdk</PackageType>
+    <PackageTags>MSBuildSdk;Ming</PackageTags>
+    <IsPackable>true</IsPackable>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+    <NoWarn>$(NoWarn);NU5100</NoWarn>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageOutputPath>$(MSBuildThisFileDirectory)../../../Temporary/NuGet/</PackageOutputPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../MingSharp/MingSharp.csproj" ReferenceOutputAssembly="false" PrivateAssets="all" />
+    <ProjectReference Include="../Ming.SourceGenerators/Ming.SourceGenerators.csproj" ReferenceOutputAssembly="false" PrivateAssets="all" />
+    <None Include="Sdk/Sdk.props" Pack="true" PackagePath="Sdk/" />
+    <None Include="Sdk/Sdk.targets" Pack="true" PackagePath="Sdk/" />
+    <None Update="README.md" Pack="true" PackagePath="/" />
+    <None Update="LICENSE.txt" Pack="true" PackagePath="/" />
+    <None Update="THIRD-PARTY-NOTICES.txt" Pack="true" PackagePath="/" />
+    <None Include="../MingSharp/bin/$(Configuration)/net9.0/MingSharp.dll" Pack="true" PackagePath="Api/" />
+    <None Include="../MingSharp/bin/$(Configuration)/net9.0/MingSharp.xml" Pack="true" PackagePath="Api/" />
+    <None Include="../Ming.SourceGenerators/bin/$(Configuration)/netstandard2.0/Ming.SourceGenerators.dll" Pack="true" PackagePath="Analyzers/" />
+  </ItemGroup>
+</Project>

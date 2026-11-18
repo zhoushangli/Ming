@@ -26,7 +26,7 @@ bool EditorState::Enter(App& app)
 	glfwSetWindowSizeLimits(g_engine->m_windowSystem->GetGLFWWindow(), 900, 540, GLFW_DONT_CARE, GLFW_DONT_CARE);
 	m_app = &app;
 
-	auto editorNode = new EditorNode(EditorThemeManager::LoadScale());
+	auto editorNode = new EditorNode(EditorThemeManager::LoadScale(), [this]() { UpdateGameProcess(); });
 	editorNode->SetName("EditorNode");
 	g_engine->m_sceneSystem->GetSceneTree()->GetRoot()->AddNode(editorNode);
 	ProjectManagerState::RememberProject(app.GetRunConfig().projectPath);
@@ -42,16 +42,6 @@ bool EditorState::Enter(App& app)
 	return true;
 }
 
-void EditorState::Update([[maybe_unused]] App& app, [[maybe_unused]] float deltaSeconds)
-{
-	UpdateGameProcess();
-
-	if (!g_engine->m_inputSystem->IsWindowFocused())
-	{
-		g_engine->m_inputSystem->SetCursorMode(CursorMode::POINTER);
-		g_engine->m_inputSystem->ClearCursorDelta();
-	}
-}
 
 void EditorState::Exit([[maybe_unused]] App& app)
 {

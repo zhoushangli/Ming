@@ -7,7 +7,6 @@ class EditorState : public AppState
 {
 public:
 	bool Enter(App& app) override;
-	void Update(App& app, float deltaSeconds) override;
 	void Exit(App& app) override;
 	bool CanQuit(App& app) override;
 

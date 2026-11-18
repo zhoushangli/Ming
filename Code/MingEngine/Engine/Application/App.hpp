@@ -22,7 +22,6 @@ public:
 	void Shutdown();
 	void RunMainLoop();
 	void RunFrame();
-	void Restart();
 	void Quit();
 
 	bool LaunchGame();
@@ -39,7 +38,6 @@ public:
 private:
 	void EnterState();
 	void ExitState();
-	void RestartImmediately();
 
 private:
 	MingRunConfig m_runConfig;
@@ -47,7 +45,6 @@ private:
 	std::unique_ptr<AppState> m_state;
 	std::unique_ptr<Clock> m_clock;
 	bool m_started = false;
-	bool m_shouldRestart = false;
 	bool m_shouldQuit = false;
 	bool m_comInitialized = false;
 	int m_exitCode = 0;

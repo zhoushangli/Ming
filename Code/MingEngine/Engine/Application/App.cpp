@@ -28,6 +28,7 @@ App* g_app = nullptr;
 App::App(MingRunConfig const& config) : m_runConfig(config)
 {
 	EngineConfig engineConfig;
+	engineConfig.m_enablePhysics = config.mode == MingRunMode::Game;
 	engineConfig.m_windowConfig.m_clientAspect = 16.f / 9.f;
 	engineConfig.m_windowConfig.m_appName = config.mode == MingRunMode::ProjectManager
 		? "MingEngine - Project Manager" : "MingEngine";
@@ -64,7 +65,12 @@ void App::Startup()
 
 	ClassDatabase::Startup();
 	RegisterAllTypes();
-	m_engine->Startup();
+	if (!m_engine->Startup())
+	{
+		m_exitCode = 1;
+		m_shouldQuit = true;
+		return;
+	}
 
 	if (m_runConfig.mode != MingRunMode::ProjectManager)
 	{
@@ -119,6 +125,8 @@ void App::Shutdown()
 
 void App::EnterState()
 {
+	// Select the mode for this process at startup. Opening another mode launches a new instance.
+	// e.g. Editor Play launches a separate Game process with its own engine and physics world.
 	switch (m_runConfig.mode)
 	{
 	case MingRunMode::ProjectManager:
@@ -150,7 +158,6 @@ void App::ExitState()
 
 	// 1) Destroy nodes and their captured callbacks while the state still exists.
 	m_engine->m_sceneSystem->Shutdown();
-	m_engine->m_physicsServer->Shutdown();
 	m_state.reset();
 	m_clock.reset();
 }
@@ -173,28 +180,13 @@ void App::RunFrame()
 	m_engine->BeginFrame();
 	Clock::TickSystemClock();
 	float const deltaSeconds = static_cast<float>(m_clock->GetDeltaSeconds());
-	m_state->Update(*this, deltaSeconds);
-	m_engine->Update(deltaSeconds);
+	if (!m_engine->Update(deltaSeconds, [this]() { return IsQuitting(); }))
+	{
+		Quit();
+	}
+
 	m_engine->Render();
 	m_engine->EndFrame();
-
-	if (m_shouldRestart && !m_shouldQuit)
-	{
-		m_shouldRestart = false;
-		RestartImmediately();
-	}
-}
-
-void App::Restart()
-{
-	m_shouldRestart = true;
-}
-
-void App::RestartImmediately()
-{
-	ExitState();
-	m_engine->m_sceneSystem->Startup();
-	EnterState();
 }
 
 void App::Quit()

@@ -403,22 +403,21 @@ namespace MingPlugins
         }
 
         [UnmanagedCallersOnly]
-        private static unsafe int EnsureProjectSolution(String* projectDirectory, String* sdkDirectory)
+        private static unsafe int EnsureProjectSolution(String* projectDirectory)
         {
             try
             {
                 // 1) Validate the native pointers
-                if (projectDirectory == null || sdkDirectory == null)
+                if (projectDirectory == null)
                 {
                     return -1;
                 }
 
                 // 2) Convert the native strings into managed strings
                 string projectPath = Marshaling.ConvertStringToManaged(*projectDirectory);
-                string sdkPath = Marshaling.ConvertStringToManaged(*sdkDirectory);
 
                 // 3) Generate the missing project files
-                MingTools.ProjectGenerator.EnsureProjectSolution(projectPath, sdkPath);
+                MingTools.ProjectGenerator.EnsureProjectSolution(projectPath);
 
                 return 0;
             }

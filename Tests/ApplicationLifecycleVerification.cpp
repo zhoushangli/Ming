@@ -1,7 +1,6 @@
 #define NOMINMAX
 
 #include "MingEngine/Engine/Application/Engine.hpp"
-#include "MingEngine/Engine/Application/GameState.hpp"
 #include "MingEngine/Engine/Application/ProjectManagerState.hpp"
 #include "MingEngine/Editor/EditorNode.hpp"
 #include "MingEngine/Scene/Core/SceneTree.hpp"
@@ -145,13 +144,10 @@ void VerifyPhysics(MingRunConfig const& config)
 	glfwHideWindow(app.GetEngine()->m_windowSystem->GetGLFWWindow());
 	Engine* engine = app.GetEngine();
 	SceneSystem* scenes = engine->m_sceneSystem;
-	GameState scheduler;
 	bool exitedWithWorld = false;
 
 	for (int fps : { 30, 60, 120 })
 	{
-		scenes->Reset();
-		Check(scheduler.Enter(app), "enter explicit-delta scheduler");
 		auto probe = MemNew<PhysicsProbe>();
 		probe->exitWithWorld = &exitedWithWorld;
 		scenes->GetSceneTree()->GetRoot()->AddNode(probe);
@@ -159,8 +155,7 @@ void VerifyPhysics(MingRunConfig const& config)
 
 		for (int frame = 0; frame < fps * 10; ++frame)
 		{
-			scheduler.Update(app, 1.f / fps);
-			scenes->Process(1.f / fps);
+			engine->Update(1.f / fps);
 		}
 
 		Check(std::abs(probe->ticks - 600) <= 1, "render FPS independent fixed tick count");
@@ -168,48 +163,39 @@ void VerifyPhysics(MingRunConfig const& config)
 		Check(probe->frames == fps * 10, "one ordinary callback per frame");
 		Check(probe->validDeltas, "fixed and ordinary deltas remain separate");
 		int before = probe->ticks;
-		scheduler.Update(app, 1.005f);
+		engine->Update(1.005f);
 		Check(probe->ticks - before == 8, "stall capped at eight steps");
 		before = probe->ticks;
-		scheduler.Update(app, 0.f);
+		engine->Update(0.f);
 		Check(probe->ticks == before, "whole backlog discarded");
-		scheduler.Update(app, 0.012f);
+		engine->Update(0.012f);
 		Check(probe->ticks == before + 1, "fractional stall remainder retained");
 		before = probe->ticks;
-		scheduler.Update(app, -1.f);
-		scheduler.Update(app, std::numeric_limits<float>::infinity());
-		scheduler.Update(app, std::numeric_limits<float>::quiet_NaN());
+		engine->Update(-1.f);
+		engine->Update(std::numeric_limits<float>::infinity());
+		engine->Update(std::numeric_limits<float>::quiet_NaN());
 		Check(probe->ticks == before, "invalid delta ignored");
 		probe->SetPhysicsProcess(false);
-		scheduler.Update(app, 1.f / 60.f);
+		engine->Update(1.f / 60.f);
 		Check(!probe->GetPhysicsProcess() && probe->ticks == before, "independent physics processing switch");
 		probe->SetPhysicsProcess(true);
 		ObjectID const probeID = probe->GetObjectID();
+		exitedWithWorld = false;
 		probe->QueueFree();
-		scheduler.Update(app, 1.f / 60.f);
+		engine->Update(1.f / 60.f);
 		Check(ObjectDatabase::GetInstance<Node>(probeID) == nullptr && exitedWithWorld, "pending deletion before simulation with live world");
-		scheduler.Update(app, 0.01f);
-		scheduler.Exit(app);
-		scenes->Reset();
-		Check(scheduler.Enter(app), "scheduler reentry");
-		auto resetProbe = MemNew<PhysicsProbe>();
-		resetProbe->exitWithWorld = &exitedWithWorld;
-		scenes->GetSceneTree()->GetRoot()->AddNode(resetProbe);
-		scheduler.Update(app, 0.01f);
-		Check(resetProbe->ticks == 0, "reentry clears fractional accumulator");
-		scheduler.Update(app, 0.007f);
-		Check(resetProbe->ticks == 1, "fresh accumulator retains fractional time");
-		scheduler.Exit(app);
-		scheduler.Update(app, 1.f);
-		Check(resetProbe->ticks == 1, "exit stops fixed callbacks");
-		scenes->Shutdown();
-		Check(engine->m_physicsServer->RunTest(), "world remains usable after scene teardown");
-		engine->m_physicsServer->Shutdown();
-		Check(!engine->m_physicsServer->Step(1.f / 60.f), "shutdown prevents stepping");
-		scenes->Startup();
 	}
 
+	auto shutdownProbe = MemNew<PhysicsProbe>();
+	exitedWithWorld = false;
+	shutdownProbe->exitWithWorld = &exitedWithWorld;
+	scenes->GetSceneTree()->GetRoot()->AddNode(shutdownProbe);
+	app.Quit();
+	engine->Update(1.f, [&app]() { return app.IsQuitting(); });
+	Check(shutdownProbe->ticks == 0, "quit request stops fixed callbacks");
 	app.Shutdown();
+	Check(exitedWithWorld, "scene exits with an active physics world");
+	Check(!engine->m_physicsServer->Step(1.f / 60.f), "shutdown prevents stepping");
 }
 
 void VerifyManaged(MingRunConfig const& config, std::filesystem::path const& project)
@@ -222,15 +208,14 @@ void VerifyManaged(MingRunConfig const& config, std::filesystem::path const& pro
 	Check(!app.IsQuitting(), "managed lifecycle game startup");
 	glfwHideWindow(app.GetEngine()->m_windowSystem->GetGLFWWindow());
 	SceneSystem* scenes = app.GetEngine()->m_sceneSystem;
-	scenes->Process(1.f / 30.f);
-	scenes->PhysicsProcess(1.f / 60.f);
+	Check(app.GetEngine()->Update(1.f / 60.f), "managed frame update");
 	scenes->ClearScene();
 	scenes->EndFrame();
 	app.Shutdown();
 	std::ifstream input(log);
 	std::string actual;
 	input >> actual;
-	Check(actual == "ERPFX", "renamed managed lifecycle and physics dispatch");
+	Check(actual == "ERFPX", "renamed managed lifecycle and physics dispatch");
 	_wputenv_s(L"MING_VERIFY_LIFECYCLE_LOG", L"");
 }
 
@@ -271,10 +256,6 @@ void VerifyMode(MingRunConfig const& config)
 		Check(!app.IsGameRunning(), "reap natural game exit");
 	}
 
-	ObjectID const root = app.GetEngine()->m_sceneSystem->GetSceneTree()->GetRoot()->GetObjectID();
-	app.Restart();
-	app.RunFrame();
-	Check(!app.IsQuitting() && ObjectDatabase::GetInstance<Node>(root) == nullptr, "restart cleans old tree");
 	if (config.mode == MingRunMode::Editor)
 	{
 		Check(app.LaunchGame(), "launch before editor shutdown");

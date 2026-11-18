@@ -145,7 +145,7 @@ private:
 		int32_t(CORECLR_DELEGATE_CALLTYPE*)(String const* assemblyPath, String* outLoadedAssemblyPath);
 	using UnloadProjectAssemblyFunc = int32_t(CORECLR_DELEGATE_CALLTYPE*)();
 	using EnsureProjectSolutionFunc =
-		int32_t(CORECLR_DELEGATE_CALLTYPE*)(String const* projectDirectory, String const* sdkDirectory);
+		int32_t(CORECLR_DELEGATE_CALLTYPE*)(String const* projectDirectory);
 	using BuildProjectSolutionFunc = int32_t(CORECLR_DELEGATE_CALLTYPE*)(String const* projectDirectory);
 	using PollProjectBuildFunc = int32_t(CORECLR_DELEGATE_CALLTYPE*)(int32_t* exitCode);
 

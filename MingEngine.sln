@@ -19,6 +19,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ming.SourceGenerators", "Co
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Ming.NET.Sdk", "Ming.NET.Sdk", "{8A41EAE7-42B9-5AEE-BFFD-AF52C40FBB6D}"
 	ProjectSection(SolutionItems) = preProject
+		Code\CSharp\Ming.NET.Sdk\Ming.NET.Sdk.csproj = Code\CSharp\Ming.NET.Sdk\Ming.NET.Sdk.csproj
+		Code\CSharp\Ming.NET.Sdk\MingSdkPackage.props = Code\CSharp\Ming.NET.Sdk\MingSdkPackage.props
 		Code\CSharp\Ming.NET.Sdk\Sdk\Sdk.props = Code\CSharp\Ming.NET.Sdk\Sdk\Sdk.props
 		Code\CSharp\Ming.NET.Sdk\Sdk\Sdk.targets = Code\CSharp\Ming.NET.Sdk\Sdk\Sdk.targets
 	EndProjectSection

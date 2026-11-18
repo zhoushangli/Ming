@@ -34,10 +34,40 @@
 #include <algorithm>
 #include <fstream>
 #include <cwctype>
+#include <functional>
+#include <utility>
 
 #pragma comment(lib, "Comdlg32.lib")
 #pragma comment(lib, "Ole32.lib")
 #pragma comment(lib, "Shell32.lib")
+
+namespace
+{
+class ProjectManagerRoot : public ColorRect
+{
+	MCLASS(ProjectManagerRoot, ColorRect);
+
+public:
+	explicit ProjectManagerRoot(std::function<void()> update) : m_update(std::move(update))
+	{
+		SetProcess(true);
+	}
+
+protected:
+	void OnNotification(int notification)
+	{
+		switch (notification)
+		{
+		case Notification_Process:
+			m_update();
+			break;
+		}
+	}
+
+private:
+	std::function<void()> m_update;
+};
+}
 
 bool ProjectManagerState::Enter(App& app)
 {
@@ -46,13 +76,9 @@ bool ProjectManagerState::Enter(App& app)
 	glfwRestoreWindow(window);
 	glfwSetWindowSizeLimits(window, 900, 600, GLFW_DONT_CARE, GLFW_DONT_CARE);
 	glfwSetWindowSize(window, 1000, 700);
-	DrawProjectManager();
+	CreateProjectManager();
+	UpdateProjectManager();
 	return true;
-}
-
-void ProjectManagerState::Update([[maybe_unused]] App& app, [[maybe_unused]] float deltaSeconds)
-{
-	DrawProjectManager();
 }
 
 void ProjectManagerState::Exit([[maybe_unused]] App& app)
@@ -141,109 +167,109 @@ std::wstring ProjectKey(std::filesystem::path const& directory)
 }
 }
 
-void ProjectManagerState::DrawProjectManager()
+void ProjectManagerState::CreateProjectManager()
 {
-	if (m_projectManagerRoot == nullptr)
-	{
-		auto* background     = MemNew<ColorRect>();
-		m_projectManagerRoot = background;
-		background->SetName("ProjectManager");
-		background->SetClipContents(true);
-		g_engine->m_sceneSystem->GetSceneTree()->GetRoot()->AddNode(background);
-		Ref<Theme> theme =
-			EditorThemeManager::CreateScaledTheme(EditorThemeManager::CreateTheme(), EditorThemeManager::LoadScale());
-		ThemeDatabase::SetThemeContext(background, { theme });
-		background->SetColor(theme->GetColor("background", "Editor"));
-		g_engine->m_windowSystem->SetTitleBarColors(
-			theme->GetColor("background", "Editor"),
-			theme->GetColor("font_color", "Control"));
-		auto*       content = MemNew<VBoxContainer>();
-		float const padding = static_cast<float>(background->GetThemeConstant("content_padding", "Editor"));
-		content->SetPosition(Vector2(padding, padding));
-		content->AddThemeChangedCallback(
-			[control = content]()
+	auto* background     = MemNew<ProjectManagerRoot>([this]() { UpdateProjectManager(); });
+	m_projectManagerRoot = background;
+	background->SetName("ProjectManager");
+	background->SetClipContents(true);
+	g_engine->m_sceneSystem->GetSceneTree()->GetRoot()->AddNode(background);
+	Ref<Theme> theme =
+		EditorThemeManager::CreateScaledTheme(EditorThemeManager::CreateTheme(), EditorThemeManager::LoadScale());
+	ThemeDatabase::SetThemeContext(background, { theme });
+	background->SetColor(theme->GetColor("background", "Editor"));
+	g_engine->m_windowSystem->SetTitleBarColors(
+		theme->GetColor("background", "Editor"),
+		theme->GetColor("font_color", "Control"));
+	auto*       content = MemNew<VBoxContainer>();
+	float const padding = static_cast<float>(background->GetThemeConstant("content_padding", "Editor"));
+	content->SetPosition(Vector2(padding, padding));
+	content->AddThemeChangedCallback(
+		[control = content]()
+		{
+			control->SetSeparation(static_cast<float>(control->GetThemeConstant("content_padding", "Editor")));
+		});
+	background->AddNode(content);
+	EditorPopupUtils::AddLabel(content, "Ming - Project Manager", "EditorInspectorTitle");
+	auto* tools = MemNew<HBoxContainer>();
+	tools->AddThemeChangedCallback(
+		[control = tools]()
+		{
+			control->SetSeparation(static_cast<float>(control->GetThemeConstant("content_padding", "Editor")));
+		});
+	content->AddNode(tools);
+	EditorPopupUtils::AddButton(
+		tools,
+		"New Project...",
+		[this]()
+		{
+			NewProject();
+		});
+	EditorPopupUtils::AddButton(
+		tools,
+		"Import / Open...",
+		[this]()
+		{
+			OpenProject();
+		});
+	m_projectSearch = MemNew<LineEdit>();
+	m_projectSearch->SetPlaceholder("Filter Projects");
+	m_projectSearch->SetMinimumCharacterWidth(1);
+	m_projectSearch->SetHorizontalSizeFlags(Control::Size_ExpandFill);
+	tools->AddNode(m_projectSearch);
+	m_projectSearch->SetTextChangedCallback(
+		[this](String const&)
+		{
+			m_recentDirty = true;
+		});
+	auto* scroll = MemNew<ScrollContainer>();
+	scroll->SetVerticalSizeFlags(Control::Size_ExpandFill);
+	content->AddNode(scroll);
+	m_recentTree = MemNew<Tree>();
+	m_recentTree->SetClipText(true);
+	scroll->AddNode(m_recentTree);
+	m_recentTree->SetActivatedCallback(
+		[this](uint64_t key)
+		{
+			if (key > 0 && key <= m_recentAvailable.size() && m_recentAvailable[key - 1])
 			{
-				control->SetSeparation(static_cast<float>(control->GetThemeConstant("content_padding", "Editor")));
-			});
-		background->AddNode(content);
-		EditorPopupUtils::AddLabel(content, "Ming - Project Manager", "EditorInspectorTitle");
-		auto* tools = MemNew<HBoxContainer>();
-		tools->AddThemeChangedCallback(
-			[control = tools]()
+				OpenProject(m_recentProjects[key - 1]);
+			}
+		});
+	m_projectManagerErrorLabel = EditorPopupUtils::AddLabel(content, "", "EditorErrorLabel");
+	auto* actions              = EditorPopupUtils::AddActions(content);
+	m_editProjectButton        = EditorPopupUtils::AddButton(
+		actions,
+		"Edit",
+		[this]()
+		{
+			uint64_t const key = m_recentTree->GetSelected();
+			if (key > 0 && key <= m_recentAvailable.size() && m_recentAvailable[key - 1])
 			{
-				control->SetSeparation(static_cast<float>(control->GetThemeConstant("content_padding", "Editor")));
-			});
-		content->AddNode(tools);
-		EditorPopupUtils::AddButton(
-			tools,
-			"New Project...",
-			[this]()
+				OpenProject(m_recentProjects[key - 1]);
+			}
+		});
+	m_removeProjectButton = EditorPopupUtils::AddButton(
+		actions,
+		"Remove",
+		[this]()
+		{
+			uint64_t const key = m_recentTree->GetSelected();
+			if (key > 0 && key <= m_recentProjects.size())
 			{
-				NewProject();
-			});
-		EditorPopupUtils::AddButton(
-			tools,
-			"Import / Open...",
-			[this]()
-			{
-				OpenProject();
-			});
-		m_projectSearch = MemNew<LineEdit>();
-		m_projectSearch->SetPlaceholder("Filter Projects");
-		m_projectSearch->SetMinimumCharacterWidth(1);
-		m_projectSearch->SetHorizontalSizeFlags(Control::Size_ExpandFill);
-		tools->AddNode(m_projectSearch);
-		m_projectSearch->SetTextChangedCallback(
-			[this](String const&)
-			{
+				m_recentProjects.erase(m_recentProjects.begin() + key - 1);
+				if (!SaveRecentProjects(m_recentProjects))
+				{
+					m_projectManagerError = "Could not save recent projects.";
+				}
 				m_recentDirty = true;
-			});
-		auto* scroll = MemNew<ScrollContainer>();
-		scroll->SetVerticalSizeFlags(Control::Size_ExpandFill);
-		content->AddNode(scroll);
-		m_recentTree = MemNew<Tree>();
-		m_recentTree->SetClipText(true);
-		scroll->AddNode(m_recentTree);
-		m_recentTree->SetActivatedCallback(
-			[this](uint64_t key)
-			{
-				if (key > 0 && key <= m_recentAvailable.size() && m_recentAvailable[key - 1])
-				{
-					OpenProject(m_recentProjects[key - 1]);
-				}
-			});
-		m_projectManagerErrorLabel = EditorPopupUtils::AddLabel(content, "", "EditorErrorLabel");
-		auto* actions              = EditorPopupUtils::AddActions(content);
-		m_editProjectButton        = EditorPopupUtils::AddButton(
-			actions,
-			"Edit",
-			[this]()
-			{
-				uint64_t const key = m_recentTree->GetSelected();
-				if (key > 0 && key <= m_recentAvailable.size() && m_recentAvailable[key - 1])
-				{
-					OpenProject(m_recentProjects[key - 1]);
-				}
-			});
-		m_removeProjectButton = EditorPopupUtils::AddButton(
-			actions,
-			"Remove",
-			[this]()
-			{
-				uint64_t const key = m_recentTree->GetSelected();
-				if (key > 0 && key <= m_recentProjects.size())
-				{
-					m_recentProjects.erase(m_recentProjects.begin() + key - 1);
-					if (!SaveRecentProjects(m_recentProjects))
-					{
-						m_projectManagerError = "Could not save recent projects.";
-					}
-					m_recentDirty = true;
-				}
-			});
-		m_recentProjects = LoadRecentProjects();
-	}
+			}
+		});
+	m_recentProjects = LoadRecentProjects();
+}
 
+void ProjectManagerState::UpdateProjectManager()
+{
 	Vector2 const size(static_cast<Viewport*>(g_engine->m_sceneSystem->GetSceneTree()->GetRoot())->GetOutputResolution());
 	m_projectManagerRoot->UpdateSize(size);
 	auto*         content = static_cast<Control*>(m_projectManagerRoot->GetChildren().front());
