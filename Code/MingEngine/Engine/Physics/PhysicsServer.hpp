@@ -1,5 +1,7 @@
 #pragma once
 
+#include "MingEngine/Core/Object/Object.hpp"
+
 namespace JPH
 {
 class BroadPhaseLayerInterfaceTable;
@@ -10,7 +12,7 @@ class PhysicsSystem;
 class TempAllocatorMalloc;
 }
 
-class PhysicsServer
+class PhysicsServer : public Object
 {
 public:
 	PhysicsServer() = default;

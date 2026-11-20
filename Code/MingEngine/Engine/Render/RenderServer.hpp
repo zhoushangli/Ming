@@ -1,7 +1,8 @@
 #pragma once
 
+#include "MingEngine/Core/Object/Object.hpp"
+
 #include "MingEngine/Core/Render/RID.hpp"
-#include "MingEngine/Engine/Event/EventSystem.hpp"
 #include "MingEngine/Engine/Render/RenderContext.hpp"
 #include "MingEngine/Scene/Resource/MaterialResource.hpp"
 #include "MingEngine/Scene/Resource/MeshResource.hpp"
@@ -12,8 +13,10 @@
 
 class Renderer;
 
-class RenderServer
+class RenderServer : public Object
 {
+	MCLASS(RenderServer, Object)
+
 public:
 	explicit RenderServer(RendererServerConfig config);
 	~RenderServer();
@@ -184,7 +187,9 @@ public:
 	void CopyCPUToGPU(void const* data, unsigned int size, VertexBuffer* buffer);
 
 private:
-	static bool OnWindowResized(EventArgs& args);
+	static void BindMethods();
+
+	void OnWindowResized(int width, int height);
 
 	void          PrepareViewportData(ViewportData* viewportData);
 	RenderRequest BuildInstance3DRenderRequest(Instance3D const* instance);
@@ -215,7 +220,6 @@ private:
 private:
 	Renderer*         m_renderer             = nullptr;
 	bool              m_started              = false;
-	EventConnectionID m_windowResizedEventID = 0;
 
 	Ref<ShaderResource>   m_defaultUnlit;
 	Ref<ShaderResource>   m_defaultUI;

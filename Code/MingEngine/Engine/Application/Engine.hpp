@@ -3,7 +3,6 @@
 #include "MingEngine/Engine/Audio/AudioSystem.hpp"
 #include "MingEngine/Engine/Scene/SceneSystem.hpp"
 #include "MingEngine/Engine/Physics/PhysicsServer.hpp"
-#include "MingEngine/Engine/Event/EventSystem.hpp"
 #include "MingEngine/Engine/File/FileSystem.hpp"
 #include "MingEngine/Engine/Input/InputSystem.hpp"
 #include "MingEngine/Engine/Network/NetworkSystem.hpp"
@@ -14,9 +13,10 @@
 
 #include <functional>
 
+class WorkerThreadPool;
+
 struct EngineConfig
 {
-	EventSystemConfig    m_eventSystemConfig;
 	WindowSystemConfig   m_windowConfig;
 	FileSystemConfig     m_fileSystemConfig;
 	ScriptSystemConfig   m_scriptSystemConfig;
@@ -24,7 +24,8 @@ struct EngineConfig
 	AudioSystemConfig    m_audioConfig;
 	InputSystemConfig    m_inputConfig;
 	NetworkSystemConfig  m_networkConfig;
-	bool                 m_enablePhysics = false;
+	bool                 m_enablePhysics        = false;
+	bool                 m_enableWorkerThreadPool = false;
 };
 
 class Engine
@@ -35,6 +36,8 @@ public:
 
 	bool Startup();
 	void Shutdown();
+	void StopWorkerThreadPool();
+	bool HasWorkerThreadPool() const { return m_workerThreadPool != nullptr; }
 	bool Update(float deltaSeconds, std::function<bool()> const& shouldQuit = {});
 	void Render() const;
 	void BeginFrame();
@@ -47,7 +50,6 @@ public:
 public:
 	EngineConfig m_config;
 
-	EventSystem*   m_eventSystem   = nullptr;
 	WindowSystem*  m_windowSystem  = nullptr;
 	FileSystem*    m_fileSystem    = nullptr;
 	ScriptSystem*  m_scriptSystem  = nullptr;
@@ -62,6 +64,7 @@ public:
 	TextServer*   m_textServer   = nullptr;
 
 private:
+	WorkerThreadPool* m_workerThreadPool = nullptr;
 	double m_physicsAccumulator = 0.0;
 	bool   m_isEditorMode       = false;
 };

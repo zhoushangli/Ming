@@ -24,8 +24,6 @@ std::vector<DebugObject> s_debugMessages;
 
 bool s_isVisible = true;
 
-EventConnectionID s_clearEventID  = 0;
-EventConnectionID s_toggleEventID = 0;
 
 std::array<std::vector<RenderRequest>, static_cast<size_t>(RenderRequestPass::Count)> s_renderRequests;
 
@@ -204,16 +202,10 @@ void DebugGizmos::Startup(DebugRenderConfig const& config)
 	s_debugMessages.clear();
 	s_isVisible = true;
 
-	s_clearEventID  = g_engine->m_eventSystem->RegisterEvent("Dev_DebugRenderClear", Command_DebugRenderClear);
-	s_toggleEventID = g_engine->m_eventSystem->RegisterEvent("Dev_DebugRenderToggle", Command_DebugRenderToggle);
 }
 
 void DebugGizmos::Shutdown()
 {
-	g_engine->m_eventSystem->UnregisterEvent("Dev_DebugRenderClear", s_clearEventID);
-	g_engine->m_eventSystem->UnregisterEvent("Dev_DebugRenderToggle", s_toggleEventID);
-	s_clearEventID  = 0;
-	s_toggleEventID = 0;
 
 	s_debugRenderConfig.m_renderer = nullptr;
 	s_debugObjects.clear();
@@ -703,17 +695,4 @@ void DebugGizmos::AddWorldGrid(float duration, int halfExtent)
 
 	CreateVertexBufferForObject(object);
 	AddDebugObject(std::move(object));
-}
-
-// — Console commands —
-bool DebugGizmos::Command_DebugRenderClear([[maybe_unused]] EventArgs& args)
-{
-	Clear();
-	return true;
-}
-
-bool DebugGizmos::Command_DebugRenderToggle([[maybe_unused]] EventArgs& args)
-{
-	s_isVisible = !s_isVisible;
-	return true;
 }

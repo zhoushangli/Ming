@@ -1,5 +1,6 @@
 #pragma once
 
+#include "MingEngine/Core/Render/Vertex.hpp"
 #include "MingEngine/Core/Object/RefCounted.hpp"
 #include "MingEngine/Scene/3D/VisualInstance3D.hpp"
 

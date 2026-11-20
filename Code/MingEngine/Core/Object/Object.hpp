@@ -131,7 +131,7 @@ public:
 	void     Notification(int notification, bool reverse = false);
 	void     Free();
 
-	bool HasMethod(std::string const& methodName) const;
+	bool    HasMethod(std::string const& methodName) const;
 	Variant Call(std::string const& methodName, std::vector<Variant> const& arguments = {});
 	Variant Call(std::string const& methodName, std::vector<Variant> const& arguments, CallError& error);
 
@@ -189,7 +189,7 @@ protected:
 
 private:
 	std::map<std::string, std::vector<Connection>> m_signalMap;
-	std::vector<Connection>                      m_signalSubscriptions;
+	std::vector<Connection>                        m_signalSubscriptions;
 };
 
 class ObjectDatabase

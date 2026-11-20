@@ -19,7 +19,6 @@
 
 #include "MingEngine/Core/Math/AABB3.hpp"
 #include "MingEngine/Core/Math/CylinderZ3.hpp"
-#include "MingEngine/Engine/Event/EventSystem.hpp"
 #include "MingEngine/Engine/Render/RenderContext.hpp"
 
 class Renderer;
@@ -213,6 +212,4 @@ public:
 
 private:
 	// Console command handlers
-	static bool Command_DebugRenderClear(EventArgs& args);
-	static bool Command_DebugRenderToggle(EventArgs& args);
 };

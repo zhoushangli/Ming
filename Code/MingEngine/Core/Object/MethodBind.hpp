@@ -1,16 +1,18 @@
 #pragma once
 
 #include "MingEngine/Core/Object/Object.hpp"
+#include "MingEngine/Core/Object/Callable.hpp"
 #include "MingEngine/Core/Object/Variant.hpp"
 #include "MingEngine/Core/Object/RefCounted.hpp"
 #include "MingEngine/Core/String.hpp"
 
+#include <new>
 #include <stdexcept>
 #include <utility>
 #include <vector>
 
 template <typename T>
-struct PtrToArg
+struct PtrConverter
 {
 public:
 	using ReferenceType = std::remove_reference_t<T>;
@@ -53,7 +55,7 @@ public:
 // bool is a special case, because for different platform, the size of bool is different
 // so we need to explicitly cast this to uint8_t, which is one byte, and this aligned with C# side code
 template <>
-struct PtrToArg<bool>
+struct PtrConverter<bool>
 {
 	static bool Decode(void* ptr) { return *static_cast<uint8_t const*>(ptr) != 0; }
 
@@ -61,7 +63,7 @@ struct PtrToArg<bool>
 };
 
 template <typename T>
-struct PtrToArg<Ref<T>>
+struct PtrConverter<Ref<T>>
 {
 	static Ref<T> Decode(void* ptr) { return Ref<T>(*static_cast<T* const*>(ptr)); }
 	static void Encode(Ref<T> const& value, void* ptr)
@@ -74,7 +76,16 @@ struct PtrToArg<Ref<T>>
 		*static_cast<T**>(ptr) = object;
 	}
 };
-template <typename T> struct PtrToArg<Ref<T> const&> : PtrToArg<Ref<T>> {};
+template <typename T> struct PtrConverter<Ref<T> const&> : PtrConverter<Ref<T>> {};
+
+template <>
+struct PtrConverter<Callable>
+{
+	static Callable const& Decode(void* ptr) { return *static_cast<Callable const*>(ptr); }
+	static void Encode(Callable const& value, void* ptr) { new (ptr) Callable(value); }
+};
+
+template <> struct PtrConverter<Callable const&> : PtrConverter<Callable> {};
 
 class MethodBind
 {
@@ -129,12 +140,12 @@ private:
 		// We need to do this in compile time, so we use if constexpr
 		if constexpr (std::is_void_v<ReturnType>)
 		{
-			(instance.*m_method)(VariantCaster<Args>::Cast(arguments[Indices])...);
+			(instance.*m_method)(VariantConverter<Args>::Decode(arguments[Indices])...);
 			return Variant();
 		}
 		else
 		{
-			ReturnType result = (instance.*m_method)(VariantCaster<Args>::Cast(arguments[Indices])...);
+			ReturnType result = (instance.*m_method)(VariantConverter<Args>::Decode(arguments[Indices])...);
 			return Variant(result);
 		}
 	}
@@ -144,12 +155,12 @@ private:
 	{
 		if constexpr (std::is_void_v<ReturnType>)
 		{
-			(instance.*m_method)(PtrToArg<Args>::Decode(args[Indices])...);
+			(instance.*m_method)(PtrConverter<Args>::Decode(args[Indices])...);
 		}
 		else
 		{
-			ReturnType result = (instance.*m_method)(PtrToArg<Args>::Decode(args[Indices])...);
-			PtrToArg<ReturnType>::Encode(result, retPtr);
+			ReturnType result = (instance.*m_method)(PtrConverter<Args>::Decode(args[Indices])...);
+			PtrConverter<ReturnType>::Encode(result, retPtr);
 		}
 	}
 
@@ -196,12 +207,12 @@ private:
 	{
 		if constexpr (std::is_void_v<ReturnType>)
 		{
-			(instance.*m_method)(VariantCaster<Args>::Cast(arguments[Indices])...);
+			(instance.*m_method)(VariantConverter<Args>::Decode(arguments[Indices])...);
 			return Variant();
 		}
 		else
 		{
-			ReturnType result = (instance.*m_method)(VariantCaster<Args>::Cast(arguments[Indices])...);
+			ReturnType result = (instance.*m_method)(VariantConverter<Args>::Decode(arguments[Indices])...);
 			return Variant(result);
 		}
 	}
@@ -211,12 +222,12 @@ private:
 	{
 		if constexpr (std::is_void_v<ReturnType>)
 		{
-			(instance.*m_method)(PtrToArg<Args>::Decode(args[Indices])...);
+			(instance.*m_method)(PtrConverter<Args>::Decode(args[Indices])...);
 		}
 		else
 		{
-			ReturnType result = (instance.*m_method)(PtrToArg<Args>::Decode(args[Indices])...);
-			PtrToArg<ReturnType>::Encode(result, retPtr);
+			ReturnType result = (instance.*m_method)(PtrConverter<Args>::Decode(args[Indices])...);
+			PtrConverter<ReturnType>::Encode(result, retPtr);
 		}
 	}
 
@@ -255,12 +266,12 @@ private:
 	{
 		if constexpr (std::is_void_v<ReturnType>)
 		{
-			(*m_method)(VariantCaster<Args>::Cast(arguments[Indices])...);
+			(*m_method)(VariantConverter<Args>::Decode(arguments[Indices])...);
 			return Variant();
 		}
 		else
 		{
-			ReturnType result = (*m_method)(VariantCaster<Args>::Cast(arguments[Indices])...);
+			ReturnType result = (*m_method)(VariantConverter<Args>::Decode(arguments[Indices])...);
 			return Variant(result);
 		}
 	}
@@ -270,12 +281,12 @@ private:
 	{
 		if constexpr (std::is_void_v<ReturnType>)
 		{
-			(*m_method)(PtrToArg<Args>::Decode(args[Indices])...);
+			(*m_method)(PtrConverter<Args>::Decode(args[Indices])...);
 		}
 		else
 		{
-			ReturnType result = (*m_method)(PtrToArg<Args>::Decode(args[Indices])...);
-			PtrToArg<ReturnType>::Encode(result, retPtr);
+			ReturnType result = (*m_method)(PtrConverter<Args>::Decode(args[Indices])...);
+			PtrConverter<ReturnType>::Encode(result, retPtr);
 		}
 	}
 

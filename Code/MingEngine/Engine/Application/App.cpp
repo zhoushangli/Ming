@@ -29,6 +29,7 @@ App::App(MingRunConfig const& config) : m_runConfig(config)
 {
 	EngineConfig engineConfig;
 	engineConfig.m_enablePhysics = config.mode == MingRunMode::Game;
+	engineConfig.m_enableWorkerThreadPool = config.mode == MingRunMode::Game;
 	engineConfig.m_windowConfig.m_clientAspect = 16.f / 9.f;
 	engineConfig.m_windowConfig.m_appName = config.mode == MingRunMode::ProjectManager
 		? "MingEngine - Project Manager" : "MingEngine";
@@ -89,7 +90,6 @@ void App::Startup()
 		}
 	}
 
-	m_quitEventID = RegisterEvent("Quit", App::OnQuit);
 	EnterState();
 }
 
@@ -100,12 +100,8 @@ void App::Shutdown()
 		return;
 	}
 
+	m_engine->StopWorkerThreadPool();
 	ExitState();
-	if (m_quitEventID != 0)
-	{
-		UnregisterEvent("Quit", m_quitEventID);
-		m_quitEventID = 0;
-	}
 
 	ProjectSettings::Reset();
 	ThemeDatabase::Shutdown();
@@ -217,14 +213,4 @@ void App::StopGame()
 	{
 		editor->StopGame();
 	}
-}
-
-bool App::OnQuit([[maybe_unused]] EventArgs& args)
-{
-	if (g_app != nullptr)
-	{
-		g_app->Quit();
-	}
-
-	return true;
 }

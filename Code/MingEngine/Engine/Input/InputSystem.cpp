@@ -1,5 +1,6 @@
 #include "MingEngine/Engine/Input/InputSystem.hpp"
 
+#include "MingEngine/Core/StringUtils.hpp"
 #include "MingEngine/Core/ErrorWarningAssert.hpp"
 #include "MingEngine/Core/Math/MathUtils.hpp"
 #include "MingEngine/Core/Object/ClassDatabase.hpp"
@@ -370,15 +371,6 @@ void InputSystem::ProcessInputEvent(InputEvent const& event)
 		if (m_windowFocused && m_cursorMode == CursorMode::FPS)
 		{
 			m_cursorClientDelta += event.m_relative;
-		}
-
-		break;
-	case InputEventType::Text:
-		if (event.m_codepoint <= 255)
-		{
-			EventArgs args;
-			args.SetValue("asKey", std::to_string(event.m_codepoint));
-			FireEvent("CharInput", args);
 		}
 
 		break;

@@ -50,6 +50,7 @@ struct CSharpTypeInfo
 	std::string m_ptrCallArgument;
 	std::string m_callOut;
 
+	bool m_keepArgumentAlive      = false;
 	bool m_disposableReturn        = false;
 	bool m_defaultInitializeReturn = false;
 };

@@ -88,8 +88,9 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ProjectReference Include="..\CSharp\MingPlugins\MingPlugins.csproj">
+    <ProjectReference Include="..\CSharp\MingPlugin\MingPlugin.csproj">
       <Project>{1340bef0-1951-eb9e-a3c5-15e26a91156a}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
@@ -154,7 +155,6 @@
     <ClCompile Include="Core\Object\ClassDatabase.cpp" />
     <ClCompile Include="Core\Object\Callable.cpp" />
     <ClCompile Include="Core\Object\Signal.cpp" />
-    <ClCompile Include="Engine\Event\EventSystem.cpp" />
     <ClCompile Include="Engine\File\FileSystem.cpp" />
     <ClCompile Include="Core\IO\VirtualPath.cpp" />
     <ClCompile Include="Engine\File\FileUtils.cpp" />
@@ -354,7 +354,6 @@
     <ClInclude Include="Core\Object\CallError.hpp" />
     <ClInclude Include="Core\Object\Callable.hpp" />
     <ClInclude Include="Core\Object\Signal.hpp" />
-    <ClInclude Include="Engine\Event\EventSystem.hpp" />
     <ClInclude Include="Engine\File\FileSystem.hpp" />
     <ClInclude Include="Core\IO\VirtualPath.hpp" />
     <ClInclude Include="Engine\File\FileUtils.hpp" />

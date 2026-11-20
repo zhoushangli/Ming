@@ -48,6 +48,9 @@ bool TrySerialize(Variant const& value, Json& outJson)
 	case Variant::Type::Bool:
 		outJson = value.As<bool>();
 		return true;
+	case Variant::Type::Int64:
+		outJson = value.As<int64_t>();
+		return true;
 	case Variant::Type::UInt32:
 		outJson = value.As<uint32_t>();
 		return true;
@@ -147,6 +150,15 @@ bool TryDeserialize(Json const& json, Variant::Type expectedType, Variant& outVa
 			if (json.is_boolean())
 			{
 				outValue = Variant(json.get<bool>());
+				return true;
+			}
+
+			break;
+		case Variant::Type::Int64:
+			if (json.is_number_integer()
+				&& (!json.is_number_unsigned() || json.get<uint64_t>() <= static_cast<uint64_t>((std::numeric_limits<int64_t>::max)())))
+			{
+				outValue = Variant(json.get<int64_t>());
 				return true;
 			}
 

@@ -16,6 +16,11 @@ public static partial class VariantUtils
             return Variant.Type.UInt32;
         }
 
+        if (typeof(T) == typeof(long))
+        {
+            return Variant.Type.Int64;
+        }
+
         if (typeof(T) == typeof(int))
         {
             return Variant.Type.Int;
@@ -145,6 +150,18 @@ public static partial class VariantUtils
             return (T)Enum.ToObject(typeof(T), variant.Int);
         }
 
+        if (typeof(T) == typeof(long))
+        {
+            GuaranteeTag(in variant, Variant.Type.Int64);
+            return (T)(object)variant.Int64;
+        }
+
+        if (typeof(T) == typeof(Callable))
+        {
+            GuaranteeTag(in variant, Variant.Type.Callable);
+            return (T)(object)Callable.FromNative(in *(ming_callable*)variant.OwnedValue);
+        }
+
         if (typeof(T) == typeof(int))
         {
             GuaranteeTag(in variant, Variant.Type.Int);
@@ -272,6 +289,18 @@ public static partial class VariantUtils
             variant.Type = Variant.Type.Int;
             variant.Int = Convert.ToInt32(value);
             return variant;
+        }
+
+        if (typeof(T) == typeof(long))
+        {
+            variant.Type = Variant.Type.Int64;
+            variant.Int64 = (long)(object)value;
+            return variant;
+        }
+
+        if (typeof(T) == typeof(Callable))
+        {
+            return NativeFuncs.CreateCallableVariant((Callable)(object)value);
         }
 
         if (typeof(T) == typeof(int))

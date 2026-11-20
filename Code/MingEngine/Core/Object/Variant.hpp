@@ -17,6 +17,7 @@
 #include <string>
 #include <type_traits>
 
+class Callable;
 template <typename T> class Ref;
 template <typename T> struct RefTypeInfo { static constexpr bool IsRef = false; };
 template <typename T> struct RefTypeInfo<Ref<T>>
@@ -49,6 +50,8 @@ public:
 		ObjectPtr,
 		Any, // This is a special type used for method binding, it means the method can accept any type of argument
 		UInt32,
+		Int64,
+		Callable,
 	};
 
 private:
@@ -70,6 +73,7 @@ public:
 	Variant(bool value);
 	Variant(int value);
 	Variant(uint32_t value);
+	Variant(int64_t value);
 	template <typename T, std::enable_if_t<std::is_enum_v<T>, int> = 0>
 	Variant(T value) : Variant(static_cast<int>(value)) {}
 	static Variant FromRef(Object* value);
@@ -90,6 +94,7 @@ public:
 	Variant(EulerAngles const& value);
 	Variant(Matrix4x4 const& value);
 	Variant(Object* const& value);
+	Variant(Callable const& value);
 
 	// 1) Copy or steal the payload of the other variant
 	// 2) Keep the tag, so a copied String shares its text and an owned type is copied by value
@@ -155,6 +160,14 @@ public:
 		else if constexpr (std::is_same_v<CleanType, uint32_t>)
 		{
 			return Type::UInt32;
+		}
+		else if constexpr (std::is_same_v<CleanType, int64_t>)
+		{
+			return Type::Int64;
+		}
+		else if constexpr (std::is_same_v<CleanType, Callable>)
+		{
+			return Type::Callable;
 		}
 		else if constexpr (std::is_enum_v<CleanType>)
 		{
@@ -231,7 +244,7 @@ private:
 		using CleanType = std::remove_cv_t<std::remove_reference_t<T>>;
 
 		return std::is_same_v<CleanType, OBB2> || std::is_same_v<CleanType, Capsule3>
-			   || std::is_same_v<CleanType, Matrix4x4>;
+			   || std::is_same_v<CleanType, Matrix4x4> || std::is_same_v<CleanType, Callable>;
 	}
 
 	// 1) Copy the bytes of the value into the payload
@@ -266,9 +279,9 @@ private:
 static_assert(sizeof(Variant) == 24, "Variant must stay 24 bytes so the tag and the payload fit.");
 
 template <typename T>
-struct VariantCaster
+struct VariantConverter
 {
-	static decltype(auto) Cast(Variant const& value)
+	static decltype(auto) Decode(Variant const& value)
 	{
 		using CleanType   = std::remove_cv_t<std::remove_reference_t<T>>;
 		using PointeeType = std::remove_cv_t<std::remove_pointer_t<CleanType>>;

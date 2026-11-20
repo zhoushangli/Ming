@@ -1,7 +1,6 @@
 #pragma once
 
 #include "MingEngine/Engine/Application/MingRunConfig.hpp"
-#include "MingEngine/Engine/Event/EventSystem.hpp"
 
 #include <memory>
 
@@ -33,8 +32,6 @@ public:
 	MingRunConfig const& GetRunConfig() const { return m_runConfig; }
 	Engine* GetEngine() const { return m_engine.get(); }
 
-	static bool OnQuit(EventArgs& args);
-
 private:
 	void EnterState();
 	void ExitState();
@@ -48,7 +45,6 @@ private:
 	bool m_shouldQuit = false;
 	bool m_comInitialized = false;
 	int m_exitCode = 0;
-	EventConnectionID m_quitEventID = 0;
 };
 
 extern App* g_app;

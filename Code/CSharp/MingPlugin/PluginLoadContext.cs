@@ -1,4 +1,4 @@
-namespace MingPlugins;
+namespace MingPlugin;
 
 using System.Reflection;
 using System.Runtime.Loader;

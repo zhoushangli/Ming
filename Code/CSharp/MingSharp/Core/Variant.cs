@@ -22,7 +22,9 @@ public partial struct Variant : IDisposable
         Matrix4x4 = 13,
         ObjectPtr = 14,
         Any = 15,
-        UInt32 = 16
+        UInt32 = 16,
+        Int64 = 17,
+        Callable = 18
     }
 
     internal sealed class Disposer : IDisposable
@@ -139,7 +141,7 @@ public partial struct Variant : IDisposable
         {
             Variant result = default;
             if (value.Type == Type.String || value.Type == Type.OBB2 || value.Type == Type.Capsule3
-                || value.Type == Type.Matrix4x4 || value.OwnsReference)
+                || value.Type == Type.Matrix4x4 || value.Type == Type.Callable || value.OwnsReference)
             {
                 result._disposer = new Disposer(in value);
             }

@@ -35,31 +35,41 @@ Ming Engine 是一个使用 C++ 编写的个人自研游戏引擎项目，主要
 - `Run` - 部署后的引擎程序与运行时文件
 - `Temporary` - 构建中间文件与验证生成产物
 
-解决方案文件夹与上述结构对应。C++ 筛选器跟随源码目录，外部依赖统一归入 `ThirdParty`。`Ming.NET.Sdk` 和测试文件通过解决方案条目展示，不增加构建项目。
+解决方案文件夹与上述结构对应。C++ 筛选器跟随源码目录，外部依赖统一归入 `ThirdParty`。SDK 使用独立的 `Code/CSharp/SDK/Ming.NET.Sdk.sln`，包含 SDK、源码生成器和共享的 MingSharp 工程；主解决方案只构建引擎及其运行组件。
 
 ## 脚本系统
 
-Ming Engine 通过 .NET 承载 C# 游戏脚本。`MingSharp` 提供托管 API，`MingPlugins` 处理托管加载与互操作，`MingTools` 提供项目及构建工具，`Ming.SourceGenerators` 提供编译期脚本元数据。
+Ming Engine 通过 .NET 承载 C# 游戏脚本。`MingSharp` 提供托管 API，`MingPlugin` 处理托管加载、互操作、项目生成及构建工具，`Ming.SourceGenerators` 提供编译期脚本元数据。运行组件位于 `Code/CSharp/MingSharp/` 和 `Code/CSharp/MingPlugin/`；SDK 与源码生成器位于 `Code/CSharp/SDK/`。
 
 ## 构建说明
 
 当前仓库包含引擎项目文件和源码。项目主要在 Windows / Visual Studio 环境下开发，渲染后端基于 Direct3D 11。
 
+### VS Code 任务
+
+- `Build MingEngine Debug` / `Build MingEngine Release`：构建并部署引擎及配套托管组件，不生成 NuGet 包。
+- `Generate C# Bindings`：构建 Release 原生生成器，清理旧生成文件，再生成 MingSharp 绑定源码；不会自动编译新的托管 DLL。
+- `Pack Ming SDK`：依次生成最新绑定、构建并部署 Release 托管组件、打包 SDK。任一步失败即停止，不自动上传。
+
+任务依赖在 `tasks.json` 中串联；`launch.json` 用于启动或调试程序，并通过 `preLaunchTask` 运行准备任务。绑定生成的 launch 保留供调试使用。
+
+`Run/MingSharp/Api/` 提供 MingPlugin、MingSharp 及其配套运行文件；游戏编译使用 NuGet SDK 包内的规则和生成器，不再使用旧的 `Run/MingSharp/Tool/`。
+
 ### C# SDK 包
 
-生成 C# API 绑定后，在引擎仓库根目录执行：
+完整准备流程使用 VS Code 的 `Pack Ming SDK` 任务。已有最新绑定时，也可在引擎仓库根目录单独打包：
 
 ```powershell
-dotnet pack Code/CSharp/Ming.NET.Sdk/Ming.NET.Sdk.csproj -c Release
+dotnet pack Code/CSharp/SDK/Ming.NET.Sdk/Ming.NET.Sdk.csproj -c Release
 ```
 
 此命令以 Release 构建托管 API 和源码生成器，输出 `Temporary/NuGet/Ming.NET.Sdk.0.1.0-dev.1.nupkg`。普通引擎构建不生成包。包内包含 SDK 构建规则、`MingSharp.dll`、API 文档和源码生成器，不包含引擎运行程序。
 
-包名和版本统一维护在 `Code/CSharp/Ming.NET.Sdk/MingSdkPackage.props` 中，并在构建时嵌入 MingTools。新游戏项目使用 `<Project Sdk="Ming.NET.Sdk/0.1.0-dev.1">`，目标框架仍为 `net9.0`。生成器不会自动改写已有项目。
+包名和版本统一维护在 `Code/CSharp/MingSdkPackage.props` 中，并在构建时嵌入 MingPlugin。新游戏项目使用 `<Project Sdk="Ming.NET.Sdk/0.1.0-dev.1">`，目标框架仍为 `net9.0`。生成器不会自动改写已有项目。
 
 在 nuget.org 点击 **Upload** 上传 `.nupkg`，核对元数据并提交。等待校验和索引完成后，再执行 `dotnet build Game.csproj` 构建游戏项目。发布之前，全新环境无法从 nuget.org 还原此包；本流程不配置本地包源。打包、发布和运行验证分别确认。
 
-已发布版本不能覆盖。API 或构建规则变化后，需要递增共享版本、重新构建 MingTools、生成新包，并明确更新已有游戏项目的 SDK 版本。包名能否使用以 nuget.org 的名称和所有权校验为准。
+已发布版本不能覆盖。API 或构建规则变化后，需要递增共享版本、重新构建 MingPlugin、生成新包，并明确更新已有游戏项目的 SDK 版本。包名能否使用以 nuget.org 的名称和所有权校验为准。
 
 ## 未来计划
 

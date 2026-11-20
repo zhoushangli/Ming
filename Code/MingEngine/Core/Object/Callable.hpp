@@ -11,10 +11,13 @@
 #include <vector>
 
 class Object;
+class WorkerThreadPool;
 struct ManagedCallable;
 
 class Callable
 {
+	friend class WorkerThreadPool;
+
 public:
 	using CallError         = ::CallError;
 	using InvokeDelegate    = void (*)(void*, void*, Variant const* const*, int32_t, Variant*, CallError*);
@@ -34,7 +37,7 @@ public:
 	// Retain a real delegate and its typed trampoline in shared native state.
 	// e.g. FromManaged(nullptr, handle, trampoline, invoke, compare, release) can represent a closure.
 	static Callable FromManaged(Object const* target, void* handle, void* trampoline,
-		InvokeDelegate invoke, CompareDelegates compare, ReleaseDelegate release);
+		InvokeDelegate invoke, CompareDelegates compare, ReleaseDelegate release, int32_t workerArgumentCount = -1);
 
 	static void InvalidateManagedCallables();
 	static bool IsInvokingManagedCallable();
@@ -63,6 +66,8 @@ public:
 	Variant Call(std::vector<Variant> const& arguments, CallError& error) const;
 
 private:
+	bool CanRunOnWorker(int32_t argumentCount) const;
+	void InvokeOnWorker(Variant const* argument) const;
 	void ReleaseManaged();
 
 private:

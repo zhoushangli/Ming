@@ -1,12 +1,14 @@
 #pragma once
 
+#include "MingEngine/Core/Object/Object.hpp"
+
 #include "MingEngine/Engine/Application/ProjectSettings.hpp"
 #include "MingEngine/Core/Object/ObjectID.hpp"
 
 class Node;
 class SceneTree;
 
-class SceneSystem
+class SceneSystem : public Object
 {
 public:
 	SceneSystem() = default;

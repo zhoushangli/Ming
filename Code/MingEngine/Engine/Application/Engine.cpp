@@ -3,25 +3,23 @@
 #include "MingEngine/Core/ErrorWarningAssert.hpp"
 
 #include "MingEngine/Core/Math/RandomNumberGenerator.hpp"
+#include "MingEngine/Core/OS/WorkerThreadPool.hpp"
 #include "MingEngine/Engine/Audio/AudioSystem.hpp"
 #include "MingEngine/Engine/Input/InputSystem.hpp"
 #include "MingEngine/Engine/Render/RenderServer.hpp"
 #include "MingEngine/Engine/Window/WindowSystem.hpp"
 
+#include <algorithm>
 #include <cmath>
+#include <thread>
 
 Engine* g_engine = nullptr;
 
 Engine::Engine(EngineConfig config) : m_config(config)
 {
 	g_engine = this;
-	m_sceneSystem = new SceneSystem();
-	m_physicsServer = new PhysicsServer();
-
-	if (config.m_eventSystemConfig.m_isEnable)
-	{
-		m_eventSystem = MemNew<EventSystem>(config.m_eventSystemConfig);
-	}
+	m_sceneSystem = MemNew<SceneSystem>();
+	m_physicsServer = MemNew<PhysicsServer>();
 
 	if (config.m_windowConfig.m_isEnable)
 	{
@@ -40,10 +38,10 @@ Engine::Engine(EngineConfig config) : m_config(config)
 
 	if (config.m_rendererServerConfig.m_isEnable)
 	{
-		m_renderServer = new RenderServer(config.m_rendererServerConfig);
+		m_renderServer = MemNew<RenderServer>(config.m_rendererServerConfig);
 	}
 
-	m_textServer = new TextServer();
+	m_textServer = MemNew<TextServer>();
 	if (config.m_inputConfig.m_isEnable)
 	{
 		m_inputSystem = MemNew<InputSystem>(config.m_inputConfig);
@@ -62,9 +60,11 @@ Engine::Engine(EngineConfig config) : m_config(config)
 
 Engine::~Engine()
 {
-	delete m_sceneSystem;
+	StopWorkerThreadPool();
+
+	MemDelete(m_sceneSystem);
 	m_sceneSystem = nullptr;
-	delete m_physicsServer;
+	MemDelete(m_physicsServer);
 	m_physicsServer = nullptr;
 
 	ClassDatabase::ClearGlobalObjects();
@@ -78,10 +78,10 @@ Engine::~Engine()
 	MemDelete(m_fileSystem);
 	m_fileSystem = nullptr;
 
-	delete m_renderServer;
+	MemDelete(m_renderServer);
 	m_renderServer = nullptr;
 
-	delete m_textServer;
+	MemDelete(m_textServer);
 	m_textServer = nullptr;
 
 	MemDelete(m_scriptSystem);
@@ -90,20 +90,12 @@ Engine::~Engine()
 	MemDelete(m_windowSystem);
 	m_windowSystem = nullptr;
 
-	MemDelete(m_eventSystem);
-	m_eventSystem = nullptr;
-
 	MemDelete(m_networkSystem);
 	m_networkSystem = nullptr;
 }
 
 bool Engine::Startup()
 {
-	if (m_eventSystem != nullptr)
-	{
-		m_eventSystem->Startup();
-	}
-
 	if (m_windowSystem != nullptr)
 	{
 		m_windowSystem->Startup();
@@ -117,6 +109,20 @@ bool Engine::Startup()
 	if (m_fileSystem != nullptr)
 	{
 		m_fileSystem->Startup();
+	}
+
+	if (m_config.m_enableWorkerThreadPool && m_scriptSystem != nullptr)
+	{
+		m_workerThreadPool = MemNew<WorkerThreadPool>();
+		int const threadCount = static_cast<int>((std::max)(1u, std::thread::hardware_concurrency()));
+		if (!m_workerThreadPool->Start(threadCount))
+		{
+			StopWorkerThreadPool();
+			ERR_PRINT("Cannot start the worker thread pool.");
+			return false;
+		}
+
+		ClassDatabase::RegisterGlobalObject(m_workerThreadPool);
 	}
 
 	if (m_scriptSystem != nullptr)
@@ -139,7 +145,7 @@ bool Engine::Startup()
 		m_networkSystem->Startup();
 	}
 
-	if (m_windowSystem != nullptr && m_renderServer != nullptr && m_inputSystem != nullptr && m_eventSystem != nullptr)
+	if (m_windowSystem != nullptr && m_renderServer != nullptr && m_inputSystem != nullptr)
 	{
 		m_sceneSystem->Startup();
 	}
@@ -153,8 +159,23 @@ bool Engine::Startup()
 	return true;
 }
 
+void Engine::StopWorkerThreadPool()
+{
+	if (m_workerThreadPool == nullptr)
+	{
+		return;
+	}
+
+	m_workerThreadPool->Stop();
+	ClassDatabase::UnregisterGlobalObject(WorkerThreadPool::GetStaticClassName());
+	MemDelete(m_workerThreadPool);
+	m_workerThreadPool = nullptr;
+}
+
 void Engine::Shutdown()
 {
+	StopWorkerThreadPool();
+
 	m_sceneSystem->Shutdown();
 	m_physicsServer->Shutdown();
 	m_physicsAccumulator = 0.0;
@@ -193,20 +214,10 @@ void Engine::Shutdown()
 	{
 		m_windowSystem->Shutdown();
 	}
-
-	if (m_eventSystem != nullptr)
-	{
-		m_eventSystem->Shutdown();
-	}
 }
 
 void Engine::BeginFrame()
 {
-	if (m_eventSystem != nullptr)
-	{
-		m_eventSystem->BeginFrame();
-	}
-
 	if (m_windowSystem != nullptr)
 	{
 		m_windowSystem->BeginFrame();
@@ -280,11 +291,6 @@ void Engine::EndFrame()
 	if (m_windowSystem != nullptr)
 	{
 		m_windowSystem->EndFrame();
-	}
-
-	if (m_eventSystem != nullptr)
-	{
-		m_eventSystem->EndFrame();
 	}
 }
 

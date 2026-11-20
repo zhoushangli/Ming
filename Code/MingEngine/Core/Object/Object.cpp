@@ -251,6 +251,9 @@ void Object::Notification(int notification, bool reverse)
 
 void Object::Free()
 {
+	ERR_FAIL_COND_MSG(ClassDatabase::GetGlobalObject(GetClassName()) == this,
+		"Engine singletons are released by the engine.");
+
 	ERR_FAIL_COND_MSG(dynamic_cast<RefCounted*>(this) != nullptr,
 		"RefCounted objects must be released through their references.");
 

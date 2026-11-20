@@ -1,7 +1,22 @@
 #include "MingEngine/Core/OS/WorkerThreadPool.hpp"
 
-#include <utility>
-#include <vector>
+#include "MingEngine/Core/Object/ClassDatabase.hpp"
+
+#include <limits>
+#include <new>
+
+void WorkerThreadPool::BindMethods()
+{
+	ClassDatabase::BindMethod("AddTask", &WorkerThreadPool::AddTask, { "callback" });
+	ClassDatabase::BindMethod("AddGroupTask", &WorkerThreadPool::AddGroupTask,
+		{ "callback", "elementCount", "tasksNeeded" });
+
+	ClassDatabase::BindMethod("IsTaskCompleted", &WorkerThreadPool::IsTaskCompleted, { "id" });
+	ClassDatabase::BindMethod("IsGroupTaskCompleted", &WorkerThreadPool::IsGroupTaskCompleted, { "id" });
+
+	ClassDatabase::BindMethod("WaitForTaskCompletion", &WorkerThreadPool::WaitForTaskCompletion, { "id" });
+	ClassDatabase::BindMethod("WaitForGroupTaskCompletion", &WorkerThreadPool::WaitForGroupTaskCompletion, { "id" });
+}
 
 WorkerThreadPool::~WorkerThreadPool()
 {
@@ -31,9 +46,15 @@ bool WorkerThreadPool::Start(int threadCount)
 		}
 
 		// 1) Allocate stable storage before starting any worker.
-		m_threads     = new Thread[threadCount];
+		m_threads = new (std::nothrow) Thread[threadCount];
+		if (m_threads == nullptr)
+		{
+			return false;
+		}
+
+		m_ownerThread = Thread::GetCallerId();
 		m_threadCount = threadCount;
-		int started   = 0;
+		int started = 0;
 		for (; started < threadCount; ++started)
 		{
 			if (!m_threads[started].Start(ThreadCallback, this))
@@ -76,9 +97,9 @@ void WorkerThreadPool::Stop()
 	}
 }
 
-WorkerThreadPool::TaskID WorkerThreadPool::AddTask(TaskCallback callback)
+WorkerThreadPool::TaskID WorkerThreadPool::AddTask(Callable const& callback)
 {
-	if (!callback)
+	if (Thread::GetCallerId() != m_ownerThread || !callback.CanRunOnWorker(0))
 	{
 		return INVALID_TASK_ID;
 	}
@@ -86,25 +107,26 @@ WorkerThreadPool::TaskID WorkerThreadPool::AddTask(TaskCallback callback)
 	TaskID id = INVALID_TASK_ID;
 	{
 		std::unique_lock<std::mutex> lock(m_mutex);
-		if (!m_accepting)
+		if (!m_accepting || m_nextId == std::numeric_limits<TaskID>::max())
 		{
 			return INVALID_TASK_ID;
 		}
 
 		id               = m_nextId++;
-		Task* task       = new Task();
-		task->m_callback = std::move(callback);
+		Task* task = nullptr;
 		try
 		{
+			task = new Task();
+			task->m_callback = callback;
 			m_tasks.emplace(id, task);
-			m_pending.push(task);
+			m_pending.push_back(task);
 		}
 		catch (...)
 		{
 			m_tasks.erase(id);
 			lock.unlock();
 			delete task;
-			throw;
+			return INVALID_TASK_ID;
 		}
 	}
 
@@ -112,9 +134,10 @@ WorkerThreadPool::TaskID WorkerThreadPool::AddTask(TaskCallback callback)
 	return id;
 }
 
-WorkerThreadPool::GroupID WorkerThreadPool::AddGroupTask(GroupCallback callback, int elementCount, int tasksNeeded)
+WorkerThreadPool::GroupID WorkerThreadPool::AddGroupTask(Callable const& callback, int elementCount, int tasksNeeded)
 {
-	if (!callback || elementCount < 0 || (elementCount > 0 && tasksNeeded == 0))
+	if (Thread::GetCallerId() != m_ownerThread || !callback.CanRunOnWorker(1)
+		|| elementCount < 0 || (elementCount > 0 && tasksNeeded == 0))
 	{
 		return INVALID_GROUP_ID;
 	}
@@ -122,7 +145,7 @@ WorkerThreadPool::GroupID WorkerThreadPool::AddGroupTask(GroupCallback callback,
 	GroupID id = INVALID_GROUP_ID;
 	{
 		std::unique_lock<std::mutex> lock(m_mutex);
-		if (!m_accepting)
+		if (!m_accepting || m_nextId == std::numeric_limits<TaskID>::max())
 		{
 			return INVALID_GROUP_ID;
 		}
@@ -137,54 +160,39 @@ WorkerThreadPool::GroupID WorkerThreadPool::AddGroupTask(GroupCallback callback,
 			tasksNeeded = 0;
 		}
 
-		// 1) Prepare distinct Tasks sharing one Group before publishing any work.
-		Group* group            = new Group();
-		group->m_elementCount   = elementCount;
-		group->m_remainingTasks = tasksNeeded;
-		std::vector<Task*> tasks;
-		int                posted = 0;
-		id                        = m_nextId++;
+		// 1) Publish the entire group while holding the queue lock.
+		Group* group = nullptr;
+		size_t const previousPendingCount = m_pending.size();
+		id = m_nextId++;
 		try
 		{
-			tasks.reserve(tasksNeeded);
+			group = new Group();
+			group->m_callback       = callback;
+			group->m_elementCount   = elementCount;
+			group->m_remainingTasks = tasksNeeded;
+			m_groups.emplace(id, group);
+
 			for (int index = 0; index < tasksNeeded; ++index)
 			{
+				m_pending.push_back(nullptr);
 				Task* task = new Task();
-				tasks.push_back(task);
-				task->m_groupCallback = callback;
-				task->m_group         = group;
-			}
-
-			// 2) Register even empty groups so they can be queried and reclaimed by ID.
-			m_groups.emplace(id, group);
-			for (Task* task : tasks)
-			{
-				m_pending.push(task);
-				++posted;
+				task->m_group = group;
+				m_pending.back() = task;
 			}
 		}
 		catch (...)
 		{
-			// 3) Keep queued Tasks alive and release unpublished Tasks outside the lock.
-			group->m_remainingTasks = posted;
-			if (posted == 0)
+			// 2) Undo partial publication before a worker can take a Task.
+			while (m_pending.size() > previousPendingCount)
 			{
-				m_groups.erase(id);
+				delete m_pending.back();
+				m_pending.pop_back();
 			}
 
+			m_groups.erase(id);
 			lock.unlock();
-			for (int index = posted; index < static_cast<int>(tasks.size()); ++index)
-			{
-				delete tasks[index];
-			}
-
-			if (posted == 0)
-			{
-				delete group;
-			}
-
-			m_workAvailable.notify_all();
-			throw;
+			delete group;
+			return INVALID_GROUP_ID;
 		}
 	}
 
@@ -194,6 +202,11 @@ WorkerThreadPool::GroupID WorkerThreadPool::AddGroupTask(GroupCallback callback,
 
 bool WorkerThreadPool::IsTaskCompleted(TaskID id) const
 {
+	if (Thread::GetCallerId() != m_ownerThread)
+	{
+		return false;
+	}
+
 	std::lock_guard<std::mutex> lock(m_mutex);
 	auto const                  found = m_tasks.find(id);
 	return found != m_tasks.end() && found->second->m_completed;
@@ -201,6 +214,11 @@ bool WorkerThreadPool::IsTaskCompleted(TaskID id) const
 
 bool WorkerThreadPool::IsGroupTaskCompleted(GroupID id) const
 {
+	if (Thread::GetCallerId() != m_ownerThread)
+	{
+		return false;
+	}
+
 	std::lock_guard<std::mutex> lock(m_mutex);
 	auto const                  found = m_groups.find(id);
 	return found != m_groups.end() && found->second->m_remainingTasks == 0;
@@ -208,6 +226,11 @@ bool WorkerThreadPool::IsGroupTaskCompleted(GroupID id) const
 
 bool WorkerThreadPool::WaitForTaskCompletion(TaskID id)
 {
+	if (Thread::GetCallerId() != m_ownerThread)
+	{
+		return false;
+	}
+
 	std::unique_lock<std::mutex> lock(m_mutex);
 	auto const                   found = m_tasks.find(id);
 	if (found == m_tasks.end())
@@ -233,6 +256,11 @@ bool WorkerThreadPool::WaitForTaskCompletion(TaskID id)
 
 bool WorkerThreadPool::WaitForGroupTaskCompletion(GroupID id)
 {
+	if (Thread::GetCallerId() != m_ownerThread)
+	{
+		return false;
+	}
+
 	std::unique_lock<std::mutex> lock(m_mutex);
 	auto const                   found = m_groups.find(id);
 	if (found == m_groups.end())
@@ -251,6 +279,7 @@ bool WorkerThreadPool::WaitForGroupTaskCompletion(GroupID id)
 
 	// 2) No Task can access this Group after the final retirement.
 	m_groups.erase(id);
+	lock.unlock();
 	delete group;
 	return true;
 }
@@ -280,7 +309,7 @@ void WorkerThreadPool::ThreadFunction()
 			}
 
 			task = m_pending.front();
-			m_pending.pop();
+			m_pending.pop_front();
 		}
 
 		// 1) Invoke user callbacks outside the queue and state lock.
@@ -293,7 +322,7 @@ void WorkerThreadPool::ExecuteTask(Task* task)
 	Group* group = task->m_group;
 	if (group == nullptr)
 	{
-		task->m_callback();
+		task->m_callback.InvokeOnWorker(nullptr);
 		{
 			std::lock_guard<std::mutex> lock(m_mutex);
 			task->m_completed = true;
@@ -317,7 +346,8 @@ void WorkerThreadPool::ExecuteTask(Task* task)
 			index = group->m_nextIndex++;
 		}
 
-		task->m_groupCallback(index);
+		Variant const argument(index);
+		group->m_callback.InvokeOnWorker(&argument);
 	}
 
 	// 2) Destroy this internal Task before retiring its use of the shared Group.

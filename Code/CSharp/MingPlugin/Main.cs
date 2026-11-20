@@ -8,7 +8,7 @@ using Ming;
 // e.g. String* parameters below are Ming.String, while string stays System.String.
 using String = Ming.String;
 
-namespace MingPlugins
+namespace MingPlugin
 {
     public static class Main
     {
@@ -71,7 +71,7 @@ namespace MingPlugins
         // to a single instance.
         private static readonly List<string> s_sharedAssemblies = new();
 
-        // The context that owns the shared assemblies: the one MingPlugins itself lives in.
+        // The context that owns the shared assemblies: the one MingPlugin itself lives in.
         private static readonly AssemblyLoadContext s_hostLoadContext =
             AssemblyLoadContext.GetLoadContext(typeof(MingObject).Assembly) ?? AssemblyLoadContext.Default;
 
@@ -124,7 +124,7 @@ namespace MingPlugins
         {
             try
             {
-                MingTools.BuildSystem.CloseProjectBuild();
+                BuildSystem.CloseProjectBuild();
                 return Log(ScriptManagerBridge.GetBindingSummary());
             }
 
@@ -322,7 +322,7 @@ namespace MingPlugins
         {
             try
             {
-                return projectDirectory != null && MingTools.BuildSystem.BeginProjectBuild(
+                return projectDirectory != null && BuildSystem.BeginProjectBuild(
                     Marshaling.ConvertStringToManaged(*projectDirectory)) ? 0 : -1;
             }
             catch (Exception exception)
@@ -337,12 +337,12 @@ namespace MingPlugins
         {
             if (exitCode == null)
             {
-                return (int)MingTools.BuildSystem.BuildState.Failed;
+                return (int)BuildSystem.BuildState.Failed;
             }
 
             try
             {
-                var state = MingTools.BuildSystem.PollProjectBuild(message => Log(message), out int code);
+                var state = BuildSystem.PollProjectBuild(message => Log(message), out int code);
                 *exitCode = code;
                 return (int)state;
             }
@@ -350,7 +350,7 @@ namespace MingPlugins
             {
                 *exitCode = -1;
                 Log($"[Error] Could not poll C# build: {exception}");
-                return (int)MingTools.BuildSystem.BuildState.Failed;
+                return (int)BuildSystem.BuildState.Failed;
             }
         }
 
@@ -359,7 +359,7 @@ namespace MingPlugins
         {
             try
             {
-                MingTools.BuildSystem.CloseProjectBuild();
+                BuildSystem.CloseProjectBuild();
                 return 0;
             }
             catch (Exception exception)
@@ -383,7 +383,7 @@ namespace MingPlugins
                 string projectPath = Marshaling.ConvertStringToManaged(*projectDirectory);
 
                 // 2) Build the project and forward its diagnostics
-                return MingTools.BuildSystem.BuildProjectSolution(projectPath, message => Log(message));
+                return BuildSystem.BuildProjectSolution(projectPath, message => Log(message));
             }
 
             catch (Exception exception)
@@ -417,7 +417,7 @@ namespace MingPlugins
                 string projectPath = Marshaling.ConvertStringToManaged(*projectDirectory);
 
                 // 3) Generate the missing project files
-                MingTools.ProjectGenerator.EnsureProjectSolution(projectPath);
+                ProjectGenerator.EnsureProjectSolution(projectPath);
 
                 return 0;
             }

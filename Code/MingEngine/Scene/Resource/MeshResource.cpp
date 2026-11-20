@@ -1,6 +1,7 @@
 #include "MingEngine/Scene/Resource/MeshResource.hpp"
 #include "MingEngine/Core/Object/ClassDatabase.hpp"
 
+#include "MingEngine/Core/Render/VertexUtils.hpp"
 #include "MingEngine/Core/Render/Vertex.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Engine/Render/IndexBuffer.hpp"

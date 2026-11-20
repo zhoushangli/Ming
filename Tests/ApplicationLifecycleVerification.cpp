@@ -202,10 +202,14 @@ void VerifyManaged(MingRunConfig const& config, std::filesystem::path const& pro
 {
 	auto log = project / "callbacks.log";
 	std::filesystem::remove(log);
+	auto workerLog = log;
+	workerLog += ".worker";
+	std::filesystem::remove(workerLog);
 	_wputenv_s(L"MING_VERIFY_LIFECYCLE_LOG", log.c_str());
 	App app(config);
 	app.Startup();
 	Check(!app.IsQuitting(), "managed lifecycle game startup");
+	Check(app.GetEngine()->HasWorkerThreadPool(), "managed game has a worker pool");
 	glfwHideWindow(app.GetEngine()->m_windowSystem->GetGLFWWindow());
 	SceneSystem* scenes = app.GetEngine()->m_sceneSystem;
 	Check(app.GetEngine()->Update(1.f / 60.f), "managed frame update");
@@ -215,6 +219,11 @@ void VerifyManaged(MingRunConfig const& config, std::filesystem::path const& pro
 	std::ifstream input(log);
 	std::string actual;
 	input >> actual;
+	std::ifstream workerInput(workerLog);
+	std::string workerResult;
+	workerInput >> workerResult;
+	Check(workerResult == "drained", "unclaimed worker task finished before game teardown");
+	Check(ClassDatabase::GetGlobalObject("WorkerThreadPool") == nullptr, "pool unregistered on game shutdown");
 	Check(actual == "ERFPX", "renamed managed lifecycle and physics dispatch");
 	_wputenv_s(L"MING_VERIFY_LIFECYCLE_LOG", L"");
 }
@@ -224,6 +233,8 @@ void VerifyMode(MingRunConfig const& config)
 	App app(config);
 	app.Startup();
 	Check(!app.IsQuitting() && app.GetExitCode() == 0, "mode startup");
+	Check((ClassDatabase::GetGlobalObject("WorkerThreadPool") != nullptr) == (config.mode == MingRunMode::Game),
+		"worker pool exists only in game mode");
 	Check(config.mode == MingRunMode::Game || !app.GetEngine()->m_physicsServer->Step(1.f / 60.f), "non-game mode has no active physics world");
 	glfwHideWindow(app.GetEngine()->m_windowSystem->GetGLFWWindow());
 	app.RunFrame();
@@ -314,7 +325,6 @@ int wmain(int argc, wchar_t** argv)
 			ClassDatabase::Startup();
 			RegisterAllTypes();
 			EngineConfig config;
-			config.m_eventSystemConfig.m_isEnable = false;
 			config.m_windowConfig.m_isEnable = false;
 			config.m_fileSystemConfig.m_isEnable = false;
 			config.m_scriptSystemConfig.m_isEnabled = false;

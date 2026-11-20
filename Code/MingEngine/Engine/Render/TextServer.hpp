@@ -1,5 +1,7 @@
 #pragma once
 
+#include "MingEngine/Core/Object/Object.hpp"
+
 #include "MingEngine/Core/Render/RID.hpp"
 #include "MingEngine/Core/String.hpp"
 #include "MingEngine/Scene/Resource/TextureResource.hpp"
@@ -59,7 +61,7 @@ struct GlyphTexture
 
 struct FontData;
 
-class TextServer
+class TextServer : public Object
 {
 public:
 	TextServer();

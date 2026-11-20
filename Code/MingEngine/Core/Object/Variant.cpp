@@ -1,6 +1,7 @@
 #include "MingEngine/Core/Object/Variant.hpp"
 
 #include "MingEngine/Core/Memory.hpp"
+#include "MingEngine/Core/Object/Callable.hpp"
 #include "MingEngine/Core/Object/RefCounted.hpp"
 
 #include <new>
@@ -61,6 +62,16 @@ Variant::Variant(int value) : m_type(Type::Int)
 Variant::Variant(uint32_t value) : m_type(Type::UInt32)
 {
 	Write(value);
+}
+
+Variant::Variant(int64_t value) : m_type(Type::Int64)
+{
+	Write(value);
+}
+
+Variant::Variant(Callable const& value) : m_type(Type::Callable)
+{
+	m_payload.m_pointer = MemNew<Callable>(value);
 }
 
 Variant Variant::FromRef(Object* value)
@@ -188,6 +199,9 @@ void Variant::CopyFrom(Variant const& other)
 	case Type::Capsule3:
 		m_payload.m_pointer = MemNew<Capsule3>(other.As<Capsule3>());
 		break;
+	case Type::Callable:
+		m_payload.m_pointer = MemNew<Callable>(other.As<Callable>());
+		break;
 	case Type::Matrix4x4:
 		m_payload.m_pointer = MemNew<Matrix4x4>(other.As<Matrix4x4>());
 		break;
@@ -214,6 +228,7 @@ void Variant::MoveFrom(Variant& other)
 	case Type::OBB2:
 	case Type::Capsule3:
 	case Type::Matrix4x4:
+	case Type::Callable:
 		m_payload.m_pointer = other.m_payload.m_pointer;
 		break;
 	default:
@@ -250,6 +265,9 @@ void Variant::Clear()
 	case Type::Capsule3:
 		MemDelete(static_cast<Capsule3*>(m_payload.m_pointer));
 		break;
+	case Type::Callable:
+		MemDelete(static_cast<Callable*>(m_payload.m_pointer));
+		break;
 	case Type::Matrix4x4:
 		MemDelete(static_cast<Matrix4x4*>(m_payload.m_pointer));
 		break;
@@ -273,6 +291,10 @@ bool Variant::operator==(Variant const& other) const
 		return true;
 	case Type::UInt32:
 		return As<uint32_t>() == other.As<uint32_t>();
+	case Type::Int64:
+		return As<int64_t>() == other.As<int64_t>();
+	case Type::Callable:
+		return As<Callable>() == other.As<Callable>();
 	case Type::Bool:
 		return As<bool>() == other.As<bool>();
 	case Type::Int:

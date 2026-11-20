@@ -1027,7 +1027,13 @@ public sealed partial class Callable
         bool transferred = false;
         try
         {
-            ming_callable value = NativeFuncs.CreateManagedCallable(targetPtr, handle, (IntPtr)trampoline);
+            int workerArgumentCount = -1;
+            if ((callback is Action || callback is Action<int>) && callback.GetInvocationList().Length == 1
+                && !callback.Method.IsDefined(typeof(System.Runtime.CompilerServices.AsyncStateMachineAttribute), false))
+            {
+                workerArgumentCount = callback is Action ? 0 : 1;
+            }
+            ming_callable value = NativeFuncs.CreateManagedCallable(targetPtr, handle, (IntPtr)trampoline, workerArgumentCount);
             transferred = true;
             return TakeOwnershipOfNative(ref value);
         }

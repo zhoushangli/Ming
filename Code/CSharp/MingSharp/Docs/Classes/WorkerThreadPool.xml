@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<class name="WorkerThreadPool">
+  <brief_description>Runs managed callbacks on the game's native worker threads.</brief_description>
+  <description>The singleton is available in the standalone game process. Submit, query, and reclaim tasks on the main thread. Callbacks must complete synchronously, use thread-safe data, and finish without waiting on the main thread or calling Ming object APIs.</description>
+  <methods>
+    <method name="AddTask">
+      <description>Queues one Action and retains the Callable until the task is reclaimed.</description>
+      <param name="callback">A Callable created from a synchronous Action with no MingObject target.</param>
+      <returns>A task ID, or -1 when the task could not be submitted.</returns>
+    </method>
+    <method name="AddGroupTask">
+      <description>Queues work for the given number of elements. The callback receives each index once in an unspecified order.</description>
+      <param name="callback">A Callable created from a synchronous Action of int with no MingObject target.</param>
+      <param name="elementCount">Number of elements to process. An empty group completes immediately.</param>
+      <param name="tasksNeeded">Number of internal tasks. Pass -1 to use the pool's worker count.</param>
+      <returns>A group ID, or -1 when the group could not be submitted.</returns>
+    </method>
+    <method name="IsTaskCompleted">
+      <description>Returns whether the task has finished without reclaiming its ID.</description>
+    </method>
+    <method name="IsGroupTaskCompleted">
+      <description>Returns whether the group has finished without reclaiming its ID.</description>
+    </method>
+    <method name="WaitForTaskCompletion">
+      <description>Waits for the task and reclaims its ID. Returns false for an invalid or previously reclaimed ID.</description>
+    </method>
+    <method name="WaitForGroupTaskCompletion">
+      <description>Waits for all group work and reclaims its ID. Returns false for an invalid or previously reclaimed ID.</description>
+    </method>
+  </methods>
+</class>

@@ -4,7 +4,7 @@ using System.Reflection;
 using System.Text;
 using System.Xml.Linq;
 
-namespace MingTools;
+namespace MingPlugin;
 
 public static class ProjectGenerator
 {

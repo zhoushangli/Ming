@@ -1,0 +1,28 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 18
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ming.NET.Sdk", "Ming.NET.Sdk\Ming.NET.Sdk.csproj", "{BC5AD584-C549-4F25-B3DD-BF16B10447F3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ming.SourceGenerators", "Ming.SourceGenerators\Ming.SourceGenerators.csproj", "{D49F9914-5304-4DD2-85EC-5182ECFB6DB1}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MingSharp", "..\MingSharp\MingSharp.csproj", "{831C5CB7-0FF1-C229-EFC7-20E4F514F205}"
+EndProject
+Global
+    GlobalSection(SolutionConfigurationPlatforms) = preSolution
+        Debug|Any CPU = Debug|Any CPU
+        Release|Any CPU = Release|Any CPU
+    EndGlobalSection
+    GlobalSection(ProjectConfigurationPlatforms) = postSolution
+        {BC5AD584-C549-4F25-B3DD-BF16B10447F3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+        {BC5AD584-C549-4F25-B3DD-BF16B10447F3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+        {BC5AD584-C549-4F25-B3DD-BF16B10447F3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+        {BC5AD584-C549-4F25-B3DD-BF16B10447F3}.Release|Any CPU.Build.0 = Release|Any CPU
+        {D49F9914-5304-4DD2-85EC-5182ECFB6DB1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+        {D49F9914-5304-4DD2-85EC-5182ECFB6DB1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+        {D49F9914-5304-4DD2-85EC-5182ECFB6DB1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+        {D49F9914-5304-4DD2-85EC-5182ECFB6DB1}.Release|Any CPU.Build.0 = Release|Any CPU
+        {831C5CB7-0FF1-C229-EFC7-20E4F514F205}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+        {831C5CB7-0FF1-C229-EFC7-20E4F514F205}.Debug|Any CPU.Build.0 = Debug|Any CPU
+        {831C5CB7-0FF1-C229-EFC7-20E4F514F205}.Release|Any CPU.ActiveCfg = Release|Any CPU
+        {831C5CB7-0FF1-C229-EFC7-20E4F514F205}.Release|Any CPU.Build.0 = Release|Any CPU
+    EndGlobalSection
+EndGlobal

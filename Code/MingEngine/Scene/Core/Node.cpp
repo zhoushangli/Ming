@@ -1,5 +1,6 @@
 #include "MingEngine/Scene/Core/Node.hpp"
 
+#include "MingEngine/Core/StringUtils.hpp"
 #include "MingEngine/Core/ErrorWarningAssert.hpp"
 #include "MingEngine/Core/Object/ClassDatabase.hpp"
 #include "MingEngine/Core/IO/Resource.hpp"

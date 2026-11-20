@@ -3,12 +3,15 @@
 
 #include "MingEngine/Core/Math/Rect2.hpp"
 #include "MingEngine/Core/Memory.hpp"
+#include "MingEngine/Core/Object/Callable.hpp"
+#include "MingEngine/Core/Object/ClassDatabase.hpp"
 #include "MingEngine/Core/Render/Vertex.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Engine/Render/BuiltinShaders.hpp"
 #include "MingEngine/Engine/Render/IndexBuffer.hpp"
 #include "MingEngine/Engine/Render/Renderer.hpp"
 #include "MingEngine/Engine/Render/VertexBuffer.hpp"
+#include "MingEngine/Engine/Window/WindowSystem.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -22,6 +25,11 @@ RenderServer::~RenderServer()
 {
 	MemDelete(m_renderer);
 	m_renderer = nullptr;
+}
+
+void RenderServer::BindMethods()
+{
+	ClassDatabase::BindMethod("OnWindowResized", &RenderServer::OnWindowResized, { "width", "height" });
 }
 
 void RenderServer::Startup()
@@ -44,7 +52,10 @@ void RenderServer::Startup()
 	// e.g. the default material only carries the lit shader and leaves every texture slot empty
 	m_defaultMaterial->m_shaderResource = m_defaultLit;
 
-	m_windowResizedEventID = RegisterEvent("WindowResized", RenderServer::OnWindowResized);
+	if (WindowSystem* windowSystem = g_engine->m_windowSystem)
+	{
+		windowSystem->Connect("framebuffer_resized", Callable(this, "OnWindowResized"));
+	}
 
 	m_started = true;
 }
@@ -56,8 +67,10 @@ void RenderServer::Shutdown()
 		return;
 	}
 
-	UnregisterEvent("WindowResized", m_windowResizedEventID);
-	m_windowResizedEventID = 0;
+	if (WindowSystem* windowSystem = g_engine->m_windowSystem)
+	{
+		windowSystem->Disconnect("framebuffer_resized", Callable(this, "OnWindowResized"));
+	}
 
 	// 1) Detach light bases before releasing registered lights.
 	for (RID lightRID : m_lightOwner.GetRIDList())
@@ -660,15 +673,9 @@ void RenderServer::PrepareCanvasItemRequests(
 	}
 }
 
-bool RenderServer::OnWindowResized(EventArgs& args)
+void RenderServer::OnWindowResized(int width, int height)
 {
-	int     width  = args.GetValue("width", 0);
-	int     height = args.GetValue("height", 0);
-	IntVec2 newDimensions(width, height);
-
-	g_engine->m_renderServer->m_renderer->ResizeBackBuffer(newDimensions);
-
-	return false;
+	m_renderer->ResizeBackBuffer(IntVec2(width, height));
 }
 
 Shader* RenderServer::CreateShader(std::string const& name, std::string const& source, std::string const& sourcePath)

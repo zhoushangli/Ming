@@ -31,8 +31,9 @@ internal unsafe struct NativeCallbacks
     public delegate* unmanaged<IntPtr, String*, ming_callable*, int> DisconnectSignal;
     public delegate* unmanaged<ming_variant*, ming_variant*, void> CopyVariant;
     public delegate* unmanaged<IntPtr, String*, ming_variant**, int, int> EmitSignal;
-    public delegate* unmanaged<IntPtr, IntPtr, IntPtr, ming_callable*, int> CreateManagedCallable;
+    public delegate* unmanaged<IntPtr, IntPtr, IntPtr, int, ming_callable*, int> CreateManagedCallable;
     public delegate* unmanaged<ming_callable*, ming_variant**, int, ming_variant*, ming_call_error*, void> CallCallable;
+    public delegate* unmanaged<ming_callable*, ming_variant*, int> CreateCallableVariant;
 }
 
 [StructLayout(LayoutKind.Sequential)]
@@ -129,12 +130,28 @@ public static unsafe class NativeFuncs
 
     #region Callable and Signals
 
-    internal static ming_callable CreateManagedCallable(IntPtr target, IntPtr handle, IntPtr trampoline)
+    internal static ming_callable CreateManagedCallable(IntPtr target, IntPtr handle, IntPtr trampoline, int workerArgumentCount)
     {
         ming_callable result = default;
-        if (s_callbacks.CreateManagedCallable(target, handle, trampoline, &result) == 0)
+        if (s_callbacks.CreateManagedCallable(target, handle, trampoline, workerArgumentCount, &result) == 0)
         {
             throw new InvalidOperationException("Managed Callable creation is unavailable while scripts are unloading or shut down.");
+        }
+
+        return result;
+    }
+
+    internal static ming_variant CreateCallableVariant(Callable callback)
+    {
+        ArgumentNullException.ThrowIfNull(callback);
+
+        ming_callable nativeCallback = callback.BorrowNativeValue();
+        ming_variant result = default;
+        int created = s_callbacks.CreateCallableVariant(&nativeCallback, &result);
+        GC.KeepAlive(callback);
+        if (created == 0)
+        {
+            throw new InvalidOperationException("Could not copy the Callable into a Variant.");
         }
 
         return result;

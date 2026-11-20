@@ -172,6 +172,7 @@ public:
 	static void Startup();
 	static void Shutdown();
 	static void ClearGlobalObjects();
+	static void UnregisterGlobalObject(std::string const& className) { m_globalObjectMap.erase(className); }
 
 	static Object*                       CreateInstance(std::string const& className);
 	static ConstructorFunc               GetConstructor(std::string const& className);

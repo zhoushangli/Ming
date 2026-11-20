@@ -5,7 +5,6 @@
 #include "MingEngine/Core/IO/Image.hpp"
 #include "MingEngine/Core/Math/IntVec2.hpp"
 #include "MingEngine/Core/Math/Matrix4x4.hpp"
-#include "MingEngine/Engine/Event/EventSystem.hpp"
 #include "MingEngine/Engine/Render/PostProcessChain.hpp"
 #include "MingEngine/Engine/Render/RenderBackend.hpp"
 #include "MingEngine/Engine/Render/RenderTypes.hpp"

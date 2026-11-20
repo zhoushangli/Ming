@@ -1,4 +1,7 @@
-param([switch]$SkipBuild)
+param(
+    [switch]$SkipBuild,
+    [string[]]$Modules = @('--verify-arguments', '--verify-services-only', '--verify-project-manager', '--verify-game', '--verify-physics', '--verify-managed', '--verify-editor', '--verify-failed-enter', '--verify-failed-config')
+)
 
 $ErrorActionPreference = 'Stop'
 $workspace = Split-Path $PSScriptRoot -Parent
@@ -17,7 +20,7 @@ if (-not $SkipBuild)
 $managedProject = Join-Path $verificationDirectory 'ManagedProject'
 New-Item -ItemType Directory -Force -Path $managedProject | Out-Null
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'ManagedLifecycleProbe.cs') -Destination $managedProject
-[xml]$sdkPackage = Get-Content -LiteralPath (Join-Path $workspace 'Code/CSharp/Ming.NET.Sdk/MingSdkPackage.props')
+[xml]$sdkPackage = Get-Content -LiteralPath (Join-Path $workspace 'Code/CSharp/MingSdkPackage.props')
 $sdkIdentity = "$($sdkPackage.Project.PropertyGroup.MingSdkPackageId)/$($sdkPackage.Project.PropertyGroup.MingSdkPackageVersion)"
 @"
 <Project Sdk="$sdkIdentity">
@@ -28,7 +31,8 @@ $sdkIdentity = "$($sdkPackage.Project.PropertyGroup.MingSdkPackageId)/$($sdkPack
   </PropertyGroup>
 </Project>
 "@ | Set-Content -LiteralPath (Join-Path $managedProject 'Game.csproj') -Encoding UTF8
-dotnet build (Join-Path $managedProject 'Game.csproj') --nologo --verbosity quiet
+$mingApi = Join-Path $workspace 'Run\MingSharp\Api'
+dotnet build (Join-Path $managedProject 'Game.csproj') --nologo --verbosity quiet "-p:MingApiDirectory=$mingApi"
 if ($LASTEXITCODE -ne 0) { throw 'Managed lifecycle fixture build failed.' }
 
 $testObject = Join-Path $verificationDirectory 'ApplicationLifecycleVerification.obj'
@@ -58,7 +62,7 @@ if ($LASTEXITCODE -ne 0) { throw 'Verification compile or link failed.' }
 Push-Location (Join-Path $workspace 'Run')
 try
 {
-    foreach ($module in @('--verify-arguments', '--verify-services-only', '--verify-project-manager', '--verify-game', '--verify-physics', '--verify-managed', '--verify-editor', '--verify-failed-enter', '--verify-failed-config'))
+    foreach ($module in $Modules)
     {
         Write-Output "Checking $module"
         & $executable $module

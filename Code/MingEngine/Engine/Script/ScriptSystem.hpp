@@ -64,8 +64,9 @@ struct NativeCallbacks
 	int32_t(CORECLR_DELEGATE_CALLTYPE* m_disconnectSignal)(Object*, String const*, Callable const*) = nullptr;
 	void(CORECLR_DELEGATE_CALLTYPE* m_copyVariant)(Variant const*, Variant*) = nullptr;
 	int32_t(CORECLR_DELEGATE_CALLTYPE* m_emitSignal)(Object*, String const*, Variant const* const*, int32_t) = nullptr;
-	int32_t(CORECLR_DELEGATE_CALLTYPE* m_createManagedCallable)(Object const*, void*, void*, Callable*) = nullptr;
+	int32_t(CORECLR_DELEGATE_CALLTYPE* m_createManagedCallable)(Object const*, void*, void*, int32_t, Callable*) = nullptr;
 	void(CORECLR_DELEGATE_CALLTYPE* m_callCallable)(Callable const*, Variant const* const*, int32_t, Variant*, CallError*) = nullptr;
+	int32_t(CORECLR_DELEGATE_CALLTYPE* m_createCallableVariant)(Callable const*, Variant*) = nullptr;
 };
 
 //---------------------------------------------------------------------------
@@ -188,7 +189,7 @@ public:
 
 	bool IsScriptExecutionSuspended() const { return m_scriptExecutionSuspended; }
 
-	bool CreateManagedCallable(Object const* target, void* handle, void* trampoline, Callable& result);
+	bool CreateManagedCallable(Object const* target, void* handle, void* trampoline, int32_t workerArgumentCount, Callable& result);
 
 	void RegisterScriptOwner(ObjectID id);
 	void UnregisterScriptOwner(ObjectID id);

@@ -138,9 +138,6 @@
     <ClCompile Include="Core\ErrorWarningAssert.cpp">
       <Filter>Core</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Event\EventSystem.cpp">
-      <Filter>Engine\Event</Filter>
-    </ClCompile>
     <ClCompile Include="Engine\Render\HeatMaps.cpp">
       <Filter>Engine\Render</Filter>
     </ClCompile>
@@ -706,9 +703,6 @@
     </ClInclude>
     <ClInclude Include="Core\ErrorWarningAssert.hpp">
       <Filter>Core</Filter>
-    </ClInclude>
-    <ClInclude Include="Engine\Event\EventSystem.hpp">
-      <Filter>Engine\Event</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Render\HeatMaps.hpp">
       <Filter>Engine\Render</Filter>

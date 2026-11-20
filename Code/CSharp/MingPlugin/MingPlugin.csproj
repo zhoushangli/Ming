@@ -1,4 +1,5 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="../MingSdkPackage.props" />
 
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
@@ -14,8 +15,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\MingSharp\MingSharp.csproj" />
-    <ProjectReference Include="..\MingTools\MingTools.csproj" />
-    <ProjectReference Include="..\Ming.SourceGenerators\Ming.SourceGenerators.csproj" ReferenceOutputAssembly="false" />
+    <AssemblyMetadata Include="MingSdkPackageId" Value="$(MingSdkPackageId)" />
+    <AssemblyMetadata Include="MingSdkPackageVersion" Value="$(MingSdkPackageVersion)" />
   </ItemGroup>
 
 </Project>

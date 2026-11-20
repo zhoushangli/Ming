@@ -653,6 +653,62 @@
         <member name="T:Ming.VisualInstance3D">
             <summary>Base class for 3D nodes that have a render instance.</summary>
         </member>
+        <member name="T:Ming.WorkerThreadPool">
+            <summary>Runs managed callbacks on the game&apos;s native worker threads.</summary>
+            <remarks>The singleton is available in the standalone game process. Submit, query, and reclaim tasks on the main thread. Callbacks must complete synchronously, use thread-safe data, and finish without waiting on the main thread or calling Ming object APIs.</remarks>
+        </member>
+        <member name="M:Ming.WorkerThreadPool.AddTask(Ming.Callable)">
+            <summary>Queues one Action and retains the Callable until the task is reclaimed.</summary>
+            <param name="callback">A Callable created from a synchronous Action with no MingObject target.</param>
+            <returns>A task ID, or -1 when the task could not be submitted.</returns>
+        </member>
+        <member name="M:Ming.WorkerThreadPool.AddGroupTask(Ming.Callable,System.Int32,System.Int32)">
+            <summary>Queues work for the given number of elements. The callback receives each index once in an unspecified order.</summary>
+            <param name="callback">A Callable created from a synchronous Action of int with no MingObject target.</param>
+            <param name="elementCount">Number of elements to process. An empty group completes immediately.</param>
+            <param name="tasksNeeded">Number of internal tasks. Pass -1 to use the pool&apos;s worker count.</param>
+            <returns>A group ID, or -1 when the group could not be submitted.</returns>
+        </member>
+        <member name="M:Ming.WorkerThreadPool.IsTaskCompleted(System.Int64)">
+            <summary>Returns whether the task has finished without reclaiming its ID.</summary>
+        </member>
+        <member name="M:Ming.WorkerThreadPool.IsGroupTaskCompleted(System.Int64)">
+            <summary>Returns whether the group has finished without reclaiming its ID.</summary>
+        </member>
+        <member name="M:Ming.WorkerThreadPool.WaitForTaskCompletion(System.Int64)">
+            <summary>Waits for the task and reclaims its ID. Returns false for an invalid or previously reclaimed ID.</summary>
+        </member>
+        <member name="M:Ming.WorkerThreadPool.WaitForGroupTaskCompletion(System.Int64)">
+            <summary>Waits for all group work and reclaims its ID. Returns false for an invalid or previously reclaimed ID.</summary>
+        </member>
+        <member name="T:Ming.WorkerThreadPoolInstance">
+            <summary>Runs managed callbacks on the game&apos;s native worker threads.</summary>
+            <remarks>The singleton is available in the standalone game process. Submit, query, and reclaim tasks on the main thread. Callbacks must complete synchronously, use thread-safe data, and finish without waiting on the main thread or calling Ming object APIs.</remarks>
+        </member>
+        <member name="M:Ming.WorkerThreadPoolInstance.AddTask(Ming.Callable)">
+            <summary>Queues one Action and retains the Callable until the task is reclaimed.</summary>
+            <param name="callback">A Callable created from a synchronous Action with no MingObject target.</param>
+            <returns>A task ID, or -1 when the task could not be submitted.</returns>
+        </member>
+        <member name="M:Ming.WorkerThreadPoolInstance.AddGroupTask(Ming.Callable,System.Int32,System.Int32)">
+            <summary>Queues work for the given number of elements. The callback receives each index once in an unspecified order.</summary>
+            <param name="callback">A Callable created from a synchronous Action of int with no MingObject target.</param>
+            <param name="elementCount">Number of elements to process. An empty group completes immediately.</param>
+            <param name="tasksNeeded">Number of internal tasks. Pass -1 to use the pool&apos;s worker count.</param>
+            <returns>A group ID, or -1 when the group could not be submitted.</returns>
+        </member>
+        <member name="M:Ming.WorkerThreadPoolInstance.IsTaskCompleted(System.Int64)">
+            <summary>Returns whether the task has finished without reclaiming its ID.</summary>
+        </member>
+        <member name="M:Ming.WorkerThreadPoolInstance.IsGroupTaskCompleted(System.Int64)">
+            <summary>Returns whether the group has finished without reclaiming its ID.</summary>
+        </member>
+        <member name="M:Ming.WorkerThreadPoolInstance.WaitForTaskCompletion(System.Int64)">
+            <summary>Waits for the task and reclaims its ID. Returns false for an invalid or previously reclaimed ID.</summary>
+        </member>
+        <member name="M:Ming.WorkerThreadPoolInstance.WaitForGroupTaskCompletion(System.Int64)">
+            <summary>Waits for all group work and reclaims its ID. Returns false for an invalid or previously reclaimed ID.</summary>
+        </member>
         <member name="M:Ming.FastNoiseLite.#ctor(System.Int32)">
             <summary>
             Create new FastNoise object with optional seed

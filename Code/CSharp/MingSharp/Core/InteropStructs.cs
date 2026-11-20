@@ -81,6 +81,7 @@ public unsafe ref struct ming_variant
         [FieldOffset(0)] public ming_bool Bool;
         [FieldOffset(0)] public int Int;
         [FieldOffset(0)] public uint UInt32;
+        [FieldOffset(0)] public long Int64;
         [FieldOffset(0)] public float Float;
         [FieldOffset(0)] public Color Color;
         [FieldOffset(0)] public Vector2 Vector2;
@@ -163,6 +164,12 @@ public unsafe ref struct ming_variant
     {
         readonly get => _payload.UInt32;
         set => _payload.UInt32 = value;
+    }
+
+    public long Int64
+    {
+        readonly get => _payload.Int64;
+        set => _payload.Int64 = value;
     }
 
     public float Float

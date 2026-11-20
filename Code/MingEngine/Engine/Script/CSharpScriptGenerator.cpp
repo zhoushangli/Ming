@@ -160,7 +160,7 @@ constexpr char const* NativeCallFunctionTemplate =
 	R"(	internal static {RETURN_TYPE} {METHOD_NAME}(IntPtr methodBind, IntPtr objectPtr{ARGUMENTS})
 	{
 {RETURN_VALUE_DECLARATION}{ARGUMENT_CONVERSIONS}{ARGUMENTS_ARRAY_DECLARATION}		NativeFuncs.MethodBindPtrCall(methodBind, objectPtr, {ARGUMENTS_POINTER}, {RETURN_VALUE_POINTER});
-{RETURN_VALUE_RETURN}	}
+{ARGUMENT_KEEP_ALIVES}{RETURN_VALUE_RETURN}	}
 
 )";
 
@@ -384,6 +384,10 @@ char const* GetVariantTypeName(Variant::Type type)
 		return "Empty";
 	case Variant::Type::Bool:
 		return "Bool";
+	case Variant::Type::Int64:
+		return "Int64";
+	case Variant::Type::Callable:
+		return "Callable";
 	case Variant::Type::UInt32:
 		return "UInt32";
 	case Variant::Type::Int:
@@ -661,7 +665,13 @@ std::string BuildMingClassMethodCall(
 		callArguments += "arg" + index;
 		argumentConversions += "\t\t\tif (!VariantUtils.TryConvertTo<" + type + ">(args[" + index + "], " + index
 			+ ", Variant.Type." + GetVariantTypeName(argumentInfo.m_type) + ", out " + type + " arg" + index
-			+ ", out error))\n\t\t\t{\n\t\t\t\treturn;\n\t\t\t}\n\n";
+			+ ", out error))\n\t\t\t{\n\t\t\t\treturn;\n\t\t\t}\n";
+		if (argumentInfo.m_type == Variant::Type::Callable)
+		{
+			argumentConversions += "\t\t\tusing var argLease" + index + " = arg" + index + ";\n";
+		}
+
+		argumentConversions += "\n";
 	}
 
 	return methodInfo.m_name + "(" + callArguments + ")";
@@ -731,6 +741,7 @@ std::string GenerateNativeCallFunction(NativeCallInfo const& nativeCall)
 	std::string arguments;
 	std::string argumentConversions;
 	std::string argumentPointers;
+	std::string argumentKeepAlives;
 
 	for (size_t argumentIndex = 0; argumentIndex < nativeCall.m_argumentTypes.size(); ++argumentIndex)
 	{
@@ -749,6 +760,10 @@ std::string GenerateNativeCallFunction(NativeCallInfo const& nativeCall)
 		}
 
 		argumentPointers += FormatTypeExpression(argumentTypeInfo.m_ptrCallArgument, argumentName);
+		if (argumentTypeInfo.m_keepArgumentAlive)
+		{
+			argumentKeepAlives += "\t\tGC.KeepAlive(" + argumentName + ");\n";
+		}
 	}
 
 	bool const  hasReturnValue = nativeCall.m_returnType.m_callTypeOut != "void";
@@ -793,6 +808,7 @@ std::string GenerateNativeCallFunction(NativeCallInfo const& nativeCall)
 	ReplaceAll(source, "{ARGUMENTS_ARRAY_DECLARATION}", argumentsArrayDeclaration);
 	ReplaceAll(source, "{ARGUMENTS_POINTER}", nativeCall.m_argumentTypes.empty() ? "null" : "args");
 	ReplaceAll(source, "{RETURN_VALUE_POINTER}", hasReturnValue ? "&ret" : "null");
+	ReplaceAll(source, "{ARGUMENT_KEEP_ALIVES}", argumentKeepAlives);
 	ReplaceAll(source, "{RETURN_VALUE_RETURN}", returnValueReturn);
 	return source;
 }
@@ -1224,6 +1240,30 @@ CSharpScriptGenerator::CSharpScriptGenerator()
         typeInfo.m_callTypeOut = "uint";
         typeInfo.m_ptrCallType = "uint";
         m_builtinTypes[Variant::Type::UInt32] = typeInfo;
+
+		typeInfo.m_name        = "Int64";
+		typeInfo.m_csType      = "long";
+		typeInfo.m_callTypeIn  = "long";
+		typeInfo.m_callTypeOut = "long";
+		typeInfo.m_ptrCallType = "long";
+		m_builtinTypes[Variant::Type::Int64] = typeInfo;
+	}
+
+	{
+		typeInfo                           = {};
+		typeInfo.m_name                    = "Callable";
+		typeInfo.m_csType                  = "Callable";
+		typeInfo.m_callTypeIn              = "Callable";
+		typeInfo.m_callTypeOut             = "Callable";
+		typeInfo.m_ptrCallType             = "ming_callable";
+		typeInfo.m_csInExpression          = "{VALUE}";
+		typeInfo.m_csOutExpression         = "return {CALL};";
+		typeInfo.m_callIn                  = "ArgumentNullException.ThrowIfNull({VALUE});\n\t\tming_callable {VALUE}Native = {VALUE}.BorrowNativeValue();";
+		typeInfo.m_ptrCallArgument         = "&{VALUE}Native";
+		typeInfo.m_callOut                 = "return Callable.TakeOwnershipOfNative(ref {VALUE});";
+		typeInfo.m_defaultInitializeReturn = true;
+		typeInfo.m_keepArgumentAlive       = true;
+		m_builtinTypes[Variant::Type::Callable] = typeInfo;
 	}
 
 	{

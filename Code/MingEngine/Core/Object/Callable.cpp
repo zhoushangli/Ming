@@ -11,6 +11,7 @@
 struct ManagedCallable
 {
 	uint32_t m_refCount = 1;
+	int32_t m_workerArgumentCount = -1;
 	void* m_handle = nullptr;
 	void* m_trampoline = nullptr;
 	Callable::InvokeDelegate m_invoke = nullptr;
@@ -82,10 +83,11 @@ Callable& Callable::operator=(Callable&& other) noexcept
 }
 
 Callable Callable::FromManaged(Object const* target, void* handle, void* trampoline,
-	InvokeDelegate invoke, CompareDelegates compare, ReleaseDelegate release)
+	InvokeDelegate invoke, CompareDelegates compare, ReleaseDelegate release, int32_t workerArgumentCount)
 {
 	auto state = std::make_unique<ManagedCallable>();
 	state->m_handle = handle;
+	state->m_workerArgumentCount = workerArgumentCount;
 	state->m_trampoline = trampoline;
 	state->m_invoke = invoke;
 	state->m_compare = compare;
@@ -96,6 +98,22 @@ Callable Callable::FromManaged(Object const* target, void* handle, void* trampol
 	result.m_targetID = target != nullptr ? target->GetObjectID() : ObjectID::Invalid;
 	result.m_managed = state.release();
 	return result;
+}
+
+bool Callable::CanRunOnWorker(int32_t argumentCount) const
+{
+	return m_managed != nullptr && m_managed->m_handle != nullptr && !m_targetID.IsValid()
+		&& m_managed->m_workerArgumentCount == argumentCount;
+}
+
+// Borrow the pool's pinned delegate until the callback returns.
+// e.g. Group tasks borrow the same Callable while processing their own indices.
+void Callable::InvokeOnWorker(Variant const* argument) const
+{
+	Variant result;
+	CallError error;
+	m_managed->m_invoke(m_managed->m_handle, m_managed->m_trampoline,
+		argument != nullptr ? &argument : nullptr, argument != nullptr ? 1 : 0, &result, &error);
 }
 
 void Callable::ReleaseManaged()

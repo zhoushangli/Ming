@@ -1,6 +1,7 @@
 #include "MingEngine/Engine/Application/RegisterEngineTypes.hpp"
 
 #include "MingEngine/Core/Object/ClassDatabase.hpp"
+#include "MingEngine/Core/OS/WorkerThreadPool.hpp"
 #include "MingEngine/Core/IO/ResourceLoader.hpp"
 #include "MingEngine/Core/IO/ResourceSaver.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
@@ -8,6 +9,8 @@
 #include "MingEngine/Engine/Application/ProjectSettingsFormat.hpp"
 #include "MingEngine/Engine/Application/SystemBase.hpp"
 #include "MingEngine/Engine/Input/InputSystem.hpp"
+#include "MingEngine/Engine/Render/RenderServer.hpp"
+#include "MingEngine/Engine/Window/WindowSystem.hpp"
 
 #pragma region Engine
 
@@ -23,6 +26,9 @@ void RegisterEngineTypes()
 
 	// Engine system types
 	ClassDatabase::RegisterClass<SystemBase>(true);
+	ClassDatabase::RegisterAbstractClass<WindowSystem>();
+	ClassDatabase::RegisterAbstractClass<RenderServer>();
+	ClassDatabase::RegisterSingletonClass<WorkerThreadPool>();
 	ClassDatabase::RegisterSingletonClass<InputSystem>();
 	ClassDatabase::RegisterSingletonClass<FileSystem>();
 

@@ -1,6 +1,8 @@
 #include "MingEngine/Engine/Window/WindowSystem.hpp"
 
 #include "MingEngine/Core/ErrorWarningAssert.hpp"
+#include "MingEngine/Core/Object/ClassDatabase.hpp"
+#include "MingEngine/Engine/Application/App.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Engine/Input/InputSystem.hpp"
 
@@ -151,15 +153,6 @@ static void CursorEnterCallback(GLFWwindow* window, int entered)
 	AddInputEvent(event);
 }
 
-static void FramebufferSizeCallback(GLFWwindow* window, int width, int height)
-{
-	(void)window;
-
-	EventArgs args;
-	args.SetValue("width", std::to_string(width));
-	args.SetValue("height", std::to_string(height));
-	FireEvent("WindowResized", args);
-}
 } // namespace
 
 WindowSystem::WindowSystem(WindowSystemConfig config) : m_config(config)
@@ -172,6 +165,8 @@ WindowSystem::~WindowSystem()
 
 void WindowSystem::BindMethods()
 {
+	ADD_SIGNAL("framebuffer_resized", ArgumentInfo(Variant::Type::Int, "width"),
+		ArgumentInfo(Variant::Type::Int, "height"));
 }
 
 void WindowSystem::Startup()
@@ -327,7 +322,14 @@ void WindowSystem::CreateGLFWWindow()
 	glfwSetScrollCallback(m_glfwWindow, ScrollCallback);
 	glfwSetWindowFocusCallback(m_glfwWindow, WindowFocusCallback);
 	glfwSetCursorEnterCallback(m_glfwWindow, CursorEnterCallback);
-	glfwSetFramebufferSizeCallback(m_glfwWindow, FramebufferSizeCallback);
+	glfwSetWindowUserPointer(m_glfwWindow, this);
+	glfwSetFramebufferSizeCallback(
+		m_glfwWindow,
+		[](GLFWwindow* window, int width, int height)
+		{
+			auto* windowSystem = static_cast<WindowSystem*>(glfwGetWindowUserPointer(window));
+			windowSystem->EmitSignal("framebuffer_resized", { Variant(width), Variant(height) });
+		});
 
 	glfwMaximizeWindow(m_glfwWindow);
 	glfwShowWindow(m_glfwWindow);
@@ -340,9 +342,9 @@ void WindowSystem::RunMessagePump()
 {
 	glfwPollEvents();
 
-	if (m_glfwWindow != nullptr && glfwWindowShouldClose(m_glfwWindow))
+	if (m_glfwWindow != nullptr && glfwWindowShouldClose(m_glfwWindow) && g_app != nullptr)
 	{
-		FireEvent("Quit");
+		g_app->Quit();
 	}
 }
 

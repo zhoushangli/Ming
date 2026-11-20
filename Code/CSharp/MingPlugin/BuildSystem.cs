@@ -2,7 +2,7 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Text;
 
-namespace MingTools;
+namespace MingPlugin;
 
 public static class BuildSystem
 {

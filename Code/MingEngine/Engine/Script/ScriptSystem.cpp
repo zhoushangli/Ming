@@ -121,13 +121,27 @@ void CORECLR_DELEGATE_CALLTYPE DestroyCallable(Callable* value)
 	*value = Callable();
 }
 
-int32_t CORECLR_DELEGATE_CALLTYPE CreateManagedCallableFromManaged(Object const* target, void* handle, void* trampoline, Callable* result)
+int32_t CORECLR_DELEGATE_CALLTYPE CreateManagedCallableFromManaged(Object const* target, void* handle, void* trampoline,
+	int32_t workerArgumentCount, Callable* result)
 {
 	new (result) Callable();
 	try
 	{
 		return g_engine != nullptr && g_engine->m_scriptSystem != nullptr
-			&& g_engine->m_scriptSystem->CreateManagedCallable(target, handle, trampoline, *result);
+			&& g_engine->m_scriptSystem->CreateManagedCallable(target, handle, trampoline, workerArgumentCount, *result);
+	}
+	catch (...)
+	{
+		return 0;
+	}
+}
+
+int32_t CORECLR_DELEGATE_CALLTYPE CreateCallableVariant(Callable const* source, Variant* result)
+{
+	try
+	{
+		new (result) Variant(*source);
+		return 1;
 	}
 	catch (...)
 	{
@@ -381,6 +395,8 @@ void ScriptSystem::Startup()
 
 void ScriptSystem::Shutdown()
 {
+	ERR_FAIL_COND_MSG(g_engine != nullptr && g_engine->HasWorkerThreadPool(),
+		"Stop the worker thread pool before shutting down scripts.\n");
 	ERR_FAIL_COND_MSG(Callable::IsInvokingManagedCallable(), "Cannot shut down scripts during a delegate callback.\n");
 
 	if (!m_isInitialized)
@@ -441,8 +457,8 @@ bool ScriptSystem::InitializeDotNetRuntime()
 	std::filesystem::path const executableDirectory = GetExecutableDirectory();
 
 	std::filesystem::path const managedApiDirectory = executableDirectory / L"MingSharp" / L"Api";
-	std::filesystem::path const runtimeConfigPath   = managedApiDirectory / L"MingPlugins.runtimeconfig.json";
-	std::filesystem::path const managedAssemblyPath = managedApiDirectory / L"MingPlugins.dll";
+	std::filesystem::path const runtimeConfigPath   = managedApiDirectory / L"MingPlugin.runtimeconfig.json";
+	std::filesystem::path const managedAssemblyPath = managedApiDirectory / L"MingPlugin.dll";
 
 	ERR_FAIL_COND_V_MSG(
 		!std::filesystem::exists(runtimeConfigPath),
@@ -521,7 +537,7 @@ bool ScriptSystem::InitializeDotNetRuntime()
 		false,
 		Stringf("Failed to get .NET assembly loader: 0x%08X\n", result));
 
-	wchar_t const* typeName   = L"MingPlugins.Main, MingPlugins";
+	wchar_t const* typeName   = L"MingPlugin.Main, MingPlugin";
 	InitializeFunc initialize = nullptr;
 
 	result = loadAssembly(
@@ -654,6 +670,7 @@ bool ScriptSystem::InitializeDotNetRuntime()
 		&EmitSignalFromManaged,
 		&CreateManagedCallableFromManaged,
 		&CallCallable,
+		&CreateCallableVariant,
 	};
 
 	int32_t const initResult = initialize(
@@ -855,6 +872,8 @@ bool ScriptSystem::LoadProjectAssembly()
 
 bool ScriptSystem::UnloadProjectAssembly()
 {
+	ERR_FAIL_COND_V_MSG(g_engine != nullptr && g_engine->HasWorkerThreadPool(), false,
+		"Stop the game to unload its project assembly.\n");
 	ERR_FAIL_COND_V_MSG(Callable::IsInvokingManagedCallable(), false, "Cannot unload scripts during a delegate callback.\n");
 	m_acceptManagedCallables = false;
 	Callable::InvalidateManagedCallables();
@@ -1196,6 +1215,8 @@ bool ScriptSystem::RestoreScriptInstances()
 
 bool ScriptSystem::ReloadProjectAssembly()
 {
+	ERR_FAIL_COND_V_MSG(g_engine != nullptr && g_engine->HasWorkerThreadPool(), false,
+		"Restart the game to reload its project assembly.\n");
 	ERR_FAIL_COND_V_MSG(Callable::IsInvokingManagedCallable(), false, "Cannot reload scripts during a delegate callback.\n");
 	ERR_FAIL_COND_V_MSG(m_isAssemblyReloading || !m_isInitialized, false, "Cannot start script reload.\n");
 	m_isAssemblyReloading      = true;
@@ -1240,7 +1261,8 @@ bool ScriptSystem::ReloadProjectAssembly()
 	return success;
 }
 
-bool ScriptSystem::CreateManagedCallable(Object const* target, void* handle, void* trampoline, Callable& result)
+bool ScriptSystem::CreateManagedCallable(Object const* target, void* handle, void* trampoline,
+	int32_t workerArgumentCount, Callable& result)
 {
 	if (!m_acceptManagedCallables || handle == nullptr || trampoline == nullptr
 		|| m_managedCallbacks.m_invokeDelegate == nullptr || m_managedCallbacks.m_delegateEquals == nullptr
@@ -1250,6 +1272,6 @@ bool ScriptSystem::CreateManagedCallable(Object const* target, void* handle, voi
 	}
 
 	result = Callable::FromManaged(target, handle, trampoline, m_managedCallbacks.m_invokeDelegate,
-		m_managedCallbacks.m_delegateEquals, m_managedCallbacks.m_releaseDelegateGCHandle);
+		m_managedCallbacks.m_delegateEquals, m_managedCallbacks.m_releaseDelegateGCHandle, workerArgumentCount);
 	return true;
 }

@@ -204,6 +204,11 @@ public sealed class ScriptPathGenerator : ISourceGenerator
                     source.AppendLine("                {");
                     source.AppendLine("                    return;");
                     source.AppendLine("                }");
+                    if (variantType == "Callable")
+                    {
+                        source.Append("                using var argLease").Append(i).Append(" = arg").Append(i).AppendLine(";");
+                    }
+
                     source.AppendLine();
                 }
 
@@ -313,6 +318,7 @@ public sealed class ScriptPathGenerator : ISourceGenerator
             case SpecialType.System_Boolean: name = "Bool"; break;
             case SpecialType.System_Int32: name = "Int"; break;
             case SpecialType.System_UInt32: name = "UInt32"; break;
+            case SpecialType.System_Int64: name = "Int64"; break;
             case SpecialType.System_Single: name = "Float"; break;
             case SpecialType.System_String: name = "String"; break;
         }
@@ -331,6 +337,7 @@ public sealed class ScriptPathGenerator : ISourceGenerator
         string fullName = type.ToDisplayString();
         switch (fullName)
         {
+            case "Ming.Callable":
             case "Ming.Vector2":
             case "Ming.Vector3":
             case "Ming.Vector4":

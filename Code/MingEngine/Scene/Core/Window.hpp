@@ -17,12 +17,9 @@ public:
 	void OnInputEvent(InputEvent const& event);
 
 protected:
-	static void BindMethods() {}
+	static void BindMethods();
 
 	void OnNotification(int notification);
 
-	bool OnWindowResized(EventArgs& args);
-
-private:
-	EventConnectionID m_windowResizedEventID = 0;
+	void OnWindowResized(int width, int height);
 };

@@ -1,0 +1,92 @@
+name: Publish Ming.NET.Sdk
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-nuget
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: windows-2025
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      id-token: write
+    defaults:
+      run:
+        shell: pwsh
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up .NET 9
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+
+      - name: Set up MSBuild
+        uses: microsoft/setup-msbuild@v2
+        with:
+          msbuild-architecture: x64
+
+      - name: Build C# binding generator
+        run: >-
+          msbuild Code/MingEngine/MingEngine.vcxproj
+          /m /nologo /verbosity:minimal /target:Build
+          /property:Configuration=Release /property:Platform=x64
+          /property:BuildProjectReferences=false
+          "/property:SolutionDir=$env:GITHUB_WORKSPACE/"
+
+      - name: Generate C# bindings
+        working-directory: Run
+        run: |
+          $process = Start-Process -FilePath ./MingEngine_Release.exe -ArgumentList @('--generate-bindings', "`"$env:GITHUB_WORKSPACE/Code/CSharp/MingSharp`"") -NoNewWindow -Wait -PassThru
+          if ($process.ExitCode -ne 0)
+          {
+              throw "C# binding generation failed with exit code $($process.ExitCode)."
+          }
+
+      - name: Build managed runtime
+        run: dotnet build Code/CSharp/MingPlugin/MingPlugin.csproj -c Release --nologo
+
+      - name: Pack SDK
+        run: dotnet pack Code/CSharp/SDK/Ming.NET.Sdk/Ming.NET.Sdk.csproj -c Release --nologo
+
+      - name: Locate package
+        id: package
+        run: |
+          $packages = @(Get-ChildItem -LiteralPath Temporary/NuGet -Filter '*.nupkg' -File)
+          if ($packages.Count -ne 1)
+          {
+              throw "Expected one SDK package, found $($packages.Count)."
+          }
+
+          "path=$($packages[0].FullName)" >> $env:GITHUB_OUTPUT
+          Write-Host "Package: $($packages[0].Name)"
+
+      - name: Save package artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Ming.NET.Sdk
+          path: ${{ steps.package.outputs.path }}
+          if-no-files-found: error
+
+      - name: Log in to NuGet
+        uses: NuGet/login@v1
+        id: login
+        with:
+          user: ZhouShangLi
+
+      - name: Publish package
+        env:
+          NUGET_API_KEY: ${{ steps.login.outputs.NUGET_API_KEY }}
+          NUGET_PACKAGE_PATH: ${{ steps.package.outputs.path }}
+        run: dotnet nuget push "$env:NUGET_PACKAGE_PATH" --api-key "$env:NUGET_API_KEY" --source https://api.nuget.org/v3/index.json

@@ -1,5 +1,6 @@
 #include "MingEngine/Scene/Resource/ShaderResourceFormat.hpp"
 
+#include "MingEngine/Core/StringUtils.hpp"
 #include "MingEngine/Core/ErrorWarningAssert.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Engine/Render/RenderServer.hpp"
