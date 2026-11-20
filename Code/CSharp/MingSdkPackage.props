@@ -1,6 +1,6 @@
 <Project>
   <PropertyGroup>
     <MingSdkPackageId>Ming.NET.Sdk</MingSdkPackageId>
-    <MingSdkPackageVersion>0.1.0-dev.1</MingSdkPackageVersion>
+    <MingSdkPackageVersion>0.1.1</MingSdkPackageVersion>
   </PropertyGroup>
 </Project>
