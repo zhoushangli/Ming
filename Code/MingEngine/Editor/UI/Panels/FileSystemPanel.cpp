@@ -7,7 +7,6 @@
 #include "MingEngine/Editor/UI/EditorUIContext.hpp"
 #include "MingEngine/Engine/File/FileSystem.hpp"
 
-#include "MingEngine/Scene/GUI/ScrollContainer.hpp"
 #include "MingEngine/Scene/GUI/MarginContainer.hpp"
 #include "MingEngine/Engine/Window/WindowSystem.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
@@ -155,12 +154,10 @@ void FileSystemPanel::OnInitialize()
 	tools->AddNode(m_filter);
 
 	m_empty      = EditorPopupUtils::AddLabel(layout, "Empty directory", "EditorStatusLabel");
-	auto* scroll = MemNew<ScrollContainer>();
-	scroll->SetVerticalSizeFlags(Size_ExpandFill);
-	layout->AddNode(scroll);
 	m_tree = MemNew<Tree>();
+	m_tree->SetVerticalSizeFlags(Control::Size_ExpandFill);
 	m_tree->SetClipText(true);
-	scroll->AddNode(m_tree);
+	layout->AddNode(m_tree);
 	m_tree->SetSelectedCallback(
 		[this](uint64_t key)
 		{

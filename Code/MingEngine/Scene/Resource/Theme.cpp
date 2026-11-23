@@ -37,6 +37,8 @@ Ref<Theme> Theme::Duplicate() const
 					auto const side = static_cast<ThemeStyleBox::Side>(i);
 					copy->SetBorderWidth(side, item.second->GetBorderWidth(side));
 					copy->SetContentMargin(side, item.second->GetContentMargin(side));
+					auto const corner = static_cast<ThemeStyleBox::Corner>(i);
+					copy->SetCornerRadius(corner, item.second->GetCornerRadius(corner));
 				}
 			}
 

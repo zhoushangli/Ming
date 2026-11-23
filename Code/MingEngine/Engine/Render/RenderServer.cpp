@@ -16,6 +16,104 @@
 #include <algorithm>
 #include <cmath>
 
+namespace
+{
+Vertex InterpolateCanvasVertex(Vertex const& a, Vertex const& b, float t)
+{
+	auto channel = [t](unsigned char x, unsigned char y)
+	{
+		return static_cast<unsigned char>(std::clamp(std::round(x + (y - x) * t), 0.f, 255.f));
+	};
+	return Vertex(
+		a.m_position + (b.m_position - a.m_position) * t,
+		Color(
+			channel(a.m_color.r, b.m_color.r),
+			channel(a.m_color.g, b.m_color.g),
+			channel(a.m_color.b, b.m_color.b),
+			channel(a.m_color.a, b.m_color.a)),
+		a.m_uv + (b.m_uv - a.m_uv) * t);
+}
+
+std::vector<Vertex> PrepareCanvasTriangles(
+	std::vector<Vertex> const& source, Vector2 const& position, AABB2 const* clip)
+{
+	std::vector<Vertex> result;
+	result.reserve(source.size());
+	if (clip == nullptr)
+	{
+		result = source;
+		for (Vertex& vertex : result)
+		{
+			vertex.m_position.x += position.x;
+			vertex.m_position.y += position.y;
+		}
+		return result;
+	}
+
+	for (size_t triangle = 0; triangle + 2 < source.size(); triangle += 3)
+	{
+		std::array<Vertex, 8> polygon;
+		size_t                polygonSize = 3;
+		for (size_t i = 0; i < polygonSize; ++i)
+		{
+			polygon[i] = source[triangle + i];
+			polygon[i].m_position.x += position.x;
+			polygon[i].m_position.y += position.y;
+		}
+
+		if (clip != nullptr)
+		{
+			for (int side = 0; side < 4 && polygonSize > 0; ++side)
+			{
+				bool const  horizontal = side % 2 == 0;
+				float const bound      = side == 0   ? clip->m_mins.x
+										 : side == 1 ? clip->m_mins.y
+										 : side == 2 ? clip->m_maxs.x
+													 : clip->m_maxs.y;
+				auto        distance   = [=](Vertex const& vertex)
+				{
+					float const coordinate = horizontal ? vertex.m_position.x : vertex.m_position.y;
+					return side < 2 ? coordinate - bound : bound - coordinate;
+				};
+				std::array<Vertex, 8> output;
+				size_t                outputSize       = 0;
+				Vertex                previous         = polygon[polygonSize - 1];
+				float                 previousDistance = distance(previous);
+				for (size_t i = 0; i < polygonSize; ++i)
+				{
+					Vertex const& current         = polygon[i];
+					float const   currentDistance = distance(current);
+					if ((previousDistance < 0.f && currentDistance > 0.f)
+						|| (previousDistance > 0.f && currentDistance < 0.f))
+					{
+						output[outputSize++] = InterpolateCanvasVertex(
+							previous,
+							current,
+							previousDistance / (previousDistance - currentDistance));
+					}
+
+					if (currentDistance >= 0.f)
+					{
+						output[outputSize++] = current;
+					}
+
+					previous         = current;
+					previousDistance = currentDistance;
+				}
+				polygon     = output;
+				polygonSize = outputSize;
+			}
+		}
+
+		for (size_t i = 1; i + 1 < polygonSize; ++i)
+		{
+			result.insert(result.end(), { polygon[0], polygon[i], polygon[i + 1] });
+		}
+	}
+	return result;
+}
+}
+
 RenderServer::RenderServer(RendererServerConfig config)
 {
 	m_renderer = MemNew<Renderer>(config);
@@ -440,6 +538,11 @@ void RenderServer::Render()
 
 			for (CanvasItemData::Command* command : item->m_commands)
 			{
+				if (command->type != CanvasItemData::Command::TYPE_RECT)
+				{
+					continue;
+				}
+
 				RID const source = static_cast<CanvasItemData::CommandRect*>(command)->viewportTexture;
 				if (source.IsValid() && source != viewportRID)
 				{
@@ -521,6 +624,37 @@ void RenderServer::PrepareCanvasItemRequests(
 	{
 		for (CanvasItemData::Command* command : item->m_commands)
 		{
+			if (command->type == CanvasItemData::Command::TYPE_TRIANGLES)
+			{
+				auto const* triangles = static_cast<CanvasItemData::CommandTriangles const*>(command);
+				auto        vertices  = PrepareCanvasTriangles(triangles->vertices, position, parentClip);
+				if (vertices.empty())
+				{
+					continue;
+				}
+
+				unsigned int const byteSize = static_cast<unsigned int>(vertices.size() * sizeof(Vertex));
+				if (command->vertexBuffer == nullptr)
+				{
+					command->vertexBuffer = m_renderer->CreateVertexBuffer(byteSize, sizeof(Vertex));
+				}
+				else if (command->vertexBuffer->GetSize() != byteSize)
+				{
+					command->vertexBuffer->Resize(byteSize);
+				}
+
+				m_renderer->CopyCPUToGPU(vertices.data(), byteSize, command->vertexBuffer);
+				RenderRequest request;
+				request.m_pass           = RenderRequestPass::UI;
+				request.m_vertexBuffer   = command->vertexBuffer;
+				request.m_shader         = m_defaultUI->GetShader();
+				request.m_blendMode      = BlendMode::ALPHA;
+				request.m_depthMode      = DepthMode::READ_ONLY_ALWAYS;
+				request.m_rasterizerMode = RasterizerMode::SOLID_CULL_NONE;
+				viewportData->m_renderRequests[static_cast<size_t>(RenderRequestPass::UI)].push_back(request);
+				continue;
+			}
+
 			CanvasItemData::CommandRect const* rectCommand = static_cast<CanvasItemData::CommandRect const*>(command);
 
 			Rect2 const& rect        = rectCommand->rect;
@@ -877,6 +1011,27 @@ void RenderServer::CanvasItemAddRect(RID rid, AABB2 const& rect, Color const& co
 	command->rect.m_position             = rect.m_mins;
 	command->rect.m_size                 = rect.m_maxs - rect.m_mins;
 	command->color                       = color;
+	item->m_commands.push_back(command);
+}
+
+void RenderServer::CanvasItemAddTriangles(RID rid, std::vector<Vertex> const& vertices)
+{
+	CanvasItemData* item = m_canvasItemOwner.GetOrNull(rid);
+	if (item == nullptr || vertices.empty() || vertices.size() % 3 != 0)
+	{
+		return;
+	}
+
+	for (Vertex const& vertex : vertices)
+	{
+		if (!std::isfinite(vertex.m_position.x) || !std::isfinite(vertex.m_position.y))
+		{
+			return;
+		}
+	}
+
+	auto* command     = new CanvasItemData::CommandTriangles();
+	command->vertices = vertices;
 	item->m_commands.push_back(command);
 }
 

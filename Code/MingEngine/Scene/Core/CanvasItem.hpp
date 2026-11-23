@@ -3,7 +3,10 @@
 #include "MingEngine/Core/Math/AABB2.hpp"
 #include "MingEngine/Core/Math/Rect2.hpp"
 #include "MingEngine/Core/Render/RID.hpp"
+#include "MingEngine/Core/Render/Vertex.hpp"
 #include "MingEngine/Scene/Core/Node.hpp"
+
+#include <vector>
 
 class RenderServer;
 
@@ -46,6 +49,7 @@ protected:
 	// We do this because we a CanvasItem drawing
 	// he just need to care about what he looks like in his own local space, not the global space.
 	void DrawRect(AABB2 const& rect, Color const& color);
+	void DrawTriangles(std::vector<Vertex> const& vertices);
 	void DrawTextureRect(
 		Ref<TextureResource> const& texture,
 		Rect2 const&                rect,

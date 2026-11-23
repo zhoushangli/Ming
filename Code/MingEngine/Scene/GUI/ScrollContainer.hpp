@@ -29,6 +29,10 @@ public:
 	Vector2 GetContentSize() const { return m_contentSize; }
 	Vector2 GetPageSize() const { return m_pageSize; }
 
+	bool IsFollowingFocus() const { return m_followFocus; }
+
+	void SetFollowFocus(bool enabled) { m_followFocus = enabled; }
+
 	void SetScroll(float offset);
 	void SetHorizontalScroll(float offset);
 
@@ -53,6 +57,7 @@ private:
 
 private:
 	ThemeCache m_themeCache;
+	bool       m_followFocus        = false;
 	int        m_hoverAxis          = -1;
 	int        m_dragScrollbarWidth = 0;
 	int        m_dragMinimumSize    = 0;

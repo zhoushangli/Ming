@@ -108,6 +108,7 @@ void OptionButton::OpenOptions()
 		m_popupID = popup->GetObjectID();
 		GetViewport()->AddNode(popup);
 		m_scroll = MemNew<ScrollContainer>();
+		m_scroll->SetFollowFocus(true);
 		popup->AddNode(m_scroll);
 		auto* list = MemNew<VBoxContainer>();
 		list->SetSeparation(1.f);

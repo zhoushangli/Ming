@@ -57,6 +57,15 @@ private:
 		Ref<ThemeStyleBox>   selected;
 		Ref<ThemeStyleBox>   focus;
 		Ref<ThemeStyleBox>   drop_mark;
+
+		int                 scrollbar_width        = 0;
+		int                 grabber_minimum_size   = 0;
+		int                 grabber_margin         = 0;
+		int                 scroll_step            = 0;
+		Ref<ThemeStyleBox>   track;
+		Ref<ThemeStyleBox>   grabber;
+		Ref<ThemeStyleBox>   grabber_hover;
+		Ref<ThemeStyleBox>   grabber_pressed;
 	};
 
 public:
@@ -69,6 +78,14 @@ public:
 	float    GetRowHeight() const;
 	AABB2    GetItemRect(uint64_t id) const;
 	AABB2    GetItemActionRect(uint64_t id, int action) const;
+
+	float   GetScroll() const { return m_scroll; }
+	float   GetHorizontalScroll() const { return m_horizontalScroll; }
+	Vector2 GetContentSize() const { return m_contentSize; }
+	Vector2 GetPageSize() const { return m_pageSize; }
+
+	void SetScroll(float offset);
+	void SetHorizontalScroll(float offset);
 
 	void SetItems(std::vector<Item> items, bool filtering = false);
 	void SetFont(Ref<FontResource> const& font);
@@ -114,6 +131,18 @@ private:
 	float GetRowTextX(size_t row) const;
 	float GetRowTextEnd(size_t row) const;
 
+	float GetMaximumScroll() const;
+	AABB2 GetTrackRect(int axis) const;
+	AABB2 GetGrabberRect(int axis) const;
+
+	bool HandleScrollInput(InputEvent const& event);
+	void UpdateScrollRange();
+
+	AABB2 ClipItemRect(AABB2 const& rect) const;
+	void DrawItemRect(AABB2 const& rect, Color const& color);
+	void DrawItemTexture(
+		Ref<TextureResource> const& texture, Rect2 const& rect, Rect2 const& source, Color const& color);
+
 	void RebuildRows();
 	void UpdateRowLayout();
 
@@ -132,6 +161,16 @@ private:
 	uint64_t                                     m_hoveredItem       = 0;
 	double                                       m_lastClickTime     = 0.0;
 	float                                        m_contentWidth      = 32.f;
+	float                                        m_scroll             = 0.f;
+	float                                        m_horizontalScroll   = 0.f;
+	Vector2                                      m_contentSize        = Vector2::Zero;
+	Vector2                                      m_pageSize           = Vector2::Zero;
+	int                                          m_hoverAxis          = -1;
+	int                                          m_dragAxis           = -1;
+	float                                        m_dragOffset         = 0.f;
+	int                                          m_dragScrollbarWidth = 0;
+	int                                          m_dragMinimumSize    = 0;
+	int                                          m_dragMargin         = 0;
 	bool                                         m_filtering         = false;
 	bool                                         m_updatingRowLayout = false;
 	bool                                         m_clipText          = false;

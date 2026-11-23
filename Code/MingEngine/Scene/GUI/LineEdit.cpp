@@ -5,6 +5,7 @@
 #include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Editor/EditorNode.hpp"
 #include "MingEngine/Scene/Core/Viewport.hpp"
+#include "MingEngine/Scene/Core/SceneTree.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -306,7 +307,7 @@ void LineEdit::UpdateTextLayout()
 	}
 
 	EnsureCursorVisible();
-	QueueRedraw();
+	ResetCaretBlink();
 }
 
 AABB2 LineEdit::GetContentRect() const
@@ -361,7 +362,7 @@ void LineEdit::MoveCursor(int column, bool select)
 	}
 
 	EnsureCursorVisible();
-	QueueRedraw();
+	ResetCaretBlink();
 }
 
 CursorShape LineEdit::GetCursorShape([[maybe_unused]] Vector2 const& localPosition) const
@@ -718,6 +719,13 @@ bool LineEdit::GuiInput(InputEvent const& event)
 	return false;
 }
 
+void LineEdit::ResetCaretBlink()
+{
+	m_caretVisible   = true;
+	m_caretBlinkTime = 0.f;
+	QueueRedraw();
+}
+
 void LineEdit::DrawContent()
 {
 	AABB2 const content = GetContentRect();
@@ -800,9 +808,10 @@ void LineEdit::DrawContent()
 		}
 	}
 
-	if (m_editable && !m_disabled && HasFocus() && GetViewport()->IsWindowFocused())
+	if (m_caretVisible && m_editable && !m_disabled && HasFocus() && GetViewport()->IsWindowFocused())
 	{
-		float const cursorHeight = height > 0.f ? height : static_cast<float>(m_themeCache.font_size);
+		float const cursorHeight =
+			std::min(content.GetHeight(), static_cast<float>(std::max(1, m_themeCache.font_size)));
 		float const cursorTop    = content.m_mins.y + (content.GetHeight() - cursorHeight) * 0.5f;
 		float const x            = originX + GetColumnPosition(m_cursorColumn);
 		drawClippedRect(
@@ -819,6 +828,29 @@ void LineEdit::OnNotification(int notification)
 {
 	switch (notification)
 	{
+	case Notification_Process:
+		if (!HasFocus() || !m_editable || m_disabled || !IsVisibleInHierarchy() || GetViewport() == nullptr
+			|| !GetViewport()->IsWindowFocused())
+		{
+			if (!m_caretVisible || m_caretBlinkTime != 0.f)
+			{
+				ResetCaretBlink();
+			}
+
+			break;
+		}
+
+		if (SceneTree* tree = GetSceneTree())
+		{
+			m_caretBlinkTime = std::fmod(m_caretBlinkTime + std::max(0.f, tree->GetDeltaSeconds()), 1.f);
+			bool const visible = m_selecting || m_caretBlinkTime < 0.5f;
+			if (visible != m_caretVisible)
+			{
+				m_caretVisible = visible;
+				QueueRedraw();
+			}
+		}
+		break;
 	case Notification_MouseEnter:
 		m_hovering = true;
 		QueueRedraw();
@@ -835,10 +867,12 @@ void LineEdit::OnNotification(int notification)
 		QueueRedraw();
 		break;
 	case Notification_FocusEnter:
-		QueueRedraw();
+		SetProcess(true);
+		ResetCaretBlink();
 		BeginEditing();
 		break;
 	case Notification_FocusExit:
+		SetProcess(false);
 		Deselect();
 		m_selecting = false;
 		EndEditing(EditEndReason::FocusLost);
@@ -846,6 +880,11 @@ void LineEdit::OnNotification(int notification)
 	case Notification_GuiInputCancelled:
 	case Notification_ExitTree:
 	case Notification_PreDelete:
+		if (notification != Notification_GuiInputCancelled)
+		{
+			SetProcess(false);
+		}
+
 		m_selecting = false;
 		QueueRedraw();
 		EndEditing();

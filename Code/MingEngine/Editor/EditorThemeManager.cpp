@@ -1,4 +1,5 @@
 #include "MingEngine/Editor/EditorThemeManager.hpp"
+#include "MingEngine/Scene/GUI/DefaultTheme.hpp"
 #include "MingEngine/Editor/UI/EditorIcons.hpp"
 #include "MingEngine/Editor/BuiltinIcons.hpp"
 #include "MingEngine/Core/Object/ClassDatabase.hpp"
@@ -311,7 +312,7 @@ Ref<Theme> EditorThemeManager::CreateTheme()
 	}
 
 	theme->SetColor("font_color", "EditorLogTime", dim);
-	theme->SetColor("font_color", "EditorLogInfo", Color(145, 185, 155));
+	theme->SetColor("font_color", "EditorLogInfo", text);
 	theme->SetColor("font_color", "EditorLogWarning", Color(226, 186, 114));
 	theme->SetColor("font_color", "EditorLogError", Color(227, 152, 152));
 	for (ClassInfo const* info : ClassDatabase::GetRegisteredClasses())
@@ -386,19 +387,23 @@ Ref<Theme> EditorThemeManager::CreateTheme()
 	theme->SetStyleBox("hover_pressed", "EditorOutputFilter", box(strong, Color::Transparent, 0.f, 3.75f, 2.5f));
 	theme->SetTypeVariation("EditorLogArea", "PanelContainer");
 	theme->SetStyleBox("panel", "EditorLogArea", box(field, Color::Transparent, 0.f, 5.f, 5.f));
+	theme->SetColor("selection_color", "EditorLogArea", Color(87, 65, 42));
 	theme->SetColor("background_color", "EditorLogScroll", field);
 	theme->SetTypeVariation("EditorLogScroll", "ScrollContainer");
+	theme->SetTypeVariation("EditorLogRow", "HBoxContainer");
+	theme->SetConstant("separation", "EditorLogRow", compactSpacing);
 	auto logFont = JetBrainsMonoFont::Create();
 	for (char const* variation : { "EditorLogTime", "EditorLogInfo", "EditorLogWarning", "EditorLogError" })
 	{
 		theme->SetFont("font", variation, logFont);
 	}
 
-	theme->SetColor("font_color", "EditorLogInfo", text);
 	theme->SetColor("font_color", "MenuBarButton", text);
 	theme->SetColor("font_hover_color", "MenuBarButton", text);
 	theme->SetConstant("project_popup_width", "Editor", 650);
 	theme->SetConstant("project_popup_height", "Editor", 275);
+	theme->SetConstant("project_settings_width", "Editor", 1000);
+	theme->SetConstant("project_settings_height", "Editor", 650);
 	theme->SetConstant("warning_popup_width", "Editor", 700);
 	theme->SetConstant("warning_popup_height", "Editor", 225);
 	theme->SetConstant("create_popup_height", "Editor", 300);
@@ -420,6 +425,58 @@ Ref<Theme> EditorThemeManager::CreateTheme()
 	theme->SetConstant("node_sidebar_width", "Editor", 170);
 	theme->SetConstant("node_description_height", "Editor", 80);
 	theme->SetConstant("gizmo_size", "Editor", 104);
+	ApplyThemeCornerRadii(theme);
+	theme->SetTypeVariation("EditorSettingsTabs", "TabContainer");
+	theme->SetColor("font_color", "EditorSettingsTabs", muted);
+	theme->SetColor("font_selected_color", "EditorSettingsTabs", text);
+	theme->SetColor("font_selected_hover_color", "EditorSettingsTabs", text);
+	for (char const* state : { "tab_normal", "tab_hover", "tab_selected", "tab_selected_hover" })
+	{
+		bool const active = std::string(state) == "tab_selected" || std::string(state) == "tab_selected_hover";
+		auto tab = box(active || std::string(state) == "tab_hover" ? elevated : Color::Transparent,
+			accent, 0.f, 12.5f, 5.f);
+		tab->SetCornerRadius(ThemeStyleBox::Corner::TopLeft, ThemeRadii::Control);
+		tab->SetCornerRadius(ThemeStyleBox::Corner::TopRight, ThemeRadii::Control);
+		if (active)
+		{
+			tab->SetBorderWidth(ThemeStyleBox::Side::Top, 2.f);
+		}
+
+		theme->SetStyleBox(state, "EditorSettingsTabs", tab);
+	}
+
+	theme->SetTypeVariation("EditorSettingsTitle", "Label");
+	theme->SetFontSize("font_size", "EditorSettingsTitle", 17);
+	theme->SetColor("font_color", "EditorSettingsTitle", text);
+	theme->SetTypeVariation("EditorSettingsPage", "MarginContainer");
+	for (char const* margin : { "margin_left", "margin_top", "margin_right", "margin_bottom" })
+	{
+		theme->SetConstant(margin, "EditorSettingsPage", static_cast<int>(contentPadding));
+	}
+
+	theme->SetTypeVariation("EditorSettingsGroup", "BoxContainer");
+	theme->SetConstant("separation", "EditorSettingsGroup", static_cast<int>(contentPadding));
+	theme->SetTypeVariation("EditorSettingsRows", "BoxContainer");
+	theme->SetConstant("separation", "EditorSettingsRows", compactSpacing);
+	theme->SetTypeVariation("EditorSettingsSection", "BoxContainer");
+	theme->SetConstant("separation", "EditorSettingsSection", static_cast<int>(contentPadding * 2.f));
+	theme->SetTypeVariation("EditorSettingsEdit", "LineEdit");
+	for (char const* state : { "normal", "hover", "read_only" })
+	{
+		auto edit = box(field, std::string(state) == "hover" ? strong : border, 1.f, fieldPadding, fieldVerticalPadding);
+		edit->SetCornerRadiusAll(ThemeRadii::Control);
+		theme->SetStyleBox(state, "EditorSettingsEdit", edit);
+	}
+
+	theme->SetColor("font_read_only_color", "EditorSettingsEdit", text);
+	theme->SetTypeVariation("EditorSettingsTable", "PanelContainer");
+	auto settingsTable = box(field, border, 1.f, contentPadding, contentPadding);
+	settingsTable->SetCornerRadiusAll(ThemeRadii::Control);
+	theme->SetStyleBox("panel", "EditorSettingsTable", settingsTable);
+	for (int i = 0; i < 4; ++i)
+	{
+		theme->GetStyleBox("panel", "EditorDialog")->SetContentMargin(static_cast<ThemeStyleBox::Side>(i), 1.f);
+	}
 	return theme;
 }
 
@@ -461,6 +518,13 @@ Ref<Theme> EditorThemeManager::CreateScaledTheme(Ref<Theme> const& baseTheme, fl
 	// Only these constants represent editor dimensions; switches and counts retain their values.
 	// e.g. A user-defined mode constant is copied even when its value happens to be 20.
 	static std::pair<char const*, char const*> const dimensions[] = {
+		{ "EditorSettingsPage", "margin_left" },
+		{ "EditorSettingsPage", "margin_top" },
+		{ "EditorSettingsPage", "margin_right" },
+		{ "EditorSettingsPage", "margin_bottom" },
+		{ "EditorSettingsGroup", "separation" },
+		{ "EditorSettingsRows", "separation" },
+		{ "EditorSettingsSection", "separation" },
 		{ "ColorPicker", "minimum_width" },
 		{ "ColorPicker", "shape_height" },
 		{ "ColorPicker", "bar_width" },
@@ -478,6 +542,8 @@ Ref<Theme> EditorThemeManager::CreateScaledTheme(Ref<Theme> const& baseTheme, fl
 		{ "Editor", "warning_popup_width" },
 		{ "Editor", "project_popup_height" },
 		{ "Editor", "project_popup_width" },
+		{ "Editor", "project_settings_height" },
+		{ "Editor", "project_settings_width" },
 		{ "BoxContainer", "separation" },
 		{ "Button", "icon_separation" },
 		{ "Button", "icon_size" },
@@ -512,6 +578,7 @@ Ref<Theme> EditorThemeManager::CreateScaledTheme(Ref<Theme> const& baseTheme, fl
 		{ "Editor", "viewport_min_width" },
 		{ "Editor", "viewport_toolbar_height" },
 		{ "EditorOutputTab", "minimum_height" },
+		{ "EditorLogRow", "separation" },
 		{ "EditorPanelAction", "minimum_height" },
 		{ "EditorToolbarButton", "minimum_height" },
 		{ "Label", "line_spacing" },
@@ -582,6 +649,8 @@ Ref<Theme> EditorThemeManager::CreateScaledTheme(Ref<Theme> const& baseTheme, fl
 			{
 				auto const  side   = static_cast<ThemeStyleBox::Side>(i);
 				float const border = box->GetBorderWidth(side);
+				auto const corner = static_cast<ThemeStyleBox::Corner>(i);
+				box->SetCornerRadius(corner, box->GetCornerRadius(corner) * scale);
 				box->SetContentMargin(side, box->GetContentMargin(side) * scale);
 				box->SetBorderWidth(side, border > 0.f ? std::max(1.f, std::floor(border * scale)) : 0.f);
 			}

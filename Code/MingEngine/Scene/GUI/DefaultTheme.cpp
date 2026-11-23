@@ -176,5 +176,154 @@ Ref<Theme> CreateDefaultTheme()
 	theme->SetColor("checker_dark", "ColorPicker", Color(100, 100, 100));
 	theme->SetColor("cursor_color", "ColorPicker", Color::White);
 	theme->SetStyleBox("panel", "ColorPicker", box(panel, border, 1.f, 0.f, 0.f));
+	theme->SetTypeVariation("EditorMenuPopup", "PanelContainer");
+	theme->SetStyleBox("panel", "EditorMenuPopup", box(panel, border, 1.f, 2.f, 3.f));
+	theme->SetTypeVariation("EditorMenuItem", "Button");
+	ApplyThemeCornerRadii(theme);
 	return theme;
+}
+
+void ApplyThemeCornerRadii(Ref<Theme> const& theme)
+{
+	using namespace ThemeRadii;
+	auto apply = [&](char const* type, float radius, bool topOnly = false, char const* fallback = "")
+	{
+		auto        names = theme->GetItemList(Theme::DataType::StyleBox, type);
+		std::string base  = fallback;
+		if (base.empty())
+		{
+			base = theme->GetTypeVariationBase(type);
+		}
+
+		std::map<std::string, Ref<ThemeStyleBox>> inherited;
+		while (!base.empty())
+		{
+			for (auto const& name : theme->GetItemList(Theme::DataType::StyleBox, base))
+			{
+				inherited.emplace(name, theme->GetStyleBox(name, base));
+			}
+			base = theme->GetTypeVariationBase(base);
+		}
+
+		for (auto const& entry : inherited)
+		{
+			if (!theme->HasStyleBox(entry.first, type))
+			{
+				auto copy = CreateRef<ThemeStyleBox>();
+				copy->SetBackgroundColor(entry.second->GetBackgroundColor());
+				copy->SetBorderColor(entry.second->GetBorderColor());
+				for (int i = 0; i < 4; ++i)
+				{
+					auto side = static_cast<ThemeStyleBox::Side>(i);
+					copy->SetBorderWidth(side, entry.second->GetBorderWidth(side));
+					copy->SetContentMargin(side, entry.second->GetContentMargin(side));
+				}
+				theme->SetStyleBox(entry.first, type, copy);
+				names.push_back(entry.first);
+			}
+		}
+
+		for (auto const& name : names)
+		{
+			auto box = theme->GetStyleBox(name, type);
+			box->SetCornerRadiusAll(radius);
+			if (topOnly)
+			{
+				box->SetCornerRadius(ThemeStyleBox::Corner::BottomLeft, Square);
+				box->SetCornerRadius(ThemeStyleBox::Corner::BottomRight, Square);
+			}
+		}
+	};
+
+	// 1) Apply base control shapes before resolving editor variations.
+	apply("Button", Control);
+	apply("OptionButton", Control, false, "Button");
+	apply("LineEdit", Control);
+	apply("PanelContainer", Panel);
+	apply("ColorPicker", Panel);
+	apply("ProgressBar", Control);
+	if (auto fill = theme->GetStyleBox("fill", "ProgressBar"); fill.IsValid())
+	{
+		fill->SetCornerRadiusAll(Control - 1.f);
+	}
+
+	apply("SpinBoxStep", Small);
+	apply("MenuBarButton", Small);
+	for (char const* state : { "hover", "selected" })
+	{
+		auto box = theme->GetStyleBox(state, "Tree");
+		if (box.IsValid())
+		{
+			box->SetCornerRadiusAll(Small);
+		}
+	}
+
+	for (char const* state : { "grabber", "grabber_hover", "grabber_pressed" })
+	{
+		auto box = theme->GetStyleBox(state, "ScrollContainer");
+		if (box.IsValid())
+		{
+			box->SetCornerRadiusAll(Control);
+		}
+	}
+
+	for (auto const& name : theme->GetItemList(Theme::DataType::StyleBox, "TabContainer"))
+	{
+		if (name != "panel")
+		{
+			auto box = theme->GetStyleBox(name, "TabContainer");
+			box->SetCornerRadius(ThemeStyleBox::Corner::TopLeft, Control);
+			box->SetCornerRadius(ThemeStyleBox::Corner::TopRight, Control);
+		}
+	}
+
+	// 2) Keep joined editor surfaces square and round only exposed corners.
+	for (char const* type : { "EditorToolbarButton",
+							  "EditorPanelAction",
+							  "EditorGroupButton",
+							  "EditorOutputFilter",
+							  "EditorScriptAction",
+							  "EditorScriptMenu",
+							  "EditorMenuItem" })
+	{
+		if (!theme->GetTypeVariationBase(type).empty() || theme->HasStyleBox("normal", type))
+		{
+			apply(type, Small, false, std::string(type) == "EditorToolbarButton" ? "Button" : "");
+		}
+	}
+
+	for (char const* type : { "EditorPrimaryButton",
+							  "EditorWorkspaceButton",
+							  "EditorScriptButton",
+							  "EditorPropertyEdit",
+							  "EditorPropertyButton",
+							  "EditorPropertyOption",
+							  "EditorPropertyValue" })
+	{
+		if (!theme->GetTypeVariationBase(type).empty())
+		{
+			apply(type, Control, false, std::string(type) == "EditorPropertyOption" ? "OptionButton" : "");
+		}
+	}
+
+	for (char const* type :
+		 { "EditorPanel", "EditorViewportHeader", "EditorObjectBar", "EditorLogArea", "EditorDialogSidebar" })
+	{
+		apply(type, Square);
+	}
+	apply("EditorInspectorClassHeader", Panel);
+	apply("EditorSceneTab", Control, true);
+	if (!theme->GetTypeVariationBase("EditorOutputTab").empty())
+	{
+		apply("EditorOutputTab", Control, true);
+	}
+	apply("EditorMenuPopup", Popup);
+	apply("EditorDialog", Popup);
+	apply("EditorDialogHeader", Popup - 1.f, true);
+	apply("EditorDialogBody", Popup - 1.f);
+	if (auto body = theme->GetStyleBox("panel", "EditorDialogBody"); body.IsValid())
+	{
+		body->SetCornerRadius(ThemeStyleBox::Corner::TopLeft, Square);
+		body->SetCornerRadius(ThemeStyleBox::Corner::TopRight, Square);
+	}
 }

@@ -15,7 +15,8 @@ public:
 	{
 		Open,
 		Save,
-		MainScene
+		MainScene,
+		Autoload
 	};
 
 public:
@@ -28,6 +29,9 @@ public:
 	bool Confirm();
 
 private:
+	bool        IsSupportedFile(VirtualPath const& path) const;
+	char const* GetConfirmText() const;
+
 	void Navigate(VirtualPath const& directory);
 	void Refresh();
 
@@ -37,6 +41,7 @@ private:
 	VBoxContainer*                          m_content   = nullptr;
 	LineEdit*                               m_path      = nullptr;
 	LineEdit*                               m_name      = nullptr;
+	Label*                                  m_fileLabel = nullptr;
 	Tree*                                   m_tree      = nullptr;
 	Label*                                  m_error     = nullptr;
 	Button*                                 m_confirm   = nullptr;

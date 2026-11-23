@@ -4,7 +4,6 @@
 #include "MingEngine/Editor/UI/EditorUI.hpp"
 #include "MingEngine/Editor/UI/Popup/EditorPopupUtils.hpp"
 #include "MingEngine/Scene/Core/SceneTree.hpp"
-#include "MingEngine/Scene/GUI/ScrollContainer.hpp"
 #include "MingEngine/Scene/GUI/MarginContainer.hpp"
 #include "MingEngine/Scene/Core/CanvasItem.hpp"
 #include "ThirdParty/GLFW/glfw3.h"
@@ -91,12 +90,10 @@ void ScenePanel::OnInitialize()
 		{
 			OpenCreateNode();
 		});
-	auto* scroll = MemNew<ScrollContainer>();
-	scroll->SetVerticalSizeFlags(Size_ExpandFill);
-	layout->AddNode(scroll);
 	m_tree = MemNew<Tree>();
+	m_tree->SetVerticalSizeFlags(Control::Size_ExpandFill);
 	m_tree->SetClipText(true);
-	scroll->AddNode(m_tree);
+	layout->AddNode(m_tree);
 	m_tree->SetItemActionCallback(
 		[this](uint64_t key, int action)
 		{

@@ -5,6 +5,7 @@
 #include "MingEngine/Core/Math/Matrix4x4.hpp"
 #include "MingEngine/Core/Math/Rect2.hpp"
 #include "MingEngine/Core/Render/Color.hpp"
+#include "MingEngine/Core/Render/Vertex.hpp"
 #include "MingEngine/Core/Render/RID.hpp"
 #include "MingEngine/Engine/Render/PostProcessChain.hpp"
 #include "MingEngine/Engine/Render/RenderTypes.hpp"
@@ -234,6 +235,7 @@ public:
 		enum Type
 		{
 			TYPE_RECT,
+			TYPE_TRIANGLES,
 		};
 
 		Type          type;
@@ -254,6 +256,13 @@ public:
 		bool  hasRegion = false;
 
 		CommandRect() { type = TYPE_RECT; }
+	};
+
+	struct CommandTriangles : Command
+	{
+		CommandTriangles() { type = TYPE_TRIANGLES; }
+
+		std::vector<Vertex> vertices;
 	};
 
 public:

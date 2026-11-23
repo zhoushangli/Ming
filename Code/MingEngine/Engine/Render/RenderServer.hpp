@@ -45,6 +45,7 @@ public:
 	void CanvasItemClear(RID item);
 
 	void CanvasItemAddRect(RID item, AABB2 const& rect, Color const& color);
+	void CanvasItemAddTriangles(RID item, std::vector<Vertex> const& vertices);
 	void CanvasItemAddTextureRect(
 		RID                         item,
 		Ref<TextureResource> const& texture,

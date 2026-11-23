@@ -17,8 +17,8 @@ Engine* g_engine = nullptr;
 
 Engine::Engine(EngineConfig config) : m_config(config)
 {
-	g_engine = this;
-	m_sceneSystem = MemNew<SceneSystem>();
+	g_engine        = this;
+	m_sceneSystem   = MemNew<SceneSystem>();
 	m_physicsServer = MemNew<PhysicsServer>();
 
 	if (config.m_windowConfig.m_isEnable)
@@ -55,6 +55,11 @@ Engine::Engine(EngineConfig config) : m_config(config)
 	if (config.m_networkConfig.m_isEnable)
 	{
 		m_networkSystem = MemNew<NetworkSystem>(config.m_networkConfig);
+	}
+
+	if (config.m_enableWorkerThreadPool && m_scriptSystem != nullptr)
+	{
+		m_workerThreadPool = MemNew<WorkerThreadPool>();
 	}
 }
 
@@ -111,9 +116,8 @@ bool Engine::Startup()
 		m_fileSystem->Startup();
 	}
 
-	if (m_config.m_enableWorkerThreadPool && m_scriptSystem != nullptr)
+	if (m_workerThreadPool != nullptr)
 	{
-		m_workerThreadPool = MemNew<WorkerThreadPool>();
 		int const threadCount = static_cast<int>((std::max)(1u, std::thread::hardware_concurrency()));
 		if (!m_workerThreadPool->Start(threadCount))
 		{
@@ -121,8 +125,6 @@ bool Engine::Startup()
 			ERR_PRINT("Cannot start the worker thread pool.");
 			return false;
 		}
-
-		ClassDatabase::RegisterGlobalObject(m_workerThreadPool);
 	}
 
 	if (m_scriptSystem != nullptr)
@@ -300,7 +302,7 @@ bool Engine::Update(float deltaSeconds, std::function<bool()> const& shouldQuit)
 		&& (!shouldQuit || !shouldQuit()))
 	{
 		constexpr double fixedDelta = 1.0 / 60.0;
-		constexpr int maxSteps = 8;
+		constexpr int    maxSteps   = 8;
 		m_physicsAccumulator += static_cast<double>(deltaSeconds);
 
 		int steps = 0;

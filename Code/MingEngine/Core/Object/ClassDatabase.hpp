@@ -250,6 +250,14 @@ public:
 		T::InitializeClass();
 	}
 
+	// Register Singleton Class, which means this class is a singletone
+	// And its function will be static in C# bindings
+	// e.g.
+	// c# file:
+	// public class WorkerThreadPool : Object
+	// {
+	//     public static AddTask(callback: Callable) : int64;
+	// }
 	template <typename T>
 	static void RegisterSingletonClass()
 	{
@@ -257,8 +265,9 @@ public:
 		m_classInfoMap[T::GetStaticClassName()].m_isSingleton = true;
 	}
 
+	// Register Singleton, which means assign a instance to the singleton class
 	template <typename T>
-	static void RegisterGlobalObject(T* object)
+	static void RegisterSingleton(T* object)
 	{
 		static_assert(std::is_base_of_v<Object, T>, "T must be derived from Object");
 		m_globalObjectMap[object->GetClassName()] = object;

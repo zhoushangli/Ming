@@ -57,6 +57,8 @@ public:
 	AudioSystem*   m_audioSystem   = nullptr;
 	NetworkSystem* m_networkSystem = nullptr;
 
+	WorkerThreadPool* m_workerThreadPool = nullptr;
+
 	SceneSystem* m_sceneSystem = nullptr;
 	PhysicsServer* m_physicsServer = nullptr;
 
@@ -64,7 +66,6 @@ public:
 	TextServer*   m_textServer   = nullptr;
 
 private:
-	WorkerThreadPool* m_workerThreadPool = nullptr;
 	double m_physicsAccumulator = 0.0;
 	bool   m_isEditorMode       = false;
 };

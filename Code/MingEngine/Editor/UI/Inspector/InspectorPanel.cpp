@@ -423,6 +423,7 @@ void InspectorPanel::OnInitialize()
 	m_objectName->SetVerticalAlignment(VerticalAlignment::Center);
 	m_empty      = EditorPopupUtils::AddLabel(layout, "No object selected", "EditorStatusLabel");
 	auto* scroll = MemNew<ScrollContainer>();
+	scroll->SetFollowFocus(true);
 	m_scroll     = scroll;
 	scroll->SetVerticalSizeFlags(Size_ExpandFill);
 	layout->AddNode(scroll);

@@ -80,6 +80,7 @@ ColorPicker* ColorPickerButton::GetPicker()
 	m_popupID = popup->GetObjectID();
 	GetViewport()->AddNode(popup);
 	m_scroll = MemNew<ScrollContainer>();
+	m_scroll->SetFollowFocus(true);
 	popup->AddNode(m_scroll);
 	m_picker = MemNew<ColorPicker>();
 	m_scroll->AddNode(m_picker);

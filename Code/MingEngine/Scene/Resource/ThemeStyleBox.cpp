@@ -22,6 +22,49 @@ Vector2 ThemeStyleBox::GetMinimumSize() const
 	return Vector2(m_contentMargins[0] + m_contentMargins[2], m_contentMargins[1] + m_contentMargins[3]);
 }
 
+float ThemeStyleBox::GetCornerRadius(Corner corner) const
+{
+	int const index = static_cast<int>(corner);
+	return index >= 0 && index < 4 ? m_cornerRadii[index] : 0.f;
+}
+
+void ThemeStyleBox::SetCornerRadius(Corner corner, float radius)
+{
+	int const index = static_cast<int>(corner);
+	if (index < 0 || index >= 4 || !std::isfinite(radius))
+	{
+		return;
+	}
+
+	radius = std::max(0.f, radius);
+	if (m_cornerRadii[index] != radius)
+	{
+		m_cornerRadii[index] = radius;
+		EmitChanged();
+	}
+}
+
+void ThemeStyleBox::SetCornerRadiusAll(float radius)
+{
+	if (!std::isfinite(radius))
+	{
+		return;
+	}
+
+	radius       = std::max(0.f, radius);
+	bool changed = false;
+	for (float& value : m_cornerRadii)
+	{
+		changed = changed || value != radius;
+		value   = radius;
+	}
+
+	if (changed)
+	{
+		EmitChanged();
+	}
+}
+
 AABB2 ThemeStyleBox::GetContentRect(AABB2 const& rect) const
 {
 	Vector2 const start(
@@ -140,10 +183,12 @@ bool ThemeStyleBox::CopyFrom(Resource&& other)
 	m_borderColor     = box->m_borderColor;
 	std::copy(std::begin(box->m_borderWidths), std::end(box->m_borderWidths), m_borderWidths);
 	std::copy(std::begin(box->m_contentMargins), std::end(box->m_contentMargins), m_contentMargins);
+	std::copy(std::begin(box->m_cornerRadii), std::end(box->m_cornerRadii), m_cornerRadii);
 	box->m_backgroundColor = Color::Transparent;
 	box->m_borderColor     = Color::Transparent;
 	std::fill(std::begin(box->m_borderWidths), std::end(box->m_borderWidths), 0.f);
 	std::fill(std::begin(box->m_contentMargins), std::end(box->m_contentMargins), 0.f);
+	std::fill(std::begin(box->m_cornerRadii), std::end(box->m_cornerRadii), 0.f);
 	EmitChanged();
 	box->EmitChanged();
 	return true;

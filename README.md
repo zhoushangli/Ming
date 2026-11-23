@@ -2,6 +2,38 @@
 
 Ming Engine 是一个使用 C++ 编写的个人自研游戏引擎项目，主要用于学习、实验和构建完整的游戏引擎基础设施。项目覆盖渲染、场景管理、输入、音频、编辑器工具以及脚本系统等核心模块。
 
+## UI Theme 圆角标准
+
+默认 Theme 和编辑器 Theme 共用 `ThemeRadii` 半径，以 100% 为基准，编辑器按当前比例缩放。控件通过 StyleBox 和类型变体选择外观，业务面板不要自行硬编码圆角。
+
+| 分类 | 半径 | 对象 |
+| --- | ---: | --- |
+| 连续结构 | 0 | 根背景、Dock 内容区、Viewport、结构栏、日志区、分隔条、滚动轨道、树连接线及拖放标记 |
+| 小型交互 | 2 | 工具栏与菜单按钮、树节点悬停和选中背景、输出过滤与分组按钮、SpinBox 步进按钮 |
+| 标准控件 | 4 | Button、OptionButton、LineEdit、属性编辑控件、滚动滑块、进度条背景 |
+| 独立面板 | 6 | PanelContainer、Inspector 分组标题、ColorPicker 面板 |
+| 浮动容器 | 8 | 菜单弹出面板、编辑器对话框外壳 |
+| 拼接标签 | 上角 4，下角 0 | TabContainer 标签、场景标签、Output 标签 |
+
+同一控件的 normal、hover、pressed、disabled、focus 采用相同轮廓，焦点样式只绘制边框。拼接区域保持直角；对话框预留外边框宽度，标题只圆上角，正文只圆下角，内部半径扣除外边框宽度。进度条填充的半径扣除背景内边距，绘制时按实际尺寸收缩。
+
+`ThemeStyleBox` 提供 `GetCornerRadius(Corner)`、`SetCornerRadius(Corner, float)`、`SetCornerRadiusAll(float)`。四角默认是 0，负数归零，非有限值不接受。复制、移动和编辑器缩放保留圆角配置，修改共享样式会沿现有 Theme 通知链自动刷新控件。
+
+圆角使用 CPU 生成的三角形，每角 8 段，边缘采用约 1 个渲染像素的透明过渡带。圆角不改变矩形布局、点击区域和子节点裁剪方式。新增控件应选用上述分类；连接区域只保留外露角，状态切换不改变半径。
+
+验证与交互预览：
+
+```powershell
+.\Tests\RunRoundedThemeVerification.ps1
+.\Tests\RunRoundedThemeVerification.ps1 -SkipBuild -Preview -Scale 1.25
+.\Tests\RunRoundedThemeVerification.ps1 -SkipBuild -Capture -Scale 1.25
+.\Tests\RunRoundedThemeVerification.ps1 -SkipBuild -EditorCapture -Scale 1.25
+```
+
+`-SkipBuild` 复用当前 Debug 引擎对象文件，验证程序自身仍会编译。`-Capture` 从 GPU 读取控件预览和组合弹窗，保存到 `Temporary/RoundedThemeVerification`，不代表真实桌面输入验收。也可直接运行 `Run/RoundedThemeVerification.exe --preview 1.25` 打开预览。
+
+`-EditorCapture` 使用独立临时项目，检查主编辑器、Inspector、菜单和项目设置弹窗，并将渲染输出保存在同一目录。测试使用临时设置目录，不覆盖用户的编辑器设置。
+
 ## 技术特性
 
 - 使用 C++ 构建的引擎架构，按 Core、Engine、Scene 和 Editor 组织

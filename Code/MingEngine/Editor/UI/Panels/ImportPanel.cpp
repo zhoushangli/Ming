@@ -354,6 +354,7 @@ void ImportPanel::OnInitialize()
 			ApplyCachedImportOptions();
 		});
 	auto* scroll = MemNew<ScrollContainer>();
+	scroll->SetFollowFocus(true);
 	m_scroll     = scroll;
 	scroll->SetVerticalSizeFlags(Size_ExpandFill);
 	layout->AddNode(scroll);

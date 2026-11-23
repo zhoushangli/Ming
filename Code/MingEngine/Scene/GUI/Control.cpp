@@ -6,6 +6,208 @@
 
 #include <algorithm>
 
+#include <array>
+#include <cmath>
+
+namespace
+{
+constexpr int roundedCornerSegments = 8;
+constexpr int roundedContourSize    = 4 * (roundedCornerSegments + 1);
+using StyleContour                  = std::array<Vertex, roundedContourSize>;
+
+Color MixStyleColor(Color a, Color b, float t)
+{
+	auto channel = [t](unsigned char x, unsigned char y)
+	{
+		return static_cast<unsigned char>(std::clamp(std::round(x + (y - x) * t), 0.f, 255.f));
+	};
+	return Color(channel(a.r, b.r), channel(a.g, b.g), channel(a.b, b.b), channel(a.a, b.a));
+}
+
+std::vector<Vertex> BuildRoundedStyleVertices(ThemeStyleBox const& box, AABB2 const& rect)
+{
+	float const width  = rect.GetWidth();
+	float const height = rect.GetHeight();
+	if (width <= 0.f || height <= 0.f)
+	{
+		return {};
+	}
+
+	// 1) Fit the requested radii and border widths to the available rectangle.
+	float radius[4];
+	float border[4];
+	for (int i = 0; i < 4; ++i)
+	{
+		radius[i] = box.GetCornerRadius(static_cast<ThemeStyleBox::Corner>(i));
+		border[i] = std::min(i % 2 == 0 ? width : height, box.GetBorderWidth(static_cast<ThemeStyleBox::Side>(i)));
+	}
+
+	double factor = 1.0;
+	auto   fit    = [&factor](float size, float a, float b)
+	{
+		double const sum = static_cast<double>(a) + b;
+		if (sum > size)
+		{
+			factor = std::min(factor, size / sum);
+		}
+	};
+	fit(width, radius[0], radius[1]);
+	fit(width, radius[3], radius[2]);
+	fit(height, radius[0], radius[3]);
+	fit(height, radius[1], radius[2]);
+	for (float& value : radius)
+	{
+		value = static_cast<float>(value * factor);
+	}
+
+	for (int axis = 0; axis < 2; ++axis)
+	{
+		float const size = (axis == 0 ? width : height) - std::min(1.f, std::min(width, height) * 0.5f);
+		float const sum  = border[axis] + border[axis + 2];
+		if (sum > size)
+		{
+			border[axis] *= size / sum;
+			border[axis + 2] *= size / sum;
+		}
+	}
+
+	Color const fill = box.GetBackgroundColor();
+	Color const edge = box.GetBorderColor();
+	if (fill.a == 0 && edge.a == 0)
+	{
+		return {};
+	}
+
+	float const halfAA  = std::min(0.5f, std::min(width, height) * 0.25f);
+	auto        contour = [&](std::array<float, 4> inset, bool edgeColor, bool transparent)
+	{
+		StyleContour result;
+		float const  x0 = rect.m_mins.x + inset[0];
+		float const  y0 = rect.m_mins.y + inset[1];
+		float const  x1 = std::max(x0, rect.m_maxs.x - inset[2]);
+		float const  y1 = std::max(y0, rect.m_maxs.y - inset[3]);
+		float        rx[4];
+		float        ry[4];
+		for (int corner = 0; corner < 4; ++corner)
+		{
+			int const horizontal = corner == 0 || corner == 3 ? 0 : 2;
+			int const vertical   = corner < 2 ? 1 : 3;
+			rx[corner]           = radius[corner] > 0.f ? std::max(0.f, radius[corner] - inset[horizontal]) : 0.f;
+			ry[corner]           = radius[corner] > 0.f ? std::max(0.f, radius[corner] - inset[vertical]) : 0.f;
+		}
+
+		factor = 1.0;
+		fit(x1 - x0, rx[0], rx[1]);
+		fit(x1 - x0, rx[3], rx[2]);
+		fit(y1 - y0, ry[0], ry[3]);
+		fit(y1 - y0, ry[1], ry[2]);
+		for (int corner = 0; corner < 4; ++corner)
+		{
+			rx[corner] *= static_cast<float>(factor);
+			ry[corner] *= static_cast<float>(factor);
+			int const   horizontal = corner == 0 || corner == 3 ? 0 : 2;
+			int const   vertical   = corner < 2 ? 1 : 3;
+			float const cx         = horizontal == 0 ? x0 + rx[corner] : x1 - rx[corner];
+			float const cy         = vertical == 1 ? y0 + ry[corner] : y1 - ry[corner];
+			for (int step = 0; step <= roundedCornerSegments; ++step)
+			{
+				float const angle =
+					(corner + step / static_cast<float>(roundedCornerSegments)) * 1.57079632679f + 3.14159265359f;
+				float const   cosine = std::cos(angle);
+				float const   sine   = std::sin(angle);
+				Vector3 const position(cx + rx[corner] * cosine, cy + ry[corner] * sine, 0.f);
+				float const   horizontalWeight = std::abs(cosine);
+				float const   verticalWeight   = std::abs(sine);
+				float const   edgeWeight       = ((border[horizontal] > 0.f ? horizontalWeight : 0.f)
+												  + (border[vertical] > 0.f ? verticalWeight : 0.f))
+												 / (horizontalWeight + verticalWeight);
+				Color         color            = edgeColor ? MixStyleColor(fill, edge, edgeWeight) : fill;
+				if (transparent)
+				{
+					color.a = 0;
+				}
+
+				result[corner * (roundedCornerSegments + 1) + step] = Vertex(position, color, Vector2::Zero);
+			}
+		}
+		return result;
+	};
+
+	// 2) Generate adjacent strips so translucent fill and borders never overlap.
+	std::array<float, 4> outerInset;
+	std::array<float, 4> innerEdgeInset;
+	std::array<float, 4> innerFillInset;
+	for (int side = 0; side < 4; ++side)
+	{
+		outerInset[side]     = halfAA;
+		innerEdgeInset[side] = std::max(halfAA, border[side] - halfAA);
+		innerFillInset[side] = border[side] > 0.f ? border[side] + halfAA : halfAA;
+	}
+
+	// Collapse opposing insets together when a border consumes the entire control.
+	// e.g. A 20-pixel border on a 6-pixel button must not invert its inner contour.
+	for (int axis = 0; axis < 2; ++axis)
+	{
+		float const size = axis == 0 ? width : height;
+		for (auto* inset : { &innerEdgeInset, &innerFillInset })
+		{
+			float const sum = (*inset)[axis] + (*inset)[axis + 2];
+			if (sum > size)
+			{
+				(*inset)[axis] *= size / sum;
+				(*inset)[axis + 2] *= size / sum;
+			}
+		}
+	}
+
+	if (innerFillInset[0] + innerFillInset[2] >= width - 0.00001f
+		|| innerFillInset[1] + innerFillInset[3] >= height - 0.00001f)
+	{
+		innerEdgeInset = { width * 0.5f, height * 0.5f, width * 0.5f, height * 0.5f };
+		innerFillInset = innerEdgeInset;
+	}
+
+	auto const          outer     = contour(outerInset, true, false);
+	auto const          fringe    = contour({ -halfAA, -halfAA, -halfAA, -halfAA }, true, true);
+	auto const          innerEdge = contour(innerEdgeInset, true, false);
+	auto const          innerFill = contour(innerFillInset, false, false);
+	std::vector<Vertex> vertices;
+	vertices.reserve(roundedContourSize * 21);
+	auto triangle = [&vertices](Vertex const& a, Vertex const& b, Vertex const& c)
+	{
+		float const area = (b.m_position.x - a.m_position.x) * (c.m_position.y - a.m_position.y)
+						   - (b.m_position.y - a.m_position.y) * (c.m_position.x - a.m_position.x);
+		if (std::abs(area) > 0.000001f && (a.m_color.a != 0 || b.m_color.a != 0 || c.m_color.a != 0))
+		{
+			vertices.insert(vertices.end(), { a, b, c });
+		}
+	};
+	auto ring = [&triangle](StyleContour const& a, StyleContour const& b)
+	{
+		for (int i = 0; i < roundedContourSize; ++i)
+		{
+			int const next = (i + 1) % roundedContourSize;
+			triangle(a[i], a[next], b[i]);
+			triangle(a[next], b[next], b[i]);
+		}
+	};
+	ring(fringe, outer);
+	ring(outer, innerEdge);
+	ring(innerEdge, innerFill);
+	Vertex const center(
+		Vector3(
+			(rect.m_mins.x + innerFillInset[0] + rect.m_maxs.x - innerFillInset[2]) * 0.5f,
+			(rect.m_mins.y + innerFillInset[1] + rect.m_maxs.y - innerFillInset[3]) * 0.5f,
+			0.f),
+		fill);
+	for (int i = 0; i < roundedContourSize; ++i)
+	{
+		triangle(center, innerFill[i], innerFill[(i + 1) % roundedContourSize]);
+	}
+	return vertices;
+}
+}
+
 bool Control::IsPointInside(Vector2 const& localPosition) const
 {
 	return m_size.x > 0.f && m_size.y > 0.f && localPosition.x >= 0.f && localPosition.y >= 0.f
@@ -483,6 +685,18 @@ void Control::DrawThemeStyleBox(Ref<ThemeStyleBox> const& box, AABB2 const& rect
 {
 	if (!box.IsValid() || rect.GetWidth() <= 0.f || rect.GetHeight() <= 0.f)
 	{
+		return;
+	}
+
+	bool rounded = false;
+	for (int i = 0; i < 4; ++i)
+	{
+		rounded = rounded || box->GetCornerRadius(static_cast<ThemeStyleBox::Corner>(i)) > 0.f;
+	}
+
+	if (rounded)
+	{
+		DrawTriangles(BuildRoundedStyleVertices(*box.Get(), rect));
 		return;
 	}
 

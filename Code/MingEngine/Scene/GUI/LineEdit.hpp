@@ -143,6 +143,7 @@ private:
 
 	void UpdateTextLayout();
 	void EnsureCursorVisible();
+	void ResetCaretBlink();
 	void DrawContent();
 
 private:
@@ -163,6 +164,8 @@ private:
 	bool                                              m_disabled              = false;
 	bool                                              m_selecting             = false;
 	bool                                              m_editing               = false;
+	bool                                              m_caretVisible          = true;
+	float                                             m_caretBlinkTime        = 0.f;
 	uint64_t                                          m_editVersion           = 0;
 	std::function<void(String const&)>                m_textChangedCallback;
 	std::function<void(String const&)>                m_editingStartedCallback;

@@ -20,27 +20,33 @@ void RegisterEngineTypes()
 
 	ClassDatabase::RegisterClass<ProjectSettingsLoader>();
 	ClassDatabase::RegisterClass<ProjectSettingsSaver>();
+	ClassDatabase::RegisterClass<ProjectSettings>();
 	ResourceLoader::AddLoader(CreateRef<ProjectSettingsLoader>());
 	ResourceSaver::AddSaver(CreateRef<ProjectSettingsSaver>());
-	ClassDatabase::RegisterClass<ProjectSettings>();
 
 	// Engine system types
 	ClassDatabase::RegisterClass<SystemBase>(true);
 	ClassDatabase::RegisterAbstractClass<WindowSystem>();
 	ClassDatabase::RegisterAbstractClass<RenderServer>();
+
 	ClassDatabase::RegisterSingletonClass<WorkerThreadPool>();
 	ClassDatabase::RegisterSingletonClass<InputSystem>();
 	ClassDatabase::RegisterSingletonClass<FileSystem>();
 
-	// Global objects
+	// 1) Register the available singleton instances.
+	if (g_engine != nullptr && g_engine->m_workerThreadPool != nullptr)
+	{
+		ClassDatabase::RegisterSingleton(g_engine->m_workerThreadPool);
+	}
+
 	if (g_engine != nullptr && g_engine->m_inputSystem != nullptr)
 	{
-		ClassDatabase::RegisterGlobalObject(g_engine->m_inputSystem);
+		ClassDatabase::RegisterSingleton(g_engine->m_inputSystem);
 	}
 
 	if (g_engine != nullptr && g_engine->m_fileSystem != nullptr)
 	{
-		ClassDatabase::RegisterGlobalObject(g_engine->m_fileSystem);
+		ClassDatabase::RegisterSingleton(g_engine->m_fileSystem);
 	}
 }
 

@@ -918,6 +918,7 @@ void EditorUI::OpenScriptFile(std::function<void(VirtualPath const&)> selected)
 
 	EditorPopupUtils::ClearContent(m_scriptFileContent);
 	auto* scroll = MemNew<ScrollContainer>();
+	scroll->SetFollowFocus(true);
 	scroll->SetCustomMinimumSize(Vector2(0.f, static_cast<float>(GetRootControl()->GetThemeConstant("create_popup_height", "Editor"))));
 	m_scriptFileContent->AddNode(scroll);
 	auto* list = MemNew<VBoxContainer>();

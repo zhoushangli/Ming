@@ -376,7 +376,7 @@ void Viewport::SetGuiFocus(Control* control)
 
 		for (Node* parent = current->GetParent(); parent != nullptr; parent = parent->GetParent())
 		{
-			if (auto* scroll = dynamic_cast<ScrollContainer*>(parent))
+			if (auto* scroll = dynamic_cast<ScrollContainer*>(parent); scroll != nullptr && scroll->IsFollowingFocus())
 			{
 				scroll->EnsureControlVisible(current);
 			}

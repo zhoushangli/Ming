@@ -163,23 +163,17 @@ void ScrollContainer::EnsureControlVisible(Control* control)
 
 	Vector2 const top    = control->GetGlobalPosition() - GetGlobalPosition();
 	Vector2 const bottom = top + control->GetSize();
-	if (top.y < 0.f)
+	auto adjustment = [](float begin, float end, float page, float size)
 	{
-		m_scroll += top.y;
-	}
-	else if (bottom.y > m_pageSize.y)
-	{
-		m_scroll += bottom.y - m_pageSize.y;
-	}
+		if (size <= page)
+		{
+			return begin < 0.f ? begin : std::max(0.f, end - page);
+		}
 
-	if (top.x < 0.f)
-	{
-		m_horizontalScroll += top.x;
-	}
-	else if (bottom.x > m_pageSize.x && control->GetSize().x <= m_pageSize.x)
-	{
-		m_horizontalScroll += bottom.x - m_pageSize.x;
-	}
+		return begin > 0.f ? begin : std::min(0.f, end - page);
+	};
+	m_scroll += adjustment(top.y, bottom.y, m_pageSize.y, control->GetSize().y);
+	m_horizontalScroll += adjustment(top.x, bottom.x, m_pageSize.x, control->GetSize().x);
 
 	Arrange();
 }

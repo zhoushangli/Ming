@@ -6,14 +6,15 @@
 
 #include "MingEngine/Scene/GUI/Label.hpp"
 #include "MingEngine/Scene/GUI/LineEdit.hpp"
-#include "MingEngine/Scene/GUI/ScrollContainer.hpp"
 #include "ThirdParty/GLFW/glfw3.h"
 
 #include <algorithm>
+#include <cmath>
 #include <unordered_map>
 
 Tree::Tree()
 {
+	SetClipContents(true);
 	SetFocusMode(FocusMode::All);
 	SetMouseFilter(MouseFilter::Pass);
 	m_edit = MemNew<LineEdit>();
@@ -60,6 +61,46 @@ void Tree::BindMethods()
 	BIND_THEME_ITEM(Theme::DataType::StyleBox, Tree, selected);
 	BIND_THEME_ITEM(Theme::DataType::StyleBox, Tree, focus);
 	BIND_THEME_ITEM(Theme::DataType::StyleBox, Tree, drop_mark);
+	ThemeDatabase::BindThemeItem(Theme::DataType::Constant, GetStaticClassName(), "scrollbar_width", [](Control* control)
+	{
+		static_cast<Tree*>(control)->m_themeCache.scrollbar_width = control->GetThemeConstant("scrollbar_width", "ScrollContainer");
+	});
+
+	ThemeDatabase::BindThemeItem(Theme::DataType::Constant, GetStaticClassName(), "grabber_minimum_size", [](Control* control)
+	{
+		static_cast<Tree*>(control)->m_themeCache.grabber_minimum_size = control->GetThemeConstant("grabber_minimum_size", "ScrollContainer");
+	});
+
+	ThemeDatabase::BindThemeItem(Theme::DataType::Constant, GetStaticClassName(), "grabber_margin", [](Control* control)
+	{
+		static_cast<Tree*>(control)->m_themeCache.grabber_margin = control->GetThemeConstant("grabber_margin", "ScrollContainer");
+	});
+
+	ThemeDatabase::BindThemeItem(Theme::DataType::Constant, GetStaticClassName(), "scroll_step", [](Control* control)
+	{
+		static_cast<Tree*>(control)->m_themeCache.scroll_step = control->GetThemeConstant("scroll_step", "ScrollContainer");
+	});
+
+	ThemeDatabase::BindThemeItem(Theme::DataType::StyleBox, GetStaticClassName(), "track", [](Control* control)
+	{
+		static_cast<Tree*>(control)->m_themeCache.track = control->GetThemeStyleBox("track", "ScrollContainer");
+	});
+
+	ThemeDatabase::BindThemeItem(Theme::DataType::StyleBox, GetStaticClassName(), "grabber", [](Control* control)
+	{
+		static_cast<Tree*>(control)->m_themeCache.grabber = control->GetThemeStyleBox("grabber", "ScrollContainer");
+	});
+
+	ThemeDatabase::BindThemeItem(Theme::DataType::StyleBox, GetStaticClassName(), "grabber_hover", [](Control* control)
+	{
+		static_cast<Tree*>(control)->m_themeCache.grabber_hover = control->GetThemeStyleBox("grabber_hover", "ScrollContainer");
+	});
+
+	ThemeDatabase::BindThemeItem(Theme::DataType::StyleBox, GetStaticClassName(), "grabber_pressed", [](Control* control)
+	{
+		static_cast<Tree*>(control)->m_themeCache.grabber_pressed = control->GetThemeStyleBox("grabber_pressed", "ScrollContainer");
+	});
+
 }
 
 void Tree::SetFont(Ref<FontResource> const& font)
@@ -69,8 +110,14 @@ void Tree::SetFont(Ref<FontResource> const& font)
 
 void Tree::OnThemeChanged()
 {
+	if (m_dragAxis >= 0
+		&& (m_dragScrollbarWidth != m_themeCache.scrollbar_width
+			|| m_dragMinimumSize != m_themeCache.grabber_minimum_size || m_dragMargin != m_themeCache.grabber_margin))
+	{
+		m_dragAxis = -1;
+	}
+
 	UpdateRowLayout();
-	EnsureSelectedVisible();
 }
 
 float Tree::GetRowHeight() const
@@ -97,8 +144,8 @@ AABB2 Tree::GetRowRect(size_t row) const
 {
 	float const top =
 		(m_themeCache.panel.IsValid() ? m_themeCache.panel->GetContentMargin(ThemeStyleBox::Side::Top) : 0.f)
-		+ row * GetRowHeight();
-	return AABB2(0.f, top, GetSize().x, top + GetRowHeight());
+		+ row * GetRowHeight() - m_scroll;
+	return AABB2(0.f, top, m_pageSize.x, top + GetRowHeight());
 }
 
 AABB2 Tree::GetItemRect(uint64_t id) const
@@ -118,12 +165,12 @@ int Tree::GetRowAtPosition(Vector2 const& position) const
 {
 	float const top =
 		m_themeCache.panel.IsValid() ? m_themeCache.panel->GetContentMargin(ThemeStyleBox::Side::Top) : 0.f;
-	if (!IsPointInside(position) || position.y < top)
+	if (!AABB2(Vector2::Zero, m_pageSize).IsPointInside(position) || position.y + m_scroll < top)
 	{
 		return -1;
 	}
 
-	int const row = static_cast<int>((position.y - top) / GetRowHeight());
+	int const row = static_cast<int>((position.y + m_scroll - top) / GetRowHeight());
 	return row < static_cast<int>(m_rows.size()) ? row : -1;
 }
 
@@ -155,14 +202,14 @@ float Tree::GetRowTextX(size_t row) const
 	float const iconWidth = m_items[m_rows[row]].m_icon.IsValid()
 								? static_cast<float>(m_themeCache.icon_size + m_themeCache.icon_separation)
 								: 0.f;
-	return left + m_depths[row] * static_cast<float>(std::max(0, m_themeCache.indent)) + GetFoldWidth(row) + iconWidth;
+	return left - m_horizontalScroll + m_depths[row] * static_cast<float>(std::max(0, m_themeCache.indent)) + GetFoldWidth(row) + iconWidth;
 }
 
 float Tree::GetRowTextEnd(size_t row) const
 {
 	float const right =
 		m_themeCache.panel.IsValid() ? m_themeCache.panel->GetContentMargin(ThemeStyleBox::Side::Right) : 0.f;
-	return GetSize().x - right
+	return std::max(m_pageSize.x, m_contentSize.x) - m_horizontalScroll - right
 		   - m_items[m_rows[row]].m_actions.size() * (m_themeCache.icon_size + m_themeCache.icon_separation);
 }
 
@@ -176,7 +223,7 @@ AABB2 Tree::GetItemActionRect(uint64_t id, int action) const
 			float const side = static_cast<float>(m_themeCache.icon_size);
 			float const right =
 				m_themeCache.panel.IsValid() ? m_themeCache.panel->GetContentMargin(ThemeStyleBox::Side::Right) : 0.f;
-			float const x = GetSize().x - right - side
+			float const x = std::max(m_pageSize.x, m_contentSize.x) - m_horizontalScroll - right - side
 							- (static_cast<int>(actions.size()) - action - 1) * (side + m_themeCache.icon_separation);
 			float const y = GetRowRect(row).GetCenter().y - side * 0.5f;
 			return AABB2(x, y, x + side, y + side);
@@ -217,17 +264,26 @@ void Tree::UpdateRowLayout()
 			item.m_dimmed ? m_themeCache.guide_color
 						  : (item.m_ID == m_selected ? m_themeCache.font_selected_color : m_themeCache.font_color));
 		label->SetClipText(m_clipText);
+		width = std::max(
+			width,
+			GetRowTextX(row) + m_horizontalScroll - (texturedFold ? 0.f : GetFoldWidth(row))
+				+ label->GetCombinedMinimumSize().x + right
+				+ item.m_actions.size() * (m_themeCache.icon_size + m_themeCache.icon_separation));
+	}
+
+	m_contentWidth = width;
+	UpdateScrollRange();
+	for (size_t row = 0; row < m_rows.size(); ++row)
+	{
+		Item const& item = m_items[m_rows[row]];
+		Label* label = m_labels[row];
+		bool const texturedFold = m_themeCache.arrow_collapsed.IsValid() && m_themeCache.arrow_expanded.IsValid();
 		AABB2 const rect = GetRowRect(row);
 		label->SetPosition(Vector2(GetRowTextX(row) - (texturedFold ? 0.f : GetFoldWidth(row)), rect.m_mins.y));
 		label->UpdateSize(Vector2(
 			m_clipText ? std::max(0.f, GetRowTextEnd(row) - label->GetLocalPosition().x)
-					   : label->GetCombinedMinimumSize().x,
+				: label->GetCombinedMinimumSize().x,
 			rect.GetHeight()));
-		width = std::max(
-			width,
-			m_clipText ? 60.f
-					   : label->GetLocalPosition().x + label->GetSize().x + right
-							 + item.m_actions.size() * (m_themeCache.icon_size + m_themeCache.icon_separation));
 		if (item.m_ID == m_editing)
 		{
 			float const x = GetRowTextX(row) - m_edit->GetContentRect().m_mins.x;
@@ -236,13 +292,7 @@ void Tree::UpdateRowLayout()
 		}
 	}
 
-	bool const widthChanged = m_contentWidth != width;
-	m_contentWidth          = width;
-	m_updatingRowLayout     = false;
-	if (widthChanged)
-	{
-		PropagateMinimumSizeChanged();
-	}
+	m_updatingRowLayout = false;
 
 	QueueRedraw();
 }
@@ -358,8 +408,8 @@ void Tree::RebuildRows()
 
 Vector2 Tree::GetInternalMinimumSize() const
 {
-	float const margins = m_themeCache.panel.IsValid() ? m_themeCache.panel->GetMinimumSize().y : 0.f;
-	return Vector2(m_contentWidth, margins + std::max(1.f, static_cast<float>(m_rows.size())) * GetRowHeight());
+	Vector2 const margins = m_themeCache.panel.IsValid() ? m_themeCache.panel->GetMinimumSize() : Vector2::Zero;
+	return Vector2(32.f, 24.f) + margins;
 }
 
 void Tree::SetCollapsed(uint64_t id, bool collapsed)
@@ -419,9 +469,14 @@ void Tree::EnsureSelectedVisible()
 	{
 		if (m_items[m_rows[row]].m_ID == m_selected)
 		{
-			if (auto* scroll = dynamic_cast<ScrollContainer*>(GetParent()))
+			AABB2 const rect = GetRowRect(row);
+			if (rect.m_mins.y < 0.f || rect.GetHeight() > m_pageSize.y)
 			{
-				scroll->EnsureControlVisible(m_labels[row]);
+				SetScroll(m_scroll + rect.m_mins.y);
+			}
+			else if (rect.m_maxs.y > m_pageSize.y)
+			{
+				SetScroll(m_scroll + rect.m_maxs.y - m_pageSize.y);
 			}
 
 			break;
@@ -431,6 +486,7 @@ void Tree::EnsureSelectedVisible()
 
 void Tree::EditSelected()
 {
+	EnsureSelectedVisible();
 	for (size_t row = 0; row < m_rows.size(); ++row)
 	{
 		Item const& item = m_items[m_rows[row]];
@@ -450,6 +506,11 @@ void Tree::EditSelected()
 
 bool Tree::GuiInput(InputEvent const& event)
 {
+	if (HandleScrollInput(event))
+	{
+		return true;
+	}
+
 	auto callback = m_inputCallback;
 	if (callback && callback(event))
 	{
@@ -642,7 +703,12 @@ void Tree::OnNotification(int notification)
 	case Notification_MinimumSizeChanged:
 		UpdateRowLayout();
 		break;
+	case Notification_GuiInputCancelled:
+	case Notification_ExitTree:
+		m_dragAxis = -1;
+		[[fallthrough]];
 	case Notification_MouseExit:
+		m_hoverAxis = -1;
 		m_hoveredItem = 0;
 		QueueRedraw();
 		break;
@@ -657,11 +723,11 @@ void Tree::OnNotification(int notification)
 			uint64_t const id = m_items[m_rows[row]].m_ID;
 			if (id == m_selected)
 			{
-				DrawThemeStyleBox(m_themeCache.selected, GetRowRect(row));
+				DrawThemeStyleBox(m_themeCache.selected, ClipItemRect(GetRowRect(row)));
 			}
 			else if (id == m_hoveredItem)
 			{
-				DrawThemeStyleBox(m_themeCache.hover, GetRowRect(row));
+				DrawThemeStyleBox(m_themeCache.hover, ClipItemRect(GetRowRect(row)));
 			}
 		}
 
@@ -683,7 +749,7 @@ void Tree::OnNotification(int notification)
 				float const left      = m_themeCache.panel.IsValid()
 											? m_themeCache.panel->GetContentMargin(ThemeStyleBox::Side::Left)
 											: 0.f;
-				float const x = left + m_depths[selectedRow] * m_themeCache.indent + GetFoldWidth(selectedRow) * 0.5f;
+				float const x = left - m_horizontalScroll + m_depths[selectedRow] * m_themeCache.indent + GetFoldWidth(selectedRow) * 0.5f;
 				float const width = static_cast<float>(m_themeCache.children_guide_width);
 				for (int row = selectedRow + 1;
 					 row < static_cast<int>(m_rows.size()) && m_depths[row] > m_depths[selectedRow];
@@ -695,15 +761,16 @@ void Tree::OnNotification(int notification)
 					}
 
 					float const y   = GetRowRect(row).GetCenter().y;
-					float const end = left + m_depths[row] * m_themeCache.indent + GetFoldWidth(row)
+					float const end = left - m_horizontalScroll + m_depths[row] * m_themeCache.indent
+										+ (HasChildren(m_items[m_rows[row]].m_ID) ? 0.f : GetFoldWidth(row))
 									  - m_themeCache.icon_separation;
-					DrawRect(AABB2(x, y, std::max(x, end), y + width), m_themeCache.children_guide_color);
+					DrawItemRect(AABB2(x, y, std::max(x, end), y + width), m_themeCache.children_guide_color);
 					lastChild = row;
 				}
 
 				if (lastChild >= 0)
 				{
-					DrawRect(
+					DrawItemRect(
 						AABB2(
 							x,
 							GetRowRect(selectedRow).GetCenter().y + GetFoldWidth(selectedRow) * 0.5f,
@@ -729,13 +796,14 @@ void Tree::OnNotification(int notification)
 				float const left   = m_themeCache.panel.IsValid()
 										 ? m_themeCache.panel->GetContentMargin(ThemeStyleBox::Side::Left)
 										 : 0.f;
-				float const x      = left + m_depths[parent] * m_themeCache.indent + GetFoldWidth(parent) * 0.5f;
+				float const x      = left - m_horizontalScroll + m_depths[parent] * m_themeCache.indent + GetFoldWidth(parent) * 0.5f;
 				float const top    = GetRowRect(parent).GetCenter().y + GetFoldWidth(parent) * 0.5f;
 				float const bottom = GetRowRect(child).GetCenter().y;
-				float const end    = left + m_depths[child] * m_themeCache.indent + GetFoldWidth(child)
+				float const end    = left - m_horizontalScroll + m_depths[child] * m_themeCache.indent
+									+ (HasChildren(m_items[m_rows[child]].m_ID) ? 0.f : GetFoldWidth(child))
 								   - m_themeCache.icon_separation;
-				DrawRect(AABB2(x, top, x + m_themeCache.guide_width, bottom), m_themeCache.guide_color);
-				DrawRect(
+				DrawItemRect(AABB2(x, top, x + m_themeCache.guide_width, bottom), m_themeCache.guide_color);
+				DrawItemRect(
 					AABB2(x, bottom, std::max(x, end), bottom + m_themeCache.guide_width),
 					m_themeCache.guide_color);
 				child = parent;
@@ -760,7 +828,7 @@ void Tree::OnNotification(int notification)
 				target.m_size = Vector2(foldSize, foldSize);
 				Rect2 source;
 				source.m_size = Vector2(arrow->GetDimensions());
-				DrawTextureRectRegion(arrow, target, source, m_themeCache.guide_color);
+				DrawItemTexture(arrow, target, source, m_themeCache.guide_color);
 			}
 
 			if (auto icon = m_items[m_rows[row]].m_icon; icon.IsValid())
@@ -774,7 +842,7 @@ void Tree::OnNotification(int notification)
 				target.m_size = Vector2(size, size);
 				Rect2 source;
 				source.m_size = Vector2(icon->GetDimensions());
-				DrawTextureRectRegion(icon, target, source, m_items[m_rows[row]].m_iconColor);
+				DrawItemTexture(icon, target, source, m_items[m_rows[row]].m_iconColor);
 			}
 
 			for (int action = 0; action < static_cast<int>(m_items[m_rows[row]].m_actions.size()); ++action)
@@ -788,14 +856,29 @@ void Tree::OnNotification(int notification)
 					target.m_size     = bounds.GetDimensions();
 					Rect2 source;
 					source.m_size = Vector2(entry.m_icon->GetDimensions());
-					DrawTextureRectRegion(entry.m_icon, target, source, entry.m_color);
+					DrawItemTexture(entry.m_icon, target, source, entry.m_color);
 				}
 			}
 
 			if (id == m_dropItem)
 			{
-				DrawThemeStyleBox(m_themeCache.drop_mark, GetRowRect(row));
+				DrawThemeStyleBox(m_themeCache.drop_mark, ClipItemRect(GetRowRect(row)));
 			}
+		}
+
+		for (int axis = 0; axis < 2; ++axis)
+		{
+			AABB2 const track = GetTrackRect(axis);
+			if (track.GetWidth() <= 0.f || track.GetHeight() <= 0.f)
+			{
+				continue;
+			}
+
+			DrawThemeStyleBox(m_themeCache.track, track);
+			Ref<ThemeStyleBox> const style =
+				m_dragAxis == axis ? m_themeCache.grabber_pressed
+								   : (m_hoverAxis == axis ? m_themeCache.grabber_hover : m_themeCache.grabber);
+			DrawThemeStyleBox(style, GetGrabberRect(axis));
 		}
 
 		if (HasFocus())
@@ -804,4 +887,250 @@ void Tree::OnNotification(int notification)
 		}
 		break;
 	}
+}
+
+AABB2 Tree::GetTrackRect(int axis) const
+{
+	float const length = axis == 0 ? m_pageSize.x : m_pageSize.y;
+	float const extent = axis == 0 ? m_contentSize.x : m_contentSize.y;
+	if (extent <= length || length <= 0.f || m_themeCache.scrollbar_width <= 0)
+	{
+		return AABB2::Zero;
+	}
+
+	return axis == 0 ? AABB2(0.f, m_pageSize.y, length, GetSize().y) : AABB2(m_pageSize.x, 0.f, GetSize().x, length);
+}
+
+AABB2 Tree::GetGrabberRect(int axis) const
+{
+	AABB2 const track  = GetTrackRect(axis);
+	float const length = axis == 0 ? track.GetWidth() : track.GetHeight();
+	if (track.GetWidth() <= 0.f || track.GetHeight() <= 0.f)
+	{
+		return AABB2::Zero;
+	}
+
+	float const extent = axis == 0 ? m_contentSize.x : m_contentSize.y;
+	float const offset = axis == 0 ? m_horizontalScroll : m_scroll;
+	float const thumb  = std::min(
+		length,
+		std::max(static_cast<float>(std::max(1, m_themeCache.grabber_minimum_size)), length * length / extent));
+	float const top       = offset / (extent - length) * (length - thumb);
+	float const thickness = axis == 0 ? track.GetHeight() : track.GetWidth();
+	float const margin =
+		std::min(static_cast<float>(std::max(0, m_themeCache.grabber_margin)), std::max(0.f, (thickness - 1.f) * 0.5f));
+	return axis == 0 ? AABB2(top, track.m_mins.y + margin, top + thumb, track.m_maxs.y - margin)
+					 : AABB2(track.m_mins.x + margin, top, track.m_maxs.x - margin, top + thumb);
+}
+
+bool Tree::HandleScrollInput(InputEvent const& event)
+{
+	if (event.m_type == InputEventType::MouseMotion || event.m_type == InputEventType::MouseButton)
+	{
+		int hovered = -1;
+		for (int axis = 0; axis < 2; ++axis)
+		{
+			AABB2 const thumb = GetGrabberRect(axis);
+			if (thumb.GetWidth() > 0.f && thumb.GetHeight() > 0.f && thumb.IsPointInside(event.m_position))
+			{
+				hovered = axis;
+			}
+		}
+
+		if (hovered != m_hoverAxis)
+		{
+			m_hoverAxis = hovered;
+			QueueRedraw();
+		}
+	}
+
+	switch (event.m_type)
+	{
+	case InputEventType::MouseWheel:
+	{
+		float const step = static_cast<float>(std::max(0, m_themeCache.scroll_step));
+		if ((event.m_modifiers & GLFW_MOD_SHIFT) != 0)
+		{
+			SetHorizontalScroll(m_horizontalScroll - event.m_scroll.y * step);
+		}
+		else
+		{
+			m_horizontalScroll -= event.m_scroll.x * step;
+			SetScroll(m_scroll - event.m_scroll.y * step);
+		}
+
+		return true;
+	}
+	case InputEventType::MouseButton:
+	{
+		if (event.m_mouseButton != GLFW_MOUSE_BUTTON_LEFT)
+		{
+			return IsPointInside(event.m_position) && !AABB2(Vector2::Zero, m_pageSize).IsPointInside(event.m_position);
+		}
+
+		if (!event.m_pressed)
+		{
+			bool const dragging = m_dragAxis >= 0;
+			m_dragAxis = -1;
+			QueueRedraw();
+			return dragging;
+		}
+
+		m_dragAxis = -1;
+		for (int axis = 0; axis < 2; ++axis)
+		{
+			AABB2 const track = GetTrackRect(axis);
+			if (track.GetWidth() > 0.f && track.GetHeight() > 0.f && track.IsPointInside(event.m_position))
+			{
+				m_dragAxis = axis;
+				break;
+			}
+		}
+
+		if (m_dragAxis < 0)
+		{
+			return IsPointInside(event.m_position) && !AABB2(Vector2::Zero, m_pageSize).IsPointInside(event.m_position);
+		}
+
+		AABB2 const thumb    = GetGrabberRect(m_dragAxis);
+		float const top      = m_dragAxis == 0 ? thumb.m_mins.x : thumb.m_mins.y;
+		float const size     = m_dragAxis == 0 ? thumb.GetWidth() : thumb.GetHeight();
+		float const position = m_dragAxis == 0 ? event.m_position.x : event.m_position.y;
+		m_dragOffset         = position >= top && position < top + size ? position - top : size * 0.5f;
+		m_dragScrollbarWidth = m_themeCache.scrollbar_width;
+		m_dragMinimumSize    = m_themeCache.grabber_minimum_size;
+		m_dragMargin         = m_themeCache.grabber_margin;
+		QueueRedraw();
+	}
+		[[fallthrough]];
+	case InputEventType::MouseMotion:
+	{
+		if (m_dragAxis < 0)
+		{
+			break;
+		}
+
+		AABB2 const track    = GetTrackRect(m_dragAxis);
+		AABB2 const thumb    = GetGrabberRect(m_dragAxis);
+		float const length   = m_dragAxis == 0 ? track.GetWidth() : track.GetHeight();
+		float const size     = m_dragAxis == 0 ? thumb.GetWidth() : thumb.GetHeight();
+		float const extent   = m_dragAxis == 0 ? m_contentSize.x : m_contentSize.y;
+		float const position = m_dragAxis == 0 ? event.m_position.x : event.m_position.y;
+		float const offset   = length > size ? (position - m_dragOffset) / (length - size) * (extent - length) : 0.f;
+		if (m_dragAxis == 0)
+		{
+			SetHorizontalScroll(offset);
+		}
+		else
+		{
+			SetScroll(offset);
+		}
+
+		return true;
+	}
+	}
+
+	return false;
+}
+
+float Tree::GetMaximumScroll() const
+{
+	return std::max(0.f, m_contentSize.y - m_pageSize.y);
+}
+
+void Tree::UpdateScrollRange()
+{
+	Vector2 const previousPage = m_pageSize;
+	Vector2 const previousContent = m_contentSize;
+	float const thickness = static_cast<float>(std::max(0, m_themeCache.scrollbar_width));
+	Vector2 const margins = m_themeCache.panel.IsValid() ? m_themeCache.panel->GetMinimumSize() : Vector2::Zero;
+	float const height = margins.y + m_rows.size() * GetRowHeight();
+	bool horizontal = false;
+	bool vertical = false;
+	for (int i = 0; i < 3; ++i)
+	{
+		m_pageSize = Vector2(std::max(0.f, GetSize().x - (vertical ? thickness : 0.f)),
+			std::max(0.f, GetSize().y - (horizontal ? thickness : 0.f)));
+		horizontal = !m_clipText && m_contentWidth > m_pageSize.x;
+		vertical = height > m_pageSize.y;
+	}
+
+	m_pageSize = Vector2(std::max(0.f, GetSize().x - (vertical ? thickness : 0.f)),
+		std::max(0.f, GetSize().y - (horizontal ? thickness : 0.f)));
+	m_contentSize = Vector2(m_clipText ? m_pageSize.x : std::max(m_contentWidth, m_pageSize.x),
+		std::max(height, m_pageSize.y));
+	if (previousPage != m_pageSize || previousContent != m_contentSize)
+	{
+		m_dragAxis = -1;
+		m_hoverAxis = -1;
+	}
+
+	m_scroll = std::clamp(m_scroll, 0.f, GetMaximumScroll());
+	m_horizontalScroll = std::clamp(m_horizontalScroll, 0.f, std::max(0.f, m_contentSize.x - m_pageSize.x));
+	SetChildrenClip(true, m_pageSize);
+}
+
+void Tree::SetScroll(float offset)
+{
+	if (!std::isfinite(offset))
+	{
+		return;
+	}
+
+	m_scroll = offset;
+	m_hoveredItem = 0;
+	UpdateRowLayout();
+}
+
+void Tree::SetHorizontalScroll(float offset)
+{
+	if (!std::isfinite(offset))
+	{
+		return;
+	}
+
+	m_horizontalScroll = offset;
+	m_hoveredItem = 0;
+	UpdateRowLayout();
+}
+
+AABB2 Tree::ClipItemRect(AABB2 const& rect) const
+{
+	return AABB2(Vector2(std::clamp(rect.m_mins.x, 0.f, m_pageSize.x), std::clamp(rect.m_mins.y, 0.f, m_pageSize.y)),
+		Vector2(std::clamp(rect.m_maxs.x, 0.f, m_pageSize.x), std::clamp(rect.m_maxs.y, 0.f, m_pageSize.y)));
+}
+
+void Tree::DrawItemRect(AABB2 const& rect, Color const& color)
+{
+	AABB2 const clipped = ClipItemRect(rect);
+	if (clipped.GetWidth() > 0.f && clipped.GetHeight() > 0.f)
+	{
+		DrawRect(clipped, color);
+	}
+}
+
+void Tree::DrawItemTexture(
+	Ref<TextureResource> const& texture, Rect2 const& rect, Rect2 const& source, Color const& color)
+{
+	if (rect.m_size.x <= 0.f || rect.m_size.y <= 0.f)
+	{
+		return;
+	}
+
+	AABB2 const clipped = ClipItemRect(AABB2(rect.m_position, rect.m_position + rect.m_size));
+	if (clipped.GetWidth() <= 0.f || clipped.GetHeight() <= 0.f)
+	{
+		return;
+	}
+
+	Rect2 target;
+	target.m_position = clipped.m_mins;
+	target.m_size = clipped.GetDimensions();
+	Rect2 region;
+	region.m_position = source.m_position + Vector2(
+		(clipped.m_mins.x - rect.m_position.x) / rect.m_size.x * source.m_size.x,
+		(clipped.m_mins.y - rect.m_position.y) / rect.m_size.y * source.m_size.y);
+	region.m_size = Vector2(target.m_size.x / rect.m_size.x * source.m_size.x,
+		target.m_size.y / rect.m_size.y * source.m_size.y);
+	DrawTextureRectRegion(texture, target, region, color);
 }

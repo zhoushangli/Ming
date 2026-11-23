@@ -19,11 +19,20 @@ public:
 		Bottom
 	};
 
+	enum class Corner
+	{
+		TopLeft,
+		TopRight,
+		BottomRight,
+		BottomLeft
+	};
+
 public:
 	Color   GetBackgroundColor() const { return m_backgroundColor; }
 	Color   GetBorderColor() const { return m_borderColor; }
 	float   GetBorderWidth(Side side) const;
 	float   GetContentMargin(Side side) const;
+	float   GetCornerRadius(Corner corner) const;
 	Vector2 GetMinimumSize() const;
 	AABB2   GetContentRect(AABB2 const& rect) const;
 
@@ -31,6 +40,8 @@ public:
 	void SetBorderColor(Color const& color);
 	void SetBorderWidth(Side side, float width);
 	void SetContentMargin(Side side, float margin);
+	void SetCornerRadius(Corner corner, float radius);
+	void SetCornerRadiusAll(float radius);
 	bool CopyFrom(Resource&& other) override;
 
 	// Keep weak, counted subscriptions separate from the Ref that owns this resource.
@@ -49,5 +60,6 @@ private:
 	Color                   m_borderColor       = Color::Transparent;
 	float                   m_borderWidths[4]   = {};
 	float                   m_contentMargins[4] = {};
+	float                   m_cornerRadii[4]    = {};
 	std::map<ObjectID, int> m_users;
 };

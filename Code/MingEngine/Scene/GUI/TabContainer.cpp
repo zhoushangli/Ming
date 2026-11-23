@@ -443,7 +443,16 @@ void TabContainer::SetCurrentTab(int index)
 		{
 			if (auto* popup = dynamic_cast<PopupPanel*>(viewport->GetGuiPopup()))
 			{
-				popup->Close(false);
+				Node const* ancestor = GetParent();
+				while (ancestor != nullptr && ancestor != popup)
+				{
+					ancestor = ancestor->GetParent();
+				}
+
+				if (ancestor == nullptr)
+				{
+					popup->Close(false);
+				}
 			}
 
 			viewport->CancelGuiInteraction(previous, true, false);

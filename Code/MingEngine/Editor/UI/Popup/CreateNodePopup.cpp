@@ -128,6 +128,7 @@ void CreateNodePopup::Render(EditorUIContext& context)
 			});
 		body->AddNode(sidebar);
 		auto* sideScroll = MemNew<ScrollContainer>();
+		sideScroll->SetFollowFocus(true);
 		sidebar->AddNode(sideScroll);
 		m_sidebar = MemNew<VBoxContainer>();
 		sideScroll->AddNode(m_sidebar);
@@ -180,13 +181,11 @@ void CreateNodePopup::Render(EditorUIContext& context)
 			});
 		m_favorite->SetToggleMode(true);
 		EditorPopupUtils::AddLabel(main, "Matches", "EditorStatusLabel");
-		auto* scroll = MemNew<ScrollContainer>();
-		scroll->SetVerticalSizeFlags(Control::Size_ExpandFill);
-		main->AddNode(scroll);
 		m_types = MemNew<Tree>();
+		m_types->SetVerticalSizeFlags(Control::Size_ExpandFill);
 		m_types->SetName("NodeTypes");
 		m_types->SetClipText(true);
-		scroll->AddNode(m_types);
+		main->AddNode(m_types);
 		m_types->SetSelectedCallback(
 			[this](uint64_t id)
 			{

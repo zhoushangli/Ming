@@ -5,9 +5,8 @@
 #include <vector>
 
 class VBoxContainer;
-class OptionButton;
 class Button;
-class ScrollContainer;
+class OutputLogView;
 
 class OutputPanel final : public EditorPanel
 {
@@ -39,19 +38,20 @@ public:
 private:
 	void OnInitialize() override;
 	void OnRender(EditorUIContext& context) override;
-	void RebuildMessages();
+	void UpdateMessages();
 
 private:
 	std::vector<Message> m_messages;
 	VBoxContainer*       m_layout         = nullptr;
-	VBoxContainer*       m_lines          = nullptr;
+	OutputLogView*       m_log            = nullptr;
 	Button*              m_typeFilters[3] = {};
+	size_t               m_messageCounts[3] = {};
 	bool                 m_filters[3]     = { true, true, true };
 	bool                 m_combine        = false;
-	bool                 m_follow         = false;
 	bool                 m_restoreScroll  = false;
 	float                m_savedScroll    = 0.f;
-	ScrollContainer*     m_scroll         = nullptr;
+	size_t               m_processed      = 0;
+	size_t               m_repetitions    = 0;
 	std::string          m_searchText;
 	bool                 m_collapsed = false;
 	bool                 m_dirty     = true;

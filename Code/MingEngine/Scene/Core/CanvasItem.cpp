@@ -196,6 +196,11 @@ void CanvasItem::SetChildrenClip(bool enabled, Vector2 const& size)
 	g_engine->m_renderServer->CanvasItemSetChildrenClip(m_canvasItemRID, enabled, size);
 }
 
+void CanvasItem::DrawTriangles(std::vector<Vertex> const& vertices)
+{
+	g_engine->m_renderServer->CanvasItemAddTriangles(m_canvasItemRID, vertices);
+}
+
 void CanvasItem::DrawViewportRect(RID viewport, Rect2 const& rect)
 {
 	g_engine->m_renderServer->CanvasItemAddViewportRect(m_canvasItemRID, viewport, rect);

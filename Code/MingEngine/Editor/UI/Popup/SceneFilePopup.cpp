@@ -3,7 +3,6 @@
 #include "MingEngine/Core/IO/ResourceLoader.hpp"
 #include "MingEngine/Engine/File/FileSystem.hpp"
 #include "MingEngine/Scene/Core/PackedScene.hpp"
-#include "MingEngine/Scene/GUI/ScrollContainer.hpp"
 
 #include <algorithm>
 #include <filesystem>
@@ -60,17 +59,15 @@ void SceneFilePopup::Render(EditorUIContext& context)
 					Navigate(path);
 				}
 			});
-		auto* scroll = MemNew<ScrollContainer>();
-		scroll->SetVerticalSizeFlags(Control::Size_ExpandFill);
-		m_content->AddNode(scroll);
 		m_tree = MemNew<Tree>();
+		m_tree->SetVerticalSizeFlags(Control::Size_ExpandFill);
 		m_tree->SetClipText(true);
-		scroll->AddNode(m_tree);
+		m_content->AddNode(m_tree);
 		m_tree->SetSelectedCallback(
 			[this](uint64_t key)
 			{
 				auto found = m_entries.find(key);
-				if (found != m_entries.end() && found->second.HasExtension(".tscn"))
+				if (found != m_entries.end() && IsSupportedFile(found->second))
 				{
 					m_name->SetText(found->second.GetFileName());
 				}
@@ -94,7 +91,7 @@ void SceneFilePopup::Render(EditorUIContext& context)
 					}
 				}
 			});
-		EditorPopupUtils::AddLabel(m_content, "Scene file (.tscn)");
+		m_fileLabel = EditorPopupUtils::AddLabel(m_content, "");
 		m_name = MemNew<LineEdit>();
 		m_name->SetName("SceneFilename");
 		m_name->SetMinimumCharacterWidth(1);
@@ -103,7 +100,7 @@ void SceneFilePopup::Render(EditorUIContext& context)
 			[this](String const&)
 			{
 				m_overwrite = {};
-				m_confirm->SetText(m_mode == Mode::Save ? "Save" : m_mode == Mode::Open ? "Open" : "Select Main Scene");
+				m_confirm->SetText(GetConfirmText());
 			});
 		m_name->SetEditingEndedCallback(
 			[this](String const&, LineEdit::EditEndReason reason)
@@ -135,12 +132,21 @@ void SceneFilePopup::Render(EditorUIContext& context)
 	{
 		m_requested = false;
 		m_error->SetText("");
-		m_confirm->SetText(m_mode == Mode::Save ? "Save" : m_mode == Mode::Open ? "Open" : "Select Main Scene");
-		m_name->SetText(m_initial.HasExtension(".tscn") ? m_initial.GetFileName() : "");
-		Navigate(
-			m_initial.HasExtension(".tscn") ? m_initial.GetParent()
-			: m_initial.IsValid()           ? m_initial
-											: VirtualPath("res://"));
+		m_confirm->SetText(GetConfirmText());
+		bool const initialFile = IsSupportedFile(m_initial);
+		m_fileLabel->SetText(m_mode == Mode::Autoload ? "Script (.cs) or scene (.tscn)" : "Scene file (.tscn)");
+		m_name->SetText(initialFile ? m_initial.GetFileName() : "");
+		VirtualPath const directory = initialFile ? m_initial.GetParent() : m_initial;
+		std::filesystem::path physical;
+		std::error_code error;
+		if (m_context.m_fileSystem->TryGetPhysicalPath(directory, physical) && std::filesystem::is_directory(physical, error))
+		{
+			Navigate(directory);
+		}
+		else
+		{
+			Navigate(VirtualPath("res://"));
+		}
 		EditorPopupUtils::Open(
 			m_popup,
 			context.m_rootControl,
@@ -161,6 +167,24 @@ void SceneFilePopup::Render(EditorUIContext& context)
 	}
 }
 
+bool SceneFilePopup::IsSupportedFile(VirtualPath const& path) const
+{
+	return path.HasExtension(".tscn") || (m_mode == Mode::Autoload && path.HasExtension(".cs"));
+}
+
+char const* SceneFilePopup::GetConfirmText() const
+{
+	switch (m_mode)
+	{
+	case Mode::Save:      return "Save";
+	case Mode::Open:      return "Open";
+	case Mode::Autoload:  return "Select Autoload";
+	case Mode::MainScene: return "Select Main Scene";
+	}
+
+	return "";
+}
+
 void SceneFilePopup::Navigate(VirtualPath const& directory)
 {
 	std::filesystem::path physical;
@@ -174,7 +198,7 @@ void SceneFilePopup::Navigate(VirtualPath const& directory)
 
 	m_directory = directory;
 	m_overwrite = {};
-	m_confirm->SetText(m_mode == Mode::Save ? "Save" : m_mode == Mode::Open ? "Open" : "Select Main Scene");
+	m_confirm->SetText(GetConfirmText());
 	m_path->SetText(directory.GetString());
 	Refresh();
 }
@@ -203,7 +227,7 @@ void SceneFilePopup::Refresh()
 	{
 		bool const        directory = entry.is_directory(error);
 		VirtualPath const path      = m_directory.Join(entry.path().filename().u8string());
-		if (!path.IsValid() || (!directory && !path.HasExtension(".tscn"))
+		if (!path.IsValid() || (!directory && !IsSupportedFile(path))
 			|| entry.path().filename().u8string().front() == '.')
 		{
 			continue;
@@ -217,7 +241,7 @@ void SceneFilePopup::Refresh()
 			  path.GetFileName(),
 			  true,
 			  false,
-			  m_content->GetThemeIcon(directory ? "Folder" : "PackedScene", "EditorIcons") });
+			  m_content->GetThemeIcon(directory ? "Folder" : path.HasExtension(".cs") ? "CSharpScript" : "PackedScene", "EditorIcons") });
 	}
 	m_tree->SetItems(std::move(items));
 }
@@ -231,13 +255,24 @@ bool SceneFilePopup::Confirm()
 	}
 	VirtualPath const path = m_directory.Join(name);
 	if (name.empty() || name.find_first_of("/\\<>:\"|?*") != std::string::npos || !path.IsValid()
-		|| !path.HasExtension(".tscn"))
+		|| !IsSupportedFile(path))
 	{
-		m_error->SetText("Enter a scene filename ending in .tscn.");
+		m_error->SetText(m_mode == Mode::Autoload ? "Enter a script (.cs) or scene (.tscn) filename."
+			: "Enter a scene filename ending in .tscn.");
 		return false;
 	}
 
-	if (m_mode != Mode::Save)
+	if (m_mode == Mode::Autoload && path.HasExtension(".cs"))
+	{
+		std::filesystem::path physical;
+		std::error_code error;
+		if (!m_context.m_fileSystem->TryGetPhysicalPath(path, physical) || !std::filesystem::is_regular_file(physical, error))
+		{
+			m_error->SetText("The selected C# script does not exist.");
+			return false;
+		}
+	}
+	else if (m_mode != Mode::Save)
 	{
 		Ref<PackedScene> scene(ResourceLoader::LoadUncached(path));
 		if (!scene.IsValid())

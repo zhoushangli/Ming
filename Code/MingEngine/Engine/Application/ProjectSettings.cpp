@@ -47,6 +47,48 @@ void ProjectSettings::Reset()
 	s_instance = nullptr;
 }
 
+bool ProjectSettings::ParseMainScenePath(std::string const& text, VirtualPath& path, std::string& error)
+{
+	path = {};
+	error.clear();
+	if (!text.empty() && (!VirtualPath::TryParse(text, path) || !path.HasExtension(".tscn")))
+	{
+		error = "The project main scene must be a res:// path ending in .tscn.";
+		return false;
+	}
+
+	return true;
+}
+
+bool ProjectSettings::ValidateAutoloads(std::vector<AutoLoad> const& entries, std::string& error)
+{
+	error.clear();
+	std::unordered_set<std::string> names;
+	for (AutoLoad const& entry : entries)
+	{
+		if (entry.m_name.empty() || entry.m_name == "." || entry.m_name == ".."
+			|| entry.m_name.find_first_of("/\\:") != std::string::npos)
+		{
+			error = "Enter a valid Autoload node name.";
+			return false;
+		}
+
+		if (!names.insert(entry.m_name).second)
+		{
+			error = "Duplicate Autoload name: " + entry.m_name;
+			return false;
+		}
+
+		if (!entry.m_path.HasExtension(".tscn") && !entry.m_path.HasExtension(".cs"))
+		{
+			error = "Autoload " + entry.m_name + " must use a res:// scene (.tscn) or C# script (.cs).";
+			return false;
+		}
+	}
+
+	return true;
+}
+
 Ref<ProjectSettings> ProjectSettings::Parse(std::string const& text, std::string& error)
 {
 	error.clear();
@@ -66,13 +108,11 @@ Ref<ProjectSettings> ProjectSettings::Parse(std::string const& text, std::string
 
 	Ref<ProjectSettings> settings = CreateRef<ProjectSettings>();
 	std::string const    path     = root["start_scene_path"].get<std::string>();
-	if (!path.empty()
-		&& (!VirtualPath::TryParse(path, settings->m_startScenePath)
-			|| !settings->m_startScenePath.HasExtension(".tscn")))
+	if (!ParseMainScenePath(path, settings->m_startScenePath, error))
 	{
-		error = "The project main scene must be a res:// path ending in .tscn.";
 		return {};
 	}
+
 	if (root.contains("autoloads"))
 	{
 		if (!root["autoloads"].is_array())
@@ -81,7 +121,6 @@ Ref<ProjectSettings> ProjectSettings::Parse(std::string const& text, std::string
 			return {};
 		}
 
-		std::unordered_set<std::string> names;
 		for (auto const& entry : root["autoloads"])
 		{
 			if (!entry.is_object() || !entry.contains("name") || !entry["name"].is_string()
@@ -93,16 +132,18 @@ Ref<ProjectSettings> ProjectSettings::Parse(std::string const& text, std::string
 
 			AutoLoad autoload;
 			autoload.m_name = entry["name"].get<std::string>();
-			if (autoload.m_name.empty() || autoload.m_name == "." || autoload.m_name == ".."
-				|| autoload.m_name.find_first_of("/\\:") != std::string::npos || !names.insert(autoload.m_name).second
-				|| !VirtualPath::TryParse(entry["path"].get<std::string>(), autoload.m_path)
-				|| (!autoload.m_path.HasExtension(".tscn") && !autoload.m_path.HasExtension(".cs")))
+			if (!VirtualPath::TryParse(entry["path"].get<std::string>(), autoload.m_path))
 			{
-				error = "Invalid or duplicate autoload: " + autoload.m_name;
+				error = "Invalid Autoload path for " + autoload.m_name + ".";
 				return {};
 			}
 
 			settings->m_autoLoads.push_back(std::move(autoload));
+		}
+
+		if (!ValidateAutoloads(settings->m_autoLoads, error))
+		{
+			return {};
 		}
 	}
 
