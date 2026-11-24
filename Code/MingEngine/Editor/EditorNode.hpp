@@ -2,7 +2,7 @@
 
 #include "MingEngine/Core/Math/Vector2.hpp"
 #include "MingEngine/Core/Object/ObjectID.hpp"
-#include "MingEngine/Editor/EditorData.hpp"
+#include "MingEngine/Editor/EditorSelection.hpp"
 #include "MingEngine/Editor/EditorUndoRedo.hpp"
 #include "MingEngine/Editor/UI/EditorUIContext.hpp"
 #include "MingEngine/Scene/Core/Node.hpp"
@@ -16,21 +16,18 @@ class Camera3D;
 class EditorCamera;
 class EditorUI;
 class EditorGizmos;
-
-class EditorSelection
-{
-public:
-	ObjectID GetSelected() const;
-	void     SetSelected(ObjectID nodeID);
-	void     Clear();
-
-private:
-	ObjectID m_selectedNodeID = ObjectID::Invalid;
-};
+class EditorRunManager;
+class EditorCSharpBuildManager;
+class EditorSceneManager;
+class EditorProjectChecker;
 
 class EditorNode : public Node
 {
 	MCLASS(EditorNode, Node);
+	friend class EditorRunManager;
+	friend class EditorCSharpBuildManager;
+	friend class EditorSceneManager;
+	friend class EditorProjectChecker;
 
 public:
 	enum class SceneActionChoice
@@ -38,27 +35,6 @@ public:
 		Save,
 		Discard,
 		Cancel
-	};
-
-private:
-	enum class SaveResult
-	{
-		Saved,
-		AwaitingPath,
-		Failed
-	};
-
-	enum class PendingSceneAction
-	{
-		None,
-		New,
-		Close,
-		Play,
-		BuildPlay,
-		LaunchPlay,
-		Load,
-		Create,
-		Quit
 	};
 
 public:
@@ -70,6 +46,12 @@ public:
 	bool       SetEditorScale(float scale);
 
 	static EditorNode* Get();
+	void               CheckProject(bool full = false);
+	void               ImportExternalFiles(std::vector<std::string> const& paths, Vector2 position);
+	void               NotifyFileSaved(VirtualPath const& path);
+	void               NotifySceneLoaded(VirtualPath const& path);
+	void               ShutdownBackgroundWork();
+	bool               IsCheckingProject() const;
 	bool               HandleGuiInput(InputEvent const& event);
 	bool               IsEditingNativeControl() const;
 	void               ResolvePendingSceneAction(SceneActionChoice choice);
@@ -88,22 +70,19 @@ public:
 	void RequestOpenScene();
 	void RequestCreateScene(
 		VirtualPath const& virtualPath, std::string const& rootName, std::function<void()> completed = {});
-	bool        LoadScene(VirtualPath const& virtualPath);
-	bool        SaveScene();
-	bool        SaveSceneAs(VirtualPath const& path);
-	void        RequestSaveSceneAs();
-	void        RequestNewScene();
-	void        RequestCloseScene(std::function<void()> completed = {});
-	void        RequestPlay();
-	bool        IsPreparingPlay() const
-	{
-		return m_pendingSceneAction == PendingSceneAction::BuildPlay
-			|| m_pendingSceneAction == PendingSceneAction::LaunchPlay;
-	}
-	bool        IsBuildingCSharpProject() const { return m_buildInProgress; }
-	int32_t     GetCSharpBuildExitCode() const { return m_buildExitCode; }
-	bool        GenerateCSharpProject();
-	bool        OpenCSharpScript(VirtualPath const& path);
+	bool    LoadScene(VirtualPath const& virtualPath);
+	bool    SaveScene();
+	bool    SaveSceneAs(VirtualPath const& path);
+	void    RequestSaveSceneAs();
+	void    RequestNewScene();
+	void    RequestCloseScene(std::function<void()> completed = {});
+	void    RequestPlay();
+	void    RequestStop();
+	bool    IsPreparingPlay() const;
+	bool    IsBuildingCSharpProject() const;
+	int32_t GetCSharpBuildExitCode() const;
+	bool    GenerateCSharpProject();
+	bool    OpenCSharpScript(VirtualPath const& path);
 	// Start a menu build and return whether the build process was started.
 	// e.g. BuildCSharpProject() returns before the compiler finishes.
 	bool        BuildCSharpProject();
@@ -113,7 +92,7 @@ public:
 	void        FilesMoved(VirtualPath const& before, VirtualPath const& after);
 	bool        FilesRemoved(VirtualPath const& path);
 	bool        SetMainScene(VirtualPath const& path);
-	VirtualPath GetCurrentScenePath() const { return m_editorData.m_currentScenePath; }
+	VirtualPath GetCurrentScenePath() const;
 
 	void        MarkSceneDirty();
 	bool        IsSceneDirty() const;
@@ -128,48 +107,30 @@ protected:
 	static void BindMethods();
 
 private:
-	void       _Ready() override;
-	void       OnNotification(int notification);
-	bool       CreateScene(VirtualPath const& virtualPath, std::string const& rootName);
-	void       RenderUnsavedScenePopup();
-	void       ExecutePendingSceneAction();
-	void       RequestSceneAction(PendingSceneAction action, std::function<void()> completed = {});
-	void       CancelPendingSceneAction();
-	bool       BeginCSharpBuild(bool runAfterBuild);
-	void       UpdateCSharpBuild();
-	void       LaunchPreparedGame(bool scripted);
-	SaveResult SaveCurrentScene();
-	void       ClearSceneState();
+	void _Ready() override;
+	void OnNotification(int notification);
 
 public:
-	EditorSelection m_selection;
-	EditorGizmos*   m_editorGizmos = nullptr;
-	EditorCamera*   m_editorCamera = nullptr;
-	EditorUI*       m_editorUI     = nullptr;
+	EditorGizmos* m_editorGizmos = nullptr;
+	EditorCamera* m_editorCamera = nullptr;
+	EditorUI*     m_editorUI     = nullptr;
 
 private:
 	static EditorNode* s_instance;
 
-	Ref<Theme>      m_baseEditorTheme;
-	Ref<Theme>      m_editorTheme;
-	float           m_editorScale = 1.25f;
-	EditorData      m_editorData;
+	EditorSelection*          m_selection      = nullptr;
+	EditorProjectChecker*     m_projectChecker = nullptr;
+	EditorSceneManager*       m_sceneManager   = nullptr;
+	EditorCSharpBuildManager* m_buildManager   = nullptr;
+	EditorRunManager*         m_runManager     = nullptr;
+
+	Ref<Theme> m_baseEditorTheme;
+	Ref<Theme> m_editorTheme;
+	float      m_editorScale = 1.25f;
+
 	EditorUndoRedo  m_undoRedo;
 	EditorUIContext m_uiContext;
 
-	PendingSceneAction                               m_pendingSceneAction = PendingSceneAction::None;
-	SaveResult                                       m_lastSaveResult     = SaveResult::Failed;
-	VirtualPath                                      m_pendingScenePath;
-	std::string                                      m_pendingSceneRootName;
-	bool                                             m_openUnsavedScenePopup = false;
-	bool                                             m_waitingForSave        = false;
-	bool                                             m_resumePending         = false;
-	int m_playDelayFrames = 0;
-	bool m_buildInProgress = false;
-	bool m_runAfterBuild = false;
-	int32_t m_buildExitCode = -1;
-	std::chrono::steady_clock::time_point m_buildStarted;
-	std::function<void()>                            m_afterClose;
 	std::function<void()>                            m_pollGameProcess;
 	std::mutex                                       m_messageMutex;
 	std::vector<std::pair<std::string, std::string>> m_messages;

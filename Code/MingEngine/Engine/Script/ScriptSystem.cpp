@@ -1,3 +1,5 @@
+#include "MingEngine/Core/OS/WorkerThreadPool.hpp"
+#include "MingEngine/Engine/Application/App.hpp"
 #include "MingEngine/Engine/Script/ScriptSystem.hpp"
 
 #include "MingEngine/Core/ErrorWarningAssert.hpp"
@@ -395,7 +397,8 @@ void ScriptSystem::Startup()
 
 void ScriptSystem::Shutdown()
 {
-	ERR_FAIL_COND_MSG(g_engine != nullptr && g_engine->HasWorkerThreadPool(),
+	ERR_FAIL_COND_MSG(g_engine != nullptr && g_engine->HasWorkerThreadPool()
+		&& ((g_app != nullptr && g_app->GetRunConfig().mode == MingRunMode::Game) || g_engine->m_workerThreadPool->HasManagedTasks()),
 		"Stop the worker thread pool before shutting down scripts.\n");
 	ERR_FAIL_COND_MSG(Callable::IsInvokingManagedCallable(), "Cannot shut down scripts during a delegate callback.\n");
 
@@ -872,7 +875,8 @@ bool ScriptSystem::LoadProjectAssembly()
 
 bool ScriptSystem::UnloadProjectAssembly()
 {
-	ERR_FAIL_COND_V_MSG(g_engine != nullptr && g_engine->HasWorkerThreadPool(), false,
+	ERR_FAIL_COND_V_MSG(g_engine != nullptr && g_engine->HasWorkerThreadPool()
+		&& ((g_app != nullptr && g_app->GetRunConfig().mode == MingRunMode::Game) || g_engine->m_workerThreadPool->HasManagedTasks()), false,
 		"Stop the game to unload its project assembly.\n");
 	ERR_FAIL_COND_V_MSG(Callable::IsInvokingManagedCallable(), false, "Cannot unload scripts during a delegate callback.\n");
 	m_acceptManagedCallables = false;
@@ -1215,7 +1219,8 @@ bool ScriptSystem::RestoreScriptInstances()
 
 bool ScriptSystem::ReloadProjectAssembly()
 {
-	ERR_FAIL_COND_V_MSG(g_engine != nullptr && g_engine->HasWorkerThreadPool(), false,
+	ERR_FAIL_COND_V_MSG(g_engine != nullptr && g_engine->HasWorkerThreadPool()
+		&& ((g_app != nullptr && g_app->GetRunConfig().mode == MingRunMode::Game) || g_engine->m_workerThreadPool->HasManagedTasks()), false,
 		"Restart the game to reload its project assembly.\n");
 	ERR_FAIL_COND_V_MSG(Callable::IsInvokingManagedCallable(), false, "Cannot reload scripts during a delegate callback.\n");
 	ERR_FAIL_COND_V_MSG(m_isAssemblyReloading || !m_isInitialized, false, "Cannot start script reload.\n");

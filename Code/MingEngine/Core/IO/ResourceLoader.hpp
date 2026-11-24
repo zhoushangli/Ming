@@ -42,6 +42,7 @@ public:
 	static Ref<Resource> LoadUncached(VirtualPath const& virtualPath);
 	// Reload will force a resource to be reloaded, replacing the cached resource if it exists
 	static Ref<Resource> Reload(VirtualPath const& virtualPath);
+	static void ReloadIfCached(VirtualPath const& virtualPath);
 
 private:
 	// Raw loading path shared by Load() and LoadUncached().

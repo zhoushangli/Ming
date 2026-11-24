@@ -36,6 +36,8 @@ private:
 	// e.g. A Task invokes one callback or processes indices from its shared Group.
 	struct Task
 	{
+		void (*m_nativeCallback)(void*) = nullptr;
+		void* m_userdata = nullptr;
 		Callable m_callback;
 		Group*   m_group     = nullptr;
 		bool     m_completed = false;
@@ -61,6 +63,8 @@ public:
 	// Submit from the owner thread and retain the managed callback until reclamation.
 	// e.g. AddTask(callback) runs a Callable created from a C# Action.
 	TaskID AddTask(Callable const& callback);
+	TaskID AddNativeTask(void (*callback)(void*), void* userdata);
+	bool HasManagedTasks() const;
 	// Schedule the requested number of Tasks; negative counts use the worker count, empty groups use zero.
 	// e.g. AddGroupTask(callback, 100, 5) creates five Tasks sharing 100 elements.
 	GroupID AddGroupTask(Callable const& callback, int elementCount, int tasksNeeded = -1);

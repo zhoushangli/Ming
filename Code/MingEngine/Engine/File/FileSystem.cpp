@@ -1,4 +1,5 @@
 #include "MingEngine/Engine/File/FileSystem.hpp"
+#include "MingEngine/Engine/Application/App.hpp"
 
 #include "MingEngine/Core/IO/ResourceImporter.hpp"
 #include "MingEngine/Core/IO/ResourceLoader.hpp"
@@ -31,10 +32,10 @@ std::string ToLower(std::string text)
 
 std::string GetDisplayName(std::filesystem::path const& path)
 {
-	std::string displayName = path.filename().string();
+	std::string displayName = path.filename().u8string();
 	if (displayName.empty())
 	{
-		displayName = path.string();
+		displayName = path.u8string();
 	}
 
 	return displayName;
@@ -47,7 +48,7 @@ bool IsImportMetadataFile(std::filesystem::path const& path)
 
 bool IsInternalResourceDirectory(std::filesystem::path const& path)
 {
-	return path.filename().string() == kInternalResourceDirectoryName;
+	return path.filename().u8string() == kInternalResourceDirectoryName;
 }
 
 bool ShouldSkipResourceTreeEntry(std::filesystem::path const& path, bool isDirectory)
@@ -211,7 +212,14 @@ String FileSystem::GetResourceRootPath() const
 
 void FileSystem::Startup()
 {
-	ScanResourceTree();
+	if (g_app != nullptr && g_app->GetRunConfig().mode == MingRunMode::Editor)
+	{
+		ApplyResourceSnapshot({}, {});
+	}
+	else
+	{
+		ScanResourceTree();
+	}
 }
 
 bool FileSystem::Exists(VirtualPath const& virtualPath) const
@@ -644,7 +652,26 @@ std::filesystem::path const& FileSystem::GetResourceRoot() const
 	return m_resourceRoot;
 }
 
+void FileSystem::SetEditorScanCallback(std::function<void()> callback)
+{
+	m_editorScanCallback = std::move(callback);
+}
+
 void FileSystem::ScanResourceTree()
+{
+	if (m_editorScanCallback)
+	{
+		m_editorScanCallback();
+		return;
+	}
+
+	std::unordered_map<VirtualPath, std::filesystem::file_time_type> importedTimes;
+	ScanResourceImports(importedTimes);
+	m_importedTimes = std::move(importedTimes);
+	RebuildResourceTree();
+}
+
+void FileSystem::RebuildResourceTree()
 {
 	std::error_code errorCode;
 	if (m_resourceRoot.empty() || !std::filesystem::exists(m_resourceRoot, errorCode)
@@ -654,9 +681,8 @@ void FileSystem::ScanResourceTree()
 		return;
 	}
 
-	// 1) Refresh import cache first, while the previous resource tree still holds import times.
-	std::unordered_map<VirtualPath, std::filesystem::file_time_type> importedTimes;
-	ScanResourceImports(importedTimes);
+	// 1) Preserve successful import records while rebuilding the visible tree.
+	auto const& importedTimes = m_importedTimes;
 
 	// 2) Move the previous tree aside so import times can be copied into the new tree.
 	std::unique_ptr<FileEntry> previousRootEntry = std::move(m_rootEntry);
@@ -738,7 +764,7 @@ bool FileSystem::TryToVirtualPath(std::filesystem::path const& physicalPath, Vir
 		return true;
 	}
 
-	return VirtualPath::TryParse("res://" + relativePath.generic_string(), outVirtualPath);
+	return VirtualPath::TryParse("res://" + relativePath.generic_u8string(), outVirtualPath);
 }
 
 bool FileSystem::TryGetPhysicalPath(VirtualPath const& virtualPath, std::filesystem::path& outPhysicalPath) const
@@ -757,7 +783,7 @@ bool FileSystem::TryGetPhysicalPath(VirtualPath const& virtualPath, std::filesys
 		return false;
 	}
 
-	std::filesystem::path const candidate     = relativePath.empty() ? canonicalRoot : canonicalRoot / relativePath;
+	std::filesystem::path const candidate     = relativePath.empty() ? canonicalRoot : canonicalRoot / std::filesystem::u8path(relativePath);
 	std::filesystem::path const canonicalPath = std::filesystem::weakly_canonical(candidate, errorCode);
 	if (errorCode)
 	{
@@ -926,4 +952,73 @@ void FileSystem::SortChildren(FileEntry& entry) const
 
 			return a->GetLowerName() < b->GetLowerName();
 		});
+}
+
+void FileSystem::RecordImport(VirtualPath const& path)
+{
+	std::filesystem::path physical;
+	std::filesystem::file_time_type modified;
+	if (TryGetPhysicalPath(path, physical) && TryGetLastWriteTime(physical, modified))
+	{
+		m_importedTimes[path] = modified;
+	}
+}
+
+void FileSystem::ApplyResourceSnapshot(std::vector<VirtualPath> const& directories,
+	std::unordered_map<VirtualPath, std::filesystem::file_time_type> const& files)
+{
+	std::unique_ptr<FileEntry> root(new FileEntry(m_resourceRoot, VirtualPath::ResourceRoot(), "res://", "res://", true, nullptr));
+	std::unordered_map<VirtualPath, FileEntry*> entries;
+	entries[VirtualPath::ResourceRoot()] = root.get();
+	std::function<FileEntry*(VirtualPath const&)> addDirectory = [&](VirtualPath const& path) -> FileEntry*
+	{
+		auto const existing = entries.find(path);
+		if (existing != entries.end())
+		{
+			return existing->second;
+		}
+		FileEntry* parent = addDirectory(path.GetParent());
+		std::string const name = path.GetFileName();
+		auto physical = m_resourceRoot / std::filesystem::u8path(path.GetString().substr(6));
+		std::unique_ptr<FileEntry> entry(new FileEntry(physical, path, name, ToLower(name), true, parent));
+		FileEntry* result = entry.get();
+		parent->m_children.push_back(std::move(entry));
+		entries[path] = result;
+		return result;
+	};
+
+	for (auto const& path : directories)
+	{
+		if (path.IsValid() && !ResourceImporter::IsInternalResourcePath(path))
+		{
+			addDirectory(path);
+		}
+	}
+	for (auto const& file : files)
+	{
+		VirtualPath const& path = file.first;
+		if (!path.IsValid() || ResourceImporter::IsInternalResourcePath(path)
+			|| ResourceImporter::IsImportConfigPath(path) || path.GetString() == "res://project.ming" || !IsVisibleResourceFile(path))
+		{
+			continue;
+		}
+		FileEntry* parent = addDirectory(path.GetParent());
+		std::string const name = path.GetFileName();
+		auto physical = m_resourceRoot / std::filesystem::u8path(path.GetString().substr(6));
+		std::unique_ptr<FileEntry> entry(new FileEntry(physical, path, name, ToLower(name), false, parent));
+		entry->m_hasModifiedTime = true;
+		entry->m_modifiedTime = file.second;
+		auto const imported = m_importedTimes.find(path);
+		if (imported != m_importedTimes.end())
+		{
+			entry->m_hasImportTime = true;
+			entry->m_importTime = imported->second;
+		}
+		parent->m_children.push_back(std::move(entry));
+	}
+	for (auto const& directory : entries)
+	{
+		SortChildren(*directory.second);
+	}
+	m_rootEntry = std::move(root);
 }

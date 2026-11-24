@@ -171,7 +171,18 @@
     <ClCompile Include="Core\Render\VertexUtils.cpp" />
     <ClCompile Include="Core\IO\XmlUtils.cpp" />
     <ClCompile Include="Editor\EditorCamera.cpp" />
+    <ClCompile Include="Editor\EditorProjectChecker.cpp" />
+    <ClInclude Include="Editor\EditorProjectChecker.hpp" />
     <ClCompile Include="Editor\EditorNode.cpp" />
+    <ClCompile Include="Editor\EditorSelection.cpp" />
+    <ClInclude Include="Editor\EditorSelection.hpp" />
+    <ClCompile Include="Editor\EditorSceneManager.cpp" />
+    <ClInclude Include="Editor\EditorSceneManager.hpp" />
+    <ClCompile Include="Editor\EditorCSharpBuildManager.cpp" />
+    <ClInclude Include="Editor\EditorCSharpBuildManager.hpp" />
+    <ClCompile Include="Editor\EditorRunManager.cpp" />
+    <ClInclude Include="Editor\EditorRunManager.hpp" />
+
     <ClCompile Include="Editor\EditorUndoRedo.cpp" />
     <ClCompile Include="Editor\UI\Popup\CreateNodePopup.cpp" />
     <ClCompile Include="Editor\UI\Popup\CreateFolderPopup.cpp" />

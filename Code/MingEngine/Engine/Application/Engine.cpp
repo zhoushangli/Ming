@@ -57,7 +57,7 @@ Engine::Engine(EngineConfig config) : m_config(config)
 		m_networkSystem = MemNew<NetworkSystem>(config.m_networkConfig);
 	}
 
-	if (config.m_enableWorkerThreadPool && m_scriptSystem != nullptr)
+	if (config.m_enableWorkerThreadPool)
 	{
 		m_workerThreadPool = MemNew<WorkerThreadPool>();
 	}
@@ -298,6 +298,10 @@ void Engine::EndFrame()
 
 bool Engine::Update(float deltaSeconds, std::function<bool()> const& shouldQuit)
 {
+	// 1) Logic Process
+	m_sceneSystem->Process(deltaSeconds);
+
+	// 2) Physics Process and Physics System Simulation
 	if (m_config.m_enablePhysics && std::isfinite(deltaSeconds) && deltaSeconds >= 0.f
 		&& (!shouldQuit || !shouldQuit()))
 	{
@@ -329,7 +333,6 @@ bool Engine::Update(float deltaSeconds, std::function<bool()> const& shouldQuit)
 		}
 	}
 
-	m_sceneSystem->Process(deltaSeconds);
 	return true;
 }
 

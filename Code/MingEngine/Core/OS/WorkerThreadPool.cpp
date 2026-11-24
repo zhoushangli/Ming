@@ -134,6 +134,58 @@ WorkerThreadPool::TaskID WorkerThreadPool::AddTask(Callable const& callback)
 	return id;
 }
 
+WorkerThreadPool::TaskID WorkerThreadPool::AddNativeTask(void (*callback)(void*), void* userdata)
+{
+	if (Thread::GetCallerId() != m_ownerThread || callback == nullptr)
+	{
+		return INVALID_TASK_ID;
+	}
+
+	std::unique_lock<std::mutex> lock(m_mutex);
+	if (!m_accepting || m_nextId == std::numeric_limits<TaskID>::max())
+	{
+		return INVALID_TASK_ID;
+	}
+
+	TaskID const id = m_nextId++;
+	Task* task = new (std::nothrow) Task();
+	if (task == nullptr)
+	{
+		return INVALID_TASK_ID;
+	}
+
+	task->m_nativeCallback = callback;
+	task->m_userdata = userdata;
+	try
+	{
+		m_tasks.emplace(id, task);
+		m_pending.push_back(task);
+	}
+	catch (...)
+	{
+		m_tasks.erase(id);
+		delete task;
+		return INVALID_TASK_ID;
+	}
+
+	lock.unlock();
+	m_workAvailable.notify_one();
+	return id;
+}
+
+bool WorkerThreadPool::HasManagedTasks() const
+{
+	std::lock_guard<std::mutex> lock(m_mutex);
+	for (auto const& entry : m_tasks)
+	{
+		if (entry.second->m_nativeCallback == nullptr)
+		{
+			return true;
+		}
+	}
+	return !m_groups.empty();
+}
+
 WorkerThreadPool::GroupID WorkerThreadPool::AddGroupTask(Callable const& callback, int elementCount, int tasksNeeded)
 {
 	if (Thread::GetCallerId() != m_ownerThread || !callback.CanRunOnWorker(1)
@@ -322,7 +374,14 @@ void WorkerThreadPool::ExecuteTask(Task* task)
 	Group* group = task->m_group;
 	if (group == nullptr)
 	{
-		task->m_callback.InvokeOnWorker(nullptr);
+		if (task->m_nativeCallback != nullptr)
+		{
+			task->m_nativeCallback(task->m_userdata);
+		}
+		else
+		{
+			task->m_callback.InvokeOnWorker(nullptr);
+		}
 		{
 			std::lock_guard<std::mutex> lock(m_mutex);
 			task->m_completed = true;

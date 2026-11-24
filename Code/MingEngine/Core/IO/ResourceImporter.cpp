@@ -47,6 +47,23 @@ std::string GetHashSuffix(VirtualPath const& sourceVirtualPath)
 	return stream.str();
 }
 
+std::string HashBytes(void const* bytes, size_t size)
+{
+	std::ostringstream stream;
+	stream << std::hex << std::setfill('0') << std::setw(16) << XXH3_64bits(bytes, size);
+	return stream.str();
+}
+
+std::string SourceHash(VirtualPath const& path)
+{
+	std::vector<uint8_t> data;
+	if (!g_engine->m_fileSystem->ReadBinary(path, data))
+	{
+		return {};
+	}
+	return HashBytes(data.data(), data.size());
+}
+
 std::string NormalizeExtension(std::string extension)
 {
 	if (extension.empty())
@@ -222,8 +239,32 @@ bool ResourceImporter::Import(
 		return false;
 	}
 
+	std::filesystem::path sourcePhysical;
+	if (!g_engine->m_fileSystem->TryGetPhysicalPath(sourceVirtualPath, sourcePhysical))
+	{
+		return false;
+	}
+	std::error_code sourceError;
+	auto const sourceTime = std::filesystem::last_write_time(sourcePhysical, sourceError);
+	if (sourceError)
+	{
+		return false;
+	}
+	auto const sourceSize = std::filesystem::file_size(sourcePhysical, sourceError);
+	std::string const sourceHash = SourceHash(sourceVirtualPath);
+	if (sourceError || sourceHash.empty())
+	{
+		return false;
+	}
+
 	Ref<Resource> importedResource = importer->Import(importOptions, sourceVirtualPath);
 	if (!importedResource.IsValid())
+	{
+		return false;
+	}
+
+	auto const currentTime = std::filesystem::last_write_time(sourcePhysical, sourceError);
+	if (sourceError || currentTime != sourceTime || std::filesystem::file_size(sourcePhysical, sourceError) != sourceSize || sourceError)
 	{
 		return false;
 	}
@@ -240,6 +281,11 @@ bool ResourceImporter::Import(
 	metadata["importer"]    = importer->GetClassName();
 
 	Json serializedOptions = SerializeNonDefaultImportOptions(importer, importOptions);
+	metadata["source_hash"] = sourceHash;
+	std::string const optionText = serializedOptions.dump();
+	metadata["options_hash"] = HashBytes(optionText.data(), optionText.size());
+	metadata["source_time"] = sourceTime.time_since_epoch().count();
+	metadata["source_size"] = sourceSize;
 	if (!serializedOptions.empty())
 	{
 		metadata["import_options"] = std::move(serializedOptions);
@@ -250,6 +296,8 @@ bool ResourceImporter::Import(
 		return false;
 	}
 
+	ResourceSaver::NotifySaved(GetImportConfigPath(sourceVirtualPath));
+	g_engine->m_fileSystem->RecordImport(sourceVirtualPath);
 	return true;
 }
 
@@ -364,8 +412,12 @@ bool ResourceImporter::TryReadImportConfig(
 
 // This function keeps the import config and generated cache complete for a source asset.
 // e.g. a missing res://.ming/Import/Pawn_1234.mesh is regenerated from res://Models/Pawn.obj.
-bool ResourceImporter::EnsureImported(VirtualPath const& sourceVirtualPath)
+bool ResourceImporter::EnsureImported(VirtualPath const& sourceVirtualPath, bool checkContent, bool* outImported)
 {
+	if (outImported != nullptr)
+	{
+		*outImported = false;
+	}
 	std::vector<Ref<ResourceFormatImporter>> importers = FindMatchedImporters(sourceVirtualPath);
 	if (importers.empty())
 	{
@@ -399,24 +451,44 @@ bool ResourceImporter::EnsureImported(VirtualPath const& sourceVirtualPath)
 
 	// 3) Validate that the generated cache exists and is at least as new as the source.
 	VirtualPath importPath;
-	bool        hasFreshCache  = false;
 	bool        hasAlignedName = false;
 	if (hasConfig && TryGetImportFile(sourceVirtualPath, importPath) && g_engine != nullptr
 		&& g_engine->m_fileSystem != nullptr && g_engine->m_fileSystem->Exists(importPath))
 	{
-		std::filesystem::file_time_type importModifiedTime;
-		hasFreshCache = TryGetModifiedTime(importPath, importModifiedTime) && importModifiedTime >= sourceModifiedTime;
-
 		hasAlignedName = (importPath == GetImportOutputPath(sourceVirtualPath, importer->GetImportedExtension()));
 	}
 
-	// 4) Reimport when the config is missing/broken, the importer is unavailable, or the cache is stale.
-	if (hasConfig && importerClassName == importer->GetClassName() && hasFreshCache && hasAlignedName)
+	// 4) Verify source and effective options rather than comparing source age to output age.
+	Json metadata;
+	bool const readable = TryReadImportConfigJson(sourceVirtualPath, metadata);
+	std::string const optionsText = SerializeNonDefaultImportOptions(importer, importOptions).dump();
+	bool fresh = false;
+	if (readable && metadata.contains("source_hash") && metadata["source_hash"].is_string()
+		&& metadata.contains("options_hash") && metadata["options_hash"].is_string())
+	{
+		std::filesystem::path physical;
+		std::error_code error;
+		g_engine->m_fileSystem->TryGetPhysicalPath(sourceVirtualPath, physical);
+		auto const size = std::filesystem::file_size(physical, error);
+		bool const sameStamp = !error && metadata.contains("source_time") && metadata["source_time"].is_number_integer()
+			&& metadata.contains("source_size") && metadata["source_size"].is_number_unsigned() && metadata.value("source_time", int64_t(0)) == sourceModifiedTime.time_since_epoch().count()
+			&& metadata.value("source_size", uintmax_t(0)) == size;
+		bool const sameSource = (!checkContent && sameStamp) || metadata["source_hash"].get<std::string>() == SourceHash(sourceVirtualPath);
+		fresh = sameSource && metadata["options_hash"].get<std::string>() == HashBytes(optionsText.data(), optionsText.size());
+	}
+
+	if (hasConfig && importerClassName == importer->GetClassName() && hasAlignedName && fresh
+		&& g_engine->m_fileSystem->Exists(importPath))
 	{
 		return true;
 	}
 
-	return Import(sourceVirtualPath, importer, importOptions);
+	bool const success = Import(sourceVirtualPath, importer, importOptions);
+	if (outImported != nullptr)
+	{
+		*outImported = success;
+	}
+	return success;
 }
 
 // This function returns the import config path beside the source asset.

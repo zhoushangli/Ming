@@ -24,7 +24,8 @@ bool EditorUI::HandleInput(InputEvent const& event)
 		m_viewportPanel->CancelNavigation();
 	}
 
-	if (m_owner->IsBuildingCSharpProject() || m_owner->IsPreparingPlay())
+	if ((m_owner->IsBuildingCSharpProject() || m_owner->IsPreparingPlay() || m_owner->IsCheckingProject())
+		&& static_cast<Viewport*>(m_owner->GetSceneTree()->GetRoot())->GetGuiPopup() == nullptr)
 	{
 		return true;
 	}
@@ -77,6 +78,11 @@ bool EditorUI::HandleInput(InputEvent const& event)
 		}
 	}
 
+	if (event.m_type == InputEventType::Key && event.m_pressed && event.m_keyCode == GLFW_KEY_F5)
+	{
+		m_owner->CheckProject(true);
+		return true;
+	}
 	HandleMenuPointer(event);
 	root->ProcessInputEvent(event);
 	UpdateNativeDocking();

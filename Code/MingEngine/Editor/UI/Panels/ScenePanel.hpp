@@ -23,7 +23,8 @@ private:
 	void UpdateItems();
 	void DeleteSelected();
 	bool HandleTreeInput(InputEvent const& event);
-	bool CanReparent(ObjectID source, uint64_t target) const;
+	bool CanReparent(ObjectID source, uint64_t target, int section = 0) const;
+	bool GetDropTarget(ObjectID source, uint64_t target, int section, Node*& parent, int& index) const;
 	bool CreateNode(std::string const& type, std::string& error);
 
 private:

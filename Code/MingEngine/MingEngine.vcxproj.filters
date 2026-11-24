@@ -174,6 +174,21 @@
     <ClCompile Include="Editor\EditorNode.cpp">
       <Filter>Editor</Filter>
     </ClCompile>
+    <ClCompile Include="Editor\EditorProjectChecker.cpp">
+      <Filter>Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\EditorSceneManager.cpp">
+      <Filter>Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\EditorRunManager.cpp">
+      <Filter>Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\EditorCSharpBuildManager.cpp">
+      <Filter>Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\EditorSelection.cpp">
+      <Filter>Editor</Filter>
+    </ClCompile>
     <ClCompile Include="Editor\EditorUndoRedo.cpp">
       <Filter>Editor</Filter>
     </ClCompile>
@@ -738,6 +753,21 @@
       <Filter>Editor</Filter>
     </ClInclude>
     <ClInclude Include="Editor\EditorNode.hpp">
+      <Filter>Editor</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\EditorProjectChecker.hpp">
+      <Filter>Editor</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\EditorSceneManager.hpp">
+      <Filter>Editor</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\EditorRunManager.hpp">
+      <Filter>Editor</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\EditorCSharpBuildManager.hpp">
+      <Filter>Editor</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\EditorSelection.hpp">
       <Filter>Editor</Filter>
     </ClInclude>
     <ClInclude Include="Editor\UI\Popup\CreateNodePopup.hpp">

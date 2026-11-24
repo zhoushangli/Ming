@@ -296,9 +296,9 @@ void EditorUI::CreateRunControls()
 	m_stopButton = addAction(
 		"",
 		"Stop",
-		[]()
+		[this]()
 		{
-			g_app->StopGame();
+			m_owner->RequestStop();
 		});
 }
 
@@ -534,7 +534,7 @@ void EditorUI::ShowBuildProgress(String const& message)
 	if (m_buildPopup == nullptr)
 	{
 		VBoxContainer* content = nullptr;
-		m_buildPopup = EditorPopupUtils::Create(GetRootControl(), "C# Build", content, false);
+		m_buildPopup = EditorPopupUtils::Create(GetRootControl(), "Project Progress", content, false);
 		m_buildPopup->SetName("BuildProgressPopup");
 		m_buildMessage = EditorPopupUtils::AddLabel(content, message);
 		m_buildProgress = MemNew<ProgressBar>();
@@ -955,4 +955,45 @@ void EditorUI::OpenScriptFile(std::function<void(VirtualPath const&)> selected)
 	EditorPopupUtils::AddButton(EditorPopupUtils::AddActions(m_scriptFileContent), "Cancel", [this]() { m_scriptFilePopup->Close(); });
 	EditorPopupUtils::Open(m_scriptFilePopup, GetRootControl(),
 		Vector2(static_cast<float>(GetRootControl()->GetThemeConstant("project_popup_width", "Editor")), 0.f));
+}
+
+void EditorUI::ShowChoice(String const& title, String const& message, std::vector<String> const& choices, std::function<void(int)> chosen)
+{
+	if (m_choicePopup != nullptr)
+	{
+		m_choicePopup->Close();
+		m_choicePopup->QueueFree();
+	}
+
+	VBoxContainer* content = nullptr;
+	m_choicePopup = EditorPopupUtils::Create(GetRootControl(), title, content, false);
+	m_choicePopup->SetName("ProjectChoicePopup");
+	Label* label = EditorPopupUtils::AddLabel(content, message);
+	label->SetAutowrapMode(AutowrapMode::WordSmart);
+	auto* actions = EditorPopupUtils::AddActions(content);
+	for (int i = 0; i < static_cast<int>(choices.size()); ++i)
+	{
+		EditorPopupUtils::AddButton(actions, choices[i], [this, chosen, i]()
+		{
+			m_choicePopup->Close();
+			chosen(i);
+		});
+	}
+
+	EditorPopupUtils::Open(m_choicePopup, GetRootControl(), Vector2(620.f, 0.f));
+	if (title == String("Replace File?") && actions->GetChildren().size() > 1)
+	{
+		static_cast<Button*>(actions->GetChildren()[1])->GrabFocus();
+	}
+}
+
+void EditorUI::ShowProjectProgress(String const& message, int completed, int total)
+{
+	ShowBuildProgress(message);
+	m_buildProgress->SetIndeterminate(total <= 0);
+	if (total > 0)
+	{
+		m_buildProgress->SetMaxValue(static_cast<float>(total));
+		m_buildProgress->SetValue(static_cast<float>(completed));
+	}
 }

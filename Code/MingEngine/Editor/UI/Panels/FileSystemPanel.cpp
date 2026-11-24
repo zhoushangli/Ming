@@ -442,6 +442,7 @@ void FileSystemPanel::ShowContextMenu(Vector2 position)
 			  } });
 	}
 
+	actions.push_back({ "Refresh", []() { EditorNode::Get()->CheckProject(true); } });
 	m_context.m_editorUI->ShowMenu(m_tree, position, actions);
 }
 
@@ -679,4 +680,26 @@ bool FileSystemPanel::ValidateName(
 
 	outError.clear();
 	return true;
+}
+
+VirtualPath FileSystemPanel::GetDropDirectory(Vector2 const& position) const
+{
+	auto const found = m_fileItems.find(m_tree->GetItemAtPosition(position));
+	if (found == m_fileItems.end())
+	{
+		return m_directory;
+	}
+
+	std::filesystem::path physical;
+	std::error_code error;
+	if (m_context.m_fileSystem->TryGetPhysicalPath(found->second, physical) && std::filesystem::is_directory(physical, error))
+	{
+		return found->second;
+	}
+	VirtualPath parent;
+	if (m_context.m_fileSystem->TryToVirtualPath(physical.parent_path(), parent))
+	{
+		return parent;
+	}
+	return m_directory;
 }

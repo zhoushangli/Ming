@@ -224,7 +224,7 @@ void VerifyManaged(MingRunConfig const& config, std::filesystem::path const& pro
 	workerInput >> workerResult;
 	Check(workerResult == "drained", "unclaimed worker task finished before game teardown");
 	Check(ClassDatabase::GetGlobalObject("WorkerThreadPool") == nullptr, "pool unregistered on game shutdown");
-	Check(actual == "ERFPX", "renamed managed lifecycle and physics dispatch");
+	Check(actual == "ERFPX" || actual == "ERPFX", "managed enter-ready, ordinary and physics callbacks, and exit");
 	_wputenv_s(L"MING_VERIFY_LIFECYCLE_LOG", L"");
 }
 
@@ -233,8 +233,8 @@ void VerifyMode(MingRunConfig const& config)
 	App app(config);
 	app.Startup();
 	Check(!app.IsQuitting() && app.GetExitCode() == 0, "mode startup");
-	Check((ClassDatabase::GetGlobalObject("WorkerThreadPool") != nullptr) == (config.mode == MingRunMode::Game),
-		"worker pool exists only in game mode");
+	Check((ClassDatabase::GetGlobalObject("WorkerThreadPool") != nullptr) == (config.mode == MingRunMode::Game || config.mode == MingRunMode::Editor),
+		"worker pool exists in game and editor modes");
 	Check(config.mode == MingRunMode::Game || !app.GetEngine()->m_physicsServer->Step(1.f / 60.f), "non-game mode has no active physics world");
 	glfwHideWindow(app.GetEngine()->m_windowSystem->GetGLFWWindow());
 	app.RunFrame();

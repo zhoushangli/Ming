@@ -30,14 +30,6 @@ bool EditorState::Enter(App& app)
 	editorNode->SetName("EditorNode");
 	g_engine->m_sceneSystem->GetSceneTree()->GetRoot()->AddNode(editorNode);
 	ProjectManagerState::RememberProject(app.GetRunConfig().projectPath);
-	VirtualPath const& startScenePath = ProjectSettings::Get()->m_startScenePath;
-	if (startScenePath.IsValid())
-	{
-		if (!editorNode->LoadScene(startScenePath))
-		{
-			editorNode->m_editorUI->Warning("Open Scene Failed", startScenePath.GetString());
-		}
-	}
 
 	return true;
 }

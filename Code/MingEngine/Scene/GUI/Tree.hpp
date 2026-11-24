@@ -34,6 +34,15 @@ public:
 		bool                    m_dimmed = false;
 	};
 
+public:
+	enum DropMode
+	{
+		DROP_MODE_DISABLED = 0,
+		DROP_MODE_ON_ITEM = 1,
+		DROP_MODE_INBETWEEN = 2
+	};
+
+
 private:
 	struct ThemeCache
 	{
@@ -68,8 +77,11 @@ private:
 		Ref<ThemeStyleBox>   grabber_pressed;
 	};
 
+
 public:
 	Tree();
+	void SetDropModeFlags(int flags);
+	int GetDropSectionAtPosition(Vector2 const& position) const;
 
 	uint64_t GetSelected() const { return m_selected; }
 	uint64_t GetItemAtPosition(Vector2 const& position) const;
@@ -157,6 +169,8 @@ private:
 	uint64_t                                     m_selected          = 0;
 	uint64_t                                     m_editing           = 0;
 	uint64_t                                     m_lastClicked       = 0;
+	int m_dropModeFlags = DROP_MODE_ON_ITEM;
+	int m_dropSection = 0;
 	uint64_t                                     m_dropItem          = 0;
 	uint64_t                                     m_hoveredItem       = 0;
 	double                                       m_lastClickTime     = 0.0;

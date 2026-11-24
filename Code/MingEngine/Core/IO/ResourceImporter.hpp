@@ -56,7 +56,7 @@ public:
 		VirtualPath const&                        sourceVirtualPath,
 		std::string&                              outImporterClassName,
 		std::unordered_map<std::string, Variant>& outImportOptions);
-	static bool EnsureImported(VirtualPath const& sourceVirtualPath);
+	static bool EnsureImported(VirtualPath const& sourceVirtualPath, bool checkContent = false, bool* outImported = nullptr);
 
 	static VirtualPath GetImportConfigPath(VirtualPath const& sourceVirtualPath);
 	static VirtualPath GetImportOutputPath(VirtualPath const& sourceVirtualPath, std::string const& importedExtension);

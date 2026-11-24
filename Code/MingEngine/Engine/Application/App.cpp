@@ -1,3 +1,4 @@
+#include "MingEngine/Editor/EditorNode.hpp"
 #include "MingEngine/Engine/Application/App.hpp"
 
 #include "MingEngine/Core/Clock.hpp"
@@ -29,7 +30,7 @@ App::App(MingRunConfig const& config) : m_runConfig(config)
 {
 	EngineConfig engineConfig;
 	engineConfig.m_enablePhysics = config.mode == MingRunMode::Game;
-	engineConfig.m_enableWorkerThreadPool = config.mode == MingRunMode::Game;
+	engineConfig.m_enableWorkerThreadPool = config.mode == MingRunMode::Game || config.mode == MingRunMode::Editor;
 	engineConfig.m_windowConfig.m_clientAspect = 16.f / 9.f;
 	engineConfig.m_windowConfig.m_appName = config.mode == MingRunMode::ProjectManager
 		? "MingEngine - Project Manager" : "MingEngine";
@@ -100,6 +101,10 @@ void App::Shutdown()
 		return;
 	}
 
+	if (EditorNode::Get() != nullptr)
+	{
+		EditorNode::Get()->ShutdownBackgroundWork();
+	}
 	m_engine->StopWorkerThreadPool();
 	ExitState();
 

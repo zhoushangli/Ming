@@ -323,6 +323,10 @@ void WindowSystem::CreateGLFWWindow()
 	glfwSetWindowFocusCallback(m_glfwWindow, WindowFocusCallback);
 	glfwSetCursorEnterCallback(m_glfwWindow, CursorEnterCallback);
 	glfwSetWindowUserPointer(m_glfwWindow, this);
+	glfwSetDropCallback(m_glfwWindow, [](GLFWwindow* window, int count, char const** paths)
+	{
+		static_cast<WindowSystem*>(glfwGetWindowUserPointer(window))->HandleFilesDropped(count, paths);
+	});
 	glfwSetFramebufferSizeCallback(
 		m_glfwWindow,
 		[](GLFWwindow* window, int width, int height)
@@ -435,4 +439,22 @@ bool WindowSystem::TryGetScreenColor(Vector2 clientPosition, Color& outColor) co
 
 	outColor = Color(GetRValue(pixel), GetGValue(pixel), GetBValue(pixel), 255);
 	return true;
+}
+
+void WindowSystem::SetFilesDroppedCallback(std::function<void(std::vector<std::string> const&, Vector2)> callback)
+{
+	m_filesDroppedCallback = std::move(callback);
+}
+
+void WindowSystem::HandleFilesDropped(int count, char const** paths)
+{
+	std::vector<std::string> copied;
+	for (int i = 0; i < count; ++i)
+	{
+		copied.emplace_back(paths[i]);
+	}
+	if (m_filesDroppedCallback)
+	{
+		m_filesDroppedCallback(copied, GetMousePosition(m_glfwWindow));
+	}
 }

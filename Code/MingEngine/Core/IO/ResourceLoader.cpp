@@ -130,6 +130,34 @@ Ref<Resource> ResourceLoader::Reload(VirtualPath const& virtualPath)
 	return freshResource;
 }
 
+void ResourceLoader::ReloadIfCached(VirtualPath const& virtualPath)
+{
+	VirtualPath output = virtualPath;
+	VirtualPath mapped;
+	if (ResourceImporter::TryGetImportFile(virtualPath, mapped))
+	{
+		output = mapped;
+	}
+	std::vector<VirtualPath> keys;
+	for (auto const& entry : s_loadedResources)
+	{
+		VirtualPath resolved = entry.first;
+		if (ResourceImporter::TryGetImportFile(entry.first, mapped))
+		{
+			resolved = mapped;
+		}
+		if (entry.first == virtualPath || entry.first == output || resolved == virtualPath || resolved == output)
+		{
+			keys.push_back(entry.first);
+		}
+	}
+
+	for (auto const& key : keys)
+	{
+		Reload(key);
+	}
+}
+
 bool ResourceFormatLoader::CanLoad(VirtualPath const& virtualPath) const
 {
 	std::vector<std::string> supportedExtensions = GetSupportedExtensions();

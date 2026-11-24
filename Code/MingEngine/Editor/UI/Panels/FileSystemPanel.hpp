@@ -21,6 +21,7 @@ public:
 	FileSystemPanel();
 	VirtualPath const& GetSelectedVirtualPath() const { return m_selectedVirtualPath; }
 	void               SelectPath(VirtualPath const& path) { m_selectedVirtualPath = path; }
+	VirtualPath GetDropDirectory(Vector2 const& position) const;
 	Tree*              GetTree() const { return m_tree; }
 	VirtualPath const& GetDirectory() const { return m_directory; }
 	void               NavigateTo(VirtualPath const& directory, bool addHistory = true);

@@ -683,12 +683,52 @@ bool Tree::GetDragData(Vector2 const& position, GuiDragData& data)
 	return Control::GetDragData(position, data);
 }
 
+void Tree::SetDropModeFlags(int flags)
+{
+	m_dropModeFlags = flags;
+	m_dropItem = 0;
+	QueueRedraw();
+}
+
+int Tree::GetDropSectionAtPosition(Vector2 const& position) const
+{
+	int const row = GetRowAtPosition(position);
+	if (row < 0 || m_dropModeFlags == DROP_MODE_DISABLED)
+	{
+		return -100;
+	}
+
+	if ((m_dropModeFlags & DROP_MODE_INBETWEEN) == 0)
+	{
+		return 0;
+	}
+	auto const rect = GetRowRect(static_cast<size_t>(row));
+	float const fraction = (position.y - rect.m_mins.y) / rect.GetHeight();
+	bool const onItem = (m_dropModeFlags & DROP_MODE_ON_ITEM) != 0;
+	if (fraction < (onItem ? 0.25f : 0.5f))
+	{
+		return -1;
+	}
+	if (fraction > (onItem ? 0.75f : 0.5f))
+	{
+		uint64_t const id = m_items[m_rows[row]].m_ID;
+		if (HasChildren(id) && !IsCollapsed(id) && position.x >= GetRowTextX(static_cast<size_t>(row)))
+		{
+			return 2;
+		}
+		return 1;
+	}
+	return 0;
+}
+
 void Tree::DragHover(Vector2 const& position, GuiDragData const& data, bool accepted)
 {
 	uint64_t const item = accepted ? GetItemAtPosition(position) : 0;
-	if (item != m_dropItem)
+	int const section = GetDropSectionAtPosition(position);
+	if (item != m_dropItem || section != m_dropSection)
 	{
 		m_dropItem = item;
+		m_dropSection = section;
 		QueueRedraw();
 	}
 
@@ -862,7 +902,22 @@ void Tree::OnNotification(int notification)
 
 			if (id == m_dropItem)
 			{
-				DrawThemeStyleBox(m_themeCache.drop_mark, ClipItemRect(GetRowRect(row)));
+				if (m_dropSection == 0)
+				{
+					DrawThemeStyleBox(m_themeCache.drop_mark, ClipItemRect(GetRowRect(row)));
+				}
+				else
+				{
+					auto mark = GetRowRect(row);
+					float const y = m_dropSection == -1 ? mark.m_mins.y : mark.m_maxs.y - 2.f;
+					mark.m_mins.y = y;
+					mark.m_maxs.y = y + 2.f;
+					if (m_dropSection == 2)
+					{
+						mark.m_mins.x = GetRowTextX(row) + static_cast<float>(m_themeCache.indent);
+					}
+					DrawItemRect(ClipItemRect(mark), m_themeCache.font_selected_color);
+				}
 			}
 		}
 

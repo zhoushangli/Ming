@@ -12,6 +12,8 @@ struct GLFWcursor;
 enum class CursorMode;
 
 #include <string>
+#include <functional>
+#include <vector>
 
 struct WindowSystemConfig
 {
@@ -30,6 +32,9 @@ class WindowSystem : public SystemBase
 public:
 	WindowSystem(WindowSystemConfig config);
 	~WindowSystem();
+
+	void SetFilesDroppedCallback(std::function<void(std::vector<std::string> const&, Vector2)> callback);
+	void HandleFilesDropped(int count, char const** paths);
 
 	void Startup() override;
 	void Shutdown() override;
@@ -60,6 +65,7 @@ public:
 	GLFWwindow* m_glfwWindow   = nullptr;
 
 private:
+	std::function<void(std::vector<std::string> const&, Vector2)> m_filesDroppedCallback;
 	WindowSystemConfig m_config;
 	GLFWcursor*        m_resizeHorizontalCursor = nullptr;
 	GLFWcursor*        m_resizeVerticalCursor   = nullptr;

@@ -67,6 +67,9 @@ public:
 		std::function<bool(VirtualPath const&)> accepted,
 		std::function<void()>                   cancelled = {});
 	void Warning(std::string const& title, std::string const& message);
+	void ShowChoice(String const& title, String const& message, std::vector<String> const& choices, std::function<void(int)> chosen);
+	void ShowProjectProgress(String const& message, int completed, int total);
+	bool IsProjectSettingsOpen() const { return m_projectSettingsPopup.IsOpen(); }
 	void ShowBuildProgress(String const& message);
 	void HideBuildProgress();
 	bool IsBuildProgressVisible() const;
@@ -132,6 +135,7 @@ private:
 	SceneFilePopup             m_sceneFilePopup;
 	ProjectSettingsPopup       m_projectSettingsPopup;
 	WarningPopup               m_warningPopup;
+	PopupPanel* m_choicePopup = nullptr;
 	PopupPanel*                m_buildPopup = nullptr;
 	Label*                     m_buildMessage = nullptr;
 	ProgressBar*               m_buildProgress = nullptr;

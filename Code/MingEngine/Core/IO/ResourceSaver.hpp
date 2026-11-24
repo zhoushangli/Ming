@@ -5,6 +5,7 @@
 #include "MingEngine/Core/IO/VirtualPath.hpp"
 
 #include <string>
+#include <functional>
 
 class ResourceFormatSaver : public RefCounted
 {
@@ -21,12 +22,15 @@ protected:
 class ResourceSaver
 {
 public:
+	static void SetSavedCallback(std::function<void(VirtualPath const&)> callback);
 	static void AddSaver(Ref<ResourceFormatSaver> saver);
 	static bool Save(VirtualPath const& virtualPath, Variant const& value);
+	static void NotifySaved(VirtualPath const& virtualPath);
 
 private:
 	static constexpr int MaxSavers = 64;
 
+	static std::function<void(VirtualPath const&)> s_savedCallback;
 	static int                      s_saverCount;
 	static Ref<ResourceFormatSaver> s_saver[MaxSavers];
 };

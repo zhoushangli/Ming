@@ -59,7 +59,7 @@ Ref<Resource> ImageImporter::Import(
 
 	// 3) Store the complete CPU image in TextureResource
 	Ref<TextureResource> texData = CreateRef<TextureResource>();
-	texData->SetName(physicalPath.stem().string());
+	texData->SetName(physicalPath.stem().u8string());
 	texData->m_image = std::move(image);
 
 	return texData;

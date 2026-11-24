@@ -5,6 +5,7 @@
 #include "MingEngine/Core/String.hpp"
 
 #include <filesystem>
+#include <functional>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -99,6 +100,11 @@ public:
 	std::filesystem::path const& GetResourceRoot() const;
 	String                       GetResourceRootPath() const;
 	void                         ScanResourceTree();
+	void                         RebuildResourceTree();
+	void                         RecordImport(VirtualPath const& path);
+	void ApplyResourceSnapshot(std::vector<VirtualPath> const& directories,
+		std::unordered_map<VirtualPath, std::filesystem::file_time_type> const& files);
+	void                         SetEditorScanCallback(std::function<void()> callback);
 	bool                         HasResourceTree() const;
 	FileEntry const*             GetResourceRootEntry() const;
 
@@ -121,6 +127,8 @@ private:
 	void SortChildren(FileEntry& entry) const;
 
 private:
+	std::unordered_map<VirtualPath, std::filesystem::file_time_type> m_importedTimes;
+	std::function<void()> m_editorScanCallback;
 	std::filesystem::path      m_resourceRoot;
 	std::unique_ptr<FileEntry> m_rootEntry;
 };

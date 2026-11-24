@@ -151,6 +151,7 @@ void ScenePanel::OnInitialize()
 		{
 			return HandleTreeInput(event);
 		});
+	m_tree->SetDropModeFlags(Tree::DROP_MODE_ON_ITEM | Tree::DROP_MODE_INBETWEEN);
 	m_tree->SetDragCallbacks(
 		[this](Vector2 const& position, GuiDragData& data)
 		{
@@ -167,12 +168,14 @@ void ScenePanel::OnInitialize()
 		},
 		[this](Vector2 const& position, GuiDragData const& data)
 		{
-			return data.m_type == String("node") && CanReparent(data.m_objectID, m_tree->GetItemAtPosition(position));
+			return data.m_type == String("node") && CanReparent(data.m_objectID, m_tree->GetItemAtPosition(position), m_tree->GetDropSectionAtPosition(position));
 		},
 		[this](Vector2 const& position, GuiDragData const& data)
 		{
 			uint64_t const key = m_tree->GetItemAtPosition(position);
-			if (CanReparent(data.m_objectID, key))
+			Node* targetParent = nullptr;
+			int targetIndex = -1;
+			if (GetDropTarget(data.m_objectID, key, m_tree->GetDropSectionAtPosition(position), targetParent, targetIndex))
 			{
 				Node*      child  = ObjectDatabase::GetInstance<Node>(data.m_objectID);
 				auto*      editor = EditorNode::Get();
@@ -211,7 +214,8 @@ void ScenePanel::OnInitialize()
 				{
 					snapshot(true);
 				}
-				child->Reparent(ObjectDatabase::GetInstance<Node>(m_nodeItems.at(key)), true);
+				child->Reparent(targetParent, true);
+				targetParent->MoveChild(child, targetIndex);
 				if (recording)
 				{
 					snapshot(false);
@@ -356,15 +360,39 @@ bool ScenePanel::HandleTreeInput(InputEvent const& event)
 	return false;
 }
 
-bool ScenePanel::CanReparent(ObjectID source, uint64_t target) const
+bool ScenePanel::CanReparent(ObjectID source, uint64_t target, int section) const
 {
-	auto  found  = m_nodeItems.find(target);
-	Node* child  = ObjectDatabase::GetInstance<Node>(source);
-	Node* parent = found != m_nodeItems.end() ? ObjectDatabase::GetInstance<Node>(found->second) : nullptr;
-	if (child == nullptr || parent == nullptr || child == m_context.m_sceneTree->GetScene()
-		|| child->GetParent() == parent || child->IsQueuedForDeletion() || parent->IsQueuedForDeletion())
+	Node* parent = nullptr;
+	int index = -1;
+	return GetDropTarget(source, target, section, parent, index);
+}
+
+bool ScenePanel::GetDropTarget(ObjectID source, uint64_t target, int section, Node*& parent, int& index) const
+{
+	auto const found = m_nodeItems.find(target);
+	Node* child = ObjectDatabase::GetInstance<Node>(source);
+	Node* item = found != m_nodeItems.end() ? ObjectDatabase::GetInstance<Node>(found->second) : nullptr;
+	if (child == nullptr || item == nullptr || child == item || section == -100
+		|| child == m_context.m_sceneTree->GetScene() || child->IsQueuedForDeletion() || item->IsQueuedForDeletion())
 	{
 		return false;
+	}
+
+	parent = item;
+	index = static_cast<int>(item->GetChildren().size());
+	if (section == -1 || section == 1)
+	{
+		if (item == m_context.m_sceneTree->GetScene())
+		{
+			return false;
+		}
+		parent = item->GetParent();
+		auto const& children = parent->GetChildren();
+		index = static_cast<int>(std::find(children.begin(), children.end(), item) - children.begin()) + (section == 1 ? 1 : 0);
+	}
+	else if (section == 2)
+	{
+		index = 0;
 	}
 
 	for (Node* current = parent; current != nullptr; current = current->GetParent())
@@ -374,7 +402,19 @@ bool ScenePanel::CanReparent(ObjectID source, uint64_t target) const
 			return false;
 		}
 	}
-
+	if (child->GetParent() == parent)
+	{
+		auto const& children = parent->GetChildren();
+		int const previous = static_cast<int>(std::find(children.begin(), children.end(), child) - children.begin());
+		if (previous < index)
+		{
+			--index;
+		}
+		if (previous == index)
+		{
+			return false;
+		}
+	}
 	return child->GetSceneTree() == m_context.m_sceneTree && parent->GetSceneTree() == m_context.m_sceneTree;
 }
 
