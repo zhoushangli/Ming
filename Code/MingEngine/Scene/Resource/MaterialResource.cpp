@@ -48,19 +48,21 @@ void MaterialResource::BindMethods()
 
 	ClassDatabase::BindMethod("SetBlendMode", &MaterialResource::SetBlendMode, { "value" });
 	ClassDatabase::BindMethod("GetBlendMode", &MaterialResource::GetBlendMode, {});
-	ADD_PROPERTY(PropertyInfo(Variant::Type::Int, "blend_mode", PropertyInfo::Hint::Enum, "ALPHA,ADDITIVE,OPAQUE", PropertyInfo::UsageFlags::Default), "SetBlendMode", "GetBlendMode");
+	ADD_GROUP("Render State");
+	ADD_PROPERTY(PropertyInfo(Variant::Type::Int, "blend_mode", PropertyInfo::Hint::Enum, "Alpha:0,Additive:1,Opaque:2", PropertyInfo::UsageFlags::Default), "SetBlendMode", "GetBlendMode");
 
 	ClassDatabase::BindMethod("SetDepthMode", &MaterialResource::SetDepthMode, { "value" });
 	ClassDatabase::BindMethod("GetDepthMode", &MaterialResource::GetDepthMode, {});
-	ADD_PROPERTY(PropertyInfo(Variant::Type::Int, "depth_mode", PropertyInfo::Hint::Enum, "DISABLED,READ_ONLY_ALWAYS,READ_ONLY_LESS_EQUAL,READ_WRITE_LESS_EQUAL", PropertyInfo::UsageFlags::Default), "SetDepthMode", "GetDepthMode");
+	ADD_PROPERTY(PropertyInfo(Variant::Type::Int, "depth_mode", PropertyInfo::Hint::Enum, "Disabled:0,Read Only Always:1,Read Only Less or Equal:2,Read Write Less or Equal:3", PropertyInfo::UsageFlags::Default), "SetDepthMode", "GetDepthMode");
 
 	ClassDatabase::BindMethod("SetRasterizerMode", &MaterialResource::SetRasterizerMode, { "value" });
 	ClassDatabase::BindMethod("GetRasterizerMode", &MaterialResource::GetRasterizerMode, {});
-	ADD_PROPERTY(PropertyInfo(Variant::Type::Int, "rasterizer_mode", PropertyInfo::Hint::Enum, "SOLID_CULL_NONE,SOLID_CULL_BACK,WIREFRAME_CULL_NONE,WIREFRAME_CULL_BACK", PropertyInfo::UsageFlags::Default), "SetRasterizerMode", "GetRasterizerMode");
+	ADD_PROPERTY(PropertyInfo(Variant::Type::Int, "rasterizer_mode", PropertyInfo::Hint::Enum, "Solid Cull None:0,Solid Cull Back:1,Wireframe Cull None:2,Wireframe Cull Back:3", PropertyInfo::UsageFlags::Default), "SetRasterizerMode", "GetRasterizerMode");
 
 	ClassDatabase::BindMethod("SetSamplerMode", &MaterialResource::SetSamplerMode, { "value" });
 	ClassDatabase::BindMethod("GetSamplerMode", &MaterialResource::GetSamplerMode, {});
-	ADD_PROPERTY(PropertyInfo(Variant::Type::Int, "sampler_mode", PropertyInfo::Hint::Enum, "POINT_CLAMP,BILINEAR_CLAMP,POINT_WRAP,BILINEAR_WRAP", PropertyInfo::UsageFlags::Default), "SetSamplerMode", "GetSamplerMode");
+	ADD_GROUP("Sampling");
+	ADD_PROPERTY(PropertyInfo(Variant::Type::Int, "sampler_mode", PropertyInfo::Hint::Enum, "Nearest Clamp:0,Linear Clamp:1,Nearest Repeat:2,Linear Repeat:3", PropertyInfo::UsageFlags::Default), "SetSamplerMode", "GetSamplerMode");
 
 }
 

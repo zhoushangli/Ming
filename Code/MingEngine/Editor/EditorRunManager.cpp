@@ -1,4 +1,5 @@
 #include "MingEngine/Editor/EditorRunManager.hpp"
+#include "MingEngine/Editor/EditorChecker.hpp"
 #include "MingEngine/Editor/EditorSceneManager.hpp"
 #include "MingEngine/Editor/EditorCSharpBuildManager.hpp"
 #include "MingEngine/Editor/Gizmos/EditorGizmos.hpp"
@@ -20,6 +21,11 @@ EditorRunManager::EditorRunManager(EditorNode& editor) : m_editor(editor)
 void EditorRunManager::RequestPlay()
 {
 	if (g_app == nullptr || g_app->IsGameRunning() || IsPreparingPlay() || m_editor.IsBuildingCSharpProject() || m_editor.IsCheckingProject())
+	{
+		return;
+	}
+
+	if (!m_editor.GetChecker()->SavePendingChanges())
 	{
 		return;
 	}

@@ -22,16 +22,18 @@ private:
 public:
 	explicit EditorRunManager(EditorNode& editor);
 
+	bool IsPreparingPlay() const;
+
 	void RequestPlay();
 	void Stop();
-	void Update();
 	void Cancel();
+
+	void Update();
 	void BuildFinished(bool success);
-	bool IsPreparingPlay() const;
 	void LaunchPreparedGame(bool scripted);
 
 private:
 	EditorNode& m_editor;
-	int m_playDelayFrames = 0;
-	State m_state = State::Idle;
+	int         m_playDelayFrames = 0;
+	State       m_state = State::Idle;
 };

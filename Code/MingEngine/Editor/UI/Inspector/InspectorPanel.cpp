@@ -14,6 +14,17 @@
 #include "MingEngine/Editor/UI/EditorIcons.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Editor/UI/Popup/EditorPopupUtils.hpp"
+#include "MingEngine/Editor/EditorChecker.hpp"
+#include "MingEngine/Editor/UI/EditorUI.hpp"
+#include "MingEngine/Core/IO/ResourceLoader.hpp"
+#include "MingEngine/Engine/File/FileSystem.hpp"
+#include "MingEngine/Core/IO/ResourceSaver.hpp"
+#include "MingEngine/Scene/GUI/SubViewportContainer.hpp"
+#include "MingEngine/Scene/3D/MeshInstance3D.hpp"
+#include "MingEngine/Scene/3D/Camera3D.hpp"
+#include "MingEngine/Scene/3D/Light3D.hpp"
+#include "MingEngine/Scene/Resource/SurfaceTool.hpp"
+#include <cmath>
 #include <algorithm>
 #include <cctype>
 
@@ -53,7 +64,7 @@ void InspectorPanel::BuildInheritanceChain(std::string const& className)
 	{
 		m_inheritanceChain.push_back(current);
 		ClassInfo const* info = ClassDatabase::GetClassInfo(current);
-		if (current == "Node" || info == nullptr || info->m_parentClassName.empty()
+		if (current == "Node" || current == "Resource" || info == nullptr || info->m_parentClassName.empty()
 			|| info->m_parentClassName == current)
 		{
 			break;
@@ -67,16 +78,16 @@ void InspectorPanel::RefreshValues()
 {
 	if (m_propertyEdit.m_target.IsValid() && !m_propertyEdit.m_applying)
 	{
-		Node* target = ObjectDatabase::GetInstance<Node>(m_propertyEdit.m_target);
-		if (target == nullptr || target->IsQueuedForDeletion()
+		Object* target = GetTarget(m_propertyEdit.m_target);
+		if (target == nullptr
 			|| m_propertyEdit.m_getter->Invoke(target, {}) != m_propertyEdit.m_last)
 		{
 			EndPropertyEdit(false);
 		}
 	}
 
-	Node* node = ObjectDatabase::GetInstance<Node>(m_cachedObjectID);
-	if (node == nullptr || node->IsQueuedForDeletion() || node->GetSceneTree() != m_sceneTree)
+	Object* node = GetTarget(m_cachedObjectID);
+	if (node == nullptr)
 	{
 		return;
 	}
@@ -101,8 +112,8 @@ void InspectorPanel::CommitValue(
 	Variant const&     value,
 	Variant const*     original)
 {
-	Node* node = ObjectDatabase::GetInstance<Node>(id);
-	if (id != m_cachedObjectID || node == nullptr || node->IsQueuedForDeletion() || node->GetSceneTree() != m_sceneTree
+	Object* node = GetTarget(id);
+	if (id != m_cachedObjectID || node == nullptr
 		|| setter == nullptr || getter == nullptr)
 	{
 		return;
@@ -114,8 +125,8 @@ void InspectorPanel::CommitValue(
 		return;
 	}
 
-	node = ObjectDatabase::GetInstance<Node>(id);
-	if (node == nullptr || node->IsQueuedForDeletion())
+	node = GetTarget(id);
+	if (node == nullptr)
 	{
 		return;
 	}
@@ -125,8 +136,8 @@ void InspectorPanel::CommitValue(
 	{
 		setter->Invoke(node, { value });
 	}
-	node = ObjectDatabase::GetInstance<Node>(id);
-	if (node == nullptr || node->IsQueuedForDeletion())
+	node = GetTarget(id);
+	if (node == nullptr)
 	{
 		return;
 	}
@@ -135,26 +146,40 @@ void InspectorPanel::CommitValue(
 	if (actual != oldValue && EditorNode::Get() != nullptr)
 	{
 		auto* editor  = EditorNode::Get();
-		Node* scene   = m_sceneTree->GetScene();
 		auto& history = editor->GetUndoRedo();
-		if (scene != nullptr && history.CreateAction("Edit " + propertyName, scene->GetObjectID()))
+		if (history.CreateAction("Edit " + propertyName, GetUndoHistory()))
 		{
 			history.AddDoProperty(node, propertyName, actual);
 			history.AddUndoProperty(node, propertyName, oldValue);
-			history.AddDoMethod(editor, "MarkSceneDirty");
-			history.AddUndoMethod(editor, "MarkSceneDirty");
+			if (dynamic_cast<Resource*>(node) != nullptr)
+			{
+				history.AddDoMethod(editor, "MarkResourceDirty", { Variant(node) });
+				history.AddUndoMethod(editor, "MarkResourceDirty", { Variant(node) });
+			}
+			else
+			{
+				history.AddDoMethod(editor, "MarkSceneDirty");
+				history.AddUndoMethod(editor, "MarkSceneDirty");
+			}
 			history.CommitAction(false);
 		}
-		editor->MarkSceneDirty();
+		if (dynamic_cast<Resource*>(node) != nullptr)
+		{
+			editor->MarkResourceDirty(node);
+		}
+		else
+		{
+			editor->MarkSceneDirty();
+		}
 	}
 
 	RefreshValues();
 }
 
-void InspectorPanel::RebuildProperties(EditorUIContext& context)
+void InspectorPanel::RebuildProperties(EditorUIContext&)
 {
-	Node* node = ObjectDatabase::GetInstance<Node>(m_cachedObjectID);
-	if (node == nullptr || node->IsQueuedForDeletion() || node->GetSceneTree() != context.m_sceneTree)
+	Object* node = GetTarget(m_cachedObjectID);
+	if (node == nullptr)
 	{
 		return;
 	}
@@ -220,6 +245,7 @@ void InspectorPanel::RebuildProperties(EditorUIContext& context)
 		group.m_title = title;
 
 		std::string sectionName;
+		std::string sectionPrefix;
 		int         sectionIndex = -1;
 		auto properties = ClassDatabase::GetProperties(className);
 		if (className == "Node")
@@ -237,6 +263,7 @@ void InspectorPanel::RebuildProperties(EditorUIContext& context)
 			if (prop.HasUsage(PropertyInfo::UsageFlags::Group))
 			{
 				sectionName  = prop.m_name;
+				sectionPrefix = prop.m_hintData;
 				sectionIndex = -1;
 				continue;
 			}
@@ -260,6 +287,7 @@ void InspectorPanel::RebuildProperties(EditorUIContext& context)
 			{
 				continue;
 			}
+			field->SetDisplayPrefix(sectionPrefix);
 
 			if (prop.m_type == Variant::Type::Color || prop.m_type == Variant::Type::Int
 				|| prop.m_type == Variant::Type::Float || prop.m_type == Variant::Type::Vector2
@@ -336,10 +364,10 @@ void InspectorPanel::RebuildProperties(EditorUIContext& context)
 			}
 
 			field->SetValueReader(
-				[id, getter]() -> Variant
+				[this, id, getter]() -> Variant
 				{
-					Node* target = ObjectDatabase::GetInstance<Node>(id);
-					if (target == nullptr || target->IsQueuedForDeletion() || getter == nullptr)
+					Object* target = GetTarget(id);
+					if (target == nullptr || getter == nullptr)
 					{
 						return {};
 					}
@@ -375,6 +403,19 @@ void InspectorPanel::OnInitialize()
 				static_cast<float>(control->GetThemeConstant("panel_margin", "Editor")));
 		});
 
+	auto* actions = MemNew<HBoxContainer>();
+	actions->AddThemeChangedCallback([actions]()
+	{
+		actions->SetSeparation(static_cast<float>(actions->GetThemeConstant("spacing", "Editor")));
+	});
+	auto* actionsMargin = MemNew<MarginContainer>();
+	actionsMargin->AddThemeChangedCallback([actionsMargin]()
+	{
+		float const margin = static_cast<float>(actionsMargin->GetThemeConstant("panel_margin", "Editor"));
+		actionsMargin->SetMargins(margin, margin, margin, margin);
+	});
+	actionsMargin->AddNode(actions);
+	m_resourceActions = actionsMargin;
 	auto* tools = MemNew<HBoxContainer>();
 	tools->AddThemeChangedCallback(
 		[control = tools]()
@@ -394,11 +435,23 @@ void InspectorPanel::OnInitialize()
 			FilterProperties();
 		});
 	tools->AddNode(m_filter);
+	m_resourceBack = EditorPopupUtils::AddButton(actions, "Back", [this]() { GoBack(); });
+	EditorPopupUtils::AddButton(actions, "Save", [this]() { SaveResource(); });
+	m_resourceSaveAs = EditorPopupUtils::AddButton(actions, "Save As", [this]() { SaveResourceAs(); });
 
 	m_objectBar = MemNew<PanelContainer>();
 	m_objectBar->SetThemeTypeVariation("EditorObjectBar");
 	layout->AddNode(m_objectBar);
+	layout->AddNode(actionsMargin);
 	layout->AddNode(toolsMargin);
+	m_previewHost = MemNew<MarginContainer>();
+	m_previewHost->AddThemeChangedCallback([host = static_cast<MarginContainer*>(m_previewHost)]()
+	{
+		float const margin = static_cast<float>(host->GetThemeConstant("panel_margin", "Editor"));
+		host->SetMargins(margin, 0.f, margin, margin);
+	});
+	m_previewHost->SetVisible(false);
+	layout->AddNode(m_previewHost);
 	auto* objectRow = MemNew<HBoxContainer>();
 	objectRow->AddThemeChangedCallback(
 		[control = objectRow]()
@@ -511,9 +564,18 @@ void InspectorPanel::FilterProperties()
 void InspectorPanel::OnRender(EditorUIContext& context)
 {
 	m_sceneTree          = context.m_sceneTree;
-	ObjectID const id    = context.m_selection != nullptr ? context.m_selection->GetSelected() : ObjectID::Invalid;
-	Node*          node  = ObjectDatabase::GetInstance<Node>(id);
-	bool const     valid = node != nullptr && !node->IsQueuedForDeletion() && node->GetSceneTree() == m_sceneTree;
+	ObjectID const selected = context.m_selection != nullptr ? context.m_selection->GetSelected() : ObjectID::Invalid;
+	if (selected != m_sceneSelection)
+	{
+		FinishEditing();
+		m_resource = {};
+		m_resourceHistory.clear();
+		m_sceneSelection = selected;
+	}
+
+	ObjectID const id = m_resource.IsValid() ? m_resource->GetObjectID() : selected;
+	Object* node = GetTarget(id);
+	bool const valid = node != nullptr;
 	if (!valid || id != m_cachedObjectID)
 	{
 		ClearProperties();
@@ -527,9 +589,18 @@ void InspectorPanel::OnRender(EditorUIContext& context)
 
 	m_empty->SetVisible(!valid);
 	m_objectBar->SetVisible(valid);
+	m_resourceActions->SetVisible(m_resource.IsValid());
+	m_resourceBack->SetDisabled(m_resourceHistory.empty());
+	m_resourceSaveAs->SetDisabled(dynamic_cast<MaterialResource*>(m_resource.Get()) == nullptr);
 	if (valid)
 	{
-		m_objectName->SetText(node->GetName());
+		String label = m_resource.IsValid() ? m_resource->GetName() : static_cast<Node*>(node)->GetName();
+		if (m_resource.IsValid() && EditorNode::Get()->GetChecker()->IsResourceDirty(m_resource->GetVirtualPath()))
+		{
+			label = label + String(" *");
+		}
+
+		m_objectName->SetText(label);
 		m_objectIcon->SetTexture(GetThemeIcon(node->GetClassName(), "EditorIcons"));
 		m_objectIcon->SetTint(EditorIcons::GetIconColor(node->GetClassName(), this));
 	}
@@ -554,15 +625,17 @@ void InspectorPanel::OnRender(EditorUIContext& context)
 		group.m_bar->UpdateSize(Vector2(width, static_cast<float>(GetThemeConstant("section_height", "Editor"))));
 	}
 
+	BuildMaterialPreview();
 	RefreshValues();
 	FilterProperties();
 }
 
 void InspectorPanel::FinishInput(EditorUIContext& context)
 {
-	ObjectID const selected = context.m_selection != nullptr ? context.m_selection->GetSelected() : ObjectID::Invalid;
-	Node*          node     = ObjectDatabase::GetInstance<Node>(m_cachedObjectID);
-	if (selected != m_cachedObjectID || node == nullptr || node->IsQueuedForDeletion())
+	ObjectID const selected = m_resource.IsValid() ? m_resource->GetObjectID()
+		: context.m_selection != nullptr ? context.m_selection->GetSelected() : ObjectID::Invalid;
+	Object* node = GetTarget(m_cachedObjectID);
+	if (selected != m_cachedObjectID || node == nullptr)
 	{
 		ClearProperties();
 		m_cachedObjectID = ObjectID::Invalid;
@@ -602,9 +675,9 @@ void InspectorPanel::BeginPropertyEdit(
 	std::string const& name, ObjectID id, MethodBind const* setter, MethodBind const* getter, InspectorProperty* field)
 {
 	EndPropertyEdit(false);
-	Node* target = ObjectDatabase::GetInstance<Node>(id);
+	Object* target = GetTarget(id);
 	Node* scene  = m_sceneTree != nullptr ? m_sceneTree->GetScene() : nullptr;
-	if (id != m_cachedObjectID || target == nullptr || target->IsQueuedForDeletion() || scene == nullptr
+	if (id != m_cachedObjectID || target == nullptr || (scene == nullptr && !m_resource.IsValid())
 		|| setter == nullptr || getter == nullptr)
 	{
 		field->EndEditing();
@@ -612,7 +685,7 @@ void InspectorPanel::BeginPropertyEdit(
 	}
 
 	m_propertyEdit.m_target   = id;
-	m_propertyEdit.m_scene    = scene->GetObjectID();
+	m_propertyEdit.m_scene    = GetUndoHistory();
 	m_propertyEdit.m_name     = name;
 	m_propertyEdit.m_setter   = setter;
 	m_propertyEdit.m_getter   = getter;
@@ -623,9 +696,9 @@ void InspectorPanel::BeginPropertyEdit(
 
 void InspectorPanel::PreviewPropertyValue(Variant const& value)
 {
-	Node* target = ObjectDatabase::GetInstance<Node>(m_propertyEdit.m_target);
-	if (target == nullptr || target->IsQueuedForDeletion() || value.GetType() != m_propertyEdit.m_original.GetType()
-		|| target->GetSceneTree() != m_sceneTree || m_propertyEdit.m_target != m_cachedObjectID
+	Object* target = GetTarget(m_propertyEdit.m_target);
+	if (target == nullptr || value.GetType() != m_propertyEdit.m_original.GetType()
+		|| m_propertyEdit.m_target != m_cachedObjectID
 		|| m_propertyEdit.m_getter->Invoke(target, {}) != m_propertyEdit.m_last)
 	{
 		EndPropertyEdit(false);
@@ -634,8 +707,8 @@ void InspectorPanel::PreviewPropertyValue(Variant const& value)
 
 	m_propertyEdit.m_applying = true;
 	m_propertyEdit.m_setter->Invoke(target, { value });
-	target = ObjectDatabase::GetInstance<Node>(m_propertyEdit.m_target);
-	if (target != nullptr && !target->IsQueuedForDeletion())
+	target = GetTarget(m_propertyEdit.m_target);
+	if (target != nullptr)
 	{
 		m_propertyEdit.m_last = m_propertyEdit.m_getter->Invoke(target, {});
 	}
@@ -653,14 +726,13 @@ void InspectorPanel::EndPropertyEdit(bool accept)
 
 	PropertyEdit const edit = m_propertyEdit;
 	m_propertyEdit          = {};
-	Node* target         = ObjectDatabase::GetInstance<Node>(edit.m_target);
-	if (target != nullptr && !target->IsQueuedForDeletion() && target->GetSceneTree() == m_sceneTree)
+	Object* target       = GetTarget(edit.m_target);
+	if (target != nullptr)
 	{
 		Variant const actual = edit.m_getter->Invoke(target, {});
 		if (actual == edit.m_last)
 		{
-			Node* scene = m_sceneTree->GetScene();
-			if (accept && scene != nullptr && scene->GetObjectID() == edit.m_scene)
+			if (accept && GetUndoHistory() == edit.m_scene)
 			{
 				CommitValue(edit.m_name, edit.m_target, edit.m_setter, edit.m_getter, actual, &edit.m_original);
 			}
@@ -672,4 +744,186 @@ void InspectorPanel::EndPropertyEdit(bool accept)
 	}
 
 	edit.m_field->EndEditing();
+}
+
+Object* InspectorPanel::GetTarget(ObjectID id) const
+{
+	Object* object = ObjectDatabase::GetInstance<Object>(id);
+	if (auto* node = dynamic_cast<Node*>(object))
+	{
+		return !node->IsQueuedForDeletion() && node->GetSceneTree() == m_sceneTree ? node : nullptr;
+	}
+
+	return dynamic_cast<Resource*>(object);
+}
+
+ObjectID InspectorPanel::GetUndoHistory() const
+{
+	if (m_resource.IsValid())
+	{
+		return m_resource->GetObjectID();
+	}
+
+	Node* scene = m_sceneTree != nullptr ? m_sceneTree->GetScene() : nullptr;
+	return scene != nullptr ? scene->GetObjectID() : ObjectID::Invalid;
+}
+
+void InspectorPanel::EditResource(Ref<Resource> const& resource)
+{
+	if (!resource.IsValid() || resource == m_resource)
+	{
+		return;
+	}
+
+	if (!resource->GetVirtualPath().HasExtension(".tres"))
+	{
+		VirtualPath const& path = resource->GetSourceFilePath().IsValid() ? resource->GetSourceFilePath() : resource->GetVirtualPath();
+		if (path.IsValid())
+		{
+			auto& files = EditorNode::Get()->m_editorUI->GetPanel<FileSystemPanel>();
+			files.NavigateTo(path.GetParent());
+			files.SelectPath(path);
+		}
+
+		return;
+	}
+
+	FinishEditing();
+	ClearProperties();
+	m_resourceHistory.push_back(m_resource);
+	m_resource = resource;
+	m_sceneSelection = EditorNode::Get()->GetSelection().GetSelected();
+	m_cachedObjectID = ObjectID::Invalid;
+}
+
+void InspectorPanel::GoBack()
+{
+	FinishEditing();
+	ClearProperties();
+	m_resource = m_resourceHistory.empty() ? Ref<Resource>() : m_resourceHistory.back();
+	if (!m_resourceHistory.empty())
+	{
+		m_resourceHistory.pop_back();
+	}
+
+	m_cachedObjectID = ObjectID::Invalid;
+}
+
+bool InspectorPanel::SaveResource()
+{
+	FinishEditing();
+	if (!m_resource.IsValid())
+	{
+		return EditorNode::Get()->SaveScene();
+	}
+
+	bool const saved = EditorNode::Get()->GetChecker()->SaveResource(m_resource);
+	if (!saved)
+	{
+		EditorNode::Get()->m_editorUI->Warning("Save Resource Failed", m_resource->GetVirtualPath().GetString());
+	}
+
+	return saved;
+}
+
+void InspectorPanel::SaveResourceAs()
+{
+	FinishEditing();
+	Ref<MaterialResource> material(m_resource);
+	if (material.IsValid())
+	{
+		EditorNode::Get()->m_editorUI->SaveMaterialAs(material, [this](VirtualPath const& path)
+		{
+			EditResource(ResourceLoader::Load(path));
+		});
+	}
+	else if (!m_resource.IsValid())
+	{
+		EditorNode::Get()->RequestSaveSceneAs();
+	}
+}
+
+void InspectorPanel::BuildMaterialPreview()
+{
+	Ref<MaterialResource> material(m_resource);
+	m_previewHost->SetVisible(material.IsValid());
+	if (!material.IsValid())
+	{
+		if (m_preview != nullptr)
+		{
+			m_preview->QueueFree();
+			m_preview = nullptr;
+			m_previewMesh = nullptr;
+		}
+
+		return;
+	}
+
+	if (m_preview == nullptr)
+	{
+		m_preview = MemNew<SubViewportContainer>();
+		m_preview->SetName("MaterialPreview");
+		m_preview->SetCustomMinimumSize(Vector2(0.f, 180.f));
+		m_preview->SetTextureFilter(TextureFilter::Linear);
+		m_previewHost->AddNode(m_preview);
+	}
+
+	if (m_previewMesh == nullptr)
+	{
+		SubViewport* viewport = m_preview->GetSubViewport();
+		auto* camera = MemNew<Camera3D>();
+		camera->SetLocalPosition(Vector3(3.f, 0.f, 0.f));
+		camera->SetLocalOrientation(EulerAngles(180.f, 0.f, 0.f));
+		viewport->AddNode(camera);
+		camera->SetCurrent();
+		auto* light = MemNew<DirectionalLight3D>();
+		light->SetLocalOrientation(EulerAngles(150.f, 35.f, 0.f));
+		viewport->AddNode(light);
+
+		Ref<SurfaceTool> surface = CreateRef<SurfaceTool>();
+		constexpr int rings = 16;
+		constexpr int sectors = 24;
+		constexpr float pi = 3.14159265358979323846f;
+		auto vertex = [&](int ring, int sector)
+		{
+			float const v = static_cast<float>(ring) / rings;
+			float const u = static_cast<float>(sector) / sectors;
+			float const latitude = v * pi;
+			float const longitude = u * 2.f * pi;
+			Vector3 position(std::sin(latitude) * std::cos(longitude), std::sin(latitude) * std::sin(longitude), std::cos(latitude));
+			surface->SetNormal(position);
+			surface->SetUV(Vector2(u, v));
+			surface->AddVertex(position);
+		};
+		for (int ring = 0; ring < rings; ++ring)
+		{
+			for (int sector = 0; sector < sectors; ++sector)
+			{
+				vertex(ring, sector);
+				vertex(ring + 1, sector);
+				vertex(ring + 1, sector + 1);
+				vertex(ring, sector);
+				vertex(ring + 1, sector + 1);
+				vertex(ring, sector + 1);
+			}
+		}
+
+		surface->Index();
+		surface->GenerateTangents();
+		m_previewMesh = MemNew<MeshInstance3D>();
+		m_previewMesh->SetMeshResource(surface->CreateMeshResource());
+		viewport->AddNode(m_previewMesh);
+	}
+
+	m_previewMesh->SetMaterialOverride(material);
+}
+
+void InspectorPanel::OnNotification(int notification)
+{
+	switch (notification)
+	{
+	case Notification_ExitTree:
+		ClearProperties();
+		break;
+	}
 }

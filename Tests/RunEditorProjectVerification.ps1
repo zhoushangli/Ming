@@ -1,5 +1,6 @@
 param(
-    [switch]$SkipBuild
+    [switch]$SkipBuild,
+    [switch]$ResourcesOnly
 )
 
 $ErrorActionPreference = 'Stop'
@@ -45,11 +46,16 @@ if ($LASTEXITCODE -ne 0) { throw 'Verification compile or link failed.' }
 Push-Location (Join-Path $workspace 'Run')
 try
 {
-    & $executable
+    $verificationArguments = @()
+    if ($ResourcesOnly)
+    {
+        $verificationArguments += '--verify-resources'
+    }
+    & $executable @verificationArguments
 
     if ($LASTEXITCODE -ne 0)
     {
-        throw 'Editor project verification failed.'
+        throw ('Editor project verification failed with exit code ' + $LASTEXITCODE)
     }
 }
 finally

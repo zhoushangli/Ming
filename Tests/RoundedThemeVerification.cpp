@@ -723,7 +723,12 @@ void VerifyEditorFrames(float scale)
 		project << R"({"type":"ProjectSettings","version":1,"start_scene_path":"res://main.tscn"})";
 		std::ofstream scene(directory / "main.tscn");
 		scene
-			<< R"({"nodes":[{"name":"Main","type":"Node","parent":""},{"name":"SampleButton","type":"Button","parent":"."}]})";
+			<< R"([ming_scene format=1]
+
+[node name="Main" type="Node" parent=""]
+
+[node name="SampleButton" type="Button" parent="."]
+)";
 		std::ofstream script(directory / "Session.cs");
 		script << "public class Session : Ming.Node {}";
 	}

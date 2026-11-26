@@ -33,13 +33,15 @@ private:
 public:
 	explicit EditorSceneManager(EditorNode& editor);
 
-	void Update();
-	bool HasScene() const;
-	bool IsSceneDirty() const;
+	bool        HasScene() const;
+	bool        IsSceneDirty() const;
 	std::string GetCurrentSceneName() const;
+	bool        ContainsCurrentScene(VirtualPath const& path) const;
 
+	void Update();
 	void MarkSceneDirty();
 	void NewRootCreated();
+
 	void RequestNewScene();
 	void RequestCloseScene(std::function<void()> completed = {});
 	void RequestOpenScene();
@@ -55,7 +57,7 @@ public:
 
 	void ResolvePendingSceneAction(SceneActionChoice choice);
 	void RequestQuit();
-	bool ContainsCurrentScene(VirtualPath const& path) const;
+
 	void FilesMoved(VirtualPath const& before, VirtualPath const& after);
 	bool FilesRemoved(VirtualPath const& path);
 
@@ -63,6 +65,7 @@ private:
 	bool CreateScene(VirtualPath const& virtualPath, std::string const& rootName);
 	SaveResult SaveCurrentScene();
 	void ClearSceneState();
+	void ClearSceneHistory();
 
 	void RequestSceneAction(PendingSceneAction action, std::function<void()> completed = {});
 	void CancelPendingSceneAction();
@@ -71,15 +74,15 @@ private:
 
 private:
 	EditorNode& m_editor;
-	EditorData m_editorData;
+	EditorData  m_editorData;
 
 	PendingSceneAction m_pendingSceneAction = PendingSceneAction::None;
-	SaveResult m_lastSaveResult = SaveResult::Failed;
-	VirtualPath m_pendingScenePath;
-	std::string m_pendingSceneRootName;
-	bool m_openUnsavedScenePopup = false;
-	bool m_waitingForSave = false;
-	bool m_resumePending = false;
-	bool m_quitRequested = false;
+	SaveResult         m_lastSaveResult = SaveResult::Failed;
+	VirtualPath        m_pendingScenePath;
+	std::string        m_pendingSceneRootName;
+	bool               m_openUnsavedScenePopup = false;
+	bool               m_waitingForSave = false;
+	bool               m_resumePending = false;
+	bool               m_quitRequested = false;
 	std::function<void()> m_afterClose;
 };

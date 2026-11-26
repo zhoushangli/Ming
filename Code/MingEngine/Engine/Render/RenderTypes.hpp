@@ -24,6 +24,20 @@ enum class SamplerMode
 	COUNT
 };
 
+enum class TextureFilter
+{
+	Inherit,
+	Nearest,
+	Linear
+};
+
+enum class TextureRepeat
+{
+	Inherit,
+	Disabled,
+	Enabled
+};
+
 enum class RasterizerMode
 {
 	SOLID_CULL_NONE,

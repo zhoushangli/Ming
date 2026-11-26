@@ -9,11 +9,29 @@
 #include "MingEngine/Editor/UI/EditorUI.hpp"
 #include "MingEngine/Core/IO/ResourceImporter.hpp"
 #include "MingEngine/Core/IO/ResourceLoader.hpp"
+#include "MingEngine/Core/IO/ResourceSaver.hpp"
+#include "MingEngine/Engine/Render/GPUTexture.hpp"
+#include <d3d11.h>
+#undef GetClassName
+#include "MingEngine/Core/IO/ResourceFormatText.hpp"
+#include "MingEngine/Editor/EditorChecker.hpp"
+#include "MingEngine/Scene/3D/MeshInstance3D.hpp"
+#include "MingEngine/Scene/Resource/SurfaceTool.hpp"
+#include "MingEngine/Scene/Core/PackedScene.hpp"
+
 #include "MingEngine/Core/IO/Image.hpp"
 #include "MingEngine/Scene/Core/SceneTree.hpp"
 #include "MingEngine/Scene/Core/Viewport.hpp"
 #include "MingEngine/Scene/GUI/Button.hpp"
 #include "MingEngine/Scene/Resource/TextureResource.hpp"
+#include "MingEngine/Scene/Resource/ShaderMaterial.hpp"
+#include "MingEngine/Scene/GUI/TextureRect.hpp"
+#include "MingEngine/Scene/GUI/SubViewportContainer.hpp"
+#include "MingEngine/Scene/GUI/OptionButton.hpp"
+#include "MingEngine/Scene/GUI/PanelContainer.hpp"
+#include "MingEngine/Scene/GUI/Label.hpp"
+#include "MingEngine/Editor/EditorThemeManager.hpp"
+#include "MingEngine/Engine/File/FileSystem.hpp"
 #include "MingEngine/Core/OS/WorkerThreadPool.hpp"
 #include "ThirdParty/GLFW/glfw3.h"
 #include <chrono>
@@ -44,13 +62,15 @@ void Write(std::filesystem::path const& path, std::string const& text)
 	Check(output.good(), "write fixture");
 }
 
-void Image(std::filesystem::path const& path, uint8_t red)
+void Image(std::filesystem::path const& path, uint8_t red, bool white = false)
 {
 	uint8_t bytes[21] = {};
 	bytes[2] = 2;
 	bytes[12] = 1;
 	bytes[14] = 1;
 	bytes[16] = 24;
+	bytes[18] = white ? 255 : 0;
+	bytes[19] = white ? 255 : 0;
 	bytes[20] = red;
 	std::ofstream output(path, std::ios::binary);
 	output.write(reinterpret_cast<char const*>(bytes), sizeof(bytes));
@@ -108,12 +128,642 @@ uint64_t Key(Node* node)
 	return ((static_cast<uint64_t>(id.GetUID()) << 32) | id.GetIndex()) + 1;
 }
 
-void Verify()
+
+LineEdit* FindTextField(Node* node)
+{
+	if (auto* field = dynamic_cast<LineEdit*>(node))
+	{
+		return field;
+	}
+
+	for (Node* child : node->GetChildren())
+	{
+		if (auto* field = FindTextField(child))
+		{
+			return field;
+		}
+	}
+
+	return nullptr;
+}
+
+Node* FindNamed(Node* node, String const& name)
+{
+	if (node->GetName() == name)
+	{
+		return node;
+	}
+
+	for (Node* child : node->GetChildren())
+	{
+		if (auto* found = FindNamed(child, name))
+		{
+			return found;
+		}
+	}
+
+	return nullptr;
+}
+
+void CaptureMaterialFrame(Engine& engine, std::string const& path)
+{
+	auto* viewport = static_cast<Viewport*>(engine.m_sceneSystem->GetSceneTree()->GetRoot());
+	auto* texture  = engine.m_renderServer->ViewportGetTexture(viewport->GetViewportRID());
+	Check(texture != nullptr, "rendered viewport texture exists");
+	ID3D11Resource* resource = nullptr;
+	texture->GetShaderResourceView()->GetResource(&resource);
+	ID3D11Texture2D* source = nullptr;
+	Check(
+		SUCCEEDED(resource->QueryInterface(__uuidof(ID3D11Texture2D), reinterpret_cast<void**>(&source))),
+		"readback texture");
+	resource->Release();
+	ID3D11Device* device = nullptr;
+	source->GetDevice(&device);
+	ID3D11DeviceContext* context = nullptr;
+	device->GetImmediateContext(&context);
+	D3D11_TEXTURE2D_DESC description;
+	source->GetDesc(&description);
+	description.Usage          = D3D11_USAGE_STAGING;
+	description.BindFlags      = 0;
+	description.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
+	description.MiscFlags      = 0;
+	ID3D11Texture2D* staging   = nullptr;
+	Check(SUCCEEDED(device->CreateTexture2D(&description, nullptr, &staging)), "create readback staging texture");
+	context->CopyResource(staging, source);
+	D3D11_MAPPED_SUBRESOURCE mapped;
+	Check(SUCCEEDED(context->Map(staging, 0, D3D11_MAP_READ, 0, &mapped)), "map rendered pixels");
+
+	std::ofstream output(path, std::ios::binary);
+	output << "P6\n" << description.Width << ' ' << description.Height << "\n255\n";
+	for (unsigned int y = 0; y < description.Height; ++y)
+	{
+		auto const* row = static_cast<unsigned char const*>(mapped.pData) + y * mapped.RowPitch;
+		for (unsigned int x = 0; x < description.Width; ++x)
+		{
+			output.write(reinterpret_cast<char const*>(row + x * 4), 3);
+		}
+	}
+	Check(output.good(), "write GPU frame evidence");
+	context->Unmap(staging, 0);
+	staging->Release();
+	context->Release();
+	device->Release();
+	source->Release();
+}
+
+Color ReadCanvasPixel(App& app, Viewport* viewport, int x, int y)
+{
+	app.RunFrame();
+	GPUTexture* texture = app.GetEngine()->m_renderServer->ViewportGetTexture(viewport->GetViewportRID());
+	Check(texture != nullptr, "sampling viewport has a rendered texture");
+	ID3D11Resource* resource = nullptr;
+	texture->GetShaderResourceView()->GetResource(&resource);
+	ID3D11Texture2D* source = nullptr;
+	Check(SUCCEEDED(resource->QueryInterface(__uuidof(ID3D11Texture2D), reinterpret_cast<void**>(&source))), "sampling texture readback");
+	resource->Release();
+	ID3D11Device* device = nullptr;
+	source->GetDevice(&device);
+	ID3D11DeviceContext* context = nullptr;
+	device->GetImmediateContext(&context);
+	D3D11_TEXTURE2D_DESC description;
+	source->GetDesc(&description);
+	description.Usage = D3D11_USAGE_STAGING;
+	description.BindFlags = 0;
+	description.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
+	description.MiscFlags = 0;
+	ID3D11Texture2D* staging = nullptr;
+	Check(SUCCEEDED(device->CreateTexture2D(&description, nullptr, &staging)), "sampling staging texture");
+	context->CopyResource(staging, source);
+	D3D11_MAPPED_SUBRESOURCE mapped;
+	Check(SUCCEEDED(context->Map(staging, 0, D3D11_MAP_READ, 0, &mapped)), "sampling pixels are readable");
+	auto const* pixel = static_cast<unsigned char const*>(mapped.pData) + y * mapped.RowPitch + x * 4;
+	Color result(pixel[0], pixel[1], pixel[2], pixel[3]);
+	context->Unmap(staging, 0);
+	staging->Release();
+	context->Release();
+	device->Release();
+	source->Release();
+	return result;
+}
+
+void VerifyOptionButton(App& app, EditorNode* editor, std::filesystem::path const& evidence)
+{
+	auto* viewport = static_cast<Viewport*>(editor->GetSceneTree()->GetRoot());
+	InputEvent event;
+	event.m_type = InputEventType::WindowFocus;
+	event.m_focused = true;
+	viewport->ProcessInputEvent(event);
+	auto* host = MemNew<Control>();
+	host->SetMouseFilter(Control::MouseFilter::Ignore);
+	viewport->AddNode(host);
+	auto* option = MemNew<OptionButton>();
+	option->SetClipText(true);
+	option->SetOptions("Inherit:0,Nearest:7,Linear:12");
+	option->SetValueNoSignal(7);
+	option->SetPosition(Vector2(400.f, 180.f));
+	option->UpdateSize(Vector2(220.f, 32.f));
+	host->AddNode(option);
+	int changes = 0;
+	option->SetValueChangedCallback([&changes](int) { ++changes; });
+	for (float scale : { 1.f, 1.25f })
+	{
+		option->SetTheme(EditorThemeManager::CreateScaledTheme(EditorThemeManager::CreateTheme(), scale));
+		option->OpenOptions();
+		auto* popup = dynamic_cast<PopupPanel*>(viewport->GetGuiPopup());
+		Check(popup != nullptr, "enum opens a native popup");
+		auto* nearest = FindButton(popup, "Nearest");
+		auto* linear = FindButton(popup, "Linear");
+		Check(nearest != nullptr && linear != nullptr && nearest->IsPressed(), "enum highlights the current item on open");
+		auto* mark = dynamic_cast<PanelContainer*>(FindNamed(nearest, "OptionSelection"));
+		Check(mark != nullptr, "enum selection has a separate radio marker");
+		auto selectedStyle = mark->GetThemeStyleBox("panel");
+		event.m_type = InputEventType::Key;
+		event.m_pressed = true;
+		event.m_keyCode = GLFW_KEY_DOWN;
+		viewport->ProcessInputEvent(event);
+		Check(option->GetValue() == 7 && changes == 0 && linear->IsPressed()
+			&& mark->GetThemeStyleBox("panel") == selectedStyle, "keyboard navigation moves highlight without changing the checked value");
+		event.m_keyCode = GLFW_KEY_ESCAPE;
+		viewport->ProcessInputEvent(event);
+		Check(viewport->GetGuiPopup() == nullptr && option->HasFocus() && option->GetValue() == 7,
+			"escape cancels enum navigation and restores focus");
+	}
+	option->OpenOptions();
+	auto* popup = dynamic_cast<PopupPanel*>(viewport->GetGuiPopup());
+	auto* linear = FindButton(popup, "Linear");
+	event.m_type = InputEventType::MouseMotion;
+	event.m_position = linear->GetGlobalPosition() + linear->GetSize() * 0.5f;
+	viewport->ProcessInputEvent(event);
+	Check(linear->IsPressed() && option->GetValue() == 7, "mouse hover updates enum highlight without committing");
+	app.RunFrame();
+	CaptureMaterialFrame(*app.GetEngine(), (evidence / "enum-popup.ppm").string());
+	event.m_type = InputEventType::Key;
+	event.m_keyCode = GLFW_KEY_ENTER;
+	viewport->ProcessInputEvent(event);
+	Check(option->GetValue() == 12 && changes == 1 && viewport->GetGuiPopup() == nullptr,
+		"enter commits the hovered sparse enum value exactly once");
+	option->OpenOptions();
+	Choose(viewport, "Inherit");
+	Check(option->GetValue() == 0 && changes == 2, "mouse click commits an enum item");
+	std::string many;
+	for (int i = 0; i < 24; ++i)
+	{
+		if (!many.empty())
+		{
+			many += ',';
+		}
+		many += "Long texture filter option " + std::to_string(i) + ':' + std::to_string(i);
+	}
+	option->SetOptions(many);
+	Vector2 const bounds(viewport->GetOutputResolution());
+	option->SetPosition(bounds - Vector2(120.f, 40.f));
+	option->OpenOptions();
+	popup = dynamic_cast<PopupPanel*>(viewport->GetGuiPopup());
+	auto* panel = dynamic_cast<Control*>(FindNamed(popup, "OptionPopup"));
+	Check(panel != nullptr && panel->GetSize().x >= option->GetSize().x
+		&& panel->GetGlobalPosition().x + panel->GetSize().x <= bounds.x
+		&& panel->GetGlobalPosition().y + panel->GetSize().y <= bounds.y, "enum popup fits the screen and expands to its option labels");
+	event.m_type = InputEventType::Key;
+	event.m_keyCode = GLFW_KEY_UP;
+	viewport->ProcessInputEvent(event);
+	event.m_keyCode = GLFW_KEY_ENTER;
+	viewport->ProcessInputEvent(event);
+	Check(option->GetValue() == 23, "long enum menus scroll to keyboard-selected items");
+	host->QueueFree();
+	app.RunFrame();
+
+	auto* canvas = MemNew<Control>();
+	editor->GetSceneTree()->GetScene()->AddNode(canvas);
+	editor->GetSelection().SetSelected(canvas->GetObjectID());
+	app.RunFrame();
+	app.RunFrame();
+	auto& inspector = editor->m_editorUI->GetPanel<InspectorPanel>();
+	for (auto const& name : { "texture_filter", "texture_repeat" })
+	{
+		Node* field = FindNamed(inspector.GetContentControl(), name);
+		Check(field != nullptr, "canvas texture properties retain their serialized names");
+		Node* labelArea = FindNamed(field, "PropertyLabelArea");
+		auto* title = dynamic_cast<Label*>(labelArea->GetChildren().front());
+		Check(title != nullptr && title->GetText() == String(std::string(name) == "texture_filter" ? "Filter" : "Repeat"),
+			"texture group displays short property labels");
+	}
+	Node* filterField = FindNamed(inspector.GetContentControl(), "texture_filter");
+	auto* filter = dynamic_cast<OptionButton*>(FindButton(filterField, "Inherit"));
+	Check(filter != nullptr, "texture filter uses the shared enum control");
+	filter->OpenOptions();
+	app.RunFrame();
+	CaptureMaterialFrame(*app.GetEngine(), (evidence / "enum-inspector.ppm").string());
+	filter->CloseOptions();
+	canvas->QueueFree();
+	app.RunFrame();
+}
+
+void VerifyFileRemovals(App& app, EditorNode* editor, std::filesystem::path const& project)
+{
+	FileSystem* files = app.GetEngine()->m_fileSystem;
+	auto hasFile = [files](VirtualPath const& path)
+	{
+		std::function<bool(FileEntry const*)> find = [&](FileEntry const* entry)
+		{
+			if (entry->GetVirtualPath() == path)
+			{
+				return true;
+			}
+			for (auto const& child : entry->GetChildren())
+			{
+				if (find(child.get()))
+				{
+					return true;
+				}
+			}
+			return false;
+		};
+		return find(files->GetResourceRootEntry());
+	};
+	Write(project / "ScanRename.tres", "[ming_resource type=\"ShaderMaterial\" format=1]\n[resource]\n");
+	editor->CheckProject();
+	Wait(app, [&]() { return hasFile(VirtualPath("res://ScanRename.tres")); }, "scanner discovers removal fixture");
+	auto& output = editor->m_editorUI->GetPanel<OutputPanel>();
+	size_t const messages = output.GetMessageCount();
+	VirtualPath renamed;
+	std::string error;
+	Check(files->Rename(VirtualPath("res://ScanRename.tres"), "ScanRenamed.tres", renamed, error), "rename fixture resource");
+	editor->CheckProject();
+	Wait(app, [&]() { return hasFile(renamed) && !hasFile(VirtualPath("res://ScanRename.tres")); }, "scanner accepts renamed resource");
+	Check(output.GetMessageCount() == messages, "normal rename does not log a missing project file");
+	std::filesystem::create_directories(project / "Moved");
+	VirtualPath moved;
+	Check(files->Move(renamed, VirtualPath("res://Moved"), moved, error), "move fixture resource");
+	editor->CheckProject();
+	Wait(app, [&]() { return hasFile(moved) && !hasFile(renamed); }, "scanner accepts moved resource");
+	Check(output.GetMessageCount() == messages, "normal move does not log a missing project file");
+	Check(files->Remove(moved, error), "delete fixture resource");
+	editor->CheckProject();
+	Wait(app, [&]() { return !hasFile(moved); }, "scanner removes deleted resource");
+	Check(output.GetMessageCount() == messages, "normal deletion does not log a missing project file");
+}
+
+void VerifyCanvasSampling(App& app)
+{
+	auto image = CreateRef<::Image>();
+	Check(image->LoadFromRGBA8(IntVec2(2, 1), { 255, 0, 0, 255, 0, 0, 255, 255 }), "sampling fixture image");
+	auto texture = CreateRef<TextureResource>();
+	texture->m_image = image;
+	Check(texture->InitGPUResources(), "sampling fixture texture upload");
+	auto* viewport = MemNew<SubViewport>();
+	viewport->UpdateResolution(IntVec2(64, 16));
+	app.GetEngine()->m_sceneSystem->GetSceneTree()->GetRoot()->AddNode(viewport);
+	auto* first = MemNew<Control>();
+	first->SetTextureFilter(TextureFilter::Nearest);
+	viewport->AddNode(first);
+	auto* second = MemNew<Control>();
+	second->SetPosition(Vector2(32.f, 0.f));
+	viewport->AddNode(second);
+	auto* nearest = MemNew<TextureRect>();
+	nearest->SetTexture(texture);
+	nearest->SetExpandMode(TextureRect::ExpandMode::IgnoreSize);
+	nearest->UpdateSize(Vector2(32.f, 16.f));
+	first->AddNode(nearest);
+	auto* linear = MemNew<TextureRect>();
+	linear->SetTexture(texture);
+	linear->SetExpandMode(TextureRect::ExpandMode::IgnoreSize);
+	linear->UpdateSize(Vector2(32.f, 16.f));
+	second->AddNode(linear);
+	Color pixel = ReadCanvasPixel(app, viewport, 12, 8);
+	Check(pixel.r > 240 && pixel.b < 10, "nearest sampling follows the parent CanvasItem");
+	pixel = ReadCanvasPixel(app, viewport, 44, 8);
+	Check(pixel.r > 80 && pixel.b > 20, "the same texture uses root-default linear sampling on another CanvasItem");
+	first->SetTextureFilter(TextureFilter::Linear);
+	pixel = ReadCanvasPixel(app, viewport, 12, 8);
+	Check(pixel.r > 80 && pixel.b > 20, "parent sampling changes affect existing draw commands");
+	nearest->SetTextureFilter(TextureFilter::Nearest);
+	nearest->SetStretchMode(TextureRect::StretchMode::Tile);
+	first->SetTextureRepeat(TextureRepeat::Enabled);
+	pixel = ReadCanvasPixel(app, viewport, 4, 8);
+	Check(pixel.r > 240 && pixel.b < 10, "repeat inherits independently of the child's filter override");
+	nearest->SetTextureRepeat(TextureRepeat::Disabled);
+	pixel = ReadCanvasPixel(app, viewport, 4, 8);
+	Check(pixel.b > 240 && pixel.r < 10, "disabled repeat clamps even when tiled UVs exceed one");
+	nearest->SetTextureRepeat(TextureRepeat::Inherit);
+	first->SetTextureRepeat(TextureRepeat::Disabled);
+	pixel = ReadCanvasPixel(app, viewport, 4, 8);
+	Check(pixel.b > 240 && pixel.r < 10, "parent repeat changes affect inherited addressing");
+	linear->QueueFree();
+	app.RunFrame();
+	nearest->Reparent(second, false);
+	nearest->SetStretchMode(TextureRect::StretchMode::Scale);
+	nearest->SetTextureFilter(TextureFilter::Inherit);
+	pixel = ReadCanvasPixel(app, viewport, 44, 8);
+	Check(pixel.r > 80 && pixel.b > 20, "reparenting resolves sampling from the new CanvasItem ancestry");
+	nearest->SetVisible(false);
+	auto* embedded = MemNew<SubViewportContainer>();
+	embedded->UpdateSize(Vector2(32.f, 16.f));
+	second->AddNode(embedded);
+	auto* source = MemNew<TextureRect>();
+	source->SetTexture(texture);
+	source->SetTextureFilter(TextureFilter::Nearest);
+	source->UpdateSize(Vector2(2.f, 1.f));
+	embedded->GetSubViewport()->AddNode(source);
+	app.RunFrame();
+	embedded->GetSubViewport()->UpdateResolution(IntVec2(2, 1));
+	embedded->SetTextureFilter(TextureFilter::Nearest);
+	pixel = ReadCanvasPixel(app, viewport, 44, 8);
+	Check(pixel.r > 240 && pixel.b < 10, "viewport textures obey CanvasItem nearest filtering");
+	embedded->SetTextureFilter(TextureFilter::Linear);
+	pixel = ReadCanvasPixel(app, viewport, 44, 8);
+	Check(pixel.r > 80 && pixel.b > 20, "viewport textures obey CanvasItem linear filtering");
+	viewport->QueueFree();
+	app.RunFrame();
+}
+
+void VerifyTextResources(App& app, std::filesystem::path const& project, EditorNode* editor)
+{
+	std::filesystem::create_directories(project / "TextResources");
+	VirtualPath const materialPath("res://TextResources/brick.tres");
+	Ref<MaterialResource> original = CreateRef<MaterialResource>();
+	original->SetName("Brick\n\"quoted\"\\path");
+	original->SetTint(Color(123, 45, 67, 255));
+	Image(project / "TextResources" / "white.tga", 255, true);
+	Check(ResourceImporter::EnsureImported("res://TextResources/white.tga"), "resource fixture imports its own image");
+	Ref<TextureResource> texture(ResourceLoader::Load("res://TextResources/white.tga"));
+	Check(texture.IsValid(), "text fixture loads its own texture dependency");
+	original->SetDiffuseTexture(texture);
+	original->SetNormalTexture(texture);
+	Check(ResourceSaver::Save(materialPath, original), "generic saver writes material");
+	Ref<MaterialResource> material(ResourceLoader::Load(materialPath));
+	Check(material.IsValid() && material->GetName() == original->GetName(), "name and escapes roundtrip");
+	Check(material->GetTint() == original->GetTint(), "byte RGBA roundtrip");
+	Check(material->GetDiffuseTexture() == texture && material->GetNormalTexture() == texture, "external references share cached identity");
+	Check(!material->GetShaderResource().IsValid(), "null resource roundtrip");
+	Check(material->GetVirtualPath() == materialPath, "loader supplies resource path");
+
+	Ref<ShaderMaterial> shaderMaterial = CreateRef<ShaderMaterial>();
+	shaderMaterial->SetTint(Color::Blue);
+	shaderMaterial->SetDiffuseTexture(texture);
+	shaderMaterial->SetBlendMode(BlendMode::ALPHA);
+	Check(ResourceSaver::Save("res://TextResources/shader.tres", shaderMaterial), "ShaderMaterial saves through the text resource writer");
+	Ref<ShaderMaterial> loadedShader(ResourceLoader::LoadUncached("res://TextResources/shader.tres"));
+	Check(loadedShader.IsValid() && loadedShader->GetTint() == Color::Blue
+		&& loadedShader->GetDiffuseTexture() == texture && loadedShader->GetBlendMode() == BlendMode::ALPHA,
+		"ShaderMaterial preserves its concrete type and inherited properties");
+
+	std::string text;
+	std::string error;
+	Check(ResourceFormatSaverText::Write(material, text, error), "material encodes without IO");
+	auto rejects = [&](std::string const& contents)
+	{
+		error.clear();
+		return !ResourceFormatLoaderText::Parse(contents, materialPath, error).IsValid() && error.find("brick.tres:") != std::string::npos;
+	};
+	Check(rejects("[ming_resource type=\"MissingClass\" format=1]\n[resource]\n"), "unknown resource class reports location");
+	Check(rejects("[ming_resource type=\"MaterialResource\" format=2]\n[resource]\n"), "future format is rejected");
+	Check(rejects("[ming_resource type=\"MaterialResource\" format=1]\n[resource]\ntint = [1,2,3,4]\n"), "plain arrays are not typed colors");
+	Check(rejects("[ming_resource type=\"MaterialResource\" format=1]\n[resource]\ntint = Color(256,0,0,255)\n"), "out of range color is rejected");
+	Check(rejects("[ming_resource type=\"MaterialResource\" format=1]\n[resource]\nmissing = 1\n"), "unknown property is rejected");
+	Check(rejects("[ming_resource type=\"MaterialResource\" format=1]\n[resource]\nblend_mode = 999\n"), "setter rejected values fail loading");
+	Check(rejects("[ming_resource type=\"MaterialResource\" format=1]\n[resource]\nblend_mode = 4294967296\n"), "int overflow is rejected");
+
+	Ref<MaterialResource> anonymous = CreateRef<MaterialResource>();
+	anonymous->SetShaderResource(app.GetEngine()->m_renderServer->GetDefaultLitShaderResource());
+	Check(!ResourceFormatSaverText::Write(anonymous, text, error), "unsaved resource dependencies are rejected");
+	Write(project / "TextResources" / "cycle.tres", "[ming_resource type=\"MaterialResource\" format=1]\n[ext_resource type=\"MaterialResource\" path=\"res://TextResources/cycle.tres\" id=\"1\"]\n[resource]\n");
+	Check(!ResourceLoader::Load("res://TextResources/cycle.tres").IsValid(), "recursive dependencies fail without recursion overflow");
+
+	Ref<SurfaceTool> surface = CreateRef<SurfaceTool>();
+	surface->AddVertex(Vector3(0.f, 0.f, 0.f));
+	surface->AddVertex(Vector3(0.f, 1.f, 0.f));
+	surface->AddVertex(Vector3(0.f, 0.f, 1.f));
+	surface->Index();
+	Ref<MeshResource> mesh = surface->CreateMeshResource();
+	Check(ResourceSaver::Save("res://TextResources/triangle.mesh", mesh), "specialized mesh saver remains available");
+	Check(!ResourceFormatSaverText::Write(mesh, text, error), "text writer refuses incomplete mesh serialization");
+	Ref<MaterialResource> other = CreateRef<MaterialResource>();
+	other->SetTint(Color::Blue);
+	Check(ResourceSaver::Save("res://TextResources/blue.tres", other), "second independent material saves");
+	Node* root = MemNew<Node>();
+	root->SetName("TextRoot");
+	auto* first = MemNew<MeshInstance3D>();
+	first->SetName("First");
+	first->SetMeshResource(mesh);
+	first->SetMaterialOverride(material);
+	root->AddNode(first);
+	auto* second = MemNew<MeshInstance3D>();
+	second->SetName("Second");
+	second->SetMeshResource(mesh);
+	second->SetMaterialOverride(other);
+	root->AddNode(second);
+	auto* canvas = MemNew<Control>();
+	canvas->SetName("Canvas");
+	canvas->SetTextureFilter(TextureFilter::Nearest);
+	canvas->SetTextureRepeat(TextureRepeat::Enabled);
+	root->AddNode(canvas);
+	Ref<PackedScene> packed = CreateRef<PackedScene>();
+	Check(packed->Pack(root) && ResourceSaver::Save("res://TextResources/shared.tscn", packed), "scene text saves node material references");
+	MemDelete(root);
+	Ref<PackedScene> loaded(ResourceLoader::LoadUncached("res://TextResources/shared.tscn"));
+	Check(loaded.IsValid(), "new scene text loads");
+	root = loaded->Instantiate();
+	Check(root != nullptr, "new scene instantiates");
+	first = dynamic_cast<MeshInstance3D*>(root->FindChildByName("First"));
+	second = dynamic_cast<MeshInstance3D*>(root->FindChildByName("Second"));
+	Check(first != nullptr && second != nullptr && first->GetMeshResource() == second->GetMeshResource(), "scene restores shared mesh identity");
+	Check(first->GetMaterialOverride() == material && first->GetMaterialOverride() != second->GetMaterialOverride(), "per node material overrides persist independently");
+	Check(!first->GetMeshResource()->GetMaterial().IsValid(), "overrides do not mutate mesh default");
+	canvas = dynamic_cast<Control*>(root->FindChildByName("Canvas"));
+	Check(canvas != nullptr && canvas->GetTextureFilter() == TextureFilter::Nearest
+		&& canvas->GetTextureRepeat() == TextureRepeat::Enabled, "CanvasItem sampling survives scene serialization");
+	MemDelete(root);
+
+	auto& inspector = editor->m_editorUI->GetPanel<InspectorPanel>();
+	inspector.EditResource(material);
+	app.RunFrame();
+	app.RunFrame();
+	Control* depthField = dynamic_cast<Control*>(FindNamed(inspector.GetContentControl(), "depth_mode"));
+	Check(depthField != nullptr && depthField->GetGlobalPosition().x + depthField->GetSize().x
+		<= inspector.GetGlobalPosition().x + inspector.GetSize().x,
+		"long material enum labels do not push inspector fields beyond the panel");
+	CaptureMaterialFrame(*app.GetEngine(), (project.parent_path() / "material-preview.ppm").string());
+	Node* nameControl = FindNamed(inspector.GetContentControl(), "name");
+	Check(nameControl != nullptr, "resource properties appear in the real inspector");
+	LineEdit* name = FindTextField(nameControl);
+	Check(name != nullptr, "resource string editor exists");
+	InputEvent focus;
+	focus.m_type = InputEventType::WindowFocus;
+	focus.m_focused = true;
+	static_cast<Viewport*>(editor->GetSceneTree()->GetRoot())->ProcessInputEvent(focus);
+	name->GrabFocus();
+	name->SelectAll();
+	for (char character : std::string("Edited Brick"))
+	{
+		InputEvent input;
+		input.m_type = InputEventType::Text;
+		input.m_codepoint = character;
+		name->GuiInput(input);
+	}
+	name->EndEditing(LineEdit::EditEndReason::Submitted);
+	Check(material->GetName() == String("Edited Brick") && editor->GetChecker()->IsResourceDirty(materialPath), "inspector marks edited resource dirty");
+	Check(!editor->IsSceneDirty(), "resource edit does not dirty scene");
+	Check(editor->GetUndoRedo().Undo(material->GetObjectID()), "resource has independent undo history");
+	Check(material->GetName() == original->GetName(), "resource undo restores original value");
+	Check(editor->GetUndoRedo().Redo(material->GetObjectID()), "resource redo succeeds");
+	Check(inspector.SaveResource() && !editor->GetChecker()->IsResourceDirty(materialPath), "saving resource clears dirty after success");
+	inspector.GoBack();
+	app.RunFrame();
+
+	material->SetTint(Color::Green);
+	editor->MarkResourceDirty(material.Get());
+	std::filesystem::remove(project / "TextResources" / "brick.tres");
+	Check(!editor->GetChecker()->SaveDirtyResources() && editor->GetChecker()->IsResourceDirty(materialPath), "deleted resource is not recreated and stays dirty");
+	if (auto* viewport = static_cast<Viewport*>(editor->GetSceneTree()->GetRoot()); viewport->GetGuiPopup() != nullptr)
+	{
+		Choose(viewport, "OK");
+	}
+	Check(ResourceSaver::Save(materialPath, material), "explicit resource write restores fixture");
+
+
+	VirtualPath createdPath;
+	editor->m_editorUI->CreateResource(VirtualPath("res://TextResources"), [&createdPath](VirtualPath const& path) { createdPath = path; });
+	auto* viewport = static_cast<Viewport*>(editor->GetSceneTree()->GetRoot());
+	Check(FindNamed(viewport->GetGuiPopup(), "ResourceTypes") != nullptr, "resource creation opens the type picker");
+	app.RunFrame();
+	CaptureMaterialFrame(*app.GetEngine(), (project.parent_path() / "resource-picker.ppm").string());
+	Choose(viewport, "Create");
+	app.RunFrame();
+	auto* filename = dynamic_cast<LineEdit*>(FindNamed(viewport->GetGuiPopup(), "SceneFilename"));
+	Check(filename != nullptr, "new material uses the existing file dialog");
+	filename->SetText("Created.tres");
+	Choose(viewport, "Save");
+	Check(createdPath == VirtualPath("res://TextResources/Created.tres") && ResourceLoader::Load(createdPath).IsValid(), "material creation saves an independent file");
+	Check(Ref<ShaderMaterial>(ResourceLoader::Load(createdPath)).IsValid(), "new resources use the ShaderMaterial concrete type");
+	Check(editor->m_editorUI->GetPanel<FileSystemPanel>().GetSelectedVirtualPath() == createdPath,
+		"new resource is selected in the filesystem");
+	VirtualPath copiedPath;
+	editor->m_editorUI->SaveMaterialAs(material, [&copiedPath](VirtualPath const& path) { copiedPath = path; });
+	app.RunFrame();
+	filename = dynamic_cast<LineEdit*>(FindNamed(viewport->GetGuiPopup(), "SceneFilename"));
+	Check(filename != nullptr, "material copy opens save as dialog");
+	filename->SetText("Unique.tres");
+	Choose(viewport, "Save");
+	Ref<MaterialResource> copy(ResourceLoader::Load(copiedPath));
+	Check(copy.IsValid() && copy != material && copy->GetTint() == material->GetTint(), "save as creates an independent material with matching parameters");
+	Check(copy->GetDiffuseTexture() == material->GetDiffuseTexture(), "independent material keeps shared textures");
+	copy->SetTint(Color::Blue);
+	Check(material->GetTint() == Color::Green, "editing copied material leaves original unchanged");
+
+	VirtualPath shaderCopyPath;
+	editor->m_editorUI->SaveMaterialAs(loadedShader, [&shaderCopyPath](VirtualPath const& path) { shaderCopyPath = path; });
+	app.RunFrame();
+	filename = dynamic_cast<LineEdit*>(FindNamed(viewport->GetGuiPopup(), "SceneFilename"));
+	Check(filename != nullptr, "ShaderMaterial copy opens save as dialog");
+	filename->SetText("ShaderCopy.tres");
+	Choose(viewport, "Save");
+	Ref<ShaderMaterial> shaderCopy(ResourceLoader::LoadUncached(shaderCopyPath));
+	Check(shaderCopy.IsValid() && shaderCopy->GetTint() == loadedShader->GetTint()
+		&& shaderCopy->GetDiffuseTexture() == loadedShader->GetDiffuseTexture(),
+		"save as preserves ShaderMaterial type and inherited values");
+	inspector.EditResource(shaderCopy);
+	app.RunFrame();
+	app.RunFrame();
+	auto const captureDeadline = std::chrono::steady_clock::now() + std::chrono::seconds(5);
+	while (editor->IsCheckingProject() && std::chrono::steady_clock::now() < captureDeadline)
+	{
+		app.RunFrame();
+		std::this_thread::sleep_for(std::chrono::milliseconds(10));
+	}
+	Check(!editor->IsCheckingProject(), "resource import finishes before capturing the material inspector");
+	CaptureMaterialFrame(*app.GetEngine(), (project.parent_path() / "shader-material.ppm").string());
+
+	auto* instance = MemNew<MeshInstance3D>();
+	instance->SetName("MaterialUser");
+	instance->SetMeshResource(mesh);
+	editor->GetSceneTree()->GetScene()->AddNode(instance);
+	editor->GetSelection().SetSelected(instance->GetObjectID());
+	app.RunFrame();
+	auto* materialField = dynamic_cast<Control*>(FindNamed(inspector.GetContentControl(), "material_override"));
+	Check(materialField != nullptr, "node exposes material override in inspector");
+	GuiDragData drag{ "file", ObjectID::Invalid, materialPath.GetString() };
+	Check(materialField->CanDropData(Vector2::Zero, drag), "material field accepts compatible file drag");
+	materialField->DropData(Vector2::Zero, drag);
+	Check(instance->GetMaterialOverride() == material && editor->IsSceneDirty(), "dropping material assigns override and dirties scene");
+	drag.m_value = "res://TextResources/white.tga";
+	Check(!materialField->CanDropData(Vector2::Zero, drag), "material field rejects texture drop");
+	Check(editor->SaveSceneAs("res://TextResources/assigned.tscn"), "assigned material scene saves");
+	Check(editor->LoadScene("res://main.tscn"), "scene replacement succeeds after resource editing");
+	app.RunFrame();
+	Check(editor->GetUndoRedo().HasUndo(material->GetObjectID()), "scene replacement preserves resource undo history");
+
+	Ref<MaterialResource> disk = CreateRef<MaterialResource>();
+	disk->SetTint(Color::Blue);
+	Check(ResourceFormatSaverText::Write(disk, text, error), "external edit fixture encodes");
+	material->SetTint(Color::Red);
+	editor->MarkResourceDirty(material.Get());
+	Write(project / "TextResources" / "brick.tres", text);
+	editor->CheckProject();
+	Wait(app, [viewport]() { return FindButton(viewport->GetGuiPopup(), "Reload from disk") != nullptr; }, "dirty resource external edit prompts");
+	Check(material->GetTint() == Color::Red && editor->GetChecker()->IsResourceDirty(materialPath), "external scan preserves dirty memory before resolution");
+	Choose(viewport, "Cancel");
+	Check(material->GetTint() == Color::Red && editor->GetChecker()->IsResourceDirty(materialPath), "cancel preserves pending resource changes");
+	editor->CheckProject();
+	Wait(app, [viewport]() { return FindButton(viewport->GetGuiPopup(), "Reload from disk") != nullptr; }, "unresolved external resource can be checked again");
+	Choose(viewport, "Reload from disk");
+	Check(material->GetTint() == Color::Blue && !editor->GetChecker()->IsResourceDirty(materialPath), "reload replaces resource in place and clears dirty");
+	material->SetTint(Color::Green);
+	editor->MarkResourceDirty(material.Get());
+	disk->SetTint(Color::Red);
+	Check(ResourceFormatSaverText::Write(disk, text, error), "second external edit encodes");
+	Write(project / "TextResources" / "brick.tres", text);
+	editor->CheckProject();
+	Wait(app, [viewport]() { return FindButton(viewport->GetGuiPopup(), "Reload from disk") != nullptr; }, "second dirty resource conflict prompts");
+	Choose(viewport, "Keep and Save");
+	Ref<MaterialResource> saved(ResourceLoader::LoadUncached(materialPath));
+	Check(saved.IsValid() && saved->GetTint() == Color::Green && !editor->GetChecker()->IsResourceDirty(materialPath), "keep and save writes memory and clears dirty");
+}
+
+
+void VerifyResourceQuit(App& app, EditorNode* editor)
+{
+	if (editor->IsSceneDirty())
+	{
+		Check(editor->SaveScene(), "quit fixture saves scene baseline");
+	}
+
+	VirtualPath const path("res://QuitVerification/material.tres");
+	Ref<MaterialResource> material = CreateRef<MaterialResource>();
+	Check(ResourceSaver::Save(path, material), "quit fixture creates independent material");
+	editor->m_editorUI->GetPanel<InspectorPanel>().EditResource(material);
+	app.RunFrame();
+	material->SetTint(Color::Blue);
+	editor->MarkResourceDirty(material.Get());
+	Check(!editor->IsSceneDirty() && editor->GetChecker()->IsResourceDirty(path), "quit fixture has only resource changes");
+	auto* viewport = static_cast<Viewport*>(editor->GetSceneTree()->GetRoot());
+	app.Quit();
+	Check(!app.IsQuitting(), "resource-only changes block immediate quit");
+	Wait(app, [viewport]() { return FindButton(viewport->GetGuiPopup(), "Save & Quit") != nullptr; }, "resource-only quit prompts");
+	Choose(viewport, "Cancel");
+	Check(!app.IsQuitting() && editor->GetChecker()->IsResourceDirty(path), "cancel quit retains dirty resource");
+	app.Quit();
+	Wait(app, [viewport]() { return FindButton(viewport->GetGuiPopup(), "Save & Quit") != nullptr; }, "resource-only quit can be retried");
+	Choose(viewport, "Save & Quit");
+	Wait(app, [&app]() { return app.IsQuitting(); }, "save and quit completes");
+	Ref<MaterialResource> saved(ResourceLoader::LoadUncached(path));
+	Check(saved.IsValid() && saved->GetTint() == Color::Blue && !editor->GetChecker()->IsResourceDirty(path), "quit saves material changes before exit");
+}
+
+void Verify(bool resourcesOnly = false)
 {
 	auto const directory = std::filesystem::absolute("../Temporary/EditorProjectVerification/Project" + std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()));
 	std::filesystem::create_directories(directory / "Settings");
 	_wputenv_s(L"LOCALAPPDATA", (directory / "Settings").c_str());
-	std::string const scene = R"({"nodes":[{"name":"Main","type":"Node","parent":""},{"name":"A","type":"Node","parent":"."},{"name":"B","type":"Node","parent":"."},{"name":"C","type":"Node","parent":"."}]})";
+	std::string const scene = R"([ming_scene format=1]
+
+[node name="Main" type="Node" parent=""]
+
+[node name="A" type="Node" parent="."]
+
+[node name="B" type="Node" parent="."]
+
+[node name="C" type="Node" parent="."]
+)";
 	Write(directory / "project.ming", R"({"type":"ProjectSettings","version":1,"start_scene_path":"res://main.tscn"})");
 	Write(directory / "main.tscn", scene);
 	Image(directory / "board.tga", 12);
@@ -128,6 +778,16 @@ void Verify()
 	auto* viewport = static_cast<Viewport*>(app.GetEngine()->m_sceneSystem->GetSceneTree()->GetRoot());
 	Wait(app, [editor]() { return editor->HasScene() && !editor->IsCheckingProject(); }, "initial imports finish before scene opens");
 	Check(std::filesystem::exists(directory / "board.tga.import"), "initial source imported");
+	VerifyTextResources(app, directory, editor);
+	VerifyCanvasSampling(app);
+	VerifyOptionButton(app, editor, directory.parent_path());
+	VerifyFileRemovals(app, editor, directory);
+	if (resourcesOnly)
+	{
+		VerifyResourceQuit(app, editor);
+		app.Shutdown();
+		return;
+	}
 	auto* selected = &editor->GetSelection();
 	Node* root = editor->GetSceneTree()->GetScene();
 	Node* c = root->FindChildByName("C");
@@ -172,7 +832,10 @@ void Verify()
 	Wait(app, [&outputPhysical]() { return std::filesystem::exists(outputPhysical); }, "missing imported product is regenerated");
 	Wait(app, [editor]() { return !editor->IsCheckingProject(); }, "recovery completes");
 
-	Write(directory / "main.tscn", R"({"nodes":[{"name":"External","type":"Node","parent":""}]})");
+	Write(directory / "main.tscn", R"([ming_scene format=1]
+
+[node name="External" type="Node" parent=""]
+)");
 	editor->CheckProject();
 	Wait(app, [viewport]() { return FindButton(viewport->GetGuiPopup(), "Reload from disk") != nullptr; }, "external scene change prompts");
 	Choose(viewport, "Reload from disk");
@@ -181,9 +844,10 @@ void Verify()
 	Write(directory / "main.tscn", scene);
 	editor->CheckProject();
 	Wait(app, [viewport]() { return FindButton(viewport->GetGuiPopup(), "Reload from disk") != nullptr; }, "second external scene change prompts");
-	Choose(viewport, "Ignore external changes");
+	Choose(viewport, "Keep and Save");
 	std::ifstream saved(directory / "main.tscn");
 	std::string savedText((std::istreambuf_iterator<char>(saved)), {});
+	saved.close();
 	Check(savedText.find("External") != std::string::npos, "ignore overwrites disk with editor scene");
 	Node* retained = editor->GetSceneTree()->GetScene();
 	Write(directory / "main.tscn", "{");
@@ -264,6 +928,7 @@ void Verify()
 	dropped = {};
 	texture = {};
 	settings = {};
+	VerifyResourceQuit(app, editor);
 	app.Shutdown();
 	Check(EditorNode::Get() == nullptr, "shutdown drains checker before destroying editor");
 }
@@ -271,7 +936,8 @@ void Verify()
 
 int wmain(int argc, wchar_t** argv)
 {
-	if (argc > 1)
+	bool const resourcesOnly = argc == 2 && std::wstring(argv[1]) == L"--verify-resources";
+	if (argc > 1 && !resourcesOnly)
 	{
 		MingRunConfig config;
 		if (!TryParseRunConfig(config, argc, argv))
@@ -288,7 +954,7 @@ int wmain(int argc, wchar_t** argv)
 
 	try
 	{
-		Verify();
+		Verify(resourcesOnly);
 		std::printf("EDITOR_PROJECT: PASS checks=%d\n", checks);
 		return 0;
 	}

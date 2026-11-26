@@ -278,10 +278,10 @@ MethodBind const* ClassDatabase::GetMethodBind(std::string const& className, std
 	return method != nullptr ? method->m_bind.get() : nullptr;
 }
 
-void ClassDatabase::AddPropertyGroup(std::string const& className, std::string const& name)
+void ClassDatabase::AddPropertyGroup(std::string const& className, std::string const& name, std::string const& prefix)
 {
 	m_classInfoMap[className].m_properties.emplace_back(
-		Variant::Type::Empty, name, PropertyInfo::Hint::None, "", PropertyInfo::UsageFlags::Group);
+		Variant::Type::Empty, name, PropertyInfo::Hint::None, prefix, PropertyInfo::UsageFlags::Group);
 }
 
 void ClassDatabase::AddProperty(

@@ -33,6 +33,9 @@ public:
 
 	bool IsEmpty() const;
 
+	void SetMaterialOverride(Ref<MaterialResource> const& material);
+	Ref<MaterialResource> GetMaterialOverride() const { return m_materialOverride; }
+
 	void    SetMeshResource(Ref<MeshResource> const& meshResource);
 	Ref<MeshResource> GetMeshResource() const;
 
@@ -46,6 +49,7 @@ protected:
 	void SyncMeshBase();
 
 protected:
+	Ref<MaterialResource> m_materialOverride;
 	Ref<MeshResource> m_meshResource;
 	bool              m_useMaterialTextures = true;
 

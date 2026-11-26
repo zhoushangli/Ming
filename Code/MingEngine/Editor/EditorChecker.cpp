@@ -1,4 +1,4 @@
-#include "MingEngine/Editor/EditorProjectChecker.hpp"
+#include "MingEngine/Editor/EditorChecker.hpp"
 
 #include "MingEngine/Editor/EditorNode.hpp"
 #include "MingEngine/Editor/Gizmos/EditorGizmos.hpp"
@@ -17,12 +17,12 @@
 #include <algorithm>
 #include <system_error>
 
-bool EditorProjectChecker::Stamp::operator==(Stamp const& other) const
+bool EditorChecker::Stamp::operator==(Stamp const& other) const
 {
 	return m_time == other.m_time && m_size == other.m_size;
 }
 
-bool EditorProjectChecker::ReadStamp(std::filesystem::path const& path, Stamp& stamp)
+bool EditorChecker::ReadStamp(std::filesystem::path const& path, Stamp& stamp)
 {
 	std::error_code error;
 	stamp.m_time = std::filesystem::last_write_time(path, error);
@@ -35,19 +35,19 @@ bool EditorProjectChecker::ReadStamp(std::filesystem::path const& path, Stamp& s
 	return !error;
 }
 
-EditorProjectChecker::EditorProjectChecker(EditorNode& editor) : m_editor(editor)
+EditorChecker::EditorChecker(EditorNode& editor) : m_editor(editor)
 {
 	m_root = std::filesystem::absolute(g_engine->m_fileSystem->GetResourceRoot()).lexically_normal();
 	g_engine->m_fileSystem->SetEditorScanCallback([this]() { CheckProject(); });
 	ResourceSaver::SetSavedCallback([this](VirtualPath const& path) { NotifyFileSaved(path); });
 }
 
-EditorProjectChecker::~EditorProjectChecker()
+EditorChecker::~EditorChecker()
 {
 	Shutdown();
 }
 
-void EditorProjectChecker::Shutdown()
+void EditorChecker::Shutdown()
 {
 	if (m_stop.exchange(true))
 	{
@@ -63,7 +63,7 @@ void EditorProjectChecker::Shutdown()
 	m_task = WorkerThreadPool::INVALID_TASK_ID;
 }
 
-void EditorProjectChecker::CheckProject(bool full)
+void EditorChecker::CheckProject(bool full)
 {
 	if (!m_stop)
 	{
@@ -72,18 +72,20 @@ void EditorProjectChecker::CheckProject(bool full)
 	}
 }
 
-bool EditorProjectChecker::IsBusy() const
+bool EditorChecker::IsBusy() const
 {
 	return !m_initialComplete || m_importing || m_choosing || !m_drops.empty();
 }
 
-bool EditorProjectChecker::IsInitialScanComplete() const
+bool EditorChecker::IsInitialScanComplete() const
 {
 	return m_initialComplete;
 }
 
-void EditorProjectChecker::NotifyFileSaved(VirtualPath const& path)
+void EditorChecker::NotifyFileSaved(VirtualPath const& path)
 {
+	m_dirtyResources.erase(path.GetString());
+
 	if (ResourceImporter::IsInternalResourcePath(path))
 	{
 		return;
@@ -99,14 +101,14 @@ void EditorProjectChecker::NotifyFileSaved(VirtualPath const& path)
 	}
 }
 
-void EditorProjectChecker::NotifySceneLoaded(VirtualPath const& path)
+void EditorChecker::NotifySceneLoaded(VirtualPath const& path)
 {
 	NotifyFileSaved(path);
 }
 
-void EditorProjectChecker::ScanTask(void* userdata)
+void EditorChecker::ScanTask(void* userdata)
 {
-	auto& self = *static_cast<EditorProjectChecker*>(userdata);
+	auto& self = *static_cast<EditorChecker*>(userdata);
 	try
 	{
 		std::error_code error;
@@ -166,7 +168,7 @@ void EditorProjectChecker::ScanTask(void* userdata)
 	}
 }
 
-void EditorProjectChecker::StartScan()
+void EditorChecker::StartScan()
 {
 	m_scanned.clear();
 	m_directories.clear();
@@ -185,7 +187,7 @@ void EditorProjectChecker::StartScan()
 	}
 }
 
-void EditorProjectChecker::AcceptScan()
+void EditorChecker::AcceptScan()
 {
 	if (m_scanRevision != m_revision || !m_errors.empty())
 	{
@@ -208,6 +210,8 @@ void EditorProjectChecker::AcceptScan()
 		return;
 	}
 
+	m_editor.m_editorUI->FinishNativeEditing();
+
 	m_imports.clear();
 	m_conflicts.clear();
 	std::string const scene = m_editor.GetCurrentScenePath().GetString();
@@ -220,7 +224,7 @@ void EditorProjectChecker::AcceptScan()
 		}
 		auto const previous = m_known.find(entry.first);
 		bool const changed = previous == m_known.end() || !(previous->second == entry.second);
-		if ((entry.first == scene || entry.first == ProjectSettings::GetSettingsPath()) && changed && m_initialComplete)
+		if ((entry.first == scene || entry.first == ProjectSettings::GetSettingsPath() || IsResourceDirty(path)) && changed && m_initialComplete)
 		{
 			m_conflicts.push_back(entry.first);
 			continue;
@@ -248,14 +252,6 @@ void EditorProjectChecker::AcceptScan()
 		}
 	}
 
-	for (auto const& entry : m_known)
-	{
-		if (m_scanned.count(entry.first) == 0 && !ResourceImporter::IsInternalResourcePath(VirtualPath(entry.first)))
-		{
-			ERR_PRINT("Project file is missing: " + entry.first);
-		}
-	}
-
 	// 2) Preserve conflict baselines until the user has resolved the choice.
 	auto previous = std::move(m_known);
 	m_known = m_scanned;
@@ -280,7 +276,7 @@ void EditorProjectChecker::AcceptScan()
 	m_importing = true;
 }
 
-void EditorProjectChecker::FinishImports()
+void EditorChecker::FinishImports()
 {
 	m_importing = false;
 	CommitTree();
@@ -303,7 +299,7 @@ void EditorProjectChecker::FinishImports()
 	}
 }
 
-void EditorProjectChecker::ShowProgress(std::string const& message, int completed, int total)
+void EditorChecker::ShowProgress(std::string const& message, int completed, int total)
 {
 	m_editor.m_editorUI->SetStatusMessage(message);
 	if (std::chrono::steady_clock::now() - m_started >= std::chrono::milliseconds(250))
@@ -313,7 +309,7 @@ void EditorProjectChecker::ShowProgress(std::string const& message, int complete
 	}
 }
 
-void EditorProjectChecker::ResolveExternalChanges(bool reload)
+void EditorChecker::ResolveExternalChanges(bool reload)
 {
 	bool succeeded = true;
 	for (auto const& name : m_conflicts)
@@ -341,6 +337,23 @@ void EditorProjectChecker::ResolveExternalChanges(bool reload)
 		{
 			success = reload ? m_editor.LoadScene(path) : m_editor.SaveSceneAs(path);
 		}
+		else
+		{
+			auto found = m_dirtyResources.find(name);
+			if (found != m_dirtyResources.end())
+			{
+				Ref<Resource> resource = found->second;
+				if (reload)
+				{
+					Ref<Resource> fresh = ResourceLoader::LoadUncached(path);
+					success = fresh.IsValid() && resource->CopyFrom(std::move(*fresh));
+				}
+				else
+				{
+					success = ResourceSaver::Save(path, resource);
+				}
+			}
+		}
 
 		if (success)
 		{
@@ -360,7 +373,7 @@ void EditorProjectChecker::ResolveExternalChanges(bool reload)
 	}
 }
 
-void EditorProjectChecker::Update()
+void EditorChecker::Update()
 {
 	if (m_stop || m_editor.IsBuildingCSharpProject() || m_editor.IsPreparingPlay())
 	{
@@ -430,7 +443,18 @@ void EditorProjectChecker::Update()
 		message += "\n\nWhat action should be taken?";
 		m_choosing = true;
 		m_editor.m_editorUI->ShowChoice("Files have been modified outside Ming", message,
-			{ "Reload from disk", "Ignore external changes" }, [this](int choice) { ResolveExternalChanges(choice == 0); });
+			{ "Reload from disk", "Keep and Save", "Cancel" }, [this](int choice)
+			{
+				if (choice < 2)
+				{
+					ResolveExternalChanges(choice == 0);
+				}
+				else
+				{
+					m_conflicts.clear();
+					m_choosing = false;
+				}
+			});
 		return;
 	}
 
@@ -452,7 +476,7 @@ void EditorProjectChecker::Update()
 	}
 }
 
-void EditorProjectChecker::PrepareCopy(std::filesystem::path const& source, std::filesystem::path const& target)
+void EditorChecker::PrepareCopy(std::filesystem::path const& source, std::filesystem::path const& target)
 {
 	std::error_code error;
 	VirtualPath targetPath;
@@ -483,7 +507,7 @@ void EditorProjectChecker::PrepareCopy(std::filesystem::path const& source, std:
 	}
 }
 
-void EditorProjectChecker::ImportExternal(std::vector<std::string> const& paths, Vector2 position)
+void EditorChecker::ImportExternal(std::vector<std::string> const& paths, Vector2 position)
 {
 	if (m_stop || m_editor.IsBuildingCSharpProject() || m_editor.IsPreparingPlay())
 	{
@@ -501,7 +525,7 @@ void EditorProjectChecker::ImportExternal(std::vector<std::string> const& paths,
 	m_drops.push_back({ paths, panel.GetDropDirectory(local) });
 }
 
-void EditorProjectChecker::StartExternalCopy(std::vector<std::string> const& paths, VirtualPath const& target)
+void EditorChecker::StartExternalCopy(std::vector<std::string> const& paths, VirtualPath const& target)
 {
 	std::filesystem::path directory;
 	if (!g_engine->m_fileSystem->TryGetPhysicalPath(target, directory))
@@ -531,7 +555,7 @@ void EditorProjectChecker::StartExternalCopy(std::vector<std::string> const& pat
 	ContinueCopy();
 }
 
-void EditorProjectChecker::ContinueCopy()
+void EditorChecker::ContinueCopy()
 {
 	for (; m_collisionIndex < m_pendingCopies.size(); ++m_collisionIndex)
 	{
@@ -568,7 +592,7 @@ void EditorProjectChecker::ContinueCopy()
 	CheckProject();
 }
 
-void EditorProjectChecker::CopyFiles()
+void EditorChecker::CopyFiles()
 {
 	try
 	{
@@ -607,7 +631,7 @@ void EditorProjectChecker::CopyFiles()
 	}
 }
 
-void EditorProjectChecker::CommitTree()
+void EditorChecker::CommitTree()
 {
 	std::unordered_map<VirtualPath, std::filesystem::file_time_type> files;
 	for (auto const& entry : m_known)
@@ -615,4 +639,70 @@ void EditorProjectChecker::CommitTree()
 		files.emplace(VirtualPath(entry.first), entry.second.m_time);
 	}
 	g_engine->m_fileSystem->ApplyResourceSnapshot(m_directories, files);
+}
+
+void EditorChecker::MarkSceneDirty()
+{
+	m_sceneDirty = true;
+}
+
+void EditorChecker::ClearSceneDirty()
+{
+	m_sceneDirty = false;
+}
+
+bool EditorChecker::IsSceneDirty() const
+{
+	return m_sceneDirty;
+}
+
+void EditorChecker::MarkResourceDirty(Resource* resource)
+{
+	if (resource != nullptr && resource->GetVirtualPath().IsValid())
+	{
+		m_dirtyResources[resource->GetVirtualPath().GetString()] = Ref<Resource>(resource);
+	}
+}
+
+bool EditorChecker::IsResourceDirty(VirtualPath const& path) const
+{
+	return m_dirtyResources.count(path.GetString()) != 0;
+}
+
+bool EditorChecker::HasDirtyResources() const
+{
+	return !m_dirtyResources.empty();
+}
+
+bool EditorChecker::SaveDirtyResources()
+{
+	auto pending = m_dirtyResources;
+	bool success = true;
+	for (auto const& entry : pending)
+	{
+		if (!SaveResource(entry.second))
+		{
+			success = false;
+			m_editor.m_editorUI->Warning("Save Resource Failed", entry.first);
+		}
+	}
+
+	return success;
+}
+
+bool EditorChecker::HasUnsavedChanges() const
+{
+	return IsSceneDirty() || HasDirtyResources() || m_editor.m_editorUI->HasProjectSettingsChanges();
+}
+
+bool EditorChecker::SavePendingChanges()
+{
+	m_editor.m_editorUI->FinishNativeEditing();
+	return m_editor.m_editorUI->SaveProjectSettingsDraft() && SaveDirtyResources();
+}
+
+bool EditorChecker::SaveResource(Ref<Resource> const& resource)
+{
+	return resource.IsValid() && g_engine->m_fileSystem->Exists(resource->GetVirtualPath())
+		&& ResourceSaver::Save(resource->GetVirtualPath(), resource);
 }

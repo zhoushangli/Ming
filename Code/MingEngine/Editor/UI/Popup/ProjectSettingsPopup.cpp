@@ -544,3 +544,28 @@ void ProjectSettingsPopup::PrepareFields(EditorUIContext& context)
 		});
 	cancel->SetName("CancelProjectSettings");
 }
+
+bool ProjectSettingsPopup::HasChanges() const
+{
+	if (!IsOpen())
+	{
+		return false;
+	}
+
+	Ref<ProjectSettings> settings = ProjectSettings::Get();
+	std::string const path = m_mainScene != nullptr ? m_mainScene->GetText().ToUtf8() : m_startScenePath;
+	if (path != settings->m_startScenePath.GetString() || m_autoLoads.size() != settings->m_autoLoads.size())
+	{
+		return true;
+	}
+
+	for (size_t i = 0; i < m_autoLoads.size(); ++i)
+	{
+		if (m_autoLoads[i].m_name != settings->m_autoLoads[i].m_name || m_autoLoads[i].m_path != settings->m_autoLoads[i].m_path)
+		{
+			return true;
+		}
+	}
+
+	return false;
+}

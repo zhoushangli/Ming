@@ -5,6 +5,7 @@
 #include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Engine/Scene/SceneSystem.hpp"
 #include "MingEngine/Editor/EditorNode.hpp"
+#include "MingEngine/Editor/EditorChecker.hpp"
 #include "MingEngine/Editor/EditorThemeManager.hpp"
 #include "MingEngine/Editor/UI/EditorUI.hpp"
 #include "MingEngine/Scene/Core/SceneTree.hpp"
@@ -68,7 +69,7 @@ bool EditorState::CanQuit([[maybe_unused]] App& app)
 		editor->m_editorUI->FinishNativeEditing();
 	}
 
-	if (EditorNode* editor = EditorNode::Get(); editor != nullptr && editor->IsSceneDirty())
+	if (EditorNode* editor = EditorNode::Get(); editor != nullptr && !editor->GetChecker()->IsQuitApproved() && editor->GetChecker()->HasUnsavedChanges())
 	{
 		glfwSetWindowShouldClose(g_engine->m_windowSystem->GetGLFWWindow(), GLFW_FALSE);
 		editor->RequestQuit();

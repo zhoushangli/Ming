@@ -187,7 +187,7 @@ public:
 
 	static MethodInfo const* GetMethodInfo(std::string const& className, std::string const& methodName);
 	static MethodBind const* GetMethodBind(std::string const& className, std::string const& methodName);
-	static void              AddPropertyGroup(std::string const& className, std::string const& name);
+	static void              AddPropertyGroup(std::string const& className, std::string const& name, std::string const& prefix = {});
 	static void              AddProperty(
 		std::string const& className,
 		PropertyInfo       propertyInfo,

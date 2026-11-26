@@ -11,6 +11,7 @@
 #include "MingEngine/Editor/UI/Inspector/InspectorPropertyVec2.hpp"
 #include "MingEngine/Editor/UI/Inspector/InspectorPropertyEnum.hpp"
 #include "MingEngine/Core/IO/ResourceLoader.hpp"
+#include "MingEngine/Core/IO/ResourceSaver.hpp"
 #include "MingEngine/Editor/UI/Controls/EditorSpinSlider.hpp"
 #include "MingEngine/Scene/GUI/OptionButton.hpp"
 #include "MingEngine/Scene/GUI/ColorPickerButton.hpp"
@@ -20,6 +21,7 @@
 #include "MingEngine/Scene/GUI/Label.hpp"
 #include "MingEngine/Editor/UI/EditorIcons.hpp"
 #include "MingEngine/Editor/EditorNode.hpp"
+#include "MingEngine/Editor/EditorChecker.hpp"
 #include "MingEngine/Editor/UI/EditorUI.hpp"
 #include "MingEngine/Scene/Core/Viewport.hpp"
 #include "MingEngine/Scene/GUI/PanelContainer.hpp"
@@ -447,6 +449,8 @@ void InspectorProperty::BuildEnum()
 {
 	m_options = MemNew<OptionButton>();
 	m_options->SetThemeTypeVariation("EditorPropertyOption");
+	m_options->SetClipText(true);
+	m_options->SetTextOverrunBehavior(TextOverrunBehavior::EllipsisAlways);
 	if (!m_options->SetOptions(m_info.m_hintData))
 	{
 		SetError("Invalid enum hint");
@@ -463,7 +467,7 @@ void InspectorProperty::BuildEnum()
 
 void InspectorProperty::BuildResource()
 {
-	m_root->SetHorizontalSizeFlags(Control::Size_ShrinkBegin);
+	m_root->SetHorizontalSizeFlags(Control::Size_ExpandFill);
 	auto* row = MemNew<HBoxContainer>();
 	row->SetHorizontalSizeFlags(Control::Size_ExpandFill);
 	row->SetSeparation(0.f);
@@ -472,6 +476,7 @@ void InspectorProperty::BuildResource()
 	m_resourceButton->SetThemeTypeVariation("EditorScriptButton");
 	m_resourceButton->SetName(m_info.m_name == "script" ? "ScriptResource" : "ResourceValue");
 	m_resourceButton->SetClipText(true);
+	m_resourceButton->SetTextOverrunBehavior(TextOverrunBehavior::EllipsisAlways);
 	m_resourceButton->SetHorizontalSizeFlags(Control::Size_ExpandFill);
 	m_resourceButton->SetText("<empty>");
 	m_resourceButton->SetPressedCallback([this]()
@@ -485,14 +490,23 @@ void InspectorProperty::BuildResource()
 			}
 			else
 			{
-				auto& files = EditorNode::Get()->m_editorUI->GetPanel<FileSystemPanel>();
-				files.NavigateTo(resource->GetVirtualPath().GetParent());
-				files.SelectPath(resource->GetVirtualPath());
+				EditorNode::Get()->m_editorUI->GetPanel<InspectorPanel>().EditResource(resource);
 			}
 		}
 	});
 	row->AddNode(m_resourceButton);
-	m_resourceButton->SetDragCallbacks({}, [this](Vector2 const&, GuiDragData const& data)
+	m_resourceButton->SetDragCallbacks([this](Vector2 const&, GuiDragData& data)
+	{
+		Ref<Resource> resource(ReadValue());
+		if (!resource.IsValid() || !resource->GetVirtualPath().IsValid())
+		{
+			return false;
+		}
+
+		data = { "file", ObjectID::Invalid, (resource->GetSourceFilePath().IsValid() ? resource->GetSourceFilePath() : resource->GetVirtualPath()).GetString() };
+		EditorNode::Get()->m_editorUI->SetNativeDragPreview(m_resourceButton, data.m_value);
+		return true;
+	}, [this](Vector2 const&, GuiDragData const& data)
 	{
 		VirtualPath path;
 		return data.m_type == String("file") && VirtualPath::TryParse(data.m_value.ToUtf8(), path) && CanAssignResource(path);
@@ -620,6 +634,78 @@ void InspectorProperty::ShowResourceMenu()
 	if (m_info.m_name != "script")
 	{
 		items.erase(items.begin(), items.begin() + 2);
+		items.push_back({ "Load...", [ui, changed, type = m_info.m_hintData]()
+			{
+				ui->OpenSceneFile(SceneFilePopup::Mode::ResourceOpen, VirtualPath("res://"), [changed, type](VirtualPath const& path)
+				{
+					Ref<Resource> selected = ResourceLoader::Load(path);
+					if (!selected.IsValid() || !ClassDatabase::IsSubclassOf(selected->GetClassName(), type))
+					{
+						return false;
+					}
+
+					if (changed)
+					{
+						changed(Variant(selected));
+					}
+
+					return true;
+				});
+			} });
+		items.push_back({ "Edit", [ui, resource]() { ui->GetPanel<InspectorPanel>().EditResource(resource); } });
+		items.back().m_enabled = resource.IsValid();
+		items.push_back({ "Locate", [ui, resource]()
+			{
+				if (resource.IsValid())
+				{
+					auto& files = ui->GetPanel<FileSystemPanel>();
+					VirtualPath const& path = resource->GetSourceFilePath().IsValid() ? resource->GetSourceFilePath() : resource->GetVirtualPath();
+					files.NavigateTo(path.GetParent());
+					files.SelectPath(path);
+				}
+			} });
+		items.back().m_enabled = resource.IsValid() && (resource->GetSourceFilePath().IsValid() || resource->GetVirtualPath().IsValid());
+		if (m_info.m_hintData == "MaterialResource" || m_info.m_hintData == "ShaderMaterial")
+		{
+			items.push_back({ "New Material...", [ui, changed]()
+				{
+					ui->CreateResource(ui->GetPanel<FileSystemPanel>().GetDirectory(), [changed](VirtualPath const& path)
+					{
+						if (changed)
+						{
+							changed(Variant(ResourceLoader::Load(path)));
+						}
+					});
+				} });
+			items.push_back({ "Save", [ui, resource]()
+				{
+					if (resource.IsValid())
+					{
+						if (!EditorNode::Get()->GetChecker()->SaveResource(resource))
+						{
+							ui->Warning("Save Resource Failed", resource->GetVirtualPath().GetString());
+						}
+					}
+				} });
+			items.back().m_enabled = resource.IsValid() && resource->GetVirtualPath().IsValid();
+			items.push_back({ "Save As...", [ui, resource, changed]()
+				{
+					Ref<MaterialResource> material(resource);
+					if (material.IsValid())
+					{
+						ui->SaveMaterialAs(material, [changed](VirtualPath const& path)
+						{
+							if (changed)
+							{
+								changed(Variant(ResourceLoader::Load(path)));
+							}
+						});
+					}
+				} });
+			items.back().m_enabled = resource.IsValid();
+			items.push_back({ "Make Unique", {} });
+			items.back().m_enabled = false;
+		}
 	}
 
 	ui->ShowMenu(m_resourceMenu, m_resourceMenu->GetGlobalPosition() + Vector2(0.f, m_resourceMenu->GetSize().y), items);
@@ -686,7 +772,7 @@ void InspectorProperty::UpdateValue(Variant const& value)
 		String label("<empty>");
 		if (resource.IsValid())
 		{
-			label = resource->GetVirtualPath().GetFileName();
+			label = (resource->GetSourceFilePath().IsValid() ? resource->GetSourceFilePath() : resource->GetVirtualPath()).GetFileName();
 			if (label.IsEmpty())
 			{
 				label = resource->GetName().IsEmpty() ? String(resource->GetClassName()) : resource->GetName();
@@ -695,16 +781,7 @@ void InspectorProperty::UpdateValue(Variant const& value)
 
 		m_resourceButton->SetText(label);
 		m_resourceButton->SetIcon(resource.IsValid() ? m_root->GetThemeIcon(resource->GetClassName(), "EditorIcons") : Ref<TextureResource>());
-		if (EditorNode::Get() != nullptr && EditorNode::Get()->m_editorUI->GetRootControl() != nullptr)
-		{
-			auto& inspector = EditorNode::Get()->m_editorUI->GetPanel<InspectorPanel>();
-			float const padding = m_root->GetThemeConstant("panel_margin", "Editor") * 2.f
-				+ m_root->GetThemeConstant("scrollbar_width", "ScrollContainer");
-			auto* row = static_cast<Control*>(m_title->GetParent()->GetParent());
-			float const minimum = row->GetCombinedMinimumSize().x;
-			inspector.SetCustomMinimumSize(Vector2(minimum + padding, 0.f));
-			m_root->SetCustomMinimumSize(Vector2(std::max(minimum, inspector.GetSize().x - padding), 0.f));
-		}
+		m_resourceButton->SetIconTint(resource.IsValid() ? EditorIcons::GetIconColor(resource->GetClassName(), m_root) : Color::White);
 
 		Viewport* viewport = m_root->GetViewport();
 		VirtualPath path;
@@ -734,7 +811,7 @@ void InspectorProperty::UpdateValue(Variant const& value)
 			tooltip->SetVisible(show);
 			if (show)
 			{
-				m_resourceHint->SetText(resource->GetVirtualPath().GetString());
+				m_resourceHint->SetText((resource->GetSourceFilePath().IsValid() ? resource->GetSourceFilePath() : resource->GetVirtualPath()).GetString());
 				Vector2 const size = tooltip->GetCombinedMinimumSize();
 				Vector2 const bounds(viewport->GetOutputResolution());
 				Vector2 const origin = m_resourceButton->GetGlobalPosition() + Vector2(0.f, m_resourceButton->GetSize().y);
@@ -901,6 +978,10 @@ InspectorProperty* InspectorProperty::Create(PropertyInfo info, std::string labe
 std::string InspectorProperty::GetDisplayName() const
 {
 	std::string result     = m_info.m_name;
+	if (!m_displayPrefix.empty() && result.compare(0, m_displayPrefix.size(), m_displayPrefix) == 0)
+	{
+		result.erase(0, m_displayPrefix.size());
+	}
 	bool        capitalize = true;
 	for (char& ch : result)
 	{
@@ -917,6 +998,12 @@ std::string InspectorProperty::GetDisplayName() const
 	}
 
 	return result;
+}
+
+void InspectorProperty::SetDisplayPrefix(std::string const& prefix)
+{
+	m_displayPrefix = prefix;
+	m_title->SetText(GetDisplayName());
 }
 
 float InspectorProperty::GetEditorDimension(char const* name, float fallback) const

@@ -139,6 +139,7 @@ struct ScenarioData
 // e.g. Instance3DSetBase(instance, meshRID) makes it an Instance3DBaseType::Mesh instance
 struct Instance3D
 {
+	Ref<MaterialResource> m_materialOverride;
 	RID m_base     = RID::Invalid;
 	RID m_scenario = RID::Invalid;
 
@@ -295,6 +296,8 @@ public:
 	std::vector<RID> m_children;
 
 	Vector2               m_position = Vector2::Zero;
+	TextureFilter         m_textureFilter = TextureFilter::Inherit;
+	TextureRepeat         m_textureRepeat = TextureRepeat::Inherit;
 	bool                  m_visible  = true;
 	std::vector<Command*> m_commands;
 };

@@ -4,6 +4,8 @@
 
 class PopupPanel;
 class ScrollContainer;
+class PanelContainer;
+class VBoxContainer;
 
 class OptionButton : public Button
 {
@@ -22,6 +24,7 @@ public:
 
 	int                      GetValue() const { return m_value; }
 	std::vector<Item> const& GetOptions() const { return m_items; }
+	Vector2 GetInternalMinimumSize() const override;
 
 	bool SetOptions(std::string const& hint);
 	void SetValueNoSignal(int value);
@@ -34,18 +37,22 @@ public:
 protected:
 	static void BindMethods() {}
 
+	AABB2 GetTextRect() const override;
 	void OnNotification(int notification);
 
 private:
 	void Select(int index);
-	void UpdateActive();
+	void UpdateActive(bool ensureVisible = true);
 
 	void HandleKey(InputEvent const& event);
 
 private:
 	std::vector<Item>        m_items;
 	std::vector<Button*>     m_buttons;
+	std::vector<PanelContainer*> m_indicators;
 	ObjectID                 m_popupID = ObjectID::Invalid;
+	PanelContainer*          m_popupPanel = nullptr;
+	VBoxContainer*           m_list = nullptr;
 	ScrollContainer*         m_scroll  = nullptr;
 	int                      m_value   = 0;
 	int                      m_active  = 0;

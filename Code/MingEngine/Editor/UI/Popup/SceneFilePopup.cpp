@@ -1,6 +1,7 @@
 #include "MingEngine/Editor/UI/Popup/SceneFilePopup.hpp"
 
 #include "MingEngine/Core/IO/ResourceLoader.hpp"
+#include "MingEngine/Core/IO/ResourceImporter.hpp"
 #include "MingEngine/Engine/File/FileSystem.hpp"
 #include "MingEngine/Scene/Core/PackedScene.hpp"
 
@@ -26,7 +27,7 @@ void SceneFilePopup::Render(EditorUIContext& context)
 	m_context = context;
 	if (m_requested && m_popup == nullptr)
 	{
-		m_popup = EditorPopupUtils::Create(context.m_rootControl, "Scene File", m_content);
+		m_popup = EditorPopupUtils::Create(context.m_rootControl, "Select File", m_content);
 		m_popup->SetClosedCallback(
 			[this]()
 			{
@@ -134,7 +135,7 @@ void SceneFilePopup::Render(EditorUIContext& context)
 		m_error->SetText("");
 		m_confirm->SetText(GetConfirmText());
 		bool const initialFile = IsSupportedFile(m_initial);
-		m_fileLabel->SetText(m_mode == Mode::Autoload ? "Script (.cs) or scene (.tscn)" : "Scene file (.tscn)");
+		m_fileLabel->SetText(m_mode == Mode::ResourceSave ? "Text resource (.tres)" : m_mode == Mode::ResourceOpen ? "Resource file" : m_mode == Mode::Autoload ? "Script (.cs) or scene (.tscn)" : "Scene file (.tscn)");
 		m_name->SetText(initialFile ? m_initial.GetFileName() : "");
 		VirtualPath const directory = initialFile ? m_initial.GetParent() : m_initial;
 		std::filesystem::path physical;
@@ -169,6 +170,16 @@ void SceneFilePopup::Render(EditorUIContext& context)
 
 bool SceneFilePopup::IsSupportedFile(VirtualPath const& path) const
 {
+	if (m_mode == Mode::ResourceSave)
+	{
+		return path.HasExtension(".tres");
+	}
+
+	if (m_mode == Mode::ResourceOpen)
+	{
+		return ResourceLoader::CanLoad(path) || ResourceImporter::CanImport(path);
+	}
+
 	return path.HasExtension(".tscn") || (m_mode == Mode::Autoload && path.HasExtension(".cs"));
 }
 
@@ -176,7 +187,9 @@ char const* SceneFilePopup::GetConfirmText() const
 {
 	switch (m_mode)
 	{
+	case Mode::ResourceSave:
 	case Mode::Save:      return "Save";
+	case Mode::ResourceOpen: return "Load Resource";
 	case Mode::Open:      return "Open";
 	case Mode::Autoload:  return "Select Autoload";
 	case Mode::MainScene: return "Select Main Scene";
@@ -249,16 +262,16 @@ void SceneFilePopup::Refresh()
 bool SceneFilePopup::Confirm()
 {
 	std::string name = m_name->GetText().ToUtf8();
-	if (m_mode == Mode::Save && std::filesystem::u8path(name).extension().empty())
+	if ((m_mode == Mode::Save || m_mode == Mode::ResourceSave) && std::filesystem::u8path(name).extension().empty())
 	{
-		name += ".tscn";
+		name += m_mode == Mode::ResourceSave ? ".tres" : ".tscn";
 	}
 	VirtualPath const path = m_directory.Join(name);
 	if (name.empty() || name.find_first_of("/\\<>:\"|?*") != std::string::npos || !path.IsValid()
 		|| !IsSupportedFile(path))
 	{
 		m_error->SetText(m_mode == Mode::Autoload ? "Enter a script (.cs) or scene (.tscn) filename."
-			: "Enter a scene filename ending in .tscn.");
+			: m_mode == Mode::ResourceSave ? "Enter a resource filename ending in .tres." : m_mode == Mode::ResourceOpen ? "Select a supported resource file." : "Enter a scene filename ending in .tscn.");
 		return false;
 	}
 
@@ -272,7 +285,15 @@ bool SceneFilePopup::Confirm()
 			return false;
 		}
 	}
-	else if (m_mode != Mode::Save)
+	else if (m_mode == Mode::ResourceOpen)
+	{
+		if (!ResourceLoader::Load(path).IsValid())
+		{
+			m_error->SetText("This file is not a valid resource.");
+			return false;
+		}
+	}
+	else if (m_mode != Mode::Save && m_mode != Mode::ResourceSave)
 	{
 		Ref<PackedScene> scene(ResourceLoader::LoadUncached(path));
 		if (!scene.IsValid())
@@ -284,7 +305,7 @@ bool SceneFilePopup::Confirm()
 	else if (m_context.m_fileSystem->Exists(path) && m_overwrite != path)
 	{
 		m_overwrite = path;
-		m_error->SetText("This scene already exists. Press Overwrite to replace it.");
+		m_error->SetText("This file already exists. Press Overwrite to replace it.");
 		m_confirm->SetText("Overwrite");
 		return false;
 	}

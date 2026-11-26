@@ -39,6 +39,8 @@ public:
 	void CanvasItemSetParent(RID item, RID parent);
 	void CanvasItemSetPosition(RID item, Vector2 const& position);
 	void CanvasItemSetVisible(RID item, bool visible);
+	void CanvasItemSetTextureFilter(RID item, TextureFilter filter);
+	void CanvasItemSetTextureRepeat(RID item, TextureRepeat repeat);
 	void CanvasItemSetClip(RID item, bool enabled, Vector2 const& size);
 	void CanvasItemSetChildrenClip(RID item, bool enabled, Vector2 const& size);
 	void CanvasItemAddViewportRect(RID item, RID viewport, Rect2 const& rect);
@@ -73,6 +75,7 @@ public:
 	void Instance3DFree(RID instance);
 
 	void Instance3DSetBase(RID instance, RID base);
+	void Instance3DSetMaterialOverride(RID instance, Ref<MaterialResource> const& material);
 	void Instance3DSetTransform(RID instance, Matrix4x4 const& transform);
 	void Instance3DSetVisible(RID instance, bool visible);
 	void Instance3DSetRenderPass(RID instance, RenderRequestPass pass);
@@ -216,7 +219,9 @@ private:
 		RID            viewport,
 		ViewportData*  viewportData,
 		Vector2 const& parentPosition,
-		AABB2 const*   parentClip = nullptr);
+		AABB2 const*   parentClip = nullptr,
+		TextureFilter parentFilter = TextureFilter::Linear,
+		TextureRepeat parentRepeat = TextureRepeat::Disabled);
 
 private:
 	Renderer*         m_renderer             = nullptr;

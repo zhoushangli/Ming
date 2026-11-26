@@ -63,6 +63,7 @@ private:
 	VirtualPath                     m_selectedVirtualPath;
 	std::map<uint64_t, VirtualPath> m_fileItems;
 	std::map<std::string, uint64_t> m_fileKeys;
+	std::map<std::string, std::pair<std::filesystem::file_time_type, std::string>> m_resourceIcons;
 	uint64_t                        m_nextFileKey = 1;
 	CreateFolderPopup               m_createFolderPopup;
 	CreateScenePopup                m_createScenePopup;

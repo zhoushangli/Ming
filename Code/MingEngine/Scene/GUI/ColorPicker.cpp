@@ -115,6 +115,8 @@ bool ParseHex(std::string text, Color& color)
 
 ColorPicker::ColorPicker()
 {
+	SetTextureFilter(TextureFilter::Linear);
+	SetTextureRepeat(TextureRepeat::Disabled);
 	SetFocusMode(FocusMode::All);
 	for (int i = 0; i < 4; ++i)
 	{
@@ -665,8 +667,7 @@ void ColorPicker::UpdateTextures()
 		{
 			if (!m_gradients[region].IsValid())
 			{
-				m_gradients[region]                = CreateRef<TextureResource>();
-				m_gradients[region]->m_samplerMode = SamplerMode::BILINEAR_CLAMP;
+				m_gradients[region] = CreateRef<TextureResource>();
 			}
 
 			m_gradients[region]->m_image = image;

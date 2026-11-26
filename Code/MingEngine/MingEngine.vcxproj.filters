@@ -174,7 +174,7 @@
     <ClCompile Include="Editor\EditorNode.cpp">
       <Filter>Editor</Filter>
     </ClCompile>
-    <ClCompile Include="Editor\EditorProjectChecker.cpp">
+    <ClCompile Include="Editor\EditorChecker.cpp">
       <Filter>Editor</Filter>
     </ClCompile>
     <ClCompile Include="Editor\EditorSceneManager.cpp">
@@ -525,8 +525,8 @@
     <ClCompile Include="Core\Object\Script.cpp">
       <Filter>Core\Object</Filter>
     </ClCompile>
-    <ClCompile Include="Scene\Core\PackedSceneFormat.cpp">
-      <Filter>Scene\Core</Filter>
+    <ClCompile Include="Core\IO\ResourceFormatText.cpp">
+      <Filter>Core\IO</Filter>
     </ClCompile>
     <ClCompile Include="Core\Object\RegisterCoreTypes.cpp">
       <Filter>Core\Object</Filter>
@@ -755,7 +755,7 @@
     <ClInclude Include="Editor\EditorNode.hpp">
       <Filter>Editor</Filter>
     </ClInclude>
-    <ClInclude Include="Editor\EditorProjectChecker.hpp">
+    <ClInclude Include="Editor\EditorChecker.hpp">
       <Filter>Editor</Filter>
     </ClInclude>
     <ClInclude Include="Editor\EditorSceneManager.hpp">
@@ -1169,8 +1169,8 @@
     <ClInclude Include="Core\Object\Script.hpp">
       <Filter>Core\Object</Filter>
     </ClInclude>
-    <ClInclude Include="Scene\Core\PackedSceneFormat.hpp">
-      <Filter>Scene\Core</Filter>
+    <ClInclude Include="Core\IO\ResourceFormatText.hpp">
+      <Filter>Core\IO</Filter>
     </ClInclude>
     <ClInclude Include="Scene\Import\GLTFImporter.hpp">
       <Filter>Scene\Import</Filter>
@@ -1284,6 +1284,9 @@
       <Filter>Core\Render</Filter>
     </ClInclude>
     <ClInclude Include="Scene\Resource\MaterialResource.hpp">
+      <Filter>Scene\Resource</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\Resource\ShaderMaterial.hpp">
       <Filter>Scene\Resource</Filter>
     </ClInclude>
     <ClInclude Include="Scene\Core\CanvasLayer.hpp">

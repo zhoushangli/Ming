@@ -8,13 +8,11 @@
 
 #include <vector>
 
-class PackedSceneLoader;
-class PackedSceneSaver;
+class ResourceFormatLoaderText;
+class ResourceFormatSaverText;
 
-// When we serialize a scene, we go through the following steps:
-// runtime scene <-> PackedScene <-> .tscn file
-// Pack() / Instantiate() convert between runtime scene and PackedScene.
-// PackedSceneLoader / PackedSceneSaver convert between PackedScene and .tscn files.
+// Convert between runtime nodes, PackedScene data and text scene files.
+// e.g. Pack(root), ResourceSaver::Save(path, scene), then Load(path)->Instantiate().
 
 struct PackedProperty
 {
@@ -45,8 +43,8 @@ struct PackedSceneData
 class PackedScene : public Resource
 {
 	MCLASS(PackedScene, Resource)
-	friend class PackedSceneLoader;
-	friend class PackedSceneSaver;
+	friend class ResourceFormatLoaderText;
+	friend class ResourceFormatSaverText;
 
 public:
 	PackedScene()  = default;

@@ -19,7 +19,7 @@ class EditorGizmos;
 class EditorRunManager;
 class EditorCSharpBuildManager;
 class EditorSceneManager;
-class EditorProjectChecker;
+class EditorChecker;
 
 class EditorNode : public Node
 {
@@ -27,7 +27,7 @@ class EditorNode : public Node
 	friend class EditorRunManager;
 	friend class EditorCSharpBuildManager;
 	friend class EditorSceneManager;
-	friend class EditorProjectChecker;
+	friend class EditorChecker;
 
 public:
 	enum class SceneActionChoice
@@ -41,63 +41,71 @@ public:
 	explicit EditorNode(float editorScale = 1.25f, std::function<void()> pollGameProcess = {});
 	~EditorNode() override;
 
+	static EditorNode* Get();
+
 	Ref<Theme> GetEditorTheme() const { return m_editorTheme; }
 	float      GetEditorScale() const { return m_editorScale; }
 	bool       SetEditorScale(float scale);
 
-	static EditorNode* Get();
-	void               CheckProject(bool full = false);
-	void               ImportExternalFiles(std::vector<std::string> const& paths, Vector2 position);
-	void               NotifyFileSaved(VirtualPath const& path);
-	void               NotifySceneLoaded(VirtualPath const& path);
-	void               ShutdownBackgroundWork();
-	bool               IsCheckingProject() const;
-	bool               HandleGuiInput(InputEvent const& event);
-	bool               IsEditingNativeControl() const;
-	void               ResolvePendingSceneAction(SceneActionChoice choice);
-	bool               IsSceneNavigationActive() const;
-	void               RequestQuit();
-
 	EditorUndoRedo&       GetUndoRedo() { return m_undoRedo; }
 	EditorUndoRedo const& GetUndoRedo() const { return m_undoRedo; }
-
 	EditorSelection&       GetSelection();
 	EditorSelection const& GetSelection() const;
+	EditorCamera*  GetEditorCamera() const { return m_editorCamera; }
+	EditorChecker* GetChecker() const { return m_checker; }
 
-	EditorCamera* GetEditorCamera() const { return m_editorCamera; }
+	bool HandleGuiInput(InputEvent const& event);
+	bool IsEditingNativeControl() const;
+	bool IsSceneNavigationActive() const;
+
+	void CheckProject(bool full = false);
+	bool IsCheckingProject() const;
+	void ImportExternalFiles(std::vector<std::string> const& paths, Vector2 position);
+	void NotifyFileSaved(VirtualPath const& path);
+	void NotifySceneLoaded(VirtualPath const& path);
+	void ShutdownBackgroundWork();
+
+	void MarkSceneDirty();
+	void MarkResourceDirty(Object* resource);
+	bool IsSceneDirty() const;
+	bool HasScene() const;
+	bool SaveAll();
+	std::string GetCurrentSceneName() const;
+	VirtualPath GetCurrentScenePath() const;
 
 	void RequestLoadScene(VirtualPath const& virtualPath);
 	void RequestOpenScene();
 	void RequestCreateScene(
 		VirtualPath const& virtualPath, std::string const& rootName, std::function<void()> completed = {});
-	bool    LoadScene(VirtualPath const& virtualPath);
-	bool    SaveScene();
-	bool    SaveSceneAs(VirtualPath const& path);
-	void    RequestSaveSceneAs();
-	void    RequestNewScene();
-	void    RequestCloseScene(std::function<void()> completed = {});
-	void    RequestPlay();
-	void    RequestStop();
-	bool    IsPreparingPlay() const;
+	void RequestNewScene();
+	void RequestCloseScene(std::function<void()> completed = {});
+	void RequestSaveSceneAs();
+	void ResolvePendingSceneAction(SceneActionChoice choice);
+	void RequestQuit();
+
+	bool LoadScene(VirtualPath const& virtualPath);
+	bool SaveScene();
+	bool SaveSceneAs(VirtualPath const& path);
+	bool SetMainScene(VirtualPath const& path);
+	void NewRootCreated();
+
+	bool ContainsCurrentScene(VirtualPath const& path) const;
+	void FilesMoved(VirtualPath const& before, VirtualPath const& after);
+	bool FilesRemoved(VirtualPath const& path);
+
+	void RequestPlay();
+	void RequestStop();
+	bool IsPreparingPlay() const;
+
 	bool    IsBuildingCSharpProject() const;
 	int32_t GetCSharpBuildExitCode() const;
 	bool    GenerateCSharpProject();
 	bool    OpenCSharpScript(VirtualPath const& path);
+
 	// Start a menu build and return whether the build process was started.
 	// e.g. BuildCSharpProject() returns before the compiler finishes.
-	bool        BuildCSharpProject();
-	bool        ReloadCSharpAssembly();
-	void        NewRootCreated();
-	bool        ContainsCurrentScene(VirtualPath const& path) const;
-	void        FilesMoved(VirtualPath const& before, VirtualPath const& after);
-	bool        FilesRemoved(VirtualPath const& path);
-	bool        SetMainScene(VirtualPath const& path);
-	VirtualPath GetCurrentScenePath() const;
-
-	void        MarkSceneDirty();
-	bool        IsSceneDirty() const;
-	bool        HasScene() const;
-	std::string GetCurrentSceneName() const;
+	bool BuildCSharpProject();
+	bool ReloadCSharpAssembly();
 
 	void OnMouseMove(Vector2 screenPos, Vector2 delta);
 	void OnMouseDown(int keyCode, Vector2 screenPos);
@@ -119,7 +127,7 @@ private:
 	static EditorNode* s_instance;
 
 	EditorSelection*          m_selection      = nullptr;
-	EditorProjectChecker*     m_projectChecker = nullptr;
+	EditorChecker*            m_checker = nullptr;
 	EditorSceneManager*       m_sceneManager   = nullptr;
 	EditorCSharpBuildManager* m_buildManager   = nullptr;
 	EditorRunManager*         m_runManager     = nullptr;

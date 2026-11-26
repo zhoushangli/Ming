@@ -4,6 +4,12 @@
 #include "MingEngine/Engine/File/FileSystem.hpp"
 
 #include <utility>
+#include <set>
+
+namespace
+{
+thread_local std::set<std::string> s_loadingPaths;
+}
 
 int                                            ResourceLoader::s_loaderCount = 0;
 Ref<ResourceFormatLoader>                      ResourceLoader::s_loader[MaxLoaders];
@@ -40,6 +46,20 @@ bool ResourceLoader::CanLoad(VirtualPath const& virtualPath)
 // 2) Iterate registered loaders and call loader->Load(path)
 Ref<Resource> ResourceLoader::LoadInternal(VirtualPath const& virtualPath)
 {
+	auto& loading = s_loadingPaths;
+	if (!loading.insert(virtualPath.GetString()).second)
+	{
+		ERR_PRINT("Circular resource dependency: " + virtualPath.GetString());
+		return {};
+	}
+
+	struct LoadingGuard
+	{
+		std::set<std::string>& m_paths;
+		std::string m_path;
+		~LoadingGuard() { m_paths.erase(m_path); }
+	} guard{ loading, virtualPath.GetString() };
+
 	if (!virtualPath.IsValid())
 	{
 		return Ref<Resource>();
@@ -79,6 +99,12 @@ Ref<Resource> ResourceLoader::LoadInternal(VirtualPath const& virtualPath)
 
 Ref<Resource> ResourceLoader::Load(VirtualPath const& virtualPath)
 {
+	if (s_loadingPaths.count(virtualPath.GetString()) != 0)
+	{
+		ERR_PRINT("Circular resource dependency: " + virtualPath.GetString());
+		return {};
+	}
+
 	// 1) Return cached resource if already loaded
 	auto const iter = s_loadedResources.find(virtualPath);
 	if (iter != s_loadedResources.end())

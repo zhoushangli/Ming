@@ -8,6 +8,8 @@
 #include <vector>
 
 class VBoxContainer;
+class SubViewportContainer;
+class MeshInstance3D;
 class Label;
 class PanelContainer;
 class ScrollContainer;
@@ -62,11 +64,20 @@ private:
 public:
 	InspectorPanel();
 	~InspectorPanel() override;
+	void EditResource(Ref<Resource> const& resource);
+	void GoBack();
+	bool SaveResource();
+	void SaveResourceAs();
+	ObjectID GetUndoHistory() const;
+
 	void     FinishInput(EditorUIContext& context);
 	void     FinishEditing();
 	Control* GetContentControl() const;
 
 private:
+	Object* GetTarget(ObjectID id) const;
+	void BuildMaterialPreview();
+	void OnNotification(int notification);
 	void OnInitialize() override;
 	void OnClose() override;
 	void OnRender(EditorUIContext& context) override;
@@ -93,6 +104,16 @@ private:
 		Variant const*     original = nullptr);
 
 private:
+	Ref<Resource>              m_resource;
+	std::vector<Ref<Resource>> m_resourceHistory;
+	ObjectID                   m_sceneSelection = ObjectID::Invalid;
+	Control*                   m_resourceActions = nullptr;
+	Button*                    m_resourceBack = nullptr;
+	Button*                    m_resourceSaveAs = nullptr;
+	Control*                   m_previewHost = nullptr;
+	SubViewportContainer*      m_preview = nullptr;
+	MeshInstance3D*            m_previewMesh = nullptr;
+
 	ObjectID                   m_cachedObjectID;
 	VBoxContainer*             m_content    = nullptr;
 	Label*                     m_empty      = nullptr;
@@ -104,5 +125,5 @@ private:
 	SceneTree*                 m_sceneTree  = nullptr;
 	std::vector<std::string>   m_inheritanceChain;
 	std::vector<PropertyGroup> m_propertyGroups;
-	PropertyEdit                  m_propertyEdit;
+	PropertyEdit               m_propertyEdit;
 };

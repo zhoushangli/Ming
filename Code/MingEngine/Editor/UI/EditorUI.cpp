@@ -1,10 +1,14 @@
 #include "MingEngine/Editor/UI/EditorUI.hpp"
 #include "MingEngine/Editor/EditorNode.hpp"
+#include "MingEngine/Core/IO/ResourceLoader.hpp"
+#include "MingEngine/Core/IO/ResourceSaver.hpp"
 #include "MingEngine/Scene/Core/SceneTree.hpp"
 #include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Engine/Input/InputSystem.hpp"
 #include "MingEngine/Scene/GUI/TabContainer.hpp"
 #include "MingEngine/Scene/GUI/ColorRect.hpp"
+#include "MingEngine/Scene/Resource/ShaderMaterial.hpp"
+#include "MingEngine/Editor/UI/EditorIcons.hpp"
 #include "ThirdParty/GLFW/glfw3.h"
 
 Control* EditorUI::GetRootControl() const
@@ -39,16 +43,16 @@ bool EditorUI::HandleInput(InputEvent const& event)
 		if ((event.m_keyCode == GLFW_KEY_Z || event.m_keyCode == GLFW_KEY_Y)
 			&& dynamic_cast<LineEdit*>(root->GetGuiFocus()) == nullptr)
 		{
-			if (Node* scene = m_owner->GetSceneTree()->GetScene())
+			if (ObjectID history = m_inspectorPanel->GetUndoHistory(); history.IsValid())
 			{
 				FinishNativeEditing();
 				if (event.m_keyCode == GLFW_KEY_Y || (event.m_modifiers & GLFW_MOD_SHIFT) != 0)
 				{
-					m_owner->GetUndoRedo().Redo(scene->GetObjectID());
+					m_owner->GetUndoRedo().Redo(history);
 				}
 				else
 				{
-					m_owner->GetUndoRedo().Undo(scene->GetObjectID());
+					m_owner->GetUndoRedo().Undo(history);
 				}
 			}
 			return true;
@@ -65,11 +69,11 @@ bool EditorUI::HandleInput(InputEvent const& event)
 		case GLFW_KEY_S:
 			if ((event.m_modifiers & GLFW_MOD_SHIFT) != 0)
 			{
-				m_owner->RequestSaveSceneAs();
+				m_inspectorPanel->SaveResourceAs();
 			}
 			else
 			{
-				m_owner->SaveScene();
+				m_inspectorPanel->SaveResource();
 			}
 			return true;
 		case GLFW_KEY_W:
@@ -181,4 +185,105 @@ void EditorUI::TogglePanel(EditorPanel* panel)
 
 	UpdateNativeDocking();
 	SaveNativeLayout();
+}
+
+void EditorUI::SaveMaterialAs(Ref<MaterialResource> const& source, std::function<void(VirtualPath const&)> created, VirtualPath const& directory)
+{
+	VirtualPath initial = source.IsValid() ? source->GetVirtualPath().GetParent() : directory;
+	OpenSceneFile(SceneFilePopup::Mode::ResourceSave, initial.Join(source.IsValid() ? "Material.tres" : "ShaderMaterial.tres"),
+		[this, source, created](VirtualPath const& path)
+		{
+			FinishNativeEditing();
+			if (source.IsValid() && path == source->GetVirtualPath())
+			{
+				Warning("Save Material As", "Choose a different path to create an independent material.");
+				return false;
+			}
+
+			Ref<MaterialResource> material = source.IsValid()
+				? Ref<MaterialResource>(dynamic_cast<MaterialResource*>(ClassDatabase::CreateInstance(source->GetClassName())))
+				: Ref<MaterialResource>(CreateRef<ShaderMaterial>());
+			if (!material.IsValid())
+			{
+				return false;
+			}
+			if (g_engine->m_fileSystem->Exists(path))
+			{
+				Ref<Resource> existing = ResourceLoader::LoadUncached(path);
+				if (existing.IsValid() && existing->GetClassName() != material->GetClassName())
+				{
+					Warning("Save Material As", "Choose a different path when saving a different resource type.");
+					return false;
+				}
+			}
+			if (source.IsValid())
+			{
+				material->m_shaderResource = source->m_shaderResource;
+				material->m_textureResources = source->m_textureResources;
+				material->m_tint = source->m_tint;
+				material->m_blendMode = source->m_blendMode;
+				material->m_depthMode = source->m_depthMode;
+				material->m_rasterizerMode = source->m_rasterizerMode;
+				material->m_samplerMode = source->m_samplerMode;
+			}
+
+			material->SetName(path.GetStem());
+			if (!ResourceSaver::Save(path, material))
+			{
+				return false;
+			}
+
+			ResourceLoader::ReloadIfCached(path);
+			if (created)
+			{
+				created(path);
+			}
+
+			return true;
+		});
+}
+
+void EditorUI::CreateResource(VirtualPath const& directory, std::function<void(VirtualPath const&)> created)
+{
+	FinishNativeEditing();
+	if (m_createResourcePopup == nullptr)
+	{
+		m_createResourcePopup = EditorPopupUtils::Create(GetRootControl(), "Create Resource", m_createResourceContent);
+		m_createResourcePopup->SetName("CreateResourcePopup");
+	}
+
+	EditorPopupUtils::ClearContent(m_createResourceContent);
+	EditorPopupUtils::AddLabel(m_createResourceContent, "Resource type:");
+	auto* types = MemNew<Tree>();
+	types->SetName("ResourceTypes");
+	types->SetVerticalSizeFlags(Control::Size_ExpandFill);
+	types->SetCustomMinimumSize(Vector2(0.f, 120.f));
+	m_createResourceContent->AddNode(types);
+	types->SetItems({ { 1, 0, "ShaderMaterial", true, false,
+		EditorIcons::GetIconTexture("ShaderMaterial"), EditorIcons::GetIconColor("ShaderMaterial", types) } });
+	types->Select(1);
+	EditorPopupUtils::AddLabel(m_createResourceContent, "A material drawn with a shader.", "EditorStatusLabel");
+	auto create = [this, directory, created]()
+	{
+		m_createResourcePopup->Close();
+		SaveMaterialAs({}, [this, created](VirtualPath const& path)
+		{
+			g_engine->m_fileSystem->ScanResourceTree();
+			m_fileSystemPanel->NavigateTo(path.GetParent());
+			m_fileSystemPanel->SelectPath(path);
+			if (created)
+			{
+				created(path);
+			}
+		}, directory);
+	};
+	types->SetActivatedCallback([create](uint64_t) { create(); });
+	auto* actions = EditorPopupUtils::AddActions(m_createResourceContent);
+	actions->SetSeparation(static_cast<float>(GetRootControl()->GetThemeConstant("spacing", "Editor")));
+	EditorPopupUtils::AddButton(actions, "Cancel", [this]() { m_createResourcePopup->Close(); });
+	Button* confirm = EditorPopupUtils::AddButton(actions, "Create", create);
+	confirm->SetThemeTypeVariation("EditorPrimaryButton");
+	EditorPopupUtils::Open(m_createResourcePopup, GetRootControl(),
+		Vector2(static_cast<float>(GetRootControl()->GetThemeConstant("project_popup_width", "Editor")), 0.f));
+	types->GrabFocus();
 }

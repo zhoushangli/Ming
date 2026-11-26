@@ -60,6 +60,8 @@ public:
 	void FinishInput(EditorUIContext& context);
 	void FinishNativeEditing();
 	void ShowUnsavedScene(String const& message, String const& question, String const& action);
+	void SaveMaterialAs(Ref<MaterialResource> const& source, std::function<void(VirtualPath const&)> created, VirtualPath const& directory = VirtualPath("res://"));
+	void CreateResource(VirtualPath const& directory, std::function<void(VirtualPath const&)> created);
 	void CreateScript(VirtualPath const& directory, std::string const& base, std::function<void(VirtualPath const&)> created);
 	void OpenSceneFile(
 		SceneFilePopup::Mode                    mode,
@@ -70,6 +72,9 @@ public:
 	void ShowChoice(String const& title, String const& message, std::vector<String> const& choices, std::function<void(int)> chosen);
 	void ShowProjectProgress(String const& message, int completed, int total);
 	bool IsProjectSettingsOpen() const { return m_projectSettingsPopup.IsOpen(); }
+	bool HasProjectSettingsChanges() const { return m_projectSettingsPopup.HasChanges(); }
+	bool SaveProjectSettingsDraft() { return !m_projectSettingsPopup.HasChanges() || m_projectSettingsPopup.Confirm(); }
+	void DiscardProjectSettingsDraft() { m_projectSettingsPopup.Cancel(); }
 	void ShowBuildProgress(String const& message);
 	void HideBuildProgress();
 	bool IsBuildProgressVisible() const;
@@ -131,6 +136,8 @@ private:
 	OptionButton*              m_settingsScale   = nullptr;
 	PopupPanel* m_scriptFilePopup = nullptr;
 	VBoxContainer* m_scriptFileContent = nullptr;
+	PopupPanel* m_createResourcePopup = nullptr;
+	VBoxContainer* m_createResourceContent = nullptr;
 	CreateScriptPopup          m_createScriptPopup;
 	SceneFilePopup             m_sceneFilePopup;
 	ProjectSettingsPopup       m_projectSettingsPopup;

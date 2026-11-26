@@ -83,6 +83,34 @@ Ref<Theme> EditorThemeManager::CreateTheme()
 		"Button",
 		box(Color::Transparent, Color::Transparent, 0.f, contentPadding, static_cast<float>(compactSpacing)));
 	theme->SetStyleBox("focus", "Button", box(Color::Transparent, accent, 1.f, 0.f, 0.f));
+
+	theme->SetConstant("arrow_size", "OptionButton", 8);
+	theme->SetConstant("arrow_margin", "OptionButton", 6);
+	theme->SetConstant("radio_size", "OptionButton", 12);
+	theme->SetConstant("radio_margin", "OptionButton", 6);
+	theme->SetConstant("popup_max_height", "OptionButton", 240);
+	theme->SetTypeVariation("OptionButtonPopup", "PanelContainer");
+	auto optionPopup = box(panel, border, 1.f, 4.f, 4.f);
+	optionPopup->SetCornerRadiusAll(ThemeRadii::Small);
+	theme->SetStyleBox("panel", "OptionButtonPopup", optionPopup);
+	theme->SetTypeVariation("OptionButtonItem", "Button");
+	theme->SetConstant("minimum_height", "OptionButtonItem", controlHeight);
+	for (char const* state : { "normal", "hover", "pressed", "hover_pressed", "disabled" })
+	{
+		bool const active = std::string(state) == "hover" || std::string(state) == "pressed" || std::string(state) == "hover_pressed";
+		auto item = box(active ? tint : Color::Transparent, Color::Transparent, 0.f, 6.f, 2.f);
+		item->SetContentMargin(ThemeStyleBox::Side::Left, 24.f);
+		theme->SetStyleBox(state, "OptionButtonItem", item);
+	}
+	theme->SetStyleBox("focus", "OptionButtonItem", box(Color::Transparent, Color::Transparent, 0.f, 0.f, 0.f));
+	theme->SetColor("font_pressed_color", "OptionButtonItem", text);
+	theme->SetColor("font_hover_pressed_color", "OptionButtonItem", text);
+	auto checked = box(text, accent, 3.f, 0.f, 0.f);
+	checked->SetCornerRadiusAll(6.f);
+	theme->SetStyleBox("checked", "OptionButtonRadio", checked);
+	auto unchecked = box(strong, Color::Transparent, 0.f, 0.f, 0.f);
+	unchecked->SetCornerRadiusAll(6.f);
+	theme->SetStyleBox("unchecked", "OptionButtonRadio", unchecked);
 	theme->SetTypeVariation("EditorScriptButton", "Button");
 	theme->SetStyleBox("normal", "EditorScriptButton", box(field, border, 1.f, 4.f, 2.5f));
 	theme->SetStyleBox("hover", "EditorScriptButton", box(elevated, accent, 1.f, 4.f, 2.5f));
@@ -518,6 +546,12 @@ Ref<Theme> EditorThemeManager::CreateScaledTheme(Ref<Theme> const& baseTheme, fl
 	// Only these constants represent editor dimensions; switches and counts retain their values.
 	// e.g. A user-defined mode constant is copied even when its value happens to be 20.
 	static std::pair<char const*, char const*> const dimensions[] = {
+		{ "OptionButton", "arrow_size" },
+		{ "OptionButton", "arrow_margin" },
+		{ "OptionButton", "radio_size" },
+		{ "OptionButton", "radio_margin" },
+		{ "OptionButton", "popup_max_height" },
+		{ "OptionButtonItem", "minimum_height" },
 		{ "EditorSettingsPage", "margin_left" },
 		{ "EditorSettingsPage", "margin_top" },
 		{ "EditorSettingsPage", "margin_right" },

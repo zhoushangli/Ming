@@ -34,7 +34,6 @@ Ref<TextureResource> EditorIcons::GetIconTexture(std::string const& name, std::s
 
 	auto texture           = CreateRef<TextureResource>();
 	texture->m_image       = image;
-	texture->m_samplerMode = SamplerMode::BILINEAR_CLAMP;
 	if (!texture->InitGPUResources())
 	{
 		return {};

@@ -172,6 +172,22 @@
             <summary>Gets this item&apos;s own visibility setting. Does not check whether a parent item is hidden.</summary>
             <returns>True if this item is set to be visible.</returns>
         </member>
+        <member name="M:Ming.CanvasItem.SetTextureFilter(Ming.TextureFilter)">
+            <summary>Sets texture filtering for this item. Inherit uses the parent canvas item, with Linear as the root default. Does not change the shared texture resource.</summary>
+            <param name="filter">Inherit, Nearest or Linear.</param>
+        </member>
+        <member name="M:Ming.CanvasItem.GetTextureFilter">
+            <summary>Gets this item&apos;s texture filter setting, which may be Inherit.</summary>
+            <returns>The local texture filter setting.</returns>
+        </member>
+        <member name="M:Ming.CanvasItem.SetTextureRepeat(Ming.TextureRepeat)">
+            <summary>Sets texture addressing for this item. Inherit uses the parent canvas item, with Disabled as the root default. Enabled repeats texture coordinates outside the image.</summary>
+            <param name="repeat">Inherit, Disabled or Enabled.</param>
+        </member>
+        <member name="M:Ming.CanvasItem.GetTextureRepeat">
+            <summary>Gets this item&apos;s texture repeat setting, which may be Inherit.</summary>
+            <returns>The local texture repeat setting.</returns>
+        </member>
         <member name="T:Ming.CapsuleCollider3D">
             <summary>A 3D collision shape defined by a line segment and a radius.</summary>
         </member>
@@ -452,13 +468,6 @@
             <summary>Creates a new node tree from the stored scene data. Does not add the result to a scene tree.</summary>
             <returns>The new root node, or null if the data is empty or the node tree could not be created.</returns>
         </member>
-        <member name="T:Ming.PackedSceneLoader">
-            <summary>Engine loader for packed scenes from .tscn files.</summary>
-            <remarks>Uses Ming&apos;s JSON scene format.</remarks>
-        </member>
-        <member name="T:Ming.PackedSceneSaver">
-            <summary>Engine save handler for packed scenes in .tscn files.</summary>
-        </member>
         <member name="T:Ming.PanelContainer">
             <summary>Draws a styled panel behind its child controls.</summary>
         </member>
@@ -555,6 +564,10 @@
         </member>
         <member name="T:Ming.ScrollContainer">
             <summary>Shows child content through a scrollable area.</summary>
+        </member>
+        <member name="T:Ming.ShaderMaterial">
+            <summary>A material drawn with an assigned shader.</summary>
+            <remarks>Inherits the fixed texture slots, tint and render states of MaterialResource.</remarks>
         </member>
         <member name="T:Ming.ShaderResource">
             <summary>Holds a shader used by the renderer.</summary>

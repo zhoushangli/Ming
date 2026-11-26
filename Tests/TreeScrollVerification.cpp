@@ -341,14 +341,17 @@ void VerifyEditor(bool capture)
 		std::ofstream project(directory / "project.ming");
 		project << R"({"type":"ProjectSettings","version":1,"start_scene_path":"res://main.tscn"})";
 		std::ofstream scene(directory / "main.tscn");
-		scene << R"({"nodes":[{"name":"Main","type":"Node","parent":""})";
+		scene << "[ming_scene format=1]\n\n[node name=\"Main\" type=\"Node\" parent=\"\"]\n";
 		for (int i = 0; i < 70; ++i)
 		{
-			scene << ",{\"name\":\"Item" << i << "\",\"type\":\"Node\",\"parent\":\".\"}";
+			scene << "\n[node name=\"Item" << i << "\" type=\"Node\" parent=\".\"]\n";
 			std::ofstream file(directory / ("item" + std::to_string(i) + ".tscn"));
-			file << R"({"nodes":[{"name":"Main","type":"Node","parent":""}]})";
+			file << R"([ming_scene format=1]
+
+[node name="Main" type="Node" parent=""]
+)";
 		}
-		scene << "]}";
+
 	}
 
 	MingRunConfig config;

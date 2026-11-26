@@ -1,4 +1,5 @@
 #include "MingEngine/Editor/EditorSceneManager.hpp"
+#include "MingEngine/Editor/EditorChecker.hpp"
 #include "MingEngine/Editor/EditorCSharpBuildManager.hpp"
 #include "MingEngine/Editor/EditorRunManager.hpp"
 #include "MingEngine/Editor/Gizmos/EditorGizmos.hpp"
@@ -72,7 +73,7 @@ void EditorSceneManager::RequestSceneAction(PendingSceneAction action, std::func
 	CancelPendingSceneAction();
 	m_pendingSceneAction = action;
 	m_afterClose         = std::move(completed);
-	if (IsSceneDirty())
+	if (IsSceneDirty() || (action == PendingSceneAction::Quit && m_editor.GetChecker()->HasUnsavedChanges()))
 	{
 		m_openUnsavedScenePopup = true;
 	}
@@ -95,11 +96,11 @@ void EditorSceneManager::RequestCloseScene(std::function<void()> completed)
 void EditorSceneManager::ClearSceneState()
 {
 	m_editor.m_editorGizmos->CancelDrag();
+	ClearSceneHistory();
 	m_editor.GetSceneTree()->ClearScene();
 	m_editor.m_selection->Clear();
-	m_editor.m_undoRedo.ClearAllHistory();
 	m_editorData.m_currentScenePath = {};
-	m_editorData.m_isSceneDirty     = false;
+	m_editor.GetChecker()->ClearSceneDirty();
 	m_editorData.m_sceneActionTime = std::chrono::steady_clock::now();
 	m_editorData.m_sceneWasSaved = false;
 }
@@ -109,7 +110,6 @@ void EditorSceneManager::NewRootCreated()
 	m_editorData.m_sceneActionTime = std::chrono::steady_clock::now();
 	m_editorData.m_sceneWasSaved = false;
 	m_editorData.m_currentScenePath = {};
-	m_editor.m_undoRedo.ClearAllHistory();
 	MarkSceneDirty();
 }
 
@@ -155,11 +155,11 @@ bool EditorSceneManager::LoadScene(VirtualPath const& virtualPath)
 	}
 
 	m_editor.m_editorGizmos->CancelDrag();
+	ClearSceneHistory();
 	m_editor.GetSceneTree()->ChangeScene(newSceneRoot);
-	m_editor.m_undoRedo.ClearAllHistory();
 	m_editorData.m_currentScenePath = virtualPath;
 	m_editor.NotifySceneLoaded(virtualPath);
-	m_editorData.m_isSceneDirty     = false;
+	m_editor.GetChecker()->ClearSceneDirty();
 	m_editorData.m_sceneActionTime = std::chrono::steady_clock::now();
 	m_editorData.m_sceneWasSaved = false;
 	m_editor.m_selection->Clear();
@@ -212,9 +212,8 @@ bool EditorSceneManager::SaveSceneAs(VirtualPath const& path)
 	}
 
 	m_editorData.m_currentScenePath = path;
-	m_editorData.m_isSceneDirty     = false;
+	m_editor.GetChecker()->ClearSceneDirty();
 	m_editorData.m_sceneActionTime = std::chrono::steady_clock::now();
-	m_editorData.m_sceneWasSaved = false;
 	m_editorData.m_sceneWasSaved = true;
 	g_engine->m_fileSystem->ScanResourceTree();
 	INFO_PRINT("Saved scene: " + path.GetString());
@@ -258,13 +257,13 @@ void EditorSceneManager::MarkSceneDirty()
 {
 	if (HasScene())
 	{
-		m_editorData.m_isSceneDirty = true;
+		m_editor.GetChecker()->MarkSceneDirty();
 	}
 }
 
 bool EditorSceneManager::IsSceneDirty() const
 {
-	return m_editorData.m_isSceneDirty;
+	return m_editor.GetChecker() != nullptr && m_editor.GetChecker()->IsSceneDirty();
 }
 
 bool EditorSceneManager::HasScene() const
@@ -296,11 +295,11 @@ bool EditorSceneManager::CreateScene(VirtualPath const& virtualPath, std::string
 	}
 
 	m_editor.m_editorGizmos->CancelDrag();
+	ClearSceneHistory();
 	m_editor.GetSceneTree()->ChangeScene(sceneRoot);
-	m_editor.m_undoRedo.ClearAllHistory();
 	m_editorData.m_currentScenePath = virtualPath;
 	m_editor.NotifySceneLoaded(virtualPath);
-	m_editorData.m_isSceneDirty     = false;
+	m_editor.GetChecker()->ClearSceneDirty();
 	m_editorData.m_sceneActionTime = std::chrono::steady_clock::now();
 	m_editorData.m_sceneWasSaved = false;
 	m_editor.m_selection->Clear();
@@ -324,8 +323,9 @@ void EditorSceneManager::RenderUnsavedScenePopup()
 			: std::to_string(seconds / 60) + " minutes ago.";
 		bool const quit = m_pendingSceneAction == PendingSceneAction::Quit;
 		bool const close = m_pendingSceneAction == PendingSceneAction::Close;
-		m_editor.m_editorUI->ShowUnsavedScene("Scene \"" + path + "\" has unsaved changes.\nScene "
-			+ (m_editorData.m_sceneWasSaved ? "saved: " : "opened: ") + time,
+		std::string const message = quit ? "There are unsaved scene, resource or project settings changes."
+			: "Scene \"" + path + "\" has unsaved changes.\nScene " + (m_editorData.m_sceneWasSaved ? "saved: " : "opened: ") + time;
+		m_editor.m_editorUI->ShowUnsavedScene(message,
 			quit ? "Save before quitting?" : close ? "Save before closing?" : "Save before continuing?",
 			quit ? "Save & Quit" : close ? "Save & Close" : "Save & Continue");
 	}
@@ -359,7 +359,7 @@ void EditorSceneManager::ExecutePendingSceneAction()
 		}
 		break;
 	case PendingSceneAction::Quit:
-		m_editorData.m_isSceneDirty = false;
+		m_editor.GetChecker()->ApproveQuit();
 		g_app->Quit();
 		break;
 	case PendingSceneAction::Continue:
@@ -381,7 +381,13 @@ void EditorSceneManager::ResolvePendingSceneAction(SceneActionChoice choice)
 		CancelPendingSceneAction();
 		return;
 	case SceneActionChoice::Save:
-		if (!SaveScene())
+		if (m_pendingSceneAction == PendingSceneAction::Quit && !m_editor.GetChecker()->SavePendingChanges())
+		{
+			CancelPendingSceneAction();
+			return;
+		}
+
+		if (IsSceneDirty() && !SaveScene())
 		{
 			m_waitingForSave = m_lastSaveResult == SaveResult::AwaitingPath;
 			if (!m_waitingForSave)
@@ -392,6 +398,10 @@ void EditorSceneManager::ResolvePendingSceneAction(SceneActionChoice choice)
 		}
 		break;
 	case SceneActionChoice::Discard:
+		if (m_pendingSceneAction == PendingSceneAction::Quit)
+		{
+			m_editor.m_editorUI->DiscardProjectSettingsDraft();
+		}
 		break;
 	}
 
@@ -491,5 +501,13 @@ void EditorSceneManager::Update()
 	{
 		m_resumePending = false;
 		ExecutePendingSceneAction();
+	}
+}
+
+void EditorSceneManager::ClearSceneHistory()
+{
+	if (Node* scene = m_editor.GetSceneTree()->GetScene())
+	{
+		m_editor.m_undoRedo.ClearHistory(scene->GetObjectID());
 	}
 }

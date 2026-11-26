@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<class name="ShaderMaterial">
+  <brief_description>A material drawn with an assigned shader.</brief_description>
+  <description>Inherits the fixed texture slots, tint and render states of MaterialResource.</description>
+</class>

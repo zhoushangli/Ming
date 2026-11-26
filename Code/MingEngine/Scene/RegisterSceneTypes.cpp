@@ -3,6 +3,7 @@
 #include "MingEngine/Core/Object/ClassDatabase.hpp"
 #include "MingEngine/Scene/Resource/SurfaceTool.hpp"
 #include "MingEngine/Scene/Resource/MaterialResource.hpp"
+#include "MingEngine/Scene/Resource/ShaderMaterial.hpp"
 #include "MingEngine/Core/IO/ResourceImporter.hpp"
 #include "MingEngine/Core/IO/ResourceLoader.hpp"
 #include "MingEngine/Core/IO/ResourceSaver.hpp"
@@ -19,7 +20,7 @@
 #include "MingEngine/Scene/Core/CanvasItem.hpp"
 #include "MingEngine/Scene/Core/Node.hpp"
 #include "MingEngine/Scene/Core/PackedScene.hpp"
-#include "MingEngine/Scene/Core/PackedSceneFormat.hpp"
+#include "MingEngine/Core/IO/ResourceFormatText.hpp"
 #include "MingEngine/Scene/Core/RaycastSpace3D.hpp"
 #include "MingEngine/Scene/Core/SceneTree.hpp"
 #include "MingEngine/Scene/Core/Viewport.hpp"
@@ -77,6 +78,13 @@ void RegisterSceneTypes()
 	BIND_ENUM(SamplerMode, POINT_WRAP);
 	BIND_ENUM(SamplerMode, BILINEAR_WRAP);
 	BIND_ENUM(SamplerMode, COUNT);
+
+	BIND_ENUM(TextureFilter, Inherit);
+	BIND_ENUM(TextureFilter, Nearest);
+	BIND_ENUM(TextureFilter, Linear);
+	BIND_ENUM(TextureRepeat, Inherit);
+	BIND_ENUM(TextureRepeat, Disabled);
+	BIND_ENUM(TextureRepeat, Enabled);
 	BIND_ENUM(BlendMode, ALPHA);
 	BIND_ENUM(BlendMode, ADDITIVE);
 	BIND_ENUM(BlendMode, OPAQUE);
@@ -93,6 +101,7 @@ void RegisterSceneTypes()
 	BIND_ENUM(RasterizerMode, COUNT);
 
 	ClassDatabase::RegisterClass<MaterialResource>();
+	ClassDatabase::RegisterClass<ShaderMaterial>();
 	ClassDatabase::RegisterClass<SurfaceTool>();
 
 	// Resource types
@@ -106,17 +115,16 @@ void RegisterSceneTypes()
 	ClassDatabase::RegisterClass<CSharpScript>();
 
 	// Resource format types
-	ClassDatabase::RegisterClass<PackedSceneLoader>();
+	ClassDatabase::RegisterClass<ResourceFormatLoaderText>();
 	ClassDatabase::RegisterClass<MeshResourceLoader>();
 	ClassDatabase::RegisterClass<FontResourceLoader>();
 	ClassDatabase::RegisterClass<TextureResourceLoader>();
 	ClassDatabase::RegisterClass<ShaderResourceLoader>();
 	ClassDatabase::RegisterClass<CSharpScriptLoader>();
 
-	ClassDatabase::RegisterClass<PackedSceneSaver>();
+	ClassDatabase::RegisterClass<ResourceFormatSaverText>();
 	ClassDatabase::RegisterClass<MeshResourceSaver>();
 	ClassDatabase::RegisterClass<TextureResourceSaver>();
-	// ClassDatabase::RegisterClass<ShaderResourceSaver>();
 	ClassDatabase::RegisterClass<CSharpScriptSaver>();
 
 	ClassDatabase::RegisterClass<OBJImporter>();
@@ -124,17 +132,16 @@ void RegisterSceneTypes()
 	ClassDatabase::RegisterClass<ImageImporter>();
 
 	// Resource format registration
-	ResourceLoader::AddLoader(CreateRef<PackedSceneLoader>());
+	ResourceLoader::AddLoader(CreateRef<ResourceFormatLoaderText>());
 	ResourceLoader::AddLoader(CreateRef<MeshResourceLoader>());
 	ResourceLoader::AddLoader(CreateRef<FontResourceLoader>());
 	ResourceLoader::AddLoader(CreateRef<TextureResourceLoader>());
 	ResourceLoader::AddLoader(CreateRef<ShaderResourceLoader>());
 	ResourceLoader::AddLoader(CreateRef<CSharpScriptLoader>());
 
-	ResourceSaver::AddSaver(CreateRef<PackedSceneSaver>());
+	ResourceSaver::AddSaver(CreateRef<ResourceFormatSaverText>());
 	ResourceSaver::AddSaver(CreateRef<MeshResourceSaver>());
 	ResourceSaver::AddSaver(CreateRef<TextureResourceSaver>());
-	// ResourceSaver::AddSaver(CreateRef<ShaderResourceSaver>());
 	ResourceSaver::AddSaver(CreateRef<CSharpScriptSaver>());
 
 	ResourceImporter::AddImporter(CreateRef<OBJImporter>());

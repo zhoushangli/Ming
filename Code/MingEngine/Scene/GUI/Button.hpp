@@ -4,6 +4,8 @@
 #include "MingEngine/Core/String.hpp"
 #include "MingEngine/Engine/Render/TextServer.hpp"
 
+#include <optional>
+
 class Button : public BaseButton
 {
 	MCLASS(Button, BaseButton);
@@ -43,6 +45,7 @@ public:
 
 	void SetText(String const& text);
 	void SetIcon(Ref<TextureResource> const& icon);
+	void SetIconTint(Color const& tint);
 	void SetFont(Ref<FontResource> const& font) { AddThemeFontOverride("font", font); }
 	void SetFontSize(int fontSize) { AddThemeFontSizeOverride("font_size", fontSize); }
 	void SetClipText(bool enabled);
@@ -60,9 +63,9 @@ protected:
 	void OnDrawModeChanged() override;
 
 	void OnNotification(int notification);
+	virtual AABB2 GetTextRect() const;
 
 private:
-	AABB2   GetTextRect() const;
 	Vector2 GetContentSize() const;
 	Vector2 GetIconSize() const;
 	void    DrawContent(Color const& color);
@@ -71,6 +74,7 @@ private:
 	String               m_text;
 	HorizontalAlignment  m_alignment = HorizontalAlignment::Center;
 	Ref<TextureResource> m_icon;
+	std::optional<Color> m_iconTint;
 	bool                 m_clipText = false;
 	TextOverrunBehavior  m_overrun  = TextOverrunBehavior::TrimNothing;
 	// These are resolved values, populated by the explicit bindings in BindMethods.

@@ -17,6 +17,7 @@ public:
 	void               PrepareFields(EditorUIContext& context);
 	Control*           GetContentControl() const { return m_content; }
 	bool               IsOpen() const;
+	bool               HasChanges() const;
 
 private:
 	void RefreshAutoloads();

@@ -19,6 +19,7 @@
 #include <cctype>
 #include <cstring>
 #include <filesystem>
+#include <fstream>
 #include <string>
 
 namespace
@@ -284,6 +285,10 @@ void FileSystemPanel::OpenSelected()
 		{
 			EditorNode::Get()->OpenCSharpScript(entry->GetVirtualPath());
 		}
+		else if (entry->GetVirtualPath().HasExtension(".tres"))
+		{
+			m_context.m_editorUI->GetPanel<InspectorPanel>().EditResource(ResourceLoader::Load(entry->GetVirtualPath()));
+		}
 		else if (entry->GetVirtualPath().HasExtension(".tscn"))
 		{
 			m_context.m_editorUI->FinishNativeEditing();
@@ -356,11 +361,22 @@ void FileSystemPanel::ShowContextMenu(Vector2 position)
 					NavigateTo(path.GetParent());
 					SelectPath(path);
 				});
-			} }
+			} },
+		{ "Resource...", [this, directory]()
+			{
+				m_context.m_editorUI->CreateResource(directory, [this](VirtualPath const& path)
+				{
+					m_context.m_editorUI->GetPanel<InspectorPanel>().EditResource(ResourceLoader::Load(path));
+				});
+			} },
+		{ "TextFile...", {} }
 	};
 	create.m_children[0].m_icon = "Folder";
 	create.m_children[1].m_icon = "PackedScene";
 	create.m_children[2].m_icon = "CSharpScript";
+	create.m_children[3].m_icon = "Resource";
+	create.m_children[4].m_icon = "File";
+	create.m_children[4].m_enabled = false;
 	std::vector<EditorUI::MenuItem> actions = {
 		{ "Open", [this]() { OpenSelected(); } },
 		std::move(create)
@@ -528,12 +544,39 @@ void FileSystemPanel::UpdateItems()
 		m_fileItems[key]            = entry->GetVirtualPath();
 		size_t const      index     = items.size();
 		std::string const extension = ToLower(entry->GetPhysicalPath().extension().string());
-		char const*       icon      = entry->IsDirectory()                         ? "Folder"
+		std::string       icon      = entry->IsDirectory()                         ? "Folder"
 									  : extension == ".tscn"                       ? "PackedScene"
+									  : extension == ".tres"                       ? "Resource"
 									  : extension == ".cs"                         ? "CSharpScript"
 									  : extension == ".png" || extension == ".jpg" ? "Texture2D"
 									  : extension == ".obj" || extension == ".glb" ? "Mesh"
 																				   : "File";
+		if (extension == ".tres" && !entry->IsDirectory())
+		{
+			auto found = m_resourceIcons.find(entry->GetVirtualPath().GetString());
+			if (found == m_resourceIcons.end() || found->second.first != entry->GetModifiedTime())
+			{
+				std::ifstream file(entry->GetPhysicalPath(), std::ios::binary);
+				std::string header;
+				std::getline(file, header);
+				size_t const begin = header.find("type=\"");
+				if (begin != std::string::npos)
+				{
+					size_t const end = header.find('"', begin + 6);
+					std::string const type = header.substr(begin + 6, end - begin - 6);
+					if (ClassDatabase::IsSubclassOf(type, "ShaderMaterial"))
+					{
+						icon = "ShaderMaterial";
+					}
+				}
+
+				m_resourceIcons[entry->GetVirtualPath().GetString()] = { entry->GetModifiedTime(), icon };
+			}
+			else
+			{
+				icon = found->second.second;
+			}
+		}
 		items.push_back(
 			{ key,
 			  parent,

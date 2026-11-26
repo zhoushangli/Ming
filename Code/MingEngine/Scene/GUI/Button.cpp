@@ -95,6 +95,15 @@ void Button::SetText(String const& text)
 	}
 }
 
+void Button::SetIconTint(Color const& tint)
+{
+	if (!m_iconTint.has_value() || *m_iconTint != tint)
+	{
+		m_iconTint = tint;
+		QueueRedraw();
+	}
+}
+
 void Button::SetIcon(Ref<TextureResource> const& icon)
 {
 	if (m_icon != icon)
@@ -211,7 +220,7 @@ void Button::DrawContent(Color const& color)
 		Rect2 source;
 		source.m_position = Vector2::Zero;
 		source.m_size     = Vector2(GetIcon()->GetDimensions());
-		DrawTextureRectRegion(GetIcon(), iconRect, source, color);
+		DrawTextureRectRegion(GetIcon(), iconRect, source, m_iconTint.value_or(color));
 		offset.x += iconSize.x + separation;
 	}
 

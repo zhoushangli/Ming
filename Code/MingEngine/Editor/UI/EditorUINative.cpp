@@ -47,6 +47,8 @@ void EditorUI::InitializeNative(EditorNode* owner)
 	ClassDatabase::RegisterClass<ViewportPanel>();
 	ClassDatabase::RegisterClass<OutputPanel>();
 	m_nativeRoot = MemNew<ColorRect>();
+	m_nativeRoot->SetTextureFilter(TextureFilter::Linear);
+	m_nativeRoot->SetTextureRepeat(TextureRepeat::Disabled);
 	m_nativeRoot->SetName("EditorUI");
 	m_nativeRoot->SetSerializable(false);
 	m_nativeRoot->SetClipContents(true);
@@ -147,6 +149,7 @@ std::vector<EditorUI::MenuItem> EditorUI::CreateMenuItems(std::string const& men
 				   false,
 				   false,
 				   hasScene },
+				 { "Save All", [this]() { m_owner->SaveAll(); } },
 				 { "Save Scene As...",
 				   [this]()
 				   {
@@ -412,6 +415,11 @@ void EditorUI::Render(EditorUIContext& context)
 	m_sceneFilePopup.Render(context);
 	m_createScriptPopup.Render(context);
 	m_warningPopup.Render(context);
+	if (m_createResourcePopup != nullptr && m_createResourcePopup->IsVisible())
+	{
+		EditorPopupUtils::Layout(m_createResourcePopup,
+			Vector2(static_cast<float>(m_nativeRoot->GetThemeConstant("project_popup_width", "Editor")), 0.f));
+	}
 	if (IsBuildProgressVisible())
 	{
 		EditorPopupUtils::Layout(m_buildPopup,

@@ -1,4 +1,5 @@
 #include "MingEngine/Core/Object/VariantJson.hpp"
+#include <cmath>
 #include "MingEngine/Core/StringUtils.hpp"
 
 #include "MingEngine/Core/ErrorWarningAssert.hpp"
@@ -29,7 +30,7 @@ bool IsNumberArray(VariantJson::Json const& json, size_t expectedSize)
 
 	for (VariantJson::Json const& entry : json)
 	{
-		if (!entry.is_number())
+		if (!entry.is_number() || !std::isfinite(entry.get<float>()))
 		{
 			return false;
 		}
@@ -63,6 +64,30 @@ bool TrySerialize(Variant const& value, Json& outJson)
 	case Variant::Type::String:
 		outJson = value.As<String>().ToUtf8();
 		return true;
+	case Variant::Type::Vector4:
+	{
+		auto const& vector = value.As<Vector4>();
+		outJson = Json::array({ vector.x, vector.y, vector.z, vector.w });
+		return true;
+	}
+	case Variant::Type::AABB2:
+	{
+		auto const& box = value.As<AABB2>();
+		outJson = Json::array({ box.m_mins.x, box.m_mins.y, box.m_maxs.x, box.m_maxs.y });
+		return true;
+	}
+	case Variant::Type::OBB2:
+	{
+		auto const& box = value.As<OBB2>();
+		outJson = Json::array({ box.m_center.x, box.m_center.y, box.m_iBasisNormal.x, box.m_iBasisNormal.y, box.m_halfDimensions.x, box.m_halfDimensions.y });
+		return true;
+	}
+	case Variant::Type::Capsule3:
+	{
+		auto const& capsule = value.As<Capsule3>();
+		outJson = Json::array({ capsule.m_start.x, capsule.m_start.y, capsule.m_start.z, capsule.m_end.x, capsule.m_end.y, capsule.m_end.z, capsule.m_radius });
+		return true;
+	}
 	case Variant::Type::Vector2:
 	{
 		Vector2 const& vector = value.As<Vector2>();
@@ -175,7 +200,7 @@ bool TryDeserialize(Json const& json, Variant::Type expectedType, Variant& outVa
 			}
 			break;
 		case Variant::Type::Int:
-			if (json.is_number_integer())
+			if (json.is_number_integer() && json.get<double>() >= (std::numeric_limits<int>::min)() && json.get<double>() <= (std::numeric_limits<int>::max)())
 			{
 				outValue = Variant(json.get<int>());
 				return true;
@@ -183,7 +208,7 @@ bool TryDeserialize(Json const& json, Variant::Type expectedType, Variant& outVa
 
 			break;
 		case Variant::Type::Float:
-			if (json.is_number())
+			if (json.is_number() && std::isfinite(json.get<float>()))
 			{
 				outValue = Variant(json.get<float>());
 				return true;
@@ -194,6 +219,38 @@ bool TryDeserialize(Json const& json, Variant::Type expectedType, Variant& outVa
 			if (json.is_string())
 			{
 				outValue = Variant(json.get<std::string>());
+				return true;
+			}
+
+			break;
+		case Variant::Type::Vector4:
+			if (IsNumberArray(json, 4))
+			{
+				outValue = Variant(Vector4(json[0].get<float>(), json[1].get<float>(), json[2].get<float>(), json[3].get<float>()));
+				return true;
+			}
+
+			break;
+		case Variant::Type::AABB2:
+			if (IsNumberArray(json, 4))
+			{
+				outValue = Variant(AABB2(json[0].get<float>(), json[1].get<float>(), json[2].get<float>(), json[3].get<float>()));
+				return true;
+			}
+
+			break;
+		case Variant::Type::OBB2:
+			if (IsNumberArray(json, 6))
+			{
+				outValue = Variant(OBB2(Vector2(json[0].get<float>(), json[1].get<float>()), Vector2(json[2].get<float>(), json[3].get<float>()), Vector2(json[4].get<float>(), json[5].get<float>())));
+				return true;
+			}
+
+			break;
+		case Variant::Type::Capsule3:
+			if (IsNumberArray(json, 7))
+			{
+				outValue = Variant(Capsule3(Vector3(json[0].get<float>(), json[1].get<float>(), json[2].get<float>()), Vector3(json[3].get<float>(), json[4].get<float>(), json[5].get<float>()), json[6].get<float>()));
 				return true;
 			}
 

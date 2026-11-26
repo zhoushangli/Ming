@@ -16,6 +16,8 @@ public:
 		Open,
 		Save,
 		MainScene,
+		ResourceOpen,
+		ResourceSave,
 		Autoload
 	};
 

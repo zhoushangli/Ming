@@ -1,4 +1,4 @@
-#include "MingEngine/Editor/EditorProjectChecker.hpp"
+#include "MingEngine/Editor/EditorChecker.hpp"
 #include "MingEngine/Editor/EditorRunManager.hpp"
 #include "MingEngine/Editor/EditorCSharpBuildManager.hpp"
 #include "MingEngine/Editor/EditorSceneManager.hpp"
@@ -66,7 +66,7 @@ EditorNode::EditorNode(float editorScale, std::function<void()> pollGameProcess)
 EditorNode::~EditorNode()
 {
 	ShutdownBackgroundWork();
-	delete m_projectChecker;
+	delete m_checker;
 	delete m_runManager;
 	delete m_buildManager;
 	delete m_sceneManager;
@@ -215,7 +215,7 @@ void EditorNode::_Ready()
 		m_editorTheme->GetColor("background", "Editor"),
 		m_editorTheme->GetColor("font_color", "Control"));
 	m_editorUI->InitializeNative(this);
-	m_projectChecker = new EditorProjectChecker(*this);
+	m_checker = new EditorChecker(*this);
 	g_engine->m_windowSystem->SetFilesDroppedCallback([this](std::vector<std::string> const& paths, Vector2 position)
 	{
 		ImportExternalFiles(paths, position);
@@ -248,7 +248,7 @@ void EditorNode::OnNotification(int notification)
 			g_engine->m_inputSystem->SetCursorMode(CursorMode::POINTER);
 		}
 
-		m_projectChecker->Update();
+		m_checker->Update();
 		m_buildManager->UpdateCSharpBuild();
 
 		std::vector<std::pair<std::string, std::string>> messages;
@@ -332,6 +332,7 @@ void EditorNode::RequestSaveSceneAs()
 
 void EditorNode::BindMethods()
 {
+	ClassDatabase::BindMethod("MarkResourceDirty", &EditorNode::MarkResourceDirty, { "resource" });
 	ClassDatabase::BindMethod("MarkSceneDirty", &EditorNode::MarkSceneDirty, {});
 }
 
@@ -487,51 +488,70 @@ VirtualPath EditorNode::GetCurrentScenePath() const
 
 void EditorNode::CheckProject(bool full)
 {
-	if (m_projectChecker != nullptr)
+	if (m_checker != nullptr)
 	{
-		m_projectChecker->CheckProject(full);
+		m_checker->CheckProject(full);
 	}
 }
 
 void EditorNode::NotifyFileSaved(VirtualPath const& path)
 {
-	if (m_projectChecker != nullptr)
+	if (m_checker != nullptr)
 	{
-		m_projectChecker->NotifyFileSaved(path);
+		m_checker->NotifyFileSaved(path);
 	}
 }
 
 void EditorNode::NotifySceneLoaded(VirtualPath const& path)
 {
-	if (m_projectChecker != nullptr)
+	if (m_checker != nullptr)
 	{
-		m_projectChecker->NotifySceneLoaded(path);
+		m_checker->NotifySceneLoaded(path);
 	}
 }
 
 bool EditorNode::IsCheckingProject() const
 {
-	return m_projectChecker != nullptr && m_projectChecker->IsBusy();
+	return m_checker != nullptr && m_checker->IsBusy();
 }
 
 void EditorNode::ShutdownBackgroundWork()
 {
-	if (m_projectChecker != nullptr)
+	if (m_checker != nullptr)
 	{
-		m_projectChecker->Shutdown();
+		m_checker->Shutdown();
 	}
 	g_engine->m_windowSystem->SetFilesDroppedCallback({});
 }
 
 void EditorNode::ImportExternalFiles(std::vector<std::string> const& paths, Vector2 position)
 {
-	if (m_projectChecker != nullptr)
+	if (m_checker != nullptr)
 	{
-		m_projectChecker->ImportExternal(paths, position);
+		m_checker->ImportExternal(paths, position);
 	}
 }
 
 void EditorNode::RequestStop()
 {
 	m_runManager->Stop();
+}
+
+void EditorNode::MarkResourceDirty(Object* object)
+{
+	if (m_checker != nullptr)
+	{
+		m_checker->MarkResourceDirty(dynamic_cast<Resource*>(object));
+	}
+}
+
+bool EditorNode::SaveAll()
+{
+	m_editorUI->FinishNativeEditing();
+	if (m_checker != nullptr && !m_checker->SavePendingChanges())
+	{
+		return false;
+	}
+
+	return !IsSceneDirty() || SaveScene();
 }

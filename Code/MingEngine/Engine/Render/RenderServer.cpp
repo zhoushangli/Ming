@@ -589,7 +589,8 @@ void RenderServer::PrepareCanvasLayerRequests(RID layer, RID viewport, ViewportD
 }
 
 void RenderServer::PrepareCanvasItemRequests(
-	RID itemRID, RID viewport, ViewportData* viewportData, Vector2 const& parentPosition, AABB2 const* parentClip)
+	RID itemRID, RID viewport, ViewportData* viewportData, Vector2 const& parentPosition, AABB2 const* parentClip,
+	TextureFilter parentFilter, TextureRepeat parentRepeat)
 {
 	CanvasItemData* item = m_canvasItemOwner.GetOrNull(itemRID);
 	if (item == nullptr || item->m_viewport != viewport || !item->m_visible)
@@ -598,6 +599,11 @@ void RenderServer::PrepareCanvasItemRequests(
 	}
 
 	Vector2 const position = parentPosition + item->m_position;
+	TextureFilter const filter = item->m_textureFilter == TextureFilter::Inherit ? parentFilter : item->m_textureFilter;
+	TextureRepeat const repeat = item->m_textureRepeat == TextureRepeat::Inherit ? parentRepeat : item->m_textureRepeat;
+	SamplerMode const samplerMode = filter == TextureFilter::Nearest
+		? (repeat == TextureRepeat::Enabled ? SamplerMode::POINT_WRAP : SamplerMode::POINT_CLAMP)
+		: (repeat == TextureRepeat::Enabled ? SamplerMode::BILINEAR_WRAP : SamplerMode::BILINEAR_CLAMP);
 	AABB2         clip;
 	if (parentClip != nullptr)
 	{
@@ -661,7 +667,6 @@ void RenderServer::PrepareCanvasItemRequests(
 			Vector2      uvMin       = Vector2::Zero;
 			Vector2      uvMax       = Vector2::One;
 			GPUTexture*  texture     = nullptr;
-			SamplerMode  samplerMode = SamplerMode::POINT_CLAMP;
 
 			if (rectCommand->viewportTexture.IsValid())
 			{
@@ -685,7 +690,6 @@ void RenderServer::PrepareCanvasItemRequests(
 				}
 
 				texture     = textureData->m_texture;
-				samplerMode = rectCommand->texture->m_samplerMode;
 
 				if (rectCommand->hasRegion)
 				{
@@ -711,10 +715,6 @@ void RenderServer::PrepareCanvasItemRequests(
 					}
 
 					uvMax = Vector2(std::abs(rect.m_size.x) / dimensions.x, std::abs(rect.m_size.y) / dimensions.y);
-					samplerMode =
-						samplerMode == SamplerMode::BILINEAR_CLAMP || samplerMode == SamplerMode::BILINEAR_WRAP
-							? SamplerMode::BILINEAR_WRAP
-							: SamplerMode::POINT_WRAP;
 				}
 			}
 
@@ -803,7 +803,7 @@ void RenderServer::PrepareCanvasItemRequests(
 
 	for (RID childRID : item->m_children)
 	{
-		PrepareCanvasItemRequests(childRID, viewport, viewportData, position, parentClip);
+		PrepareCanvasItemRequests(childRID, viewport, viewportData, position, parentClip, filter, repeat);
 	}
 }
 
@@ -969,6 +969,22 @@ void RenderServer::CanvasItemSetPosition(RID rid, Vector2 const& position)
 	if (item != nullptr)
 	{
 		item->m_position = position;
+	}
+}
+
+void RenderServer::CanvasItemSetTextureFilter(RID rid, TextureFilter filter)
+{
+	if (CanvasItemData* item = m_canvasItemOwner.GetOrNull(rid))
+	{
+		item->m_textureFilter = filter;
+	}
+}
+
+void RenderServer::CanvasItemSetTextureRepeat(RID rid, TextureRepeat repeat)
+{
+	if (CanvasItemData* item = m_canvasItemOwner.GetOrNull(rid))
+	{
+		item->m_textureRepeat = repeat;
 	}
 }
 
@@ -1336,6 +1352,11 @@ RenderRequest RenderServer::BuildInstance3DRenderRequest(Instance3D const* insta
 		MaterialResource* materialResource = meshData->m_materialResource.IsValid()
 												 ? meshData->m_materialResource.Get()
 												 : GetDefaultMaterialResource().Get();
+
+		if (instance->m_materialOverride.IsValid())
+		{
+			materialResource = instance->m_materialOverride.Get();
+		}
 
 		if (materialResource != nullptr)
 		{
@@ -1785,5 +1806,13 @@ void RenderServer::MeshSetMaterial(RID mesh, Ref<MaterialResource> const& materi
 	if (MeshData* data = m_meshOwner.GetOrNull(mesh))
 	{
 		data->m_materialResource = material;
+	}
+}
+
+void RenderServer::Instance3DSetMaterialOverride(RID instance, Ref<MaterialResource> const& material)
+{
+	if (Instance3D* data = m_instanceOwner.GetOrNull(instance))
+	{
+		data->m_materialOverride = material;
 	}
 }

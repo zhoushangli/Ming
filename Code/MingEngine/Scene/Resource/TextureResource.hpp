@@ -31,8 +31,7 @@ protected:
 	static void BindMethods() {}
 
 public:
-	Ref<Image>  m_image;
-	SamplerMode m_samplerMode = SamplerMode::POINT_CLAMP;
+	Ref<Image> m_image;
 
 private:
 	// Texture RID on the RenderServer; RID::Invalid means the image has no GPU data yet.

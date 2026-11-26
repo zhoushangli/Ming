@@ -14,9 +14,11 @@ void Resource::BindMethods()
 	ClassDatabase::BindMethod("SetName", &Resource::SetName, { "name" });
 
 	ADD_PROPERTY(
-		PropertyInfo(Variant::Type::String, "path", PropertyInfo::Hint::None, "", PropertyInfo::UsageFlags::Default),
+		PropertyInfo(Variant::Type::String, "path", PropertyInfo::Hint::None, "", PropertyInfo::UsageFlags::None),
 		"SetPath",
 		"GetPath");
+
+	ADD_PROPERTY(PropertyInfo(Variant::Type::String, "name", PropertyInfo::Hint::None, "", PropertyInfo::UsageFlags::Default), "SetName", "GetName");
 }
 
 String Resource::GetPathString() const

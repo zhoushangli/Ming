@@ -3,6 +3,22 @@
   <brief_description>Base class for nodes drawn on a 2D canvas.</brief_description>
   <description>Controls inherit this class. An item can be hidden by its own visibility setting or by a parent item.</description>
   <methods>
+    <method name="SetTextureFilter">
+      <description>Sets texture filtering for this item. Inherit uses the parent canvas item, with Linear as the root default. Does not change the shared texture resource.</description>
+      <param name="filter">Inherit, Nearest or Linear.</param>
+    </method>
+    <method name="GetTextureFilter">
+      <description>Gets this item's texture filter setting, which may be Inherit.</description>
+      <returns>The local texture filter setting.</returns>
+    </method>
+    <method name="SetTextureRepeat">
+      <description>Sets texture addressing for this item. Inherit uses the parent canvas item, with Disabled as the root default. Enabled repeats texture coordinates outside the image.</description>
+      <param name="repeat">Inherit, Disabled or Enabled.</param>
+    </method>
+    <method name="GetTextureRepeat">
+      <description>Gets this item's texture repeat setting, which may be Inherit.</description>
+      <returns>The local texture repeat setting.</returns>
+    </method>
     <method name="SetVisible">
       <description>Sets the visibility of this item. Hiding it also cancels interface interaction with it. Does nothing if the visibility value has not changed.</description>
       <param name="visible">True to show the item, or false to hide it. A hidden parent item can still hide this item.</param>

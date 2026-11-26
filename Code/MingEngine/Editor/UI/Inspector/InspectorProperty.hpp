@@ -26,6 +26,7 @@ public:
 	Control*                  GetControl() const;
 	Variant::Type             GetType() const { return m_info.m_type; }
 	std::string               GetDisplayName() const;
+	void                      SetDisplayPrefix(std::string const& prefix);
 	void                      SetValueReader(std::function<Variant()> reader) { m_reader = std::move(reader); }
 	void                      SetEditedObject(ObjectID id) { m_editedObject = id; }
 	void                      UpdateValue(Variant const& value);
@@ -60,6 +61,7 @@ protected:
 protected:
 	PropertyInfo             m_info;
 	std::string              m_labelId;
+	std::string              m_displayPrefix;
 	ValueChangedCallback     m_onValueChanged;
 	std::function<Variant()> m_reader;
 	Variant                  m_value;

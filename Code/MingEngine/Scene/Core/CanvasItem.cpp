@@ -110,6 +110,20 @@ void CanvasItem::QueueRedraw()
 	m_redrawPending = false;
 }
 
+void CanvasItem::SetTextureFilter(TextureFilter filter)
+{
+	ERR_FAIL_COND_MSG(filter < TextureFilter::Inherit || filter > TextureFilter::Linear, "Invalid TextureFilter.");
+	m_textureFilter = filter;
+	g_engine->m_renderServer->CanvasItemSetTextureFilter(m_canvasItemRID, filter);
+}
+
+void CanvasItem::SetTextureRepeat(TextureRepeat repeat)
+{
+	ERR_FAIL_COND_MSG(repeat < TextureRepeat::Inherit || repeat > TextureRepeat::Enabled, "Invalid TextureRepeat.");
+	m_textureRepeat = repeat;
+	g_engine->m_renderServer->CanvasItemSetTextureRepeat(m_canvasItemRID, repeat);
+}
+
 void CanvasItem::SyncPosition()
 {
 	g_engine->m_renderServer->CanvasItemSetPosition(m_canvasItemRID, GetLocalPosition());
@@ -239,4 +253,12 @@ void CanvasItem::BindMethods()
 		PropertyInfo(Variant::Type::Bool, "visible", PropertyInfo::Hint::None, "", PropertyInfo::UsageFlags::Default),
 		"SetVisibility",
 		"IsVisible");
+
+	ClassDatabase::BindMethod("SetTextureFilter", &CanvasItem::SetTextureFilter, { "filter" });
+	ClassDatabase::BindMethod("GetTextureFilter", &CanvasItem::GetTextureFilter, {});
+	ClassDatabase::BindMethod("SetTextureRepeat", &CanvasItem::SetTextureRepeat, { "repeat" });
+	ClassDatabase::BindMethod("GetTextureRepeat", &CanvasItem::GetTextureRepeat, {});
+	ADD_GROUP("Texture", "texture_");
+	ADD_PROPERTY(PropertyInfo(Variant::Type::Int, "texture_filter", PropertyInfo::Hint::Enum, "Inherit:0,Nearest:1,Linear:2", PropertyInfo::UsageFlags::Default), "SetTextureFilter", "GetTextureFilter");
+	ADD_PROPERTY(PropertyInfo(Variant::Type::Int, "texture_repeat", PropertyInfo::Hint::Enum, "Inherit:0,Disabled:1,Enabled:2", PropertyInfo::UsageFlags::Default), "SetTextureRepeat", "GetTextureRepeat");
 }

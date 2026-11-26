@@ -309,12 +309,27 @@ int wmain(int argc, wchar_t** argv)
 		std::filesystem::create_directories(project / "Settings");
 		_wputenv_s(L"LOCALAPPDATA", (project / "Settings").c_str());
 		Write(project / "project.ming", R"({"type":"ProjectSettings","version":1,"start_scene_path":"res://main.tscn","autoloads":[{"name":"Session","path":"res://autoload.tscn"}]})");
-		Write(project / "main.tscn", R"({"nodes":[{"name":"Main","type":"Node","parent":""}]})");
-		Write(project / "other.tscn", R"({"nodes":[{"name":"Other","type":"Node","parent":""}]})");
-		Write(project / "autoload.tscn", R"({"nodes":[{"name":"Session","type":"Node","parent":""}]})");
+		Write(project / "main.tscn", R"([ming_scene format=1]
+
+[node name="Main" type="Node" parent=""]
+)");
+		Write(project / "other.tscn", R"([ming_scene format=1]
+
+[node name="Other" type="Node" parent=""]
+)");
+		Write(project / "autoload.tscn", R"([ming_scene format=1]
+
+[node name="Session" type="Node" parent=""]
+)");
 		if (module == L"--verify-managed")
 		{
-			Write(project / "main.tscn", R"({"nodes":[{"name":"Main","type":"Node","parent":"","properties":{"script":"res://ManagedLifecycleProbe.cs"}}]})");
+			Write(project / "main.tscn", R"([ming_scene format=1]
+
+[ext_resource type="CSharpScript" path="res://ManagedLifecycleProbe.cs" id="1"]
+
+[node name="Main" type="Node" parent=""]
+script = ExtResource("1")
+)");
 		}
 		if (module == L"--verify-arguments")
 		{

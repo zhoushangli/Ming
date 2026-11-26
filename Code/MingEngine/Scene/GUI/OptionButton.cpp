@@ -1,6 +1,7 @@
 #include "MingEngine/Scene/GUI/OptionButton.hpp"
 
 #include "MingEngine/Scene/GUI/PopupPanel.hpp"
+#include "MingEngine/Scene/GUI/PanelContainer.hpp"
 #include "MingEngine/Scene/GUI/ScrollContainer.hpp"
 #include "MingEngine/Scene/GUI/VBoxContainer.hpp"
 #include "MingEngine/Scene/GUI/SpinBox.hpp"
@@ -11,6 +12,7 @@
 
 OptionButton::OptionButton()
 {
+	SetHorizontalAlignment(HorizontalAlignment::Left);
 	SetPressedCallback(
 		[this]()
 		{
@@ -47,6 +49,7 @@ bool OptionButton::SetOptions(std::string const& hint)
 
 	m_popupID = ObjectID::Invalid;
 	m_buttons.clear();
+	m_indicators.clear();
 	m_items.clear();
 	size_t start = 0;
 	while (start < hint.size())
@@ -91,6 +94,24 @@ void OptionButton::SetValueNoSignal(int value)
 			break;
 		}
 	}
+	if (PopupPanel* popup = ObjectDatabase::GetInstance<PopupPanel>(m_popupID); popup != nullptr && popup->IsVisible())
+	{
+		UpdateActive(false);
+	}
+}
+
+Vector2 OptionButton::GetInternalMinimumSize() const
+{
+	return Button::GetInternalMinimumSize() + Vector2(
+		static_cast<float>(GetThemeConstant("arrow_size", "OptionButton") + GetThemeConstant("arrow_margin", "OptionButton")), 0.f);
+}
+
+AABB2 OptionButton::GetTextRect() const
+{
+	AABB2 rect = Button::GetTextRect();
+	rect.m_maxs.x = std::max(rect.m_mins.x, rect.m_maxs.x
+		- GetThemeConstant("arrow_size", "OptionButton") - GetThemeConstant("arrow_margin", "OptionButton"));
+	return rect;
 }
 
 void OptionButton::OpenOptions()
@@ -107,15 +128,27 @@ void OptionButton::OpenOptions()
 		popup->SetSerializable(false);
 		m_popupID = popup->GetObjectID();
 		GetViewport()->AddNode(popup);
+		popup->SetThemeSource(this);
+		m_popupPanel = MemNew<PanelContainer>();
+		m_popupPanel->SetName("OptionPopup");
+		m_popupPanel->SetThemeTypeVariation("OptionButtonPopup");
+		m_popupPanel->SetMouseFilter(MouseFilter::Pass);
+		popup->AddNode(m_popupPanel);
 		m_scroll = MemNew<ScrollContainer>();
 		m_scroll->SetFollowFocus(true);
-		popup->AddNode(m_scroll);
+		m_scroll->SetMouseFilter(MouseFilter::Pass);
+		m_popupPanel->AddNode(m_scroll);
 		auto* list = MemNew<VBoxContainer>();
-		list->SetSeparation(1.f);
+		m_list = list;
+		list->SetSeparation(0.f);
+		list->SetMouseFilter(MouseFilter::Pass);
 		m_scroll->AddNode(list);
 		for (int i = 0; i < static_cast<int>(m_items.size()); ++i)
 		{
 			auto* button = MemNew<Button>();
+			button->SetThemeTypeVariation("OptionButtonItem");
+			button->SetHorizontalAlignment(HorizontalAlignment::Left);
+			button->SetMouseFilter(MouseFilter::Pass);
 			button->SetToggleMode(true);
 			button->SetFocusMode(FocusMode::None);
 			button->SetText(m_items[i].m_name);
@@ -126,7 +159,29 @@ void OptionButton::OpenOptions()
 				});
 			list->AddNode(button);
 			m_buttons.push_back(button);
+			auto* indicator = MemNew<PanelContainer>();
+			indicator->SetName("OptionSelection");
+			indicator->SetMouseFilter(MouseFilter::Ignore);
+			button->AddNode(indicator);
+			m_indicators.push_back(indicator);
 		}
+		popup->SetPointerCallback([this](InputEvent const& event)
+		{
+			if (event.m_type == InputEventType::MouseMotion
+				&& m_scroll->IsPointInside(event.m_position - m_scroll->GetGlobalPosition()))
+			{
+				for (int i = 0; i < static_cast<int>(m_buttons.size()); ++i)
+				{
+					if (m_buttons[i]->IsPointInside(event.m_position - m_buttons[i]->GetGlobalPosition()))
+					{
+						m_active = i;
+						UpdateActive(false);
+						break;
+					}
+				}
+			}
+			return false;
+		});
 
 		popup->SetKeyCallback(
 			[this](InputEvent const& event)
@@ -145,15 +200,20 @@ void OptionButton::OpenOptions()
 		}
 	}
 
+	popup->Open(this);
+	GetSceneTree()->FlushContainerUpdate();
 	Vector2 const bounds(GetViewport()->GetOutputResolution());
 	Vector2 const origin = GetGlobalPosition();
-	float const   height = std::min(bounds.y, std::min(240.f, static_cast<float>(m_items.size()) * 36.f));
-	float const   width  = std::min(bounds.x, std::max(GetSize().x, 180.f));
+	auto panel = m_popupPanel->GetThemeStyleBox("panel");
+	Vector2 const padding = panel.IsValid() ? panel->GetMinimumSize() : Vector2::Zero;
+	Vector2 const content = m_list->GetCombinedMinimumSize() + padding;
+	float const height = std::min(bounds.y, std::min(static_cast<float>(GetThemeConstant("popup_max_height", "OptionButton")), content.y));
+	float const scrollbar = content.y > height ? static_cast<float>(m_scroll->GetThemeConstant("scrollbar_width", "ScrollContainer")) : 0.f;
+	float const width = std::min(bounds.x, std::max(GetSize().x, content.x + scrollbar));
 	float const   y =
 		origin.y + GetSize().y + height <= bounds.y ? origin.y + GetSize().y : std::max(0.f, origin.y - height);
-	m_scroll->SetPosition(Vector2(std::clamp(origin.x, 0.f, std::max(0.f, bounds.x - width)), y));
-	m_scroll->UpdateSize(Vector2(width, height));
-	popup->Open(this);
+	m_popupPanel->SetPosition(Vector2(std::clamp(origin.x, 0.f, std::max(0.f, bounds.x - width)), y));
+	m_popupPanel->UpdateSize(Vector2(width, height));
 	GetSceneTree()->FlushContainerUpdate();
 	UpdateActive();
 }
@@ -166,14 +226,21 @@ void OptionButton::CloseOptions(bool restoreFocus)
 	}
 }
 
-void OptionButton::UpdateActive()
+void OptionButton::UpdateActive(bool ensureVisible)
 {
 	for (int i = 0; i < static_cast<int>(m_buttons.size()); ++i)
 	{
 		m_buttons[i]->SetPressedNoSignal(i == m_active);
+		float const size = static_cast<float>(GetThemeConstant("radio_size", "OptionButton"));
+		m_indicators[i]->AddThemeStyleBoxOverride("panel",
+			GetThemeStyleBox(m_items[i].m_value == m_value ? "checked" : "unchecked", "OptionButtonRadio"));
+		m_indicators[i]->SetPosition(Vector2(
+			static_cast<float>(GetThemeConstant("radio_margin", "OptionButton")),
+			std::max(0.f, (m_buttons[i]->GetSize().y - size) * 0.5f)));
+		m_indicators[i]->UpdateSize(Vector2(size, size));
 	}
 
-	if (!m_buttons.empty())
+	if (ensureVisible && !m_buttons.empty())
 	{
 		m_scroll->EnsureControlVisible(m_buttons[m_active]);
 	}
@@ -228,5 +295,16 @@ void OptionButton::OnNotification(int notification)
 	case Notification_GuiInputCancelled:
 		CloseOptions(false);
 		break;
+	case Notification_Draw:
+	{
+		float const size = static_cast<float>(GetThemeConstant("arrow_size", "OptionButton"));
+		float const margin = static_cast<float>(GetThemeConstant("arrow_margin", "OptionButton"));
+		Vector2 const center(GetSize().x - margin - size * 0.5f, GetSize().y * 0.5f);
+		Color const color = GetThemeColor(IsDisabled() ? "font_disabled_color" : "font_color");
+		DrawTriangles({ Vertex(Vector3(center.x - size * 0.5f, center.y - size * 0.25f, 0.f), color),
+			Vertex(Vector3(center.x + size * 0.5f, center.y - size * 0.25f, 0.f), color),
+			Vertex(Vector3(center.x, center.y + size * 0.25f, 0.f), color) });
+		break;
+	}
 	}
 }

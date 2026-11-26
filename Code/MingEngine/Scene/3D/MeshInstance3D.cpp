@@ -79,6 +79,10 @@ RaycastResult3D MeshRaycastObject::IntersectRay(RaycastQuery3D const& query)
 
 void MeshInstance3D::BindMethods()
 {
+	ClassDatabase::BindMethod("SetMaterialOverride", &MeshInstance3D::SetMaterialOverride, { "material" });
+	ClassDatabase::BindMethod("GetMaterialOverride", &MeshInstance3D::GetMaterialOverride, {});
+	ADD_PROPERTY(PropertyInfo(Variant::Type::ObjectPtr, "material_override", PropertyInfo::Hint::ResourceType, "MaterialResource", PropertyInfo::UsageFlags::Default), "SetMaterialOverride", "GetMaterialOverride");
+
 	ClassDatabase::BindMethod("SetMeshResource", &MeshInstance3D::SetMeshResource, { "meshResource" });
 	ClassDatabase::BindMethod("GetMeshResource", &MeshInstance3D::GetMeshResource, {});
 
@@ -139,6 +143,7 @@ void MeshInstance3D::SyncMeshBase()
 	// An invalid Base RID keeps the instance type at None, so it produces no request.
 	RID meshRID = m_meshResource.IsValid() ? m_meshResource->GetMeshRID() : RID::Invalid;
 	server->Instance3DSetBase(m_instanceRID, meshRID);
+	server->Instance3DSetMaterialOverride(m_instanceRID, m_materialOverride);
 }
 
 bool MeshInstance3D::IsEmpty() const
@@ -157,4 +162,10 @@ void MeshInstance3D::SetMeshResource(Ref<MeshResource> const& meshResource)
 Ref<MeshResource> MeshInstance3D::GetMeshResource() const
 {
 	return m_meshResource;
+}
+
+void MeshInstance3D::SetMaterialOverride(Ref<MaterialResource> const& material)
+{
+	m_materialOverride = material;
+	SyncMeshBase();
 }
