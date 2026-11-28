@@ -42,7 +42,7 @@ public:
 	void SetContentMargin(Side side, float margin);
 	void SetCornerRadius(Corner corner, float radius);
 	void SetCornerRadiusAll(float radius);
-	bool CopyFrom(Resource&& other) override;
+	bool MoveFrom(Resource&& other) override;
 
 	// Keep weak, counted subscriptions separate from the Ref that owns this resource.
 	// e.g. A Theme using one box for normal and hover subscribes twice and releases twice.

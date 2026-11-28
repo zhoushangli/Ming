@@ -31,6 +31,11 @@ public:
 	void                      SetEditedObject(ObjectID id) { m_editedObject = id; }
 	void                      UpdateValue(Variant const& value);
 	void                      SetRevertValue(Variant const& value);
+	void                      SetRevertCallback(std::function<void()> callback, std::function<bool()> available)
+	{
+		m_revertCallback = std::move(callback);
+		m_canRevert = std::move(available);
+	}
 	void                      SetContinuousEditCallbacks(
 		std::function<void()> started, ValueChangedCallback preview, std::function<void(bool)> ended);
 	void                      EndEditing(LineEdit::EditEndReason reason = LineEdit::EditEndReason::Interrupted);
@@ -73,6 +78,8 @@ protected:
 	Label*                   m_title  = nullptr;
 	Button*                  m_revert = nullptr;
 	Variant                  m_revertValue;
+	std::function<void()>     m_revertCallback;
+	std::function<bool()>     m_canRevert;
 	LineEdit*                m_text    = nullptr;
 	Button*                  m_button  = nullptr;
 	OptionButton*            m_options = nullptr;

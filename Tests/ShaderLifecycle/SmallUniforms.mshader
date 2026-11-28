@@ -1,0 +1,8 @@
+shader_type spatial;
+
+uniform float height = 1.0;
+
+void vertex(inout VertexContext v)
+{
+    v.modelPosition.y += height;
+}

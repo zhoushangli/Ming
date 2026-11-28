@@ -25,6 +25,8 @@ private:
 		std::string           m_name;
 		std::vector<Argument> m_arguments;
 		bool                  m_isProperty = false;
+		bool                  m_restoreDynamicProperties = false;
+		std::vector<std::pair<std::string, Variant>> m_dynamicProperties;
 	};
 
 	struct Action
@@ -53,6 +55,10 @@ public:
 	bool AddUndoMethod(Object* target, std::string const& methodName, std::vector<Variant> const& arguments = {});
 	bool AddDoProperty(Object* target, std::string const& propertyName, Variant const& value);
 	bool AddUndoProperty(Object* target, std::string const& propertyName, Variant const& value);
+	bool AddDoPropertyState(Object* target, std::string const& propertyName, Variant const& value,
+		std::vector<std::pair<std::string, Variant>> const& dynamicProperties);
+	bool AddUndoPropertyState(Object* target, std::string const& propertyName, Variant const& value,
+		std::vector<std::pair<std::string, Variant>> const& dynamicProperties);
 
 	// Record the pending action and optionally execute its do operations for the first time.
 	// e.g. CommitAction(false) records an edit that has already been applied.

@@ -1,36 +1,36 @@
 #include "MingEngine/Core/Render/Color.hpp"
 
-#include "MingEngine/Core/Math/MathUtils.hpp"
 #include "MingEngine/Core/StringUtils.hpp"
 
-using namespace Math;
+#include <algorithm>
+#include <cmath>
 
-Color const Color::White            = Color(255, 255, 255);
-Color const Color::Black            = Color(0, 0, 0);
-Color const Color::Red              = Color(255, 0, 0);
-Color const Color::Green            = Color(0, 255, 0);
-Color const Color::Blue             = Color(0, 0, 255);
-Color const Color::Yellow           = Color(255, 255, 0);
-Color const Color::Cyan             = Color(0, 255, 255);
-Color const Color::Magenta          = Color(255, 0, 255);
-Color const Color::Orange           = Color(255, 165, 0);
-Color const Color::Purple           = Color(128, 0, 128);
-Color const Color::Pink             = Color(255, 182, 193);
-Color const Color::Gray             = Color(128, 128, 128);
-Color const Color::LightGray        = Color(176, 176, 176);
-Color const Color::DarkGray         = Color(32, 32, 32);
-Color const Color::TranslucentBlack = Color(0, 0, 0, 128);
-Color const Color::Transparent      = Color(0, 0, 0, 0);
+Color const Color::White            = Color(1.f, 1.f, 1.f);
+Color const Color::Black            = Color(0.f, 0.f, 0.f);
+Color const Color::Red              = Color(1.f, 0.f, 0.f);
+Color const Color::Green            = Color(0.f, 1.f, 0.f);
+Color const Color::Blue             = Color(0.f, 0.f, 1.f);
+Color const Color::Yellow           = Color(1.f, 1.f, 0.f);
+Color const Color::Cyan             = Color(0.f, 1.f, 1.f);
+Color const Color::Magenta          = Color(1.f, 0.f, 1.f);
+Color const Color::Orange           = Color(1.f, 165.f / 255.f, 0.f);
+Color const Color::Purple           = Color(128.f / 255.f, 0.f, 128.f / 255.f);
+Color const Color::Pink             = Color(1.f, 182.f / 255.f, 193.f / 255.f);
+Color const Color::Gray             = Color(128.f / 255.f, 128.f / 255.f, 128.f / 255.f);
+Color const Color::LightGray        = Color(176.f / 255.f, 176.f / 255.f, 176.f / 255.f);
+Color const Color::DarkGray         = Color(32.f / 255.f, 32.f / 255.f, 32.f / 255.f);
+Color const Color::TranslucentBlack = Color(0.f, 0.f, 0.f, 128.f / 255.f);
+Color const Color::Transparent      = Color(0.f, 0.f, 0.f, 0.f);
 
-Color::Color() : r(255), g(255), b(255), a(255)
+Color::Color() : r(1.f), g(1.f), b(1.f), a(1.f)
 {
 }
 
-Color::Color(unsigned char red, unsigned char green, unsigned char blue) : r(red), g(green), b(blue), a(255)
+Color::Color(float red, float green, float blue) : r(red), g(green), b(blue), a(1.f)
 {
 }
 
-Color::Color(unsigned char red, unsigned char green, unsigned char blue, unsigned char alpha)
+Color::Color(float red, float green, float blue, float alpha)
 	: r(red), g(green), b(blue), a(alpha)
 {
 }
@@ -48,28 +48,28 @@ bool Color::operator!=(Color const& other) const
 Color const Color::operator+(float value) const
 {
 	return Color(
-		static_cast<unsigned char>(GetClamped(static_cast<float>(r) + value, 0.f, 255.f)),
-		static_cast<unsigned char>(GetClamped(static_cast<float>(g) + value, 0.f, 255.f)),
-		static_cast<unsigned char>(GetClamped(static_cast<float>(b) + value, 0.f, 255.f)),
-		static_cast<unsigned char>(GetClamped(static_cast<float>(a) + value, 0.f, 255.f)));
+		r + value,
+		g + value,
+		b + value,
+		a + value);
 }
 
 Color const Color::operator-(float value) const
 {
 	return Color(
-		static_cast<unsigned char>(GetClamped(static_cast<float>(r) - value, 0.f, 255.f)),
-		static_cast<unsigned char>(GetClamped(static_cast<float>(g) - value, 0.f, 255.f)),
-		static_cast<unsigned char>(GetClamped(static_cast<float>(b) - value, 0.f, 255.f)),
-		static_cast<unsigned char>(GetClamped(static_cast<float>(a) - value, 0.f, 255.f)));
+		r - value,
+		g - value,
+		b - value,
+		a - value);
 }
 
 Color const Color::operator*(float value) const
 {
 	return Color(
-		static_cast<unsigned char>(GetClamped(static_cast<float>(r) * value, 0.f, 255.f)),
-		static_cast<unsigned char>(GetClamped(static_cast<float>(g) * value, 0.f, 255.f)),
-		static_cast<unsigned char>(GetClamped(static_cast<float>(b) * value, 0.f, 255.f)),
-		static_cast<unsigned char>(GetClamped(static_cast<float>(a) * value, 0.f, 255.f)));
+		r * value,
+		g * value,
+		b * value,
+		a * value);
 }
 
 Color const Color::operator/(float value) const
@@ -80,10 +80,10 @@ Color const Color::operator/(float value) const
 	}
 
 	return Color(
-		static_cast<unsigned char>(GetClamped(static_cast<float>(r) / value, 0.f, 255.f)),
-		static_cast<unsigned char>(GetClamped(static_cast<float>(g) / value, 0.f, 255.f)),
-		static_cast<unsigned char>(GetClamped(static_cast<float>(b) / value, 0.f, 255.f)),
-		static_cast<unsigned char>(GetClamped(static_cast<float>(a) / value, 0.f, 255.f)));
+		r / value,
+		g / value,
+		b / value,
+		a / value);
 }
 
 void Color::operator+=(float value)
@@ -112,28 +112,28 @@ void Color::SetFromText(const char* text)
 
 	if (parts.size() < 3)
 	{
-		r = 255;
-		g = 255;
-		b = 255;
-		a = 255;
+		r = 1.f;
+		g = 1.f;
+		b = 1.f;
+		a = 1.f;
 		return;
 	}
 
-	r = static_cast<unsigned char>(atoi(parts[0].c_str()));
-	g = static_cast<unsigned char>(atoi(parts[1].c_str()));
-	b = static_cast<unsigned char>(atoi(parts[2].c_str()));
+	r = std::stof(parts[0]);
+	g = std::stof(parts[1]);
+	b = std::stof(parts[2]);
 	if (parts.size() == 4)
 	{
-		a = static_cast<unsigned char>(std::stoi(parts[3]));
+		a = std::stof(parts[3]);
 	}
 }
 
 void Color::GetAsFloats(float* colorAsFloats) const
 {
-	colorAsFloats[0] = NormalizeByte(r);
-	colorAsFloats[1] = NormalizeByte(g);
-	colorAsFloats[2] = NormalizeByte(b);
-	colorAsFloats[3] = NormalizeByte(a);
+	colorAsFloats[0] = r;
+	colorAsFloats[1] = g;
+	colorAsFloats[2] = b;
+	colorAsFloats[3] = a;
 }
 
 float NormalizeByte(unsigned char byteValue)
@@ -143,8 +143,12 @@ float NormalizeByte(unsigned char byteValue)
 
 unsigned char DenormalizeByte(float normalizedValue)
 {
-	float v = normalizedValue * 256.f;
-	return static_cast<unsigned char>(GetClamped(v, 0.f, 255.f));
+	return static_cast<unsigned char>(std::lround(std::clamp(normalizedValue, 0.f, 1.f) * 255.f));
+}
+
+Color Color::Clamped() const
+{
+	return Color(std::clamp(r, 0.f, 1.f), std::clamp(g, 0.f, 1.f), std::clamp(b, 0.f, 1.f), std::clamp(a, 0.f, 1.f));
 }
 
 Color const operator+(float value, Color const& color)
@@ -155,10 +159,10 @@ Color const operator+(float value, Color const& color)
 Color const operator-(float value, Color const& color)
 {
 	return Color(
-		static_cast<unsigned char>(GetClamped(value - static_cast<float>(color.r), 0.f, 255.f)),
-		static_cast<unsigned char>(GetClamped(value - static_cast<float>(color.g), 0.f, 255.f)),
-		static_cast<unsigned char>(GetClamped(value - static_cast<float>(color.b), 0.f, 255.f)),
-		static_cast<unsigned char>(GetClamped(value - static_cast<float>(color.a), 0.f, 255.f)));
+		value - color.r,
+		value - color.g,
+		value - color.b,
+		value - color.a);
 }
 
 Color const operator*(float value, Color const& color)
@@ -169,8 +173,8 @@ Color const operator*(float value, Color const& color)
 Color const operator/(float value, Color const& color)
 {
 	return Color(
-		color.r == 0 ? 255 : static_cast<unsigned char>(GetClamped(value / static_cast<float>(color.r), 0.f, 255.f)),
-		color.g == 0 ? 255 : static_cast<unsigned char>(GetClamped(value / static_cast<float>(color.g), 0.f, 255.f)),
-		color.b == 0 ? 255 : static_cast<unsigned char>(GetClamped(value / static_cast<float>(color.b), 0.f, 255.f)),
-		color.a == 0 ? 255 : static_cast<unsigned char>(GetClamped(value / static_cast<float>(color.a), 0.f, 255.f)));
+		color.r == 0.f ? 1.f : value / color.r,
+		color.g == 0.f ? 1.f : value / color.g,
+		color.b == 0.f ? 1.f : value / color.b,
+		color.a == 0.f ? 1.f : value / color.a);
 }

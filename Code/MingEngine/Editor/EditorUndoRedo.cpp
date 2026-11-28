@@ -66,13 +66,15 @@ bool EditorUndoRedo::AddOperation(
 	}
 
 	MethodInfo const*   method = target != nullptr && !isProperty ? FindMethod(target, name) : nullptr;
-	PropertyInfo const* property =
-		target != nullptr && isProperty ? ClassDatabase::FindProperty(target->GetClassName(), name) : nullptr;
+	PropertyInfo property;
+	bool const hasProperty = target != nullptr && isProperty && target->FindProperty(name, property);
 	bool valid = false;
 	if (isProperty)
 	{
-		valid = property != nullptr && property->GetSetter() != nullptr && arguments.size() == 1
-				&& (property->m_type == Variant::Type::Any || property->m_type == arguments[0].GetType());
+		valid = hasProperty && (property.GetSetter() != nullptr || ClassDatabase::FindProperty(target->GetClassName(), name) == nullptr)
+			&& arguments.size() == 1
+			&& (property.m_type == Variant::Type::Any || property.m_type == arguments[0].GetType()
+				|| (property.GetSetter() == nullptr && arguments[0].IsEmpty()));
 	}
 	else if (method != nullptr && method->m_bind != nullptr && method->m_argumentInfos.size() == arguments.size())
 	{
@@ -140,6 +142,30 @@ bool EditorUndoRedo::AddUndoProperty(Object* target, std::string const& property
 	return AddOperation(target, propertyName, { value }, true, true);
 }
 
+bool EditorUndoRedo::AddDoPropertyState(Object* target, std::string const& name, Variant const& value,
+	std::vector<std::pair<std::string, Variant>> const& dynamicProperties)
+{
+	if (!AddDoProperty(target, name, value))
+	{
+		return false;
+	}
+	m_pendingAction.m_doOps.back().m_restoreDynamicProperties = true;
+	m_pendingAction.m_doOps.back().m_dynamicProperties = dynamicProperties;
+	return true;
+}
+
+bool EditorUndoRedo::AddUndoPropertyState(Object* target, std::string const& name, Variant const& value,
+	std::vector<std::pair<std::string, Variant>> const& dynamicProperties)
+{
+	if (!AddUndoProperty(target, name, value))
+	{
+		return false;
+	}
+	m_pendingAction.m_undoOps.back().m_restoreDynamicProperties = true;
+	m_pendingAction.m_undoOps.back().m_dynamicProperties = dynamicProperties;
+	return true;
+}
+
 bool EditorUndoRedo::CommitAction(bool execute)
 {
 	if (m_isReplaying || !m_pendingHistoryID.IsValid())
@@ -195,10 +221,19 @@ void EditorUndoRedo::ReplayOperations(std::vector<Operation> const& operations, 
 
 			if (operation.m_isProperty)
 			{
-				PropertyInfo const* property = ClassDatabase::FindProperty(target->GetClassName(), operation.m_name);
-				if (property != nullptr && property->GetSetter() != nullptr)
+				if (target->SetProperty(operation.m_name, arguments[0]) && operation.m_restoreDynamicProperties)
 				{
-					property->GetSetter()->Invoke(target, arguments);
+					for (auto const& property : target->GetPropertyList())
+					{
+						if (property.GetSetter() == nullptr && !property.HasUsage(PropertyInfo::UsageFlags::Group))
+						{
+							target->SetProperty(property.m_name, Variant());
+						}
+					}
+					for (auto const& property : operation.m_dynamicProperties)
+					{
+						target->SetProperty(property.first, property.second);
+					}
 				}
 			}
 			else

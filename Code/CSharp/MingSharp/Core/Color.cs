@@ -6,12 +6,12 @@ using System.Runtime.InteropServices;
 [StructLayout(LayoutKind.Sequential)]
 public struct Color
 {
-    public byte R;
-    public byte G;
-    public byte B;
-    public byte A;
+    public float R;
+    public float G;
+    public float B;
+    public float A;
 
-    public Color(byte r, byte g, byte b, byte a)
+    public Color(float r, float g, float b, float a)
     {
         R = r;
         G = g;
@@ -19,7 +19,7 @@ public struct Color
         A = a;
     }
 
-    public Color(byte r, byte g, byte b) : this(r, g, b, 255)
+    public Color(float r, float g, float b) : this(r, g, b, 1f)
     {
     }
 

@@ -10,7 +10,7 @@ class CSharpScript : public Script
 
 public:
 	~CSharpScript() override;
-	bool CopyFrom(Resource&& other) override;
+	bool MoveFrom(Resource&& other) override;
 
 	bool Instantiate(Object* owner) override;
 	bool InstantiatePlaceHolder(Object* owner) override;

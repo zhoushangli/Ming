@@ -14,7 +14,7 @@ public:
 	Script()          = default;
 	virtual ~Script() = default;
 
-	bool CopyFrom(Resource&& other) override;
+	bool MoveFrom(Resource&& other) override;
 
 	virtual bool Instantiate(Object* owner)            = 0;
 	virtual bool InstantiatePlaceHolder(Object* owner) = 0;

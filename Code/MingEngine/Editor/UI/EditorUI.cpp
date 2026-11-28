@@ -227,7 +227,7 @@ void EditorUI::SaveMaterialAs(Ref<MaterialResource> const& source, std::function
 			}
 			if (source.IsValid())
 			{
-				material->CopyValuesFrom(*source);
+				material->CopyFrom(*source);
 			}
 
 			material->SetName(path.GetStem());

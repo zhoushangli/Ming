@@ -27,7 +27,7 @@ bool ProjectSettings::Load(std::filesystem::path const& directory, std::string& 
 	return true;
 }
 
-bool ProjectSettings::CopyFrom(Resource&& other)
+bool ProjectSettings::MoveFrom(Resource&& other)
 {
 	ProjectSettings* otherSettings = dynamic_cast<ProjectSettings*>(&other);
 	if (otherSettings == nullptr)
@@ -35,7 +35,9 @@ bool ProjectSettings::CopyFrom(Resource&& other)
 		return false;
 	}
 
-	MoveBaseFrom(std::move(other));
+	m_name           = std::move(otherSettings->m_name);
+	m_virtualPath    = std::move(otherSettings->m_virtualPath);
+	m_sourceFilePath = std::move(otherSettings->m_sourceFilePath);
 	m_startScenePath = std::move(otherSettings->m_startScenePath);
 	m_autoLoads = std::move(otherSettings->m_autoLoads);
 

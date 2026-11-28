@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstddef>
+
 #if defined(TRANSPARENT)
 #undef TRANSPARENT
 #endif
@@ -8,8 +10,8 @@ struct Color
 {
 public:
 	Color();
-	Color(unsigned char red, unsigned char green, unsigned char blue);
-	Color(unsigned char red, unsigned char green, unsigned char blue, unsigned char alpha);
+	Color(float red, float green, float blue);
+	Color(float red, float green, float blue, float alpha);
 	~Color() = default;
 
 	bool operator==(Color const& other) const;
@@ -27,6 +29,7 @@ public:
 
 	void SetFromText(const char* text);
 	void GetAsFloats(float* colorAsFloats) const;
+	Color Clamped() const;
 
 public:
 	static const Color White;
@@ -45,11 +48,14 @@ public:
 	static const Color DarkGray;
 	static const Color TranslucentBlack;
 	static const Color Transparent;
-	unsigned char      r = 0;
-	unsigned char      g = 0;
-	unsigned char      b = 0;
-	unsigned char      a = 0;
+	float r = 0.f;
+	float g = 0.f;
+	float b = 0.f;
+	float a = 0.f;
 };
+
+static_assert(sizeof(Color) == 16);
+static_assert(offsetof(Color, r) == 0 && offsetof(Color, g) == 4 && offsetof(Color, b) == 8 && offsetof(Color, a) == 12);
 
 float         NormalizeByte(unsigned char byteValue);
 unsigned char DenormalizeByte(float normalizedValue);

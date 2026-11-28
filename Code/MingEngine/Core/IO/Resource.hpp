@@ -26,14 +26,12 @@ public:
 
 	void SetName(String const& name) { m_name = name; }
 
-	// Copy all data from another resource of the same type and leave the source valid but empty.
-	// Mainly used for reloading a resource in-place without creating a new instance
-	// e.g. cachedResource.CopyFrom(std::move(freshResource))
-	virtual bool CopyFrom(Resource&& other) = 0;
+	// Receive data from another resource of the same type while preserving this resource instance.
+	// e.g. cachedResource.MoveFrom(std::move(*freshResource)) reloads the cached resource in place.
+	virtual bool MoveFrom(Resource&& other) = 0;
 
 protected:
 	static void BindMethods();
-	void        MoveBaseFrom(Resource&& other);
 	String      GetPathString() const;
 	void        SetPathString(String const& path);
 

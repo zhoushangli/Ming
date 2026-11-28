@@ -302,9 +302,9 @@ bool ParseOBJFile(VirtualPath const& sourceVirtualPath, OBJData& outData)
 				}
 
 				colors.emplace_back(
-					DenormalizeByte(static_cast<float>(atof(tokens[4].c_str()))),
-					DenormalizeByte(static_cast<float>(atof(tokens[5].c_str()))),
-					DenormalizeByte(static_cast<float>(atof(tokens[6].c_str()))),
+					static_cast<float>(atof(tokens[4].c_str())),
+					static_cast<float>(atof(tokens[5].c_str())),
+					static_cast<float>(atof(tokens[6].c_str())),
 					static_cast<unsigned char>(255));
 			}
 			else if (!colors.empty())

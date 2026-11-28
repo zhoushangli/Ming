@@ -15,7 +15,7 @@ public:
 	RID GetFontRID() const { return m_fontRID; }
 
 	void SetFontRID(RID rid);
-	bool CopyFrom(Resource&& other) override;
+	bool MoveFrom(Resource&& other) override;
 
 protected:
 	static void BindMethods() {}

@@ -1,9 +1,9 @@
 #include "MingEngine/Engine/Render/Renderer.hpp"
-#include "MingEngine/Scene/Resource/MaterialResource.hpp"
 
 #include "MingEngine/Core/Clock.hpp"
 #include "MingEngine/Core/Math/EulerAngles.hpp"
 #include "MingEngine/Engine/Render/BuiltinShaders.hpp"
+#include "MingEngine/Engine/Render/ConstantBuffer.hpp"
 #include "MingEngine/Engine/Render/D3D11RenderBackend.hpp"
 #include "MingEngine/Engine/Render/DebugGizmos.hpp"
 #include "MingEngine/Engine/Render/PostProcessChain.hpp"
@@ -62,13 +62,11 @@ float GetViewportAspect(ViewportData const* viewport)
 	return (float)viewport->m_outputResolution.x / (float)viewport->m_outputResolution.y;
 }
 
-// Convert a color to the normalized rgb triple the light constant buffers carry.
+// Copy floating point RGB channels into the light constant buffers.
 // e.g. Color::White becomes Vector3(1, 1, 1)
 Vector3 GetColorAsRGB(Color const& color)
 {
-	float colorAsFloats[4];
-	color.GetAsFloats(colorAsFloats);
-	return Vector3(colorAsFloats[0], colorAsFloats[1], colorAsFloats[2]);
+	return Vector3(color.r, color.g, color.b);
 }
 
 } // namespace
@@ -110,6 +108,10 @@ void Renderer::Shutdown()
 	DebugGizmos::Shutdown();
 	m_postProcessCopyShaderResource = nullptr;
 	m_builtinShaderResources.clear();
+
+	delete m_materialParameterBuffer;
+	m_materialParameterBuffer         = nullptr;
+	m_materialParameterBufferCapacity = 0;
 
 	if (m_renderBackend != nullptr)
 	{
@@ -218,18 +220,26 @@ void Renderer::ExecuteRenderRequest(RenderRequest const& request)
 {
 	ModelConstants modelData  = ModelConstants();
 	modelData.m_modelToWorld  = request.m_modelToWorld;
-	modelData.m_modelColor[0] = request.m_tint.r / 255.f;
-	modelData.m_modelColor[1] = request.m_tint.g / 255.f;
-	modelData.m_modelColor[2] = request.m_tint.b / 255.f;
-	modelData.m_modelColor[3] = request.m_tint.a / 255.f;
+	modelData.m_modelColor[0] = request.m_tint.r;
+	modelData.m_modelColor[1] = request.m_tint.g;
+	modelData.m_modelColor[2] = request.m_tint.b;
+	modelData.m_modelColor[3] = request.m_tint.a;
 	m_renderBackend->UpdateAndBindConstantBuffer(BuiltinConstantBufferType::Model, modelData);
 
 	// Requests always carry a shader, because the RenderServer fills the fallback at collection time.
 	// e.g. BuildInstance3DRenderRequest() and ViewportSubmitRenderRequest() both guarantee it
 	m_renderBackend->BindShader(request.m_shader);
-	if (auto* material = request.m_material.Get())
+	if (!request.m_materialParameterBytes.empty())
 	{
-		material->BindParameters(*m_renderBackend);
+		unsigned int const size = static_cast<unsigned int>(request.m_materialParameterBytes.size());
+		if (m_materialParameterBufferCapacity < size)
+		{
+			delete m_materialParameterBuffer;
+			m_materialParameterBuffer         = m_renderBackend->CreateConstantBuffer(size);
+			m_materialParameterBufferCapacity = size;
+		}
+		m_renderBackend->CopyCPUToGPU(request.m_materialParameterBytes.data(), size, m_materialParameterBuffer);
+		m_renderBackend->BindConstantBuffer(m_materialParameterBuffer, 6);
 	}
 	else
 	{
@@ -305,7 +315,7 @@ void Renderer::ResizeViewport(ViewportData* viewport, IntVec2 dimensions)
 	viewport->m_pingTexture           = m_renderBackend->CreateRenderTargetTexture("Ping", dimensions);
 	viewport->m_pongTexture           = m_renderBackend->CreateRenderTargetTexture("Pong", dimensions);
 
-	m_renderBackend->ClearRenderTarget(viewport->m_sceneNormalTexture, Color(128, 128, 128, 255));
+	m_renderBackend->ClearRenderTarget(viewport->m_sceneNormalTexture, Color(128.f / 255.f, 128.f / 255.f, 128.f / 255.f, 1.f));
 	m_renderBackend->ClearDepthStencil(viewport->m_sceneDepthTexture);
 }
 
@@ -346,7 +356,7 @@ void Renderer::ClearSceneTargets(ViewportData* viewport)
 
 	m_renderBackend->ClearRenderTarget(viewport->m_viewportOutputTexture, viewport->m_clearColor);
 	m_renderBackend->ClearRenderTarget(viewport->m_sceneColorTexture, viewport->m_clearColor);
-	m_renderBackend->ClearRenderTarget(viewport->m_sceneNormalTexture, Color(128, 128, 128, 255));
+	m_renderBackend->ClearRenderTarget(viewport->m_sceneNormalTexture, Color(128.f / 255.f, 128.f / 255.f, 128.f / 255.f, 1.f));
 	m_renderBackend->ClearDepthStencil(viewport->m_sceneDepthTexture);
 }
 

@@ -7,6 +7,8 @@
 
 #include "ThirdParty/GLFW/glfw3.h"
 #include <algorithm>
+#include <cmath>
+
 
 ColorPickerButton::ColorPickerButton()
 {
@@ -50,7 +52,6 @@ void ColorPickerButton::SetColorNoSignal(Color const& color)
 	{
 		m_picker->SetColorNoSignal(color);
 	}
-
 	QueueRedraw();
 }
 
@@ -156,9 +157,9 @@ void ColorPickerButton::OpenPicker()
 		return;
 	}
 
-	m_original = m_color;
-	m_editing  = true;
-	m_accept   = true;
+	m_original      = m_color;
+	m_editing       = true;
+	m_accept        = true;
 	m_picker->SetOldColor(m_original);
 	m_picker->SetColorNoSignal(m_color);
 	m_scroll->SetVisible(true);
@@ -271,7 +272,7 @@ bool ColorPickerButton::HandlePointer(InputEvent const& event)
 	m_validSample    = valid;
 	if (valid)
 	{
-		sample.a = 255;
+		sample.a = 1.f;
 		m_picker->SetColorNoSignal(sample);
 		Preview(sample);
 	}
@@ -293,9 +294,9 @@ void ColorPickerButton::StartScreenPicking()
 	}
 
 	m_picker->EndEditing(true);
-	m_beforePick  = m_color;
-	m_picking     = true;
-	m_validSample = false;
+	m_beforePick      = m_color;
+	m_picking         = true;
+	m_validSample     = false;
 	m_scroll->SetVisible(false);
 	if (auto* popup = ObjectDatabase::GetInstance<PopupPanel>(m_popupID))
 	{
@@ -357,7 +358,7 @@ void ColorPickerButton::OnNotification(int notification)
 			}
 		}
 
-		DrawRect(rect, m_color);
+		DrawRect(rect, m_color.Clamped());
 		break;
 	}
 	case Notification_ExitTree:

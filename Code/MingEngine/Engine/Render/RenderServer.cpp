@@ -17,14 +17,15 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstring>
 
 namespace
 {
 Vertex InterpolateCanvasVertex(Vertex const& a, Vertex const& b, float t)
 {
-	auto channel = [t](unsigned char x, unsigned char y)
+	auto channel = [t](float x, float y)
 	{
-		return static_cast<unsigned char>(std::clamp(std::round(x + (y - x) * t), 0.f, 255.f));
+		return x + (y - x) * t;
 	};
 	return Vertex(
 		a.m_position + (b.m_position - a.m_position) * t,
@@ -143,10 +144,10 @@ void RenderServer::Startup()
 
 	// Engine-facing default resources live here, so other systems never reach into the Renderer.
 	// e.g. a mesh without a material, or a request without a shader, falls back to one of these
-	m_defaultUnlit    = m_renderer->GetBuiltinShaderResource("DefaultUnlit", BuiltinShaders::DefaultUnlit);
-	m_defaultUI       = m_renderer->GetBuiltinShaderResource("DefaultUI", BuiltinShaders::DefaultUI);
-	m_defaultLit      = m_renderer->GetBuiltinShaderResource("DefaultLit", BuiltinShaders::DefaultLit);
-	m_defaultMaterial = CreateRef<StandardMaterial3D>();
+	m_defaultUnlit      = m_renderer->GetBuiltinShaderResource("DefaultUnlit", BuiltinShaders::DefaultUnlit);
+	m_defaultUI         = m_renderer->GetBuiltinShaderResource("DefaultUI", BuiltinShaders::DefaultUI);
+	m_defaultLit        = m_renderer->GetBuiltinShaderResource("DefaultLit", BuiltinShaders::DefaultLit);
+	m_defaultMaterial   = CreateRef<StandardMaterial3D>();
 	m_defaultMaterial2D = CreateRef<StandardMaterial2D>();
 
 	// Empty texture slots keep the Renderer default textures bound, so a plain mesh renders white.
@@ -208,11 +209,11 @@ void RenderServer::Shutdown()
 	}
 
 	// 3) The defaults own builtin shader resources, so they are released before the Renderer shuts down.
-	m_defaultMaterial = nullptr;
+	m_defaultMaterial   = nullptr;
 	m_defaultMaterial2D = nullptr;
-	m_defaultLit      = nullptr;
-	m_defaultUnlit    = nullptr;
-	m_defaultUI       = nullptr;
+	m_defaultLit        = nullptr;
+	m_defaultUnlit      = nullptr;
+	m_defaultUI         = nullptr;
 
 	m_renderer->Shutdown();
 	m_started = false;
@@ -602,9 +603,9 @@ void RenderServer::PrepareCanvasItemRequests(
 		return;
 	}
 
-	Vector2 const position = parentPosition + item->m_position;
+	Vector2 const     position = parentPosition + item->m_position;
 	MaterialResource* material = item->m_material.IsValid() ? item->m_material.Get() : m_defaultMaterial2D.Get();
-	AABB2         clip;
+	AABB2             clip;
 	if (parentClip != nullptr)
 	{
 		clip = *parentClip;
@@ -651,8 +652,8 @@ void RenderServer::PrepareCanvasItemRequests(
 
 				m_renderer->CopyCPUToGPU(vertices.data(), byteSize, command->vertexBuffer);
 				RenderRequest request;
-				request.m_pass           = RenderRequestPass::UI;
-				request.m_vertexBuffer   = command->vertexBuffer;
+				request.m_pass         = RenderRequestPass::UI;
+				request.m_vertexBuffer = command->vertexBuffer;
 				ApplyMaterialToRequest(*material, request);
 				viewportData->m_renderRequests[static_cast<size_t>(RenderRequestPass::UI)].push_back(request);
 				continue;
@@ -660,10 +661,10 @@ void RenderServer::PrepareCanvasItemRequests(
 
 			CanvasItemData::CommandRect const* rectCommand = static_cast<CanvasItemData::CommandRect const*>(command);
 
-			Rect2 const& rect        = rectCommand->rect;
-			Vector2      uvMin       = Vector2::Zero;
-			Vector2      uvMax       = Vector2::One;
-			GPUTexture*  texture     = nullptr;
+			Rect2 const& rect    = rectCommand->rect;
+			Vector2      uvMin   = Vector2::Zero;
+			Vector2      uvMax   = Vector2::One;
+			GPUTexture*  texture = nullptr;
 
 			if (rectCommand->viewportTexture.IsValid())
 			{
@@ -686,7 +687,7 @@ void RenderServer::PrepareCanvasItemRequests(
 					continue;
 				}
 
-				texture     = textureData->m_texture;
+				texture = textureData->m_texture;
 
 				if (rectCommand->hasRegion)
 				{
@@ -771,9 +772,12 @@ void RenderServer::PrepareCanvasItemRequests(
 			m_renderer->CopyCPUToGPU(vertices, byteSize, command->vertexBuffer);
 
 			RenderRequest request;
-			request.m_pass                                  = RenderRequestPass::UI;
-			request.m_vertexBuffer                          = command->vertexBuffer;
+			request.m_pass         = RenderRequestPass::UI;
+			request.m_vertexBuffer = command->vertexBuffer;
 			ApplyMaterialToRequest(*material, request);
+
+			// The draw command overrides the material's diffuse texture, including nullptr to clear it.
+			// e.g. An untextured rectangle clears the material texture for this request only.
 			request.m_textures[SurfaceTextureSlot::Diffuse] = texture;
 			viewportData->m_renderRequests[static_cast<size_t>(RenderRequestPass::UI)].push_back(request);
 		}
@@ -967,7 +971,8 @@ void RenderServer::CanvasItemSetPosition(RID rid, Vector2 const& position)
 
 void RenderServer::CanvasItemSetMaterial(RID rid, Ref<MaterialResource> const& material)
 {
-	ERR_FAIL_COND_MSG(material.IsValid() && dynamic_cast<StandardMaterial2D*>(material.Get()) == nullptr,
+	ERR_FAIL_COND_MSG(
+		material.IsValid() && dynamic_cast<StandardMaterial2D*>(material.Get()) == nullptr,
 		"CanvasItem requires a StandardMaterial2D.");
 	if (CanvasItemData* item = m_canvasItemOwner.GetOrNull(rid))
 	{
@@ -1369,10 +1374,11 @@ RenderRequest RenderServer::BuildInstance3DRenderRequest(Instance3D const* insta
 void RenderServer::ApplyMaterialToRequest(MaterialResource& materialResource, RenderRequest& request)
 {
 	materialResource.PrepareShader();
-	materialResource.SynchronizeShader();
-	request.m_material = Ref<MaterialResource>(&materialResource);
-	request.m_shader = materialResource.m_shaderResource.IsValid() && !materialResource.m_shaderResource->IsEmpty()
-		? materialResource.m_shaderResource->GetShader() : m_defaultUnlit->GetShader();
+	materialResource.UpdateShaderCache();
+	request.m_materialParameterBytes.clear();
+	request.m_shader   = materialResource.m_shaderResource.IsValid() && !materialResource.m_shaderResource->IsEmpty()
+							 ? materialResource.m_shaderResource->GetShader()
+							 : m_defaultUnlit->GetShader();
 	if (materialResource.m_shaderResource.IsValid())
 	{
 		for (MShaderUniform const& uniform : materialResource.m_shaderResource->GetUniforms())
@@ -1380,12 +1386,46 @@ void RenderServer::ApplyMaterialToRequest(MaterialResource& materialResource, Re
 			Variant const& value = materialResource.m_parameters.at(uniform.m_name);
 			switch (uniform.m_binding)
 			{
+			case MShaderUniform::Binding::ConstantBuffer:
+			{
+				auto& bytes = request.m_materialParameterBytes;
+				bytes.resize(std::max(bytes.size(), size_t(uniform.m_offset) + 16), 0);
+				void const* data = nullptr;
+				switch (value.GetType())
+				{
+				case Variant::Type::Int:
+					data = &value.As<int>();
+					break;
+				case Variant::Type::Float:
+					data = &value.As<float>();
+					break;
+				case Variant::Type::Vector2:
+					data = &value.As<Vector2>();
+					break;
+				case Variant::Type::Vector3:
+					data = &value.As<Vector3>();
+					break;
+				case Variant::Type::Vector4:
+					data = &value.As<Vector4>();
+					break;
+				case Variant::Type::Color:
+					data = &value.As<Color>();
+					break;
+				default:
+					break;
+				}
+				if (data != nullptr)
+				{
+					std::memcpy(bytes.data() + uniform.m_offset, data, uniform.m_byteSize);
+				}
+				break;
+			}
 			case MShaderUniform::Binding::ModelColor:
 				request.m_tint = value.As<Color>();
 				break;
 			case MShaderUniform::Binding::Texture:
 			{
-				auto* texture = dynamic_cast<TextureResource*>(value.As<Object*>());
+				auto*        texture = dynamic_cast<TextureResource*>(value.As<Object*>());
 				TextureData* data = texture != nullptr ? m_textureOwner.GetOrNull(texture->GetTextureRID()) : nullptr;
 				if (uniform.m_textureSlot < SurfaceTextureSlot::Count)
 				{
@@ -1398,10 +1438,10 @@ void RenderServer::ApplyMaterialToRequest(MaterialResource& materialResource, Re
 			}
 		}
 	}
-	request.m_blendMode = materialResource.m_blendMode;
-	request.m_depthMode = materialResource.m_depthMode;
+	request.m_blendMode      = materialResource.m_blendMode;
+	request.m_depthMode      = materialResource.m_depthMode;
 	request.m_rasterizerMode = materialResource.m_rasterizerMode;
-	request.m_samplerMode = materialResource.m_samplerMode;
+	request.m_samplerMode    = materialResource.m_samplerMode;
 }
 
 RID RenderServer::RegisterVertexBuffer(VertexBuffer* vertexBuffer)
@@ -1795,7 +1835,8 @@ void RenderServer::CanvasItemAddViewportRect(RID item, RID viewport, Rect2 const
 
 void RenderServer::MeshSetMaterial(RID mesh, Ref<MaterialResource> const& material)
 {
-	ERR_FAIL_COND_MSG(material.IsValid() && dynamic_cast<StandardMaterial2D*>(material.Get()) != nullptr,
+	ERR_FAIL_COND_MSG(
+		material.IsValid() && dynamic_cast<StandardMaterial2D*>(material.Get()) != nullptr,
 		"3D geometry cannot use a StandardMaterial2D.");
 	if (MeshData* data = m_meshOwner.GetOrNull(mesh))
 	{
@@ -1805,7 +1846,8 @@ void RenderServer::MeshSetMaterial(RID mesh, Ref<MaterialResource> const& materi
 
 void RenderServer::Instance3DSetMaterialOverride(RID instance, Ref<MaterialResource> const& material)
 {
-	ERR_FAIL_COND_MSG(material.IsValid() && dynamic_cast<StandardMaterial2D*>(material.Get()) != nullptr,
+	ERR_FAIL_COND_MSG(
+		material.IsValid() && dynamic_cast<StandardMaterial2D*>(material.Get()) != nullptr,
 		"3D geometry cannot use a StandardMaterial2D.");
 	if (Instance3D* data = m_instanceOwner.GetOrNull(instance))
 	{

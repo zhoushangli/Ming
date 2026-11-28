@@ -2,13 +2,16 @@
 
 #include "MingEngine/Core/Object/ScriptInstance.hpp"
 
-bool Script::CopyFrom(Resource&& other)
+bool Script::MoveFrom(Resource&& other)
 {
-	if (dynamic_cast<Script*>(&other) == nullptr)
+	auto* script = dynamic_cast<Script*>(&other);
+	if (script == nullptr)
 	{
 		return false;
 	}
 
-	MoveBaseFrom(std::move(other));
+	m_name           = std::move(script->m_name);
+	m_virtualPath    = std::move(script->m_virtualPath);
+	m_sourceFilePath = std::move(script->m_sourceFilePath);
 	return true;
 }

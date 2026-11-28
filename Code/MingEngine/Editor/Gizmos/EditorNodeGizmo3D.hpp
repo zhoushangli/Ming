@@ -41,7 +41,7 @@ protected:
 	Vector3              m_origin;
 	std::vector<Vector3> m_segments;
 	std::vector<Vector3> m_handles;
-	Color                m_color = Color(255, 215, 100, 255);
+	Color                m_color = Color(1.f, 215.f / 255.f, 100.f / 255.f, 1.f);
 	Matrix4x4            m_dragBasis;
 	Vector3              m_dragOrigin;
 	Vector3              m_dragViewNormal;

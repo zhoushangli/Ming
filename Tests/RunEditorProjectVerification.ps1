@@ -1,6 +1,9 @@
 param(
     [switch]$SkipBuild,
-    [switch]$ResourcesOnly
+    [switch]$ResourcesOnly,
+    [switch]$PreviewShaderParameters,
+    [switch]$ShaderHintsOnly,
+    [switch]$BuildOnly
 )
 
 $ErrorActionPreference = 'Stop'
@@ -20,7 +23,7 @@ if (-not $SkipBuild)
 }
 
 $testObject = Join-Path $verificationDirectory 'EditorProjectVerification.obj'
-$executable = Join-Path $workspace 'Run\EditorProjectVerification.exe'
+$executable = Join-Path $workspace $(if ($PreviewShaderParameters) { 'Run\ShaderParameterPreview.exe' } else { 'Run\EditorProjectVerification.exe' })
 $responsePath = Join-Path $verificationDirectory 'link.rsp'
 $objects = Get-ChildItem -LiteralPath $buildDirectory -Filter '*.obj' |
     Where-Object { $_.Name -notin @('Main_Windows.obj') } |
@@ -43,11 +46,24 @@ $compileCommand = 'call "{0}" >nul && cl /nologo /EHsc /std:c++17 /MDd /Zi /Od /
 & $env:ComSpec /d /c $compileCommand
 if ($LASTEXITCODE -ne 0) { throw 'Verification compile or link failed.' }
 
+if ($BuildOnly)
+{
+    return
+}
+
 Push-Location (Join-Path $workspace 'Run')
 try
 {
     $verificationArguments = @()
-    if ($ResourcesOnly)
+    if ($ShaderHintsOnly)
+    {
+        $verificationArguments += '--verify-shader-hints'
+    }
+    elseif ($PreviewShaderParameters)
+    {
+        $verificationArguments += '--preview-shader-parameters'
+    }
+    elseif ($ResourcesOnly)
     {
         $verificationArguments += '--verify-resources'
     }
@@ -61,5 +77,8 @@ try
 finally
 {
     Pop-Location
-    Remove-Item -LiteralPath $executable -Force
+    if (-not $PreviewShaderParameters)
+    {
+        Remove-Item -LiteralPath $executable -Force
+    }
 }

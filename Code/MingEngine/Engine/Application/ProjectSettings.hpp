@@ -29,7 +29,7 @@ public:
 
 	static constexpr char const* GetSettingsPath() { return "res://project.ming"; }
 
-	bool CopyFrom(Resource&& other) override;
+	bool MoveFrom(Resource&& other) override;
 
 private:
 	static void BindMethods() {}

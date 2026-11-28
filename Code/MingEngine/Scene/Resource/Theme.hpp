@@ -79,7 +79,7 @@ public:
 	bool        SetTypeVariation(std::string const& variation, std::string const& baseType);
 	void        RemoveTypeVariation(std::string const& variation);
 	std::string GetTypeVariationBase(std::string const& variation) const;
-	bool        CopyFrom(Resource&& other) override;
+	bool        MoveFrom(Resource&& other) override;
 
 	void AddUser(ObjectID user);
 	void RemoveUser(ObjectID user);

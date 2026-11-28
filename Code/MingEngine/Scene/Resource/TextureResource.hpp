@@ -17,7 +17,7 @@ public:
 	TextureResource& operator=(TextureResource const& copy) = delete;
 
 	bool IsEmpty() const;
-	bool CopyFrom(Resource&& other) override;
+	bool MoveFrom(Resource&& other) override;
 
 	bool InitGPUResources();
 

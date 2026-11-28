@@ -27,7 +27,7 @@ bool MeshResource::IsEmpty() const
 	return m_vertices.empty() || m_indices.empty() || m_vertexCount == 0 || m_indexCount == 0;
 }
 
-bool MeshResource::CopyFrom(Resource&& other)
+bool MeshResource::MoveFrom(Resource&& other)
 {
 	// 1) Validate type
 	MeshResource* otherMesh = dynamic_cast<MeshResource*>(&other);
@@ -37,7 +37,9 @@ bool MeshResource::CopyFrom(Resource&& other)
 	}
 
 	// 2) Move CPU data fields
-	MoveBaseFrom(std::move(other));
+	m_name           = std::move(otherMesh->m_name);
+	m_virtualPath    = std::move(otherMesh->m_virtualPath);
+	m_sourceFilePath = std::move(otherMesh->m_sourceFilePath);
 	m_vertexFormat = std::move(otherMesh->m_vertexFormat);
 	m_vertexStride = otherMesh->m_vertexStride;
 	m_vertexCount  = otherMesh->m_vertexCount;

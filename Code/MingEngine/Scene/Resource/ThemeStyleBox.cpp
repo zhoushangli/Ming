@@ -170,7 +170,7 @@ void ThemeStyleBox::EmitChanged()
 	}
 }
 
-bool ThemeStyleBox::CopyFrom(Resource&& other)
+bool ThemeStyleBox::MoveFrom(Resource&& other)
 {
 	auto* box = dynamic_cast<ThemeStyleBox*>(&other);
 	if (box == nullptr || box == this)
@@ -178,7 +178,9 @@ bool ThemeStyleBox::CopyFrom(Resource&& other)
 		return false;
 	}
 
-	MoveBaseFrom(std::move(other));
+	m_name           = std::move(box->m_name);
+	m_virtualPath    = std::move(box->m_virtualPath);
+	m_sourceFilePath = std::move(box->m_sourceFilePath);
 	m_backgroundColor = box->m_backgroundColor;
 	m_borderColor     = box->m_borderColor;
 	std::copy(std::begin(box->m_borderWidths), std::end(box->m_borderWidths), m_borderWidths);

@@ -69,7 +69,7 @@ void fragment(inout FragmentContext f)
 
 ## MShader parameters
 
-Place `uniform` declarations before ordinary HLSL definitions. Supported types are `float`, `float2`, `float3`, `float4`. Defaults accept signed numeric literals and vector constructors with matching numeric components; omitted defaults are zero.
+Place `uniform` declarations before ordinary HLSL definitions. Supported types are `int`, `float`, `float2`, `float3`, `float4`. Integers remain signed 32-bit HLSL integers. Defaults accept signed numeric literals and vector constructors with matching numeric components; omitted defaults are zero.
 
 ```hlsl
 shader_type spatial;
@@ -96,9 +96,9 @@ material->SetShaderParameter("rgb", Vector3(1.0f, 0.0f, 0.0f));
 meshInstance->SetMaterialOverride(material);
 ```
 
-Types strictly match `float` and `Vector2/3/4`. Unknown names or mismatched types return false and preserve the previous value. Changes mark the material dirty; drawing packs and uploads values. Materials sharing a Shader retain independent values. Shader replacement or resource reload preserves matching names and types. New parameters and type changes use the new declaration defaults; removed parameters are discarded.
+Types strictly match `int`, `float` and `Vector2/3/4`. Unknown names or mismatched types return false and preserve the previous value. RenderServer packs numeric values into each RenderRequest when it is collected. Renderer uploads that snapshot to a reusable constant buffer at b6 before each draw and unbinds b6 for requests without material constants. Material changes take effect in newly collected requests. Materials sharing a Shader retain independent values. Shader replacement or resource reload preserves matching names and types. New parameters and type changes use the new declaration defaults; removed parameters are discarded.
 
-The parser checks top-level declarations, callback signatures and delimiter boundaries without an AST. Ordinary HLSL and preprocessor directives pass through. MShader declarations and callbacks must appear directly in the main file, independently of macros, conditional compilation and include files. No canvas_item, texture parameters, arrays, matrices, Inspector parameter editing or parameter persistence are provided.
+The parser checks top-level declarations, callback signatures and delimiter boundaries without an AST. Ordinary HLSL and preprocessor directives pass through. MShader declarations and callbacks must appear directly in the main file, independently of macros, conditional compilation and include files. No canvas_item, texture uniform declarations, arrays or matrices are provided. Shader parameters support Inspector editing and material resource persistence.
 
 Run `Tests/RunShaderLifecycleVerification.ps1 -SkipBuild` after a Debug build. It checks parser failures, defaults, type validation, resource reload and GPU readback of six meshes, including runtime updates and shared-Shader materials. Add `-Preview` for a visible preview. `Bad.mshader` intentionally exercises compiler failure diagnostics.
 
@@ -115,3 +115,72 @@ Shader ????????????????????????????????????????????????????????? GPU ???????????
 The base owns common storage and exposes no material configuration API. StandardMaterial2D exposes Tint, Blend, Filter and Repeat; draw commands supply textures. StandardMaterial3D exposes fixed surface parameters and draw states. ShaderMaterial exposes shader selection, named parameters and draw states. CanvasItem uses its assigned material or the engine default 2D material, without parent material inheritance. External legacy resources require migration to concrete material types.
 
 The visible shader preview also contains 2D default/nearest/tinted samples and a StandardMaterial3D sample. Run the editor resource checks with `Tests/RunEditorProjectVerification.ps1 -SkipBuild -ResourcesOnly`; run managed material checks with `Tests/RunApplicationLifecycleVerification.ps1 -SkipBuild -Modules --verify-managed`.
+
+## Shader 参数 Inspector / Shader parameter Inspector
+
+选中 ShaderMaterial 后，自定义 uniform 按声明顺序及分组显示。普通 float2/3/4 使用分量数值框；hint_color、hint_range 和 hint_enum 分别提供颜色、范围和枚举编辑。拖动实时更新材质预览，松开提交一条撤销记录；恢复默认按钮清除显式覆盖。材质只保存覆盖值，未覆盖参数跟随 shader 默认值；等于默认值的显式覆盖仍可恢复默认。
+
+Selecting a ShaderMaterial exposes custom uniforms in declaration and group order. Ordinary vectors use component fields; hint_color, hint_range and hint_enum select color, range and enum editors. Drags preview live and commit one undo action. Restore Default removes the explicit override. Only overrides are serialized; unmodified parameters follow shader defaults. An explicit value equal to the default remains an override.
+
+```powershell
+# 自动验证 / Automated checks
+.\Tests\RunEditorProjectVerification.ps1 -SkipBuild -ResourcesOnly
+# 打开已选中示例材质的编辑器 / Open the editor with the sample material selected
+.\Tests\RunEditorProjectVerification.ps1 -SkipBuild -PreviewShaderParameters
+```
+
+交互预览每次在 `Temporary/ShaderParameterPreview` 重新生成独立示例。可调整范围、浮点颜色、枚举及普通数值，撤销重做、恢复默认和保存；关闭窗口退出。提示相关截图位于 `Temporary/ShaderParameterEvidence`。
+
+The interactive preview regenerates an isolated sample in `Temporary/ShaderParameterPreview`. Edit ranges, floating-point colors, enums and ordinary numbers, undo/redo, restore defaults, or save; close the window to exit. Hint screenshots are stored in `Temporary/ShaderParameterEvidence`.
+
+MaterialResource stores user parameters and render states without owning a GPU constant buffer. RenderRequest contains resolved draw data and owns its material parameter bytes; it has no MaterialResource reference. Canvas draw-command textures are resolved through ApplyMaterialToRequest without changing the shared material.
+
+The engine preview also checks alternating 16-byte and 64-byte material layouts, b6 unbinding in both stages, parameter snapshots when a later request changes an earlier material, and distinct Canvas textures sharing one material. SmallUniforms.mshader keeps the vertex-deformation preview while exercising the smaller layout.
+
+
+## Uniform hints / 参数提示
+
+```hlsl
+shader_type spatial;
+
+group_uniforms Appearance;
+uniform float opacity : hint_range(0, 1, 0.01) = 0.8;
+uniform float4 tint : hint_color = float4(0.12345, 0.5, 0.8, 1);
+
+group_uniforms Effect;
+uniform int mode : hint_enum("Normal", "Glow", "Outline") = 0;
+uniform int count : hint_range(0, 16) = 4;
+
+group_uniforms;
+uniform float strength = 1;
+
+void fragment(inout FragmentContext f)
+{
+    f.color = tint * opacity * strength;
+}
+```
+
+`hint_range(min, max[, step])` supports scalar float/int. Omitted steps are 0.001/1. Bounds must be ordered and the step positive; int ranges use integer literals. The Inspector enforces the editing range; runtime setters retain strict types without clamping values.
+
+`hint_color` applies only to float4. Material properties, saved overrides and C++/C# APIs use Color with four 32-bit floating-point channels; ordinary float4 uses Vector4. RGB numeric fields accept negative and above-one values. HSV and Hex editing require ordinary-range RGB (Hex also requires ordinary-range alpha); previews clamp a copy without changing the value. Alpha editing uses 0-1. Hex and byte images round to 8-bit channels at conversion boundaries. Vertex and uniform uploads preserve the floating-point values. Existing UNORM render targets still clamp and quantize when written; this change does not add HDR rendering or color-space conversion.
+
+`hint_enum("A", "B")` applies only to int, with values 0, 1, etc. Labels must be nonempty and cannot contain commas, colons or escapes. One hint is allowed per parameter. Explicit enum values and nested groups are not supported.
+
+`group_uniforms Name;` starts or switches a single-level Inspector group. `group_uniforms;` ends it; subsequent parameters return to Shader Parameters. Grouping never changes parameter names or GPU storage. All declarations precede ordinary HLSL definitions.
+
+Each constant has a 16-byte slot; m_byteSize records only its payload: int/float=4, float2=8, float3=12, float4=16 bytes.
+
+颜色参数与普通颜色统一使用四浮点 Color，普通 float4 仍使用 Vector4。RGB 数值允许负数和大于 1；扩展 RGB 禁用 HSV、Hex 编辑，Alpha 编辑限制为 0～1，预览仅截断副本。Hex 和字节图片在转换边界量化；顶点及 uniform 上传保留原值，中间 UNORM 目标仍在写入时截断，不引入 HDR 流程或颜色空间转换。旧字节颜色数据及颜色 uniform 的 Vector4 数据需迁移为新格式，不自动猜测旧数值含义。单层分组不改变参数名，所有声明仍须位于 HLSL 定义之前。
+
+范围提示仅用于 float/int，省略步长时分别使用 0.001/1；它限制面板编辑，不裁剪运行时 setter 的值。枚举提示仅用于 int，非空选项依次对应 0、1、2，不支持逗号、冒号或转义字符。一个参数只接受一个提示。颜色控件保留浮点 RGBA 精度，十六进制和屏幕取色沿用来源的 8 位精度。
+
+Focused verification and a directly openable editor preview:
+
+```powershell
+.\Tests\RunEditorProjectVerification.ps1 -SkipBuild -ShaderHintsOnly
+.\Tests\RunEditorProjectVerification.ps1 -SkipBuild -PreviewShaderParameters
+```
+
+The preview project is generated under `Temporary/ShaderParameterPreview/`; screenshots are stored in `Temporary/ShaderParameterEvidence/`. Use `-PreviewShaderParameters -BuildOnly` to prepare `Run/ShaderParameterPreview.exe`, which can then be opened directly. Shader/GPU checks use `Tests/RunShaderLifecycleVerification.ps1 -SkipBuild`.
+
+使用 `-PreviewShaderParameters -BuildOnly` 可生成能直接双击打开的 `Run/ShaderParameterPreview.exe`。测试项目和本地设置均写入 Temporary，截图单独保存，避免作为项目资源导入。

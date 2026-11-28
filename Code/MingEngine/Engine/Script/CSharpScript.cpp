@@ -13,14 +13,17 @@ CSharpScript::~CSharpScript()
 	}
 }
 
-bool CSharpScript::CopyFrom(Resource&& other)
+bool CSharpScript::MoveFrom(Resource&& other)
 {
-	if (dynamic_cast<CSharpScript*>(&other) == nullptr)
+	auto* script = dynamic_cast<CSharpScript*>(&other);
+	if (script == nullptr)
 	{
 		return false;
 	}
 
-	MoveBaseFrom(std::move(other));
+	m_name           = std::move(script->m_name);
+	m_virtualPath    = std::move(script->m_virtualPath);
+	m_sourceFilePath = std::move(script->m_sourceFilePath);
 	return true;
 }
 

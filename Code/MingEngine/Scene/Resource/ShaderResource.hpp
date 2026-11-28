@@ -17,12 +17,12 @@ public:
 
 	bool IsEmpty() const { return m_shader == nullptr; }
 
-	bool CopyFrom(Resource&& other) override;
+	bool MoveFrom(Resource&& other) override;
 
 	Shader* GetShader() const { return m_shader; }
 
 	void SetShader(Shader* shader) { m_shader = shader; ++m_revision; }
-	void SetUniforms(std::vector<MShaderUniform> uniforms) { m_uniforms = std::move(uniforms); ++m_revision; }
+	void SetUniforms(std::vector<MShaderUniform> uniforms);
 	std::vector<MShaderUniform> const& GetUniforms() const { return m_uniforms; }
 	uint64_t GetRevision() const { return m_revision; }
 

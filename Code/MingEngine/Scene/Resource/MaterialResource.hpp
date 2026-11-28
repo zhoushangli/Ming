@@ -8,10 +8,7 @@
 
 #include <unordered_map>
 
-class ConstantBuffer;
-class RenderBackend;
 class RenderServer;
-class Renderer;
 class EditorUI;
 
 class MaterialResource : public Resource
@@ -19,16 +16,15 @@ class MaterialResource : public Resource
 	MCLASS(MaterialResource, Resource)
 
 	friend class RenderServer;
-	friend class Renderer;
 	friend class EditorUI;
 
 public:
-	~MaterialResource() override;
+	~MaterialResource() override = default;
 
 	MaterialResource(MaterialResource const&)            = delete;
 	MaterialResource& operator=(MaterialResource const&) = delete;
 
-	bool CopyFrom(Resource&& other) override;
+	bool MoveFrom(Resource&& other) override;
 
 protected:
 	MaterialResource() = default;
@@ -38,7 +34,9 @@ protected:
 	void                SetShaderResource(Ref<ShaderResource> const& value);
 	Ref<ShaderResource> GetShaderResource() const { return m_shaderResource; }
 	bool                SetParameter(String const& name, Variant const& value);
-	Variant             GetParameter(String const& name) const;
+	Variant             GetParameter(String const& name);
+	bool                HasParameterOverride(String const& name);
+	bool                ClearParameterOverride(String const& name);
 
 	void SetBlendMode(BlendMode value);
 	void SetDepthMode(DepthMode value);
@@ -46,9 +44,8 @@ protected:
 	void SetSamplerMode(SamplerMode value);
 
 private:
-	void SynchronizeShader() const;
-	void BindParameters(RenderBackend& backend);
-	void CopyValuesFrom(MaterialResource const& other);
+	void UpdateShaderCache();
+	void CopyFrom(MaterialResource& other);
 
 protected:
 	Ref<ShaderResource> m_shaderResource;
@@ -58,10 +55,8 @@ protected:
 	SamplerMode         m_samplerMode    = SamplerMode::POINT_CLAMP;
 
 private:
-	mutable Ref<ShaderResource>                      m_parameterShader;
-	mutable uint64_t                                 m_shaderRevision = 0;
-	mutable std::unordered_map<std::string, Variant> m_parameters;
-	mutable std::vector<unsigned char>               m_parameterBytes;
-	mutable bool                                     m_parametersDirty = true;
-	mutable ConstantBuffer*                          m_parameterBuffer = nullptr;
+	Ref<ShaderResource>                     m_parameterShader;
+	uint64_t                                m_shaderRevision = 0;
+	std::unordered_map<std::string, Variant> m_parameters;
+	std::unordered_map<std::string, Variant> m_parameterOverrides;
 };

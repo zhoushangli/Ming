@@ -277,7 +277,7 @@ bool PackedScene::ParseNodeRecursively(Node const* node, String const& parentPat
 	return true;
 }
 
-bool PackedScene::CopyFrom(Resource&& other)
+bool PackedScene::MoveFrom(Resource&& other)
 {
 	PackedScene* otherScene = dynamic_cast<PackedScene*>(&other);
 	if (otherScene == nullptr)
@@ -285,7 +285,9 @@ bool PackedScene::CopyFrom(Resource&& other)
 		return false;
 	}
 
-	MoveBaseFrom(std::move(other));
+	m_name           = std::move(otherScene->m_name);
+	m_virtualPath    = std::move(otherScene->m_virtualPath);
+	m_sourceFilePath = std::move(otherScene->m_sourceFilePath);
 	m_data = std::move(otherScene->m_data);
 	return true;
 }

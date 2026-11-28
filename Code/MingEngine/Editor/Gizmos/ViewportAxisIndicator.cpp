@@ -17,9 +17,9 @@ using namespace Math;
 
 namespace
 {
-Color const kAxisXColor(255, 70, 105, 255);
-Color const kAxisYColor(155, 225, 20, 255);
-Color const kAxisZColor(55, 160, 255, 255);
+Color const kAxisXColor(1.f, 70.f / 255.f, 105.f / 255.f, 1.f);
+Color const kAxisYColor(155.f / 255.f, 225.f / 255.f, 20.f / 255.f, 1.f);
+Color const kAxisZColor(55.f / 255.f, 160.f / 255.f, 1.f, 1.f);
 
 float constexpr kCircleRadius = 10.f;
 float constexpr kLineWidth    = 3.f;
@@ -174,7 +174,7 @@ void ViewportAxisIndicator::RebuildVertexBuffer()
 			axisColor = kAxisZColor;
 		}
 
-		axisColor.a = (unsigned char)RangeMap(axis.m_x, -1.f, 1.f, 255, 100);
+		axisColor.a = RangeMap(axis.m_x, -1.f, 1.f, 1.f, 100.f / 255.f);
 
 		if (axis.m_isPositive)
 		{

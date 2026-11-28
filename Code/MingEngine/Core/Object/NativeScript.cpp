@@ -3,14 +3,17 @@
 #include "MingEngine/Engine/Application/Engine.hpp"
 #include "MingEngine/Engine/Script/ScriptSystem.hpp"
 
-bool NativeScript::CopyFrom(Resource&& other)
+bool NativeScript::MoveFrom(Resource&& other)
 {
-	if (dynamic_cast<NativeScript*>(&other) == nullptr)
+	auto* script = dynamic_cast<NativeScript*>(&other);
+	if (script == nullptr)
 	{
 		return false;
 	}
 
-	MoveBaseFrom(std::move(other));
+	m_name           = std::move(script->m_name);
+	m_virtualPath    = std::move(script->m_virtualPath);
+	m_sourceFilePath = std::move(script->m_sourceFilePath);
 	return true;
 }
 

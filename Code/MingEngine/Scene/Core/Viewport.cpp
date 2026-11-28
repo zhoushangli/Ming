@@ -965,7 +965,7 @@ void Viewport::UpdateGuiDrag(Vector2 const& position)
 		preview->UpdateSize(m_gui.m_dragPreviewSize);
 		if (auto* background = dynamic_cast<ColorRect*>(preview))
 		{
-			background->SetColor(m_gui.m_dragTarget.IsValid() ? Color(36, 100, 74) : Color(112, 48, 48));
+			background->SetColor(m_gui.m_dragTarget.IsValid() ? Color(36.f / 255.f, 100.f / 255.f, 74.f / 255.f) : Color(112.f / 255.f, 48.f / 255.f, 48.f / 255.f));
 		}
 	}
 }

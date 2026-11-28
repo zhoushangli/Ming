@@ -13,14 +13,6 @@
 
 #include <algorithm>
 
-namespace
-{
-Vector3 GetNormalizedColor(Color const& color)
-{
-	return Vector3(color.r / 255.f, color.g / 255.f, color.b / 255.f);
-}
-} // namespace
-
 SceneTree::SceneTree()
 {
 	// raycast space should create first and delete last, so node can enter / exit it

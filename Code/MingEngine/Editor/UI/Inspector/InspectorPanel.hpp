@@ -25,10 +25,10 @@ private:
 		ObjectID           m_target = ObjectID::Invalid;
 		ObjectID           m_scene  = ObjectID::Invalid;
 		std::string        m_name;
-		MethodBind const*  m_setter = nullptr;
-		MethodBind const*  m_getter = nullptr;
 		InspectorProperty* m_field  = nullptr;
 		Variant            m_original;
+		Variant            m_originalState;
+		uint64_t           m_revision = 0;
 		Variant            m_last;
 		bool               m_applying = false;
 	};
@@ -36,7 +36,8 @@ private:
 	struct PropertyEntry
 	{
 		InspectorProperty* m_property = nullptr;
-		MethodBind const*  m_getter   = nullptr;
+		bool               m_dynamic = false;
+		std::string        m_name;
 		int                m_section  = -1;
 	};
 
@@ -48,6 +49,7 @@ private:
 		Control*       m_content   = nullptr;
 		VBoxContainer* m_fields    = nullptr;
 		bool           m_collapsed = false;
+		bool           m_dynamic = false;
 	};
 
 	struct PropertyGroup
@@ -84,25 +86,22 @@ private:
 	void OnRender(EditorUIContext& context) override;
 
 	void BuildInheritanceChain(std::string const& className);
-	void RebuildProperties(EditorUIContext& context);
+	void RebuildProperties(EditorUIContext& context, bool dynamicOnly = false);
 	void ClearProperties();
 	void RefreshValues();
 	void FilterProperties();
 	void BeginPropertyEdit(
 		std::string const& name,
 		ObjectID           id,
-		MethodBind const*  setter,
-		MethodBind const*  getter,
 		InspectorProperty* field);
 	void PreviewPropertyValue(Variant const& value);
 	void EndPropertyEdit(bool accept);
 	void CommitValue(
 		std::string const& propertyName,
 		ObjectID           objectID,
-		MethodBind const*  setter,
-		MethodBind const*  getter,
 		Variant const&     value,
 		Variant const*     original = nullptr);
+	void RevertProperty(std::string const& name, ObjectID id);
 
 private:
 	Ref<Resource>              m_resource;
@@ -130,4 +129,5 @@ private:
 	std::vector<std::string>   m_inheritanceChain;
 	std::vector<PropertyGroup> m_propertyGroups;
 	PropertyEdit               m_propertyEdit;
+	uint64_t                   m_propertyListRevision = 0;
 };

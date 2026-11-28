@@ -17,9 +17,9 @@ using StyleContour                  = std::array<Vertex, roundedContourSize>;
 
 Color MixStyleColor(Color a, Color b, float t)
 {
-	auto channel = [t](unsigned char x, unsigned char y)
+	auto channel = [t](float x, float y)
 	{
-		return static_cast<unsigned char>(std::clamp(std::round(x + (y - x) * t), 0.f, 255.f));
+		return x + (y - x) * t;
 	};
 	return Color(channel(a.r, b.r), channel(a.g, b.g), channel(a.b, b.b), channel(a.a, b.a));
 }

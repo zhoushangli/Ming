@@ -71,7 +71,7 @@ void VerifyResources()
 	copy->GetStyleBox("normal", "Button")->SetCornerRadiusAll(4.f);
 	Check(box->GetCornerRadius(ThemeStyleBox::Corner::TopLeft) == 2.f, "duplicate isolates base");
 	auto moved = CreateRef<ThemeStyleBox>();
-	Check(moved->CopyFrom(std::move(*box.Get())), "move style data");
+	Check(moved->MoveFrom(std::move(*box.Get())), "move style data");
 	Check(moved->GetCornerRadius(ThemeStyleBox::Corner::TopLeft) == 2.f, "move preserves radius");
 	Check(box->GetCornerRadius(ThemeStyleBox::Corner::BottomLeft) == 0.f, "move resets source radii");
 
@@ -128,8 +128,8 @@ float SampleStyleAlpha(std::vector<Vertex> const& vertices, float x, float y, in
 void VerifyGeometry()
 {
 	auto box = CreateRef<ThemeStyleBox>();
-	box->SetBackgroundColor(Color(80, 100, 120, 128));
-	box->SetBorderColor(Color(210, 170, 110, 160));
+	box->SetBackgroundColor(Color(80.f / 255.f, 100.f / 255.f, 120.f / 255.f, 128.f / 255.f));
+	box->SetBorderColor(Color(210.f / 255.f, 170.f / 255.f, 110.f / 255.f, 160.f / 255.f));
 	AABB2 const rect(0.f, 0.f, 80.f, 30.f);
 	for (float radius : { 0.f, 2.f, 4.f, 8.f, 10000.f })
 	{
@@ -184,8 +184,8 @@ void VerifyGeometry()
 	box->SetBorderColor(Color::Transparent);
 	Check(BuildRoundedStyleVertices(*box.Get(), rect).empty(), "invisible styles emit no geometry");
 
-	std::vector<Vertex> triangle = { Vertex(Vector3(0.f, 0.f, 0.f), Color(0, 0, 0, 0), Vector2(0.f, 0.f)),
-									 Vertex(Vector3(10.f, 0.f, 0.f), Color(200, 100, 50, 200), Vector2(1.f, 0.f)),
+	std::vector<Vertex> triangle = { Vertex(Vector3(0.f, 0.f, 0.f), Color(0.f, 0.f, 0.f, 0.f), Vector2(0.f, 0.f)),
+									 Vertex(Vector3(10.f, 0.f, 0.f), Color(200.f / 255.f, 100.f / 255.f, 50.f / 255.f, 200.f / 255.f), Vector2(1.f, 0.f)),
 									 Vertex(Vector3(0.f, 10.f, 0.f), Color::White, Vector2(0.f, 1.f)) };
 	AABB2 const         clip(7.f, 3.f, 11.f, 9.f);
 	auto                clipped = PrepareCanvasTriangles(triangle, Vector2(2.f, 3.f), &clip);
@@ -198,7 +198,7 @@ void VerifyGeometry()
 				 && v.m_position.y <= 9.001f;
 		if (Near(v.m_position.x, 7.f) && Near(v.m_position.y, 3.f))
 		{
-			interpolated = Near(v.m_uv.x, 0.5f) && v.m_color.r == 100 && v.m_color.a == 100;
+			interpolated = Near(v.m_uv.x, 0.5f) && v.m_color.r == 100.f / 255.f && v.m_color.a == 100.f / 255.f;
 		}
 	}
 	Check(inside && interpolated, "clip interpolates position UV color and alpha");
@@ -214,7 +214,7 @@ void VerifyStandards()
 {
 	auto defaults = CreateDefaultTheme();
 	auto editor   = EditorThemeManager::CreateTheme();
-	Check(editor->GetStyleBox("normal", "MenuBarButton")->GetBackgroundColor().a == 0,
+	Check(editor->GetStyleBox("normal", "MenuBarButton")->GetBackgroundColor().a == 0.f,
 		"editor menu idle background stays transparent");
 	for (auto const& theme : { defaults, editor })
 	{
@@ -460,7 +460,7 @@ void CaptureRenderedFrame(Engine& engine, std::string const& path, float layoutS
 			x                = static_cast<int>(x * layoutScale);
 			y                = static_cast<int>(y * layoutScale);
 			auto const* rgba = static_cast<unsigned char const*>(mapped.pData) + y * mapped.RowPitch + x * 4;
-			return Color(rgba[0], rgba[1], rgba[2], rgba[3]);
+			return Color(NormalizeByte(rgba[0]), NormalizeByte(rgba[1]), NormalizeByte(rgba[2]), NormalizeByte(rgba[3]));
 		};
 		auto sameRGB = [](Color a, Color b)
 		{

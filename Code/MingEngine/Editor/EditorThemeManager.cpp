@@ -24,17 +24,17 @@ Ref<Theme> EditorThemeManager::CreateTheme()
 	constexpr float fieldVerticalPadding = 3.75f;
 
 	auto        theme = CreateRef<Theme>();
-	Color const background(25, 24, 23);
-	Color const panel(36, 35, 33);
-	Color const elevated(44, 42, 39);
-	Color const field(29, 28, 26);
-	Color const border(57, 54, 49);
-	Color const strong(81, 74, 64);
-	Color const text(222, 217, 208);
-	Color const muted(164, 158, 147);
-	Color const dim(127, 121, 110);
-	Color const accent(211, 173, 114);
-	Color const tint(60, 51, 38);
+	Color const background(25.f / 255.f, 24.f / 255.f, 23.f / 255.f);
+	Color const panel(36.f / 255.f, 35.f / 255.f, 33.f / 255.f);
+	Color const elevated(44.f / 255.f, 42.f / 255.f, 39.f / 255.f);
+	Color const field(29.f / 255.f, 28.f / 255.f, 26.f / 255.f);
+	Color const border(57.f / 255.f, 54.f / 255.f, 49.f / 255.f);
+	Color const strong(81.f / 255.f, 74.f / 255.f, 64.f / 255.f);
+	Color const text(222.f / 255.f, 217.f / 255.f, 208.f / 255.f);
+	Color const muted(164.f / 255.f, 158.f / 255.f, 147.f / 255.f);
+	Color const dim(127.f / 255.f, 121.f / 255.f, 110.f / 255.f);
+	Color const accent(211.f / 255.f, 173.f / 255.f, 114.f / 255.f);
+	Color const tint(60.f / 255.f, 51.f / 255.f, 38.f / 255.f);
 	// Create independent mutable boxes so editing one state does not change another state.
 	// e.g. Changing LineEdit normal margins leaves its hover resource unchanged.
 	auto box = [](Color const& fill, Color const& edge, float width, float horizontal, float vertical)
@@ -166,9 +166,9 @@ Ref<Theme> EditorThemeManager::CreateTheme()
 	{
 		theme->SetStyleBox(state, "EditorVectorEdit", box(Color::Transparent, Color::Transparent, 0.f, 0.f, fieldVerticalPadding));
 	}
-	theme->SetColor("property_color_x", "Editor", Color(224, 97, 120));
-	theme->SetColor("property_color_y", "Editor", Color(194, 237, 102));
-	theme->SetColor("property_color_z", "Editor", Color(107, 171, 245));
+	theme->SetColor("property_color_x", "Editor", Color(224.f / 255.f, 97.f / 255.f, 120.f / 255.f));
+	theme->SetColor("property_color_y", "Editor", Color(194.f / 255.f, 237.f / 255.f, 102.f / 255.f));
+	theme->SetColor("property_color_z", "Editor", Color(107.f / 255.f, 171.f / 255.f, 245.f / 255.f));
 
 	theme->SetConstant("row_height", "Tree", controlHeight);
 	theme->SetConstant("indent", "Tree", 18);
@@ -252,7 +252,7 @@ Ref<Theme> EditorThemeManager::CreateTheme()
 	theme->SetFontSize("font_size", "EditorInspectorTitle", 15);
 	theme->SetFontSize("font_size", "EditorPropertyTitle", 14);
 	theme->SetFontSize("font_size", "EditorErrorLabel", 13);
-	theme->SetColor("font_color", "EditorErrorLabel", Color(225, 120, 105));
+	theme->SetColor("font_color", "EditorErrorLabel", Color(225.f / 255.f, 120.f / 255.f, 105.f / 255.f));
 	theme->SetStyleBox(
 		"normal",
 		"EditorToolbarButton",
@@ -269,7 +269,7 @@ Ref<Theme> EditorThemeManager::CreateTheme()
 	theme->SetStyleBox(
 		"hover",
 		"EditorPrimaryButton",
-		box(Color(226, 186, 114), Color(226, 186, 114), 1.f, 12.5f, 5.f));
+		box(Color(226.f / 255.f, 186.f / 255.f, 114.f / 255.f), Color(226.f / 255.f, 186.f / 255.f, 114.f / 255.f), 1.f, 12.5f, 5.f));
 	theme->SetStyleBox("pressed", "EditorPrimaryButton", box(accent, background, 1.f, 12.5f, 5.f));
 	theme->SetStyleBox("hover_pressed", "EditorPrimaryButton", box(accent, background, 1.f, 12.5f, 5.f));
 	theme->SetColor("font_color", "EditorPrimaryButton", background);
@@ -280,7 +280,7 @@ Ref<Theme> EditorThemeManager::CreateTheme()
 	theme->SetColor("panel", "Editor", panel);
 	theme->SetColor("elevated", "Editor", elevated);
 	theme->SetColor("accent", "Editor", accent);
-	theme->SetColor("scene_background", "Editor", Color(32, 32, 32));
+	theme->SetColor("scene_background", "Editor", Color(32.f / 255.f, 32.f / 255.f, 32.f / 255.f));
 	theme->SetConstant("icon_size", "Button", iconSize);
 	theme->SetConstant("icon_separation", "Button", iconSeparation);
 	theme->SetStyleBox("panel", "PanelContainer", box(panel, border, 1.f, contentPadding, contentPadding));
@@ -344,8 +344,8 @@ Ref<Theme> EditorThemeManager::CreateTheme()
 
 	theme->SetColor("font_color", "EditorLogTime", dim);
 	theme->SetColor("font_color", "EditorLogInfo", text);
-	theme->SetColor("font_color", "EditorLogWarning", Color(226, 186, 114));
-	theme->SetColor("font_color", "EditorLogError", Color(227, 152, 152));
+	theme->SetColor("font_color", "EditorLogWarning", Color(226.f / 255.f, 186.f / 255.f, 114.f / 255.f));
+	theme->SetColor("font_color", "EditorLogError", Color(227.f / 255.f, 152.f / 255.f, 152.f / 255.f));
 	for (ClassInfo const* info : ClassDatabase::GetRegisteredClasses())
 	{
 		if (info != nullptr && info->m_apiType == ApiType::Runtime
@@ -360,12 +360,12 @@ Ref<Theme> EditorThemeManager::CreateTheme()
 	theme->SetIcon("arrow_expanded", "Tree", EditorIcons::GetIconTexture("ChevronDown"));
 	theme->SetColor("guide_color", "Tree", strong);
 	theme->SetColor("tn", "EditorIcons", muted);
-	theme->SetColor("t2d", "EditorIcons", Color(147, 208, 221));
-	theme->SetColor("t3d", "EditorIcons", Color(166, 139, 212));
-	theme->SetColor("tui", "EditorIcons", Color(159, 190, 160));
-	theme->SetColor("terr", "EditorIcons", Color(227, 152, 152));
-	theme->SetColor("twarn", "EditorIcons", Color(226, 186, 114));
-	theme->SetColor("tsuc", "EditorIcons", Color(145, 185, 155));
+	theme->SetColor("t2d", "EditorIcons", Color(147.f / 255.f, 208.f / 255.f, 221.f / 255.f));
+	theme->SetColor("t3d", "EditorIcons", Color(166.f / 255.f, 139.f / 255.f, 212.f / 255.f));
+	theme->SetColor("tui", "EditorIcons", Color(159.f / 255.f, 190.f / 255.f, 160.f / 255.f));
+	theme->SetColor("terr", "EditorIcons", Color(227.f / 255.f, 152.f / 255.f, 152.f / 255.f));
+	theme->SetColor("twarn", "EditorIcons", Color(226.f / 255.f, 186.f / 255.f, 114.f / 255.f));
+	theme->SetColor("tsuc", "EditorIcons", Color(145.f / 255.f, 185.f / 255.f, 155.f / 255.f));
 	for (auto const& icon : BuiltinIcons::Detail::kEntries)
 	{
 		theme->SetIcon(std::string(icon.m_name), "EditorIcons", EditorIcons::GetIconTexture(std::string(icon.m_name)));
@@ -389,8 +389,8 @@ Ref<Theme> EditorThemeManager::CreateTheme()
 	theme->SetConstant("spacing", "ColorPicker", 8);
 	theme->SetConstant("padding", "ColorPicker", 8);
 	theme->SetConstant("checker_size", "ColorPicker", 6);
-	theme->SetColor("checker_light", "ColorPicker", Color(145, 140, 132));
-	theme->SetColor("checker_dark", "ColorPicker", Color(85, 81, 75));
+	theme->SetColor("checker_light", "ColorPicker", Color(145.f / 255.f, 140.f / 255.f, 132.f / 255.f));
+	theme->SetColor("checker_dark", "ColorPicker", Color(85.f / 255.f, 81.f / 255.f, 75.f / 255.f));
 	theme->SetColor("cursor_color", "ColorPicker", text);
 	theme->SetStyleBox("panel", "ColorPicker", box(panel, border, 1.f, 0.f, 0.f));
 	theme->SetConstant("viewport_min_width", "Editor", 280);
@@ -418,7 +418,7 @@ Ref<Theme> EditorThemeManager::CreateTheme()
 	theme->SetStyleBox("hover_pressed", "EditorOutputFilter", box(strong, Color::Transparent, 0.f, 3.75f, 2.5f));
 	theme->SetTypeVariation("EditorLogArea", "PanelContainer");
 	theme->SetStyleBox("panel", "EditorLogArea", box(field, Color::Transparent, 0.f, 5.f, 5.f));
-	theme->SetColor("selection_color", "EditorLogArea", Color(87, 65, 42));
+	theme->SetColor("selection_color", "EditorLogArea", Color(87.f / 255.f, 65.f / 255.f, 42.f / 255.f));
 	theme->SetColor("background_color", "EditorLogScroll", field);
 	theme->SetTypeVariation("EditorLogScroll", "ScrollContainer");
 	theme->SetTypeVariation("EditorLogRow", "HBoxContainer");
@@ -444,7 +444,7 @@ Ref<Theme> EditorThemeManager::CreateTheme()
 	theme->SetFontSize("font_size", "SpinBoxStep", 12);
 	theme->SetTypeVariation("SpinBoxError", "Label");
 	theme->SetFontSize("font_size", "SpinBoxError", 11);
-	theme->SetColor("modal_color", "PopupPanel", Color(0, 0, 0, 145));
+	theme->SetColor("modal_color", "PopupPanel", Color(0.f, 0.f, 0.f, 145.f / 255.f));
 	theme->SetTypeVariation("EditorDialog", "PanelContainer");
 	theme->SetStyleBox("panel", "EditorDialog", box(panel, strong, 1.f, 0.f, 0.f));
 	theme->SetTypeVariation("EditorDialogHeader", "PanelContainer");

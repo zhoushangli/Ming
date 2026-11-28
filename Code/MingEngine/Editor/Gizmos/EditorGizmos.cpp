@@ -21,9 +21,9 @@ namespace
 float constexpr kEditorGizmoRaycastLength = 10000.f;
 float constexpr kWorldAxisExtent          = 100.f;
 
-Color const kAxisXColor(255, 70, 105, 255);
-Color const kAxisYColor(155, 225, 20, 255);
-Color const kAxisZColor(55, 160, 255, 255);
+Color const kAxisXColor(1.f, 70.f / 255.f, 105.f / 255.f, 1.f);
+Color const kAxisYColor(155.f / 255.f, 225.f / 255.f, 20.f / 255.f, 1.f);
+Color const kAxisZColor(55.f / 255.f, 160.f / 255.f, 1.f, 1.f);
 
 EditorWorldAxis3D* CreateWorldAxis(
 	Node* parent, char const* name, Vector3 const& axisStart, Vector3 const& axisEnd, Color const& color)

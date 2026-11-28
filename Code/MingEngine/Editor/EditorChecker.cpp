@@ -325,7 +325,7 @@ void EditorChecker::ResolveExternalChanges(bool reload)
 				if (fresh.IsValid())
 				{
 					fresh->SetVirtualPath(path);
-					success = ProjectSettings::Get()->CopyFrom(std::move(*fresh));
+					success = ProjectSettings::Get()->MoveFrom(std::move(*fresh));
 				}
 			}
 			else
@@ -346,7 +346,7 @@ void EditorChecker::ResolveExternalChanges(bool reload)
 				if (reload)
 				{
 					Ref<Resource> fresh = ResourceLoader::LoadUncached(path);
-					success = fresh.IsValid() && resource->CopyFrom(std::move(*fresh));
+					success = fresh.IsValid() && resource->MoveFrom(std::move(*fresh));
 				}
 				else
 				{

@@ -16,12 +16,12 @@
 
 namespace
 {
-unsigned char Byte(float value)
+bool IsNormalRGB(Color const& color)
 {
-	return static_cast<unsigned char>(std::lround(std::clamp(value, 0.f, 1.f) * 255.f));
+	return color.r >= 0.f && color.r <= 1.f && color.g >= 0.f && color.g <= 1.f && color.b >= 0.f && color.b <= 1.f;
 }
 
-Color FromHSV(float hue, float saturation, float value, unsigned char alpha)
+Color FromHSV(float hue, float saturation, float value, float alpha)
 {
 	hue           = std::fmod(hue, 360.f) / 60.f;
 	float const c = value * saturation;
@@ -58,8 +58,9 @@ Color FromHSV(float hue, float saturation, float value, unsigned char alpha)
 		break;
 	}
 
-	return Color(Byte(r + m), Byte(g + m), Byte(b + m), alpha);
+	return Color(r + m, g + m, b + m, alpha);
 }
+
 
 Rect2 TextureRect(AABB2 const& rect)
 {
@@ -69,7 +70,7 @@ Rect2 TextureRect(AABB2 const& rect)
 std::string Hex(Color const& color)
 {
 	char buffer[10];
-	std::snprintf(buffer, sizeof(buffer), "#%02X%02X%02X%02X", color.r, color.g, color.b, color.a);
+	std::snprintf(buffer, sizeof(buffer), "#%02X%02X%02X%02X", DenormalizeByte(color.r), DenormalizeByte(color.g), DenormalizeByte(color.b), DenormalizeByte(color.a));
 	return buffer;
 }
 
@@ -105,10 +106,10 @@ bool ParseHex(std::string text, Color& color)
 	}
 
 	color = Color(
-		static_cast<unsigned char>(value >> 24),
-		static_cast<unsigned char>(value >> 16),
-		static_cast<unsigned char>(value >> 8),
-		static_cast<unsigned char>(value));
+		NormalizeByte(static_cast<unsigned char>(value >> 24)),
+		NormalizeByte(static_cast<unsigned char>(value >> 16)),
+		NormalizeByte(static_cast<unsigned char>(value >> 8)),
+		NormalizeByte(static_cast<unsigned char>(value)));
 	return true;
 }
 }
@@ -129,7 +130,7 @@ ColorPicker::ColorPicker()
 		m_spins[i]->SetName(i == 3 ? "Alpha" : String("Channel" + std::to_string(i)));
 		m_spins[i]->SetStepButtonsVisible(false);
 		m_spins[i]->SetErrorMessagesVisible(false);
-		m_spins[i]->Configure(true, "0,255,1");
+		m_spins[i]->Configure(false, i == 3 ? "0,1,0.001" : "-3.4028234663852886e38,3.4028234663852886e38,0.001");
 		m_spins[i]->SetValueChangedCallback(
 			[this, i](Variant const& value)
 			{
@@ -168,7 +169,7 @@ ColorPicker::ColorPicker()
 		{
 			Color color;
 			if ((reason == LineEdit::EditEndReason::Submitted || reason == LineEdit::EditEndReason::FocusLost)
-				&& ParseHex(text.ToUtf8(), color))
+				&& IsNormalRGB(m_color) && text.ToUtf8() != Hex(m_color) && ParseHex(text.ToUtf8(), color))
 			{
 				Publish(color);
 			}
@@ -327,9 +328,9 @@ void ColorPicker::SetOldColor(Color const& color)
 
 void ColorPicker::UpdateHSV()
 {
-	float const r       = m_color.r / 255.f;
-	float const g       = m_color.g / 255.f;
-	float const b       = m_color.b / 255.f;
+	float const r       = std::clamp(m_color.r, 0.f, 1.f);
+	float const g       = std::clamp(m_color.g, 0.f, 1.f);
+	float const b       = std::clamp(m_color.b, 0.f, 1.f);
 	float const maximum = std::max({ r, g, b });
 	float const delta   = maximum - std::min({ r, g, b });
 	m_value             = maximum;
@@ -354,7 +355,7 @@ float ColorPicker::GetChannel(int index) const
 {
 	if (index == 3)
 	{
-		return static_cast<float>(m_color.a);
+		return m_color.a;
 	}
 
 	if (m_hsvMode)
@@ -362,25 +363,37 @@ float ColorPicker::GetChannel(int index) const
 		return index == 0 ? m_hue : (index == 1 ? m_saturation : m_value) * 100.f;
 	}
 
-	return static_cast<float>(index == 0 ? m_color.r : (index == 1 ? m_color.g : m_color.b));
+	return index == 0 ? m_color.r : (index == 1 ? m_color.g : m_color.b);
 }
 
 void ColorPicker::SyncFields()
 {
+	bool const normal = IsNormalRGB(m_color);
+	if (!normal)
+	{
+		m_hsvMode = false;
+	}
 	char const* labels[] = { "R", "G", "B", "A", "H", "S", "V" };
 	for (int i = 0; i < 4; ++i)
 	{
-		m_labels[i]->SetText(labels[m_hsvMode && i < 3 ? i + 4 : i]);
-		m_spins[i]->SetValueNoSignal(
-			m_hsvMode && i < 3 ? Variant(GetChannel(i)) : Variant(static_cast<int>(GetChannel(i))));
+		bool const hsvChannel = m_hsvMode && i < 3;
+		m_labels[i]->SetText(labels[hsvChannel ? i + 4 : i]);
+		m_spins[i]->Configure(false, hsvChannel ? (i == 0 ? "0,360,0.1" : "0,100,0.1")
+			: (i == 3 ? "0,1,0.001" : "-3.4028234663852886e38,3.4028234663852886e38,0.001"));
+		m_spins[i]->SetValueNoSignal(Variant(GetChannel(i)));
 	}
 
+	bool const hexAvailable = normal && m_color.a >= 0.f && m_color.a <= 1.f;
+	m_hex->SetEditable(hexAvailable);
+	m_hex->SetTooltipText(hexAvailable ? "" : "Hex requires RGBA in the range 0 to 1. Edit RGB values directly.");
 	if (!m_hex->IsEditing())
 	{
-		m_hex->SetText(Hex(m_color));
+		m_hex->SetText(hexAvailable ? Hex(m_color) : "Unavailable");
 	}
 
 	m_rgbButton->SetPressedNoSignal(!m_hsvMode);
+	m_hsvButton->SetDisabled(!normal);
+	m_hsvButton->SetTooltipText(normal ? "" : "HSV editing requires RGB in the range 0 to 1.");
 	m_hsvButton->SetPressedNoSignal(m_hsvMode);
 	m_pickButton->SetDisabled(!m_screenReader);
 }
@@ -388,29 +401,27 @@ void ColorPicker::SyncFields()
 void ColorPicker::SetHSVMode(bool enabled)
 {
 	EndEditing(true);
-	m_hsvMode = enabled;
-	for (int i = 0; i < 3; ++i)
-	{
-		m_spins[i]->Configure(!enabled, enabled ? (i == 0 ? "0,360,0.1" : "0,100,0.1") : "0,255,1");
-	}
-
+	m_hsvMode = enabled && IsNormalRGB(m_color);
 	SyncFields();
 	QueueRedraw();
 }
 
 void ColorPicker::Publish(Color const& color, bool keepHSV)
 {
-	bool const changed = m_color != color;
-	m_color            = color;
+	if (m_color == color)
+	{
+		return;
+	}
+
+	m_color = color;
 	if (!keepHSV)
 	{
 		UpdateHSV();
 	}
-
 	SyncFields();
 	QueueRedraw();
 	auto callback = m_changed;
-	if (changed && callback)
+	if (callback)
 	{
 		callback(color);
 	}
@@ -421,7 +432,7 @@ void ColorPicker::SetChannel(int index, float value)
 	Color color = m_color;
 	if (index == 3)
 	{
-		color.a = Byte(value / 255.f);
+		color.a = std::clamp(value, 0.f, 1.f);
 	}
 	else if (m_hsvMode)
 	{
@@ -437,14 +448,12 @@ void ColorPicker::SetChannel(int index, float value)
 		{
 			m_value = value / 100.f;
 		}
-
 		color = FromHSV(m_hue, m_saturation, m_value, m_color.a);
 	}
 	else
 	{
-		(index == 0 ? color.r : (index == 1 ? color.g : color.b)) = Byte(value / 255.f);
+		(index == 0 ? color.r : (index == 1 ? color.g : color.b)) = value;
 	}
-
 	Publish(color, m_hsvMode || index == 3);
 }
 
@@ -515,10 +524,10 @@ void ColorPicker::ApplyPointer(Vector2 const& position)
 		Publish(FromHSV(m_hue, m_saturation, m_value, m_color.a), true);
 		break;
 	case 2:
-		SetChannel(3, uv.x * 255.f);
+		SetChannel(3, uv.x);
 		break;
 	default:
-		SetChannel(m_dragRegion - 3, uv.x * (m_hsvMode ? (m_dragRegion == 3 ? 360.f : 100.f) : 255.f));
+		SetChannel(m_dragRegion - 3, uv.x * (m_hsvMode ? (m_dragRegion == 3 ? 360.f : 100.f) : 1.f));
 		break;
 	}
 }
@@ -609,7 +618,7 @@ void ColorPicker::UpdateTextures()
 		}
 		else if (region == 2 || (region >= 3 && !m_hsvMode))
 		{
-			key = { static_cast<float>(m_color.r), static_cast<float>(m_color.g), static_cast<float>(m_color.b), 0.f };
+			key = { m_color.r, m_color.g, m_color.b, 0.f };
 		}
 		else if (region >= 3)
 		{
@@ -632,15 +641,15 @@ void ColorPicker::UpdateTextures()
 				Color       color = m_color;
 				if (region == 0)
 				{
-					color = FromHSV(m_hue, t, 1.f - y / 255.f, 255);
+					color = FromHSV(m_hue, t, 1.f - y / 255.f, 1.f);
 				}
 				else if (region == 1)
 				{
-					color = FromHSV(t * 360.f, 1.f, 1.f, 255);
+					color = FromHSV(t * 360.f, 1.f, 1.f, 1.f);
 				}
 				else if (region == 2)
 				{
-					color.a = Byte(t);
+					color.a = t;
 				}
 				else if (m_hsvMode)
 				{
@@ -648,19 +657,19 @@ void ColorPicker::UpdateTextures()
 						region == 3 ? t * 360.f : m_hue,
 						region == 4 ? t : m_saturation,
 						region == 5 ? t : m_value,
-						255);
+						1.f);
 				}
 				else
 				{
-					(region == 3 ? color.r : (region == 4 ? color.g : color.b)) = Byte(t);
-					color.a                                                     = 255;
+					(region == 3 ? color.r : (region == 4 ? color.g : color.b)) = t;
+					color.a                                                     = 1.f;
 				}
 
 				size_t const offset = static_cast<size_t>((y * width + x) * 4);
-				pixels[offset]      = color.r;
-				pixels[offset + 1]  = color.g;
-				pixels[offset + 2]  = color.b;
-				pixels[offset + 3]  = color.a;
+				pixels[offset]      = DenormalizeByte(color.r);
+				pixels[offset + 1]  = DenormalizeByte(color.g);
+				pixels[offset + 2]  = DenormalizeByte(color.b);
+				pixels[offset + 3]  = DenormalizeByte(color.a);
 			}
 		}
 
@@ -702,9 +711,9 @@ void ColorPicker::DrawContent()
 		if (i > 0)
 		{
 			float const t = i == 1 ? m_hue / 360.f
-								   : (i == 2 ? m_color.a / 255.f
-											 : GetChannel(i - 3) / (m_hsvMode ? (i == 3 ? 360.f : 100.f) : 255.f));
-			DrawMarker(regions[i], t, i == 1);
+								   : (i == 2 ? m_color.a
+											 : GetChannel(i - 3) / (m_hsvMode ? (i == 3 ? 360.f : 100.f) : 1.f));
+			DrawMarker(regions[i], std::clamp(t, 0.f, 1.f), i == 1);
 		}
 	}
 
@@ -716,13 +725,13 @@ void ColorPicker::DrawContent()
 		m_themeCache.cursor_color);
 	DrawRect(
 		AABB2(selected - Vector2(radius * 0.35f, radius * 0.35f), selected + Vector2(radius * 0.35f, radius * 0.35f)),
-		FromHSV(m_hue, m_saturation, m_value, 255));
+		FromHSV(m_hue, m_saturation, m_value, 1.f));
 	AABB2 old = GetOldColorRect();
 	AABB2 current(old.m_maxs.x, old.m_mins.y, GetSize().x - m_themeCache.padding, old.m_maxs.y);
 	DrawChecker(old);
-	DrawRect(old, m_oldColor);
+	DrawRect(old, m_oldColor.Clamped());
 	DrawChecker(current);
-	DrawRect(current, m_color);
+	DrawRect(current, m_color.Clamped());
 }
 
 void ColorPicker::OnNotification(int notification)

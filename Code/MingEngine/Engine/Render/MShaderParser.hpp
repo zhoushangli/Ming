@@ -1,12 +1,13 @@
 #pragma once
 
-#include "MingEngine/Core/Object/Variant.hpp"
+#include "MingEngine/Core/Object/ClassDatabase.hpp"
 
 #include <string>
 #include <vector>
 
 struct MShaderUniform
 {
+public:
 	enum class Binding
 	{
 		ConstantBuffer,
@@ -14,12 +15,16 @@ struct MShaderUniform
 		Texture
 	};
 
-	std::string m_name;
-	Variant m_defaultValue;
-	unsigned int m_offset = 0;
-	unsigned int m_components = 1;
-	Binding m_binding = Binding::ConstantBuffer;
-	unsigned int m_textureSlot = 0;
+public:
+	std::string        m_name;
+	Variant            m_defaultValue;
+	unsigned int       m_offset = 0;
+	unsigned int       m_byteSize = sizeof(float);
+	Binding            m_binding = Binding::ConstantBuffer;
+	unsigned int       m_textureSlot = 0;
+	PropertyInfo::Hint m_hint = PropertyInfo::Hint::None;
+	std::string        m_hintData;
+	std::string        m_group;
 };
 
 struct MShaderParseResult

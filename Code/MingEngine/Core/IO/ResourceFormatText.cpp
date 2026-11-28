@@ -175,17 +175,6 @@ Variant ReadValue(std::string const& text, PropertyInfo const& property, std::ma
 		}
 	}
 
-	if (property.m_type == Variant::Type::Color)
-	{
-		for (auto const& channel : json)
-		{
-			if (!channel.is_number_integer() || channel.get<int>() < 0 || channel.get<int>() > 255)
-			{
-				throw std::runtime_error("Color channels must be integers from 0 to 255");
-			}
-		}
-	}
-
 	Variant value;
 	if (!VariantJson::TryDeserialize(json, property.m_type, value))
 	{
@@ -307,7 +296,7 @@ Ref<Resource> ResourceFormatLoaderText::Parse(std::string const& text, VirtualPa
 		Ref<PackedScene> scene;
 		PackedSceneData data;
 		std::map<std::string, Ref<Resource>> external;
-		std::vector<std::pair<PropertyInfo const*, Variant>> values;
+		std::vector<std::pair<std::string, std::string>> values;
 		std::set<std::string> assigned;
 		bool body = false;
 		while (std::getline(stream, line))
@@ -394,22 +383,24 @@ Ref<Resource> ResourceFormatLoaderText::Parse(std::string const& text, VirtualPa
 
 			std::string const name = Trim(line.substr(0, equal));
 			std::string const type = scene.IsValid() ? data.m_packedNodes.back().m_type.ToUtf8() : resource->GetClassName();
+			if (!scene.IsValid())
+			{
+				if (!assigned.insert(name).second)
+				{
+					throw std::runtime_error("Duplicate property " + name);
+				}
+				values.emplace_back(name, Trim(line.substr(equal + 1)));
+				continue;
+			}
+
 			PropertyInfo const* property = ClassDatabase::FindProperty(type, name);
 			if (property == nullptr || !property->HasUsage(PropertyInfo::UsageFlags::Storage)
 				|| property->GetSetter() == nullptr || !assigned.insert(name).second)
 			{
 				throw std::runtime_error("Unknown, duplicate or unwritable property " + type + "." + name);
 			}
-
 			Variant value = ReadValue(Trim(line.substr(equal + 1)), *property, external);
-			if (scene.IsValid())
-			{
-				data.m_packedNodes.back().m_properties.emplace_back(name, value);
-			}
-			else
-			{
-				values.emplace_back(property, value);
-			}
+			data.m_packedNodes.back().m_properties.emplace_back(name, value);
 		}
 
 		if (!body)
@@ -453,12 +444,53 @@ Ref<Resource> ResourceFormatLoaderText::Parse(std::string const& text, VirtualPa
 		}
 		else
 		{
+			std::stable_sort(values.begin(), values.end(), [](auto const& a, auto const& b)
+			{
+				return a.first == "shader" && b.first != "shader";
+			});
 			for (auto const& entry : values)
 			{
-				entry.first->GetSetter()->Invoke(resource.Get(), { entry.second });
-				if (entry.first->GetGetter() != nullptr && entry.first->GetGetter()->Invoke(resource.Get(), {}) != entry.second)
+				bool const shaderParameter = ClassDatabase::IsSubclassOf(resource->GetClassName(), "ShaderMaterial")
+					&& entry.first.compare(0, 17, "shader_parameter/") == 0;
+				PropertyInfo property;
+				bool const exists = resource->FindProperty(entry.first, property);
+				if (shaderParameter)
 				{
-					throw std::runtime_error("Setter rejected property " + entry.first->m_name);
+					PropertyInfo stored;
+					stored.m_name = entry.first;
+					stored.m_type = Variant::Type::Float;
+					for (auto type : { Variant::Type::Vector2, Variant::Type::Vector3, Variant::Type::Vector4, Variant::Type::Color })
+					{
+						if (entry.second.rfind(std::string(Constructor(type)) + "(", 0) == 0)
+						{
+							stored.m_type = type;
+							break;
+						}
+					}
+					if (stored.m_type == Variant::Type::Float && entry.second.find_first_of(".eE") == std::string::npos)
+					{
+						stored.m_type = Variant::Type::Int;
+					}
+					Variant value = ReadValue(entry.second, stored, external);
+					if (!exists || property.m_type != value.GetType())
+					{
+						WARN_PRINT("Skipping removed or incompatible shader parameter: " + entry.first);
+						continue;
+					}
+					if (!resource->SetProperty(entry.first, value) || resource->GetProperty(entry.first) != value)
+					{
+						throw std::runtime_error("Setter rejected property " + entry.first);
+					}
+					continue;
+				}
+				if (!exists || !property.HasUsage(PropertyInfo::UsageFlags::Storage) || property.GetSetter() == nullptr)
+				{
+					throw std::runtime_error("Unknown or unwritable property " + entry.first);
+				}
+				Variant value = ReadValue(entry.second, property, external);
+				if (!resource->SetProperty(entry.first, value) || resource->GetProperty(entry.first) != value)
+				{
+					throw std::runtime_error("Setter rejected property " + entry.first);
 				}
 			}
 		}
@@ -514,21 +546,21 @@ bool ResourceFormatSaverText::Write(Ref<Resource> const& resource, std::string& 
 		else
 		{
 			body = "\n[resource]\n";
-			auto properties = ClassDatabase::GetAllProperties(resource->GetClassName());
-			std::sort(properties.begin(), properties.end(), [](auto* a, auto* b) { return a->m_name < b->m_name; });
-			for (auto const* property : properties)
+			auto properties = resource->GetPropertyList();
+			std::sort(properties.begin(), properties.end(), [](auto const& a, auto const& b) { return a.m_name < b.m_name; });
+			for (auto const& property : properties)
 			{
-				if (!property->HasUsage(PropertyInfo::UsageFlags::Storage))
+				if (!property.HasUsage(PropertyInfo::UsageFlags::Storage))
 				{
 					continue;
 				}
 
-				if (property->GetGetter() == nullptr || property->GetSetter() == nullptr)
+				if (ClassDatabase::FindProperty(resource->GetClassName(), property.m_name) != nullptr
+					&& (property.GetGetter() == nullptr || property.GetSetter() == nullptr))
 				{
-					throw std::runtime_error("Stored property has no getter or setter: " + property->m_name);
+					throw std::runtime_error("Stored property has no getter or setter: " + property.m_name);
 				}
-
-				body += property->m_name + " = " + writer.Value(property->GetGetter()->Invoke(resource.Get(), {})) + "\n";
+				body += property.m_name + " = " + writer.Value(resource->GetProperty(property.m_name)) + "\n";
 			}
 		}
 

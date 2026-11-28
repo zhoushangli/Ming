@@ -366,8 +366,8 @@ void WindowSystem::SetTitleBarColors(Color const& background, Color const& text)
 
 	HWND const     window     = static_cast<HWND>(m_windowHandle);
 	BOOL const     dark       = TRUE;
-	COLORREF const caption    = RGB(background.r, background.g, background.b);
-	COLORREF const foreground = RGB(text.r, text.g, text.b);
+	COLORREF const caption    = RGB(DenormalizeByte(background.r), DenormalizeByte(background.g), DenormalizeByte(background.b));
+	COLORREF const foreground = RGB(DenormalizeByte(text.r), DenormalizeByte(text.g), DenormalizeByte(text.b));
 	// Unsupported DWM attributes leave the operating system's default decoration intact.
 	// e.g. Older Windows versions can accept dark mode without supporting custom caption colors.
 	DwmSetWindowAttribute(window, 20, &dark, sizeof(dark));
@@ -437,7 +437,7 @@ bool WindowSystem::TryGetScreenColor(Vector2 clientPosition, Color& outColor) co
 		return false;
 	}
 
-	outColor = Color(GetRValue(pixel), GetGValue(pixel), GetBValue(pixel), 255);
+	outColor = Color(NormalizeByte(GetRValue(pixel)), NormalizeByte(GetGValue(pixel)), NormalizeByte(GetBValue(pixel)), 1.f);
 	return true;
 }
 

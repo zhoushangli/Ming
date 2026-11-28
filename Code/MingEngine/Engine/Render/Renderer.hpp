@@ -80,6 +80,9 @@ private:
 	RendererServerConfig m_config;
 	RenderBackend*       m_renderBackend = nullptr;
 
+	ConstantBuffer* m_materialParameterBuffer         = nullptr;
+	unsigned int    m_materialParameterBufferCapacity = 0;
+
 	Ref<ShaderResource>                                  m_postProcessCopyShaderResource;
 	std::unordered_map<std::string, Ref<ShaderResource>> m_builtinShaderResources;
 

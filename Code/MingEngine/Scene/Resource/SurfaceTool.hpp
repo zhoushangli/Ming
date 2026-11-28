@@ -70,10 +70,10 @@ private:
 			Vertex const& vertex = surfaceVertex.m_vertex;
 			size_t        hash   = 0;
 			HashHelper::CombineVec3(hash, vertex.m_position);
-			HashHelper::Combine(hash, std::hash<unsigned char>{}(vertex.m_color.r));
-			HashHelper::Combine(hash, std::hash<unsigned char>{}(vertex.m_color.g));
-			HashHelper::Combine(hash, std::hash<unsigned char>{}(vertex.m_color.b));
-			HashHelper::Combine(hash, std::hash<unsigned char>{}(vertex.m_color.a));
+			HashHelper::Combine(hash, std::hash<float>{}(vertex.m_color.r));
+			HashHelper::Combine(hash, std::hash<float>{}(vertex.m_color.g));
+			HashHelper::Combine(hash, std::hash<float>{}(vertex.m_color.b));
+			HashHelper::Combine(hash, std::hash<float>{}(vertex.m_color.a));
 			HashHelper::CombineVec2(hash, vertex.m_uv);
 			HashHelper::CombineVec3(hash, vertex.m_tangent);
 			HashHelper::CombineVec3(hash, vertex.m_bitangent);

@@ -10,7 +10,7 @@ public:
 	StandardMaterial2D();
 
 	void SetTint(Color const& value) { SetParameter("tint", value); }
-	Color GetTint() const { return GetParameter("tint").As<Color>(); }
+	Color GetTint() { return GetParameter("tint").As<Color>(); }
 
 	void SetBlendMode(BlendMode value) { MaterialResource::SetBlendMode(value); }
 	BlendMode GetBlendMode() const { return m_blendMode; }

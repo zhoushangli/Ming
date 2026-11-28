@@ -38,7 +38,9 @@ InspectorProperty::InspectorProperty(PropertyInfo info, std::string labelId, Val
 	m_root   = MemNew<VBoxContainer>();
 	m_rootID = m_root->GetObjectID();
 	m_root->SetName(m_info.m_name);
-	bool const vector = m_info.m_type == Variant::Type::Vector3 || m_info.m_type == Variant::Type::EulerAngles;
+	bool const vector = m_info.m_type == Variant::Type::Vector3
+		|| m_info.m_type == Variant::Type::Vector4
+		|| m_info.m_type == Variant::Type::EulerAngles;
 	if (EditorNode::Get() != nullptr && EditorNode::Get()->m_editorUI->GetRootControl() != nullptr)
 	{
 		m_root->SetThemeSource(EditorNode::Get()->m_editorUI->GetRootControl());
@@ -117,7 +119,14 @@ InspectorProperty::InspectorProperty(PropertyInfo info, std::string labelId, Val
 	m_revert->SetPressedCallback(
 		[this]()
 		{
-			EmitValueChanged(m_revertValue);
+			if (m_revertCallback)
+			{
+				m_revertCallback();
+			}
+			else
+			{
+				EmitValueChanged(m_revertValue);
+			}
 		});
 	auto* revertSlot = MemNew<HBoxContainer>();
 	revertSlot->AddThemeChangedCallback(
@@ -286,8 +295,10 @@ void InspectorProperty::BuildNumeric()
 
 void InspectorProperty::BuildComponents()
 {
-	bool const vector = m_info.m_type == Variant::Type::Vector3 || m_info.m_type == Variant::Type::EulerAngles;
-	int const  count  = m_info.m_type == Variant::Type::Vector2 ? 2 : 3;
+	bool const vector = m_info.m_type == Variant::Type::Vector3
+		|| m_info.m_type == Variant::Type::Vector4
+		|| m_info.m_type == Variant::Type::EulerAngles;
+	int const  count  = m_info.m_type == Variant::Type::Vector2 ? 2 : (m_info.m_type == Variant::Type::Vector4 ? 4 : 3);
 
 	auto* components = MemNew<HBoxContainer>();
 	components->AddThemeChangedCallback(
@@ -297,8 +308,8 @@ void InspectorProperty::BuildComponents()
 		});
 	m_fields->AddNode(components);
 	char const* names[]  = { "X", "Y", "Z", "W" };
-	char const* axes[] = { "x", "y", "z" };
-	char const* axisColors[] = { "property_color_x", "property_color_y", "property_color_z" };
+	char const* axes[] = { "x", "y", "z", "w" };
+	char const* axisColors[] = { "property_color_x", "property_color_y", "property_color_z", "property_color_z" };
 	for (int i = 0; i < count; ++i)
 	{
 		auto* row   = MemNew<HBoxContainer>();
@@ -390,6 +401,12 @@ Variant InspectorProperty::GetComponentValue(Variant const& value, int index)
 		return Variant(index == 0 ? v.x : (index == 1 ? v.y : v.z));
 	}
 
+	if (value.Is<Vector4>())
+	{
+		Vector4 const& v = value.As<Vector4>();
+		return Variant(index == 0 ? v.x : (index == 1 ? v.y : (index == 2 ? v.z : v.w)));
+	}
+
 	if (value.Is<EulerAngles>())
 	{
 		EulerAngles const& v = value.As<EulerAngles>();
@@ -418,6 +435,11 @@ void InspectorProperty::SetComponent(int index, Variant const& component)
 		}
 
 		(index == 0 ? v.x : (index == 1 ? v.y : v.z)) = number;
+	}
+	else if (value.Is<Vector4>())
+	{
+		Vector4& v = value.As<Vector4>();
+		(index == 0 ? v.x : (index == 1 ? v.y : (index == 2 ? v.z : v.w))) = component.As<float>();
 	}
 	else if (value.Is<EulerAngles>())
 	{
@@ -821,7 +843,7 @@ void InspectorProperty::UpdateValue(Variant const& value)
 			}
 		}
 	}
-	m_revert->SetVisible(m_revertValue.GetType() == value.GetType() && value != m_revertValue);
+	m_revert->SetVisible(m_canRevert ? m_canRevert() : (m_revertValue.GetType() == value.GetType() && value != m_revertValue));
 	for (int i = 0; i < static_cast<int>(m_spins.size()); ++i)
 	{
 		m_spins[i]->SetValueNoSignal(
@@ -966,6 +988,12 @@ InspectorProperty* InspectorProperty::Create(PropertyInfo info, std::string labe
 		return new InspectorPropertyVec2(std::move(info), std::move(labelId), std::move(changed));
 	case Variant::Type::Vector3:
 		return new InspectorPropertyVec3(std::move(info), std::move(labelId), std::move(changed));
+	case Variant::Type::Vector4:
+	{
+		auto* field = new InspectorProperty(std::move(info), std::move(labelId), std::move(changed));
+		field->BuildComponents();
+		return field;
+	}
 	case Variant::Type::EulerAngles:
 		return new InspectorPropertyEuler(std::move(info), std::move(labelId), std::move(changed));
 	case Variant::Type::Color:
@@ -1053,6 +1081,7 @@ void InspectorProperty::BuildColor()
 				EmitValueChanged(Variant(color));
 			}
 		});
+
 	m_color->SetEditingEndedCallback(
 		[this](bool accept)
 		{

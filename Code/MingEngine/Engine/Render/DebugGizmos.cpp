@@ -45,8 +45,8 @@ void AddDebugObject(DebugObject&& object)
 	depthObject.mode        = DebugRenderMode::USE_DEPTH;
 
 	object.mode         = DebugRenderMode::ALWAYS;
-	object.startColor.a = static_cast<unsigned char>(static_cast<float>(object.startColor.a) * 0.35f);
-	object.endColor.a   = static_cast<unsigned char>(static_cast<float>(object.endColor.a) * 0.35f);
+	object.startColor.a = object.startColor.a * 0.35f;
+	object.endColor.a   = object.endColor.a * 0.35f;
 
 	// 1) Draw the translucent object through geometry.
 	// 2) Draw the normal depth-tested object on top.
@@ -510,9 +510,9 @@ void DebugGizmos::AddBasis(
 	float            alphaScale,
 	DebugRenderMode  mode)
 {
-	Color const kAxisXColor(255, 70, 105, 255);
-	Color const kAxisYColor(155, 225, 20, 255);
-	Color const kAxisZColor(55, 160, 255, 255);
+	Color const kAxisXColor(1.f, 70.f / 255.f, 105.f / 255.f, 1.f);
+	Color const kAxisYColor(155.f / 255.f, 225.f / 255.f, 20.f / 255.f, 1.f);
+	Color const kAxisZColor(55.f / 255.f, 160.f / 255.f, 1.f, 1.f);
 
 	Vector3 origin = transform.GetTranslation3D();
 	Vector3 xEnd   = transform.TransformPosition3D(Vector3(length, 0.f, 0.f));
@@ -523,9 +523,9 @@ void DebugGizmos::AddBasis(
 	Color yColor = Interpolate(Color::Black, kAxisYColor, colorScale);
 	Color zColor = Interpolate(Color::Black, kAxisZColor, colorScale);
 
-	xColor.a = (unsigned char)GetClamped((float)xColor.a * alphaScale, 0.f, 255.f);
-	yColor.a = (unsigned char)GetClamped((float)yColor.a * alphaScale, 0.f, 255.f);
-	zColor.a = (unsigned char)GetClamped((float)zColor.a * alphaScale, 0.f, 255.f);
+	xColor.a = xColor.a * alphaScale;
+	yColor.a = yColor.a * alphaScale;
+	zColor.a = zColor.a * alphaScale;
 
 	AddWorldArrow(origin, xEnd, radius, duration, xColor, xColor, mode);
 	AddWorldArrow(origin, yEnd, radius, duration, yColor, yColor, mode);
@@ -586,8 +586,8 @@ void DebugGizmos::AddMessage(std::string const& text, float duration, Color cons
 
 void DebugGizmos::AddWorldGrid(float duration, int halfExtent)
 {
-	Color const kAxisXColor(255, 70, 105, 255);
-	Color const kAxisYColor(155, 225, 20, 255);
+	Color const kAxisXColor(1.f, 70.f / 255.f, 105.f / 255.f, 1.f);
+	Color const kAxisYColor(155.f / 255.f, 225.f / 255.f, 20.f / 255.f, 1.f);
 
 	// Configurable parameters for grid generation.
 	const float kLineHeight = 0.01f;
@@ -614,10 +614,10 @@ void DebugGizmos::AddWorldGrid(float duration, int halfExtent)
 	object.verts.clear();
 	object.verts.reserve((clampedHalfExtent * 2 + 1) * 2 * 36);
 
-	auto ComputeAlphaForDistance = [&](float d) -> unsigned char
+	auto ComputeAlphaForDistance = [&](float d) -> float
 	{
-		float a = RangeMapClamped(d, kFadeStart, kFadeEnd, 255.f, 0.f);
-		return (unsigned char)GetClamped(a, 0.f, 255.f);
+		float a = RangeMapClamped(d, kFadeStart, kFadeEnd, 1.f, 0.f);
+		return a;
 	};
 
 	auto AddSegmentAABB = [&object, &ComputeAlphaForDistance](AABB3 const& aabb, Color baseColor)

@@ -11,17 +11,17 @@ Ref<Theme> CreateDefaultTheme()
 	constexpr float fieldVerticalPadding = 3.f;
 
 	auto        theme = CreateRef<Theme>();
-	Color const background(30, 30, 30);
-	Color const panel(40, 40, 40);
-	Color const elevated(48, 48, 48);
-	Color const field(24, 24, 24);
-	Color const border(64, 64, 64);
-	Color const strong(86, 86, 86);
-	Color const text(224, 224, 224);
-	Color const muted(165, 165, 165);
-	Color const dim(125, 125, 125);
-	Color const accent(130, 165, 210);
-	Color const tint(48, 62, 80);
+	Color const background(30.f / 255.f, 30.f / 255.f, 30.f / 255.f);
+	Color const panel(40.f / 255.f, 40.f / 255.f, 40.f / 255.f);
+	Color const elevated(48.f / 255.f, 48.f / 255.f, 48.f / 255.f);
+	Color const field(24.f / 255.f, 24.f / 255.f, 24.f / 255.f);
+	Color const border(64.f / 255.f, 64.f / 255.f, 64.f / 255.f);
+	Color const strong(86.f / 255.f, 86.f / 255.f, 86.f / 255.f);
+	Color const text(224.f / 255.f, 224.f / 255.f, 224.f / 255.f);
+	Color const muted(165.f / 255.f, 165.f / 255.f, 165.f / 255.f);
+	Color const dim(125.f / 255.f, 125.f / 255.f, 125.f / 255.f);
+	Color const accent(130.f / 255.f, 165.f / 255.f, 210.f / 255.f);
+	Color const tint(48.f / 255.f, 62.f / 255.f, 80.f / 255.f);
 	// Create independent mutable boxes so editing one state does not change another state.
 	// e.g. Changing LineEdit normal margins leaves its hover resource unchanged.
 	auto box = [](Color const& fill, Color const& edge, float width, float horizontal, float vertical)
@@ -200,8 +200,8 @@ Ref<Theme> CreateDefaultTheme()
 	theme->SetConstant("spacing", "ColorPicker", 8);
 	theme->SetConstant("padding", "ColorPicker", 8);
 	theme->SetConstant("checker_size", "ColorPicker", 6);
-	theme->SetColor("checker_light", "ColorPicker", Color(160, 160, 160));
-	theme->SetColor("checker_dark", "ColorPicker", Color(100, 100, 100));
+	theme->SetColor("checker_light", "ColorPicker", Color(160.f / 255.f, 160.f / 255.f, 160.f / 255.f));
+	theme->SetColor("checker_dark", "ColorPicker", Color(100.f / 255.f, 100.f / 255.f, 100.f / 255.f));
 	theme->SetColor("cursor_color", "ColorPicker", Color::White);
 	theme->SetStyleBox("panel", "ColorPicker", box(panel, border, 1.f, 0.f, 0.f));
 	theme->SetTypeVariation("EditorMenuPopup", "PanelContainer");

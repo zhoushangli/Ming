@@ -44,10 +44,3 @@ void Resource::SetPathString(String const& path)
 		Stringf("Invalid virtual path '%s'.", pathText.c_str()));
 	m_virtualPath = std::move(parsedPath);
 }
-
-void Resource::MoveBaseFrom(Resource&& other)
-{
-	m_name           = std::move(other.m_name);
-	m_virtualPath    = std::move(other.m_virtualPath);
-	m_sourceFilePath = std::move(other.m_sourceFilePath);
-}

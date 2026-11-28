@@ -7,7 +7,7 @@ class NativeScript : public Script
 	MCLASS(NativeScript, Script)
 
 public:
-	bool CopyFrom(Resource&& other) override;
+	bool MoveFrom(Resource&& other) override;
 
 	bool Instantiate(Object* owner) override;
 };

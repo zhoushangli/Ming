@@ -47,6 +47,7 @@ public:
 
 	void SetColorNoSignal(Color const& color);
 	void SetOldColor(Color const& color);
+
 	void SetHSVMode(bool enabled);
 	void SetColorChangedCallback(std::function<void(Color const&)> callback) { m_changed = std::move(callback); }
 	void SetPickRequestedCallback(std::function<void()> callback) { m_pickRequested = std::move(callback); }

@@ -16,6 +16,84 @@
 
 #include <algorithm>
 
+std::vector<PropertyInfo> Object::GetPropertyList(std::string const& className, bool dynamicOnly)
+{
+	std::vector<PropertyInfo> properties;
+	if (!dynamicOnly && className.empty())
+	{
+		for (auto const* property : ClassDatabase::GetAllProperties(GetClassName()))
+		{
+			properties.push_back(*property);
+		}
+	}
+	else if (!dynamicOnly)
+	{
+		properties = ClassDatabase::GetProperties(className);
+	}
+
+	if (className.empty() || className == GetClassName())
+	{
+		GetDynamicPropertyList(properties);
+	}
+	return properties;
+}
+
+bool Object::FindProperty(std::string const& name, PropertyInfo& property)
+{
+	for (auto const& candidate : GetPropertyList())
+	{
+		if (candidate.m_name == name && !candidate.HasUsage(PropertyInfo::UsageFlags::Group))
+		{
+			property = candidate;
+			return true;
+		}
+	}
+	return false;
+}
+
+Variant Object::GetProperty(std::string const& name)
+{
+	if (auto const* property = ClassDatabase::FindProperty(GetClassName(), name))
+	{
+		return property->GetGetter() != nullptr ? property->GetGetter()->Invoke(this, {}) : Variant();
+	}
+	Variant value;
+	GetDynamicProperty(name, value);
+	return value;
+}
+
+bool Object::SetProperty(std::string const& name, Variant const& value)
+{
+	if (auto const* property = ClassDatabase::FindProperty(GetClassName(), name))
+	{
+		if (property->GetSetter() == nullptr
+			|| (property->m_type != Variant::Type::Any && property->m_type != value.GetType()))
+		{
+			return false;
+		}
+		property->GetSetter()->Invoke(this, { value });
+		return true;
+	}
+	return SetDynamicProperty(name, value);
+}
+
+Variant Object::GetPropertyState(std::string const& name)
+{
+	return GetProperty(name);
+}
+
+bool Object::GetPropertyDefault(std::string const& name, Variant& value)
+{
+	auto defaults = ClassDatabase::GetPropertyDefaultValues(GetClassName());
+	auto found = defaults.find(name);
+	if (found == defaults.end())
+	{
+		return false;
+	}
+	value = found->second;
+	return true;
+}
+
 namespace
 {
 MethodInfo const* FindNativeMethod(std::string const& className, std::string const& methodName)

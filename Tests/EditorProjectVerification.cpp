@@ -8,6 +8,7 @@
 #include "MingEngine/Engine/Script/ScriptSystem.hpp"
 #include "MingEngine/Engine/Window/WindowSystem.hpp"
 #include "MingEngine/Editor/EditorNode.hpp"
+#include "MingEngine/Editor/UI/Controls/EditorSpinSlider.hpp"
 #include "MingEngine/Editor/UI/EditorUI.hpp"
 #include "MingEngine/Core/IO/ResourceImporter.hpp"
 #include "MingEngine/Core/IO/ResourceLoader.hpp"
@@ -25,6 +26,9 @@
 #include "MingEngine/Scene/Core/SceneTree.hpp"
 #include "MingEngine/Scene/Core/Viewport.hpp"
 #include "MingEngine/Scene/GUI/Button.hpp"
+#include "MingEngine/Scene/GUI/ColorPickerButton.hpp"
+#include "MingEngine/Scene/GUI/SpinBox.hpp"
+#include "MingEngine/Scene/GUI/SplitContainer.hpp"
 #include "MingEngine/Scene/Resource/TextureResource.hpp"
 #include "MingEngine/Scene/Resource/ShaderMaterial.hpp"
 #include "MingEngine/Scene/GUI/TextureRect.hpp"
@@ -240,7 +244,7 @@ Color ReadCanvasPixel(App& app, Viewport* viewport, int x, int y)
 	D3D11_MAPPED_SUBRESOURCE mapped;
 	Check(SUCCEEDED(context->Map(staging, 0, D3D11_MAP_READ, 0, &mapped)), "sampling pixels are readable");
 	auto const* pixel = static_cast<unsigned char const*>(mapped.pData) + y * mapped.RowPitch + x * 4;
-	Color result(pixel[0], pixel[1], pixel[2], pixel[3]);
+	Color result(NormalizeByte(pixel[0]), NormalizeByte(pixel[1]), NormalizeByte(pixel[2]), NormalizeByte(pixel[3]));
 	context->Unmap(staging, 0);
 	staging->Release();
 	context->Release();
@@ -350,7 +354,7 @@ void VerifyOptionButton(App& app, EditorNode* editor, std::filesystem::path cons
 	Check(previewViewport != nullptr, "2D inspector preview uses a canvas viewport");
 	IntVec2 previewSize = previewViewport->GetOutputResolution();
 	Color previewPixel = ReadCanvasPixel(app, previewViewport, previewSize.x / 2, previewSize.y / 2);
-	Check(previewPixel.b > previewPixel.r + 10, "2D inspector preview renders its material checker");
+	Check(previewPixel.b > previewPixel.r + 10.f / 255.f, "2D inspector preview renders its material checker");
 	for (auto const& name : { "texture_filter", "texture_repeat" })
 	{
 		Node* field = FindNamed(inspector.GetContentControl(), name);
@@ -420,6 +424,8 @@ void VerifyCanvasSampling(App& app)
 {
 	auto image = CreateRef<::Image>();
 	Check(image->LoadFromRGBA8(IntVec2(2, 1), { 255, 0, 0, 255, 0, 0, 255, 255 }), "sampling fixture image");
+	Check(image->GetColorAt(0, 0) == Color::Red && image->GetColorAt(1, 0) == Color::Blue,
+		"RGBA8 image pixels convert to normalized float Color");
 	auto texture = CreateRef<TextureResource>();
 	texture->m_image = image;
 	Check(texture->InitGPUResources(), "sampling fixture texture upload");
@@ -438,26 +444,26 @@ void VerifyCanvasSampling(App& app)
 	nearest->UpdateSize(Vector2(32.f, 16.f));
 	first->AddNode(nearest);
 	Color pixel = ReadCanvasPixel(app, viewport, 12, 8);
-	Check(pixel.r > 80 && pixel.b > 20, "empty child material uses default linear sampling and does not inherit tint");
+	Check(pixel.r > 80.f / 255.f && pixel.b > 20.f / 255.f, "empty child material uses default linear sampling and does not inherit tint");
 	auto material = CreateRef<StandardMaterial2D>();
 	material->SetTextureFilter(TextureFilter::Nearest);
 	nearest->SetMaterial(material);
 	pixel = ReadCanvasPixel(app, viewport, 12, 8);
-	Check(pixel.r > 240 && pixel.b < 10, "assigned material controls nearest sampling");
+	Check(pixel.r > 240.f / 255.f && pixel.b < 10.f / 255.f, "assigned material controls nearest sampling");
 	material->SetTextureFilter(TextureFilter::Linear);
 	pixel = ReadCanvasPixel(app, viewport, 12, 8);
-	Check(pixel.r > 80 && pixel.b > 20, "material edits affect existing draw commands");
+	Check(pixel.r > 80.f / 255.f && pixel.b > 20.f / 255.f, "material edits affect existing draw commands");
 	material->SetTextureFilter(TextureFilter::Nearest);
 	nearest->SetStretchMode(TextureRect::StretchMode::Tile);
 	material->SetTextureRepeat(TextureRepeat::Enabled);
 	pixel = ReadCanvasPixel(app, viewport, 4, 8);
-	Check(pixel.r > 240 && pixel.b < 10, "material repeat samples tiled UVs");
+	Check(pixel.r > 240.f / 255.f && pixel.b < 10.f / 255.f, "material repeat samples tiled UVs");
 	material->SetTextureRepeat(TextureRepeat::Disabled);
 	pixel = ReadCanvasPixel(app, viewport, 4, 8);
-	Check(pixel.b > 240 && pixel.r < 10, "disabled repeat clamps tiled UVs");
-	material->SetTint(Color(255, 255, 128, 255));
+	Check(pixel.b > 240.f / 255.f && pixel.r < 10.f / 255.f, "disabled repeat clamps tiled UVs");
+	material->SetTint(Color(1.f, 1.f, 128.f / 255.f, 1.f));
 	pixel = ReadCanvasPixel(app, viewport, 4, 8);
-	Check(pixel.b > 115 && pixel.b < 140, "material tint multiplies command texture color");
+	Check(pixel.b > 115.f / 255.f && pixel.b < 140.f / 255.f, "material tint multiplies command texture color");
 	nearest->SetMaterial(CreateRef<StandardMaterial3D>());
 	Check(nearest->GetMaterial() == material, "2D rejects a 3D material without changing the assignment");
 	auto* meshInstance = MemNew<MeshInstance3D>();
@@ -478,10 +484,10 @@ void VerifyCanvasSampling(App& app)
 	viewportMaterial->SetTextureFilter(TextureFilter::Nearest);
 	embedded->SetMaterial(viewportMaterial);
 	pixel = ReadCanvasPixel(app, viewport, 12, 8);
-	Check(pixel.r > 240 && pixel.b < 10, "viewport texture uses its node material sampling");
+	Check(pixel.r > 240.f / 255.f && pixel.b < 10.f / 255.f, "viewport texture uses its node material sampling");
 	viewportMaterial->SetTextureFilter(TextureFilter::Linear);
 	pixel = ReadCanvasPixel(app, viewport, 12, 8);
-	Check(pixel.r > 80 && pixel.b > 20, "viewport texture supports linear sampling");
+	Check(pixel.r > 80.f / 255.f && pixel.b > 20.f / 255.f, "viewport texture supports linear sampling");
 	viewport->QueueFree();
 	app.RunFrame();
 }
@@ -492,7 +498,12 @@ void VerifyTextResources(App& app, std::filesystem::path const& project, EditorN
 	VirtualPath const materialPath("res://TextResources/brick.tres");
 	Ref<StandardMaterial3D> original = CreateRef<StandardMaterial3D>();
 	original->SetName("Brick\n\"quoted\"\\path");
-	original->SetTint(Color(123, 45, 67, 255));
+	Color const extended(-0.25f, 1.5f, 0.12345f, 0.87654f);
+	original->SetTint(extended);
+	Check((extended * 2.f).g == 3.f && (extended - 0.5f).r == -0.75f,
+		"Color arithmetic retains extended floating point values");
+	Check(DenormalizeByte(-0.25f) == 0 && DenormalizeByte(1.5f) == 255 && DenormalizeByte(0.5f) == 128,
+		"byte conversion clamps and rounds only at the boundary");
 	Image(project / "TextResources" / "white.tga", 255, true);
 	Check(ResourceImporter::EnsureImported("res://TextResources/white.tga"), "resource fixture imports its own image");
 	Ref<TextureResource> texture(ResourceLoader::Load("res://TextResources/white.tga"));
@@ -502,7 +513,7 @@ void VerifyTextResources(App& app, std::filesystem::path const& project, EditorN
 	Check(ResourceSaver::Save(materialPath, original), "generic saver writes material");
 	Ref<StandardMaterial3D> material(ResourceLoader::Load(materialPath));
 	Check(material.IsValid() && material->GetName() == original->GetName(), "name and escapes roundtrip");
-	Check(material->GetTint() == original->GetTint(), "byte RGBA roundtrip");
+	Check(material->GetTint() == original->GetTint(), "float RGBA roundtrip");
 	Check(material->GetDiffuseTexture() == texture && material->GetNormalTexture() == texture, "external references share cached identity");
 	Check(!material->HasMethod("SetShaderResource"), "standard material hides shader replacement");
 	Check(material->GetVirtualPath() == materialPath, "loader supplies resource path");
@@ -525,7 +536,7 @@ void VerifyTextResources(App& app, std::filesystem::path const& project, EditorN
 	Check(rejects("[ming_resource type=\"MissingClass\" format=1]\n[resource]\n"), "unknown resource class reports location");
 	Check(rejects("[ming_resource type=\"StandardMaterial3D\" format=2]\n[resource]\n"), "future format is rejected");
 	Check(rejects("[ming_resource type=\"StandardMaterial3D\" format=1]\n[resource]\ntint = [1,2,3,4]\n"), "plain arrays are not typed colors");
-	Check(rejects("[ming_resource type=\"StandardMaterial3D\" format=1]\n[resource]\ntint = Color(256,0,0,255)\n"), "out of range color is rejected");
+	Check(rejects("[ming_resource type=\"StandardMaterial3D\" format=1]\n[resource]\ntint = Color(1,0,0)\n"), "wrong color component count is rejected");
 	Check(rejects("[ming_resource type=\"StandardMaterial3D\" format=1]\n[resource]\nmissing = 1\n"), "unknown property is rejected");
 	Check(rejects("[ming_resource type=\"StandardMaterial3D\" format=1]\n[resource]\nblend_mode = 999\n"), "setter rejected values fail loading");
 	Check(rejects("[ming_resource type=\"StandardMaterial3D\" format=1]\n[resource]\nblend_mode = 4294967296\n"), "int overflow is rejected");
@@ -839,6 +850,462 @@ void VerifyTextResources(App& app, std::filesystem::path const& project, EditorN
 }
 
 
+char const* const parameterShaderSource = R"(shader_type spatial;
+uniform float scalar = 1.0;
+uniform float2 pair = float2(2.0, 3.0);
+uniform float3 triple = float3(4.0, 5.0, 6.0);
+uniform float4 quad = float4(0.2, 0.4, 0.8, 1.0);
+void fragment(inout FragmentContext f) { f.color = quad; }
+)";
+
+void VerifyShaderParameters(App& app, std::filesystem::path const& project, EditorNode* editor)
+{
+	auto* native = MemNew<Node>();
+	native->SetName("Before");
+	Check(native->SetProperty("name", String("")) && native->GetName() == String("Node"),
+		"native property writes retain setter normalization and getter readback");
+	MemDelete(native);
+	Write(project / "parameters.mshader", parameterShaderSource);
+	auto shader = Ref<ShaderResource>(ResourceLoader::Load("res://parameters.mshader"));
+	Check(shader.IsValid(), "parameter fixture loads through the shader loader");
+	auto material = CreateRef<ShaderMaterial>();
+	material->SetShaderResource(shader);
+	auto shared = CreateRef<ShaderMaterial>();
+	shared->SetShaderResource(shader);
+	Check(material->GetProperty("shader_parameter/scalar") == Variant(1.f)
+		&& material->GetPropertyState("shader_parameter/scalar").IsEmpty(), "unmodified uniforms read shader defaults without overrides");
+	Check(material->SetProperty("shader_parameter/scalar", 1.f)
+		&& material->HasShaderParameterOverride("scalar"), "setting the default explicitly retains an override");
+	auto uniforms = shader->GetUniforms();
+	uniforms[0].m_defaultValue = 2.f;
+	shader->SetUniforms(uniforms);
+	Check(material->GetShaderParameter("scalar") == Variant(1.f)
+		&& shared->GetShaderParameter("scalar") == Variant(2.f), "default revisions affect only materials without overrides");
+	Check(material->SetProperty("shader_parameter/scalar", Variant())
+		&& material->GetShaderParameter("scalar") == Variant(2.f), "clearing override restores the current shader default");
+	Check(!material->SetProperty("shader_parameter/scalar", Vector2(1.f, 2.f)), "dynamic writes reject incompatible types");
+	Check(material->SetProperty("shader_parameter/quad", Vector4(0.3f, 0.5f, 0.7f, 1.f)), "float4 writes through the object property interface");
+	std::string text;
+	std::string error;
+	Check(ResourceFormatSaverText::Write(material, text, error)
+		&& text.find("shader_parameter/scalar") == std::string::npos
+		&& text.find("shader_parameter/quad") != std::string::npos, "serialization contains only explicit uniform overrides");
+	VirtualPath path("res://parameters.tres");
+	Check(ResourceSaver::Save(path, material), "shader parameter resource saves");
+	auto loaded = Ref<ShaderMaterial>(ResourceLoader::LoadUncached(path));
+	Check(loaded.IsValid() && loaded->GetShaderParameter("quad") == material->GetShaderParameter("quad")
+		&& !loaded->HasShaderParameterOverride("scalar"), "resource roundtrip preserves values and override absence");
+	size_t begin = text.find("shader_parameter/quad =");
+	size_t end = text.find('\n', begin);
+	std::string assignment = text.substr(begin, end - begin + 1);
+	text.erase(begin, end - begin + 1);
+	text.insert(text.find("[resource]\n") + 11, assignment);
+	loaded = Ref<ShaderMaterial>(ResourceFormatLoaderText::Parse(text, path, error));
+	Check(loaded.IsValid() && loaded->GetShaderParameter("quad") == material->GetShaderParameter("quad"),
+		"uniform assignments can precede the shader assignment");
+	text += "shader_parameter/removed = 3.0\n";
+	text.replace(text.find(assignment), assignment.size(), "shader_parameter/quad = Vector3(1.0,2.0,3.0)\n");
+	loaded = Ref<ShaderMaterial>(ResourceFormatLoaderText::Parse(text, path, error));
+	Check(loaded.IsValid() && !loaded->HasShaderParameterOverride("quad"), "removed and incompatible saved uniforms are skipped");
+	Check(!ResourceFormatLoaderText::Parse(text + "shader_parameter/broken = Vector4(nope)\n", path, error).IsValid(),
+		"malformed saved uniform values still fail loading");
+
+	auto& inspector = editor->m_editorUI->GetPanel<InspectorPanel>();
+	inspector.EditResource(material);
+	app.RunFrame();
+	app.RunFrame();
+	std::vector<EditorSpinSlider*> spins;
+	std::function<void(Node*)> collect = [&](Node* node)
+	{
+		if (auto* spin = dynamic_cast<EditorSpinSlider*>(node))
+		{
+			spins.push_back(spin);
+		}
+		for (auto* child : node->GetChildren())
+		{
+			collect(child);
+		}
+	};
+	for (auto const& entry : std::vector<std::pair<std::string, size_t>>{ { "scalar", 1 }, { "pair", 2 }, { "triple", 3 }, { "quad", 4 } })
+	{
+		auto* field = FindNamed(&inspector, "shader_parameter/" + entry.first);
+		Check(field != nullptr, "custom uniform appears in the real Inspector");
+		spins.clear();
+		collect(field);
+		Check(spins.size() == entry.second, "uniform field has the correct number of numeric components");
+	}
+	for (int component = 0; component < 4; ++component)
+	{
+		InputEvent click;
+		click.m_type = InputEventType::MouseButton;
+		click.m_mouseButton = GLFW_MOUSE_BUTTON_LEFT;
+		click.m_pressed = true;
+		spins[component]->GuiInput(click);
+		click.m_pressed = false;
+		spins[component]->GuiInput(click);
+		auto* field = spins[component]->GetLineEdit();
+		Check(field->IsEditing(), "clicking a numeric component starts text editing");
+		field->SelectAll();
+		for (char character : std::string("0.9"))
+		{
+			InputEvent textInput;
+			textInput.m_type = InputEventType::Text;
+			textInput.m_codepoint = character;
+			field->GuiInput(textInput);
+		}
+		field->EndEditing(LineEdit::EditEndReason::Submitted);
+		Vector4 expected(0.3f, 0.5f, 0.7f, 1.f);
+		(component == 0 ? expected.x : (component == 1 ? expected.y : (component == 2 ? expected.z : expected.w))) = 0.9f;
+		Check(material->GetShaderParameter("quad") == Variant(expected), "float4 text editing updates only the selected component");
+		Check(editor->GetUndoRedo().Undo(material->GetObjectID())
+			&& material->GetShaderParameter("quad") == Variant(Vector4(0.3f, 0.5f, 0.7f, 1.f)), "float4 component editing is undoable");
+		app.RunFrame();
+	}
+	Node* fixedField = FindNamed(&inspector, "blend_mode");
+	auto* scalarField = FindNamed(&inspector, "shader_parameter/scalar");
+	spins.clear();
+	collect(scalarField);
+	auto* spin = spins.front();
+	InputEvent input;
+	input.m_type = InputEventType::MouseButton;
+	input.m_mouseButton = GLFW_MOUSE_BUTTON_LEFT;
+	input.m_pressed = true;
+	spin->GuiInput(input);
+	input.m_type = InputEventType::MouseMotion;
+	input.m_relative = Vector2(20.f, 0.f);
+	spin->GuiInput(input);
+	Check(material->GetShaderParameter("scalar") != Variant(2.f), "drag previews the material before release");
+	input.m_type = InputEventType::MouseButton;
+	input.m_pressed = false;
+	spin->GuiInput(input);
+	auto& history = editor->GetUndoRedo();
+	Check(history.Undo(material->GetObjectID()) && !material->HasShaderParameterOverride("scalar"),
+		"undoing a drag restores absence of an override");
+	Check(history.Redo(material->GetObjectID()) && material->HasShaderParameterOverride("scalar"), "redo restores the drag override");
+	app.RunFrame();
+	auto* revert = dynamic_cast<Button*>(FindNamed(scalarField, "RevertProperty"));
+	Check(revert != nullptr && revert->IsVisible(), "overridden parameter offers restore default");
+	input.m_pressed = true;
+	revert->GuiInput(input);
+	input.m_pressed = false;
+	revert->GuiInput(input);
+	Check(!material->HasShaderParameterOverride("scalar") && material->GetShaderParameter("scalar") == Variant(2.f),
+		"restore default removes the override");
+	Check(history.Undo(material->GetObjectID()) && material->HasShaderParameterOverride("scalar"), "restore default is undoable");
+	Check(history.Redo(material->GetObjectID()) && !material->HasShaderParameterOverride("scalar"), "restore default is redoable");
+
+	material->SetShaderParameter("scalar", 2.f);
+	app.RunFrame();
+	Check(revert->IsVisible(), "restore default remains available for an explicit value equal to the default");
+	input.m_pressed = true;
+	revert->GuiInput(input);
+	input.m_pressed = false;
+	revert->GuiInput(input);
+	Check(!material->HasShaderParameterOverride("scalar"), "restore default clears an equal-valued override");
+	app.RunFrame();
+	input.m_pressed = true;
+	spin->GuiInput(input);
+	input.m_type = InputEventType::MouseMotion;
+	input.m_relative = Vector2(20.f, 0.f);
+	spin->GuiInput(input);
+	spin->EndEditing(LineEdit::EditEndReason::Cancelled);
+	Check(!material->HasShaderParameterOverride("scalar"), "cancelling a drag restores absence of an override");
+
+	input.m_type = InputEventType::MouseButton;
+	input.m_pressed = true;
+	spin->GuiInput(input);
+	input.m_type = InputEventType::MouseMotion;
+	input.m_relative = Vector2(20.f, 0.f);
+	spin->GuiInput(input);
+	shader->SetUniforms(uniforms);
+	app.RunFrame();
+	Check(!material->HasShaderParameterOverride("scalar"), "shader revisions cancel transient drag overrides");
+
+	Write(project / "parameters-second.mshader", R"(shader_type spatial;
+uniform float scalar = 2.0;
+uniform float2 pair = float2(2.0, 3.0);
+uniform float3 triple = float3(4.0, 5.0, 6.0);
+uniform float3 quad = float3(1.0, 2.0, 3.0);
+void fragment(inout FragmentContext f) { f.color = float4(quad, 1.0); }
+)");
+	auto replacement = Ref<ShaderResource>(ResourceLoader::Load("res://parameters-second.mshader"));
+	Check(replacement.IsValid(), "replacement shader has compiled render data");
+	Check(history.CreateAction("Replace shader", material->GetObjectID()), "shader replacement action starts");
+	Check(history.AddDoPropertyState(material.Get(), "shader", Variant(replacement), {})
+		&& history.AddUndoPropertyState(material.Get(), "shader", Variant(shader),
+			{ { "shader_parameter/quad", material->GetShaderParameter("quad") } })
+		&& history.CommitAction(), "shader replacement records dependent parameter state");
+	app.RunFrame();
+	Check(FindNamed(&inspector, "blend_mode") == fixedField && FindNamed(&inspector, "shader_parameter/quad") != nullptr,
+		"shader revision rebuilds only dynamic fields");
+	Check(history.Undo(material->GetObjectID()) && material->GetShaderResource() == shader
+		&& material->GetShaderParameter("quad") == Variant(Vector4(0.3f, 0.5f, 0.7f, 1.f)),
+		"undo shader replacement restores removed overrides");
+	app.RunFrame();
+	app.RunFrame();
+	CaptureMaterialFrame(*app.GetEngine(), (project.parent_path() / "shader-parameters.ppm").string());
+	material->SetVirtualPath(path);
+	Check(inspector.SaveResource(), "parameter edits can be saved from Inspector");
+}
+
+
+char const* const hintShaderSource = R"(shader_type spatial;
+group_uniforms Appearance;
+uniform float opacity : hint_range(0.f, 1.f, 0.01f) = 0.8;
+uniform float4 tint : hint_color = float4(0.12345, 0.5, 0.8, 1);
+group_uniforms Effect;
+uniform int mode : hint_enum("Normal", "Glow", "Outline") = 0;
+uniform int count : hint_range(0, 16, 1) = 4;
+group_uniforms;
+uniform float strength = 1;
+void fragment(inout FragmentContext f) { f.color = tint * opacity * strength; }
+)";
+
+template <typename T>
+T* FindControl(Node* node)
+{
+	if (auto* control = dynamic_cast<T*>(node))
+	{
+		return control;
+	}
+	for (auto* child : node->GetChildren())
+	{
+		if (auto* control = FindControl<T>(child))
+		{
+			return control;
+		}
+	}
+	return nullptr;
+}
+
+void VerifyShaderHints(App& app, std::filesystem::path const& directory, EditorNode* editor, Ref<ShaderMaterial> material)
+{
+	auto& inspector = editor->m_editorUI->GetPanel<InspectorPanel>();
+	auto evidence = directory.parent_path() / "ShaderParameterEvidence";
+	std::filesystem::create_directories(evidence);
+	auto* viewport = static_cast<Viewport*>(editor->GetSceneTree()->GetRoot());
+	InputEvent focus;
+	focus.m_type = InputEventType::WindowFocus;
+	focus.m_focused = true;
+	viewport->ProcessInputEvent(focus);
+	editor->m_editorUI->ResetNativeLayout();
+	app.RunFrame();
+	app.RunFrame();
+	Check(FindNamed(&inspector, "InspectorGroup_Appearance") != nullptr
+		&& FindNamed(&inspector, "InspectorGroup_Effect") != nullptr
+		&& FindNamed(&inspector, "InspectorGroup_Shader Parameters") != nullptr, "shader groups and ungrouped parameters appear");
+	auto* color = FindControl<ColorPickerButton>(FindNamed(&inspector, "shader_parameter/tint"));
+	auto* option = FindControl<OptionButton>(FindNamed(&inspector, "shader_parameter/mode"));
+	auto* range = FindControl<EditorSpinSlider>(FindNamed(&inspector, "shader_parameter/opacity"));
+	Check(color != nullptr && option != nullptr && range != nullptr && option->GetOptions().size() == 3
+		&& range->GetError().empty(), "hints select configured color, enum and range editors");
+	Check(!material->SetShaderParameter("mode", 1.f) && !material->SetShaderParameter("tint", Vector4(1.f, 0.f, 0.f, 1.f)),
+		"hinted parameters retain strict int and Color API types");
+	CaptureMaterialFrame(*app.GetEngine(), (evidence / "hints-inspector.ppm").string());
+	Color const original = material->GetShaderParameter("tint").As<Color>();
+	Check(original.r == 0.12345f && color->GetColor() == original, "Inspector preserves non-byte float colors");
+	color->OpenPicker();
+	app.RunFrame();
+	CaptureMaterialFrame(*app.GetEngine(), (evidence / "hints-color.ppm").string());
+	Check(color->IsPickerOpen() && color->GetPicker()->GetColor() == original, "opening float picker preserves precision");
+	auto* hexInput = dynamic_cast<LineEdit*>(FindNamed(color->GetPicker(), "HexColor"));
+	Check(hexInput != nullptr && hexInput->GetText() == "#1F80CCFF" && color->GetColor() == original,
+		"Hex display rounds a copy without quantizing the original");
+	auto enterHex = [&](char const* text)
+	{
+		hexInput->GrabFocus();
+		hexInput->SelectAll();
+		for (char const* c = text; *c != '\0'; ++c)
+		{
+			InputEvent input;
+			input.m_type = InputEventType::Text;
+			input.m_codepoint = static_cast<unsigned char>(*c);
+			hexInput->GuiInput(input);
+		}
+		hexInput->EndEditing(LineEdit::EditEndReason::Submitted);
+	};
+	enterHex("#1F80CCFF");
+	Check(color->GetColor() == original, "submitting unchanged Hex text preserves float precision");
+	color->ClosePicker(true);
+	app.RunFrame();
+	Check(material->GetShaderParameter("tint") == Variant(original) && !material->HasShaderParameterOverride("tint"), "opening and closing picker does not create an override");
+	color->OpenPicker();
+	app.RunFrame();
+	enterHex("#80402080");
+	Check(material->GetShaderParameter("tint") == Variant(Color(128.f / 255.f, 64.f / 255.f, 32.f / 255.f, 128.f / 255.f)),
+		"submitting changed Hex text converts bytes to floating point channels");
+	color->ClosePicker(false);
+	app.RunFrame();
+	Check(material->GetShaderParameter("tint") == Variant(original) && !material->HasShaderParameterOverride("tint"),
+		"cancelling Hex editing restores exact value and override absence");
+	color->OpenPicker();
+	app.RunFrame();
+	auto* green = dynamic_cast<SpinBox*>(FindNamed(color->GetPicker(), "Channel1"));
+	Check(green != nullptr, "float picker exposes RGBA channels");
+	green->Step(1);
+	Color changed = material->GetShaderParameter("tint").As<Color>();
+	Check(changed.r == original.r && changed.b == original.b && changed.a == original.a
+		&& changed.g > original.g && changed.g < original.g + 0.002f, "float channel edit preserves untouched channels");
+	color->ClosePicker(false);
+	app.RunFrame();
+	Check(material->GetShaderParameter("tint") == Variant(original) && !material->HasShaderParameterOverride("tint"), "cancel restores exact color and override absence");
+	color->SetScreenColorReader([](Vector2 const&, Color& sample)
+	{
+		sample = Color(17.f / 255.f, 128.f / 255.f, 240.f / 255.f, 1.f);
+		return true;
+	});
+	color->OpenPicker();
+	color->StartScreenPicking();
+	InputEvent sample;
+	sample.m_type = InputEventType::MouseMotion;
+	sample.m_position = Vector2(100.f, 100.f);
+	viewport->ProcessInputEvent(sample);
+	Check(material->GetShaderParameter("tint") == Variant(Color(17.f / 255.f, 128.f / 255.f, 240.f / 255.f, 1.f)), "screen sample converts byte source to float RGBA");
+	sample.m_type = InputEventType::Key;
+	sample.m_pressed = true;
+	sample.m_keyCode = GLFW_KEY_ESCAPE;
+	viewport->ProcessInputEvent(sample);
+	Check(!color->IsPickingScreen() && material->GetShaderParameter("tint") == Variant(original), "screen sampling cancellation restores float precision");
+	color->ClosePicker(false);
+	app.RunFrame();
+	color->OpenPicker();
+	app.RunFrame();
+	green->Step(1);
+	color->ClosePicker(true);
+	app.RunFrame();
+	changed = material->GetShaderParameter("tint").As<Color>();
+	auto& history = editor->GetUndoRedo();
+	Check(history.Undo(material->GetObjectID()) && material->GetShaderParameter("tint") == Variant(original), "float color editing is undoable");
+	Check(history.Redo(material->GetObjectID()) && material->GetShaderParameter("tint") == Variant(changed), "float color editing is redoable");
+	app.RunFrame();
+	auto* revert = dynamic_cast<Button*>(FindNamed(FindNamed(&inspector, "shader_parameter/tint"), "RevertProperty"));
+	InputEvent click;
+	click.m_type = InputEventType::MouseButton;
+	click.m_mouseButton = GLFW_MOUSE_BUTTON_LEFT;
+	click.m_pressed = true;
+	revert->GuiInput(click);
+	click.m_pressed = false;
+	revert->GuiInput(click);
+	Check(material->GetShaderParameter("tint") == Variant(original) && !material->HasShaderParameterOverride("tint"), "color restore-default clears override");
+	option->OpenOptions();
+	app.RunFrame();
+	CaptureMaterialFrame(*app.GetEngine(), (evidence / "hints-enum.ppm").string());
+	Choose(viewport, "Glow");
+	Check(material->GetShaderParameter("mode") == Variant(1), "enum selection commits an integer");
+	Check(history.Undo(material->GetObjectID()) && material->GetShaderParameter("mode") == Variant(0), "shader enum selection is undoable");
+	Check(history.Redo(material->GetObjectID()) && material->GetShaderParameter("mode") == Variant(1), "shader enum selection is redoable");
+	material->SetShaderParameter("tint", original);
+	VirtualPath path("res://hints-roundtrip.tres");
+	Check(ResourceSaver::Save(path, material), "hint parameters save");
+	Ref<ShaderMaterial> loaded(ResourceLoader::LoadUncached(path));
+	Check(loaded.IsValid() && loaded->GetShaderParameter("tint") == Variant(original)
+		&& loaded->GetShaderParameter("mode") == Variant(1), "float colors and integer enums survive resource roundtrip");
+	auto uniforms = material->GetShaderResource()->GetUniforms();
+	uniforms[1].m_defaultValue = Vector4(0.8f, 0.6f, 0.4f, 1.f);
+	material->GetShaderResource()->SetUniforms(uniforms);
+	app.RunFrame();
+	app.RunFrame();
+	Check(material->GetShaderParameter("tint") == Variant(original), "reload preserves matching Color overrides");
+	color = FindControl<ColorPickerButton>(FindNamed(&inspector, "shader_parameter/tint"));
+	Check(color != nullptr && color->GetColor() == original, "dynamic UI refresh retains hint and float value");
+	uniforms[1].m_hint = PropertyInfo::Hint::None;
+	material->GetShaderResource()->SetUniforms(uniforms);
+	app.RunFrame();
+	app.RunFrame();
+	Check(FindControl<ColorPickerButton>(FindNamed(&inspector, "shader_parameter/tint")) == nullptr
+		&& FindControl<EditorSpinSlider>(FindNamed(&inspector, "shader_parameter/tint")) != nullptr
+		&& material->GetShaderParameter("tint") == Variant(Vector4(original.r, original.g, original.b, original.a)), "removing a color hint preserves components and changes the API type");
+	uniforms[1].m_hint = PropertyInfo::Hint::Color;
+	uniforms[2].m_defaultValue = 0.25f;
+	uniforms[2].m_hint = PropertyInfo::Hint::None;
+	material->GetShaderResource()->SetUniforms(uniforms);
+	loaded = Ref<ShaderMaterial>(ResourceLoader::LoadUncached(path));
+	Check(loaded.IsValid() && loaded->GetShaderParameter("mode") == Variant(0.25f), "saved int override is skipped after a shader type change");
+	app.RunFrame();
+	app.RunFrame();
+	color = FindControl<ColorPickerButton>(FindNamed(&inspector, "shader_parameter/tint"));
+	Color const extended(-0.25f, 1.5f, 0.12345f, 1.f);
+	material->SetShaderParameter("tint", extended);
+	app.RunFrame();
+	color->OpenPicker();
+	app.RunFrame();
+	CaptureMaterialFrame(*app.GetEngine(), (evidence / "hints-color-extended.ppm").string());
+	color->ClosePicker(true);
+	Check(material->GetShaderParameter("tint") == Variant(extended), "opening picker does not clamp external values");
+	material->SetShaderParameter("tint", original);
+	app.RunFrame();
+	auto* picker = MemNew<ColorPicker>();
+	picker->SetColorNoSignal(original);
+	auto* channel = dynamic_cast<SpinBox*>(FindNamed(picker, "Channel1"));
+	channel->Step(1);
+	Color channelEdited = picker->GetColor();
+	Check(channelEdited.r == original.r && channelEdited.b == original.b && channelEdited.g > original.g,
+		"ordinary Color editing preserves float precision");
+	picker->SetColorNoSignal(original);
+	picker->SetHSVMode(true);
+	Check(picker->GetColor() == original, "switching RGB and HSV does not change float values");
+	auto* alpha = dynamic_cast<SpinBox*>(FindNamed(picker, "Alpha"));
+	alpha->Step(-1);
+	Color alphaEdited = picker->GetColor();
+	Check(alphaEdited.r == original.r && alphaEdited.g == original.g && alphaEdited.b == original.b
+		&& alphaEdited.a < 1.f && alphaEdited.a > 0.998f, "alpha editing preserves RGB precision in HSV mode");
+	channel->Step(1);
+	Check(picker->GetColor() != alphaEdited && picker->GetColor().a == alphaEdited.a,
+		"HSV editing preserves floating alpha");
+	picker->SetColorNoSignal(extended);
+	picker->SetHSVMode(true);
+	Check(!picker->IsHSVMode() && picker->GetColor() == extended, "extended RGB keeps exact values and disables HSV editing");
+	auto* hex = dynamic_cast<LineEdit*>(FindNamed(picker, "HexColor"));
+	Check(hex != nullptr && !hex->IsEditable(), "extended RGB disables Hex editing");
+	channel->Step(1);
+	Check(picker->GetColor().r == extended.r && picker->GetColor().b == extended.b
+		&& picker->GetColor().g > extended.g, "extended RGB channel editing does not clamp other channels");
+	MemDelete(picker);
+	uniforms[2].m_defaultValue = 0;
+	uniforms[2].m_hint = PropertyInfo::Hint::Enum;
+	material->GetShaderResource()->SetUniforms(uniforms);
+	editor->m_editorUI->GetDockSplit(1)->SetSplitRatio(0.75f);
+	app.RunFrame();
+	app.RunFrame();
+	CaptureMaterialFrame(*app.GetEngine(), (evidence / "hints-wide.ppm").string());
+	std::printf("SHADER_HINTS: PASS checks=%d\n", checks);
+}
+
+void PreviewShaderParameters(bool verifyHints = false)
+{
+	std::filesystem::current_path(GetExecutableDirectory());
+	auto directory = std::filesystem::absolute("../Temporary/ShaderParameterPreview");
+	std::filesystem::create_directories(directory / "Settings");
+	_wputenv_s(L"LOCALAPPDATA", (directory / "Settings").c_str());
+	Write(directory / "project.ming", R"({"type":"ProjectSettings","version":1,"start_scene_path":"res://main.tscn"})");
+	Write(directory / "main.tscn", "[ming_scene format=1]\n[node name=\"ShaderParameters\" type=\"Node3D\" parent=\"\"]\n");
+	Write(directory / "parameters.mshader", hintShaderSource);
+	MingRunConfig config;
+	config.mode = MingRunMode::Editor;
+	config.projectPath = directory;
+	App app(config);
+	app.Startup();
+	auto* editor = EditorNode::Get();
+	Wait(app, [editor]() { return editor->HasScene() && !editor->IsCheckingProject(); }, "preview project opens");
+	auto shader = Ref<ShaderResource>(ResourceLoader::Load("res://parameters.mshader"));
+	auto material = CreateRef<ShaderMaterial>();
+	material->SetName("Shader Parameters Preview");
+	material->SetShaderResource(shader);
+	VirtualPath path("res://parameters.tres");
+	Check(ResourceSaver::Save(path, material), "preview material saves");
+	material->SetVirtualPath(path);
+	editor->m_editorUI->GetPanel<InspectorPanel>().EditResource(material);
+	if (verifyHints)
+	{
+		VerifyShaderHints(app, directory, editor, material);
+	}
+	else
+	{
+		app.RunMainLoop();
+	}
+	app.Shutdown();
+}
+
 void VerifyResourceQuit(App& app, EditorNode* editor)
 {
 	if (editor->IsSceneDirty())
@@ -898,6 +1365,7 @@ void Verify(bool resourcesOnly = false)
 	Wait(app, [editor]() { return editor->HasScene() && !editor->IsCheckingProject(); }, "initial imports finish before scene opens");
 	Check(std::filesystem::exists(directory / "board.tga.import"), "initial source imported");
 	VerifyTextResources(app, directory, editor);
+	VerifyShaderParameters(app, directory, editor);
 	VerifyCanvasSampling(app);
 	VerifyOptionButton(app, editor, directory.parent_path());
 	VerifyFileRemovals(app, editor, directory);
@@ -1055,6 +1523,20 @@ void Verify(bool resourcesOnly = false)
 
 int wmain(int argc, wchar_t** argv)
 {
+	if ((argc == 1 && std::filesystem::path(argv[0]).filename() == L"ShaderParameterPreview.exe")
+		|| (argc == 2 && (std::wstring(argv[1]) == L"--preview-shader-parameters" || std::wstring(argv[1]) == L"--verify-shader-hints")))
+	{
+		try
+		{
+			PreviewShaderParameters(argc == 2 && std::wstring(argv[1]) == L"--verify-shader-hints");
+			return 0;
+		}
+		catch (std::exception const& exception)
+		{
+			std::fprintf(stderr, "SHADER_HINTS: FAIL %s\n", exception.what());
+			return 1;
+		}
+	}
 	bool const resourcesOnly = argc == 2 && std::wstring(argv[1]) == L"--verify-resources";
 	if (argc > 1 && !resourcesOnly)
 	{

@@ -21,7 +21,7 @@ bool TextureResource::IsEmpty() const
 	return !m_image.IsValid() || !m_image->IsValid();
 }
 
-bool TextureResource::CopyFrom(Resource&& other)
+bool TextureResource::MoveFrom(Resource&& other)
 {
 	// 1) Validate type
 	TextureResource* otherTex = dynamic_cast<TextureResource*>(&other);
@@ -31,7 +31,9 @@ bool TextureResource::CopyFrom(Resource&& other)
 	}
 
 	// 2) Move CPU image data
-	MoveBaseFrom(std::move(other));
+	m_name           = std::move(otherTex->m_name);
+	m_virtualPath    = std::move(otherTex->m_virtualPath);
+	m_sourceFilePath = std::move(otherTex->m_sourceFilePath);
 	m_image       = std::move(otherTex->m_image);
 
 	// 3) Hand the loaded GPU texture to the registration of this resource.

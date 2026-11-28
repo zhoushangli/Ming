@@ -296,16 +296,8 @@ bool TryDeserialize(Json const& json, Variant::Type expectedType, Variant& outVa
 		case Variant::Type::Color:
 			if (IsNumberArray(json, 4))
 			{
-				for (Json const& component : json)
-				{
-					if (!component.is_number_integer() || component.get<double>() < 0.0 || component.get<double>() > 255.0)
-					{
-						return false;
-					}
-				}
-
 				outValue = Variant(
-					Color(json[0].get<uint8_t>(), json[1].get<uint8_t>(), json[2].get<uint8_t>(), json[3].get<uint8_t>()));
+					Color(json[0].get<float>(), json[1].get<float>(), json[2].get<float>(), json[3].get<float>()));
 				return true;
 			}
 

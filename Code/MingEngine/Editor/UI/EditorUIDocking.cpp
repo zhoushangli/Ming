@@ -198,7 +198,7 @@ void EditorUI::InitializeNativeDocking()
 		hint->SetSerializable(false);
 		hint->SetMouseFilter(Control::MouseFilter::Stop);
 		hint->SetVisible(false);
-		hint->SetColor(Color(211, 173, 114, 55));
+		hint->SetColor(Color(211.f / 255.f, 173.f / 255.f, 114.f / 255.f, 55.f / 255.f));
 		m_nativeRoot->AddNode(hint);
 		m_dockHints[i] = hint;
 		hint->SetDragCallbacks(
@@ -218,7 +218,7 @@ void EditorUI::InitializeNativeDocking()
 		hint->SetDragHoverCallback(
 			[this, i, hint](Vector2 const& position, GuiDragData const& data, bool accepted)
 			{
-				hint->SetColor(accepted ? Color(211, 173, 114, 100) : Color(211, 173, 114, 40));
+				hint->SetColor(accepted ? Color(211.f / 255.f, 173.f / 255.f, 114.f / 255.f, 100.f / 255.f) : Color(211.f / 255.f, 173.f / 255.f, 114.f / 255.f, 40.f / 255.f));
 				for (TabContainer* slot : m_dockSlots)
 				{
 					slot->SetDropInsertIndex(-1);
@@ -254,7 +254,7 @@ void EditorUI::InitializeNativeDocking()
 	m_dockInsertMark = MemNew<ColorRect>();
 	m_dockInsertMark->SetSerializable(false);
 	m_dockInsertMark->SetMouseFilter(Control::MouseFilter::Ignore);
-	m_dockInsertMark->SetColor(Color(211, 173, 114));
+	m_dockInsertMark->SetColor(Color(211.f / 255.f, 173.f / 255.f, 114.f / 255.f));
 	m_dockInsertMark->SetVisible(false);
 	m_nativeRoot->AddNode(m_dockInsertMark);
 	bool const loading = m_loadingLayout;

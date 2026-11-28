@@ -26,7 +26,7 @@ void FontResource::SetFontRID(RID rid)
 	m_fontRID = rid;
 }
 
-bool FontResource::CopyFrom(Resource&& other)
+bool FontResource::MoveFrom(Resource&& other)
 {
 	FontResource* source = dynamic_cast<FontResource*>(&other);
 	if (source == nullptr)
@@ -34,7 +34,9 @@ bool FontResource::CopyFrom(Resource&& other)
 		return false;
 	}
 
-	MoveBaseFrom(std::move(other));
+	m_name           = std::move(source->m_name);
+	m_virtualPath    = std::move(source->m_virtualPath);
+	m_sourceFilePath = std::move(source->m_sourceFilePath);
 	SetFontRID(source->m_fontRID);
 	source->m_fontRID = RID::Invalid;
 	return true;

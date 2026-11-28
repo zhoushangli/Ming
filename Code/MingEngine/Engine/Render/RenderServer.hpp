@@ -197,7 +197,7 @@ private:
 	void          PrepareViewportData(ViewportData* viewportData);
 	RenderRequest BuildInstance3DRenderRequest(Instance3D const* instance);
 
-	// Fill shader, textures, tint and draw states of one request from a material.
+	// Fill shader, textures, tint, constants and draw states of one request from a material.
 	// e.g. BuildInstance3DRenderRequest() calls it with the mesh material or the default material
 	void ApplyMaterialToRequest(MaterialResource& materialResource, RenderRequest& request);
 

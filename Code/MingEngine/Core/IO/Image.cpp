@@ -149,5 +149,5 @@ Color Image::GetColorAt(int x, int y) const
 	GUARANTEE_OR_DIE(x >= 0 && x < m_dimensions.x && y >= 0 && y < m_dimensions.y, "GetColorAt out of bounds");
 
 	size_t const byteIndex = (static_cast<size_t>(y) * m_dimensions.x + x) * m_channels;
-	return Color(m_pixels[byteIndex], m_pixels[byteIndex + 1], m_pixels[byteIndex + 2], m_pixels[byteIndex + 3]);
+	return Color(NormalizeByte(m_pixels[byteIndex]), NormalizeByte(m_pixels[byteIndex + 1]), NormalizeByte(m_pixels[byteIndex + 2]), NormalizeByte(m_pixels[byteIndex + 3]));
 }

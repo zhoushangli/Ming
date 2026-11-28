@@ -53,10 +53,13 @@ public partial class ManagedLifecycleProbe : Node
     private static void VerifyMaterials()
     {
         using var canvas = new StandardMaterial2D();
-        canvas.Tint = new Color(12, 34, 56);
+        Require(System.Runtime.InteropServices.Marshal.SizeOf<Color>() == 16, "managed Color layout is four floats");
+        var extended = new Color(-0.25f, 1.5f, 0.12345f, 0.87654f);
+        canvas.Tint = extended;
         canvas.TextureFilter = TextureFilter.Nearest;
         canvas.TextureRepeat = TextureRepeat.Enabled;
-        Require(canvas.Tint.R == 12 && canvas.TextureFilter == TextureFilter.Nearest
+        Require(canvas.Tint.R == extended.R && canvas.Tint.G == extended.G
+            && canvas.Tint.B == extended.B && canvas.Tint.A == extended.A && canvas.TextureFilter == TextureFilter.Nearest
             && canvas.TextureRepeat == TextureRepeat.Enabled, "managed 2D fixed properties");
         Require(typeof(MaterialResource).GetMethod("SetTint") == null
             && typeof(StandardMaterial2D).GetMethod("SetDepthMode") == null
@@ -65,8 +68,8 @@ public partial class ManagedLifecycleProbe : Node
         using var surface = new StandardMaterial3D();
         using var texture = new TextureResource();
         surface.DiffuseTexture = texture;
-        surface.Tint = new Color(78, 90, 12);
-        Require(surface.DiffuseTexture == texture && surface.Tint.R == 78, "managed 3D cache owns texture references");
+        surface.Tint = new Color(78f / 255f, 90f / 255f, 12f / 255f);
+        Require(surface.DiffuseTexture == texture && surface.Tint.R == 78f / 255f, "managed 3D cache owns texture references");
         using var shader = ResourceLoader.Load<ShaderResource>("res://Uniforms.mshader");
         using var material = new ShaderMaterial { Shader = shader };
         using Variant value = Variant.From(3.5f);
@@ -76,6 +79,12 @@ public partial class ManagedLifecycleProbe : Node
             "managed parameter roundtrip preserves borrowed caller value");
         using Variant wrongType = Variant.From(3);
         Require(!material.SetShaderParameter("height", wrongType), "managed setter rejects incorrect parameter type");
+        using Variant color = Variant.From(extended);
+        Require(material.SetShaderParameter("multiplier", color), "managed Color uniform setter");
+        using Variant colorResult = material.GetShaderParameter("multiplier");
+        Color roundtrip = colorResult.As<Color>();
+        Require(roundtrip.R == extended.R && roundtrip.G == extended.G && roundtrip.B == extended.B
+            && roundtrip.A == extended.A, "managed Color Variant roundtrip retains all four floats");
         using Variant retained = material.GetShaderParameter("height");
         Require(retained.As<float>() == 3.5f, "managed rejected setter preserves value");
         MingObject.Log("MATERIAL_MANAGED: PASS");

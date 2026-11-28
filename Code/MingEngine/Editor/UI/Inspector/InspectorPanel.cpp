@@ -27,6 +27,7 @@
 #include <cmath>
 #include <algorithm>
 #include <cctype>
+#include <map>
 
 InspectorPanel::InspectorPanel() : EditorPanel("Inspector")
 {
@@ -80,7 +81,8 @@ void InspectorPanel::RefreshValues()
 	{
 		Object* target = GetTarget(m_propertyEdit.m_target);
 		if (target == nullptr
-			|| m_propertyEdit.m_getter->Invoke(target, {}) != m_propertyEdit.m_last)
+			|| target->GetProperty(m_propertyEdit.m_name) != m_propertyEdit.m_last
+			|| target->GetPropertyListRevision() != m_propertyEdit.m_revision)
 		{
 			EndPropertyEdit(false);
 		}
@@ -96,10 +98,7 @@ void InspectorPanel::RefreshValues()
 	{
 		for (PropertyEntry& entry : group.m_properties)
 		{
-			if (entry.m_getter != nullptr)
-			{
-				entry.m_property->UpdateValue(entry.m_getter->Invoke(node, {}));
-			}
+			entry.m_property->UpdateValue(node->GetProperty(entry.m_name));
 		}
 	}
 }
@@ -107,20 +106,18 @@ void InspectorPanel::RefreshValues()
 void InspectorPanel::CommitValue(
 	std::string const& propertyName,
 	ObjectID           id,
-	MethodBind const*  setter,
-	MethodBind const*  getter,
 	Variant const&     value,
 	Variant const*     original)
 {
 	Object* node = GetTarget(id);
-	if (id != m_cachedObjectID || node == nullptr
-		|| setter == nullptr || getter == nullptr)
+	if (id != m_cachedObjectID || node == nullptr)
 	{
 		return;
 	}
 
-	Variant const oldValue = original != nullptr ? *original : getter->Invoke(node, {});
-	if (value.GetType() != oldValue.GetType() || value == oldValue)
+	Variant const oldValue = original != nullptr ? *original : node->GetPropertyState(propertyName);
+	Variant const effective = node->GetProperty(propertyName);
+	if ((!value.IsEmpty() && value.GetType() != effective.GetType()) || value == oldValue)
 	{
 		return;
 	}
@@ -132,9 +129,24 @@ void InspectorPanel::CommitValue(
 	}
 
 	Ref<Resource> oldResource(oldValue);
+	bool const changingShader = propertyName == "shader" && node->GetClassName() == "ShaderMaterial";
+	std::vector<std::pair<std::string, Variant>> oldParameters;
+	if (changingShader)
+	{
+		for (auto const& property : node->GetPropertyList())
+		{
+			if (property.GetSetter() == nullptr && property.HasUsage(PropertyInfo::UsageFlags::Storage))
+			{
+				oldParameters.emplace_back(property.m_name, node->GetPropertyState(property.m_name));
+			}
+		}
+	}
 	if (original == nullptr)
 	{
-		setter->Invoke(node, { value });
+		if (!node->SetProperty(propertyName, value))
+		{
+			return;
+		}
 	}
 	node = GetTarget(id);
 	if (node == nullptr)
@@ -142,15 +154,31 @@ void InspectorPanel::CommitValue(
 		return;
 	}
 
-	Variant const actual = getter->Invoke(node, {});
+	Variant const actual = node->GetPropertyState(propertyName);
 	if (actual != oldValue && EditorNode::Get() != nullptr)
 	{
 		auto* editor  = EditorNode::Get();
 		auto& history = editor->GetUndoRedo();
 		if (history.CreateAction("Edit " + propertyName, GetUndoHistory()))
 		{
-			history.AddDoProperty(node, propertyName, actual);
-			history.AddUndoProperty(node, propertyName, oldValue);
+			if (changingShader)
+			{
+				std::vector<std::pair<std::string, Variant>> parameters;
+				for (auto const& property : node->GetPropertyList())
+				{
+					if (property.GetSetter() == nullptr && property.HasUsage(PropertyInfo::UsageFlags::Storage))
+					{
+						parameters.emplace_back(property.m_name, node->GetPropertyState(property.m_name));
+					}
+				}
+				history.AddDoPropertyState(node, propertyName, actual, parameters);
+				history.AddUndoPropertyState(node, propertyName, oldValue, oldParameters);
+			}
+			else
+			{
+				history.AddDoProperty(node, propertyName, actual);
+				history.AddUndoProperty(node, propertyName, oldValue);
+			}
 			if (dynamic_cast<Resource*>(node) != nullptr)
 			{
 				history.AddDoMethod(editor, "MarkResourceDirty", { Variant(node) });
@@ -176,7 +204,13 @@ void InspectorPanel::CommitValue(
 	RefreshValues();
 }
 
-void InspectorPanel::RebuildProperties(EditorUIContext&)
+void InspectorPanel::RevertProperty(std::string const& name, ObjectID id)
+{
+	FinishEditing();
+	CommitValue(name, id, Variant());
+}
+
+void InspectorPanel::RebuildProperties(EditorUIContext&, bool dynamicOnly)
 {
 	Object* node = GetTarget(m_cachedObjectID);
 	if (node == nullptr)
@@ -184,70 +218,121 @@ void InspectorPanel::RebuildProperties(EditorUIContext&)
 		return;
 	}
 
-	auto const defaults = ClassDatabase::GetPropertyDefaultValues(node->GetClassName());
+	auto const defaults = dynamicOnly ? std::unordered_map<std::string, Variant>() : ClassDatabase::GetPropertyDefaultValues(node->GetClassName());
 	for (std::string const& className : m_inheritanceChain)
 	{
-		PropertyGroup group;
-		group.m_className = className;
-		auto* section     = MemNew<Control>();
-		section->AddThemeChangedCallback(
-			[control = section]()
+		if (dynamicOnly && className != node->GetClassName())
+		{
+			continue;
+		}
+		std::map<std::string, bool> collapsedSections;
+		PropertyGroup newGroup;
+		PropertyGroup* existing = nullptr;
+		if (dynamicOnly)
+		{
+			for (auto& candidate : m_propertyGroups)
 			{
-				control->SetCustomMinimumSize(
-					Vector2(0.f, static_cast<float>(control->GetThemeConstant("section_height", "Editor"))));
-			});
-		m_content->AddNode(section);
-		group.m_header = section;
-
-		auto* header = MemNew<PanelContainer>();
-		header->SetThemeTypeVariation("EditorInspectorClassHeader");
-		header->AddThemeChangedCallback(
-			[control = header]()
+				if (candidate.m_className == className)
+				{
+					existing = &candidate;
+					break;
+				}
+			}
+		}
+		auto& group = existing != nullptr ? *existing : newGroup;
+		if (existing != nullptr)
+		{
+			for (auto it = group.m_properties.begin(); it != group.m_properties.end();)
 			{
-				control->SetCustomMinimumSize(
-					Vector2(0.f, static_cast<float>(control->GetThemeConstant("section_height", "Editor"))));
-			});
-		header->SetClipContents(true);
-		section->AddNode(header);
-		group.m_bar = header;
-
-		auto* heading = MemNew<HBoxContainer>();
-		heading->AddThemeChangedCallback(
-			[control = heading]()
+				if (it->m_dynamic)
+				{
+					delete it->m_property;
+					it = group.m_properties.erase(it);
+				}
+				else
+				{
+					++it;
+				}
+			}
+			for (auto it = group.m_sections.begin(); it != group.m_sections.end();)
 			{
-				control->SetSeparation(static_cast<float>(control->GetThemeConstant("spacing", "Editor")));
-			});
-		heading->SetHorizontalSizeFlags(Size_ShrinkCenter);
-		heading->SetVerticalSizeFlags(Size_ShrinkCenter);
-		header->AddNode(heading);
+				if (it->m_dynamic)
+				{
+					collapsedSections[it->m_name] = it->m_collapsed;
+					it->m_root->SetName("RetiredProperties");
+					it->m_root->SetVisible(false);
+					it->m_root->QueueFree();
+					it = group.m_sections.erase(it);
+				}
+				else
+				{
+					++it;
+				}
+			}
+		}
+		if (!dynamicOnly)
+		{
+			group.m_className = className;
+			auto* section     = MemNew<Control>();
+			section->AddThemeChangedCallback(
+				[control = section]()
+				{
+					control->SetCustomMinimumSize(
+						Vector2(0.f, static_cast<float>(control->GetThemeConstant("section_height", "Editor"))));
+				});
+			m_content->AddNode(section);
+			group.m_header = section;
 
-		auto* icon = MemNew<TextureRect>();
-		icon->SetTexture(GetThemeIcon(className, "EditorIcons"));
-		icon->SetTint(EditorIcons::GetIconColor(className, this));
-		group.m_icon = icon;
-		icon->SetExpandMode(TextureRect::ExpandMode::IgnoreSize);
-		icon->SetStretchMode(TextureRect::StretchMode::KeepAspectCentered);
-		icon->AddThemeChangedCallback(
-			[control = icon]()
-			{
-				control->SetCustomMinimumSize(Vector2(
-					static_cast<float>(control->GetThemeConstant("icon_size", "Button")),
-					static_cast<float>(control->GetThemeConstant("icon_size", "Button"))));
-			});
-		heading->AddNode(icon);
+			auto* header = MemNew<PanelContainer>();
+			header->SetThemeTypeVariation("EditorInspectorClassHeader");
+			header->AddThemeChangedCallback(
+				[control = header]()
+				{
+					control->SetCustomMinimumSize(
+						Vector2(0.f, static_cast<float>(control->GetThemeConstant("section_height", "Editor"))));
+				});
+			header->SetClipContents(true);
+			section->AddNode(header);
+			group.m_bar = header;
 
-		auto* title = MemNew<Label>();
-		title->SetText(className);
-		title->SetThemeTypeVariation("EditorInspectorClassLabel");
-		title->SetTextOverrunBehavior(TextOverrunBehavior::TrimCharacters);
-		title->SetVerticalAlignment(VerticalAlignment::Center);
-		heading->AddNode(title);
-		group.m_title = title;
+			auto* heading = MemNew<HBoxContainer>();
+			heading->AddThemeChangedCallback(
+				[control = heading]()
+				{
+					control->SetSeparation(static_cast<float>(control->GetThemeConstant("spacing", "Editor")));
+				});
+			heading->SetHorizontalSizeFlags(Size_ShrinkCenter);
+			heading->SetVerticalSizeFlags(Size_ShrinkCenter);
+			header->AddNode(heading);
+
+			auto* icon = MemNew<TextureRect>();
+			icon->SetTexture(GetThemeIcon(className, "EditorIcons"));
+			icon->SetTint(EditorIcons::GetIconColor(className, this));
+			group.m_icon = icon;
+			icon->SetExpandMode(TextureRect::ExpandMode::IgnoreSize);
+			icon->SetStretchMode(TextureRect::StretchMode::KeepAspectCentered);
+			icon->AddThemeChangedCallback(
+				[control = icon]()
+				{
+					control->SetCustomMinimumSize(Vector2(
+						static_cast<float>(control->GetThemeConstant("icon_size", "Button")),
+						static_cast<float>(control->GetThemeConstant("icon_size", "Button"))));
+				});
+			heading->AddNode(icon);
+
+			auto* title = MemNew<Label>();
+			title->SetText(className);
+			title->SetThemeTypeVariation("EditorInspectorClassLabel");
+			title->SetTextOverrunBehavior(TextOverrunBehavior::TrimCharacters);
+			title->SetVerticalAlignment(VerticalAlignment::Center);
+			heading->AddNode(title);
+			group.m_title = title;
+		}
 
 		std::string sectionName;
 		std::string sectionPrefix;
 		int         sectionIndex = -1;
-		auto properties = ClassDatabase::GetProperties(className);
+		auto properties = node->GetPropertyList(className, dynamicOnly);
 		if (className == "Node")
 		{
 			if (auto* script = ClassDatabase::FindProperty("Object", "script"))
@@ -275,13 +360,12 @@ void InspectorPanel::RebuildProperties(EditorUIContext&)
 
 			ObjectID const    id     = m_cachedObjectID;
 			MethodBind const* setter = prop.GetSetter();
-			MethodBind const* getter = prop.GetGetter();
 			auto*             field  = InspectorProperty::Create(
 				prop,
 				className + "::" + prop.m_name,
-				[this, id, setter, getter, name = prop.m_name](Variant const& value)
+				[this, id, name = prop.m_name](Variant const& value)
 				{
-					CommitValue(name, id, setter, getter, value);
+					CommitValue(name, id, value);
 				});
 			if (field == nullptr)
 			{
@@ -291,12 +375,13 @@ void InspectorPanel::RebuildProperties(EditorUIContext&)
 
 			if (prop.m_type == Variant::Type::Color || prop.m_type == Variant::Type::Int
 				|| prop.m_type == Variant::Type::Float || prop.m_type == Variant::Type::Vector2
-				|| prop.m_type == Variant::Type::Vector3 || prop.m_type == Variant::Type::EulerAngles)
+				|| prop.m_type == Variant::Type::Vector3 || prop.m_type == Variant::Type::Vector4
+				|| prop.m_type == Variant::Type::EulerAngles)
 			{
 				field->SetContinuousEditCallbacks(
-					[this, id, setter, getter, field, name = prop.m_name]()
+					[this, id, field, name = prop.m_name]()
 					{
-						BeginPropertyEdit(name, id, setter, getter, field);
+						BeginPropertyEdit(name, id, field);
 					},
 					[this](Variant const& value)
 					{
@@ -314,6 +399,19 @@ void InspectorPanel::RebuildProperties(EditorUIContext&)
 				auto* sectionRoot = MemNew<VBoxContainer>();
 				sectionRoot->SetName("InspectorGroup_" + sectionName);
 				m_content->AddNode(sectionRoot);
+				if (dynamicOnly)
+				{
+					for (size_t i = 0; i + 1 < m_propertyGroups.size(); ++i)
+					{
+						if (m_propertyGroups[i].m_className == className)
+						{
+							auto const& children = m_content->GetChildren();
+							auto next = std::find(children.begin(), children.end(), m_propertyGroups[i + 1].m_header);
+							m_content->MoveChild(sectionRoot, static_cast<int>(std::distance(children.begin(), next)));
+							break;
+						}
+					}
+				}
 				Button* sectionHeading = EditorPopupUtils::AddButton(
 					sectionRoot,
 					sectionName,
@@ -354,32 +452,44 @@ void InspectorPanel::RebuildProperties(EditorUIContext&)
 					{
 						fields->SetSeparation(static_cast<float>(fields->GetThemeConstant("panel_margin", "Editor")));
 					});
-				group.m_sections.push_back({ sectionName, sectionRoot, sectionHeading, content, fields, false });
+				group.m_sections.push_back({ sectionName, sectionRoot, sectionHeading, content, fields, collapsedSections[sectionName], setter == nullptr });
 			}
 
 			field->SetEditedObject(id);
-			if (auto found = defaults.find(prop.m_name); found != defaults.end())
+			Variant defaultValue;
+			if (setter == nullptr && node->GetPropertyDefault(prop.m_name, defaultValue))
+			{
+				field->SetRevertValue(defaultValue);
+			}
+			else if (auto found = defaults.find(prop.m_name); found != defaults.end())
 			{
 				field->SetRevertValue(found->second);
 			}
-
+			if (setter == nullptr)
+			{
+				field->SetRevertCallback(
+					[this, id, name = prop.m_name]() { RevertProperty(name, id); },
+					[this, id, name = prop.m_name]()
+					{
+						auto* target = GetTarget(id);
+						return target != nullptr && !target->GetPropertyState(name).IsEmpty();
+					});
+			}
 			field->SetValueReader(
-				[this, id, getter]() -> Variant
+				[this, id, name = prop.m_name]() -> Variant
 				{
 					Object* target = GetTarget(id);
-					if (target == nullptr || getter == nullptr)
-					{
-						return {};
-					}
-
-					return getter->Invoke(target, {});
+					return target != nullptr ? target->GetProperty(name) : Variant();
 				});
 			auto* destination = sectionIndex >= 0 ? group.m_sections[sectionIndex].m_fields : m_content;
 			destination->AddNode(field->GetControl());
-			group.m_properties.push_back({ field, getter, sectionIndex });
+			group.m_properties.push_back({ field, setter == nullptr, prop.m_name, sectionIndex });
 		}
 
-		m_propertyGroups.push_back(std::move(group));
+		if (!dynamicOnly)
+		{
+			m_propertyGroups.push_back(std::move(group));
+		}
 	}
 
 	RefreshValues();
@@ -619,9 +729,17 @@ void InspectorPanel::OnRender(EditorUIContext& context)
 		m_cachedObjectID = valid ? id : ObjectID::Invalid;
 		if (valid)
 		{
+			m_propertyListRevision = node->GetPropertyListRevision();
 			BuildInheritanceChain(node->GetClassName());
 			RebuildProperties(context);
 		}
+	}
+
+	else if (node->GetPropertyListRevision() != m_propertyListRevision)
+	{
+		EndPropertyEdit(false);
+		m_propertyListRevision = node->GetPropertyListRevision();
+		RebuildProperties(context, true);
 	}
 
 	m_empty->SetVisible(!valid);
@@ -710,13 +828,12 @@ Control* InspectorPanel::GetContentControl() const
 }
 
 void InspectorPanel::BeginPropertyEdit(
-	std::string const& name, ObjectID id, MethodBind const* setter, MethodBind const* getter, InspectorProperty* field)
+	std::string const& name, ObjectID id, InspectorProperty* field)
 {
 	EndPropertyEdit(false);
 	Object* target = GetTarget(id);
 	Node* scene  = m_sceneTree != nullptr ? m_sceneTree->GetScene() : nullptr;
-	if (id != m_cachedObjectID || target == nullptr || (scene == nullptr && !m_resource.IsValid())
-		|| setter == nullptr || getter == nullptr)
+	if (id != m_cachedObjectID || target == nullptr || (scene == nullptr && !m_resource.IsValid()))
 	{
 		field->EndEditing();
 		return;
@@ -725,10 +842,10 @@ void InspectorPanel::BeginPropertyEdit(
 	m_propertyEdit.m_target   = id;
 	m_propertyEdit.m_scene    = GetUndoHistory();
 	m_propertyEdit.m_name     = name;
-	m_propertyEdit.m_setter   = setter;
-	m_propertyEdit.m_getter   = getter;
 	m_propertyEdit.m_field    = field;
-	m_propertyEdit.m_original = getter->Invoke(target, {});
+	m_propertyEdit.m_original = target->GetProperty(name);
+	m_propertyEdit.m_originalState = target->GetPropertyState(name);
+	m_propertyEdit.m_revision = target->GetPropertyListRevision();
 	m_propertyEdit.m_last     = m_propertyEdit.m_original;
 }
 
@@ -737,18 +854,19 @@ void InspectorPanel::PreviewPropertyValue(Variant const& value)
 	Object* target = GetTarget(m_propertyEdit.m_target);
 	if (target == nullptr || value.GetType() != m_propertyEdit.m_original.GetType()
 		|| m_propertyEdit.m_target != m_cachedObjectID
-		|| m_propertyEdit.m_getter->Invoke(target, {}) != m_propertyEdit.m_last)
+		|| target->GetProperty(m_propertyEdit.m_name) != m_propertyEdit.m_last
+			|| target->GetPropertyListRevision() != m_propertyEdit.m_revision)
 	{
 		EndPropertyEdit(false);
 		return;
 	}
 
 	m_propertyEdit.m_applying = true;
-	m_propertyEdit.m_setter->Invoke(target, { value });
+	target->SetProperty(m_propertyEdit.m_name, value);
 	target = GetTarget(m_propertyEdit.m_target);
 	if (target != nullptr)
 	{
-		m_propertyEdit.m_last = m_propertyEdit.m_getter->Invoke(target, {});
+		m_propertyEdit.m_last = target->GetProperty(m_propertyEdit.m_name);
 	}
 
 	m_propertyEdit.m_applying = false;
@@ -767,16 +885,16 @@ void InspectorPanel::EndPropertyEdit(bool accept)
 	Object* target       = GetTarget(edit.m_target);
 	if (target != nullptr)
 	{
-		Variant const actual = edit.m_getter->Invoke(target, {});
+		Variant const actual = target->GetProperty(edit.m_name);
 		if (actual == edit.m_last)
 		{
-			if (accept && GetUndoHistory() == edit.m_scene)
+			if (accept && GetUndoHistory() == edit.m_scene && target->GetPropertyListRevision() == edit.m_revision)
 			{
-				CommitValue(edit.m_name, edit.m_target, edit.m_setter, edit.m_getter, actual, &edit.m_original);
+				CommitValue(edit.m_name, edit.m_target, target->GetPropertyState(edit.m_name), &edit.m_originalState);
 			}
 			else
 			{
-				edit.m_setter->Invoke(target, { edit.m_original });
+				target->SetProperty(edit.m_name, edit.m_originalState);
 			}
 		}
 	}

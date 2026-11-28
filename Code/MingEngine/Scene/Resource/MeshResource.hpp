@@ -22,7 +22,7 @@ public:
 	MeshResource& operator=(MeshResource const& copy) = delete;
 
 	bool IsEmpty() const;
-	bool CopyFrom(Resource&& other) override;
+	bool MoveFrom(Resource&& other) override;
 
 	void InitGPUResources();
 	void SetMaterial(Ref<MaterialResource> const& material);

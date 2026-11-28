@@ -27,6 +27,23 @@
 
 namespace
 {
+class SnapshotMaterial : public ShaderMaterial
+{
+protected:
+	void PrepareShader() override
+	{
+		if (m_target.IsValid())
+		{
+			m_target->SetShaderParameter("rgb", Vector3(0.f, 0.f, 1.f));
+			m_target = nullptr;
+		}
+	}
+
+public:
+	Ref<ShaderMaterial> m_target;
+};
+
+Ref<SnapshotMaterial> snapshotMaterial;
 std::vector<Ref<ShaderMaterial>> parameterMaterials;
 std::vector<Label*> meshLabels;
 std::vector<Label*> materialLabels;
@@ -79,9 +96,31 @@ void VerifyParsing()
 	Check(std::abs(result.m_uniforms[0].m_defaultValue.As<float>() + 0.0125f) < 0.00001f, "signed exponent default");
 	Check(result.m_uniforms[1].m_defaultValue.As<Vector2>() == Vector2(1.f, 2.f), "vector default");
 	Check(result.m_uniforms[2].m_defaultValue.As<Vector3>() == Vector3::Zero, "implicit zero vector");
+	Check(parse("shader_type spatial;\ngroup_uniforms Appearance;\nuniform float opacity : hint_range(0,1) = 0.8;\nuniform float4 tint : hint_color = float4(0.12345,0.5,0.8,1);\ngroup_uniforms Effect;\nuniform int mode : hint_enum(\"Normal\",\"Glow\") = 1;\nuniform int count : hint_range(-10,10,2) = -10;\ngroup_uniforms;\nuniform int limit = -2147483648;\nuniform int maximum = 2147483647;"), "all uniform hints and group syntax parse");
+	Check(result.m_uniforms[0].m_hint == PropertyInfo::Hint::Range && result.m_uniforms[0].m_hintData == "0,1,0.001", "float range gets a default step");
+	Check(result.m_uniforms[1].m_defaultValue.As<Color>().r == 0.12345f && result.m_uniforms[1].m_hint == PropertyInfo::Hint::Color, "color uses float Color without losing precision");
+	Check(result.m_uniforms[2].m_hintData == "Normal:0,Glow:1" && result.m_uniforms[2].m_defaultValue.As<int>() == 1, "enum retains labels and integer value");
+	Check(result.m_uniforms[0].m_group == "Appearance" && result.m_uniforms[2].m_group == "Effect" && result.m_uniforms[4].m_group.empty(), "group changes and termination do not rename parameters");
+	Check(result.m_uniforms[1].m_byteSize == 16 && result.m_uniforms[2].m_byteSize == 4 && result.m_uniforms[2].m_offset == 32, "payload bytes remain distinct from padded slots");
+	Check(result.m_uniformSource.find("int mode : packoffset(c2)") != std::string::npos, "integer stays an HLSL integer");
+	Check(!parse("shader_type spatial;\ngroup_uniforms A;\nuniform int count = 2147483648;") && error.find("Case.mshader:3:") == 0, "integer overflow reports original source line");
+	for (char const* invalid : {
+		"uniform int x = -2147483649;", "uniform int x = 1.0;", "uniform int x = 1e2;",
+		"uniform float x : hint_color;", "uniform float4 x : hint_range(0,1);",
+		"uniform float x : hint_enum(\"A\");", "uniform int x : hint_enum();", "uniform int x : hint_enum(\"\");",
+		"uniform float x : hint_range(1,0);", "uniform float x : hint_range(0,1,0);",
+		"uniform float x : hint_range(0,1,-1);", "uniform int x : hint_range(0,1,0.1);",
+		"uniform float x : unknown;", "uniform float4 x : hint_color, hint_color;",
+		"uniform float4 x : hint_color : hint_color;", "group_uniforms A.B;",
+		"group_uniforms", "uniform float x :", "uniform float x : hint_range(0,",
+		"uniform int x : hint_enum(\"A\",", "void helper() {} group_uniforms A;" })
+	{
+		Check(!parse(std::string("shader_type spatial; ") + invalid), "invalid hint, integer or group rejected");
+		Check(result.m_uniforms.empty() && !error.empty(), "parse failures clear partial declarations");
+	}
 	for (char const* invalid : {
 		"", "shader_type canvas_item;", "shader_type spatial; shader_type spatial;",
-		"shader_type spatial; uniform int x;", "shader_type spatial; uniform float x; uniform float x;",
+		"shader_type spatial; uniform bool x;", "shader_type spatial; uniform float x; uniform float x;",
 		"shader_type spatial; uniform float x = 1 + 2;", "shader_type spatial; uniform float2 x = float2(1);",
 		"shader_type spatial; uniform float x[2];", "shader_type spatial; uniform float x, y;",
 		"shader_type spatial; void vertex(VertexContext v) {}", "shader_type spatial; void vertex(inout FragmentContext v) {}",
@@ -122,7 +161,7 @@ void VerifyParsing()
 	auto reloaded = CreateRef<ShaderResource>();
 	result.m_uniforms[0].m_defaultValue = Variant(5.f);
 	reloaded->SetUniforms(result.m_uniforms);
-	Check(shader->CopyFrom(std::move(*reloaded)), "reload shader metadata");
+	Check(shader->MoveFrom(std::move(*reloaded)), "reload shader metadata");
 	Check(material->GetShaderParameter("value").As<float>() == 4.f, "resource revision preserves matching values");
 
 	Check(ClassDatabase::GetConstructor("MaterialResource") == nullptr, "base material cannot be constructed through reflection");
@@ -138,14 +177,14 @@ void VerifyParsing()
 	auto texture = CreateRef<TextureResource>();
 	standard3D->SetDiffuseTexture(texture);
 	auto standardCopy = CreateRef<StandardMaterial3D>();
-	Check(standardCopy->CopyFrom(std::move(*standard3D)) && standardCopy->GetDiffuseTexture() == texture,
+	Check(standardCopy->MoveFrom(std::move(*standard3D)) && standardCopy->GetDiffuseTexture() == texture,
 		"resource copy retains texture ownership and values");
 	standardCopy->SetTint(Color::Red);
 	Check(standard3D->GetTint() == Color::White, "copy uses an independent cache");
-	Check(!standardCopy->CopyFrom(std::move(*standard2D)), "resource copy rejects another concrete material type");
+	Check(!standardCopy->MoveFrom(std::move(*standard2D)), "resource copy rejects another concrete material type");
 
 	auto copied = CreateRef<ShaderMaterial>();
-	Check(copied->CopyFrom(std::move(*material)) && copied->GetShaderParameter("value").As<float>() == 4.f,
+	Check(copied->MoveFrom(std::move(*material)) && copied->GetShaderParameter("value").As<float>() == 4.f,
 		"custom material copy preserves parameter overrides");
 	copied->SetShaderParameter("value", 7.f);
 	Check(material->GetShaderParameter("value").As<float>() == 4.f, "custom material copies do not share mutable values");
@@ -172,20 +211,25 @@ void Populate(App& app)
 	sun->SetWorldForward(Vector3(0.f, 0.f, 1.f));
 	sun->SetIntensity(0.6f);
 	root->AddNode(sun);
-	auto surface = CreateRef<SurfaceTool>();
-	surface->SetNormal(Vector3(0.f, 0.f, -1.f));
-	surface->SetTangent(Vector3(1.f, 0.f, 0.f));
-	surface->SetBitangent(Vector3(0.f, 1.f, 0.f));
-	surface->AddVertex(Vector3(-0.6f, -0.6f, 0.5f));
-	surface->AddVertex(Vector3(-0.6f, 0.6f, 0.5f));
-	surface->AddVertex(Vector3(0.6f, 0.6f, 0.5f));
-	surface->AddVertex(Vector3(0.6f, -0.6f, 0.5f));
-	for (uint32_t index : {0, 1, 2, 0, 2, 3})
+	auto makeMesh = [](Color const& color)
 	{
-		surface->AddIndex(index);
-	}
-	auto mesh = surface->CreateMeshResource();
-	char const* shaders[] = {"res://Empty.mshader", "res://MoveUp.mshader", "res://Red.mshader"};
+		auto surface = CreateRef<SurfaceTool>();
+		surface->SetColor(color);
+		surface->SetNormal(Vector3(0.f, 0.f, -1.f));
+		surface->SetTangent(Vector3(1.f, 0.f, 0.f));
+		surface->SetBitangent(Vector3(0.f, 1.f, 0.f));
+		surface->AddVertex(Vector3(-0.6f, -0.6f, 0.5f));
+		surface->AddVertex(Vector3(-0.6f, 0.6f, 0.5f));
+		surface->AddVertex(Vector3(0.6f, 0.6f, 0.5f));
+		surface->AddVertex(Vector3(0.6f, -0.6f, 0.5f));
+		for (uint32_t index : {0, 1, 2, 0, 2, 3})
+		{
+			surface->AddIndex(index);
+		}
+		return surface->CreateMeshResource();
+	};
+	auto mesh = makeMesh(Color::White);
+	char const* shaders[] = {"res://Empty.mshader", "res://SmallUniforms.mshader", "res://Red.mshader"};
 	char const* labels[] = {"Empty callbacks", "Vertex: model Y + 1", "Fragment: red surface"};
 	for (int i = 0; i < 6; ++i)
 	{
@@ -195,7 +239,16 @@ void Populate(App& app)
 		{
 			Check(shader == parameterMaterials[0]->GetShaderResource(), "materials share the same cached ShaderResource");
 		}
-		auto material = CreateRef<ShaderMaterial>();
+		Ref<ShaderMaterial> material;
+		if (i == 5)
+		{
+			snapshotMaterial = CreateRef<SnapshotMaterial>();
+			material = snapshotMaterial;
+		}
+		else
+		{
+			material = CreateRef<ShaderMaterial>();
+		}
 		material->SetShaderResource(shader);
 		material->SetRasterizerMode(RasterizerMode::SOLID_CULL_NONE);
 		if (i >= 3)
@@ -204,22 +257,24 @@ void Populate(App& app)
 			if (i == 4)
 			{
 				Check(material->SetShaderParameter("rgb", Vector3(1.f, 0.f, 0.f)), "set independent red material");
+				Check(material->SetShaderParameter("mode", -7), "set signed integer shader parameter");
 			}
 			if (i == 5)
 			{
 				Check(material->SetShaderParameter("height", 0.5f), "set scalar");
 				Check(material->SetShaderParameter("offset", Vector2(0.25f, 0.f)), "set float2");
-				Check(material->SetShaderParameter("multiplier", Vector4(0.f, 0.f, 1.f, 1.f)), "set float4");
+				Check(material->SetShaderParameter("multiplier", Color(-0.25f, 1.5f, 0.12345f, 0.87654f)), "set extended float Color");
 				Check(material->SetShaderParameter("rgb", Vector3(1.f, 1.f, 1.f)), "set float3");
+				Check(material->SetShaderParameter("mode", -8), "select extended color verification");
 			}
 		}
 		auto* instance = MemNew<MeshInstance3D>();
-		instance->SetMeshResource(mesh);
+		instance->SetMeshResource(i == 5 ? makeMesh(Color(-0.25f, 1.5f, 0.12345f, 0.87654f)) : mesh);
 		instance->SetMaterialOverride(material);
 		instance->SetLocalPosition(Vector3(2.f + (i % 3) * 3.f, i < 3 ? 3.f : 6.f, 0.f));
 		root->AddNode(instance);
 		auto* label = MemNew<Label>();
-		label->SetText(i < 3 ? labels[i] : i == 3 ? "Uniform default / runtime update" : i == 4 ? "Shared shader: red" : "Mixed layout: blue + offset");
+		label->SetText(i < 3 ? labels[i] : i == 3 ? "Uniform default / runtime update" : i == 4 ? "Shared shader: red" : "Float vertex + uniform: blue");
 		float const height = static_cast<float>(app.GetEngine()->m_windowSystem->GetClientDimensions().y);
 		label->SetPosition(Vector2((2.f + (i % 3) * 3.f) * height / 8.f - 190.f, (1.f - (i < 3 ? 3.f : 6.f) / 8.f) * height + height * 0.75f / 8.f));
 		label->SetHorizontalAlignment(HorizontalAlignment::Center);
@@ -254,7 +309,7 @@ void Populate(App& app)
 			{
 				auto material = CreateRef<StandardMaterial2D>();
 				material->SetTextureFilter(index == 1 ? TextureFilter::Nearest : TextureFilter::Linear);
-				material->SetTint(index == 1 ? Color::White : Color(255, 128, 128));
+				material->SetTint(index == 1 ? Color::White : Color(1.f, 128.f / 255.f, 128.f / 255.f));
 				sample->SetMaterial(material);
 			}
 			overlay->AddNode(sample);
@@ -263,7 +318,7 @@ void Populate(App& app)
 		else
 		{
 			auto material = CreateRef<StandardMaterial3D>();
-			material->SetTint(Color(255, 180, 60));
+			material->SetTint(Color(1.f, 180.f / 255.f, 60.f / 255.f));
 			material->SetRasterizerMode(RasterizerMode::SOLID_CULL_NONE);
 			auto* instance = MemNew<MeshInstance3D>();
 			instance->SetMeshResource(mesh);
@@ -275,6 +330,24 @@ void Populate(App& app)
 		}
 	}
 
+	auto sharedCanvasMaterial = CreateRef<StandardMaterial2D>();
+	for (int index = 0; index < 2; ++index)
+	{
+		auto sampleImage = CreateRef<Image>();
+		Check(sampleImage->LoadFromRGBA8(IntVec2(1, 1),
+			index == 0 ? std::vector<uint8_t>{255, 0, 0, 255} : std::vector<uint8_t>{0, 255, 0, 255}),
+			"shared Canvas material sample image");
+		auto sampleTexture = CreateRef<TextureResource>();
+		sampleTexture->m_image = sampleImage;
+		Check(sampleTexture->InitGPUResources(), "shared Canvas material sample texture");
+		auto* sample = MemNew<TextureRect>();
+		sample->SetTexture(sampleTexture);
+		sample->SetMaterial(sharedCanvasMaterial);
+		sample->SetExpandMode(TextureRect::ExpandMode::IgnoreSize);
+		sample->SetPosition(Vector2(32.f + index * 32.f, 32.f));
+		sample->UpdateSize(Vector2(16.f, 16.f));
+		overlay->AddNode(sample);
+	}
 }
 
 void VerifyImage(App& app, std::filesystem::path const& directory, bool updated = false)
@@ -291,6 +364,11 @@ void VerifyImage(App& app, std::filesystem::path const& directory, bool updated 
 	source->GetDevice(&device);
 	ComPtr<ID3D11DeviceContext> context;
 	device->GetImmediateContext(&context);
+	ComPtr<ID3D11Buffer> vertexConstants;
+	ComPtr<ID3D11Buffer> pixelConstants;
+	context->VSGetConstantBuffers(6, 1, vertexConstants.GetAddressOf());
+	context->PSGetConstantBuffers(6, 1, pixelConstants.GetAddressOf());
+	Check(!vertexConstants && !pixelConstants, "draws without material constants unbind b6 in both stages");
 	D3D11_TEXTURE2D_DESC description;
 	source->GetDesc(&description);
 	description.Usage = D3D11_USAGE_STAGING;
@@ -306,8 +384,10 @@ void VerifyImage(App& app, std::filesystem::path const& directory, bool updated 
 		UINT column = static_cast<UINT>(x * description.Height / 8.f);
 		UINT row = static_cast<UINT>((1.f - y / 8.f) * description.Height);
 		auto* value = static_cast<unsigned char*>(mapped.pData) + row * mapped.RowPitch + column * 4;
-		return Color(value[0], value[1], value[2], value[3]);
+		return Color(NormalizeByte(value[0]), NormalizeByte(value[1]), NormalizeByte(value[2]), NormalizeByte(value[3]));
 	};
+	Color canvasRed = pixel(40.f * 8.f / description.Height, 8.f - 40.f * 8.f / description.Height);
+	Color canvasGreen = pixel(72.f * 8.f / description.Height, 8.f - 40.f * 8.f / description.Height);
 	Color standard = pixel(772.f * 8.f / description.Height, 60.f * 8.f / description.Height);
 	Color empty = pixel(2.f, 3.f);
 	Color moved = pixel(5.f, 4.f);
@@ -327,13 +407,15 @@ void VerifyImage(App& app, std::filesystem::path const& directory, bool updated 
 		}
 	}
 	context->Unmap(staging.Get(), 0);
-	Check(standard.r > 100 && standard.g > standard.b && standard.r > standard.g, "standard 3D tint reaches the built-in shader");
-	Check(empty.r > 100 && empty.g > 100 && empty.b > 100, "empty callbacks render default Lit white fallback");
-	Check(moved.r > 100 && moved.g > 100 && original.r < 100, "vertex deformation moves the engine-rendered mesh by one unit");
-	Check(red.r > 100 && red.g < 5 && red.b < 5, "fragment callback renders a lit red surface");
-	Check(updated ? firstParameter.b > 100 && firstParameter.g < 5 : firstParameter.g > 100 && firstParameter.b < 5, "default and runtime parameter values reach GPU");
-	Check(secondParameter.r > 100 && secondParameter.g < 5 && secondParameter.b < 5, "shared Shader keeps material parameters independent");
-	Check(mixedParameter.b > 100 && mixedParameter.r < 5 && mixedParameter.g < 5, "all four uniform types reach both GPU stages with correct layout");
+	Check(canvasRed.r > 240.f / 255.f && canvasRed.g < 5.f / 255.f && canvasGreen.g > 240.f / 255.f && canvasGreen.r < 5.f / 255.f,
+		"Canvas commands sharing a material retain independent textures");
+	Check(standard.r > 100.f / 255.f && standard.g > standard.b && standard.r > standard.g, "standard 3D tint reaches the built-in shader");
+	Check(empty.r > 100.f / 255.f && empty.g > 100.f / 255.f && empty.b > 100.f / 255.f, "empty callbacks render default Lit white fallback");
+	Check(moved.r > 100.f / 255.f && moved.g > 100.f / 255.f && original.r < 100.f / 255.f, "vertex deformation moves the engine-rendered mesh by one unit");
+	Check(red.r > 100.f / 255.f && red.g < 5.f / 255.f && red.b < 5.f / 255.f, "fragment callback renders a lit red surface");
+	Check(updated ? firstParameter.b > 100.f / 255.f && firstParameter.g < 5.f / 255.f : firstParameter.g > 100.f / 255.f && firstParameter.b < 5.f / 255.f, "default and runtime parameter values reach GPU");
+	Check(secondParameter.r > 100.f / 255.f && secondParameter.g < 5.f / 255.f && secondParameter.b < 5.f / 255.f, "shared Shader keeps material parameters independent");
+	Check(mixedParameter.b > 100.f / 255.f && mixedParameter.r < 5.f / 255.f && mixedParameter.g < 5.f / 255.f, "extended vertex and uniform colors reach both GPU stages without quantization or clamping");
 }
 }
 
@@ -361,7 +443,11 @@ int main(int argc, char** argv)
 			app.RunFrame();
 		}
 		VerifyImage(app, config.projectPath.parent_path());
-		Check(parameterMaterials[0]->SetShaderParameter("rgb", Vector3(0.f, 0.f, 1.f)), "runtime parameter update");
+		snapshotMaterial->m_target = parameterMaterials[0];
+		app.RunFrame();
+		Check(parameterMaterials[0]->GetShaderParameter("rgb").As<Vector3>() == Vector3(0.f, 0.f, 1.f),
+			"later request collection updates the earlier material");
+		VerifyImage(app, config.projectPath.parent_path());
 		for (int frame = 0; frame < 3; ++frame)
 		{
 			app.RunFrame();
@@ -377,6 +463,7 @@ int main(int argc, char** argv)
 				app.RunFrame();
 			}
 		}
+		snapshotMaterial = nullptr;
 		parameterMaterials.clear();
 		app.Shutdown();
 		return 0;

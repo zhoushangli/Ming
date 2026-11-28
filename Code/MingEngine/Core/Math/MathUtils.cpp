@@ -453,12 +453,12 @@ Vector3 Interpolate(Vector3 const& start, Vector3 const& end, float fraction)
 
 Color Interpolate(Color const& start, Color const& end, float fraction)
 {
-	float r = Interpolate(::NormalizeByte(start.r), ::NormalizeByte(end.r), fraction);
-	float g = Interpolate(::NormalizeByte(start.g), ::NormalizeByte(end.g), fraction);
-	float b = Interpolate(::NormalizeByte(start.b), ::NormalizeByte(end.b), fraction);
-	float a = Interpolate(::NormalizeByte(start.a), ::NormalizeByte(end.a), fraction);
+	float r = Interpolate(start.r, end.r, fraction);
+	float g = Interpolate(start.g, end.g, fraction);
+	float b = Interpolate(start.b, end.b, fraction);
+	float a = Interpolate(start.a, end.a, fraction);
 
-	return Color(::DenormalizeByte(r), ::DenormalizeByte(g), ::DenormalizeByte(b), ::DenormalizeByte(a));
+	return Color(r, g, b, a);
 }
 
 EulerAngles Interpolate(EulerAngles const& start, EulerAngles const& end, float fraction)

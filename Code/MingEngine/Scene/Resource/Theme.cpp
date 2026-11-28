@@ -561,7 +561,7 @@ void Theme::ReleaseStyleBoxes()
 	}
 }
 
-bool Theme::CopyFrom(Resource&& other)
+bool Theme::MoveFrom(Resource&& other)
 {
 	auto* theme = dynamic_cast<Theme*>(&other);
 	if (theme == nullptr || theme == this)
@@ -571,7 +571,9 @@ bool Theme::CopyFrom(Resource&& other)
 
 	ReleaseStyleBoxes();
 	theme->ReleaseStyleBoxes();
-	MoveBaseFrom(std::move(other));
+	m_name           = std::move(theme->m_name);
+	m_virtualPath    = std::move(theme->m_virtualPath);
+	m_sourceFilePath = std::move(theme->m_sourceFilePath);
 	m_defaultFont            = theme->m_defaultFont;
 	m_defaultFontSize        = theme->m_defaultFontSize;
 	theme->m_defaultFont     = nullptr;

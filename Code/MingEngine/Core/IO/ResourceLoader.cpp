@@ -143,7 +143,7 @@ Ref<Resource> ResourceLoader::Reload(VirtualPath const& virtualPath)
 	// 3) Move fresh data into cached object so existing Ref<> holders see the update
 	if (cachedResource.IsValid())
 	{
-		if (!cachedResource->CopyFrom(std::move(*freshResource)))
+		if (!cachedResource->MoveFrom(std::move(*freshResource)))
 		{
 			return cachedResource;
 		}

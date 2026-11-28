@@ -82,6 +82,7 @@ class Variant;
 class Object;
 class Callable;
 struct CallError;
+struct PropertyInfo;
 
 // These are for Memory.hpp override
 // so we can call PostInitialize and PreDelete when creating and deleting objects
@@ -135,6 +136,16 @@ public:
 	Variant Call(std::string const& methodName, std::vector<Variant> const& arguments = {});
 	Variant Call(std::string const& methodName, std::vector<Variant> const& arguments, CallError& error);
 
+	std::vector<PropertyInfo> GetPropertyList(std::string const& className = {}, bool dynamicOnly = false);
+	bool FindProperty(std::string const& name, PropertyInfo& property);
+	Variant GetProperty(std::string const& name);
+	bool SetProperty(std::string const& name, Variant const& value);
+	// Capture the stored state; an empty dynamic state means no explicit override.
+	// e.g. SetProperty(name, GetPropertyState(name)) restores an inherited shader default.
+	virtual Variant GetPropertyState(std::string const& name);
+	virtual bool GetPropertyDefault(std::string const& name, Variant& value);
+	virtual uint64_t GetPropertyListRevision() { return 0; }
+
 	// Store synchronous connections on the emitter; signal names are dynamic in this minimal implementation.
 	// e.g. button->Connect("pressed", Callable(inventory, "Open")) subscribes inventory to that button.
 	bool Connect(std::string const& signalName, Callable const& callable);
@@ -164,6 +175,10 @@ public:
 	void DetachNativeBindingGCHandle(void* expected);
 
 protected:
+	virtual void GetDynamicPropertyList(std::vector<PropertyInfo>&) {}
+	virtual bool GetDynamicProperty(std::string const&, Variant&) { return false; }
+	virtual bool SetDynamicProperty(std::string const&, Variant const&) { return false; }
+
 	void OnNotification([[maybe_unused]] int notification) {}
 
 	void NotificationForward(int notification);

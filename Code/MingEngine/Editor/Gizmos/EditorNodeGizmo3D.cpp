@@ -181,8 +181,8 @@ void EditorNodeGizmo3D::UpdateView(GizmoContext const& context)
 	std::vector<Vertex> handles;
 	for (size_t i = 0; i < m_handles.size(); ++i)
 	{
-		Color const color  = static_cast<int>(i) == m_activeHandle    ? Color(255, 170, 30, 255)
-							 : static_cast<int>(i) == m_hoveredHandle ? Color(255, 235, 90, 255)
+		Color const color  = static_cast<int>(i) == m_activeHandle    ? Color(1.f, 170.f / 255.f, 30.f / 255.f, 1.f)
+							 : static_cast<int>(i) == m_hoveredHandle ? Color(1.f, 235.f / 255.f, 90.f / 255.f, 1.f)
 																	  : Color::White;
 		float const radius = PixelSize(*context.m_camera, m_handles[i], context.m_clientDimensions) * 5.f * scale;
 		AddVertsForSphere3D(handles, m_handles[i], radius, color, AABB2::Unit, 8, 4);
@@ -194,7 +194,7 @@ void EditorNodeGizmo3D::UpdateView(GizmoContext const& context)
 	// e.g. An unselected light keeps its icon visible without drawing its range outline.
 	if (m_mesh.IsValid())
 	{
-		static_cast<ShaderMaterial*>(m_mesh->m_materialResource.Get())->SetShaderParameter("tint", selected ? Color::White : Color(255, 255, 255, 0));
+		static_cast<ShaderMaterial*>(m_mesh->m_materialResource.Get())->SetShaderParameter("tint", selected ? Color::White : Color(1.f, 1.f, 1.f, 0.f));
 	}
 }
 
@@ -423,9 +423,9 @@ void Light3DGizmo::BuildShape(GizmoContext const& context)
 {
 	auto* light         = static_cast<Light3D*>(GetTarget());
 	m_color             = light->GetColor();
-	int const brightest = std::max({ int(m_color.r), int(m_color.g), int(m_color.b) });
-	m_color             = brightest > 0 ? m_color * (255.f / brightest) : Color::White;
-	m_color.a           = 255;
+	float const brightest = std::max({ m_color.r, m_color.g, m_color.b });
+	m_color             = brightest > 0 ? m_color * (1.f / brightest) : Color::White;
+	m_color.a           = 1.f;
 	if (auto* omni = dynamic_cast<OmniLight3D*>(light))
 	{
 		float const radius = std::max(0.f, omni->GetRange());
@@ -557,7 +557,7 @@ void Camera3DGizmo::BuildShape(GizmoContext const&)
 								Vector3(1.f, -width, height),
 								Vector3(1.f, -width, -height),
 								Vector3(1.f, width, -height) };
-	m_color                 = Color(125, 190, 255, 255);
+	m_color                 = Color(125.f / 255.f, 190.f / 255.f, 1.f, 1.f);
 	for (int i = 0; i < 4; ++i)
 	{
 		AddLine(corners[i], corners[(i + 1) % 4]);

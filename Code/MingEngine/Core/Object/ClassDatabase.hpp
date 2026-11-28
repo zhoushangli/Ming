@@ -69,6 +69,7 @@ public:
 		Range,
 		Enum,
 		Path,
+		Color,
 	};
 
 	// UsageFlags indicates how we use the property in the engine

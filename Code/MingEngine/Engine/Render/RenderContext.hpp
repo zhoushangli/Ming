@@ -59,7 +59,10 @@ public:
 	// Shader the request is drawn with; the backend rejects a null one when the request executes.
 	// e.g. the RenderServer fills the default unlit shader when the material or caller picked none
 	Shader* m_shader = nullptr;
-	Ref<MaterialResource> m_material;
+
+	// Material constants packed according to the selected shader layout.
+	// e.g. custom numeric uniforms are uploaded to b6 before this request is drawn
+	std::vector<unsigned char> m_materialParameterBytes;
 
 	// Draw states resolved from the material; the defaults below match MaterialResource defaults.
 	// e.g. a material with BlendMode::ALPHA arrives here as m_blendMode = BlendMode::ALPHA
@@ -213,7 +216,7 @@ public:
 	// output rect indicates the portion of the render target to render to
 	IntVec2 m_outputResolution = IntVec2::Zero;
 	AABB2   m_outputRect       = AABB2::Unit;
-	Color   m_clearColor       = Color(47, 54, 65, 255);
+	Color   m_clearColor       = Color(47.f / 255.f, 54.f / 255.f, 65.f / 255.f, 1.f);
 
 	GPUTexture*      m_viewportOutputTexture = nullptr;
 	GPUTexture*      m_sceneColorTexture     = nullptr;

@@ -36,9 +36,9 @@ float constexpr kGizmoRotationPickWidth = 0.1f;
 int constexpr kGizmoArcSegments         = 128;
 int constexpr kGizmoArcSectionSegments  = 3;
 
-Color const kHoverColor(255, 235, 90, 255);
-Color const kActiveColor(255, 170, 30, 255);
-Color const kGuideColor(220, 220, 220, 255);
+Color const kHoverColor(1.f, 235.f / 255.f, 90.f / 255.f, 1.f);
+Color const kActiveColor(1.f, 170.f / 255.f, 30.f / 255.f, 1.f);
+Color const kGuideColor(220.f / 255.f, 220.f / 255.f, 220.f / 255.f, 1.f);
 
 void AddVertsForRotationRing3D(
 	std::vector<Vertex>&       verts,
@@ -356,16 +356,16 @@ Color GizmoComponent::GetDrawColor() const
 	{
 		if (m_isHovered || m_isDragging)
 		{
-			float const maximum = std::max(1.f, static_cast<float>(std::max({ color.r, color.g, color.b })));
-			auto        brighten = [&](unsigned char channel)
+			float const maximum = std::max(1.f / 255.f, std::max({ color.r, color.g, color.b }));
+			auto        brighten = [&](float channel)
 			{
-				return static_cast<unsigned char>(255.f * (0.75f + 0.25f * channel / maximum));
+				return 0.75f + 0.25f * channel / maximum;
 			};
 
-			return Color(brighten(color.r), brighten(color.g), brighten(color.b), 255);
+			return Color(brighten(color.r), brighten(color.g), brighten(color.b), 1.f);
 		}
 
-		color.a = 230;
+		color.a = 230.f / 255.f;
 		return color;
 	}
 
@@ -427,7 +427,7 @@ void GizmoComponent::UpdateDragFeedback(GizmoContext const& context, float value
 		int const     segments = std::max(1, static_cast<int>(std::ceil(std::abs(value) / 4.f)));
 		Vector3       previous = origin + start * radius;
 		Color         fill     = kActiveColor;
-		fill.a                 = 55;
+		fill.a                 = 55.f / 255.f;
 		for (int i = 1; i <= segments; ++i)
 		{
 			float const   degrees = value * static_cast<float>(i) / segments;
@@ -478,7 +478,7 @@ void GizmoComponent::UpdateDragFeedback(GizmoContext const& context, float value
 	{
 		float const extent = scale * 100.f;
 		Color       guide  = m_baseColor;
-		guide.a            = 110;
+		guide.a            = 110.f / 255.f;
 		line(origin - axis * extent, origin + axis * extent, guide);
 		line(origin, context.m_selectedNode3D->GetWorldPosition(), kActiveColor);
 		m_dragLabel->SetText(Stringf("%+.3f", value));
@@ -490,7 +490,7 @@ void GizmoComponent::UpdateDragFeedback(GizmoContext const& context, float value
 		Vector3 const delta   = current - origin;
 		Vector3 const u       = context.m_basis.TransformDirection3D(GetPlaneU());
 		Vector3 const v       = context.m_basis.TransformDirection3D(GetPlaneV());
-		Color const colors[]  = { Color(255, 70, 105, 110), Color(155, 225, 20, 110), Color(55, 160, 255, 110) };
+		Color const colors[]  = { Color(1.f, 70.f / 255.f, 105.f / 255.f, 110.f / 255.f), Color(155.f / 255.f, 225.f / 255.f, 20.f / 255.f, 110.f / 255.f), Color(55.f / 255.f, 160.f / 255.f, 1.f, 110.f / 255.f) };
 		char const* names[]   = { "X", "Y", "Z" };
 		int const   uIndex    = m_axis == GizmoAxis::X ? 1 : 0;
 		int const   vIndex    = m_axis == GizmoAxis::Z ? 1 : 2;

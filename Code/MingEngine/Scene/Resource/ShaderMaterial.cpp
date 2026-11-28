@@ -29,3 +29,97 @@ void ShaderMaterial::BindMethods()
 	ClassDatabase::BindMethod("SetShaderParameter", &ShaderMaterial::SetShaderParameter, { "name", "value" });
 	ClassDatabase::BindMethod("GetShaderParameter", &ShaderMaterial::GetShaderParameter, { "name" });
 }
+
+void ShaderMaterial::GetDynamicPropertyList(std::vector<PropertyInfo>& properties)
+{
+	auto shader = GetShaderResource();
+	if (!shader.IsValid() || shader->GetUniforms().empty())
+	{
+		return;
+	}
+
+	properties.emplace_back(Variant::Type::Empty, "Shader Parameters", PropertyInfo::Hint::None,
+		"shader_parameter/", PropertyInfo::UsageFlags::Group);
+	std::string group;
+	for (auto const& uniform : shader->GetUniforms())
+	{
+		if (uniform.m_group != group)
+		{
+			group = uniform.m_group;
+			properties.emplace_back(Variant::Type::Empty, group.empty() ? "Shader Parameters" : group,
+				PropertyInfo::Hint::None, "shader_parameter/", PropertyInfo::UsageFlags::Group);
+		}
+
+		auto usage = PropertyInfo::UsageFlags::Inspector;
+		if (HasShaderParameterOverride(uniform.m_name))
+		{
+			usage = usage | PropertyInfo::UsageFlags::Storage;
+		}
+		properties.emplace_back(uniform.m_defaultValue.GetType(), "shader_parameter/" + uniform.m_name,
+			uniform.m_hint, uniform.m_hintData, usage);
+	}
+}
+
+bool ShaderMaterial::GetDynamicProperty(std::string const& name, Variant& value)
+{
+	Variant defaultValue;
+	if (name.compare(0, 17, "shader_parameter/") != 0 || !GetPropertyDefault(name, defaultValue))
+	{
+		return false;
+	}
+	value = GetShaderParameter(name.substr(17));
+	return true;
+}
+
+bool ShaderMaterial::SetDynamicProperty(std::string const& name, Variant const& value)
+{
+	Variant defaultValue;
+	if (name.compare(0, 17, "shader_parameter/") != 0 || !GetPropertyDefault(name, defaultValue))
+	{
+		return false;
+	}
+	return value.IsEmpty() ? ClearShaderParameterOverride(name.substr(17)) : SetShaderParameter(name.substr(17), value);
+}
+
+Variant ShaderMaterial::GetPropertyState(std::string const& name)
+{
+	if (name.compare(0, 17, "shader_parameter/") == 0 && !HasShaderParameterOverride(name.substr(17)))
+	{
+		return {};
+	}
+	return GetProperty(name);
+}
+
+bool ShaderMaterial::GetPropertyDefault(std::string const& name, Variant& value)
+{
+	if (name.compare(0, 17, "shader_parameter/") != 0)
+	{
+		return Object::GetPropertyDefault(name, value);
+	}
+	auto shader = GetShaderResource();
+	if (shader.IsValid())
+	{
+		for (auto const& uniform : shader->GetUniforms())
+		{
+			if (uniform.m_name == name.substr(17))
+			{
+				value = uniform.m_defaultValue;
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+uint64_t ShaderMaterial::GetPropertyListRevision()
+{
+	auto shader = GetShaderResource();
+	uint64_t revision = shader.IsValid() ? shader->GetRevision() : 0;
+	if (shader != m_propertyShader || revision != m_propertyShaderRevision)
+	{
+		m_propertyShader = shader;
+		m_propertyShaderRevision = revision;
+		++m_propertyListRevision;
+	}
+	return m_propertyListRevision;
+}
