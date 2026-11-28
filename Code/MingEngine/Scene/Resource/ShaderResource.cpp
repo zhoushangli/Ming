@@ -21,6 +21,8 @@ bool ShaderResource::CopyFrom(Resource&& other)
 	delete m_shader;
 	m_shader = nullptr;
 	std::swap(m_shader, otherShader->m_shader);
+	m_uniforms = std::move(otherShader->m_uniforms);
+	++m_revision;
 
 	return true;
 }

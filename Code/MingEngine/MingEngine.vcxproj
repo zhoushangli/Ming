@@ -314,10 +314,14 @@
     <ClCompile Include="Scene\Resource\FontResource.cpp" />
     <ClCompile Include="Scene\Resource\FontResourceFormat.cpp" />
     <ClCompile Include="Scene\Resource\MaterialResource.cpp" />
+    <ClCompile Include="Scene\Resource\StandardMaterial2D.cpp" />
+    <ClCompile Include="Scene\Resource\StandardMaterial3D.cpp" />
     <ClCompile Include="Scene\Resource\MeshResource.cpp" />
     <ClCompile Include="Scene\Resource\MeshResourceFormat.cpp" />
     <ClCompile Include="..\ThirdParty\tinyxml2\tinyxml2.cpp" />
     <ClCompile Include="Scene\Resource\ShaderResource.cpp" />
+    <ClCompile Include="Scene\Resource\ShaderMaterial.cpp" />
+    <ClCompile Include="Engine\Render\MShaderParser.cpp" />
     <ClCompile Include="Scene\Resource\ShaderResourceFormat.cpp" />
     <ClCompile Include="Scene\Resource\TextureResource.cpp" />
     <ClCompile Include="Scene\Resource\TextureResourceFormat.cpp" />
@@ -522,7 +526,10 @@
     <ClInclude Include="Scene\Resource\FontResource.hpp" />
     <ClInclude Include="Scene\Resource\FontResourceFormat.hpp" />
     <ClInclude Include="Scene\Resource\MaterialResource.hpp" />
+    <ClInclude Include="Scene\Resource\StandardMaterial2D.hpp" />
+    <ClInclude Include="Scene\Resource\StandardMaterial3D.hpp" />
     <ClInclude Include="Scene\Resource\ShaderMaterial.hpp" />
+    <ClInclude Include="Engine\Render\MShaderParser.hpp" />
     <ClInclude Include="Scene\Resource\MeshResource.hpp" />
     <ClInclude Include="Scene\Resource\MeshResourceFormat.hpp" />
     <ClInclude Include="..\ThirdParty\FastNoiseLite\FastNoiseLite.h" />

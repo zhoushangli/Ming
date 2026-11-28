@@ -1,0 +1,6 @@
+shader_type spatial;
+
+void fragment(inout FragmentContext f)
+{
+    f.color.rgb = float3(1.0, 0.0, 0.0);
+}

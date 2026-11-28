@@ -406,7 +406,7 @@ void InspectorPanel::OnInitialize()
 	auto* actions = MemNew<HBoxContainer>();
 	actions->AddThemeChangedCallback([actions]()
 	{
-		actions->SetSeparation(static_cast<float>(actions->GetThemeConstant("spacing", "Editor")));
+		actions->SetSeparation(static_cast<float>(actions->GetThemeConstant("spacing", "Editor")) * 0.5f);
 	});
 	auto* actionsMargin = MemNew<MarginContainer>();
 	actionsMargin->AddThemeChangedCallback([actionsMargin]()
@@ -435,9 +435,45 @@ void InspectorPanel::OnInitialize()
 			FilterProperties();
 		});
 	tools->AddNode(m_filter);
-	m_resourceBack = EditorPopupUtils::AddButton(actions, "Back", [this]() { GoBack(); });
-	EditorPopupUtils::AddButton(actions, "Save", [this]() { SaveResource(); });
-	m_resourceSaveAs = EditorPopupUtils::AddButton(actions, "Save As", [this]() { SaveResourceAs(); });
+	auto* resourceTools = MemNew<HBoxContainer>();
+	resourceTools->AddThemeChangedCallback([resourceTools]()
+	{
+		resourceTools->SetSeparation(static_cast<float>(resourceTools->GetThemeConstant("spacing", "Editor")) * 0.5f);
+	});
+	actions->AddNode(resourceTools);
+	m_resourceTools = resourceTools;
+	auto* save = EditorPopupUtils::AddButton(resourceTools, "", [this]() { SaveResource(); });
+	save->SetName("SaveResource");
+	save->SetThemeTypeVariation("EditorInspectorAction");
+	save->SetIcon(GetThemeIcon("Save", "EditorIcons"));
+	save->SetTooltipText("Save Resource");
+
+	auto* resourceMenu = EditorPopupUtils::AddButton(resourceTools, "", {});
+	resourceMenu->SetName("ResourceOptions");
+	resourceMenu->SetThemeTypeVariation("EditorInspectorAction");
+	resourceMenu->SetIcon(GetThemeIcon("MoreVertical", "EditorIcons"));
+	resourceMenu->SetTooltipText("Resource Options");
+	resourceMenu->SetPressedCallback([this, resourceMenu]()
+	{
+		std::vector<EditorUI::MenuItem> items = { { "Save As...", [this]() { SaveResourceAs(); } } };
+		items.front().m_enabled = dynamic_cast<MaterialResource*>(m_resource.Get()) != nullptr;
+		EditorNode::Get()->m_editorUI->ShowMenu(
+			resourceMenu, resourceMenu->GetGlobalPosition() + Vector2(0.f, resourceMenu->GetSize().y), items);
+	});
+
+	auto* spacer = MemNew<Control>();
+	spacer->SetHorizontalSizeFlags(Size_ExpandFill);
+	actions->AddNode(spacer);
+	m_resourceBack = EditorPopupUtils::AddButton(actions, "", [this]() { GoBack(); });
+	m_resourceBack->SetName("ResourceBack");
+	m_resourceBack->SetThemeTypeVariation("EditorInspectorAction");
+	m_resourceBack->SetIcon(GetThemeIcon("ChevronLeft", "EditorIcons"));
+	m_resourceBack->SetTooltipText("Go Back");
+	m_resourceForward = EditorPopupUtils::AddButton(actions, "", [this]() { GoForward(); });
+	m_resourceForward->SetName("ResourceForward");
+	m_resourceForward->SetThemeTypeVariation("EditorInspectorAction");
+	m_resourceForward->SetIcon(GetThemeIcon("ChevronRight", "EditorIcons"));
+	m_resourceForward->SetTooltipText("Go Forward");
 
 	m_objectBar = MemNew<PanelContainer>();
 	m_objectBar->SetThemeTypeVariation("EditorObjectBar");
@@ -570,6 +606,7 @@ void InspectorPanel::OnRender(EditorUIContext& context)
 		FinishEditing();
 		m_resource = {};
 		m_resourceHistory.clear();
+		m_resourceForwardHistory.clear();
 		m_sceneSelection = selected;
 	}
 
@@ -589,9 +626,10 @@ void InspectorPanel::OnRender(EditorUIContext& context)
 
 	m_empty->SetVisible(!valid);
 	m_objectBar->SetVisible(valid);
-	m_resourceActions->SetVisible(m_resource.IsValid());
+	m_resourceActions->SetVisible(m_resource.IsValid() || !m_resourceForwardHistory.empty());
+	m_resourceTools->SetVisible(m_resource.IsValid());
 	m_resourceBack->SetDisabled(m_resourceHistory.empty());
-	m_resourceSaveAs->SetDisabled(dynamic_cast<MaterialResource*>(m_resource.Get()) == nullptr);
+	m_resourceForward->SetDisabled(m_resourceForwardHistory.empty());
 	if (valid)
 	{
 		String label = m_resource.IsValid() ? m_resource->GetName() : static_cast<Node*>(node)->GetName();
@@ -791,6 +829,7 @@ void InspectorPanel::EditResource(Ref<Resource> const& resource)
 	FinishEditing();
 	ClearProperties();
 	m_resourceHistory.push_back(m_resource);
+	m_resourceForwardHistory.clear();
 	m_resource = resource;
 	m_sceneSelection = EditorNode::Get()->GetSelection().GetSelected();
 	m_cachedObjectID = ObjectID::Invalid;
@@ -798,14 +837,31 @@ void InspectorPanel::EditResource(Ref<Resource> const& resource)
 
 void InspectorPanel::GoBack()
 {
-	FinishEditing();
-	ClearProperties();
-	m_resource = m_resourceHistory.empty() ? Ref<Resource>() : m_resourceHistory.back();
-	if (!m_resourceHistory.empty())
+	if (m_resourceHistory.empty())
 	{
-		m_resourceHistory.pop_back();
+		return;
 	}
 
+	FinishEditing();
+	ClearProperties();
+	m_resourceForwardHistory.push_back(m_resource);
+	m_resource = m_resourceHistory.back();
+	m_resourceHistory.pop_back();
+	m_cachedObjectID = ObjectID::Invalid;
+}
+
+void InspectorPanel::GoForward()
+{
+	if (m_resourceForwardHistory.empty())
+	{
+		return;
+	}
+
+	FinishEditing();
+	ClearProperties();
+	m_resourceHistory.push_back(m_resource);
+	m_resource = m_resourceForwardHistory.back();
+	m_resourceForwardHistory.pop_back();
 	m_cachedObjectID = ObjectID::Invalid;
 }
 
@@ -846,6 +902,14 @@ void InspectorPanel::SaveResourceAs()
 void InspectorPanel::BuildMaterialPreview()
 {
 	Ref<MaterialResource> material(m_resource);
+	bool canvas = dynamic_cast<StandardMaterial2D*>(material.Get()) != nullptr;
+	if (m_preview != nullptr && (m_preview2D != nullptr) != canvas)
+	{
+		m_preview->QueueFree();
+		m_preview = nullptr;
+		m_previewMesh = nullptr;
+		m_preview2D = nullptr;
+	}
 	m_previewHost->SetVisible(material.IsValid());
 	if (!material.IsValid())
 	{
@@ -854,6 +918,7 @@ void InspectorPanel::BuildMaterialPreview()
 			m_preview->QueueFree();
 			m_preview = nullptr;
 			m_previewMesh = nullptr;
+			m_preview2D = nullptr;
 		}
 
 		return;
@@ -864,8 +929,33 @@ void InspectorPanel::BuildMaterialPreview()
 		m_preview = MemNew<SubViewportContainer>();
 		m_preview->SetName("MaterialPreview");
 		m_preview->SetCustomMinimumSize(Vector2(0.f, 180.f));
-		m_preview->SetTextureFilter(TextureFilter::Linear);
+		auto samplingMaterial = CreateRef<StandardMaterial2D>();
+		samplingMaterial->SetTextureFilter(TextureFilter::Linear);
+		m_preview->SetMaterial(samplingMaterial);
 		m_previewHost->AddNode(m_preview);
+	}
+
+	if (canvas)
+	{
+		if (m_preview2D == nullptr)
+		{
+			m_preview2D = MemNew<TextureRect>();
+			m_preview2D->SetName("MaterialPreview2D");
+			auto image = CreateRef<Image>();
+			image->LoadFromRGBA8(IntVec2(2, 2), {
+				255, 255, 255, 255, 60, 100, 200, 255,
+				60, 100, 200, 255, 255, 255, 255, 255 });
+			auto texture = CreateRef<TextureResource>();
+			texture->m_image = image;
+			texture->InitGPUResources();
+			m_preview2D->SetTexture(texture);
+			m_preview2D->SetExpandMode(TextureRect::ExpandMode::IgnoreSize);
+			m_preview2D->UpdateSize(Vector2(128.f, 128.f));
+			m_preview2D->SetPosition(Vector2(16.f, 16.f));
+			m_preview->GetSubViewport()->AddNode(m_preview2D);
+		}
+		m_preview2D->SetMaterial(material);
+		return;
 	}
 
 	if (m_previewMesh == nullptr)

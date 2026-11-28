@@ -20,6 +20,7 @@ if (-not $SkipBuild)
 $managedProject = Join-Path $verificationDirectory 'ManagedProject'
 New-Item -ItemType Directory -Force -Path $managedProject | Out-Null
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'ManagedLifecycleProbe.cs') -Destination $managedProject
+Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'ShaderLifecycle/Uniforms.mshader') -Destination $managedProject
 [xml]$sdkPackage = Get-Content -LiteralPath (Join-Path $workspace 'Code/CSharp/MingSdkPackage.props')
 $sdkIdentity = "$($sdkPackage.Project.PropertyGroup.MingSdkPackageId)/$($sdkPackage.Project.PropertyGroup.MingSdkPackageVersion)"
 @"

@@ -26,15 +26,13 @@ enum class SamplerMode
 
 enum class TextureFilter
 {
-	Inherit,
-	Nearest,
+	Nearest = 1,
 	Linear
 };
 
 enum class TextureRepeat
 {
-	Inherit,
-	Disabled,
+	Disabled = 1,
 	Enabled
 };
 

@@ -1,3 +1,4 @@
+#include "MingEngine/Scene/Resource/StandardMaterial3D.hpp"
 #include "MingEngine/Scene/Import/OBJImporter.hpp"
 
 #include "MingEngine/Core/Object/ClassDatabase.hpp"
@@ -696,7 +697,7 @@ Ref<Resource> OBJImporter::Import(
 			return Ref<Resource>();
 		}
 
-		meshData->m_materialResource = CreateRef<MaterialResource>();
+		meshData->m_materialResource = CreateRef<StandardMaterial3D>();
 
 		auto AddTextureResource = [&meshData](VirtualPath const& texVirtualPath, unsigned int slot) -> bool
 		{
@@ -717,7 +718,19 @@ Ref<Resource> OBJImporter::Import(
 				return false;
 			}
 
-			meshData->m_materialResource->m_textureResources[slot] = textureResource;
+			auto* material = static_cast<StandardMaterial3D*>(meshData->m_materialResource.Get());
+			switch (slot)
+			{
+			case SurfaceTextureSlot::Diffuse:
+				material->SetDiffuseTexture(textureResource);
+				break;
+			case SurfaceTextureSlot::Normal:
+				material->SetNormalTexture(textureResource);
+				break;
+			case SurfaceTextureSlot::SGE:
+				material->SetSGETexture(textureResource);
+				break;
+			}
 			return true;
 		};
 

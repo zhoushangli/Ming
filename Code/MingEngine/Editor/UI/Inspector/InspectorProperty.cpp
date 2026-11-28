@@ -665,7 +665,7 @@ void InspectorProperty::ShowResourceMenu()
 				}
 			} });
 		items.back().m_enabled = resource.IsValid() && (resource->GetSourceFilePath().IsValid() || resource->GetVirtualPath().IsValid());
-		if (m_info.m_hintData == "MaterialResource" || m_info.m_hintData == "ShaderMaterial")
+		if (ClassDatabase::IsSubclassOf(m_info.m_hintData, "MaterialResource"))
 		{
 			items.push_back({ "New Material...", [ui, changed]()
 				{

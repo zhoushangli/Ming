@@ -110,18 +110,12 @@ void CanvasItem::QueueRedraw()
 	m_redrawPending = false;
 }
 
-void CanvasItem::SetTextureFilter(TextureFilter filter)
+void CanvasItem::SetMaterial(Ref<MaterialResource> const& material)
 {
-	ERR_FAIL_COND_MSG(filter < TextureFilter::Inherit || filter > TextureFilter::Linear, "Invalid TextureFilter.");
-	m_textureFilter = filter;
-	g_engine->m_renderServer->CanvasItemSetTextureFilter(m_canvasItemRID, filter);
-}
-
-void CanvasItem::SetTextureRepeat(TextureRepeat repeat)
-{
-	ERR_FAIL_COND_MSG(repeat < TextureRepeat::Inherit || repeat > TextureRepeat::Enabled, "Invalid TextureRepeat.");
-	m_textureRepeat = repeat;
-	g_engine->m_renderServer->CanvasItemSetTextureRepeat(m_canvasItemRID, repeat);
+	ERR_FAIL_COND_MSG(material.IsValid() && dynamic_cast<StandardMaterial2D*>(material.Get()) == nullptr,
+		"CanvasItem requires a StandardMaterial2D.");
+	m_material = material;
+	g_engine->m_renderServer->CanvasItemSetMaterial(m_canvasItemRID, material);
 }
 
 void CanvasItem::SyncPosition()
@@ -254,11 +248,9 @@ void CanvasItem::BindMethods()
 		"SetVisibility",
 		"IsVisible");
 
-	ClassDatabase::BindMethod("SetTextureFilter", &CanvasItem::SetTextureFilter, { "filter" });
-	ClassDatabase::BindMethod("GetTextureFilter", &CanvasItem::GetTextureFilter, {});
-	ClassDatabase::BindMethod("SetTextureRepeat", &CanvasItem::SetTextureRepeat, { "repeat" });
-	ClassDatabase::BindMethod("GetTextureRepeat", &CanvasItem::GetTextureRepeat, {});
-	ADD_GROUP("Texture", "texture_");
-	ADD_PROPERTY(PropertyInfo(Variant::Type::Int, "texture_filter", PropertyInfo::Hint::Enum, "Inherit:0,Nearest:1,Linear:2", PropertyInfo::UsageFlags::Default), "SetTextureFilter", "GetTextureFilter");
-	ADD_PROPERTY(PropertyInfo(Variant::Type::Int, "texture_repeat", PropertyInfo::Hint::Enum, "Inherit:0,Disabled:1,Enabled:2", PropertyInfo::UsageFlags::Default), "SetTextureRepeat", "GetTextureRepeat");
+	ClassDatabase::BindMethod("SetMaterial", &CanvasItem::SetMaterial, { "material" });
+	ClassDatabase::BindMethod("GetMaterial", &CanvasItem::GetMaterial, {});
+	ADD_GROUP("Material");
+	ADD_PROPERTY(PropertyInfo(Variant::Type::ObjectPtr, "material", PropertyInfo::Hint::ResourceType,
+		"StandardMaterial2D", PropertyInfo::UsageFlags::Default), "SetMaterial", "GetMaterial");
 }

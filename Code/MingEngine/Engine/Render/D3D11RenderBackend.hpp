@@ -199,7 +199,7 @@ private:
 	ID3D11DepthStencilState* m_depthStencilStates[(int)(DepthMode::COUNT)] = {};
 
 	std::vector<uint8_t> m_vertexShaderByteCode;
-	std::vector<uint8_t> m_pixelShaderByteCode;
+	std::vector<uint8_t> m_fragmentShaderByteCode;
 
 #if defined(ENGINE_DEBUG_RENDER)
 	void* m_dxgiDebug       = nullptr;

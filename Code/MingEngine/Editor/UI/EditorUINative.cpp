@@ -47,8 +47,10 @@ void EditorUI::InitializeNative(EditorNode* owner)
 	ClassDatabase::RegisterClass<ViewportPanel>();
 	ClassDatabase::RegisterClass<OutputPanel>();
 	m_nativeRoot = MemNew<ColorRect>();
-	m_nativeRoot->SetTextureFilter(TextureFilter::Linear);
-	m_nativeRoot->SetTextureRepeat(TextureRepeat::Disabled);
+	auto samplingMaterial = CreateRef<StandardMaterial2D>();
+	samplingMaterial->SetTextureFilter(TextureFilter::Linear);
+	samplingMaterial->SetTextureRepeat(TextureRepeat::Disabled);
+	m_nativeRoot->SetMaterial(samplingMaterial);
 	m_nativeRoot->SetName("EditorUI");
 	m_nativeRoot->SetSerializable(false);
 	m_nativeRoot->SetClipContents(true);
@@ -447,6 +449,62 @@ void EditorUI::Render(EditorUIContext& context)
 	context.m_isViewportImageHovered = IsSceneHovered();
 	auto* root                       = static_cast<Viewport*>(context.m_sceneTree->GetRoot());
 	root->UpdateGuiDrag(root->GetGuiDragPosition());
+	UpdateTooltip();
+}
+
+void EditorUI::UpdateTooltip()
+{
+	auto* viewport = m_nativeRoot->GetViewport();
+	Control* source = viewport->GetGuiHovered();
+	if (!viewport->IsWindowFocused() || viewport->GetGuiPopup() != nullptr
+		|| viewport->HasGuiMouseCapture() || viewport->IsGuiDragging()
+		|| source == nullptr || source->GetTooltipText().IsEmpty())
+	{
+		m_tooltipSource = ObjectID::Invalid;
+		if (m_tooltip != nullptr)
+		{
+			m_tooltip->SetVisible(false);
+		}
+		return;
+	}
+
+	if (source->GetObjectID() != m_tooltipSource)
+	{
+		m_tooltipSource = source->GetObjectID();
+		m_tooltipStart = glfwGetTime();
+		if (m_tooltip != nullptr)
+		{
+			m_tooltip->SetVisible(false);
+		}
+	}
+	if (glfwGetTime() - m_tooltipStart < 0.5)
+	{
+		return;
+	}
+
+	if (m_tooltip == nullptr)
+	{
+		m_tooltip = MemNew<PanelContainer>();
+		m_tooltip->SetName("EditorTooltip");
+		m_tooltip->SetThemeTypeVariation("EditorMenuPopup");
+		m_tooltip->SetMouseFilter(Control::MouseFilter::Ignore);
+		m_nativeRoot->AddNode(m_tooltip);
+		m_tooltipLabel = MemNew<Label>();
+		m_tooltip->AddNode(m_tooltipLabel);
+	}
+	m_tooltip->SetThemeSource(source);
+	m_tooltipLabel->SetText(source->GetTooltipText());
+	Vector2 const size = m_tooltip->GetCombinedMinimumSize();
+	Vector2 const bounds(viewport->GetOutputResolution());
+	Vector2 origin = source->GetGlobalPosition() + Vector2(0.f, source->GetSize().y + 4.f);
+	if (origin.y + size.y > bounds.y)
+	{
+		origin.y = source->GetGlobalPosition().y - size.y - 4.f;
+	}
+	m_tooltip->SetPosition(Vector2(std::clamp(origin.x, 0.f, std::max(0.f, bounds.x - size.x)),
+		std::clamp(origin.y, 0.f, std::max(0.f, bounds.y - size.y))));
+	m_tooltip->UpdateSize(size);
+	m_tooltip->SetVisible(true);
 }
 
 void EditorUI::SetNativeDragPreview(Control* source, String const& text)

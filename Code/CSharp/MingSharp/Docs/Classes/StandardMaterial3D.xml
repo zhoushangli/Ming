@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<class name="StandardMaterial3D">
+  <brief_description>Configures fixed surface parameters and draw state for the built-in lit shader.</brief_description>
+  <description>Exposes tint, diffuse/normal/SGE textures, blend, depth, rasterizer and sampler settings. Shader replacement and arbitrary parameter writes are internal.</description>
+</class>

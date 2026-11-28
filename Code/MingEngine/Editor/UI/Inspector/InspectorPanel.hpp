@@ -66,6 +66,7 @@ public:
 	~InspectorPanel() override;
 	void EditResource(Ref<Resource> const& resource);
 	void GoBack();
+	void GoForward();
 	bool SaveResource();
 	void SaveResourceAs();
 	ObjectID GetUndoHistory() const;
@@ -106,13 +107,16 @@ private:
 private:
 	Ref<Resource>              m_resource;
 	std::vector<Ref<Resource>> m_resourceHistory;
+	std::vector<Ref<Resource>> m_resourceForwardHistory;
 	ObjectID                   m_sceneSelection = ObjectID::Invalid;
 	Control*                   m_resourceActions = nullptr;
+	Control*                   m_resourceTools = nullptr;
 	Button*                    m_resourceBack = nullptr;
-	Button*                    m_resourceSaveAs = nullptr;
+	Button*                    m_resourceForward = nullptr;
 	Control*                   m_previewHost = nullptr;
 	SubViewportContainer*      m_preview = nullptr;
 	MeshInstance3D*            m_previewMesh = nullptr;
+	TextureRect*              m_preview2D = nullptr;
 
 	ObjectID                   m_cachedObjectID;
 	VBoxContainer*             m_content    = nullptr;

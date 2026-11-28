@@ -4,6 +4,8 @@
 #include "MingEngine/Scene/Resource/SurfaceTool.hpp"
 #include "MingEngine/Scene/Resource/MaterialResource.hpp"
 #include "MingEngine/Scene/Resource/ShaderMaterial.hpp"
+#include "MingEngine/Scene/Resource/StandardMaterial2D.hpp"
+#include "MingEngine/Scene/Resource/StandardMaterial3D.hpp"
 #include "MingEngine/Core/IO/ResourceImporter.hpp"
 #include "MingEngine/Core/IO/ResourceLoader.hpp"
 #include "MingEngine/Core/IO/ResourceSaver.hpp"
@@ -79,10 +81,8 @@ void RegisterSceneTypes()
 	BIND_ENUM(SamplerMode, BILINEAR_WRAP);
 	BIND_ENUM(SamplerMode, COUNT);
 
-	BIND_ENUM(TextureFilter, Inherit);
 	BIND_ENUM(TextureFilter, Nearest);
 	BIND_ENUM(TextureFilter, Linear);
-	BIND_ENUM(TextureRepeat, Inherit);
 	BIND_ENUM(TextureRepeat, Disabled);
 	BIND_ENUM(TextureRepeat, Enabled);
 	BIND_ENUM(BlendMode, ALPHA);
@@ -100,7 +100,9 @@ void RegisterSceneTypes()
 	BIND_ENUM(RasterizerMode, WIREFRAME_CULL_BACK);
 	BIND_ENUM(RasterizerMode, COUNT);
 
-	ClassDatabase::RegisterClass<MaterialResource>();
+	ClassDatabase::RegisterAbstractClass<MaterialResource>();
+	ClassDatabase::RegisterClass<StandardMaterial2D>();
+	ClassDatabase::RegisterClass<StandardMaterial3D>();
 	ClassDatabase::RegisterClass<ShaderMaterial>();
 	ClassDatabase::RegisterClass<SurfaceTool>();
 

@@ -1,3 +1,4 @@
+#include "MingEngine/Scene/Resource/StandardMaterial3D.hpp"
 #include "MingEngine/Scene/Import/GLTFImporter.hpp"
 
 #include "MingEngine/Core/IO/ResourceLoader.hpp"
@@ -424,9 +425,8 @@ Ref<Resource> GLTFImporter::Import(
 						if (textureResource.IsValid())
 						{
 							// The material is set after CreateMeshResource() registered the mesh, so re-register it.
-							meshData->m_materialResource = CreateRef<MaterialResource>();
-							meshData->m_materialResource->m_textureResources[SurfaceTextureSlot::Diffuse] =
-								textureResource;
+							meshData->m_materialResource = CreateRef<StandardMaterial3D>();
+							static_cast<StandardMaterial3D*>(meshData->m_materialResource.Get())->SetDiffuseTexture(textureResource);
 							meshData->InitGPUResources();
 						}
 					}

@@ -46,7 +46,7 @@ public:
 	Matrix4x4 m_modelToWorld = Matrix4x4::Identity;
 
 	// Material tint of this request; requests without a material keep the white default.
-	// e.g. BuildInstance3DRenderRequest() copies MaterialResource::m_tint here
+	// e.g. material parameter bindings supply the draw tint here
 	Color m_tint = Color::White;
 
 	VertexBuffer* m_vertexBuffer = nullptr;
@@ -59,6 +59,7 @@ public:
 	// Shader the request is drawn with; the backend rejects a null one when the request executes.
 	// e.g. the RenderServer fills the default unlit shader when the material or caller picked none
 	Shader* m_shader = nullptr;
+	Ref<MaterialResource> m_material;
 
 	// Draw states resolved from the material; the defaults below match MaterialResource defaults.
 	// e.g. a material with BlendMode::ALPHA arrives here as m_blendMode = BlendMode::ALPHA
@@ -296,8 +297,7 @@ public:
 	std::vector<RID> m_children;
 
 	Vector2               m_position = Vector2::Zero;
-	TextureFilter         m_textureFilter = TextureFilter::Inherit;
-	TextureRepeat         m_textureRepeat = TextureRepeat::Inherit;
+	Ref<MaterialResource> m_material;
 	bool                  m_visible  = true;
 	std::vector<Command*> m_commands;
 };

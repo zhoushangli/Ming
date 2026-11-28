@@ -564,6 +564,12 @@
     <ClCompile Include="Engine\Application\ProjectSettingsFormat.cpp">
       <Filter>Engine\Application</Filter>
     </ClCompile>
+    <ClCompile Include="Scene\Resource\ShaderMaterial.cpp">
+      <Filter>Scene\Resource</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Render\MShaderParser.cpp">
+      <Filter>Engine\Render</Filter>
+    </ClCompile>
     <ClCompile Include="Scene\Resource\ShaderResource.cpp">
       <Filter>Scene\Resource</Filter>
     </ClCompile>
@@ -640,6 +646,12 @@
       <Filter>Scene\GUI</Filter>
     </ClCompile>
     <ClCompile Include="Scene\Resource\MaterialResource.cpp">
+      <Filter>Scene\Resource</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene\Resource\StandardMaterial2D.cpp">
+      <Filter>Scene\Resource</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene\Resource\StandardMaterial3D.cpp">
       <Filter>Scene\Resource</Filter>
     </ClCompile>
     <ClCompile Include="Scene\Core\CanvasLayer.cpp">
@@ -1285,6 +1297,15 @@
     </ClInclude>
     <ClInclude Include="Scene\Resource\MaterialResource.hpp">
       <Filter>Scene\Resource</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\Resource\StandardMaterial2D.hpp">
+      <Filter>Scene\Resource</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\Resource\StandardMaterial3D.hpp">
+      <Filter>Scene\Resource</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Render\MShaderParser.hpp">
+      <Filter>Engine\Render</Filter>
     </ClInclude>
     <ClInclude Include="Scene\Resource\ShaderMaterial.hpp">
       <Filter>Scene\Resource</Filter>

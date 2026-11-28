@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<class name="StandardMaterial2D">
+  <brief_description>Configures tint, blending and sampling for canvas drawing.</brief_description>
+  <description>Uses the built-in canvas shader. Textures come from draw commands. Defaults to white tint, alpha blending, linear filtering and clamp addressing. Does not inherit material settings from parent canvas items.</description>
+</class>

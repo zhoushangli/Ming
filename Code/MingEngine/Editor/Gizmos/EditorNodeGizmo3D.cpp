@@ -1,3 +1,4 @@
+#include "MingEngine/Scene/Resource/ShaderMaterial.hpp"
 #include "MingEngine/Editor/Gizmos/EditorNodeGizmo3D.hpp"
 
 #include "MingEngine/Core/Math/MathUtils.hpp"
@@ -193,7 +194,7 @@ void EditorNodeGizmo3D::UpdateView(GizmoContext const& context)
 	// e.g. An unselected light keeps its icon visible without drawing its range outline.
 	if (m_mesh.IsValid())
 	{
-		m_mesh->m_materialResource->SetTint(selected ? Color::White : Color(255, 255, 255, 0));
+		static_cast<ShaderMaterial*>(m_mesh->m_materialResource.Get())->SetShaderParameter("tint", selected ? Color::White : Color(255, 255, 255, 0));
 	}
 }
 

@@ -564,9 +564,10 @@ void FileSystemPanel::UpdateItems()
 				{
 					size_t const end = header.find('"', begin + 6);
 					std::string const type = header.substr(begin + 6, end - begin - 6);
-					if (ClassDatabase::IsSubclassOf(type, "ShaderMaterial"))
+					if (end != std::string::npos && ClassDatabase::IsSubclassOf(type, "Resource")
+						&& GetThemeIcon(type, "EditorIcons").IsValid())
 					{
-						icon = "ShaderMaterial";
+						icon = type;
 					}
 				}
 

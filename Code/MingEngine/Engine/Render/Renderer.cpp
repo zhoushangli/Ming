@@ -1,4 +1,5 @@
 #include "MingEngine/Engine/Render/Renderer.hpp"
+#include "MingEngine/Scene/Resource/MaterialResource.hpp"
 
 #include "MingEngine/Core/Clock.hpp"
 #include "MingEngine/Core/Math/EulerAngles.hpp"
@@ -226,6 +227,14 @@ void Renderer::ExecuteRenderRequest(RenderRequest const& request)
 	// Requests always carry a shader, because the RenderServer fills the fallback at collection time.
 	// e.g. BuildInstance3DRenderRequest() and ViewportSubmitRenderRequest() both guarantee it
 	m_renderBackend->BindShader(request.m_shader);
+	if (auto* material = request.m_material.Get())
+	{
+		material->BindParameters(*m_renderBackend);
+	}
+	else
+	{
+		m_renderBackend->BindConstantBuffer(nullptr, 6);
+	}
 
 	for (unsigned int textureSlot = 0; textureSlot < request.m_textures.size(); ++textureSlot)
 	{
@@ -548,6 +557,7 @@ Ref<ShaderResource> Renderer::GetBuiltinShaderResource(std::string const& shader
 
 	Ref<ShaderResource> shaderResource = CreateRef<ShaderResource>();
 	shaderResource->SetName(shaderName);
+	shaderResource->SetUniforms(BuiltinShaders::GetMaterialUniforms(shaderName == "DefaultUI"));
 	shaderResource->SetShader(CreateShader(shaderName, std::string(shaderSource)));
 	m_builtinShaderResources.emplace(shaderName, shaderResource);
 	return shaderResource;

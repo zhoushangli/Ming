@@ -90,6 +90,7 @@ public:
 	void     SetGuiHovered(Control* control);
 	void     SetGuiFocus(Control* control);
 	Control* GetGuiFocus() const { return ResolveGuiControl(m_gui.m_focusedControl); }
+	Control* GetGuiHovered() const { return ResolveGuiControl(m_gui.m_hoveredControl); }
 	Control* GetGuiPopup() const { return ResolveGuiControl(m_gui.m_popupControl); }
 	void     SetGuiPopup(Control* control);
 	bool     HasGuiMouseCapture() const { return ResolveGuiControl(m_gui.m_mouseCaptureControl) != nullptr; }

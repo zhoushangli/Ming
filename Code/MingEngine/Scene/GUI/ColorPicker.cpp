@@ -115,8 +115,10 @@ bool ParseHex(std::string text, Color& color)
 
 ColorPicker::ColorPicker()
 {
-	SetTextureFilter(TextureFilter::Linear);
-	SetTextureRepeat(TextureRepeat::Disabled);
+	auto samplingMaterial = CreateRef<StandardMaterial2D>();
+	samplingMaterial->SetTextureFilter(TextureFilter::Linear);
+	samplingMaterial->SetTextureRepeat(TextureRepeat::Disabled);
+	SetMaterial(samplingMaterial);
 	SetFocusMode(FocusMode::All);
 	for (int i = 0; i < 4; ++i)
 	{

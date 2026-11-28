@@ -1,3 +1,4 @@
+#include "MingEngine/Scene/Resource/StandardMaterial2D.hpp"
 #include "MingEngine/Scene/Resource/MeshResource.hpp"
 #include "MingEngine/Core/Object/ClassDatabase.hpp"
 
@@ -129,6 +130,8 @@ void MeshResource::BindMethods()
 
 void MeshResource::SetMaterial(Ref<MaterialResource> const& material)
 {
+	ERR_FAIL_COND_MSG(material.IsValid() && dynamic_cast<StandardMaterial2D*>(material.Get()) != nullptr,
+		"3D geometry cannot use a StandardMaterial2D.");
 	m_materialResource = material;
 	RenderServer* server = g_engine != nullptr ? g_engine->m_renderServer : nullptr;
 	if (server != nullptr && m_meshRID.IsValid())

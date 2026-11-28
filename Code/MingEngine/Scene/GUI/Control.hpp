@@ -173,6 +173,9 @@ public:
 	void SetClipContents(bool enabled);
 	bool IsClippingContents() const { return m_clipContents; }
 
+	String const& GetTooltipText() const { return m_tooltipText; }
+	void SetTooltipText(String const& text) { m_tooltipText = text; }
+
 	Vector2 GetSize() const { return m_size; }
 	AABB2   GetLocalRect() const { return AABB2(Vector2::Zero, m_size); }
 	Vector2 GetLocalPosition() const override { return m_position; }
@@ -238,6 +241,7 @@ private:
 	MouseFilter m_mouseFilter         = MouseFilter::Stop;
 	FocusMode   m_focusMode           = FocusMode::None;
 	bool        m_clipContents        = false;
+	String      m_tooltipText;
 
 	std::function<bool(Vector2 const&, GuiDragData&)>             m_dragSource;
 	std::function<bool(Vector2 const&, GuiDragData const&)>       m_dropCheck;

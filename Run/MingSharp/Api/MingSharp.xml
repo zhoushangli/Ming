@@ -109,6 +109,10 @@
             <summary>Called at a fixed interval while the game is running and physics processing is enabled.</summary>
             <param name="deltaSeconds">The fixed physics interval in seconds.</param>
         </member>
+        <member name="T:Ming.ShaderMaterial">
+            <summary>Uses a chosen shader and its declared parameters.</summary>
+            <remarks>Exposes shader selection, named parameter access and blend/depth/rasterizer/sampler settings. Matching parameter names and types retain values after shader changes or reloads. New or changed types use declared defaults. Custom parameters currently support spatial numeric uniforms; dynamic Inspector editing and parameter persistence are not provided.</remarks>
+        </member>
         <member name="T:Ming.AABBCollider3D">
             <summary>A 3D collision shape defined by an axis-aligned box.</summary>
         </member>
@@ -172,21 +176,12 @@
             <summary>Gets this item&apos;s own visibility setting. Does not check whether a parent item is hidden.</summary>
             <returns>True if this item is set to be visible.</returns>
         </member>
-        <member name="M:Ming.CanvasItem.SetTextureFilter(Ming.TextureFilter)">
-            <summary>Sets texture filtering for this item. Inherit uses the parent canvas item, with Linear as the root default. Does not change the shared texture resource.</summary>
-            <param name="filter">Inherit, Nearest or Linear.</param>
+        <member name="M:Ming.CanvasItem.SetMaterial(Ming.MaterialResource)">
+            <summary>Assigns a StandardMaterial2D. An empty reference uses the engine default canvas material. Parent material settings are not inherited.</summary>
+            <param name="material">Canvas material or an empty reference.</param>
         </member>
-        <member name="M:Ming.CanvasItem.GetTextureFilter">
-            <summary>Gets this item&apos;s texture filter setting, which may be Inherit.</summary>
-            <returns>The local texture filter setting.</returns>
-        </member>
-        <member name="M:Ming.CanvasItem.SetTextureRepeat(Ming.TextureRepeat)">
-            <summary>Sets texture addressing for this item. Inherit uses the parent canvas item, with Disabled as the root default. Enabled repeats texture coordinates outside the image.</summary>
-            <param name="repeat">Inherit, Disabled or Enabled.</param>
-        </member>
-        <member name="M:Ming.CanvasItem.GetTextureRepeat">
-            <summary>Gets this item&apos;s texture repeat setting, which may be Inherit.</summary>
-            <returns>The local texture repeat setting.</returns>
+        <member name="M:Ming.CanvasItem.GetMaterial">
+            <summary>Returns the assigned material reference, which is empty when using the engine default.</summary>
         </member>
         <member name="T:Ming.CapsuleCollider3D">
             <summary>A 3D collision shape defined by a line segment and a radius.</summary>
@@ -349,7 +344,8 @@
             <summary>Adds space between its edges and its child controls.</summary>
         </member>
         <member name="T:Ming.MaterialResource">
-            <summary>Stores shader, textures, tint and draw states shared by mesh instances.</summary>
+            <summary>Base resource that owns material shader, parameter cache and draw state.</summary>
+            <remarks>Cannot be instantiated directly. StandardMaterial2D, StandardMaterial3D and ShaderMaterial expose their own configuration interfaces.</remarks>
         </member>
         <member name="T:Ming.MenuBar">
             <summary>A row of menus that can open popup lists.</summary>
@@ -565,10 +561,6 @@
         <member name="T:Ming.ScrollContainer">
             <summary>Shows child content through a scrollable area.</summary>
         </member>
-        <member name="T:Ming.ShaderMaterial">
-            <summary>A material drawn with an assigned shader.</summary>
-            <remarks>Inherits the fixed texture slots, tint and render states of MaterialResource.</remarks>
-        </member>
         <member name="T:Ming.ShaderResource">
             <summary>Holds a shader used by the renderer.</summary>
         </member>
@@ -616,6 +608,14 @@
         <member name="M:Ming.SpotLight3D.GetSpotAttenuation">
             <summary>Gets the cone fade value.</summary>
             <returns>The current cone fade setting.</returns>
+        </member>
+        <member name="T:Ming.StandardMaterial2D">
+            <summary>Configures tint, blending and sampling for canvas drawing.</summary>
+            <remarks>Uses the built-in canvas shader. Textures come from draw commands. Defaults to white tint, alpha blending, linear filtering and clamp addressing. Does not inherit material settings from parent canvas items.</remarks>
+        </member>
+        <member name="T:Ming.StandardMaterial3D">
+            <summary>Configures fixed surface parameters and draw state for the built-in lit shader.</summary>
+            <remarks>Exposes tint, diffuse/normal/SGE textures, blend, depth, rasterizer and sampler settings. Shader replacement and arbitrary parameter writes are internal.</remarks>
         </member>
         <member name="T:Ming.SubViewportContainer">
             <summary>Displays a child SubViewport inside the interface.</summary>

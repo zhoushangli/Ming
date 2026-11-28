@@ -299,6 +299,9 @@ Ref<Theme> EditorThemeManager::CreateTheme()
 	theme->SetStyleBox("normal", "EditorPanelAction", box(Color::Transparent, Color::Transparent, 0.f, 3.75f, 2.5f));
 	theme->SetStyleBox("hover", "EditorPanelAction", box(elevated, Color::Transparent, 0.f, 3.75f, 2.5f));
 	theme->SetColor("font_color", "EditorPanelAction", dim);
+	theme->SetTypeVariation("EditorInspectorAction", "EditorPanelAction");
+	theme->SetConstant("minimum_height", "EditorInspectorAction", 24);
+	theme->SetConstant("icon_size", "EditorInspectorAction", 16);
 	theme->SetConstant("minimum_height", "EditorToolbarButton", 30);
 	theme->SetColor("font_color", "EditorToolbarButton", muted);
 	theme->SetTypeVariation("EditorMenuItem", "Button");
@@ -614,6 +617,8 @@ Ref<Theme> EditorThemeManager::CreateScaledTheme(Ref<Theme> const& baseTheme, fl
 		{ "EditorOutputTab", "minimum_height" },
 		{ "EditorLogRow", "separation" },
 		{ "EditorPanelAction", "minimum_height" },
+		{ "EditorInspectorAction", "minimum_height" },
+		{ "EditorInspectorAction", "icon_size" },
 		{ "EditorToolbarButton", "minimum_height" },
 		{ "Label", "line_spacing" },
 		{ "LineEdit", "caret_width" },

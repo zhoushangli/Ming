@@ -5,6 +5,7 @@
 #include "MingEngine/Core/Render/RID.hpp"
 #include "MingEngine/Core/Render/Vertex.hpp"
 #include "MingEngine/Engine/Render/RenderTypes.hpp"
+#include "MingEngine/Scene/Resource/StandardMaterial2D.hpp"
 #include "MingEngine/Scene/Core/Node.hpp"
 
 #include <vector>
@@ -38,10 +39,8 @@ public:
 	bool IsVisible() const;
 	bool IsVisibleInHierarchy() const;
 
-	void SetTextureFilter(TextureFilter filter);
-	TextureFilter GetTextureFilter() const { return m_textureFilter; }
-	void SetTextureRepeat(TextureRepeat repeat);
-	TextureRepeat GetTextureRepeat() const { return m_textureRepeat; }
+	void SetMaterial(Ref<MaterialResource> const& material);
+	Ref<MaterialResource> GetMaterial() const { return m_material; }
 
 	void QueueRedraw();
 	void SetCanvasClip(bool enabled, Vector2 const& size);
@@ -76,8 +75,7 @@ private:
 	bool m_visible       = true;
 	bool m_redrawPending = true;
 
-	TextureFilter m_textureFilter = TextureFilter::Inherit;
-	TextureRepeat m_textureRepeat = TextureRepeat::Inherit;
+	Ref<MaterialResource> m_material;
 
 	RID m_canvasItemRID  = RID::Invalid;
 	RID m_canvasLayerRID = RID::Invalid;

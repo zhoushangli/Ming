@@ -39,8 +39,7 @@ public:
 	void CanvasItemSetParent(RID item, RID parent);
 	void CanvasItemSetPosition(RID item, Vector2 const& position);
 	void CanvasItemSetVisible(RID item, bool visible);
-	void CanvasItemSetTextureFilter(RID item, TextureFilter filter);
-	void CanvasItemSetTextureRepeat(RID item, TextureRepeat repeat);
+	void CanvasItemSetMaterial(RID item, Ref<MaterialResource> const& material);
 	void CanvasItemSetClip(RID item, bool enabled, Vector2 const& size);
 	void CanvasItemSetChildrenClip(RID item, bool enabled, Vector2 const& size);
 	void CanvasItemAddViewportRect(RID item, RID viewport, Rect2 const& rect);
@@ -200,7 +199,7 @@ private:
 
 	// Fill shader, textures, tint and draw states of one request from a material.
 	// e.g. BuildInstance3DRenderRequest() calls it with the mesh material or the default material
-	void ApplyMaterialToRequest(MaterialResource const& materialResource, RenderRequest& request);
+	void ApplyMaterialToRequest(MaterialResource& materialResource, RenderRequest& request);
 
 	// GPU buffer registrations stay private because only MeshCreate()/MeshFree() use them.
 	RID  RegisterVertexBuffer(VertexBuffer* vertexBuffer);
@@ -219,9 +218,7 @@ private:
 		RID            viewport,
 		ViewportData*  viewportData,
 		Vector2 const& parentPosition,
-		AABB2 const*   parentClip = nullptr,
-		TextureFilter parentFilter = TextureFilter::Linear,
-		TextureRepeat parentRepeat = TextureRepeat::Disabled);
+		AABB2 const*   parentClip = nullptr);
 
 private:
 	Renderer*         m_renderer             = nullptr;
@@ -231,6 +228,7 @@ private:
 	Ref<ShaderResource>   m_defaultUI;
 	Ref<ShaderResource>   m_defaultLit;
 	Ref<MaterialResource> m_defaultMaterial;
+	Ref<MaterialResource> m_defaultMaterial2D;
 
 	RIDOwner<CanvasItemData>   m_canvasItemOwner;
 	RIDOwner<CanvasLayerData>  m_canvasLayerOwner;

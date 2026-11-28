@@ -1,0 +1,17 @@
+shader_type spatial;
+
+uniform float height;
+uniform float2 offset = float2(0.0, 0.0);
+uniform float3 rgb = float3(0.0, 1.0, 0.0);
+uniform float4 multiplier = float4(1.0, 1.0, 1.0, 1.0);
+
+void vertex(inout VertexContext v)
+{
+    v.modelPosition.xy += offset;
+    v.modelPosition.y += height;
+}
+
+void fragment(inout FragmentContext f)
+{
+    f.color = float4(rgb, 1.0) * multiplier;
+}

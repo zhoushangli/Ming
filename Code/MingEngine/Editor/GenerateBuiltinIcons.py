@@ -143,7 +143,7 @@ def write_if_changed(output_path: Path, content: bytes) -> bool:
     if output_path.exists() and output_path.read_bytes() == content:
         return False
 
-    if output_path.exists():
+    if output_path.exists() and not (output_path.stat().st_mode & stat.S_IWRITE):
         output_path.chmod(stat.S_IWRITE | stat.S_IREAD)
     output_path.write_bytes(content)
     return True
@@ -152,9 +152,9 @@ def write_if_changed(output_path: Path, content: bytes) -> bool:
 def main() -> None:
     icon_directory = Path(__file__).resolve().parent / "Icons"
     output_path = icon_directory.parent / "BuiltinIcons.hpp"
-    source_directory = Path(__file__).resolve().parents[3] / "EditorStyleTest" / "warm-carbon"
-    manifest = json.loads((source_directory / "icons" / "manifest.json").read_text(encoding="utf-8"))
-    sources = sorted((source_directory / "icons").glob("*.svg"))
+    source_directory = Path(__file__).resolve().parents[3] / "EditorIcons"
+    manifest = json.loads((source_directory / "manifest.json").read_text(encoding="utf-8"))
+    sources = sorted(source_directory.glob("*.svg"))
     if {p.stem for p in sources} != set(manifest):
         raise SystemExit("SVG files and manifest must contain the same icon names.")
 

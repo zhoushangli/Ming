@@ -1,3 +1,4 @@
+#include "MingEngine/Scene/Resource/ShaderMaterial.hpp"
 #include "MingEngine/Editor/Gizmos/GizmosShapes.hpp"
 
 #include "MingEngine/Engine/Render/BuiltinShaders.hpp"
@@ -32,14 +33,14 @@ void EditorGizmoVisual3D::UploadGeometry(
 	if (!m_mesh.IsValid())
 	{
 		m_mesh                     = CreateRef<MeshResource>();
-		m_mesh->m_materialResource = CreateRef<MaterialResource>();
+		m_mesh->m_materialResource = CreateRef<ShaderMaterial>();
 	}
 
-	auto& material             = m_mesh->m_materialResource;
-	material->m_shaderResource = server->GetBuiltinShaderResource(shaderName, shaderSource);
-	material->m_depthMode      = depth;
-	material->m_blendMode      = BlendMode::ALPHA;
-	material->m_rasterizerMode = RasterizerMode::SOLID_CULL_NONE;
+	auto* material = static_cast<ShaderMaterial*>(m_mesh->m_materialResource.Get());
+	material->SetShaderResource(server->GetBuiltinShaderResource(shaderName, shaderSource));
+	material->SetDepthMode(depth);
+	material->SetBlendMode(BlendMode::ALPHA);
+	material->SetRasterizerMode(RasterizerMode::SOLID_CULL_NONE);
 	m_mesh->m_vertexStride     = sizeof(Vertex);
 	m_mesh->m_vertexCount      = static_cast<uint32_t>(m_verts.size());
 	m_mesh->m_vertices.resize(m_verts.size() * sizeof(Vertex));
@@ -71,7 +72,7 @@ void EditorGizmoVisual3D::SetGizmoColor(Color const& color)
 {
 	if (m_mesh.IsValid())
 	{
-		m_mesh->m_materialResource->m_tint = color;
+		static_cast<ShaderMaterial*>(m_mesh->m_materialResource.Get())->SetShaderParameter("tint", color);
 	}
 }
 
@@ -79,7 +80,7 @@ void EditorGizmoVisual3D::SetGizmoTexture(Ref<TextureResource> const& texture)
 {
 	if (m_mesh.IsValid())
 	{
-		m_mesh->m_materialResource->SetDiffuseTexture(texture);
+		static_cast<ShaderMaterial*>(m_mesh->m_materialResource.Get())->SetShaderParameter("diffuse_texture", Variant::FromRef(texture.Get()));
 	}
 }
 

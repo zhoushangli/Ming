@@ -14,10 +14,10 @@ Shader::~Shader()
 		m_inputLayout = nullptr;
 	}
 
-	if (m_pixelShader)
+	if (m_fragmentShader)
 	{
-		m_pixelShader->Release();
-		m_pixelShader = nullptr;
+		m_fragmentShader->Release();
+		m_fragmentShader = nullptr;
 	}
 
 	if (m_vertexShader)

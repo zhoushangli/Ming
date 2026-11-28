@@ -1,69 +1,170 @@
 #include "MingEngine/Scene/Resource/MaterialResource.hpp"
-#include "MingEngine/Core/Object/ClassDatabase.hpp"
 
+#include "MingEngine/Core/ErrorWarningAssert.hpp"
+#include "MingEngine/Engine/Render/ConstantBuffer.hpp"
+#include "MingEngine/Engine/Render/RenderBackend.hpp"
+
+#include <algorithm>
+#include <cstring>
 #include <utility>
+
+MaterialResource::~MaterialResource()
+{
+	delete m_parameterBuffer;
+}
+
+void MaterialResource::CopyValuesFrom(MaterialResource const& other)
+{
+	other.SynchronizeShader();
+	delete m_parameterBuffer;
+	m_parameterBuffer = nullptr;
+	m_shaderResource = other.m_shaderResource;
+	m_parameterShader = other.m_parameterShader;
+	m_shaderRevision = other.m_shaderRevision;
+	m_parameters = other.m_parameters;
+	m_parameterBytes = other.m_parameterBytes;
+	m_parametersDirty = true;
+	m_blendMode = other.m_blendMode;
+	m_depthMode = other.m_depthMode;
+	m_rasterizerMode = other.m_rasterizerMode;
+	m_samplerMode = other.m_samplerMode;
+}
 
 bool MaterialResource::CopyFrom(Resource&& other)
 {
-	// 1) Validate type
-	MaterialResource* otherMaterial = dynamic_cast<MaterialResource*>(&other);
-	if (otherMaterial == nullptr)
+	auto* material = dynamic_cast<MaterialResource*>(&other);
+	if (material == nullptr || material == this || material->GetClassName() != GetClassName())
 	{
 		return false;
 	}
 
-	// 2) Move CPU data fields; a moved Ref leaves the source empty
+	CopyValuesFrom(*material);
 	MoveBaseFrom(std::move(other));
-	m_shaderResource   = std::move(otherMaterial->m_shaderResource);
-	m_textureResources = std::move(otherMaterial->m_textureResources);
-	m_tint             = otherMaterial->m_tint;
-	m_blendMode        = otherMaterial->m_blendMode;
-	m_depthMode        = otherMaterial->m_depthMode;
-	m_rasterizerMode   = otherMaterial->m_rasterizerMode;
-	m_samplerMode      = otherMaterial->m_samplerMode;
-
 	return true;
 }
-void MaterialResource::BindMethods()
+
+void MaterialResource::SetShaderResource(Ref<ShaderResource> const& value)
 {
-	ClassDatabase::BindMethod("SetShaderResource", &MaterialResource::SetShaderResource, { "value" });
-	ClassDatabase::BindMethod("GetShaderResource", &MaterialResource::GetShaderResource, {});
-	ADD_PROPERTY(PropertyInfo(Variant::Type::ObjectPtr, "shader", PropertyInfo::Hint::ResourceType, "ShaderResource", PropertyInfo::UsageFlags::Default), "SetShaderResource", "GetShaderResource");
+	m_shaderResource = value;
+	SynchronizeShader();
+}
 
-	ClassDatabase::BindMethod("SetDiffuseTexture", &MaterialResource::SetDiffuseTexture, { "value" });
-	ClassDatabase::BindMethod("GetDiffuseTexture", &MaterialResource::GetDiffuseTexture, {});
-	ADD_PROPERTY(PropertyInfo(Variant::Type::ObjectPtr, "diffuse_texture", PropertyInfo::Hint::ResourceType, "TextureResource", PropertyInfo::UsageFlags::Default), "SetDiffuseTexture", "GetDiffuseTexture");
+void MaterialResource::SynchronizeShader() const
+{
+	uint64_t revision = m_shaderResource.IsValid() ? m_shaderResource->GetRevision() : 0;
+	if (m_parameterShader == m_shaderResource && m_shaderRevision == revision)
+	{
+		return;
+	}
 
-	ClassDatabase::BindMethod("SetNormalTexture", &MaterialResource::SetNormalTexture, { "value" });
-	ClassDatabase::BindMethod("GetNormalTexture", &MaterialResource::GetNormalTexture, {});
-	ADD_PROPERTY(PropertyInfo(Variant::Type::ObjectPtr, "normal_texture", PropertyInfo::Hint::ResourceType, "TextureResource", PropertyInfo::UsageFlags::Default), "SetNormalTexture", "GetNormalTexture");
+	delete m_parameterBuffer;
+	m_parameterBuffer = nullptr;
+	m_parameterShader = m_shaderResource;
+	m_shaderRevision = revision;
+	auto previous = std::move(m_parameters);
+	m_parameters.clear();
+	m_parameterBytes.clear();
+	m_parametersDirty = true;
+	if (m_shaderResource.IsValid())
+	{
+		for (MShaderUniform const& uniform : m_shaderResource->GetUniforms())
+		{
+			auto found = previous.find(uniform.m_name);
+			m_parameters.emplace(uniform.m_name,
+				found != previous.end() && found->second.GetType() == uniform.m_defaultValue.GetType()
+					? found->second : uniform.m_defaultValue);
+			if (uniform.m_binding == MShaderUniform::Binding::ConstantBuffer)
+			{
+				m_parameterBytes.resize(std::max(m_parameterBytes.size(), size_t(uniform.m_offset) + 16), 0);
+			}
+		}
+	}
+}
 
-	ClassDatabase::BindMethod("SetSGETexture", &MaterialResource::SetSGETexture, { "value" });
-	ClassDatabase::BindMethod("GetSGETexture", &MaterialResource::GetSGETexture, {});
-	ADD_PROPERTY(PropertyInfo(Variant::Type::ObjectPtr, "sge_texture", PropertyInfo::Hint::ResourceType, "TextureResource", PropertyInfo::UsageFlags::Default), "SetSGETexture", "GetSGETexture");
+bool MaterialResource::SetParameter(String const& name, Variant const& value)
+{
+	SynchronizeShader();
+	auto found = m_parameters.find(name.ToUtf8());
+	if (found == m_parameters.end() || found->second.GetType() != value.GetType())
+	{
+		ERR_PRINT("Unknown material parameter or mismatched type: " + name.ToUtf8());
+		return false;
+	}
+	if (value.GetType() == Variant::Type::ObjectPtr && value.As<Object*>() != nullptr
+		&& dynamic_cast<TextureResource*>(value.As<Object*>()) == nullptr)
+	{
+		ERR_PRINT("Material texture parameter requires a TextureResource.");
+		return false;
+	}
+	if (found->second != value)
+	{
+		found->second = value.GetType() == Variant::Type::ObjectPtr ? Variant::FromRef(value.As<Object*>()) : value;
+		m_parametersDirty = true;
+	}
+	return true;
+}
 
-	ClassDatabase::BindMethod("SetTint", &MaterialResource::SetTint, { "value" });
-	ClassDatabase::BindMethod("GetTint", &MaterialResource::GetTint, {});
-	ADD_PROPERTY(PropertyInfo(Variant::Type::Color, "tint", PropertyInfo::Hint::None, "", PropertyInfo::UsageFlags::Default), "SetTint", "GetTint");
+Variant MaterialResource::GetParameter(String const& name) const
+{
+	SynchronizeShader();
+	auto found = m_parameters.find(name.ToUtf8());
+	if (found == m_parameters.end())
+	{
+		ERR_PRINT("Unknown material parameter: " + name.ToUtf8());
+		return Variant();
+	}
+	return found->second;
+}
 
-	ClassDatabase::BindMethod("SetBlendMode", &MaterialResource::SetBlendMode, { "value" });
-	ClassDatabase::BindMethod("GetBlendMode", &MaterialResource::GetBlendMode, {});
-	ADD_GROUP("Render State");
-	ADD_PROPERTY(PropertyInfo(Variant::Type::Int, "blend_mode", PropertyInfo::Hint::Enum, "Alpha:0,Additive:1,Opaque:2", PropertyInfo::UsageFlags::Default), "SetBlendMode", "GetBlendMode");
-
-	ClassDatabase::BindMethod("SetDepthMode", &MaterialResource::SetDepthMode, { "value" });
-	ClassDatabase::BindMethod("GetDepthMode", &MaterialResource::GetDepthMode, {});
-	ADD_PROPERTY(PropertyInfo(Variant::Type::Int, "depth_mode", PropertyInfo::Hint::Enum, "Disabled:0,Read Only Always:1,Read Only Less or Equal:2,Read Write Less or Equal:3", PropertyInfo::UsageFlags::Default), "SetDepthMode", "GetDepthMode");
-
-	ClassDatabase::BindMethod("SetRasterizerMode", &MaterialResource::SetRasterizerMode, { "value" });
-	ClassDatabase::BindMethod("GetRasterizerMode", &MaterialResource::GetRasterizerMode, {});
-	ADD_PROPERTY(PropertyInfo(Variant::Type::Int, "rasterizer_mode", PropertyInfo::Hint::Enum, "Solid Cull None:0,Solid Cull Back:1,Wireframe Cull None:2,Wireframe Cull Back:3", PropertyInfo::UsageFlags::Default), "SetRasterizerMode", "GetRasterizerMode");
-
-	ClassDatabase::BindMethod("SetSamplerMode", &MaterialResource::SetSamplerMode, { "value" });
-	ClassDatabase::BindMethod("GetSamplerMode", &MaterialResource::GetSamplerMode, {});
-	ADD_GROUP("Sampling");
-	ADD_PROPERTY(PropertyInfo(Variant::Type::Int, "sampler_mode", PropertyInfo::Hint::Enum, "Nearest Clamp:0,Linear Clamp:1,Nearest Repeat:2,Linear Repeat:3", PropertyInfo::UsageFlags::Default), "SetSamplerMode", "GetSamplerMode");
-
+void MaterialResource::BindParameters(RenderBackend& backend)
+{
+	SynchronizeShader();
+	if (m_parameterBytes.empty())
+	{
+		backend.BindConstantBuffer(nullptr, 6);
+		return;
+	}
+	if (m_parameterBuffer == nullptr)
+	{
+		m_parameterBuffer = backend.CreateConstantBuffer(static_cast<unsigned int>(m_parameterBytes.size()));
+		m_parametersDirty = true;
+	}
+	if (m_parametersDirty)
+	{
+		for (MShaderUniform const& uniform : m_shaderResource->GetUniforms())
+		{
+			if (uniform.m_binding != MShaderUniform::Binding::ConstantBuffer)
+			{
+				continue;
+			}
+			Variant const& value = m_parameters.at(uniform.m_name);
+			void const* data = nullptr;
+			switch (value.GetType())
+			{
+			case Variant::Type::Float:
+				data = &value.As<float>();
+				break;
+			case Variant::Type::Vector2:
+				data = &value.As<Vector2>();
+				break;
+			case Variant::Type::Vector3:
+				data = &value.As<Vector3>();
+				break;
+			case Variant::Type::Vector4:
+				data = &value.As<Vector4>();
+				break;
+			default:
+				break;
+			}
+			if (data != nullptr)
+			{
+				std::memcpy(m_parameterBytes.data() + uniform.m_offset, data, uniform.m_components * sizeof(float));
+			}
+		}
+		backend.CopyCPUToGPU(m_parameterBytes.data(), static_cast<unsigned int>(m_parameterBytes.size()), m_parameterBuffer);
+		m_parametersDirty = false;
+	}
+	backend.BindConstantBuffer(m_parameterBuffer, 6);
 }
 
 void MaterialResource::SetBlendMode(BlendMode value)

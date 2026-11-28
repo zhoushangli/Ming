@@ -1,3 +1,4 @@
+#include "MingEngine/Scene/Resource/StandardMaterial2D.hpp"
 #include "MingEngine/Scene/3D/MeshInstance3D.hpp"
 
 #include "MingEngine/Core/Math/RaycastUtils.hpp"
@@ -166,6 +167,8 @@ Ref<MeshResource> MeshInstance3D::GetMeshResource() const
 
 void MeshInstance3D::SetMaterialOverride(Ref<MaterialResource> const& material)
 {
+	ERR_FAIL_COND_MSG(material.IsValid() && dynamic_cast<StandardMaterial2D*>(material.Get()) != nullptr,
+		"3D geometry cannot use a StandardMaterial2D.");
 	m_materialOverride = material;
 	SyncMeshBase();
 }

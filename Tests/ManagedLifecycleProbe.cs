@@ -12,6 +12,7 @@ public partial class ManagedLifecycleProbe : Node
 
     public override void _Ready()
     {
+        VerifyMaterials();
         VerifyWorkerPool();
         Record("R");
 
@@ -47,6 +48,37 @@ public partial class ManagedLifecycleProbe : Node
     public override void _ExitTree()
     {
         Record("X");
+    }
+
+    private static void VerifyMaterials()
+    {
+        using var canvas = new StandardMaterial2D();
+        canvas.Tint = new Color(12, 34, 56);
+        canvas.TextureFilter = TextureFilter.Nearest;
+        canvas.TextureRepeat = TextureRepeat.Enabled;
+        Require(canvas.Tint.R == 12 && canvas.TextureFilter == TextureFilter.Nearest
+            && canvas.TextureRepeat == TextureRepeat.Enabled, "managed 2D fixed properties");
+        Require(typeof(MaterialResource).GetMethod("SetTint") == null
+            && typeof(StandardMaterial2D).GetMethod("SetDepthMode") == null
+            && typeof(StandardMaterial3D).GetMethod("SetShaderResource") == null,
+            "managed API follows concrete material contracts");
+        using var surface = new StandardMaterial3D();
+        using var texture = new TextureResource();
+        surface.DiffuseTexture = texture;
+        surface.Tint = new Color(78, 90, 12);
+        Require(surface.DiffuseTexture == texture && surface.Tint.R == 78, "managed 3D cache owns texture references");
+        using var shader = ResourceLoader.Load<ShaderResource>("res://Uniforms.mshader");
+        using var material = new ShaderMaterial { Shader = shader };
+        using Variant value = Variant.From(3.5f);
+        Require(material.SetShaderParameter("height", value), "managed named parameter setter");
+        using Variant result = material.GetShaderParameter("height");
+        Require(result.As<float>() == 3.5f && value.As<float>() == 3.5f,
+            "managed parameter roundtrip preserves borrowed caller value");
+        using Variant wrongType = Variant.From(3);
+        Require(!material.SetShaderParameter("height", wrongType), "managed setter rejects incorrect parameter type");
+        using Variant retained = material.GetShaderParameter("height");
+        Require(retained.As<float>() == 3.5f, "managed rejected setter preserves value");
+        MingObject.Log("MATERIAL_MANAGED: PASS");
     }
 
     private static void VerifyWorkerPool()

@@ -1,3 +1,5 @@
+#include "MingEngine/Scene/Resource/StandardMaterial2D.hpp"
+#include "MingEngine/Scene/Resource/StandardMaterial3D.hpp"
 #include "MingEngine/Editor/UI/EditorUI.hpp"
 #include "MingEngine/Editor/EditorNode.hpp"
 #include "MingEngine/Core/IO/ResourceLoader.hpp"
@@ -7,6 +9,7 @@
 #include "MingEngine/Engine/Input/InputSystem.hpp"
 #include "MingEngine/Scene/GUI/TabContainer.hpp"
 #include "MingEngine/Scene/GUI/ColorRect.hpp"
+#include "MingEngine/Scene/GUI/PanelContainer.hpp"
 #include "MingEngine/Scene/Resource/ShaderMaterial.hpp"
 #include "MingEngine/Editor/UI/EditorIcons.hpp"
 #include "ThirdParty/GLFW/glfw3.h"
@@ -18,6 +21,12 @@ Control* EditorUI::GetRootControl() const
 
 bool EditorUI::HandleInput(InputEvent const& event)
 {
+	if (event.m_type != InputEventType::MouseMotion && m_tooltip != nullptr)
+	{
+		m_tooltip->SetVisible(false);
+		m_tooltipSource = ObjectID::Invalid;
+	}
+
 	if (m_owner == nullptr)
 	{
 		return false;
@@ -189,8 +198,8 @@ void EditorUI::TogglePanel(EditorPanel* panel)
 
 void EditorUI::SaveMaterialAs(Ref<MaterialResource> const& source, std::function<void(VirtualPath const&)> created, VirtualPath const& directory)
 {
-	VirtualPath initial = source.IsValid() ? source->GetVirtualPath().GetParent() : directory;
-	OpenSceneFile(SceneFilePopup::Mode::ResourceSave, initial.Join(source.IsValid() ? "Material.tres" : "ShaderMaterial.tres"),
+	VirtualPath initial = source.IsValid() && source->GetVirtualPath().IsValid() ? source->GetVirtualPath().GetParent() : directory;
+	OpenSceneFile(SceneFilePopup::Mode::ResourceSave, initial.Join(source.IsValid() ? source->GetClassName() + ".tres" : "ShaderMaterial.tres"),
 		[this, source, created](VirtualPath const& path)
 		{
 			FinishNativeEditing();
@@ -218,13 +227,7 @@ void EditorUI::SaveMaterialAs(Ref<MaterialResource> const& source, std::function
 			}
 			if (source.IsValid())
 			{
-				material->m_shaderResource = source->m_shaderResource;
-				material->m_textureResources = source->m_textureResources;
-				material->m_tint = source->m_tint;
-				material->m_blendMode = source->m_blendMode;
-				material->m_depthMode = source->m_depthMode;
-				material->m_rasterizerMode = source->m_rasterizerMode;
-				material->m_samplerMode = source->m_samplerMode;
+				material->CopyValuesFrom(*source);
 			}
 
 			material->SetName(path.GetStem());
@@ -260,13 +263,28 @@ void EditorUI::CreateResource(VirtualPath const& directory, std::function<void(V
 	types->SetCustomMinimumSize(Vector2(0.f, 120.f));
 	m_createResourceContent->AddNode(types);
 	types->SetItems({ { 1, 0, "ShaderMaterial", true, false,
-		EditorIcons::GetIconTexture("ShaderMaterial"), EditorIcons::GetIconColor("ShaderMaterial", types) } });
+		EditorIcons::GetIconTexture("ShaderMaterial"), EditorIcons::GetIconColor("ShaderMaterial", types) },
+		{ 2, 0, "StandardMaterial2D", true, false, EditorIcons::GetIconTexture("StandardMaterial3D"), EditorIcons::GetIconColor("StandardMaterial3D", types) },
+		{ 3, 0, "StandardMaterial3D", true, false, EditorIcons::GetIconTexture("StandardMaterial3D"), EditorIcons::GetIconColor("StandardMaterial3D", types) } });
 	types->Select(1);
 	EditorPopupUtils::AddLabel(m_createResourceContent, "A material drawn with a shader.", "EditorStatusLabel");
-	auto create = [this, directory, created]()
+	auto create = [this, directory, created, types]()
 	{
+		Ref<MaterialResource> material;
+		switch (types->GetSelected())
+		{
+		case 2:
+			material = CreateRef<StandardMaterial2D>();
+			break;
+		case 3:
+			material = CreateRef<StandardMaterial3D>();
+			break;
+		default:
+			material = CreateRef<ShaderMaterial>();
+			break;
+		}
 		m_createResourcePopup->Close();
-		SaveMaterialAs({}, [this, created](VirtualPath const& path)
+		SaveMaterialAs(material, [this, created](VirtualPath const& path)
 		{
 			g_engine->m_fileSystem->ScanResourceTree();
 			m_fileSystemPanel->NavigateTo(path.GetParent());

@@ -1,0 +1,2 @@
+shader_type spatial;
+void fragment(inout FragmentContext f) { f.color = missing_symbol; }

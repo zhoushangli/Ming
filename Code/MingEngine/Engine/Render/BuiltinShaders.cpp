@@ -2,51 +2,74 @@
 
 namespace BuiltinShaders
 {
-std::string_view const DefaultLit = R"MING_SHADER(#define COMMON_ENABLE_SURFACE_TEXTURES
+namespace
+{
+std::string_view const SurfaceCommonTemplate = R"MING_SHADER(#define COMMON_ENABLE_SURFACE_TEXTURES
 #ifndef COMMON_BUFFERS_HLSLI
 #define COMMON_BUFFERS_HLSLI
 
 cbuffer CameraConstants : register(b2)
 {
+    // Read-only: transform world coordinates into camera coordinates.
+    // e.g. mul(WorldToCameraTransform, worldPosition)
     float4x4 WorldToCameraTransform;
+    // Read-only: convert camera coordinates to the rendering basis.
+    // e.g. mul(CameraToRenderTransform, cameraPosition)
     float4x4 CameraToRenderTransform;
+    // Read-only: project rendering coordinates into homogeneous clip coordinates.
+    // e.g. mul(RenderToClipTransform, renderPosition)
     float4x4 RenderToClipTransform;
+    // Read-only: transform camera coordinates into world coordinates.
+    // e.g. mul(CameraToWorldTransform, float4(0, 0, 0, 1))
     float4x4 CameraToWorldTransform;
+    // Read-only: transform clip coordinates into camera coordinates.
+    // e.g. mul(ClipToCameraTransform, clipPosition)
     float4x4 ClipToCameraTransform;
 };
 
 cbuffer ModelConstants : register(b3)
 {
+    // Read-only: transform model coordinates into world coordinates.
+    // e.g. mul(ModelToWorldTransform, float4(v.modelPosition, 1))
     float4x4 ModelToWorldTransform;
+    // Read-only: draw tint multiplied into the default surface RGBA.
+    // e.g. f.color *= ModelColor
     float4 ModelColor;
 };
 
 cbuffer PostProcessConstants : register(b4)
 {
+    // Read-only: viewport dimensions in output pixels.
+    // e.g. float2 texelSize = 1.0 / ScreenSize
     float2 ScreenSize;
+    // Read-only: camera near clipping distance.
+    // e.g. float nearDistance = CameraNear
     float CameraNear;
+    // Read-only: camera far clipping distance.
+    // e.g. float farDistance = CameraFar
     float CameraFar;
 };
 
 cbuffer FrameConstants : register(b5)
 {
+    // Read-only: engine frame time in seconds.
+    // e.g. v.modelPosition.y += sin(Time)
     float Time;
+    // Read-only: frame duration in seconds.
+    // e.g. float frameDuration = DeltaSeconds
     float DeltaSeconds;
+    // Reserved: retain constant-buffer alignment; user shaders must not consume this field.
+    // e.g. leave alignment padding unused.
     float2 FramePadding;
 };
 
 #ifdef COMMON_ENABLE_SURFACE_TEXTURES
+// Read-only: surface diffuse texture, with the existing white fallback.
+// e.g. f.color = DiffuseTexture.Sample(DiffuseSampler, f.uv)
 Texture2D DiffuseTexture : register(t0);
+// Read-only: sampler bound by the material drawing path.
+// e.g. DiffuseTexture.Sample(DiffuseSampler, f.uv)
 SamplerState DiffuseSampler : register(s0);
-#endif
-
-#ifdef COMMON_ENABLE_POSTPROCESS_TEXTURES
-Texture2D ColorTexture : register(t0);
-Texture2D DepthTexture : register(t1);
-Texture2D NormalTexture : register(t2);
-SamplerState ColorSampler : register(s0);
-SamplerState DepthSampler : register(s1);
-SamplerState NormalSampler : register(s2);
 #endif
 
 #endif
@@ -64,42 +87,92 @@ SamplerState NormalSampler : register(s2);
 
 struct DirectionalLight
 {
+    // Read-only: world-space direction in which the light shines.
+    // e.g. float3 toLight = -directionalLight.Direction
     float3 Direction;
+    // Read-only: light intensity multiplier.
+    // e.g. float intensity = directionalLight.Intensity
     float Intensity;
+    // Read-only: RGB light color supplied by the renderer.
+    // e.g. float3 lightColor = directionalLight.Color
     float3 Color;
+    // Reserved: retain constant-buffer alignment; user shaders must not consume this field.
+    // e.g. leave alignment padding unused.
     float Padding;
 };
 
 struct OmniLight
 {
+    // Read-only: world-space light position.
+    // e.g. float3 toLight = PointLights[0].Position - f.worldPosition
     float3 Position;
+    // Read-only: maximum light range in world units.
+    // e.g. float range = PointLights[0].Range
     float Range;
+    // Read-only: RGB light color supplied by the renderer.
+    // e.g. float3 lightColor = directionalLight.Color
     float3 Color;
+    // Read-only: light intensity multiplier.
+    // e.g. float intensity = directionalLight.Intensity
     float Intensity;
+    // Read-only: distance attenuation exponent.
+    // e.g. float exponent = PointLights[0].Attenuation
     float Attenuation;
+    // Reserved: retain constant-buffer alignment; user shaders must not consume this field.
+    // e.g. leave alignment padding unused.
     float3 Padding;
 };
 
 struct SpotLight
 {
+    // Read-only: world-space light position.
+    // e.g. float3 toLight = PointLights[0].Position - f.worldPosition
     float3 Position;
+    // Read-only: maximum light range in world units.
+    // e.g. float range = PointLights[0].Range
     float Range;
+    // Read-only: world-space direction in which the light shines.
+    // e.g. float3 toLight = -directionalLight.Direction
     float3 Direction;
+    // Read-only: light intensity multiplier.
+    // e.g. float intensity = directionalLight.Intensity
     float Intensity;
+    // Read-only: RGB light color supplied by the renderer.
+    // e.g. float3 lightColor = directionalLight.Color
     float3 Color;
+    // Read-only: distance attenuation exponent.
+    // e.g. float exponent = PointLights[0].Attenuation
     float Attenuation;
+    // Read-only: full spot cone angle in degrees.
+    // e.g. float angle = SpotLights[0].SpotAngle
     float SpotAngle;
+    // Read-only: spot cone attenuation parameter.
+    // e.g. float falloff = SpotLights[0].SpotAttenuation
     float SpotAttenuation;
+    // Reserved: retain constant-buffer alignment; user shaders must not consume this field.
+    // e.g. leave alignment padding unused.
     float2 Padding;
 };
 
 cbuffer LightConstants : register(b1)
 {
+    // Read-only: directional light data for this viewport.
+    // e.g. float3 sunColor = directionalLight.Color
     DirectionalLight directionalLight;
+    // Read-only: number of active entries in PointLights.
+    // e.g. bool hasPointLights = NumPointLights > 0
     int NumPointLights;
+    // Read-only: number of active entries in SpotLights.
+    // e.g. bool hasSpotLights = NumSpotLights > 0
     int NumSpotLights;
+    // Reserved: retain constant-buffer alignment; user shaders must not consume this field.
+    // e.g. leave alignment padding unused.
     float2 Padding;
+    // Read-only: active point lights, indexed below NumPointLights.
+    // e.g. float3 position = PointLights[0].Position
     OmniLight PointLights[MAX_POINT_LIGHTS];
+    // Read-only: active spot lights, indexed below NumSpotLights.
+    // e.g. float3 direction = SpotLights[0].Direction
     SpotLight SpotLights[MAX_SPOT_LIGHTS];
 };
 
@@ -276,80 +349,189 @@ LightingResult ComputeLighting(float3 worldPos, float3 worldNormal, float3 viewD
 #endif
 
 
-struct VertexInput
+struct VertexContext
 {
-	float3 modelPosition : POSITION;
-	float4 color : COLOR;
-	float2 uv : TEXCOORD;
-	float3 modelTangent : TANGENT;
-	float3 modelBitangent : BITANGENT;
-	float3 modelNormal : NORMAL;
+    // Read/write: model-space position used by subsequent engine transforms.
+    // e.g. v.modelPosition.y += 1.0
+    float3 modelPosition;
+
+    // Read/write: model-space normal transformed after vertex(); not rebuilt from positions.
+    // e.g. v.modelNormal = float3(0, 1, 0)
+    float3 modelNormal;
+
+    // Read/write: model-space tangent transformed after vertex().
+    // e.g. v.modelTangent = float3(1, 0, 0)
+    float3 modelTangent;
+
+    // Read/write: model-space bitangent transformed after vertex().
+    // e.g. v.modelBitangent = float3(0, 0, 1)
+    float3 modelBitangent;
+
+    // Read/write: mesh UV interpolated for subsequent default diffuse sampling.
+    // e.g. v.uv *= 2.0
+    float2 uv;
+
+    // Read/write: mesh RGBA interpolated and multiplied into the default surface color.
+    // e.g. v.color = float4(1, 0, 0, 1)
+    float4 color;
 };
 
-struct VertexToPixel
+struct FragmentContext
 {
-	float4 clipPosition : SV_Position;
-	float3 worldPos : WORLDPOS;
-	float4 color : COLOR;
-	float2 uv : TEXCOORD;
-	float4 worldTangent : TANGENT;
-	float4 worldBitangent : BITANGENT;
-	float4 worldNormal : NORMAL;
+    // Read-only by contract: interpolated world position after vertex deformation.
+    // e.g. float height = f.worldPosition.y
+    float3 worldPosition;
+
+    // Read/write: interpolated world normal used for lighting and scene normal output.
+    // e.g. f.worldNormal = normalize(float3(0, 1, 1))
+    float3 worldNormal;
+
+    // Read-only by contract: interpolated UV; default sampling has already completed.
+    // e.g. f.color = DiffuseTexture.Sample(DiffuseSampler, f.uv * 2.0)
+    float2 uv;
+
+    // Read-only by contract: interpolated vertex RGBA available to user calculations.
+    // e.g. f.color = f.vertexColor
+    float4 vertexColor;
+
+    // Read/write: diffuse texture times vertex RGBA times ModelColor, before lighting and alpha clipping.
+    // e.g. f.color.rgb = float3(1, 0, 0)
+    float4 color;
 };
 
-struct PixelOutput
+)MING_SHADER";
+
+std::string_view const SurfaceEntryTemplate = R"MING_SHADER(struct VertexInput
 {
-	float4 color : SV_Target0;
-	float4 normal : SV_Target1;
+    float3 modelPosition : POSITION;
+    float4 color : COLOR;
+    float2 uv : TEXCOORD;
+    float3 modelTangent : TANGENT;
+    float3 modelBitangent : BITANGENT;
+    float3 modelNormal : NORMAL;
 };
 
-VertexToPixel VertexMain(VertexInput input)
+struct VertexToFragment
 {
-	float4 modelPosition = float4(input.modelPosition, 1);
-	float4 worldPosition = mul(ModelToWorldTransform, modelPosition);
-	float4 cameraPosition = mul(WorldToCameraTransform, worldPosition);
-	float4 renderPosition = mul(CameraToRenderTransform, cameraPosition);
-	float4 clipPosition = mul(RenderToClipTransform, renderPosition);
+    float4 clipPosition : SV_Position;
+    float3 worldPos : WORLDPOS;
+    float4 color : COLOR;
+    float2 uv : TEXCOORD;
+    float4 worldTangent : TANGENT;
+    float4 worldBitangent : BITANGENT;
+    float4 worldNormal : NORMAL;
+};
 
-	float4 worldTangent = mul(ModelToWorldTransform, float4(input.modelTangent, 0.0f));
-	float4 worldBitangent = mul(ModelToWorldTransform, float4(input.modelBitangent, 0.0f));
-	float4 worldNormal = mul(ModelToWorldTransform, float4(input.modelNormal, 0.0f));
+struct FragmentOutput
+{
+    float4 color : SV_Target0;
+    float4 normal : SV_Target1;
+};
 
-	VertexToPixel v2p;
-	v2p.clipPosition = clipPosition;
-	v2p.worldPos = worldPosition.xyz;
-	v2p.color = input.color;
-	v2p.uv = input.uv;
-	v2p.worldTangent = worldTangent;
-	v2p.worldBitangent = worldBitangent;
-	v2p.worldNormal = worldNormal;
-	return v2p;
+VertexToFragment VertexMain(VertexInput input)
+{
+    // 1) Initialize editable mesh data and invoke the user vertex callback.
+    VertexContext v;
+    v.modelPosition = input.modelPosition;
+    v.modelNormal = input.modelNormal;
+    v.modelTangent = input.modelTangent;
+    v.modelBitangent = input.modelBitangent;
+    v.uv = input.uv;
+    v.color = input.color;
+
+    // 2) User Entry Point
+    vertex(v);
+
+    // 3) Transform the modified vertex and forward interpolated data.
+
+    float4 modelPosition = float4(v.modelPosition, 1);
+    float4 worldPosition = mul(ModelToWorldTransform, modelPosition);
+    float4 cameraPosition = mul(WorldToCameraTransform, worldPosition);
+    float4 renderPosition = mul(CameraToRenderTransform, cameraPosition);
+    float4 clipPosition = mul(RenderToClipTransform, renderPosition);
+
+    float4 worldTangent = mul(ModelToWorldTransform, float4(v.modelTangent, 0.0f));
+    float4 worldBitangent = mul(ModelToWorldTransform, float4(v.modelBitangent, 0.0f));
+    float4 worldNormal = mul(ModelToWorldTransform, float4(v.modelNormal, 0.0f));
+
+    VertexToFragment v2p;
+    v2p.clipPosition = clipPosition;
+    v2p.worldPos = worldPosition.xyz;
+    v2p.color = v.color;
+    v2p.uv = v.uv;
+    v2p.worldTangent = worldTangent;
+    v2p.worldBitangent = worldBitangent;
+    v2p.worldNormal = worldNormal;
+    return v2p;
 }
 
-PixelOutput PixelMain(VertexToPixel input)
+FragmentOutput FragmentMain(VertexToFragment input)
 {
-	PixelOutput output;
+    FragmentOutput output;
 
-	float4 textureColor = DiffuseTexture.Sample(DiffuseSampler, input.uv);
-	float4 vertexColor = input.color;
-	float4 modelColor = ModelColor;
-	float3 cameraWorldPos = mul(CameraToWorldTransform, float4(0.0f, 0.0f, 0.0f, 1.0f)).xyz;
-	float3 viewDir = normalize(cameraWorldPos - input.worldPos);
-	LightingResult lighting = ComputeLighting(input.worldPos, input.worldNormal.xyz, viewDir, 0.0f, 0.0f);
-	float3 albedo = textureColor.xyz * vertexColor.xyz * modelColor.xyz;
+    // 1) Prepare the default surface before invoking the user fragment callback.
+    FragmentContext f;
+    f.worldPosition = input.worldPos;
+    f.worldNormal = input.worldNormal.xyz;
+    f.uv = input.uv;
+    f.vertexColor = input.color;
+    f.color = DiffuseTexture.Sample(DiffuseSampler, input.uv) * input.color * ModelColor;
+    
+    // 2) User Entry Point
+    fragment(f);
 
-	float4 color;
-	color.xyz = albedo * lighting.diffuse + lighting.specular;
-	color.a = textureColor.a * vertexColor.a * modelColor.a;
-
-	clip(color.a - 0.01f);
-
-	output.color = color;
-	output.normal = float4(input.worldNormal.xyz * 0.5f + 0.5f, 1.f);
-
-	return output;
+    // 3) Light the writable results using the original interpolated world position.
+    float3 cameraWorldPos = mul(CameraToWorldTransform, float4(0.0f, 0.0f, 0.0f, 1.0f)).xyz;
+    float3 viewDir = normalize(cameraWorldPos - input.worldPos);
+    LightingResult lighting = ComputeLighting(input.worldPos, f.worldNormal, viewDir, 0.0f, 0.0f);
+    output.color = float4(f.color.rgb * lighting.diffuse + lighting.specular, f.color.a);
+    clip(output.color.a - 0.01f);
+    output.normal = float4(f.worldNormal * 0.5f + 0.5f, 1.f);
+    return output;
 }
 )MING_SHADER";
+}
+
+std::string BuildSurfaceShaderSource(std::string const& userSource, std::string const& sourcePath, std::string const& uniformSource)
+{
+	std::string diagnosticPath;
+	for (char character : sourcePath)
+	{
+		if (character == '\\')
+		{
+			diagnosticPath += '/';
+		}
+		else if (character == '"' || character == '\n' || character == '\r')
+		{
+			diagnosticPath += '_';
+		}
+		else
+		{
+			diagnosticPath += character;
+		}
+	}
+
+	if (diagnosticPath.empty())
+	{
+		diagnosticPath = "UserSurface.hlsl";
+	}
+
+	// 1) Remove a file-leading UTF-8 BOM before inserting the user text inside the combined source.
+	size_t const userOffset = userSource.compare(0, 3, "\xEF\xBB\xBF") == 0 ? 3 : 0;
+	return "#line 1 \"Ming/ShaderCommon.hlsli\"\n" + std::string(SurfaceCommonTemplate)
+		   + "\n#line 1 \"Ming/MaterialConstants\"\n" + uniformSource
+		   + "\n#line 1 \"" + diagnosticPath + "\"\n" + userSource.substr(userOffset)
+		   + "\n#line 1 \"Ming/ShaderEntry.hlsli\"\n" + std::string(SurfaceEntryTemplate);
+}
+
+namespace
+{
+std::string const DefaultLitSource = BuildSurfaceShaderSource(
+	"void vertex(inout VertexContext v) {}\nvoid fragment(inout FragmentContext f) {}\n",
+	"Ming/DefaultLit.hlsl");
+}
+
+std::string_view const DefaultLit = DefaultLitSource;
 
 std::string_view const DefaultUI = R"MING_SHADER(#define COMMON_ENABLE_SURFACE_TEXTURES
 #ifndef COMMON_BUFFERS_HLSLI
@@ -408,33 +590,33 @@ struct VertexInput
 	float2 uv : TEXCOORD;
 };
 
-struct VertexToPixel
+struct VertexToFragment
 {
 	float4 clipPosition : SV_Position;
 	float4 color : COLOR;
 	float2 uv : TEXCOORD;
 };
 
-struct PixelOutput
+struct FragmentOutput
 {
 	float4 color : SV_Target0;
 };
 
-VertexToPixel VertexMain(VertexInput input)
+VertexToFragment VertexMain(VertexInput input)
 {
 	float4 modelPosition = float4(input.modelPosition, 1);
 	float4 clipPosition = mul(RenderToClipTransform, modelPosition);
 
-	VertexToPixel v2p;
+	VertexToFragment v2p;
 	v2p.clipPosition = clipPosition;
 	v2p.color = input.color;
 	v2p.uv = input.uv;
 	return v2p;
 }
 
-PixelOutput PixelMain(VertexToPixel input)
+FragmentOutput FragmentMain(VertexToFragment input)
 {
-	PixelOutput output;
+	FragmentOutput output;
 
 	float4 textureColor = DiffuseTexture.Sample(DiffuseSampler, input.uv);
 	float4 vertexColor = input.color;
@@ -512,7 +694,7 @@ struct VertexInput
 	float3 modelNormal : NORMAL;
 };
 
-struct VertexToPixel
+struct VertexToFragment
 {
 	float4 clipPosition : SV_Position;
 	float3 worldPos : WORLDPOS;
@@ -523,12 +705,12 @@ struct VertexToPixel
 	float4 worldNormal : NORMAL;
 };
 
-struct PixelOutput
+struct FragmentOutput
 {
 	float4 color : SV_Target0;
 };
 
-VertexToPixel VertexMain(VertexInput input)
+VertexToFragment VertexMain(VertexInput input)
 {
 	float4 modelPosition = float4(input.modelPosition, 1);
 	float4 worldPosition = mul(ModelToWorldTransform, modelPosition);
@@ -540,7 +722,7 @@ VertexToPixel VertexMain(VertexInput input)
 	float4 worldBitangent = mul(ModelToWorldTransform, float4(input.modelBitangent, 0.0f));
 	float4 worldNormal = mul(ModelToWorldTransform, float4(input.modelNormal, 0.0f));
 
-	VertexToPixel v2p;
+	VertexToFragment v2p;
 	v2p.clipPosition = clipPosition;
 	v2p.worldPos = worldPosition.xyz;
 	v2p.color = input.color;
@@ -551,9 +733,9 @@ VertexToPixel VertexMain(VertexInput input)
 	return v2p;
 }
 
-PixelOutput PixelMain(VertexToPixel input)
+FragmentOutput FragmentMain(VertexToFragment input)
 {
-	PixelOutput output;
+	FragmentOutput output;
 
 	float4 textureColor = DiffuseTexture.Sample(DiffuseSampler, input.uv);
 	float4 vertexColor = input.color;
@@ -628,21 +810,21 @@ struct VertexInput
 	float2 uv : TEXCOORD;
 };
 
-struct VertexToPixel
+struct VertexToFragment
 {
 	float4 clipPosition : SV_Position;
 	float4 color : COLOR;
 	float2 uv : TEXCOORD;
 };
 
-struct PixelOutput
+struct FragmentOutput
 {
 	float4 color : SV_Target0;
 };
 
-VertexToPixel VertexMain(VertexInput input)
+VertexToFragment VertexMain(VertexInput input)
 {
-	VertexToPixel v2p;
+	VertexToFragment v2p;
 
 	float3 positionA = mul(ModelToWorldTransform, float4(0.f, 0.f, 0.f, 1.0f)).xyz;
 	float3 positionB = float3(ModelToWorldTransform[0][0], ModelToWorldTransform[1][1], ModelToWorldTransform[2][2]);
@@ -670,9 +852,9 @@ VertexToPixel VertexMain(VertexInput input)
 	return v2p;
 }
 
-PixelOutput PixelMain(VertexToPixel input)
+FragmentOutput FragmentMain(VertexToFragment input)
 {
-	PixelOutput output;
+	FragmentOutput output;
 
 	output.color = input.color;
 
@@ -740,7 +922,7 @@ struct VertexInput
 	float3 modelNormal : NORMAL;
 };
 
-struct VertexToPixel
+struct VertexToFragment
 {
 	float4 clipPosition : SV_Position;
 	float3 worldPos : WORLDPOS;
@@ -751,12 +933,12 @@ struct VertexToPixel
 	float4 worldNormal : NORMAL;
 };
 
-struct PixelOutput
+struct FragmentOutput
 {
 	float4 color : SV_Target0;
 };
 
-VertexToPixel VertexMain(VertexInput input)
+VertexToFragment VertexMain(VertexInput input)
 {
 	float4 modelPosition = float4(input.modelPosition, 1);
 	float4 worldPosition = mul(ModelToWorldTransform, modelPosition);
@@ -768,7 +950,7 @@ VertexToPixel VertexMain(VertexInput input)
 	float4 worldBitangent = mul(ModelToWorldTransform, float4(input.modelBitangent, 0.0f));
 	float4 worldNormal = mul(ModelToWorldTransform, float4(input.modelNormal, 0.0f));
 
-	VertexToPixel v2p;
+	VertexToFragment v2p;
 	v2p.clipPosition = clipPosition;
 	v2p.worldPos = worldPosition.xyz;
 	v2p.color = input.color;
@@ -779,18 +961,18 @@ VertexToPixel VertexMain(VertexInput input)
 	return v2p;
 }
 
-PixelOutput PixelMain(VertexToPixel input)
+FragmentOutput FragmentMain(VertexToFragment input)
 {
-	PixelOutput output;
+	FragmentOutput output;
 
 	float4 textureColor = DiffuseTexture.Sample(DiffuseSampler, input.uv);
 	float4 vertexColor = input.color;
 	float4 modelColor = ModelColor;
 
 	float3 cameraPosition = mul(CameraToWorldTransform, float4(0, 0, 0, 1)).xyz;
-	float3 cameraToPixel = normalize(input.worldPos - cameraPosition);
+	float3 cameraToFragment = normalize(input.worldPos - cameraPosition);
 
-	float angleFade = abs(dot(float3(0.f, 0.f, 1.f), cameraToPixel));
+	float angleFade = abs(dot(float3(0.f, 0.f, 1.f), cameraToFragment));
 	angleFade = smoothstep(0.1f, 0.4f, angleFade);
 
 	float distFade = 1.f - distance(input.worldPos, float3(cameraPosition.xy, 0.f)) / 50.f;
@@ -926,7 +1108,7 @@ VS_OUTPUT VertexMain(VS_INPUT input)
     return o;
 }
 
-float4 PixelMain(VS_OUTPUT input) : SV_Target0
+float4 FragmentMain(VS_OUTPUT input) : SV_Target0
 {
     float4 textureColor = DiffuseTexture.Sample(DiffuseSampler, input.uv);
 
@@ -994,19 +1176,19 @@ struct VertexInput
 	float3 modelNormal : NORMAL;
 };
 
-struct VertexToPixel
+struct VertexToFragment
 {
 	float4 clipPosition : SV_Position;
 	float4 color : COLOR;
 	float2 uv : TEXCOORD;
 };
 
-struct PixelOutput
+struct FragmentOutput
 {
 	float4 color : SV_Target0;
 };
 
-VertexToPixel VertexMain(VertexInput input)
+VertexToFragment VertexMain(VertexInput input)
 {
 	float4 modelDirection = float4(input.modelPosition, 0);
 	float4 worldDirection = mul(ModelToWorldTransform, modelDirection);
@@ -1025,7 +1207,7 @@ VertexToPixel VertexMain(VertexInput input)
 	float4 renderPosition = mul(CameraToRenderTransform, cameraPosition);
 	float4 clipPosition = mul(RenderToClipTransform, renderPosition);
 
-	VertexToPixel v2p;
+	VertexToFragment v2p;
 	v2p.clipPosition = clipPosition;
 	v2p.color = input.color;
 	v2p.uv = input.uv;
@@ -1033,9 +1215,9 @@ VertexToPixel VertexMain(VertexInput input)
 	return v2p;
 }
 
-PixelOutput PixelMain(VertexToPixel input)
+FragmentOutput FragmentMain(VertexToFragment input)
 {
-	PixelOutput output;
+	FragmentOutput output;
 
 	float4 textureColor = DiffuseTexture.Sample(DiffuseSampler, input.uv);
 	float4 vertexColor = input.color;

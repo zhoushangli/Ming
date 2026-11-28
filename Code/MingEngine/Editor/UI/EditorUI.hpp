@@ -118,6 +118,7 @@ private:
 	void                  ShowEditorSettings();
 	void OpenSubmenu(Button* parent, std::vector<MenuItem> const& items);
 	void HandleMenuKey(InputEvent const& event);
+	void UpdateTooltip();
 
 	void InitializeNativeDocking();
 	void UpdateNativeDocking();
@@ -160,6 +161,11 @@ private:
 	Label*                     m_statusMessage = nullptr;
 	Label*                     m_statusInfo    = nullptr;
 	std::vector<ToolbarAction> m_toolbarActions;
+
+	PanelContainer* m_tooltip = nullptr;
+	Label*          m_tooltipLabel = nullptr;
+	ObjectID        m_tooltipSource = ObjectID::Invalid;
+	double          m_tooltipStart = 0.0;
 
 	SubViewportContainer* m_sceneView    = nullptr;
 	PopupPanel*           m_unsavedPopup = nullptr;

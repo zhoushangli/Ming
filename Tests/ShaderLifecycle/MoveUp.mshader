@@ -1,0 +1,7 @@
+shader_type spatial;
+
+void vertex(inout VertexContext v)
+{
+    v.modelPosition.y += 1.0;
+}
+

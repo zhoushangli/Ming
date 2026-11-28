@@ -607,7 +607,7 @@ void D3D11RenderBackend::BindShader(Shader* shader)
 
 	m_d3dDeviceContext->IASetInputLayout(shader->m_inputLayout);
 	m_d3dDeviceContext->VSSetShader(shader->m_vertexShader, nullptr, 0);
-	m_d3dDeviceContext->PSSetShader(shader->m_pixelShader, nullptr, 0);
+	m_d3dDeviceContext->PSSetShader(shader->m_fragmentShader, nullptr, 0);
 }
 
 #pragma endregion
@@ -825,7 +825,7 @@ Shader* D3D11RenderBackend::CreateShader(
 
 	// Compile VS / PS
 	std::vector<unsigned char> vsByteCode;
-	std::vector<unsigned char> psByteCode;
+	std::vector<unsigned char> fragmentByteCode;
 
 	bool vsOK = CompileShaderToByteCode(
 		vsByteCode,
@@ -833,23 +833,31 @@ Shader* D3D11RenderBackend::CreateShader(
 		shaderSource.c_str(),
 		config.m_vertexEntryPoint.c_str(),
 		"vs_5_0");
-	GUARANTEE_OR_DIE(vsOK, Stringf("Could not compile vertex shader for '%s'", shaderName.c_str()));
+	if (!vsOK)
+	{
+		delete shader;
+		return nullptr;
+	}
 
-	bool psOK = CompileShaderToByteCode(
-		psByteCode,
+	bool fragmentOK = CompileShaderToByteCode(
+		fragmentByteCode,
 		sourceName,
 		shaderSource.c_str(),
-		config.m_pixelEntryPoint.c_str(),
+		config.m_fragmentEntryPoint.c_str(),
 		"ps_5_0");
-	GUARANTEE_OR_DIE(psOK, Stringf("Could not compile pixel shader for '%s'", shaderName.c_str()));
+	if (!fragmentOK)
+	{
+		delete shader;
+		return nullptr;
+	}
 
 	// Create VS / PS
 	HRESULT hr =
 		m_d3dDevice->CreateVertexShader(vsByteCode.data(), vsByteCode.size(), nullptr, &shader->m_vertexShader);
 	GUARANTEE_OR_DIE(SUCCEEDED(hr), Stringf("Could not create vertex shader for '%s'", shaderName.c_str()));
 
-	hr = m_d3dDevice->CreatePixelShader(psByteCode.data(), psByteCode.size(), nullptr, &shader->m_pixelShader);
-	GUARANTEE_OR_DIE(SUCCEEDED(hr), Stringf("Could not create pixel shader for '%s'", shaderName.c_str()));
+	hr = m_d3dDevice->CreatePixelShader(fragmentByteCode.data(), fragmentByteCode.size(), nullptr, &shader->m_fragmentShader);
+	GUARANTEE_OR_DIE(SUCCEEDED(hr), Stringf("Could not create fragment shader for '%s'", shaderName.c_str()));
 
 	// clang-format off
 	static D3D11_INPUT_ELEMENT_DESC const kPcutbnDesc[] = {
